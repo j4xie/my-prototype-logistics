@@ -72,7 +72,7 @@ MODULE_TOPICS = {
     },
     "m2": {
         "name": "生产管理",
-        "topics": ["生产工序流程", "报工方式和字段", "设备数据采集", "质检流程", "分析需求和指标", "预警需求"],
+        "topics": ["生产工序流程", "报工方式和字段", "领人/签到方式", "工时统计维度", "设备数据采集", "质检流程", "分析需求和指标", "预警需求"],
     },
     "m3": {
         "name": "人员管理",
@@ -388,8 +388,10 @@ class AIConsultant:
         "yield_rate": {"excellent": 98, "qualified": 95, "warning": 90}
       },
       "quickActions": ["BatchList", "ScanReport"],
+      "quickActionOrder": ["BatchList", "ScanReport"],
       "disabledScreens": ["EquipmentMonitoring"],
-      "disabledReports": ["equipment"]
+      "disabledReports": ["equipment"],
+      "priority": 8
     }
   },
   "stageTemplates": [
@@ -409,7 +411,10 @@ class AIConsultant:
 5. alertThresholds 根据对话中提到的预警需求生成
 6. factoryMetadata 从行业和地区推断代码
 7. 对话中工厂说"不需要"或"没有"的功能，对应字段 applicable=false
-8. 对话中未明确提及的字段，根据行业常识推断（confidence 较低）"""
+8. 对话中未明确提及的字段，根据行业常识推断（confidence 较低）
+9. priority: 1-10 的数字，表示该模块对工厂的重要程度。根据对话中的使用频率和重视程度推断
+10. quickActionOrder: 按对话中提到的使用频率排列快捷操作
+11. disabledScreens 必须使用以下标准名称之一：EquipmentMonitoring, TempMonitoring, AlertHandling, OutboundManagement, InboundManagement, AttendanceManagement, WhitelistManagement, NewHireTracking, QualityInspection, QualityAnalysis, ScheduleManagement, BatchManagement, WorkerManagement, AISchedule, AIAnalysis, SmartBI, Reports, ProductionPlanning, PersonnelManagement"""
 
         user_prompt = f"""工厂基本信息：
 - 名称：{basic_info.get('factoryName', '未知')}

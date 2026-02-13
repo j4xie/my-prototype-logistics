@@ -17,6 +17,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DispatcherTabParamList, DISPATCHER_THEME } from '../types/dispatcher';
+import { useFactoryFeatureStore } from '../store/factoryFeatureStore';
 
 // Stack Navigators
 import DSHomeStackNavigator from './dispatcher/DSHomeStackNavigator';
@@ -29,8 +30,16 @@ import DSProfileStackNavigator from './dispatcher/DSProfileStackNavigator';
 const Tab = createBottomTabNavigator<DispatcherTabParamList>();
 
 export function DispatcherTabNavigator() {
+  const { isScreenEnabled, loaded } = useFactoryFeatureStore();
+
+  // Force navigator re-mount when feature config changes
+  const schedulingOn = isScreenEnabled('ProductionPlanning');
+  const smartbiOn = isScreenEnabled('SmartBI');
+  const navKey = `ds-${loaded}-${schedulingOn}-${smartbiOn}`;
+
   return (
     <Tab.Navigator
+      key={navKey}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: DISPATCHER_THEME.primary,
@@ -58,6 +67,7 @@ export function DispatcherTabNavigator() {
           ),
         }}
       />
+      {isScreenEnabled('ProductionPlanning') && (
       <Tab.Screen
         name="PlanTab"
         component={DSPlanStackNavigator}
@@ -68,6 +78,8 @@ export function DispatcherTabNavigator() {
           ),
         }}
       />
+      )}
+      {isScreenEnabled('AISchedule') && (
       <Tab.Screen
         name="AITab"
         component={DSAIStackNavigator}
@@ -78,6 +90,8 @@ export function DispatcherTabNavigator() {
           ),
         }}
       />
+      )}
+      {isScreenEnabled('SmartBI') && (
       <Tab.Screen
         name="SmartBITab"
         component={SmartBIStackNavigator}
@@ -88,6 +102,8 @@ export function DispatcherTabNavigator() {
           ),
         }}
       />
+      )}
+      {isScreenEnabled('PersonnelManagement') && (
       <Tab.Screen
         name="PersonnelTab"
         component={DSPersonnelStackNavigator}
@@ -98,6 +114,7 @@ export function DispatcherTabNavigator() {
           ),
         }}
       />
+      )}
       <Tab.Screen
         name="ProfileTab"
         component={DSProfileStackNavigator}

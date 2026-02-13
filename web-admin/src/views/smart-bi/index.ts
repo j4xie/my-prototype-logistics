@@ -64,7 +64,7 @@ export const smartBIRoutes = [
       },
       {
         path: 'ai-query',
-        name: 'SmartBIAIQuery',
+        name: 'SmartBIQuery',
         component: () => import('./AIQuery.vue'),
         meta: {
           title: 'AI 问答',

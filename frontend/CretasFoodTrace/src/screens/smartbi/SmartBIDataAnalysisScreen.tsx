@@ -11,6 +11,8 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
+  RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import {
   Text,
@@ -27,6 +29,9 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useAuthStore } from '../../store/authStore';
 import { apiClient } from '../../services/api/apiClient';
 import { WebView } from 'react-native-webview';
+import KPICardMobile from '../../components/smartbi/KPICardMobile';
+import { formatCompactNumber } from '../../utils/formatters';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -42,6 +47,14 @@ interface SheetResult {
     recommendedChartType?: string;
     chartConfig?: any;
     aiAnalysis?: string;
+    charts?: any[];
+    kpiSummary?: {
+      metrics: Array<{
+        label: string;
+        value: number;
+        unit?: string;
+      }>;
+    };
   };
 }
 
@@ -60,6 +73,8 @@ export function SmartBIDataAnalysisScreen() {
   const [uploadProgress, setUploadProgress] = useState<string>('');
   const [uploadResult, setUploadResult] = useState<BatchUploadResult | null>(null);
   const [selectedSheetIndex, setSelectedSheetIndex] = useState<number>(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [aiAnalysisExpanded, setAiAnalysisExpanded] = useState(false);
 
   // 选择文件
   const pickDocument = async () => {
@@ -167,15 +182,25 @@ export function SmartBIDataAnalysisScreen() {
   const resetUpload = () => {
     setUploadResult(null);
     setSelectedSheetIndex(0);
+    setAiAnalysisExpanded(false);
+  };
+
+  // 下拉刷新（重新加载当前上传结果）
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Simulate refresh delay
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
   };
 
   // 获取当前 Sheet
   const currentSheet = uploadResult?.results?.[selectedSheetIndex];
 
-  // 生成图表 HTML
+  // 生成图表 HTML（含 DataZoom 自适应 + 标签优化）
   const generateChartHTML = (chartConfig: any) => {
     if (!chartConfig || !chartConfig.options) {
-      return '<html><body><h3>暂无图表数据</h3></body></html>';
+      return '<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;color:#999;font-family:sans-serif;"><h3>暂无图表数据</h3></body></html>';
     }
 
     return `
@@ -183,24 +208,47 @@ export function SmartBIDataAnalysisScreen() {
     <html>
       <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
         <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: -apple-system, system-ui, sans-serif; }
-          #chart { width: 100vw; height: 400px; }
+          body { font-family: -apple-system, system-ui, sans-serif; background: #fff; }
+          #chart { width: 100vw; height: 380px; }
         </style>
       </head>
       <body>
         <div id="chart"></div>
         <script>
-          const chart = echarts.init(document.getElementById('chart'));
-          const option = ${JSON.stringify(chartConfig.options)};
-          chart.setOption(option);
+          var chart = echarts.init(document.getElementById('chart'));
+          var option = ${JSON.stringify(chartConfig.options)};
 
-          window.addEventListener('resize', () => {
-            chart.resize();
-          });
+          // Mobile optimization: DataZoom for large datasets
+          if (option.xAxis && option.xAxis.type === 'category' && Array.isArray(option.xAxis.data) && option.xAxis.data.length > 15) {
+            var dataLen = option.xAxis.data.length;
+            var endPct = Math.min(100, Math.round((12 / dataLen) * 100));
+            if (!option.dataZoom) {
+              option.dataZoom = [
+                { type: 'slider', show: true, xAxisIndex: 0, start: 0, end: endPct, height: 18, bottom: 5 },
+                { type: 'inside', xAxisIndex: 0, start: 0, end: endPct }
+              ];
+              option.grid = option.grid || {};
+              option.grid.bottom = Math.max(option.grid.bottom || 40, 55);
+            }
+            // Label rotation for mobile
+            option.xAxis.axisLabel = option.xAxis.axisLabel || {};
+            if (!option.xAxis.axisLabel.rotate) option.xAxis.axisLabel.rotate = 45;
+            option.xAxis.axisLabel.hideOverlap = true;
+            if (!option.xAxis.axisLabel.formatter) {
+              option.xAxis.axisLabel.formatter = function(val) {
+                var s = String(val);
+                if (/^\\d{4}-\\d{2}-\\d{2}/.test(s)) return s.slice(5, 10);
+                return s.length > 8 ? s.slice(0, 8) + '…' : s;
+              };
+            }
+          }
+
+          chart.setOption(option);
+          window.addEventListener('resize', function() { chart.resize(); });
         </script>
       </body>
     </html>
@@ -239,6 +287,14 @@ export function SmartBIDataAnalysisScreen() {
                     >
                       选择文件
                     </Button>
+
+                    {/* Preview Skeleton */}
+                    <View style={styles.previewSection}>
+                      <Text variant="bodySmall" style={styles.previewTitle}>
+                        预览效果：
+                      </Text>
+                      <LoadingSkeleton />
+                    </View>
                   </>
                 )}
               </View>
@@ -267,7 +323,16 @@ export function SmartBIDataAnalysisScreen() {
   // 渲染结果区域
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#2196F3']}
+          />
+        }
+      >
         {/* 总结卡片 */}
         <Card style={styles.summaryCard}>
           <Card.Content>
@@ -286,32 +351,68 @@ export function SmartBIDataAnalysisScreen() {
           </Card.Content>
         </Card>
 
-        {/* Sheet 选择器 */}
-        <Card style={styles.sheetSelectorCard}>
-          <Card.Content>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              选择 Sheet
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.sheetChipsContainer}>
-                {uploadResult.results.map((sheet, index) => (
-                  <Chip
-                    key={sheet.sheetIndex}
-                    selected={selectedSheetIndex === index}
-                    onPress={() => setSelectedSheetIndex(index)}
-                    style={styles.sheetChip}
+        {/* Sheet 选择器（水平滚动标签页） */}
+        <View style={styles.sheetTabBar}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.sheetTabsContainer}>
+              {uploadResult.results.map((sheet, index) => (
+                <TouchableOpacity
+                  key={sheet.sheetIndex}
+                  style={[
+                    styles.sheetTab,
+                    selectedSheetIndex === index && styles.sheetTabActive,
+                  ]}
+                  onPress={() => {
+                    setSelectedSheetIndex(index);
+                    setAiAnalysisExpanded(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.sheetTabText,
+                      selectedSheetIndex === index && styles.sheetTabTextActive,
+                    ]}
+                    numberOfLines={1}
                   >
-                    {sheet.sheetName} ({sheet.savedRows}行)
-                  </Chip>
-                ))}
-              </View>
-            </ScrollView>
-          </Card.Content>
-        </Card>
+                    {sheet.sheetName}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.sheetTabCount,
+                      selectedSheetIndex === index && styles.sheetTabCountActive,
+                    ]}
+                  >
+                    {sheet.savedRows}行
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
 
         {/* 当前 Sheet 详情 */}
         {currentSheet && (
           <>
+            {/* KPI Cards Section */}
+            {currentSheet.flowResult?.kpiSummary?.metrics &&
+             currentSheet.flowResult.kpiSummary.metrics.length > 0 && (
+              <View style={styles.kpiSection}>
+                <Text variant="titleMedium" style={styles.sectionTitleText}>
+                  📊 关键指标
+                </Text>
+                <View style={styles.kpiGrid}>
+                  {currentSheet.flowResult.kpiSummary.metrics.slice(0, 4).map((metric, idx) => (
+                    <KPICardMobile
+                      key={idx}
+                      title={metric.label}
+                      value={formatCompactNumber(metric.value)}
+                      colorPreset={['purple', 'pink', 'blue', 'green'][idx % 4] as any}
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+
             {/* Sheet 信息 */}
             <Card style={styles.sheetInfoCard}>
               <Card.Content>
@@ -325,11 +426,36 @@ export function SmartBIDataAnalysisScreen() {
               </Card.Content>
             </Card>
 
-            {/* 图表展示 */}
-            {currentSheet.flowResult?.chartConfig && (
+            {/* 图表展示（支持多图表） */}
+            {currentSheet.flowResult?.charts && currentSheet.flowResult.charts.length > 0 ? (
+              <View style={styles.chartsSection}>
+                <Text variant="titleMedium" style={styles.sectionTitleText}>
+                  📈 数据可视化 ({currentSheet.flowResult.charts.length} 个图表)
+                </Text>
+                {currentSheet.flowResult.charts.map((chart, idx) => (
+                  <Card key={idx} style={styles.chartCard}>
+                    <Card.Content>
+                      {chart.title && (
+                        <Text variant="bodyMedium" style={styles.chartTitle}>
+                          {chart.title}
+                        </Text>
+                      )}
+                      <View style={styles.chartContainer}>
+                        <WebView
+                          source={{ html: generateChartHTML(chart.config || chart) }}
+                          style={styles.webview}
+                          scrollEnabled={false}
+                          bounces={false}
+                        />
+                      </View>
+                    </Card.Content>
+                  </Card>
+                ))}
+              </View>
+            ) : currentSheet.flowResult?.chartConfig ? (
               <Card style={styles.chartCard}>
                 <Card.Content>
-                  <Text variant="titleMedium" style={styles.sectionTitle}>
+                  <Text variant="titleMedium" style={styles.sectionTitleText}>
                     📈 数据可视化
                   </Text>
                   <View style={styles.chartContainer}>
@@ -342,20 +468,42 @@ export function SmartBIDataAnalysisScreen() {
                   </View>
                 </Card.Content>
               </Card>
-            )}
+            ) : null}
 
-            {/* AI 分析 */}
+            {/* AI 分析（可展开/折叠） */}
             {(currentSheet.flowResult?.aiAnalysis ||
               currentSheet.flowResult?.chartConfig?.aiAnalysis) && (
               <Card style={styles.analysisCard}>
                 <Card.Content>
-                  <Text variant="titleMedium" style={styles.sectionTitle}>
-                    🤖 AI 智能分析
-                  </Text>
-                  <Text style={styles.analysisText}>
-                    {currentSheet.flowResult?.aiAnalysis ||
-                      currentSheet.flowResult?.chartConfig?.aiAnalysis}
-                  </Text>
+                  <TouchableOpacity
+                    style={styles.analysisHeader}
+                    onPress={() => setAiAnalysisExpanded(!aiAnalysisExpanded)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.analysisHeaderLeft}>
+                      <MaterialCommunityIcons
+                        name="robot"
+                        size={20}
+                        color="#2196F3"
+                      />
+                      <Text variant="titleMedium" style={styles.analysisTitle}>
+                        AI 智能分析
+                      </Text>
+                    </View>
+                    <MaterialCommunityIcons
+                      name={aiAnalysisExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={24}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                  {aiAnalysisExpanded && (
+                    <View style={styles.analysisContent}>
+                      <Text style={styles.analysisText}>
+                        {currentSheet.flowResult?.aiAnalysis ||
+                          currentSheet.flowResult?.chartConfig?.aiAnalysis}
+                      </Text>
+                    </View>
+                  )}
                 </Card.Content>
               </Card>
             )}
@@ -402,6 +550,24 @@ function InfoItem({ label, value }: { label: string; value: string }) {
       <Chip mode="outlined" compact>
         {value}
       </Chip>
+    </View>
+  );
+}
+
+// Loading skeleton component
+function LoadingSkeleton() {
+  return (
+    <View style={styles.skeletonContainer}>
+      <View style={styles.skeletonKPIGrid}>
+        {[0, 1, 2, 3].map((i) => (
+          <View key={i} style={styles.skeletonKPI} />
+        ))}
+      </View>
+      <View style={styles.skeletonChart} />
+      <View style={styles.skeletonChart} />
+      <View style={styles.skeletonText} />
+      <View style={[styles.skeletonText, { width: '80%' }]} />
+      <View style={[styles.skeletonText, { width: '90%' }]} />
     </View>
   );
 }
@@ -496,20 +662,64 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
-  sheetSelectorCard: {
-    margin: 16,
-    marginTop: 0,
+  sheetTabBar: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  sectionTitle: {
-    marginBottom: 12,
-  },
-  sheetChipsContainer: {
+  sheetTabsContainer: {
     flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
-  sheetChip: {
-    marginRight: 0,
+  sheetTab: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginHorizontal: 4,
+    borderRadius: 6,
+    backgroundColor: '#F5F5F5',
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  sheetTabActive: {
+    backgroundColor: '#2196F3',
+  },
+  sheetTabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+    marginBottom: 2,
+  },
+  sheetTabTextActive: {
+    color: '#FFF',
+  },
+  sheetTabCount: {
+    fontSize: 11,
+    color: '#999',
+  },
+  sheetTabCountActive: {
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  sectionTitleText: {
+    marginBottom: 12,
+    marginHorizontal: 16,
+    fontWeight: '600',
+    color: '#212121',
+  },
+  kpiSection: {
+    marginBottom: 16,
+  },
+  kpiGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
   },
   sheetInfoCard: {
     margin: 16,
@@ -527,9 +737,17 @@ const styles = StyleSheet.create({
   infoLabel: {
     color: '#666',
   },
+  chartsSection: {
+    marginBottom: 16,
+  },
   chartCard: {
-    margin: 16,
-    marginTop: 0,
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  chartTitle: {
+    fontWeight: '600',
+    color: '#424242',
+    marginBottom: 8,
   },
   chartContainer: {
     height: 400,
@@ -543,12 +761,73 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   analysisCard: {
-    margin: 16,
-    marginTop: 0,
+    marginHorizontal: 16,
     marginBottom: 32,
+  },
+  analysisHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  analysisHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  analysisTitle: {
+    fontWeight: '600',
+    color: '#212121',
+  },
+  analysisContent: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E0E0E0',
   },
   analysisText: {
     lineHeight: 24,
     color: '#444',
+  },
+  previewSection: {
+    marginTop: 32,
+    width: '100%',
+  },
+  previewTitle: {
+    color: '#999',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  skeletonContainer: {
+    padding: 16,
+    backgroundColor: '#FAFAFA',
+    borderRadius: 8,
+  },
+  skeletonKPIGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  skeletonKPI: {
+    width: '48%',
+    height: 100,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  skeletonChart: {
+    width: '100%',
+    height: 200,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  skeletonText: {
+    width: '100%',
+    height: 12,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    marginBottom: 8,
   },
 });

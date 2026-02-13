@@ -31,19 +31,23 @@ import { useTranslation } from 'react-i18next';
 import { DISPATCHER_THEME, SchedulingDashboard, WorkshopStatus } from '../../../types/dispatcher';
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 import { useAuthStore } from '../../../store/authStore';
+import { useFactoryFeatureStore } from '../../../store/factoryFeatureStore';
 
 export default function DSHomeScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
+  const { isScreenEnabled } = useFactoryFeatureStore();
   const { t } = useTranslation('dispatcher');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<SchedulingDashboard | null>(null);
   const [workshops, setWorkshops] = useState<WorkshopStatus[]>([]);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       // P0 Fix: Parallel API requests to eliminate waterfall
       const [dashboardRes, linesRes] = await Promise.all([
         schedulingApiClient.getDashboard(),
@@ -90,8 +94,9 @@ export default function DSHomeScreen() {
         // Fallback when API returns no data
         setWorkshops(fallbackWorkshops);
       }
-    } catch (error) {
-      console.error('加载调度首页数据失败:', error);
+    } catch (err) {
+      console.error('加载调度首页数据失败:', err);
+      setError('加载失败');
       // Fallback when API call fails
       setWorkshops(fallbackWorkshops);
     } finally {
@@ -111,6 +116,24 @@ export default function DSHomeScreen() {
 
   const completionProbability = dashboard?.aiInsights?.completionProbability ?? 80;
   const riskLevel = dashboard?.aiInsights?.riskLevel ?? 'medium';
+
+  // 错误状态
+  if (error && !dashboard) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="cloud-off-outline" size={48} color="#C0C4CC" />
+          <Text style={{ color: '#606266', marginTop: 12, fontSize: 14 }}>加载失败，请检查网络</Text>
+          <TouchableOpacity
+            style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: DISPATCHER_THEME.primary, borderRadius: 6 }}
+            onPress={() => loadData()}
+          >
+            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>重试</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -157,6 +180,7 @@ export default function DSHomeScreen() {
         </LinearGradient>
 
         {/* AI智能调度中心入口 */}
+        {isScreenEnabled('AISchedule') && (
         <TouchableOpacity
           onPress={() => navigation.navigate('AITab', { screen: 'AISchedule' })}
           activeOpacity={0.9}
@@ -205,9 +229,10 @@ export default function DSHomeScreen() {
             </View>
           </LinearGradient>
         </TouchableOpacity>
+        )}
 
         {/* AI风险提示 */}
-        {riskLevel !== 'low' && (
+        {isScreenEnabled('AICompletionProb') && riskLevel !== 'low' && (
           <View style={styles.aiRiskAlert}>
             <View style={styles.aiRiskIcon}>
               <MaterialCommunityIcons name="alert" size={16} color="white" />
@@ -265,6 +290,8 @@ export default function DSHomeScreen() {
         </View>
 
         {/* 车间实时状态 */}
+        {isScreenEnabled('WorkshopStatus') && (
+        <>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>车间实时状态</Text>
           <TouchableOpacity onPress={() => navigation.navigate('WorkshopStatus', { workshopId: 'all' })}>
@@ -300,14 +327,18 @@ export default function DSHomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        </>
+        )}
 
         {/* 人员配置 */}
         <View style={styles.quickPersonnel}>
           <View style={styles.quickPersonnelHeader}>
             <Text style={styles.quickPersonnelTitle}>人员配置</Text>
+            {isScreenEnabled('PersonnelTransfer') && (
             <TouchableOpacity onPress={() => navigation.navigate('PersonnelTransfer')}>
               <Text style={styles.quickPersonnelAction}>调动人员 {'>'}</Text>
             </TouchableOpacity>
+            )}
           </View>
           {(workshops.length > 0 ? workshops : fallbackWorkshops).slice(0, 3).map((workshop, index) => (
             <View key={workshop.workshopId || index} style={styles.quickPersonnelRow}>
@@ -333,9 +364,11 @@ export default function DSHomeScreen() {
               <Text style={[styles.quickPersonnelCount, { color: DISPATCHER_THEME.success }]}>
                 {dashboard?.workers?.idle ?? 4}人
               </Text>
+              {isScreenEnabled('AIWorkerOptimize') && (
               <TouchableOpacity onPress={() => navigation.navigate('AI', { screen: 'AIWorkerOptimize' })}>
                 <Text style={styles.aiOptimizeLink}>AI优化 →</Text>
               </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
@@ -442,6 +475,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: DISPATCHER_THEME.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,

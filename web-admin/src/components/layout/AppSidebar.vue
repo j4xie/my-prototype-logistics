@@ -7,7 +7,8 @@ import { usePermissionStore, ModuleName } from '@/store/modules/permission';
 import {
   House, Operation, Box, Checked, ShoppingCart, Goods,
   User, Monitor, Money, Setting, DataAnalysis, Calendar,
-  TrendCharts, Sell, Upload, ChatDotRound, Aim, Odometer
+  TrendCharts, Sell, Upload, ChatDotRound, Aim, Odometer, Tickets,
+  Histogram
 } from '@element-plus/icons-vue';
 
 const router = useRouter();
@@ -23,7 +24,8 @@ const roleCode = computed(() => authStore.currentRole);
 const iconMap: Record<string, any> = {
   House, Operation, Box, Checked, ShoppingCart, Goods,
   User, Monitor, Money, Setting, DataAnalysis, Calendar,
-  TrendCharts, Sell, Upload, ChatDotRound, Aim, Odometer
+  TrendCharts, Sell, Upload, ChatDotRound, Aim, Odometer, Tickets,
+  Histogram
 };
 
 // 菜单配置
@@ -34,6 +36,7 @@ interface MenuItem {
   module: ModuleName;
   roles?: string[];  // 可选：限制特定角色可见
   children?: MenuItem[];
+  groupLabel?: string;  // 可选：分组标签（仅作为子菜单内的分割标题）
 }
 
 // 财务主管专用菜单 - 简化版
@@ -42,6 +45,7 @@ const financeManagerMenu: MenuItem[] = [
   { path: '/smart-bi/finance', title: '财务分析', icon: 'Money', module: 'analytics' },
   { path: '/smart-bi/sales', title: '销售分析', icon: 'TrendCharts', module: 'analytics' },
   { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
+  { path: '/smart-bi/query-templates', title: '查询模板管理', icon: 'Tickets', module: 'analytics' },
   { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' }
 ];
 
@@ -117,7 +121,8 @@ const menuConfig: MenuItem[] = [
       { path: '/system/logs', title: '操作日志', icon: '', module: 'system' },
       { path: '/system/settings', title: '系统设置', icon: '', module: 'system' },
       { path: '/system/ai-intents', title: 'AI意图配置', icon: '', module: 'system' },
-      { path: '/system/products', title: '产品信息管理', icon: '', module: 'system' }
+      { path: '/system/products', title: '产品信息管理', icon: '', module: 'system' },
+      { path: '/system/features', title: '功能模块配置', icon: '', module: 'system' }
     ]
   },
   {
@@ -127,7 +132,8 @@ const menuConfig: MenuItem[] = [
       { path: '/analytics/trends', title: '趋势分析', icon: '', module: 'analytics' },
       { path: '/analytics/ai-reports', title: 'AI分析报告', icon: '', module: 'analytics' },
       { path: '/analytics/kpi', title: 'KPI看板', icon: '', module: 'analytics' },
-      { path: '/analytics/production-report', title: '车间实时生产报表', icon: '', module: 'analytics' }
+      { path: '/analytics/production-report', title: '车间实时生产报表', icon: '', module: 'analytics' },
+      { path: '/analytics/alert-dashboard', title: '异常预警', icon: '', module: 'analytics' }
     ]
   },
   {
@@ -147,14 +153,27 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
-    path: '/smart-bi', title: '智能分析', icon: 'TrendCharts', module: 'analytics',
+    path: '/production-analytics', title: '生产分析', icon: 'Histogram', module: 'analytics',
     children: [
-      { path: '/smart-bi/dashboard', title: '经营驾驶舱', icon: 'Monitor', module: 'analytics' },
-      { path: '/smart-bi/sales', title: '智能销售分析', icon: 'Sell', module: 'analytics' },
-      { path: '/smart-bi/finance', title: '智能财务分析', icon: 'Money', module: 'analytics' },
-      { path: '/smart-bi/upload', title: 'Excel上传(旧)', icon: 'Upload', module: 'analytics' },
+      { path: '/production-analytics/production', title: '生产数据分析', icon: 'Histogram', module: 'analytics' },
+      { path: '/production-analytics/efficiency', title: '人效分析', icon: 'User', module: 'analytics' }
+    ]
+  },
+  {
+    path: '/smart-bi', title: '智能BI', icon: 'TrendCharts', module: 'analytics',
+    children: [
+      // -- 分析入口 --
+      { path: '/smart-bi/dashboard', title: '经营驾驶舱', icon: 'Monitor', module: 'analytics', groupLabel: '分析入口' },
       { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' },
       { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
+      // -- 预定义报表 --
+      { path: '/smart-bi/sales', title: '销售数据分析', icon: 'Sell', module: 'analytics', groupLabel: '预定义报表' },
+      { path: '/smart-bi/finance', title: '财务数据分析', icon: 'Money', module: 'analytics' },
+      // -- 数据管理 --
+      { path: '/smart-bi/upload', title: 'Excel上传', icon: 'Upload', module: 'analytics', groupLabel: '数据管理' },
+      { path: '/smart-bi/query-templates', title: '查询模板', icon: 'Tickets', module: 'analytics' },
+      { path: '/smart-bi/data-completeness', title: '数据完整度', icon: 'DataAnalysis', module: 'analytics' },
+      { path: '/smart-bi/food-kb-feedback', title: '知识库反馈', icon: 'ChatDotRound', module: 'analytics', groupLabel: '质量管理' },
       { path: '/smart-bi/calibration', title: '行为校准监控', icon: 'Aim', module: 'analytics', roles: ['platform_admin'] }
     ]
   }
@@ -235,13 +254,14 @@ function handleSelect(path: string) {
               <el-icon><component :is="iconMap[item.icon]" /></el-icon>
               <span>{{ item.title }}</span>
             </template>
-            <el-menu-item
-              v-for="child in item.children"
-              :key="child.path"
-              :index="child.path"
-            >
-              {{ child.title }}
-            </el-menu-item>
+            <template v-for="child in item.children" :key="child.path">
+              <div v-if="child.groupLabel && !appStore.sidebarCollapsed" class="menu-group-label">
+                {{ child.groupLabel }}
+              </div>
+              <el-menu-item :index="child.path">
+                {{ child.title }}
+              </el-menu-item>
+            </template>
           </el-sub-menu>
 
           <!-- 无子菜单 -->
@@ -313,6 +333,24 @@ function handleSelect(path: string) {
 
   .el-menu-item.is-active {
     background-color: #1890ff !important;
+  }
+}
+
+.menu-group-label {
+  padding: 8px 20px 4px 44px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  user-select: none;
+
+  &:not(:first-child) {
+    margin-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 10px;
   }
 }
 </style>

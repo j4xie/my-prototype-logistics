@@ -1,0 +1,119 @@
+"""
+食品知识库向量嵌入服务
+Embedding service for food knowledge base using DashScope text-embedding-v3.
+
+Uses OpenAI-compatible API (DashScope) to generate 768-dim vectors.
+Reuses llm_api_key + llm_base_url from SmartBI config.
+"""
+
+import logging
+from typing import List, Optional
+
+import httpx
+
+logger = logging.getLogger(__name__)
+
+# Module-level config
+_api_key: str = ""
+_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+_model: str = "text-embedding-v3"
+_dims: int = 768
+_client: Optional[httpx.AsyncClient] = None
+
+
+def configure(api_key: str, base_url: str, model: str = "text-embedding-v3", dims: int = 768):
+    """Configure the embedding service."""
+    global _api_key, _base_url, _model, _dims, _client
+    _api_key = api_key
+    _base_url = base_url.rstrip("/")
+    _model = model
+    _dims = dims
+    _client = httpx.AsyncClient(timeout=30.0)
+    logger.info(f"Embedding service configured: model={_model}, dims={_dims}")
+
+
+async def get_embedding(text: str) -> Optional[List[float]]:
+    """
+    Generate embedding vector for a single text.
+
+    Uses DashScope text-embedding-v3 via OpenAI-compatible endpoint.
+    Returns 768-dim float list, or None on error.
+    """
+    global _client
+    if not _api_key:
+        logger.warning("Embedding service not configured (no API key)")
+        return None
+
+    if _client is None:
+        _client = httpx.AsyncClient(timeout=30.0)
+
+    try:
+        resp = await _client.post(
+            f"{_base_url}/embeddings",
+            headers={
+                "Authorization": f"Bearer {_api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": _model,
+                "input": text,
+                "dimensions": _dims,
+            },
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        embedding = data["data"][0]["embedding"]
+        return embedding
+
+    except Exception as e:
+        logger.error(f"Embedding generation failed: {e}")
+        return None
+
+
+async def get_embeddings_batch(texts: List[str], batch_size: int = 20) -> List[Optional[List[float]]]:
+    """
+    Generate embeddings for multiple texts in batches.
+
+    DashScope supports batch input. Returns list of embeddings (None for failures).
+    """
+    global _client
+    if not _api_key:
+        return [None] * len(texts)
+
+    if _client is None:
+        _client = httpx.AsyncClient(timeout=60.0)
+
+    results: List[Optional[List[float]]] = [None] * len(texts)
+
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        try:
+            resp = await _client.post(
+                f"{_base_url}/embeddings",
+                headers={
+                    "Authorization": f"Bearer {_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": _model,
+                    "input": batch,
+                    "dimensions": _dims,
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            for item in data["data"]:
+                idx = i + item["index"]
+                results[idx] = item["embedding"]
+        except Exception as e:
+            logger.error(f"Batch embedding failed for batch starting at {i}: {e}")
+
+    return results
+
+
+async def close():
+    """Close the HTTP client."""
+    global _client
+    if _client:
+        await _client.aclose()
+        _client = None

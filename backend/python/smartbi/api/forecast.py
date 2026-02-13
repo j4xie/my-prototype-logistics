@@ -100,7 +100,7 @@ async def predict(request: ForecastRequest):
         raise
     except Exception as e:
         logger.error(f"Forecast error: {e}", exc_info=True)
-        return ForecastResponse(success=False, error=str(e))
+        return ForecastResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/accuracy", response_model=AccuracyResponse)
@@ -135,7 +135,7 @@ async def calculate_accuracy(request: AccuracyRequest):
         raise
     except Exception as e:
         logger.error(f"Accuracy calculation error: {e}", exc_info=True)
-        return AccuracyResponse(success=False, error=str(e))
+        return AccuracyResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.get("/algorithms")
@@ -213,5 +213,5 @@ async def batch_forecast(requests: List[ForecastRequest]):
         logger.error(f"Batch forecast error: {e}", exc_info=True)
         return {
             "success": False,
-            "error": str(e)
+            "error": "处理失败，请稍后重试"
         }

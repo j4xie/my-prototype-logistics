@@ -24,6 +24,7 @@ from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 # Import settings from smartbi config
@@ -47,7 +48,8 @@ from smartbi.api import (
     yoy,
     statistical,
     analysis_cache,
-    ai_proxy
+    ai_proxy,
+    benchmark
 )
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
@@ -80,6 +82,33 @@ except ImportError as e:
 # legacy endpoints + wizard endpoints + gap-analysis + guide-config)
 from client_requirement import wizard_api as client_requirement_routes
 
+# Import Completeness Calculator API router (optional - requires asyncpg)
+try:
+    from client_requirement import completeness_calculator as completeness_routes
+    _completeness_available = True
+except ImportError as e:
+    _completeness_available = False
+    import logging as _log
+    _log.getLogger(__name__).warning(f"Completeness Calculator not available: {e}")
+
+# Import Food Knowledge Base API router (optional - requires asyncpg)
+try:
+    from food_kb.api import knowledge as food_kb_api
+    _food_kb_available = True
+except ImportError as e:
+    _food_kb_available = False
+    import logging as _log
+    _log.getLogger(__name__).warning(f"Food Knowledge Base not available: {e}")
+
+# Import Food KB Feedback API router (optional - requires asyncpg)
+try:
+    from food_kb.api.feedback import router as food_kb_feedback_router
+    _food_kb_feedback_available = True
+except ImportError as e:
+    _food_kb_feedback_available = False
+    import logging as _log
+    _log.getLogger(__name__).warning(f"Food KB Feedback not available: {e}")
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG if get_settings().debug else logging.INFO,
@@ -108,7 +137,78 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("PostgreSQL is disabled")
 
+    # Initialize Food Knowledge Base services
+    if _food_kb_available:
+        try:
+            settings = get_settings()
+            db_url = settings.food_kb_db_url
+
+            # Configure embedding service
+            from food_kb.services.embedding import configure as configure_embedding, get_embedding, close as close_embedding
+            configure_embedding(
+                api_key=settings.llm_api_key,
+                base_url=settings.llm_base_url,
+                model=settings.food_kb_embedding_model,
+                dims=settings.food_kb_embedding_dims,
+            )
+
+            # Initialize knowledge retriever
+            from food_kb.services.knowledge_retriever import get_knowledge_retriever
+            retriever = get_knowledge_retriever()
+            await retriever.initialize(db_url, embedding_fn=get_embedding)
+
+            # Configure DashScope Reranker (Phase 1 RAG optimization)
+            import os
+            from food_kb.services.reranker import get_reranker
+            reranker = get_reranker()
+            reranker_enabled = os.environ.get("FOOD_KB_RERANKER_ENABLED", "true").lower() == "true"
+            reranker.configure(
+                api_key=settings.llm_api_key,
+                model=os.environ.get("FOOD_KB_RERANKER_MODEL", "gte-rerank-v2"),
+                enabled=reranker_enabled,
+            )
+
+            # Initialize document ingester
+            from food_kb.services.document_ingester import get_document_ingester
+            ingester = get_document_ingester()
+            await ingester.initialize(db_url, embedding_fn=get_embedding)
+
+            # Load NER entity dictionary (uses retriever's pool)
+            from food_kb.services.food_ner_service import get_food_ner_service
+            ner_service = get_food_ner_service()
+            if retriever.is_ready() and retriever._pool:
+                await ner_service.load_dictionary(retriever._pool)
+
+            # Load NER ONNX model (if available)
+            import os
+            ner_model_dir = os.environ.get(
+                "FOOD_NER_MODEL_DIR",
+                os.path.join(os.path.dirname(__file__), "models", "food-ner-onnx")
+            )
+            if os.path.isdir(ner_model_dir):
+                ner_service.load_model(ner_model_dir)
+
+            logger.info("Food Knowledge Base initialized successfully")
+        except Exception as e:
+            logger.warning(f"Food Knowledge Base initialization failed: {e}")
+
     yield
+
+    # Shutdown: close food_kb connections
+    if _food_kb_available:
+        try:
+            from food_kb.services.knowledge_retriever import get_knowledge_retriever
+            from food_kb.services.document_ingester import get_document_ingester
+            from food_kb.services.embedding import close as close_embedding
+            from food_kb.services.reranker import get_reranker
+            await get_knowledge_retriever().close()
+            await get_document_ingester().close()
+            await get_reranker().close()
+            await close_embedding()
+            logger.info("Food Knowledge Base connections closed")
+        except Exception as e:
+            logger.warning(f"Food KB shutdown error: {e}")
+
     logger.info("Python Services shutting down...")
 
 
@@ -121,6 +221,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# T4.2: Gzip compression — reduces chart JSON payloads by 60-75%
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Configure CORS
 settings = get_settings()
@@ -149,6 +252,7 @@ app.include_router(cross_sheet.router, prefix="/api/smartbi", tags=["Cross-Sheet
 app.include_router(yoy.router, prefix="/api/smartbi", tags=["YoY Comparison"])
 app.include_router(statistical.router, prefix="/api/statistical", tags=["Statistical Analysis"])
 app.include_router(analysis_cache.router, prefix="/api/smartbi", tags=["Analysis Cache"])
+app.include_router(benchmark.router, prefix="/api/smartbi", tags=["Industry Benchmark"])
 
 # =====================================================
 # AI Proxy Routes (called by Java backend)
@@ -188,6 +292,19 @@ else:
     logger.warning("Scene Intelligence routes not registered")
 
 # =====================================================
+# Food Knowledge Base API Routes (optional)
+# =====================================================
+if _food_kb_available:
+    app.include_router(food_kb_api.router, prefix="/api/food-kb", tags=["Food Knowledge Base"])
+else:
+    logger.warning("Food Knowledge Base routes not registered")
+
+if _food_kb_feedback_available:
+    app.include_router(food_kb_feedback_router, prefix="/api/food-kb", tags=["FoodKB-Feedback"])
+else:
+    logger.warning("Food KB Feedback routes not registered")
+
+# =====================================================
 # Client Requirement API Routes
 # =====================================================
 app.include_router(
@@ -200,6 +317,18 @@ app.include_router(
     prefix="/api/public/client-requirement",
     tags=["Client Requirement (Public)"]
 )
+
+# =====================================================
+# Data Completeness Calculator Routes (optional)
+# =====================================================
+if _completeness_available:
+    app.include_router(
+        completeness_routes.router,
+        prefix="/api/client-requirement",
+        tags=["Data Completeness"]
+    )
+else:
+    logger.warning("Completeness Calculator routes not registered (asyncpg not available)")
 
 
 @app.get("/health")
@@ -226,8 +355,11 @@ async def health_check():
             "modules": [
                 "smartbi",
                 "client_requirement",
+                *( ["completeness_calculator"] if _completeness_available else []),
                 *( ["efficiency_recognition"] if _efficiency_available else []),
                 *( ["scene_intelligence"] if _scene_available else []),
+                *( ["food_knowledge_base"] if _food_kb_available else []),
+                *( ["food_kb_feedback"] if _food_kb_feedback_available else []),
             ],
             "postgres": postgres_status
         }
@@ -256,11 +388,14 @@ async def root():
                 "classifier": "/api/classifier",
                 "db_analysis": "/api/smartbi/analysis/db",
                 "cross_sheet": "/api/smartbi/cross-sheet-analysis",
-                "ai_proxy": "/api/ai"
+                "ai_proxy": "/api/ai",
+                "benchmark": "/api/smartbi/benchmark"
             },
             "client_requirement": "/api/client-requirement",
             **({"efficiency_recognition": "/api/efficiency"} if _efficiency_available else {}),
             **({"scene_intelligence": "/api/scene"} if _scene_available else {}),
+            **({"food_knowledge_base": "/api/food-kb"} if _food_kb_available else {}),
+            **({"food_kb_feedback": "/api/food-kb/feedback"} if _food_kb_feedback_available else {}),
         },
         "endpoints": {
             "health": "/health",

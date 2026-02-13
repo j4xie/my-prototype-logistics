@@ -16,15 +16,23 @@ logger = logging.getLogger(__name__)
 
 
 def _sanitize_for_json(obj):
-    """Replace NaN/Infinity/-Infinity with None to prevent JSON serialization errors."""
+    """Replace NaN/Infinity/-Infinity and non-serializable types with JSON-safe values."""
     if isinstance(obj, float):
         if math.isnan(obj) or math.isinf(obj):
             return 0
         return obj
     if isinstance(obj, dict):
         return {k: _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, pd.Series):
+        return [_sanitize_for_json(item) for item in obj.tolist()]
+    if isinstance(obj, np.ndarray):
+        return [_sanitize_for_json(item) for item in obj.tolist()]
     if isinstance(obj, (list, tuple)):
         return [_sanitize_for_json(item) for item in obj]
+    if isinstance(obj, pd.Timestamp):
+        return obj.isoformat() if not pd.isna(obj) else None
+    if isinstance(obj, np.bool_):
+        return bool(obj)
     if isinstance(obj, np.floating):
         val = float(obj)
         if math.isnan(val) or math.isinf(val):
@@ -62,6 +70,11 @@ class ChartType(str, Enum):
     SLOPE = "slope"                 # Slope chart for comparison
     DONUT = "donut"                 # Donut chart (环形图)
     NESTED_DONUT = "nested_donut"   # Nested donut chart (嵌套环形图)
+
+    # Statistical charts (Phase 5 - Advanced)
+    BOXPLOT = "boxplot"                 # Box plot for distribution analysis
+    PARALLEL = "parallel"               # Parallel coordinates for multi-variable
+    CORRELATION_MATRIX = "correlation_matrix"  # Correlation heatmap matrix
 
 
 class ChartBuilder:
@@ -360,6 +373,12 @@ class ChartBuilder:
                 config = self._build_donut_chart(df, x_field, y_fields)
             elif chart_type_enum == ChartType.NESTED_DONUT:
                 config = self._build_nested_donut_chart(df, x_field, y_fields, series_field)
+            elif chart_type_enum == ChartType.BOXPLOT:
+                config = self._build_boxplot_chart(df, x_field, y_fields, series_field)
+            elif chart_type_enum == ChartType.PARALLEL:
+                config = self._build_parallel_chart(df, x_field, y_fields, series_field)
+            elif chart_type_enum == ChartType.CORRELATION_MATRIX:
+                config = self._build_correlation_matrix_chart(df, x_field, y_fields, series_field)
             else:
                 config = self._build_line_chart(df, x_field, y_fields, series_field)
 
@@ -1485,6 +1504,231 @@ class ChartBuilder:
             }
         }
 
+    def _build_boxplot_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        series_field: Optional[str]
+    ) -> dict:
+        """Build boxplot for distribution analysis"""
+        palette = self._get_palette()["charts"]
+
+        if not y_fields:
+            y_fields = df.select_dtypes(include=['number']).columns.tolist()[:6]
+        if not y_fields:
+            return self._build_bar_chart(df, x_field, y_fields, series_field)
+
+        # Compute boxplot statistics for each numeric column
+        box_data = []
+        outlier_data = []
+        for i, col in enumerate(y_fields):
+            if col not in df.columns:
+                continue
+            vals = pd.to_numeric(df[col], errors='coerce').dropna()
+            if len(vals) < 5:
+                continue
+            q1 = float(vals.quantile(0.25))
+            q2 = float(vals.quantile(0.5))
+            q3 = float(vals.quantile(0.75))
+            iqr = q3 - q1
+            lower = float(max(vals.min(), q1 - 1.5 * iqr))
+            upper = float(min(vals.max(), q3 + 1.5 * iqr))
+            box_data.append([round(lower, 2), round(q1, 2), round(q2, 2), round(q3, 2), round(upper, 2)])
+
+            # Outliers
+            outliers = vals[(vals < q1 - 1.5 * iqr) | (vals > q3 + 1.5 * iqr)]
+            for v in outliers.tolist()[:10]:  # Limit outliers
+                outlier_data.append([i, round(float(v), 2)])
+
+        if not box_data:
+            return self._build_bar_chart(df, x_field, y_fields, series_field)
+
+        config = {
+            "xAxis": {
+                "type": "category",
+                "data": y_fields[:len(box_data)],
+                "axisLabel": {"fontSize": 11}
+            },
+            "yAxis": {"type": "value", "name": "数值"},
+            "tooltip": self._make_enhanced_tooltip("item"),
+            "grid": {"left": "10%", "right": "10%", "bottom": "15%", "top": "10%"},
+            "series": [
+                {
+                    "name": "分布",
+                    "type": "boxplot",
+                    "data": box_data,
+                    "itemStyle": {"color": palette[0], "borderColor": palette[1]},
+                    "tooltip": {
+                        "formatter": "__FUNC__function(p){var d=p.data;return p.name+'<br/>最小: '+d[0]+'<br/>Q1: '+d[1]+'<br/>中位数: '+d[2]+'<br/>Q3: '+d[3]+'<br/>最大: '+d[4]}"
+                    }
+                }
+            ]
+        }
+
+        if outlier_data:
+            config["series"].append({
+                "name": "异常值",
+                "type": "scatter",
+                "data": outlier_data,
+                "itemStyle": {"color": palette[4] if len(palette) > 4 else "#dc2626"},
+                "symbolSize": 6
+            })
+
+        return config
+
+    def _build_parallel_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        series_field: Optional[str]
+    ) -> dict:
+        """Build parallel coordinates chart for multi-variable comparison"""
+        palette = self._get_palette()["charts"]
+
+        if not y_fields:
+            y_fields = df.select_dtypes(include=['number']).columns.tolist()[:8]
+        if len(y_fields) < 3:
+            return self._build_bar_chart(df, x_field, y_fields, series_field)
+
+        # Build parallel axes
+        parallel_axis = []
+        for i, col in enumerate(y_fields):
+            if col not in df.columns:
+                continue
+            vals = pd.to_numeric(df[col], errors='coerce').dropna()
+            if len(vals) == 0:
+                continue
+            parallel_axis.append({
+                "dim": i,
+                "name": col,
+                "min": round(float(vals.min()), 2),
+                "max": round(float(vals.max()), 2)
+            })
+
+        if len(parallel_axis) < 3:
+            return self._build_bar_chart(df, x_field, y_fields, series_field)
+
+        # Build data rows (limit to 50 for readability)
+        data_rows = []
+        sample_df = df.head(50)
+        for _, row in sample_df.iterrows():
+            values = []
+            for col in y_fields[:len(parallel_axis)]:
+                val = pd.to_numeric(row.get(col), errors='coerce')
+                values.append(round(float(val), 2) if not pd.isna(val) else 0)
+            data_rows.append(values)
+
+        # Color by label if available
+        label_field = x_field or series_field
+        line_styles = []
+        if label_field and label_field in df.columns:
+            labels = sample_df[label_field].astype(str).tolist()
+            unique_labels = list(dict.fromkeys(labels))
+            for label in labels:
+                idx = unique_labels.index(label) if label in unique_labels else 0
+                line_styles.append({"color": palette[idx % len(palette)], "opacity": 0.6})
+
+        config = {
+            "parallelAxis": parallel_axis,
+            "parallel": {
+                "left": "5%",
+                "right": "13%",
+                "bottom": "10%",
+                "top": "10%",
+                "parallelAxisDefault": {
+                    "type": "value",
+                    "nameLocation": "end",
+                    "nameGap": 20,
+                    "nameTextStyle": {"fontSize": 11}
+                }
+            },
+            "tooltip": {"trigger": "item"},
+            "series": [{
+                "type": "parallel",
+                "lineStyle": {"width": 2, "opacity": 0.5},
+                "data": data_rows,
+                "smooth": True
+            }]
+        }
+
+        return config
+
+    def _build_correlation_matrix_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        series_field: Optional[str]
+    ) -> dict:
+        """Build correlation matrix as heatmap"""
+        palette = self._get_palette()
+
+        if not y_fields:
+            y_fields = df.select_dtypes(include=['number']).columns.tolist()[:10]
+        if len(y_fields) < 3:
+            return self._build_bar_chart(df, x_field, y_fields, series_field)
+
+        # Compute correlation matrix
+        numeric_df = df[y_fields].apply(pd.to_numeric, errors='coerce')
+        corr_matrix = numeric_df.corr()
+
+        # Build heatmap data
+        heatmap_data = []
+        labels = y_fields[:len(corr_matrix)]
+        for i, col_i in enumerate(labels):
+            for j, col_j in enumerate(labels):
+                val = corr_matrix.loc[col_i, col_j] if col_i in corr_matrix.index and col_j in corr_matrix.columns else 0
+                if pd.isna(val):
+                    val = 0
+                heatmap_data.append([i, j, round(float(val), 2)])
+
+        config = {
+            "xAxis": {
+                "type": "category",
+                "data": labels,
+                "axisLabel": {"rotate": 45, "fontSize": 10}
+            },
+            "yAxis": {
+                "type": "category",
+                "data": labels,
+                "axisLabel": {"fontSize": 10}
+            },
+            "tooltip": {
+                "trigger": "item",
+                "formatter": "__FUNC__function(p){return p.data[2].toFixed(2)}"
+            },
+            "grid": {"left": "15%", "right": "10%", "bottom": "20%", "top": "5%"},
+            "visualMap": {
+                "min": -1,
+                "max": 1,
+                "calculable": True,
+                "orient": "horizontal",
+                "left": "center",
+                "bottom": "0%",
+                "inRange": {
+                    "color": ["#dc2626", "#fca5a5", "#ffffff", "#93c5fd", "#2563eb"]
+                },
+                "text": ["正相关", "负相关"],
+                "textStyle": {"fontSize": 11}
+            },
+            "series": [{
+                "type": "heatmap",
+                "data": heatmap_data,
+                "label": {
+                    "show": True,
+                    "fontSize": 10,
+                    "formatter": "__FUNC__function(p){return p.data[2].toFixed(1)}"
+                },
+                "emphasis": {
+                    "itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.3)"}
+                }
+            }]
+        }
+
+        return config
+
     def get_available_chart_types(self) -> List[dict]:
         """Get list of available chart types"""
         return [
@@ -1506,5 +1750,9 @@ class ChartBuilder:
             {"id": "dual_axis", "name": "双Y轴图", "description": "不同量纲对比"},
             {"id": "bar_horizontal", "name": "水平柱图", "description": "长标签对比"},
             {"id": "donut", "name": "环形图", "description": "占比分析"},
-            {"id": "nested_donut", "name": "嵌套环形图", "description": "多层级占比"}
+            {"id": "nested_donut", "name": "嵌套环形图", "description": "多层级占比"},
+            # Statistical charts (Phase 5 - Advanced)
+            {"id": "boxplot", "name": "箱线图", "description": "数据分布分析（四分位、异常值）"},
+            {"id": "parallel", "name": "平行坐标图", "description": "多变量同时对比分析"},
+            {"id": "correlation_matrix", "name": "相关性矩阵", "description": "变量间相关性热力图"},
         ]

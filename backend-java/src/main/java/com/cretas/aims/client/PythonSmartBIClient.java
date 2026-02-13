@@ -1313,6 +1313,123 @@ public class PythonSmartBIClient {
         }
     }
 
+    // ==================== 食品知识库 ====================
+
+    /**
+     * 食品知识库 RAG 查询
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> queryFoodKnowledge(String query, List<String> categories, int topK) {
+        log.info("食品知识库查询: query={}, categories={}, topK={}", query, categories, topK);
+        try {
+            Map<String, Object> body = new java.util.HashMap<>();
+            body.put("query", query);
+            body.put("top_k", topK);
+            body.put("similarity_threshold", 0.55);
+            if (categories != null && !categories.isEmpty()) {
+                body.put("categories", categories);
+            }
+            Request request = new Request.Builder()
+                    .url(config.getFoodKbQueryUrl())
+                    .post(RequestBody.create(JSON, objectMapper.writeValueAsString(body)))
+                    .build();
+            return executeWithRetry(request, Map.class);
+        } catch (IOException e) {
+            log.error("食品知识库查询失败: {}", e.getMessage());
+            Map<String, Object> errorResult = new java.util.HashMap<>();
+            errorResult.put("success", false);
+            errorResult.put("message", e.getMessage());
+            return errorResult;
+        }
+    }
+
+    /**
+     * 食品知识库实体提取 (NER)
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> extractFoodEntities(String text) {
+        log.debug("食品知识库实体提取: text={}", text);
+        try {
+            Map<String, Object> body = new java.util.HashMap<>();
+            body.put("text", text);
+            body.put("use_model", true);
+            Request request = new Request.Builder()
+                    .url(config.getFoodKbExtractEntitiesUrl())
+                    .post(RequestBody.create(JSON, objectMapper.writeValueAsString(body)))
+                    .build();
+            return executeWithRetry(request, Map.class);
+        } catch (IOException e) {
+            log.warn("食品知识库实体提取失败: {}", e.getMessage());
+            Map<String, Object> errorResult = new java.util.HashMap<>();
+            errorResult.put("success", false);
+            return errorResult;
+        }
+    }
+
+    // ==================== 食品知识库反馈 ====================
+
+    /**
+     * 提交食品知识库反馈
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> submitFoodKBFeedback(Map<String, Object> feedbackRequest) {
+        log.info("提交食品知识库反馈: query={}", feedbackRequest.get("query"));
+        try {
+            Request request = new Request.Builder()
+                    .url(config.getFoodKbFeedbackSubmitUrl())
+                    .post(RequestBody.create(JSON, objectMapper.writeValueAsString(feedbackRequest)))
+                    .build();
+            return executeWithRetry(request, Map.class);
+        } catch (IOException e) {
+            log.error("提交食品知识库反馈失败: {}", e.getMessage());
+            Map<String, Object> errorResult = new java.util.HashMap<>();
+            errorResult.put("success", false);
+            errorResult.put("message", e.getMessage());
+            return errorResult;
+        }
+    }
+
+    /**
+     * 记录食品知识库查询日志
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> logFoodKBQuery(Map<String, Object> logRequest) {
+        log.debug("记录食品知识库查询: query={}", logRequest.get("query"));
+        try {
+            Request request = new Request.Builder()
+                    .url(config.getFoodKbFeedbackLogQueryUrl())
+                    .post(RequestBody.create(JSON, objectMapper.writeValueAsString(logRequest)))
+                    .build();
+            return executeWithRetry(request, Map.class);
+        } catch (IOException e) {
+            log.warn("记录食品知识库查询日志失败（非致命）: {}", e.getMessage());
+            Map<String, Object> errorResult = new java.util.HashMap<>();
+            errorResult.put("success", false);
+            return errorResult;
+        }
+    }
+
+    /**
+     * 获取食品知识库反馈统计
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getFoodKBFeedbackStats() {
+        log.info("获取食品知识库反馈统计");
+        try {
+            Request request = new Request.Builder()
+                    .url(config.getFoodKbFeedbackStatsUrl())
+                    .get()
+                    .build();
+            return executeWithRetry(request, Map.class);
+        } catch (IOException e) {
+            log.error("获取食品知识库反馈统计失败: {}", e.getMessage());
+            Map<String, Object> errorResult = new java.util.HashMap<>();
+            errorResult.put("success", false);
+            errorResult.put("message", e.getMessage());
+            return errorResult;
+        }
+    }
+
     // ==================== 辅助转换方法 ====================
 
     /**

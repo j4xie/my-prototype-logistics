@@ -1,0 +1,813 @@
+{
+  "timestamp": "2026-02-10T18:36:45.907180",
+  "test": "v5_round42_kpi_metrics",
+  "total": 50,
+  "pass": 41,
+  "fail": 9,
+  "error": 0,
+  "pass_rate": 82.0,
+  "category_breakdown": {
+    "production_kpi": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "quality_kpi": {
+      "pass": 4,
+      "fail": 2,
+      "error": 0
+    },
+    "inventory_kpi": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "financial_kpi": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "efficiency_kpi": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "hr_kpi": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "dashboard": {
+      "pass": 4,
+      "fail": 2,
+      "error": 0
+    },
+    "trend_analysis": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "target_setting": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 16,
+    "NONE": 17,
+    "CLASSIFIER": 16,
+    "SEMANTIC": 1
+  },
+  "results": [
+    {
+      "query": "OEE是多少",
+      "status": "FAIL",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        "EQUIPMENT_STATS",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "production_kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 447
+    },
+    {
+      "query": "产线利用率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATS",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "production_kpi",
+      "method": null,
+      "latency_ms": 629
+    },
+    {
+      "query": "产量完成率",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "production_kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 458
+    },
+    {
+      "query": "产能利用率",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATS",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "production_kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 432
+    },
+    {
+      "query": "直通率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "production_kpi",
+      "method": null,
+      "latency_ms": 783
+    },
+    {
+      "query": "计划达成率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "production_kpi",
+      "method": null,
+      "latency_ms": 661
+    },
+    {
+      "query": "合格率",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality_kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "不良率",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality_kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 467
+    },
+    {
+      "query": "一次通过率",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.8385594487190247,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "quality_kpi",
+      "method": "CLASSIFIER",
+      "latency_ms": 626
+    },
+    {
+      "query": "退货率",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality_kpi",
+      "method": "SEMANTIC",
+      "latency_ms": 592
+    },
+    {
+      "query": "客诉率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality_kpi",
+      "method": null,
+      "latency_ms": 661
+    },
+    {
+      "query": "质量成本",
+      "status": "FAIL",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_QUALITY",
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality_kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "库存周转率",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "inventory_kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 453
+    },
+    {
+      "query": "库存准确率",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "inventory_kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 425
+    },
+    {
+      "query": "安全库存达标率",
+      "status": "FAIL",
+      "intent": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.6449931263923645,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "inventory_kpi",
+      "method": "CLASSIFIER",
+      "latency_ms": 595
+    },
+    {
+      "query": "呆滞料比例",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "inventory_kpi",
+      "method": null,
+      "latency_ms": 641
+    },
+    {
+      "query": "库存金额",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_INVENTORY",
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        null
+      ],
+      "category": "inventory_kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 455
+    },
+    {
+      "query": "毛利率",
+      "status": "PASS",
+      "intent": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        null
+      ],
+      "category": "financial_kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 436
+    },
+    {
+      "query": "净利率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        null
+      ],
+      "category": "financial_kpi",
+      "method": null,
+      "latency_ms": 794
+    },
+    {
+      "query": "成本率",
+      "status": "PASS",
+      "intent": "COST_TREND_ANALYSIS",
+      "confidence": 0.6338127255439758,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        null
+      ],
+      "category": "financial_kpi",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    },
+    {
+      "query": "费用率",
+      "status": "FAIL",
+      "intent": "COST_TREND_ANALYSIS",
+      "confidence": 0.704052746295929,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        null
+      ],
+      "category": "financial_kpi",
+      "method": "CLASSIFIER",
+      "latency_ms": 620
+    },
+    {
+      "query": "投资回报率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "financial_kpi",
+      "method": null,
+      "latency_ms": 648
+    },
+    {
+      "query": "应收账款周转",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "financial_kpi",
+      "method": null,
+      "latency_ms": 621
+    },
+    {
+      "query": "人均产值",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "efficiency_kpi",
+      "method": null,
+      "latency_ms": 646
+    },
+    {
+      "query": "工时利用率",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.8638225197792053,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "efficiency_kpi",
+      "method": "CLASSIFIER",
+      "latency_ms": 581
+    },
+    {
+      "query": "设备综合效率",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATS",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "efficiency_kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 445
+    },
+    {
+      "query": "能源单耗",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_CONSUME",
+      "confidence": 0.5165417194366455,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        null
+      ],
+      "category": "efficiency_kpi",
+      "method": "CLASSIFIER",
+      "latency_ms": 586
+    },
+    {
+      "query": "损耗率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        "COST_QUERY",
+        null
+      ],
+      "category": "efficiency_kpi",
+      "method": null,
+      "latency_ms": 619
+    },
+    {
+      "query": "交付准时率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "efficiency_kpi",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "出勤率",
+      "status": "PASS",
+      "intent": "ATTENDANCE_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "hr_kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 432
+    },
+    {
+      "query": "离职率",
+      "status": "FAIL",
+      "intent": "HR_EMPLOYEE_DELETE",
+      "confidence": 0.5523025989532471,
+      "expected": [
+        "REPORT_KPI",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "hr_kpi",
+      "method": "CLASSIFIER",
+      "latency_ms": 597
+    },
+    {
+      "query": "人均工时",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "ATTENDANCE_STATS",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "hr_kpi",
+      "method": null,
+      "latency_ms": 614
+    },
+    {
+      "query": "加班率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "hr_kpi",
+      "method": null,
+      "latency_ms": 628
+    },
+    {
+      "query": "培训覆盖率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "hr_kpi",
+      "method": null,
+      "latency_ms": 691
+    },
+    {
+      "query": "KPI看板",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "dashboard",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 447
+    },
+    {
+      "query": "指标汇总",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.8709808588027954,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "dashboard",
+      "method": "CLASSIFIER",
+      "latency_ms": 612
+    },
+    {
+      "query": "综合评分",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "dashboard",
+      "method": null,
+      "latency_ms": 973
+    },
+    {
+      "query": "红绿灯状态",
+      "status": "FAIL",
+      "intent": "ISAPI_CONFIG_LINE_DETECTION",
+      "confidence": 0.7453673481941223,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "dashboard",
+      "method": "CLASSIFIER",
+      "latency_ms": 610
+    },
+    {
+      "query": "预警指标",
+      "status": "FAIL",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "dashboard",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 431
+    },
+    {
+      "query": "达标情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "dashboard",
+      "method": null,
+      "latency_ms": 631
+    },
+    {
+      "query": "KPI趋势",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        null
+      ],
+      "category": "trend_analysis",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "指标环比",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.7076333165168762,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        null
+      ],
+      "category": "trend_analysis",
+      "method": "CLASSIFIER",
+      "latency_ms": 605
+    },
+    {
+      "query": "同比变化",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.9370493292808533,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        null
+      ],
+      "category": "trend_analysis",
+      "method": "CLASSIFIER",
+      "latency_ms": 615
+    },
+    {
+      "query": "改善趋势",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.923366904258728,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        null
+      ],
+      "category": "trend_analysis",
+      "method": "CLASSIFIER",
+      "latency_ms": 1078
+    },
+    {
+      "query": "下滑指标",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.6171317100524902,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "trend_analysis",
+      "method": "CLASSIFIER",
+      "latency_ms": 615
+    },
+    {
+      "query": "KPI目标",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "target_setting",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 448
+    },
+    {
+      "query": "指标设定",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.9404677152633667,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "target_setting",
+      "method": "CLASSIFIER",
+      "latency_ms": 593
+    },
+    {
+      "query": "考核标准",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.7608711123466492,
+      "expected": [
+        "REPORT_KPI",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "target_setting",
+      "method": "CLASSIFIER",
+      "latency_ms": 596
+    },
+    {
+      "query": "达标线",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "target_setting",
+      "method": null,
+      "latency_ms": 608
+    },
+    {
+      "query": "目标差距",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.9014855623245239,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "target_setting",
+      "method": "CLASSIFIER",
+      "latency_ms": 576
+    }
+  ]
+}

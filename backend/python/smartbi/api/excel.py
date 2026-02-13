@@ -18,6 +18,9 @@ from services.data_feature_analyzer import DataFeatureAnalyzer
 from services.field_mapping import FieldMappingService
 
 # Zero-Code services
+import numpy as np
+import pandas as pd
+
 from services.structure_detector import StructureDetector
 from services.semantic_mapper import SemanticMapper
 from services.fixed_executor import FixedExecutor
@@ -239,7 +242,7 @@ async def list_sheets_detailed(file: UploadFile = File(...)):
         logger.error(f"List sheets error: {e}", exc_info=True)
         return ListSheetsResponse(
             success=False,
-            errorMessage=str(e)
+            errorMessage="Excel处理失败，请检查文件格式后重试"
         )
 
 
@@ -261,7 +264,7 @@ async def get_sheet_names(file: UploadFile = File(...)):
 
     except Exception as e:
         logger.error(f"Get sheet names error: {e}", exc_info=True)
-        return SheetNamesResponse(success=False, error=str(e))
+        return SheetNamesResponse(success=False, error="Excel处理失败，请检查文件格式后重试")
 
 
 @router.post("/detect-header", response_model=MultiHeaderDetectionResponse)
@@ -297,7 +300,7 @@ async def detect_multi_header(
 
     except Exception as e:
         logger.error(f"Multi-header detection error: {e}", exc_info=True)
-        return MultiHeaderDetectionResponse(success=False, error=str(e))
+        return MultiHeaderDetectionResponse(success=False, error="Excel处理失败，请检查文件格式后重试")
 
 
 @router.post("/preview")
@@ -345,7 +348,7 @@ async def preview_excel(
 
     except Exception as e:
         logger.error(f"Excel preview error: {e}", exc_info=True)
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": "Excel处理失败，请检查文件格式后重试"}
 
 
 class SheetAnalysisResponse(BaseModel):
@@ -422,7 +425,7 @@ async def analyze_sheets(file: UploadFile = File(...)):
         raise
     except Exception as e:
         logger.error(f"Sheet analysis error: {e}", exc_info=True)
-        return SheetAnalysisResponse(success=False, error=str(e))
+        return SheetAnalysisResponse(success=False, error="Excel处理失败，请检查文件格式后重试")
 
 
 # =============================================================================
@@ -776,6 +779,12 @@ async def auto_parse_excel(
                         row_dict[extracted.headers[i]] = value
                 preview_data.append(row_dict)
 
+        # Sanitize all values to JSON-safe scalars (prevents Series/ndarray strings in DB)
+        preview_data = [
+            {k: _sanitize_preview_value(v) for k, v in row.items()}
+            for row in preview_data
+        ]
+
         return AutoParseResponse(
             # Core Java-compatible fields
             success=True,
@@ -833,10 +842,50 @@ async def auto_parse_excel(
         return AutoParseResponse(
             success=False,
             autoDetected=True,
-            errorMessage=str(e),
+            errorMessage="Excel处理失败，请检查文件格式后重试",
             status="ERROR",
             processingTimeMs=int((time.time() - start_time) * 1000)
         )
+
+
+def _sanitize_preview_value(val):
+    """Ensure a preview data value is a JSON-serializable scalar.
+
+    Handles pandas Series/Timestamp, numpy arrays/scalars, and other
+    non-primitive types that can leak from pd.read_excel() or MultiIndex ops.
+    """
+    if val is None:
+        return None
+    if isinstance(val, (int, float, bool)):
+        return val
+    if isinstance(val, str):
+        # Safety net: detect strings that are stringified pandas Series
+        # e.g. "0     2024-01\n1     2024-01\n2     ..."
+        if len(val) > 60 and '\n' in val and '     ' in val:
+            # Likely a str(Series) — extract first value after index
+            first_line = val.split('\n')[0].strip()
+            parts = first_line.split()
+            return parts[-1] if parts else val
+        return val
+    if isinstance(val, pd.Series):
+        return _sanitize_preview_value(val.iloc[0]) if len(val) > 0 else None
+    if isinstance(val, np.ndarray):
+        return _sanitize_preview_value(val.flat[0]) if val.size > 0 else None
+    if isinstance(val, pd.Timestamp):
+        return val.isoformat() if not pd.isna(val) else None
+    if hasattr(val, 'item') and not isinstance(val, (str, bytes)):
+        try:
+            return val.item()
+        except (ValueError, OverflowError):
+            return None
+    if isinstance(val, (list, tuple)):
+        return _sanitize_preview_value(val[0]) if len(val) > 0 else None
+    try:
+        if pd.isna(val):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return str(val)
 
 
 def _recommend_charts(
@@ -915,8 +964,8 @@ async def submit_auto_parse_feedback(
             return {"success": False, "error": "Cache key not found"}
 
     except Exception as e:
-        logger.error(f"Feedback submission error: {e}")
-        return {"success": False, "error": str(e)}
+        logger.error(f"Feedback submission error: {e}", exc_info=True)
+        return {"success": False, "error": "Excel处理失败，请检查文件格式后重试"}
 
 
 # =============================================================================
@@ -1003,7 +1052,7 @@ async def extract_context(
         logger.error(f"Context extraction error: {e}", exc_info=True)
         return ExtractContextResponse(
             success=False,
-            error=str(e)
+            error="Excel处理失败，请检查文件格式后重试"
         )
 
 
@@ -1122,7 +1171,7 @@ async def export_excel(
             success=False,
             format=format,
             content="",
-            error=str(e),
+            error="Excel处理失败，请检查文件格式后重试",
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
 
@@ -1278,7 +1327,7 @@ async def get_export_metadata(
         logger.error(f"Export metadata error: {e}", exc_info=True)
         return ExportMetadataResponse(
             success=False,
-            error=str(e)
+            error="Excel处理失败，请检查文件格式后重试"
         )
 
 
@@ -1378,7 +1427,7 @@ async def batch_export_all_sheets(
         logger.error(f"Batch export error: {e}", exc_info=True)
         return BatchExportResponse(
             success=False,
-            error=str(e)
+            error="Excel处理失败，请检查文件格式后重试"
         )
 
 
@@ -1420,7 +1469,7 @@ async def batch_export_and_save(
         logger.error(f"Batch export save error: {e}", exc_info=True)
         return {
             "success": False,
-            "error": str(e)
+            "error": "Excel处理失败，请检查文件格式后重试"
         }
 
 
@@ -1519,7 +1568,7 @@ async def match_parse_rule(
         logger.error(f"Rule match error: {e}", exc_info=True)
         return RuleMatchResponse(
             success=False,
-            error=str(e)
+            error="Excel处理失败，请检查文件格式后重试"
         )
 
 
@@ -1597,7 +1646,7 @@ async def smart_parse_excel(
         logger.error(f"Smart parse error: {e}", exc_info=True)
         return SmartParseResponse(
             success=False,
-            error=str(e)
+            error="Excel处理失败，请检查文件格式后重试"
         )
 
 
@@ -1757,7 +1806,7 @@ async def export_with_validation(
         logger.error(f"Export with validation error: {e}", exc_info=True)
         return ExportWithValidationResponse(
             success=False,
-            error=str(e),
+            error="Excel处理失败，请检查文件格式后重试",
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
 
@@ -1904,7 +1953,7 @@ async def export_with_validation_and_fix(
         logger.error(f"Export with validation and fix error: {e}", exc_info=True)
         return ExportWithValidationResponse(
             success=False,
-            error=str(e),
+            error="Excel处理失败，请检查文件格式后重试",
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
 
@@ -2024,7 +2073,7 @@ async def batch_export_with_validation(
         logger.error(f"Batch export with validation error: {e}", exc_info=True)
         return {
             "success": False,
-            "error": str(e),
+            "error": "Excel处理失败，请检查文件格式后重试",
             "processing_time_ms": int((time.time() - start_time) * 1000)
         }
 
@@ -2156,7 +2205,7 @@ async def raw_export_excel(
             success=False,
             format=format,
             content="",
-            error=str(e),
+            error="Excel处理失败，请检查文件格式后重试",
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
 
@@ -2206,7 +2255,7 @@ async def raw_export_all_sheets(
         logger.error(f"Raw export all sheets error: {e}", exc_info=True)
         return {
             "success": False,
-            "error": str(e),
+            "error": "Excel处理失败，请检查文件格式后重试",
             "processing_time_ms": int((time.time() - start_time) * 1000)
         }
 
@@ -2383,7 +2432,7 @@ async def analyze_excel_structure(
         logger.error(f"LLM structure analysis error: {e}", exc_info=True)
         return LLMAnalysisResponse(
             success=False,
-            error=str(e),
+            error="Excel处理失败，请检查文件格式后重试",
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
 
@@ -2539,7 +2588,7 @@ async def smart_analyze_excel(
         logger.error(f"Smart analyze error: {e}", exc_info=True)
         return {
             "success": False,
-            "error": str(e),
+            "error": "Excel处理失败，请检查文件格式后重试",
             "processing_time_ms": int((time.time() - start_time) * 1000)
         }
 
@@ -2903,6 +2952,6 @@ async def analyze_workbook(
         logger.error(f"Analyze workbook error: {e}", exc_info=True)
         return MultiSheetAnalysisResponse(
             success=False,
-            error=str(e),
+            error="Excel处理失败，请检查文件格式后重试",
             processingTimeMs=int((time.time() - start_time) * 1000)
         )

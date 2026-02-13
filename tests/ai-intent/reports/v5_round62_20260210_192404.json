@@ -1,0 +1,819 @@
+{
+  "timestamp": "2026-02-10T19:24:04.212749",
+  "test": "v5_round62_search_and_filter",
+  "total": 50,
+  "pass": 45,
+  "fail": 5,
+  "error": 0,
+  "pass_rate": 90.0,
+  "category_breakdown": {
+    "batch_search": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "material_search": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "order_search": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "employee_search": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "equipment_search": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "supplier_search": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "quality_search": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "date_filter": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "condition_filter": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "SEMANTIC": 4,
+    "PHRASE_MATCH": 18,
+    "CLASSIFIER": 10,
+    "NONE": 18
+  },
+  "results": [
+    {
+      "query": "查找批次B001",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "batch_search",
+      "method": "SEMANTIC",
+      "latency_ms": 599
+    },
+    {
+      "query": "搜索批次号",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_DETAIL",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "batch_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 445
+    },
+    {
+      "query": "按批次查",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_DETAIL",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "batch_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 454
+    },
+    {
+      "query": "批次筛选",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_DETAIL",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "batch_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 488
+    },
+    {
+      "query": "定位批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "batch_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 433
+    },
+    {
+      "query": "找到这个批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "batch_search",
+      "method": "SEMANTIC",
+      "latency_ms": 601
+    },
+    {
+      "query": "搜索原料",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "material_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 469
+    },
+    {
+      "query": "查找面粉",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "material_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 431
+    },
+    {
+      "query": "按名称查物料",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.8184405565261841,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "material_search",
+      "method": "CLASSIFIER",
+      "latency_ms": 591
+    },
+    {
+      "query": "物料编码搜索",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "material_search",
+      "method": "SEMANTIC",
+      "latency_ms": 594
+    },
+    {
+      "query": "筛选原材料",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "material_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 499
+    },
+    {
+      "query": "找到大豆",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "material_search",
+      "method": null,
+      "latency_ms": 759
+    },
+    {
+      "query": "查找订单",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.5433429479598999,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_FILTER",
+        "ORDER_STATUS",
+        "CUSTOMER_PURCHASE_HISTORY",
+        null
+      ],
+      "category": "order_search",
+      "method": "CLASSIFIER",
+      "latency_ms": 633
+    },
+    {
+      "query": "按日期筛选订单",
+      "status": "PASS",
+      "intent": "ORDER_FILTER",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_FILTER",
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "CUSTOMER_PURCHASE_HISTORY",
+        null
+      ],
+      "category": "order_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 439
+    },
+    {
+      "query": "搜索客户订单",
+      "status": "PASS",
+      "intent": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_FILTER",
+        "CUSTOMER_PURCHASE_HISTORY",
+        null
+      ],
+      "category": "order_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 1747
+    },
+    {
+      "query": "订单编号查询",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_FILTER",
+        "ORDER_STATUS",
+        "CUSTOMER_PURCHASE_HISTORY",
+        null
+      ],
+      "category": "order_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "筛选未完成订单",
+      "status": "PASS",
+      "intent": "ORDER_FILTER",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_FILTER",
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "CUSTOMER_PURCHASE_HISTORY",
+        null
+      ],
+      "category": "order_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 460
+    },
+    {
+      "query": "查找员工",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "HR_EMPLOYEE_SEARCH",
+        "ATTENDANCE_TODAY",
+        "PROCESSING_BATCH_WORKERS",
+        null
+      ],
+      "category": "employee_search",
+      "method": null,
+      "latency_ms": 715
+    },
+    {
+      "query": "搜索张三",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_SEARCH",
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_TODAY",
+        "PROCESSING_BATCH_WORKERS",
+        null
+      ],
+      "category": "employee_search",
+      "method": null,
+      "latency_ms": 823
+    },
+    {
+      "query": "按部门筛选",
+      "status": "FAIL",
+      "intent": "ATTENDANCE_DEPARTMENT",
+      "confidence": 0.5136516094207764,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "HR_EMPLOYEE_SEARCH",
+        "ATTENDANCE_TODAY",
+        "PROCESSING_BATCH_WORKERS",
+        null
+      ],
+      "category": "employee_search",
+      "method": "CLASSIFIER",
+      "latency_ms": 744
+    },
+    {
+      "query": "工号查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_SEARCH",
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_TODAY",
+        "PROCESSING_BATCH_WORKERS",
+        null
+      ],
+      "category": "employee_search",
+      "method": null,
+      "latency_ms": 1495
+    },
+    {
+      "query": "人员搜索",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_SEARCH",
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_TODAY",
+        "PROCESSING_BATCH_WORKERS",
+        null
+      ],
+      "category": "employee_search",
+      "method": null,
+      "latency_ms": 650
+    },
+    {
+      "query": "谁在车间A",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_BATCH_WORKERS",
+        "HR_EMPLOYEE_LIST",
+        "HR_EMPLOYEE_SEARCH",
+        "ATTENDANCE_TODAY",
+        null
+      ],
+      "category": "employee_search",
+      "method": null,
+      "latency_ms": 659
+    },
+    {
+      "query": "查找设备",
+      "status": "PASS",
+      "intent": "EQUIPMENT_LIST",
+      "confidence": 0.8955600261688232,
+      "expected": [
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        null
+      ],
+      "category": "equipment_search",
+      "method": "CLASSIFIER",
+      "latency_ms": 629
+    },
+    {
+      "query": "设备编号搜索",
+      "status": "PASS",
+      "intent": "EQUIPMENT_LIST",
+      "confidence": 0.7409595251083374,
+      "expected": [
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        null
+      ],
+      "category": "equipment_search",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    },
+    {
+      "query": "筛选离线设备",
+      "status": "FAIL",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_DETAIL",
+        null
+      ],
+      "category": "equipment_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 456
+    },
+    {
+      "query": "找到搅拌机",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        null
+      ],
+      "category": "equipment_search",
+      "method": null,
+      "latency_ms": 695
+    },
+    {
+      "query": "定位设备",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        null
+      ],
+      "category": "equipment_search",
+      "method": null,
+      "latency_ms": 688
+    },
+    {
+      "query": "搜索供应商",
+      "status": "PASS",
+      "intent": "SUPPLIER_SEARCH",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_LIST",
+        "SUPPLIER_SEARCH",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "supplier_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 453
+    },
+    {
+      "query": "查找A公司",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_SEARCH",
+        "SUPPLIER_LIST",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "supplier_search",
+      "method": null,
+      "latency_ms": 652
+    },
+    {
+      "query": "筛选合格供应商",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_LIST",
+        "SUPPLIER_SEARCH",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "supplier_search",
+      "method": null,
+      "latency_ms": 658
+    },
+    {
+      "query": "供应商编码查询",
+      "status": "PASS",
+      "intent": "SUPPLIER_SEARCH",
+      "confidence": 0.7695964574813843,
+      "expected": [
+        "SUPPLIER_SEARCH",
+        "SUPPLIER_LIST",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "supplier_search",
+      "method": "CLASSIFIER",
+      "latency_ms": 609
+    },
+    {
+      "query": "按地区查供应商",
+      "status": "PASS",
+      "intent": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_LIST",
+        "SUPPLIER_SEARCH",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "supplier_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 482
+    },
+    {
+      "query": "供应商模糊搜索",
+      "status": "PASS",
+      "intent": "SUPPLIER_SEARCH",
+      "confidence": 0.851998507976532,
+      "expected": [
+        "SUPPLIER_SEARCH",
+        "SUPPLIER_LIST",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "supplier_search",
+      "method": "CLASSIFIER",
+      "latency_ms": 634
+    },
+    {
+      "query": "查找质检记录",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 445
+    },
+    {
+      "query": "搜索不合格项",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality_search",
+      "method": null,
+      "latency_ms": 779
+    },
+    {
+      "query": "按日期查质检",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality_search",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 515
+    },
+    {
+      "query": "质检单号查询",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.7357882261276245,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality_search",
+      "method": "CLASSIFIER",
+      "latency_ms": 803
+    },
+    {
+      "query": "筛选异常质检",
+      "status": "FAIL",
+      "intent": "ALERT_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality_search",
+      "method": "SEMANTIC",
+      "latency_ms": 614
+    },
+    {
+      "query": "按日期筛选",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ORDER_FILTER",
+        "CONDITION_SWITCH",
+        null
+      ],
+      "category": "date_filter",
+      "method": null,
+      "latency_ms": 856
+    },
+    {
+      "query": "最近7天",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ORDER_FILTER",
+        "CONDITION_SWITCH",
+        null
+      ],
+      "category": "date_filter",
+      "method": null,
+      "latency_ms": 816
+    },
+    {
+      "query": "上个月数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ORDER_FILTER",
+        "CONDITION_SWITCH",
+        null
+      ],
+      "category": "date_filter",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 494
+    },
+    {
+      "query": "按时间范围查",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ORDER_FILTER",
+        "CONDITION_SWITCH",
+        null
+      ],
+      "category": "date_filter",
+      "method": null,
+      "latency_ms": 817
+    },
+    {
+      "query": "日期区间筛选",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ORDER_FILTER",
+        "CONDITION_SWITCH",
+        null
+      ],
+      "category": "date_filter",
+      "method": null,
+      "latency_ms": 887
+    },
+    {
+      "query": "今年的记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ORDER_FILTER",
+        "CONDITION_SWITCH",
+        null
+      ],
+      "category": "date_filter",
+      "method": null,
+      "latency_ms": 661
+    },
+    {
+      "query": "按状态筛选",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CONDITION_SWITCH",
+        "ORDER_FILTER",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "condition_filter",
+      "method": null,
+      "latency_ms": 662
+    },
+    {
+      "query": "只看异常",
+      "status": "FAIL",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "CONDITION_SWITCH",
+        "ORDER_FILTER",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "condition_filter",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "筛选条件设置",
+      "status": "PASS",
+      "intent": "CONDITION_SWITCH",
+      "confidence": 0.8301475644111633,
+      "expected": [
+        "CONDITION_SWITCH",
+        "ORDER_FILTER",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "condition_filter",
+      "method": "CLASSIFIER",
+      "latency_ms": 656
+    },
+    {
+      "query": "过滤已完成",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CONDITION_SWITCH",
+        "ORDER_FILTER",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "condition_filter",
+      "method": null,
+      "latency_ms": 659
+    },
+    {
+      "query": "条件查询",
+      "status": "PASS",
+      "intent": "CONDITION_SWITCH",
+      "confidence": 0.7135515213012695,
+      "expected": [
+        "CONDITION_SWITCH",
+        "ORDER_FILTER",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "condition_filter",
+      "method": "CLASSIFIER",
+      "latency_ms": 613
+    }
+  ]
+}

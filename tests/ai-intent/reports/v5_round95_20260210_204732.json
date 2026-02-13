@@ -1,0 +1,910 @@
+{
+  "timestamp": "2026-02-10T20:47:32.497489",
+  "test": "v5_round95_milestone_comprehensive_mix_6",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "follow_up": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "hypothetical": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "opinion_seeking": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "temporal_relative": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "quantified": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "role_specific": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "action_chain": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "error_tolerance": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "implicit_intent": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "meta_query": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "CLASSIFIER": 18,
+    "PHRASE_MATCH": 17,
+    "NONE": 11,
+    "SEMANTIC": 4
+  },
+  "results": [
+    {
+      "query": "上次说的产量呢",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.8115972280502319,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "CONTINUE_LAST_OPERATION",
+        "SYSTEM_RESUME_LAST_ACTION",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "follow_up",
+      "method": "CLASSIFIER",
+      "latency_ms": 637
+    },
+    {
+      "query": "刚才查的结果",
+      "status": "PASS",
+      "intent": "QUERY_RETRY_LAST",
+      "confidence": 0.7885378003120422,
+      "expected": [
+        "CONTINUE_LAST_OPERATION",
+        "SYSTEM_RESUME_LAST_ACTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        "INVENTORY_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "QUERY_RETRY_LAST",
+        null
+      ],
+      "category": "follow_up",
+      "method": "CLASSIFIER",
+      "latency_ms": 595
+    },
+    {
+      "query": "继续刚才的话题",
+      "status": "PASS",
+      "intent": "SYSTEM_RESUME_LAST_ACTION",
+      "confidence": 0.5906910300254822,
+      "expected": [
+        "CONTINUE_LAST_OPERATION",
+        "SYSTEM_RESUME_LAST_ACTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "follow_up",
+      "method": "CLASSIFIER",
+      "latency_ms": 928
+    },
+    {
+      "query": "接着看库存",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "CONTINUE_LAST_OPERATION",
+        "SYSTEM_RESUME_LAST_ACTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "follow_up",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    },
+    {
+      "query": "还有什么问题",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_QUERY",
+        "CONTINUE_LAST_OPERATION",
+        "SYSTEM_RESUME_LAST_ACTION",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "follow_up",
+      "method": null,
+      "latency_ms": 637
+    },
+    {
+      "query": "假如产量翻倍",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.534830629825592,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "REPORT_EFFICIENCY",
+        "SCHEDULING_AUTO",
+        "CONDITION_SWITCH",
+        "EXECUTE_SWITCH",
+        null
+      ],
+      "category": "hypothetical",
+      "method": "CLASSIFIER",
+      "latency_ms": 590
+    },
+    {
+      "query": "如果增加一条产线",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.7339927554130554,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "SCHEDULING_AUTO",
+        "EQUIPMENT_STATUS_QUERY",
+        "CONDITION_SWITCH",
+        "EXECUTE_SWITCH",
+        "PROCESSING_BATCH_CREATE",
+        null
+      ],
+      "category": "hypothetical",
+      "method": "CLASSIFIER",
+      "latency_ms": 624
+    },
+    {
+      "query": "万一设备坏了怎么办",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CONDITION_SWITCH",
+        "EXECUTE_SWITCH",
+        null
+      ],
+      "category": "hypothetical",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 455
+    },
+    {
+      "query": "要是库存不够呢",
+      "status": "PASS",
+      "intent": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.6912648677825928,
+      "expected": [
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CONDITION_SWITCH",
+        "EXECUTE_SWITCH",
+        "MATERIAL_LOW_STOCK_ALERT",
+        null
+      ],
+      "category": "hypothetical",
+      "method": "CLASSIFIER",
+      "latency_ms": 600
+    },
+    {
+      "query": "假设质检不合格",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CONDITION_SWITCH",
+        "EXECUTE_SWITCH",
+        null
+      ],
+      "category": "hypothetical",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 454
+    },
+    {
+      "query": "你觉得产量够吗",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.6102448105812073,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "opinion_seeking",
+      "method": "CLASSIFIER",
+      "latency_ms": 628
+    },
+    {
+      "query": "这批质量怎么样",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "TRACE_BATCH",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "opinion_seeking",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 469
+    },
+    {
+      "query": "效率还行吗",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.8996289372444153,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "opinion_seeking",
+      "method": "CLASSIFIER",
+      "latency_ms": 702
+    },
+    {
+      "query": "成本合理吗",
+      "status": "PASS",
+      "intent": "COST_QUERY",
+      "confidence": 0.7842085957527161,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "opinion_seeking",
+      "method": "CLASSIFIER",
+      "latency_ms": 627
+    },
+    {
+      "query": "你建议怎么排产",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.6183719635009766,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PROCESSING_BATCH_CREATE",
+        null
+      ],
+      "category": "opinion_seeking",
+      "method": "CLASSIFIER",
+      "latency_ms": 644
+    },
+    {
+      "query": "前天的产量",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "temporal_relative",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 472
+    },
+    {
+      "query": "上上个月的报表",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "REPORT_FINANCE",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "temporal_relative",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "最近三天的质检",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.7443235516548157,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "temporal_relative",
+      "method": "CLASSIFIER",
+      "latency_ms": 638
+    },
+    {
+      "query": "过去一周的库存变化",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.93,
+      "expected": [
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "temporal_relative",
+      "method": "SEMANTIC",
+      "latency_ms": 668
+    },
+    {
+      "query": "明天的排班",
+      "status": "PASS",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_HISTORY",
+        null
+      ],
+      "category": "temporal_relative",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    },
+    {
+      "query": "查第三车间产量",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quantified",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 483
+    },
+    {
+      "query": "二号设备状态",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quantified",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    },
+    {
+      "query": "第五批次质检",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "TRACE_BATCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quantified",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 460
+    },
+    {
+      "query": "仓库三的库存",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "quantified",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 470
+    },
+    {
+      "query": "产线一效率",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quantified",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 462
+    },
+    {
+      "query": "我是质检员要做什么",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.95,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST",
+        "ATTENDANCE_TODAY",
+        null
+      ],
+      "category": "role_specific",
+      "method": "SEMANTIC",
+      "latency_ms": 630
+    },
+    {
+      "query": "车间主管看什么",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.92,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "SCHEDULING_AUTO",
+        "ALERT_LIST",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "role_specific",
+      "method": "SEMANTIC",
+      "latency_ms": 597
+    },
+    {
+      "query": "仓管员日常操作",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "role_specific",
+      "method": null,
+      "latency_ms": 707
+    },
+    {
+      "query": "调度员今天任务",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "ATTENDANCE_TODAY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "role_specific",
+      "method": null,
+      "latency_ms": 634
+    },
+    {
+      "query": "厂长看板",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.9199384450912476,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "REPORT_FINANCE",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "role_specific",
+      "method": "CLASSIFIER",
+      "latency_ms": 627
+    },
+    {
+      "query": "先质检再入库",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.6827183365821838,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "FORM_GENERATION",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "action_chain",
+      "method": "CLASSIFIER",
+      "latency_ms": 1637
+    },
+    {
+      "query": "检完发货",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "SHIPMENT_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "action_chain",
+      "method": "SEMANTIC",
+      "latency_ms": 633
+    },
+    {
+      "query": "排完产通知我",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "PRODUCTION_STATUS_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "action_chain",
+      "method": null,
+      "latency_ms": 1401
+    },
+    {
+      "query": "审批后开工",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_START",
+      "confidence": 0.6822854280471802,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "PRODUCTION_STATUS_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PROCESSING_BATCH_START",
+        null
+      ],
+      "category": "action_chain",
+      "method": "CLASSIFIER",
+      "latency_ms": 666
+    },
+    {
+      "query": "盘点完生成报告",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "FORM_GENERATION",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "action_chain",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 457
+    },
+    {
+      "query": "产量产量",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "error_tolerance",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 440
+    },
+    {
+      "query": "查查查库存",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "error_tolerance",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 443
+    },
+    {
+      "query": "我我我要看报表",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "REPORT_FINANCE",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "error_tolerance",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 460
+    },
+    {
+      "query": "那个那个设备",
+      "status": "PASS",
+      "intent": "EQUIPMENT_LIST",
+      "confidence": 0.8643240332603455,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "error_tolerance",
+      "method": "CLASSIFIER",
+      "latency_ms": 615
+    },
+    {
+      "query": "就是就是质检",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.9332371950149536,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "error_tolerance",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    },
+    {
+      "query": "怎么回事",
+      "status": "PASS",
+      "intent": "ALERT_DIAGNOSE",
+      "confidence": 0.7228659391403198,
+      "expected": [
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "implicit_intent",
+      "method": "CLASSIFIER",
+      "latency_ms": 641
+    },
+    {
+      "query": "出了什么问题",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "implicit_intent",
+      "method": null,
+      "latency_ms": 663
+    },
+    {
+      "query": "有什么异常",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "implicit_intent",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 1455
+    },
+    {
+      "query": "情况如何",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        "ALERT_LIST",
+        "INVENTORY_QUERY",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "implicit_intent",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 491
+    },
+    {
+      "query": "一切正常吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST",
+        "PRODUCTION_STATUS_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "implicit_intent",
+      "method": null,
+      "latency_ms": 627
+    },
+    {
+      "query": "你能查什么",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        "CONFIG_RESET",
+        null
+      ],
+      "category": "meta_query",
+      "method": null,
+      "latency_ms": 701
+    },
+    {
+      "query": "系统有什么功能",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CONFIG_RESET",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "meta_query",
+      "method": null,
+      "latency_ms": 682
+    },
+    {
+      "query": "帮我做什么",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        "SCHEDULING_AUTO",
+        "CONFIG_RESET",
+        null
+      ],
+      "category": "meta_query",
+      "method": null,
+      "latency_ms": 669
+    },
+    {
+      "query": "还能查啥",
+      "status": "PASS",
+      "intent": "QUERY_RETRY_LAST",
+      "confidence": 0.6924641132354736,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        "INVENTORY_QUERY",
+        "CONFIG_RESET",
+        "CONTINUE_LAST_OPERATION",
+        "QUERY_RETRY_LAST",
+        null
+      ],
+      "category": "meta_query",
+      "method": "CLASSIFIER",
+      "latency_ms": 637
+    },
+    {
+      "query": "你都会什么",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CONFIG_RESET",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "meta_query",
+      "method": null,
+      "latency_ms": 667
+    }
+  ]
+}

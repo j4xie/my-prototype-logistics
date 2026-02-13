@@ -1,0 +1,882 @@
+{
+  "timestamp": "2026-02-10T19:55:14.854216",
+  "test": "v5_round75_predictive_ai_driven",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "demand_forecast": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "quality_predict": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "maintenance_predict": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "cost_predict": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "optimization": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "anomaly_detect": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "trend_analysis": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "what_if": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "smart_alert": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "CLASSIFIER": 26,
+    "NONE": 14,
+    "PHRASE_MATCH": 8,
+    "SEMANTIC": 2
+  },
+  "results": [
+    {
+      "query": "下个月需求预测",
+      "status": "PASS",
+      "intent": "MRP_CALCULATION",
+      "confidence": 0.7536582946777344,
+      "expected": [
+        "REPORT_TRENDS",
+        "MRP_CALCULATION",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "demand_forecast",
+      "method": "CLASSIFIER",
+      "latency_ms": 662
+    },
+    {
+      "query": "预测下季度销量",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.5006440281867981,
+      "expected": [
+        "REPORT_TRENDS",
+        "MRP_CALCULATION",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "demand_forecast",
+      "method": "CLASSIFIER",
+      "latency_ms": 643
+    },
+    {
+      "query": "订单预测分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "MRP_CALCULATION",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "demand_forecast",
+      "method": null,
+      "latency_ms": 993
+    },
+    {
+      "query": "市场需求趋势",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.6816320419311523,
+      "expected": [
+        "REPORT_TRENDS",
+        "MRP_CALCULATION",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "demand_forecast",
+      "method": "CLASSIFIER",
+      "latency_ms": 636
+    },
+    {
+      "query": "预估下月销量多少",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.6016915440559387,
+      "expected": [
+        "REPORT_TRENDS",
+        "MRP_CALCULATION",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "demand_forecast",
+      "method": "CLASSIFIER",
+      "latency_ms": 661
+    },
+    {
+      "query": "需求规划报告",
+      "status": "PASS",
+      "intent": "MRP_CALCULATION",
+      "confidence": 0.8019717335700989,
+      "expected": [
+        "REPORT_TRENDS",
+        "MRP_CALCULATION",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "demand_forecast",
+      "method": "CLASSIFIER",
+      "latency_ms": 643
+    },
+    {
+      "query": "质量预测模型",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "ALERT_LIST",
+        "REPORT_TRENDS",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "quality_predict",
+      "method": null,
+      "latency_ms": 620
+    },
+    {
+      "query": "不良品率预测",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "ALERT_LIST",
+        "REPORT_TRENDS",
+        "ALERT_DIAGNOSE",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "quality_predict",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 473
+    },
+    {
+      "query": "质量风险预判",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.6084461212158203,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "ALERT_LIST",
+        "REPORT_TRENDS",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "quality_predict",
+      "method": "CLASSIFIER",
+      "latency_ms": 675
+    },
+    {
+      "query": "质量预警分析",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.7352160811424255,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "ALERT_LIST",
+        "REPORT_TRENDS",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "quality_predict",
+      "method": "CLASSIFIER",
+      "latency_ms": 613
+    },
+    {
+      "query": "缺陷趋势预测",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.6747515201568604,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "ALERT_LIST",
+        "REPORT_TRENDS",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "quality_predict",
+      "method": "CLASSIFIER",
+      "latency_ms": 635
+    },
+    {
+      "query": "下月质量风险评估",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EVALUATE",
+      "confidence": 0.715316653251648,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "ALERT_LIST",
+        "REPORT_TRENDS",
+        "ALERT_DIAGNOSE",
+        "QUALITY_DISPOSITION_EVALUATE",
+        null
+      ],
+      "category": "quality_predict",
+      "method": "CLASSIFIER",
+      "latency_ms": 610
+    },
+    {
+      "query": "预测性维护方案",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.9296127557754517,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "ALERT_LIST",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "maintenance_predict",
+      "method": "CLASSIFIER",
+      "latency_ms": 601
+    },
+    {
+      "query": "设备故障预测",
+      "status": "PASS",
+      "intent": "EQUIPMENT_ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "ALERT_LIST",
+        "ALERT_DIAGNOSE",
+        "EQUIPMENT_ALERT_LIST",
+        null
+      ],
+      "category": "maintenance_predict",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "设备剩余寿命预估",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "ALERT_LIST",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "maintenance_predict",
+      "method": null,
+      "latency_ms": 658
+    },
+    {
+      "query": "维护预警提示",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.9205590486526489,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "ALERT_LIST",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "maintenance_predict",
+      "method": "CLASSIFIER",
+      "latency_ms": 636
+    },
+    {
+      "query": "预防性维修计划",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.9167240262031555,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "ALERT_LIST",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "maintenance_predict",
+      "method": "CLASSIFIER",
+      "latency_ms": 611
+    },
+    {
+      "query": "下季度成本预测",
+      "status": "PASS",
+      "intent": "COST_TREND_ANALYSIS",
+      "confidence": 0.7930164337158203,
+      "expected": [
+        "COST_TREND_ANALYSIS",
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_predict",
+      "method": "CLASSIFIER",
+      "latency_ms": 624
+    },
+    {
+      "query": "费用预估报告",
+      "status": "PASS",
+      "intent": "COST_TREND_ANALYSIS",
+      "confidence": 0.8077051639556885,
+      "expected": [
+        "COST_TREND_ANALYSIS",
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_predict",
+      "method": "CLASSIFIER",
+      "latency_ms": 655
+    },
+    {
+      "query": "预算预测分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_TREND_ANALYSIS",
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_predict",
+      "method": null,
+      "latency_ms": 862
+    },
+    {
+      "query": "成本模拟计算",
+      "status": "PASS",
+      "intent": "COST_TREND_ANALYSIS",
+      "confidence": 0.586085855960846,
+      "expected": [
+        "COST_TREND_ANALYSIS",
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_predict",
+      "method": "CLASSIFIER",
+      "latency_ms": 689
+    },
+    {
+      "query": "明年费用预算多少",
+      "status": "PASS",
+      "intent": "COST_QUERY",
+      "confidence": 0.8134745955467224,
+      "expected": [
+        "COST_TREND_ANALYSIS",
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_predict",
+      "method": "CLASSIFIER",
+      "latency_ms": 868
+    },
+    {
+      "query": "投资回报率预测",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_TREND_ANALYSIS",
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_predict",
+      "method": null,
+      "latency_ms": 877
+    },
+    {
+      "query": "AI优化建议",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MRP_CALCULATION",
+        null
+      ],
+      "category": "optimization",
+      "method": null,
+      "latency_ms": 697
+    },
+    {
+      "query": "产线改善方案",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MRP_CALCULATION",
+        null
+      ],
+      "category": "optimization",
+      "method": null,
+      "latency_ms": 747
+    },
+    {
+      "query": "如何提升生产效率",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MRP_CALCULATION",
+        null
+      ],
+      "category": "optimization",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 463
+    },
+    {
+      "query": "流程优化分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MRP_CALCULATION",
+        null
+      ],
+      "category": "optimization",
+      "method": null,
+      "latency_ms": 633
+    },
+    {
+      "query": "给出最优排产方案",
+      "status": "PASS",
+      "intent": "SCHEDULING_SET_MANUAL",
+      "confidence": 0.6011568307876587,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MRP_CALCULATION",
+        "SCHEDULING_SET_MANUAL",
+        null
+      ],
+      "category": "optimization",
+      "method": "CLASSIFIER",
+      "latency_ms": 691
+    },
+    {
+      "query": "异常数据检测",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        "REPORT_ANOMALY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "anomaly_detect",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 467
+    },
+    {
+      "query": "异常识别报告",
+      "status": "PASS",
+      "intent": "REPORT_ANOMALY",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        "REPORT_ANOMALY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "anomaly_detect",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 1256
+    },
+    {
+      "query": "生产偏差检测",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        "REPORT_ANOMALY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "anomaly_detect",
+      "method": null,
+      "latency_ms": 673
+    },
+    {
+      "query": "找出离群点数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        "REPORT_ANOMALY",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "anomaly_detect",
+      "method": "SEMANTIC",
+      "latency_ms": 650
+    },
+    {
+      "query": "异常数据有哪些",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        "REPORT_ANOMALY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "anomaly_detect",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 462
+    },
+    {
+      "query": "自动检测异常波动",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        "REPORT_ANOMALY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "anomaly_detect",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "产量趋势分析",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "trend_analysis",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "销售走势预判",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.9204285144805908,
+      "expected": [
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "trend_analysis",
+      "method": "CLASSIFIER",
+      "latency_ms": 623
+    },
+    {
+      "query": "数据趋势怎么样",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "trend_analysis",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 7509
+    },
+    {
+      "query": "找出变化规律",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.892562747001648,
+      "expected": [
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "trend_analysis",
+      "method": "CLASSIFIER",
+      "latency_ms": 662
+    },
+    {
+      "query": "近半年增长趋势",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.9419928193092346,
+      "expected": [
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "trend_analysis",
+      "method": "CLASSIFIER",
+      "latency_ms": 665
+    },
+    {
+      "query": "假如增产20%会怎样",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MRP_CALCULATION",
+        null
+      ],
+      "category": "what_if",
+      "method": null,
+      "latency_ms": 955
+    },
+    {
+      "query": "如果增加一条产线",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.7339927554130554,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MRP_CALCULATION",
+        "PROCESSING_BATCH_CREATE",
+        null
+      ],
+      "category": "what_if",
+      "method": "CLASSIFIER",
+      "latency_ms": 648
+    },
+    {
+      "query": "模拟增产50%的影响",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MRP_CALCULATION",
+        null
+      ],
+      "category": "what_if",
+      "method": null,
+      "latency_ms": 1916
+    },
+    {
+      "query": "产能仿真分析",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.8575714826583862,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MRP_CALCULATION",
+        null
+      ],
+      "category": "what_if",
+      "method": "CLASSIFIER",
+      "latency_ms": 666
+    },
+    {
+      "query": "两个方案对比分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MRP_CALCULATION",
+        null
+      ],
+      "category": "what_if",
+      "method": null,
+      "latency_ms": 1192
+    },
+    {
+      "query": "扩产对成本的影响分析",
+      "status": "PASS",
+      "intent": "COST_TREND_ANALYSIS",
+      "confidence": 0.7808598279953003,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MRP_CALCULATION",
+        "COST_TREND_ANALYSIS",
+        null
+      ],
+      "category": "what_if",
+      "method": "CLASSIFIER",
+      "latency_ms": 624
+    },
+    {
+      "query": "智能预警设置",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "ALERT_DIAGNOSE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "smart_alert",
+      "method": "SEMANTIC",
+      "latency_ms": 1638
+    },
+    {
+      "query": "AI告警有哪些",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.7709630131721497,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "ALERT_DIAGNOSE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "smart_alert",
+      "method": "CLASSIFIER",
+      "latency_ms": 637
+    },
+    {
+      "query": "自动预警规则",
+      "status": "PASS",
+      "intent": "RULE_CONFIG",
+      "confidence": 0.5542566776275635,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "ALERT_DIAGNOSE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "RULE_CONFIG",
+        null
+      ],
+      "category": "smart_alert",
+      "method": "CLASSIFIER",
+      "latency_ms": 919
+    },
+    {
+      "query": "智能监控面板",
+      "status": "PASS",
+      "intent": "ISAPI_QUERY_CAPABILITIES",
+      "confidence": 0.7973321676254272,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "ALERT_DIAGNOSE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ISAPI_QUERY_CAPABILITIES",
+        null
+      ],
+      "category": "smart_alert",
+      "method": "CLASSIFIER",
+      "latency_ms": 643
+    },
+    {
+      "query": "AI巡检结果",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "ALERT_DIAGNOSE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "smart_alert",
+      "method": null,
+      "latency_ms": 1724
+    }
+  ]
+}

@@ -60,6 +60,9 @@ public class BatchWorkSession extends BaseEntity {
     @Column(name = "assigned_by")
     private Long assignedBy;  // 分配人ID（主管）
 
+    @Column(name = "checkin_method", length = 20)
+    private String checkinMethod;  // NFC / QR / MANUAL
+
     @Column(name = "status", length = 20)
     private String status;  // assigned, working, completed, cancelled
 

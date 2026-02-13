@@ -1,0 +1,801 @@
+{
+  "timestamp": "2026-02-10T20:33:40.045067",
+  "test": "v5_round86_rnd_and_innovation",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "formula_dev": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "taste_test": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "shelf_life": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "packaging_dev": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "pilot_production": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "nutrition_analysis": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "patent_ip": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "market_research": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "tech_transfer": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "NONE": 36,
+    "SEMANTIC": 5,
+    "CLASSIFIER": 6,
+    "PHRASE_MATCH": 3
+  },
+  "results": [
+    {
+      "query": "配方开发进度查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "PRODUCT_TYPE_QUERY",
+        null
+      ],
+      "category": "formula_dev",
+      "method": null,
+      "latency_ms": 656
+    },
+    {
+      "query": "新配方试验结果怎么样",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCT_TYPE_QUERY",
+        null
+      ],
+      "category": "formula_dev",
+      "method": null,
+      "latency_ms": 4750
+    },
+    {
+      "query": "查看配方调整记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCT_TYPE_QUERY",
+        "PRODUCT_UPDATE",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "formula_dev",
+      "method": null,
+      "latency_ms": 658
+    },
+    {
+      "query": "配方成本计算一下",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "formula_dev",
+      "method": null,
+      "latency_ms": 699
+    },
+    {
+      "query": "配方审批流程到哪一步了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCT_TYPE_QUERY",
+        null
+      ],
+      "category": "formula_dev",
+      "method": null,
+      "latency_ms": 650
+    },
+    {
+      "query": "配方保密管理情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "formula_dev",
+      "method": null,
+      "latency_ms": 718
+    },
+    {
+      "query": "口感测试报告出来了吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "taste_test",
+      "method": null,
+      "latency_ms": 659
+    },
+    {
+      "query": "感官评价结果汇总",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "taste_test",
+      "method": null,
+      "latency_ms": 1678
+    },
+    {
+      "query": "上次品评报告在哪里",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "taste_test",
+      "method": null,
+      "latency_ms": 681
+    },
+    {
+      "query": "试吃反馈收集情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "taste_test",
+      "method": null,
+      "latency_ms": 718
+    },
+    {
+      "query": "风味分析数据对比",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "taste_test",
+      "method": "SEMANTIC",
+      "latency_ms": 665
+    },
+    {
+      "query": "保质期测试进展",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.8137201070785522,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "shelf_life",
+      "method": "CLASSIFIER",
+      "latency_ms": 723
+    },
+    {
+      "query": "加速老化实验数据",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "shelf_life",
+      "method": null,
+      "latency_ms": 676
+    },
+    {
+      "query": "保质期预测模型结果",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.6859917640686035,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "shelf_life",
+      "method": "CLASSIFIER",
+      "latency_ms": 653
+    },
+    {
+      "query": "货架寿命评估报告",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "shelf_life",
+      "method": "SEMANTIC",
+      "latency_ms": 652
+    },
+    {
+      "query": "稳定性测试数据查询",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "shelf_life",
+      "method": "SEMANTIC",
+      "latency_ms": 643
+    },
+    {
+      "query": "保质期延长方案评估",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.650754988193512,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCT_UPDATE",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "shelf_life",
+      "method": "CLASSIFIER",
+      "latency_ms": 643
+    },
+    {
+      "query": "包装设计方案有几个",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCT_TYPE_QUERY",
+        null
+      ],
+      "category": "packaging_dev",
+      "method": null,
+      "latency_ms": 703
+    },
+    {
+      "query": "包装测试通过了吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "packaging_dev",
+      "method": null,
+      "latency_ms": 641
+    },
+    {
+      "query": "包装材料评估报告",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EVALUATE",
+      "confidence": 0.6363936066627502,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "SUPPLIER_LIST",
+        "QUALITY_DISPOSITION_EVALUATE",
+        null
+      ],
+      "category": "packaging_dev",
+      "method": "CLASSIFIER",
+      "latency_ms": 602
+    },
+    {
+      "query": "包装成本核算情况",
+      "status": "PASS",
+      "intent": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "packaging_dev",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 455
+    },
+    {
+      "query": "包装改进建议汇总",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_QUERY",
+        "PRODUCT_UPDATE",
+        null
+      ],
+      "category": "packaging_dev",
+      "method": null,
+      "latency_ms": 678
+    },
+    {
+      "query": "中试生产安排情况",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_CREATE",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "pilot_production",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 467
+    },
+    {
+      "query": "小批量试产结果",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "REPORT_PRODUCTION",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "pilot_production",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "放大试验进展怎么样",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "pilot_production",
+      "method": null,
+      "latency_ms": 703
+    },
+    {
+      "query": "工艺验证报告查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "pilot_production",
+      "method": null,
+      "latency_ms": 1437
+    },
+    {
+      "query": "试产报告提交了吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "pilot_production",
+      "method": null,
+      "latency_ms": 1599
+    },
+    {
+      "query": "量产评估能不能通过",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "PROCESSING_BATCH_LIST",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "pilot_production",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "营养成分分析报告",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "nutrition_analysis",
+      "method": null,
+      "latency_ms": 682
+    },
+    {
+      "query": "热量计算结果查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "nutrition_analysis",
+      "method": null,
+      "latency_ms": 621
+    },
+    {
+      "query": "营养标签审核通过没",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "PRODUCT_TYPE_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "nutrition_analysis",
+      "method": null,
+      "latency_ms": 721
+    },
+    {
+      "query": "成分检测数据汇总",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "nutrition_analysis",
+      "method": "SEMANTIC",
+      "latency_ms": 616
+    },
+    {
+      "query": "营养配比优化方案",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "PRODUCT_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "nutrition_analysis",
+      "method": null,
+      "latency_ms": 1649
+    },
+    {
+      "query": "专利申请进度查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "patent_ip",
+      "method": null,
+      "latency_ms": 688
+    },
+    {
+      "query": "知识产权保护情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "patent_ip",
+      "method": null,
+      "latency_ms": 726
+    },
+    {
+      "query": "技术保密协议签署情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "patent_ip",
+      "method": null,
+      "latency_ms": 707
+    },
+    {
+      "query": "专利检索结果反馈",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "patent_ip",
+      "method": null,
+      "latency_ms": 646
+    },
+    {
+      "query": "新发明登记了没有",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.5628689527511597,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PROCESSING_BATCH_CREATE",
+        null
+      ],
+      "category": "patent_ip",
+      "method": "CLASSIFIER",
+      "latency_ms": 700
+    },
+    {
+      "query": "技术转让协议审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "patent_ip",
+      "method": null,
+      "latency_ms": 705
+    },
+    {
+      "query": "市场调研报告出来了吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "market_research",
+      "method": null,
+      "latency_ms": 666
+    },
+    {
+      "query": "竞品分析数据对比",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "market_research",
+      "method": "SEMANTIC",
+      "latency_ms": 635
+    },
+    {
+      "query": "消费者偏好调查结果",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "market_research",
+      "method": null,
+      "latency_ms": 673
+    },
+    {
+      "query": "新品需求预测分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "PRODUCT_TYPE_QUERY",
+        null
+      ],
+      "category": "market_research",
+      "method": null,
+      "latency_ms": 1651
+    },
+    {
+      "query": "市场趋势分析报告",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "market_research",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 491
+    },
+    {
+      "query": "技术转移进度跟踪",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "tech_transfer",
+      "method": null,
+      "latency_ms": 693
+    },
+    {
+      "query": "工艺移交文件准备好了吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "tech_transfer",
+      "method": null,
+      "latency_ms": 656
+    },
+    {
+      "query": "配方移交审批流程",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCT_TYPE_QUERY",
+        null
+      ],
+      "category": "tech_transfer",
+      "method": null,
+      "latency_ms": 681
+    },
+    {
+      "query": "技术培训计划安排",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "tech_transfer",
+      "method": null,
+      "latency_ms": 646
+    },
+    {
+      "query": "产线验证测试结果",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "QUALITY_CHECK_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "tech_transfer",
+      "method": null,
+      "latency_ms": 682
+    },
+    {
+      "query": "批量验证通过了没有",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.5354284048080444,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "tech_transfer",
+      "method": "CLASSIFIER",
+      "latency_ms": 624
+    }
+  ]
+}

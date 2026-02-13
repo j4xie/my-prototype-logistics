@@ -1,0 +1,768 @@
+{
+  "timestamp": "2026-02-10T17:44:30.298068",
+  "test": "v5_round11_architectural_stress",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "particle": {
+      "pass": 8,
+      "fail": 0,
+      "error": 0
+    },
+    "reversal": {
+      "pass": 7,
+      "fail": 0,
+      "error": 0
+    },
+    "preproc": {
+      "pass": 7,
+      "fail": 0,
+      "error": 0
+    },
+    "multibound": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "longnat": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "abbrev": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "numeric": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "consec": {
+      "pass": 4,
+      "fail": 0,
+      "error": 0
+    },
+    "negation": {
+      "pass": 4,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 28,
+    "CLASSIFIER": 16,
+    "SEMANTIC": 2,
+    "NONE": 2,
+    "PHRASE_MATCH(none-fallback)": 2
+  },
+  "latency_stats": {
+    "avg_ms": 515,
+    "p50_ms": 456,
+    "p90_ms": 638,
+    "p99_ms": 837
+  },
+  "results": [
+    {
+      "query": "冷库的温度",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.98,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "particle-coldtemp",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 440
+    },
+    {
+      "query": "订单的状态",
+      "status": "PASS",
+      "intent": "ORDER_STATUS",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST"
+      ],
+      "category": "particle-orderstatus",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 434
+    },
+    {
+      "query": "设备都正常运行吗",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_STATS"
+      ],
+      "category": "particle-equiprun",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 442
+    },
+    {
+      "query": "产量今天有多少",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION"
+      ],
+      "category": "particle-prodtoday",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 456
+    },
+    {
+      "query": "原料还有多少库存",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "MATERIAL_LOW_STOCK_ALERT"
+      ],
+      "category": "particle-materialstock",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 438
+    },
+    {
+      "query": "质检这批合格了吗",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.845441460609436,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE"
+      ],
+      "category": "particle-qualpass",
+      "method": "CLASSIFIER",
+      "latency_ms": 601
+    },
+    {
+      "query": "告警什么时候处理的",
+      "status": "PASS",
+      "intent": "ALERT_ACKNOWLEDGE",
+      "confidence": 0.93,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "ALERT_RESOLVE",
+        "ALERT_ACKNOWLEDGE"
+      ],
+      "category": "particle-alertwhen",
+      "method": "SEMANTIC",
+      "latency_ms": 644
+    },
+    {
+      "query": "供应商最近表现怎么样",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_RANKING",
+        "SUPPLIER_LIST"
+      ],
+      "category": "particle-supplierperf",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 434
+    },
+    {
+      "query": "排名供应商",
+      "status": "PASS",
+      "intent": "SUPPLIER_RANKING",
+      "confidence": 0.8062646389007568,
+      "expected": [
+        "SUPPLIER_RANKING",
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST"
+      ],
+      "category": "reversal-supplierrank",
+      "method": "CLASSIFIER",
+      "latency_ms": 590
+    },
+    {
+      "query": "查询的结果质检",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "reversal-qualresult",
+      "method": null,
+      "latency_ms": 638
+    },
+    {
+      "query": "多少库存还剩",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.6794798374176025,
+      "expected": [
+        "REPORT_INVENTORY",
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_LOW_STOCK_ALERT"
+      ],
+      "category": "reversal-stockleft",
+      "method": "CLASSIFIER",
+      "latency_ms": 686
+    },
+    {
+      "query": "谁在值班今天",
+      "status": "PASS",
+      "intent": "ATTENDANCE_TODAY",
+      "confidence": 0.8431086540222168,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_STATS"
+      ],
+      "category": "reversal-dutytoday",
+      "method": "CLASSIFIER",
+      "latency_ms": 685
+    },
+    {
+      "query": "报告效率分析",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.9362277388572693,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY"
+      ],
+      "category": "reversal-effreport",
+      "method": "CLASSIFIER",
+      "latency_ms": 601
+    },
+    {
+      "query": "列表设备",
+      "status": "PASS",
+      "intent": "EQUIPMENT_LIST",
+      "confidence": 0.9130703210830688,
+      "expected": [
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "reversal-equiplist",
+      "method": "CLASSIFIER",
+      "latency_ms": 597
+    },
+    {
+      "query": "统计告警本月",
+      "status": "PASS",
+      "intent": "ALERT_STATS",
+      "confidence": 0.8723471760749817,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_STATS"
+      ],
+      "category": "reversal-alertmonth",
+      "method": "CLASSIFIER",
+      "latency_ms": 579
+    },
+    {
+      "query": "请帮我查一下设备效率",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.8033279776573181,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "preproc-equipeff",
+      "method": "CLASSIFIER",
+      "latency_ms": 588
+    },
+    {
+      "query": "麻烦看看考勤统计",
+      "status": "PASS",
+      "intent": "ATTENDANCE_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_STATS_BY_DEPT"
+      ],
+      "category": "preproc-attendstat",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 434
+    },
+    {
+      "query": "能不能帮忙查下订单",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.5867652297019958,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS"
+      ],
+      "category": "preproc-orderquery",
+      "method": "CLASSIFIER",
+      "latency_ms": 586
+    },
+    {
+      "query": "我想要效率分析报告",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        "REPORT_KPI"
+      ],
+      "category": "preproc-effreport",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 435
+    },
+    {
+      "query": "帮我把这批原料入库",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "PROCESSING_BATCH_CREATE",
+        "MATERIAL_BATCH_CONSUME",
+        "MATERIAL_BATCH_CREATE"
+      ],
+      "category": "preproc-materialin",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 453
+    },
+    {
+      "query": "请查看一下溯源信息",
+      "status": "PASS",
+      "intent": "TRACE_FULL",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_FULL",
+        "TRACE_BATCH",
+        "TRACE_PUBLIC"
+      ],
+      "category": "preproc-traceinfo",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 453
+    },
+    {
+      "query": "能帮忙统计下产量吗",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.6258520483970642,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION"
+      ],
+      "category": "preproc-prodstat",
+      "method": "CLASSIFIER",
+      "latency_ms": 591
+    },
+    {
+      "query": "产量和预期差多少",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.7926726341247559,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "multibound-prodgap",
+      "method": "CLASSIFIER",
+      "latency_ms": 596
+    },
+    {
+      "query": "质检和标准对比",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "multibound-qualcompare",
+      "method": null,
+      "latency_ms": 612
+    },
+    {
+      "query": "温度和湿度传感器",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.8771037459373474,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "multibound-sensor",
+      "method": "CLASSIFIER",
+      "latency_ms": 602
+    },
+    {
+      "query": "入库和出库记录",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "multibound-inout",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 428
+    },
+    {
+      "query": "签到和签退记录",
+      "status": "PASS",
+      "intent": "CLOCK_OUT",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_TODAY",
+        null
+      ],
+      "category": "multibound-clockinout",
+      "method": "PHRASE_MATCH(none-fallback)",
+      "latency_ms": 452
+    },
+    {
+      "query": "我刚才看到1号产线的温度好像有点偏高你帮我确认一下告警情况",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "COLD_CHAIN_TEMPERATURE",
+        "EQUIPMENT_ALERT_LIST",
+        null
+      ],
+      "category": "longnat-tempalert",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 460
+    },
+    {
+      "query": "帮我看看最近一周各个供应商的到货准时率是多少",
+      "status": "PASS",
+      "intent": "SUPPLIER_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_RANKING",
+        "SUPPLIER_LIST",
+        null
+      ],
+      "category": "longnat-supplierrate",
+      "method": "SEMANTIC",
+      "latency_ms": 620
+    },
+    {
+      "query": "把上个月各产线的生产效率对比数据调出来给我看看",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "longnat-effcompare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 421
+    },
+    {
+      "query": "今天仓库里面各种原料的库存情况大概是什么样的",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_INVENTORY",
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_LOW_STOCK_ALERT",
+        null
+      ],
+      "category": "longnat-stockoverview",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 432
+    },
+    {
+      "query": "有没有什么设备最近频繁出问题需要安排维修的",
+      "status": "PASS",
+      "intent": "EQUIPMENT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_STATS",
+        null
+      ],
+      "category": "longnat-equipmaint",
+      "method": "PHRASE_MATCH(none-fallback)",
+      "latency_ms": 433
+    },
+    {
+      "query": "Q1产量",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION"
+      ],
+      "category": "abbrev-q1prod",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 432
+    },
+    {
+      "query": "OEE多少",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "abbrev-oee",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 429
+    },
+    {
+      "query": "KPI完成率",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY"
+      ],
+      "category": "abbrev-kpi",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 426
+    },
+    {
+      "query": "MoM环比增长",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.924767255783081,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_PRODUCTION",
+        "REPORT_FINANCE"
+      ],
+      "category": "abbrev-mom",
+      "method": "CLASSIFIER",
+      "latency_ms": 600
+    },
+    {
+      "query": "SOP执行情况",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_PRODUCTION",
+        "PROCESSING_BATCH_LIST"
+      ],
+      "category": "abbrev-sop",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 432
+    },
+    {
+      "query": "PB20260210003批次进度",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_TIMELINE",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "TRACE_BATCH",
+        "PROCESSING_BATCH_TIMELINE"
+      ],
+      "category": "numeric-batchprog",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 454
+    },
+    {
+      "query": "3号线5号工位产量",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.6285157799720764,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION"
+      ],
+      "category": "numeric-linestation",
+      "method": "CLASSIFIER",
+      "latency_ms": 614
+    },
+    {
+      "query": "2月10号的日报",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_KPI"
+      ],
+      "category": "numeric-dailyreport",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 428
+    },
+    {
+      "query": "A仓B区3排5层库存",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.5418521165847778,
+      "expected": [
+        "REPORT_INVENTORY",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "numeric-warehousepos",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    },
+    {
+      "query": "订单ORD-2026-0210状态",
+      "status": "PASS",
+      "intent": "ORDER_STATUS",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST"
+      ],
+      "category": "numeric-orderid",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 448
+    },
+    {
+      "query": "查产量",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION"
+      ],
+      "category": "consec-prodquery",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 453
+    },
+    {
+      "query": "查质量",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_STATS",
+        "QUALITY_CHECK_QUERY"
+      ],
+      "category": "consec-qualquery",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 475
+    },
+    {
+      "query": "查库存",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_INVENTORY",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "consec-stockquery",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 431
+    },
+    {
+      "query": "查订单",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS"
+      ],
+      "category": "consec-orderquery",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 468
+    },
+    {
+      "query": "不合格的产品清单",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS"
+      ],
+      "category": "negation-unqualified",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 431
+    },
+    {
+      "query": "没有到货的订单",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.5188651084899902,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST",
+        "ORDER_FILTER"
+      ],
+      "category": "negation-noarrival",
+      "method": "CLASSIFIER",
+      "latency_ms": 837
+    },
+    {
+      "query": "未完成的批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_DETAIL"
+      ],
+      "category": "negation-incomplete",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 459
+    },
+    {
+      "query": "不在线的设备",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_STATS"
+      ],
+      "category": "negation-offline",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    }
+  ]
+}

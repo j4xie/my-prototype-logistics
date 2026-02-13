@@ -285,15 +285,29 @@ class FixedExecutor:
             renamed_columns = {orig: column_map.get(orig, orig) for orig in df.columns}
             df = df.rename(columns=renamed_columns)
 
+            # Deduplicate column names to prevent df[col] returning DataFrame
+            # when multiple columns share the same mapped name (e.g. both 日期 and 月份 → period)
+            seen: Dict[str, int] = {}
+            new_cols = []
+            for c in df.columns:
+                if c in seen:
+                    seen[c] += 1
+                    new_cols.append(f"{c}_{seen[c]}")
+                else:
+                    seen[c] = 1
+                    new_cols.append(c)
+            df.columns = new_cols
+
             result.headers = df.columns.tolist()
 
-            # Clean data
+            # Clean data — iterate by position to avoid duplicate-name issues
             data_type_map = self._build_data_type_map(structure_config, mapping_config, result.original_headers)
             result.data_types = data_type_map
 
-            for col in df.columns:
-                data_type = data_type_map.get(col, "text")
-                df[col] = df[col].apply(lambda x: self._clean_value(x, data_type))
+            for col_idx in range(len(df.columns)):
+                col_name = df.columns[col_idx]
+                data_type = data_type_map.get(col_name, "text")
+                df.iloc[:, col_idx] = df.iloc[:, col_idx].apply(lambda x: self._clean_value(x, data_type))
 
             # Remove empty rows if configured
             if options.get("skip_empty_rows", True):
@@ -301,9 +315,13 @@ class FixedExecutor:
                 df = df.dropna(how='all')
                 result.skipped_rows = original_count - len(df)
 
-            # Convert to records
+            # Convert to records and ensure all values are JSON-safe scalars
             df = df.replace({np.nan: None})
-            result.rows = df.to_dict(orient='records')
+            raw_rows = df.to_dict(orient='records')
+            result.rows = [
+                {k: self._ensure_scalar(v) for k, v in row.items()}
+                for row in raw_rows
+            ]
             result.row_count = len(result.rows)
             result.column_count = len(result.headers)
 
@@ -407,14 +425,26 @@ class FixedExecutor:
                 mapped = column_map.get(orig_header, orig_header)
                 mapped_headers.append(mapped)
 
+            # Deduplicate mapped headers (e.g. both 日期 and 月份 → period)
+            seen_mapped: Dict[str, int] = {}
+            deduped_mapped = []
+            for h in mapped_headers:
+                if h in seen_mapped:
+                    seen_mapped[h] += 1
+                    deduped_mapped.append(f"{h}_{seen_mapped[h]}")
+                else:
+                    seen_mapped[h] = 1
+                    deduped_mapped.append(h)
+            mapped_headers = deduped_mapped
+
             for row in rows:
                 mapped_row = {}
-                for orig_header in merged_headers:
-                    mapped_header = column_map.get(orig_header, orig_header)
+                for idx, orig_header in enumerate(merged_headers):
+                    deduped_header = mapped_headers[idx]
                     value = row.get(orig_header)
                     # 清理数据
                     data_type = "numeric" if self._looks_numeric(value) else "text"
-                    mapped_row[mapped_header] = self._clean_value(value, data_type)
+                    mapped_row[deduped_header] = self._clean_value(value, data_type)
                 mapped_rows.append(mapped_row)
 
             result.headers = mapped_headers
@@ -638,7 +668,18 @@ class FixedExecutor:
 
             merged_headers.append(final_name)
 
-        return merged_headers, actual_data_start
+        # Deduplicate column names: append _2, _3, ... for duplicates
+        seen_names: Dict[str, int] = {}
+        deduped = []
+        for name in merged_headers:
+            if name in seen_names:
+                seen_names[name] += 1
+                deduped.append(f"{name}_{seen_names[name]}")
+            else:
+                seen_names[name] = 1
+                deduped.append(name)
+
+        return deduped, actual_data_start
 
     def _looks_numeric(self, value: Any) -> bool:
         """判断值是否看起来像数字"""
@@ -703,8 +744,51 @@ class FixedExecutor:
 
         return type_map
 
+    def _ensure_scalar(self, value: Any) -> Any:
+        """Convert any non-scalar value to a JSON-safe scalar.
+
+        Handles pandas Series, numpy arrays, Timestamps, and other
+        non-primitive types that can leak through pd.read_excel() or
+        MultiIndex flattening.
+        """
+        if value is None:
+            return None
+        # pandas Series → take first element
+        if isinstance(value, pd.Series):
+            return self._ensure_scalar(value.iloc[0]) if len(value) > 0 else None
+        # pandas Timestamp
+        if isinstance(value, pd.Timestamp):
+            return value.isoformat() if not pd.isna(value) else None
+        # numpy ndarray → take first element (check before hasattr 'item' since ndarray has .item() too)
+        if isinstance(value, np.ndarray):
+            return self._ensure_scalar(value.flat[0]) if value.size > 0 else None
+        # numpy scalar (int64, float64, bool_) — has .item() method
+        if hasattr(value, 'item') and not isinstance(value, (str, bytes)):
+            try:
+                return value.item()
+            except (ValueError, OverflowError):
+                return None
+        # list/tuple → take first element
+        if isinstance(value, (list, tuple)):
+            return self._ensure_scalar(value[0]) if len(value) > 0 else None
+        # dict → stringify
+        if isinstance(value, dict):
+            return str(value)
+        # Check for NaN/NaT
+        try:
+            if pd.isna(value):
+                return None
+        except (TypeError, ValueError):
+            pass
+        return value
+
     def _clean_value(self, value: Any, data_type: str) -> Any:
         """Clean value based on data type"""
+        if value is None:
+            return None
+
+        # Ensure we have a scalar before type-specific cleaning
+        value = self._ensure_scalar(value)
         if value is None:
             return None
 

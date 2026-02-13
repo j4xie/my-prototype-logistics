@@ -145,7 +145,7 @@ async def solve_least_squares(request: LeastSquaresRequest):
         raise
     except Exception as e:
         logger.error(f"Least squares error: {e}", exc_info=True)
-        return LeastSquaresResponse(success=False, error=str(e))
+        return LeastSquaresResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/validate-matrix", response_model=MatrixValidationResponse)
@@ -172,7 +172,7 @@ async def validate_matrix(request: MatrixValidationRequest):
 
     except Exception as e:
         logger.error(f"Matrix validation error: {e}", exc_info=True)
-        return MatrixValidationResponse(valid=False, error=str(e))
+        return MatrixValidationResponse(valid=False, error="处理失败，请稍后重试")
 
 
 @router.get("/methods")
@@ -237,5 +237,5 @@ async def batch_solve(requests: List[LeastSquaresRequest]):
         logger.error(f"Batch solve error: {e}", exc_info=True)
         return {
             "success": False,
-            "error": str(e)
+            "error": "处理失败，请稍后重试"
         }

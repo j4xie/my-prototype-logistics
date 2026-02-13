@@ -73,7 +73,7 @@ async def get_analysis_cache(upload_id: int):
 
     except Exception as e:
         logger.error(f"Failed to get analysis cache for upload {upload_id}: {e}", exc_info=True)
-        return {"success": False, "cached": False, "message": str(e)}
+        return {"success": False, "cached": False, "message": "处理失败，请稍后重试"}
 
 
 # ─── POST: Save enrichment result to cache ───────────────────────
@@ -129,7 +129,7 @@ async def save_analysis_cache(upload_id: int, body: SaveCacheRequest):
 
     except Exception as e:
         logger.error(f"Failed to save analysis cache for upload {upload_id}: {e}", exc_info=True)
-        return {"success": False, "message": str(e)}
+        return {"success": False, "message": "处理失败，请稍后重试"}
 
 
 # ─── DELETE: Invalidate cache (for "refresh analysis") ──────────
@@ -155,4 +155,4 @@ async def delete_analysis_cache(upload_id: int):
 
     except Exception as e:
         logger.error(f"Failed to delete analysis cache for upload {upload_id}: {e}", exc_info=True)
-        return {"success": False, "message": str(e)}
+        return {"success": False, "message": "处理失败，请稍后重试"}

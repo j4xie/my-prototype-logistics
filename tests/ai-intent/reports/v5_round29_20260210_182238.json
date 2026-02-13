@@ -1,0 +1,828 @@
+{
+  "timestamp": "2026-02-10T18:22:38.932131",
+  "test": "v5_round29_role_specific_queries",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "factoryadmin": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "workshop": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "warehouse": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "quality": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "hr": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "dispatch": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "procurement": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "finance": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "management": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "CLASSIFIER": 14,
+    "PHRASE_MATCH": 16,
+    "NONE": 17,
+    "SEMANTIC": 3
+  },
+  "results": [
+    {
+      "query": "全厂运营数据汇总",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.8309794664382935,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_TRENDS"
+      ],
+      "category": "factoryadmin-operations",
+      "method": "CLASSIFIER",
+      "latency_ms": 603
+    },
+    {
+      "query": "工厂KPI完成得怎么样",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.9527142643928528,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS"
+      ],
+      "category": "factoryadmin-kpi",
+      "method": "CLASSIFIER",
+      "latency_ms": 589
+    },
+    {
+      "query": "各部门绩效排名",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_STATS",
+        "REPORT_TRENDS"
+      ],
+      "category": "factoryadmin-dept-performance",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 448
+    },
+    {
+      "query": "生成本月运营报告",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.6269543766975403,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS"
+      ],
+      "category": "factoryadmin-report",
+      "method": "CLASSIFIER",
+      "latency_ms": 583
+    },
+    {
+      "query": "成本控制情况怎么样",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_KPI",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "factoryadmin-cost-control",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    },
+    {
+      "query": "下个月产能规划",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "factoryadmin-capacity",
+      "method": null,
+      "latency_ms": 644
+    },
+    {
+      "query": "我车间今天产量多少",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY",
+        "PROCESSING_BATCH_LIST"
+      ],
+      "category": "workshop-output",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 431
+    },
+    {
+      "query": "工人出勤情况怎么样",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.95,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_QUERY",
+        "ATTENDANCE_STATUS",
+        "ATTENDANCE_HISTORY",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "workshop-attendance",
+      "method": "SEMANTIC",
+      "latency_ms": 588
+    },
+    {
+      "query": "设备状态正常吗",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_STATUS",
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_LIST"
+      ],
+      "category": "workshop-equipment",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 425
+    },
+    {
+      "query": "目前在产批次有哪些",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PRODUCTION_STATUS_QUERY",
+        "PROCESSING_BATCH_DETAIL"
+      ],
+      "category": "workshop-active-batches",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "物料够不够用到下班",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_LOW_STOCK_ALERT",
+        "REPORT_INVENTORY",
+        "INVENTORY_QUERY"
+      ],
+      "category": "workshop-material",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 427
+    },
+    {
+      "query": "交接班需要注意什么",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PRODUCTION_STATUS_QUERY",
+        "ATTENDANCE_HISTORY",
+        null
+      ],
+      "category": "workshop-handover",
+      "method": null,
+      "latency_ms": 616
+    },
+    {
+      "query": "库存总览看一下",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.8811632394790649,
+      "expected": [
+        "REPORT_INVENTORY",
+        "INVENTORY_QUERY",
+        "INVENTORY_STATS",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "warehouse-overview",
+      "method": "CLASSIFIER",
+      "latency_ms": 603
+    },
+    {
+      "query": "今天入库了多少",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.8302263617515564,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_LIST",
+        "MATERIAL_BATCH_CREATE"
+      ],
+      "category": "warehouse-inbound",
+      "method": "CLASSIFIER",
+      "latency_ms": 593
+    },
+    {
+      "query": "出库单查一下",
+      "status": "PASS",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_LIST",
+        "ORDER_LIST",
+        "REPORT_INVENTORY",
+        "SHIPMENT_CREATE"
+      ],
+      "category": "warehouse-outbound",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 428
+    },
+    {
+      "query": "A3库位还有什么货",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.7024080157279968,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "warehouse-location",
+      "method": "CLASSIFIER",
+      "latency_ms": 624
+    },
+    {
+      "query": "哪些物料库存预警了",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "MATERIAL_EXPIRY_ALERT",
+        "ALERT_ACTIVE",
+        "ALERT_LIST",
+        "REPORT_INVENTORY",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "warehouse-alert",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 434
+    },
+    {
+      "query": "安排一下月底盘点",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_CHECK",
+        "INVENTORY_QUERY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "warehouse-stocktake",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 432
+    },
+    {
+      "query": "今天有哪些待检清单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_LIST",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality-pending",
+      "method": null,
+      "latency_ms": 664
+    },
+    {
+      "query": "最近的质检结果怎么样",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "QUALITY_RESULT"
+      ],
+      "category": "quality-results",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 455
+    },
+    {
+      "query": "不合格品怎么处理",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EXECUTE",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "DISPOSITION_EXECUTE",
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "quality-nonconforming",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 448
+    },
+    {
+      "query": "这个产品检验标准是什么",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.744748592376709,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "quality-standard",
+      "method": "CLASSIFIER",
+      "latency_ms": 605
+    },
+    {
+      "query": "取样检测做一下",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.6374176144599915,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_QUERY"
+      ],
+      "category": "quality-sampling",
+      "method": "CLASSIFIER",
+      "latency_ms": 593
+    },
+    {
+      "query": "质量趋势最近有变化吗",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.9331120252609253,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_TRENDS"
+      ],
+      "category": "quality-trend",
+      "method": "CLASSIFIER",
+      "latency_ms": 616
+    },
+    {
+      "query": "员工出勤率统计",
+      "status": "PASS",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_HISTORY",
+        "REPORT_EFFICIENCY"
+      ],
+      "category": "hr-attendance-rate",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 427
+    },
+    {
+      "query": "请假审批有几个待处理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_QUERY",
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_ANOMALY",
+        null
+      ],
+      "category": "hr-leave-approval",
+      "method": null,
+      "latency_ms": 669
+    },
+    {
+      "query": "这个月加班统计",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_HISTORY",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_MONTHLY",
+        null
+      ],
+      "category": "hr-overtime",
+      "method": null,
+      "latency_ms": 648
+    },
+    {
+      "query": "最近人员变动情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "hr-personnel-change",
+      "method": null,
+      "latency_ms": 601
+    },
+    {
+      "query": "绩效考核结果出来了吗",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.9470100998878479,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "hr-performance-review",
+      "method": "CLASSIFIER",
+      "latency_ms": 613
+    },
+    {
+      "query": "今天的排产计划",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.5310413241386414,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "PRODUCTION_STATUS_QUERY",
+        "PROCESSING_BATCH_CREATE"
+      ],
+      "category": "dispatch-today-schedule",
+      "method": "CLASSIFIER",
+      "latency_ms": 598
+    },
+    {
+      "query": "订单排期查一下",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATS",
+        "PRODUCTION_PLAN_QUERY",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "dispatch-order-schedule",
+      "method": "SEMANTIC",
+      "latency_ms": 595
+    },
+    {
+      "query": "各产线怎么安排的",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.93,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_PRODUCTION",
+        "PROCESSING_BATCH_CREATE"
+      ],
+      "category": "dispatch-line-arrange",
+      "method": "SEMANTIC",
+      "latency_ms": 591
+    },
+    {
+      "query": "有个紧急插单需要安排",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "PROCESSING_BATCH_CREATE",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "dispatch-rush-order",
+      "method": null,
+      "latency_ms": 677
+    },
+    {
+      "query": "客户要的交期能赶上吗",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST",
+        "SHIPMENT_QUERY",
+        "PRODUCTION_PLAN_QUERY",
+        null,
+        "PRODUCTION_STATUS_QUERY"
+      ],
+      "category": "dispatch-delivery-confirm",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "当前产能还能接多少单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "PRODUCTION_PLAN_QUERY",
+        null
+      ],
+      "category": "dispatch-capacity",
+      "method": null,
+      "latency_ms": 620
+    },
+    {
+      "query": "采购订单进度",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "SUPPLIER_QUERY",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "procurement-order",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    },
+    {
+      "query": "供应商评价怎么样",
+      "status": "PASS",
+      "intent": "SUPPLIER_RANKING",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_QUERY",
+        "SUPPLIER_RANKING",
+        "SUPPLIER_STATS"
+      ],
+      "category": "procurement-supplier",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 428
+    },
+    {
+      "query": "这批原料各家价格对比",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_QUERY",
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_RANKING",
+        "MATERIAL_BATCH_QUERY",
+        "SUPPLIER_COMPARISON",
+        null
+      ],
+      "category": "procurement-price-compare",
+      "method": null,
+      "latency_ms": 656
+    },
+    {
+      "query": "到货情况核实一下",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.769600510597229,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS",
+        "MATERIAL_BATCH_LIST",
+        "MATERIAL_BATCH_CREATE"
+      ],
+      "category": "procurement-arrival",
+      "method": "CLASSIFIER",
+      "latency_ms": 659
+    },
+    {
+      "query": "供应商付款进度",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_QUERY",
+        "ORDER_STATUS",
+        "ORDER_LIST",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "procurement-payment",
+      "method": null,
+      "latency_ms": 612
+    },
+    {
+      "query": "这个月财务报表",
+      "status": "PASS",
+      "intent": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS"
+      ],
+      "category": "finance-statement",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 433
+    },
+    {
+      "query": "成本分析报告",
+      "status": "PASS",
+      "intent": "COST_TREND_ANALYSIS",
+      "confidence": 0.8539519906044006,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_TRENDS"
+      ],
+      "category": "finance-cost-analysis",
+      "method": "CLASSIFIER",
+      "latency_ms": 592
+    },
+    {
+      "query": "产品利润率是多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_KPI",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "finance-profit-margin",
+      "method": null,
+      "latency_ms": 813
+    },
+    {
+      "query": "各部门费用统计",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "finance-expense",
+      "method": null,
+      "latency_ms": 809
+    },
+    {
+      "query": "预算执行情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "finance-budget",
+      "method": null,
+      "latency_ms": 763
+    },
+    {
+      "query": "经营分析数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.8687170147895813,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        "REPORT_KPI"
+      ],
+      "category": "management-business-analysis",
+      "method": "CLASSIFIER",
+      "latency_ms": 881
+    },
+    {
+      "query": "决策支持报告",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_KPI",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "management-decision-support",
+      "method": null,
+      "latency_ms": 641
+    },
+    {
+      "query": "风险预警有哪些",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "ALERT_STATS",
+        "MATERIAL_LOW_STOCK_ALERT",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "management-risk-alert",
+      "method": null,
+      "latency_ms": 663
+    },
+    {
+      "query": "市场分析情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "management-market",
+      "method": null,
+      "latency_ms": 607
+    },
+    {
+      "query": "竞争对手动态",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "management-competitor",
+      "method": null,
+      "latency_ms": 668
+    }
+  ]
+}

@@ -1,0 +1,778 @@
+{
+  "timestamp": "2026-02-10T18:18:29.669265",
+  "test": "v5_round22_supplier_procurement",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "supplier": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "procurement": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "evaluation": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "sourcing": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "bidding": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "price": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "quality": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "payment": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "compliance": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 14,
+    "CLASSIFIER": 11,
+    "NONE": 22,
+    "SEMANTIC": 3
+  },
+  "results": [
+    {
+      "query": "查看供应商列表",
+      "status": "PASS",
+      "intent": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_LIST",
+        "ORDER_LIST"
+      ],
+      "category": "supplier-list",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 429
+    },
+    {
+      "query": "帮我找一下调味料的供应商",
+      "status": "PASS",
+      "intent": "SUPPLIER_BY_CATEGORY",
+      "confidence": 0.7939291000366211,
+      "expected": [
+        "SUPPLIER_LIST",
+        "MATERIAL_BATCH_QUERY",
+        "SUPPLIER_BY_CATEGORY"
+      ],
+      "category": "supplier-find",
+      "method": "CLASSIFIER",
+      "latency_ms": 718
+    },
+    {
+      "query": "优选供应商有哪些",
+      "status": "PASS",
+      "intent": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_LIST",
+        "SUPPLIER_EVALUATE"
+      ],
+      "category": "supplier-preferred",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 431
+    },
+    {
+      "query": "新增一个供应商",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_CREATE",
+        "ORDER_CREATE",
+        null
+      ],
+      "category": "supplier-new",
+      "method": null,
+      "latency_ms": 642
+    },
+    {
+      "query": "查询供应商联系方式",
+      "status": "PASS",
+      "intent": "SUPPLIER_SEARCH",
+      "confidence": 0.8380546569824219,
+      "expected": [
+        "SUPPLIER_LIST",
+        "SUPPLIER_SEARCH",
+        null
+      ],
+      "category": "supplier-contact",
+      "method": "CLASSIFIER",
+      "latency_ms": 606
+    },
+    {
+      "query": "哪些供应商能供应面粉",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_LIST",
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_LOW_STOCK_ALERT"
+      ],
+      "category": "supplier-by-material",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 454
+    },
+    {
+      "query": "创建采购订单",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_CREATE",
+        "SUPPLIER_CREATE",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "procurement-create",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 424
+    },
+    {
+      "query": "采购单状态查询",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST"
+      ],
+      "category": "procurement-status",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 429
+    },
+    {
+      "query": "待审核采购单",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS"
+      ],
+      "category": "procurement-pending",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 433
+    },
+    {
+      "query": "审批采购订单",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "procurement-approve",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 435
+    },
+    {
+      "query": "采购订单到货情况",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "procurement-delivery",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 432
+    },
+    {
+      "query": "上个月采购记录",
+      "status": "PASS",
+      "intent": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.5201640129089355,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "REPORT_TRENDS",
+        "CUSTOMER_PURCHASE_HISTORY"
+      ],
+      "category": "procurement-history",
+      "method": "CLASSIFIER",
+      "latency_ms": 652
+    },
+    {
+      "query": "供应商评分",
+      "status": "PASS",
+      "intent": "SUPPLIER_RANKING",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        "REPORT_KPI",
+        "SUPPLIER_RANKING"
+      ],
+      "category": "evaluation-rating",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 434
+    },
+    {
+      "query": "供应商绩效评估",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        "REPORT_KPI"
+      ],
+      "category": "evaluation-performance",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 431
+    },
+    {
+      "query": "比较几家供应商",
+      "status": "PASS",
+      "intent": "SUPPLIER_LIST",
+      "confidence": 0.7064544558525085,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST"
+      ],
+      "category": "evaluation-comparison",
+      "method": "CLASSIFIER",
+      "latency_ms": 633
+    },
+    {
+      "query": "供应商审核结果",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.8795795440673828,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "evaluation-audit",
+      "method": "CLASSIFIER",
+      "latency_ms": 708
+    },
+    {
+      "query": "供应商质量记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "evaluation-quality",
+      "method": null,
+      "latency_ms": 621
+    },
+    {
+      "query": "查找原料货源",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.5857386589050293,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "SUPPLIER_LIST",
+        "MATERIAL_LOW_STOCK_ALERT"
+      ],
+      "category": "sourcing-find",
+      "method": "CLASSIFIER",
+      "latency_ms": 584
+    },
+    {
+      "query": "有没有替代原料",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.92,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "SUPPLIER_LIST",
+        null
+      ],
+      "category": "sourcing-alternative",
+      "method": "SEMANTIC",
+      "latency_ms": 626
+    },
+    {
+      "query": "原材料价格对比",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE"
+      ],
+      "category": "sourcing-price-compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 431
+    },
+    {
+      "query": "进口原料采购渠道",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "sourcing-import",
+      "method": null,
+      "latency_ms": 679
+    },
+    {
+      "query": "本地供应商推荐",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_LIST",
+        null
+      ],
+      "category": "sourcing-local",
+      "method": null,
+      "latency_ms": 767
+    },
+    {
+      "query": "有机认证原料供应商",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_LIST",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "sourcing-organic",
+      "method": null,
+      "latency_ms": 680
+    },
+    {
+      "query": "发布招标公告",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_CREATE",
+        null
+      ],
+      "category": "bidding-announce",
+      "method": null,
+      "latency_ms": 663
+    },
+    {
+      "query": "投标情况汇总",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "bidding-submission",
+      "method": null,
+      "latency_ms": 636
+    },
+    {
+      "query": "各供应商报价对比",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "bidding-comparison",
+      "method": null,
+      "latency_ms": 805
+    },
+    {
+      "query": "确定中标供应商",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "ORDER_CREATE",
+        null
+      ],
+      "category": "bidding-award",
+      "method": null,
+      "latency_ms": 673
+    },
+    {
+      "query": "招标结果公示",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "bidding-results",
+      "method": null,
+      "latency_ms": 603
+    },
+    {
+      "query": "跟供应商谈价格",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        "ORDER_CREATE",
+        null
+      ],
+      "category": "price-negotiate",
+      "method": null,
+      "latency_ms": 661
+    },
+    {
+      "query": "批量采购折扣",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_CREATE",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "price-bulk-discount",
+      "method": null,
+      "latency_ms": 612
+    },
+    {
+      "query": "合同价格查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "price-contract",
+      "method": null,
+      "latency_ms": 644
+    },
+    {
+      "query": "原料价格趋势",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.8804154396057129,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_FINANCE",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "price-trend",
+      "method": "CLASSIFIER",
+      "latency_ms": 587
+    },
+    {
+      "query": "更新采购价格",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_CREATE",
+        "ORDER_STATUS",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "price-update",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 437
+    },
+    {
+      "query": "供应商质量报告",
+      "status": "PASS",
+      "intent": "REPORT_QUALITY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_STATS",
+        "QUALITY_CHECK_QUERY",
+        "SUPPLIER_EVALUATE",
+        "REPORT_FINANCE",
+        "REPORT_QUALITY"
+      ],
+      "category": "quality-supplier-report",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 462
+    },
+    {
+      "query": "来料检验记录",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "quality-incoming-inspect",
+      "method": "SEMANTIC",
+      "latency_ms": 633
+    },
+    {
+      "query": "各供应商退货率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_STATS",
+        "SUPPLIER_EVALUATE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "quality-rejection-rate",
+      "method": null,
+      "latency_ms": 601
+    },
+    {
+      "query": "供应商质量改进计划",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality-improvement",
+      "method": null,
+      "latency_ms": 611
+    },
+    {
+      "query": "供应商纠正措施跟踪",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "quality-corrective",
+      "method": null,
+      "latency_ms": 679
+    },
+    {
+      "query": "供应商付款状态",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_STATUS",
+        "REPORT_FINANCE",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "payment-status",
+      "method": null,
+      "latency_ms": 614
+    },
+    {
+      "query": "采购发票查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "payment-invoice",
+      "method": null,
+      "latency_ms": 661
+    },
+    {
+      "query": "供应商账户余额",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "payment-balance",
+      "method": null,
+      "latency_ms": 740
+    },
+    {
+      "query": "逾期未付款项",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_STATUS",
+        "REPORT_FINANCE",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "payment-overdue",
+      "method": null,
+      "latency_ms": 771
+    },
+    {
+      "query": "付款排期计划",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.6170111894607544,
+      "expected": [
+        "ORDER_LIST",
+        "REPORT_FINANCE",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "payment-schedule",
+      "method": "CLASSIFIER",
+      "latency_ms": 581
+    },
+    {
+      "query": "预付款申请",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_CREATE",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "payment-advance",
+      "method": null,
+      "latency_ms": 608
+    },
+    {
+      "query": "查看供应商资质证书",
+      "status": "PASS",
+      "intent": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "SUPPLIER_LIST",
+        "SUPPLIER_EVALUATE"
+      ],
+      "category": "compliance-certificate",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "供应商审核排期",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.5007306933403015,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        null
+      ],
+      "category": "compliance-audit-schedule",
+      "method": "CLASSIFIER",
+      "latency_ms": 595
+    },
+    {
+      "query": "供应商合规检查",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.6592633724212646,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "FOOD_SAFETY_CERT_QUERY",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "compliance-check",
+      "method": "CLASSIFIER",
+      "latency_ms": 604
+    },
+    {
+      "query": "供应商黑名单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_LIST",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "compliance-blacklist",
+      "method": null,
+      "latency_ms": 949
+    },
+    {
+      "query": "供应商风险评估",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.8611356019973755,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "compliance-risk",
+      "method": "CLASSIFIER",
+      "latency_ms": 757
+    },
+    {
+      "query": "供应商HACCP认证查询",
+      "status": "PASS",
+      "intent": "SUPPLIER_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        null
+      ],
+      "category": "compliance-haccp",
+      "method": "SEMANTIC",
+      "latency_ms": 737
+    }
+  ]
+}

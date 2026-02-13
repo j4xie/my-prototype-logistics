@@ -1,0 +1,789 @@
+{
+  "timestamp": "2026-02-10T18:47:22.765056",
+  "test": "v5_round47_attendance_workforce",
+  "total": 50,
+  "pass": 42,
+  "fail": 8,
+  "error": 0,
+  "pass_rate": 84.0,
+  "category_breakdown": {
+    "clock_in_out": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "leave_management": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "overtime": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "shift_schedule": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "department_stats": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "performance": {
+      "pass": 3,
+      "fail": 2,
+      "error": 0
+    },
+    "training": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "worker_assignment": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "payroll": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 12,
+    "CLASSIFIER": 8,
+    "NONE": 29,
+    "SEMANTIC": 1
+  },
+  "results": [
+    {
+      "query": "打卡记录",
+      "status": "PASS",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_HISTORY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "clock_in_out",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 432
+    },
+    {
+      "query": "今天谁没打卡",
+      "status": "PASS",
+      "intent": "ATTENDANCE_ANOMALY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_ANOMALY",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "clock_in_out",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "迟到了谁",
+      "status": "FAIL",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_ANOMALY",
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "clock_in_out",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "早退记录",
+      "status": "PASS",
+      "intent": "ATTENDANCE_ANOMALY",
+      "confidence": 0.804125964641571,
+      "expected": [
+        "ATTENDANCE_ANOMALY",
+        "ATTENDANCE_HISTORY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "clock_in_out",
+      "method": "CLASSIFIER",
+      "latency_ms": 618
+    },
+    {
+      "query": "补卡申请",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_ANOMALY",
+        "ATTENDANCE_TODAY",
+        null
+      ],
+      "category": "clock_in_out",
+      "method": null,
+      "latency_ms": 657
+    },
+    {
+      "query": "打卡异常",
+      "status": "PASS",
+      "intent": "ATTENDANCE_ANOMALY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_ANOMALY",
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "clock_in_out",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 433
+    },
+    {
+      "query": "请假申请",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_ANOMALY",
+        null
+      ],
+      "category": "leave_management",
+      "method": null,
+      "latency_ms": 730
+    },
+    {
+      "query": "请假审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_ANOMALY",
+        null
+      ],
+      "category": "leave_management",
+      "method": null,
+      "latency_ms": 703
+    },
+    {
+      "query": "年假余额",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_HISTORY",
+        null
+      ],
+      "category": "leave_management",
+      "method": null,
+      "latency_ms": 629
+    },
+    {
+      "query": "病假记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_HISTORY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "leave_management",
+      "method": null,
+      "latency_ms": 698
+    },
+    {
+      "query": "事假统计",
+      "status": "FAIL",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_HISTORY",
+        "ATTENDANCE_MONTHLY",
+        null
+      ],
+      "category": "leave_management",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 447
+    },
+    {
+      "query": "调休申请",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_ANOMALY",
+        null
+      ],
+      "category": "leave_management",
+      "method": null,
+      "latency_ms": 623
+    },
+    {
+      "query": "加班申请",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_HISTORY",
+        null
+      ],
+      "category": "overtime",
+      "method": null,
+      "latency_ms": 742
+    },
+    {
+      "query": "加班统计",
+      "status": "FAIL",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_MONTHLY",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "overtime",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 435
+    },
+    {
+      "query": "加班费计算",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "overtime",
+      "method": null,
+      "latency_ms": 701
+    },
+    {
+      "query": "加班审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        null
+      ],
+      "category": "overtime",
+      "method": null,
+      "latency_ms": 721
+    },
+    {
+      "query": "强制加班提醒",
+      "status": "PASS",
+      "intent": "ATTENDANCE_ANOMALY",
+      "confidence": 0.5444592833518982,
+      "expected": [
+        "ATTENDANCE_ANOMALY",
+        "ATTENDANCE_TODAY",
+        null
+      ],
+      "category": "overtime",
+      "method": "CLASSIFIER",
+      "latency_ms": 616
+    },
+    {
+      "query": "排班表",
+      "status": "FAIL",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_DEPARTMENT",
+        "PROCESSING_WORKER_ASSIGN",
+        null
+      ],
+      "category": "shift_schedule",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 426
+    },
+    {
+      "query": "换班申请",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "PROCESSING_WORKER_ASSIGN",
+        null
+      ],
+      "category": "shift_schedule",
+      "method": null,
+      "latency_ms": 667
+    },
+    {
+      "query": "值班安排",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_DEPARTMENT",
+        "PROCESSING_WORKER_ASSIGN",
+        null
+      ],
+      "category": "shift_schedule",
+      "method": null,
+      "latency_ms": 621
+    },
+    {
+      "query": "夜班人员",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_DEPARTMENT",
+        "PROCESSING_WORKER_ASSIGN",
+        null
+      ],
+      "category": "shift_schedule",
+      "method": null,
+      "latency_ms": 657
+    },
+    {
+      "query": "轮班制度",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "shift_schedule",
+      "method": null,
+      "latency_ms": 618
+    },
+    {
+      "query": "倒班记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_HISTORY",
+        "ATTENDANCE_STATS",
+        "PROCESSING_WORKER_ASSIGN",
+        null
+      ],
+      "category": "shift_schedule",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "部门出勤率",
+      "status": "PASS",
+      "intent": "ATTENDANCE_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_DEPARTMENT",
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_MONTHLY",
+        null
+      ],
+      "category": "department_stats",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 429
+    },
+    {
+      "query": "各车间人员",
+      "status": "FAIL",
+      "intent": "PROCESSING_BATCH_WORKERS",
+      "confidence": 0.5311458110809326,
+      "expected": [
+        "ATTENDANCE_DEPARTMENT",
+        "PRODUCTION_STATUS_QUERY",
+        "PROCESSING_WORKER_ASSIGN",
+        null
+      ],
+      "category": "department_stats",
+      "method": "CLASSIFIER",
+      "latency_ms": 741
+    },
+    {
+      "query": "班组人数",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_DEPARTMENT",
+        "ATTENDANCE_TODAY",
+        "PROCESSING_WORKER_ASSIGN",
+        null
+      ],
+      "category": "department_stats",
+      "method": null,
+      "latency_ms": 597
+    },
+    {
+      "query": "岗位分布",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_DEPARTMENT",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "department_stats",
+      "method": null,
+      "latency_ms": 650
+    },
+    {
+      "query": "人员配置",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_DEPARTMENT",
+        "PROCESSING_WORKER_ASSIGN",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "department_stats",
+      "method": null,
+      "latency_ms": 633
+    },
+    {
+      "query": "缺员情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_DEPARTMENT",
+        "ATTENDANCE_ANOMALY",
+        "ATTENDANCE_TODAY",
+        null
+      ],
+      "category": "department_stats",
+      "method": null,
+      "latency_ms": 603
+    },
+    {
+      "query": "绩效评价",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.9270829558372498,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "performance",
+      "method": "CLASSIFIER",
+      "latency_ms": 603
+    },
+    {
+      "query": "工作量统计",
+      "status": "FAIL",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "performance",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 473
+    },
+    {
+      "query": "产量考核",
+      "status": "FAIL",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "performance",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 453
+    },
+    {
+      "query": "技能评级",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "performance",
+      "method": null,
+      "latency_ms": 661
+    },
+    {
+      "query": "优秀员工",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "performance",
+      "method": null,
+      "latency_ms": 629
+    },
+    {
+      "query": "培训计划",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "training",
+      "method": null,
+      "latency_ms": 635
+    },
+    {
+      "query": "培训记录",
+      "status": "PASS",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.7188609838485718,
+      "expected": [
+        "ATTENDANCE_HISTORY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "training",
+      "method": "CLASSIFIER",
+      "latency_ms": 615
+    },
+    {
+      "query": "新人培训",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "PROCESSING_WORKER_ASSIGN",
+        null
+      ],
+      "category": "training",
+      "method": null,
+      "latency_ms": 783
+    },
+    {
+      "query": "技能培训",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "training",
+      "method": null,
+      "latency_ms": 769
+    },
+    {
+      "query": "安全培训",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "training",
+      "method": null,
+      "latency_ms": 609
+    },
+    {
+      "query": "人员调配",
+      "status": "PASS",
+      "intent": "PROCESSING_WORKER_ASSIGN",
+      "confidence": 0.550872802734375,
+      "expected": [
+        "PROCESSING_WORKER_ASSIGN",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "worker_assignment",
+      "method": "CLASSIFIER",
+      "latency_ms": 617
+    },
+    {
+      "query": "临时借调",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_WORKER_ASSIGN",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "worker_assignment",
+      "method": null,
+      "latency_ms": 635
+    },
+    {
+      "query": "岗位调整",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_WORKER_ASSIGN",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "worker_assignment",
+      "method": null,
+      "latency_ms": 1156
+    },
+    {
+      "query": "新员工分配",
+      "status": "PASS",
+      "intent": "PROCESSING_WORKER_ASSIGN",
+      "confidence": 0.7299233675003052,
+      "expected": [
+        "PROCESSING_WORKER_ASSIGN",
+        "ATTENDANCE_DEPARTMENT",
+        "PROCESSING_WORKER_CHECKOUT",
+        null
+      ],
+      "category": "worker_assignment",
+      "method": "CLASSIFIER",
+      "latency_ms": 605
+    },
+    {
+      "query": "产线人员安排",
+      "status": "FAIL",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.93,
+      "expected": [
+        "PROCESSING_WORKER_ASSIGN",
+        "PRODUCTION_STATUS_QUERY",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "worker_assignment",
+      "method": "SEMANTIC",
+      "latency_ms": 611
+    },
+    {
+      "query": "支援其他车间",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_WORKER_ASSIGN",
+        "PROCESSING_WORKER_CHECKOUT",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "worker_assignment",
+      "method": null,
+      "latency_ms": 641
+    },
+    {
+      "query": "工资计算",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "payroll",
+      "method": null,
+      "latency_ms": 619
+    },
+    {
+      "query": "计件工资",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "payroll",
+      "method": null,
+      "latency_ms": 656
+    },
+    {
+      "query": "绩效奖金",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.9379039406776428,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_KPI",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "payroll",
+      "method": "CLASSIFIER",
+      "latency_ms": 599
+    },
+    {
+      "query": "工时统计",
+      "status": "PASS",
+      "intent": "ATTENDANCE_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_MONTHLY",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "payroll",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 428
+    },
+    {
+      "query": "薪资报表",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "payroll",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 434
+    }
+  ]
+}

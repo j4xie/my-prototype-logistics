@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { Text, Appbar, Searchbar, IconButton, SegmentedButtons } from 'react-native-paper';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -85,7 +85,7 @@ export default function BatchListScreen() {
     setRefreshing(false);
   };
 
-  const filteredBatches = batches.filter(batch => {
+  const filteredBatches = useMemo(() => batches.filter(batch => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const supervisorName = getSupervisorName(batch.supervisor as SupervisorData, t);
@@ -96,9 +96,9 @@ export default function BatchListScreen() {
       );
     }
     return true;
-  });
+  }), [batches, searchQuery, t]);
 
-  const renderBatchCard = ({ item }: { item: BatchResponse }) => (
+  const renderBatchCard = useCallback(({ item }: { item: BatchResponse }) => (
     <TouchableOpacity
       onPress={() => {
         navigation.navigate('BatchDetail', { batchId: item.id.toString() });
@@ -143,7 +143,7 @@ export default function BatchListScreen() {
         </View>
       </NeoCard>
     </TouchableOpacity>
-  );
+  ), [navigation, t]);
 
   return (
     <ScreenWrapper edges={['top']} backgroundColor={theme.colors.background}>

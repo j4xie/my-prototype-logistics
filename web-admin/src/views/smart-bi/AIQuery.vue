@@ -17,10 +17,22 @@ import {
   User,
   Cpu,
   TrendCharts,
-  Loading
+  Loading,
+  Histogram,
+  Location,
+  Money,
+  Coin,
+  DataLine,
+  PieChart,
+  Warning,
+  Sort,
+  SetUp,
+  DataAnalysis,
+  Flag
 } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import { AIInsightPanel } from '@/components/smartbi';
+import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -57,7 +69,7 @@ const currentTableType = ref<string>('');
 const chatHistory = ref<ChatMessage[]>([]);
 const chatContainerRef = ref<HTMLDivElement | null>(null);
 
-// 快捷问题
+// 快捷问题 (保留作为后备)
 const quickQuestions = [
   '本月销售额是多少?',
   '销售额最高的产品是什么?',
@@ -68,6 +80,59 @@ const quickQuestions = [
   '与上月相比销售变化如何?',
   '客户数量增长情况?'
 ];
+
+// 分析模板系统
+interface QueryTemplate {
+  id: string;
+  category: string;
+  icon: string;
+  label: string;
+  description: string;
+  query: string;
+  params?: { name: string; label: string; type: 'text' | 'select'; options?: string[] }[];
+}
+
+const templateCategories = [
+  { key: 'sales', label: '销售分析', icon: 'TrendCharts', color: '#409EFF' },
+  { key: 'finance', label: '财务分析', icon: 'Money', color: '#67C23A' },
+  { key: 'cost', label: '成本分析', icon: 'PieChart', color: '#E6A23C' },
+  { key: 'comparison', label: '对比分析', icon: 'DataAnalysis', color: '#F56C6C' },
+];
+
+const queryTemplates: QueryTemplate[] = [
+  // 销售分析
+  { id: 't1', category: 'sales', icon: 'TrendCharts', label: '销售趋势分析', description: '按月度/季度展示销售额变化趋势', query: '分析销售额的月度变化趋势，标注增长和下降的关键月份' },
+  { id: 't2', category: 'sales', icon: 'Histogram', label: '产品销售排名', description: '各产品/品类的销售额排名对比', query: '按产品或品类统计销售额排名，找出TOP5和末位产品' },
+  { id: 't3', category: 'sales', icon: 'Location', label: '区域销售对比', description: '不同区域的销售业绩对比', query: '对比各区域的销售业绩，分析区域差异的原因' },
+
+  // 财务分析
+  { id: 't4', category: 'finance', icon: 'Money', label: '毛利率分析', description: '各产品/业务线的毛利率对比', query: '计算并对比各产品线的毛利率，识别高利润和低利润业务' },
+  { id: 't5', category: 'finance', icon: 'Coin', label: '费用结构分析', description: '各项费用的占比和趋势', query: '分析各项费用（管理费用、销售费用、财务费用）的占比和变化趋势' },
+  { id: 't6', category: 'finance', icon: 'DataLine', label: '收入利润对比', description: '收入与利润的变化关系', query: '对比分析收入和利润的变化趋势，计算利润率变动' },
+
+  // 成本分析
+  { id: 't7', category: 'cost', icon: 'PieChart', label: '成本构成分析', description: '各项成本的占比分布', query: '分析成本构成，找出占比最大的成本项目和优化空间' },
+  { id: 't8', category: 'cost', icon: 'Warning', label: '异常值检测', description: '检测数据中的异常波动', query: '检测数据中的异常值和突变点，分析可能的原因' },
+
+  // 对比分析
+  { id: 't9', category: 'comparison', icon: 'Sort', label: '同比环比分析', description: '与去年同期/上期的对比', query: '进行同比和环比分析，识别增长和下降趋势' },
+  { id: 't10', category: 'comparison', icon: 'SetUp', label: '预算达成分析', description: '实际值与预算目标的对比', query: '对比实际业绩与预算目标，计算达成率和差异' },
+  { id: 't11', category: 'comparison', icon: 'DataAnalysis', label: '综合经营分析', description: '多维度经营指标综合分析', query: '综合分析收入、成本、利润、费用等关键经营指标，给出经营建议' },
+  { id: 't12', category: 'comparison', icon: 'Flag', label: '行业对标分析', description: '与行业平均水平对比', query: '将关键指标与食品加工行业平均水平对比，评估竞争力和改进方向' },
+];
+
+const selectedCategory = ref('');
+
+const filteredTemplates = computed(() => {
+  if (!selectedCategory.value) return queryTemplates;
+  return queryTemplates.filter(t => t.category === selectedCategory.value);
+});
+
+const useTemplate = (tpl: QueryTemplate) => {
+  inputQuery.value = tpl.query;
+  // Auto-send the template query
+  handleSendMessage();
+};
 
 // 加载状态
 const isTyping = ref(false);
@@ -88,7 +153,7 @@ onMounted(() => {
     chatHistory.value.push({
       id: 'welcome',
       role: 'assistant',
-      content: '您好！我是 SmartBI 智能助手，可以帮您分析销售、财务、库存等数据。您可以直接输入问题，或点击下方的快捷问题。',
+      content: '您好！我是 SmartBI 智能助手，可以帮您分析销售、财务、库存等数据。您可以选择下方的分析模板快速开始，或直接输入问题。',
       timestamp: new Date()
     });
   }
@@ -167,10 +232,24 @@ async function handleSendMessage() {
           loading: false
         };
       } else {
+        // Convert raw API errors to user-friendly messages
+        let errorMsg = '分析请求失败，请稍后重试';
+        const rawError = response.error || '';
+        if (rawError.includes('422') || rawError.includes('Unprocessable') || rawError.includes('sheet_id') || rawError.includes('Field required')) {
+          errorMsg = '请先选择一个数据源（上传 Excel 或选择已有数据），再进行 AI 问答';
+        } else if (rawError.includes('500') || rawError.includes('Internal Server')) {
+          errorMsg = '分析服务暂时不可用，请稍后重试';
+        } else if (rawError.includes('503') || rawError.includes('504') || rawError.includes('timeout')) {
+          errorMsg = 'AI 分析服务暂时不可用，请稍后重试。';
+        } else if (rawError.includes('network') || rawError.includes('fetch') || rawError.includes('Failed to fetch') || rawError.includes('ERR_CONNECTION')) {
+          errorMsg = '请求失败，请检查网络连接';
+        } else if (rawError) {
+          errorMsg = rawError.length > 100 ? '分析请求失败，请稍后重试' : rawError;
+        }
         chatHistory.value[messageIndex] = {
           id: assistantId,
           role: 'assistant',
-          content: response.error || '分析请求失败，请稍后重试',
+          content: errorMsg,
           timestamp: new Date(),
           loading: false
         };
@@ -185,13 +264,30 @@ async function handleSendMessage() {
   } catch (error) {
     console.error('AI 查询失败:', error);
 
+    // Convert technical errors to user-friendly Chinese messages
+    let friendlyMessage = '抱歉，查询过程中发生错误，请稍后重试。';
+    const errStr = (error instanceof Error ? error.message : String(error)) || '';
+    if (error && typeof error === 'object') {
+      const errObj = error as Record<string, unknown>;
+      const status = errObj.status || errObj.statusCode;
+      if (status === 422 || errStr.includes('422') || errStr.includes('Unprocessable')) {
+        friendlyMessage = '请先选择一个数据源（上传 Excel 或选择已有数据），再进行 AI 问答';
+      } else if (status === 500 || errStr.includes('500') || errStr.includes('Internal Server')) {
+        friendlyMessage = '分析服务暂时不可用，请稍后重试';
+      } else if (status === 503 || status === 504 || errStr.includes('503') || errStr.includes('504') || errStr.includes('timeout')) {
+        friendlyMessage = 'AI 分析服务暂时不可用，请稍后重试。';
+      } else if (errStr.includes('fetch') || errStr.includes('network') || errStr.includes('Failed to fetch') || errStr.includes('ERR_CONNECTION')) {
+        friendlyMessage = '请求失败，请检查网络连接';
+      }
+    }
+
     // 更新为错误消息
     const messageIndex = chatHistory.value.findIndex(m => m.id === assistantId);
     if (messageIndex !== -1) {
       chatHistory.value[messageIndex] = {
         id: assistantId,
         role: 'assistant',
-        content: '抱歉，查询过程中发生错误，请稍后重试。',
+        content: friendlyMessage,
         timestamp: new Date(),
         loading: false
       };
@@ -228,7 +324,7 @@ function renderChartFromConfig(messageId: string, chartConfig: ChartConfig) {
     oldChart.dispose();
   }
 
-  const chart = echarts.init(chartDom);
+  const chart = echarts.init(chartDom, 'cretas');
   chartInstances.set(messageId, chart);
 
   // 直接使用 Python 返回的 ECharts option
@@ -248,7 +344,7 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
     oldChart.dispose();
   }
 
-  const chart = echarts.init(chartDom);
+  const chart = echarts.init(chartDom, 'cretas');
   chartInstances.set(messageId, chart);
 
   let option: echarts.EChartsOption;
@@ -342,7 +438,7 @@ function handleClearHistory() {
   chatHistory.value = [{
     id: 'welcome',
     role: 'assistant',
-    content: '您好！我是 SmartBI 智能助手，可以帮您分析销售、财务、库存等数据。您可以直接输入问题，或点击下方的快捷问题。',
+    content: '您好！我是 SmartBI 智能助手，可以帮您分析销售、财务、库存等数据。您可以选择下方的分析模板快速开始，或直接输入问题。',
     timestamp: new Date()
   }];
 }
@@ -433,6 +529,51 @@ function handleKeydown(event: KeyboardEvent) {
                   </el-table>
                 </div>
               </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template section - shown when only welcome message exists (no real conversation) -->
+        <div v-if="chatHistory.length <= 1" class="template-section">
+          <h3 class="template-title">
+            <el-icon><Cpu /></el-icon> 选择分析模板
+          </h3>
+
+          <!-- Category tabs -->
+          <div class="template-categories">
+            <el-button
+              v-for="cat in templateCategories"
+              :key="cat.key"
+              :type="selectedCategory === cat.key ? 'primary' : 'default'"
+              size="small"
+              round
+              @click="selectedCategory = selectedCategory === cat.key ? '' : cat.key"
+            >
+              {{ cat.label }}
+            </el-button>
+            <el-button
+              v-if="selectedCategory"
+              size="small"
+              text
+              @click="selectedCategory = ''"
+            >
+              全部
+            </el-button>
+          </div>
+
+          <!-- Template cards grid -->
+          <div class="template-grid">
+            <div
+              v-for="tpl in filteredTemplates"
+              :key="tpl.id"
+              class="template-card"
+              @click="useTemplate(tpl)"
+            >
+              <div class="template-card-header">
+                <el-icon :size="20"><component :is="tpl.icon" /></el-icon>
+                <span class="template-label">{{ tpl.label }}</span>
+              </div>
+              <p class="template-desc">{{ tpl.description }}</p>
             </div>
           </div>
         </div>
@@ -691,6 +832,72 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
+// 分析模板
+.template-section {
+  padding: 20px;
+}
+
+.template-title {
+  margin: 0 0 16px;
+  color: #303133;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .el-icon {
+    color: #409EFF;
+  }
+}
+
+.template-categories {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.template-card {
+  padding: 16px;
+  background: white;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #409EFF;
+    box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+    transform: translateY(-2px);
+  }
+}
+
+.template-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #303133;
+  font-weight: 600;
+}
+
+.template-label {
+  font-size: 14px;
+}
+
+.template-desc {
+  margin: 0;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+}
+
 // 响应式
 @media (max-width: 768px) {
   .chat-message {
@@ -704,6 +911,10 @@ function handleKeydown(event: KeyboardEvent) {
       max-height: 80px;
       overflow-y: auto;
     }
+  }
+
+  .template-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

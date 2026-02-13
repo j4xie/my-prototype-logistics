@@ -1,0 +1,862 @@
+{
+  "timestamp": "2026-02-10T20:55:04.601525",
+  "test": "v5_round99_workflow_approval",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "approval_flow": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "work_order_flow": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "change_mgmt": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "purchase_approval": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "quality_approval": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "production_approval": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "hr_approval": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "finance_approval": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "escalation": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "NONE": 37,
+    "PHRASE_MATCH": 8,
+    "CLASSIFIER": 5
+  },
+  "results": [
+    {
+      "query": "审批流程",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "approval_flow",
+      "method": null,
+      "latency_ms": 642
+    },
+    {
+      "query": "待审批",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "ORDER_LIST",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "approval_flow",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 454
+    },
+    {
+      "query": "我的审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "ORDER_LIST",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "approval_flow",
+      "method": null,
+      "latency_ms": 598
+    },
+    {
+      "query": "审批记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "approval_flow",
+      "method": null,
+      "latency_ms": 653
+    },
+    {
+      "query": "审批通过",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "approval_flow",
+      "method": null,
+      "latency_ms": 622
+    },
+    {
+      "query": "审批驳回",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "approval_flow",
+      "method": null,
+      "latency_ms": 654
+    },
+    {
+      "query": "工单流转",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        "ORDER_LIST",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "work_order_flow",
+      "method": null,
+      "latency_ms": 618
+    },
+    {
+      "query": "工单状态",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_UPDATE",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "work_order_flow",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 502
+    },
+    {
+      "query": "工单审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        "ORDER_LIST",
+        "PLAN_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "work_order_flow",
+      "method": null,
+      "latency_ms": 651
+    },
+    {
+      "query": "工单关闭",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        "PROCESSING_BATCH_COMPLETE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "work_order_flow",
+      "method": null,
+      "latency_ms": 637
+    },
+    {
+      "query": "工单挂起",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "work_order_flow",
+      "method": null,
+      "latency_ms": 694
+    },
+    {
+      "query": "变更申请",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "ORDER_CREATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "change_mgmt",
+      "method": null,
+      "latency_ms": 657
+    },
+    {
+      "query": "变更审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "change_mgmt",
+      "method": null,
+      "latency_ms": 669
+    },
+    {
+      "query": "工艺变更",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "change_mgmt",
+      "method": null,
+      "latency_ms": 605
+    },
+    {
+      "query": "配方变更",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "PROCESSING_BATCH_CREATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "change_mgmt",
+      "method": null,
+      "latency_ms": 652
+    },
+    {
+      "query": "规格变更",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "change_mgmt",
+      "method": null,
+      "latency_ms": 644
+    },
+    {
+      "query": "变更记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_LIST",
+        "ORDER_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "change_mgmt",
+      "method": null,
+      "latency_ms": 690
+    },
+    {
+      "query": "采购审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        "ORDER_LIST",
+        "ORDER_CREATE",
+        "MRP_CALCULATION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "purchase_approval",
+      "method": null,
+      "latency_ms": 626
+    },
+    {
+      "query": "采购申请",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_CREATE",
+        "ORDER_LIST",
+        "MRP_CALCULATION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "purchase_approval",
+      "method": null,
+      "latency_ms": 693
+    },
+    {
+      "query": "采购确认",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        "ORDER_LIST",
+        "ORDER_CREATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "purchase_approval",
+      "method": null,
+      "latency_ms": 637
+    },
+    {
+      "query": "采购驳回",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "purchase_approval",
+      "method": null,
+      "latency_ms": 664
+    },
+    {
+      "query": "采购流程",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_CREATE",
+        "ORDER_UPDATE",
+        "MRP_CALCULATION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "purchase_approval",
+      "method": null,
+      "latency_ms": 608
+    },
+    {
+      "query": "质检审批",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "QUALITY_DISPOSITION_EVALUATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quality_approval",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    },
+    {
+      "query": "放行审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "QUALITY_DISPOSITION_EVALUATE",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quality_approval",
+      "method": null,
+      "latency_ms": 666
+    },
+    {
+      "query": "偏差审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "QUALITY_DISPOSITION_EVALUATE",
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quality_approval",
+      "method": null,
+      "latency_ms": 840
+    },
+    {
+      "query": "不合格品处理审批",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EXECUTE",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "QUALITY_DISPOSITION_EVALUATE",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quality_approval",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 469
+    },
+    {
+      "query": "让步接收",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EXECUTE",
+      "confidence": 0.8506684303283691,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "QUALITY_DISPOSITION_EVALUATE",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quality_approval",
+      "method": "CLASSIFIER",
+      "latency_ms": 734
+    },
+    {
+      "query": "质量评审",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_DISPOSITION_EVALUATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quality_approval",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 530
+    },
+    {
+      "query": "生产审批",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_CREATE",
+        "PROCESSING_BATCH_LIST",
+        "SCHEDULING_AUTO",
+        "PLAN_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "production_approval",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 471
+    },
+    {
+      "query": "排产确认",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "PROCESSING_BATCH_CREATE",
+        "PLAN_UPDATE",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "production_approval",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 458
+    },
+    {
+      "query": "开工审批",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_START",
+      "confidence": 0.5867332220077515,
+      "expected": [
+        "PROCESSING_BATCH_CREATE",
+        "PROCESSING_BATCH_LIST",
+        "SCHEDULING_AUTO",
+        "PLAN_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PROCESSING_BATCH_START",
+        null
+      ],
+      "category": "production_approval",
+      "method": "CLASSIFIER",
+      "latency_ms": 595
+    },
+    {
+      "query": "完工确认",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_COMPLETE",
+      "confidence": 0.5769548416137695,
+      "expected": [
+        "PROCESSING_BATCH_COMPLETE",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "production_approval",
+      "method": "CLASSIFIER",
+      "latency_ms": 610
+    },
+    {
+      "query": "产量确认",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_COMPLETE",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "COST_QUERY",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "production_approval",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 482
+    },
+    {
+      "query": "请假审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "hr_approval",
+      "method": null,
+      "latency_ms": 629
+    },
+    {
+      "query": "加班审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "COST_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "hr_approval",
+      "method": null,
+      "latency_ms": 640
+    },
+    {
+      "query": "调岗审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "PLAN_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "hr_approval",
+      "method": null,
+      "latency_ms": 656
+    },
+    {
+      "query": "离职审批",
+      "status": "PASS",
+      "intent": "HR_EMPLOYEE_DELETE",
+      "confidence": 0.666804850101471,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "HR_EMPLOYEE_DELETE",
+        null
+      ],
+      "category": "hr_approval",
+      "method": "CLASSIFIER",
+      "latency_ms": 648
+    },
+    {
+      "query": "转正审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "hr_approval",
+      "method": null,
+      "latency_ms": 677
+    },
+    {
+      "query": "薪资审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "hr_approval",
+      "method": null,
+      "latency_ms": 667
+    },
+    {
+      "query": "费用审批",
+      "status": "PASS",
+      "intent": "COST_QUERY",
+      "confidence": 0.6620959639549255,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "finance_approval",
+      "method": "CLASSIFIER",
+      "latency_ms": 597
+    },
+    {
+      "query": "报销审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "finance_approval",
+      "method": null,
+      "latency_ms": 612
+    },
+    {
+      "query": "付款审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "ORDER_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "finance_approval",
+      "method": null,
+      "latency_ms": 667
+    },
+    {
+      "query": "预算审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "PLAN_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "finance_approval",
+      "method": null,
+      "latency_ms": 618
+    },
+    {
+      "query": "合同审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        "ORDER_LIST",
+        "COST_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "finance_approval",
+      "method": null,
+      "latency_ms": 649
+    },
+    {
+      "query": "升级处理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "escalation",
+      "method": null,
+      "latency_ms": 657
+    },
+    {
+      "query": "催办",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "ORDER_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "escalation",
+      "method": null,
+      "latency_ms": 434
+    },
+    {
+      "query": "超时提醒",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "escalation",
+      "method": null,
+      "latency_ms": 710
+    },
+    {
+      "query": "自动升级",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "escalation",
+      "method": null,
+      "latency_ms": 634
+    },
+    {
+      "query": "紧急审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "escalation",
+      "method": null,
+      "latency_ms": 705
+    },
+    {
+      "query": "特批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "ORDER_UPDATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "escalation",
+      "method": null,
+      "latency_ms": 477
+    }
+  ]
+}

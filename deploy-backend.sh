@@ -1,6 +1,6 @@
 #!/bin/bash
-# 后端部署脚本 v3.0
-# 支持多种并行上传方式，取最快的
+# 后端部署脚本 v4.0
+# 修复: 独立临时文件 + MD5校验 + orphan进程清理
 #
 # 模式1 - JAR 部署 (推荐，默认):
 #   ./deploy-backend.sh              # 本地打包 + 并行上传 + 服务器部署
@@ -14,7 +14,7 @@ set -e
 # ==================== 配置 ====================
 REPO="j4xie/my-prototype-logistics"
 JAR_NAME="cretas-backend-system-1.0.0.jar"
-SERVER="root@139.196.165.140"
+SERVER="root@47.100.235.168"
 REMOTE_JAR_DIR="/www/wwwroot/cretas"
 REMOTE_TMP="/tmp"
 
@@ -34,12 +34,12 @@ OSS_ACCELERATE_ENDPOINT="oss-accelerate.aliyuncs.com"  # 全球加速
 OSS_INTERNAL_ENDPOINT="oss-cn-shanghai-internal.aliyuncs.com"
 OSS_DEPLOY_PATH="deploy/backend/"
 
-# Cloudflare R2 配置
+# Cloudflare R2 配置 (从环境变量读取，不要硬编码凭证)
 R2_BUCKET="cretas"
-R2_ACCOUNT_ID="7ff7cc2e7bc3af46147d5c7df18062db"
-R2_ACCESS_KEY_ID="2758f2523b0e67a71fae616d2d2fb14b"
-R2_SECRET_ACCESS_KEY="f03d3f5ff3c1880c13fc825e4e436dd835a66a8a06028f12088822440b0b0019"
-R2_PUBLIC_URL="https://pub-70da4e6da1f3446d9e055f2793d05837.r2.dev"
+R2_ACCOUNT_ID="${R2_ACCOUNT_ID:-7ff7cc2e7bc3af46147d5c7df18062db}"
+R2_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID:?请设置环境变量 R2_ACCESS_KEY_ID}"
+R2_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY:?请设置环境变量 R2_SECRET_ACCESS_KEY}"
+R2_PUBLIC_URL="${R2_PUBLIC_URL:-https://pub-70da4e6da1f3446d9e055f2793d05837.r2.dev}"
 
 # ==================== 参数解析 ====================
 MODE="jar"
@@ -146,7 +146,7 @@ deploy_jar() {
     [ "$HAS_R2" = "true" ] && METHODS+=("R2")
 
     echo "=========================================="
-    echo "  JAR 部署 v3.0 - 版本: $VERSION"
+    echo "  JAR 部署 v4.0 - 版本: $VERSION"
     echo "  可用方式: ${METHODS[*]}"
     echo "=========================================="
 
@@ -165,8 +165,11 @@ deploy_jar() {
 
     JAR_SIZE=$(du -h "$JAR_PATH" | cut -f1)
     JAR_SIZE_BYTES=$(stat -f%z "$JAR_PATH" 2>/dev/null || stat -c%s "$JAR_PATH" 2>/dev/null)
-    MIN_JAR_SIZE=$((JAR_SIZE_BYTES * 95 / 100))
     echo "   ✓ 打包完成: $JAR_NAME ($JAR_SIZE, ${JAR_SIZE_BYTES} bytes)"
+
+    # 计算本地 MD5 checksum
+    LOCAL_MD5=$(md5sum "$JAR_PATH" | cut -d' ' -f1)
+    echo "   ✓ MD5: $LOCAL_MD5"
 
     # 预先创建 gzip 压缩版本
     echo "   压缩中..."
@@ -183,14 +186,39 @@ deploy_jar() {
         [ -f "$UPLOAD_STATUS_DIR/winner" ]
     }
 
+    # 远程 MD5 验证 + rename 为标准名
+    # 参数: $1=远程临时文件名 (不含目录), $2=方法名
+    verify_and_claim() {
+        local TMP_FILE="$1"
+        local METHOD_NAME="$2"
+        if ssh -o ConnectTimeout=5 $SERVER "
+            REMOTE_MD5=\$(md5sum $REMOTE_TMP/$TMP_FILE | cut -d' ' -f1)
+            if [ \"\$REMOTE_MD5\" = \"$LOCAL_MD5\" ]; then
+                mv -f $REMOTE_TMP/$TMP_FILE $REMOTE_TMP/$JAR_NAME
+                exit 0
+            else
+                echo \"MD5 mismatch: \$REMOTE_MD5 vs $LOCAL_MD5\"
+                rm -f $REMOTE_TMP/$TMP_FILE
+                exit 1
+            fi
+        " 2>/dev/null; then
+            if ! check_winner; then
+                echo "$METHOD_NAME" > "$UPLOAD_STATUS_DIR/winner"
+                echo "   [$METHOD_NAME] ✓ 完成! (MD5 verified)"
+            fi
+        else
+            check_winner || echo "   [$METHOD_NAME] ✗ MD5 验证失败"
+        fi
+    }
+
     # === Fallback 方法1: SCP 直接上传 ===
     upload_scp() {
         check_winner && return 0
+        local TMP_FILE="${JAR_NAME}.scp"
         echo "   [SCP] 开始上传..."
-        if scp -o ConnectTimeout=10 -o ServerAliveInterval=10 "$JAR_PATH" "$SERVER:$REMOTE_TMP/$JAR_NAME" 2>/dev/null; then
+        if scp -o ConnectTimeout=10 -o ServerAliveInterval=10 "$JAR_PATH" "$SERVER:$REMOTE_TMP/$TMP_FILE" 2>/dev/null; then
             if ! check_winner; then
-                echo "SCP" > "$UPLOAD_STATUS_DIR/winner"
-                echo "   [SCP] ✓ 完成!"
+                verify_and_claim "$TMP_FILE" "SCP"
             fi
         else
             check_winner || echo "   [SCP] ✗ 失败"
@@ -200,13 +228,14 @@ deploy_jar() {
     # === Fallback 方法2: SCP + gzip 压缩传输 ===
     upload_scp_gzip() {
         check_winner && return 0
+        local TMP_FILE="${JAR_NAME}.scp_gzip"
+        local TMP_GZ="${JAR_NAME}.scp_gzip.gz"
         echo "   [SCP+gzip] 开始压缩上传..."
-        if scp -o ConnectTimeout=10 -o ServerAliveInterval=10 "/tmp/${JAR_NAME}.gz" "$SERVER:$REMOTE_TMP/${JAR_NAME}.gz" 2>/dev/null; then
+        if scp -o ConnectTimeout=10 -o ServerAliveInterval=10 "/tmp/${JAR_NAME}.gz" "$SERVER:$REMOTE_TMP/$TMP_GZ" 2>/dev/null; then
             check_winner && return 0
-            if ssh $SERVER "cd $REMOTE_TMP && gunzip -f ${JAR_NAME}.gz" 2>/dev/null; then
+            if ssh $SERVER "cd $REMOTE_TMP && gunzip -c $TMP_GZ > $TMP_FILE && rm -f $TMP_GZ" 2>/dev/null; then
                 if ! check_winner; then
-                    echo "SCP+gzip" > "$UPLOAD_STATUS_DIR/winner"
-                    echo "   [SCP+gzip] ✓ 完成!"
+                    verify_and_claim "$TMP_FILE" "SCP+gzip"
                 fi
             else
                 check_winner || echo "   [SCP+gzip] ✗ 解压失败"
@@ -221,6 +250,7 @@ deploy_jar() {
         [ "$HAS_OSS" != "true" ] && return 1
         check_winner && return 0
 
+        local TMP_FILE="${JAR_NAME}.oss"
         echo "   [OSS加速] 使用全球加速上传..."
         local OSS_PATH="oss://${OSS_BUCKET}/${OSS_DEPLOY_PATH}${JAR_NAME}"
 
@@ -232,12 +262,10 @@ deploy_jar() {
 
             if ssh -o ConnectTimeout=5 $SERVER "
                 cd $REMOTE_TMP && \
-                curl -sL --connect-timeout 10 --max-time 300 -o $JAR_NAME '$INTERNAL_URL' && \
-                REMOTE_SIZE=\$(stat -c%s $JAR_NAME 2>/dev/null || stat -f%z $JAR_NAME 2>/dev/null || echo 0) && [ \$REMOTE_SIZE -ge $MIN_JAR_SIZE ]
+                curl -sL --connect-timeout 10 --max-time 300 -o $TMP_FILE '$INTERNAL_URL'
             " 2>/dev/null; then
                 if ! check_winner; then
-                    echo "OSS加速" > "$UPLOAD_STATUS_DIR/winner"
-                    echo "   [OSS加速] ✓ 完成!"
+                    verify_and_claim "$TMP_FILE" "OSS加速"
                 fi
             else
                 check_winner || echo "   [OSS加速] ✗ 服务器下载失败"
@@ -252,6 +280,7 @@ deploy_jar() {
         [ "$HAS_R2" != "true" ] && return 1
         check_winner && return 0
 
+        local TMP_FILE="${JAR_NAME}.r2"
         echo "   [R2] 上传到 Cloudflare R2..."
 
         export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
@@ -268,12 +297,10 @@ deploy_jar() {
 
             if ssh -o ConnectTimeout=5 $SERVER "
                 cd $REMOTE_TMP && \
-                curl -sL --connect-timeout 10 --max-time 300 -o $JAR_NAME '$R2_URL' && \
-                REMOTE_SIZE=\$(stat -c%s $JAR_NAME 2>/dev/null || stat -f%z $JAR_NAME 2>/dev/null || echo 0) && [ \$REMOTE_SIZE -ge $MIN_JAR_SIZE ]
+                curl -sL --connect-timeout 10 --max-time 300 -o $TMP_FILE '$R2_URL'
             " 2>/dev/null; then
                 if ! check_winner; then
-                    echo "R2" > "$UPLOAD_STATUS_DIR/winner"
-                    echo "   [R2] ✓ 完成!"
+                    verify_and_claim "$TMP_FILE" "R2"
                 fi
             else
                 check_winner || echo "   [R2] ✗ 服务器下载失败"
@@ -307,15 +334,14 @@ deploy_jar() {
                 sleep 1  # 等待 Release 生效
                 [ -f "$UPLOAD_STATUS_DIR/winner" ] && exit 0
                 local URL="https://github.com/$REPO/releases/download/$VERSION/$JAR_NAME"
+                local TMP_FILE="${JAR_NAME}.github_direct"
                 echo "   [GitHub直连] 开始下载..."
                 if ssh -o ConnectTimeout=5 $SERVER "
                     cd $REMOTE_TMP && \
-                    curl -sL --connect-timeout 15 --max-time 300 -o $JAR_NAME '$URL' && \
-                    REMOTE_SIZE=\$(stat -c%s $JAR_NAME 2>/dev/null || stat -f%z $JAR_NAME 2>/dev/null || echo 0) && [ \$REMOTE_SIZE -ge $MIN_JAR_SIZE ]
+                    curl -sL --connect-timeout 15 --max-time 300 -o $TMP_FILE '$URL'
                 " 2>/dev/null; then
                     if [ ! -f "$UPLOAD_STATUS_DIR/winner" ]; then
-                        echo "GitHub直连" > "$UPLOAD_STATUS_DIR/winner"
-                        echo "   [GitHub直连] ✓ 完成!"
+                        verify_and_claim "$TMP_FILE" "GitHub直连"
                     fi
                 fi
             ) &
@@ -327,14 +353,14 @@ deploy_jar() {
                     sleep 1
                     [ -f "$UPLOAD_STATUS_DIR/winner" ] && exit 0
                     local URL="https://${mirror}/https://github.com/$REPO/releases/download/$VERSION/$JAR_NAME"
+                    local SAFE_MIRROR=$(echo "$mirror" | tr '.' '_')
+                    local TMP_FILE="${JAR_NAME}.gh_${SAFE_MIRROR}"
                     if ssh -o ConnectTimeout=5 $SERVER "
                         cd $REMOTE_TMP && \
-                        curl -sL --connect-timeout 10 --max-time 300 -o $JAR_NAME '$URL' && \
-                        REMOTE_SIZE=\$(stat -c%s $JAR_NAME 2>/dev/null || stat -f%z $JAR_NAME 2>/dev/null || echo 0) && [ \$REMOTE_SIZE -ge $MIN_JAR_SIZE ]
+                        curl -sL --connect-timeout 10 --max-time 300 -o $TMP_FILE '$URL'
                     " 2>/dev/null; then
                         if [ ! -f "$UPLOAD_STATUS_DIR/winner" ]; then
-                            echo "GitHub/$mirror" > "$UPLOAD_STATUS_DIR/winner"
-                            echo "   [GitHub/$mirror] ✓ 完成!"
+                            verify_and_claim "$TMP_FILE" "GitHub/$mirror"
                         fi
                     fi
                 ) &
@@ -376,6 +402,9 @@ deploy_jar() {
             pkill -9 -P "$pid" 2>/dev/null || true
         done
         UPLOAD_PIDS=()
+
+        # 杀掉服务器上残留的 GitHub 下载 curl 进程
+        ssh -o ConnectTimeout=5 $SERVER "pkill -f 'curl.*$JAR_NAME' 2>/dev/null; true" 2>/dev/null || true
 
         # 启动 Fallback 方式
         upload_scp &
@@ -430,8 +459,14 @@ deploy_jar() {
     # 方法3: 终止当前脚本的所有后台任务
     jobs -p 2>/dev/null | xargs -r kill -9 2>/dev/null || true
 
+    # 方法4: 杀掉服务器上残留的 curl/wget (防止 orphan 覆盖 winner 文件)
+    ssh -o ConnectTimeout=5 $SERVER "pkill -f 'curl.*$JAR_NAME' 2>/dev/null; true" 2>/dev/null || true
+
     sleep 1
     wait 2>/dev/null || true
+
+    # 清理服务器上的临时文件 (保留 winner 的 $JAR_NAME)
+    ssh -o ConnectTimeout=5 $SERVER "rm -f $REMOTE_TMP/${JAR_NAME}.scp $REMOTE_TMP/${JAR_NAME}.scp_gzip $REMOTE_TMP/${JAR_NAME}.scp_gzip.gz $REMOTE_TMP/${JAR_NAME}.oss $REMOTE_TMP/${JAR_NAME}.r2 $REMOTE_TMP/${JAR_NAME}.github_direct $REMOTE_TMP/${JAR_NAME}.gh_* 2>/dev/null; true" 2>/dev/null || true
 
     if [ -z "$WINNER" ]; then
         echo ""
@@ -455,9 +490,12 @@ deploy_jar() {
     # ----- 3. 服务器部署 -----
     echo ""
     echo "🚀 [3/4] 服务器部署..."
-    ssh $SERVER "
+    # MD5 验证 + 部署 JAR (不含重启)
+    DEPLOY_OK=false
+    if ssh $SERVER "
         cd $REMOTE_JAR_DIR
 
+        # 备份当前 JAR
         if [ -f aims-0.0.1-SNAPSHOT.jar ]; then
             BACKUP_NAME=\"aims-0.0.1-SNAPSHOT.jar.bak.\$(date +%Y%m%d_%H%M%S)\"
             cp aims-0.0.1-SNAPSHOT.jar \"\$BACKUP_NAME\"
@@ -465,25 +503,50 @@ deploy_jar() {
             ls -t aims-0.0.1-SNAPSHOT.jar.bak.* 2>/dev/null | tail -n +4 | xargs rm -f 2>/dev/null || true
         fi
 
-        # 验证 JAR 完整性
-        REMOTE_SIZE=\$(stat -c%s $REMOTE_TMP/$JAR_NAME 2>/dev/null || echo 0)
-        echo \"   JAR 大小: \${REMOTE_SIZE} bytes (预期 >= $MIN_JAR_SIZE)\"
-        if [ \$REMOTE_SIZE -lt $MIN_JAR_SIZE ]; then
-            echo '   ❌ JAR 文件不完整，中止部署!'
+        # 最终 MD5 验证 (部署前)
+        REMOTE_MD5=\$(md5sum $REMOTE_TMP/$JAR_NAME | cut -d' ' -f1)
+        echo \"   MD5 验证: \$REMOTE_MD5 (预期: $LOCAL_MD5)\"
+        if [ \"\$REMOTE_MD5\" != \"$LOCAL_MD5\" ]; then
+            echo '   ❌ JAR 文件 MD5 不匹配，中止部署!'
             exit 1
         fi
 
+        # 部署 JAR
         mv $REMOTE_TMP/$JAR_NAME aims-0.0.1-SNAPSHOT.jar
-        echo '   重启服务...'
-        bash restart.sh
-    "
+
+        # 验证部署后文件完整性
+        DEPLOYED_MD5=\$(md5sum aims-0.0.1-SNAPSHOT.jar | cut -d' ' -f1)
+        if [ \"\$DEPLOYED_MD5\" != \"$LOCAL_MD5\" ]; then
+            echo '   ❌ 部署后 checksum 不匹配! 恢复备份...'
+            if [ -n \"\$BACKUP_NAME\" ] && [ -f \"\$BACKUP_NAME\" ]; then
+                cp \"\$BACKUP_NAME\" aims-0.0.1-SNAPSHOT.jar
+                echo '   ✓ 已恢复备份'
+            fi
+            exit 1
+        fi
+        echo '   ✓ MD5 验证通过'
+    "; then
+        DEPLOY_OK=true
+    fi
+
+    if [ "$DEPLOY_OK" != "true" ]; then
+        echo "   ❌ 部署失败 (MD5 不匹配或文件损坏)"
+        exit 1
+    fi
+
+    # 重启服务 (单独 SSH，restart.sh 的 nohup 不会被 SSH 断开影响)
+    echo "   重启服务..."
+    ssh $SERVER "cd $REMOTE_JAR_DIR && bash restart.sh" || true
+
+    # 清理残留临时文件
+    ssh -o ConnectTimeout=5 $SERVER "rm -f $REMOTE_TMP/${JAR_NAME}.* $REMOTE_TMP/aims-new.jar $REMOTE_TMP/deploy.jar.gz 2>/dev/null" 2>/dev/null || true
 
     # ----- 4. 验证部署 -----
     echo ""
     echo "🔍 [4/4] 验证部署..."
     sleep 8
 
-    HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" http://139.196.165.140:10010/api/mobile/health 2>/dev/null || echo "000")
+    HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:10010/api/mobile/health 2>/dev/null || echo "000")
 
     if [ "$HEALTH_CHECK" = "200" ]; then
         echo "   ✓ 服务正常 (HTTP 200)"
@@ -496,6 +559,7 @@ deploy_jar() {
     echo "  ✅ 部署完成!"
     echo "  版本: $VERSION"
     echo "  方式: $WINNER"
+    echo "  MD5: $LOCAL_MD5"
     echo "  上传耗时: ${UPLOAD_DURATION}s (${SPEED_MBPS} MB/s)"
     [ "$HAS_GH" = "true" ] && echo "  Release: https://github.com/$REPO/releases/tag/$VERSION"
     echo "=========================================="

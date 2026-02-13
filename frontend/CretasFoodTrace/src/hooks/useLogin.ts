@@ -5,8 +5,10 @@
 import { useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import { useAuthStore } from '../store';
+import { useFactoryFeatureStore } from '../store/factoryFeatureStore';
 import { AuthServiceInstance as AuthService } from '../services/serviceFactory';
 import { NotImplementedError } from '../errors';
+import { getFactoryId } from '../types/auth';
 
 interface LoginParams {
   username: string;
@@ -94,6 +96,12 @@ export function useLogin(options?: UseLoginOptions): UseLoginReturn {
           expiresIn: result.tokens.expiresIn || 86400,
           tokenType: result.tokens.tokenType || 'Bearer',
         });
+
+        // 加载工厂特性配置（阻塞式，防止UI闪烁）
+        const factoryId = getFactoryId(result.user);
+        if (factoryId) {
+          await useFactoryFeatureStore.getState().loadFeatures(factoryId);
+        }
 
         Alert.alert('登录成功', `欢迎回来，${result.user.username}！`);
         return true;

@@ -16,9 +16,13 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { WSHomeStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
+import { useFactoryFeatureStore } from '../../../store/factoryFeatureStore';
+import { OfflineIndicator } from '../../../components/common/OfflineIndicator';
+import { useDraftReportStore } from '../../../store/draftReportStore';
 import { dashboardAPI } from '../../../services/api/dashboardApiClient';
 import { processingApiClient } from '../../../services/api/processingApiClient';
 import { schedulingApiClient, SupervisorTaskDTO } from '../../../services/api/schedulingApiClient';
@@ -77,11 +81,14 @@ interface EquipmentStatus {
 export function WSHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
+  const { isScreenEnabled, getBenchmarks } = useFactoryFeatureStore();
   const { t } = useTranslation('workshop');
+  const draftCount = useDraftReportStore(s => s.drafts.length);
 
   // 状态
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // 状态数据 - 从API加载
   const [nextTask, setNextTask] = useState<NextTask | null>(null);
@@ -120,6 +127,7 @@ export function WSHomeScreen() {
   // 加载数据
   const loadData = useCallback(async () => {
     try {
+      setError(null);
       // 获取Dashboard概览数据
       const overviewRes = await dashboardAPI.getDashboardOverview('today');
       if (overviewRes.success && overviewRes.data) {
@@ -203,10 +211,11 @@ export function WSHomeScreen() {
       } catch (scheduleError) {
         console.error('获取排程任务失败:', scheduleError);
       }
-    } catch (error) {
-      console.error('加载车间主管首页数据失败:', error);
-      if (isAxiosError(error)) {
-        if (error.response?.status === 401) {
+    } catch (err) {
+      console.error('加载车间主管首页数据失败:', err);
+      setError('加载失败');
+      if (isAxiosError(err)) {
+        if (err.response?.status === 401) {
           // TODO: Handle auth expired
           console.error('认证过期，请重新登录');
         }
@@ -244,6 +253,24 @@ export function WSHomeScreen() {
     );
   }
 
+  // 错误状态
+  if (error && taskStats.assigned === 0 && taskStats.completed === 0 && inProgressBatches.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="cloud-off-outline" size={48} color="#C0C4CC" />
+          <Text style={[styles.loadingText, { color: '#606266', marginTop: 12 }]}>加载失败，请检查网络</Text>
+          <TouchableOpacity
+            style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: '#059669', borderRadius: 6 }}
+            onPress={() => loadData()}
+          >
+            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>重试</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -258,6 +285,9 @@ export function WSHomeScreen() {
           />
         }
       >
+        {/* 离线状态指示器 */}
+        <OfflineIndicator />
+
         {/* 头部欢迎区 */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
@@ -275,6 +305,77 @@ export function WSHomeScreen() {
               <Text style={styles.notificationBadgeText}>3</Text>
             </View>
           </TouchableOpacity>
+        </View>
+
+        {/* 快捷操作 */}
+        <View style={styles.quickActionsSection}>
+          <Text style={styles.sectionTitle}>快捷操作</Text>
+          <View style={styles.quickActionsGrid}>
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() => navigation.navigate('ScanReport')}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#EEF2FF' }]}>
+                <MaterialCommunityIcons name="barcode-scan" size={22} color="#4F46E5" />
+              </View>
+              <Text style={styles.quickActionLabel}>扫码报工</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() => navigation.navigate('TeamBatchReport')}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#F0FDF4' }]}>
+                <MaterialCommunityIcons name="account-group" size={22} color="#16A34A" />
+              </View>
+              <Text style={styles.quickActionLabel}>班组报工</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() => navigation.navigate('LabelScan', { workstationId: 'WS-001' })}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#FFF7ED' }]}>
+                <MaterialCommunityIcons name="label-variant-outline" size={22} color="#EA580C" />
+              </View>
+              <Text style={styles.quickActionLabel}>标签扫描</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() => navigation.navigate('DraftReports')}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#FFFBEB' }]}>
+                <MaterialCommunityIcons name="file-clock-outline" size={22} color="#D97706" />
+                {draftCount > 0 && (
+                  <View style={styles.draftBadge}>
+                    <Text style={styles.draftBadgeText}>{draftCount}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.quickActionLabel}>草稿管理</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() => navigation.navigate('DynamicReport', { reportType: 'PROGRESS' })}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#EFF6FF' }]}>
+                <MaterialCommunityIcons name="clipboard-check-outline" size={22} color="#2563EB" />
+              </View>
+              <Text style={styles.quickActionLabel}>进度上报</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() => navigation.navigate('NfcCheckin')}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#F5F3FF' }]}>
+                <MaterialCommunityIcons name="nfc-variant" size={22} color="#7C3AED" />
+              </View>
+              <Text style={styles.quickActionLabel}>扫码签到</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* 下一批任务卡片 - 最醒目 */}
@@ -322,7 +423,7 @@ export function WSHomeScreen() {
         )}
 
         {/* 排程任务区域 */}
-        {scheduleTasks.length > 0 && (
+        {isScreenEnabled('ScheduleManagement') && scheduleTasks.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>待执行排程</Text>
@@ -389,9 +490,30 @@ export function WSHomeScreen() {
               <Text style={styles.statLabel}>{t('home.stats.completed')}</Text>
             </View>
           </View>
+          {(() => {
+            const benchmarks = getBenchmarks();
+            const yieldBenchmark = benchmarks['yield_rate'];
+            if (yieldBenchmark && taskStats.assigned > 0) {
+              const completionRate = Math.round((taskStats.completed / taskStats.assigned) * 100);
+              const benchColor = completionRate >= (yieldBenchmark.excellent ?? 98)
+                ? '#52c41a'
+                : completionRate >= (yieldBenchmark.qualified ?? 95)
+                  ? '#fa8c16'
+                  : '#ff4d4f';
+              return (
+                <View style={{ marginTop: 8, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 12, color: benchColor }}>
+                    完成率 {completionRate}% (目标: {yieldBenchmark.qualified ?? 95}%)
+                  </Text>
+                </View>
+              );
+            }
+            return null;
+          })()}
         </View>
 
         {/* 进行中批次 */}
+        {isScreenEnabled('BatchManagement') && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t('home.inProgressBatches')}</Text>
@@ -426,8 +548,10 @@ export function WSHomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        )}
 
         {/* 人员状态 */}
+        {isScreenEnabled('WorkerManagement') && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t('home.personnelStatus')}</Text>
@@ -452,8 +576,10 @@ export function WSHomeScreen() {
             </View>
           </View>
         </View>
+        )}
 
         {/* 设备状态 */}
+        {isScreenEnabled('EquipmentMonitoring') && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t('home.equipmentStatus')}</Text>
@@ -478,6 +604,7 @@ export function WSHomeScreen() {
             </View>
           </View>
         </View>
+        )}
 
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -551,6 +678,52 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     color: '#fff',
+  },
+
+  // 快捷操作
+  quickActionsSection: {
+    paddingHorizontal: 16,
+    marginTop: 16,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  quickActionBtn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  quickActionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  quickActionLabel: {
+    fontSize: 12,
+    color: '#4B5563',
+    marginTop: 6,
+    fontWeight: '500',
+  },
+  draftBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  draftBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
 
   // 下一批任务卡片

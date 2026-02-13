@@ -13,7 +13,7 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { QI_COLORS, QualityInspectorStackParamList, QIBatch, QualityStatistics } from '../../types/qualityInspector';
 import { qualityInspectorApi } from '../../services/api/qualityInspectorApi';
 import { useAuthStore } from '../../store/authStore';
+import { useFactoryFeatureStore } from '../../store/factoryFeatureStore';
 
 type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 
@@ -30,10 +31,12 @@ export default function QIHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
+  const { isScreenEnabled } = useFactoryFeatureStore();
   const factoryId = user?.factoryId;
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [statistics, setStatistics] = useState<QualityStatistics | null>(null);
   const [nextBatch, setNextBatch] = useState<QIBatch | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -49,6 +52,7 @@ export default function QIHomeScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
 
       // 并行加载数据
       const [statsResult, batchesResult, unreadResult] = await Promise.allSettled([
@@ -68,8 +72,9 @@ export default function QIHomeScreen() {
       if (unreadResult.status === 'fulfilled') {
         setUnreadCount(unreadResult.value);
       }
-    } catch (error) {
-      console.error('加载数据失败:', error);
+    } catch (err) {
+      console.error('加载数据失败:', err);
+      setError('加载失败');
     } finally {
       setLoading(false);
     }
@@ -97,11 +102,25 @@ export default function QIHomeScreen() {
   };
 
   // 计算合格率
-  const passRate = statistics?.today
-    ? statistics.today.total > 0
-      ? Math.round((statistics.today.passed / statistics.today.total) * 100 * 10) / 10
-      : 0
+  const passRate = statistics?.today?.total
+    ? Math.round((statistics.today.passed / statistics.today.total) * 100 * 10) / 10
     : 0;
+
+  // 错误状态
+  if (error && !statistics) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: QI_COLORS.background }}>
+        <MaterialCommunityIcons name="cloud-off-outline" size={48} color="#C0C4CC" />
+        <Text style={{ color: '#606266', marginTop: 12, fontSize: 14 }}>加载失败，请检查网络</Text>
+        <TouchableOpacity
+          style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: '#EF4444', borderRadius: 6 }}
+          onPress={() => loadData()}
+        >
+          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>重试</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -165,7 +184,7 @@ export default function QIHomeScreen() {
       <View style={styles.statsGrid}>
         <View style={[styles.statCard, { backgroundColor: '#FFF3E0' }]}>
           <Text style={[styles.statValue, { color: '#E65100' }]}>
-            {statistics?.today.pending ?? '-'}
+            {statistics?.today?.pending ?? '-'}
           </Text>
           <Text style={styles.statLabel}>{t('home.pending')}</Text>
         </View>
@@ -177,13 +196,13 @@ export default function QIHomeScreen() {
         </View>
         <View style={[styles.statCard, { backgroundColor: '#E8F5E9' }]}>
           <Text style={[styles.statValue, { color: '#2E7D32' }]}>
-            {statistics?.today.passed ?? '-'}
+            {statistics?.today?.passed ?? '-'}
           </Text>
           <Text style={styles.statLabel}>{t('home.passed')}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: '#FFEBEE' }]}>
           <Text style={[styles.statValue, { color: '#C62828' }]}>
-            {statistics?.today.failed ?? '-'}
+            {statistics?.today?.failed ?? '-'}
           </Text>
           <Text style={styles.statLabel}>{t('home.failed')}</Text>
         </View>
@@ -199,7 +218,7 @@ export default function QIHomeScreen() {
             <Text style={styles.rateUnit}>%</Text>
           </View>
           <Text style={styles.metricSubText}>
-            {t('home.batchesPassed', { passed: statistics?.today.passed ?? 0, total: statistics?.today.total ?? 0 })}
+            {t('home.batchesPassed', { passed: statistics?.today?.passed ?? 0, total: statistics?.today?.total ?? 0 })}
           </Text>
         </View>
 
@@ -219,6 +238,7 @@ export default function QIHomeScreen() {
       <View style={styles.quickActions}>
         <Text style={styles.sectionTitle}>{t('home.quickActions')}</Text>
         <View style={styles.actionGrid}>
+          {isScreenEnabled('QualityInspection') && (
           <TouchableOpacity
             style={styles.actionItem}
             onPress={() => navigation.navigate('QIScan')}
@@ -228,7 +248,9 @@ export default function QIHomeScreen() {
             </View>
             <Text style={styles.actionText}>{t('home.scanInspection')}</Text>
           </TouchableOpacity>
+          )}
 
+          {isScreenEnabled('QualityInspection') && (
           <TouchableOpacity
             style={styles.actionItem}
             onPress={() => navigation.navigate('QIVoice', { batchId: '', batchNumber: '' })}
@@ -238,6 +260,7 @@ export default function QIHomeScreen() {
             </View>
             <Text style={styles.actionText}>{t('home.voiceInspection')}</Text>
           </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.actionItem}
@@ -249,6 +272,7 @@ export default function QIHomeScreen() {
             <Text style={styles.actionText}>{t('home.inspectionRecords')}</Text>
           </TouchableOpacity>
 
+          {isScreenEnabled('QualityAnalysis') && (
           <TouchableOpacity
             style={styles.actionItem}
             onPress={() => navigation.navigate('QIAnalysis')}
@@ -258,11 +282,12 @@ export default function QIHomeScreen() {
             </View>
             <Text style={styles.actionText}>{t('home.dataAnalysis')}</Text>
           </TouchableOpacity>
+          )}
         </View>
       </View>
 
       {/* 异常提醒 */}
-      {statistics && statistics.today.failed > 0 && (
+      {statistics?.today?.failed != null && statistics.today.failed > 0 && (
         <View style={styles.alertSection}>
           <View style={styles.alertHeader}>
             <Ionicons name="warning" size={20} color={QI_COLORS.danger} />

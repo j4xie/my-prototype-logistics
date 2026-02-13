@@ -66,6 +66,10 @@ import { WorkstationMonitorScreen } from '../screens/production/WorkstationMonit
 // 标签扫描 (shared模块)
 import LabelScanScreen from '../screens/shared/LabelScanScreen';
 
+// 报工页面
+import ScanReportScreen from '../screens/processing/ScanReportScreen';
+import TeamBatchReportScreen from '../screens/processing/TeamBatchReportScreen';
+
 // 溯源功能 - Phase 3
 import {
   TraceabilityScreen,
@@ -268,6 +272,16 @@ export function ProcessingStackNavigator() {
       <Stack.Screen
         name="LabelScan"
         component={LabelScanScreen}
+      />
+
+      {/* 报工 */}
+      <Stack.Screen
+        name="ScanReport"
+        component={ScanReportScreen}
+      />
+      <Stack.Screen
+        name="TeamBatchReport"
+        component={TeamBatchReportScreen}
       />
     </Stack.Navigator>
   );

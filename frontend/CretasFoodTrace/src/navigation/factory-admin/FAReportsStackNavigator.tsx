@@ -20,6 +20,9 @@ import ForecastReportScreen from "../../screens/reports/ForecastReportScreen";
 import AnomalyReportScreen from "../../screens/reports/AnomalyReportScreen";
 import RealtimeReportScreen from "../../screens/reports/RealtimeReportScreen";
 import DataExportScreen from "../../screens/reports/DataExportScreen";
+// 独立生产分析 & 人效分析 (2026-02-13)
+import ProductionAnalysisScreen from "../../screens/analytics/ProductionAnalysisScreen";
+import EfficiencyAnalysisScreen from "../../screens/analytics/EfficiencyAnalysisScreen";
 // 新增报表页面 (2026-01-14)
 import OeeReportScreen from "../../screens/reports/OeeReportScreen";
 import CostVarianceReportScreen from "../../screens/reports/CostVarianceReportScreen";
@@ -144,6 +147,20 @@ export function FAReportsStackNavigator() {
         name="OnTimeDeliveryReport"
         component={OnTimeDeliveryReportScreen}
         options={{ title: "准时交付率" }}
+      />
+
+      {/* 生产数据分析 (2026-02-13) */}
+      <Stack.Screen
+        name="ProductionAnalysis"
+        component={ProductionAnalysisScreen}
+        options={{ title: "生产数据分析" }}
+      />
+
+      {/* 人效分析 (2026-02-13) */}
+      <Stack.Screen
+        name="EfficiencyAnalysis"
+        component={EfficiencyAnalysisScreen}
+        options={{ title: "人效分析" }}
       />
     </Stack.Navigator>
   );

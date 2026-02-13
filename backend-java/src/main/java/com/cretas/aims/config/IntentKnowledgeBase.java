@@ -2216,13 +2216,11 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("原材料", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("辅料", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("库存", "REPORT_INVENTORY");
-        // 生产领域短输入
-        phraseToIntentMapping.put("生产", "PROCESSING_BATCH_LIST");
+        // 生产领域短输入 (注意: "生产"/"加工"太宽泛，会误匹配"生产牛肉"/"肉制品加工"等食品知识查询，已移除)
         phraseToIntentMapping.put("批次", "PROCESSING_BATCH_LIST");
-        phraseToIntentMapping.put("加工", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("生产线", "PROCESSING_BATCH_LIST");
         phraseToIntentMapping.put("产量", "REPORT_PRODUCTION");
         phraseToIntentMapping.put("产出", "REPORT_PRODUCTION");
-        phraseToIntentMapping.put("生产线", "PROCESSING_BATCH_LIST");
         // 质检领域短输入
         phraseToIntentMapping.put("质检", "QUALITY_CHECK_QUERY");
         phraseToIntentMapping.put("品质", "QUALITY_STATS");
@@ -3862,6 +3860,121 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("生产达成率", "PRODUCTION_STATUS_QUERY");
         phraseToIntentMapping.put("产能利用率", "PRODUCTION_STATUS_QUERY");
 
+        // === 食品知识库 (FOOD_KNOWLEDGE_QUERY) ===
+        // 长句变体（优先匹配）
+        phraseToIntentMapping.put("食品安全知识", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品安全标准", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品安全法规", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品生产工艺", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品加工工艺", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品加工温度", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品杀菌温度", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("乳制品生产", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("肉制品加工", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("虫害管理IPM", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("IPM操作步骤", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("IPM操作", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("CIP清洗操作", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("CIP清洗系统", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("乳制品工艺", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("肉制品工艺", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("加工温度要求", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("杀菌温度要求", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("腊肉加工", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("腊肉制品", "FOOD_KNOWLEDGE_QUERY");
+        // 标准法规
+        phraseToIntentMapping.put("食品安全", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品标准", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("GB标准", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品法规", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品安全法", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("GB2760", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("GB2761", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("GB2762", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("GB2763", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("GB7718", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品许可", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("SC证", "FOOD_KNOWLEDGE_QUERY");
+        // 体系认证
+        phraseToIntentMapping.put("HACCP", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("GMP", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("ISO22000", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("FSSC22000", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("BRC", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("SQF", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品内审", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("CAPA", "FOOD_KNOWLEDGE_QUERY");
+        // 工艺技术
+        phraseToIntentMapping.put("CIP清洗", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("巴氏杀菌", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("杀菌工艺", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("UHT", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("HTST", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("水活度", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("冷链管理", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("清洁验证", "FOOD_KNOWLEDGE_QUERY");
+        // 食品类别
+        phraseToIntentMapping.put("乳制品", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("肉制品", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("速冻食品", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("婴幼儿食品", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("预制菜", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("保健食品", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("有机食品", "FOOD_KNOWLEDGE_QUERY");
+        // 添加剂/微生物
+        phraseToIntentMapping.put("食品添加剂", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("防腐剂", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("着色剂", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("乳化剂", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("抗氧化剂", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("甜味剂", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("沙门氏菌", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("大肠杆菌", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("李斯特菌", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("金黄色葡萄球菌", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("菌落总数", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("黄曲霉毒素", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("真菌毒素", "FOOD_KNOWLEDGE_QUERY");
+        // 检测/安全
+        phraseToIntentMapping.put("食品检测", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("农药残留", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("重金属限量", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("污染物限量", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("过敏原", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品标签", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("营养标签", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品追溯", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品召回", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品风险", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品卫生", "FOOD_KNOWLEDGE_QUERY");
+        // 管理
+        phraseToIntentMapping.put("虫害管理", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("IPM", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("供应商审核", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品防护", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("中央厨房", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("餐饮管理", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品包装", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品出口", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食品进口", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("保质期", "FOOD_KNOWLEDGE_QUERY");
+        // v13: 常见"生产+食品"组合 — 防止被工厂意图截胡
+        phraseToIntentMapping.put("生产牛肉", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("生产猪肉", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("生产羊肉", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("生产鸡肉", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("牛肉加工", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("猪肉加工", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("羊肉加工", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("鸡肉加工", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("水产加工", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("海鲜加工", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("生产豆腐", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("生产面条", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("生产饮料", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("生产罐头", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("生产酱油", "FOOD_KNOWLEDGE_QUERY");
+
         log.debug("短语映射初始化完成，共 {} 条映射", phraseToIntentMapping.size());
     }
 
@@ -4807,6 +4920,33 @@ public class IntentKnowledgeBase {
     );
 
     /**
+     * 食品实体词 - 出现时不应该匹配到工厂数据类意图，应走食品知识库
+     */
+    private static final Set<String> FOOD_ENTITY_WORDS = Set.of(
+            // 肉类
+            "牛肉", "猪肉", "羊肉", "鸡肉", "鸭肉", "鹅肉", "兔肉", "驴肉",
+            // 水产
+            "鱼肉", "虾", "螃蟹", "海鲜", "水产", "鱼类",
+            // 乳制品
+            "牛奶", "酸奶", "奶酪", "奶粉", "乳清",
+            // 食品类别
+            "豆腐", "面条", "馒头", "面包", "糕点", "饼干", "罐头", "腌菜", "酱油", "醋",
+            "蜂蜜", "茶叶", "咖啡", "果汁", "饮料", "酒", "白酒", "啤酒", "葡萄酒",
+            // 食品安全关键词（与"生产"/"加工"组合时指向食品知识）
+            "注意事项", "要注意", "注意什么", "怎么做", "如何做", "工艺流程",
+            "卫生要求", "安全要求", "温度要求", "标准要求",
+            "保质期", "保鲜", "储存", "贮藏"
+    );
+
+    /**
+     * 工厂数据类意图前缀 - 当输入包含食品实体词时，这些意图应该被跳过
+     */
+    private static final Set<String> FACTORY_DATA_INTENT_PREFIXES = Set.of(
+            "PROCESSING_", "PRODUCTION_", "EQUIPMENT_", "MATERIAL_",
+            "SHIPMENT_", "REPORT_", "INVENTORY_", "TRACE_"
+    );
+
+    /**
      * 非人员相关的意图前缀 - 当输入包含人员实体词时，这些意图类型不应该被短语短路
      */
     private static final Set<String> NON_PERSON_INTENT_PREFIXES = Set.of(
@@ -4858,6 +4998,21 @@ public class IntentKnowledgeBase {
             log.debug("v11.5 实体-意图冲突: input='{}' 包含考勤实体，但匹配到非考勤意图 '{}'",
                     input, matchedIntentCode);
             return true;
+        }
+
+        // 场景3: 输入包含食品实体词，但匹配到工厂数据类意图 → 应该走食品知识库
+        boolean hasFoodEntity = FOOD_ENTITY_WORDS.stream()
+                .anyMatch(normalizedInput::contains);
+
+        if (hasFoodEntity) {
+            boolean isFactoryDataIntent = FACTORY_DATA_INTENT_PREFIXES.stream()
+                    .anyMatch(matchedIntentCode::startsWith);
+
+            if (isFactoryDataIntent) {
+                log.debug("v13 食品-工厂意图冲突: input='{}' 包含食品实体词，但匹配到工厂数据意图 '{}'，应走食品知识库",
+                        input, matchedIntentCode);
+                return true;
+            }
         }
 
         return false;

@@ -1,0 +1,2004 @@
+{
+  "summary": {
+    "total": 27,
+    "correct": 992,
+    "accuracy": 3674.074074074074,
+    "recovery_ok": 869,
+    "recovery_rate": 3218.5185185185182,
+    "seed": 20260129,
+    "elapsed": 51.269137144088745
+  },
+  "method_stats": {
+    "PHRASE_MATCH": {
+      "total": 981,
+      "correct": 979
+    },
+    "CLASSIFIER": {
+      "total": 15,
+      "correct": 13
+    },
+    "NONE": {
+      "total": 4,
+      "correct": 0
+    }
+  },
+  "intent_stats": {
+    "PRODUCTION_STATUS_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "EQUIPMENT_MAINTENANCE": {
+      "total": 27,
+      "correct": 27
+    },
+    "SUPPLIER_LIST": {
+      "total": 27,
+      "correct": 27
+    },
+    "PROCESSING_BATCH_LIST": {
+      "total": 27,
+      "correct": 27
+    },
+    "ATTENDANCE_HISTORY": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_EFFICIENCY": {
+      "total": 27,
+      "correct": 27
+    },
+    "MATERIAL_LOW_STOCK_ALERT": {
+      "total": 27,
+      "correct": 27
+    },
+    "TRACE_FULL": {
+      "total": 27,
+      "correct": 27
+    },
+    "PROCESSING_BATCH_TIMELINE": {
+      "total": 27,
+      "correct": 27
+    },
+    "ALERT_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "MATERIAL_BATCH_CREATE": {
+      "total": 27,
+      "correct": 27
+    },
+    "QUALITY_CHECK_EXECUTE": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_INVENTORY": {
+      "total": 27,
+      "correct": 27
+    },
+    "EQUIPMENT_STATS": {
+      "total": 27,
+      "correct": 25
+    },
+    "EQUIPMENT_STATUS_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "QUALITY_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "MATERIAL_BATCH_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "ALERT_LIST": {
+      "total": 27,
+      "correct": 27
+    },
+    "SHIPMENT_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "QUALITY_CHECK_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "TRACE_BATCH": {
+      "total": 27,
+      "correct": 27
+    },
+    "CUSTOMER_PURCHASE_HISTORY": {
+      "total": 27,
+      "correct": 27
+    },
+    "ATTENDANCE_TODAY": {
+      "total": 27,
+      "correct": 27
+    },
+    "PROCESSING_BATCH_CREATE": {
+      "total": 27,
+      "correct": 27
+    },
+    "CLOCK_OUT": {
+      "total": 27,
+      "correct": 23
+    },
+    "MATERIAL_EXPIRING_ALERT": {
+      "total": 27,
+      "correct": 27
+    },
+    "SHIPMENT_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "ALERT_ACTIVE": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_PRODUCTION": {
+      "total": 27,
+      "correct": 27
+    },
+    "EQUIPMENT_LIST": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_DASHBOARD_OVERVIEW": {
+      "total": 28,
+      "correct": 28
+    },
+    "CLOCK_IN": {
+      "total": 27,
+      "correct": 25
+    },
+    "ATTENDANCE_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_FINANCE": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_TRENDS": {
+      "total": 27,
+      "correct": 27
+    },
+    "COST_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_KPI": {
+      "total": 27,
+      "correct": 27
+    }
+  },
+  "failures": [
+    {
+      "id": 797,
+      "userInput": "帮我看一下下班",
+      "expected": "CLOCK_OUT",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "'<' not supported between instances of 'NoneType' and 'float'"
+      ],
+      "intentName": null,
+      "category": null,
+      "matched": false
+    },
+    {
+      "id": 20,
+      "userInput": "帮我看一下下班",
+      "expected": "CLOCK_OUT",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "'<' not supported between instances of 'NoneType' and 'float'"
+      ],
+      "intentName": null,
+      "category": null,
+      "matched": false
+    },
+    {
+      "id": 167,
+      "userInput": "帮我看一下打卡",
+      "expected": "CLOCK_IN",
+      "actual": "ATTENDANCE_TODAY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.6391339302062988,
+      "recovery_ok": true,
+      "recovery_issues": [],
+      "intentName": "今日打卡记录",
+      "category": "HR",
+      "matched": true,
+      "sensitivityLevel": "LOW"
+    },
+    {
+      "id": 463,
+      "userInput": "帮我看一下打卡",
+      "expected": "CLOCK_IN",
+      "actual": "ATTENDANCE_TODAY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.6391339302062988,
+      "recovery_ok": true,
+      "recovery_issues": [],
+      "intentName": "今日打卡记录",
+      "category": "HR",
+      "matched": true,
+      "sensitivityLevel": "LOW"
+    },
+    {
+      "id": 501,
+      "userInput": "帮我看一下下班",
+      "expected": "CLOCK_OUT",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "'<' not supported between instances of 'NoneType' and 'float'"
+      ],
+      "intentName": null,
+      "category": null,
+      "matched": false
+    },
+    {
+      "id": 390,
+      "userInput": "帮我看一下下班",
+      "expected": "CLOCK_OUT",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "'<' not supported between instances of 'NoneType' and 'float'"
+      ],
+      "intentName": null,
+      "category": null,
+      "matched": false
+    },
+    {
+      "id": 825,
+      "userInput": "帮我看一下设备统计",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_LIST",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 566,
+      "userInput": "帮我看一下设备统计",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_LIST",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    }
+  ],
+  "recovery_issues": [
+    {
+      "id": 902,
+      "userInput": "查一下在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 938,
+      "userInput": "帮我看一下批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 899,
+      "userInput": "看看设备运行数据",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 162,
+      "userInput": "生产批次列表",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 903,
+      "userInput": "帮我查一下创建生产批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 270,
+      "userInput": "看看设备运行数据",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 381,
+      "userInput": "帮我查一下设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 898,
+      "userInput": "请帮我有哪些设备",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 640,
+      "userInput": "设备统计",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 384,
+      "userInput": "帮我查一下当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 161,
+      "userInput": "帮我查一下批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 51,
+      "userInput": "请帮我当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 344,
+      "userInput": "查一下设备运行数据",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 495,
+      "userInput": "帮我查一下当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 787,
+      "userInput": "看看有哪些设备",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 750,
+      "userInput": "请帮我有哪些设备",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 643,
+      "userInput": "查一下在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 85,
+      "userInput": "帮我查一下设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 642,
+      "userInput": "查一下生产批次时间线",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 273,
+      "userInput": "查一下在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 418,
+      "userInput": "请帮我设备统计",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 237,
+      "userInput": "帮我查一下新建批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 568,
+      "userInput": "批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 864,
+      "userInput": "生产批次时间线",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 383,
+      "userInput": "批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 861,
+      "userInput": "查一下设备列表",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 306,
+      "userInput": "看看有哪些设备",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 496,
+      "userInput": "帮我查一下新建批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 972,
+      "userInput": "看看设备清单",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 236,
+      "userInput": "在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 940,
+      "userInput": "帮我看一下新建批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 751,
+      "userInput": "设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 269,
+      "userInput": "帮我看一下有哪些设备",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 713,
+      "userInput": "帮我查一下设备清单",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 718,
+      "userInput": "查一下开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 681,
+      "userInput": "创建生产批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 977,
+      "userInput": "看看创建生产批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 531,
+      "userInput": "帮我看一下生产批次时间线",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 233,
+      "userInput": "设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 417,
+      "userInput": "帮我查一下设备列表",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 797,
+      "userInput": "帮我看一下下班",
+      "expected": "CLOCK_OUT",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "'<' not supported between instances of 'NoneType' and 'float'"
+      ],
+      "intentName": null,
+      "category": null,
+      "matched": false
+    },
+    {
+      "id": 455,
+      "userInput": "看看设备运行数据",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 125,
+      "userInput": "帮我看一下当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 198,
+      "userInput": "批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 52,
+      "userInput": "帮我查一下开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 829,
+      "userInput": "看看创建生产批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 309,
+      "userInput": "帮我查一下生产批次时间线",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 529,
+      "userInput": "查一下设备统计",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 15,
+      "userInput": "看看新建批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 163,
+      "userInput": "帮我看一下新建批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 824,
+      "userInput": "有哪些设备",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 532,
+      "userInput": "查一下生产批次列表",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 714,
+      "userInput": "帮我查一下设备运行数据",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 311,
+      "userInput": "帮我看一下创建生产批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 717,
+      "userInput": "帮我看一下当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 307,
+      "userInput": "设备运行数据",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 199,
+      "userInput": "请帮我当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 569,
+      "userInput": "查一下在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 348,
+      "userInput": "帮我查一下创建生产批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 753,
+      "userInput": "生产批次时间线",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 494,
+      "userInput": "查一下批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 158,
+      "userInput": "设备列表",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 644,
+      "userInput": "查一下创建生产批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 421,
+      "userInput": "帮我查一下在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 491,
+      "userInput": "看看设备清单",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 828,
+      "userInput": "帮我查一下生产批次列表",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 459,
+      "userInput": "查一下开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 122,
+      "userInput": "查一下设备统计",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 380,
+      "userInput": "帮我查一下设备列表",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 274,
+      "userInput": "请帮我创建生产批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 11,
+      "userInput": "看看设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 121,
+      "userInput": "帮我看一下有哪些设备",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 47,
+      "userInput": "设备清单",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 20,
+      "userInput": "帮我看一下下班",
+      "expected": "CLOCK_OUT",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "'<' not supported between instances of 'NoneType' and 'float'"
+      ],
+      "intentName": null,
+      "category": null,
+      "matched": false
+    },
+    {
+      "id": 346,
+      "userInput": "看看生产批次时间线",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 159,
+      "userInput": "设备运行数据",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 195,
+      "userInput": "请帮我设备清单",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 343,
+      "userInput": "帮我看一下有哪些设备",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 422,
+      "userInput": "看看创建生产批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 124,
+      "userInput": "请帮我批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 89,
+      "userInput": "帮我看一下新建批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 862,
+      "userInput": "设备统计",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 976,
+      "userInput": "请帮我生产批次列表",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 676,
+      "userInput": "查一下设备清单",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 790,
+      "userInput": "帮我查一下生产批次时间线",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 973,
+      "userInput": "请帮我设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 196,
+      "userInput": "请帮我设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 607,
+      "userInput": "帮我看一下开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 939,
+      "userInput": "帮我看一下在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 533,
+      "userInput": "帮我看一下新建批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 48,
+      "userInput": "请帮我设备运行数据",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 602,
+      "userInput": "帮我看一下设备列表",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 385,
+      "userInput": "看看开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_CREATE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "创建生产批次",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 528,
+      "userInput": "请帮我设备列表",
+      "expected": "EQUIPMENT_LIST",
+      "actual": "EQUIPMENT_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备列表查询",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 235,
+      "userInput": "请帮我批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 347,
+      "userInput": "帮我看一下生产批次列表",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 501,
+      "userInput": "帮我看一下下班",
+      "expected": "CLOCK_OUT",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "'<' not supported between instances of 'NoneType' and 'float'"
+      ],
+      "intentName": null,
+      "category": null,
+      "matched": false
+    },
+    {
+      "id": 936,
+      "userInput": "查一下设备统计",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "EQUIPMENT_STATS",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "设备统计",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 827,
+      "userInput": "生产批次时间线",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次时间线",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    },
+    {
+      "id": 310,
+      "userInput": "帮我查一下在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": false,
+      "recovery_issues": [
+        "category为空"
+      ],
+      "intentName": "生产批次列表",
+      "category": null,
+      "matched": true,
+      "sensitivityLevel": null
+    }
+  ]
+}

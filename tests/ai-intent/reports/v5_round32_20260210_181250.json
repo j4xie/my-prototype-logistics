@@ -1,0 +1,751 @@
+{
+  "timestamp": "2026-02-10T18:12:50.471428",
+  "test": "v5_round32_alerts_alarm_management",
+  "total": 50,
+  "pass": 40,
+  "fail": 10,
+  "error": 0,
+  "pass_rate": 80.0,
+  "category_breakdown": {
+    "active_alerts": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "alert_history": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "alert_types": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "alert_handling": {
+      "pass": 4,
+      "fail": 2,
+      "error": 0
+    },
+    "alert_config": {
+      "pass": 2,
+      "fail": 3,
+      "error": 0
+    },
+    "escalation": {
+      "pass": 3,
+      "fail": 2,
+      "error": 0
+    },
+    "alert_analytics": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "predictive_alerts": {
+      "pass": 3,
+      "fail": 2,
+      "error": 0
+    },
+    "alert_resolution": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 33,
+    "NONE": 9,
+    "SEMANTIC": 2,
+    "CLASSIFIER": 6
+  },
+  "results": [
+    {
+      "query": "当前有什么告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "EQUIPMENT_ALERT_LIST",
+        null
+      ],
+      "category": "active_alerts",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "未处理的告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_ACTIVE",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "active_alerts",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 429
+    },
+    {
+      "query": "紧急告警",
+      "status": "PASS",
+      "intent": "ALERT_ACTIVE",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_ACTIVE",
+        "ALERT_LIST",
+        "EQUIPMENT_ALERT_LIST",
+        null
+      ],
+      "category": "active_alerts",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 422
+    },
+    {
+      "query": "今天的告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        null
+      ],
+      "category": "active_alerts",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 438
+    },
+    {
+      "query": "告警总数",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_STATS",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "active_alerts",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 428
+    },
+    {
+      "query": "实时告警",
+      "status": "PASS",
+      "intent": "ALERT_ACTIVE",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_ACTIVE",
+        "ALERT_LIST",
+        "EQUIPMENT_ALERT_LIST",
+        null
+      ],
+      "category": "active_alerts",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    },
+    {
+      "query": "告警历史",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "alert_history",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "上周告警记录",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_STATS",
+        null
+      ],
+      "category": "alert_history",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "告警趋势",
+      "status": "PASS",
+      "intent": "ALERT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "alert_history",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 448
+    },
+    {
+      "query": "月度告警统计",
+      "status": "PASS",
+      "intent": "ALERT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "alert_history",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 432
+    },
+    {
+      "query": "历史告警分析",
+      "status": "PASS",
+      "intent": "ALERT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_STATS",
+        "ALERT_LIST",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "alert_history",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 428
+    },
+    {
+      "query": "设备告警",
+      "status": "PASS",
+      "intent": "EQUIPMENT_ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        null
+      ],
+      "category": "alert_types",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 445
+    },
+    {
+      "query": "温度告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "COLD_CHAIN_ALERT",
+        "COLD_CHAIN_TEMPERATURE",
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        null
+      ],
+      "category": "alert_types",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 426
+    },
+    {
+      "query": "库存告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        null
+      ],
+      "category": "alert_types",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 494
+    },
+    {
+      "query": "质量告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        null
+      ],
+      "category": "alert_types",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 433
+    },
+    {
+      "query": "安全告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        null
+      ],
+      "category": "alert_types",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "过期告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_EXPIRING_ALERT",
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        null
+      ],
+      "category": "alert_types",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 429
+    },
+    {
+      "query": "处理这个告警",
+      "status": "PASS",
+      "intent": "ALERT_ACKNOWLEDGE",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_ACKNOWLEDGE",
+        null
+      ],
+      "category": "alert_handling",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 455
+    },
+    {
+      "query": "确认告警",
+      "status": "PASS",
+      "intent": "ALERT_ACKNOWLEDGE",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_ACKNOWLEDGE",
+        null
+      ],
+      "category": "alert_handling",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 428
+    },
+    {
+      "query": "关闭告警",
+      "status": "FAIL",
+      "intent": "ALERT_RESOLVE",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_ACKNOWLEDGE",
+        null
+      ],
+      "category": "alert_handling",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 433
+    },
+    {
+      "query": "告警已处理",
+      "status": "PASS",
+      "intent": "ALERT_ACKNOWLEDGE",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_ACKNOWLEDGE",
+        null
+      ],
+      "category": "alert_handling",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 425
+    },
+    {
+      "query": "忽略这个告警",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_ACKNOWLEDGE",
+        null
+      ],
+      "category": "alert_handling",
+      "method": null,
+      "latency_ms": 656
+    },
+    {
+      "query": "转发告警",
+      "status": "FAIL",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "ALERT_ACKNOWLEDGE"
+      ],
+      "category": "alert_handling",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 453
+    },
+    {
+      "query": "告警阈值设置",
+      "status": "PASS",
+      "intent": "RULE_CONFIG",
+      "confidence": 0.93,
+      "expected": [
+        "RULE_CONFIG",
+        null
+      ],
+      "category": "alert_config",
+      "method": "SEMANTIC",
+      "latency_ms": 744
+    },
+    {
+      "query": "告警规则配置",
+      "status": "PASS",
+      "intent": "RULE_CONFIG",
+      "confidence": 0.8976951837539673,
+      "expected": [
+        "RULE_CONFIG",
+        null
+      ],
+      "category": "alert_config",
+      "method": "CLASSIFIER",
+      "latency_ms": 801
+    },
+    {
+      "query": "添加告警条件",
+      "status": "FAIL",
+      "intent": "ALERT_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "RULE_CONFIG",
+        null
+      ],
+      "category": "alert_config",
+      "method": "SEMANTIC",
+      "latency_ms": 686
+    },
+    {
+      "query": "修改告警级别",
+      "status": "FAIL",
+      "intent": "ALERT_BY_LEVEL",
+      "confidence": 0.98,
+      "expected": [
+        "RULE_CONFIG",
+        null
+      ],
+      "category": "alert_config",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 442
+    },
+    {
+      "query": "告警通知方式",
+      "status": "FAIL",
+      "intent": "FACTORY_NOTIFICATION_CONFIG",
+      "confidence": 0.8364989161491394,
+      "expected": [
+        "RULE_CONFIG",
+        null
+      ],
+      "category": "alert_config",
+      "method": "CLASSIFIER",
+      "latency_ms": 1043
+    },
+    {
+      "query": "告警升级",
+      "status": "FAIL",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "ALERT_ACKNOWLEDGE",
+        "ALERT_ACTIVE"
+      ],
+      "category": "escalation",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 513
+    },
+    {
+      "query": "通知主管",
+      "status": "FAIL",
+      "intent": "FACTORY_NOTIFICATION_CONFIG",
+      "confidence": 0.8800362944602966,
+      "expected": [
+        null,
+        "ALERT_ACKNOWLEDGE"
+      ],
+      "category": "escalation",
+      "method": "CLASSIFIER",
+      "latency_ms": 611
+    },
+    {
+      "query": "紧急联系",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "escalation",
+      "method": null,
+      "latency_ms": 617
+    },
+    {
+      "query": "升级处理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "ALERT_ACKNOWLEDGE"
+      ],
+      "category": "escalation",
+      "method": null,
+      "latency_ms": 610
+    },
+    {
+      "query": "二级响应",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "escalation",
+      "method": null,
+      "latency_ms": 691
+    },
+    {
+      "query": "告警频率分析",
+      "status": "PASS",
+      "intent": "ALERT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "alert_analytics",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "TOP10告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.6840841174125671,
+      "expected": [
+        "ALERT_STATS",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "alert_analytics",
+      "method": "CLASSIFIER",
+      "latency_ms": 926
+    },
+    {
+      "query": "告警分类统计",
+      "status": "PASS",
+      "intent": "ALERT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_STATS",
+        null
+      ],
+      "category": "alert_analytics",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 459
+    },
+    {
+      "query": "重复告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_STATS",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "alert_analytics",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "误报率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_STATS",
+        null
+      ],
+      "category": "alert_analytics",
+      "method": null,
+      "latency_ms": 786
+    },
+    {
+      "query": "告警响应时间",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "alert_analytics",
+      "method": null,
+      "latency_ms": 714
+    },
+    {
+      "query": "预测性告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "predictive_alerts",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    },
+    {
+      "query": "异常预警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "ALERT_ACTIVE",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "predictive_alerts",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 480
+    },
+    {
+      "query": "趋势告警",
+      "status": "FAIL",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "predictive_alerts",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    },
+    {
+      "query": "提前预警",
+      "status": "FAIL",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "predictive_alerts",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 469
+    },
+    {
+      "query": "风险提示",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "predictive_alerts",
+      "method": null,
+      "latency_ms": 730
+    },
+    {
+      "query": "告警解决方案",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "alert_resolution",
+      "method": null,
+      "latency_ms": 776
+    },
+    {
+      "query": "根因分析",
+      "status": "PASS",
+      "intent": "ALERT_DIAGNOSE",
+      "confidence": 0.9226009249687195,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "alert_resolution",
+      "method": "CLASSIFIER",
+      "latency_ms": 634
+    },
+    {
+      "query": "纠正措施",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "alert_resolution",
+      "method": null,
+      "latency_ms": 618
+    },
+    {
+      "query": "预防措施",
+      "status": "PASS",
+      "intent": "ALERT_DIAGNOSE",
+      "confidence": 0.6809518933296204,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "alert_resolution",
+      "method": "CLASSIFIER",
+      "latency_ms": 599
+    },
+    {
+      "query": "告警闭环",
+      "status": "FAIL",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_ACKNOWLEDGE",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "alert_resolution",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 470
+    },
+    {
+      "query": "复查告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "alert_resolution",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 432
+    }
+  ]
+}

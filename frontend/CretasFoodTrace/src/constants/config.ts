@@ -25,8 +25,8 @@ const getApiBaseUrl = () => {
     return envUrl;
   }
 
-  // 默认值：生产服务器地址
-  const defaultUrl = 'http://139.196.165.140:10010';
+  // 默认值：本地测试 (10.0.2.2 = Android emulator host)
+  const defaultUrl = 'http://10.0.2.2:10010';
   // P4 Fix: Wrap console.log with __DEV__ to avoid production logging
   if (__DEV__) {
     console.log(`[API Config] Using default API URL: ${defaultUrl}`);

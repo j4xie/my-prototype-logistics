@@ -104,6 +104,6 @@ async def cross_sheet_analysis(request: CrossSheetRequest) -> CrossSheetResponse
         logger.error(f"Cross-sheet analysis failed: {e}", exc_info=True)
         return CrossSheetResponse(
             success=False,
-            error=str(e),
+            error="综合分析失败，请稍后重试",
             processingTimeMs=int((time.time() - start_time) * 1000)
         )

@@ -5,9 +5,11 @@ Insight Generation API
 Endpoints for AI-powered business insights.
 """
 import logging
+import json
 from typing import Any, Optional, List, Dict
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from services.insight_generator import InsightGenerator
@@ -103,7 +105,7 @@ async def generate_insights(request: InsightRequest):
         raise
     except Exception as e:
         logger.error(f"Insight generation error: {e}", exc_info=True)
-        return InsightResponse(success=False, error=str(e))
+        return InsightResponse(success=False, error="分析生成失败，请稍后重试")
 
 
 @router.get("/types")
@@ -185,7 +187,7 @@ async def analyze_metrics(metrics: List[dict]):
         raise
     except Exception as e:
         logger.error(f"Metrics analysis error: {e}", exc_info=True)
-        return InsightResponse(success=False, error=str(e))
+        return InsightResponse(success=False, error="分析生成失败，请稍后重试")
 
 
 @router.post("/quick-summary")
@@ -240,16 +242,29 @@ async def quick_summary(data: List[Dict[str, Any]]):
                     sparkline = [round(float(v), 2) for v in values[::step]][:12]
                     col_info["sparkline"] = sparkline
 
-                    # Trend detection
-                    first_val = values[0]
-                    last_val = values[-1]
-                    if first_val != 0:
-                        pct = ((last_val - first_val) / abs(first_val)) * 100
-                        col_info["trend"] = "up" if pct > 5 else ("down" if pct < -5 else "flat")
-                        col_info["trendPercent"] = round(pct, 1)
+                    # Trend detection (MoM from last two non-zero sparkline points)
+                    # Use sparkline-based MoM instead of first-vs-last, which is
+                    # unreliable for row-based financial data (revenue row vs profit row)
+                    if len(sparkline) >= 2:
+                        # Find last two meaningful (non-zero) sparkline values
+                        meaningful = [v for v in sparkline if v != 0]
+                        if len(meaningful) >= 2:
+                            prev_val = meaningful[-2]
+                            last_val = meaningful[-1]
+                            pct = ((last_val - prev_val) / abs(prev_val)) * 100
+                            # Guard: extreme values (abs >= 95%) are likely data artifacts
+                            if abs(pct) >= 95:
+                                col_info["trend"] = "flat"
+                                col_info["trendPercent"] = None
+                            else:
+                                col_info["trend"] = "up" if pct > 5 else ("down" if pct < -5 else "flat")
+                                col_info["trendPercent"] = round(pct, 1)
+                        else:
+                            col_info["trend"] = "flat"
+                            col_info["trendPercent"] = None
                     else:
                         col_info["trend"] = "flat"
-                        col_info["trendPercent"] = 0
+                        col_info["trendPercent"] = None
 
             summary["columns"].append(col_info)
 
@@ -259,4 +274,43 @@ async def quick_summary(data: List[Dict[str, Any]]):
         raise
     except Exception as e:
         logger.error(f"Quick summary error: {e}", exc_info=True)
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": "分析生成失败，请稍后重试"}
+
+
+@router.post("/generate-stream")
+async def generate_insights_stream(request: InsightRequest):
+    """
+    Stream AI insights via SSE (Server-Sent Events).
+
+    Returns a text/event-stream with:
+    - event: chunk — raw LLM text as it's generated
+    - event: done  — final parsed JSON with structured insights
+
+    This allows the frontend to show AI analysis text progressively
+    instead of waiting 5-10s for the full response.
+    """
+    if not request.data:
+        raise HTTPException(status_code=400, detail="Data is required")
+
+    async def event_generator():
+        async for event in insight_generator.generate_insights_stream(
+            data=request.data,
+            metrics=request.metrics,
+            analysis_context=request.analysisContext,
+            max_insights=request.maxInsights
+        ):
+            evt_type = event.get("event", "chunk")
+            evt_data = event.get("data", "")
+            # SSE format: escape newlines in data
+            safe_data = evt_data.replace("\n", "\\n")
+            yield f"event: {evt_type}\ndata: {safe_data}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )

@@ -1,0 +1,821 @@
+{
+  "timestamp": "2026-02-10T19:28:58.021470",
+  "test": "v5_round31_cost_analysis_financial",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "cost_breakdown": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "budget_tracking": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "profit_analysis": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "expense_categories": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "roi_investment": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "pricing": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "financial_forecasting": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "tax_compliance": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "cost_optimization": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "CLASSIFIER": 11,
+    "PHRASE_MATCH": 10,
+    "NONE": 28,
+    "SEMANTIC": 1
+  },
+  "results": [
+    {
+      "query": "原料成本占总成本的比例是多少",
+      "status": "PASS",
+      "intent": "COST_QUERY",
+      "confidence": 0.7051103711128235,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "cost_breakdown",
+      "method": "CLASSIFIER",
+      "latency_ms": 614
+    },
+    {
+      "query": "人工成本分析一下最近三个月的变化",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_TREND_ANALYSIS",
+        "COST_QUERY",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "cost_breakdown",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 482
+    },
+    {
+      "query": "本月制造费用明细帮我列一下",
+      "status": "PASS",
+      "intent": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        null
+      ],
+      "category": "cost_breakdown",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 472
+    },
+    {
+      "query": "包装成本上升了多少",
+      "status": "PASS",
+      "intent": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "expected": [
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_breakdown",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 460
+    },
+    {
+      "query": "物流成本跟上个月比怎么样",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_breakdown",
+      "method": null,
+      "latency_ms": 609
+    },
+    {
+      "query": "每单位产品的成本是多少",
+      "status": "PASS",
+      "intent": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_PRODUCTION",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "cost_breakdown",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 453
+    },
+    {
+      "query": "本月预算执行率是多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_KPI",
+        "COST_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "budget_tracking",
+      "method": null,
+      "latency_ms": 640
+    },
+    {
+      "query": "有没有预算超支的部门",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "budget_tracking",
+      "method": null,
+      "latency_ms": 639
+    },
+    {
+      "query": "本季度还剩多少预算",
+      "status": "PASS",
+      "intent": "COST_QUERY",
+      "confidence": 0.5759620070457458,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        null
+      ],
+      "category": "budget_tracking",
+      "method": "CLASSIFIER",
+      "latency_ms": 611
+    },
+    {
+      "query": "实际支出和预算对比情况",
+      "status": "PASS",
+      "intent": "COST_QUERY",
+      "confidence": 0.7320476770401001,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "budget_tracking",
+      "method": "CLASSIFIER",
+      "latency_ms": 637
+    },
+    {
+      "query": "需要追加预算吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        null
+      ],
+      "category": "budget_tracking",
+      "method": null,
+      "latency_ms": 657
+    },
+    {
+      "query": "上个月的毛利分析报告",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "profit_analysis",
+      "method": null,
+      "latency_ms": 674
+    },
+    {
+      "query": "今年净利润情况怎么样",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_KPI",
+        "COST_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "profit_analysis",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 458
+    },
+    {
+      "query": "利润率趋势看一下",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "profit_analysis",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 456
+    },
+    {
+      "query": "盈亏平衡点分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        null
+      ],
+      "category": "profit_analysis",
+      "method": null,
+      "latency_ms": 663
+    },
+    {
+      "query": "各产品利润排名",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "profit_analysis",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "哪些产品在亏损",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "profit_analysis",
+      "method": null,
+      "latency_ms": 652
+    },
+    {
+      "query": "这个月水电费花了多少",
+      "status": "PASS",
+      "intent": "COST_QUERY",
+      "confidence": 0.6478379964828491,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "expense_categories",
+      "method": "CLASSIFIER",
+      "latency_ms": 630
+    },
+    {
+      "query": "设备维修费用统计",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.7768468856811523,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "EQUIPMENT_STATS",
+        "REPORT_EQUIPMENT",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "expense_categories",
+      "method": "CLASSIFIER",
+      "latency_ms": 633
+    },
+    {
+      "query": "上个季度差旅费多少",
+      "status": "PASS",
+      "intent": "COST_QUERY",
+      "confidence": 0.7730579376220703,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "expense_categories",
+      "method": "CLASSIFIER",
+      "latency_ms": 606
+    },
+    {
+      "query": "办公费用有没有超标",
+      "status": "PASS",
+      "intent": "COST_QUERY",
+      "confidence": 0.7769770622253418,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "expense_categories",
+      "method": "CLASSIFIER",
+      "latency_ms": 648
+    },
+    {
+      "query": "固定资产折旧费是多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "expense_categories",
+      "method": null,
+      "latency_ms": 840
+    },
+    {
+      "query": "上半年的投资回报率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_KPI",
+        "COST_QUERY",
+        null
+      ],
+      "category": "roi_investment",
+      "method": null,
+      "latency_ms": 796
+    },
+    {
+      "query": "新设备的ROI怎么样",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "EQUIPMENT_STATS",
+        "REPORT_EQUIPMENT",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "roi_investment",
+      "method": null,
+      "latency_ms": 767
+    },
+    {
+      "query": "车间改造项目的收益分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "roi_investment",
+      "method": null,
+      "latency_ms": 979
+    },
+    {
+      "query": "自动化投入产出比是多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_EFFICIENCY",
+        "REPORT_KPI",
+        "EQUIPMENT_STATS",
+        null
+      ],
+      "category": "roi_investment",
+      "method": null,
+      "latency_ms": 913
+    },
+    {
+      "query": "新产线多久能回收成本",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "roi_investment",
+      "method": null,
+      "latency_ms": 1313
+    },
+    {
+      "query": "技改效果评估一下",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATS",
+        "REPORT_EQUIPMENT",
+        null
+      ],
+      "category": "roi_investment",
+      "method": null,
+      "latency_ms": 694
+    },
+    {
+      "query": "我们产品的定价合理吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        null
+      ],
+      "category": "pricing",
+      "method": null,
+      "latency_ms": 625
+    },
+    {
+      "query": "成本加成定价法算一下",
+      "status": "PASS",
+      "intent": "COST_TREND_ANALYSIS",
+      "confidence": 0.5431763529777527,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "COST_TREND_ANALYSIS",
+        null
+      ],
+      "category": "pricing",
+      "method": "CLASSIFIER",
+      "latency_ms": 649
+    },
+    {
+      "query": "竞品价格对比分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_FINANCE",
+        "COST_QUERY"
+      ],
+      "category": "pricing",
+      "method": null,
+      "latency_ms": 781
+    },
+    {
+      "query": "哪些产品需要调价",
+      "status": "PASS",
+      "intent": "MATERIAL_ADJUST_QUANTITY",
+      "confidence": 0.6070559024810791,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "MATERIAL_ADJUST_QUANTITY",
+        null
+      ],
+      "category": "pricing",
+      "method": "CLASSIFIER",
+      "latency_ms": 813
+    },
+    {
+      "query": "价格弹性分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "REPORT_TRENDS"
+      ],
+      "category": "pricing",
+      "method": null,
+      "latency_ms": 612
+    },
+    {
+      "query": "预测一下下个月的生产成本",
+      "status": "PASS",
+      "intent": "COST_QUERY",
+      "confidence": 0.5743812322616577,
+      "expected": [
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "financial_forecasting",
+      "method": "CLASSIFIER",
+      "latency_ms": 621
+    },
+    {
+      "query": "明年预算怎么编制比较合理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_FINANCE",
+        "COST_QUERY"
+      ],
+      "category": "financial_forecasting",
+      "method": null,
+      "latency_ms": 829
+    },
+    {
+      "query": "未来三个月现金流预测",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        null
+      ],
+      "category": "financial_forecasting",
+      "method": null,
+      "latency_ms": 818
+    },
+    {
+      "query": "下季度资金需求多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        null
+      ],
+      "category": "financial_forecasting",
+      "method": null,
+      "latency_ms": 628
+    },
+    {
+      "query": "有什么财务风险需要关注的",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_KPI",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "financial_forecasting",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 464
+    },
+    {
+      "query": "应收账款情况统计",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        null
+      ],
+      "category": "financial_forecasting",
+      "method": null,
+      "latency_ms": 811
+    },
+    {
+      "query": "本月税务申报状态",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_FINANCE"
+      ],
+      "category": "tax_compliance",
+      "method": null,
+      "latency_ms": 811
+    },
+    {
+      "query": "发票管理情况统计一下",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_FINANCE",
+        "COST_QUERY"
+      ],
+      "category": "tax_compliance",
+      "method": null,
+      "latency_ms": 621
+    },
+    {
+      "query": "我们的税负率是多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_FINANCE",
+        "REPORT_KPI"
+      ],
+      "category": "tax_compliance",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "退税进度怎样了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_FINANCE"
+      ],
+      "category": "tax_compliance",
+      "method": null,
+      "latency_ms": 669
+    },
+    {
+      "query": "财务合规检查有什么问题",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "tax_compliance",
+      "method": null,
+      "latency_ms": 666
+    },
+    {
+      "query": "有什么降本增效的建议",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_EFFICIENCY",
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_optimization",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    },
+    {
+      "query": "目前的成本节约项目进展",
+      "status": "PASS",
+      "intent": "COST_TREND_ANALYSIS",
+      "confidence": 0.6872890591621399,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_EFFICIENCY",
+        "COST_TREND_ANALYSIS",
+        null
+      ],
+      "category": "cost_optimization",
+      "method": "CLASSIFIER",
+      "latency_ms": 630
+    },
+    {
+      "query": "生产浪费分析报告",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "cost_optimization",
+      "method": "SEMANTIC",
+      "latency_ms": 625
+    },
+    {
+      "query": "能耗成本占比多少",
+      "status": "PASS",
+      "intent": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "REPORT_EFFICIENCY",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "cost_optimization",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 467
+    },
+    {
+      "query": "原材料采购有没有议价空间",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "cost_optimization",
+      "method": null,
+      "latency_ms": 649
+    },
+    {
+      "query": "替代材料成本对比分析",
+      "status": "PASS",
+      "intent": "COST_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_FINANCE",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "cost_optimization",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    }
+  ]
+}

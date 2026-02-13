@@ -1,0 +1,913 @@
+{
+  "summary": {
+    "total": 500,
+    "correct": 434,
+    "accuracy": 86.8,
+    "seed": 12345,
+    "elapsed": 110.5231101512909
+  },
+  "method_stats": {
+    "PHRASE_MATCH": {
+      "total": 450,
+      "correct": 434
+    },
+    "NONE": {
+      "total": 50,
+      "correct": 0
+    }
+  },
+  "intent_stats": {
+    "SHIPMENT_QUERY": {
+      "total": 13,
+      "correct": 13
+    },
+    "CLOCK_OUT": {
+      "total": 13,
+      "correct": 11
+    },
+    "EQUIPMENT_MAINTENANCE": {
+      "total": 14,
+      "correct": 14
+    },
+    "REPORT_KPI": {
+      "total": 14,
+      "correct": 10
+    },
+    "COST_QUERY": {
+      "total": 13,
+      "correct": 13
+    },
+    "MATERIAL_EXPIRING_ALERT": {
+      "total": 13,
+      "correct": 13
+    },
+    "ATTENDANCE_HISTORY": {
+      "total": 14,
+      "correct": 13
+    },
+    "ALERT_LIST": {
+      "total": 13,
+      "correct": 13
+    },
+    "TRACE_FULL": {
+      "total": 13,
+      "correct": 13
+    },
+    "REPORT_PRODUCTION": {
+      "total": 14,
+      "correct": 14
+    },
+    "REPORT_TRENDS": {
+      "total": 14,
+      "correct": 14
+    },
+    "QUALITY_STATS": {
+      "total": 13,
+      "correct": 13
+    },
+    "PROCESSING_BATCH_TIMELINE": {
+      "total": 14,
+      "correct": 14
+    },
+    "REPORT_DASHBOARD_OVERVIEW": {
+      "total": 14,
+      "correct": 6
+    },
+    "TRACE_BATCH": {
+      "total": 13,
+      "correct": 13
+    },
+    "ALERT_ACTIVE": {
+      "total": 13,
+      "correct": 13
+    },
+    "SUPPLIER_LIST": {
+      "total": 13,
+      "correct": 13
+    },
+    "MATERIAL_BATCH_QUERY": {
+      "total": 13,
+      "correct": 12
+    },
+    "REPORT_INVENTORY": {
+      "total": 14,
+      "correct": 10
+    },
+    "EQUIPMENT_STATUS_QUERY": {
+      "total": 14,
+      "correct": 9
+    },
+    "REPORT_EFFICIENCY": {
+      "total": 14,
+      "correct": 14
+    },
+    "PRODUCTION_STATUS_QUERY": {
+      "total": 14,
+      "correct": 14
+    },
+    "ALERT_STATS": {
+      "total": 13,
+      "correct": 9
+    },
+    "PROCESSING_BATCH_CREATE": {
+      "total": 14,
+      "correct": 13
+    },
+    "ATTENDANCE_STATS": {
+      "total": 14,
+      "correct": 12
+    },
+    "ATTENDANCE_TODAY": {
+      "total": 14,
+      "correct": 12
+    },
+    "MATERIAL_LOW_STOCK_ALERT": {
+      "total": 13,
+      "correct": 11
+    },
+    "QUALITY_CHECK_QUERY": {
+      "total": 13,
+      "correct": 13
+    },
+    "CUSTOMER_PURCHASE_HISTORY": {
+      "total": 13,
+      "correct": 13
+    },
+    "REPORT_FINANCE": {
+      "total": 14,
+      "correct": 12
+    },
+    "MATERIAL_BATCH_CREATE": {
+      "total": 13,
+      "correct": 8
+    },
+    "EQUIPMENT_LIST": {
+      "total": 14,
+      "correct": 14
+    },
+    "CLOCK_IN": {
+      "total": 14,
+      "correct": 11
+    },
+    "EQUIPMENT_STATS": {
+      "total": 14,
+      "correct": 12
+    },
+    "PROCESSING_BATCH_LIST": {
+      "total": 14,
+      "correct": 5
+    },
+    "QUALITY_CHECK_EXECUTE": {
+      "total": 13,
+      "correct": 7
+    },
+    "SHIPMENT_STATS": {
+      "total": 13,
+      "correct": 10
+    }
+  },
+  "confusion_pairs": [
+    [
+      "PROCESSING_BATCH_LIST->None",
+      9
+    ],
+    [
+      "REPORT_DASHBOARD_OVERVIEW->None",
+      8
+    ],
+    [
+      "MATERIAL_BATCH_CREATE->MATERIAL_BATCH_QUERY",
+      5
+    ],
+    [
+      "ALERT_STATS->ALERT_LIST",
+      4
+    ],
+    [
+      "REPORT_INVENTORY->None",
+      4
+    ],
+    [
+      "QUALITY_CHECK_EXECUTE->None",
+      4
+    ],
+    [
+      "REPORT_KPI->None",
+      4
+    ],
+    [
+      "CLOCK_IN->None",
+      3
+    ],
+    [
+      "SHIPMENT_STATS->None",
+      3
+    ],
+    [
+      "EQUIPMENT_STATUS_QUERY->None",
+      3
+    ],
+    [
+      "EQUIPMENT_STATS->REPORT_EFFICIENCY",
+      2
+    ],
+    [
+      "MATERIAL_LOW_STOCK_ALERT->None",
+      2
+    ],
+    [
+      "QUALITY_CHECK_EXECUTE->QUALITY_CHECK_QUERY",
+      2
+    ],
+    [
+      "REPORT_FINANCE->None",
+      2
+    ],
+    [
+      "EQUIPMENT_STATUS_QUERY->EQUIPMENT_STATS",
+      2
+    ],
+    [
+      "ATTENDANCE_TODAY->None",
+      2
+    ],
+    [
+      "CLOCK_OUT->None",
+      2
+    ],
+    [
+      "ATTENDANCE_STATS->None",
+      2
+    ],
+    [
+      "MATERIAL_BATCH_QUERY->None",
+      1
+    ],
+    [
+      "ATTENDANCE_HISTORY->CLOCK_IN",
+      1
+    ]
+  ],
+  "failures": [
+    {
+      "id": 284,
+      "userInput": "帮我查一下今天告警数量",
+      "expected": "ALERT_STATS",
+      "actual": "ALERT_LIST",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 402,
+      "userInput": "新增原料",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 310,
+      "userInput": "看看在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: 5889B4E7)"
+    },
+    {
+      "id": 48,
+      "userInput": "查一下设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "REPORT_EFFICIENCY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 408,
+      "userInput": "帮我看一下上个月业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Read timed out. (read timeout=60)"
+    },
+    {
+      "id": 372,
+      "userInput": "查看本周库存",
+      "expected": "REPORT_INVENTORY",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Read timed out. (read timeout=60)"
+    },
+    {
+      "id": 167,
+      "userInput": "帮我查一下签到",
+      "expected": "CLOCK_IN",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Read timed out. (read timeout=60)"
+    },
+    {
+      "id": 75,
+      "userInput": "帮我看一下上周业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Read timed out. (read timeout=60)"
+    },
+    {
+      "id": 319,
+      "userInput": "请帮我开始检验",
+      "expected": "QUALITY_CHECK_EXECUTE",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Read timed out. (read timeout=60)"
+    },
+    {
+      "id": 328,
+      "userInput": "新增原料",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 51,
+      "userInput": "看看在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Read timed out. (read timeout=60)"
+    },
+    {
+      "id": 436,
+      "userInput": "帮我查一下物料查询",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: E56BE981)"
+    },
+    {
+      "id": 199,
+      "userInput": "请帮我当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Read timed out. (read timeout=60)"
+    },
+    {
+      "id": 208,
+      "userInput": "看看开始检验",
+      "expected": "QUALITY_CHECK_EXECUTE",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: EB42C8EC)"
+    },
+    {
+      "id": 25,
+      "userInput": "帮我查一下今天告警数量",
+      "expected": "ALERT_STATS",
+      "actual": "ALERT_LIST",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 300,
+      "userInput": "请帮我关键绩效指标",
+      "expected": "REPORT_KPI",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 485,
+      "userInput": "查一下关键绩效指标",
+      "expected": "REPORT_KPI",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Read timed out. (read timeout=60)"
+    },
+    {
+      "id": 393,
+      "userInput": "看看开始检验",
+      "expected": "QUALITY_CHECK_EXECUTE",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: 78D38CF3)"
+    },
+    {
+      "id": 435,
+      "userInput": "查一下最近出货量",
+      "expected": "SHIPMENT_STATS",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: FA0A5ADD)"
+    },
+    {
+      "id": 215,
+      "userInput": "请帮我原料不够了",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: AD5D0517)"
+    },
+    {
+      "id": 371,
+      "userInput": "帮我看一下本周业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 260,
+      "userInput": "帮我看一下上周业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 347,
+      "userInput": "查一下当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: 630AD5A7)"
+    },
+    {
+      "id": 129,
+      "userInput": "请帮我打卡记录",
+      "expected": "ATTENDANCE_HISTORY",
+      "actual": "CLOCK_IN",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 445,
+      "userInput": "帮我看一下本月业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Read timed out. (read timeout=60)"
+    },
+    {
+      "id": 180,
+      "userInput": "新增原料",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 430,
+      "userInput": "开始检验",
+      "expected": "QUALITY_CHECK_EXECUTE",
+      "actual": "QUALITY_CHECK_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 153,
+      "userInput": "收支情况上周",
+      "expected": "REPORT_FINANCE",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Read timed out. (read timeout=60)"
+    },
+    {
+      "id": 82,
+      "userInput": "看看机器正常吗",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATS",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 15,
+      "userInput": "帮我查一下开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: E0B2A7CE)"
+    },
+    {
+      "id": 356,
+      "userInput": "开始检验",
+      "expected": "QUALITY_CHECK_EXECUTE",
+      "actual": "QUALITY_CHECK_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 298,
+      "userInput": "查看上个月库存",
+      "expected": "REPORT_INVENTORY",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: 3DE99229)"
+    },
+    {
+      "id": 236,
+      "userInput": "查一下当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: C7EAE1C6)"
+    },
+    {
+      "id": 421,
+      "userInput": "帮我查一下在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: A10A072F)"
+    },
+    {
+      "id": 341,
+      "userInput": "查一下设备昨天状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 386,
+      "userInput": "请帮我今天到岗人员",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 190,
+      "userInput": "收支情况本周",
+      "expected": "REPORT_FINANCE",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 131,
+      "userInput": "帮我查一下下班",
+      "expected": "CLOCK_OUT",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: 93D15050)"
+    },
+    {
+      "id": 226,
+      "userInput": "帮我查一下关键绩效指标",
+      "expected": "REPORT_KPI",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 205,
+      "userInput": "帮我查一下下班",
+      "expected": "CLOCK_OUT",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: 1AF7CCE1)"
+    },
+    {
+      "id": 424,
+      "userInput": "请帮我考勤分析",
+      "expected": "ATTENDANCE_STATS",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 458,
+      "userInput": "看看当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: AA421F8E)"
+    },
+    {
+      "id": 187,
+      "userInput": "查看昨天库存",
+      "expected": "REPORT_INVENTORY",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: 1E8060CD)"
+    },
+    {
+      "id": 149,
+      "userInput": "帮我看一下今天业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 230,
+      "userInput": "看看机器正常吗",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATS",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 93,
+      "userInput": "帮我查一下签到",
+      "expected": "CLOCK_IN",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: BE4FC80E)"
+    },
+    {
+      "id": 384,
+      "userInput": "帮我查一下当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: FAE49A05)"
+    },
+    {
+      "id": 495,
+      "userInput": "请帮我当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: 59C99058)"
+    },
+    {
+      "id": 156,
+      "userInput": "帮我查一下设备最近状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 455,
+      "userInput": "看看设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "REPORT_EFFICIENCY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 213,
+      "userInput": "请帮我上个月出货量",
+      "expected": "SHIPMENT_STATS",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 41,
+      "userInput": "查一下关键绩效指标",
+      "expected": "REPORT_KPI",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 297,
+      "userInput": "帮我看一下最近业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 267,
+      "userInput": "看看设备上周状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 467,
+      "userInput": "请帮我开始检验",
+      "expected": "QUALITY_CHECK_EXECUTE",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: 7280F408)"
+    },
+    {
+      "id": 186,
+      "userInput": "帮我看一下昨天业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 69,
+      "userInput": "看看新增原料",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 204,
+      "userInput": "帮我查一下打卡",
+      "expected": "CLOCK_IN",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: 6339142C)"
+    },
+    {
+      "id": 39,
+      "userInput": "查看本月库存",
+      "expected": "REPORT_INVENTORY",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: 0C2A15AE)"
+    },
+    {
+      "id": 32,
+      "userInput": "帮我查一下新增原料",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 363,
+      "userInput": "帮我查一下原料不够了",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": 0,
+      "error": "数据服务暂时不可用 (追踪码: 6E1CA489)"
+    },
+    {
+      "id": 127,
+      "userInput": "请帮我今天到岗人员",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 247,
+      "userInput": "本月告警数量",
+      "expected": "ALERT_STATS",
+      "actual": "ALERT_LIST",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 239,
+      "userInput": "看看考勤分析",
+      "expected": "ATTENDANCE_STATS",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 136,
+      "userInput": "看看本周告警数量",
+      "expected": "ALERT_STATS",
+      "actual": "ALERT_LIST",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 102,
+      "userInput": "请帮我上周出货量",
+      "expected": "SHIPMENT_STATS",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    }
+  ]
+}

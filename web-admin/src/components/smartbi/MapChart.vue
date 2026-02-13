@@ -5,7 +5,7 @@
  * Note: Requires china.json geo data to be registered
  */
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import type { EChartsOption, ECharts } from 'echarts';
 
 // Types
@@ -189,7 +189,7 @@ async function loadChinaMap() {
 function initChart() {
   if (!chartRef.value || !isMapRegistered.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value);
+  chartInstance.value = echarts.init(chartRef.value, 'cretas');
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event

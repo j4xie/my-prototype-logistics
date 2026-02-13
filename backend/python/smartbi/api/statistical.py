@@ -182,7 +182,7 @@ async def analyze(request: StatisticalRequest) -> StatisticalResponse:
         logger.error(f"Statistical analysis failed: {e}", exc_info=True)
         return StatisticalResponse(
             success=False,
-            error=str(e),
+            error="处理失败，请稍后重试",
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
 
@@ -240,7 +240,7 @@ async def correlations(request: CorrelationRequest) -> CorrelationResponse:
         logger.error(f"Correlation analysis failed: {e}", exc_info=True)
         return CorrelationResponse(
             success=False,
-            error=str(e),
+            error="处理失败，请稍后重试",
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
 

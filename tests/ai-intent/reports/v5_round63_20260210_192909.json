@@ -1,0 +1,869 @@
+{
+  "timestamp": "2026-02-10T19:29:09.502803",
+  "test": "v5_round63_comparison_ranking",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "production_compare": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "quality_compare": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "cost_compare": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "employee_rank": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "supplier_rank": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "equipment_compare": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "period_compare": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "benchmark": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "best_worst": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 20,
+    "CLASSIFIER": 19,
+    "NONE": 11
+  },
+  "results": [
+    {
+      "query": "A线和B线产量对比",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "REPORT_EFFICIENCY",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "production_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 473
+    },
+    {
+      "query": "两个车间产量对比",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.9022598266601562,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "REPORT_EFFICIENCY",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "production_compare",
+      "method": "CLASSIFIER",
+      "latency_ms": 829
+    },
+    {
+      "query": "产量排名",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.8684969544410706,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "REPORT_EFFICIENCY",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "production_compare",
+      "method": "CLASSIFIER",
+      "latency_ms": 781
+    },
+    {
+      "query": "哪条线效率高",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.881220817565918,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "production_compare",
+      "method": "CLASSIFIER",
+      "latency_ms": 777
+    },
+    {
+      "query": "班组产量比较",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "REPORT_EFFICIENCY",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "production_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 551
+    },
+    {
+      "query": "各线体产量对比",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "REPORT_EFFICIENCY",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "production_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 438
+    },
+    {
+      "query": "各批次合格率对比",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "quality_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 485
+    },
+    {
+      "query": "质量排名",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_TRENDS",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "quality_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 511
+    },
+    {
+      "query": "哪个产品质量好",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "quality_compare",
+      "method": null,
+      "latency_ms": 1042
+    },
+    {
+      "query": "不良率对比",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "quality_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 490
+    },
+    {
+      "query": "各线质检对比",
+      "status": "PASS",
+      "intent": "REPORT_QUALITY",
+      "confidence": 0.6711390018463135,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "quality_compare",
+      "method": "CLASSIFIER",
+      "latency_ms": 621
+    },
+    {
+      "query": "质量趋势对比",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.7658272385597229,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality_compare",
+      "method": "CLASSIFIER",
+      "latency_ms": 657
+    },
+    {
+      "query": "成本对比",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 492
+    },
+    {
+      "query": "各产品成本比较",
+      "status": "PASS",
+      "intent": "COST_TREND_ANALYSIS",
+      "confidence": 0.5655134320259094,
+      "expected": [
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_compare",
+      "method": "CLASSIFIER",
+      "latency_ms": 747
+    },
+    {
+      "query": "月度成本变化",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.5708962678909302,
+      "expected": [
+        "COST_TREND_ANALYSIS",
+        "COST_QUERY",
+        "REPORT_TRENDS",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "cost_compare",
+      "method": "CLASSIFIER",
+      "latency_ms": 670
+    },
+    {
+      "query": "哪个产品便宜",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_compare",
+      "method": null,
+      "latency_ms": 659
+    },
+    {
+      "query": "费用对比",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "COST_QUERY",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "cost_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 461
+    },
+    {
+      "query": "员工绩效排名",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.9419054388999939,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "employee_rank",
+      "method": "CLASSIFIER",
+      "latency_ms": 682
+    },
+    {
+      "query": "谁效率最高",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.9229559302330017,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "employee_rank",
+      "method": "CLASSIFIER",
+      "latency_ms": 620
+    },
+    {
+      "query": "产量前十员工",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.8570522665977478,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "employee_rank",
+      "method": "CLASSIFIER",
+      "latency_ms": 633
+    },
+    {
+      "query": "出勤排名",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "REPORT_EFFICIENCY",
+        "HR_EMPLOYEE_LIST",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "employee_rank",
+      "method": null,
+      "latency_ms": 650
+    },
+    {
+      "query": "技能评分排名",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "employee_rank",
+      "method": null,
+      "latency_ms": 781
+    },
+    {
+      "query": "最佳员工",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "employee_rank",
+      "method": null,
+      "latency_ms": 810
+    },
+    {
+      "query": "供应商评分排名",
+      "status": "PASS",
+      "intent": "SUPPLIER_RANKING",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        "SUPPLIER_RANKING",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "supplier_rank",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 440
+    },
+    {
+      "query": "哪家供应商最好",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        "SUPPLIER_RANKING",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "supplier_rank",
+      "method": null,
+      "latency_ms": 712
+    },
+    {
+      "query": "供应商对比",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        "SUPPLIER_RANKING",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "supplier_rank",
+      "method": null,
+      "latency_ms": 1166
+    },
+    {
+      "query": "交货准时率排名",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        "SUPPLIER_RANKING",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "supplier_rank",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 464
+    },
+    {
+      "query": "供应商综合评价",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.8673660755157471,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        "SUPPLIER_RANKING",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "supplier_rank",
+      "method": "CLASSIFIER",
+      "latency_ms": 611
+    },
+    {
+      "query": "设备效率对比",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.5907704830169678,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "equipment_compare",
+      "method": "CLASSIFIER",
+      "latency_ms": 604
+    },
+    {
+      "query": "哪台设备故障多",
+      "status": "PASS",
+      "intent": "EQUIPMENT_ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_TRENDS",
+        "EQUIPMENT_ALERT_LIST",
+        null
+      ],
+      "category": "equipment_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 487
+    },
+    {
+      "query": "OEE排名",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "equipment_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "设备利用率对比",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "equipment_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 468
+    },
+    {
+      "query": "各设备运行时间比较",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "equipment_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 476
+    },
+    {
+      "query": "同比增长多少",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "period_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 454
+    },
+    {
+      "query": "环比变化",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "period_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "上月对比情况",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.9036478400230408,
+      "expected": [
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "period_compare",
+      "method": "CLASSIFIER",
+      "latency_ms": 760
+    },
+    {
+      "query": "去年同期对比",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.9386686086654663,
+      "expected": [
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "period_compare",
+      "method": "CLASSIFIER",
+      "latency_ms": 627
+    },
+    {
+      "query": "季度环比分析",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.9393208026885986,
+      "expected": [
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "period_compare",
+      "method": "CLASSIFIER",
+      "latency_ms": 613
+    },
+    {
+      "query": "年度同比分析",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_TRENDS",
+        "COST_TREND_ANALYSIS",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "period_compare",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    },
+    {
+      "query": "达标率是多少",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.556028425693512,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "benchmark",
+      "method": "CLASSIFIER",
+      "latency_ms": 635
+    },
+    {
+      "query": "产量是否达标",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "benchmark",
+      "method": null,
+      "latency_ms": 623
+    },
+    {
+      "query": "目标完成度",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.938387393951416,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "benchmark",
+      "method": "CLASSIFIER",
+      "latency_ms": 639
+    },
+    {
+      "query": "KPI达成情况",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "benchmark",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 445
+    },
+    {
+      "query": "指标对比分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "benchmark",
+      "method": null,
+      "latency_ms": 626
+    },
+    {
+      "query": "与标准对比",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_QUALITY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "benchmark",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "最差的批次是哪个",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "EQUIPMENT_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "best_worst",
+      "method": null,
+      "latency_ms": 692
+    },
+    {
+      "query": "最好的产品是哪个",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "EQUIPMENT_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "best_worst",
+      "method": null,
+      "latency_ms": 658
+    },
+    {
+      "query": "最高产量是多少",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "EQUIPMENT_STATS",
+        "REPORT_TRENDS",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "best_worst",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 459
+    },
+    {
+      "query": "最低合格率是多少",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.8097677230834961,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_PRODUCTION",
+        "EQUIPMENT_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "best_worst",
+      "method": "CLASSIFIER",
+      "latency_ms": 604
+    },
+    {
+      "query": "最多故障的设备",
+      "status": "PASS",
+      "intent": "EQUIPMENT_ALERT_STATS",
+      "confidence": 0.5029653310775757,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "EQUIPMENT_ALERT_STATS",
+        null
+      ],
+      "category": "best_worst",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    }
+  ]
+}

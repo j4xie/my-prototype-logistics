@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, AuthTokens, isPlatformUser, isFactoryUser } from '../types/auth';
+import { useFactoryFeatureStore } from './factoryFeatureStore';
 import { logger } from '../utils/logger';
 
 // 创建AuthStore专用logger
@@ -67,13 +68,15 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      logout: () =>
+      logout: () => {
+        useFactoryFeatureStore.getState().reset();
         set({
           user: null,
           tokens: null,
           isAuthenticated: false,
           isLoading: false,
-        }),
+        });
+      },
 
       updateUser: (updates) =>
         set((state) => ({

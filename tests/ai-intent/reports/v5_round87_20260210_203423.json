@@ -1,0 +1,838 @@
+{
+  "timestamp": "2026-02-10T20:34:23.263770",
+  "test": "v5_round87_customer_service_complaint",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "complaint_receive": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "return_process": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "customer_feedback": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "after_sales": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "recall_manage": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "customer_inquiry": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "service_level": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "claim_process": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "crm_data": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "SEMANTIC": 4,
+    "NONE": 28,
+    "PHRASE_MATCH": 8,
+    "CLASSIFIER": 10
+  },
+  "results": [
+    {
+      "query": "客户投诉记录查询",
+      "status": "PASS",
+      "intent": "CUSTOMER_SEARCH",
+      "confidence": 0.85,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "complaint_receive",
+      "method": "SEMANTIC",
+      "latency_ms": 630
+    },
+    {
+      "query": "登记一条新的投诉信息",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "CUSTOMER_SEARCH",
+        null
+      ],
+      "category": "complaint_receive",
+      "method": null,
+      "latency_ms": 620
+    },
+    {
+      "query": "投诉处理进度怎么样了",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "complaint_receive",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 524
+    },
+    {
+      "query": "跟踪上周的客户投诉",
+      "status": "PASS",
+      "intent": "CUSTOMER_STATS",
+      "confidence": 0.7147444486618042,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CUSTOMER_STATS",
+        null
+      ],
+      "category": "complaint_receive",
+      "method": "CLASSIFIER",
+      "latency_ms": 992
+    },
+    {
+      "query": "本月投诉统计数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "complaint_receive",
+      "method": "SEMANTIC",
+      "latency_ms": 861
+    },
+    {
+      "query": "按投诉类型分类汇总",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "complaint_receive",
+      "method": null,
+      "latency_ms": 774
+    },
+    {
+      "query": "查看退货处理记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "return_process",
+      "method": null,
+      "latency_ms": 670
+    },
+    {
+      "query": "退货原因分析报告",
+      "status": "PASS",
+      "intent": "ALERT_DIAGNOSE",
+      "confidence": 0.6302796006202698,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "QUALITY_CHECK_QUERY",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "return_process",
+      "method": "CLASSIFIER",
+      "latency_ms": 645
+    },
+    {
+      "query": "本月退货统计是多少",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "return_process",
+      "method": "SEMANTIC",
+      "latency_ms": 676
+    },
+    {
+      "query": "退货审批流程查询",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "return_process",
+      "method": "SEMANTIC",
+      "latency_ms": 739
+    },
+    {
+      "query": "客户要求换货怎么处理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ORDER_LIST",
+        "CUSTOMER_SEARCH",
+        null
+      ],
+      "category": "return_process",
+      "method": null,
+      "latency_ms": 730
+    },
+    {
+      "query": "查看客户反馈汇总",
+      "status": "PASS",
+      "intent": "CUSTOMER_STATS",
+      "confidence": 0.7743465304374695,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CUSTOMER_STATS",
+        null
+      ],
+      "category": "customer_feedback",
+      "method": "CLASSIFIER",
+      "latency_ms": 1680
+    },
+    {
+      "query": "满意度调查结果怎么样",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "CUSTOMER_SEARCH",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "customer_feedback",
+      "method": null,
+      "latency_ms": 667
+    },
+    {
+      "query": "客户评价数据分析",
+      "status": "PASS",
+      "intent": "CUSTOMER_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "SUPPLIER_EVALUATE",
+        "CUSTOMER_STATS",
+        null
+      ],
+      "category": "customer_feedback",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 1006
+    },
+    {
+      "query": "反馈分析报告",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "CUSTOMER_SEARCH",
+        null
+      ],
+      "category": "customer_feedback",
+      "method": null,
+      "latency_ms": 688
+    },
+    {
+      "query": "NPS评分是多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "customer_feedback",
+      "method": null,
+      "latency_ms": 655
+    },
+    {
+      "query": "收集到的客户建议有哪些",
+      "status": "PASS",
+      "intent": "MRP_CALCULATION",
+      "confidence": 0.6399950385093689,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MRP_CALCULATION",
+        null
+      ],
+      "category": "customer_feedback",
+      "method": "CLASSIFIER",
+      "latency_ms": 645
+    },
+    {
+      "query": "售后服务情况总览",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CUSTOMER_SEARCH",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "after_sales",
+      "method": null,
+      "latency_ms": 673
+    },
+    {
+      "query": "查看售后服务记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_PURCHASE_HISTORY",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "after_sales",
+      "method": null,
+      "latency_ms": 738
+    },
+    {
+      "query": "维修工单跟踪查询",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "after_sales",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 518
+    },
+    {
+      "query": "保修期查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "after_sales",
+      "method": null,
+      "latency_ms": 686
+    },
+    {
+      "query": "售后费用统计报告",
+      "status": "PASS",
+      "intent": "COST_TREND_ANALYSIS",
+      "confidence": 0.5458129644393921,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "CUSTOMER_PURCHASE_HISTORY",
+        "COST_TREND_ANALYSIS",
+        null
+      ],
+      "category": "after_sales",
+      "method": "CLASSIFIER",
+      "latency_ms": 636
+    },
+    {
+      "query": "产品召回流程启动",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EXECUTE",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "recall_manage",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 460
+    },
+    {
+      "query": "查询召回批次信息",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_BATCH",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "recall_manage",
+      "method": null,
+      "latency_ms": 627
+    },
+    {
+      "query": "召回进度跟踪",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_BATCH",
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "recall_manage",
+      "method": null,
+      "latency_ms": 654
+    },
+    {
+      "query": "发送召回通知给客户",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "CUSTOMER_SEARCH",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "recall_manage",
+      "method": null,
+      "latency_ms": 732
+    },
+    {
+      "query": "召回范围评估分析",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EVALUATE",
+      "confidence": 0.5653303265571594,
+      "expected": [
+        "TRACE_BATCH",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_DISPOSITION_EVALUATE",
+        null
+      ],
+      "category": "recall_manage",
+      "method": "CLASSIFIER",
+      "latency_ms": 666
+    },
+    {
+      "query": "生成召回报告",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_BATCH",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "recall_manage",
+      "method": null,
+      "latency_ms": 673
+    },
+    {
+      "query": "客户咨询记录查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "CUSTOMER_PURCHASE_HISTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "customer_inquiry",
+      "method": null,
+      "latency_ms": 687
+    },
+    {
+      "query": "产品咨询问题汇总",
+      "status": "PASS",
+      "intent": "PRODUCT_UPDATE",
+      "confidence": 0.6100451946258545,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCT_UPDATE",
+        null
+      ],
+      "category": "customer_inquiry",
+      "method": "CLASSIFIER",
+      "latency_ms": 635
+    },
+    {
+      "query": "客户问价格怎么报",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "customer_inquiry",
+      "method": null,
+      "latency_ms": 694
+    },
+    {
+      "query": "交期咨询回复情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "ORDER_LIST",
+        "CUSTOMER_SEARCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "customer_inquiry",
+      "method": null,
+      "latency_ms": 637
+    },
+    {
+      "query": "技术咨询记录查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "customer_inquiry",
+      "method": null,
+      "latency_ms": 669
+    },
+    {
+      "query": "客户服务等级标准查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CUSTOMER_BY_TYPE",
+        "CUSTOMER_SEARCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "service_level",
+      "method": null,
+      "latency_ms": 658
+    },
+    {
+      "query": "投诉响应时间统计",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "service_level",
+      "method": null,
+      "latency_ms": 676
+    },
+    {
+      "query": "工单处理时效分析",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.5292006134986877,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "service_level",
+      "method": "CLASSIFIER",
+      "latency_ms": 1675
+    },
+    {
+      "query": "服务质量考核报告",
+      "status": "PASS",
+      "intent": "REPORT_QUALITY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "service_level",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "客服人员绩效排名",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.9187687039375305,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "service_level",
+      "method": "CLASSIFIER",
+      "latency_ms": 656
+    },
+    {
+      "query": "服务标准达成情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "service_level",
+      "method": null,
+      "latency_ms": 768
+    },
+    {
+      "query": "理赔处理进度查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "claim_process",
+      "method": null,
+      "latency_ms": 829
+    },
+    {
+      "query": "制定赔偿方案",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "claim_process",
+      "method": null,
+      "latency_ms": 630
+    },
+    {
+      "query": "损失评估金额是多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "claim_process",
+      "method": null,
+      "latency_ms": 678
+    },
+    {
+      "query": "保险理赔申请记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "claim_process",
+      "method": null,
+      "latency_ms": 656
+    },
+    {
+      "query": "质量事故责任认定",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "claim_process",
+      "method": null,
+      "latency_ms": 675
+    },
+    {
+      "query": "查看客户档案信息",
+      "status": "PASS",
+      "intent": "CUSTOMER_SEARCH",
+      "confidence": 0.98,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "CUSTOMER_PURCHASE_HISTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "crm_data",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 495
+    },
+    {
+      "query": "客户分级管理列表",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CUSTOMER_BY_TYPE",
+        "CUSTOMER_SEARCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "crm_data",
+      "method": null,
+      "latency_ms": 658
+    },
+    {
+      "query": "VIP客户名单查询",
+      "status": "PASS",
+      "intent": "CUSTOMER_SEARCH",
+      "confidence": 0.98,
+      "expected": [
+        "CUSTOMER_BY_TYPE",
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_PURCHASE_HISTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "crm_data",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 478
+    },
+    {
+      "query": "客户画像数据分析",
+      "status": "PASS",
+      "intent": "CUSTOMER_STATS",
+      "confidence": 0.701859176158905,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CUSTOMER_STATS",
+        null
+      ],
+      "category": "crm_data",
+      "method": "CLASSIFIER",
+      "latency_ms": 1684
+    },
+    {
+      "query": "客户关系维护记录",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_PURCHASE_HISTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "crm_data",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 486
+    },
+    {
+      "query": "客户生命周期分析报告",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "crm_data",
+      "method": null,
+      "latency_ms": 708
+    }
+  ]
+}

@@ -250,5 +250,5 @@ async def yoy_comparison(request: YoYRequest):
         return YoYResponse(
             success=False,
             current_upload_id=request.upload_id,
-            error=str(e)
+            error="处理失败，请稍后重试"
         )

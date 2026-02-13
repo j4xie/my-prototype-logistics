@@ -67,6 +67,27 @@ class Settings(BaseSettings):
     postgres_pool_size: int = 5
     postgres_max_overflow: int = 10
 
+    # ==========================================
+    # Food Knowledge Base Database Configuration
+    # ==========================================
+    # Uses cretas_db (main DB) with pgvector for RAG
+    food_kb_postgres_host: str = "localhost"
+    food_kb_postgres_port: int = 5432
+    food_kb_postgres_db: str = "cretas_db"
+    food_kb_postgres_user: str = "cretas_user"
+    food_kb_postgres_password: str = ""
+
+    # Embedding model configuration (DashScope text-embedding-v3)
+    food_kb_embedding_model: str = "text-embedding-v3"
+    food_kb_embedding_dims: int = 768
+
+    @property
+    def food_kb_db_url(self) -> str:
+        """Get Food KB PostgreSQL connection URL (for asyncpg)"""
+        user = quote(self.food_kb_postgres_user, safe='')
+        passwd = quote(self.food_kb_postgres_password, safe='')
+        return f"postgresql://{user}:{passwd}@{self.food_kb_postgres_host}:{self.food_kb_postgres_port}/{self.food_kb_postgres_db}"
+
     @property
     def postgres_url(self) -> str:
         """Get PostgreSQL connection URL"""

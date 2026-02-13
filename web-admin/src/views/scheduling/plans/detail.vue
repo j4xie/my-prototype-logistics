@@ -27,7 +27,7 @@ import {
   Edit,
   Loading
 } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 
 const route = useRoute();
 const router = useRouter();
@@ -101,7 +101,7 @@ async function loadData(silent = false) {
 function initGanttChart() {
   if (!ganttContainer.value) return;
 
-  ganttChart.value = echarts.init(ganttContainer.value);
+  ganttChart.value = echarts.init(ganttContainer.value, 'cretas');
   updateGanttChart();
 
   window.addEventListener('resize', () => {

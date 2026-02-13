@@ -1,0 +1,889 @@
+{
+  "timestamp": "2026-02-10T20:40:08.661555",
+  "test": "v5_round94_maintenance_tpm",
+  "total": 50,
+  "pass": 42,
+  "fail": 8,
+  "error": 0,
+  "pass_rate": 84.0,
+  "category_breakdown": {
+    "preventive": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "corrective": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "spare_parts": {
+      "pass": 4,
+      "fail": 2,
+      "error": 0
+    },
+    "work_order": {
+      "pass": 3,
+      "fail": 2,
+      "error": 0
+    },
+    "mtbf_mttr": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "lubrication": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "condition_monitor": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "maintenance_cost": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "tpm_metrics": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "CLASSIFIER": 18,
+    "PHRASE_MATCH": 10,
+    "NONE": 21,
+    "SEMANTIC": 1
+  },
+  "results": [
+    {
+      "query": "预防性维护计划",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.9300807118415833,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_DETAIL",
+        "EQUIPMENT_STATS",
+        null
+      ],
+      "category": "preventive",
+      "method": "CLASSIFIER",
+      "latency_ms": 659
+    },
+    {
+      "query": "保养计划查询",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.9187803864479065,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_DETAIL",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "preventive",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    },
+    {
+      "query": "定期保养提醒",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.922096848487854,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "preventive",
+      "method": "CLASSIFIER",
+      "latency_ms": 627
+    },
+    {
+      "query": "PM计划执行情况",
+      "status": "FAIL",
+      "intent": "PLAN_UPDATE",
+      "confidence": 0.6038816571235657,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_STATS",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "preventive",
+      "method": "CLASSIFIER",
+      "latency_ms": 664
+    },
+    {
+      "query": "维护提醒到期设备",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.9173750877380371,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "preventive",
+      "method": "CLASSIFIER",
+      "latency_ms": 897
+    },
+    {
+      "query": "保养到期未执行",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.8942520022392273,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "preventive",
+      "method": "CLASSIFIER",
+      "latency_ms": 629
+    },
+    {
+      "query": "故障维修记录",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "corrective",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 486
+    },
+    {
+      "query": "紧急维修申请",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.8729893565177917,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "corrective",
+      "method": "CLASSIFIER",
+      "latency_ms": 632
+    },
+    {
+      "query": "维修工单列表",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_DETAIL",
+        null
+      ],
+      "category": "corrective",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 489
+    },
+    {
+      "query": "查看维修记录",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "corrective",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 440
+    },
+    {
+      "query": "维修进度跟踪",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.8907307386398315,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "corrective",
+      "method": "CLASSIFIER",
+      "latency_ms": 639
+    },
+    {
+      "query": "备件管理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_DETAIL",
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "spare_parts",
+      "method": null,
+      "latency_ms": 619
+    },
+    {
+      "query": "备件库存查询",
+      "status": "FAIL",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_DETAIL",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "spare_parts",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 464
+    },
+    {
+      "query": "备件申购审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "spare_parts",
+      "method": null,
+      "latency_ms": 641
+    },
+    {
+      "query": "备件使用记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_DETAIL",
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "spare_parts",
+      "method": null,
+      "latency_ms": 705
+    },
+    {
+      "query": "备件到货入库",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.8830162286758423,
+      "expected": [
+        "INVENTORY_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "spare_parts",
+      "method": "CLASSIFIER",
+      "latency_ms": 615
+    },
+    {
+      "query": "备件消耗统计",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "INVENTORY_QUERY",
+        "COST_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "spare_parts",
+      "method": null,
+      "latency_ms": 668
+    },
+    {
+      "query": "工单管理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "work_order",
+      "method": null,
+      "latency_ms": 674
+    },
+    {
+      "query": "创建维修工单",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        null
+      ],
+      "category": "work_order",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 465
+    },
+    {
+      "query": "工单分配给张师傅",
+      "status": "FAIL",
+      "intent": "TASK_ASSIGN_EMPLOYEE",
+      "confidence": 0.5504064559936523,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "work_order",
+      "method": "CLASSIFIER",
+      "latency_ms": 626
+    },
+    {
+      "query": "工单完成确认",
+      "status": "FAIL",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "work_order",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 466
+    },
+    {
+      "query": "工单统计分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "work_order",
+      "method": null,
+      "latency_ms": 635
+    },
+    {
+      "query": "MTBF分析报告",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "mtbf_mttr",
+      "method": null,
+      "latency_ms": 745
+    },
+    {
+      "query": "MTTR统计数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "mtbf_mttr",
+      "method": "SEMANTIC",
+      "latency_ms": 1876
+    },
+    {
+      "query": "故障频率分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "mtbf_mttr",
+      "method": null,
+      "latency_ms": 787
+    },
+    {
+      "query": "平均修复时间统计",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "mtbf_mttr",
+      "method": null,
+      "latency_ms": 1418
+    },
+    {
+      "query": "故障间隔时间",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "mtbf_mttr",
+      "method": null,
+      "latency_ms": 631
+    },
+    {
+      "query": "设备可靠性分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "mtbf_mttr",
+      "method": null,
+      "latency_ms": 1721
+    },
+    {
+      "query": "润滑管理计划",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.9028787016868591,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "lubrication",
+      "method": "CLASSIFIER",
+      "latency_ms": 613
+    },
+    {
+      "query": "加油记录查询",
+      "status": "FAIL",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.7330508828163147,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "lubrication",
+      "method": "CLASSIFIER",
+      "latency_ms": 613
+    },
+    {
+      "query": "润滑计划执行",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.88719642162323,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "lubrication",
+      "method": "CLASSIFIER",
+      "latency_ms": 638
+    },
+    {
+      "query": "润滑油更换记录",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.702736496925354,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_DETAIL",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "lubrication",
+      "method": "CLASSIFIER",
+      "latency_ms": 632
+    },
+    {
+      "query": "油品管理台账",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "lubrication",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "设备状态监测",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_DETAIL",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "condition_monitor",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 1202
+    },
+    {
+      "query": "振动监测数据",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_DETAIL",
+        "COLD_CHAIN_TEMPERATURE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "condition_monitor",
+      "method": null,
+      "latency_ms": 699
+    },
+    {
+      "query": "温度监测异常",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "condition_monitor",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 484
+    },
+    {
+      "query": "电流监测报警",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "condition_monitor",
+      "method": null,
+      "latency_ms": 627
+    },
+    {
+      "query": "噪音检测超标",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "condition_monitor",
+      "method": null,
+      "latency_ms": 660
+    },
+    {
+      "query": "在线监测系统",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_DETAIL",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "condition_monitor",
+      "method": null,
+      "latency_ms": 627
+    },
+    {
+      "query": "维修费用统计",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.776711642742157,
+      "expected": [
+        "COST_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "maintenance_cost",
+      "method": "CLASSIFIER",
+      "latency_ms": 625
+    },
+    {
+      "query": "维修预算执行情况",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.8802043795585632,
+      "expected": [
+        "COST_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "maintenance_cost",
+      "method": "CLASSIFIER",
+      "latency_ms": 611
+    },
+    {
+      "query": "备件成本分析",
+      "status": "FAIL",
+      "intent": "COST_TREND_ANALYSIS",
+      "confidence": 0.7126795053482056,
+      "expected": [
+        "COST_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "INVENTORY_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "maintenance_cost",
+      "method": "CLASSIFIER",
+      "latency_ms": 607
+    },
+    {
+      "query": "维修成本趋势",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "COST_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "maintenance_cost",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 478
+    },
+    {
+      "query": "维修ROI评估",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "maintenance_cost",
+      "method": null,
+      "latency_ms": 702
+    },
+    {
+      "query": "TPM推进情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_EFFICIENCY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "tpm_metrics",
+      "method": null,
+      "latency_ms": 663
+    },
+    {
+      "query": "自主保全活动",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "tpm_metrics",
+      "method": null,
+      "latency_ms": 696
+    },
+    {
+      "query": "设备综合效率OEE",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "tpm_metrics",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 476
+    },
+    {
+      "query": "零故障目标达成",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "tpm_metrics",
+      "method": null,
+      "latency_ms": 655
+    },
+    {
+      "query": "改善提案提交",
+      "status": "FAIL",
+      "intent": "PLAN_UPDATE",
+      "confidence": 0.5646994709968567,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "tpm_metrics",
+      "method": "CLASSIFIER",
+      "latency_ms": 591
+    },
+    {
+      "query": "技能矩阵评估",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "tpm_metrics",
+      "method": null,
+      "latency_ms": 702
+    }
+  ]
+}

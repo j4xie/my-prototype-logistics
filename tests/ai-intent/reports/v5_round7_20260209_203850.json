@@ -1,0 +1,788 @@
+{
+  "timestamp": "2026-02-09T20:38:50.255404",
+  "test": "v5_round7_write_ops",
+  "total": 49,
+  "pass": 34,
+  "fail": 15,
+  "error": 0,
+  "pass_rate": 69.38775510204081,
+  "category_breakdown": {
+    "create": {
+      "pass": 4,
+      "fail": 4,
+      "error": 0
+    },
+    "update": {
+      "pass": 6,
+      "fail": 1,
+      "error": 0
+    },
+    "delete": {
+      "pass": 4,
+      "fail": 2,
+      "error": 0
+    },
+    "exec": {
+      "pass": 4,
+      "fail": 0,
+      "error": 0
+    },
+    "pause": {
+      "pass": 1,
+      "fail": 0,
+      "error": 0
+    },
+    "stop": {
+      "pass": 1,
+      "fail": 0,
+      "error": 0
+    },
+    "cancel": {
+      "pass": 1,
+      "fail": 0,
+      "error": 0
+    },
+    "complete": {
+      "pass": 0,
+      "fail": 1,
+      "error": 0
+    },
+    "resume": {
+      "pass": 1,
+      "fail": 0,
+      "error": 0
+    },
+    "start": {
+      "pass": 2,
+      "fail": 0,
+      "error": 0
+    },
+    "assign": {
+      "pass": 1,
+      "fail": 1,
+      "error": 0
+    },
+    "clock": {
+      "pass": 2,
+      "fail": 1,
+      "error": 0
+    },
+    "alert": {
+      "pass": 3,
+      "fail": 0,
+      "error": 0
+    },
+    "ship": {
+      "pass": 0,
+      "fail": 3,
+      "error": 0
+    },
+    "mat": {
+      "pass": 2,
+      "fail": 1,
+      "error": 0
+    },
+    "safety": {
+      "pass": 2,
+      "fail": 1,
+      "error": 0
+    }
+  },
+  "action_type_distribution": {},
+  "method_distribution": {
+    "SEMANTIC": 6,
+    "PHRASE_MATCH": 31,
+    "CLASSIFIER": 9,
+    "NONE": 3
+  },
+  "results": [
+    {
+      "query": "新建一个订单",
+      "status": "FAIL",
+      "intent": "ORDER_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "ORDER_CREATE",
+        "ORDER_STATUS"
+      ],
+      "category": "create-order",
+      "method": "SEMANTIC",
+      "latency_ms": 635,
+      "action_type": null
+    },
+    {
+      "query": "创建生产批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_CREATE"
+      ],
+      "category": "create-batch",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 486,
+      "action_type": null
+    },
+    {
+      "query": "录入一批新原料",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.5172250866889954,
+      "expected": [
+        "MATERIAL_BATCH_CREATE",
+        "MATERIAL_UPDATE"
+      ],
+      "category": "create-material",
+      "method": "CLASSIFIER",
+      "latency_ms": 634,
+      "action_type": null
+    },
+    {
+      "query": "新增一条发货单",
+      "status": "FAIL",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_CREATE"
+      ],
+      "category": "create-shipment",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 478,
+      "action_type": null
+    },
+    {
+      "query": "添加新供应商",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_CREATE",
+        "SUPPLIER_LIST"
+      ],
+      "category": "create-supplier",
+      "method": null,
+      "latency_ms": 11727,
+      "action_type": null
+    },
+    {
+      "query": "创建质检任务",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.7323356866836548,
+      "expected": [
+        "QUALITY_CHECK_CREATE",
+        "QUALITY_CHECK_EXECUTE"
+      ],
+      "category": "create-qc",
+      "method": "CLASSIFIER",
+      "latency_ms": 713,
+      "action_type": null
+    },
+    {
+      "query": "新增客户信息",
+      "status": "FAIL",
+      "intent": "CUSTOMER_SEARCH",
+      "confidence": 0.98,
+      "expected": [
+        "CUSTOMER_CREATE",
+        "CUSTOMER_QUERY"
+      ],
+      "category": "create-customer",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 473,
+      "action_type": null
+    },
+    {
+      "query": "注册新用户",
+      "status": "PASS",
+      "intent": "USER_CREATE",
+      "confidence": 0.8825865387916565,
+      "expected": [
+        "USER_CREATE"
+      ],
+      "category": "create-user",
+      "method": "CLASSIFIER",
+      "latency_ms": 637,
+      "action_type": null
+    },
+    {
+      "query": "更新设备状态",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_UPDATE",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "update-equip-status",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 463,
+      "action_type": null
+    },
+    {
+      "query": "修改订单信息",
+      "status": "PASS",
+      "intent": "ORDER_STATUS",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_UPDATE",
+        "ORDER_STATUS"
+      ],
+      "category": "update-order",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 493,
+      "action_type": null
+    },
+    {
+      "query": "更新发货单状态",
+      "status": "PASS",
+      "intent": "SHIPMENT_UPDATE",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_STATUS_UPDATE",
+        "SHIPMENT_UPDATE",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "update-shipment",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 473,
+      "action_type": null
+    },
+    {
+      "query": "修改批次信息",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_DETAIL",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_UPDATE",
+        "PROCESSING_BATCH_DETAIL"
+      ],
+      "category": "update-batch",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 504,
+      "action_type": null
+    },
+    {
+      "query": "调整库存数量",
+      "status": "PASS",
+      "intent": "MATERIAL_ADJUST_QUANTITY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_ADJUST_QUANTITY",
+        "QUANTITY_ADJUST",
+        "MATERIAL_UPDATE"
+      ],
+      "category": "update-inv-qty",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 478,
+      "action_type": null
+    },
+    {
+      "query": "更新供应商评级",
+      "status": "FAIL",
+      "intent": "SUPPLIER_RANKING",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_UPDATE"
+      ],
+      "category": "update-supplier-rating",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 477,
+      "action_type": null
+    },
+    {
+      "query": "修改用户权限",
+      "status": "PASS",
+      "intent": "USER_ROLE_ASSIGN",
+      "confidence": 0.8901472687721252,
+      "expected": [
+        "USER_ROLE_ASSIGN",
+        "USER_UPDATE"
+      ],
+      "category": "update-user-role",
+      "method": "CLASSIFIER",
+      "latency_ms": 703,
+      "action_type": null
+    },
+    {
+      "query": "删除这个订单",
+      "status": "PASS",
+      "intent": "ORDER_DELETE",
+      "confidence": 0.9028614163398743,
+      "expected": [
+        "ORDER_DELETE",
+        "ORDER_STATUS"
+      ],
+      "category": "delete-order",
+      "method": "CLASSIFIER",
+      "latency_ms": 633,
+      "action_type": null
+    },
+    {
+      "query": "删除这批原料记录",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "MATERIAL_BATCH_DELETE",
+        "DATA_BATCH_DELETE"
+      ],
+      "category": "delete-material",
+      "method": "SEMANTIC",
+      "latency_ms": 651,
+      "action_type": null
+    },
+    {
+      "query": "移除供应商",
+      "status": "PASS",
+      "intent": "SUPPLIER_DELETE",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_DELETE",
+        "SUPPLIER_LIST"
+      ],
+      "category": "delete-supplier",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 493,
+      "action_type": null
+    },
+    {
+      "query": "删除客户",
+      "status": "PASS",
+      "intent": "CUSTOMER_DELETE",
+      "confidence": 0.98,
+      "expected": [
+        "CUSTOMER_DELETE"
+      ],
+      "category": "delete-customer",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 474,
+      "action_type": null
+    },
+    {
+      "query": "注销用户账号",
+      "status": "PASS",
+      "intent": "USER_DELETE",
+      "confidence": 0.98,
+      "expected": [
+        "USER_DELETE",
+        "USER_UPDATE"
+      ],
+      "category": "delete-user",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 497,
+      "action_type": null
+    },
+    {
+      "query": "删除设备",
+      "status": "FAIL",
+      "intent": "SCALE_DELETE_DEVICE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_DELETE"
+      ],
+      "category": "delete-equip",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 483,
+      "action_type": null
+    },
+    {
+      "query": "执行质检",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_CREATE"
+      ],
+      "category": "exec-quality-check",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 467,
+      "action_type": null
+    },
+    {
+      "query": "做一次质检",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_CREATE"
+      ],
+      "category": "exec-do-qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 1500,
+      "action_type": null
+    },
+    {
+      "query": "执行质量处置",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EXECUTE",
+      "confidence": 0.8131201863288879,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE"
+      ],
+      "category": "exec-disposition",
+      "method": "CLASSIFIER",
+      "latency_ms": 648,
+      "action_type": null
+    },
+    {
+      "query": "把不合格品标记为报废",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EXECUTE",
+      "confidence": 0.6998868584632874,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "QUALITY_CHECK_EXECUTE"
+      ],
+      "category": "exec-mark-scrap",
+      "method": "CLASSIFIER",
+      "latency_ms": 654,
+      "action_type": null
+    },
+    {
+      "query": "暂停这个批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_PAUSE",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_PAUSE"
+      ],
+      "category": "pause-batch",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 466,
+      "action_type": null
+    },
+    {
+      "query": "停止设备运行",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STOP",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STOP",
+        "EQUIPMENT_STATUS_UPDATE"
+      ],
+      "category": "stop-equip",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 466,
+      "action_type": null
+    },
+    {
+      "query": "取消生产批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CANCEL",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_CANCEL",
+        "PROCESSING_BATCH_PAUSE"
+      ],
+      "category": "cancel-batch",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 467,
+      "action_type": null
+    },
+    {
+      "query": "完成生产批次",
+      "status": "FAIL",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_COMPLETE",
+        "PROCESSING_BATCH_UPDATE"
+      ],
+      "category": "complete-batch",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 481,
+      "action_type": null
+    },
+    {
+      "query": "恢复生产",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_RESUME",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_RESUME",
+        "PROCESSING_BATCH_START",
+        "PRODUCTION_STATUS_QUERY"
+      ],
+      "category": "resume-prod",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 508,
+      "action_type": null
+    },
+    {
+      "query": "启动设备",
+      "status": "PASS",
+      "intent": "EQUIPMENT_START",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_START",
+        "EQUIPMENT_STATUS_UPDATE"
+      ],
+      "category": "start-equip",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 477,
+      "action_type": null
+    },
+    {
+      "query": "开始生产",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_START",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_START",
+        "PROCESSING_BATCH_CREATE",
+        "PRODUCTION_STATUS_QUERY"
+      ],
+      "category": "start-prod",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 461,
+      "action_type": null
+    },
+    {
+      "query": "分配工人到这个批次",
+      "status": "PASS",
+      "intent": "PROCESSING_WORKER_ASSIGN",
+      "confidence": 0.7131337523460388,
+      "expected": [
+        "PROCESSING_WORKER_ASSIGN",
+        "TASK_ASSIGN_WORKER"
+      ],
+      "category": "assign-worker",
+      "method": "CLASSIFIER",
+      "latency_ms": 637,
+      "action_type": null
+    },
+    {
+      "query": "给张三分配任务",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TASK_ASSIGN_WORKER",
+        "TASK_ASSIGN_EMPLOYEE",
+        "PROCESSING_WORKER_ASSIGN"
+      ],
+      "category": "assign-task",
+      "method": null,
+      "latency_ms": 12201,
+      "action_type": null
+    },
+    {
+      "query": "打卡上班",
+      "status": "PASS",
+      "intent": "CLOCK_IN",
+      "confidence": 0.98,
+      "expected": [
+        "CLOCK_IN",
+        "ATTENDANCE_TODAY"
+      ],
+      "category": "clock-in",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 508,
+      "action_type": null
+    },
+    {
+      "query": "打卡下班",
+      "status": "PASS",
+      "intent": "CLOCK_OUT",
+      "confidence": 0.98,
+      "expected": [
+        "CLOCK_OUT",
+        "CLOCK_IN"
+      ],
+      "category": "clock-out",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 476,
+      "action_type": null
+    },
+    {
+      "query": "签到",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CLOCK_IN",
+        "ATTENDANCE_TODAY"
+      ],
+      "category": "clock-sign-in",
+      "method": null,
+      "latency_ms": 498,
+      "action_type": null
+    },
+    {
+      "query": "处理这个告警",
+      "status": "PASS",
+      "intent": "ALERT_ACKNOWLEDGE",
+      "confidence": 0.93,
+      "expected": [
+        "ALERT_RESOLVE",
+        "ALERT_ACKNOWLEDGE",
+        "ALERT_LIST"
+      ],
+      "category": "alert-resolve",
+      "method": "SEMANTIC",
+      "latency_ms": 671,
+      "action_type": null
+    },
+    {
+      "query": "确认告警已收到",
+      "status": "PASS",
+      "intent": "ALERT_ACKNOWLEDGE",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_ACKNOWLEDGE",
+        "ALERT_RESOLVE"
+      ],
+      "category": "alert-ack",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 479,
+      "action_type": null
+    },
+    {
+      "query": "关闭告警",
+      "status": "PASS",
+      "intent": "ALERT_RESOLVE",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_RESOLVE",
+        "ALERT_LIST"
+      ],
+      "category": "alert-close",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 482,
+      "action_type": null
+    },
+    {
+      "query": "确认发货",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "SHIPMENT_CONFIRM",
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "ship-confirm",
+      "method": "SEMANTIC",
+      "latency_ms": 675,
+      "action_type": null
+    },
+    {
+      "query": "取消发货",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "SHIPMENT_CANCEL",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "ship-cancel",
+      "method": "SEMANTIC",
+      "latency_ms": 1126,
+      "action_type": null
+    },
+    {
+      "query": "完成发货",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "SHIPMENT_COMPLETE",
+        "SHIPMENT_CONFIRM",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "ship-complete",
+      "method": "SEMANTIC",
+      "latency_ms": 628,
+      "action_type": null
+    },
+    {
+      "query": "领用原料",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_CONSUME",
+        "MATERIAL_BATCH_USE",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "mat-consume",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 488,
+      "action_type": null
+    },
+    {
+      "query": "预留库存",
+      "status": "FAIL",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_RESERVE",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "mat-reserve",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 499,
+      "action_type": null
+    },
+    {
+      "query": "释放预留库存",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_RELEASE",
+      "confidence": 0.62990403175354,
+      "expected": [
+        "MATERIAL_BATCH_RELEASE",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "mat-release",
+      "method": "CLASSIFIER",
+      "latency_ms": 636,
+      "action_type": null
+    },
+    {
+      "query": "删除所有订单",
+      "status": "FAIL",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "DATA_BATCH_DELETE",
+        "ORDER_DELETE"
+      ],
+      "category": "safety-delete-all",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 471,
+      "action_type": null
+    },
+    {
+      "query": "清空库存",
+      "status": "PASS",
+      "intent": "INVENTORY_CLEAR",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_CLEAR",
+        "DATA_BATCH_DELETE",
+        "MATERIAL_BATCH_DELETE"
+      ],
+      "category": "safety-clear-inv",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 470,
+      "action_type": null
+    },
+    {
+      "query": "批量删除数据",
+      "status": "PASS",
+      "intent": "DATA_BATCH_DELETE",
+      "confidence": 0.98,
+      "expected": [
+        "DATA_BATCH_DELETE"
+      ],
+      "category": "safety-batch-delete",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 453,
+      "action_type": null
+    }
+  ]
+}

@@ -345,6 +345,196 @@ class InsightGenerator:
 
         return insights
 
+    def _detect_analysis_scenario(self, df: pd.DataFrame) -> str:
+        """
+        Detect the analysis scenario from column names and data.
+        Returns one of: 'financial', 'sales', 'production', 'supply_chain', 'general'
+        """
+        col_text = '|'.join(df.columns.tolist()).lower()
+        # Add sample data labels for better detection (sample 50 rows for wider coverage)
+        text_cols = df.select_dtypes(include=['object']).columns
+        if len(text_cols) > 0:
+            labels = df[text_cols[0]].dropna().astype(str).tolist()[:50]
+            col_text += '|' + '|'.join(labels).lower()
+
+        scores = {
+            'financial': 0,
+            'sales': 0,
+            'production': 0,
+            'supply_chain': 0,
+        }
+
+        financial_kw = ['收入', '利润', '费用', '成本', '毛利', '净利', '营业', '资产', '负债',
+                        '税', '折旧', '摊销', '预算', '金额', '合计', '应收', '应付', '现金',
+                        '分红', '利润表', '资产负债', '损益',
+                        'revenue', 'profit', 'cost', 'expense', 'margin', 'budget', 'actual']
+        sales_kw = ['订单', '客户', '销量', '销售额', '退货', '客单价', '转化率', '渠道',
+                     '区域', '经销商', '返利', '分部', '销售',
+                     'order', 'customer', 'sales', 'channel', 'return']
+        production_kw = ['产量', '良品', '废品', '设备', '利用率', '产能', 'oee', '能耗',
+                          '用电', '水耗', '工时', '产线', 'yield', 'production', 'equipment']
+        supply_chain_kw = ['库存', '到货', '供应商', '采购', '周转', '仓储', '物流', '缺货',
+                            'inventory', 'supplier', 'procurement', 'warehouse', 'logistics']
+
+        for kw in financial_kw:
+            if kw in col_text:
+                scores['financial'] += 1
+        for kw in sales_kw:
+            if kw in col_text:
+                scores['sales'] += 1
+        for kw in production_kw:
+            if kw in col_text:
+                scores['production'] += 1
+        for kw in supply_chain_kw:
+            if kw in col_text:
+                scores['supply_chain'] += 1
+
+        max_score = max(scores.values())
+        if max_score == 0:
+            return 'general'
+
+        return max(scores, key=scores.get)
+
+    def _get_scenario_system_role(self, scenario: str) -> str:
+        """Get the LLM system role prompt based on detected scenario."""
+        roles = {
+            'financial': (
+                "你是一位服务于食品加工企业CFO的资深财务分析师。"
+                "你的职责是从经营数据中挖掘可执行的财务洞察。"
+                "写作风格：数据驱动（每条结论必须引用具体数字）、因果明确（不仅说是什么更要说为什么）、"
+                "建议可落地（含量化目标和时间节点）。"
+                "行业对标基准：食品加工业毛利率25-35%、净利率3-8%、管理费用率5-10%、销售费用率8-15%。"
+            ),
+            'sales': (
+                "你是一位服务于食品加工企业CMO的资深销售分析师。"
+                "你的职责是从销售数据中发现增长机会和客户洞察。"
+                "分析侧重：渠道效率、客户结构、区域表现、产品组合贡献度、退货异常。"
+                "行业参考：食品行业平均客户保留率70-85%，渠道返利率3-8%，经销商集中度前5占比30-50%。"
+            ),
+            'production': (
+                "你是一位服务于食品加工企业COO的资深生产运营分析师。"
+                "你的职责是从生产数据中找出效率瓶颈和改进方向。"
+                "分析侧重：OEE拆解(可用率×性能率×良品率)、能耗效率、产能利用率、废品率趋势。"
+                "行业参考：食品加工OEE 60-85%、良品率95-99.5%、能耗成本占比5-15%。"
+            ),
+            'supply_chain': (
+                "你是一位服务于食品加工企业供应链总监的资深供应链分析师。"
+                "你的职责是从供应链数据中优化库存和采购效率。"
+                "分析侧重：库存周转天数、供应商集中度、采购成本波动、缺货风险、物流时效。"
+                "行业参考：食品行业存货周转30-90天、应收账款15-60天、原料成本占比50-70%。"
+            ),
+            'general': (
+                "你是一位服务于食品加工企业管理层的资深数据分析师。"
+                "你的职责是从数据中挖掘可执行的业务洞察。"
+                "写作风格：数据驱动、因果明确、建议可落地。"
+            ),
+        }
+        return roles.get(scenario, roles['general'])
+
+    def _get_scenario_benchmarks(self, scenario: str) -> str:
+        """Get scenario-specific benchmark text for the prompt."""
+        if scenario == 'production':
+            return (
+                "生产对标基准：OEE 60-85%（食品加工业）、良品率 95-99.5%、废品率 1-5%、"
+                "设备可用率 85-95%、能耗成本占总成本 5-15%、人均产出 行业中位数参考。"
+            )
+        if scenario == 'sales':
+            return (
+                "销售对标基准：客户保留率 70-85%、渠道返利率 3-8%、前5大客户占比 30-50%、"
+                "客单价增长率 3-8%/年、退货率 <3%。"
+            )
+        if scenario == 'supply_chain':
+            return (
+                "供应链对标基准：存货周转 30-90天、应收周转 15-60天、采购集中度前3供应商 <40%、"
+                "缺货率 <2%、物流准时率 >95%。"
+            )
+        # financial / general
+        return (
+            "财务对标基准：食品加工业毛利率25-35%、净利率3-8%、管理费用率5-10%、销售费用率8-15%。"
+        )
+
+    def _compute_production_context(self, df: pd.DataFrame) -> str:
+        """Pre-compute production/OEE metrics for LLM context (analogous to _compute_financial_context)."""
+        parts = []
+        text_cols = df.select_dtypes(include=['object']).columns
+        if len(text_cols) == 0:
+            return ""
+        label_col = text_cols[0]
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        if not numeric_cols:
+            return ""
+
+        prod_kw_map = {
+            '产量': ['产量', '产出', '总产量', 'output', 'production'],
+            '良品率': ['良品率', '合格率', '良率', 'yield', 'yield_rate'],
+            '废品率': ['废品率', '不良率', '次品率', 'waste_rate', 'defect_rate'],
+            '设备利用率': ['设备利用率', '利用率', '开机率', 'oee', 'utilization'],
+            '能耗': ['能耗', '用电', '水耗', '电耗', 'energy', 'power'],
+            '工时': ['工时', '人工时', '人时', 'labor_hours', 'man_hours'],
+        }
+
+        found_rows = {}
+        for _, row in df.iterrows():
+            label = str(row.get(label_col, '')).strip()
+            if not label:
+                continue
+            for category, keywords in prod_kw_map.items():
+                for kw in keywords:
+                    if kw in label.lower():
+                        row_values = {}
+                        for nc in numeric_cols:
+                            val = row.get(nc)
+                            if pd.notna(val) and isinstance(val, (int, float)):
+                                row_values[nc] = val
+                        if row_values:
+                            found_rows[label] = {'values': row_values, 'category': category}
+                        break
+
+        # Also check column names for production metrics
+        col_metrics = {}
+        for col in numeric_cols:
+            col_lower = col.lower()
+            for category, keywords in prod_kw_map.items():
+                if any(kw in col_lower for kw in keywords):
+                    values = df[col].dropna()
+                    if len(values) > 0:
+                        col_metrics[col] = {
+                            'category': category,
+                            'mean': float(values.mean()),
+                            'min': float(values.min()),
+                            'max': float(values.max()),
+                        }
+                    break
+
+        if not found_rows and not col_metrics:
+            return ""
+
+        parts.append("## 预计算生产运营指标")
+
+        for label, info in found_rows.items():
+            vals = info['values']
+            total = sum(vals.values())
+            if abs(total) >= 1e4:
+                display = f"{total/1e4:.2f}万"
+            else:
+                display = f"{total:,.2f}"
+            parts.append(f"- {label} ({info['category']}): 合计 {display}")
+
+        for col, info in col_metrics.items():
+            parts.append(
+                f"- 列 [{col}] ({info['category']}): 均值={info['mean']:.2f}, "
+                f"范围=[{info['min']:.2f}, {info['max']:.2f}]"
+            )
+
+        # OEE benchmark context
+        parts.append("### 生产行业基准")
+        parts.append("  - OEE: 食品加工行业60-85%")
+        parts.append("  - 良品率: 95-99.5%")
+        parts.append("  - 废品率: 1-5%")
+        parts.append("  - 能耗成本占比: 5-15%")
+
+        return "\n".join(parts)
+
     async def _generate_llm_insights(
         self,
         df: pd.DataFrame,
@@ -358,7 +548,18 @@ class InsightGenerator:
             # Prepare enriched data summary for LLM
             data_summary = self._prepare_data_summary(df)
             financial_metrics = self._compute_financial_context(df)
+            production_metrics = self._compute_production_context(df)
             metrics_summary = self._prepare_metrics_summary(metrics) if metrics else ""
+
+            # Detect analysis scenario for adaptive prompting
+            scenario = self._detect_analysis_scenario(df)
+            logger.info(f"Detected analysis scenario: {scenario}")
+
+            # 新增：预计算关键统计摘要，减少 LLM 自行推算的不确定性
+            stat_digest = self._compute_statistical_digest(df)
+
+            # KB integration: detect food industry and inject domain knowledge
+            kb_context = await self._get_food_kb_context(df)
 
             # Prepare context from extracted Excel notes/explanations
             excel_context = ""
@@ -368,75 +569,185 @@ class InsightGenerator:
 {context_info.to_prompt_text()}
 """
 
-            prompt = f"""你是一位为管理层撰写月度经营分析报告的资深财务分析师。
-请基于以下数据提供深度业务分析，而非简单的统计描述。
+            # Get scenario-specific benchmark text
+            benchmark_text = self._get_scenario_benchmarks(scenario)
+
+            prompt = f"""你是一位为食品加工企业管理层撰写经营分析报告的资深分析师。
+分析场景：{scenario}
+{benchmark_text}
+你的角色是管理层的智囊——用数据说话，给出CEO能直接采纳的建议。
 
 ## 数据概览
 {data_summary}
 
 {financial_metrics}
 
+{production_metrics}
+
+{stat_digest}
+
 {f'## 已计算指标{chr(10)}{metrics_summary}' if metrics_summary else ''}
 
 {f'## 业务背景{chr(10)}{json.dumps(context, ensure_ascii=False)}' if context else ''}
 {excel_context}
+{kb_context}
 
-## 分析要求
-
-请按以下结构输出JSON格式分析结果：
+## 输出格式（严格JSON）
 
 {{
-    "executive_summary": "一句话管理摘要（含关键数字，不超过60字）",
+    "executive_summary": "一句话管理摘要，例：'1-6月累计营收1.2亿，同比+8.3%，但净利率3.1%低于行业均值5.5%，主因销售费用率18.7%偏高'",
     "insights": [
         {{
             "dimension": "what_happened|why_happened|forecast|recommendation",
             "type": "trend|anomaly|comparison|kpi|recommendation",
-            "title": "洞察标题（简洁有力）",
-            "text": "详细描述（必须包含：具体数字 + 业务含义 + 对比基准）",
+            "title": "洞察标题（不超过15字）",
+            "text": "详细分析（80-150字，必须包含：1个以上具体数字 + 业务归因 + 行业对标或环比变化）",
             "metric": "相关指标名称",
-            "sentiment": "positive/negative/neutral",
+            "sentiment": "positive|negative|neutral",
             "importance": 1-10,
-            "confidence": 0.0-1.0,
-            "action_items": ["建议行动1", "建议行动2"],
-            "recommendation": "具体改进建议（必须可量化、可执行）"
+            "confidence": 0.5-1.0,
+            "action_items": ["可执行建议1（含预期效果）", "可执行建议2"],
+            "recommendation": "最优先的改进建议（含量化目标和时间框架）"
         }}
     ],
     "risk_alerts": [
         {{
-            "title": "风险标题",
-            "description": "风险描述（含影响程度的具体数字）",
+            "title": "风险名称",
+            "description": "风险描述（含影响金额或百分比）",
             "severity": "high|medium|low",
-            "mitigation": "建议措施（含预期效果）"
+            "mitigation": "缓解措施（含预期效果）"
         }}
     ],
     "opportunities": [
         {{
-            "title": "机会标题",
+            "title": "机会名称",
             "description": "机会描述",
-            "potential_impact": "预期影响（量化）",
-            "action_required": "所需行动"
+            "potential_impact": "量化预期收益",
+            "action_required": "落地步骤"
+        }}
+    ],
+    "sensitivity_analysis": [
+        {{
+            "factor": "关键驱动因素名称",
+            "current_value": "当前值（含单位）",
+            "impact_description": "若该因素变动±10%，对整体的影响描述（含量化估算）"
         }}
     ]
 }}
 
-## 写作规范（严格遵守）
+## 写作铁律（违反任何一条即为不合格）
 
-1. **禁止空话**: 不要写"呈现上升/下降趋势"，改为"Q3毛利率28.4%，较Q1下降2.1个百分点，主因原料成本占比从58%升至61%"
-2. **每条洞察必须有**: 具体数字 + 业务解读 + 对比基准（环比/同比/行业均值/目标值）
-3. **因果分析**: 不止说"下降"，要分析可能的驱动因素
-4. **建议可执行**: 每条建议需含优先级、预期效果、责任方向
-5. **行业对标**: 食品加工行业参考基准 — 毛利率25-35%、净利率3-8%、费用率15-25%
-6. **列名翻译**: 将"2025-01-01"类列名解读为"1月"，将英文字段名翻译为中文业务名
-7. **risk_alerts至少1条**, severity取值high/medium/low
-8. **opportunities至少1条**, 描述具体可行的改善方向
-9. **insights至少4条**, 覆盖 what_happened/why_happened/forecast/recommendation 四个维度"""
+1. **数字驱动**: 每条 insight 至少引用 1 个来自上方数据的具体数字。禁止"较高""较低""有所增长"等模糊表述。
+   - 反面："毛利率较高" / 正面："毛利率32.5%，高于行业均值28%达4.5个百分点"
+2. **对比基准**: 每条分析必须有参照系 — 环比（上月/上期）、同比（去年同期）、行业基准、或目标值。
+3. **因果归因**: 不仅描述"是什么"，更要分析"为什么"。例：净利下降 → 因原料采购成本上涨 + 产能利用率不足。
+4. **建议落地**: 每条 recommendation 需含：做什么 + 预期效果 + 时间节点。例："Q3前将散装原料集采比例从40%提升至60%，预计降本120万/年"。
+5. **覆盖完整**: insights 至少4条，分别覆盖 what_happened / why_happened / forecast / recommendation。
+6. **risk_alerts** 至少1条（severity=high/medium/low），**opportunities** 至少1条。
+7. **列名翻译**: 将 "2025-01-01" 解读为 "1月"，英文字段名翻译为中文。
+8. **精炼**: 每条 insight 的 text 控制在 80-150 字，executive_summary 不超过 80 字。
+9. **敏感性分析**: 识别2-3个关键驱动因素，输出sensitivity_analysis数组。每项含factor/current_value/impact_description。例：原料成本每上升5%，净利率预计下降约1.2个百分点。"""
 
-            response = await self._call_llm(prompt)
+            system_role = self._get_scenario_system_role(scenario)
+            response = await self._call_llm(prompt, system_role)
             return self._parse_llm_insights(response, stat_insights)
 
         except Exception as e:
             logger.error(f"LLM insight generation failed: {e}")
             return stat_insights
+
+    def _compute_statistical_digest(self, df: pd.DataFrame) -> str:
+        """
+        预计算关键统计摘要，作为 prompt 的辅助 'ingredients'。
+        包含：环比变化率、占比排序、异常值检测。
+        """
+        parts = []
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        text_cols = df.select_dtypes(include=['object']).columns
+
+        if not numeric_cols:
+            return ""
+
+        parts.append("## 预计算统计摘要")
+
+        # 1. 环比变化率（相邻数值列之间的变化）
+        # 检测月度列
+        monthly_cols = [c for c in numeric_cols
+                        if pd.to_datetime(c, errors='coerce', format='%Y-%m-%d') is not pd.NaT
+                        or any(p in str(c) for p in ['月', '年', 'Q', 'q'])]
+
+        if len(monthly_cols) >= 2 and len(text_cols) > 0:
+            label_col = text_cols[0]
+            mom_parts = []
+            for _, row in df.head(10).iterrows():
+                label = str(row.get(label_col, '')).strip()
+                if not label:
+                    continue
+                vals = []
+                for mc in monthly_cols:
+                    v = row.get(mc)
+                    if pd.notna(v) and isinstance(v, (int, float)):
+                        vals.append((str(mc), float(v)))
+                if len(vals) >= 2:
+                    # 最近两期的环比
+                    prev_name, prev_val = vals[-2]
+                    curr_name, curr_val = vals[-1]
+                    if abs(prev_val) > 1e-6:
+                        mom_pct = ((curr_val - prev_val) / abs(prev_val)) * 100
+                        mom_parts.append(f"  {label}: {curr_name}环比{mom_pct:+.1f}% ({prev_val:,.0f} -> {curr_val:,.0f})")
+            if mom_parts:
+                parts.append("### 环比变化（最近两期）")
+                parts.extend(mom_parts[:8])
+
+        # 2. 占比排序（对第一个数值列按行排序）
+        if len(numeric_cols) >= 1 and len(text_cols) > 0:
+            label_col = text_cols[0]
+            first_num_col = numeric_cols[0]
+            valid_rows = df[[label_col, first_num_col]].dropna()
+            valid_rows = valid_rows[valid_rows[first_num_col].apply(lambda x: isinstance(x, (int, float)) and x != 0)]
+            if len(valid_rows) >= 3:
+                total = valid_rows[first_num_col].sum()
+                if abs(total) > 1e-6:
+                    sorted_rows = valid_rows.sort_values(first_num_col, ascending=False).head(5)
+                    rank_parts = []
+                    for _, row in sorted_rows.iterrows():
+                        val = row[first_num_col]
+                        pct = (val / abs(total)) * 100
+                        rank_parts.append(f"  {row[label_col]}: {val:,.0f} (占{pct:.1f}%)")
+                    if rank_parts:
+                        parts.append(f"### 占比排序（按{first_num_col}降序，前5）")
+                        parts.extend(rank_parts)
+
+        # 3. 异常值检测（偏离均值 2 倍标准差）
+        anomaly_parts = []
+        for col in numeric_cols[:6]:
+            values = df[col].dropna()
+            values = values[values.apply(lambda x: isinstance(x, (int, float)))]
+            if len(values) < 5:
+                continue
+            mean_val = values.mean()
+            std_val = values.std()
+            if std_val == 0 or abs(mean_val) < 1e-6:
+                continue
+            outliers = values[abs(values - mean_val) > 2 * std_val]
+            for idx in outliers.index[:2]:
+                val = outliers[idx]
+                dev = ((val - mean_val) / abs(mean_val)) * 100
+                direction = "高于" if val > mean_val else "低于"
+                # 尝试获取行标签
+                row_label = ""
+                if len(text_cols) > 0:
+                    try:
+                        row_label = f" ({df.loc[idx, text_cols[0]]})"
+                    except Exception:
+                        pass
+                anomaly_parts.append(f"  {col}{row_label}: {val:,.0f}, {direction}均值{abs(dev):.0f}%")
+
+        if anomaly_parts:
+            parts.append("### 异常值（偏离均值>2倍标准差）")
+            parts.extend(anomaly_parts[:6])
+
+        return "\n".join(parts) if len(parts) > 1 else ""
 
     def _prepare_data_summary(self, df: pd.DataFrame) -> str:
         """Prepare enriched data summary for LLM"""
@@ -569,15 +880,63 @@ class InsightGenerator:
         if revenue_total and abs(revenue_total) > 0:
             if cost_total is not None:
                 gross_margin = (revenue_total - cost_total) / abs(revenue_total) * 100
-                parts.append(f"- 毛利率: {gross_margin:.1f}% (行业参考: 25-35%)")
+                benchmark_status = "达标" if 25 <= gross_margin <= 35 else ("偏低" if gross_margin < 25 else "优秀")
+                parts.append(f"- 毛利率: {gross_margin:.1f}% (行业参考25-35%, {benchmark_status})")
             if net_profit_total is not None:
                 net_margin = net_profit_total / abs(revenue_total) * 100
-                parts.append(f"- 净利率: {net_margin:.1f}% (行业参考: 3-8%)")
-            # Expense ratios
+                benchmark_status = "达标" if 3 <= net_margin <= 8 else ("偏低" if net_margin < 3 else "优秀")
+                parts.append(f"- 净利率: {net_margin:.1f}% (行业参考3-8%, {benchmark_status})")
+
+            # Expense ratios with industry benchmark
+            expense_benchmarks = {
+                '销售费用': (8, 15), '管理费用': (5, 10), '财务费用': (1, 5), '研发费用': (2, 8)
+            }
+            total_expense = 0
+            expense_items = []
             for label, info in found_rows.items():
                 if '费用' in label and info['total']:
                     expense_ratio = info['total'] / abs(revenue_total) * 100
-                    parts.append(f"- {label}率: {expense_ratio:.1f}%")
+                    total_expense += info['total']
+                    # Find matching benchmark
+                    bench = None
+                    for bk, bv in expense_benchmarks.items():
+                        if bk in label:
+                            bench = bv
+                            break
+                    bench_text = ""
+                    if bench:
+                        bench_status = "达标" if bench[0] <= expense_ratio <= bench[1] else ("偏高" if expense_ratio > bench[1] else "偏低")
+                        bench_text = f" (行业参考{bench[0]}-{bench[1]}%, {bench_status})"
+                    expense_items.append((label, expense_ratio, bench_text))
+                    parts.append(f"- {label}率: {expense_ratio:.1f}%{bench_text}")
+
+            # Total expense ratio
+            if total_expense > 0:
+                total_expense_ratio = total_expense / abs(revenue_total) * 100
+                parts.append(f"- 总费用率: {total_expense_ratio:.1f}% (行业参考15-25%)")
+
+            # Expense composition ranking
+            if len(expense_items) >= 2:
+                sorted_expenses = sorted(expense_items, key=lambda x: x[1], reverse=True)
+                parts.append(f"- 费用占比排序: " + " > ".join(
+                    f"{item[0]}({item[1]:.1f}%)" for item in sorted_expenses))
+
+        # Monthly trend summary for key financial rows
+        if monthly_cols and found_rows:
+            trend_parts = []
+            for label, info in list(found_rows.items())[:4]:
+                vals = [info['values'].get(m) for m in monthly_cols if m in info['values']]
+                non_zero = [v for v in vals if v and v != 0]
+                if len(non_zero) >= 3:
+                    # Calculate volatility (coefficient of variation)
+                    arr = np.array(non_zero)
+                    cv = (arr.std() / abs(arr.mean())) * 100 if abs(arr.mean()) > 1e-6 else 0
+                    max_val, min_val = arr.max(), arr.min()
+                    trend_parts.append(
+                        f"  {label}: 波动率{cv:.1f}%, 最高{max_val:,.0f}, 最低{min_val:,.0f}")
+            if trend_parts:
+                parts.append("### 波动性分析")
+                parts.extend(trend_parts)
 
         return "\n".join(parts) if len(parts) > 1 else ""
 
@@ -591,27 +950,219 @@ class InsightGenerator:
                 )
         return "\n".join(summary_parts)
 
-    async def _call_llm(self, prompt: str) -> str:
+    async def generate_text_analysis(self, text: str) -> str:
+        """Analyze free-form text (e.g. cost data from Java) using LLM directly.
+        Returns the analysis as plain text (not JSON)."""
+        headers = {
+            "Authorization": f"Bearer {self.settings.llm_api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": self.settings.llm_model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "你是一位服务于食品加工企业的资深分析师。"
+                        "请根据提供的数据进行深入分析，给出关键发现和可执行建议。"
+                        "要求：引用具体数字，分析因果关系，给出量化建议。"
+                        "用中文回复，使用Markdown格式。"
+                    )
+                },
+                {"role": "user", "content": text}
+            ],
+            "temperature": 0.4,
+            "max_tokens": 2000
+        }
+        try:
+            response = await self.client.post(
+                f"{self.settings.llm_base_url}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=httpx.Timeout(60.0)
+            )
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            logger.error(f"Text analysis LLM call failed: {e}")
+            return ""
+
+    async def _call_llm_stream(self, prompt: str, system_role: Optional[str] = None):
+        """Call LLM API with SSE streaming — yields text chunks as they arrive"""
+        headers = {
+            "Authorization": f"Bearer {self.settings.llm_api_key}",
+            "Content-Type": "application/json"
+        }
+        if not system_role:
+            system_role = self._get_scenario_system_role('general')
+        payload = {
+            "model": self.settings.llm_model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_role + " 严格以JSON格式回复，不要附加任何Markdown标记或解释文字。"
+                },
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.4,
+            "max_tokens": 2500,
+            "stream": True
+        }
+        try:
+            async with self.client.stream(
+                "POST",
+                f"{self.settings.llm_base_url}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=httpx.Timeout(90.0)
+            ) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if not line.startswith("data: "):
+                        continue
+                    data_str = line[6:]
+                    if data_str.strip() == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data_str)
+                        delta = chunk.get("choices", [{}])[0].get("delta", {})
+                        content = delta.get("content", "")
+                        if content:
+                            yield content
+                    except (json.JSONDecodeError, IndexError, KeyError):
+                        continue
+        except Exception as e:
+            logger.error(f"LLM streaming call failed: {e}")
+
+    async def generate_insights_stream(
+        self,
+        data: List[dict],
+        metrics: Optional[List[dict]] = None,
+        analysis_context: Optional[str] = None,
+        max_insights: int = 5,
+        context_info: Optional[ContextInfo] = None
+    ):
+        """
+        Stream AI insights as SSE events.
+        Yields: 'chunk' events with raw LLM text, then a final 'done' event with parsed JSON.
+        """
+        if not self.settings.llm_api_key:
+            yield {"event": "done", "data": json.dumps({"success": False, "error": "No LLM API key"})}
+            return
+
+        try:
+            df = pd.DataFrame(data)
+            if df.empty:
+                yield {"event": "done", "data": json.dumps({"success": True, "insights": []})}
+                return
+
+            # Build the same prompt as non-streaming path
+            data_summary = self._prepare_data_summary(df)
+            financial_metrics = self._compute_financial_context(df)
+            production_metrics = self._compute_production_context(df)
+            stat_digest = self._compute_statistical_digest(df)
+            kb_context = await self._get_food_kb_context(df)
+            metrics_summary = self._prepare_metrics_summary(metrics) if metrics else ""
+
+            # Detect scenario for adaptive prompting
+            scenario = self._detect_analysis_scenario(df)
+            benchmark_text = self._get_scenario_benchmarks(scenario)
+
+            excel_context = ""
+            if context_info and context_info.has_content():
+                excel_context = f"\n## 报表上下文信息（来自原始Excel）\n{context_info.to_prompt_text()}"
+
+            prompt = f"""你是一位为食品加工企业管理层撰写经营分析报告的资深分析师。
+分析场景：{scenario}
+{benchmark_text}
+你的角色是管理层的智囊——用数据说话，给出CEO能直接采纳的建议。
+
+## 数据概览
+{data_summary}
+
+{financial_metrics}
+
+{production_metrics}
+
+{stat_digest}
+
+{f'## 已计算指标{chr(10)}{metrics_summary}' if metrics_summary else ''}
+
+{f'## 业务背景{chr(10)}{json.dumps(analysis_context, ensure_ascii=False)}' if analysis_context else ''}
+{excel_context}
+{kb_context}
+
+## 输出格式（严格JSON）
+
+{{
+    "executive_summary": "一句话管理摘要",
+    "insights": [
+        {{
+            "dimension": "what_happened|why_happened|forecast|recommendation",
+            "type": "trend|anomaly|comparison|kpi|recommendation",
+            "title": "洞察标题（不超过15字）",
+            "text": "详细分析（80-150字）",
+            "metric": "相关指标名称",
+            "sentiment": "positive|negative|neutral",
+            "importance": 1-10,
+            "confidence": 0.5-1.0,
+            "action_items": ["建议1", "建议2"],
+            "recommendation": "最优先的改进建议"
+        }}
+    ],
+    "risk_alerts": [{{ "title": "风险", "description": "描述", "severity": "high|medium|low", "mitigation": "措施" }}],
+    "opportunities": [{{ "title": "机会", "description": "描述", "potential_impact": "收益", "action_required": "步骤" }}],
+    "sensitivity_analysis": [{{ "factor": "驱动因素", "current_value": "当前值", "impact_description": "变动影响" }}]
+}}
+
+## 写作铁律
+1. 数字驱动 2. 对比基准 3. 因果归因 4. 建议落地 5. 覆盖完整(4+条) 6. risk_alerts+opportunities各至少1条 7. 列名翻译 8. 精炼(80-150字) 9. 敏感性分析(2-3个关键驱动因素)"""
+
+            # Stream LLM response chunk by chunk
+            system_role = self._get_scenario_system_role(scenario)
+            full_response = ""
+            async for chunk in self._call_llm_stream(prompt, system_role):
+                full_response += chunk
+                yield {"event": "chunk", "data": chunk}
+
+            # Parse the complete response
+            stat_insights = self._generate_statistical_insights(df, metrics)
+            parsed = self._parse_llm_insights(full_response, stat_insights)
+            yield {"event": "done", "data": json.dumps({
+                "success": True,
+                "insights": parsed,
+                "totalGenerated": len(parsed),
+                "method": "llm"
+            }, ensure_ascii=False, default=str)}
+
+        except Exception as e:
+            logger.error(f"Streaming insight generation failed: {e}", exc_info=True)
+            yield {"event": "done", "data": json.dumps({"success": False, "error": str(e)})}
+
+    async def _call_llm(self, prompt: str, system_role: Optional[str] = None) -> str:
         """Call LLM API with timeout and retry"""
         headers = {
             "Authorization": f"Bearer {self.settings.llm_api_key}",
             "Content-Type": "application/json"
         }
 
+        if not system_role:
+            system_role = self._get_scenario_system_role('general')
+
         payload = {
             "model": self.settings.llm_model,
             "messages": [
                 {
                     "role": "system",
-                    "content": "你是一位资深财务分析师，正在为食品加工企业管理层撰写经营分析报告。你的分析风格：数据驱动、因果明确、建议可执行。请严格用JSON格式回复。"
+                    "content": system_role + " 严格以JSON格式回复，不要附加任何Markdown标记或解释文字。"
                 },
                 {
                     "role": "user",
                     "content": prompt
                 }
             ],
-            "temperature": 0.5,
-            "max_tokens": 4000
+            "temperature": 0.4,
+            "max_tokens": 2500
         }
 
         max_attempts = 3
@@ -673,10 +1224,11 @@ class InsightGenerator:
                         "source": "llm"
                     })
 
-            # Inject _meta insight with executive_summary, risk_alerts, opportunities
+            # Inject _meta insight with executive_summary, risk_alerts, opportunities, sensitivity_analysis
             executive_summary = result.get("executive_summary", "")
             risk_alerts = result.get("risk_alerts", [])
             opportunities = result.get("opportunities", [])
+            sensitivity_analysis = result.get("sensitivity_analysis", [])
 
             if executive_summary or risk_alerts or opportunities:
                 meta_insight = {
@@ -685,6 +1237,7 @@ class InsightGenerator:
                     "executive_summary": executive_summary,
                     "risk_alerts": risk_alerts,
                     "opportunities": opportunities,
+                    "sensitivity_analysis": sensitivity_analysis,
                     "importance": 10,
                     "source": "llm"
                 }
@@ -695,6 +1248,46 @@ class InsightGenerator:
         except Exception as e:
             logger.error(f"Failed to parse LLM insights: {e}")
             return fallback_insights
+
+    async def _get_food_kb_context(self, df: pd.DataFrame) -> str:
+        """
+        Query food knowledge base for industry context.
+        Returns formatted context string for LLM prompt injection,
+        or empty string if data is not food-industry related.
+        """
+        try:
+            from services.food_context_bridge import get_food_context_bridge
+            bridge = get_food_context_bridge()
+
+            column_names = df.columns.tolist()
+            sample_data = df.head(5).to_dict('records') if len(df) > 0 else None
+
+            # Step 1: Basic food industry detection + benchmarks
+            ctx = await bridge.get_food_context(column_names, sample_data)
+
+            if not ctx.get("is_food_industry"):
+                return ""
+
+            parts = []
+            kb_text = ctx.get("kb_context", "")
+            if kb_text:
+                parts.append(kb_text)
+
+            # Step 2: Deep entity enrichment — NER + KB knowledge retrieval
+            try:
+                enriched = await bridge.get_entity_enriched_context(column_names, sample_data)
+                entity_text = enriched.get("context_text", "")
+                if entity_text:
+                    parts.append(entity_text)
+            except Exception as e:
+                logger.debug(f"Entity enrichment skipped: {e}")
+
+            if parts:
+                return "\n## 食品行业知识库参考\n" + "\n".join(parts)
+            return ""
+        except Exception as e:
+            logger.debug(f"Food KB context unavailable: {e}")
+            return ""
 
     async def close(self):
         """Close HTTP client"""

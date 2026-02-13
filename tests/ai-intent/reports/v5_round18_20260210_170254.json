@@ -1,0 +1,777 @@
+{
+  "timestamp": "2026-02-10T17:02:54.679709",
+  "test": "v5_round18_warehouse_logistics",
+  "total": 50,
+  "pass": 26,
+  "fail": 24,
+  "error": 0,
+  "pass_rate": 52.0,
+  "category_breakdown": {
+    "inbound": {
+      "pass": 3,
+      "fail": 3,
+      "error": 0
+    },
+    "outbound": {
+      "pass": 1,
+      "fail": 5,
+      "error": 0
+    },
+    "inventory": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "storage": {
+      "pass": 3,
+      "fail": 2,
+      "error": 0
+    },
+    "material": {
+      "pass": 3,
+      "fail": 3,
+      "error": 0
+    },
+    "location": {
+      "pass": 3,
+      "fail": 2,
+      "error": 0
+    },
+    "fulfillment": {
+      "pass": 3,
+      "fail": 2,
+      "error": 0
+    },
+    "returns": {
+      "pass": 2,
+      "fail": 3,
+      "error": 0
+    },
+    "transport": {
+      "pass": 3,
+      "fail": 3,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "CLASSIFIER": 10,
+    "PHRASE_MATCH": 15,
+    "NONE": 21,
+    "SEMANTIC": 4
+  },
+  "results": [
+    {
+      "query": "今天到货了哪些原料",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.5673701167106628,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "ORDER_STATUS"
+      ],
+      "category": "inbound-arrival-today",
+      "method": "CLASSIFIER",
+      "latency_ms": 614
+    },
+    {
+      "query": "收货确认单还有几个没处理",
+      "status": "FAIL",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.6529639363288879,
+      "expected": [
+        "ORDER_STATUS",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY"
+      ],
+      "category": "inbound-receiving-confirm",
+      "method": "CLASSIFIER",
+      "latency_ms": 611
+    },
+    {
+      "query": "来料检验结果怎么样",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "inbound-incoming-inspection",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 438
+    },
+    {
+      "query": "新到的猪肉入库登记了吗",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "ORDER_STATUS"
+      ],
+      "category": "inbound-registration",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    },
+    {
+      "query": "供应商到货通知看一下",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_LIST",
+        "ORDER_STATUS",
+        "MATERIAL_BATCH_QUERY",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "inbound-arrival-notice",
+      "method": null,
+      "latency_ms": 668
+    },
+    {
+      "query": "卸货进度到哪了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "inbound-unloading-progress",
+      "method": null,
+      "latency_ms": 632
+    },
+    {
+      "query": "今天的发货计划",
+      "status": "FAIL",
+      "intent": "SHIPMENT_BY_DATE",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "REPORT_INVENTORY"
+      ],
+      "category": "outbound-shipping-plan",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 479
+    },
+    {
+      "query": "出库单打印一下",
+      "status": "FAIL",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS",
+        "REPORT_INVENTORY",
+        "FORM_GENERATION"
+      ],
+      "category": "outbound-delivery-note",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    },
+    {
+      "query": "装车完了没有",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "outbound-loading",
+      "method": null,
+      "latency_ms": 690
+    },
+    {
+      "query": "下午发运的是哪几单",
+      "status": "FAIL",
+      "intent": "SHIPMENT_BY_DATE",
+      "confidence": 0.7258695363998413,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "ORDER_LIST",
+        "ORDER_STATUS"
+      ],
+      "category": "outbound-dispatch",
+      "method": "CLASSIFIER",
+      "latency_ms": 722
+    },
+    {
+      "query": "客户来提货了",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_STATUS",
+        "SHIPMENT_QUERY",
+        "CUSTOMER_SEARCH"
+      ],
+      "category": "outbound-pickup",
+      "method": null,
+      "latency_ms": 749
+    },
+    {
+      "query": "城西店的配送安排好了吗",
+      "status": "FAIL",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS",
+        "ORDER_LIST"
+      ],
+      "category": "outbound-delivery-schedule",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 489
+    },
+    {
+      "query": "库存盘点结果出来了吗",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_INVENTORY",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "inventory-stocktake",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 471
+    },
+    {
+      "query": "安全库存线以下的有哪些",
+      "status": "PASS",
+      "intent": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.6570621728897095,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "REPORT_INVENTORY",
+        "ALERT_LIST"
+      ],
+      "category": "inventory-safety-stock",
+      "method": "CLASSIFIER",
+      "latency_ms": 700
+    },
+    {
+      "query": "库存预警看一下",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "ALERT_LIST",
+        "REPORT_INVENTORY",
+        "MATERIAL_EXPIRING_ALERT"
+      ],
+      "category": "inventory-stock-alert",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 488
+    },
+    {
+      "query": "库龄超过90天的有多少",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.6630677580833435,
+      "expected": [
+        "REPORT_INVENTORY",
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_EXPIRING_ALERT"
+      ],
+      "category": "inventory-aging-analysis",
+      "method": "CLASSIFIER",
+      "latency_ms": 935
+    },
+    {
+      "query": "滞销品清单拉出来",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_INVENTORY",
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_EXPIRING_ALERT"
+      ],
+      "category": "inventory-slow-moving",
+      "method": null,
+      "latency_ms": 722
+    },
+    {
+      "query": "库存周转率怎么样",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_INVENTORY",
+        "REPORT_EFFICIENCY",
+        "REPORT_KPI"
+      ],
+      "category": "inventory-turnover",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 462
+    },
+    {
+      "query": "仓库温湿度正常吗",
+      "status": "FAIL",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        "ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "storage-temp-humidity",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 469
+    },
+    {
+      "query": "冷藏库温度是多少",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.98,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "storage-cold-room-temp",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 460
+    },
+    {
+      "query": "干燥剂该换了吧",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "storage-desiccant",
+      "method": null,
+      "latency_ms": 681
+    },
+    {
+      "query": "原料库防潮措施到位了吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        "EQUIPMENT_STATUS_QUERY",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "storage-moisture-proof",
+      "method": null,
+      "latency_ms": 690
+    },
+    {
+      "query": "存储条件合规检查",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        "QUALITY_CHECK_QUERY",
+        "FOOD_SAFETY_CERT_QUERY"
+      ],
+      "category": "storage-compliance",
+      "method": null,
+      "latency_ms": 656
+    },
+    {
+      "query": "领料单审批了没",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "ORDER_STATUS",
+        "MATERIAL_CONSUME",
+        null
+      ],
+      "category": "material-requisition",
+      "method": null,
+      "latency_ms": 668
+    },
+    {
+      "query": "车间退料记录查一下",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_CONSUME",
+        "REPORT_INVENTORY"
+      ],
+      "category": "material-return",
+      "method": null,
+      "latency_ms": 744
+    },
+    {
+      "query": "A线差料要补",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_CONSUME"
+      ],
+      "category": "material-replenish",
+      "method": null,
+      "latency_ms": 670
+    },
+    {
+      "query": "今天的原料消耗汇总",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_CONSUME",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_CONSUME",
+        "REPORT_INVENTORY",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_PRODUCTION"
+      ],
+      "category": "material-consumption",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 435
+    },
+    {
+      "query": "把这批面粉从2号库转到车间",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_CONSUME",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "material-transfer",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 441
+    },
+    {
+      "query": "余料回收了多少公斤",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_CONSUME",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "material-scrap-recovery",
+      "method": null,
+      "latency_ms": 662
+    },
+    {
+      "query": "B-03-02库位放的是什么",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.5242128968238831,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "location-query",
+      "method": "CLASSIFIER",
+      "latency_ms": 617
+    },
+    {
+      "query": "货架使用率看一下",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "REPORT_INVENTORY",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "location-shelf-utilization",
+      "method": "SEMANTIC",
+      "latency_ms": 601
+    },
+    {
+      "query": "新到的食用油上架了吗",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "ORDER_STATUS"
+      ],
+      "category": "location-putaway",
+      "method": null,
+      "latency_ms": 748
+    },
+    {
+      "query": "把3号库区的调味料移到1号库",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "location-relocation",
+      "method": null,
+      "latency_ms": 640
+    },
+    {
+      "query": "库区规划方案",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_INVENTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "location-zone-planning",
+      "method": null,
+      "latency_ms": 669
+    },
+    {
+      "query": "订单拣货完成了几个",
+      "status": "FAIL",
+      "intent": "ORDER_UPDATE",
+      "confidence": 0.9500000000000001,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "fulfillment-picking",
+      "method": "SEMANTIC",
+      "latency_ms": 619
+    },
+    {
+      "query": "拣货进度怎么样了",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_STATUS",
+        "SHIPMENT_QUERY",
+        "PRODUCTION_STATUS_QUERY"
+      ],
+      "category": "fulfillment-picking-progress",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 443
+    },
+    {
+      "query": "打包好了的放在哪里",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_STATUS",
+        "SHIPMENT_QUERY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "fulfillment-packing",
+      "method": null,
+      "latency_ms": 638
+    },
+    {
+      "query": "出货前称重数据对一下",
+      "status": "FAIL",
+      "intent": "SCALE_LIST_DEVICES",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "fulfillment-weighing",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 448
+    },
+    {
+      "query": "贴标机正常吗还是要手动贴",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "fulfillment-labeling",
+      "method": null,
+      "latency_ms": 837
+    },
+    {
+      "query": "昨天的退货处理好了吗",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "ORDER_STATUS",
+        "QUALITY_CHECK_QUERY",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "returns-processing",
+      "method": "SEMANTIC",
+      "latency_ms": 618
+    },
+    {
+      "query": "过期品报废清单",
+      "status": "FAIL",
+      "intent": "MATERIAL_EXPIRED_QUERY",
+      "confidence": 0.7451298236846924,
+      "expected": [
+        "MATERIAL_EXPIRING_ALERT",
+        "REPORT_INVENTORY",
+        "MATERIAL_BATCH_QUERY",
+        "DISPOSITION_EXECUTE"
+      ],
+      "category": "returns-disposal-list",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    },
+    {
+      "query": "不良品隔离区有多少",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_INVENTORY",
+        "DISPOSITION_EXECUTE"
+      ],
+      "category": "returns-defective-isolation",
+      "method": null,
+      "latency_ms": 667
+    },
+    {
+      "query": "废料回收公司什么时候来拉",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_LIST",
+        null
+      ],
+      "category": "returns-waste-pickup",
+      "method": null,
+      "latency_ms": 761
+    },
+    {
+      "query": "退货的重新入库了吗",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_STATUS",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "returns-restock",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "物流跟踪看一下这个单号",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.5902727842330933,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS",
+        "TRACE_BATCH"
+      ],
+      "category": "transport-tracking",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    },
+    {
+      "query": "配送路线优化了没",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "transport-route-optimize",
+      "method": null,
+      "latency_ms": 750
+    },
+    {
+      "query": "运输车辆今天安排了几台",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.9700000000000001,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_STATS",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "transport-vehicle-schedule",
+      "method": "SEMANTIC",
+      "latency_ms": 616
+    },
+    {
+      "query": "客户那边预计几点到货",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.5174180269241333,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS"
+      ],
+      "category": "transport-eta",
+      "method": "CLASSIFIER",
+      "latency_ms": 605
+    },
+    {
+      "query": "这个月运费花了多少",
+      "status": "FAIL",
+      "intent": "COST_QUERY",
+      "confidence": 0.7154479622840881,
+      "expected": [
+        "REPORT_FINANCE",
+        "SHIPMENT_STATS",
+        "REPORT_INVENTORY"
+      ],
+      "category": "transport-freight-cost",
+      "method": "CLASSIFIER",
+      "latency_ms": 610
+    },
+    {
+      "query": "客户签收了吗",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS"
+      ],
+      "category": "transport-delivery-confirm",
+      "method": null,
+      "latency_ms": 646
+    }
+  ]
+}

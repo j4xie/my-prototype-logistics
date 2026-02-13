@@ -1,0 +1,880 @@
+{
+  "timestamp": "2026-02-10T20:21:22.394550",
+  "test": "v5_round84_seasonal_calendar_based",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "holiday_plan": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "seasonal_demand": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "year_end": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "monthly_close": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "weekly_plan": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "daily_ops": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "quarter_review": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "shift_schedule": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "deadline_track": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "CLASSIFIER": 16,
+    "SEMANTIC": 5,
+    "NONE": 17,
+    "PHRASE_MATCH": 12
+  },
+  "results": [
+    {
+      "query": "春节排产计划怎么安排",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.5581668019294739,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "SCHEDULING_SET_MANUAL",
+        "PROCESSING_BATCH_CREATE",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "holiday_plan",
+      "method": "CLASSIFIER",
+      "latency_ms": 646
+    },
+    {
+      "query": "节假日生产安排查询",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.93,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "SCHEDULING_SET_MANUAL",
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_CREATE",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "holiday_plan",
+      "method": "SEMANTIC",
+      "latency_ms": 716
+    },
+    {
+      "query": "发一下放假通知",
+      "status": "PASS",
+      "intent": "FACTORY_NOTIFICATION_CONFIG",
+      "confidence": 0.6011704206466675,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "FACTORY_NOTIFICATION_CONFIG",
+        null
+      ],
+      "category": "holiday_plan",
+      "method": "CLASSIFIER",
+      "latency_ms": 954
+    },
+    {
+      "query": "春节加班怎么安排的",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SCHEDULING_SET_MANUAL",
+        "SCHEDULING_AUTO",
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_MONTHLY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "holiday_plan",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "节前备货量是多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "holiday_plan",
+      "method": null,
+      "latency_ms": 639
+    },
+    {
+      "query": "年终盘点什么时候开始",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "holiday_plan",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 484
+    },
+    {
+      "query": "旺季备货计划",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.92,
+      "expected": [
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "PROCESSING_BATCH_CREATE",
+        "SCHEDULING_AUTO",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "seasonal_demand",
+      "method": "SEMANTIC",
+      "latency_ms": 614
+    },
+    {
+      "query": "淡季产能怎么调整",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "SCHEDULING_SET_MANUAL",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "seasonal_demand",
+      "method": null,
+      "latency_ms": 666
+    },
+    {
+      "query": "季节性产品排产安排",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "SCHEDULING_SET_MANUAL",
+        "PROCESSING_BATCH_CREATE",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "seasonal_demand",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "应季生产任务有哪些",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "SCHEDULING_AUTO",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "seasonal_demand",
+      "method": null,
+      "latency_ms": 683
+    },
+    {
+      "query": "换季清仓库存情况",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "seasonal_demand",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 1451
+    },
+    {
+      "query": "年度生产总结",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.9003621339797974,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "year_end",
+      "method": "CLASSIFIER",
+      "latency_ms": 627
+    },
+    {
+      "query": "年度报表生成",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_FINANCE",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "year_end",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 461
+    },
+    {
+      "query": "年终考核数据",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.7805672287940979,
+      "expected": [
+        "REPORT_KPI",
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_MONTHLY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "HR_EMPLOYEE_LIST",
+        null
+      ],
+      "category": "year_end",
+      "method": "CLASSIFIER",
+      "latency_ms": 1366
+    },
+    {
+      "query": "明年的年度预算",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "year_end",
+      "method": null,
+      "latency_ms": 652
+    },
+    {
+      "query": "今年年度目标完成了多少",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "year_end",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 428
+    },
+    {
+      "query": "来年生产计划怎么定",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.92,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "SCHEDULING_SET_MANUAL",
+        "PROCESSING_BATCH_CREATE",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "year_end",
+      "method": "SEMANTIC",
+      "latency_ms": 634
+    },
+    {
+      "query": "这个月月结数据出了吗",
+      "status": "PASS",
+      "intent": "ATTENDANCE_MONTHLY",
+      "confidence": 0.6839188933372498,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_KPI",
+        "ATTENDANCE_MONTHLY",
+        null
+      ],
+      "category": "monthly_close",
+      "method": "CLASSIFIER",
+      "latency_ms": 608
+    },
+    {
+      "query": "月度盘点结果",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "monthly_close",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 445
+    },
+    {
+      "query": "月报生成了没",
+      "status": "PASS",
+      "intent": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_KPI",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "monthly_close",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 489
+    },
+    {
+      "query": "月度考勤汇总数据",
+      "status": "PASS",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_MONTHLY",
+        "ATTENDANCE_HISTORY",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "HR_EMPLOYEE_LIST",
+        null
+      ],
+      "category": "monthly_close",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 437
+    },
+    {
+      "query": "月末对账情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "monthly_close",
+      "method": null,
+      "latency_ms": 630
+    },
+    {
+      "query": "本周生产周计划",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.9700000000000001,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "SCHEDULING_SET_MANUAL",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "weekly_plan",
+      "method": "SEMANTIC",
+      "latency_ms": 628
+    },
+    {
+      "query": "本周排产安排是什么",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.8642279505729675,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "SCHEDULING_SET_MANUAL",
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_CREATE",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "weekly_plan",
+      "method": "CLASSIFIER",
+      "latency_ms": 741
+    },
+    {
+      "query": "周会安排在什么时候",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "SCHEDULING_SET_MANUAL",
+        null
+      ],
+      "category": "weekly_plan",
+      "method": null,
+      "latency_ms": 694
+    },
+    {
+      "query": "周报提交了吗",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "weekly_plan",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 484
+    },
+    {
+      "query": "下周排产计划",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "SCHEDULING_SET_MANUAL",
+        "PROCESSING_BATCH_CREATE",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "weekly_plan",
+      "method": null,
+      "latency_ms": 720
+    },
+    {
+      "query": "每周例会纪要",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "weekly_plan",
+      "method": null,
+      "latency_ms": 675
+    },
+    {
+      "query": "今日生产计划",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "SCHEDULING_AUTO",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "daily_ops",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 1228
+    },
+    {
+      "query": "今天的日报",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "daily_ops",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 468
+    },
+    {
+      "query": "早会内容准备",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "daily_ops",
+      "method": null,
+      "latency_ms": 655
+    },
+    {
+      "query": "交班记录查一下",
+      "status": "PASS",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.6960846185684204,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_HISTORY",
+        "ATTENDANCE_TODAY",
+        null
+      ],
+      "category": "daily_ops",
+      "method": "CLASSIFIER",
+      "latency_ms": 668
+    },
+    {
+      "query": "每日巡检情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "daily_ops",
+      "method": null,
+      "latency_ms": 705
+    },
+    {
+      "query": "季度生产总结",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.8965136408805847,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "quarter_review",
+      "method": "CLASSIFIER",
+      "latency_ms": 614
+    },
+    {
+      "query": "季度绩效考核",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.9451760053634644,
+      "expected": [
+        "REPORT_KPI",
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_MONTHLY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "HR_EMPLOYEE_LIST",
+        null
+      ],
+      "category": "quarter_review",
+      "method": "CLASSIFIER",
+      "latency_ms": 655
+    },
+    {
+      "query": "Q1业绩数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "quarter_review",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 476
+    },
+    {
+      "query": "下季度预测怎么样",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.7699834108352661,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quarter_review",
+      "method": "CLASSIFIER",
+      "latency_ms": 707
+    },
+    {
+      "query": "季度目标完成率多少",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.9375647306442261,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "quarter_review",
+      "method": "CLASSIFIER",
+      "latency_ms": 657
+    },
+    {
+      "query": "季度环比数据对比",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.9427658319473267,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quarter_review",
+      "method": "CLASSIFIER",
+      "latency_ms": 628
+    },
+    {
+      "query": "倒班排班表",
+      "status": "PASS",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "SCHEDULING_SET_MANUAL",
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_HISTORY",
+        "ATTENDANCE_TODAY",
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "shift_schedule",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 466
+    },
+    {
+      "query": "白班夜班人员安排",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SCHEDULING_SET_MANUAL",
+        "SCHEDULING_AUTO",
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "shift_schedule",
+      "method": null,
+      "latency_ms": 641
+    },
+    {
+      "query": "三班倒怎么排的",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SCHEDULING_AUTO",
+        "SCHEDULING_SET_MANUAL",
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "shift_schedule",
+      "method": null,
+      "latency_ms": 652
+    },
+    {
+      "query": "加班申请记录",
+      "status": "PASS",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.6562938094139099,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_HISTORY",
+        "ATTENDANCE_MONTHLY",
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "shift_schedule",
+      "method": "CLASSIFIER",
+      "latency_ms": 623
+    },
+    {
+      "query": "调休安排查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_MONTHLY",
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "shift_schedule",
+      "method": null,
+      "latency_ms": 663
+    },
+    {
+      "query": "交期跟踪情况",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.7502800226211548,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "ORDER_LIST",
+        "MATERIAL_EXPIRING_ALERT",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "deadline_track",
+      "method": "CLASSIFIER",
+      "latency_ms": 625
+    },
+    {
+      "query": "快到期的提醒有哪些",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.8586535453796387,
+      "expected": [
+        "MATERIAL_EXPIRING_ALERT",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "deadline_track",
+      "method": "CLASSIFIER",
+      "latency_ms": 642
+    },
+    {
+      "query": "截止日期快到了的任务",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "PROCESSING_BATCH_LIST",
+        "SHIPMENT_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "deadline_track",
+      "method": null,
+      "latency_ms": 691
+    },
+    {
+      "query": "逾期订单有多少",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "ORDER_LIST",
+        "SHIPMENT_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "deadline_track",
+      "method": "SEMANTIC",
+      "latency_ms": 635
+    },
+    {
+      "query": "合同到期提醒",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.7799781560897827,
+      "expected": [
+        "ALERT_LIST",
+        "MATERIAL_EXPIRING_ALERT",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "deadline_track",
+      "method": "CLASSIFIER",
+      "latency_ms": 679
+    },
+    {
+      "query": "资质到期的供应商",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_EXPIRING_ALERT",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "deadline_track",
+      "method": null,
+      "latency_ms": 676
+    }
+  ]
+}

@@ -29,6 +29,7 @@ import i18next from 'i18next';
 import { aiService, detectAnalysisMode } from '../../../services/ai';
 import type { AnalysisMode } from '../../../services/ai/types';
 import { AIModeIndicator } from '../../../components/ai/AIModeIndicator';
+import { FeedbackWidget, FoodKBQueryMetadata } from '../../../components/ai/FeedbackWidget';
 import { useAuthStore } from '../../../store/authStore';
 
 // 建议操作类型
@@ -53,6 +54,10 @@ interface Message {
   suggestedActions?: SuggestedAction[];
   /** 会话ID (用于多轮对话) */
   sessionIdForReply?: string;
+  /** 意图类别（用于判断是否显示反馈组件） */
+  intentCategory?: string;
+  /** 用户原始问题（用于反馈组件） */
+  userQuestion?: string;
 }
 
 export default function AIChatScreen() {
@@ -230,10 +235,11 @@ export default function AIChatScreen() {
           sessionIdForReply = newSessionId;
         }
 
-        // 提取状态和意图代码
+        // 提取状态、意图代码和意图类别
         const status = innerData?.status as string | undefined;
         const intentCode = innerData?.intentCode as string | undefined;
-        console.log('[AI Chat] 响应状态:', status, '意图:', intentCode);
+        const intentCategory = innerData?.intentCategory as string | undefined;
+        console.log('[AI Chat] 响应状态:', status, '意图:', intentCode, '类别:', intentCategory);
 
         // 当对话完成且有意图代码时，自动执行意图获取实际数据
         if (status === 'COMPLETED' && intentCode) {
@@ -304,7 +310,7 @@ export default function AIChatScreen() {
         replyMessage = result.errorMessage || (innerData?.message as string) || (responseData?.message as string) || t('aiChat.networkError');
       }
 
-      // 更新消息，添加模式、响应时间和建议操作
+      // 更新消息，添加模式、响应时间、建议操作和意图类别
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === assistantMessageId
@@ -314,6 +320,10 @@ export default function AIChatScreen() {
                 responseTimeMs: result.responseTimeMs,
                 suggestedActions: suggestedActions.length > 0 ? suggestedActions : undefined,
                 sessionIdForReply,
+                intentCategory: result.data && typeof result.data === 'object'
+                  ? ((result.data as Record<string, unknown>).data as Record<string, unknown> | undefined)?.intentCategory as string | undefined
+                  : undefined,
+                userQuestion: messageText,
               }
             : msg
         )
@@ -429,6 +439,16 @@ export default function AIChatScreen() {
               ))}
             </View>
           )}
+          {/* 显示反馈组件（仅食品知识类意图） */}
+          {!message.isLoading &&
+            message.intentCategory === 'FOOD_KNOWLEDGE' &&
+            message.userQuestion && (
+              <FeedbackWidget
+                queryId={message.id}
+                question={message.userQuestion}
+                answer={message.content}
+              />
+            )}
           {!message.isLoading && (
             <Text style={styles.timestamp}>
               {message.timestamp.toLocaleTimeString(i18n.language, {

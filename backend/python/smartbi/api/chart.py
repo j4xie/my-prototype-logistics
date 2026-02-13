@@ -108,16 +108,16 @@ async def build_chart(request: ChartBuildRequest):
         raise
     except Exception as e:
         logger.error(f"Chart build error: {e}", exc_info=True)
-        return ChartBuildResponse(success=False, error=str(e))
+        return ChartBuildResponse(success=False, error="图表生成失败，请稍后重试")
 
 
-@router.get("/types", response_model=List[ChartTypeInfo])
+@router.get("/types")
 async def get_chart_types():
     """
     Get available chart types with descriptions
     """
     types = chart_builder.get_available_chart_types()
-    return [ChartTypeInfo(**t) for t in types]
+    return {"success": True, "data": [ChartTypeInfo(**t).dict() for t in types], "message": "ok"}
 
 
 @router.post("/preview")
@@ -153,7 +153,7 @@ async def preview_chart(request: ChartBuildRequest):
 
     except Exception as e:
         logger.error(f"Chart preview error: {e}", exc_info=True)
-        return {"success": False, "error": str(e)}
+        return {"success": False, "data": None, "message": "图表生成失败，请稍后重试"}
 
 
 @router.post("/batch")
@@ -184,13 +184,13 @@ async def batch_build(requests: List[ChartBuildRequest]):
 
         return _sanitize_for_json({
             "success": True,
-            "charts": results,
-            "totalCharts": len(results)
+            "data": {"charts": results, "totalCharts": len(results)},
+            "message": "ok"
         })
 
     except Exception as e:
         logger.error(f"Batch chart build error: {e}", exc_info=True)
-        return {"success": False, "error": str(e)}
+        return {"success": False, "data": None, "message": "图表生成失败，请稍后重试"}
 
 
 @router.get("/themes")
@@ -199,26 +199,30 @@ async def get_themes():
     Get available chart themes
     """
     return {
-        "themes": [
-            {
-                "id": "business",
-                "name": "Business Blue",
-                "description": "Professional business theme (Tableau + Power BI inspired)",
-                "colors": ChartBuilder.THEME_PALETTES["business"]["charts"]
-            },
-            {
-                "id": "dark",
-                "name": "Dark",
-                "description": "Dark mode theme",
-                "colors": ["#4992ff", "#7cffb2", "#fddd60", "#ff6e76", "#58d9f9"]
-            },
-            {
-                "id": "vintage",
-                "name": "Vintage",
-                "description": "Vintage color palette",
-                "colors": ["#d87c7c", "#919e8b", "#d7ab82", "#6e7074", "#61a0a8"]
-            }
-        ]
+        "success": True,
+        "data": {
+            "themes": [
+                {
+                    "id": "business",
+                    "name": "Business Blue",
+                    "description": "Professional business theme (Tableau + Power BI inspired)",
+                    "colors": ChartBuilder.THEME_PALETTES["business"]["charts"]
+                },
+                {
+                    "id": "dark",
+                    "name": "Dark",
+                    "description": "Dark mode theme",
+                    "colors": ["#4992ff", "#7cffb2", "#fddd60", "#ff6e76", "#58d9f9"]
+                },
+                {
+                    "id": "vintage",
+                    "name": "Vintage",
+                    "description": "Vintage color palette",
+                    "colors": ["#d87c7c", "#919e8b", "#d7ab82", "#6e7074", "#61a0a8"]
+                }
+            ]
+        },
+        "message": "ok"
     }
 
 
@@ -298,15 +302,160 @@ async def recommend_chart(data: List[Dict[str, Any]], fields: Optional[List[dict
 
         return {
             "success": True,
-            "recommendations": sorted(recommendations, key=lambda x: x["priority"]),
-            "dataInfo": {
-                "rowCount": len(df),
-                "numericColumns": numeric_cols,
-                "categoricalColumns": categorical_cols,
-                "dateColumns": date_cols
-            }
+            "data": {
+                "recommendations": sorted(recommendations, key=lambda x: x["priority"]),
+                "dataInfo": {
+                    "rowCount": len(df),
+                    "numericColumns": numeric_cols,
+                    "categoricalColumns": categorical_cols,
+                    "dateColumns": date_cols
+                }
+            },
+            "message": "ok"
         }
 
     except Exception as e:
         logger.error(f"Chart recommendation error: {e}", exc_info=True)
-        return {"success": False, "error": str(e)}
+        return {"success": False, "data": None, "message": "图表生成失败，请稍后重试"}
+
+
+class SmartRecommendRequest(BaseModel):
+    """Smart chart recommendation request using LLM"""
+    data: List[Dict[str, Any]]
+    columns: Optional[List[Dict[str, Any]]] = None
+    columnTypes: Optional[Dict[str, str]] = None
+    sheetName: Optional[str] = None
+    context: Optional[str] = None
+    scenario: str = "general"
+    maxRecommendations: int = 7
+    excludeTypes: Optional[List[str]] = None
+
+
+@router.post("/smart-recommend")
+async def smart_recommend_chart(request: SmartRecommendRequest):
+    """
+    LLM-powered smart chart recommendation.
+
+    Uses ChartRecommender service with caching for intelligent,
+    diverse chart type recommendations based on data features.
+    """
+    try:
+        import pandas as pd
+        from services.chart_recommender import get_chart_recommender, DataSummary
+
+        recommender = get_chart_recommender()
+
+        # Build DataSummary from request data
+        df = pd.DataFrame(request.data)
+        numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        date_cols = []
+        for col in df.columns:
+            try:
+                pd.to_datetime(df[col])
+                date_cols.append(col)
+            except Exception:
+                pass
+
+        # Build column feature list
+        columns_info = []
+        for col in df.columns:
+            col_info = {"columnName": col}
+            if col in numeric_cols:
+                col_info["dataType"] = "NUMERIC"
+                col_info["sampleValues"] = df[col].dropna().head(3).tolist()
+            elif col in date_cols:
+                col_info["dataType"] = "DATE"
+                col_info["sampleValues"] = df[col].dropna().head(3).astype(str).tolist()
+            else:
+                col_info["dataType"] = "CATEGORICAL"
+                col_info["sampleValues"] = df[col].dropna().head(3).tolist()
+            columns_info.append(col_info)
+
+        # Override with provided column info if available
+        if request.columns:
+            columns_info = request.columns
+
+        data_summary = DataSummary(
+            columns=columns_info,
+            row_count=len(df),
+            dimensions=categorical_cols + date_cols,
+            measures=numeric_cols,
+            time_columns=date_cols,
+            category_columns=categorical_cols
+        )
+
+        # Detect scenario from sheet name
+        scenario = request.scenario
+        if request.sheetName:
+            name_lower = request.sheetName.lower()
+            if any(k in name_lower for k in ['利润', '收入', '成本', '费用', '财务', 'profit', 'revenue', 'cost']):
+                scenario = "finance"
+            elif any(k in name_lower for k in ['销售', '订单', '客户', 'sales', 'order']):
+                scenario = "sales"
+            elif any(k in name_lower for k in ['产能', '效率', '库存', 'production', 'inventory']):
+                scenario = "operations"
+
+        # Get LLM recommendations
+        recommendations = await recommender.recommend(
+            data_summary=data_summary,
+            scenario=scenario,
+            user_intent=request.context,
+            max_recommendations=request.maxRecommendations,
+            use_cache=True
+        )
+
+        # Filter excluded types
+        if request.excludeTypes:
+            exclude_set = set(request.excludeTypes)
+            recommendations = [r for r in recommendations if r.chart_type not in exclude_set]
+
+        # Convert to response format
+        result = {
+            "success": True,
+            "data": {
+                "recommendations": [
+                    {
+                        "chartType": r.chart_type,
+                        "title": r.title,
+                        "reason": r.reason,
+                        "xField": r.x_axis,
+                        "yFields": r.y_axis or [],
+                        "seriesField": r.series,
+                        "priority": r.priority,
+                        "category": r.category,
+                        "confidence": r.confidence,
+                        "configHints": r.config_hints
+                    }
+                    for r in recommendations
+                ],
+                "diversityScore": len(set(r.chart_type for r in recommendations)) / max(len(recommendations), 1),
+                "method": "llm" if recommender.settings.llm_api_key else "fallback",
+                "dataInfo": {
+                    "rowCount": len(df),
+                    "numericColumns": numeric_cols,
+                    "categoricalColumns": categorical_cols,
+                    "dateColumns": date_cols
+                }
+            },
+            "message": "ok"
+        }
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Smart chart recommendation error: {e}", exc_info=True)
+        return {"success": False, "data": None, "message": "图表生成失败，请稍后重试"}
+
+
+@router.get("/smart-recommend/cache-stats")
+async def get_recommendation_cache_stats():
+    """Get LLM recommendation cache statistics"""
+    try:
+        from services.chart_recommender import get_chart_recommender
+        recommender = get_chart_recommender()
+        stats = recommender.get_cache_stats()
+        return {"success": True, "data": stats, "message": "ok"}
+    except Exception as e:
+        logger.error(f"Recommendation cache stats error: {e}", exc_info=True)
+        return {"success": False, "data": None, "message": "图表生成失败，请稍后重试"}

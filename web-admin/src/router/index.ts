@@ -4,6 +4,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { setupRouterGuards } from './guards';
 import smartBIRoutes, { smartBIRedirects } from './modules/smartbi';
+import productionAnalyticsRoutes from './modules/production-analytics';
 
 // 基础路由 - 不需要权限
 const baseRoutes: RouteRecordRaw[] = [
@@ -30,6 +31,12 @@ const baseRoutes: RouteRecordRaw[] = [
     name: 'MobileOnly',
     component: () => import('@/views/error/mobile-only.vue'),
     meta: { requiresAuth: false, title: '请使用移动端' }
+  },
+  {
+    path: '/smart-bi/share/:token',
+    name: 'SmartBISharedView',
+    component: () => import('@/views/smart-bi/SharedView.vue'),
+    meta: { requiresAuth: false, title: '分享分析' }
   }
 ];
 
@@ -297,6 +304,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'ProductManagement',
             component: () => import('@/views/system/products/index.vue'),
             meta: { requiresAuth: true, title: '产品信息管理', module: 'system' }
+          },
+          {
+            path: 'features',
+            name: 'SystemFeatures',
+            component: () => import('@/views/system/features/index.vue'),
+            meta: { requiresAuth: true, title: '功能模块配置', module: 'system' }
           }
         ]
       },
@@ -337,6 +350,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'ProductionReport',
             component: () => import('@/views/analytics/production-report/index.vue'),
             meta: { requiresAuth: true, title: '车间实时生产报表', module: 'analytics' }
+          },
+          {
+            path: 'alert-dashboard',
+            name: 'AlertDashboard',
+            component: () => import('@/views/analytics/AlertDashboard.vue'),
+            meta: { requiresAuth: true, title: '生产异常预警', module: 'analytics' }
           }
         ]
       },
@@ -415,7 +434,10 @@ const businessRoutes: RouteRecordRaw[] = [
         ]
       },
 
-      // SmartBI 智能分析 (导入自模块)
+      // 生产分析 & 人效分析 (独立模块)
+      ...productionAnalyticsRoutes,
+
+      // SmartBI 智能BI (导入自模块)
       ...smartBIRoutes
     ]
   },

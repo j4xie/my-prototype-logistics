@@ -414,6 +414,42 @@ class ProcessingApiClient {
     return response;
   }
 
+  // ===== 报工 (Work Reporting) =====
+
+  // 21. 扫码查询批次
+  async scanBatchByCode(code: string, factoryId?: string): Promise<ApiResponse<ProcessingBatch>> {
+    return await apiClient.post(`${this.getPath(factoryId)}/batches/scan`, { code });
+  }
+
+  // 22. 提交个人报工
+  async submitWorkReport(batchId: number | string, data: {
+    actualQuantity: number;
+    goodQuantity?: number;
+    defectQuantity?: number;
+    notes?: string;
+  }, factoryId?: string): Promise<ApiResponse<ProcessingBatch>> {
+    return await apiClient.post(`${this.getPath(factoryId)}/batches/${batchId}/report`, data);
+  }
+
+  // 23. 班组批量报工
+  async submitTeamBatchReport(data: {
+    batchId: number;
+    members: Array<{
+      userId: number;
+      outputQuantity: number;
+      notes?: string;
+    }>;
+  }, factoryId?: string): Promise<ApiResponse<{ recordedMembers: number; totalOutput: number; batchId: number }>> {
+    return await apiClient.post(`${this.getPath(factoryId)}/work-sessions/batch-report`, data);
+  }
+
+  // 24. 上传批次照片
+  async uploadBatchPhoto(batchId: number | string, formData: FormData, factoryId?: string): Promise<ApiResponse<{ photoUrl: string; photoId: number }>> {
+    return await apiClient.post(`${this.getPath(factoryId)}/batches/${batchId}/photos`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  }
+
   /*
    * 以下功能在MVP阶段暂不实现，后续根据需要逐步添加：
    *

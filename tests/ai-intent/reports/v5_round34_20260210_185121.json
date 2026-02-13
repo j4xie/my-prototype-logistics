@@ -1,0 +1,831 @@
+{
+  "timestamp": "2026-02-10T18:51:21.852625",
+  "test": "v5_round34_production_planning_scheduling",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "production_plans": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "capacity_planning": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "scheduling": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "mrp": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "demand_forecast": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "line_balancing": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "order_scheduling": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "resource_allocation": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "plan_monitoring": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "SEMANTIC": 7,
+    "CLASSIFIER": 12,
+    "NONE": 23,
+    "PHRASE_MATCH": 8
+  },
+  "results": [
+    {
+      "query": "查一下现在的生产计划",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "production_plans",
+      "method": "SEMANTIC",
+      "latency_ms": 685
+    },
+    {
+      "query": "今天的生产任务有哪些",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.8733354806900024,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "production_plans",
+      "method": "CLASSIFIER",
+      "latency_ms": 603
+    },
+    {
+      "query": "明天排什么产品",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "production_plans",
+      "method": null,
+      "latency_ms": 655
+    },
+    {
+      "query": "这周的生产计划安排",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_CREATE",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "production_plans",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 437
+    },
+    {
+      "query": "本月生产计划完成率怎么样",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY",
+        "PRODUCTION_PLAN_QUERY",
+        null
+      ],
+      "category": "production_plans",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 454
+    },
+    {
+      "query": "生产计划需要调整吗",
+      "status": "PASS",
+      "intent": "PLAN_UPDATE",
+      "confidence": 0.6331398487091064,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        "PLAN_UPDATE",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "production_plans",
+      "method": "CLASSIFIER",
+      "latency_ms": 620
+    },
+    {
+      "query": "帮我做一下产能评估",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "capacity_planning",
+      "method": null,
+      "latency_ms": 638
+    },
+    {
+      "query": "现在各条产线的可用产能是多少",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.655670702457428,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "capacity_planning",
+      "method": "CLASSIFIER",
+      "latency_ms": 620
+    },
+    {
+      "query": "产能瓶颈在哪里",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATUS_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "capacity_planning",
+      "method": null,
+      "latency_ms": 691
+    },
+    {
+      "query": "下个月要扩产，看看可行不",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "capacity_planning",
+      "method": null,
+      "latency_ms": 666
+    },
+    {
+      "query": "各产线的产能利用率统计",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "capacity_planning",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 506
+    },
+    {
+      "query": "帮我排一下明天的生产排程",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.8798838257789612,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "PROCESSING_BATCH_CREATE",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "scheduling",
+      "method": "CLASSIFIER",
+      "latency_ms": 599
+    },
+    {
+      "query": "生产任务优先级怎么排",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "scheduling",
+      "method": null,
+      "latency_ms": 674
+    },
+    {
+      "query": "有个紧急订单要插单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_BATCH_CREATE",
+        "PRODUCTION_PLAN_QUERY",
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "scheduling",
+      "method": null,
+      "latency_ms": 618
+    },
+    {
+      "query": "排产有冲突怎么处理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "scheduling",
+      "method": null,
+      "latency_ms": 669
+    },
+    {
+      "query": "根据交期排一下生产顺序",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "ORDER_LIST",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "scheduling",
+      "method": null,
+      "latency_ms": 685
+    },
+    {
+      "query": "排产方案能不能优化一下",
+      "status": "PASS",
+      "intent": "SCHEDULING_SET_MANUAL",
+      "confidence": 0.6416451334953308,
+      "expected": [
+        "PRODUCTION_PLAN_QUERY",
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY",
+        "SCHEDULING_SET_MANUAL",
+        null
+      ],
+      "category": "scheduling",
+      "method": "CLASSIFIER",
+      "latency_ms": 715
+    },
+    {
+      "query": "物料需求计划帮我生成一下",
+      "status": "PASS",
+      "intent": "MRP_CALCULATION",
+      "confidence": 0.88138747215271,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_LOW_STOCK_ALERT",
+        "MRP_CALCULATION",
+        "PRODUCTION_PLAN_QUERY",
+        null
+      ],
+      "category": "mrp",
+      "method": "CLASSIFIER",
+      "latency_ms": 606
+    },
+    {
+      "query": "查一下这个产品的BOM清单",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "mrp",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "下周生产的物料齐套吗",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.9700000000000001,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_LOW_STOCK_ALERT",
+        "PROCESSING_BATCH_LIST",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "mrp",
+      "method": "SEMANTIC",
+      "latency_ms": 624
+    },
+    {
+      "query": "目前有哪些物料短缺",
+      "status": "PASS",
+      "intent": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.8355268836021423,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "mrp",
+      "method": "CLASSIFIER",
+      "latency_ms": 614
+    },
+    {
+      "query": "根据生产计划给一下采购建议",
+      "status": "PASS",
+      "intent": "MRP_CALCULATION",
+      "confidence": 0.897000253200531,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "MATERIAL_BATCH_QUERY",
+        "MRP_CALCULATION",
+        "PRODUCTION_PLAN_QUERY",
+        null
+      ],
+      "category": "mrp",
+      "method": "CLASSIFIER",
+      "latency_ms": 650
+    },
+    {
+      "query": "安全库存水位检查一下",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.93,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "mrp",
+      "method": "SEMANTIC",
+      "latency_ms": 596
+    },
+    {
+      "query": "帮我做一下下个月的需求预测",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_PRODUCTION",
+        "PRODUCTION_PLAN_QUERY",
+        null
+      ],
+      "category": "demand_forecast",
+      "method": null,
+      "latency_ms": 634
+    },
+    {
+      "query": "根据历史数据预测一下订单量",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "ORDER_LIST",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "demand_forecast",
+      "method": null,
+      "latency_ms": 652
+    },
+    {
+      "query": "旺季来了，季节性需求怎么分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "demand_forecast",
+      "method": null,
+      "latency_ms": 657
+    },
+    {
+      "query": "最近三个月的销量趋势怎么样",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_PRODUCTION",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "demand_forecast",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 433
+    },
+    {
+      "query": "市场需求变化情况分析一下",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.8847928047180176,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "demand_forecast",
+      "method": "CLASSIFIER",
+      "latency_ms": 611
+    },
+    {
+      "query": "产线平衡率怎么样",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.504180908203125,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "line_balancing",
+      "method": "CLASSIFIER",
+      "latency_ms": 688
+    },
+    {
+      "query": "各工序的人员分配合理吗",
+      "status": "PASS",
+      "intent": "PROCESSING_WORKER_ASSIGN",
+      "confidence": 0.5295623540878296,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "REPORT_EFFICIENCY",
+        "PROCESSING_WORKER_ASSIGN",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "line_balancing",
+      "method": "CLASSIFIER",
+      "latency_ms": 619
+    },
+    {
+      "query": "瓶颈工序是哪个环节",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "line_balancing",
+      "method": null,
+      "latency_ms": 691
+    },
+    {
+      "query": "各工位节拍时间统计一下",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "line_balancing",
+      "method": null,
+      "latency_ms": 662
+    },
+    {
+      "query": "产线平衡率能到多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "line_balancing",
+      "method": null,
+      "latency_ms": 644
+    },
+    {
+      "query": "查一下订单排期情况",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "PRODUCTION_PLAN_QUERY",
+        null
+      ],
+      "category": "order_scheduling",
+      "method": "SEMANTIC",
+      "latency_ms": 633
+    },
+    {
+      "query": "这批订单交期能保证吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "order_scheduling",
+      "method": null,
+      "latency_ms": 686
+    },
+    {
+      "query": "订单优先级怎么调整",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "PRODUCTION_PLAN_QUERY",
+        null
+      ],
+      "category": "order_scheduling",
+      "method": null,
+      "latency_ms": 628
+    },
+    {
+      "query": "有哪些延期订单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "order_scheduling",
+      "method": null,
+      "latency_ms": 647
+    },
+    {
+      "query": "客户紧急加单了怎么插进去",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_LIST",
+        "PROCESSING_BATCH_CREATE",
+        "PRODUCTION_PLAN_QUERY",
+        null
+      ],
+      "category": "order_scheduling",
+      "method": null,
+      "latency_ms": 629
+    },
+    {
+      "query": "这个大订单能不能分批生产",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.92,
+      "expected": [
+        "ORDER_LIST",
+        "PROCESSING_BATCH_CREATE",
+        "PROCESSING_BATCH_LIST",
+        "PRODUCTION_PLAN_QUERY",
+        null
+      ],
+      "category": "order_scheduling",
+      "method": "SEMANTIC",
+      "latency_ms": 612
+    },
+    {
+      "query": "各车间的资源分配情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY",
+        "ATTENDANCE_STATS",
+        null
+      ],
+      "category": "resource_allocation",
+      "method": null,
+      "latency_ms": 658
+    },
+    {
+      "query": "人员怎么调配比较合理",
+      "status": "PASS",
+      "intent": "PROCESSING_WORKER_ASSIGN",
+      "confidence": 0.5867121815681458,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "REPORT_EFFICIENCY",
+        "PROCESSING_WORKER_ASSIGN",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "resource_allocation",
+      "method": "CLASSIFIER",
+      "latency_ms": 607
+    },
+    {
+      "query": "设备分配到哪条线了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "resource_allocation",
+      "method": null,
+      "latency_ms": 612
+    },
+    {
+      "query": "模具排程安排查一下",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "PRODUCTION_PLAN_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "resource_allocation",
+      "method": null,
+      "latency_ms": 683
+    },
+    {
+      "query": "工装夹具准备好了吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "resource_allocation",
+      "method": null,
+      "latency_ms": 628
+    },
+    {
+      "query": "今天的生产计划执行到哪了",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "plan_monitoring",
+      "method": "SEMANTIC",
+      "latency_ms": 650
+    },
+    {
+      "query": "各批次的生产进度跟踪一下",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "plan_monitoring",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 446
+    },
+    {
+      "query": "计划和实际产量偏差多少",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "plan_monitoring",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 487
+    },
+    {
+      "query": "这个月的计划达成率是多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "plan_monitoring",
+      "method": null,
+      "latency_ms": 707
+    },
+    {
+      "query": "有没有可能延误的生产任务",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.92,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "plan_monitoring",
+      "method": "SEMANTIC",
+      "latency_ms": 621
+    },
+    {
+      "query": "今天各条线的产出情况跟踪",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "plan_monitoring",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 479
+    }
+  ]
+}

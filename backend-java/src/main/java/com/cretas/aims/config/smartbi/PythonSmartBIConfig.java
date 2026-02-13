@@ -239,6 +239,36 @@ public class PythonSmartBIConfig {
      */
     private String regionDistributionEndpoint = "/api/analysis/sales/region-distribution";
 
+    /**
+     * 食品知识库查询端点 (RAG)
+     */
+    private String foodKbQueryEndpoint = "/api/food-kb/query";
+
+    /**
+     * 食品知识库实体提取端点 (NER)
+     */
+    private String foodKbExtractEntitiesEndpoint = "/api/food-kb/extract-entities";
+
+    /**
+     * 食品知识库实体查找端点
+     */
+    private String foodKbEntityLookupEndpoint = "/api/food-kb/entity-lookup";
+
+    /**
+     * 食品知识库反馈提交端点
+     */
+    private String foodKbFeedbackSubmitEndpoint = "/api/food-kb/feedback";
+
+    /**
+     * 食品知识库查询日志端点
+     */
+    private String foodKbFeedbackLogQueryEndpoint = "/api/food-kb/feedback/log-query";
+
+    /**
+     * 食品知识库反馈统计端点
+     */
+    private String foodKbFeedbackStatsEndpoint = "/api/food-kb/feedback/stats";
+
     @PostConstruct
     public void init() {
         log.info("Python SmartBI 配置加载完成:");
@@ -488,5 +518,47 @@ public class PythonSmartBIConfig {
      */
     public String getClassifierHealthUrl() {
         return getFullUrl(classifierHealthEndpoint);
+    }
+
+    /**
+     * 获取食品知识库查询 URL (RAG)
+     */
+    public String getFoodKbQueryUrl() {
+        return getFullUrl(foodKbQueryEndpoint);
+    }
+
+    /**
+     * 获取食品知识库实体提取 URL (NER)
+     */
+    public String getFoodKbExtractEntitiesUrl() {
+        return getFullUrl(foodKbExtractEntitiesEndpoint);
+    }
+
+    /**
+     * 获取食品知识库实体查找 URL
+     */
+    public String getFoodKbEntityLookupUrl() {
+        return getFullUrl(foodKbEntityLookupEndpoint);
+    }
+
+    /**
+     * 获取食品知识库反馈提交 URL
+     */
+    public String getFoodKbFeedbackSubmitUrl() {
+        return getFullUrl(foodKbFeedbackSubmitEndpoint);
+    }
+
+    /**
+     * 获取食品知识库查询日志 URL
+     */
+    public String getFoodKbFeedbackLogQueryUrl() {
+        return getFullUrl(foodKbFeedbackLogQueryEndpoint);
+    }
+
+    /**
+     * 获取食品知识库反馈统计 URL
+     */
+    public String getFoodKbFeedbackStatsUrl() {
+        return getFullUrl(foodKbFeedbackStatsEndpoint);
     }
 }

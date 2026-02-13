@@ -1,0 +1,781 @@
+{
+  "timestamp": "2026-02-10T18:17:53.634321",
+  "test": "v5_round21_customer_order_management",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "customer": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "order": {
+      "pass": 16,
+      "fail": 0,
+      "error": 0
+    },
+    "pricing": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "complaint": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "contract": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "delivery": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "crm": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 17,
+    "NONE": 23,
+    "SEMANTIC": 6,
+    "CLASSIFIER": 4
+  },
+  "results": [
+    {
+      "query": "查一下客户张三的信息",
+      "status": "PASS",
+      "intent": "CUSTOMER_SEARCH",
+      "confidence": 0.98,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "customer-lookup",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "客户列表",
+      "status": "PASS",
+      "intent": "CUSTOMER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CUSTOMER_LIST"
+      ],
+      "category": "customer-list",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 433
+    },
+    {
+      "query": "华东食品公司的联系方式",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        null
+      ],
+      "category": "customer-contact",
+      "method": null,
+      "latency_ms": 655
+    },
+    {
+      "query": "VIP客户有哪些",
+      "status": "PASS",
+      "intent": "CUSTOMER_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "ORDER_LIST",
+        "REPORT_KPI",
+        "CUSTOMER_LIST",
+        null
+      ],
+      "category": "customer-vip",
+      "method": "SEMANTIC",
+      "latency_ms": 591
+    },
+    {
+      "query": "最近新增了哪些客户",
+      "status": "PASS",
+      "intent": "CUSTOMER_SEARCH",
+      "confidence": 0.98,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_CREATE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "customer-new",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 463
+    },
+    {
+      "query": "这个客户的历史订单",
+      "status": "PASS",
+      "intent": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_PURCHASE_HISTORY"
+      ],
+      "category": "customer-history",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "创建一个新订单",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_CREATE",
+        "ORDER_UPDATE",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "order-create",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 435
+    },
+    {
+      "query": "帮我下一个订单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_CREATE",
+        null
+      ],
+      "category": "order-new",
+      "method": null,
+      "latency_ms": 680
+    },
+    {
+      "query": "华东食品要订500箱牛奶",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_CREATE",
+        null
+      ],
+      "category": "order-place",
+      "method": null,
+      "latency_ms": 638
+    },
+    {
+      "query": "快速下单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_CREATE",
+        null
+      ],
+      "category": "order-quick",
+      "method": null,
+      "latency_ms": 635
+    },
+    {
+      "query": "上次订单再来一单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_CREATE",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "order-reorder",
+      "method": null,
+      "latency_ms": 710
+    },
+    {
+      "query": "订单进度怎么样了",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST",
+        "SHIPMENT_QUERY",
+        "PRODUCTION_STATUS_QUERY"
+      ],
+      "category": "order-progress",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 480
+    },
+    {
+      "query": "待处理的订单",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST"
+      ],
+      "category": "order-pending",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 528
+    },
+    {
+      "query": "今天的订单情况",
+      "status": "PASS",
+      "intent": "ORDER_TODAY",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ORDER_TODAY"
+      ],
+      "category": "order-today",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 460
+    },
+    {
+      "query": "逾期订单有多少",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "REPORT_KPI",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "order-overdue",
+      "method": "SEMANTIC",
+      "latency_ms": 591
+    },
+    {
+      "query": "紧急订单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "order-urgent",
+      "method": null,
+      "latency_ms": 632
+    },
+    {
+      "query": "订单ORD-2026-0015的进展",
+      "status": "PASS",
+      "intent": "ORDER_STATUS",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "order-timeline",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 424
+    },
+    {
+      "query": "修改订单数量",
+      "status": "PASS",
+      "intent": "ORDER_STATUS",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_UPDATE",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "order-modify",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 431
+    },
+    {
+      "query": "取消订单ORD-2026-0023",
+      "status": "PASS",
+      "intent": "ORDER_STATUS",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_UPDATE",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "order-cancel",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 426
+    },
+    {
+      "query": "把数量改成300箱",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        null
+      ],
+      "category": "order-change-qty",
+      "method": null,
+      "latency_ms": 692
+    },
+    {
+      "query": "交货日期推迟到下周五",
+      "status": "PASS",
+      "intent": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.9700000000000001,
+      "expected": [
+        "ORDER_UPDATE",
+        "SHIPMENT_CREATE",
+        "MATERIAL_LOW_STOCK_ALERT",
+        null
+      ],
+      "category": "order-change-date",
+      "method": "SEMANTIC",
+      "latency_ms": 622
+    },
+    {
+      "query": "这个订单拆成两批发货",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        "SHIPMENT_CREATE",
+        null
+      ],
+      "category": "order-split",
+      "method": null,
+      "latency_ms": 808
+    },
+    {
+      "query": "纯牛奶的出厂价是多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "ORDER_LIST",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "pricing-query",
+      "method": null,
+      "latency_ms": 801
+    },
+    {
+      "query": "给华东食品做一份报价单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_CREATE",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "pricing-quotation",
+      "method": null,
+      "latency_ms": 1165
+    },
+    {
+      "query": "这个客户有折扣吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "ORDER_LIST",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "pricing-discount",
+      "method": null,
+      "latency_ms": 1653
+    },
+    {
+      "query": "产品价格表",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "pricing-list",
+      "method": null,
+      "latency_ms": 1203
+    },
+    {
+      "query": "大客户特殊定价",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "pricing-special",
+      "method": null,
+      "latency_ms": 1079
+    },
+    {
+      "query": "客户投诉了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "CUSTOMER_SEARCH",
+        null
+      ],
+      "category": "complaint-general",
+      "method": null,
+      "latency_ms": 930
+    },
+    {
+      "query": "产品质量问题投诉",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS"
+      ],
+      "category": "complaint-quality",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "客户反映配送延迟",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_BY_DATE",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "complaint-delivery",
+      "method": null,
+      "latency_ms": 626
+    },
+    {
+      "query": "客户要求退货",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "complaint-return",
+      "method": null,
+      "latency_ms": 594
+    },
+    {
+      "query": "退款申请",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "complaint-refund",
+      "method": null,
+      "latency_ms": 643
+    },
+    {
+      "query": "需要给客户赔偿",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "complaint-compensation",
+      "method": null,
+      "latency_ms": 639
+    },
+    {
+      "query": "查看合同信息",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_LIST",
+        "CUSTOMER_SEARCH",
+        null
+      ],
+      "category": "contract-query",
+      "method": null,
+      "latency_ms": 597
+    },
+    {
+      "query": "合同快到期了需要续签",
+      "status": "PASS",
+      "intent": "PROCESSING_WORKER_CHECKOUT",
+      "confidence": 0.5251297950744629,
+      "expected": [
+        "ORDER_UPDATE",
+        "CUSTOMER_SEARCH",
+        "PROCESSING_WORKER_CHECKOUT",
+        null
+      ],
+      "category": "contract-renewal",
+      "method": "CLASSIFIER",
+      "latency_ms": 605
+    },
+    {
+      "query": "下个月到期的合同",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.5526865720748901,
+      "expected": [
+        "ORDER_LIST",
+        "REPORT_TRENDS",
+        "CUSTOMER_SEARCH",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "contract-expiring",
+      "method": "CLASSIFIER",
+      "latency_ms": 610
+    },
+    {
+      "query": "签一份新合同",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_CREATE",
+        "CUSTOMER_CREATE",
+        null
+      ],
+      "category": "contract-new",
+      "method": null,
+      "latency_ms": 632
+    },
+    {
+      "query": "合同条款有变更",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_UPDATE",
+        null
+      ],
+      "category": "contract-terms",
+      "method": null,
+      "latency_ms": 620
+    },
+    {
+      "query": "发货情况",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_BY_DATE",
+        "ORDER_STATUS"
+      ],
+      "category": "delivery-status",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 429
+    },
+    {
+      "query": "这周的发货计划",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.9700000000000001,
+      "expected": [
+        "SHIPMENT_BY_DATE",
+        "SHIPMENT_QUERY",
+        "ORDER_LIST",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "delivery-schedule",
+      "method": "SEMANTIC",
+      "latency_ms": 610
+    },
+    {
+      "query": "客户要求加急发货",
+      "status": "PASS",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.6806554198265076,
+      "expected": [
+        "SHIPMENT_CREATE",
+        "ORDER_UPDATE",
+        null
+      ],
+      "category": "delivery-express",
+      "method": "CLASSIFIER",
+      "latency_ms": 620
+    },
+    {
+      "query": "修改收货地址",
+      "status": "PASS",
+      "intent": "SHIPMENT_UPDATE",
+      "confidence": 0.6451119184494019,
+      "expected": [
+        "ORDER_UPDATE",
+        "SHIPMENT_CREATE",
+        "SHIPMENT_UPDATE",
+        null
+      ],
+      "category": "delivery-address",
+      "method": "CLASSIFIER",
+      "latency_ms": 598
+    },
+    {
+      "query": "确认收货",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "ORDER_UPDATE",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "delivery-confirmation",
+      "method": "SEMANTIC",
+      "latency_ms": 608
+    },
+    {
+      "query": "物流出了问题",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "delivery-issues",
+      "method": null,
+      "latency_ms": 870
+    },
+    {
+      "query": "客户满意度怎么样",
+      "status": "PASS",
+      "intent": "CUSTOMER_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "QUALITY_STATS",
+        "REPORT_TRENDS",
+        "CUSTOMER_STATS",
+        null
+      ],
+      "category": "crm-satisfaction",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "客户流失率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_TRENDS",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "crm-churn",
+      "method": null,
+      "latency_ms": 821
+    },
+    {
+      "query": "前十大客户是哪些",
+      "status": "PASS",
+      "intent": "CUSTOMER_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "REPORT_KPI",
+        "REPORT_FINANCE",
+        "ORDER_LIST",
+        "CUSTOMER_LIST",
+        null
+      ],
+      "category": "crm-top-customers",
+      "method": "SEMANTIC",
+      "latency_ms": 622
+    },
+    {
+      "query": "按客户统计销售额",
+      "status": "PASS",
+      "intent": "CUSTOMER_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_TRENDS",
+        "ORDER_LIST",
+        "REPORT_KPI",
+        "CUSTOMER_STATS"
+      ],
+      "category": "crm-sales-by-customer",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 466
+    },
+    {
+      "query": "客户分级分析",
+      "status": "PASS",
+      "intent": "CUSTOMER_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "REPORT_KPI",
+        "REPORT_TRENDS",
+        "CUSTOMER_STATS",
+        null
+      ],
+      "category": "crm-segment",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 436
+    },
+    {
+      "query": "复购率统计",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_TRENDS",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "crm-repeat-purchase",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 518
+    }
+  ]
+}

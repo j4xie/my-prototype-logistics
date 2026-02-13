@@ -8,6 +8,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Icon } from "react-native-paper";
 import { WorkshopSupervisorTabParamList } from "../types/navigation";
+import { useFactoryFeatureStore } from "../store/factoryFeatureStore";
 
 // 导入5个Stack导航器
 import WSHomeStackNavigator from "./workshop-supervisor/WSHomeStackNavigator";
@@ -25,6 +26,8 @@ const TAB_COLORS = {
 };
 
 export function WorkshopSupervisorTabNavigator() {
+  const { isScreenEnabled } = useFactoryFeatureStore();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -45,7 +48,7 @@ export function WorkshopSupervisorTabNavigator() {
         },
       }}
     >
-      {/* 首页Tab */}
+      {/* 首页Tab - 永远显示 */}
       <Tab.Screen
         name="WSHomeTab"
         component={WSHomeStackNavigator}
@@ -58,6 +61,7 @@ export function WorkshopSupervisorTabNavigator() {
       />
 
       {/* 批次Tab */}
+      {isScreenEnabled('BatchManagement') && (
       <Tab.Screen
         name="WSBatchesTab"
         component={WSBatchesStackNavigator}
@@ -68,8 +72,10 @@ export function WorkshopSupervisorTabNavigator() {
           ),
         }}
       />
+      )}
 
       {/* 人员Tab */}
+      {isScreenEnabled('WorkerManagement') && (
       <Tab.Screen
         name="WSWorkersTab"
         component={WSWorkersStackNavigator}
@@ -80,8 +86,10 @@ export function WorkshopSupervisorTabNavigator() {
           ),
         }}
       />
+      )}
 
       {/* 设备Tab */}
+      {isScreenEnabled('EquipmentMonitoring') && (
       <Tab.Screen
         name="WSEquipmentTab"
         component={WSEquipmentStackNavigator}
@@ -92,8 +100,9 @@ export function WorkshopSupervisorTabNavigator() {
           ),
         }}
       />
+      )}
 
-      {/* 我的Tab */}
+      {/* 我的Tab - 永远显示 */}
       <Tab.Screen
         name="WSProfileTab"
         component={WSProfileStackNavigator}

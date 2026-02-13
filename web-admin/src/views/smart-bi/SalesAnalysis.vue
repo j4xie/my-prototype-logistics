@@ -2,6 +2,7 @@
 /**
  * SmartBI 销售分析页面
  * 提供销售数据的多维度分析，包含筛选、KPI、排行榜和图表
+ * Phase 6: Enhanced with DynamicChartRenderer + ChartTypeSelector
  */
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
@@ -13,9 +14,28 @@ import {
   User,
   Calendar,
   Filter,
-  Download
+  Download,
+  Document,
+  View
 } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
+import DynamicChartRenderer from '@/components/smartbi/DynamicChartRenderer.vue';
+import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
+import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
+import type { ChartConfig as SmartBIChartConfig } from '@/types/smartbi';
+import {
+  getUploadHistory,
+  getUploadTableData,
+  getDynamicAnalysis,
+  type UploadHistoryItem,
+  type DynamicAnalysisResponse,
+  type TableDataResponse
+} from '@/api/smartbi';
+import {
+  recommendChart,
+  batchBuildCharts,
+  buildChart,
+} from '@/api/smartbi/python-service';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -27,6 +47,7 @@ const categoryFilter = ref<string>('all');
 
 // 加载状态
 const loading = ref(false);
+const loadError = ref('');
 const kpiLoading = ref(false);
 const rankingLoading = ref(false);
 const trendLoading = ref(false);
@@ -76,16 +97,19 @@ interface KPICard {
   key: string;
   title: string;
   value: string;
-  rawValue: number;
+  rawValue: number | null;
   unit: string;
-  change: number;
-  changeRate: number;
+  change: number | null;
+  changeRate: number | null;
   trend: 'up' | 'down' | 'flat';
   status: string;
   compareText: string;
 }
 
 const kpiCards = ref<KPICard[]>([]);
+
+// 是否有真实销售数据 (区分"加载失败"和"无数据")
+const hasSystemData = ref(false);
 
 // 销售员排行 (来自 API)
 interface SalesPersonRank {
@@ -119,16 +143,352 @@ const categories = ref([
   { value: 'dairy', label: '乳制品' }
 ]);
 
-// 图表实例
+// 图表实例 (legacy fallback)
 let trendChart: echarts.ECharts | null = null;
 let pieChart: echarts.ECharts | null = null;
 
-onMounted(() => {
+// ==================== Phase 6: Dynamic Chart Exploration ====================
+
+// DynamicChartRenderer configs for main charts
+const trendDynamicConfig = ref<SmartBIChartConfig | null>(null);
+const pieDynamicConfig = ref<SmartBIChartConfig | null>(null);
+const useDynamicTrend = ref(false);
+const useDynamicPie = ref(false);
+
+// Data source selection (uploaded data)
+const dataSources = ref<UploadHistoryItem[]>([]);
+const selectedDataSource = ref<string>('system');
+
+// AI insights from dynamic data
+const aiInsights = ref<string[]>([]);
+
+// Data preview dialog
+const showDataPreview = ref(false);
+const previewLoading = ref(false);
+const previewPage = ref(1);
+const previewData = ref<TableDataResponse>({
+  headers: [],
+  data: [],
+  total: 0,
+  page: 0,
+  size: 50,
+  totalPages: 0
+});
+
+// Multi-chart exploration
+interface ExplorationChart {
+  id: string;
+  chartType: string;
+  title: string;
+  config: SmartBIChartConfig;
+  xField?: string;
+  yFields?: string[];
+}
+const explorationCharts = ref<ExplorationChart[]>([]);
+const explorationLoading = ref(false);
+
+// Data info for ChartTypeSelector
+const dataInfo = ref<{
+  numericColumns: string[];
+  categoricalColumns: string[];
+  dateColumns: string[];
+  rowCount: number;
+}>({
+  numericColumns: [],
+  categoricalColumns: [],
+  dateColumns: [],
+  rowCount: 0,
+});
+
+// Raw dynamic data for chart rebuilding
+const dynamicRawData = ref<Record<string, unknown>[]>([]);
+
+// ==================== Data Source Functions ====================
+
+async function loadDataSources() {
+  try {
+    const res = await getUploadHistory();
+    if (res.success && res.data) {
+      dataSources.value = res.data.filter(
+        (item: UploadHistoryItem) => item.status === 'COMPLETED' || item.status === 'SUCCESS'
+      );
+    }
+  } catch (error) {
+    console.warn('加载数据源列表失败:', error);
+  }
+}
+
+async function onDataSourceChange(sourceId: string) {
+  if (sourceId === 'system') {
+    aiInsights.value = [];
+    explorationCharts.value = [];
+    dynamicRawData.value = [];
+    useDynamicTrend.value = false;
+    useDynamicPie.value = false;
+    trendDynamicConfig.value = null;
+    pieDynamicConfig.value = null;
+    loadSalesData();
+  } else {
+    await loadDynamicSalesData(Number(sourceId));
+  }
+}
+
+async function loadDynamicSalesData(uploadId: number) {
+  loading.value = true;
+  loadError.value = '';
+  aiInsights.value = [];
+
+  try {
+    const res = await getDynamicAnalysis(uploadId, 'sales');
+    if (res.success && res.data) {
+      const data = res.data as DynamicAnalysisResponse;
+
+      // Update AI insights
+      if (data.insights) {
+        aiInsights.value = data.insights;
+      }
+
+      // Update KPI cards from dynamic data
+      if (data.kpiCards && data.kpiCards.length > 0) {
+        kpiCards.value = data.kpiCards.map((kpi, idx) => ({
+          key: `dynamic-${idx}`,
+          title: kpi.title || '',
+          value: kpi.value || '0',
+          rawValue: kpi.rawValue || 0,
+          unit: '',
+          change: 0,
+          changeRate: 0,
+          trend: 'flat' as const,
+          status: 'green',
+          compareText: '',
+        }));
+      }
+
+      // Update charts from dynamic data
+      if (data.charts && data.charts.length > 0) {
+        updateChartsFromDynamicData(data.charts);
+      }
+
+      // Fetch raw data for exploration charts
+      try {
+        const tableRes = await getUploadTableData(uploadId, 0, 200);
+        if (tableRes.success && tableRes.data && tableRes.data.data.length > 0) {
+          buildExplorationCharts(tableRes.data.data as Record<string, unknown>[]);
+        }
+      } catch (e) {
+        console.warn('加载探索图表数据失败:', e);
+      }
+    } else {
+      loadError.value = res.message || '加载分析数据失败';
+    }
+  } catch (error) {
+    console.error('加载动态数据失败:', error);
+    loadError.value = '加载分析数据失败，请检查网络连接后重试';
+  } finally {
+    loading.value = false;
+  }
+}
+
+function updateChartsFromDynamicData(charts: DynamicAnalysisResponse['charts']) {
+  if (charts.length === 0) return;
+
+  // First chart as trend
+  const firstChart = charts[0];
+  const labels1 = firstChart.data?.labels || [];
+  const datasets1 = firstChart.data?.datasets || [];
+
+  if (firstChart.type === 'pie') {
+    const pieData = labels1.map((label, idx) => ({
+      name: label,
+      value: datasets1[0]?.data?.[idx] || 0
+    }));
+    trendDynamicConfig.value = {
+      chartType: 'pie',
+      title: firstChart.title,
+      xAxisField: 'name',
+      yAxisField: 'value',
+      data: pieData,
+    } as SmartBIChartConfig;
+  } else {
+    trendDynamicConfig.value = {
+      chartType: firstChart.type || 'bar',
+      title: firstChart.title || '',
+      xAxis: { data: labels1 },
+      series: datasets1.map(ds => ({
+        name: ds.label,
+        type: firstChart.type || 'bar',
+        data: ds.data,
+      })),
+    } as SmartBIChartConfig;
+  }
+  useDynamicTrend.value = true;
+
+  // Second chart as pie (if available)
+  if (charts.length > 1) {
+    const secondChart = charts[1];
+    const labels2 = secondChart.data?.labels || [];
+    const datasets2 = secondChart.data?.datasets || [];
+
+    if (secondChart.type === 'pie' || true) {
+      const pieData2 = labels2.map((label, idx) => ({
+        name: label,
+        value: datasets2[0]?.data?.[idx] || 0
+      }));
+      pieDynamicConfig.value = {
+        chartType: secondChart.type || 'pie',
+        title: secondChart.title,
+        xAxisField: 'name',
+        yAxisField: 'value',
+        data: pieData2,
+      } as SmartBIChartConfig;
+    }
+    useDynamicPie.value = true;
+  }
+}
+
+// ==================== Exploration Charts ====================
+
+async function buildExplorationCharts(data: Record<string, unknown>[]) {
+  if (!data || data.length === 0) return;
+
+  explorationLoading.value = true;
+  dynamicRawData.value = data;
+
+  try {
+    const recResult = await recommendChart(data);
+
+    if (recResult.success && recResult.recommendations && recResult.recommendations.length > 0) {
+      if (recResult.dataInfo) {
+        dataInfo.value = {
+          numericColumns: recResult.dataInfo.numericColumns || [],
+          categoricalColumns: recResult.dataInfo.categoricalColumns || [],
+          dateColumns: recResult.dataInfo.dateColumns || [],
+          rowCount: recResult.dataInfo.rowCount || data.length,
+        };
+      }
+
+      const topRecs = recResult.recommendations.slice(0, 4);
+      const plans = topRecs.map(rec => ({
+        chartType: rec.chartType,
+        data: data,
+        xField: rec.xField || dataInfo.value.categoricalColumns[0] || '',
+        yFields: rec.yFields || dataInfo.value.numericColumns.slice(0, 2),
+        title: rec.reason || `${rec.chartType} 图表`,
+      }));
+
+      const batchResult = await batchBuildCharts(plans);
+
+      if (batchResult.success && batchResult.charts.length > 0) {
+        explorationCharts.value = batchResult.charts
+          .filter(c => c.success && c.config)
+          .map((c, idx) => ({
+            id: `explore-${idx}`,
+            chartType: c.chartType,
+            title: plans[idx]?.title || c.chartType,
+            config: c.config as SmartBIChartConfig,
+            xField: plans[idx]?.xField,
+            yFields: plans[idx]?.yFields,
+          }));
+      }
+    }
+  } catch (error) {
+    console.warn('构建探索图表失败:', error);
+  } finally {
+    explorationLoading.value = false;
+  }
+}
+
+async function handleChartTypeSwitch(chartId: string, newType: string) {
+  const chart = explorationCharts.value.find(c => c.id === chartId);
+  if (!chart || dynamicRawData.value.length === 0) return;
+
+  try {
+    const result = await buildChart({
+      chartType: newType,
+      data: dynamicRawData.value,
+      xField: chart.xField,
+      yFields: chart.yFields,
+      title: chart.title,
+    });
+
+    if (result.success && result.option) {
+      const idx = explorationCharts.value.findIndex(c => c.id === chartId);
+      if (idx >= 0) {
+        explorationCharts.value[idx] = {
+          ...chart,
+          chartType: newType,
+          config: result.option as SmartBIChartConfig,
+        };
+      }
+    } else {
+      ElMessage.warning('图表类型切换失败: ' + (result.error || '未知错误'));
+    }
+  } catch (error) {
+    console.warn('图表类型切换失败:', error);
+  }
+}
+
+async function handleChartRefresh(chartId: string) {
+  if (dynamicRawData.value.length === 0) return;
+  const chart = explorationCharts.value.find(c => c.id === chartId);
+  if (!chart) return;
+
+  const types = ['bar', 'line', 'pie', 'area', 'scatter', 'waterfall', 'radar'];
+  const alternatives = types.filter(t => t !== chart.chartType);
+  const randomType = alternatives[Math.floor(Math.random() * alternatives.length)];
+  await handleChartTypeSwitch(chartId, randomType);
+}
+
+// ==================== Data Preview ====================
+
+async function openDataPreview() {
+  if (selectedDataSource.value === 'system') {
+    ElMessage.warning('请先选择一个上传的数据源');
+    return;
+  }
+  showDataPreview.value = true;
+  previewPage.value = 1;
+  await loadPreviewData();
+}
+
+async function loadPreviewData() {
+  const uploadId = Number(selectedDataSource.value);
+  if (!uploadId) return;
+
+  previewLoading.value = true;
+  try {
+    const res = await getUploadTableData(uploadId, previewPage.value - 1, 50);
+    if (res.success && res.data) {
+      previewData.value = res.data;
+    } else {
+      ElMessage.error(res.message || '获取数据失败');
+    }
+  } catch (error) {
+    console.error('加载预览数据失败:', error);
+    ElMessage.error('加载数据失败');
+  } finally {
+    previewLoading.value = false;
+  }
+}
+
+function handlePreviewPageChange(page: number) {
+  previewPage.value = page;
+  loadPreviewData();
+}
+
+function closeDataPreview() {
+  showDataPreview.value = false;
+}
+
+onMounted(async () => {
   // 默认选择最近30天
   const end = new Date();
   const start = new Date();
   start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
   dateRange.value = [start, end];
+
+  // 加载数据源列表
+  await loadDataSources();
 
   loadSalesData();
   initCharts();
@@ -141,25 +501,129 @@ watch([dateRange, dimensionType, categoryFilter], () => {
 
 async function loadSalesData() {
   loading.value = true;
+  loadError.value = '';
+  kpiLoading.value = true;
+  rankingLoading.value = true;
+  trendLoading.value = true;
+  pieLoading.value = true;
+
   try {
-    await Promise.all([
-      loadOverviewData(),
-      loadRankingData(),
-      loadTrendData(),
-      loadProductData()
-    ]);
+    // Load overview data first (contains KPIs, charts, rankings in unified response)
+    await loadOverviewData();
+
+    // Load dimension-specific data in parallel (only if overview didn't populate them)
+    const tasks: Promise<void>[] = [];
+    if (salesPersonRanking.value.length === 0) {
+      tasks.push(loadRankingData());
+    } else {
+      rankingLoading.value = false;
+    }
+    if (!trendChartConfig.value) {
+      tasks.push(loadTrendData());
+    } else {
+      trendLoading.value = false;
+    }
+    if (!pieChartConfig.value) {
+      tasks.push(loadProductData());
+    } else {
+      pieLoading.value = false;
+    }
+    if (tasks.length > 0) {
+      await Promise.allSettled(tasks);
+    }
+  } catch (error) {
+    loadError.value = '加载销售数据失败，请检查网络连接后重试';
   } finally {
     loading.value = false;
+    kpiLoading.value = false;
+    rankingLoading.value = false;
+    trendLoading.value = false;
+    pieLoading.value = false;
   }
 }
 
 /**
- * 加载概览数据 (包含 KPI 卡片)
+ * Parse unified backend response and extract KPIs, rankings, charts.
+ * The backend may return data in either:
+ *   1. Unified format: { overview: { kpiCards, rankings, charts } }
+ *   2. Direct format: { kpiCards, rankings, charts }  (from getComprehensiveAnalysis)
+ */
+function parseUnifiedResponse(data: Record<string, unknown>) {
+  // Extract KPI cards from various response shapes
+  const overview = data.overview as Record<string, unknown> | undefined;
+  const kpiSource = overview?.kpiCards || data.kpiCards;
+  if (Array.isArray(kpiSource) && kpiSource.length > 0) {
+    kpiCards.value = (kpiSource as KPICard[]).map(card => ({
+      ...card,
+      // Ensure null safety for numeric fields
+      rawValue: card.rawValue ?? null,
+      change: card.change ?? null,
+      changeRate: card.changeRate ?? null,
+      trend: card.trend || 'flat',
+      status: card.status || 'green',
+      compareText: card.compareText || '',
+      // Format value: show "--" if value is empty/null
+      value: card.value || (card.rawValue != null ? String(card.rawValue) : '--'),
+    }));
+    hasSystemData.value = true;
+  }
+
+  // Extract rankings (may be in overview.rankings or data.rankings)
+  const rankingsSource = (overview?.rankings || data.rankings) as Record<string, unknown[]> | undefined;
+  if (rankingsSource) {
+    const spRanking = rankingsSource.salesperson || rankingsSource.sales_person;
+    if (Array.isArray(spRanking) && spRanking.length > 0) {
+      salesPersonRanking.value = spRanking.map((item: Record<string, unknown>) => ({
+        name: String(item.name || ''),
+        sales: Number(item.value || item.sales || 0),
+        orderCount: Number(item.orderCount || item.count || 0),
+        growth: Number(item.growthRate || item.growth || 0),
+      }));
+    }
+  }
+
+  // Extract charts (may be in overview.charts or data.charts)
+  const chartsSource = (overview?.charts || data.charts) as Record<string, ChartConfig> | undefined;
+  if (chartsSource && typeof chartsSource === 'object') {
+    // Try to find trend chart
+    for (const [key, chart] of Object.entries(chartsSource)) {
+      if (!chart) continue;
+      const chartObj = chart as ChartConfig;
+      if (key.includes('trend') || key.includes('趋势') || chartObj.chartType === 'line') {
+        trendChartConfig.value = chartObj;
+        updateTrendChart();
+      } else if (key.includes('pie') || key.includes('分布') || key.includes('占比') || chartObj.chartType === 'pie') {
+        pieChartConfig.value = chartObj;
+        updatePieChart();
+      }
+    }
+  }
+
+  // Also check for chartList (legacy format)
+  const chartList = (overview?.chartList || data.chartList) as ChartConfig[] | undefined;
+  if (Array.isArray(chartList)) {
+    for (const chart of chartList) {
+      if (!chart) continue;
+      if (!trendChartConfig.value && (chart.chartType === 'line' || chart.title?.includes('趋势'))) {
+        trendChartConfig.value = chart;
+        updateTrendChart();
+      } else if (!pieChartConfig.value && (chart.chartType === 'pie' || chart.title?.includes('分布') || chart.title?.includes('占比'))) {
+        pieChartConfig.value = chart;
+        updatePieChart();
+      }
+    }
+  }
+}
+
+/**
+ * Load overview data (unified endpoint, no dimension).
  * API: GET /{factoryId}/smart-bi/analysis/sales
+ *
+ * The backend may return a comprehensive response that includes KPIs, rankings,
+ * and charts all at once.
  */
 async function loadOverviewData() {
   if (!factoryId.value || !dateRange.value) return;
-  kpiLoading.value = true;
   try {
     const params = {
       startDate: formatDate(dateRange.value[0]),
@@ -167,28 +631,30 @@ async function loadOverviewData() {
     };
     const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
     if (response.success && response.data) {
-      const data = response.data as { overview?: { kpiCards?: KPICard[] } };
-      if (data.overview?.kpiCards) {
-        kpiCards.value = data.overview.kpiCards;
-      }
+      // Handle double-wrapped response: interceptor wraps {code,data:{...}} into {success,data:{code,data:{...}}}
+      const raw = response.data as Record<string, unknown>;
+      const actualData = (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) && raw.code)
+        ? raw.data as Record<string, unknown>
+        : raw;
+      parseUnifiedResponse(actualData);
     } else {
-      ElMessage.error(response.message || '加载销售概览失败');
+      // Don't show error toast here, just log - we'll try dimension-specific calls
+      console.warn('Sales overview returned non-success:', response.message);
     }
   } catch (error) {
-    console.error('加载销售 KPI 失败:', error);
-    ElMessage.error('加载销售 KPI 数据失败，请稍后重试');
+    console.error('加载销售概览失败:', error);
+    // Don't show ElMessage error here - will show loadError if all calls fail
   } finally {
     kpiLoading.value = false;
   }
 }
 
 /**
- * 加载销售员排行数据
+ * Load salesperson ranking (dimension-specific fallback).
  * API: GET /{factoryId}/smart-bi/analysis/sales?dimension=salesperson
  */
 async function loadRankingData() {
   if (!factoryId.value || !dateRange.value) return;
-  rankingLoading.value = true;
   try {
     const params = {
       startDate: formatDate(dateRange.value[0]),
@@ -197,28 +663,33 @@ async function loadRankingData() {
     };
     const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
     if (response.success && response.data) {
-      const data = response.data as { ranking?: SalesPersonRank[] };
-      if (data.ranking) {
-        salesPersonRanking.value = data.ranking;
+      const data = response.data as Record<string, unknown>;
+      // May return { ranking: [...] } or unified response with overview.rankings
+      if (Array.isArray(data.ranking)) {
+        salesPersonRanking.value = (data.ranking as Record<string, unknown>[]).map(item => ({
+          name: String(item.name || ''),
+          sales: Number(item.value || item.sales || 0),
+          orderCount: Number(item.orderCount || item.count || 0),
+          growth: Number(item.growthRate || item.growth || 0),
+        }));
+      } else {
+        // Try parsing as unified response
+        parseUnifiedResponse(data);
       }
-    } else {
-      ElMessage.error(response.message || '加载销售员排行失败');
     }
   } catch (error) {
-    console.error('加载销售员排行失败:', error);
-    ElMessage.error('加载销售员排行数据失败，请稍后重试');
+    console.warn('加载销售员排行失败:', error);
   } finally {
     rankingLoading.value = false;
   }
 }
 
 /**
- * 加载趋势图数据
+ * Load trend chart data (dimension-specific fallback).
  * API: GET /{factoryId}/smart-bi/analysis/sales?dimension=trend
  */
 async function loadTrendData() {
   if (!factoryId.value || !dateRange.value) return;
-  trendLoading.value = true;
   try {
     const params = {
       startDate: formatDate(dateRange.value[0]),
@@ -227,29 +698,28 @@ async function loadTrendData() {
     };
     const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
     if (response.success && response.data) {
-      const data = response.data as { chart?: ChartConfig };
+      const data = response.data as Record<string, unknown>;
       if (data.chart) {
-        trendChartConfig.value = data.chart;
+        trendChartConfig.value = data.chart as ChartConfig;
         updateTrendChart();
+      } else {
+        // Try parsing as unified response
+        parseUnifiedResponse(data);
       }
-    } else {
-      ElMessage.error(response.message || '加载趋势图失败');
     }
   } catch (error) {
-    console.error('加载趋势图失败:', error);
-    ElMessage.error('加载销售趋势数据失败，请稍后重试');
+    console.warn('加载趋势图失败:', error);
   } finally {
     trendLoading.value = false;
   }
 }
 
 /**
- * 加载产品分布图数据
+ * Load product distribution chart (dimension-specific fallback).
  * API: GET /{factoryId}/smart-bi/analysis/sales?dimension=product
  */
 async function loadProductData() {
   if (!factoryId.value || !dateRange.value) return;
-  pieLoading.value = true;
   try {
     const params = {
       startDate: formatDate(dateRange.value[0]),
@@ -258,17 +728,29 @@ async function loadProductData() {
     };
     const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
     if (response.success && response.data) {
-      const data = response.data as { chart?: ChartConfig };
+      const data = response.data as Record<string, unknown>;
       if (data.chart) {
-        pieChartConfig.value = data.chart;
+        pieChartConfig.value = data.chart as ChartConfig;
         updatePieChart();
+      } else if (data.ranking) {
+        // Product dimension may return ranking data; build pie from it
+        const ranking = data.ranking as Array<{ name: string; value: number }>;
+        if (ranking.length > 0) {
+          pieChartConfig.value = {
+            chartType: 'pie',
+            title: '产品类别销售占比',
+            xAxisField: 'name',
+            yAxisField: 'value',
+            data: ranking.map(r => ({ name: r.name, value: Number(r.value || 0) })),
+          };
+          updatePieChart();
+        }
+      } else {
+        parseUnifiedResponse(data);
       }
-    } else {
-      ElMessage.error(response.message || '加载产品分布图失败');
     }
   } catch (error) {
-    console.error('加载产品分布图失败:', error);
-    ElMessage.error('加载产品分布数据失败，请稍后重试');
+    console.warn('加载产品分布图失败:', error);
   } finally {
     pieLoading.value = false;
   }
@@ -288,33 +770,35 @@ function initTrendChart() {
   const chartDom = document.getElementById('sales-trend-chart');
   if (!chartDom) return;
 
-  trendChart = echarts.init(chartDom);
+  trendChart = echarts.init(chartDom, 'cretas');
 }
 
 function initPieChart() {
   const chartDom = document.getElementById('sales-pie-chart');
   if (!chartDom) return;
 
-  pieChart = echarts.init(chartDom);
+  pieChart = echarts.init(chartDom, 'cretas');
 }
 
 /**
  * 根据 API 返回的 ChartConfig 更新趋势图
+ * Phase 6: Also sets trendDynamicConfig for DynamicChartRenderer
  */
 function updateTrendChart() {
-  if (!trendChart) return;
-
   const config = trendChartConfig.value;
   if (!config || !config.data || config.data.length === 0) {
-    // 无数据时显示空状态
-    trendChart.setOption({
-      title: {
-        text: '暂无趋势数据',
-        left: 'center',
-        top: 'center',
-        textStyle: { color: '#909399', fontSize: 14 }
-      }
-    });
+    useDynamicTrend.value = false;
+    trendDynamicConfig.value = null;
+    if (trendChart) {
+      trendChart.setOption({
+        title: {
+          text: '暂无趋势数据',
+          left: 'center',
+          top: 'center',
+          textStyle: { color: '#909399', fontSize: 14 }
+        }
+      });
+    }
     return;
   }
 
@@ -325,9 +809,22 @@ function updateTrendChart() {
   const xAxisData = config.data.map(item => String(item[xAxisField] || ''));
   const salesData = config.data.map(item => Number(item[yAxisField]) || 0);
 
-  // 尝试获取订单数据（如果存在 seriesField 或 orderCount 字段）
+  // 尝试获取订单数据
   const orderData = config.data.map(item => Number(item['orderCount'] || item['count']) || 0);
   const hasOrderData = orderData.some(v => v > 0);
+
+  // Phase 6: Set DynamicChartRenderer config (LegacyChartConfig format)
+  trendDynamicConfig.value = {
+    chartType: 'line',
+    title: '销售趋势',
+    xAxisField: xAxisField,
+    yAxisField: yAxisField,
+    data: config.data,
+  } as SmartBIChartConfig;
+  useDynamicTrend.value = true;
+
+  // Legacy fallback: still update raw echarts
+  if (!trendChart) return;
 
   const option: echarts.EChartsOption = {
     tooltip: {
@@ -426,23 +923,38 @@ function updateTrendChart() {
 
 /**
  * 根据 API 返回的 ChartConfig 更新饼图
+ * Phase 6: Also sets pieDynamicConfig for DynamicChartRenderer
  */
 function updatePieChart() {
-  if (!pieChart) return;
-
   const config = pieChartConfig.value;
   if (!config || !config.data || config.data.length === 0) {
-    // 无数据时显示空状态
-    pieChart.setOption({
-      title: {
-        text: '暂无产品分布数据',
-        left: 'center',
-        top: 'center',
-        textStyle: { color: '#909399', fontSize: 14 }
-      }
-    });
+    useDynamicPie.value = false;
+    pieDynamicConfig.value = null;
+    if (pieChart) {
+      pieChart.setOption({
+        title: {
+          text: '暂无产品分布数据',
+          left: 'center',
+          top: 'center',
+          textStyle: { color: '#909399', fontSize: 14 }
+        }
+      });
+    }
     return;
   }
+
+  // Phase 6: Set DynamicChartRenderer config (LegacyChartConfig format)
+  pieDynamicConfig.value = {
+    chartType: 'pie',
+    title: '产品类别销售占比',
+    xAxisField: config.xAxisField || 'name',
+    yAxisField: config.yAxisField || 'value',
+    data: config.data,
+  } as SmartBIChartConfig;
+  useDynamicPie.value = true;
+
+  // Legacy fallback: still update raw echarts
+  if (!pieChart) return;
 
   // 预定义颜色
   const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#00CED1', '#FF69B4', '#8A2BE2'];
@@ -495,16 +1007,44 @@ function handleResize() {
   pieChart?.resize();
 }
 
+/**
+ * Format KPI card value for display.
+ * Shows "--" for null/undefined values (truly missing data).
+ * Shows the backend-formatted value if available.
+ */
+function formatKpiValue(card: KPICard): string {
+  // Backend already formatted the value string
+  if (card.value && card.value !== '0' && card.value !== '0.00' && card.value !== '--') {
+    return card.value;
+  }
+  // If rawValue is null/undefined, data is truly missing
+  if (card.rawValue == null) {
+    return '--';
+  }
+  // rawValue is 0 - could be legitimate zero
+  if (card.rawValue === 0) {
+    if (card.unit === '%') return '0.0%';
+    return '0';
+  }
+  // Format the raw value
+  return formatMoney(card.rawValue) + (card.unit && card.unit !== '元' ? card.unit : '');
+}
+
 function formatMoney(value: number | null | undefined): string {
-  if (value == null) return '0';
-  if (value >= 10000) {
+  if (value == null) return '--';
+  if (value === 0) return '0';
+  if (Math.abs(value) >= 100000000) {
+    return (value / 100000000).toFixed(2) + '亿';
+  }
+  if (Math.abs(value) >= 10000) {
     return (value / 10000).toFixed(1) + '万';
   }
-  return value.toLocaleString();
+  // Use manual formatting (safe for all browsers)
+  return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 function formatPercent(value: number | null | undefined): string {
-  if (value == null) return '-';
+  if (value == null) return '--';
   return (value >= 0 ? '+' : '') + value.toFixed(1) + '%';
 }
 
@@ -512,8 +1052,72 @@ function getGrowthClass(value: number): string {
   return value >= 0 ? 'growth-up' : 'growth-down';
 }
 
-function handleExport() {
-  ElMessage.info('导出功能开发中...');
+async function handleExport() {
+  try {
+    const XLSX = await import('xlsx');
+    const wb = XLSX.utils.book_new();
+
+    // 1. KPI summary sheet
+    if (kpiCards.value.length > 0) {
+      const kpiRows = kpiCards.value.map(card => ({
+        '指标': card.title,
+        '数值': card.value,
+        '原始值': card.rawValue ?? '',
+        '变化率': card.changeRate != null ? `${card.changeRate >= 0 ? '+' : ''}${Number(card.changeRate).toFixed(1)}%` : '',
+        '趋势': card.trend === 'up' ? '上升' : card.trend === 'down' ? '下降' : '持平',
+      }));
+      const kpiWs = XLSX.utils.json_to_sheet(kpiRows);
+      XLSX.utils.book_append_sheet(wb, kpiWs, 'KPI汇总');
+    }
+
+    // 2. Sales ranking sheet
+    if (salesPersonRanking.value.length > 0) {
+      const rankRows = salesPersonRanking.value.map((person, idx) => ({
+        '排名': idx + 1,
+        '销售员': person.name,
+        '销售额': person.sales,
+        '订单数': person.orderCount,
+        '增长率': `${person.growth >= 0 ? '+' : ''}${person.growth.toFixed(1)}%`,
+      }));
+      const rankWs = XLSX.utils.json_to_sheet(rankRows);
+      XLSX.utils.book_append_sheet(wb, rankWs, '销售员排行');
+    }
+
+    // 3. Trend data sheet (if available)
+    if (trendChartConfig.value?.data?.length) {
+      const trendWs = XLSX.utils.json_to_sheet(trendChartConfig.value.data as Record<string, unknown>[]);
+      XLSX.utils.book_append_sheet(wb, trendWs, '趋势数据');
+    }
+
+    // 4. Product distribution data (if available)
+    if (pieChartConfig.value?.data?.length) {
+      const pieWs = XLSX.utils.json_to_sheet(pieChartConfig.value.data as Record<string, unknown>[]);
+      XLSX.utils.book_append_sheet(wb, pieWs, '产品分布');
+    }
+
+    // 5. Dynamic exploration data (if available)
+    if (dynamicRawData.value.length > 0) {
+      const dynWs = XLSX.utils.json_to_sheet(dynamicRawData.value);
+      XLSX.utils.book_append_sheet(wb, dynWs, '原始数据');
+    }
+
+    // 6. AI insights sheet (if available)
+    if (aiInsights.value.length > 0) {
+      const insightRows = aiInsights.value.map((insight, idx) => ({
+        '序号': idx + 1,
+        '洞察': insight,
+      }));
+      const insightWs = XLSX.utils.json_to_sheet(insightRows);
+      XLSX.utils.book_append_sheet(wb, insightWs, 'AI洞察');
+    }
+
+    const fileName = `销售分析报告-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    ElMessage.success(`已导出: ${fileName}`);
+  } catch (error) {
+    console.error('Export failed:', error);
+    ElMessage.error('导出失败，请重试');
+  }
 }
 
 function handleRefresh() {
@@ -546,6 +1150,33 @@ onUnmounted(() => {
     <!-- 筛选栏 -->
     <el-card class="filter-card">
       <div class="filter-bar">
+        <!-- Phase 6: 数据源选择器 -->
+        <div class="filter-item">
+          <span class="filter-label">
+            <el-icon><Document /></el-icon>
+            数据源
+          </span>
+          <el-select
+            v-model="selectedDataSource"
+            placeholder="选择数据源"
+            style="width: 240px"
+            @change="onDataSourceChange"
+          >
+            <el-option label="系统数据" value="system" />
+            <el-option
+              v-for="ds in dataSources"
+              :key="ds.id"
+              :label="`${ds.fileName}${ds.sheetName ? ' - ' + ds.sheetName : ''}`"
+              :value="String(ds.id)"
+            >
+              <div class="datasource-option">
+                <span>{{ ds.fileName }}</span>
+                <span class="datasource-meta">{{ ds.sheetName }} · {{ ds.rowCount }}行</span>
+              </div>
+            </el-option>
+          </el-select>
+        </div>
+
         <div class="filter-item">
           <span class="filter-label">
             <el-icon><Calendar /></el-icon>
@@ -559,6 +1190,7 @@ onUnmounted(() => {
             end-placeholder="结束日期"
             :shortcuts="shortcuts"
             value-format="YYYY-MM-DD"
+            :disabled="selectedDataSource !== 'system'"
           />
         </div>
         <div class="filter-item">
@@ -566,7 +1198,7 @@ onUnmounted(() => {
             <el-icon><TrendCharts /></el-icon>
             统计维度
           </span>
-          <el-radio-group v-model="dimensionType">
+          <el-radio-group v-model="dimensionType" :disabled="selectedDataSource !== 'system'">
             <el-radio-button value="daily">按日</el-radio-button>
             <el-radio-button value="weekly">按周</el-radio-button>
             <el-radio-button value="monthly">按月</el-radio-button>
@@ -577,7 +1209,7 @@ onUnmounted(() => {
             <el-icon><Filter /></el-icon>
             产品类别
           </span>
-          <el-select v-model="categoryFilter" placeholder="选择类别">
+          <el-select v-model="categoryFilter" placeholder="选择类别" :disabled="selectedDataSource !== 'system'">
             <el-option
               v-for="cat in categories"
               :key="cat.value"
@@ -586,8 +1218,28 @@ onUnmounted(() => {
             />
           </el-select>
         </div>
+
+        <!-- 查看原始数据按钮 -->
+        <div class="filter-item" v-if="selectedDataSource !== 'system'">
+          <el-button :icon="View" @click="openDataPreview">
+            查看原始数据
+          </el-button>
+        </div>
       </div>
     </el-card>
+
+    <!-- 加载错误提示 -->
+    <el-alert
+      v-if="loadError"
+      type="error"
+      :title="loadError"
+      show-icon
+      closable
+      style="margin-bottom: 16px"
+      @close="loadError = ''"
+    >
+      <el-button size="small" type="primary" @click="handleRefresh" style="margin-top: 8px">重试</el-button>
+    </el-alert>
 
     <!-- KPI 卡片 -->
     <el-row :gutter="16" class="kpi-section" v-loading="kpiLoading">
@@ -598,23 +1250,24 @@ onUnmounted(() => {
         :sm="12"
         :md="6"
       >
-        <el-card class="kpi-card">
+        <el-card class="kpi-card" :class="{ 'kpi-no-data': card.rawValue == null }">
           <div class="kpi-label">{{ card.title }}</div>
-          <div class="kpi-value">{{ card.value }}</div>
+          <div class="kpi-value">{{ formatKpiValue(card) }}</div>
           <div
             class="kpi-trend"
             :class="card.trend === 'up' ? 'growth-up' : card.trend === 'down' ? 'growth-down' : ''"
           >
-            <span v-if="card.changeRate != null">
-              {{ card.changeRate >= 0 ? '+' : '' }}{{ (card.changeRate ?? 0).toFixed(1) }}%
+            <span v-if="card.changeRate != null && card.changeRate !== 0">
+              {{ card.changeRate >= 0 ? '+' : '' }}{{ Number(card.changeRate).toFixed(1) }}%
             </span>
+            <span v-else-if="card.rawValue == null" class="no-data-text">暂无数据</span>
             <span v-if="card.compareText" class="compare-text">{{ card.compareText }}</span>
           </div>
         </el-card>
       </el-col>
       <!-- 无数据时的占位 -->
       <el-col v-if="kpiCards.length === 0 && !kpiLoading" :span="24">
-        <el-empty description="暂无 KPI 数据" :image-size="80" />
+        <SmartBIEmptyState type="no-data" :show-action="false" />
       </el-col>
     </el-row>
 
@@ -628,32 +1281,41 @@ onUnmounted(() => {
               <span>销售员排行榜</span>
             </div>
           </template>
-          <el-table :data="salesPersonRanking" stripe :show-header="true" size="small">
-            <el-table-column label="排名" width="60" align="center">
-              <template #default="{ $index }">
-                <div
-                  class="rank-badge"
-                  :class="{ 'top-3': $index < 3 }"
-                >
-                  {{ $index + 1 }}
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column label="销售员" prop="name" width="100" />
-            <el-table-column label="销售额" prop="sales" align="right">
-              <template #default="{ row }">
-                {{ formatMoney(row.sales) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="订单数" prop="orderCount" width="80" align="center" />
-            <el-table-column label="增长" width="80" align="right">
-              <template #default="{ row }">
-                <span :class="getGrowthClass(row.growth)">
-                  {{ formatPercent(row.growth) }}
-                </span>
-              </template>
-            </el-table-column>
-          </el-table>
+          <template v-if="salesPersonRanking.length > 0">
+            <el-table :data="salesPersonRanking" stripe :show-header="true" size="small">
+              <el-table-column label="排名" width="60" align="center">
+                <template #default="{ $index }">
+                  <div
+                    class="rank-badge"
+                    :class="{ 'top-3': $index < 3 }"
+                  >
+                    {{ $index + 1 }}
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="销售员" prop="name" width="100" />
+              <el-table-column label="销售额" prop="sales" align="right">
+                <template #default="{ row }">
+                  {{ formatMoney(row.sales) }}
+                </template>
+              </el-table-column>
+              <el-table-column label="订单数" prop="orderCount" width="80" align="center">
+                <template #default="{ row }">
+                  {{ row.orderCount ?? '--' }}
+                </template>
+              </el-table-column>
+              <el-table-column label="增长" width="80" align="right">
+                <template #default="{ row }">
+                  <span :class="getGrowthClass(row.growth)">
+                    {{ formatPercent(row.growth) }}
+                  </span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </template>
+          <div v-else-if="!rankingLoading" class="empty-ranking">
+            <el-empty description="暂无销售员排行数据" :image-size="80" />
+          </div>
         </el-card>
       </el-col>
 
@@ -666,7 +1328,14 @@ onUnmounted(() => {
               <span>销售趋势</span>
             </div>
           </template>
-          <div id="sales-trend-chart" class="chart-container"></div>
+          <!-- Phase 6: DynamicChartRenderer when config available -->
+          <DynamicChartRenderer
+            v-if="useDynamicTrend && trendDynamicConfig"
+            :config="trendDynamicConfig"
+            :height="320"
+          />
+          <!-- Legacy fallback -->
+          <div v-else id="sales-trend-chart" class="chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
@@ -681,10 +1350,122 @@ onUnmounted(() => {
               <span>产品类别销售占比</span>
             </div>
           </template>
-          <div id="sales-pie-chart" class="pie-chart-container"></div>
+          <!-- Phase 6: DynamicChartRenderer when config available -->
+          <DynamicChartRenderer
+            v-if="useDynamicPie && pieDynamicConfig"
+            :config="pieDynamicConfig"
+            :height="350"
+          />
+          <!-- Legacy fallback -->
+          <div v-else id="sales-pie-chart" class="pie-chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- Phase 6: AI 洞察面板 (仅动态数据源显示) -->
+    <el-card v-if="aiInsights.length > 0" class="insight-card">
+      <template #header>
+        <div class="card-header">
+          <el-icon><TrendCharts /></el-icon>
+          <span>AI 智能洞察</span>
+          <el-tag type="success" size="small" style="margin-left: 8px">来自上传数据</el-tag>
+        </div>
+      </template>
+      <div class="insight-list">
+        <div
+          v-for="(insight, index) in aiInsights"
+          :key="index"
+          class="insight-item"
+        >
+          <el-icon class="insight-icon"><TrendCharts /></el-icon>
+          <span>{{ insight }}</span>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- Phase 6: 动态图表探索面板 (仅动态数据源显示) -->
+    <el-card v-if="explorationCharts.length > 0 || explorationLoading" class="exploration-card">
+      <template #header>
+        <div class="card-header">
+          <el-icon><TrendCharts /></el-icon>
+          <span>数据图表探索</span>
+          <el-tag type="info" size="small" style="margin-left: 8px">自动推荐</el-tag>
+        </div>
+      </template>
+      <div v-loading="explorationLoading" class="exploration-grid">
+        <div
+          v-for="chart in explorationCharts"
+          :key="chart.id"
+          class="exploration-chart-item"
+        >
+          <div class="exploration-chart-header">
+            <span class="exploration-chart-title">{{ chart.title }}</span>
+            <ChartTypeSelector
+              :current-type="chart.chartType"
+              :numeric-columns="dataInfo.numericColumns"
+              :categorical-columns="dataInfo.categoricalColumns"
+              :date-columns="dataInfo.dateColumns"
+              :row-count="dataInfo.rowCount"
+              @switch-type="(newType: string) => handleChartTypeSwitch(chart.id, newType)"
+              @refresh="handleChartRefresh(chart.id)"
+            />
+          </div>
+          <DynamicChartRenderer
+            :config="chart.config"
+            :height="280"
+          />
+        </div>
+        <SmartBIEmptyState v-if="!explorationLoading && explorationCharts.length === 0" type="no-charts" :show-action="false" />
+      </div>
+    </el-card>
+
+    <!-- Phase 6: 数据预览对话框 -->
+    <el-dialog
+      v-model="showDataPreview"
+      title="数据预览"
+      width="85%"
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <div v-loading="previewLoading" class="preview-container">
+        <div class="preview-info">
+          <span>共 {{ previewData.total }} 条数据</span>
+          <span>当前第 {{ previewPage }} / {{ previewData.totalPages || 1 }} 页</span>
+        </div>
+        <el-table
+          :data="previewData.data"
+          stripe
+          border
+          height="450"
+          style="width: 100%"
+        >
+          <el-table-column
+            v-for="header in previewData.headers"
+            :key="header"
+            :label="header"
+            :prop="header"
+            min-width="120"
+            show-overflow-tooltip
+          >
+            <template #default="{ row }">
+              {{ row[header] ?? '-' }}
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="preview-pagination">
+          <el-pagination
+            v-model:current-page="previewPage"
+            :page-size="50"
+            :total="previewData.total"
+            layout="total, prev, pager, next, jumper"
+            @current-change="handlePreviewPageChange"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="closeDataPreview">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -759,6 +1540,14 @@ onUnmounted(() => {
   text-align: center;
   padding: 8px 0;
 
+  &.kpi-no-data {
+    opacity: 0.7;
+
+    .kpi-value {
+      color: #909399;
+    }
+  }
+
   .kpi-label {
     font-size: 13px;
     color: #909399;
@@ -790,7 +1579,20 @@ onUnmounted(() => {
       color: #909399;
       font-weight: normal;
     }
+
+    .no-data-text {
+      color: #C0C4CC;
+      font-size: 12px;
+      font-weight: normal;
+    }
   }
+}
+
+.empty-ranking {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
 }
 
 // 内容区
@@ -858,7 +1660,149 @@ onUnmounted(() => {
   width: 100%;
 }
 
+// Phase 6: 数据源选择器
+.datasource-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+
+  .datasource-meta {
+    font-size: 12px;
+    color: #909399;
+  }
+}
+
+// Phase 6: AI 洞察面板
+.insight-card {
+  margin-top: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #67C23A;
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+
+    .el-icon {
+      color: #67C23A;
+    }
+  }
+}
+
+.insight-list {
+  .insight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f2f5;
+    line-height: 1.6;
+    color: #303133;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .insight-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+      color: #67C23A;
+    }
+  }
+}
+
+// Phase 6: 动态图表探索面板
+.exploration-card {
+  margin-top: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #409EFF;
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+
+    .el-icon {
+      color: #409EFF;
+    }
+  }
+}
+
+.exploration-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  min-height: 100px;
+}
+
+.exploration-chart-item {
+  background: #fafbfc;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #ebeef5;
+  transition: box-shadow 0.3s;
+
+  &:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.exploration-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.exploration-chart-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+// Phase 6: 数据预览对话框
+.preview-container {
+  .preview-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: #f5f7fa;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #606266;
+  }
+
+  .preview-pagination {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+  }
+}
+
 // 响应式
+@media (max-width: 1366px) {
+  .chart-container {
+    height: 280px;
+  }
+
+  .pie-chart-container {
+    height: 300px;
+  }
+
+  .exploration-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .filter-bar {
     flex-direction: column;
@@ -867,6 +1811,18 @@ onUnmounted(() => {
 
   .filter-item {
     width: 100%;
+  }
+
+  .chart-container {
+    height: 240px;
+  }
+
+  .pie-chart-container {
+    height: 260px;
+  }
+
+  .exploration-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

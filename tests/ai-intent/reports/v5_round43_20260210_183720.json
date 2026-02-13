@@ -1,0 +1,796 @@
+{
+  "timestamp": "2026-02-10T18:37:20.580188",
+  "test": "v5_round43_material_management",
+  "total": 50,
+  "pass": 33,
+  "fail": 17,
+  "error": 0,
+  "pass_rate": 66.0,
+  "category_breakdown": {
+    "material_query": {
+      "pass": 4,
+      "fail": 2,
+      "error": 0
+    },
+    "material_receive": {
+      "pass": 4,
+      "fail": 2,
+      "error": 0
+    },
+    "material_issue": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "material_tracking": {
+      "pass": 3,
+      "fail": 2,
+      "error": 0
+    },
+    "expiry_management": {
+      "pass": 4,
+      "fail": 2,
+      "error": 0
+    },
+    "stock_level": {
+      "pass": 3,
+      "fail": 2,
+      "error": 0
+    },
+    "material_adjust": {
+      "pass": 2,
+      "fail": 4,
+      "error": 0
+    },
+    "material_analysis": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "bom_recipe": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 25,
+    "SEMANTIC": 1,
+    "CLASSIFIER": 14,
+    "NONE": 10
+  },
+  "results": [
+    {
+      "query": "原材料库存",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "material_query",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 447
+    },
+    {
+      "query": "查一下面粉库存",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        "INVENTORY_CHECK",
+        null
+      ],
+      "category": "material_query",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 448
+    },
+    {
+      "query": "大豆还有多少",
+      "status": "FAIL",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.93,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        "INVENTORY_CHECK",
+        null
+      ],
+      "category": "material_query",
+      "method": "SEMANTIC",
+      "latency_ms": 612
+    },
+    {
+      "query": "辅料够不够",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        "MATERIAL_LOW_STOCK_ALERT",
+        null
+      ],
+      "category": "material_query",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    },
+    {
+      "query": "包装材料查一下",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.7888022065162659,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        "INVENTORY_CHECK",
+        null
+      ],
+      "category": "material_query",
+      "method": "CLASSIFIER",
+      "latency_ms": 607
+    },
+    {
+      "query": "调味料库存",
+      "status": "FAIL",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        "INVENTORY_CHECK",
+        null
+      ],
+      "category": "material_query",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 440
+    },
+    {
+      "query": "物料到货了",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_CREATE",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "material_receive",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 422
+    },
+    {
+      "query": "入库登记",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.8136168718338013,
+      "expected": [
+        "MATERIAL_BATCH_CREATE",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "material_receive",
+      "method": "CLASSIFIER",
+      "latency_ms": 603
+    },
+    {
+      "query": "签收物料",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_CREATE",
+        null
+      ],
+      "category": "material_receive",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 434
+    },
+    {
+      "query": "到货数量确认",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.542889416217804,
+      "expected": [
+        "MATERIAL_BATCH_CREATE",
+        "INVENTORY_CHECK",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "material_receive",
+      "method": "CLASSIFIER",
+      "latency_ms": 589
+    },
+    {
+      "query": "收货质检",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_QUERY",
+        "MATERIAL_BATCH_CREATE",
+        null
+      ],
+      "category": "material_receive",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 445
+    },
+    {
+      "query": "入库上架",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.8426674008369446,
+      "expected": [
+        "MATERIAL_BATCH_CREATE",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "material_receive",
+      "method": "CLASSIFIER",
+      "latency_ms": 627
+    },
+    {
+      "query": "领料申请",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_CONSUME",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "material_issue",
+      "method": null,
+      "latency_ms": 601
+    },
+    {
+      "query": "出库一批面粉",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_CONSUME",
+        "MATERIAL_ADJUST_QUANTITY",
+        null
+      ],
+      "category": "material_issue",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 427
+    },
+    {
+      "query": "车间要料",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_CONSUME",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "material_issue",
+      "method": null,
+      "latency_ms": 736
+    },
+    {
+      "query": "投料记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_CONSUME",
+        "PROCESSING_BATCH_LIST",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "material_issue",
+      "method": null,
+      "latency_ms": 655
+    },
+    {
+      "query": "发料确认",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CONSUME",
+      "confidence": 0.5552499294281006,
+      "expected": [
+        "MATERIAL_BATCH_CONSUME",
+        null
+      ],
+      "category": "material_issue",
+      "method": "CLASSIFIER",
+      "latency_ms": 593
+    },
+    {
+      "query": "退料处理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_CONSUME",
+        "MATERIAL_ADJUST_QUANTITY",
+        null
+      ],
+      "category": "material_issue",
+      "method": null,
+      "latency_ms": 649
+    },
+    {
+      "query": "物料批次追踪",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "material_tracking",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 454
+    },
+    {
+      "query": "原料来源",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "material_tracking",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 434
+    },
+    {
+      "query": "物料去向",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "MATERIAL_BATCH_CONSUME",
+        null
+      ],
+      "category": "material_tracking",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 501
+    },
+    {
+      "query": "批次信息查看",
+      "status": "FAIL",
+      "intent": "PROCESSING_BATCH_DETAIL",
+      "confidence": 0.8566168546676636,
+      "expected": [
+        "TRACE_BATCH",
+        "MATERIAL_BATCH_QUERY",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "material_tracking",
+      "method": "CLASSIFIER",
+      "latency_ms": 621
+    },
+    {
+      "query": "物料使用记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_CONSUME",
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "material_tracking",
+      "method": null,
+      "latency_ms": 614
+    },
+    {
+      "query": "快到期的物料",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.870466411113739,
+      "expected": [
+        "MATERIAL_EXPIRING_ALERT",
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "expiry_management",
+      "method": "CLASSIFIER",
+      "latency_ms": 587
+    },
+    {
+      "query": "过期物料处理",
+      "status": "FAIL",
+      "intent": "MATERIAL_EXPIRED_QUERY",
+      "confidence": 0.8252760171890259,
+      "expected": [
+        "MATERIAL_EXPIRING_ALERT",
+        "MATERIAL_ADJUST_QUANTITY",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "expiry_management",
+      "method": "CLASSIFIER",
+      "latency_ms": 1591
+    },
+    {
+      "query": "保质期查看",
+      "status": "FAIL",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_EXPIRING_ALERT",
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "expiry_management",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 480
+    },
+    {
+      "query": "先进先出检查",
+      "status": "PASS",
+      "intent": "MATERIAL_FIFO_RECOMMEND",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_FIFO_RECOMMEND",
+        "MATERIAL_EXPIRING_ALERT",
+        "INVENTORY_CHECK",
+        null
+      ],
+      "category": "expiry_management",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 470
+    },
+    {
+      "query": "临期预警",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_EXPIRING_ALERT",
+        "MATERIAL_LOW_STOCK_ALERT",
+        null
+      ],
+      "category": "expiry_management",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 459
+    },
+    {
+      "query": "效期管理",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.8324436545372009,
+      "expected": [
+        "MATERIAL_EXPIRING_ALERT",
+        "MATERIAL_FIFO_RECOMMEND",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "expiry_management",
+      "method": "CLASSIFIER",
+      "latency_ms": 641
+    },
+    {
+      "query": "安全库存",
+      "status": "FAIL",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "INVENTORY_QUERY",
+        "INVENTORY_CHECK",
+        null
+      ],
+      "category": "stock_level",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "库存预警",
+      "status": "FAIL",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "MATERIAL_EXPIRING_ALERT",
+        "INVENTORY_CHECK",
+        null
+      ],
+      "category": "stock_level",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 447
+    },
+    {
+      "query": "补货提醒",
+      "status": "PASS",
+      "intent": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.8549586534500122,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "stock_level",
+      "method": "CLASSIFIER",
+      "latency_ms": 598
+    },
+    {
+      "query": "低库存物料",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "stock_level",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "库存不足",
+      "status": "PASS",
+      "intent": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "INVENTORY_QUERY",
+        "INVENTORY_CHECK",
+        null
+      ],
+      "category": "stock_level",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 448
+    },
+    {
+      "query": "库存调整",
+      "status": "FAIL",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_ADJUST_QUANTITY",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "material_adjust",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 434
+    },
+    {
+      "query": "盘点差异",
+      "status": "FAIL",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_ADJUST_QUANTITY",
+        "INVENTORY_CHECK",
+        null
+      ],
+      "category": "material_adjust",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 435
+    },
+    {
+      "query": "损耗登记",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CONSUME",
+      "confidence": 0.710595965385437,
+      "expected": [
+        "MATERIAL_ADJUST_QUANTITY",
+        "MATERIAL_BATCH_CONSUME",
+        null
+      ],
+      "category": "material_adjust",
+      "method": "CLASSIFIER",
+      "latency_ms": 601
+    },
+    {
+      "query": "报废处理",
+      "status": "FAIL",
+      "intent": "QUALITY_DISPOSITION_EXECUTE",
+      "confidence": 0.7769430875778198,
+      "expected": [
+        "MATERIAL_ADJUST_QUANTITY",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "material_adjust",
+      "method": "CLASSIFIER",
+      "latency_ms": 607
+    },
+    {
+      "query": "库存冲销",
+      "status": "FAIL",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_ADJUST_QUANTITY",
+        null
+      ],
+      "category": "material_adjust",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 447
+    },
+    {
+      "query": "数量修正",
+      "status": "PASS",
+      "intent": "MATERIAL_ADJUST_QUANTITY",
+      "confidence": 0.8844425082206726,
+      "expected": [
+        "MATERIAL_ADJUST_QUANTITY",
+        "PRODUCT_UPDATE",
+        null
+      ],
+      "category": "material_adjust",
+      "method": "CLASSIFIER",
+      "latency_ms": 607
+    },
+    {
+      "query": "物料消耗分析",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_INVENTORY",
+        "REPORT_TRENDS",
+        "COST_QUERY",
+        "MATERIAL_BATCH_CONSUME",
+        null
+      ],
+      "category": "material_analysis",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 432
+    },
+    {
+      "query": "用料趋势",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.7944343686103821,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_INVENTORY",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "material_analysis",
+      "method": "CLASSIFIER",
+      "latency_ms": 589
+    },
+    {
+      "query": "原料成本变化",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "REPORT_TRENDS",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "material_analysis",
+      "method": null,
+      "latency_ms": 807
+    },
+    {
+      "query": "物料利用率",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_INVENTORY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "material_analysis",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 480
+    },
+    {
+      "query": "损耗率分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS",
+        "REPORT_INVENTORY",
+        "COST_QUERY",
+        null
+      ],
+      "category": "material_analysis",
+      "method": null,
+      "latency_ms": 613
+    },
+    {
+      "query": "配方查看",
+      "status": "FAIL",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "bom_recipe",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 429
+    },
+    {
+      "query": "BOM清单",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "bom_recipe",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    },
+    {
+      "query": "用料标准",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "bom_recipe",
+      "method": null,
+      "latency_ms": 748
+    },
+    {
+      "query": "配比调整",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "PRODUCT_UPDATE",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "bom_recipe",
+      "method": null,
+      "latency_ms": 620
+    },
+    {
+      "query": "替代料方案",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "bom_recipe",
+      "method": null,
+      "latency_ms": 645
+    }
+  ]
+}

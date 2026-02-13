@@ -1,0 +1,1189 @@
+{
+  "test_info": {
+    "name": "V5 Round 87 - Customer Service & Complaint",
+    "focus": "CUSTOMER_SERVICE_COMPLAINT",
+    "total_cases": 50,
+    "categories": 9,
+    "timestamp": "2026-02-10T20:26:24.259659",
+    "server": "http://47.100.235.168:10010",
+    "factory_id": "F001"
+  },
+  "summary": {
+    "total": 50,
+    "matched": 33,
+    "accuracy": 66.0,
+    "elapsed_seconds": 8.830307006835938
+  },
+  "method_stats": {
+    "SEMANTIC": {
+      "total": 4,
+      "matched": 2
+    },
+    "NONE": {
+      "total": 28,
+      "matched": 28
+    },
+    "PHRASE_MATCH": {
+      "total": 8,
+      "matched": 3
+    },
+    "CLASSIFIER": {
+      "total": 10,
+      "matched": 0
+    }
+  },
+  "category_stats": {
+    "complaint_receive": {
+      "total": 6,
+      "matched": 4
+    },
+    "return_process": {
+      "total": 5,
+      "matched": 2
+    },
+    "customer_feedback": {
+      "total": 6,
+      "matched": 3
+    },
+    "after_sales": {
+      "total": 5,
+      "matched": 3
+    },
+    "recall_manage": {
+      "total": 6,
+      "matched": 5
+    },
+    "customer_inquiry": {
+      "total": 5,
+      "matched": 4
+    },
+    "service_level": {
+      "total": 6,
+      "matched": 3
+    },
+    "claim_process": {
+      "total": 5,
+      "matched": 5
+    },
+    "crm_data": {
+      "total": 6,
+      "matched": 4
+    }
+  },
+  "failure_actual_intents": [
+    [
+      "CUSTOMER_STATS",
+      4
+    ],
+    [
+      "MATERIAL_BATCH_QUERY",
+      2
+    ],
+    [
+      "EQUIPMENT_MAINTENANCE",
+      2
+    ],
+    [
+      "PRODUCTION_STATUS_QUERY",
+      1
+    ],
+    [
+      "ALERT_DIAGNOSE",
+      1
+    ],
+    [
+      "MRP_CALCULATION",
+      1
+    ],
+    [
+      "COST_TREND_ANALYSIS",
+      1
+    ],
+    [
+      "QUALITY_DISPOSITION_EVALUATE",
+      1
+    ],
+    [
+      "PRODUCT_UPDATE",
+      1
+    ],
+    [
+      "REPORT_EFFICIENCY",
+      1
+    ],
+    [
+      "REPORT_QUALITY",
+      1
+    ],
+    [
+      "REPORT_KPI",
+      1
+    ]
+  ],
+  "all_results": [
+    {
+      "id": 1,
+      "category": "complaint_receive",
+      "userInput": "客户投诉记录查询",
+      "actual": "CUSTOMER_SEARCH",
+      "matched": true,
+      "matchMethod": "SEMANTIC",
+      "confidence": 0.85,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 2,
+      "category": "complaint_receive",
+      "userInput": "登记一条新的投诉信息",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "CUSTOMER_SEARCH",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 3,
+      "category": "complaint_receive",
+      "userInput": "投诉处理进度怎么样了",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "matched": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 4,
+      "category": "complaint_receive",
+      "userInput": "跟踪上周的客户投诉",
+      "actual": "CUSTOMER_STATS",
+      "matched": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7147444486618042,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 5,
+      "category": "complaint_receive",
+      "userInput": "本月投诉统计数据",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "matched": true,
+      "matchMethod": "SEMANTIC",
+      "confidence": 0.93,
+      "acceptable_intents": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 6,
+      "category": "complaint_receive",
+      "userInput": "按投诉类型分类汇总",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 7,
+      "category": "return_process",
+      "userInput": "查看退货处理记录",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 8,
+      "category": "return_process",
+      "userInput": "退货原因分析报告",
+      "actual": "ALERT_DIAGNOSE",
+      "matched": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.6302796006202698,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 9,
+      "category": "return_process",
+      "userInput": "本月退货统计是多少",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "matched": false,
+      "matchMethod": "SEMANTIC",
+      "confidence": 0.93,
+      "acceptable_intents": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 10,
+      "category": "return_process",
+      "userInput": "退货审批流程查询",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "matched": false,
+      "matchMethod": "SEMANTIC",
+      "confidence": 0.93,
+      "acceptable_intents": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 11,
+      "category": "return_process",
+      "userInput": "客户要求换货怎么处理",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ORDER_LIST",
+        "CUSTOMER_SEARCH",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 12,
+      "category": "customer_feedback",
+      "userInput": "查看客户反馈汇总",
+      "actual": "CUSTOMER_STATS",
+      "matched": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7743465304374695,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 13,
+      "category": "customer_feedback",
+      "userInput": "满意度调查结果怎么样",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "CUSTOMER_SEARCH",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 14,
+      "category": "customer_feedback",
+      "userInput": "客户评价数据分析",
+      "actual": "CUSTOMER_STATS",
+      "matched": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 15,
+      "category": "customer_feedback",
+      "userInput": "反馈分析报告",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "CUSTOMER_SEARCH",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 16,
+      "category": "customer_feedback",
+      "userInput": "NPS评分是多少",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 17,
+      "category": "customer_feedback",
+      "userInput": "收集到的客户建议有哪些",
+      "actual": "MRP_CALCULATION",
+      "matched": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.6399950385093689,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 18,
+      "category": "after_sales",
+      "userInput": "售后服务情况总览",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CUSTOMER_SEARCH",
+        "ORDER_LIST",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 19,
+      "category": "after_sales",
+      "userInput": "查看售后服务记录",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_PURCHASE_HISTORY",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 20,
+      "category": "after_sales",
+      "userInput": "维修工单跟踪查询",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "matched": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 21,
+      "category": "after_sales",
+      "userInput": "保修期查询",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 22,
+      "category": "after_sales",
+      "userInput": "售后费用统计报告",
+      "actual": "COST_TREND_ANALYSIS",
+      "matched": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.5458129644393921,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "CUSTOMER_PURCHASE_HISTORY",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 23,
+      "category": "recall_manage",
+      "userInput": "产品召回流程启动",
+      "actual": "QUALITY_DISPOSITION_EXECUTE",
+      "matched": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "TRACE_BATCH",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 24,
+      "category": "recall_manage",
+      "userInput": "查询召回批次信息",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "TRACE_BATCH",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 25,
+      "category": "recall_manage",
+      "userInput": "召回进度跟踪",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "TRACE_BATCH",
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 26,
+      "category": "recall_manage",
+      "userInput": "发送召回通知给客户",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "ALERT_LIST",
+        "CUSTOMER_SEARCH",
+        "TRACE_BATCH",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 27,
+      "category": "recall_manage",
+      "userInput": "召回范围评估分析",
+      "actual": "QUALITY_DISPOSITION_EVALUATE",
+      "matched": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.5653303265571594,
+      "acceptable_intents": [
+        "TRACE_BATCH",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 28,
+      "category": "recall_manage",
+      "userInput": "生成召回报告",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "TRACE_BATCH",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 29,
+      "category": "customer_inquiry",
+      "userInput": "客户咨询记录查看",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "CUSTOMER_PURCHASE_HISTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 30,
+      "category": "customer_inquiry",
+      "userInput": "产品咨询问题汇总",
+      "actual": "PRODUCT_UPDATE",
+      "matched": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.6100451946258545,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 31,
+      "category": "customer_inquiry",
+      "userInput": "客户问价格怎么报",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 32,
+      "category": "customer_inquiry",
+      "userInput": "交期咨询回复情况",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "SHIPMENT_QUERY",
+        "ORDER_LIST",
+        "CUSTOMER_SEARCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 33,
+      "category": "customer_inquiry",
+      "userInput": "技术咨询记录查询",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 34,
+      "category": "service_level",
+      "userInput": "客户服务等级标准查看",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "CUSTOMER_BY_TYPE",
+        "CUSTOMER_SEARCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 35,
+      "category": "service_level",
+      "userInput": "投诉响应时间统计",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 36,
+      "category": "service_level",
+      "userInput": "工单处理时效分析",
+      "actual": "REPORT_EFFICIENCY",
+      "matched": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.5292006134986877,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 37,
+      "category": "service_level",
+      "userInput": "服务质量考核报告",
+      "actual": "REPORT_QUALITY",
+      "matched": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 38,
+      "category": "service_level",
+      "userInput": "客服人员绩效排名",
+      "actual": "REPORT_KPI",
+      "matched": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.9187687039375305,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 39,
+      "category": "service_level",
+      "userInput": "服务标准达成情况",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 40,
+      "category": "claim_process",
+      "userInput": "理赔处理进度查询",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 41,
+      "category": "claim_process",
+      "userInput": "制定赔偿方案",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 42,
+      "category": "claim_process",
+      "userInput": "损失评估金额是多少",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 43,
+      "category": "claim_process",
+      "userInput": "保险理赔申请记录",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 44,
+      "category": "claim_process",
+      "userInput": "质量事故责任认定",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 45,
+      "category": "crm_data",
+      "userInput": "查看客户档案信息",
+      "actual": "CUSTOMER_SEARCH",
+      "matched": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "CUSTOMER_PURCHASE_HISTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 46,
+      "category": "crm_data",
+      "userInput": "客户分级管理列表",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "CUSTOMER_BY_TYPE",
+        "CUSTOMER_SEARCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 47,
+      "category": "crm_data",
+      "userInput": "VIP客户名单查询",
+      "actual": "CUSTOMER_SEARCH",
+      "matched": true,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "CUSTOMER_BY_TYPE",
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_PURCHASE_HISTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 48,
+      "category": "crm_data",
+      "userInput": "客户画像数据分析",
+      "actual": "CUSTOMER_STATS",
+      "matched": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.701859176158905,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 49,
+      "category": "crm_data",
+      "userInput": "客户关系维护记录",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "matched": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_PURCHASE_HISTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 50,
+      "category": "crm_data",
+      "userInput": "客户生命周期分析报告",
+      "actual": null,
+      "matched": true,
+      "matchMethod": null,
+      "confidence": null,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    }
+  ],
+  "failures": [
+    {
+      "id": 3,
+      "category": "complaint_receive",
+      "userInput": "投诉处理进度怎么样了",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 4,
+      "category": "complaint_receive",
+      "userInput": "跟踪上周的客户投诉",
+      "actual": "CUSTOMER_STATS",
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7147444486618042,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 8,
+      "category": "return_process",
+      "userInput": "退货原因分析报告",
+      "actual": "ALERT_DIAGNOSE",
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.6302796006202698,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 9,
+      "category": "return_process",
+      "userInput": "本月退货统计是多少",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "matchMethod": "SEMANTIC",
+      "confidence": 0.93,
+      "acceptable_intents": [
+        "REPORT_TRENDS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 10,
+      "category": "return_process",
+      "userInput": "退货审批流程查询",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "matchMethod": "SEMANTIC",
+      "confidence": 0.93,
+      "acceptable_intents": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 12,
+      "category": "customer_feedback",
+      "userInput": "查看客户反馈汇总",
+      "actual": "CUSTOMER_STATS",
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7743465304374695,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 14,
+      "category": "customer_feedback",
+      "userInput": "客户评价数据分析",
+      "actual": "CUSTOMER_STATS",
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 17,
+      "category": "customer_feedback",
+      "userInput": "收集到的客户建议有哪些",
+      "actual": "MRP_CALCULATION",
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.6399950385093689,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 20,
+      "category": "after_sales",
+      "userInput": "维修工单跟踪查询",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 22,
+      "category": "after_sales",
+      "userInput": "售后费用统计报告",
+      "actual": "COST_TREND_ANALYSIS",
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.5458129644393921,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "CUSTOMER_PURCHASE_HISTORY",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 27,
+      "category": "recall_manage",
+      "userInput": "召回范围评估分析",
+      "actual": "QUALITY_DISPOSITION_EVALUATE",
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.5653303265571594,
+      "acceptable_intents": [
+        "TRACE_BATCH",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 30,
+      "category": "customer_inquiry",
+      "userInput": "产品咨询问题汇总",
+      "actual": "PRODUCT_UPDATE",
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.6100451946258545,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 36,
+      "category": "service_level",
+      "userInput": "工单处理时效分析",
+      "actual": "REPORT_EFFICIENCY",
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.5292006134986877,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 37,
+      "category": "service_level",
+      "userInput": "服务质量考核报告",
+      "actual": "REPORT_QUALITY",
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 38,
+      "category": "service_level",
+      "userInput": "客服人员绩效排名",
+      "actual": "REPORT_KPI",
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.9187687039375305,
+      "acceptable_intents": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 48,
+      "category": "crm_data",
+      "userInput": "客户画像数据分析",
+      "actual": "CUSTOMER_STATS",
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.701859176158905,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_BY_TYPE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    },
+    {
+      "id": 49,
+      "category": "crm_data",
+      "userInput": "客户关系维护记录",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "acceptable_intents": [
+        "CUSTOMER_SEARCH",
+        "CUSTOMER_PURCHASE_HISTORY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "error": null
+    }
+  ]
+}

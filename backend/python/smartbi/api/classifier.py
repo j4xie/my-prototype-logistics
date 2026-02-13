@@ -8,7 +8,7 @@ Intent Classifier API
 """
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -30,7 +30,7 @@ class ClassifyRequest(BaseModel):
 
 class ClassifyBatchRequest(BaseModel):
     """批量分类请求"""
-    texts: list[str] = Field(..., description="待分类文本列表")
+    texts: List[str] = Field(..., description="待分类文本列表")
     top_k: int = Field(1, ge=1, le=10, description="每个文本返回 top-k 个结果")
 
 

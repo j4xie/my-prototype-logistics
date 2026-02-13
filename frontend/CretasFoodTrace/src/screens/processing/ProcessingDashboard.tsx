@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
 import { useAuthStore } from '../../store/authStore';
+import { useFactoryFeatureStore } from '../../store/factoryFeatureStore';
 import { dashboardAPI } from '../../services/api/dashboardApiClient';
 import { processingApiClient, ProcessingBatch } from '../../services/api/processingApiClient';
 import { handleError } from '../../utils/errorHandler';
@@ -46,6 +47,7 @@ interface DashboardOverviewData {
 export default function ProcessingDashboard() {
   const navigation = useNavigation<ProcessingDashboardNavigationProp>();
   const { user } = useAuthStore();
+  const { isScreenEnabled } = useFactoryFeatureStore();
   const { t } = useTranslation('processing');
 
   // 状态管理
@@ -267,6 +269,24 @@ export default function ProcessingDashboard() {
                 >
                   {t('dashboard.quickActions.createProductionPlan')}
                 </Button>
+                <Button
+                  mode="contained"
+                  icon="qrcode-scan"
+                  onPress={() => navigation.navigate('ScanReport')}
+                  style={styles.actionButton}
+                  buttonColor="#7C3AED"
+                >
+                  {t('dashboard.quickActions.scanReport', '扫码报工')}
+                </Button>
+                <Button
+                  mode="contained"
+                  icon="account-group"
+                  onPress={() => navigation.navigate('TeamBatchReport')}
+                  style={styles.actionButton}
+                  buttonColor="#EA580C"
+                >
+                  {t('dashboard.quickActions.teamReport', '班组报工')}
+                </Button>
               </View>
             )}
 
@@ -311,22 +331,26 @@ export default function ProcessingDashboard() {
               >
                 {t('dashboard.quickActions.materialManagement')}
               </Button>
-              <Button
-                mode="outlined"
-                icon="monitor-dashboard"
-                onPress={() => navigation.navigate('EquipmentMonitoring')}
-                style={styles.actionButton}
-              >
-                {t('dashboard.quickActions.equipmentMonitoring')}
-              </Button>
-              <Button
-                mode="outlined"
-                icon="cash"
-                onPress={() => setCostAnalysisDialogVisible(true)}
-                style={styles.actionButton}
-              >
-                {t('dashboard.quickActions.costAnalysis')}
-              </Button>
+              {isScreenEnabled('EquipmentMonitoring') && (
+                <Button
+                  mode="outlined"
+                  icon="monitor-dashboard"
+                  onPress={() => navigation.navigate('EquipmentMonitoring')}
+                  style={styles.actionButton}
+                >
+                  {t('dashboard.quickActions.equipmentMonitoring')}
+                </Button>
+              )}
+              {isScreenEnabled('CostAnalysisDashboard') && (
+                <Button
+                  mode="outlined"
+                  icon="cash"
+                  onPress={() => setCostAnalysisDialogVisible(true)}
+                  style={styles.actionButton}
+                >
+                  {t('dashboard.quickActions.costAnalysis')}
+                </Button>
+              )}
               <Button
                 mode="outlined"
                 icon="chart-box"
@@ -335,14 +359,16 @@ export default function ProcessingDashboard() {
               >
                 {t('dashboard.quickActions.qualityStats')}
               </Button>
-              <Button
-                mode="outlined"
-                icon="clipboard-check"
-                onPress={() => navigation.navigate('InventoryCheck')}
-                style={styles.actionButton}
-              >
-                {t('dashboard.quickActions.inventoryCheck')}
-              </Button>
+              {isScreenEnabled('InventoryCheck') && (
+                <Button
+                  mode="outlined"
+                  icon="clipboard-check"
+                  onPress={() => navigation.navigate('InventoryCheck')}
+                  style={styles.actionButton}
+                >
+                  {t('dashboard.quickActions.inventoryCheck')}
+                </Button>
+              )}
               <Button
                 mode="outlined"
                 icon="package-down"
@@ -379,24 +405,28 @@ export default function ProcessingDashboard() {
           />
           <Card.Content>
             <View style={styles.actionsGrid}>
-              <Button
-                mode="contained"
-                icon="robot"
-                onPress={() => navigation.navigate('AIReportList')}
-                style={styles.actionButton}
-                buttonColor="#9C27B0"
-              >
-                {t('dashboard.aiAnalysis.aiReport')}
-              </Button>
-              <Button
-                mode="contained"
-                icon="compare"
-                onPress={handleCostComparisonPress}
-                style={styles.actionButton}
-                buttonColor="#FF9800"
-              >
-                {t('dashboard.aiAnalysis.costComparison')}
-              </Button>
+              {isScreenEnabled('AIReportList') && (
+                <Button
+                  mode="contained"
+                  icon="robot"
+                  onPress={() => navigation.navigate('AIReportList')}
+                  style={styles.actionButton}
+                  buttonColor="#9C27B0"
+                >
+                  {t('dashboard.aiAnalysis.aiReport')}
+                </Button>
+              )}
+              {isScreenEnabled('CostComparison') && (
+                <Button
+                  mode="contained"
+                  icon="compare"
+                  onPress={handleCostComparisonPress}
+                  style={styles.actionButton}
+                  buttonColor="#FF9800"
+                >
+                  {t('dashboard.aiAnalysis.costComparison')}
+                </Button>
+              )}
               <Button
                 mode="outlined"
                 icon="calendar-range"

@@ -1,0 +1,1369 @@
+{
+  "summary": {
+    "total": 2000,
+    "correct": 1368,
+    "quality_ok": 1258,
+    "phases": {
+      "intent_recognize": {
+        "total": 1200,
+        "correct": 722,
+        "quality": 1012
+      },
+      "intent_execute": {
+        "total": 400,
+        "correct": 400,
+        "quality": 0,
+        "with_data": 0
+      },
+      "smartbi": {
+        "total": 200,
+        "ok": 46
+      },
+      "chat": {
+        "total": 200,
+        "ok": 200
+      }
+    },
+    "seed": 42424
+  },
+  "failures": {
+    "intent": [
+      {
+        "id": 697,
+        "type": "intent_recognize",
+        "userInput": "临期的原料都有哪些需要优先消耗掉",
+        "expected": "MATERIAL_EXPIRING_ALERT",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 73,
+        "type": "intent_recognize",
+        "userInput": "这个批次是从哪批原料生产出来的帮我查查",
+        "expected": "TRACE_BATCH",
+        "actual": "PROCESSING_BATCH_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.8246920108795166
+      },
+      {
+        "id": 998,
+        "type": "intent_recognize",
+        "userInput": "这个批次是从哪批原料生产出来的帮我查查",
+        "expected": "TRACE_BATCH",
+        "actual": "PROCESSING_BATCH_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.8246920108795166
+      },
+      {
+        "id": 962,
+        "type": "intent_recognize",
+        "userInput": "成本明细帮我看看的情况",
+        "expected": "COST_QUERY",
+        "actual": "REPORT_FINANCE",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.8256247043609619
+      },
+      {
+        "id": 1008,
+        "type": "intent_recognize",
+        "userInput": "设备检修的计划和实际执行情况对比一下",
+        "expected": "EQUIPMENT_MAINTENANCE",
+        "actual": "PROCESSING_BATCH_START",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.7110243439674377
+      },
+      {
+        "id": 1078,
+        "type": "intent_recognize",
+        "userInput": "我需要一份这两天的财务分析报告包括收支明细",
+        "expected": "REPORT_FINANCE",
+        "actual": "REPORT_DASHBOARD_OVERVIEW",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.6967970132827759
+      },
+      {
+        "id": 6,
+        "type": "intent_recognize",
+        "userInput": "帮我汇总一下上周的生产报告包括产量和良品率",
+        "expected": "REPORT_PRODUCTION",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 955,
+        "type": "intent_recognize",
+        "userInput": "帮我检查一下有没有原材料快要用完了需要采购",
+        "expected": "MATERIAL_LOW_STOCK_ALERT",
+        "actual": "MATERIAL_BATCH_QUERY",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.9694979190826416
+      },
+      {
+        "id": 275,
+        "type": "intent_recognize",
+        "userInput": "帮我看看今天各部门的到岗情况和缺勤人员",
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "ATTENDANCE_ANOMALY",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 1007,
+        "type": "intent_recognize",
+        "userInput": "最近设备整体的运行状况怎么样有没有异常停机",
+        "expected": "EQUIPMENT_STATUS_QUERY",
+        "actual": "ALERT_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 190,
+        "type": "intent_recognize",
+        "userInput": "帮我看看今天的财务状况收入支出和利润情况",
+        "expected": "REPORT_FINANCE",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 1156,
+        "type": "intent_recognize",
+        "userInput": "本周有哪些设备做过维修和保养",
+        "expected": "EQUIPMENT_MAINTENANCE",
+        "actual": "EQUIPMENT_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 714,
+        "type": "intent_recognize",
+        "userInput": "帮我统计一下最近各台设备的运行数据",
+        "expected": "EQUIPMENT_STATS",
+        "actual": "EQUIPMENT_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.8156476020812988
+      },
+      {
+        "id": 494,
+        "type": "intent_recognize",
+        "userInput": "帮我看看当前各个生产批次的时间线进度",
+        "expected": "PROCESSING_BATCH_TIMELINE",
+        "actual": "PROCESSING_BATCH_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 951,
+        "type": "intent_recognize",
+        "userInput": "帮我看看有没有还没解决的系统告警",
+        "expected": "ALERT_ACTIVE",
+        "actual": "ALERT_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.9305739998817444
+      },
+      {
+        "id": 1169,
+        "type": "intent_recognize",
+        "userInput": "帮我统计一下昨天的质量检查数据合格率是多少",
+        "expected": "QUALITY_STATS",
+        "actual": "QUALITY_CHECK_EXECUTE",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 610,
+        "type": "intent_recognize",
+        "userInput": "帮我调出来上个月的打卡记录看一下有没有异常",
+        "expected": "ATTENDANCE_HISTORY",
+        "actual": "ALERT_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "SEMANTIC",
+        "confidence": 0.95
+      },
+      {
+        "id": 1024,
+        "type": "intent_recognize",
+        "userInput": "帮我统计一下上周的告警数量和类型分布",
+        "expected": "ALERT_STATS",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 620,
+        "type": "intent_recognize",
+        "userInput": "帮我看看本月的出货量统计数据",
+        "expected": "SHIPMENT_STATS",
+        "actual": "MATERIAL_BATCH_QUERY",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.9702103137969971
+      },
+      {
+        "id": 829,
+        "type": "intent_recognize",
+        "userInput": "帮我创建一个新的生产批次开始生产",
+        "expected": "PROCESSING_BATCH_CREATE",
+        "actual": "PROCESSING_BATCH_START",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 367,
+        "type": "intent_recognize",
+        "userInput": "帮我查一下本月客户的采购记录和订单情况",
+        "expected": "CUSTOMER_PURCHASE_HISTORY",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 418,
+        "type": "intent_recognize",
+        "userInput": "设备的综合利用率和开机率本月的数据看一下",
+        "expected": "EQUIPMENT_STATS",
+        "actual": "EQUIPMENT_START",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.6485201716423035
+      },
+      {
+        "id": 182,
+        "type": "intent_recognize",
+        "userInput": "帮我查一下最近客户的采购记录和订单情况",
+        "expected": "CUSTOMER_PURCHASE_HISTORY",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 800,
+        "type": "intent_recognize",
+        "userInput": "开始执行质检流程检查当前批次的质量",
+        "expected": "QUALITY_CHECK_EXECUTE",
+        "actual": "PROCESSING_BATCH_START",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 44,
+        "type": "intent_recognize",
+        "userInput": "帮我分析一下最近几个月的销售趋势有没有增长",
+        "expected": "REPORT_TRENDS",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 307,
+        "type": "intent_recognize",
+        "userInput": "看看上周设备的整体运行统计情况",
+        "expected": "EQUIPMENT_STATS",
+        "actual": "REPORT_DASHBOARD_OVERVIEW",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "SEMANTIC",
+        "confidence": 0.93
+      },
+      {
+        "id": 636,
+        "type": "intent_recognize",
+        "userInput": "帮我分析一下最近几个月的销售趋势有没有增长",
+        "expected": "REPORT_TRENDS",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 1084,
+        "type": "intent_recognize",
+        "userInput": "看看最近设备的整体运行统计情况",
+        "expected": "EQUIPMENT_STATS",
+        "actual": "REPORT_DASHBOARD_OVERVIEW",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "SEMANTIC",
+        "confidence": 0.93
+      },
+      {
+        "id": 152,
+        "type": "intent_recognize",
+        "userInput": "的KPI考核数据整理一下发给我",
+        "expected": "REPORT_KPI",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 936,
+        "type": "intent_recognize",
+        "userInput": "看看最近设备的整体运行统计情况",
+        "expected": "EQUIPMENT_STATS",
+        "actual": "REPORT_DASHBOARD_OVERVIEW",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "SEMANTIC",
+        "confidence": 0.93
+      },
+      {
+        "id": 197,
+        "type": "intent_recognize",
+        "userInput": "现在生产线上各批次的进度都到什么阶段了",
+        "expected": "PRODUCTION_STATUS_QUERY",
+        "actual": "PROCESSING_BATCH_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "SEMANTIC",
+        "confidence": 0.92
+      },
+      {
+        "id": 1066,
+        "type": "intent_recognize",
+        "userInput": "帮我检查一下有没有原材料快要用完了需要采购",
+        "expected": "MATERIAL_LOW_STOCK_ALERT",
+        "actual": "MATERIAL_BATCH_QUERY",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "SEMANTIC",
+        "confidence": 0.93
+      },
+      {
+        "id": 441,
+        "type": "intent_recognize",
+        "userInput": "帮我查一下今天客户的采购记录和订单情况",
+        "expected": "CUSTOMER_PURCHASE_HISTORY",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 497,
+        "type": "intent_recognize",
+        "userInput": "帮我看看今天各部门的到岗情况和缺勤人员",
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "ATTENDANCE_ANOMALY",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 1062,
+        "type": "intent_recognize",
+        "userInput": "帮我看看有没有还没解决的系统告警",
+        "expected": "ALERT_ACTIVE",
+        "actual": "ALERT_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.9305739998817444
+      },
+      {
+        "id": 54,
+        "type": "intent_recognize",
+        "userInput": "帮我统计一下今天的考勤数据包括出勤率和迟到率",
+        "expected": "ATTENDANCE_STATS",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 699,
+        "type": "intent_recognize",
+        "userInput": "查看一下目前在合作的供应商清单",
+        "expected": "SUPPLIER_LIST",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 948,
+        "type": "intent_recognize",
+        "userInput": "开始执行质检流程检查当前批次的质量",
+        "expected": "QUALITY_CHECK_EXECUTE",
+        "actual": "PROCESSING_BATCH_START",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 820,
+        "type": "intent_recognize",
+        "userInput": "看看上周各条产线分别生产了多少产品",
+        "expected": "REPORT_PRODUCTION",
+        "actual": "PROCESSING_BATCH_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.8316345810890198
+      },
+      {
+        "id": 675,
+        "type": "intent_recognize",
+        "userInput": "设备检修的计划和实际执行情况对比一下",
+        "expected": "EQUIPMENT_MAINTENANCE",
+        "actual": "PROCESSING_BATCH_START",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.7110243439674377
+      },
+      {
+        "id": 289,
+        "type": "intent_recognize",
+        "userInput": "帮我检查一下有没有原材料快要用完了需要采购",
+        "expected": "MATERIAL_LOW_STOCK_ALERT",
+        "actual": "MATERIAL_BATCH_QUERY",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "CLASSIFIER",
+        "confidence": 0.9694979190826416
+      },
+      {
+        "id": 346,
+        "type": "intent_recognize",
+        "userInput": "帮我看看当前各个生产批次的时间线进度",
+        "expected": "PROCESSING_BATCH_TIMELINE",
+        "actual": "PROCESSING_BATCH_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 784,
+        "type": "intent_recognize",
+        "userInput": "帮我分析一下最近几个月的销售趋势有没有增长",
+        "expected": "REPORT_TRENDS",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 207,
+        "type": "intent_recognize",
+        "userInput": "帮我统计一下今天的质量检查数据合格率是多少",
+        "expected": "QUALITY_STATS",
+        "actual": "QUALITY_CHECK_EXECUTE",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 147,
+        "type": "intent_recognize",
+        "userInput": "帮我追溯一下这个批次的生产全过程",
+        "expected": "TRACE_BATCH",
+        "actual": "PROCESSING_BATCH_TIMELINE",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 1196,
+        "type": "intent_recognize",
+        "userInput": "现在生产线上各批次的进度都到什么阶段了",
+        "expected": "PRODUCTION_STATUS_QUERY",
+        "actual": "PROCESSING_BATCH_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "SEMANTIC",
+        "confidence": 0.92
+      },
+      {
+        "id": 468,
+        "type": "intent_recognize",
+        "userInput": "有什么报警信息需要我关注的吗",
+        "expected": "ALERT_LIST",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 453,
+        "type": "intent_recognize",
+        "userInput": "上个月有哪些设备做过维修和保养",
+        "expected": "EQUIPMENT_MAINTENANCE",
+        "actual": "EQUIPMENT_LIST",
+        "correct": false,
+        "quality_ok": true,
+        "issues": [],
+        "matchMethod": "PHRASE_MATCH",
+        "confidence": 0.98
+      },
+      {
+        "id": 371,
+        "type": "intent_recognize",
+        "userInput": "汇报一下上个月的核心业务指标吧",
+        "expected": "REPORT_DASHBOARD_OVERVIEW",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      },
+      {
+        "id": 694,
+        "type": "intent_recognize",
+        "userInput": "统计一下最近总共发了多少货",
+        "expected": "SHIPMENT_STATS",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "'<' not supported between instances of 'NoneType' and 'float'"
+        ],
+        "matchMethod": null,
+        "confidence": 0
+      }
+    ],
+    "execute": [],
+    "smartbi": [
+      {
+        "id": 1700,
+        "type": "smartbi_query",
+        "userInput": "月度财务收支汇总",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1669,
+        "type": "smartbi_query",
+        "userInput": "最近一个月的设备故障统计",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1624,
+        "type": "smartbi_query",
+        "userInput": "本月质检合格率趋势",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 质量汇总"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1734,
+        "type": "smartbi_query",
+        "userInput": "客户订单金额排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1609,
+        "type": "smartbi_query",
+        "userInput": "最近一个月的设备故障统计",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1613,
+        "type": "smartbi_query",
+        "userInput": "库存周转率分析",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 库存健康"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1680,
+        "type": "smartbi_query",
+        "userInput": "月度财务收支汇总",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1688,
+        "type": "smartbi_query",
+        "userInput": "各供应商的供货量排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1744,
+        "type": "smartbi_query",
+        "userInput": "本月质检合格率趋势",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 质量汇总"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1774,
+        "type": "smartbi_query",
+        "userInput": "客户订单金额排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1797,
+        "type": "smartbi_query",
+        "userInput": "产品良品率趋势",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 质量汇总"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1799,
+        "type": "smartbi_query",
+        "userInput": "发货准时率统计",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1709,
+        "type": "smartbi_query",
+        "userInput": "最近一个月的设备故障统计",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1638,
+        "type": "smartbi_query",
+        "userInput": "各生产线效率排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: OEE概览"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1768,
+        "type": "smartbi_query",
+        "userInput": "各供应商的供货量排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1754,
+        "type": "smartbi_query",
+        "userInput": "客户订单金额排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1640,
+        "type": "smartbi_query",
+        "userInput": "月度财务收支汇总",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1639,
+        "type": "smartbi_query",
+        "userInput": "发货准时率统计",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1618,
+        "type": "smartbi_query",
+        "userInput": "各生产线效率排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: OEE概览"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1678,
+        "type": "smartbi_query",
+        "userInput": "各生产线效率排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: OEE概览"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1729,
+        "type": "smartbi_query",
+        "userInput": "最近一个月的设备故障统计",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1655,
+        "type": "smartbi_query",
+        "userInput": "本月生产计划完成率",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1773,
+        "type": "smartbi_query",
+        "userInput": "库存周转率分析",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 库存健康"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1759,
+        "type": "smartbi_query",
+        "userInput": "发货准时率统计",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1733,
+        "type": "smartbi_query",
+        "userInput": "库存周转率分析",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 库存健康"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1614,
+        "type": "smartbi_query",
+        "userInput": "客户订单金额排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1713,
+        "type": "smartbi_query",
+        "userInput": "库存周转率分析",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 库存健康"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1654,
+        "type": "smartbi_query",
+        "userInput": "客户订单金额排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1608,
+        "type": "smartbi_query",
+        "userInput": "各供应商的供货量排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1620,
+        "type": "smartbi_query",
+        "userInput": "月度财务收支汇总",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1708,
+        "type": "smartbi_query",
+        "userInput": "各供应商的供货量排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1738,
+        "type": "smartbi_query",
+        "userInput": "各生产线效率排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: OEE概览"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1697,
+        "type": "smartbi_query",
+        "userInput": "产品良品率趋势",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 质量汇总"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1604,
+        "type": "smartbi_query",
+        "userInput": "本月质检合格率趋势",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 质量汇总"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1693,
+        "type": "smartbi_query",
+        "userInput": "库存周转率分析",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 库存健康"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1795,
+        "type": "smartbi_query",
+        "userInput": "本月生产计划完成率",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1724,
+        "type": "smartbi_query",
+        "userInput": "本月质检合格率趋势",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 质量汇总"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1735,
+        "type": "smartbi_query",
+        "userInput": "本月生产计划完成率",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1784,
+        "type": "smartbi_query",
+        "userInput": "本月质检合格率趋势",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 质量汇总"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1633,
+        "type": "smartbi_query",
+        "userInput": "库存周转率分析",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 库存健康"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1740,
+        "type": "smartbi_query",
+        "userInput": "月度财务收支汇总",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1760,
+        "type": "smartbi_query",
+        "userInput": "月度财务收支汇总",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1800,
+        "type": "smartbi_query",
+        "userInput": "月度财务收支汇总",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1650,
+        "type": "smartbi_query",
+        "userInput": "员工考勤出勤率统计",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1659,
+        "type": "smartbi_query",
+        "userInput": "发货准时率统计",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1719,
+        "type": "smartbi_query",
+        "userInput": "发货准时率统计",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 汇总统计"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1658,
+        "type": "smartbi_query",
+        "userInput": "各生产线效率排名",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: OEE概览"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1704,
+        "type": "smartbi_query",
+        "userInput": "本月质检合格率趋势",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 质量汇总"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1737,
+        "type": "smartbi_query",
+        "userInput": "产品良品率趋势",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 质量汇总"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      },
+      {
+        "id": 1675,
+        "type": "smartbi_query",
+        "userInput": "本月生产计划完成率",
+        "expected": "SmartBI分析",
+        "actual": null,
+        "correct": false,
+        "quality_ok": false,
+        "issues": [
+          "服务不可用: 查询失败: 暂不支持该查询类型: 未知意图"
+        ],
+        "matchMethod": "SmartBI",
+        "confidence": 0
+      }
+    ],
+    "chat": []
+  }
+}

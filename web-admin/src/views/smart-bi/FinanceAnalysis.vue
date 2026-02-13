@@ -2,8 +2,9 @@
 /**
  * SmartBI 财务分析页面
  * 提供财务数据分析，包含利润、成本、应收、应付、预算等模块
+ * Phase 6: Enhanced with DynamicChartRenderer + ChartTypeSelector for dynamic chart views
  */
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
+import { ref, computed, onMounted, watch, onUnmounted, nextTick } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import {
@@ -14,6 +15,11 @@ import {
   type DynamicAnalysisResponse,
   type TableDataResponse
 } from '@/api/smartbi';
+import {
+  recommendChart,
+  batchBuildCharts,
+  buildChart,
+} from '@/api/smartbi/python-service';
 import { ElMessage } from 'element-plus';
 import {
   Refresh,
@@ -27,7 +33,11 @@ import {
   View,
   Close
 } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
+import DynamicChartRenderer from '@/components/smartbi/DynamicChartRenderer.vue';
+import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
+import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
+import type { ChartConfig } from '@/types/smartbi';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -88,10 +98,11 @@ const shortcuts = [
 
 // 加载状态
 const loading = ref(false);
+const loadError = ref('');
 
-// 数据源选择
+// 数据源选择 — default empty, will be set after loading sources
 const dataSources = ref<UploadHistoryItem[]>([]);
-const selectedDataSource = ref<string>('system');
+const selectedDataSource = ref<string>('');
 
 // AI 洞察
 const aiInsights = ref<string[]>([]);
@@ -172,8 +183,8 @@ interface WarningItem {
 }
 const warnings = ref<WarningItem[]>([]);
 
-// 图表配置 (从 API 获取)
-interface ChartConfig {
+// 图表配置 (从 API 获取) - local type, distinct from @/types/smartbi ChartConfig
+interface ChartConfig_Local {
   chartType: string;
   title?: string;
   xAxisField?: string;
@@ -225,10 +236,171 @@ interface DynamicChartConfig {
   options?: Record<string, unknown>;
 }
 
-const chartConfig = ref<ChartConfig | DynamicChartConfig | null>(null);
-const secondaryChartConfig = ref<ChartConfig | DynamicChartConfig | null>(null);
+const chartConfig = ref<ChartConfig_Local | DynamicChartConfig | null>(null);
+const secondaryChartConfig = ref<ChartConfig_Local | DynamicChartConfig | null>(null);
 
-// 图表实例
+// ==================== Phase 6: Dynamic Chart Exploration ====================
+
+// Main chart rendered via DynamicChartRenderer (when we have a typed config)
+const mainDynamicConfig = ref<ChartConfig | null>(null);
+const useDynamicRenderer = ref(false);
+
+// Multi-chart exploration from dynamic data sources
+interface ExplorationChart {
+  id: string;
+  chartType: string;
+  title: string;
+  config: ChartConfig;
+  xField?: string;
+  yFields?: string[];
+}
+const explorationCharts = ref<ExplorationChart[]>([]);
+const explorationLoading = ref(false);
+
+// Data info for ChartTypeSelector
+const dataInfo = ref<{
+  numericColumns: string[];
+  categoricalColumns: string[];
+  dateColumns: string[];
+  rowCount: number;
+}>({
+  numericColumns: [],
+  categoricalColumns: [],
+  dateColumns: [],
+  rowCount: 0,
+});
+
+// Raw dynamic data for chart rebuilding
+const dynamicRawData = ref<Record<string, unknown>[]>([]);
+
+/**
+ * Build exploration charts from uploaded dynamic data
+ * Uses Python recommend + batch build for multi-chart views
+ */
+async function buildExplorationCharts(data: Record<string, unknown>[]) {
+  if (!data || data.length === 0) return;
+
+  explorationLoading.value = true;
+  dynamicRawData.value = data;
+
+  try {
+    // Step 1: Get chart recommendations from Python
+    const recResult = await recommendChart(data);
+
+    if (recResult.success && recResult.recommendations && recResult.recommendations.length > 0) {
+      // Store data info for ChartTypeSelector
+      if (recResult.dataInfo) {
+        dataInfo.value = {
+          numericColumns: recResult.dataInfo.numericColumns || [],
+          categoricalColumns: recResult.dataInfo.categoricalColumns || [],
+          dateColumns: recResult.dataInfo.dateColumns || [],
+          rowCount: recResult.dataInfo.rowCount || data.length,
+        };
+      }
+
+      // Step 2: Build charts for top 4 recommendations
+      const topRecs = recResult.recommendations.slice(0, 4);
+      const plans = topRecs.map(rec => ({
+        chartType: rec.chartType,
+        data: data,
+        xField: rec.xField || dataInfo.value.categoricalColumns[0] || '',
+        yFields: rec.yFields || dataInfo.value.numericColumns.slice(0, 2),
+        title: rec.reason || `${rec.chartType} 图表`,
+      }));
+
+      const batchResult = await batchBuildCharts(plans);
+
+      if (batchResult.success && batchResult.charts.length > 0) {
+        explorationCharts.value = batchResult.charts
+          .filter(c => c.success && c.config)
+          .map((c, idx) => ({
+            id: `explore-${idx}`,
+            chartType: c.chartType,
+            title: plans[idx]?.title || c.chartType,
+            config: c.config as ChartConfig,
+            xField: plans[idx]?.xField,
+            yFields: plans[idx]?.yFields,
+          }));
+      }
+    }
+  } catch (error) {
+    console.warn('构建探索图表失败:', error);
+  } finally {
+    explorationLoading.value = false;
+  }
+}
+
+/**
+ * Handle chart type switch from ChartTypeSelector
+ */
+async function handleChartTypeSwitch(chartId: string, newType: string) {
+  const chart = explorationCharts.value.find(c => c.id === chartId);
+  if (!chart || dynamicRawData.value.length === 0) return;
+
+  try {
+    const result = await buildChart({
+      chartType: newType,
+      data: dynamicRawData.value,
+      xField: chart.xField,
+      yFields: chart.yFields,
+      title: chart.title,
+    });
+
+    if (result.success && result.option) {
+      const idx = explorationCharts.value.findIndex(c => c.id === chartId);
+      if (idx >= 0) {
+        explorationCharts.value[idx] = {
+          ...chart,
+          chartType: newType,
+          config: result.option as ChartConfig,
+        };
+      }
+    } else {
+      ElMessage.warning('图表类型切换失败: ' + (result.error || '未知错误'));
+    }
+  } catch (error) {
+    console.warn('图表类型切换失败:', error);
+  }
+}
+
+/**
+ * Refresh a single exploration chart (re-recommend)
+ */
+async function handleChartRefresh(chartId: string) {
+  if (dynamicRawData.value.length === 0) return;
+
+  const chart = explorationCharts.value.find(c => c.id === chartId);
+  if (!chart) return;
+
+  // Randomly pick a different chart type
+  const types = ['bar', 'line', 'pie', 'area', 'scatter', 'waterfall', 'radar'];
+  const currentType = chart.chartType;
+  const alternatives = types.filter(t => t !== currentType);
+  const randomType = alternatives[Math.floor(Math.random() * alternatives.length)];
+
+  await handleChartTypeSwitch(chartId, randomType);
+}
+
+/**
+ * Convert main chart config to DynamicChartRenderer-compatible format
+ */
+function convertToDynamicConfig(config: ChartConfig_Local | DynamicChartConfig | null): ChartConfig | null {
+  if (!config) return null;
+
+  // If it already has series[], it's a DynamicChartConfig - use directly
+  if ('series' in config && Array.isArray(config.series)) {
+    return config as unknown as ChartConfig;
+  }
+
+  // If it's a ChartConfig_Local with data[], convert to LegacyChartConfig format
+  if ('data' in config && Array.isArray(config.data)) {
+    return config as unknown as ChartConfig;
+  }
+
+  return null;
+}
+
+// 图表实例 (kept for legacy fallback)
 let mainChart: echarts.ECharts | null = null;
 
 // 分析类型配置
@@ -241,16 +413,21 @@ const analysisTypes = [
 ];
 
 onMounted(async () => {
-  // 默认选择最近30天
+  // 默认选择最近365天（覆盖更多财务数据）
   const end = new Date();
   const start = new Date();
-  start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+  start.setTime(start.getTime() - 3600 * 1000 * 24 * 365);
   dateRange.value = [start, end];
 
-  // 加载数据源列表
-  await loadDataSources();
+  // Load data source list in background (for dropdown)
+  loadDataSources();
 
-  loadFinanceData();
+  // Always default to system data for reliable KPI display
+  selectedDataSource.value = 'system';
+  await loadFinanceData();
+
+  // Initialize legacy chart container (only needed for system data fallback)
+  await nextTick();
   initChart();
 });
 
@@ -275,7 +452,14 @@ async function onDataSourceChange(sourceId: string) {
   if (sourceId === 'system') {
     // 切换回系统数据
     aiInsights.value = [];
-    loadFinanceData();
+    explorationCharts.value = [];
+    dynamicRawData.value = [];
+    useDynamicRenderer.value = false;
+    mainDynamicConfig.value = null;
+    await loadFinanceData();
+    // Re-init legacy chart after switching back to system data
+    await nextTick();
+    initChart();
   } else {
     // 加载上传的动态数据
     await loadDynamicData(Number(sourceId));
@@ -285,7 +469,10 @@ async function onDataSourceChange(sourceId: string) {
 // 加载动态数据
 async function loadDynamicData(uploadId: number) {
   loading.value = true;
+  loadError.value = '';
   aiInsights.value = [];
+  // Reset previous data to avoid showing stale values
+  resetData();
 
   try {
     const res = await getDynamicAnalysis(uploadId, 'finance');
@@ -308,14 +495,24 @@ async function loadDynamicData(uploadId: number) {
         updateChartFromDynamicData(data.charts);
       }
 
+      // Phase 6: Fetch raw data for exploration charts
+      try {
+        const tableRes = await getUploadTableData(uploadId, 0, 200);
+        if (tableRes.success && tableRes.data && tableRes.data.data.length > 0) {
+          buildExplorationCharts(tableRes.data.data as Record<string, unknown>[]);
+        }
+      } catch (e) {
+        console.warn('加载探索图表数据失败:', e);
+      }
+
       // 清空预警 (动态数据暂不支持预警)
       warnings.value = [];
     } else {
-      ElMessage.error(res.message || '加载分析数据失败');
+      loadError.value = res.message || '加载分析数据失败';
     }
   } catch (error) {
     console.error('加载动态数据失败:', error);
-    ElMessage.error('加载分析数据失败');
+    loadError.value = '加载分析数据失败，请检查网络连接后重试';
   } finally {
     loading.value = false;
   }
@@ -326,98 +523,158 @@ function updateKpiFromDynamicData(kpiCards: DynamicAnalysisResponse['kpiCards'])
   // 重置 KPI 数据
   resetData();
 
+  // Track whether we matched any KPI cards by title
+  let matchedCount = 0;
+
   for (const kpi of kpiCards) {
     const title = kpi.title?.toLowerCase() || '';
-    const value = kpi.rawValue || 0;
+    const value = kpi.rawValue ?? 0;
 
     if (title.includes('毛利') && !title.includes('率')) {
       kpiData.value.grossProfit = value;
+      matchedCount++;
     } else if (title.includes('毛利') && title.includes('率')) {
       kpiData.value.grossProfitMargin = value;
+      matchedCount++;
     } else if (title.includes('净利') && !title.includes('率')) {
       kpiData.value.netProfit = value;
+      matchedCount++;
     } else if (title.includes('净利') && title.includes('率')) {
       kpiData.value.netProfitMargin = value;
+      matchedCount++;
     } else if (title.includes('成本') || title.includes('cost')) {
       kpiData.value.totalCost = value;
+      matchedCount++;
     } else if (title.includes('收入') || title.includes('revenue') || title.includes('销售额')) {
       // 如果没有毛利数据，用收入作为近似
       if (kpiData.value.grossProfit === 0) {
         kpiData.value.grossProfit = value;
       }
+      matchedCount++;
     } else if (title.includes('利润') || title.includes('profit')) {
       // 通用利润字段
       if (kpiData.value.netProfit === 0) {
         kpiData.value.netProfit = value;
       }
+      matchedCount++;
+    } else if (title.includes('预算') || title.includes('budget')) {
+      kpiData.value.budgetTotal = value;
+      matchedCount++;
+    } else if (title.includes('应收') || title.includes('receivable')) {
+      kpiData.value.totalReceivable = value;
+      matchedCount++;
+    } else if (title.includes('应付') || title.includes('payable')) {
+      kpiData.value.totalPayable = value;
+      matchedCount++;
     }
+  }
+
+  // If no KPI titles matched, assign first available cards to primary financial KPIs
+  if (matchedCount === 0 && kpiCards.length > 0) {
+    console.log('[FinanceAnalysis] No KPI title matches; using positional fallback for', kpiCards.length, 'cards');
+    if (kpiCards[0]) kpiData.value.grossProfit = kpiCards[0].rawValue ?? 0;
+    if (kpiCards[1]) kpiData.value.netProfit = kpiCards[1].rawValue ?? 0;
+    if (kpiCards[2]) kpiData.value.totalCost = kpiCards[2].rawValue ?? 0;
   }
 }
 
 // 从动态数据更新图表
 function updateChartFromDynamicData(charts: DynamicAnalysisResponse['charts']) {
-  if (!mainChart || charts.length === 0) return;
+  if (charts.length === 0) return;
 
-  // 使用第一个图表
+  // 使用第一个图表 - convert to DynamicChartRenderer format
   const chart = charts[0];
   const labels = chart.data?.labels || [];
   const datasets = chart.data?.datasets || [];
 
-  let option: echarts.EChartsOption;
-
   if (chart.type === 'pie') {
-    // 饼图
+    // 转换饼图为 LegacyChartConfig 格式给 DynamicChartRenderer
     const pieData = labels.map((label, idx) => ({
       name: label,
       value: datasets[0]?.data?.[idx] || 0
     }));
-
-    option = {
-      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-      legend: { orient: 'vertical', right: '10%', top: 'center' },
-      series: [{
-        type: 'pie',
-        radius: ['40%', '70%'],
-        center: ['40%', '50%'],
-        data: pieData,
-        emphasis: {
-          itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
-        }
-      }]
-    };
+    mainDynamicConfig.value = {
+      chartType: 'pie',
+      title: chart.title,
+      xAxisField: 'name',
+      yAxisField: 'value',
+      data: pieData,
+    } as ChartConfig;
+    useDynamicRenderer.value = true;
   } else {
-    // 柱状图或折线图
-    option = {
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: chart.type === 'line' ? 'cross' : 'shadow' }
-      },
-      grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
-      xAxis: { type: 'category', data: labels },
-      yAxis: {
-        type: 'value',
-        axisLabel: {
-          formatter: (value: number) => {
-            if (value >= 10000) return (value / 10000).toFixed(0) + '万';
-            return String(value);
-          }
-        }
-      },
+    // 转换柱状/折线为 DashboardChartConfig 格式
+    mainDynamicConfig.value = {
+      chartType: chart.type,
+      title: chart.title || '',
+      xAxis: { data: labels },
       series: datasets.map(ds => ({
         name: ds.label,
-        type: chart.type as 'bar' | 'line',
+        type: chart.type || 'bar',
         data: ds.data,
-        smooth: chart.type === 'line',
-        itemStyle: { color: '#409EFF' }
-      }))
-    };
+      })),
+    } as ChartConfig;
+    useDynamicRenderer.value = true;
   }
 
-  mainChart.setOption(option, true);
+  // Legacy fallback: still update raw echarts if it's initialized
+  if (mainChart) {
+    let option: echarts.EChartsOption;
+
+    if (chart.type === 'pie') {
+      const pieData = labels.map((label, idx) => ({
+        name: label,
+        value: datasets[0]?.data?.[idx] || 0
+      }));
+      option = {
+        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        legend: { orient: 'vertical', right: '10%', top: 'center' },
+        series: [{
+          type: 'pie',
+          radius: ['40%', '70%'],
+          center: ['40%', '50%'],
+          data: pieData,
+          emphasis: {
+            itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
+          }
+        }]
+      };
+    } else {
+      option = {
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: chart.type === 'line' ? 'cross' : 'shadow' }
+        },
+        grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
+        xAxis: { type: 'category', data: labels },
+        yAxis: {
+          type: 'value',
+          axisLabel: {
+            formatter: (value: number) => {
+              if (value >= 10000) return (value / 10000).toFixed(0) + '万';
+              return String(value);
+            }
+          }
+        },
+        series: datasets.map(ds => ({
+          name: ds.label,
+          type: chart.type as 'bar' | 'line',
+          data: ds.data,
+          smooth: chart.type === 'line',
+          itemStyle: { color: '#409EFF' }
+        }))
+      };
+    }
+
+    mainChart.setOption(option, true);
+  }
 }
 
+// Only reload system finance data when analysis type or date range changes
+// Skip if using dynamic (uploaded) data source — those are not filtered by date/type
 watch([analysisType, dateRange], () => {
-  loadFinanceData();
+  if (selectedDataSource.value === 'system') {
+    loadFinanceData();
+  }
 });
 
 function formatDate(date: Date): string {
@@ -428,6 +685,7 @@ async function loadFinanceData() {
   if (!factoryId.value || !dateRange.value) return;
 
   loading.value = true;
+  loadError.value = '';
   try {
     const startDate = formatDate(dateRange.value[0]);
     const endDate = formatDate(dateRange.value[1]);
@@ -444,7 +702,11 @@ async function loadFinanceData() {
     );
 
     if (response.success && response.data) {
-      const data = response.data as Record<string, unknown>;
+      // Handle double-wrapped response: interceptor wraps {code,data:{...}} into {success,data:{code,data:{...}}}
+      const raw = response.data as Record<string, unknown>;
+      const data = (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) && raw.code)
+        ? raw.data as Record<string, unknown>
+        : raw;
 
       // 提取 metrics 数据到 kpiData
       if (data.metrics) {
@@ -458,48 +720,78 @@ async function loadFinanceData() {
         if (overview.kpiCards) {
           updateKpiDataFromKpiCards(overview.kpiCards as Array<Record<string, unknown>>);
         }
+        // Extract chart from overview.charts map
+        if (overview.charts && typeof overview.charts === 'object') {
+          const charts = overview.charts as Record<string, unknown>;
+          const trendKey = Object.keys(charts).find(k => k.includes('趋势') || k.includes('利润'));
+          if (trendKey) {
+            chartConfig.value = charts[trendKey] as ChartConfig | DynamicChartConfig;
+            updateChart();
+          }
+        }
+        // Extract AI insights as warnings
+        if (overview.aiInsights && Array.isArray(overview.aiInsights)) {
+          warnings.value = (overview.aiInsights as Array<Record<string, unknown>>).map(insight => ({
+            level: String(insight.level || 'info').toLowerCase() === 'red' ? 'danger' : 'warning',
+            title: String(insight.category || ''),
+            description: String(insight.message || ''),
+            amount: 0
+          })) as WarningItem[];
+        }
       }
 
-      // 提取图表配置
-      if (data.trendChart) {
-        chartConfig.value = data.trendChart as ChartConfig | DynamicChartConfig;
-        updateChart();
-      } else if (data.structureChart) {
-        chartConfig.value = data.structureChart as ChartConfig | DynamicChartConfig;
-        updateChart();
-      } else if (data.agingChart) {
-        chartConfig.value = data.agingChart as ChartConfig | DynamicChartConfig;
-        updateChart();
-      } else if (data.waterfall) {
-        chartConfig.value = data.waterfall as ChartConfig | DynamicChartConfig;
-        updateChart();
-      } else if (data.comparison) {
-        chartConfig.value = data.comparison as ChartConfig | DynamicChartConfig;
-        updateChart();
+      // Also try profitMetrics for KPI data
+      if (data.profitMetrics && Array.isArray(data.profitMetrics)) {
+        updateKpiDataFromKpiCards(data.profitMetrics as Array<Record<string, unknown>>);
       }
 
-      // 提取预警列表
-      if (data.warnings) {
-        warnings.value = data.warnings as WarningItem[];
-      } else if (data.overdueRanking) {
-        // 将逾期客户转换为预警
-        const ranking = data.overdueRanking as Array<Record<string, unknown>>;
-        warnings.value = ranking.slice(0, 5).map((item, index) => ({
-          level: index < 2 ? 'danger' : 'warning',
-          title: String(item.customerName || '未知客户'),
-          description: `逾期 ${item.overdueDays || 0} 天`,
-          amount: Number(item.overdueAmount || 0)
-        })) as WarningItem[];
-      } else {
-        warnings.value = [];
+      // 提取图表配置 (direct keys or top-level)
+      if (!chartConfig.value) {
+        if (data.trendChart) {
+          chartConfig.value = data.trendChart as ChartConfig | DynamicChartConfig;
+          updateChart();
+        } else if (data.costStructure) {
+          chartConfig.value = data.costStructure as ChartConfig | DynamicChartConfig;
+          updateChart();
+        } else if (data.receivableAging) {
+          chartConfig.value = data.receivableAging as ChartConfig | DynamicChartConfig;
+          updateChart();
+        } else if (data.structureChart) {
+          chartConfig.value = data.structureChart as ChartConfig | DynamicChartConfig;
+          updateChart();
+        } else if (data.agingChart) {
+          chartConfig.value = data.agingChart as ChartConfig | DynamicChartConfig;
+          updateChart();
+        } else if (data.waterfall) {
+          chartConfig.value = data.waterfall as ChartConfig | DynamicChartConfig;
+          updateChart();
+        } else if (data.comparison) {
+          chartConfig.value = data.comparison as ChartConfig | DynamicChartConfig;
+          updateChart();
+        }
+      }
+
+      // 提取预警列表 (if not already set from overview.aiInsights)
+      if (warnings.value.length === 0) {
+        if (data.warnings) {
+          warnings.value = data.warnings as WarningItem[];
+        } else if (data.overdueRanking) {
+          const ranking = data.overdueRanking as Array<Record<string, unknown>>;
+          warnings.value = ranking.slice(0, 5).map((item, index) => ({
+            level: index < 2 ? 'danger' : 'warning',
+            title: String(item.customerName || '未知客户'),
+            description: `逾期 ${item.overdueDays || 0} 天`,
+            amount: Number(item.overdueAmount || 0)
+          })) as WarningItem[];
+        }
       }
     } else {
-      ElMessage.error(response.message || '加载财务数据失败');
+      loadError.value = response.message || '加载财务数据失败';
       resetData();
     }
   } catch (error) {
     console.error('加载财务数据失败:', error);
-    ElMessage.error('加载财务数据失败，请检查网络连接');
+    loadError.value = '加载财务数据失败，请检查网络连接后重试';
     resetData();
   } finally {
     loading.value = false;
@@ -550,8 +842,9 @@ function updateKpiDataFromMetrics(metrics: Record<string, unknown>) {
 
 function updateKpiDataFromKpiCards(kpiCards: Array<Record<string, unknown>>) {
   for (const card of kpiCards) {
-    const label = String(card.label || '');
-    const value = Number(card.value || 0);
+    const label = String(card.title || card.metricName || card.label || '');
+    const rawVal = card.rawValue ?? card.value ?? 0;
+    const value = typeof rawVal === 'string' ? Number(String(rawVal).replace(/[,%]/g, '')) : Number(rawVal);
 
     if (label.includes('毛利') && label.includes('率')) {
       kpiData.value.grossProfitMargin = value;
@@ -607,11 +900,21 @@ function initChart() {
   const chartDom = document.getElementById('finance-main-chart');
   if (!chartDom) return;
 
-  mainChart = echarts.init(chartDom);
+  mainChart = echarts.init(chartDom, 'cretas');
   window.addEventListener('resize', handleResize);
 }
 
 function updateChart() {
+  // Phase 6: Try DynamicChartRenderer first
+  const dynamicCfg = convertToDynamicConfig(chartConfig.value);
+  if (dynamicCfg) {
+    mainDynamicConfig.value = dynamicCfg;
+    useDynamicRenderer.value = true;
+    return;
+  }
+
+  // Fallback to raw echarts.init
+  useDynamicRenderer.value = false;
   if (!mainChart || !chartConfig.value) return;
 
   const config = chartConfig.value;
@@ -622,24 +925,24 @@ function updateChart() {
   }
 }
 
-function buildEChartsOption(config: ChartConfig | DynamicChartConfig): echarts.EChartsOption | null {
+function buildEChartsOption(config: ChartConfig_Local | DynamicChartConfig): echarts.EChartsOption | null {
   // 检查是否是 DynamicChartConfig
   if ('series' in config && Array.isArray(config.series)) {
     return buildFromDynamicConfig(config as DynamicChartConfig);
   }
 
-  // ChartConfig 格式
-  const chartConfig = config as ChartConfig;
-  if (!chartConfig.data || chartConfig.data.length === 0) {
+  // ChartConfig_Local 格式
+  const localConfig = config as ChartConfig_Local;
+  if (!localConfig.data || localConfig.data.length === 0) {
     return getEmptyChartOption();
   }
 
-  const chartType = chartConfig.chartType?.toLowerCase() || 'bar';
+  const chartType = localConfig.chartType?.toLowerCase() || 'bar';
 
   if (chartType === 'pie') {
-    return buildPieChart(chartConfig);
+    return buildPieChart(localConfig);
   } else {
-    return buildAxisChart(chartConfig);
+    return buildAxisChart(localConfig);
   }
 }
 
@@ -725,7 +1028,7 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
   return option;
 }
 
-function buildPieChart(config: ChartConfig): echarts.EChartsOption {
+function buildPieChart(config: ChartConfig_Local): echarts.EChartsOption {
   const xField = config.xAxisField || 'name';
   const yField = config.yAxisField || 'value';
 
@@ -762,7 +1065,7 @@ function buildPieChart(config: ChartConfig): echarts.EChartsOption {
   };
 }
 
-function buildAxisChart(config: ChartConfig): echarts.EChartsOption {
+function buildAxisChart(config: ChartConfig_Local): echarts.EChartsOption {
   const xField = config.xAxisField || 'name';
   const yField = config.yAxisField || 'value';
   const chartType = config.chartType?.toLowerCase() || 'bar';
@@ -826,10 +1129,12 @@ function handleResize() {
   mainChart?.resize();
 }
 
-function formatMoney(value: number): string {
-  if (value >= 10000) {
+function formatMoney(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '--';
+  if (Math.abs(value) >= 10000) {
     return (value / 10000).toFixed(1) + '万';
   }
+  if (value === 0) return '0';
   return value.toLocaleString();
 }
 
@@ -842,7 +1147,11 @@ function getWarningTagType(level: string): 'danger' | 'warning' | 'info' {
 }
 
 function handleRefresh() {
-  loadFinanceData();
+  if (selectedDataSource.value && selectedDataSource.value !== 'system') {
+    loadDynamicData(Number(selectedDataSource.value));
+  } else {
+    loadFinanceData();
+  }
 }
 
 // ==================== 数据预览功能 ====================
@@ -916,7 +1225,7 @@ onUnmounted(() => {
         <h1>财务分析</h1>
       </div>
       <div class="header-right">
-        <el-button type="primary" :icon="Refresh" @click="handleRefresh">刷新</el-button>
+        <el-button type="primary" :icon="Refresh" @click="handleRefresh" :loading="loading">刷新</el-button>
       </div>
     </div>
 
@@ -991,6 +1300,19 @@ onUnmounted(() => {
         </div>
       </div>
     </el-card>
+
+    <!-- 加载错误提示 -->
+    <el-alert
+      v-if="loadError"
+      type="error"
+      :title="loadError"
+      show-icon
+      closable
+      style="margin-bottom: 16px"
+      @close="loadError = ''"
+    >
+      <el-button size="small" type="primary" @click="handleRefresh" style="margin-top: 8px">重试</el-button>
+    </el-alert>
 
     <!-- 财务 KPI -->
     <el-row :gutter="16" class="kpi-section" v-loading="loading">
@@ -1152,7 +1474,14 @@ onUnmounted(() => {
               <span>{{ analysisTypes.find(t => t.type === analysisType)?.label }}图表</span>
             </div>
           </template>
-          <div id="finance-main-chart" class="chart-container"></div>
+          <!-- Phase 6: DynamicChartRenderer when config available -->
+          <DynamicChartRenderer
+            v-if="useDynamicRenderer && mainDynamicConfig"
+            :config="mainDynamicConfig"
+            :height="360"
+          />
+          <!-- Legacy fallback: raw echarts container -->
+          <div v-else id="finance-main-chart" class="chart-container"></div>
         </el-card>
       </el-col>
 
@@ -1205,6 +1534,42 @@ onUnmounted(() => {
           <el-icon class="insight-icon"><TrendCharts /></el-icon>
           <span>{{ insight }}</span>
         </div>
+      </div>
+    </el-card>
+
+    <!-- Phase 6: 动态图表探索面板 (仅动态数据源显示) -->
+    <el-card v-if="explorationCharts.length > 0 || explorationLoading" class="exploration-card">
+      <template #header>
+        <div class="card-header">
+          <el-icon><TrendCharts /></el-icon>
+          <span>数据图表探索</span>
+          <el-tag type="info" size="small" style="margin-left: 8px">自动推荐</el-tag>
+        </div>
+      </template>
+      <div v-loading="explorationLoading" class="exploration-grid">
+        <div
+          v-for="chart in explorationCharts"
+          :key="chart.id"
+          class="exploration-chart-item"
+        >
+          <div class="exploration-chart-header">
+            <span class="exploration-chart-title">{{ chart.title }}</span>
+            <ChartTypeSelector
+              :current-type="chart.chartType"
+              :numeric-columns="dataInfo.numericColumns"
+              :categorical-columns="dataInfo.categoricalColumns"
+              :date-columns="dataInfo.dateColumns"
+              :row-count="dataInfo.rowCount"
+              @switch-type="(newType: string) => handleChartTypeSwitch(chart.id, newType)"
+              @refresh="handleChartRefresh(chart.id)"
+            />
+          </div>
+          <DynamicChartRenderer
+            :config="chart.config"
+            :height="280"
+          />
+        </div>
+        <SmartBIEmptyState v-if="!explorationLoading && explorationCharts.length === 0" type="no-charts" :show-action="false" />
       </div>
     </el-card>
 
@@ -1490,6 +1855,60 @@ onUnmounted(() => {
   }
 }
 
+// Phase 6: 动态图表探索面板
+.exploration-card {
+  margin-top: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #409EFF;
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+
+    .el-icon {
+      color: #409EFF;
+    }
+  }
+}
+
+.exploration-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  min-height: 100px;
+}
+
+.exploration-chart-item {
+  background: #fafbfc;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #ebeef5;
+  transition: box-shadow 0.3s;
+
+  &:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.exploration-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.exploration-chart-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
 // 数据源选择器
 .datasource-option {
   display: flex;
@@ -1565,6 +1984,22 @@ onUnmounted(() => {
 }
 
 // 响应式
+@media (max-width: 1366px) {
+  .chart-container {
+    height: 300px;
+  }
+
+  .chart-empty-state {
+    height: 300px;
+  }
+}
+
+@media (max-width: 1366px) {
+  .exploration-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .type-switch {
     flex-wrap: nowrap;
@@ -1583,6 +2018,18 @@ onUnmounted(() => {
 
   .filter-item {
     width: 100%;
+  }
+
+  .chart-container {
+    height: 260px;
+  }
+
+  .chart-empty-state {
+    height: 260px;
+  }
+
+  .exploration-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

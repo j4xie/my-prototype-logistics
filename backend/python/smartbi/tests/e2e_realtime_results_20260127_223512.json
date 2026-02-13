@@ -1,0 +1,387 @@
+{
+  "test_run": {
+    "start_time": "2026-01-27T22:35:12.274132",
+    "python_version": "3.11.7 | packaged by Anaconda, Inc. | (main, Dec 15 2023, 18:05:47) [MSC v.1916 64 bit (AMD64)]",
+    "test_files": 3,
+    "end_time": "2026-01-27T22:35:12.410956"
+  },
+  "files": [
+    {
+      "file": "Test.xlsx",
+      "sheet_count": 11,
+      "sheets": [
+        {
+          "sheet_name": "索引",
+          "sheet_index": 0,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "收入及净利简表",
+          "sheet_index": 1,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "2025年销售1中心利润表",
+          "sheet_index": 2,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "2025年中心利润表 ",
+          "sheet_index": 3,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "2025年江苏分部利润表",
+          "sheet_index": 4,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "2025年浙江分部利润表",
+          "sheet_index": 5,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "2025年上海分部利润表",
+          "sheet_index": 6,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "2025年赣皖区域利润表",
+          "sheet_index": 7,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "2025年安徽省区利润表",
+          "sheet_index": 8,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "2025年江西省区利润表",
+          "sheet_index": 9,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "24年返利明细",
+          "sheet_index": 10,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        }
+      ],
+      "errors": [
+        {
+          "sheet": "索引",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "收入及净利简表",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "2025年销售1中心利润表",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "2025年中心利润表 ",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "2025年江苏分部利润表",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "2025年浙江分部利润表",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "2025年上海分部利润表",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "2025年赣皖区域利润表",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "2025年安徽省区利润表",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "2025年江西省区利润表",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "24年返利明细",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        }
+      ],
+      "start_time": "2026-01-27T22:35:12.379413",
+      "total_time_s": 0.0,
+      "end_time": "2026-01-27T22:35:12.380412",
+      "summary": {
+        "total_sheets": 11,
+        "success": 0,
+        "errors": 11,
+        "success_rate": 0.0,
+        "total_time_s": 0.0,
+        "avg_time_per_sheet_s": 0.0
+      }
+    },
+    {
+      "file": "test_complex_5sheets.xlsx",
+      "sheet_count": 5,
+      "sheets": [
+        {
+          "sheet_name": "2025年利润表",
+          "sheet_index": 0,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "销售明细",
+          "sheet_index": 1,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "部门预算对比",
+          "sheet_index": 2,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "产品成本分析",
+          "sheet_index": 3,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "待补充数据",
+          "sheet_index": 4,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        }
+      ],
+      "errors": [
+        {
+          "sheet": "2025年利润表",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "销售明细",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "部门预算对比",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "产品成本分析",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "待补充数据",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        }
+      ],
+      "start_time": "2026-01-27T22:35:12.387918",
+      "total_time_s": 0.0,
+      "end_time": "2026-01-27T22:35:12.387918",
+      "summary": {
+        "total_sheets": 5,
+        "success": 0,
+        "errors": 5,
+        "success_rate": 0.0,
+        "total_time_s": 0.0,
+        "avg_time_per_sheet_s": 0.0
+      }
+    },
+    {
+      "file": "test_complex_scenarios.xlsx",
+      "sheet_count": 10,
+      "sheets": [
+        {
+          "sheet_name": "利润表_合并表头",
+          "sheet_index": 0,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "销售明细_500行",
+          "sheet_index": 1,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "预算对比_多层表头",
+          "sheet_index": 2,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "时间序列_日数据",
+          "sheet_index": 3,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "混合类型_复杂",
+          "sheet_index": 4,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "稀疏数据_70%空",
+          "sheet_index": 5,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "超宽表_120列",
+          "sheet_index": 6,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "嵌套分组_3级",
+          "sheet_index": 7,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "中英文_Bilingual",
+          "sheet_index": 8,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        },
+        {
+          "sheet_name": "特殊字符_Formula",
+          "sheet_index": 9,
+          "success": false,
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence",
+          "phases": {},
+          "quality": {}
+        }
+      ],
+      "errors": [
+        {
+          "sheet": "利润表_合并表头",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "销售明细_500行",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "预算对比_多层表头",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "时间序列_日数据",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "混合类型_复杂",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "稀疏数据_70%空",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "超宽表_120列",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "嵌套分组_3级",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "中英文_Bilingual",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        },
+        {
+          "sheet": "特殊字符_Formula",
+          "error": "'gbk' codec can't encode character '\\u23f1' in position 3: illegal multibyte sequence"
+        }
+      ],
+      "start_time": "2026-01-27T22:35:12.405441",
+      "total_time_s": 0.0,
+      "end_time": "2026-01-27T22:35:12.405441",
+      "summary": {
+        "total_sheets": 10,
+        "success": 0,
+        "errors": 10,
+        "success_rate": 0.0,
+        "total_time_s": 0.0,
+        "avg_time_per_sheet_s": 0.0
+      }
+    }
+  ],
+  "summary": {
+    "total_files": 3,
+    "total_sheets": 26,
+    "total_success": 0,
+    "total_errors": 26,
+    "success_rate": 0.0,
+    "avg_quality_score": null
+  }
+}

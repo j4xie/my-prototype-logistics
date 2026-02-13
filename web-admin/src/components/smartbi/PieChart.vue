@@ -4,8 +4,9 @@
  * Features: Custom legend, percentage display, inner label
  */
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import type { EChartsOption, ECharts } from 'echarts';
+import { CHART_COLORS } from '@/constants/chart-colors';
 
 // Types
 export interface PieDataItem {
@@ -44,7 +45,7 @@ const props = withDefaults(defineProps<Props>(), {
   centerText: '',
   centerSubText: '',
   valueUnit: '',
-  colors: () => ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399', '#00d4ff', '#ff6b9d', '#c084fc', '#fbbf24', '#34d399']
+  colors: () => [...CHART_COLORS]
 });
 
 const emit = defineEmits<{
@@ -205,7 +206,7 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value);
+  chartInstance.value = echarts.init(chartRef.value, 'cretas');
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event

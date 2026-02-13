@@ -684,6 +684,39 @@ public class AIIntentServiceImpl implements AIIntentService {
 
                     // DIRECT_EXECUTE: 高置信度，直接返回
                     if (routeDecision.canDirectExecute()) {
+                        String routedIntent = routeDecision.getBestMatchIntentCode();
+
+                        // v13: 食品实体冲突检测 — 防止"生产牛肉"等食品知识查询被语义路由到工厂意图
+                        if (knowledgeBase.hasEntityIntentConflict(userInput, routedIntent)) {
+                            log.info("v13 SemanticRouter食品冲突: input='{}' 路由到 '{}' 但包含食品实体，修正为FOOD_KNOWLEDGE_QUERY",
+                                    userInput, routedIntent);
+                            List<AIIntentConfig> allIntentsForFood = getAllIntents(factoryId);
+                            Optional<AIIntentConfig> foodIntentOpt = allIntentsForFood.stream()
+                                    .filter(i -> "FOOD_KNOWLEDGE_QUERY".equals(i.getIntentCode()))
+                                    .findFirst();
+                            if (foodIntentOpt.isPresent()) {
+                                AIIntentConfig foodIntent = foodIntentOpt.get();
+                                IntentMatchResult foodResult = IntentMatchResult.builder()
+                                        .bestMatch(foodIntent)
+                                        .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                                foodIntent, 0.90, 90, Collections.emptyList(), MatchMethod.SEMANTIC)))
+                                        .confidence(0.90)
+                                        .matchMethod(MatchMethod.SEMANTIC)
+                                        .matchedKeywords(Collections.emptyList())
+                                        .isStrongSignal(true)
+                                        .requiresConfirmation(false)
+                                        .userInput(userInput)
+                                        .build();
+                                if (preprocessedQuery != null) {
+                                    foodResult.setPreprocessedQuery(preprocessedQuery);
+                                }
+                                saveIntentMatchRecord(foodResult, factoryId, userId, sessionId, false);
+                                return foodResult;
+                            }
+                            // fallback: 如果找不到 FOOD_KNOWLEDGE_QUERY 意图配置，继续走完整流程
+                            log.warn("v13 FOOD_KNOWLEDGE_QUERY 意图配置不存在，继续走完整流程");
+                        }
+
                         IntentMatchResult directResult = convertRouteDecisionToResult(
                                 routeDecision, userInput, processedInput, enhancedResult);
 
@@ -983,6 +1016,32 @@ public class AIIntentServiceImpl implements AIIntentService {
 
                 if (intentOpt.isPresent()) {
                     AIIntentConfig intent = intentOpt.get();
+
+                    // v13: 食品实体冲突检测 — 防止"生产牛肉"等被两阶段分类器误路由到工厂意图
+                    if (knowledgeBase.hasEntityIntentConflict(originalInput, composedIntent)) {
+                        log.info("v13 TwoStage食品冲突: input='{}' 两阶段分类到 '{}' 但包含食品实体，修正为FOOD_KNOWLEDGE_QUERY",
+                                originalInput, composedIntent);
+                        Optional<AIIntentConfig> foodIntentOpt = allIntents.stream()
+                                .filter(i -> "FOOD_KNOWLEDGE_QUERY".equals(i.getIntentCode()))
+                                .findFirst();
+                        if (foodIntentOpt.isPresent()) {
+                            AIIntentConfig foodIntent = foodIntentOpt.get();
+                            IntentMatchResult foodResult = IntentMatchResult.builder()
+                                    .bestMatch(foodIntent)
+                                    .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                            foodIntent, 0.90, 90, Collections.emptyList(), MatchMethod.SEMANTIC)))
+                                    .confidence(0.90)
+                                    .matchMethod(MatchMethod.SEMANTIC)
+                                    .matchedKeywords(Collections.emptyList())
+                                    .isStrongSignal(true)
+                                    .requiresConfirmation(false)
+                                    .userInput(originalInput)
+                                    .build();
+                            saveIntentMatchRecord(foodResult, factoryId, null, null, false);
+                            return foodResult;
+                        }
+                    }
+
                     ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
 
                     log.info("v9.0多维分类命中: domain={}, action={}, modifiers={}, intent={}, confidence={}, " +

@@ -1,0 +1,401 @@
+[
+  {
+    "index": 0,
+    "name": "2025年利润表",
+    "rows": 19,
+    "cols": 8,
+    "method": "llm",
+    "table_type": "profit_statement",
+    "confidence": 0.98,
+    "title_rows": [
+      0
+    ],
+    "header_rows": [
+      2,
+      3
+    ],
+    "data_start_row": 4,
+    "columns": [
+      {
+        "letter": "A",
+        "name": "项目",
+        "role": "dimension"
+      },
+      {
+        "letter": "B",
+        "name": "行次",
+        "role": "label"
+      },
+      {
+        "letter": "C",
+        "name": "2025年1月_预算数",
+        "role": "measure"
+      },
+      {
+        "letter": "D",
+        "name": "2025年1月_实际数",
+        "role": "measure"
+      },
+      {
+        "letter": "E",
+        "name": "2025年2月_预算数",
+        "role": "measure"
+      },
+      {
+        "letter": "F",
+        "name": "2025年2月_实际数",
+        "role": "measure"
+      },
+      {
+        "letter": "G",
+        "name": "累计_预算数",
+        "role": "measure"
+      },
+      {
+        "letter": "H",
+        "name": "累计_实际数",
+        "role": "measure"
+      }
+    ],
+    "recommendations": [
+      {
+        "type": "variance_analysis",
+        "desc": "对比各项目‘实际数’与‘预算数’的差异率，识别超支/节余关键科目"
+      },
+      {
+        "type": "trend_analysis",
+        "desc": "分析营业收入、营业成本、净利润等核心指标的月度趋势及累计完成进度"
+      },
+      {
+        "type": "profitability_ratio",
+        "desc": "计算毛利率（营业毛利/营业收入）、期间费用率（期间费用/营业收入）等关键比率"
+      }
+    ],
+    "insights": [
+      "营业收入累计实际完成率100%（1100/1100），但2月实际数（580）低于预算（600），存在月度执行波动。",
+      "营业成本累计实际与预算完全一致（660万元），显示成本控制精准；但2月实际成本（350）略高于预算（360）？——核实：350 < 360，实为节约10万元。"
+    ],
+    "warnings": [
+      "第2行（索引1）含混合信息（'单位：万元'与'编制日期：2025年1月'），非结构化元数据，建议分离至报表属性而非单元格内。",
+      "A列项目名称含中文顿号、缩进空格，解析时需清洗（如去除首尾空格、标准化层级标识），否则影响自动分类。"
+    ]
+  },
+  {
+    "index": 1,
+    "name": "销售明细",
+    "rows": 54,
+    "cols": 10,
+    "method": "llm",
+    "table_type": "sales_detail",
+    "confidence": 0.98,
+    "title_rows": [
+      0,
+      1
+    ],
+    "header_rows": [
+      2
+    ],
+    "data_start_row": 3,
+    "columns": [
+      {
+        "letter": "A",
+        "name": "序号",
+        "role": "label"
+      },
+      {
+        "letter": "B",
+        "name": "日期",
+        "role": "time"
+      },
+      {
+        "letter": "C",
+        "name": "客户名称",
+        "role": "dimension"
+      },
+      {
+        "letter": "D",
+        "name": "产品名称",
+        "role": "dimension"
+      },
+      {
+        "letter": "E",
+        "name": "规格",
+        "role": "dimension"
+      },
+      {
+        "letter": "F",
+        "name": "数量",
+        "role": "measure"
+      },
+      {
+        "letter": "G",
+        "name": "单价",
+        "role": "measure"
+      },
+      {
+        "letter": "H",
+        "name": "金额",
+        "role": "measure"
+      },
+      {
+        "letter": "I",
+        "name": "业务员",
+        "role": "dimension"
+      },
+      {
+        "letter": "J",
+        "name": "备注",
+        "role": "label"
+      }
+    ],
+    "recommendations": [
+      {
+        "type": "时间趋势分析",
+        "desc": "按日期聚合日销售额、订单数、平均订单金额，识别销售高峰与低谷"
+      },
+      {
+        "type": "客户-产品矩阵分析",
+        "desc": "交叉分析客户名称与产品名称的销售频次与金额，识别核心客户-产品组合及长尾机会"
+      },
+      {
+        "type": "销售员绩效分析",
+        "desc": "统计各业务员的订单数、总金额、平均单笔金额、客户覆盖数，评估贡献度与效率"
+      },
+      {
+        "type": "规格标准化分析",
+        "desc": "将不同规格统一换算为标准单位（如'g'），计算单位克单价，消除规格干扰进行产品定价健康度诊断"
+      }
+    ],
+    "insights": [
+      "销售集中在宁波大润发、杭州联华、嘉兴世纪联华、上海沃尔玛、温州永辉五大客户，其中宁波大润发出现频次最高（10+次）",
+      "麻辣烫底料和番茄底料为最畅销产品，合计占样本前30行销量的约55%"
+    ],
+    "warnings": [
+      "列E（规格）为自由文本，缺乏结构化编码（如无SKU或规格ID），不利于自动化分类与主数据管理",
+      "‘客户名称’列未做标准化（如‘宁波大润发’与‘宁波大润发超市’可能被识别为不同客户），存在潜在去重风险"
+    ]
+  },
+  {
+    "index": 2,
+    "name": "部门预算对比",
+    "rows": 8,
+    "cols": 7,
+    "method": "llm",
+    "table_type": "budget_report",
+    "confidence": 0.98,
+    "title_rows": [
+      0
+    ],
+    "header_rows": [
+      2
+    ],
+    "data_start_row": 3,
+    "columns": [
+      {
+        "letter": "A",
+        "name": "部门",
+        "role": "dimension"
+      },
+      {
+        "letter": "B",
+        "name": "年度预算",
+        "role": "measure"
+      },
+      {
+        "letter": "C",
+        "name": "1月完成",
+        "role": "measure"
+      },
+      {
+        "letter": "D",
+        "name": "2月完成",
+        "role": "measure"
+      },
+      {
+        "letter": "E",
+        "name": "累计完成",
+        "role": "measure"
+      },
+      {
+        "letter": "F",
+        "name": "完成率",
+        "role": "measure"
+      },
+      {
+        "letter": "G",
+        "name": "排名",
+        "role": "label"
+      }
+    ],
+    "recommendations": [
+      {
+        "type": "预算执行趋势分析",
+        "desc": "对比各月完成额（C/D列）及累计完成率（F列），识别执行节奏（如是否前紧后松）及部门间差异"
+      },
+      {
+        "type": "预算偏差归因分析",
+        "desc": "以‘年度预算’为基准，分析‘累计完成’绝对偏差与‘完成率’相对偏差，定位高/低绩效部门动因"
+      },
+      {
+        "type": "排名稳定性评估",
+        "desc": "若后续月份数据可得，追踪‘排名’列变化，评估绩效排序的稳健性与管理干预效果"
+      }
+    ],
+    "insights": [
+      "电商部完成率最高（18.8%），虽预算额最低（600），但执行效率突出；大客户部预算最高（1500），但完成率最低（17.0%），存在资源匹配或启动延迟可能",
+      "所有部门前两月完成率集中在17.0%-18.8%区间，整体进度略滞后于时间进度（2/12≈16.7%），属健康偏积极水平"
+    ],
+    "warnings": [
+      "单位未在表中显式声明（推测为‘万元’），存在解读歧义风险，建议在表头或脚注补充",
+      "‘累计完成’列未注明统计截止时点（如‘截至2025-02-29’），影响时效性判断"
+    ]
+  },
+  {
+    "index": 3,
+    "name": "产品成本分析",
+    "rows": 11,
+    "cols": 8,
+    "method": "llm",
+    "table_type": "cost_analysis",
+    "confidence": 0.95,
+    "title_rows": [
+      0,
+      1
+    ],
+    "header_rows": [
+      2,
+      3
+    ],
+    "data_start_row": 4,
+    "columns": [
+      {
+        "letter": "A",
+        "name": "产品",
+        "role": "dimension"
+      },
+      {
+        "letter": "B",
+        "name": "原料",
+        "role": "measure"
+      },
+      {
+        "letter": "C",
+        "name": "人工",
+        "role": "measure"
+      },
+      {
+        "letter": "D",
+        "name": "能耗",
+        "role": "measure"
+      },
+      {
+        "letter": "E",
+        "name": "制造费用",
+        "role": "measure"
+      },
+      {
+        "letter": "F",
+        "name": "折旧",
+        "role": "measure"
+      },
+      {
+        "letter": "G",
+        "name": "总成本",
+        "role": "measure"
+      },
+      {
+        "letter": "H",
+        "name": "毛利率",
+        "role": "measure"
+      }
+    ],
+    "recommendations": [
+      {
+        "type": "成本结构分解",
+        "desc": "分析各产品直接成本与间接成本占比，识别成本驱动因素"
+      },
+      {
+        "type": "毛利率对比分析",
+        "desc": "横向比较不同产品的毛利率水平及成本敏感性"
+      },
+      {
+        "type": "成本要素相关性分析",
+        "desc": "探究原料成本与人工/能耗等要素间的协同变化关系"
+      }
+    ],
+    "insights": [
+      "火锅底料类产品（A/B）毛利率最高（48%-49%），菌菇底料虽总成本最高（17.7元/kg）但毛利率仍达49%，暗示其售价显著更高",
+      "原料成本是最大单项成本（占总成本约55%-70%），是成本优化的关键抓手"
+    ],
+    "warnings": [
+      "第10行（索引=9）为空行，需确认是否为意外插入，可能影响自动化解析",
+      "‘总成本’列未明确标注计算逻辑（如是否含税、是否四舍五入），存在可追溯性风险"
+    ]
+  },
+  {
+    "index": 4,
+    "name": "待补充数据",
+    "rows": 4,
+    "cols": 6,
+    "method": "llm",
+    "table_type": "general_table",
+    "confidence": 0.95,
+    "title_rows": [
+      0
+    ],
+    "header_rows": [
+      3
+    ],
+    "data_start_row": 4,
+    "columns": [
+      {
+        "letter": "A",
+        "name": "调查维度",
+        "role": "dimension"
+      },
+      {
+        "letter": "B",
+        "name": "非常满意",
+        "role": "measure"
+      },
+      {
+        "letter": "C",
+        "name": "满意",
+        "role": "measure"
+      },
+      {
+        "letter": "D",
+        "name": "一般",
+        "role": "measure"
+      },
+      {
+        "letter": "E",
+        "name": "不满意",
+        "role": "measure"
+      },
+      {
+        "letter": "F",
+        "name": "平均分",
+        "role": "measure"
+      }
+    ],
+    "recommendations": [
+      {
+        "type": "trend_comparison",
+        "desc": "对比不同调查维度的平均分及满意度分布，识别优势与短板维度"
+      },
+      {
+        "type": "distribution_analysis",
+        "desc": "分析各维度下四类满意度选项的占比分布，检验评价集中度与离散度"
+      }
+    ],
+    "insights": [
+      "表格设计遵循NPS/CSAT常用结构：以维度为行、满意度等级为列、辅以平均分汇总，便于横向比较",
+      "‘平均分’列为关键绩效指标（KPI），建议后续填充时确保其计算逻辑透明（如是否加权、是否剔除无效样本）"
+    ],
+    "warnings": [
+      "当前无实际数据行，无法验证数值一致性（如各维度五级评分总和是否等于样本量）",
+      "列名未明确‘非常满意’等字段是频数还是百分比，存在语义歧义风险，建议在表头或脚注中补充单位说明"
+    ]
+  }
+]

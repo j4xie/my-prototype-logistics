@@ -232,7 +232,7 @@ async def compute_ucb(request: ComputeUCBRequest):
 
     except Exception as e:
         logger.error(f"Compute UCB error: {e}", exc_info=True)
-        return ComputeUCBResponse(success=False, error=str(e))
+        return ComputeUCBResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/update-model", response_model=UpdateModelResponse)
@@ -283,7 +283,7 @@ async def update_model(request: UpdateModelRequest):
 
     except Exception as e:
         logger.error(f"Update model error: {e}", exc_info=True)
-        return UpdateModelResponse(success=False, error=str(e))
+        return UpdateModelResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/batch-compute", response_model=BatchComputeResponse)
@@ -337,7 +337,7 @@ async def batch_compute(request: BatchComputeRequest):
 
     except Exception as e:
         logger.error(f"Batch compute error: {e}", exc_info=True)
-        return BatchComputeResponse(success=False, error=str(e))
+        return BatchComputeResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/initialize", response_model=InitializeResponse)
@@ -383,7 +383,7 @@ async def initialize(request: InitializeRequest):
 
     except Exception as e:
         logger.error(f"Initialize error: {e}", exc_info=True)
-        return InitializeResponse(success=False, error=str(e))
+        return InitializeResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/validate", response_model=ValidateResponse)
@@ -431,7 +431,7 @@ async def validate(request: ValidateRequest):
 
     except Exception as e:
         logger.error(f"Validate error: {e}", exc_info=True)
-        return ValidateResponse(valid=False, error=str(e))
+        return ValidateResponse(valid=False, error="处理失败，请稍后重试")
 
 
 @router.get("/info")

@@ -28,6 +28,12 @@ export function setupRouterGuards(router: Router) {
       return;
     }
 
+    // 路由 meta 标记不需要认证的也直接放行 (如分享页)
+    if (to.meta.requiresAuth === false) {
+      next();
+      return;
+    }
+
     // 动态导入 store，确保 pinia 已初始化
     const { useAuthStore } = await import('@/store/modules/auth');
     const { usePermissionStore } = await import('@/store/modules/permission');

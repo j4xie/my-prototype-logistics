@@ -1,0 +1,307 @@
+{
+  "testFile": "C:\\Users\\Steve\\my-prototype-logistics\\smartbi\\Test.xlsx",
+  "startTime": "2026-01-27T15:32:29.936873",
+  "endTime": "2026-01-27T15:32:40.843728",
+  "totalTimeMs": 10906,
+  "totalSheets": 5,
+  "successCount": 0,
+  "errorCount": 5,
+  "cacheHitCount": 0,
+  "sheets": [
+    {
+      "sheetIndex": 0,
+      "sheetName": "索引",
+      "totalTimeMs": 1779,
+      "fromCache": false,
+      "success": false,
+      "error": "ContextExtractor.extract() missing 2 required positional arguments: 'data_end_row' and 'total_rows'",
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 1,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "77d9dc0fae5215597769f51498b26bfc"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 1773,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 26,
+            "cols": 4
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 24,
+            "cols": 4
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 3,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 0
+          }
+        }
+      ]
+    },
+    {
+      "sheetIndex": 1,
+      "sheetName": "收入及净利简表",
+      "totalTimeMs": 1971,
+      "fromCache": false,
+      "success": false,
+      "error": "ContextExtractor.extract() missing 2 required positional arguments: 'data_end_row' and 'total_rows'",
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 1,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "0683964ebb7a25db83768949a0e3c811"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 1938,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 24,
+            "cols": 44
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 21,
+            "cols": 44
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 29,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 1
+          }
+        }
+      ]
+    },
+    {
+      "sheetIndex": 2,
+      "sheetName": "2025年销售1中心利润表",
+      "totalTimeMs": 2302,
+      "fromCache": false,
+      "success": false,
+      "error": "ContextExtractor.extract() missing 2 required positional arguments: 'data_end_row' and 'total_rows'",
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 1,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "c88fb61c163c1d0c5bd837fbb5ca76b3"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 2274,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 270,
+            "cols": 59
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 4,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 265,
+            "cols": 59
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 19,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 1
+          }
+        }
+      ]
+    },
+    {
+      "sheetIndex": 3,
+      "sheetName": "2025年中心利润表 ",
+      "totalTimeMs": 2534,
+      "fromCache": false,
+      "success": false,
+      "error": "ContextExtractor.extract() missing 2 required positional arguments: 'data_end_row' and 'total_rows'",
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 2,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "8415ef82837b6a58ae256ef2d598013c"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 2445,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 284,
+            "cols": 118
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 8,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 279,
+            "cols": 118
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 78,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 1
+          }
+        }
+      ]
+    },
+    {
+      "sheetIndex": 4,
+      "sheetName": "2025年江苏分部利润表",
+      "totalTimeMs": 2314,
+      "fromCache": false,
+      "success": false,
+      "error": "ContextExtractor.extract() missing 2 required positional arguments: 'data_end_row' and 'total_rows'",
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 1,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "004727e728c3ac06ea78b7eac4dc8d52"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 2258,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 286,
+            "cols": 117
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 5,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 281,
+            "cols": 117
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 47,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 1
+          }
+        }
+      ]
+    }
+  ],
+  "phaseSummary": {
+    "cache_check": {
+      "count": 5,
+      "total_ms": 6,
+      "avg_ms": 1.2,
+      "min_ms": 1,
+      "max_ms": 2
+    },
+    "raw_export": {
+      "count": 5,
+      "total_ms": 10688,
+      "avg_ms": 2137.6,
+      "min_ms": 1773,
+      "max_ms": 2445
+    },
+    "build_dataframe": {
+      "count": 5,
+      "total_ms": 17,
+      "avg_ms": 3.4,
+      "min_ms": 0,
+      "max_ms": 8
+    },
+    "data_cleaning": {
+      "count": 5,
+      "total_ms": 176,
+      "avg_ms": 35.2,
+      "min_ms": 3,
+      "max_ms": 78
+    }
+  }
+}

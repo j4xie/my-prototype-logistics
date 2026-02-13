@@ -1,0 +1,819 @@
+{
+  "timestamp": "2026-02-10T19:47:21.308770",
+  "test": "v5_round71_process_control_monitoring",
+  "total": 50,
+  "pass": 43,
+  "fail": 7,
+  "error": 0,
+  "pass_rate": 86.0,
+  "category_breakdown": {
+    "spc": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "parameter_monitor": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "deviation": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "sampling": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "in_process": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "yield_rate": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "rework": {
+      "pass": 3,
+      "fail": 2,
+      "error": 0
+    },
+    "changeover": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "cip": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "NONE": 30,
+    "PHRASE_MATCH": 12,
+    "CLASSIFIER": 7,
+    "SEMANTIC": 1
+  },
+  "results": [
+    {
+      "query": "SPC控制图分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "spc",
+      "method": null,
+      "latency_ms": 633
+    },
+    {
+      "query": "过程能力分析报告",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "spc",
+      "method": null,
+      "latency_ms": 705
+    },
+    {
+      "query": "控制限怎么设定",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "spc",
+      "method": null,
+      "latency_ms": 667
+    },
+    {
+      "query": "Cpk值是多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "spc",
+      "method": null,
+      "latency_ms": 1004
+    },
+    {
+      "query": "过程稳定性评估",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "spc",
+      "method": null,
+      "latency_ms": 634
+    },
+    {
+      "query": "控制图出现异常点",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "spc",
+      "method": null,
+      "latency_ms": 694
+    },
+    {
+      "query": "工艺参数查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "PROCESSING_BATCH_DETAIL",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "parameter_monitor",
+      "method": null,
+      "latency_ms": 626
+    },
+    {
+      "query": "温度监控数据",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.98,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "parameter_monitor",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 511
+    },
+    {
+      "query": "当前压力值多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "COLD_CHAIN_TEMPERATURE",
+        "PROCESSING_BATCH_DETAIL",
+        null
+      ],
+      "category": "parameter_monitor",
+      "method": null,
+      "latency_ms": 944
+    },
+    {
+      "query": "转速设定值",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "PROCESSING_BATCH_DETAIL",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "parameter_monitor",
+      "method": null,
+      "latency_ms": 646
+    },
+    {
+      "query": "流量监控异常",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "parameter_monitor",
+      "method": null,
+      "latency_ms": 662
+    },
+    {
+      "query": "参数报警记录",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "parameter_monitor",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 480
+    },
+    {
+      "query": "偏差处理流程",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        "QUALITY_DISPOSITION_EXECUTE",
+        null
+      ],
+      "category": "deviation",
+      "method": null,
+      "latency_ms": 901
+    },
+    {
+      "query": "工艺偏差记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_DIAGNOSE",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "deviation",
+      "method": null,
+      "latency_ms": 1721
+    },
+    {
+      "query": "参数超标了怎么办",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        "QUALITY_DISPOSITION_EXECUTE",
+        null
+      ],
+      "category": "deviation",
+      "method": null,
+      "latency_ms": 636
+    },
+    {
+      "query": "异常波动分析",
+      "status": "FAIL",
+      "intent": "REPORT_ANOMALY",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "REPORT_TRENDS",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "deviation",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 487
+    },
+    {
+      "query": "过程偏移趋势",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.9013558626174927,
+      "expected": [
+        "REPORT_TRENDS",
+        "ALERT_LIST",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "deviation",
+      "method": "CLASSIFIER",
+      "latency_ms": 657
+    },
+    {
+      "query": "取样检测结果",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.6471161246299744,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "sampling",
+      "method": "CLASSIFIER",
+      "latency_ms": 1398
+    },
+    {
+      "query": "抽检计划安排",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.7667575478553772,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "PLAN_UPDATE",
+        null
+      ],
+      "category": "sampling",
+      "method": "CLASSIFIER",
+      "latency_ms": 653
+    },
+    {
+      "query": "采样频次设置",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "PLAN_UPDATE",
+        null
+      ],
+      "category": "sampling",
+      "method": null,
+      "latency_ms": 658
+    },
+    {
+      "query": "样品编号查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "sampling",
+      "method": null,
+      "latency_ms": 636
+    },
+    {
+      "query": "取样记录查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "sampling",
+      "method": null,
+      "latency_ms": 753
+    },
+    {
+      "query": "抽样方案制定",
+      "status": "FAIL",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.5321332216262817,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "PLAN_UPDATE",
+        null
+      ],
+      "category": "sampling",
+      "method": "CLASSIFIER",
+      "latency_ms": 669
+    },
+    {
+      "query": "在制品检查结果",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_QUERY",
+        "PROCESSING_BATCH_DETAIL",
+        null
+      ],
+      "category": "in_process",
+      "method": null,
+      "latency_ms": 641
+    },
+    {
+      "query": "过程检验记录",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "in_process",
+      "method": "SEMANTIC",
+      "latency_ms": 615
+    },
+    {
+      "query": "中间检查合格吗",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.6245973110198975,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "PROCESSING_BATCH_DETAIL",
+        null
+      ],
+      "category": "in_process",
+      "method": "CLASSIFIER",
+      "latency_ms": 652
+    },
+    {
+      "query": "半成品质检报告",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "in_process",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 462
+    },
+    {
+      "query": "工序检验数据",
+      "status": "FAIL",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "in_process",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 479
+    },
+    {
+      "query": "良率统计报告",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "yield_rate",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 479
+    },
+    {
+      "query": "今天合格率多少",
+      "status": "FAIL",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "yield_rate",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "一次合格率趋势",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "yield_rate",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 498
+    },
+    {
+      "query": "直通率下降了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_PRODUCTION",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "yield_rate",
+      "method": null,
+      "latency_ms": 654
+    },
+    {
+      "query": "成品率分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "yield_rate",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "产出率对比",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "QUALITY_STATS",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "yield_rate",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 503
+    },
+    {
+      "query": "返工处理单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "PROCESSING_BATCH_CREATE",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "rework",
+      "method": null,
+      "latency_ms": 661
+    },
+    {
+      "query": "返修记录查看",
+      "status": "FAIL",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.6238126754760742,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "PROCESSING_BATCH_LIST",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "rework",
+      "method": "CLASSIFIER",
+      "latency_ms": 623
+    },
+    {
+      "query": "重新加工批次",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_BATCH_CREATE",
+        "PROCESSING_BATCH_LIST",
+        "QUALITY_DISPOSITION_EXECUTE",
+        null
+      ],
+      "category": "rework",
+      "method": null,
+      "latency_ms": 692
+    },
+    {
+      "query": "二次检验结果",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_DISPOSITION_EXECUTE",
+        null
+      ],
+      "category": "rework",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 477
+    },
+    {
+      "query": "返工批次追踪",
+      "status": "FAIL",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "PROCESSING_BATCH_CREATE",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "rework",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 473
+    },
+    {
+      "query": "换线准备工作",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_BATCH_CREATE",
+        "PROCESSING_BATCH_LIST",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "changeover",
+      "method": null,
+      "latency_ms": 677
+    },
+    {
+      "query": "换型时间记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_CREATE",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "changeover",
+      "method": null,
+      "latency_ms": 683
+    },
+    {
+      "query": "清线检查确认",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "PROCESSING_BATCH_CREATE",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "changeover",
+      "method": null,
+      "latency_ms": 672
+    },
+    {
+      "query": "首件确认结果",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "PROCESSING_BATCH_CREATE",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "changeover",
+      "method": null,
+      "latency_ms": 631
+    },
+    {
+      "query": "产品切换安排",
+      "status": "FAIL",
+      "intent": "PRODUCT_UPDATE",
+      "confidence": 0.8693404793739319,
+      "expected": [
+        "PROCESSING_BATCH_CREATE",
+        "PROCESSING_BATCH_LIST",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "changeover",
+      "method": "CLASSIFIER",
+      "latency_ms": 1390
+    },
+    {
+      "query": "换模记录查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_CREATE",
+        null
+      ],
+      "category": "changeover",
+      "method": null,
+      "latency_ms": 675
+    },
+    {
+      "query": "CIP清洗记录",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "cip",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 483
+    },
+    {
+      "query": "在线清洗状态",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "QUALITY_CHECK_QUERY",
+        "PROCESSING_BATCH_DETAIL",
+        null
+      ],
+      "category": "cip",
+      "method": null,
+      "latency_ms": 609
+    },
+    {
+      "query": "清洗验证报告",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "cip",
+      "method": null,
+      "latency_ms": 662
+    },
+    {
+      "query": "消毒记录查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "PROCESSING_BATCH_DETAIL",
+        null
+      ],
+      "category": "cip",
+      "method": null,
+      "latency_ms": 640
+    },
+    {
+      "query": "清洁确认完成",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "EQUIPMENT_MAINTENANCE",
+        "PROCESSING_BATCH_DETAIL",
+        null
+      ],
+      "category": "cip",
+      "method": null,
+      "latency_ms": 665
+    }
+  ]
+}

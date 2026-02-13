@@ -95,4 +95,10 @@ public interface SmartBiPgExcelUploadRepository extends JpaRepository<SmartBiPgE
     int deleteOldUploads(
             @Param("factoryId") String factoryId,
             @Param("before") LocalDateTime before);
+
+    /**
+     * Find auto-sync uploads by factory, table type, and sheet name (P1-4 idempotency)
+     */
+    List<SmartBiPgExcelUpload> findByFactoryIdAndDetectedTableTypeAndSheetName(
+            String factoryId, String detectedTableType, String sheetName);
 }

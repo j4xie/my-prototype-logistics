@@ -1,0 +1,755 @@
+{
+  "timestamp": "2026-02-10T18:30:53.751628",
+  "test": "v5_round39_permission_access_admin",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "user_management": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "role_permission": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "factory_config": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "notification_config": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "data_security": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "system_monitoring": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "audit_trail": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "integration": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "maintenance": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "CLASSIFIER": 17,
+    "PHRASE_MATCH": 6,
+    "NONE": 26,
+    "SEMANTIC": 1
+  },
+  "results": [
+    {
+      "query": "添加新用户",
+      "status": "PASS",
+      "intent": "USER_CREATE",
+      "confidence": 0.8748622536659241,
+      "expected": [
+        "USER_CREATE",
+        null
+      ],
+      "category": "user_management",
+      "method": "CLASSIFIER",
+      "latency_ms": 603
+    },
+    {
+      "query": "禁用账号",
+      "status": "PASS",
+      "intent": "USER_DISABLE",
+      "confidence": 0.78560471534729,
+      "expected": [
+        "USER_DISABLE",
+        "USER_LIST",
+        null
+      ],
+      "category": "user_management",
+      "method": "CLASSIFIER",
+      "latency_ms": 621
+    },
+    {
+      "query": "重置密码",
+      "status": "PASS",
+      "intent": "CONFIG_RESET",
+      "confidence": 0.98,
+      "expected": [
+        "USER_CREATE",
+        "CONFIG_RESET",
+        null
+      ],
+      "category": "user_management",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 434
+    },
+    {
+      "query": "修改用户角色",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "USER_ROLE_ASSIGN",
+        "USER_CREATE",
+        null
+      ],
+      "category": "user_management",
+      "method": null,
+      "latency_ms": 650
+    },
+    {
+      "query": "查看用户列表",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "USER_LIST",
+        null
+      ],
+      "category": "user_management",
+      "method": null,
+      "latency_ms": 620
+    },
+    {
+      "query": "用户权限分配",
+      "status": "PASS",
+      "intent": "USER_ROLE_ASSIGN",
+      "confidence": 0.9091070294380188,
+      "expected": [
+        "USER_ROLE_ASSIGN",
+        "USER_CREATE",
+        null
+      ],
+      "category": "user_management",
+      "method": "CLASSIFIER",
+      "latency_ms": 605
+    },
+    {
+      "query": "创建新角色",
+      "status": "PASS",
+      "intent": "USER_ROLE_ASSIGN",
+      "confidence": 0.5725197196006775,
+      "expected": [
+        "USER_ROLE_ASSIGN",
+        "USER_CREATE",
+        null
+      ],
+      "category": "role_permission",
+      "method": "CLASSIFIER",
+      "latency_ms": 588
+    },
+    {
+      "query": "角色权限设置",
+      "status": "PASS",
+      "intent": "USER_ROLE_ASSIGN",
+      "confidence": 0.9069121479988098,
+      "expected": [
+        "USER_ROLE_ASSIGN",
+        "FACTORY_SETTINGS",
+        null
+      ],
+      "category": "role_permission",
+      "method": "CLASSIFIER",
+      "latency_ms": 612
+    },
+    {
+      "query": "谁有审批权限",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "USER_LIST",
+        "USER_ROLE_ASSIGN",
+        null
+      ],
+      "category": "role_permission",
+      "method": null,
+      "latency_ms": 643
+    },
+    {
+      "query": "哪些人能看财务数据",
+      "status": "PASS",
+      "intent": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "expected": [
+        "USER_LIST",
+        "USER_ROLE_ASSIGN",
+        "REPORT_FINANCE",
+        null
+      ],
+      "category": "role_permission",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "权限不够",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "USER_ROLE_ASSIGN",
+        null
+      ],
+      "category": "role_permission",
+      "method": null,
+      "latency_ms": 673
+    },
+    {
+      "query": "申请权限",
+      "status": "PASS",
+      "intent": "USER_ROLE_ASSIGN",
+      "confidence": 0.744616687297821,
+      "expected": [
+        "USER_ROLE_ASSIGN",
+        null
+      ],
+      "category": "role_permission",
+      "method": "CLASSIFIER",
+      "latency_ms": 618
+    },
+    {
+      "query": "工厂基本信息",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FACTORY_SETTINGS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "factory_config",
+      "method": null,
+      "latency_ms": 706
+    },
+    {
+      "query": "修改工厂设置",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FACTORY_SETTINGS",
+        null
+      ],
+      "category": "factory_config",
+      "method": null,
+      "latency_ms": 601
+    },
+    {
+      "query": "产线配置",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FACTORY_SETTINGS",
+        "RULE_CONFIG",
+        null
+      ],
+      "category": "factory_config",
+      "method": null,
+      "latency_ms": 677
+    },
+    {
+      "query": "车间管理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FACTORY_SETTINGS",
+        null
+      ],
+      "category": "factory_config",
+      "method": null,
+      "latency_ms": 628
+    },
+    {
+      "query": "部门设置",
+      "status": "PASS",
+      "intent": "ATTENDANCE_DEPARTMENT",
+      "confidence": 0.6712108850479126,
+      "expected": [
+        "FACTORY_SETTINGS",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "factory_config",
+      "method": "CLASSIFIER",
+      "latency_ms": 615
+    },
+    {
+      "query": "班组配置",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FACTORY_SETTINGS",
+        "RULE_CONFIG",
+        null
+      ],
+      "category": "factory_config",
+      "method": null,
+      "latency_ms": 661
+    },
+    {
+      "query": "告警通知设置",
+      "status": "PASS",
+      "intent": "FACTORY_NOTIFICATION_CONFIG",
+      "confidence": 0.9035228490829468,
+      "expected": [
+        "FACTORY_NOTIFICATION_CONFIG",
+        "FACTORY_SETTINGS",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "notification_config",
+      "method": "CLASSIFIER",
+      "latency_ms": 601
+    },
+    {
+      "query": "消息推送配置",
+      "status": "PASS",
+      "intent": "FACTORY_NOTIFICATION_CONFIG",
+      "confidence": 0.8379900455474854,
+      "expected": [
+        "FACTORY_NOTIFICATION_CONFIG",
+        "FACTORY_SETTINGS",
+        null
+      ],
+      "category": "notification_config",
+      "method": "CLASSIFIER",
+      "latency_ms": 594
+    },
+    {
+      "query": "邮件通知开关",
+      "status": "PASS",
+      "intent": "FACTORY_NOTIFICATION_CONFIG",
+      "confidence": 0.8918097019195557,
+      "expected": [
+        "FACTORY_NOTIFICATION_CONFIG",
+        "FACTORY_SETTINGS",
+        null
+      ],
+      "category": "notification_config",
+      "method": "CLASSIFIER",
+      "latency_ms": 813
+    },
+    {
+      "query": "短信通知",
+      "status": "PASS",
+      "intent": "FACTORY_NOTIFICATION_CONFIG",
+      "confidence": 0.9059845805168152,
+      "expected": [
+        "FACTORY_NOTIFICATION_CONFIG",
+        "FACTORY_SETTINGS",
+        null
+      ],
+      "category": "notification_config",
+      "method": "CLASSIFIER",
+      "latency_ms": 627
+    },
+    {
+      "query": "通知接收人设置",
+      "status": "PASS",
+      "intent": "FACTORY_NOTIFICATION_CONFIG",
+      "confidence": 0.8844845294952393,
+      "expected": [
+        "FACTORY_NOTIFICATION_CONFIG",
+        "FACTORY_SETTINGS",
+        "USER_LIST",
+        null
+      ],
+      "category": "notification_config",
+      "method": "CLASSIFIER",
+      "latency_ms": 592
+    },
+    {
+      "query": "数据备份",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "FACTORY_SETTINGS",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "data_security",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 434
+    },
+    {
+      "query": "操作日志",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_TIMELINE",
+      "confidence": 0.8420830965042114,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST",
+        "PROCESSING_BATCH_TIMELINE"
+      ],
+      "category": "data_security",
+      "method": "CLASSIFIER",
+      "latency_ms": 726
+    },
+    {
+      "query": "登录记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "USER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "data_security",
+      "method": null,
+      "latency_ms": 638
+    },
+    {
+      "query": "敏感数据访问",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "USER_ROLE_ASSIGN",
+        "FACTORY_SETTINGS"
+      ],
+      "category": "data_security",
+      "method": null,
+      "latency_ms": 652
+    },
+    {
+      "query": "数据加密",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "FACTORY_SETTINGS",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "data_security",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    },
+    {
+      "query": "系统运行状态",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.684555172920227,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "system_monitoring",
+      "method": "CLASSIFIER",
+      "latency_ms": 618
+    },
+    {
+      "query": "服务器负载",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "system_monitoring",
+      "method": null,
+      "latency_ms": 599
+    },
+    {
+      "query": "接口响应时间",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "system_monitoring",
+      "method": null,
+      "latency_ms": 636
+    },
+    {
+      "query": "数据库连接",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "system_monitoring",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "磁盘空间",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "system_monitoring",
+      "method": null,
+      "latency_ms": 799
+    },
+    {
+      "query": "内存使用",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "system_monitoring",
+      "method": null,
+      "latency_ms": 676
+    },
+    {
+      "query": "操作审计",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST"
+      ],
+      "category": "audit_trail",
+      "method": null,
+      "latency_ms": 606
+    },
+    {
+      "query": "谁修改了这条记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "USER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "audit_trail",
+      "method": null,
+      "latency_ms": 649
+    },
+    {
+      "query": "变更历史",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "audit_trail",
+      "method": null,
+      "latency_ms": 634
+    },
+    {
+      "query": "审批流程记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST"
+      ],
+      "category": "audit_trail",
+      "method": null,
+      "latency_ms": 649
+    },
+    {
+      "query": "数据变更追踪",
+      "status": "PASS",
+      "intent": "TRACE_PUBLIC",
+      "confidence": 0.6316832304000854,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW",
+        "TRACE_PUBLIC"
+      ],
+      "category": "audit_trail",
+      "method": "CLASSIFIER",
+      "latency_ms": 610
+    },
+    {
+      "query": "异常操作记录",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.93,
+      "expected": [
+        null,
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "audit_trail",
+      "method": "SEMANTIC",
+      "latency_ms": 601
+    },
+    {
+      "query": "第三方对接状态",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "integration",
+      "method": null,
+      "latency_ms": 650
+    },
+    {
+      "query": "API调用统计",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "integration",
+      "method": null,
+      "latency_ms": 666
+    },
+    {
+      "query": "数据同步状态",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "integration",
+      "method": null,
+      "latency_ms": 616
+    },
+    {
+      "query": "外部系统连接",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "integration",
+      "method": null,
+      "latency_ms": 675
+    },
+    {
+      "query": "接口调用失败",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "integration",
+      "method": null,
+      "latency_ms": 610
+    },
+    {
+      "query": "系统维护",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.9267923831939697,
+      "expected": [
+        null,
+        "FACTORY_SETTINGS",
+        "EQUIPMENT_MAINTENANCE"
+      ],
+      "category": "maintenance",
+      "method": "CLASSIFIER",
+      "latency_ms": 590
+    },
+    {
+      "query": "清理缓存",
+      "status": "PASS",
+      "intent": "INVENTORY_CLEAR",
+      "confidence": 0.7910030484199524,
+      "expected": [
+        null,
+        "CONFIG_RESET",
+        "INVENTORY_CLEAR"
+      ],
+      "category": "maintenance",
+      "method": "CLASSIFIER",
+      "latency_ms": 598
+    },
+    {
+      "query": "重启服务",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "maintenance",
+      "method": null,
+      "latency_ms": 638
+    },
+    {
+      "query": "更新版本",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "FACTORY_SETTINGS"
+      ],
+      "category": "maintenance",
+      "method": null,
+      "latency_ms": 632
+    },
+    {
+      "query": "数据库优化",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "DATA_BATCH_DELETE",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "maintenance",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 429
+    }
+  ]
+}

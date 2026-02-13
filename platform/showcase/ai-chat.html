@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI智能对话 | 白垩纪AI</title>
+    <meta name="description" content="体验白垩纪AI食品安全知识库与智能意图识别系统">
+    <link rel="canonical" href="https://cretaceousfuture.com/ai-chat.html">
+
+    <style>
+        /* ===== CSS Variables (matching showcase design language) ===== */
+        :root {
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            --font-mono: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace;
+
+            --bg-base: #FAFAF8;
+            --bg-surface: #FFFFFF;
+            --bg-warm: #F5F3EF;
+            --bg-muted: #EDEBE7;
+
+            --text-primary: #1A1A1A;
+            --text-secondary: #5C5C5C;
+            --text-tertiary: #8A8A8A;
+
+            --accent: #C45C26;
+            --accent-hover: #A84D1F;
+            --accent-light: #FDF8F5;
+            --accent-glow: rgba(196, 92, 38, 0.15);
+
+            --success: #2D6A4F;
+            --warning: #D4A574;
+            --error: #BC4749;
+
+            --border-subtle: rgba(0, 0, 0, 0.06);
+            --border-medium: rgba(0, 0, 0, 0.1);
+
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+            --chat-ai-bg: #F8F6F3;
+            --chat-user-bg: var(--accent);
+            --chat-user-text: #FFFFFF;
+            --chat-radius: 16px;
+
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* ===== Reset & Base ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-base);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Film grain overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            opacity: 0.025;
+            pointer-events: none;
+            z-index: 9999;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        /* ===== Navigation ===== */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            background: rgba(250, 250, 248, 0.9);
+            border-bottom: 1px solid var(--border-subtle);
+            height: 64px;
+        }
+
+        .nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .nav-brand svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .nav-brand span {
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.12em;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+            background: var(--bg-warm);
+        }
+
+        .nav-link.active {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            transition: all 0.2s;
+        }
+
+        .btn-back:hover {
+            color: var(--text-primary);
+            border-color: var(--border-medium);
+            background: var(--bg-surface);
+        }
+
+        /* ===== Main Layout ===== */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 860px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 88px 20px 24px;
+        }
+
+        /* ===== Page Header ===== */
+        .page-header {
+            text-align: center;
+            padding: 24px 0 16px;
+        }
+
+        .page-header .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: rgba(196, 92, 38, 0.08);
+            padding: 4px 14px;
+            border-radius: 100px;
+            margin-bottom: 12px;
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+        }
+
+        .page-header p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* ===== Chat Container ===== */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            min-height: 420px;
+            max-height: calc(100vh - 320px);
+        }
+
+        /* ===== Message Area ===== */
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        .messages::-webkit-scrollbar { width: 5px; }
+        .messages::-webkit-scrollbar-track { background: transparent; }
+        .messages::-webkit-scrollbar-thumb { background: var(--bg-muted); border-radius: 10px; }
+
+        /* ===== Message Bubbles ===== */
+        .msg {
+            display: flex;
+            gap: 10px;
+            max-width: 88%;
+            animation: msgIn 0.3s var(--ease-out);
+        }
+
+        @keyframes msgIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg.ai { align-self: flex-start; }
+        .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+
+        .msg-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .msg.ai .msg-avatar {
+            background: linear-gradient(135deg, var(--accent-light), rgba(196, 92, 38, 0.12));
+        }
+
+        .msg.user .msg-avatar {
+            background: var(--accent);
+            color: white;
+            font-size: 14px;
+        }
+
+        .msg-body {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .msg-bubble {
+            padding: 12px 16px;
+            border-radius: var(--chat-radius);
+            font-size: 14.5px;
+            line-height: 1.65;
+            word-break: break-word;
+        }
+
+        .msg.ai .msg-bubble {
+            background: var(--chat-ai-bg);
+            border-top-left-radius: 4px;
+            color: var(--text-primary);
+        }
+
+        .msg.user .msg-bubble {
+            background: var(--chat-user-bg);
+            border-top-right-radius: 4px;
+            color: var(--chat-user-text);
+        }
+
+        /* Markdown styles inside AI bubble */
+        .msg.ai .msg-bubble strong { font-weight: 600; }
+        .msg.ai .msg-bubble em { font-style: italic; color: var(--text-secondary); }
+
+        .msg.ai .msg-bubble code {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            background: rgba(0,0,0,0.05);
+            padding: 1px 5px;
+            border-radius: 4px;
+        }
+
+        .msg.ai .msg-bubble pre {
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 12px 14px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 8px 0;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .msg.ai .msg-bubble pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .msg.ai .msg-bubble ul, .msg.ai .msg-bubble ol {
+            margin: 6px 0;
+            padding-left: 20px;
+        }
+
+        .msg.ai .msg-bubble li { margin: 3px 0; }
+
+        .msg.ai .msg-bubble blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 12px;
+            margin: 6px 0;
+            color: var(--text-secondary);
+        }
+
+        .msg.ai .msg-bubble h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin: 10px 0 4px;
+        }
+
+        .msg.ai .msg-bubble h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 8px 0 2px;
+        }
+
+        .msg.ai .msg-bubble table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+
+        .msg.ai .msg-bubble th, .msg.ai .msg-bubble td {
+            border: 1px solid var(--border-subtle);
+            padding: 6px 10px;
+            text-align: left;
+        }
+
+        .msg.ai .msg-bubble th {
+            background: var(--bg-warm);
+            font-weight: 600;
+        }
+
+        /* ===== Intent Meta (below AI bubble) ===== */
+        .msg-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            padding: 0 4px;
+        }
+
+        .intent-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11.5px;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 100px;
+            background: rgba(196, 92, 38, 0.08);
+            color: var(--accent);
+        }
+
+        .match-tag {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            font-family: var(--font-mono);
+        }
+
+        .confidence-bar {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        .confidence-bar .bar {
+            width: 48px;
+            height: 4px;
+            background: var(--bg-muted);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .confidence-bar .bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s var(--ease-out);
+        }
+
+        .confidence-high .bar-fill { background: var(--success); }
+        .confidence-medium .bar-fill { background: var(--warning); }
+        .confidence-low .bar-fill { background: var(--error); }
+
+        /* ===== Citation Block ===== */
+        .citations {
+            margin-top: 4px;
+            padding: 8px 12px;
+            background: rgba(45, 106, 79, 0.04);
+            border-radius: 10px;
+            border: 1px solid rgba(45, 106, 79, 0.1);
+        }
+
+        .citations-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--success);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .citation-item {
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            padding: 2px 0;
+            line-height: 1.5;
+        }
+
+        /* ===== Permission Denial ===== */
+        .permission-notice {
+            margin-top: 4px;
+            padding: 10px 14px;
+            background: rgba(188, 71, 73, 0.05);
+            border: 1px solid rgba(188, 71, 73, 0.12);
+            border-radius: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .permission-notice .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+        /* ===== Clarification ===== */
+        .clarification {
+            margin-top: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .clarification-btn {
+            display: inline-block;
+            padding: 6px 14px;
+            font-size: 13px;
+            color: var(--accent);
+            background: var(--accent-light);
+            border: 1px solid rgba(196, 92, 38, 0.15);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .clarification-btn:hover {
+            background: rgba(196, 92, 38, 0.12);
+            border-color: rgba(196, 92, 38, 0.25);
+        }
+
+        /* ===== Feedback Buttons ===== */
+        .feedback {
+            display: flex;
+            gap: 4px;
+            margin-top: 2px;
+        }
+
+        .feedback-btn {
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            opacity: 0.4;
+            transition: all 0.2s;
+        }
+
+        .feedback-btn:hover { opacity: 0.8; background: var(--bg-warm); }
+        .feedback-btn.active { opacity: 1; }
+        .feedback-btn.active.up { background: rgba(45, 106, 79, 0.1); }
+        .feedback-btn.active.down { background: rgba(188, 71, 73, 0.1); }
+
+        /* ===== Typing Indicator ===== */
+        .typing {
+            display: none;
+            align-self: flex-start;
+            padding: 0 4px;
+        }
+
+        .typing.show { display: flex; }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            padding: 14px 18px;
+            background: var(--chat-ai-bg);
+            border-radius: var(--chat-radius);
+            border-top-left-radius: 4px;
+        }
+
+        .typing-dot {
+            width: 7px;
+            height: 7px;
+            background: var(--text-tertiary);
+            border-radius: 50%;
+            animation: typingBounce 1.2s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-6px); opacity: 1; }
+        }
+
+        /* ===== Suggested Questions ===== */
+        .suggestions {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border-subtle);
+            background: var(--bg-base);
+        }
+
+        .suggestions-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+            overflow-x: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .suggestions-tabs::-webkit-scrollbar { display: none; }
+
+        .tab-btn {
+            padding: 5px 14px;
+            font-size: 12.5px;
+            font-weight: 500;
+            border: 1px solid var(--border-subtle);
+            border-radius: 100px;
+            background: var(--bg-surface);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .tab-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .suggestion-group { display: none; }
+        .suggestion-group.active { display: flex; flex-wrap: wrap; gap: 6px; }
+
+        .suggest-btn {
+            padding: 6px 14px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .suggest-btn:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        /* ===== Input Area ===== */
+        .input-area {
+            padding: 14px 20px 16px;
+            border-top: 1px solid var(--border-subtle);
+            background: var(--bg-surface);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        #chatInput {
+            width: 100%;
+            min-height: 42px;
+            max-height: 120px;
+            padding: 10px 16px;
+            font-size: 14.5px;
+            font-family: inherit;
+            line-height: 1.5;
+            border: 1px solid var(--border-medium);
+            border-radius: 14px;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        #chatInput:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        #chatInput::placeholder { color: var(--text-tertiary); }
+
+        .send-btn {
+            width: 42px;
+            height: 42px;
+            border: none;
+            border-radius: 12px;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .send-btn:active { transform: translateY(0); }
+        .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .send-btn.stop-mode { background: var(--error); }
+        .send-btn.stop-mode:hover { background: #a03e40; }
+
+        .send-btn svg { width: 18px; height: 18px; }
+
+        /* Typewriter cursor blink */
+        .typewriter-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1em;
+            background: var(--accent);
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 0.8s step-end infinite;
+        }
+
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* ===== Footer ===== */
+        .footer {
+            text-align: center;
+            padding: 16px 20px 20px;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            line-height: 1.6;
+        }
+
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .footer a:hover { text-decoration: underline; }
+
+        .footer .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+            padding: 3px 10px;
+            background: rgba(45, 106, 79, 0.06);
+            border-radius: 100px;
+            color: var(--success);
+            font-size: 11px;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 640px) {
+            .nav-links { display: none; }
+
+            .main { padding: 72px 12px 16px; }
+
+            .page-header { padding: 16px 0 10px; }
+            .page-header h1 { font-size: 22px; }
+            .page-header p { font-size: 13.5px; }
+
+            .chat-container {
+                border-radius: 16px;
+                max-height: calc(100vh - 260px);
+            }
+
+            .messages { padding: 14px; gap: 12px; }
+            .msg { max-width: 94%; }
+            .msg-avatar { width: 28px; height: 28px; font-size: 14px; }
+            .msg-bubble { padding: 10px 14px; font-size: 14px; }
+
+            .suggestions { padding: 10px 14px; }
+            .input-area { padding: 10px 14px 14px; }
+
+            #chatInput { font-size: 16px; /* prevents iOS zoom */ }
+
+            .msg-meta { gap: 6px; }
+            .intent-tag { font-size: 11px; padding: 2px 8px; }
+        }
+
+        /* ===== Animations ===== */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav">
+    <div class="nav-inner">
+        <a href="/" class="nav-brand">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="32" height="32" rx="8" fill="#C45C26"/>
+                <path d="M8 16C8 11.6 11.6 8 16 8C20.4 8 24 11.6 24 16" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="16" cy="16" r="3" fill="white"/>
+                <path d="M16 19V24" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <span>CRETACEOUS</span>
+        </a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">官网首页</a>
+            <a href="/ai-bi.html" class="nav-link">智能分析</a>
+            <a href="/ai-chat.html" class="nav-link active">AI对话</a>
+            <a href="/" class="btn-back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                返回官网
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main">
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="eyebrow">AI Demo</div>
+        <h1>食品安全 AI 智能助手</h1>
+        <p>体验食品知识库查询、生产数据分析与智能意图识别</p>
+    </div>
+
+    <!-- Chat Container -->
+    <div class="chat-container">
+
+        <!-- Messages -->
+        <div class="messages" id="messages">
+            <!-- Welcome message inserted by JS -->
+        </div>
+
+        <!-- Typing indicator -->
+        <div class="typing" id="typing">
+            <div style="width:32px"></div>
+            <div class="typing-dots">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+            </div>
+        </div>
+
+        <!-- Suggested Questions -->
+        <div class="suggestions" id="suggestions">
+            <div class="suggestions-tabs">
+                <button class="tab-btn active" data-tab="food" onclick="switchTab('food')">食品安全知识</button>
+                <button class="tab-btn" data-tab="factory" onclick="switchTab('factory')">工厂数据查询</button>
+                <button class="tab-btn" data-tab="ai" onclick="switchTab('ai')">AI能力展示</button>
+            </div>
+            <div class="suggestion-group active" id="tab-food">
+                <button class="suggest-btn" onclick="sendSuggestion(this)">HACCP体系关键控制点有哪些？</button>
+                <button class="suggest-btn" onclick="sendSuggestion(this)">黄曲霉毒素B1在花生中的限量标准</button>
+                <button class="suggest-btn" onclick="sendSuggestion(this)">巴氏杀菌的温度和时间要求</button>
+                <button class="suggest-btn" onclick="sendSuggestion(this)">食品添加剂使用的通则规定</button>
+            </div>
+            <div class="suggestion-group" id="tab-factory">
+                <button class="suggest-btn" onclick="sendSuggestion(this)">今天的生产批次有多少？</button>
+                <button class="suggest-btn" onclick="sendSuggestion(this)">最近的质量检测合格率</button>
+                <button class="suggest-btn" onclick="sendSuggestion(this)">原材料库存预警情况</button>
+                <button class="suggest-btn" onclick="sendSuggestion(this)">本月设备维护记录</button>
+            </div>
+            <div class="suggestion-group" id="tab-ai">
+                <button class="suggest-btn" onclick="sendSuggestion(this)">帮我分析一下生产效率趋势</button>
+                <button class="suggest-btn" onclick="sendSuggestion(this)">冷链温度是否正常？</button>
+                <button class="suggest-btn" onclick="sendSuggestion(this)">对比不同产品线的成本结构</button>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-row">
+                <div class="input-wrapper">
+                    <textarea id="chatInput" rows="1" placeholder="输入您的问题..." onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+                </div>
+                <button class="send-btn" id="sendBtn" title="发送">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div>演示使用 F001 工厂模拟数据 &middot; 仅支持查询类操作 &middot; 会话刷新后重置</div>
+        <div class="security-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            数据安全保障 &middot; 不存储对话记录
+        </div>
+    </div>
+
+</main>
+
+<script>
+(function() {
+    'use strict';
+
+    // ===== Configuration =====
+    var API_BASE = ''; // same-origin, nginx proxies /api/public/ -> Java backend
+    var sessionId = null;
+    var isProcessing = false;
+    var msgCounter = 0;
+
+    // Abort / streaming state
+    var currentAbort = null;
+    var typewriterTimer = null;
+    var wasAborted = false;
+
+    var messagesEl = document.getElementById('messages');
+    var typingEl = document.getElementById('typing');
+    var inputEl = document.getElementById('chatInput');
+    var sendBtn = document.getElementById('sendBtn');
+
+    // SVG icons for send / stop
+    var SEND_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+    var STOP_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>';
+
+    // ===== Initialize =====
+    addWelcomeMessage();
+
+    // ===== Welcome Message =====
+    function addWelcomeMessage() {
+        var html = '<div class="msg ai">' +
+            '<div class="msg-avatar">🤖</div>' +
+            '<div class="msg-body">' +
+            '<div class="msg-bubble">' +
+            '<strong>你好！我是白垩纪AI智能助手</strong><br><br>' +
+            '我可以帮你：<br>' +
+            '&bull; <strong>食品安全知识</strong> — 查询法规标准、HACCP体系、添加剂规范等<br>' +
+            '&bull; <strong>工厂数据</strong> — 查看生产批次、质检记录、库存预警等<br>' +
+            '&bull; <strong>智能分析</strong> — 生产效率趋势、成本结构对比、温控监测等<br><br>' +
+            '<span style="color:var(--text-tertiary);font-size:13px;">点击下方推荐问题快速开始，或直接输入您的问题</span>' +
+            '</div></div></div>';
+        messagesEl.insertAdjacentHTML('beforeend', html);
+    }
+
+    // ===== Button Mode Toggle =====
+    function setButtonMode(mode) {
+        if (mode === 'stop') {
+            sendBtn.innerHTML = STOP_ICON;
+            sendBtn.classList.add('stop-mode');
+            sendBtn.disabled = false;
+            sendBtn.title = '停止生成';
+        } else {
+            sendBtn.innerHTML = SEND_ICON;
+            sendBtn.classList.remove('stop-mode');
+            sendBtn.disabled = false;
+            sendBtn.title = '发送';
+        }
+    }
+
+    // ===== Tab Switching =====
+    window.switchTab = function(tab) {
+        document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.suggestion-group').forEach(function(g) { g.classList.remove('active'); });
+        document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
+        document.getElementById('tab-' + tab).classList.add('active');
+    };
+
+    // ===== Send Suggestion =====
+    window.sendSuggestion = function(btn) {
+        var text = btn.textContent.trim();
+        inputEl.value = text;
+        handleSend();
+    };
+
+    // ===== Send / Stop Click Handler =====
+    sendBtn.addEventListener('click', function() {
+        if (isProcessing) {
+            handleStop();
+        } else {
+            handleSend();
+        }
+    });
+
+    // ===== Send Handler =====
+    function handleSend() {
+        var text = inputEl.value.trim();
+        if (!text || isProcessing) return;
+
+        addUserMessage(text);
+        inputEl.value = '';
+        inputEl.style.height = 'auto';
+        isProcessing = true;
+        wasAborted = false;
+        setButtonMode('stop');
+        showTyping(true);
+
+        callAPI(text).then(function(response) {
+            showTyping(false);
+            if (!wasAborted) {
+                // addAIMessage starts typewriter — finishProcessing is called
+                // from the typewriter completion callback, NOT here.
+                addAIMessage(response);
+            } else {
+                finishProcessing();
+            }
+        }).catch(function(err) {
+            showTyping(false);
+            if (!wasAborted) {
+                if (err.name === 'AbortError') {
+                    addInterruptedMessage();
+                } else {
+                    addErrorMessage(err.message || '请求失败，请稍后重试');
+                }
+            }
+            // Error path: no typewriter, finish immediately
+            finishProcessing();
+        });
+    }
+    // expose for suggestion buttons
+    window.handleSend = handleSend;
+
+    // ===== Stop / Abort Handler =====
+    function handleStop() {
+        wasAborted = true;
+        // Abort in-flight fetch
+        if (currentAbort) {
+            currentAbort.abort();
+            currentAbort = null;
+        }
+        // Cancel typewriter
+        if (typewriterTimer) {
+            clearTimeout(typewriterTimer);
+            typewriterTimer = null;
+        }
+        // Remove cursor from any active bubble
+        var cursors = document.querySelectorAll('.typewriter-cursor');
+        cursors.forEach(function(c) { c.remove(); });
+
+        showTyping(false);
+        finishProcessing();
+        addInterruptedMessage();
+    }
+
+    function finishProcessing() {
+        isProcessing = false;
+        setButtonMode('send');
+        inputEl.focus();
+    }
+
+    function addInterruptedMessage() {
+        var html = '<div class="msg ai"><div class="msg-avatar">🤖</div><div class="msg-body">' +
+            '<div class="msg-bubble" style="color:var(--text-tertiary);font-style:italic;">' +
+            '已停止生成</div></div></div>';
+        messagesEl.insertAdjacentHTML('beforeend', html);
+        scrollToBottom();
+    }
+
+    // ===== Keyboard Handler =====
+    window.handleKeyDown = function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (isProcessing) {
+                handleStop();
+            } else {
+                handleSend();
+            }
+        }
+    };
+
+    // ===== Auto Resize Textarea =====
+    window.autoResize = function(el) {
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    };
+
+    // ===== API Call =====
+    function callAPI(userInput) {
+        var body = { userInput: userInput };
+        if (sessionId) body.sessionId = sessionId;
+
+        // Create AbortController for this request
+        currentAbort = new AbortController();
+
+        return fetch(API_BASE + '/api/public/ai-demo/execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: currentAbort.signal
+        }).then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+        }).then(function(json) {
+            currentAbort = null;
+            if (!json.success) throw new Error(json.message || '请求失败');
+            var data = json.data;
+            if (data && data.sessionId) sessionId = data.sessionId;
+            return data;
+        });
+    }
+
+    // ===== Add User Message =====
+    function addUserMessage(text) {
+        var html = '<div class="msg user">' +
+            '<div class="msg-avatar">👤</div>' +
+            '<div class="msg-body"><div class="msg-bubble">' + escapeHtml(text) + '</div></div>' +
+            '</div>';
+        messagesEl.insertAdjacentHTML('beforeend', html);
+        scrollToBottom();
+    }
+
+    // ===== Add AI Message (with typewriter streaming) =====
+    function addAIMessage(resp) {
+        if (!resp) { addErrorMessage('未收到响应'); return; }
+
+        var id = 'msg-' + (++msgCounter);
+        var status = resp.status || '';
+        var content = resp.formattedText || resp.message || '无回复内容';
+
+        // Build the message shell (bubble empty, meta below)
+        var html = '<div class="msg ai" id="' + id + '"><div class="msg-avatar">🤖</div><div class="msg-body">';
+        html += '<div class="msg-bubble" id="bubble-' + id + '"></div>';
+
+        // Permission denial notice
+        var metaHtml = '';
+        if (status === 'NO_PERMISSION') {
+            metaHtml += '<div class="permission-notice">' +
+                '<span class="icon">🔒</span>' +
+                '<div>此操作需要登录正式系统使用。当前为演示模式，仅支持查询类操作。' +
+                '<br><a href="/" style="color:var(--accent);font-size:13px;">了解完整系统功能 →</a></div></div>';
+        }
+
+        // Clarification suggestions
+        if (status === 'NEED_MORE_INFO' && resp.clarificationQuestions && resp.clarificationQuestions.length) {
+            metaHtml += '<div class="clarification">';
+            resp.clarificationQuestions.forEach(function(q) {
+                metaHtml += '<button class="clarification-btn" onclick="sendSuggestion(this)">' + escapeHtml(q) + '</button>';
+            });
+            metaHtml += '</div>';
+        }
+
+        // Citations
+        var citations = extractCitations(resp);
+        if (citations.length) {
+            metaHtml += '<div class="citations"><div class="citations-label">' +
+                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>' +
+                ' 参考文档</div>';
+            citations.forEach(function(c) {
+                metaHtml += '<div class="citation-item">' + escapeHtml(c) + '</div>';
+            });
+            metaHtml += '</div>';
+        }
+
+        // Intent meta tags
+        if (resp.intentRecognized && resp.intentName) {
+            metaHtml += '<div class="msg-meta">';
+            var icon = getCategoryIcon(resp.intentCategory);
+            metaHtml += '<span class="intent-tag">' + icon + ' ' + escapeHtml(resp.intentName) + '</span>';
+            if (resp.confidence != null) {
+                var pct = Math.round(resp.confidence * 100);
+                var level = pct >= 80 ? 'high' : (pct >= 60 ? 'medium' : 'low');
+                metaHtml += '<span class="confidence-bar confidence-' + level + '">' +
+                    '<span class="bar"><span class="bar-fill" style="width:' + pct + '%"></span></span>' +
+                    pct + '%</span>';
+            }
+            if (resp.matchMethod) {
+                metaHtml += '<span class="match-tag">' + translateMatchMethod(resp.matchMethod) + '</span>';
+            }
+            metaHtml += '</div>';
+        }
+
+        // Feedback buttons
+        metaHtml += '<div class="feedback" data-id="' + id + '">' +
+            '<button class="feedback-btn up" onclick="handleFeedback(\'' + id + '\',\'up\',this)" title="有帮助">👍</button>' +
+            '<button class="feedback-btn down" onclick="handleFeedback(\'' + id + '\',\'down\',this)" title="需改进">👎</button>' +
+            '</div>';
+
+        // Meta wrapper (hidden until typewriter finishes)
+        html += '<div id="meta-' + id + '" style="display:none">' + metaHtml + '</div>';
+        html += '</div></div>';
+
+        messagesEl.insertAdjacentHTML('beforeend', html);
+        scrollToBottom();
+
+        // Start typewriter effect on the bubble
+        var bubbleEl = document.getElementById('bubble-' + id);
+        var metaEl = document.getElementById('meta-' + id);
+
+        typewriterRender(bubbleEl, content, function() {
+            // Show meta (citations, intent tags, feedback) after typewriter completes
+            metaEl.style.display = '';
+            finishProcessing();
+            scrollToBottom();
+        });
+    }
+
+    // ===== Typewriter Streaming Effect =====
+    function typewriterRender(bubbleEl, rawText, onDone) {
+        // Split into word-level tokens (preserve whitespace structure)
+        var tokens = rawText.match(/\S+|\n/g) || [rawText];
+        var current = '';
+        var idx = 0;
+        // Adaptive speed: shorter texts type faster, longer texts batch more
+        var totalLen = rawText.length;
+        var tokensPerTick = totalLen > 800 ? 4 : (totalLen > 400 ? 3 : 2);
+        var tickMs = 30;
+
+        function tick() {
+            if (wasAborted) {
+                // Render what we have so far, no cursor
+                bubbleEl.innerHTML = renderMarkdown(current);
+                onDone();
+                return;
+            }
+
+            for (var b = 0; b < tokensPerTick && idx < tokens.length; b++) {
+                var tok = tokens[idx++];
+                if (tok === '\n') {
+                    current += '\n';
+                } else {
+                    if (current.length > 0 && !current.endsWith('\n')) current += ' ';
+                    current += tok;
+                }
+            }
+
+            // Render markdown + blinking cursor
+            bubbleEl.innerHTML = renderMarkdown(current) + '<span class="typewriter-cursor"></span>';
+            scrollToBottom();
+
+            if (idx < tokens.length) {
+                typewriterTimer = setTimeout(tick, tickMs);
+            } else {
+                // Done: remove cursor, show final render
+                bubbleEl.innerHTML = renderMarkdown(current);
+                typewriterTimer = null;
+                onDone();
+            }
+        }
+
+        tick();
+    }
+
+    // ===== Add Error Message =====
+    function addErrorMessage(text) {
+        var html = '<div class="msg ai"><div class="msg-avatar">🤖</div><div class="msg-body">' +
+            '<div class="msg-bubble" style="border-left:3px solid var(--error);background:rgba(188,71,73,0.04)">' +
+            '<strong>请求失败</strong><br>' + escapeHtml(text) + '</div></div></div>';
+        messagesEl.insertAdjacentHTML('beforeend', html);
+        scrollToBottom();
+    }
+
+    // ===== Typing Indicator =====
+    function showTyping(show) {
+        typingEl.classList.toggle('show', show);
+        if (show) scrollToBottom();
+    }
+
+    // ===== Scroll to Bottom =====
+    function scrollToBottom() {
+        requestAnimationFrame(function() {
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        });
+    }
+
+    // ===== Feedback Handler =====
+    window.handleFeedback = function(id, type, btn) {
+        var container = btn.parentElement;
+        container.querySelectorAll('.feedback-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+
+        // Store locally
+        try {
+            var fb = JSON.parse(localStorage.getItem('ai-chat-feedback') || '{}');
+            fb[id] = { type: type, time: Date.now() };
+            localStorage.setItem('ai-chat-feedback', JSON.stringify(fb));
+        } catch(e) { /* ignore */ }
+    };
+
+    // ===== Extract Citations =====
+    function extractCitations(resp) {
+        var citations = [];
+        if (!resp.resultData) return citations;
+        var rd = resp.resultData;
+
+        if (rd.citations && Array.isArray(rd.citations)) {
+            rd.citations.forEach(function(c) {
+                citations.push(typeof c === 'string' ? c : (c.title || c.source || JSON.stringify(c)));
+            });
+        }
+        if (rd.sources && Array.isArray(rd.sources)) {
+            rd.sources.forEach(function(s) {
+                citations.push(typeof s === 'string' ? s : (s.title || s.name || ''));
+            });
+        }
+        if (rd.references && Array.isArray(rd.references)) {
+            rd.references.forEach(function(r) {
+                citations.push(typeof r === 'string' ? r : (r.title || r.documentTitle || ''));
+            });
+        }
+        if (rd.documentTitle) citations.push(rd.documentTitle);
+        if (rd.knowledgeBase && rd.knowledgeBase.documents) {
+            rd.knowledgeBase.documents.forEach(function(d) {
+                if (d.title) citations.push(d.title);
+            });
+        }
+        return citations.filter(Boolean);
+    }
+
+    // ===== Category Icon =====
+    function getCategoryIcon(cat) {
+        var icons = {
+            'ANALYSIS': '📊', 'DATA_OP': '📝', 'FORM': '📋',
+            'SCHEDULE': '📅', 'SYSTEM': '⚙️', 'ALERT': '🔔',
+            'FOOD_KNOWLEDGE': '🍃', 'QUERY': '🔍', 'REPORT': '📈'
+        };
+        return icons[cat] || '🔍';
+    }
+
+    // ===== Translate Match Method =====
+    function translateMatchMethod(method) {
+        var map = {
+            'EXACT': '精确匹配', 'PHRASE_MATCH': '短语匹配',
+            'REGEX': '模式匹配', 'KEYWORD': '关键词',
+            'SEMANTIC': '语义路由', 'CLASSIFIER': '分类器',
+            'FUSION': '融合匹配', 'SIMILAR': '相似匹配',
+            'LLM': 'LLM推理', 'NONE': '未匹配'
+        };
+        return map[method] || method;
+    }
+
+    // ===== Escape HTML (XSS prevention) =====
+    function escapeHtml(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    // ===== Lightweight Markdown Renderer =====
+    function renderMarkdown(text) {
+        if (!text) return '';
+
+        // Escape HTML first for safety
+        text = escapeHtml(text);
+
+        // Code blocks (``` ... ```)
+        text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(_, lang, code) {
+            return '<pre><code>' + code.trim() + '</code></pre>';
+        });
+
+        // Inline code
+        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+        // Bold
+        text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+        // Italic
+        text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+        // Headers (### and ####)
+        text = text.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+        text = text.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+
+        // Blockquote
+        text = text.replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+
+        // Horizontal rule
+        text = text.replace(/^---$/gm, '<hr style="border:none;border-top:1px solid var(--border-subtle);margin:8px 0">');
+
+        // Tables (simple: | col | col |)
+        text = text.replace(/((?:^\|.+\|\s*$\n?)+)/gm, function(tableBlock) {
+            var rows = tableBlock.trim().split('\n').filter(function(r) { return r.trim(); });
+            if (rows.length < 2) return tableBlock;
+
+            var sepIdx = -1;
+            for (var i = 0; i < rows.length; i++) {
+                if (/^\|[\s\-:]+\|/.test(rows[i])) { sepIdx = i; break; }
+            }
+
+            var html = '<table>';
+            rows.forEach(function(row, idx) {
+                if (idx === sepIdx) return;
+                var cells = row.split('|').filter(function(c, i, a) { return i > 0 && i < a.length - 1; });
+                var tag = (sepIdx > 0 && idx < sepIdx) ? 'th' : 'td';
+                html += '<tr>' + cells.map(function(c) {
+                    return '<' + tag + '>' + c.trim() + '</' + tag + '>';
+                }).join('') + '</tr>';
+            });
+            html += '</table>';
+            return html;
+        });
+
+        // Unordered lists (- item or * item)
+        var lines = text.split('\n');
+        var result = [];
+        var inList = false;
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            var listMatch = line.match(/^(\s*)[-*]\s+(.+)$/);
+
+            if (listMatch) {
+                if (!inList) { result.push('<ul>'); inList = true; }
+                result.push('<li>' + listMatch[2] + '</li>');
+            } else {
+                if (inList) { result.push('</ul>'); inList = false; }
+                var olMatch = line.match(/^(\s*)\d+\.\s+(.+)$/);
+                if (olMatch) {
+                    if (i === 0 || !lines[i-1].match(/^\s*\d+\.\s+/)) result.push('<ol>');
+                    result.push('<li>' + olMatch[2] + '</li>');
+                    if (i === lines.length - 1 || !lines[i+1].match(/^\s*\d+\.\s+/)) result.push('</ol>');
+                } else {
+                    result.push(line);
+                }
+            }
+        }
+        if (inList) result.push('</ul>');
+
+        text = result.join('\n');
+
+        // Convert remaining newlines to <br>
+        text = text.replace(/\n/g, '<br>');
+
+        // Clean up excessive <br> around block elements
+        text = text.replace(/<br>\s*(<(?:ul|ol|li|h[34]|blockquote|pre|table|hr))/g, '$1');
+        text = text.replace(/(<\/(?:ul|ol|li|h[34]|blockquote|pre|table)>)\s*<br>/g, '$1');
+
+        return text;
+    }
+
+})();
+</script>
+
+</body>
+</html>

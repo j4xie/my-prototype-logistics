@@ -4,7 +4,7 @@
  * Features: Completion rate display, target line, color zones
  */
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import type { EChartsOption, ECharts } from 'echarts';
 
 interface Props {
@@ -254,7 +254,7 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value);
+  chartInstance.value = echarts.init(chartRef.value, 'cretas');
   chartInstance.value.setOption(chartOptions.value);
 }
 
@@ -328,7 +328,7 @@ defineExpose({
       font-size: 12px;
 
       .target-label {
-        color: #909399;
+        color: var(--color-text-secondary);
       }
 
       .target-value {

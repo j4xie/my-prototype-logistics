@@ -1,0 +1,30 @@
+{
+  "c:\\Users\\Steve\\xwechat_files\\wxid_a2m0bim6zcm212_82ca\\msg\\video\\2026-01\\358b318d3fcd447f5d5b0595b08fecd6.mp4": {
+    "success": false,
+    "error": "无法提取视频帧，请确保已安装 ffmpeg",
+    "frame_count": 0,
+    "summary": {},
+    "snapshots": []
+  },
+  "c:\\Users\\Steve\\xwechat_files\\wxid_a2m0bim6zcm212_82ca\\msg\\video\\2026-01\\7167806dad4f1eabec33944a650693f6.mp4": {
+    "success": false,
+    "error": "无法提取视频帧，请确保已安装 ffmpeg",
+    "frame_count": 0,
+    "summary": {},
+    "snapshots": []
+  },
+  "c:\\Users\\Steve\\xwechat_files\\wxid_a2m0bim6zcm212_82ca\\msg\\video\\2026-01\\109d0d6ba2f4f0aa62b65e4a420b7a82.mp4": {
+    "success": false,
+    "error": "无法提取视频帧，请确保已安装 ffmpeg",
+    "frame_count": 0,
+    "summary": {},
+    "snapshots": []
+  },
+  "c:\\Users\\Steve\\xwechat_files\\wxid_a2m0bim6zcm212_82ca\\msg\\video\\2026-01\\d77624be66882fff05d8453bdf119029.mp4": {
+    "success": false,
+    "error": "无法提取视频帧，请确保已安装 ffmpeg",
+    "frame_count": 0,
+    "summary": {},
+    "snapshots": []
+  }
+}

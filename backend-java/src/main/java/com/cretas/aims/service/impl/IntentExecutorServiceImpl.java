@@ -675,23 +675,27 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         }
 
         // ====== DROOLS GATEWAY: 意图级业务规则验证 ======
-        ValidationResult validationResult = validateWithDrools(factoryId, intent, request, userId, userRole);
-        if (!validationResult.isValid()) {
-            log.warn("Drools规则验证失败: intentCode={}, violations={}",
-                    intent.getIntentCode(), validationResult.getViolations().size());
-            return IntentExecuteResponse.builder()
-                    .intentRecognized(true)
-                    .intentCode(intent.getIntentCode())
-                    .intentName(intent.getIntentName())
-                    .intentCategory(intent.getIntentCategory())
-                    .status("VALIDATION_FAILED")
-                    .message("业务规则验证未通过: " + validationResult.getViolationsSummary())
-                    .validationViolations(validationResult.getViolations())
-                    .recommendations(validationResult.getRecommendations())
-                    .executedAt(LocalDateTime.now())
-                    .build();
+        if (validationEnabled) {
+            ValidationResult validationResult = validateWithDrools(factoryId, intent, request, userId, userRole);
+            if (!validationResult.isValid()) {
+                log.warn("Drools规则验证失败: intentCode={}, violations={}",
+                        intent.getIntentCode(), validationResult.getViolations().size());
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intent.getIntentCode())
+                        .intentName(intent.getIntentName())
+                        .intentCategory(intent.getIntentCategory())
+                        .status("VALIDATION_FAILED")
+                        .message("业务规则验证未通过: " + validationResult.getViolationsSummary())
+                        .validationViolations(validationResult.getViolations())
+                        .recommendations(validationResult.getRecommendations())
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+            log.debug("Drools规则验证通过: intentCode={}", intent.getIntentCode());
+        } else {
+            log.debug("Drools规则验证已禁用，跳过: intentCode={}", intent.getIntentCode());
         }
-        log.debug("Drools规则验证通过: intentCode={}", intent.getIntentCode());
 
         // 3.5. 主动参数检查 - Slot Filling 机制
         // 在执行前检查必需参数是否缺失，如果缺失则主动触发参数收集
@@ -2399,6 +2403,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     userRole,            // 执行者角色
                     fact                 // Drools 事实对象
             );
+
+            // 如果规则引擎返回null（无匹配规则），视为验证通过
+            if (result == null) {
+                log.debug("Drools规则验证: 无匹配规则，默认通过: intentCode={}", intent.getIntentCode());
+                return ValidationResult.builder().valid(true).build();
+            }
 
             log.debug("Drools规则验证完成: intentCode={}, valid={}, violations={}, firedRules={}",
                     intent.getIntentCode(), result.isValid(), result.getViolations().size(),

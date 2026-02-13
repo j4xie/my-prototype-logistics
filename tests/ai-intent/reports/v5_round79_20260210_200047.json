@@ -1,0 +1,858 @@
+{
+  "timestamp": "2026-02-10T20:00:47.333430",
+  "test": "v5_round79_vendor_contract_management",
+  "total": 50,
+  "pass": 40,
+  "fail": 10,
+  "error": 0,
+  "pass_rate": 80.0,
+  "category_breakdown": {
+    "vendor_onboard": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "vendor_eval": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "vendor_query": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "contract_mgmt": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "procurement": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "price_negotiate": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "delivery_track": {
+      "pass": 2,
+      "fail": 3,
+      "error": 0
+    },
+    "vendor_issue": {
+      "pass": 4,
+      "fail": 2,
+      "error": 0
+    },
+    "spend_analysis": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "NONE": 28,
+    "CLASSIFIER": 14,
+    "PHRASE_MATCH": 8
+  },
+  "results": [
+    {
+      "query": "供应商入库",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_CREATE",
+        "SUPPLIER_LIST",
+        "SUPPLIER_EVALUATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "vendor_onboard",
+      "method": null,
+      "latency_ms": 1956
+    },
+    {
+      "query": "新增供应商",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_CREATE",
+        "SUPPLIER_LIST",
+        "SUPPLIER_EVALUATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "vendor_onboard",
+      "method": null,
+      "latency_ms": 726
+    },
+    {
+      "query": "供应商注册",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.7601137161254883,
+      "expected": [
+        "SUPPLIER_CREATE",
+        "SUPPLIER_LIST",
+        "SUPPLIER_EVALUATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "vendor_onboard",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    },
+    {
+      "query": "供应商审核",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.8902186751365662,
+      "expected": [
+        "SUPPLIER_CREATE",
+        "SUPPLIER_LIST",
+        "SUPPLIER_EVALUATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "vendor_onboard",
+      "method": "CLASSIFIER",
+      "latency_ms": 625
+    },
+    {
+      "query": "供应商准入",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.7234137058258057,
+      "expected": [
+        "SUPPLIER_CREATE",
+        "SUPPLIER_LIST",
+        "SUPPLIER_EVALUATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "vendor_onboard",
+      "method": "CLASSIFIER",
+      "latency_ms": 636
+    },
+    {
+      "query": "合格供应商",
+      "status": "FAIL",
+      "intent": "SUPPLIER_RANKING",
+      "confidence": 0.536873459815979,
+      "expected": [
+        "SUPPLIER_CREATE",
+        "SUPPLIER_LIST",
+        "SUPPLIER_EVALUATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "vendor_onboard",
+      "method": "CLASSIFIER",
+      "latency_ms": 608
+    },
+    {
+      "query": "供应商评价",
+      "status": "PASS",
+      "intent": "SUPPLIER_RANKING",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_RANKING",
+        "SUPPLIER_LIST",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "vendor_eval",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 518
+    },
+    {
+      "query": "评分更新",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_RANKING",
+        "SUPPLIER_LIST",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "vendor_eval",
+      "method": null,
+      "latency_ms": 626
+    },
+    {
+      "query": "供应商考核",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.8609173893928528,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_RANKING",
+        "SUPPLIER_LIST",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "vendor_eval",
+      "method": "CLASSIFIER",
+      "latency_ms": 618
+    },
+    {
+      "query": "绩效评估",
+      "status": "FAIL",
+      "intent": "REPORT_KPI",
+      "confidence": 0.899940550327301,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_RANKING",
+        "SUPPLIER_LIST",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "vendor_eval",
+      "method": "CLASSIFIER",
+      "latency_ms": 594
+    },
+    {
+      "query": "供应商打分",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.8896597623825073,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_RANKING",
+        "SUPPLIER_LIST",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "vendor_eval",
+      "method": "CLASSIFIER",
+      "latency_ms": 632
+    },
+    {
+      "query": "合格评定",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_RANKING",
+        "SUPPLIER_LIST",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "vendor_eval",
+      "method": null,
+      "latency_ms": 653
+    },
+    {
+      "query": "供应商查询",
+      "status": "PASS",
+      "intent": "SUPPLIER_SEARCH",
+      "confidence": 0.8564152717590332,
+      "expected": [
+        "SUPPLIER_LIST",
+        "SUPPLIER_SEARCH",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "vendor_query",
+      "method": "CLASSIFIER",
+      "latency_ms": 611
+    },
+    {
+      "query": "查找供应商",
+      "status": "PASS",
+      "intent": "SUPPLIER_SEARCH",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_LIST",
+        "SUPPLIER_SEARCH",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "vendor_query",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 458
+    },
+    {
+      "query": "供应商列表",
+      "status": "PASS",
+      "intent": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_LIST",
+        "SUPPLIER_SEARCH",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "vendor_query",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 465
+    },
+    {
+      "query": "供应商信息",
+      "status": "PASS",
+      "intent": "SUPPLIER_SEARCH",
+      "confidence": 0.851762592792511,
+      "expected": [
+        "SUPPLIER_LIST",
+        "SUPPLIER_SEARCH",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "vendor_query",
+      "method": "CLASSIFIER",
+      "latency_ms": 647
+    },
+    {
+      "query": "供应商资质",
+      "status": "FAIL",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.8711460828781128,
+      "expected": [
+        "SUPPLIER_LIST",
+        "SUPPLIER_SEARCH",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "vendor_query",
+      "method": "CLASSIFIER",
+      "latency_ms": 598
+    },
+    {
+      "query": "合同管理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "SUPPLIER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "contract_mgmt",
+      "method": null,
+      "latency_ms": 641
+    },
+    {
+      "query": "合同签订",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "SUPPLIER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "contract_mgmt",
+      "method": null,
+      "latency_ms": 715
+    },
+    {
+      "query": "合同到期",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "SUPPLIER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "contract_mgmt",
+      "method": null,
+      "latency_ms": 607
+    },
+    {
+      "query": "续签合同",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "SUPPLIER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "contract_mgmt",
+      "method": null,
+      "latency_ms": 675
+    },
+    {
+      "query": "合同条款",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "SUPPLIER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "contract_mgmt",
+      "method": null,
+      "latency_ms": 628
+    },
+    {
+      "query": "合同审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "SUPPLIER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "contract_mgmt",
+      "method": null,
+      "latency_ms": 659
+    },
+    {
+      "query": "采购下单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MRP_CALCULATION",
+        "ORDER_CREATE",
+        "SUPPLIER_LIST",
+        "MATERIAL_LOW_STOCK_ALERT",
+        null
+      ],
+      "category": "procurement",
+      "method": null,
+      "latency_ms": 614
+    },
+    {
+      "query": "采购申请",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MRP_CALCULATION",
+        "ORDER_CREATE",
+        "SUPPLIER_LIST",
+        "MATERIAL_LOW_STOCK_ALERT",
+        null
+      ],
+      "category": "procurement",
+      "method": null,
+      "latency_ms": 664
+    },
+    {
+      "query": "采购订单",
+      "status": "FAIL",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "MRP_CALCULATION",
+        "ORDER_CREATE",
+        "SUPPLIER_LIST",
+        "MATERIAL_LOW_STOCK_ALERT",
+        null
+      ],
+      "category": "procurement",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 467
+    },
+    {
+      "query": "紧急采购",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MRP_CALCULATION",
+        "ORDER_CREATE",
+        "SUPPLIER_LIST",
+        "MATERIAL_LOW_STOCK_ALERT",
+        null
+      ],
+      "category": "procurement",
+      "method": null,
+      "latency_ms": 647
+    },
+    {
+      "query": "补充采购",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MRP_CALCULATION",
+        "ORDER_CREATE",
+        "SUPPLIER_LIST",
+        "MATERIAL_LOW_STOCK_ALERT",
+        null
+      ],
+      "category": "procurement",
+      "method": null,
+      "latency_ms": 683
+    },
+    {
+      "query": "价格谈判",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "SUPPLIER_EVALUATE",
+        "REPORT_FINANCE",
+        "SUPPLIER_LIST",
+        null
+      ],
+      "category": "price_negotiate",
+      "method": null,
+      "latency_ms": 932
+    },
+    {
+      "query": "比价",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "SUPPLIER_EVALUATE",
+        "REPORT_FINANCE",
+        "SUPPLIER_LIST",
+        null
+      ],
+      "category": "price_negotiate",
+      "method": null,
+      "latency_ms": 448
+    },
+    {
+      "query": "议价",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "SUPPLIER_EVALUATE",
+        "REPORT_FINANCE",
+        "SUPPLIER_LIST",
+        null
+      ],
+      "category": "price_negotiate",
+      "method": null,
+      "latency_ms": 451
+    },
+    {
+      "query": "招标",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "SUPPLIER_EVALUATE",
+        "REPORT_FINANCE",
+        "SUPPLIER_LIST",
+        null
+      ],
+      "category": "price_negotiate",
+      "method": null,
+      "latency_ms": 480
+    },
+    {
+      "query": "竞标",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COST_QUERY",
+        "SUPPLIER_EVALUATE",
+        "REPORT_FINANCE",
+        "SUPPLIER_LIST",
+        null
+      ],
+      "category": "price_negotiate",
+      "method": null,
+      "latency_ms": 447
+    },
+    {
+      "query": "报价对比",
+      "status": "FAIL",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "COST_QUERY",
+        "SUPPLIER_EVALUATE",
+        "REPORT_FINANCE",
+        "SUPPLIER_LIST",
+        null
+      ],
+      "category": "price_negotiate",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 468
+    },
+    {
+      "query": "供应商交货",
+      "status": "FAIL",
+      "intent": "SUPPLIER_RANKING",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SUPPLIER_EVALUATE",
+        "ALERT_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "delivery_track",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 460
+    },
+    {
+      "query": "到货跟踪",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.7283914685249329,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SUPPLIER_EVALUATE",
+        "ALERT_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "delivery_track",
+      "method": "CLASSIFIER",
+      "latency_ms": 661
+    },
+    {
+      "query": "交期监控",
+      "status": "FAIL",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.8040589094161987,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SUPPLIER_EVALUATE",
+        "ALERT_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "delivery_track",
+      "method": "CLASSIFIER",
+      "latency_ms": 612
+    },
+    {
+      "query": "延期预警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SUPPLIER_EVALUATE",
+        "ALERT_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "delivery_track",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 459
+    },
+    {
+      "query": "催货",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SUPPLIER_EVALUATE",
+        "ALERT_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "delivery_track",
+      "method": null,
+      "latency_ms": 432
+    },
+    {
+      "query": "供应商投诉",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "SUPPLIER_LIST",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "vendor_issue",
+      "method": null,
+      "latency_ms": 653
+    },
+    {
+      "query": "质量退货",
+      "status": "FAIL",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "SUPPLIER_LIST",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "vendor_issue",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 485
+    },
+    {
+      "query": "索赔处理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "SUPPLIER_LIST",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "vendor_issue",
+      "method": null,
+      "latency_ms": 617
+    },
+    {
+      "query": "扣款通知",
+      "status": "FAIL",
+      "intent": "FACTORY_NOTIFICATION_CONFIG",
+      "confidence": 0.8013948798179626,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "SUPPLIER_LIST",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "vendor_issue",
+      "method": "CLASSIFIER",
+      "latency_ms": 599
+    },
+    {
+      "query": "供应商整改",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "SUPPLIER_LIST",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "vendor_issue",
+      "method": null,
+      "latency_ms": 789
+    },
+    {
+      "query": "黑名单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        "SUPPLIER_LIST",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "vendor_issue",
+      "method": null,
+      "latency_ms": 822
+    },
+    {
+      "query": "采购分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "spend_analysis",
+      "method": null,
+      "latency_ms": 699
+    },
+    {
+      "query": "采购金额",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "spend_analysis",
+      "method": null,
+      "latency_ms": 614
+    },
+    {
+      "query": "供应商占比",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "spend_analysis",
+      "method": null,
+      "latency_ms": 777
+    },
+    {
+      "query": "采购趋势",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.7373501658439636,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "spend_analysis",
+      "method": "CLASSIFIER",
+      "latency_ms": 740
+    },
+    {
+      "query": "采购预算",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_FINANCE",
+        "COST_QUERY",
+        "REPORT_TRENDS",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "spend_analysis",
+      "method": null,
+      "latency_ms": 661
+    }
+  ]
+}
