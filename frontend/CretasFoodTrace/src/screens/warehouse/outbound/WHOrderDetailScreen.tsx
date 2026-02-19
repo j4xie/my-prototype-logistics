@@ -19,6 +19,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHOutboundStackParamList } from "../../../types/navigation";
 import { shipmentApiClient, ShipmentRecord } from "../../../services/api/shipmentApiClient";
 import { handleError } from "../../../utils/errorHandler";
+import { formatDateTime as fmtDateTime, formatNumberWithCommas } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHOutboundStackParamList>;
 type RouteType = RouteProp<WHOutboundStackParamList, "WHOrderDetail">;
@@ -79,11 +80,7 @@ const getStatusLabel = (status: string): string => {
  */
 const formatDateTime = (dateStr?: string): string => {
   if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit'
-  });
+  return fmtDateTime(dateStr);
 };
 
 export function WHOrderDetailScreen() {
@@ -315,7 +312,7 @@ export function WHOrderDetailScreen() {
                 <View style={styles.productMain}>
                   <Text style={styles.productName}>{product.name}</Text>
                   <Text style={styles.productAmount}>
-                    ¥{product.amount.toLocaleString()}
+                    ¥{formatNumberWithCommas(product.amount)}
                   </Text>
                 </View>
                 <View style={styles.productMeta}>
@@ -339,7 +336,7 @@ export function WHOrderDetailScreen() {
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>商品金额</Text>
               <Text style={styles.summaryValue}>
-                ¥{orderDetail.summary.totalAmount.toLocaleString()}
+                ¥{formatNumberWithCommas(orderDetail.summary.totalAmount)}
               </Text>
             </View>
             <View style={styles.summaryRow}>
@@ -353,7 +350,7 @@ export function WHOrderDetailScreen() {
             <View style={[styles.summaryRow, styles.totalRow]}>
               <Text style={styles.totalLabel}>订单金额</Text>
               <Text style={styles.totalValue}>
-                ¥{orderDetail.summary.finalAmount.toLocaleString()}
+                ¥{formatNumberWithCommas(orderDetail.summary.finalAmount)}
               </Text>
             </View>
           </View>

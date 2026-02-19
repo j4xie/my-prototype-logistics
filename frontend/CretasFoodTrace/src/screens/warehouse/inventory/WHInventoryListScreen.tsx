@@ -31,6 +31,7 @@ import { WHInventoryStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
 import { logger } from "../../../utils/logger";
+import { formatNumberWithCommas, formatDate } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -140,6 +141,7 @@ export function WHInventoryListScreen() {
     { key: "transfer", label: t('inventory.quickActions.transfer'), icon: "swap-horizontal", color: "#2196F3", screen: "WHInventoryTransfer" },
     { key: "location", label: t('inventory.quickActions.location'), icon: "map-marker", color: "#9C27B0", screen: "WHLocationManage" },
     { key: "expire", label: t('inventory.quickActions.expire'), icon: "clock-alert-outline", color: "#FF5722", screen: "WHExpireHandle" },
+    { key: "warnings", label: "库存预警", icon: "bell-alert-outline", color: "#E91E63", screen: "WHInventoryWarnings" },
   ];
 
   // 加载库存数据
@@ -174,8 +176,8 @@ export function WHInventoryListScreen() {
               warning: getWarningText(warningType, batch),
               warningType: warningType,
               updatedAt: batch.updatedAt
-                ? new Date(batch.updatedAt).toLocaleDateString('zh-CN')
-                : new Date().toLocaleDateString('zh-CN'),
+                ? formatDate(new Date(batch.updatedAt))
+                : formatDate(new Date()),
             };
           });
 
@@ -251,7 +253,7 @@ export function WHInventoryListScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>库存管理</Text>
         <Text style={styles.headerSubtitle}>
-          在库 {stats.total} 种 | 总量 {stats.totalWeight.toLocaleString()} kg
+          在库 {stats.total} 种 | 总量 {formatNumberWithCommas(stats.totalWeight)} kg
         </Text>
       </View>
 
@@ -441,7 +443,7 @@ export function WHInventoryListScreen() {
             </View>
             <View style={styles.statsItem}>
               <Text style={styles.statsValue}>
-                {stats.totalWeight.toLocaleString()}
+                {formatNumberWithCommas(stats.totalWeight)}
               </Text>
               <Text style={styles.statsLabel}>总库存(kg)</Text>
             </View>

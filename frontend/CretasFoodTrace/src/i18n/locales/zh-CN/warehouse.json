@@ -402,7 +402,8 @@
       "recall": "召回管理",
       "help": "使用帮助",
       "feedback": "意见反馈",
-      "about": "关于"
+      "about": "关于",
+      "language": "语言"
     },
     "dialogs": {
       "helpTitle": "使用帮助",

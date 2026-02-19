@@ -158,6 +158,12 @@ export function FAManagementScreen() {
               color="#eb2f96"
               onPress={() => navigation.navigate('ArApOverview')}
             />
+            <GridItem
+              icon="tag-text"
+              title="价格表"
+              color="#13c2c2"
+              onPress={() => navigation.navigate('PriceList')}
+            />
           </View>
         </View>
 

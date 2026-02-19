@@ -23,6 +23,7 @@ import { WHInventoryStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch, ConvertToFrozenRequest } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
 import { useAuthStore } from "../../../store/authStore";
+import { formatNumberWithCommas } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -231,7 +232,7 @@ export function AlertDetailScreen() {
   const calculateTotal = () => {
     const qty = parseFloat(purchaseQty) || 0;
     const price = parseFloat(unitPrice) || 0;
-    return (qty * price).toLocaleString();
+    return formatNumberWithCommas(qty * price);
   };
 
   // 获取预警类型标签

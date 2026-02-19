@@ -41,6 +41,7 @@ import { shipmentApiClient, ShipmentRecord } from '../../../services/api/shipmen
 import { materialBatchApiClient, MaterialBatch } from '../../../services/api/materialBatchApiClient';
 import { handleError, getErrorMsg } from '../../../utils/errorHandler';
 import { logger } from '../../../utils/logger';
+import { formatDate, formatNumberWithCommas } from '../../../utils/formatters';
 
 // 主题色
 const THEME_COLOR = '#4CAF50';
@@ -151,7 +152,7 @@ export default function WHHomeScreen() {
           quantity: s.quantity || 0,
           unit: s.unit || 'kg',
           status: mapShipmentStatus(s.status),
-          dispatchTime: s.shipmentDate ? `${new Date(s.shipmentDate).toLocaleDateString()} 发出` : t('messages.toBeArranged'),
+          dispatchTime: s.shipmentDate ? `${formatDate(s.shipmentDate)} 发出` : t('messages.toBeArranged'),
           urgent: false, // 后端没有urgent字段，默认false
         }));
         setOutboundTasks(mappedTasks);
@@ -173,7 +174,7 @@ export default function WHHomeScreen() {
           quantity: b.inboundQuantity || 0,
           unit: 'kg',
           status: mapBatchStatus(b.status),
-          arrivalTime: b.inboundDate ? `${t('home.inboundTask.inboundTime')}: ${new Date(b.inboundDate).toLocaleDateString()}` : t('home.status.pending'),
+          arrivalTime: b.inboundDate ? `${t('home.inboundTask.inboundTime')}: ${formatDate(b.inboundDate)}` : t('home.status.pending'),
         }));
         setInboundTasks(mappedBatches.slice(0, 5)); // 只显示前5条
         logger.info(`[WHHomeScreen] 加载入库批次成功: ${mappedBatches.length}条`);
@@ -563,7 +564,7 @@ export default function WHHomeScreen() {
               <Text style={{ fontSize: 20 }}>🚚</Text>
             </View>
             <Text style={styles.statTitle}>{t('home.stats.todayOutbound')}</Text>
-            <Text style={styles.statValue}>{stats.todayOutbound.toLocaleString()}</Text>
+            <Text style={styles.statValue}>{formatNumberWithCommas(stats.todayOutbound)}</Text>
             <Text style={styles.statUnit}>{t('home.units.kg')}</Text>
           </Surface>
 
