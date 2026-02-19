@@ -164,9 +164,9 @@ const previewData = ref<TableDataResponse>({
 interface FinanceKPI {
   // 利润相关
   grossProfit: number;
-  grossProfitMargin: number;
+  grossProfitMargin: number | null;
   netProfit: number;
-  netProfitMargin: number;
+  netProfitMargin: number | null;
   // 成本相关
   totalCost: number;
   costGrowth: number;
@@ -192,9 +192,9 @@ interface FinanceKPI {
 
 const kpiData = ref<FinanceKPI>({
   grossProfit: 0,
-  grossProfitMargin: 0,
+  grossProfitMargin: null,
   netProfit: 0,
-  netProfitMargin: 0,
+  netProfitMargin: null,
   totalCost: 0,
   costGrowth: 0,
   materialCost: 0,
@@ -565,6 +565,7 @@ async function loadDynamicData(uploadId: number) {
     loadError.value = '加载分析数据失败，请检查网络连接后重试';
   } finally {
     loading.value = false;
+    generateSmartWarnings();
   }
 }
 
@@ -1056,6 +1057,7 @@ async function loadFinanceData() {
     resetData();
   } finally {
     loading.value = false;
+    generateSmartWarnings();
   }
 }
 
@@ -1129,12 +1131,56 @@ function updateKpiDataFromKpiCards(kpiCards: Array<Record<string, unknown>>) {
   }
 }
 
+// 基于 KPI 数据自动生成预警（补充后端 AI 未覆盖的场景）
+function generateSmartWarnings() {
+  const autoWarnings: WarningItem[] = [];
+  const kpi = kpiData.value;
+
+  if (analysisType.value === 'profit') {
+    if (kpi.grossProfit < 0) {
+      autoWarnings.push({
+        level: 'danger',
+        title: '毛利润为负',
+        description: `毛利润 ${formatMoney(kpi.grossProfit)}，建议检查营业收入和成本结构`,
+      });
+    }
+    if (kpi.netProfit < 0) {
+      autoWarnings.push({
+        level: 'danger',
+        title: '净利润为负',
+        description: `净利润 ${formatMoney(kpi.netProfit)}，企业处于亏损状态，需关注费用控制`,
+      });
+    }
+    if (kpi.grossProfitMargin != null && kpi.grossProfitMargin < 25) {
+      autoWarnings.push({
+        level: 'warning',
+        title: '毛利率低于行业基准',
+        description: `毛利率 ${kpi.grossProfitMargin.toFixed(1)}%，食品加工行业基准为 25-35%`,
+      });
+    }
+  }
+
+  if (analysisType.value === 'receivable' && kpi.receivableAge90Plus > 0) {
+    autoWarnings.push({
+      level: 'danger',
+      title: '存在高风险逾期应收',
+      description: `90天以上应收账款 ${formatMoney(kpi.receivableAge90Plus)}，建议加强催收`,
+      amount: kpi.receivableAge90Plus,
+    });
+  }
+
+  // Append auto-warnings to existing warnings (don't overwrite backend AI warnings)
+  if (autoWarnings.length > 0) {
+    warnings.value = [...warnings.value, ...autoWarnings];
+  }
+}
+
 function resetData() {
   kpiData.value = {
     grossProfit: 0,
-    grossProfitMargin: 0,
+    grossProfitMargin: null,
     netProfit: 0,
-    netProfitMargin: 0,
+    netProfitMargin: null,
     totalCost: 0,
     costGrowth: 0,
     materialCost: 0,
@@ -1395,7 +1441,8 @@ function formatMoney(value: number | null | undefined): string {
   return formatNumber(value, 1);
 }
 
-function formatPercent(value: number): string {
+function formatPercent(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return 'N/A';
   return value.toFixed(1) + '%';
 }
 
@@ -1600,14 +1647,14 @@ onUnmounted(() => {
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">毛利润</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.grossProfit) }}</div>
+            <div class="kpi-value" :style="{ color: kpiData.grossProfit < 0 ? '#dc2626' : undefined }">{{ formatMoney(kpiData.grossProfit) }}</div>
             <div class="kpi-sub">毛利率 {{ formatPercent(kpiData.grossProfitMargin) }}</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">净利润</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.netProfit) }}</div>
+            <div class="kpi-value" :style="{ color: kpiData.netProfit < 0 ? '#dc2626' : undefined }">{{ formatMoney(kpiData.netProfit) }}</div>
             <div class="kpi-sub">净利率 {{ formatPercent(kpiData.netProfitMargin) }}</div>
           </el-card>
         </el-col>

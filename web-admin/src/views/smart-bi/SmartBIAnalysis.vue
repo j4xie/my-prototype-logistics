@@ -3775,6 +3775,9 @@ onDeactivated(() => {
   window.removeEventListener('resize', handleResize);
   if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
   clearHoverThrottleTimers();
+  // Disconnect IntersectionObserver to prevent stale callbacks and memory leaks
+  if (chartObserver) { chartObserver.disconnect(); chartObserver = null; }
+  pendingChartConfigs.clear();
 });
 
 onActivated(() => {
