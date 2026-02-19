@@ -5,8 +5,8 @@
 set -e
 
 # 配置
-SERVER="root@139.196.165.140"
-REMOTE_DIR="/www/wwwroot/smartbi-python"
+SERVER="root@47.100.235.168"
+REMOTE_DIR="/www/wwwroot/cretas/code/backend/python"
 LOCAL_DIR="smartbi"
 IMAGE_NAME="smartbi-python"
 CONTAINER_NAME="smartbi-python"
@@ -92,9 +92,9 @@ ssh $SERVER "curl -s http://localhost:$PORT/health || echo '服务启动中...'"
 echo ""
 echo "=========================================="
 echo "Docker 部署完成!"
-echo "服务地址: http://139.196.165.140:$PORT"
-echo "健康检查: http://139.196.165.140:$PORT/health"
-echo "API 文档: http://139.196.165.140:$PORT/docs"
+echo "服务地址: http://47.100.235.168:$PORT"
+echo "健康检查: http://47.100.235.168:$PORT/health"
+echo "API 文档: http://47.100.235.168:$PORT/docs"
 echo ""
 echo "管理命令:"
 echo "  查看日志: ssh $SERVER 'docker logs $CONTAINER_NAME'"

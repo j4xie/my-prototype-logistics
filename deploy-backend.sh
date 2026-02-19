@@ -36,6 +36,7 @@ OSS_DEPLOY_PATH="deploy/backend/"
 
 # Cloudflare R2 配置 (从环境变量读取，不要硬编码凭证)
 R2_BUCKET="cretas"
+# R2_ACCOUNT_ID 是公开标识符 (非凭证)，凭证为 R2_ACCESS_KEY_ID + R2_SECRET_ACCESS_KEY
 R2_ACCOUNT_ID="${R2_ACCOUNT_ID:-7ff7cc2e7bc3af46147d5c7df18062db}"
 R2_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID:-}"
 R2_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY:-}"

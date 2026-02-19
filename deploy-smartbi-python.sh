@@ -40,22 +40,22 @@ rm -f smartbi-python.tar.gz
 
 # 4. 在服务器上安装依赖和启动服务
 echo "[4/5] 安装依赖并启动服务..."
-ssh $SERVER << 'ENDSSH'
-cd /www/wwwroot/smartbi-python
+ssh $SERVER << ENDSSH
+cd $REMOTE_DIR
 
 # 使用 Python 3.8
 PYTHON_BIN="python3.8"
-if ! command -v $PYTHON_BIN &> /dev/null; then
+if ! command -v \$PYTHON_BIN &> /dev/null; then
     echo "Python 3.8 不可用，尝试 python3..."
     PYTHON_BIN="python3"
 fi
-echo "使用 Python: $PYTHON_BIN"
-$PYTHON_BIN --version
+echo "使用 Python: \$PYTHON_BIN"
+\$PYTHON_BIN --version
 
 # 创建虚拟环境 (使用 Python 3.8)
 if [ ! -d "venv38" ]; then
     echo "创建虚拟环境 (Python 3.8)..."
-    $PYTHON_BIN -m venv venv38
+    \$PYTHON_BIN -m venv venv38
 fi
 
 # 激活虚拟环境并安装依赖
