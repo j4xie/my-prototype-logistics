@@ -4,6 +4,14 @@
 
 set -e
 
+# 加载共享函数库
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/scripts/lib/deploy-common.sh" ]; then
+    source "$SCRIPT_DIR/scripts/lib/deploy-common.sh"
+else
+    log() { echo "[$(date '+%Y-%m-%dT%H:%M:%S')] [$1] ${*:2}"; }
+fi
+
 # 配置
 SERVER="root@47.100.235.168"
 REMOTE_DIR="/www/wwwroot/cretas/code/backend/python"
@@ -85,16 +93,16 @@ ENDSSH
 
 # 5. 验证服务
 echo "[5/6] 验证服务..."
-sleep 3
-ssh $SERVER "curl -s http://localhost:$PORT/health || echo '服务启动中...'"
+SERVER_IP="${SERVER#*@}"
+wait_for_health "http://${SERVER_IP}:$PORT/health" 15 2
 
 # 6. 显示结果
 echo ""
 echo "=========================================="
 echo "Docker 部署完成!"
-echo "服务地址: http://47.100.235.168:$PORT"
-echo "健康检查: http://47.100.235.168:$PORT/health"
-echo "API 文档: http://47.100.235.168:$PORT/docs"
+echo "服务地址: http://${SERVER_IP}:$PORT"
+echo "健康检查: http://${SERVER_IP}:$PORT/health"
+echo "API 文档: http://${SERVER_IP}:$PORT/docs"
 echo ""
 echo "管理命令:"
 echo "  查看日志: ssh $SERVER 'docker logs $CONTAINER_NAME'"

@@ -11,6 +11,15 @@
 
 set -e
 
+# 加载共享函数库
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/scripts/lib/deploy-common.sh" ]; then
+    source "$SCRIPT_DIR/scripts/lib/deploy-common.sh"
+else
+    echo "警告: 未找到 scripts/lib/deploy-common.sh，使用内联函数"
+    log() { echo "[$(date '+%Y-%m-%dT%H:%M:%S')] [$1] ${*:2}"; }
+fi
+
 # ==================== 配置 ====================
 REPO="j4xie/my-prototype-logistics"
 JAR_NAME="cretas-backend-system-1.0.0.jar"
@@ -55,12 +64,20 @@ case "$1" in
         MODE="jar"
         ARG="$2"
         ;;
+    --dry-run)
+        MODE="dry-run"
+        ;;
+    --rollback)
+        MODE="rollback"
+        ;;
     -h|--help)
         echo "用法: ./deploy-backend.sh [选项] [参数]"
         echo ""
         echo "选项:"
         echo "  --jar [version]   JAR 部署模式 (默认)"
         echo "  --git [branch]    Git 部署模式"
+        echo "  --dry-run         仅构建和验证，不上传/部署"
+        echo "  --rollback        回滚到上一个备份版本"
         echo "  -h, --help        显示帮助"
         echo ""
         echo "上传策略:"
@@ -76,6 +93,8 @@ case "$1" in
         echo "  ./deploy-backend.sh              # JAR 部署"
         echo "  ./deploy-backend.sh --jar v1.2   # 指定版本"
         echo "  ./deploy-backend.sh --git        # Git 部署"
+        echo "  ./deploy-backend.sh --dry-run    # 仅构建验证"
+        echo "  ./deploy-backend.sh --rollback   # 回滚上一版本"
         exit 0
         ;;
     *)
@@ -165,9 +184,9 @@ deploy_jar() {
         exit 1
     fi
 
-    JAR_SIZE=$(du -h "$JAR_PATH" | cut -f1)
-    JAR_SIZE_BYTES=$(stat -f%z "$JAR_PATH" 2>/dev/null || stat -c%s "$JAR_PATH" 2>/dev/null)
-    echo "   ✓ 打包完成: $JAR_NAME ($JAR_SIZE, ${JAR_SIZE_BYTES} bytes)"
+    JAR_SIZE=$(get_file_size_human "$JAR_PATH")
+    JAR_SIZE_BYTES=$(get_file_size_bytes "$JAR_PATH")
+    log "INFO" "打包完成: $JAR_NAME ($JAR_SIZE, ${JAR_SIZE_BYTES} bytes)"
 
     # 计算本地 MD5 checksum
     LOCAL_MD5=$(md5sum "$JAR_PATH" | cut -d' ' -f1)
@@ -548,23 +567,10 @@ deploy_jar() {
 
     # ----- 4. 验证部署 -----
     echo ""
-    echo "🔍 [4/4] 验证部署 (最多等待60秒)..."
-    HEALTH_OK=false
-    for i in {1..30}; do
-        HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:10010/api/mobile/health 2>/dev/null || echo "000")
-        if [ "$HEALTH_CHECK" = "200" ]; then
-            echo "   ✓ 服务正常 (HTTP 200, 等待 $((i*2))s)"
-            HEALTH_OK=true
-            break
-        fi
-        if [ $((i % 5)) -eq 0 ]; then
-            echo "   ... 等待服务启动 ($((i*2))/60s, HTTP $HEALTH_CHECK)"
-        fi
-        sleep 2
-    done
-
-    if [ "$HEALTH_OK" != "true" ]; then
-        echo "   ⚠ 健康检查超时 (60s)，最后状态: HTTP $HEALTH_CHECK"
+    echo "🔍 [4/4] 验证部署..."
+    SERVER_IP="${SERVER#*@}"
+    HEALTH_URL="http://${SERVER_IP}:10010/api/mobile/health"
+    if ! wait_for_health "$HEALTH_URL" 30 2; then
         echo "   请手动检查: ssh $SERVER 'tail -50 $REMOTE_JAR_DIR/cretas-backend.log'"
     fi
 
@@ -579,9 +585,67 @@ deploy_jar() {
     echo "=========================================="
 }
 
+# ==================== Dry-run 模式 ====================
+deploy_dry_run() {
+    echo "=========================================="
+    echo "  Dry-run 模式 — 仅构建验证"
+    echo "=========================================="
+
+    export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
+    cd backend/java/cretas-api
+    ./mvnw.cmd clean package -Dmaven.test.skip=true -q
+    cd ../../..
+
+    JAR_PATH="backend/java/cretas-api/target/$JAR_NAME"
+    if [ ! -f "$JAR_PATH" ]; then
+        log "ERROR" "JAR 文件不存在: $JAR_PATH"
+        exit 1
+    fi
+
+    JAR_SIZE=$(get_file_size_human "$JAR_PATH")
+    JAR_SIZE_BYTES=$(get_file_size_bytes "$JAR_PATH")
+    LOCAL_MD5=$(md5sum "$JAR_PATH" | cut -d' ' -f1)
+
+    log "INFO" "构建成功: $JAR_NAME"
+    log "INFO" "大小: $JAR_SIZE ($JAR_SIZE_BYTES bytes)"
+    log "INFO" "MD5: $LOCAL_MD5"
+    log "INFO" "Dry-run 完成，未执行上传或部署"
+}
+
+# ==================== Rollback 模式 ====================
+deploy_rollback() {
+    echo "=========================================="
+    echo "  Rollback 模式 — 恢复上一版本"
+    echo "=========================================="
+
+    log "INFO" "查找最新备份..."
+    LATEST_BAK=$(ssh $SERVER "ls -t $REMOTE_JAR_DIR/aims-0.0.1-SNAPSHOT.jar.bak.* 2>/dev/null | head -1")
+
+    if [ -z "$LATEST_BAK" ]; then
+        log "ERROR" "无可用备份: $REMOTE_JAR_DIR/aims-0.0.1-SNAPSHOT.jar.bak.*"
+        exit 1
+    fi
+
+    log "INFO" "回滚到: $LATEST_BAK"
+    ssh $SERVER "
+        cd $REMOTE_JAR_DIR
+        cp '$LATEST_BAK' aims-0.0.1-SNAPSHOT.jar
+        bash restart.sh
+    "
+
+    SERVER_IP="${SERVER#*@}"
+    HEALTH_URL="http://${SERVER_IP}:10010/api/mobile/health"
+    if wait_for_health "$HEALTH_URL" 30 2; then
+        log "INFO" "回滚完成，服务正常"
+    else
+        log "WARN" "回滚完成但健康检查超时，请手动检查"
+    fi
+}
+
 # ==================== 执行 ====================
-if [ "$MODE" = "jar" ]; then
-    deploy_jar "$ARG"
-else
-    deploy_git "$ARG"
-fi
+case "$MODE" in
+    jar)      deploy_jar "$ARG" ;;
+    git)      deploy_git "$ARG" ;;
+    dry-run)  deploy_dry_run ;;
+    rollback) deploy_rollback ;;
+esac
