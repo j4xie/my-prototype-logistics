@@ -73,12 +73,12 @@ allowed-tools:
 
 ```bash
 # 1. 本地构建
-cd backend-java
-JAVA_HOME="C:/Program Files/Java/jdk-17" ./mvnw.cmd clean package -DskipTests
-cd ..
+cd backend/java/cretas-api
+JAVA_HOME="C:/Program Files/Java/jdk-17" ./mvnw.cmd clean package -Dmaven.test.skip=true
+cd ../../..
 
 # 2. 上传 JAR
-scp backend-java/target/cretas-backend-system-1.0.0.jar root@47.100.235.168:/www/wwwroot/cretas/aims-0.0.1-SNAPSHOT.jar.new
+scp backend/java/cretas-api/target/cretas-backend-system-1.0.0.jar root@47.100.235.168:/www/wwwroot/cretas/aims-0.0.1-SNAPSHOT.jar.new
 
 # 3. 服务器部署 (备份+替换+重启)
 ssh root@47.100.235.168 << 'EOF'

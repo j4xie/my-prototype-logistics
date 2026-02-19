@@ -47,7 +47,7 @@ allowed-tools:
 ## 检测命令
 
 ```bash
-cd /Users/jietaoxie/my-prototype-logistics/backend-java
+cd /Users/jietaoxie/my-prototype-logistics/backend/java/cretas-api
 
 # 1. N+1 查询 - for 循环中的 repository 调用
 grep -rn "for.*{" src/main/java/com/cretas/aims/service/ -A10 | \
@@ -80,4 +80,4 @@ grep -rn "@Cacheable\|@Async" src/main/java/ --include="*.java"
 
 ## 参考
 
-- 完整审计报告: `backend-java/BACKEND_AUDIT_REPORT.md`
+- 完整审计报告: `backend/java/cretas-api/BACKEND_AUDIT_REPORT.md`

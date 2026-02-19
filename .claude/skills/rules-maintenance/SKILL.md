@@ -28,9 +28,9 @@ allowed-tools:
 | 指标 | Grep 模式 | 搜索范围 |
 |------|----------|----------|
 | `as any` 使用数 | `as any` | `frontend/CretasFoodTrace/src/` (*.ts, *.tsx) |
-| Controller 数量 | `@RestController\|@Controller` | `backend-java/src/` (*.java) |
-| API 端点数 | `@.*Mapping` | `backend-java/src/.../controller/` (*.java) |
-| 硬编码密码 | `password.*=.*["']` | `backend-java/` |
+| Controller 数量 | `@RestController\|@Controller` | `backend/java/cretas-api/src/` (*.java) |
+| API 端点数 | `@.*Mapping` | `backend/java/cretas-api/src/.../controller/` (*.java) |
+| 硬编码密码 | `password.*=.*["']` | `backend/java/cretas-api/` |
 | Hermes 不兼容 | `toLocaleString\|toLocaleDateString` | `frontend/CretasFoodTrace/src/` |
 
 ### 2. Rules 格式检查

@@ -130,7 +130,7 @@ lsof -i :10010
 
 **方法1: 使用编译好的 JAR 文件**
 ```bash
-cd /Users/jietaoxie/my-prototype-logistics/backend-java
+cd /Users/jietaoxie/my-prototype-logistics/backend/java/cretas-api
 
 # 启动服务
 nohup java -jar target/cretas-backend-system-1.0.0.jar > backend.log 2>&1 &
@@ -144,7 +144,7 @@ lsof -i :10010
 
 **方法2: 使用本地运行脚本**
 ```bash
-cd /Users/jietaoxie/my-prototype-logistics/backend-java
+cd /Users/jietaoxie/my-prototype-logistics/backend/java/cretas-api
 ./run-local.sh
 ```
 
@@ -162,7 +162,7 @@ kill -9 <PID>
 
 ```bash
 # 实时查看日志
-tail -f /Users/jietaoxie/my-prototype-logistics/backend-java/backend.log
+tail -f /Users/jietaoxie/my-prototype-logistics/backend/java/cretas-api/backend.log
 
 # 查看最近30行
 tail -n 30 backend.log
@@ -243,7 +243,7 @@ lsof -i :10010
 
 如果没有输出，说明服务未启动。使用以下命令启动:
 ```bash
-cd backend-java
+cd backend/java/cretas-api
 nohup java -jar target/cretas-backend-system-1.0.0.jar > backend.log 2>&1 &
 ```
 
@@ -262,8 +262,8 @@ nohup java -jar target/cretas-backend-system-1.0.0.jar > backend.log 2>&1 &
 
 **A**:
 ```bash
-cd backend-java
-mvn clean package -DskipTests
+cd backend/java/cretas-api
+./mvnw.cmd clean package -Dmaven.test.skip=true
 ```
 
 编译成功后会在 `target/` 目录生成新的 JAR 文件。
@@ -276,7 +276,7 @@ mvn clean package -DskipTests
 mysql -u root cretas_db -e "DROP TABLE IF EXISTS time_clock_record;"
 
 # 重新创建表
-mysql -u root cretas_db < backend-java/database/create_timeclock_table.sql
+mysql -u root cretas_db < backend/java/cretas-api/database/create_timeclock_table.sql
 ```
 
 ---

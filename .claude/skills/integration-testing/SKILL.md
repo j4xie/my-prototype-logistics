@@ -30,11 +30,11 @@ allowed-tools:
 curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:10010/api/mobile/health
 
 # 本地启动后端 (如需要)
-cd backend-java
-JAVA_HOME="C:/Program Files/Java/jdk-17" ./mvnw.cmd clean package -DskipTests -q
-cd ..
+cd backend/java/cretas-api
+JAVA_HOME="C:/Program Files/Java/jdk-17" ./mvnw.cmd clean package -Dmaven.test.skip=true -q
+cd ../../..
 DB_PASSWORD=cretas_pass POSTGRES_SMARTBI_PASSWORD=smartbi_pass \
-  java -jar backend-java/target/cretas-backend-system-1.0.0.jar \
+  java -jar backend/java/cretas-api/target/cretas-backend-system-1.0.0.jar \
   --spring.profiles.active=pg,dev \
   --spring.jpa.database-platform=org.hibernate.dialect.PostgreSQL10Dialect \
   --spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQL10Dialect
@@ -146,7 +146,7 @@ bash tests/api/test_authentication.sh
 
 ## 参考
 
-- 后端代码: `backend-java/src/main/java/com/cretas/aims/controller/`
+- 后端代码: `backend/java/cretas-api/src/main/java/com/cretas/aims/controller/`
 - API Shell 测试: `tests/api/`
 - SmartBI E2E: `tests/e2e-smartbi/`
 - Intent 测试: `tests/intent-routing-e2e-150.py`

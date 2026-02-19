@@ -6,7 +6,7 @@ set -e
 
 PROJECT_ROOT="/Users/jietaoxie/my-prototype-logistics"
 FRONTEND_DIR="$PROJECT_ROOT/frontend/CretasFoodTrace"
-BACKEND_DIR="$PROJECT_ROOT/backend-java"
+BACKEND_DIR="$PROJECT_ROOT/backend/java/cretas-api"
 TARGET_DIR="${1:-$FRONTEND_DIR/src}"
 
 echo "=========================================="

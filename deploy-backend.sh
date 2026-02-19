@@ -154,11 +154,11 @@ deploy_jar() {
     echo ""
     echo "📦 [1/4] 本地 Maven 打包..."
     export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
-    cd backend-java
-    mvn clean package -Dmaven.test.skip=true -q
-    cd ..
+    cd backend/java/cretas-api
+    ./mvnw.cmd clean package -Dmaven.test.skip=true -q
+    cd ../../..
 
-    JAR_PATH="backend-java/target/$JAR_NAME"
+    JAR_PATH="backend/java/cretas-api/target/$JAR_NAME"
     if [ ! -f "$JAR_PATH" ]; then
         echo "❌ JAR 文件不存在: $JAR_PATH"
         exit 1
