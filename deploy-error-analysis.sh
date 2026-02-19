@@ -3,7 +3,7 @@
 
 set -e
 
-SERVER="root@139.196.165.140"
+SERVER="root@47.100.235.168"
 REMOTE_DIR="/www/wwwroot/error-analysis"
 SERVICE_NAME="error-analysis"
 
@@ -33,7 +33,7 @@ sleep 3
 echo "[检查] 验证服务状态..."
 if ssh $SERVER "curl -s http://localhost:8082/health | grep -q healthy"; then
     echo "✅ Error Analysis 服务部署成功！"
-    echo "   URL: http://139.196.165.140:8082"
+    echo "   URL: http://47.100.235.168:8082"
 else
     echo "❌ 服务启动失败，请检查日志"
     ssh $SERVER "tail -20 $REMOTE_DIR/error-analysis.log"

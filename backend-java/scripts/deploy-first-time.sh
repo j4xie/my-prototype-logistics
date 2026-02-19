@@ -40,7 +40,7 @@ echo ""
 nohup java -jar cretas-backend-system-1.0.0.jar \
   --spring.datasource.url=jdbc:mysql://localhost:3306/creats-test?useUnicode=true\&characterEncoding=utf8\&useSSL=false\&serverTimezone=Asia/Shanghai \
   --spring.datasource.username=creats-test \
-  --spring.datasource.password=R8mwtyFEDMDPBwC8 \
+  --spring.datasource.password="${DB_PASSWORD:?请设置环境变量 DB_PASSWORD}" \
   --spring.jpa.hibernate.ddl-auto=update \
   --spring.sql.init.mode=never \
   --server.port=10010 \

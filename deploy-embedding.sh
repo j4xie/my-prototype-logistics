@@ -12,7 +12,7 @@ set -e
 REPO="j4xie/my-prototype-logistics"
 JAR_NAME="embedding-service-1.0.0.jar"
 VERSION="${1:-embedding-v$(date +%Y%m%d_%H%M%S)}"
-SERVER="root@139.196.165.140"
+SERVER="root@47.100.235.168"
 SERVER_DIR="/www/wwwroot/embedding-service"
 
 # Windows 环境设置 PATH

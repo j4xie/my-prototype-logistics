@@ -12,9 +12,9 @@
 set -e
 
 # 配置
-DB_HOST="${DB_HOST:-139.196.165.140}"
+DB_HOST="${DB_HOST:-47.100.235.168}"
 DB_USER="${DB_USER:-creats-test}"
-DB_PASS="${DB_PASS:-R8mwtyFEDMDPBwC8}"
+DB_PASS="${DB_PASS:?请设置环境变量 DB_PASS}"
 DB_NAME="${DB_NAME:-creats-test}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
