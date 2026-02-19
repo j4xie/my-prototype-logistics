@@ -31,10 +31,10 @@ source "${SCRIPT_DIR}/lib/test_utils.sh"
 # 配置常量
 # ============================================================================
 
-API_BASE_URL="${API_BASE_URL:-http://139.196.165.140:10010/api/mobile}"
-DB_HOST="${DB_HOST:-139.196.165.140}"
+API_BASE_URL="${API_BASE_URL:-http://47.100.235.168:10010/api/mobile}"
+DB_HOST="${DB_HOST:-47.100.235.168}"
 DB_USER="${DB_USER:-creats-test}"
-DB_PASS="${DB_PASS:-R8mwtyFEDMDPBwC8}"
+DB_PASS="${DB_PASS:?请设置环境变量 DB_PASS}"
 DB_NAME="${DB_NAME:-creats-test}"
 FACTORY_ID="${FACTORY_ID:-F001}"
 TEST_USERNAME="${TEST_USERNAME:-factory_admin1}"

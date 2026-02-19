@@ -35,18 +35,32 @@ log "Maven 打包..."
 cd "$CODE_DIR/backend-java"
 mvn clean package -DskipTests -q
 
-# 3. 停止旧服务
+# 3. 停止旧服务 (先 SIGTERM，等待优雅关闭，再 SIGKILL)
 log "停止旧服务..."
 PID=$(pgrep -f "$JAR_NAME" || true)
 if [ -n "$PID" ]; then
-    kill $PID
-    sleep 3
+    kill "$PID"
+    for i in {1..10}; do
+        if ! kill -0 "$PID" 2>/dev/null; then
+            log "进程已停止"
+            break
+        fi
+        sleep 1
+    done
+    # 如果还活着，强制终止
+    if kill -0 "$PID" 2>/dev/null; then
+        log "强制终止进程..."
+        kill -9 "$PID" 2>/dev/null || true
+        sleep 1
+    fi
 fi
 
-# 4. 备份旧 JAR
+# 4. 备份旧 JAR (带时间戳，保留最近3份)
 if [ -f "$DEPLOY_DIR/$JAR_NAME" ]; then
-    log "备份旧 JAR..."
-    mv "$DEPLOY_DIR/$JAR_NAME" "$DEPLOY_DIR/${JAR_NAME}.bak"
+    BACKUP_NAME="${JAR_NAME}.bak.$(date +%Y%m%d_%H%M%S)"
+    log "备份旧 JAR: $BACKUP_NAME"
+    cp "$DEPLOY_DIR/$JAR_NAME" "$DEPLOY_DIR/$BACKUP_NAME"
+    ls -t "$DEPLOY_DIR/${JAR_NAME}.bak."* 2>/dev/null | tail -n +4 | xargs -r rm -f 2>/dev/null || true
 fi
 
 # 5. 复制新 JAR
@@ -63,18 +77,23 @@ nohup java -jar $JAR_NAME \
     --server.port=10010 \
     > app.log 2>&1 &
 
-# 7. 清理冗余文件
-log "清理冗余文件..."
+# 7. 清理构建产物
+log "清理构建产物..."
 rm -rf "$CODE_DIR/backend-java/target"
-rm -f "$DEPLOY_DIR/${JAR_NAME}.bak"
 
-# 8. 等待启动
-sleep 5
-if pgrep -f "$JAR_NAME" > /dev/null; then
-    log "✅ 部署成功！服务已启动"
-else
-    log "❌ 部署失败！服务未启动"
-    exit 1
-fi
+# 8. 等待启动 (最多60秒，每2秒检查一次)
+log "等待服务启动..."
+for i in {1..30}; do
+    if curl -s http://localhost:10010/api/mobile/health > /dev/null 2>&1; then
+        log "✅ 部署成功！服务已启动 (${i}x2s)"
+        exit 0
+    fi
+    echo "  等待服务启动... ($i/30)"
+    sleep 2
+done
+
+log "❌ 部署失败！服务启动超时 (60s)"
+log "查看日志: tail -100 $DEPLOY_DIR/app.log"
+exit 1
 
 log "========== 部署完成 =========="

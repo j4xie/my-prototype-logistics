@@ -12,15 +12,26 @@
 
 cd /www/wwwroot/project
 
+# 从环境变量读取数据库密码
+DB_PASS="${DB_PASSWORD:?请设置环境变量 DB_PASSWORD}"
+
 echo "=== 停止旧进程 ==="
-ps aux | grep cretas-backend-system | grep -v grep | awk '{print $2}' | xargs -r kill -9
-sleep 2
+PID=$(pgrep -f "cretas-backend-system" || true)
+if [ -n "$PID" ]; then
+    kill "$PID"
+    for i in {1..10}; do
+        kill -0 "$PID" 2>/dev/null || break
+        sleep 1
+    done
+    kill -9 "$PID" 2>/dev/null || true
+fi
+sleep 1
 
 echo "=== 启动新进程 (生产模式) ==="
 nohup java -jar cretas-backend-system-1.0.0.jar \
   --spring.datasource.url=jdbc:mysql://localhost:3306/creats-test?useUnicode=true\&characterEncoding=utf8\&useSSL=false\&serverTimezone=Asia/Shanghai \
   --spring.datasource.username=creats-test \
-  --spring.datasource.password=R8mwtyFEDMDPBwC8 \
+  --spring.datasource.password="$DB_PASS" \
   --spring.jpa.hibernate.ddl-auto=validate \
   --spring.sql.init.mode=never \
   --server.port=10010 \

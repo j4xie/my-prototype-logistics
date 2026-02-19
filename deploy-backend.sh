@@ -37,8 +37,8 @@ OSS_DEPLOY_PATH="deploy/backend/"
 # Cloudflare R2 配置 (从环境变量读取，不要硬编码凭证)
 R2_BUCKET="cretas"
 R2_ACCOUNT_ID="${R2_ACCOUNT_ID:-7ff7cc2e7bc3af46147d5c7df18062db}"
-R2_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID:?请设置环境变量 R2_ACCESS_KEY_ID}"
-R2_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY:?请设置环境变量 R2_SECRET_ACCESS_KEY}"
+R2_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID:-}"
+R2_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY:-}"
 R2_PUBLIC_URL="${R2_PUBLIC_URL:-https://pub-70da4e6da1f3446d9e055f2793d05837.r2.dev}"
 
 # ==================== 参数解析 ====================
@@ -153,6 +153,7 @@ deploy_jar() {
     # ----- 1. 本地 Maven 打包 -----
     echo ""
     echo "📦 [1/4] 本地 Maven 打包..."
+    export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
     cd backend-java
     mvn clean package -Dmaven.test.skip=true -q
     cd ..
@@ -534,6 +535,9 @@ deploy_jar() {
         exit 1
     fi
 
+    # 清理 .jar.new (防止 restart.sh 的 auto-swap 覆盖刚部署的 JAR)
+    ssh -o ConnectTimeout=5 $SERVER "rm -f $REMOTE_JAR_DIR/aims-0.0.1-SNAPSHOT.jar.new 2>/dev/null" 2>/dev/null || true
+
     # 重启服务 (单独 SSH，restart.sh 的 nohup 不会被 SSH 断开影响)
     echo "   重启服务..."
     ssh $SERVER "cd $REMOTE_JAR_DIR && bash restart.sh" || true
@@ -543,15 +547,24 @@ deploy_jar() {
 
     # ----- 4. 验证部署 -----
     echo ""
-    echo "🔍 [4/4] 验证部署..."
-    sleep 8
+    echo "🔍 [4/4] 验证部署 (最多等待60秒)..."
+    HEALTH_OK=false
+    for i in {1..30}; do
+        HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:10010/api/mobile/health 2>/dev/null || echo "000")
+        if [ "$HEALTH_CHECK" = "200" ]; then
+            echo "   ✓ 服务正常 (HTTP 200, 等待 $((i*2))s)"
+            HEALTH_OK=true
+            break
+        fi
+        if [ $((i % 5)) -eq 0 ]; then
+            echo "   ... 等待服务启动 ($((i*2))/60s, HTTP $HEALTH_CHECK)"
+        fi
+        sleep 2
+    done
 
-    HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:10010/api/mobile/health 2>/dev/null || echo "000")
-
-    if [ "$HEALTH_CHECK" = "200" ]; then
-        echo "   ✓ 服务正常 (HTTP 200)"
-    else
-        echo "   ⚠ 健康检查: $HEALTH_CHECK (可能需要更多启动时间)"
+    if [ "$HEALTH_OK" != "true" ]; then
+        echo "   ⚠ 健康检查超时 (60s)，最后状态: HTTP $HEALTH_CHECK"
+        echo "   请手动检查: ssh $SERVER 'tail -50 $REMOTE_JAR_DIR/cretas-backend.log'"
     fi
 
     echo ""

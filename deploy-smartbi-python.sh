@@ -5,8 +5,8 @@
 set -e
 
 # 配置
-SERVER="root@139.196.165.140"
-REMOTE_DIR="/www/wwwroot/smartbi-python"
+SERVER="root@47.100.235.168"
+REMOTE_DIR="/www/wwwroot/cretas/code/backend/python"
 LOCAL_DIR="backend/python"
 
 echo "=========================================="
@@ -97,7 +97,7 @@ ssh $SERVER "curl -s http://localhost:8083/health || echo '服务未响应'"
 echo ""
 echo "=========================================="
 echo "部署完成!"
-echo "服务地址: http://139.196.165.140:8083"
-echo "健康检查: http://139.196.165.140:8083/health"
-echo "API 文档: http://139.196.165.140:8083/docs"
+echo "服务地址: http://47.100.235.168:8083"
+echo "健康检查: http://47.100.235.168:8083/health"
+echo "API 文档: http://47.100.235.168:8083/docs"
 echo "=========================================="
