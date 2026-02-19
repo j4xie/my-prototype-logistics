@@ -4,7 +4,9 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.smartbi.*;
 import com.cretas.aims.entity.smartbi.SmartBiDatasource;
 import com.cretas.aims.entity.smartbi.SmartBiFieldDefinition;
+import com.cretas.aims.entity.smartbi.SmartBiQueryTemplate;
 import com.cretas.aims.entity.smartbi.SmartBiSchemaHistory;
+import com.cretas.aims.repository.smartbi.SmartBiQueryTemplateRepository;
 import com.cretas.aims.service.smartbi.*;
 import com.cretas.aims.util.DateRangeUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -57,6 +59,7 @@ public class SmartBIAnalysisController {
     private final InventoryHealthAnalysisService inventoryHealthAnalysisService;
     private final ProcurementAnalysisService procurementAnalysisService;
     private final SmartBIService smartBIService;
+    private final SmartBiQueryTemplateRepository queryTemplateRepository;
 
     @Autowired
     public SmartBIAnalysisController(
@@ -71,7 +74,8 @@ public class SmartBIAnalysisController {
             QualityAnalysisService qualityAnalysisService,
             InventoryHealthAnalysisService inventoryHealthAnalysisService,
             ProcurementAnalysisService procurementAnalysisService,
-            @Autowired(required = false) SmartBIService smartBIService) {
+            @Autowired(required = false) SmartBIService smartBIService,
+            SmartBiQueryTemplateRepository queryTemplateRepository) {
         this.salesAnalysisService = salesAnalysisService;
         this.departmentAnalysisService = departmentAnalysisService;
         this.regionAnalysisService = regionAnalysisService;
@@ -84,6 +88,7 @@ public class SmartBIAnalysisController {
         this.inventoryHealthAnalysisService = inventoryHealthAnalysisService;
         this.procurementAnalysisService = procurementAnalysisService;
         this.smartBIService = smartBIService;
+        this.queryTemplateRepository = queryTemplateRepository;
     }
 
     // ==================== Sales Analysis ====================
@@ -223,11 +228,13 @@ public class SmartBIAnalysisController {
         log.info("Get finance analysis: factoryId={}, startDate={}, endDate={}, type={}", factoryId, startDate, endDate, analysisType);
 
         try {
-            if (smartBIService != null) {
+            // When no specific analysisType, use smartBIService overview if available
+            if (smartBIService != null && (analysisType == null || analysisType.isEmpty())) {
                 Map<String, Object> result = smartBIService.getComprehensiveAnalysis(factoryId, startDate, endDate, "finance");
                 return ResponseEntity.ok(ApiResponse.success(result));
             }
 
+            // Per-type analysis: use financeAnalysisService for tab-specific data
             Map<String, Object> result = new HashMap<>();
             result.put("startDate", startDate);
             result.put("endDate", endDate);
@@ -936,6 +943,60 @@ public class SmartBIAnalysisController {
             }
         }
         return "Procurement data retrieved, please check details.";
+    }
+
+    // ==================== Query Templates ====================
+
+    @GetMapping("/query-templates")
+    @Operation(summary = "List query templates", description = "Get all query templates for a factory")
+    public ResponseEntity<ApiResponse<List<SmartBiQueryTemplate>>> getQueryTemplates(
+            @PathVariable String factoryId) {
+        List<SmartBiQueryTemplate> templates = queryTemplateRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId);
+        return ResponseEntity.ok(ApiResponse.success(templates));
+    }
+
+    @PostMapping("/query-templates")
+    @Operation(summary = "Create query template")
+    public ResponseEntity<ApiResponse<SmartBiQueryTemplate>> createQueryTemplate(
+            @PathVariable String factoryId,
+            @RequestBody SmartBiQueryTemplate template) {
+        template.setFactoryId(factoryId);
+        SmartBiQueryTemplate saved = queryTemplateRepository.save(template);
+        return ResponseEntity.ok(ApiResponse.success(saved));
+    }
+
+    @PutMapping("/query-templates/{templateId}")
+    @Operation(summary = "Update query template")
+    public ResponseEntity<ApiResponse<SmartBiQueryTemplate>> updateQueryTemplate(
+            @PathVariable String factoryId,
+            @PathVariable Long templateId,
+            @RequestBody SmartBiQueryTemplate template) {
+        return queryTemplateRepository.findById(templateId)
+                .filter(t -> factoryId.equals(t.getFactoryId()))
+                .map(existing -> {
+                    existing.setName(template.getName());
+                    existing.setCategory(template.getCategory());
+                    existing.setDescription(template.getDescription());
+                    existing.setQueryTemplate(template.getQueryTemplate());
+                    existing.setParameters(template.getParameters());
+                    SmartBiQueryTemplate saved = queryTemplateRepository.save(existing);
+                    return ResponseEntity.ok(ApiResponse.success(saved));
+                })
+                .orElse(ResponseEntity.ok(ApiResponse.error("Template not found")));
+    }
+
+    @DeleteMapping("/query-templates/{templateId}")
+    @Operation(summary = "Delete query template")
+    public ResponseEntity<ApiResponse<Void>> deleteQueryTemplate(
+            @PathVariable String factoryId,
+            @PathVariable Long templateId) {
+        return queryTemplateRepository.findById(templateId)
+                .filter(t -> factoryId.equals(t.getFactoryId()))
+                .map(existing -> {
+                    queryTemplateRepository.delete(existing);
+                    return ResponseEntity.ok(ApiResponse.<Void>success(null));
+                })
+                .orElse(ResponseEntity.ok(ApiResponse.error("Template not found")));
     }
 
     private List<String> generateFollowUpQuestions(IntentResult intentResult) {

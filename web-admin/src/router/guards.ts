@@ -16,6 +16,22 @@ const MOBILE_ONLY_ROLES = [
   'warehouse_worker'
 ];
 
+// 角色路由白名单 — 限制特定角色只能访问指定路径前缀
+// 防止通过 URL 直接访问超出菜单范围的路由
+const ROLE_PATH_WHITELIST: Record<string, string[]> = {
+  finance_manager: [
+    '/dashboard',
+    '/smart-bi/dashboard',
+    '/smart-bi/finance',
+    '/smart-bi/sales',
+    '/smart-bi/query',
+    '/smart-bi/query-templates',
+    '/smart-bi/analysis',
+    '/403',
+    '/404',
+  ],
+};
+
 export function setupRouterGuards(router: Router) {
   // 前置守卫
   router.beforeEach(async (to, _from, next) => {
@@ -63,6 +79,16 @@ export function setupRouterGuards(router: Router) {
       // 跳转到 Mobile 专属提示页面
       next({ path: '/mobile-only', query: { role: authStore.currentRole } });
       return;
+    }
+
+    // 检查角色路由白名单
+    const roleWhitelist = ROLE_PATH_WHITELIST[authStore.currentRole];
+    if (roleWhitelist) {
+      const pathAllowed = roleWhitelist.some(prefix => to.path === prefix || to.path.startsWith(prefix + '/'));
+      if (!pathAllowed) {
+        next('/403');
+        return;
+      }
     }
 
     // 检查模块权限

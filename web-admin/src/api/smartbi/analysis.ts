@@ -5,7 +5,11 @@
  */
 import {
   pythonFetch,
+  request,
+  get,
+  post,
   getFactoryId,
+  getSmartBIBasePath,
   enrichmentLimiter,
   activeControllers,
   humanizeColumnName,
@@ -22,8 +26,10 @@ import {
   type FinancialMetrics,
   type StructuredAIData,
   type EnrichResult,
+  type EnrichProgress,
   type SmartKPI,
   computeSensitivityFallback,
+  PYTHON_LLM_TIMEOUT_MS,
 } from './common';
 
 import { getUploadTableData } from './upload';
@@ -42,6 +48,39 @@ import {
 // Re-export renameMeaninglessColumns so existing imports work
 export { renameMeaninglessColumns } from './data-utils';
 
+// ==================== Trend / Comparison / Export ====================
+
+export function getTrendAnalysis(params: {
+  metric: string;
+  startDate: string;
+  endDate: string;
+  granularity?: 'day' | 'week' | 'month';
+}) {
+  return get(`${getSmartBIBasePath()}/analysis/trend`, { params });
+}
+
+export function getComparisonAnalysis(params: {
+  dimension: string;
+  metrics: string[];
+  startDate: string;
+  endDate: string;
+  compareWith?: 'previous_period' | 'same_period_last_year';
+}) {
+  return post(`${getSmartBIBasePath()}/analysis/comparison`, params);
+}
+
+export function exportReport(params: {
+  reportType: string;
+  format: 'excel' | 'pdf';
+  startDate: string;
+  endDate: string;
+  dimensions?: string[];
+}) {
+  return request.post(`${getSmartBIBasePath()}/export`, params, {
+    responseType: 'blob',
+  });
+}
+
 // ==================== Chat / Analysis Functions ====================
 
 /**
@@ -57,6 +96,7 @@ export async function chatAnalysis(params: {
   try {
     return await pythonFetch('/api/chat/general-analysis', {
       method: 'POST',
+      timeoutMs: PYTHON_LLM_TIMEOUT_MS,
       body: JSON.stringify({
         query: params.query,
         data: params.data,
@@ -1105,13 +1145,17 @@ function buildChartPlan(
  * Sheet data enrichment - multi-chart dashboard version
  * Orchestration: clean -> recommend + quickSummary (parallel) -> buildChartPlan -> batchBuild -> forecast -> insights
  */
-export async function enrichSheetAnalysis(uploadId: number, forceRefresh = false): Promise<EnrichResult> {
+export async function enrichSheetAnalysis(
+  uploadId: number,
+  forceRefresh = false,
+  onProgress?: (progress: EnrichProgress) => void
+): Promise<EnrichResult> {
   // Cache-first
   if (!forceRefresh) {
     try {
       const cached = await getCachedAnalysis(uploadId);
       if (cached && cached.success) {
-        // console.log(`[Cache] Hit for uploadId=${uploadId}, skipping enrichment`);
+        onProgress?.({ phase: 'complete', partial: cached });
         return cached as EnrichResult;
       }
     } catch (e) {
@@ -1159,6 +1203,8 @@ export async function enrichSheetAnalysis(uploadId: number, forceRefresh = false
     const rawIdxArray = cleanedWithIdx.map(r => r.__rawIdx as number);
     let cleanedData = cleanedWithIdx.map(({ __rawIdx, ...rest }) => rest);
 
+    onProgress?.({ phase: 'data', partial: { rawData: cleanedData } });
+
     // 5. Parallel: smart-recommend (LLM) + summary; fallback to basic recommend
     t0 = performance.now();
     const [smartRecRes, summaryRes] = await Promise.all([
@@ -1205,6 +1251,12 @@ export async function enrichSheetAnalysis(uploadId: number, forceRefresh = false
     const plans = buildChartPlan(cleanedData, recommendations, enhancedDataInfo, monthlyColumns, labelField, uploadId);
     tick('detect+buildPlan', t0);
 
+    // Notify KPI ready — user sees KPI cards within ~2-3s
+    const kpiSummaryEarly = summaryRes.success
+      ? { rowCount: summaryRes.rowCount, columnCount: summaryRes.columnCount, columns: summaryRes.columns }
+      : undefined;
+    onProgress?.({ phase: 'kpi', partial: { kpiSummary: kpiSummaryEarly, chartsTotal: plans.length } });
+
     // 7. Batch build charts
     t0 = performance.now();
     let charts: Array<{ chartType: string; title: string; config: Record<string, unknown>; xField?: string; anomalies?: Record<string, unknown> }> = [];
@@ -1238,6 +1290,11 @@ export async function enrichSheetAnalysis(uploadId: number, forceRefresh = false
       }
     }
     tick('batchBuildCharts', t0);
+
+    // Notify charts ready
+    if (charts.length) {
+      onProgress?.({ phase: 'chart-single', partial: { charts: [...charts] } });
+    }
 
     // 7.5 Forecast trend lines for line charts
     t0 = performance.now();
@@ -1360,6 +1417,9 @@ export async function enrichSheetAnalysis(uploadId: number, forceRefresh = false
     }
     tick('generateInsights', t0);
 
+    // Notify AI analysis ready
+    onProgress?.({ phase: 'ai', partial: { aiAnalysis: aiAnalysis || undefined, structuredAI } });
+
     // 9. Assemble KPI summary
     const kpiSummary = summaryRes.success
       ? { rowCount: summaryRes.rowCount, columnCount: summaryRes.columnCount, columns: summaryRes.columns }
@@ -1392,8 +1452,12 @@ export async function enrichSheetAnalysis(uploadId: number, forceRefresh = false
       structuredAI,
       chartConfig: charts.length ? charts[0].config : undefined,
       error: hasContent ? undefined : '未能生成图表或 AI 洞察',
-      timings
+      timings,
+      rawData: cleanedData,
     };
+
+    // Notify complete
+    onProgress?.({ phase: 'complete', partial: enrichResult });
 
     if (hasContent) {
       saveAnalysisToCache(uploadId, getFactoryId(), enrichResult).catch(() => {});

@@ -110,7 +110,7 @@
           </el-button>
         </template>
         <!-- 只读用户：提示 -->
-        <SmartBIEmptyState v-else type="no-upload" @action="() => {}" />
+        <SmartBIEmptyState v-else type="read-only" :showAction="false" />
       </div>
 
       <!-- 上传进度 (SSE 流式) -->
@@ -1030,7 +1030,7 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'SmartBIAnalysis' });
-import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, onDeactivated, onActivated, nextTick, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { post } from '@/api/request';
@@ -1059,6 +1059,10 @@ import type { AIInsight } from '@/components/smartbi/AIInsightPanel.vue';
 import { saveDemoCache, loadDemoCache } from '@/utils/demo-cache';
 import type { DemoCacheData } from '@/utils/demo-cache';
 import { useSmartBIShortcuts } from '@/composables/useSmartBIShortcuts';
+import { useSmartBIDrillDown } from './composables/useSmartBIDrillDown';
+import { useSmartBIStatistical } from './composables/useSmartBIStatistical';
+import { useSmartBICrossSheet } from './composables/useSmartBICrossSheet';
+import { useSmartBIDashboardLayout } from './composables/useSmartBIDashboardLayout';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -1086,6 +1090,22 @@ const pythonUnavailable = computed(() => {
   if (!pythonHealthStatus.value) return false;
   return !pythonHealthStatus.value.available;
 });
+
+/** Check Python health with exponential backoff retry (1s, 2s, 4s) */
+async function checkHealthWithRetry(maxRetries = 3): Promise<boolean> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const res = await checkPythonHealth();
+      if (res?.data) {
+        pythonHealthStatus.value = res.data;
+        if (res.data.available) return true;
+      }
+    } catch { /* ignore */ }
+    if (i < maxRetries - 1) await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
+  }
+  pythonHealthStatus.value = { enabled: false, available: false, llmConfigured: false, consecutiveFailures: maxRetries, lastCheckMs: Date.now(), url: '' };
+  return false;
+}
 
 /** Null-safe batch file name — fallback chain handles null/undefined from API or cache */
 const safeBatchName = (batch: UploadBatch): string => {
@@ -1214,24 +1234,17 @@ const foodIndustryDetection = ref<{
 const foodTemplates = FOOD_TEMPLATES;
 const activeTemplate = ref<string>('');
 
-// 下钻分析状态
-const drillDownVisible = ref(false);
-const drillDownLoading = ref(false);
-const drillDownResult = ref<DrillDownResultType | null>(null);
-const drillDownContext = ref<{ dimension: string; filterValue: string; sheetName: string }>({
-  dimension: '', filterValue: '', sheetName: ''
+// 下钻分析 (composable — lazy deps resolved at call time)
+const {
+  drillDownVisible, drillDownLoading, drillDownResult, drillDownContext,
+  drillStack, currentDrillSheet,
+  handleChartDrillDown, drillByDimension, drillBackToRoot, drillBackTo, inferMeasures,
+} = useSmartBIDrillDown({
+  sheetRawDataCache,
+  processEChartsOptions: (opts: Record<string, unknown>) => processEChartsOptions(opts),
+  waitForElement: (id: string) => waitForElement(id),
+  getSheetCharts: (s: unknown) => getSheetCharts(s as SheetResult),
 });
-
-// P4: 多级下钻栈
-interface DrillLevel {
-  dimension: string;
-  filterValue: string;
-  result: DrillDownResultType;
-  hierarchyType?: string;
-  currentLevel?: number;
-}
-const drillStack = ref<DrillLevel[]>([]);
-const currentDrillSheet = ref<SheetResult | null>(null);
 
 // Global filter state
 const globalFilterDimension = ref('');
@@ -1311,17 +1324,19 @@ const copyShareLink = async () => {
   }
 };
 
-const crossSheetVisible = ref(false);
-const crossSheetLoading = ref(false);
-const crossSheetResult = ref<CrossSheetResultType | null>(null);
-const crossSheetKpiKeys = computed(() => {
-  if (!crossSheetResult.value?.kpiComparison?.length) return [];
-  const keys = new Set<string>();
-  for (const item of crossSheetResult.value.kpiComparison) {
-    if (item.kpis) Object.keys(item.kpis).forEach(k => keys.add(k));
-  }
-  return [...keys];
+// 综合分析 (composable)
+const {
+  crossSheetVisible, crossSheetLoading, crossSheetResult, crossSheetKpiKeys,
+  openCrossSheetAnalysis: _openCrossSheet, renderCrossSheetCharts,
+} = useSmartBICrossSheet({
+  processEChartsOptions: (opts: Record<string, unknown>) => processEChartsOptions(opts),
+  resolveEChartsOptions: (config: Record<string, unknown>) => resolveEChartsOptions(config),
+  enhanceChartOption: (opts: Record<string, unknown>) => enhanceChartOption(opts),
+  waitForElement: (id: string) => waitForElement(id),
+  isIndexSheet: (s: unknown) => isIndexSheet(s as SheetResult),
+  getSheetDisplayName: (s: unknown) => getSheetDisplayName(s as SheetResult),
 });
+const openCrossSheetAnalysis = () => _openCrossSheet(uploadedSheets.value);
 
 // 同比分析状态
 const yoyVisible = ref(false);
@@ -1330,112 +1345,21 @@ const yoyResult = ref<YoYResult | null>(null);
 const yoySheetName = ref('');
 const dataSheets = computed(() => uploadedSheets.value.filter(s => !isIndexSheet(s) && s.uploadId && s.success));
 
-// P5: 因果分析状态
-const statisticalVisible = ref(false);
-const statisticalLoading = ref(false);
-const statisticalResult = ref<StatisticalResult | null>(null);
+// 因果分析 (composable)
+const {
+  statisticalVisible, statisticalLoading, statisticalResult,
+  distributionTableData, distributionTypeLabel,
+  openStatisticalAnalysis, runStatisticalAnalysis, disposeStatHeatmap,
+} = useSmartBIStatistical({ sheetRawDataCache });
 
-const distributionTableData = computed(() => {
-  if (!statisticalResult.value?.distributions) return [];
-  return Object.entries(statisticalResult.value.distributions).map(([col, d]) => ({
-    column: col,
-    mean: d.mean.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-    median: d.median.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-    std: d.std.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-    min: d.min.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-    max: d.max.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-    distribution_type: d.distribution_type,
-    is_normal: d.is_normal,
-    cv: (d.coefficient_of_variation * 100).toFixed(1) + '%',
-  }));
-});
-
-const distributionTypeLabel = (type: string) => {
-  const labels: Record<string, string> = {
-    'normal': '正态分布',
-    'skewed_right': '右偏分布',
-    'skewed_left': '左偏分布',
-    'bimodal': '双峰分布',
-    'uniform': '均匀分布',
-    'heavy_tailed': '重尾分布',
-    'unknown': '未知',
-  };
-  return labels[type] || type;
-};
-
-// P6: 编排模式状态
-const layoutEditMode = ref(false);
-const dashboardLayouts = ref<Map<number, DashboardLayout>>(new Map());
-
-const availableChartDefinitions: ChartDefinition[] = [
-  { type: 'bar', name: '柱状图', defaultWidth: 6, defaultHeight: 3, minWidth: 3, minHeight: 2 },
-  { type: 'line', name: '折线图', defaultWidth: 6, defaultHeight: 3, minWidth: 3, minHeight: 2 },
-  { type: 'pie', name: '饼图', defaultWidth: 4, defaultHeight: 3, minWidth: 3, minHeight: 2 },
-  { type: 'area', name: '面积图', defaultWidth: 6, defaultHeight: 3, minWidth: 3, minHeight: 2 },
-  { type: 'scatter', name: '散点图', defaultWidth: 6, defaultHeight: 3, minWidth: 4, minHeight: 2 },
-  { type: 'waterfall', name: '瀑布图', defaultWidth: 8, defaultHeight: 3, minWidth: 4, minHeight: 3 },
-];
-
-// P6: charts → DashboardLayout 转换
-const chartsToLayout = (charts: Array<{ chartType: string; title: string; config: Record<string, unknown> }>, sheetName: string, uploadId?: number): DashboardLayout => {
-  // Try to load saved layout
-  if (uploadId) {
-    const saved = loadSavedLayout(uploadId);
-    if (saved && saved.cards.length === charts.length && saved.cards.every((card, i) => card.chartType === (charts[i].chartType || 'bar'))) return saved;
-  }
-
-  return {
-    id: `layout-${sheetName}`,
-    name: sheetName,
-    cards: charts.map((chart, i) => ({
-      id: `card-${i}`,
-      chartType: chart.chartType || 'bar',
-      title: chart.title || `图表${i + 1}`,
-      x: (i % 2) * 6,
-      y: Math.floor(i / 2) * 3,
-      w: i === 0 ? 12 : 6,
-      h: i === 0 ? 4 : 3,
-      config: chart.config
-    }))
-  };
-};
-
-const layoutCacheMap = new Map<string, DashboardLayout>();
-const getCachedLayout = (sheet: SheetResult): DashboardLayout => {
-  const charts = getSheetCharts(sheet);
-  const cacheKey = `${sheet.uploadId}-${sheet.sheetIndex}-${charts.length}`;
-  const cached = layoutCacheMap.get(cacheKey);
-  if (cached) return cached;
-  const layout = chartsToLayout(charts, sheet.sheetName, sheet.uploadId);
-  layoutCacheMap.set(cacheKey, layout);
-  return layout;
-};
-
-const handleLayoutChange = (layout: DashboardLayout) => {
-  // Update internal reference
-};
-
-const handleLayoutSave = (layout: DashboardLayout, uploadId?: number) => {
-  if (uploadId) {
-    saveLayout(uploadId, layout);
-    ElMessage.success('布局已保存');
-  }
-};
-
-const saveLayout = (uploadId: number, layout: DashboardLayout) => {
-  const key = `smartbi-layout-${uploadId}`;
-  localStorage.setItem(key, JSON.stringify(layout));
-};
-
-const loadSavedLayout = (uploadId: number): DashboardLayout | null => {
-  const key = `smartbi-layout-${uploadId}`;
-  const saved = localStorage.getItem(key);
-  try {
-    return saved ? JSON.parse(saved) : null;
-  } catch {
-    return null;
-  }
-};
+// 仪表板布局 (composable)
+const {
+  layoutEditMode, dashboardLayouts, availableChartDefinitions,
+  chartsToLayout, handleLayoutChange, handleLayoutSave,
+  saveLayout, loadSavedLayout,
+  getCachedLayout: _getCachedLayout,
+} = useSmartBIDashboardLayout();
+const getCachedLayout = (sheet: SheetResult) => _getCachedLayout(sheet, getSheetCharts);
 
 // ========== Demo 缓存 & Tour 引导 ==========
 const usingDemoCache = ref(false);
@@ -1572,6 +1496,14 @@ const activeFilter = ref<{ dimension: string; value: string } | null>(null);
 
 // ========== Debounce timer for tab switch (Phase 2.3) ==========
 let renderDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+// ========== Hover throttle timers per chart (avoid closure leak on tab switch) ==========
+const hoverThrottleTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function clearHoverThrottleTimers() {
+  hoverThrottleTimers.forEach(timer => clearTimeout(timer));
+  hoverThrottleTimers.clear();
+}
 
 // 获取 Sheet 的所有图表（多图表优先，单图表兼容）
 const getSheetCharts = (sheet: SheetResult): Array<{ chartType: string; title: string; config: Record<string, unknown>; xField?: string; totalItems?: number }> => {
@@ -1988,6 +1920,9 @@ const handleSSEEvent = (event: any) => {
     }
 
     ElMessage.success(result.message || '上传成功');
+
+    // Re-check Python health after upload (enrichment needs it)
+    checkHealthWithRetry(2).catch(() => {});
   }
 
   // 处理错误事件
@@ -1998,13 +1933,37 @@ const handleSSEEvent = (event: any) => {
   }
 };
 
+/** Animation registry — stagger delays by named key */
+const ANIM_REGISTRY: Record<string, (idx: number) => number> = {
+  stagger_80: (idx) => idx * 80,
+  stagger_60: (idx) => idx * 60,
+  stagger_5:  (idx) => idx * 5,
+};
+
+/** Formatter registry — tooltip/label callbacks by named key */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
+  boxplot_tooltip: (p: any) => {
+    const d = p.data;
+    return `${p.name}<br/>最小: ${d[0]}<br/>Q1: ${d[1]}<br/>中位数: ${d[2]}<br/>Q3: ${d[3]}<br/>最大: ${d[4]}`;
+  },
+  correlation_tooltip: (p: any) => p.data[2].toFixed(2),
+  correlation_label: (p: any) => p.data[2].toFixed(1),
+  quadrant_scatter_tooltip: (p: any) =>
+    `${p.data[2]}<br/>收入: ${Number(p.data[0]).toLocaleString()}<br/>利润率: ${p.data[1]}%`,
+  quadrant_scatter_label: (p: any) => p.data[2],
+};
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 /**
- * Process ECharts options: evaluate __FUNC__ animation delays from Python
+ * Process ECharts options: resolve __ANIM__/__FMT__ named references from Python.
+ * No eval/new Function — all callbacks are pre-registered above.
  */
 const processEChartsOptions = (opts: Record<string, unknown>): Record<string, unknown> => {
   const processValue = (val: unknown): unknown => {
-    if (typeof val === 'string' && val.startsWith('__FUNC__')) {
-      try { return new Function('return ' + val.slice(8))(); } catch { return val; }
+    if (typeof val === 'string') {
+      if (val.startsWith('__ANIM__')) return ANIM_REGISTRY[val.slice(8)] ?? val;
+      if (val.startsWith('__FMT__'))  return FMT_REGISTRY[val.slice(7)] ?? val;
     }
     if (Array.isArray(val)) return val.map(processValue);
     if (val && typeof val === 'object') {
@@ -2421,7 +2380,7 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
     let echartsOptions = resolveEChartsOptions(config);
     if (!echartsOptions) return;
 
-    // Process __FUNC__ animation delay strings
+    // Process __ANIM__/__FMT__ named references from Python
     echartsOptions = processEChartsOptions(echartsOptions);
     enhanceChartOption(echartsOptions);
 
@@ -2520,13 +2479,13 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
       });
 
       // P0-B: Throttled hover cross-filtering with dispatchAction (100ms throttle)
-      let hoverThrottleTimer: ReturnType<typeof setTimeout> | null = null;
+      const chartKey = `chart-${activeSheet.sheetIndex}-${idx}`;
       instance.off('mouseover');
       instance.on('mouseover', (params: any) => {
         const hoverValue = params.name || params.seriesName;
         if (!hoverValue) return;
-        if (hoverThrottleTimer) return; // throttle: skip if pending
-        hoverThrottleTimer = setTimeout(() => { hoverThrottleTimer = null; }, 100);
+        if (hoverThrottleTimers.has(chartKey)) return; // throttle: skip if pending
+        hoverThrottleTimers.set(chartKey, setTimeout(() => { hoverThrottleTimers.delete(chartKey); }, 100));
         charts.forEach((_c, sibIdx) => {
           if (sibIdx === idx) return;
           const sibId = `chart-${activeSheet.sheetIndex}-${sibIdx}`;
@@ -2640,13 +2599,21 @@ watch(activeTab, (newTab, oldTab) => {
   globalFilterValues.value = [];
   layoutEditMode.value = false; // P6: reset to standard mode on tab switch
 
+  // Clear hover throttle timers from previous tab to avoid leaked closures
+  clearHoverThrottleTimers();
+
   // T4.1: Clear ECharts instances for previous tab but DON'T dispose —
   // instances are reused on tab switch back (avoid dispose+init cycle ~500ms overhead).
   // Instances are disposed only when component unmounts or after 60s idle.
   if (oldTab) {
     document.querySelectorAll(`[id^="chart-${oldTab}-"]`).forEach(dom => {
       const inst = echarts.getInstanceByDom(dom as HTMLElement);
-      if (inst) inst.clear(); // clear options but keep instance alive for reuse
+      if (inst) {
+        inst.off('click');
+        inst.off('mouseover');
+        inst.off('mouseout');
+        inst.clear(); // clear options but keep instance alive for reuse
+      }
     });
   }
 
@@ -3327,278 +3294,7 @@ const getSheetColumns = (sheet: SheetResult): Array<{ name: string; type: 'numer
   }));
 };
 
-// 图表下钻处理
-const handleChartDrillDown = async (sheet: SheetResult, chartIndex: number, params: any) => {
-  if (drillDownLoading.value) return;
-  if (!params.name && !params.seriesName) return;
-  if (!sheet.uploadId) return;
-
-  // 从图表配置中推断维度和度量
-  const charts = getSheetCharts(sheet);
-  const chartItem = charts[chartIndex];
-  if (!chartItem) return;
-
-  // 使用 enrichment 时保存的 xField 作为维度名
-  let dimension = (chartItem as any).xField || '';
-  if (!dimension) {
-    // fallback 1: 从图表配置 xAxis.name 推断
-    const config = chartItem.config as any;
-    if (config?.xAxis?.name) {
-      dimension = config.xAxis.name;
-    }
-  }
-  if (!dimension) {
-    // fallback 2: 从 xAxis.data 的类型推断 — 如果是分类轴，取第一个标签列名
-    const config = chartItem.config as any;
-    if (config?.xAxis?.type === 'category' && Array.isArray(config.xAxis.data) && config.xAxis.data.length > 0) {
-      // 尝试从 series 名或数据结构推断维度名
-      const firstCat = config.xAxis.data[0];
-      if (typeof firstCat === 'string' && isNaN(Number(firstCat))) {
-        dimension = '分类';
-      }
-    }
-  }
-  if (!dimension) {
-    // fallback 3: 从当前 sheet 的数据中找第一个分类列
-    const flowCharts = sheet.flowResult?.charts;
-    if (flowCharts?.length) {
-      for (const fc of flowCharts) {
-        if ((fc as any).xField) { dimension = (fc as any).xField; break; }
-      }
-    }
-  }
-
-  const filterValue = params.name || params.seriesName || '';
-  if (!filterValue) return;
-
-  drillDownContext.value = {
-    dimension: dimension || '项目',
-    filterValue,
-    sheetName: sheet.sheetName
-  };
-  drillStack.value = []; // P4: reset drill stack for new drill-down
-  currentDrillSheet.value = sheet;
-  drillDownVisible.value = true;
-  drillDownLoading.value = true;
-  drillDownResult.value = null;
-
-  try {
-    // R-21: 优先使用缓存数据，避免重复请求
-    let rawData = sheetRawDataCache.get(sheet.uploadId);
-    if (!rawData) {
-      const tableRes = await getUploadTableData(sheet.uploadId, 0, 2000);
-      const rawTableData = (tableRes.success && tableRes.data?.data) ? tableRes.data.data as Record<string, unknown>[] : [];
-      rawData = renameMeaninglessColumns(rawTableData);
-      sheetRawDataCache.set(sheet.uploadId, rawData);
-    }
-
-    // 推断度量列（所有数值列）
-    const measures = inferMeasures(rawData);
-
-    const result = await chartDrillDown({
-      uploadId: sheet.uploadId,
-      sheetName: sheet.sheetName,
-      dimension: drillDownContext.value.dimension,
-      filterValue,
-      measures: measures.length > 0 ? measures : ['amount', 'revenue', 'profit'],
-      data: rawData
-    });
-
-    drillDownResult.value = result;
-
-    // 渲染下钻图表 - 使用 setTimeout 等待 el-drawer DOM transition 完成
-    if (result.success && result.chartConfig) {
-      renderDrillDownChart(result.chartConfig!, true);
-    }
-  } catch (error) {
-    console.error('Drill-down failed:', error);
-    drillDownResult.value = { success: false, error: '下钻分析失败' };
-  } finally {
-    drillDownLoading.value = false;
-  }
-};
-
-// P4: 推断度量列（提取为可复用函数）
-const inferMeasures = (rawData: Record<string, unknown>[]): string[] => {
-  const measures: string[] = [];
-  if (rawData.length > 0) {
-    for (const key of Object.keys(rawData[0])) {
-      const sample = rawData.slice(0, 10);
-      const numCount = sample.filter(r => {
-        const v = r[key];
-        return typeof v === 'number' || (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v)));
-      }).length;
-      if (numCount >= 5) measures.push(key);
-    }
-  }
-  return measures;
-};
-
-const MAX_DRILL_DEPTH = 10;
-
-// P4: 按指定维度继续下钻
-const drillByDimension = async (targetDimension: string) => {
-  const sheet = currentDrillSheet.value;
-  if (!sheet?.uploadId || !drillDownResult.value) return;
-  if (drillStack.value.length >= MAX_DRILL_DEPTH) {
-    ElMessage.warning(`已达到最大下钻深度 (${MAX_DRILL_DEPTH} 层)`);
-    return;
-  }
-
-  // Push current level to stack
-  drillStack.value.push({
-    dimension: drillDownContext.value.dimension,
-    filterValue: drillDownContext.value.filterValue,
-    result: drillDownResult.value,
-    hierarchyType: drillDownResult.value.hierarchy?.type,
-    currentLevel: drillDownResult.value.current_level ?? undefined,
-  });
-
-  drillDownContext.value = {
-    dimension: targetDimension,
-    filterValue: '',
-    sheetName: sheet.sheetName
-  };
-  drillDownLoading.value = true;
-  drillDownResult.value = null;
-
-  try {
-    let rawData = sheetRawDataCache.get(sheet.uploadId);
-    if (!rawData) return;
-
-    const measures = inferMeasures(rawData);
-    const breadcrumb = drillStack.value.map(l => ({ dimension: l.dimension, value: l.filterValue }));
-
-    const result = await chartDrillDown({
-      uploadId: sheet.uploadId,
-      sheetName: sheet.sheetName,
-      dimension: targetDimension,
-      filterValue: '',
-      measures: measures.length > 0 ? measures : ['amount', 'revenue', 'profit'],
-      data: rawData,
-      breadcrumb,
-    });
-
-    drillDownResult.value = result;
-    if (result.success && result.chartConfig) {
-      renderDrillDownChart(result.chartConfig!, true);
-    }
-  } catch (error) {
-    console.error('Drill deeper failed:', error);
-    drillDownResult.value = { success: false, error: '继续下钻失败' };
-  } finally {
-    drillDownLoading.value = false;
-  }
-};
-
-// P4: 返回到根级
-const drillBackToRoot = () => {
-  if (drillStack.value.length === 0) return;
-  const first = drillStack.value[0];
-  drillStack.value = [];
-  drillDownResult.value = first.result;
-  drillDownContext.value.dimension = first.dimension;
-  drillDownContext.value.filterValue = first.filterValue;
-  if (first.result.chartConfig) {
-    renderDrillDownChart(first.result.chartConfig as Record<string, unknown>, false);
-  }
-};
-
-// P4: 返回到指定层级
-const drillBackTo = (index: number) => {
-  if (index >= drillStack.value.length) return;
-  const target = drillStack.value[index];
-  drillStack.value = drillStack.value.slice(0, index);
-  drillDownResult.value = target.result;
-  drillDownContext.value.dimension = target.dimension;
-  drillDownContext.value.filterValue = target.filterValue;
-  if (target.result.chartConfig) {
-    renderDrillDownChart(target.result.chartConfig as Record<string, unknown>, false);
-  }
-};
-
-// 渲染下钻图表 (DOM-aware, Phase 2.4) — P4: optional click handler for continue drilling
-const renderDrillDownChart = async (config: Record<string, unknown>, registerClick = false) => {
-  const dom = await waitForElement('drill-down-chart');
-  if (!dom) return;
-
-  try {
-    let instance = echarts.getInstanceByDom(dom);
-    if (!instance) instance = echarts.init(dom, 'cretas');
-    instance.setOption(processEChartsOptions(config), { notMerge: true });
-
-    if (registerClick) {
-      instance.off('click');
-      instance.on('click', (params: any) => {
-        if (drillDownLoading.value) return;
-        if (!params.name) return;
-        const sheet = currentDrillSheet.value;
-        if (!sheet?.uploadId) return;
-        if (drillStack.value.length >= MAX_DRILL_DEPTH) {
-          ElMessage.warning(`已达到最大下钻深度 (${MAX_DRILL_DEPTH} 层)`);
-          return;
-        }
-
-        // Push current result to stack and drill deeper
-        if (drillDownResult.value) {
-          drillStack.value.push({
-            dimension: drillDownContext.value.dimension,
-            filterValue: drillDownContext.value.filterValue,
-            result: drillDownResult.value,
-            hierarchyType: drillDownResult.value.hierarchy?.type,
-            currentLevel: drillDownResult.value.current_level ?? undefined,
-          });
-        }
-
-        // Determine next dimension
-        const availDims = drillDownResult.value?.available_dimensions;
-        const nextDim = availDims?.length ? availDims[0] : drillDownContext.value.dimension;
-        const clickValue = params.name;
-
-        drillDownContext.value = {
-          dimension: nextDim,
-          filterValue: clickValue,
-          sheetName: sheet.sheetName,
-        };
-        drillDownLoading.value = true;
-        drillDownResult.value = null;
-
-        (async () => {
-          try {
-            const rawData = sheetRawDataCache.get(sheet.uploadId!);
-            if (!rawData) return;
-            const measures = inferMeasures(rawData);
-            const breadcrumb = drillStack.value.map(l => ({ dimension: l.dimension, value: l.filterValue }));
-            const hierarchy = drillStack.value[drillStack.value.length - 1]?.hierarchyType;
-
-            const result = await chartDrillDown({
-              uploadId: sheet.uploadId!,
-              sheetName: sheet.sheetName,
-              dimension: nextDim,
-              filterValue: clickValue,
-              measures: measures.length > 0 ? measures : ['amount', 'revenue', 'profit'],
-              data: rawData,
-              hierarchyType: hierarchy,
-              breadcrumb,
-            });
-
-            drillDownResult.value = result;
-            if (result.success && result.chartConfig) {
-              renderDrillDownChart(result.chartConfig!, true);
-            }
-          } catch (error) {
-            console.error('Continue drill failed:', error);
-            drillDownResult.value = { success: false, error: '继续下钻失败' };
-          } finally {
-            drillDownLoading.value = false;
-          }
-        })();
-      });
-    }
-  } catch (error) {
-    console.error('Failed to render drill-down chart:', error);
-  }
-};
+// Drill-down analysis — provided by useSmartBIDrillDown composable
 
 // ========== P1.3: View More (truncated chart data) ==========
 const getDisplayedCount = (chart: { chartType: string; config: Record<string, unknown> }): number => {
@@ -4073,15 +3769,37 @@ const waitForElement = (id: string, timeout = 2000): Promise<HTMLElement | null>
 };
 
 // ========== Cleanup on unmount (Phase 2.2 — prevent memory leaks) ==========
+// ========== keep-alive lifecycle: pause/resume side effects ==========
+onDeactivated(() => {
+  // Pause resize listener & auto-refresh when cached (navigated away)
+  window.removeEventListener('resize', handleResize);
+  if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  clearHoverThrottleTimers();
+});
+
+onActivated(() => {
+  // Resume resize listener when re-entering
+  window.addEventListener('resize', handleResize);
+  // Resize ECharts to fit (container size may have changed)
+  nextTick(() => {
+    document.querySelectorAll('[id^="chart-"]').forEach(dom => {
+      const instance = echarts.getInstanceByDom(dom as HTMLElement);
+      if (instance) instance.resize();
+    });
+  });
+});
+
 onBeforeUnmount(() => {
   if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
+  clearHoverThrottleTimers();
   if (autoRefreshTimer) clearInterval(autoRefreshTimer);
   window.removeEventListener('resize', handleResize);
   // T5.2: Disconnect intersection observer
   if (chartObserver) { chartObserver.disconnect(); chartObserver = null; }
   pendingChartConfigs.clear();
-  // Dispose all ECharts instances
-  document.querySelectorAll('[id^="chart-"]').forEach(dom => {
+  // Dispose all ECharts instances within this component's scope
+  const root = document.querySelector('.smart-bi-analysis');
+  (root || document).querySelectorAll('[id^="chart-"]').forEach(dom => {
     const instance = echarts.getInstanceByDom(dom as HTMLElement);
     if (instance) instance.dispose();
   });
@@ -4089,67 +3807,7 @@ onBeforeUnmount(() => {
   disposeStatHeatmap();
 });
 
-// 打开综合分析
-let crossSheetAbortController: AbortController | null = null;
-const openCrossSheetAnalysis = async () => {
-  // R-23: 取消上一次未完成的请求
-  if (crossSheetAbortController) crossSheetAbortController.abort();
-  crossSheetAbortController = new AbortController();
-  const dataSheets = uploadedSheets.value.filter(s => !isIndexSheet(s) && s.uploadId);
-  if (dataSheets.length < 2) {
-    ElMessage.warning('至少需要 2 个数据 Sheet 才能进行综合分析');
-    return;
-  }
-
-  crossSheetVisible.value = true;
-  crossSheetLoading.value = true;
-  crossSheetResult.value = null;
-
-  try {
-    const result = await crossSheetAnalysis({
-      uploadIds: dataSheets.map(s => s.uploadId!),
-      sheetNames: dataSheets.map(s => getSheetDisplayName(s))
-    });
-
-    crossSheetResult.value = result;
-
-    // 渲染综合图表 - 使用 setTimeout 等待 el-dialog DOM transition 完成
-    if (result.success && result.charts?.length) {
-      await nextTick();
-      renderCrossSheetCharts(result.charts!);
-    }
-  } catch (error) {
-    console.error('Cross-sheet analysis failed:', error);
-    crossSheetResult.value = { success: false, error: '综合分析失败' };
-  } finally {
-    crossSheetLoading.value = false;
-  }
-};
-
-// 渲染综合分析图表
-const renderCrossSheetCharts = async (charts: Array<{ chartType: string; title: string; config: Record<string, unknown> }>) => {
-  for (let idx = 0; idx < charts.length; idx++) {
-    const chart = charts[idx];
-    const dom = await waitForElement(`cross-chart-${idx}`);
-    if (!dom) continue;
-
-    try {
-      const config = chart.config;
-      if (!config) continue;
-
-      const options = resolveEChartsOptions(config);
-      if (options) {
-        let instance = echarts.getInstanceByDom(dom);
-        if (!instance) instance = echarts.init(dom, 'cretas');
-        const processed = processEChartsOptions(options);
-        enhanceChartOption(processed);
-        instance.setOption(processed, { notMerge: true });
-      }
-    } catch (error) {
-      console.error(`Failed to render cross-chart ${idx}:`, error);
-    }
-  }
-};
+// Cross-sheet analysis — provided by useSmartBICrossSheet composable
 
 // 打开同比分析对话框
 const openYoYComparison = () => {
@@ -4196,97 +3854,7 @@ const transformYoYData = (comparison: YoYComparisonItem[]): ComparisonData[] => 
   }));
 };
 
-// P5: 打开因果分析
-const openStatisticalAnalysis = () => {
-  statisticalResult.value = null;
-  statisticalLoading.value = false;
-  statisticalVisible.value = true;
-};
-
-// P5: 运行统计分析
-const runStatisticalAnalysis = async (sheet: SheetResult) => {
-  if (!sheet.uploadId) {
-    ElMessage.warning('该 Sheet 没有持久化数据');
-    return;
-  }
-
-  statisticalLoading.value = true;
-  statisticalResult.value = null;
-
-  try {
-    let rawData = sheetRawDataCache.get(sheet.uploadId);
-    if (!rawData) {
-      const tableRes = await getUploadTableData(sheet.uploadId, 0, 2000);
-      const rawTableData = (tableRes.success && tableRes.data?.data) ? tableRes.data.data as Record<string, unknown>[] : [];
-      rawData = renameMeaninglessColumns(rawTableData);
-      sheetRawDataCache.set(sheet.uploadId, rawData);
-    }
-
-    const result = await statisticalAnalysis({ data: rawData });
-    statisticalResult.value = result;
-
-    // Render heatmap if correlations exist
-    if (result.success && result.correlations?.matrix && Object.keys(result.correlations.matrix).length >= 2) {
-      renderStatHeatmap(result.correlations.matrix);
-    }
-  } catch (error) {
-    console.error('Statistical analysis failed:', error);
-    statisticalResult.value = {
-      success: false,
-      distributions: {},
-      correlations: { matrix: {}, strong_positive: [], strong_negative: [] },
-      comparisons: {},
-      outlier_summary: {},
-      processing_time_ms: 0,
-      error: '统计分析失败'
-    };
-  } finally {
-    statisticalLoading.value = false;
-  }
-};
-
-// P5: 渲染相关性热力图
-const renderStatHeatmap = async (matrix: Record<string, Record<string, number>>) => {
-  await nextTick();
-  // Wait for dialog DOM transition
-  setTimeout(() => {
-    const dom = document.getElementById('stat-heatmap-chart');
-    if (!dom) return;
-    let instance = echarts.getInstanceByDom(dom);
-    if (!instance) instance = echarts.init(dom, 'cretas');
-
-    const measures = Object.keys(matrix);
-    const data: [number, number, number][] = [];
-    for (let i = 0; i < measures.length; i++) {
-      for (let j = 0; j < measures.length; j++) {
-        data.push([i, j, Math.round((matrix[measures[i]]?.[measures[j]] ?? 0) * 100) / 100]);
-      }
-    }
-
-    instance.setOption({
-      tooltip: {
-        position: 'top',
-        formatter: (p: any) => `${measures[p.data[0]]} vs ${measures[p.data[1]]}<br/>相关系数: ${p.data[2]}`
-      },
-      grid: { left: '18%', right: '10%', bottom: '18%', top: '5%', containLabel: true },
-      xAxis: { type: 'category', data: measures, splitArea: { show: true }, axisLabel: { rotate: 45, fontSize: 10 } },
-      yAxis: { type: 'category', data: measures, splitArea: { show: true }, axisLabel: { fontSize: 10 } },
-      visualMap: {
-        min: -1, max: 1, calculable: true, orient: 'horizontal', left: 'center', bottom: '0%',
-        inRange: { color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'] }
-      },
-      series: [{ name: '相关系数', type: 'heatmap', data, label: { show: true, fontSize: 10 }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } } }]
-    }, { notMerge: true });
-  }, 300);
-};
-
-const disposeStatHeatmap = () => {
-  const dom = document.getElementById('stat-heatmap-chart');
-  if (dom) {
-    const instance = echarts.getInstanceByDom(dom);
-    if (instance) instance.dispose();
-  }
-};
+// P5: Statistical analysis — provided by useSmartBIStatistical composable
 
 // 加载 Sheet 数据
 const loadSheetData = async (sheet: SheetResult) => {
@@ -4583,12 +4151,8 @@ const { showHelp: showShortcutsHelp, shortcuts: shortcutsList } = useSmartBIShor
 });
 
 onMounted(() => {
-  // 后台检查 Python 服务健康状态
-  checkPythonHealth().then(res => {
-    if (res?.data) pythonHealthStatus.value = res.data;
-  }).catch(() => {
-    // 检查失败不阻塞页面加载
-  });
+  // 后台检查 Python 服务健康状态 (with retry)
+  checkHealthWithRetry().catch(() => {});
 
   // Demo 缓存快速恢复: 如果有缓存，跳过网络请求直接渲染
   const restoredFromCache = restoreFromDemoCache();

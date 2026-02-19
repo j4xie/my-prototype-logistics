@@ -18,5 +18,11 @@ export function formatNumber(value: number | null | undefined, decimals = 2): st
   if (Math.abs(value) >= 10000) {
     return (value / 10000).toFixed(decimals) + '万'
   }
-  return value.toLocaleString('zh-CN', { maximumFractionDigits: decimals })
+  // Manual thousands separator (avoid toLocaleString for cross-env consistency)
+  const fixed = value.toFixed(decimals)
+  const [intPart, decPart] = fixed.split('.')
+  const sign = intPart.startsWith('-') ? '-' : ''
+  const digits = sign ? intPart.slice(1) : intPart
+  const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return decPart ? `${sign}${formatted}.${decPart}` : `${sign}${formatted}`
 }

@@ -35,10 +35,13 @@ export function getUserData(): { factoryId: string; [key: string]: unknown } {
 export function getFactoryId(): string {
   try {
     const user = getUserData();
-    if (!user.factoryId) {
+    // Auth store stores factoryId nested: { factoryUser: { factoryId } }
+    const fid = (user as Record<string, unknown>).factoryId
+      || ((user as Record<string, unknown>).factoryUser as Record<string, unknown> | undefined)?.factoryId;
+    if (!fid || typeof fid !== 'string') {
       throw new Error('No factoryId in user data');
     }
-    return user.factoryId;
+    return fid;
   } catch (error) {
     console.error('Failed to get factoryId:', error);
     // Do NOT fall back to 'F001' -- surface the error
@@ -102,8 +105,13 @@ export function abortSmartBIRequest(key: string): void {
  * Dev: Vite proxy (/smartbi-api -> localhost:8083/api) for CORS
  * Prod: VITE_SMARTBI_URL direct
  */
-const PYTHON_SMARTBI_URL = import.meta.env.VITE_SMARTBI_URL || '/smartbi-api';
+export const PYTHON_SMARTBI_URL = import.meta.env.VITE_SMARTBI_URL || '/smartbi-api';
 const PYTHON_TIMEOUT_MS = 30000;
+export const PYTHON_LLM_TIMEOUT_MS = 90000; // LLM-heavy calls (chat, insight generation)
+export const PYTHON_HEADERS = {
+  'Content-Type': 'application/json',
+  'X-Internal-Secret': import.meta.env.VITE_PYTHON_SECRET || 'cretas-internal-2026',
+} as const;
 
 // ==================== snake_case -> camelCase transform (AUDIT-065) ====================
 
@@ -129,14 +137,15 @@ export function transformKeys(obj: unknown): unknown {
  * For FormData uploads, pass `headers: {}` to remove the default Content-Type
  * so the browser sets multipart/form-data automatically.
  */
-export async function pythonFetch(path: string, options: RequestInit = {}): Promise<unknown> {
+export async function pythonFetch(path: string, options: RequestInit & { timeoutMs?: number } = {}): Promise<unknown> {
+  const { timeoutMs, ...fetchOptions } = options;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), PYTHON_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs || PYTHON_TIMEOUT_MS);
 
   // If caller already provided a signal (e.g. for user-initiated abort),
   // listen on it and forward the abort to our controller.
-  if (options.signal) {
-    const externalSignal = options.signal;
+  if (fetchOptions.signal) {
+    const externalSignal = fetchOptions.signal;
     if (externalSignal.aborted) {
       controller.abort();
     } else {
@@ -146,12 +155,11 @@ export async function pythonFetch(path: string, options: RequestInit = {}): Prom
 
   try {
     const response = await fetch(`${PYTHON_SMARTBI_URL}${path}`, {
-      ...options,
+      ...fetchOptions,
       signal: controller.signal,
       headers: {
-        'Content-Type': 'application/json',
-        'X-Internal-Secret': import.meta.env.VITE_PYTHON_SECRET || 'cretas-internal-2026',
-        ...options.headers,
+        ...PYTHON_HEADERS,
+        ...fetchOptions.headers,
       },
     });
 
@@ -498,6 +506,14 @@ export function computeSensitivityFallback(fm: FinancialMetrics): StructuredAIDa
 }
 
 /**
+ * Progressive rendering callback (P0: Progressive Rendering)
+ */
+export interface EnrichProgress {
+  phase: 'data' | 'kpi' | 'charts' | 'chart-single' | 'ai' | 'ai-streaming' | 'complete';
+  partial: Partial<EnrichResult> & { aiStreamChunk?: string; chartsTotal?: number };
+}
+
+/**
  * Enrich result (multi-chart + KPI)
  */
 export interface EnrichResult {
@@ -512,6 +528,7 @@ export interface EnrichResult {
   error?: string;
   chartConfig?: Record<string, unknown>;
   timings?: Record<string, number>;
+  rawData?: Record<string, unknown>[];
 }
 
 /**

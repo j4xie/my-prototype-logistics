@@ -57,6 +57,24 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     private static final int DISPLAY_SCALE = 2;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
 
+    /**
+     * 过滤财务数据，只保留最新 uploadId 的记录。
+     * 避免多个 Excel Sheet 上传后数据被重复聚合（如 8 个利润表 sheet 的收入加在一起）。
+     */
+    private List<SmartBiFinanceData> filterToLatestUpload(List<SmartBiFinanceData> records) {
+        if (records == null || records.isEmpty()) return records;
+        Long latestUploadId = records.stream()
+                .map(SmartBiFinanceData::getUploadId)
+                .filter(Objects::nonNull)
+                .max(Long::compareTo)
+                .orElse(null);
+        if (latestUploadId == null) return records;
+        final Long targetId = latestUploadId;
+        return records.stream()
+                .filter(r -> targetId.equals(r.getUploadId()))
+                .collect(Collectors.toList());
+    }
+
     // 预警阈值
     private static final double AGING_90_RED_THRESHOLD = 20.0;
     private static final double AGING_90_YELLOW_THRESHOLD = 10.0;
@@ -112,22 +130,32 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     public ChartConfig getProfitTrendChart(String factoryId, LocalDate startDate, LocalDate endDate, String period) {
         log.info("获取利润趋势图: factoryId={}, period={}", factoryId, period);
 
-        // 获取销售数据计算利润
-        List<SmartBiSalesData> salesData = salesDataRepository.findByFactoryIdAndOrderDateBetween(
-                factoryId, startDate, endDate);
+        // 优先从 finance_data 获取 REVENUE + COST 记录（来自 Excel 自动提取）
+        // filterToLatestUpload: 只使用最新上传的数据，避免多 sheet 重复聚合
+        List<SmartBiFinanceData> revenueData = filterToLatestUpload(financeDataRepository
+                .findByFactoryIdAndRecordTypeAndRecordDateBetween(factoryId, RecordType.REVENUE, startDate, endDate));
+        List<SmartBiFinanceData> costData = filterToLatestUpload(financeDataRepository
+                .findByFactoryIdAndRecordTypeAndRecordDateBetween(factoryId, RecordType.COST, startDate, endDate));
 
-        // 按周期聚合
-        Map<String, BigDecimal[]> aggregatedData = aggregateProfitByPeriod(salesData, period);
-
-        // 构建图表数据
         List<Map<String, Object>> chartData = new ArrayList<>();
-        for (Map.Entry<String, BigDecimal[]> entry : aggregatedData.entrySet()) {
-            Map<String, Object> point = new LinkedHashMap<>();
-            point.put("period", entry.getKey());
-            point.put("grossProfit", entry.getValue()[0]);
-            point.put("netProfit", entry.getValue()[1]);
-            point.put("grossMargin", entry.getValue()[2]);
-            chartData.add(point);
+
+        if (!revenueData.isEmpty() || !costData.isEmpty()) {
+            // 使用 finance_data 中的 REVENUE/COST 数据
+            chartData = buildProfitChartFromFinanceData(revenueData, costData, period);
+            log.info("使用 finance_data REVENUE/COST 数据: revenue={}, cost={}", revenueData.size(), costData.size());
+        } else {
+            // 回退到销售数据
+            List<SmartBiSalesData> salesData = salesDataRepository.findByFactoryIdAndOrderDateBetween(
+                    factoryId, startDate, endDate);
+            Map<String, BigDecimal[]> aggregatedData = aggregateProfitByPeriod(salesData, period);
+            for (Map.Entry<String, BigDecimal[]> entry : aggregatedData.entrySet()) {
+                Map<String, Object> point = new LinkedHashMap<>();
+                point.put("period", entry.getKey());
+                point.put("grossProfit", entry.getValue()[0]);
+                point.put("netProfit", entry.getValue()[1]);
+                point.put("grossMargin", entry.getValue()[2]);
+                chartData.add(point);
+            }
         }
 
         // 配置图表选项
@@ -137,8 +165,10 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                 Map.of("name", "毛利率(%)", "position", "right")
         ));
         options.put("series", Arrays.asList(
+                Map.of("name", "营业收入", "type", "bar", "yAxisIndex", 0),
+                Map.of("name", "营业成本", "type", "bar", "yAxisIndex", 0),
                 Map.of("name", "毛利额", "type", "bar", "yAxisIndex", 0),
-                Map.of("name", "净利润", "type", "bar", "yAxisIndex", 0),
+                Map.of("name", "净利润", "type", "line", "yAxisIndex", 0),
                 Map.of("name", "毛利率", "type", "line", "yAxisIndex", 1)
         ));
 
@@ -153,25 +183,127 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                 .build();
     }
 
+    /**
+     * 从 finance_data 的 REVENUE/COST 记录构建利润趋势图数据
+     */
+    private List<Map<String, Object>> buildProfitChartFromFinanceData(
+            List<SmartBiFinanceData> revenueData,
+            List<SmartBiFinanceData> costData,
+            String period) {
+
+        // 按周期聚合 REVENUE
+        Map<String, BigDecimal> revenueByPeriod = new TreeMap<>();
+        for (SmartBiFinanceData r : revenueData) {
+            if (r.getActualAmount() == null) continue;
+            String key = getPeriodKey(r.getRecordDate(), period);
+            // 只聚合"营业收入"类别（排除毛利、净利等）
+            String cat = r.getCategory() != null ? r.getCategory() : "";
+            if (cat.contains("收入")) {
+                revenueByPeriod.merge(key, r.getActualAmount(), BigDecimal::add);
+            }
+        }
+
+        // 按周期聚合 COST
+        Map<String, BigDecimal> costByPeriod = new TreeMap<>();
+        for (SmartBiFinanceData c : costData) {
+            if (c.getTotalCost() == null && c.getActualAmount() == null) continue;
+            String key = getPeriodKey(c.getRecordDate(), period);
+            BigDecimal val = c.getTotalCost() != null ? c.getTotalCost() : c.getActualAmount();
+            costByPeriod.merge(key, val, BigDecimal::add);
+        }
+
+        // 按周期聚合净利润（从 REVENUE 中查找）
+        Map<String, BigDecimal> netProfitByPeriod = new TreeMap<>();
+        for (SmartBiFinanceData r : revenueData) {
+            if (r.getActualAmount() == null) continue;
+            String key = getPeriodKey(r.getRecordDate(), period);
+            String cat = r.getCategory() != null ? r.getCategory() : "";
+            if (cat.contains("净利")) {
+                netProfitByPeriod.merge(key, r.getActualAmount(), BigDecimal::add);
+            }
+        }
+
+        // 合并所有周期
+        Set<String> allPeriods = new TreeSet<>();
+        allPeriods.addAll(revenueByPeriod.keySet());
+        allPeriods.addAll(costByPeriod.keySet());
+
+        List<Map<String, Object>> chartData = new ArrayList<>();
+        for (String periodKey : allPeriods) {
+            BigDecimal revenue = revenueByPeriod.getOrDefault(periodKey, BigDecimal.ZERO);
+            BigDecimal cost = costByPeriod.getOrDefault(periodKey, BigDecimal.ZERO);
+            BigDecimal grossProfit = revenue.subtract(cost);
+            BigDecimal grossMargin = revenue.compareTo(BigDecimal.ZERO) > 0
+                    ? grossProfit.divide(revenue, SCALE, ROUNDING_MODE).multiply(new BigDecimal("100"))
+                    : BigDecimal.ZERO;
+            BigDecimal netProfit = netProfitByPeriod.getOrDefault(periodKey, grossProfit);
+
+            Map<String, Object> point = new LinkedHashMap<>();
+            point.put("period", periodKey);
+            point.put("revenue", revenue.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            point.put("cost", cost.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            point.put("grossProfit", grossProfit.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            point.put("netProfit", netProfit.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            point.put("grossMargin", grossMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            chartData.add(point);
+        }
+
+        return chartData;
+    }
+
     @Override
     public List<MetricResult> getProfitMetrics(String factoryId, LocalDate startDate, LocalDate endDate) {
         log.info("获取利润指标: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
 
-        List<SmartBiSalesData> salesData = salesDataRepository.findByFactoryIdAndOrderDateBetween(
-                factoryId, startDate, endDate);
+        // 优先从 finance_data 获取 REVENUE 数据
+        // filterToLatestUpload: 只使用最新上传的数据，避免多 sheet 重复聚合
+        List<SmartBiFinanceData> revenueRecords = filterToLatestUpload(financeDataRepository
+                .findByFactoryIdAndRecordTypeAndRecordDateBetween(factoryId, RecordType.REVENUE, startDate, endDate));
+        List<SmartBiFinanceData> costRecords = filterToLatestUpload(financeDataRepository
+                .findByFactoryIdAndRecordTypeAndRecordDateBetween(factoryId, RecordType.COST, startDate, endDate));
+
+        BigDecimal totalRevenue;
+        BigDecimal totalCost;
+        BigDecimal netProfit;
+        boolean hasFinanceData = !revenueRecords.isEmpty() || !costRecords.isEmpty();
+
+        if (hasFinanceData) {
+            // 从 REVENUE 记录中取"收入"类
+            totalRevenue = revenueRecords.stream()
+                    .filter(r -> r.getCategory() != null && r.getCategory().contains("收入"))
+                    .map(SmartBiFinanceData::getActualAmount)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            totalCost = costRecords.stream()
+                    .map(r -> r.getTotalCost() != null ? r.getTotalCost() : r.getActualAmount())
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // 从 REVENUE 记录中取"净利"类
+            netProfit = revenueRecords.stream()
+                    .filter(r -> r.getCategory() != null && r.getCategory().contains("净利"))
+                    .map(SmartBiFinanceData::getActualAmount)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            log.info("使用 finance_data 计算利润指标: revenue={}, cost={}", totalRevenue, totalCost);
+        } else {
+            // 回退到销售数据
+            List<SmartBiSalesData> salesData = salesDataRepository.findByFactoryIdAndOrderDateBetween(
+                    factoryId, startDate, endDate);
+            totalRevenue = salesData.stream()
+                    .map(SmartBiSalesData::getAmount)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            totalCost = salesData.stream()
+                    .map(SmartBiSalesData::getCost)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            netProfit = null; // will calculate below
+        }
 
         List<MetricResult> metrics = new ArrayList<>();
-
-        // 计算汇总值
-        BigDecimal totalRevenue = salesData.stream()
-                .map(SmartBiSalesData::getAmount)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalCost = salesData.stream()
-                .map(SmartBiSalesData::getCost)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal grossProfit = totalRevenue.subtract(totalCost);
         BigDecimal grossMargin = totalRevenue.compareTo(BigDecimal.ZERO) > 0
@@ -201,9 +333,12 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                 .description("毛利额占销售收入的比例")
                 .build());
 
-        // 净利润（假设费用为毛利的30%）
-        BigDecimal expenses = grossProfit.multiply(new BigDecimal("0.30"));
-        BigDecimal netProfit = grossProfit.subtract(expenses);
+        // 净利润
+        if (netProfit == null || netProfit.compareTo(BigDecimal.ZERO) == 0) {
+            // 回退：假设费用为毛利的30%
+            BigDecimal expenses = grossProfit.multiply(new BigDecimal("0.30"));
+            netProfit = grossProfit.subtract(expenses);
+        }
         BigDecimal netMargin = totalRevenue.compareTo(BigDecimal.ZERO) > 0
                 ? netProfit.divide(totalRevenue, SCALE, ROUNDING_MODE).multiply(new BigDecimal("100"))
                 : BigDecimal.ZERO;
@@ -254,8 +389,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     public ChartConfig getCostStructureChart(String factoryId, LocalDate startDate, LocalDate endDate) {
         log.info("获取成本结构图: factoryId={}", factoryId);
 
-        List<SmartBiFinanceData> costData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                factoryId, RecordType.COST, startDate, endDate);
+        List<SmartBiFinanceData> costData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.COST, startDate, endDate));
 
         // 汇总成本结构
         BigDecimal materialCost = BigDecimal.ZERO;
@@ -296,8 +431,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     public ChartConfig getCostTrendChart(String factoryId, LocalDate startDate, LocalDate endDate, String period) {
         log.info("获取成本趋势图: factoryId={}, period={}", factoryId, period);
 
-        List<SmartBiFinanceData> costData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                factoryId, RecordType.COST, startDate, endDate);
+        List<SmartBiFinanceData> costData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.COST, startDate, endDate));
 
         // 按周期聚合成本
         Map<String, BigDecimal[]> aggregatedData = aggregateCostByPeriod(costData, period);
@@ -340,8 +475,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         log.info("获取应收账龄分布图: factoryId={}, date={}", factoryId, date);
 
         // 获取截止日期前的应收数据
-        List<SmartBiFinanceData> arData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                factoryId, RecordType.AR, date.minusYears(1), date);
+        List<SmartBiFinanceData> arData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.AR, date.minusYears(1), date));
 
         // 按账龄分段汇总
         Map<String, BigDecimal> agingBuckets = calculateAgingBuckets(arData);
@@ -380,8 +515,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     public List<MetricResult> getReceivableMetrics(String factoryId, LocalDate date) {
         log.info("获取应收指标: factoryId={}, date={}", factoryId, date);
 
-        List<SmartBiFinanceData> arData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                factoryId, RecordType.AR, date.minusYears(1), date);
+        List<SmartBiFinanceData> arData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.AR, date.minusYears(1), date));
 
         List<MetricResult> metrics = new ArrayList<>();
 
@@ -487,8 +622,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     public List<RankingItem> getOverdueCustomerRanking(String factoryId, LocalDate date) {
         log.info("获取逾期客户排名: factoryId={}, date={}", factoryId, date);
 
-        List<SmartBiFinanceData> arData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                factoryId, RecordType.AR, date.minusYears(1), date);
+        List<SmartBiFinanceData> arData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.AR, date.minusYears(1), date));
 
         // 按客户汇总逾期金额
         Map<String, BigDecimal[]> customerOverdue = new LinkedHashMap<>();
@@ -539,8 +674,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     public ChartConfig getReceivableTrendChart(String factoryId, LocalDate startDate, LocalDate endDate) {
         log.info("获取应收趋势图: factoryId={}", factoryId);
 
-        List<SmartBiFinanceData> arData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                factoryId, RecordType.AR, startDate, endDate);
+        List<SmartBiFinanceData> arData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.AR, startDate, endDate));
 
         // 按月聚合
         Map<String, BigDecimal[]> monthlyData = new TreeMap<>();
@@ -585,8 +720,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     public ChartConfig getPayableAgingChart(String factoryId, LocalDate date) {
         log.info("获取应付账龄分布图: factoryId={}, date={}", factoryId, date);
 
-        List<SmartBiFinanceData> apData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                factoryId, RecordType.AP, date.minusYears(1), date);
+        List<SmartBiFinanceData> apData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.AP, date.minusYears(1), date));
 
         // 按账龄分段汇总
         Map<String, BigDecimal> agingBuckets = calculatePayableAgingBuckets(apData);
@@ -623,8 +758,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     public List<MetricResult> getPayableMetrics(String factoryId, LocalDate date) {
         log.info("获取应付指标: factoryId={}, date={}", factoryId, date);
 
-        List<SmartBiFinanceData> apData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                factoryId, RecordType.AP, date.minusYears(1), date);
+        List<SmartBiFinanceData> apData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.AP, date.minusYears(1), date));
 
         List<MetricResult> metrics = new ArrayList<>();
 
@@ -679,8 +814,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         LocalDate startDate = LocalDate.of(year, 1, 1);
         LocalDate endDate = LocalDate.of(year, 12, 31);
 
-        List<SmartBiFinanceData> budgetData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                factoryId, RecordType.BUDGET, startDate, endDate);
+        List<SmartBiFinanceData> budgetData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.BUDGET, startDate, endDate));
 
         // 计算年度预算
         BigDecimal annualBudget = budgetData.stream()
@@ -735,8 +870,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     public ChartConfig getBudgetVsActualChart(String factoryId, LocalDate startDate, LocalDate endDate) {
         log.info("获取预算对比实际图: factoryId={}", factoryId);
 
-        List<SmartBiFinanceData> budgetData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                factoryId, RecordType.BUDGET, startDate, endDate);
+        List<SmartBiFinanceData> budgetData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.BUDGET, startDate, endDate));
 
         // 按类别汇总
         Map<String, BigDecimal[]> categoryData = new LinkedHashMap<>();
@@ -788,8 +923,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         LocalDate startDate = yearMonth.atDay(1);
         LocalDate endDate = yearMonth.atEndOfMonth();
 
-        List<SmartBiFinanceData> budgetData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                factoryId, RecordType.BUDGET, startDate, endDate);
+        List<SmartBiFinanceData> budgetData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.BUDGET, startDate, endDate));
 
         List<MetricResult> metrics = new ArrayList<>();
 
@@ -877,8 +1012,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         LocalDate startDate = LocalDate.of(year, 1, 1);
         LocalDate endDate = LocalDate.of(year, 12, 31);
 
-        List<SmartBiFinanceData> budgetData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                factoryId, RecordType.BUDGET, startDate, endDate);
+        List<SmartBiFinanceData> budgetData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.BUDGET, startDate, endDate));
 
         // 按月聚合预算和实际数据
         Map<Integer, BigDecimal[]> monthlyData = new TreeMap<>();
@@ -1734,8 +1869,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
             case "cost":
             case "expense":
                 // 从财务数据获取
-                List<SmartBiFinanceData> financeData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                        factoryId, RecordType.COST, startDate, endDate);
+                List<SmartBiFinanceData> financeData = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                        factoryId, RecordType.COST, startDate, endDate));
                 return financeData.stream()
                         .map(SmartBiFinanceData::getTotalCost)
                         .filter(Objects::nonNull)
@@ -1770,9 +1905,9 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                 return calculateMetricFromSales(salesData, metric);
             case "cost":
             case "expense":
-                List<SmartBiFinanceData> financeData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
-                        factoryId, RecordType.COST, startDate, endDate);
-                return financeData.stream()
+                List<SmartBiFinanceData> financeData2 = filterToLatestUpload(financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                        factoryId, RecordType.COST, startDate, endDate));
+                return financeData2.stream()
                         .map(SmartBiFinanceData::getTotalCost)
                         .filter(Objects::nonNull)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);

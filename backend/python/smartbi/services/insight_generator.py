@@ -34,6 +34,12 @@ class InsightType(str, Enum):
 class InsightGenerator:
     """AI-powered insight generation service"""
 
+    # LLM call timeout configuration
+    LLM_TIMEOUT_BASE = 60.0       # Base timeout in seconds
+    LLM_TIMEOUT_INCREMENT = 15.0  # Added per retry attempt
+    LLM_TIMEOUT_MAX = 120.0       # Hard cap
+    LLM_MAX_RETRIES = 3
+
     # Insight templates for rule-based fallback
     INSIGHT_TEMPLATES = {
         "growth_positive": "在分析期间，{metric}呈现上升趋势，增长率为{rate:.1f}%。",
@@ -125,10 +131,14 @@ class InsightGenerator:
         metrics: Optional[List[dict]]
     ) -> List[dict]:
         """Generate rule-based statistical insights"""
+        # Humanize column names so insight text uses friendly names
+        df = self._humanize_df_columns(df)
         insights = []
 
-        # Analyze each numeric column
+        # Analyze each numeric column, skip unnamed/meaningless columns
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        import re as _re
+        numeric_cols = [c for c in numeric_cols if not _re.match(r'^(Column_\d+|指标\d+|Unnamed|Unnamed:\s*\d+)$', str(c), _re.IGNORECASE)]
 
         for col in numeric_cols:
             values = df[col].dropna()
@@ -225,10 +235,24 @@ class InsightGenerator:
             value = values[idx]
             deviation = ((value - mean) / mean) * 100 if mean != 0 else 0
 
-            # Try to get date/index for context
-            date_str = str(idx)
+            # Try to get a meaningful label for the anomaly row
+            date_str = None
+            # 1. Try date column
             if 'date' in df.columns:
                 date_str = str(df.loc[idx, 'date'])
+            # 2. Try first text/object column as label (e.g. row name like "营业收入")
+            if not date_str or date_str == str(idx):
+                text_cols = df.select_dtypes(include=['object']).columns
+                for tc in text_cols:
+                    try:
+                        label = df.loc[idx, tc]
+                        if label and str(label).strip():
+                            date_str = self._humanize_col(str(label).strip())
+                            break
+                    except Exception:
+                        pass
+            if not date_str:
+                date_str = self._humanize_col(str(idx))
 
             if value > mean:
                 text = self.INSIGHT_TEMPLATES["anomaly_high"].format(
@@ -403,7 +427,8 @@ class InsightGenerator:
                 "你的职责是从经营数据中挖掘可执行的财务洞察。"
                 "写作风格：数据驱动（每条结论必须引用具体数字）、因果明确（不仅说是什么更要说为什么）、"
                 "建议可落地（含量化目标和时间节点）。"
-                "行业对标基准：食品加工业毛利率25-35%、净利率3-8%、管理费用率5-10%、销售费用率8-15%。"
+                "行业参考范围（食品加工业通用，各子行业差异大）：毛利率15-35%、净利率3-8%、管理费用率5-10%、销售费用率8-15%。"
+                "注意：禽类加工毛利约6-10%，乳制品10-15%，预制菜15-25%，调味品35-43%。请结合数据实际判断，勿机械对标。"
             ),
             'sales': (
                 "你是一位服务于食品加工企业CMO的资深销售分析师。"
@@ -448,9 +473,10 @@ class InsightGenerator:
                 "供应链对标基准：存货周转 30-90天、应收周转 15-60天、采购集中度前3供应商 <40%、"
                 "缺货率 <2%、物流准时率 >95%。"
             )
-        # financial / general
+        # financial / general — ranges, not single values
         return (
-            "财务对标基准：食品加工业毛利率25-35%、净利率3-8%、管理费用率5-10%、销售费用率8-15%。"
+            "财务参考范围（食品加工通用，子行业差异大）：毛利率15-35%、净利率3-8%、管理费用率5-10%、销售费用率8-15%。"
+            "请根据数据实际判断所属子行业特征，避免机械对标。"
         )
 
     def _compute_production_context(self, df: pd.DataFrame) -> str:
@@ -572,11 +598,21 @@ class InsightGenerator:
             # Get scenario-specific benchmark text
             benchmark_text = self._get_scenario_benchmarks(scenario)
 
+            # Build query-focus block at the top if user asked a question
+            query_block = ""
+            if context:
+                query_block = f"""
+## 核心任务（最高优先级）
+用户提出了具体问题：「{context}」
+你的所有分析必须围绕这个问题展开。executive_summary 必须直接回答这个问题，insights 的每一条都必须与用户问题主题相关。
+禁止忽略用户问题而给出泛泛的财务综述。
+"""
+
             prompt = f"""你是一位为食品加工企业管理层撰写经营分析报告的资深分析师。
 分析场景：{scenario}
 {benchmark_text}
 你的角色是管理层的智囊——用数据说话，给出CEO能直接采纳的建议。
-
+{query_block}
 ## 数据概览
 {data_summary}
 
@@ -587,15 +623,13 @@ class InsightGenerator:
 {stat_digest}
 
 {f'## 已计算指标{chr(10)}{metrics_summary}' if metrics_summary else ''}
-
-{f'## 业务背景{chr(10)}{json.dumps(context, ensure_ascii=False)}' if context else ''}
 {excel_context}
 {kb_context}
 
 ## 输出格式（严格JSON）
 
 {{
-    "executive_summary": "一句话管理摘要，例：'1-6月累计营收1.2亿，同比+8.3%，但净利率3.1%低于行业均值5.5%，主因销售费用率18.7%偏高'",
+    "executive_summary": "直接回答用户问题的一句话摘要（不超过80字），必须包含具体数字",
     "insights": [
         {{
             "dimension": "what_happened|why_happened|forecast|recommendation",
@@ -661,8 +695,12 @@ class InsightGenerator:
         预计算关键统计摘要，作为 prompt 的辅助 'ingredients'。
         包含：环比变化率、占比排序、异常值检测。
         """
+        # Humanize column names for LLM-facing output
+        df = self._humanize_df_columns(df)
         parts = []
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        import re as _re
+        numeric_cols = [c for c in df.select_dtypes(include=[np.number]).columns.tolist()
+                        if not _re.match(r'^(Column_\d+|指标\d+|Unnamed|Unnamed:\s*\d+)$', str(c), _re.IGNORECASE)]
         text_cols = df.select_dtypes(include=['object']).columns
 
         if not numeric_cols:
@@ -749,8 +787,44 @@ class InsightGenerator:
 
         return "\n".join(parts) if len(parts) > 1 else ""
 
+    @staticmethod
+    def _humanize_col(name: str) -> str:
+        """Humanize a single column name for LLM prompts.
+
+        Transforms:
+          'Column_34' -> '指标34'
+          '2025-01-01' -> '1月'
+          '2025-01-01_预算数' -> '1月预算数'
+          '2025-02-01_实际数' -> '2月实际数'
+        """
+        import re
+        if not name or not isinstance(name, str):
+            return str(name)
+        # Column_N -> 指标N
+        m = re.match(r'^Column_(\d+)$', name, re.IGNORECASE)
+        if m:
+            return f"指标{m.group(1)}"
+        # YYYY-MM-DD_suffix -> M月suffix
+        m = re.match(r'^(\d{4})-(\d{2})-\d{2}_(.+)$', name)
+        if m:
+            month = int(m.group(2))
+            return f"{month}月{m.group(3)}"
+        # Bare YYYY-MM-DD -> M月
+        m = re.match(r'^(\d{4})-(\d{2})-\d{2}$', name)
+        if m:
+            month = int(m.group(2))
+            return f"{month}月"
+        return name
+
+    def _humanize_df_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Return a copy of df with humanized column names (for LLM prompts only)."""
+        new_cols = {c: self._humanize_col(c) for c in df.columns}
+        return df.rename(columns=new_cols)
+
     def _prepare_data_summary(self, df: pd.DataFrame) -> str:
         """Prepare enriched data summary for LLM"""
+        # Humanize column names so LLM output uses friendly names
+        df = self._humanize_df_columns(df)
         summary_parts = [
             f"- 数据行数: {len(df)}",
             f"- 数据列 ({len(df.columns)}个): {', '.join(df.columns.tolist()[:15])}"
@@ -792,6 +866,8 @@ class InsightGenerator:
 
     def _compute_financial_context(self, df: pd.DataFrame) -> str:
         """Pre-compute financial metrics to give LLM better 'ingredients'"""
+        # Humanize column names for LLM-facing output
+        df = self._humanize_df_columns(df)
         parts = []
 
         # Find label column
@@ -880,12 +956,11 @@ class InsightGenerator:
         if revenue_total and abs(revenue_total) > 0:
             if cost_total is not None:
                 gross_margin = (revenue_total - cost_total) / abs(revenue_total) * 100
-                benchmark_status = "达标" if 25 <= gross_margin <= 35 else ("偏低" if gross_margin < 25 else "优秀")
-                parts.append(f"- 毛利率: {gross_margin:.1f}% (行业参考25-35%, {benchmark_status})")
+                # Use range reference — sub-sectors vary widely (6-43%)
+                parts.append(f"- 毛利率: {gross_margin:.1f}% (食品加工参考范围15-35%，子行业差异大)")
             if net_profit_total is not None:
                 net_margin = net_profit_total / abs(revenue_total) * 100
-                benchmark_status = "达标" if 3 <= net_margin <= 8 else ("偏低" if net_margin < 3 else "优秀")
-                parts.append(f"- 净利率: {net_margin:.1f}% (行业参考3-8%, {benchmark_status})")
+                parts.append(f"- 净利率: {net_margin:.1f}% (食品加工参考范围3-8%)")
 
             # Expense ratios with industry benchmark
             expense_benchmarks = {
@@ -905,15 +980,14 @@ class InsightGenerator:
                             break
                     bench_text = ""
                     if bench:
-                        bench_status = "达标" if bench[0] <= expense_ratio <= bench[1] else ("偏高" if expense_ratio > bench[1] else "偏低")
-                        bench_text = f" (行业参考{bench[0]}-{bench[1]}%, {bench_status})"
+                        bench_text = f" (参考范围{bench[0]}-{bench[1]}%)"
                     expense_items.append((label, expense_ratio, bench_text))
                     parts.append(f"- {label}率: {expense_ratio:.1f}%{bench_text}")
 
             # Total expense ratio
             if total_expense > 0:
                 total_expense_ratio = total_expense / abs(revenue_total) * 100
-                parts.append(f"- 总费用率: {total_expense_ratio:.1f}% (行业参考15-25%)")
+                parts.append(f"- 总费用率: {total_expense_ratio:.1f}% (参考范围15-25%)")
 
             # Expense composition ranking
             if len(expense_items) >= 2:
@@ -979,7 +1053,7 @@ class InsightGenerator:
                 f"{self.settings.llm_base_url}/chat/completions",
                 headers=headers,
                 json=payload,
-                timeout=httpx.Timeout(60.0)
+                timeout=httpx.Timeout(self.LLM_TIMEOUT_BASE)
             )
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
@@ -1014,7 +1088,7 @@ class InsightGenerator:
                 f"{self.settings.llm_base_url}/chat/completions",
                 headers=headers,
                 json=payload,
-                timeout=httpx.Timeout(90.0)
+                timeout=httpx.Timeout(self.LLM_TIMEOUT_MAX)
             ) as response:
                 response.raise_for_status()
                 async for line in response.aiter_lines():
@@ -1165,10 +1239,12 @@ class InsightGenerator:
             "max_tokens": 2500
         }
 
-        max_attempts = 3
-        for attempt in range(max_attempts):
+        for attempt in range(self.LLM_MAX_RETRIES):
             try:
-                timeout_secs = 60.0 + attempt * 15.0  # 60s, 75s, 90s
+                timeout_secs = min(
+                    self.LLM_TIMEOUT_BASE + attempt * self.LLM_TIMEOUT_INCREMENT,
+                    self.LLM_TIMEOUT_MAX
+                )
                 response = await self.client.post(
                     f"{self.settings.llm_base_url}/chat/completions",
                     headers=headers,
@@ -1180,15 +1256,15 @@ class InsightGenerator:
                 result = response.json()
                 return result["choices"][0]["message"]["content"]
             except httpx.TimeoutException:
-                logger.warning(f"LLM call timeout (attempt {attempt + 1}/{max_attempts}, timeout={timeout_secs}s)")
-                if attempt < max_attempts - 1:
+                logger.warning(f"LLM call timeout (attempt {attempt + 1}/{self.LLM_MAX_RETRIES}, timeout={timeout_secs}s)")
+                if attempt < self.LLM_MAX_RETRIES - 1:
                     await asyncio.sleep(2 ** attempt * 2)
                 else:
                     logger.error("LLM call failed after all retry attempts due to timeout")
                     return ""
             except httpx.HTTPStatusError as e:
-                logger.warning(f"LLM call HTTP error {e.response.status_code} (attempt {attempt + 1}/{max_attempts})")
-                if attempt < max_attempts - 1:
+                logger.warning(f"LLM call HTTP error {e.response.status_code} (attempt {attempt + 1}/{self.LLM_MAX_RETRIES})")
+                if attempt < self.LLM_MAX_RETRIES - 1:
                     await asyncio.sleep(2 ** attempt * 2)
                 else:
                     logger.error(f"LLM call failed after all retry attempts: {e}")

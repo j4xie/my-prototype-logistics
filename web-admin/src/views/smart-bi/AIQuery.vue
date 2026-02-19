@@ -7,7 +7,7 @@
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
-import { chatAnalysis, type AnalysisResult, type AIInsightData, type ChartConfig } from '@/api/smartbi';
+import { chatAnalysis, getUploadHistory, deduplicateUploads, type AnalysisResult, type AIInsightData, type ChartConfig, type UploadHistoryItem } from '@/api/smartbi';
 import { ElMessage } from 'element-plus';
 import {
   ChatDotRound,
@@ -65,6 +65,15 @@ interface ChatMessage {
 const currentData = ref<unknown[]>([]);
 const currentFields = ref<Array<{ original: string; standard: string }>>([]);
 const currentTableType = ref<string>('');
+
+// 数据源：自动加载最新上传作为分析上下文
+const dataSources = ref<UploadHistoryItem[]>([]);
+const selectedUploadId = ref<number | null>(null);
+const dataSourceLabel = computed(() => {
+  if (!selectedUploadId.value) return '';
+  const item = dataSources.value.find(d => d.id === selectedUploadId.value);
+  return item ? `数据源：${item.fileName || item.originalFileName || `上传#${item.id}`}` : '';
+});
 
 const chatHistory = ref<ChatMessage[]>([]);
 const chatContainerRef = ref<HTMLDivElement | null>(null);
@@ -140,7 +149,28 @@ const isTyping = ref(false);
 // 图表实例缓存
 const chartInstances: Map<string, echarts.ECharts> = new Map();
 
-onMounted(() => {
+onMounted(async () => {
+  // 加载可用数据源列表，去重 + 智能默认选择
+  try {
+    const res = await getUploadHistory({ status: 'COMPLETED' });
+    if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      const deduped = deduplicateUploads(res.data);
+      dataSources.value = deduped;
+
+      // Prefer non-auto-sync uploads with the most rows (richer data = better analysis)
+      const nonAutoSync = deduped.filter(d => {
+        const name = d.fileName || d.originalFileName || '';
+        return !name.startsWith('[自动同步]');
+      });
+      const candidates = nonAutoSync.length > 0 ? nonAutoSync : deduped;
+      // Sort by rowCount descending — larger sheets produce better charts
+      const sorted = [...candidates].sort((a, b) => (b.rowCount || 0) - (a.rowCount || 0));
+      selectedUploadId.value = sorted[0].id;
+    }
+  } catch (e) {
+    console.warn('加载上传列表失败:', e);
+  }
+
   // 检查 URL 中是否有预设问题
   const query = route.query.q as string;
   if (query) {
@@ -150,10 +180,11 @@ onMounted(() => {
 
   // 添加欢迎消息
   if (chatHistory.value.length === 0) {
+    const sourceHint = dataSourceLabel.value ? `\n\n当前${dataSourceLabel.value}` : '\n\n提示：暂无上传数据，建议先在"数据分析"页面上传 Excel 文件。';
     chatHistory.value.push({
       id: 'welcome',
       role: 'assistant',
-      content: '您好！我是 SmartBI 智能助手，可以帮您分析销售、财务、库存等数据。您可以选择下方的分析模板快速开始，或直接输入问题。',
+      content: `您好！我是 SmartBI 智能助手，可以帮您分析销售、财务、库存等数据。您可以选择下方的分析模板快速开始，或直接输入问题。${sourceHint}`,
       timestamp: new Date()
     });
   }
@@ -201,9 +232,10 @@ async function handleSendMessage() {
     // 调用真实 Python SmartBI API
     const response = await chatAnalysis({
       query,
-      data: currentData.value,
-      fields: currentFields.value,
-      table_type: currentTableType.value
+      data: currentData.value.length > 0 ? currentData.value : undefined,
+      fields: currentFields.value.length > 0 ? currentFields.value : undefined,
+      table_type: currentTableType.value || undefined,
+      uploadId: selectedUploadId.value ? String(selectedUploadId.value) : undefined,
     });
 
     // 更新助手消息
@@ -308,27 +340,52 @@ function setAnalysisContext(data: unknown[], fields: Array<{ original: string; s
   currentTableType.value = tableType || '';
 }
 
+// Format data source label with sheet name and row count
+function formatDataSourceLabel(ds: UploadHistoryItem): string {
+  const name = ds.fileName || `上传#${ds.id}`;
+  const parts = [name];
+  if (ds.sheetName) parts.push(ds.sheetName);
+  if (ds.rowCount) parts.push(`${ds.rowCount}行`);
+  return parts.join(' · ');
+}
+
 // 暴露给父组件调用
 defineExpose({ setAnalysisContext });
 
 // 渲染图表 (从 ChartConfig)
 function renderChartFromConfig(messageId: string, chartConfig: ChartConfig) {
-  if (!chartConfig || !chartConfig.option) return;
+  if (!chartConfig) return;
 
-  const chartDom = document.getElementById(`chart-${messageId}`);
-  if (!chartDom) return;
+  // Try to get chart container — may need a small delay for Vue to render the v-if container
+  const tryRender = (attempt = 0) => {
+    const chartDom = document.getElementById(`chart-${messageId}`);
+    if (!chartDom) {
+      if (attempt < 3) {
+        setTimeout(() => tryRender(attempt + 1), 200);
+      }
+      return;
+    }
 
-  // 销毁旧图表
-  const oldChart = chartInstances.get(messageId);
-  if (oldChart) {
-    oldChart.dispose();
-  }
+    // 销毁旧图表
+    const oldChart = chartInstances.get(messageId);
+    if (oldChart) {
+      oldChart.dispose();
+    }
 
-  const chart = echarts.init(chartDom, 'cretas');
-  chartInstances.set(messageId, chart);
+    const chart = echarts.init(chartDom, 'cretas');
+    chartInstances.set(messageId, chart);
 
-  // 直接使用 Python 返回的 ECharts option
-  chart.setOption(chartConfig.option as echarts.EChartsOption);
+    // Use option directly if available (proper ECharts config from Python)
+    if (chartConfig.option && typeof chartConfig.option === 'object') {
+      chart.setOption(chartConfig.option as echarts.EChartsOption);
+      return;
+    }
+
+    // Fallback: chartConfig has raw data but no option — skip rendering
+    console.warn('[AIQuery] chartConfig missing option, cannot render:', chartConfig);
+  };
+
+  tryRender();
 }
 
 // 渲染图表 (兼容旧格式)
@@ -471,6 +528,20 @@ function handleKeydown(event: KeyboardEvent) {
         </h1>
       </div>
       <div class="header-right">
+        <el-select
+          v-if="dataSources.length > 0"
+          v-model="selectedUploadId"
+          placeholder="选择数据源"
+          size="small"
+          style="width: 280px; margin-right: 8px"
+        >
+          <el-option
+            v-for="ds in dataSources"
+            :key="ds.id"
+            :label="formatDataSourceLabel(ds)"
+            :value="ds.id"
+          />
+        </el-select>
         <el-button :icon="Delete" @click="handleClearHistory">清空对话</el-button>
       </div>
     </div>
@@ -511,8 +582,8 @@ function handleKeydown(event: KeyboardEvent) {
                   />
                 </div>
 
-                <!-- 图表展示 -->
-                <div v-if="message.chart || message.chartConfig" class="message-chart">
+                <!-- 图表展示 (only show if chart has proper ECharts option) -->
+                <div v-if="(message.chartConfig && message.chartConfig.option) || message.chart" class="message-chart">
                   <div :id="`chart-${message.id}`" class="chart-container"></div>
                 </div>
 
@@ -653,6 +724,7 @@ function handleKeydown(event: KeyboardEvent) {
 
 .chat-container {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   background: #fff;
@@ -664,6 +736,7 @@ function handleKeydown(event: KeyboardEvent) {
 // 对话历史
 .chat-history {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 20px;
 }

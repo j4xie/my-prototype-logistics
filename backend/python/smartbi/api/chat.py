@@ -554,34 +554,42 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
             data = get_sheet_data(request.sheet_id)
 
         if not data:
-            # Try to get latest uploaded data from database
+            # Try to load data from database — prefer specific sheet_id, fallback to latest upload
             try:
-                from smartbi.config import get_postgres_url
+                from smartbi.config import get_settings
                 import asyncpg
-                import asyncio
 
-                pg_url = get_postgres_url()
+                pg_url = get_settings().postgres_url
                 if pg_url:
                     conn = await asyncpg.connect(pg_url)
                     try:
-                        # Get the most recent upload
-                        row = await conn.fetchrow(
-                            "SELECT id FROM smart_bi_pg_excel_uploads ORDER BY created_at DESC LIMIT 1"
-                        )
-                        if row:
-                            upload_id = row['id']
+                        upload_id = None
+                        # Use specific upload ID if provided via sheet_id
+                        if request.sheet_id:
+                            try:
+                                upload_id = int(request.sheet_id)
+                            except (ValueError, TypeError):
+                                pass
+                        # Fallback: get the most recent upload
+                        if not upload_id:
+                            row = await conn.fetchrow(
+                                "SELECT id FROM smart_bi_pg_excel_uploads ORDER BY created_at DESC LIMIT 1"
+                            )
+                            if row:
+                                upload_id = row['id']
+                        if upload_id:
                             rows = await conn.fetch(
-                                "SELECT row_data FROM smart_bi_pg_dynamic_data WHERE upload_id = $1 LIMIT 200",
+                                "SELECT row_data FROM smart_bi_dynamic_data WHERE upload_id = $1 LIMIT 200",
                                 upload_id
                             )
                             if rows:
                                 import json
                                 data = [json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in rows]
-                                logger.info(f"[general_analysis] Loaded {len(data)} rows from latest upload {upload_id}")
+                                logger.info(f"[general_analysis] Loaded {len(data)} rows from upload {upload_id}")
                     finally:
                         await conn.close()
             except Exception as e:
-                logger.warning(f"Failed to load latest upload data: {e}")
+                logger.warning(f"Failed to load upload data: {e}")
 
         if not data:
             # No SmartBI data — but if there's a message/query, use LLM to analyze it directly
@@ -616,36 +624,234 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
             )
 
         import pandas as pd
+        import re as _re_early
         df = pd.DataFrame(data)
+
+        # Filter out index/sequence columns before ANY analysis (affects both insight text and charts)
+        _idx_patterns = {'行次', '序号', '编号', '行号', '项目编号', 'index', 'no', 'no.', 'id', 'row_num', 'row_number', 'sn'}
+        cols_to_drop = []
+        for col in df.columns:
+            lower = col.lower().strip()
+            if lower in _idx_patterns:
+                cols_to_drop.append(col)
+            else:
+                # Also detect sequential integer columns (1,2,3,...)
+                try:
+                    vals = pd.to_numeric(df[col].dropna().head(20), errors='coerce').dropna()
+                    if len(vals) >= 3:
+                        diffs = vals.diff().dropna()
+                        if len(diffs) > 0 and all(d == 1 for d in diffs):
+                            cols_to_drop.append(col)
+                except Exception:
+                    pass
+        if cols_to_drop:
+            logger.info(f"[general_analysis] Dropping index columns: {cols_to_drop}")
+            df = df.drop(columns=cols_to_drop, errors='ignore')
+            # Also clean the data list for InsightGenerator
+            data = [{k: v for k, v in row.items() if k not in cols_to_drop} for row in data]
 
         # Use insight generator for analysis
         query = request.effective_query
         insight_gen = InsightGenerator()
+        # Build analysis context from query + any extra context
+        analysis_ctx = query
+        if request.context:
+            analysis_ctx = f"{query}\n补充信息: {request.context}"
         insights_result = await insight_gen.generate_insights(
-            df,
-            context=request.context,
-            query=query
+            data,
+            analysis_context=analysis_ctx,
         )
 
-        # Format response
+        # Format response — prefer executive_summary from first insight over generic "summary"
         answer = insights_result.get("summary", "数据分析完成。")
         insights = insights_result.get("insights", [])
+        if answer == "数据分析完成。" and insights:
+            for ins in insights:
+                if isinstance(ins, dict):
+                    better = ins.get("executive_summary") or ins.get("text")
+                    if better and len(better) > 10:
+                        answer = better
+                        break
 
-        # Generate charts based on query type
+        # Generate charts using ChartBuilder for proper ECharts options
         charts = []
-        if "趋势" in query or "变化" in query:
-            # Suggest trend chart
-            numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-            if numeric_cols:
-                charts.append({
-                    "type": "line",
-                    "title": f"{numeric_cols[0]}趋势",
-                    "data": df[numeric_cols[0]].tolist()
-                })
+        try:
+            from services.chart_builder import ChartBuilder
+            import re as _re
+            builder = ChartBuilder()
 
-        if "对比" in query or "比较" in query:
-            # Suggest comparison chart
-            charts.append({"type": "bar", "title": "对比分析"})
+            # --- Column name humanization (P1-3 fix) ---
+            _COLUMN_NAME_MAP = {
+                'actual_amount': '实际金额', 'budget_amount': '预算金额',
+                'total_amount': '总金额', 'net_profit': '净利润',
+                'gross_profit': '毛利润', 'revenue': '营收',
+                'cost': '成本', 'expense': '费用', 'sales': '销售额',
+                'quantity': '数量', 'price': '单价', 'margin': '利润率',
+                'growth_rate': '增长率', 'total': '合计',
+            }
+
+            def _humanize_col(name: str) -> str:
+                """Translate raw/English column names to readable Chinese labels."""
+                if not name:
+                    return name
+                # Column_XX pattern → remove prefix
+                if _re.match(r'^[Cc]olumn[_\s]?\d+$', name):
+                    return f"指标{name.split('_')[-1] if '_' in name else name[-1]}"
+                # Date pattern YYYY-MM-DD → M月
+                m = _re.match(r'^(\d{4})-(\d{1,2})-\d{1,2}$', name)
+                if m:
+                    return f"{int(m.group(2))}月"
+                # Compound date pattern: YYYY-MM-DD_suffix → M月suffix
+                m = _re.match(r'^(\d{4})-(\d{1,2})-\d{1,2}[_\s](.+)$', name)
+                if m:
+                    suffix = m.group(3)
+                    return f"{int(m.group(2))}月{suffix}"
+                # English snake_case → Chinese lookup
+                lower = name.lower().replace(' ', '_')
+                if lower in _COLUMN_NAME_MAP:
+                    return _COLUMN_NAME_MAP[lower]
+                # underscores → spaces for readability (only pure ASCII)
+                if '_' in name and all(c.isascii() for c in name):
+                    return name.replace('_', ' ').title()
+                return name
+
+            # --- Filter out index/sequence columns (P1-2 fix) ---
+            _INDEX_COL_PATTERNS = {'行次', '序号', '编号', '行号', '项目编号', 'index', 'no', 'no.', 'id', 'row_num', 'row_number', 'sn'}
+
+            def _is_index_column(col_name: str, series) -> bool:
+                """Detect if a column is an index/sequence column (not meaningful for analysis)."""
+                lower = col_name.lower().strip()
+                if lower in _INDEX_COL_PATTERNS:
+                    return True
+                # Check if values are sequential integers (1,2,3,...)
+                try:
+                    import pandas as pd
+                    vals = pd.to_numeric(series.dropna().head(20), errors='coerce').dropna()
+                    if len(vals) >= 3:
+                        diffs = vals.diff().dropna()
+                        if len(diffs) > 0 and all(d == 1 for d in diffs):
+                            return True
+                except Exception:
+                    pass
+                return False
+
+            numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+            non_numeric_cols = [c for c in df.columns if c not in numeric_cols]
+
+            # Remove index/sequence columns from both lists
+            numeric_cols = [c for c in numeric_cols if not _is_index_column(c, df[c])]
+            non_numeric_cols = [c for c in non_numeric_cols if not _is_index_column(c, df[c])]
+
+            # Pick a label field: prefer columns with non-numeric text values
+            label_field = None
+            for col in non_numeric_cols:
+                sample = df[col].dropna().head(10).astype(str)
+                has_text = any(len(v) > 1 and not v.replace('.','').replace('-','').isdigit() for v in sample)
+                if has_text:
+                    label_field = col
+                    break
+            if not label_field and non_numeric_cols:
+                label_field = non_numeric_cols[0]
+
+            def _humanize_echart_option(echart_option: dict) -> dict:
+                """Humanize column names in ECharts option (legend, series names, axis labels)."""
+                if not echart_option:
+                    return echart_option
+                opt = dict(echart_option)
+                # Humanize legend data
+                if 'legend' in opt and isinstance(opt['legend'], dict):
+                    leg_data = opt['legend'].get('data', [])
+                    if isinstance(leg_data, list):
+                        opt['legend'] = {**opt['legend'], 'data': [_humanize_col(str(d)) for d in leg_data]}
+                # Humanize series names
+                if 'series' in opt and isinstance(opt['series'], list):
+                    new_series = []
+                    for s in opt['series']:
+                        if isinstance(s, dict) and 'name' in s:
+                            new_series.append({**s, 'name': _humanize_col(str(s['name']))})
+                        else:
+                            new_series.append(s)
+                    opt['series'] = new_series
+                # Humanize title text
+                if 'title' in opt and isinstance(opt['title'], dict):
+                    t = opt['title'].get('text', '')
+                    if t:
+                        # Replace raw column patterns in title
+                        for raw_col in list(df.columns):
+                            h = _humanize_col(raw_col)
+                            if h != raw_col and raw_col in t:
+                                t = t.replace(raw_col, h)
+                        opt['title'] = {**opt['title'], 'text': t}
+                return opt
+
+            def _extract_echart_option(chart_result: dict, chart_type: str, title: str):
+                """Extract ECharts option from ChartBuilder result and wrap for frontend"""
+                if not chart_result or not chart_result.get("success"):
+                    return None
+                echart_option = chart_result.get("config", {})
+                if not echart_option:
+                    return None
+                # Humanize column names in the ECharts config
+                echart_option = _humanize_echart_option(echart_option)
+                return {
+                    "type": chart_type,
+                    "title": title,
+                    "option": _sanitize_for_json(echart_option)
+                }
+
+            # Limit data to first 50 rows for chart building (avoid oversized charts)
+            chart_data = data[:50] if len(data) > 50 else data
+
+            if "趋势" in query or "变化" in query:
+                if numeric_cols:
+                    y_cols = numeric_cols[:3]
+                    h_names = '、'.join(_humanize_col(c) for c in y_cols[:2])
+                    chart_result = builder.build(
+                        "line", chart_data, x_field=label_field, y_fields=y_cols,
+                        title=f"{h_names}趋势分析"
+                    )
+                    chart_entry = _extract_echart_option(chart_result, "line", f"{h_names}趋势")
+                    if chart_entry:
+                        charts.append(chart_entry)
+
+            elif "对比" in query or "比较" in query or "排名" in query:
+                if numeric_cols and label_field:
+                    y_cols = numeric_cols[:2]
+                    h_names = '、'.join(_humanize_col(c) for c in y_cols[:2])
+                    chart_result = builder.build(
+                        "bar", chart_data, x_field=label_field, y_fields=y_cols,
+                        title=f"{h_names}对比分析"
+                    )
+                    chart_entry = _extract_echart_option(chart_result, "bar", f"{h_names}对比")
+                    if chart_entry:
+                        charts.append(chart_entry)
+
+            elif "占比" in query or "构成" in query or "分布" in query:
+                if numeric_cols and label_field:
+                    h_name = _humanize_col(numeric_cols[0])
+                    chart_result = builder.build(
+                        "pie", chart_data, x_field=label_field, y_fields=[numeric_cols[0]],
+                        title=f"{h_name}占比分析"
+                    )
+                    chart_entry = _extract_echart_option(chart_result, "pie", f"{h_name}占比")
+                    if chart_entry:
+                        charts.append(chart_entry)
+
+            # Default: if no specific chart type matched, auto-recommend a bar chart
+            if not charts and numeric_cols and label_field:
+                y_cols = numeric_cols[:3]
+                chart_result = builder.build(
+                    "bar", chart_data, x_field=label_field, y_fields=y_cols,
+                    title="数据概览"
+                )
+                chart_entry = _extract_echart_option(chart_result, "bar", "数据概览")
+                if chart_entry:
+                    charts.append(chart_entry)
+        except Exception as chart_err:
+            logger.warning(f"Chart generation failed in general_analysis: {chart_err}")
+
+        # Sanitize insights to remove NaN/Infinity before JSON serialization
+        insights = _sanitize_for_json(insights)
 
         return GeneralAnalysisResponse(
             success=True,
@@ -742,6 +948,20 @@ async def health_check():
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
+import math
+
+def _sanitize_for_json(obj):
+    """Recursively replace NaN/Infinity with None to prevent JSON serialization errors."""
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize_for_json(v) for v in obj]
+    return obj
 
 def _generate_bar_chart_config(
     dimension: str,

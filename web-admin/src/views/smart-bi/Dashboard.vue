@@ -6,6 +6,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import {
   getUploadHistory,
@@ -29,12 +30,15 @@ import {
   Document
 } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
+import { formatNumber } from '@/utils/format-number';
 import { CHART_COLORS } from '@/constants/chart-colors';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canUpload = computed(() => permissionStore.canWrite('analytics'));
 
 // ==================== 类型定义 ====================
 
@@ -90,13 +94,13 @@ const dashboardData = ref<DashboardResponse | null>(null);
 const kpiData = computed(() => {
   const defaultKpi = {
     totalRevenue: null as number | null,
-    revenueGrowth: 0,
+    revenueGrowth: null as number | null,
     totalProfit: null as number | null,
-    profitGrowth: 0,
+    profitGrowth: null as number | null,
     orderCount: null as number | null,
-    orderGrowth: 0,
+    orderGrowth: null as number | null,
     customerCount: null as number | null,
-    customerGrowth: 0
+    customerGrowth: null as number | null,
   };
 
   if (!dashboardData.value?.kpiCards || dashboardData.value.kpiCards.length === 0) {
@@ -125,25 +129,25 @@ const kpiData = computed(() => {
     // Map first N cards to KPI slots by position
     return {
       totalRevenue: cards[0]?.rawValue ?? null,
-      revenueGrowth: cards[0]?.changeRate ?? 0,
+      revenueGrowth: cards[0]?.changeRate ?? null,
       totalProfit: cards[1]?.rawValue ?? null,
-      profitGrowth: cards[1]?.changeRate ?? 0,
+      profitGrowth: cards[1]?.changeRate ?? null,
       orderCount: cards[2]?.rawValue ?? null,
-      orderGrowth: cards[2]?.changeRate ?? 0,
+      orderGrowth: cards[2]?.changeRate ?? null,
       customerCount: cards[3]?.rawValue ?? null,
-      customerGrowth: cards[3]?.changeRate ?? 0
+      customerGrowth: cards[3]?.changeRate ?? null,
     };
   }
 
   return {
     totalRevenue: salesCard?.rawValue ?? null,
-    revenueGrowth: salesCard?.changeRate ?? 0,
+    revenueGrowth: salesCard?.changeRate ?? null,
     totalProfit: profitCard?.rawValue ?? null,
-    profitGrowth: profitCard?.changeRate ?? 0,
+    profitGrowth: profitCard?.changeRate ?? null,
     orderCount: orderCard?.rawValue ?? null,
-    orderGrowth: orderCard?.changeRate ?? 0,
+    orderGrowth: orderCard?.changeRate ?? null,
     customerCount: customerCard?.rawValue ?? null,
-    customerGrowth: customerCard?.changeRate ?? 0
+    customerGrowth: customerCard?.changeRate ?? null,
   };
 });
 
@@ -182,16 +186,24 @@ const regionRanking = computed<RegionRank[]>(() => {
   }));
 });
 
-// AI 洞察 (从 aiInsights 提取)
+// AI 洞察 (从 aiInsights 提取, 去重)
 const aiInsights = computed<AIInsight[]>(() => {
   if (!dashboardData.value?.aiInsights) return [];
 
-  return dashboardData.value.aiInsights.map(insight => ({
-    type: mapInsightLevel(insight.level),
-    title: insight.category || getCategoryTitle(insight.level),
-    content: insight.message,
-    suggestion: insight.actionSuggestion
-  }));
+  const seen = new Set<string>();
+  return dashboardData.value.aiInsights
+    .filter(insight => {
+      const key = insight.message;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map(insight => ({
+      type: mapInsightLevel(insight.level),
+      title: insight.category || getCategoryTitle(insight.level),
+      content: insight.message,
+      suggestion: insight.actionSuggestion
+    }));
 });
 
 // Detect if dashboard has any meaningful data (from system or dynamic source)
@@ -327,7 +339,7 @@ async function loadDynamicDashboardData(uploadId: number) {
         title: kpi.title || '',
         displayValue: kpi.value != null ? String(kpi.value) : String(kpi.rawValue ?? 0),
         rawValue: kpi.rawValue ?? 0,
-        changeRate: 0,
+        changeRate: kpi.changeRate ?? null,
         unit: '',
         trend: 'stable' as const,
         sparklineData: [],
@@ -487,12 +499,12 @@ function initTrendChart(chartConfig?: ChartConfig) {
         data: s.data,
         areaStyle: index === 0 ? {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(64, 158, 255, 0.3)' },
-            { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
+            { offset: 0, color: 'rgba(27, 101, 168, 0.3)' },
+            { offset: 1, color: 'rgba(27, 101, 168, 0.05)' }
           ])
         } : undefined,
-        lineStyle: { width: 3, color: index === 0 ? '#409EFF' : '#67C23A' },
-        itemStyle: { color: index === 0 ? '#409EFF' : '#67C23A' }
+        lineStyle: { width: 3, color: index === 0 ? '#1B65A8' : '#36B37E' },
+        itemStyle: { color: index === 0 ? '#1B65A8' : '#36B37E' }
       }))
     };
     trendChart.setOption(option);
@@ -504,7 +516,7 @@ function initTrendChart(chartConfig?: ChartConfig) {
         left: 'center',
         top: 'center',
         textStyle: {
-          color: '#909399',
+          color: '#7A8599',
           fontSize: 14,
           fontWeight: 'normal'
         }
@@ -575,7 +587,7 @@ function initPieChart(chartConfig?: ChartConfig) {
         left: 'center',
         top: 'center',
         textStyle: {
-          color: '#909399',
+          color: '#7A8599',
           fontSize: 14,
           fontWeight: 'normal'
         }
@@ -617,11 +629,8 @@ function getCategoryTitle(level: string): string {
 }
 
 function formatMoney(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '--';
-  if (Math.abs(value) >= 10000) {
-    return (value / 10000).toFixed(1) + '万';
-  }
-  return value.toLocaleString();
+  if (value == null) return '--';
+  return formatNumber(value, 1);
 }
 
 /**
@@ -736,7 +745,8 @@ onMounted(() => {
     <!-- Empty state guidance when no data -->
     <SmartBIEmptyState
       v-if="!loading && !hasError && !hasData"
-      type="no-data"
+      :type="canUpload ? 'no-data' : 'read-only'"
+      :showAction="canUpload"
       @action="goToUpload"
     />
 
@@ -750,7 +760,7 @@ onMounted(() => {
           <div class="kpi-content">
             <div class="kpi-label">本月销售额</div>
             <div class="kpi-value">{{ formatKpiValue(kpiData.totalRevenue) }}</div>
-            <div class="kpi-trend" :class="getGrowthClass(kpiData.revenueGrowth)" v-if="kpiData.totalRevenue !== null && kpiData.revenueGrowth !== 0">
+            <div class="kpi-trend" :class="getGrowthClass(kpiData.revenueGrowth!)" v-if="kpiData.totalRevenue !== null && kpiData.revenueGrowth != null && kpiData.revenueGrowth !== 0">
               <el-icon v-if="kpiData.revenueGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
               <span>{{ formatPercent(kpiData.revenueGrowth) }}</span>
@@ -770,7 +780,7 @@ onMounted(() => {
           <div class="kpi-content">
             <div class="kpi-label">本月利润</div>
             <div class="kpi-value">{{ formatKpiValue(kpiData.totalProfit) }}</div>
-            <div class="kpi-trend" :class="getGrowthClass(kpiData.profitGrowth)" v-if="kpiData.totalProfit !== null && kpiData.profitGrowth !== 0">
+            <div class="kpi-trend" :class="getGrowthClass(kpiData.profitGrowth!)" v-if="kpiData.totalProfit !== null && kpiData.profitGrowth != null && kpiData.profitGrowth !== 0">
               <el-icon v-if="kpiData.profitGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
               <span>{{ formatPercent(kpiData.profitGrowth) }}</span>
@@ -790,7 +800,7 @@ onMounted(() => {
           <div class="kpi-content">
             <div class="kpi-label">订单数量</div>
             <div class="kpi-value">{{ formatKpiValue(kpiData.orderCount) }}</div>
-            <div class="kpi-trend" :class="getGrowthClass(kpiData.orderGrowth)" v-if="kpiData.orderCount !== null && kpiData.orderGrowth !== 0">
+            <div class="kpi-trend" :class="getGrowthClass(kpiData.orderGrowth!)" v-if="kpiData.orderCount !== null && kpiData.orderGrowth != null && kpiData.orderGrowth !== 0">
               <el-icon v-if="kpiData.orderGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
               <span>{{ formatPercent(kpiData.orderGrowth) }}</span>
@@ -810,7 +820,7 @@ onMounted(() => {
           <div class="kpi-content">
             <div class="kpi-label">活跃客户</div>
             <div class="kpi-value">{{ formatKpiValue(kpiData.customerCount) }}</div>
-            <div class="kpi-trend" :class="getGrowthClass(kpiData.customerGrowth)" v-if="kpiData.customerCount !== null && kpiData.customerGrowth !== 0">
+            <div class="kpi-trend" :class="getGrowthClass(kpiData.customerGrowth!)" v-if="kpiData.customerCount !== null && kpiData.customerGrowth != null && kpiData.customerGrowth !== 0">
               <el-icon v-if="kpiData.customerGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
               <span>{{ formatPercent(kpiData.customerGrowth) }}</span>
@@ -982,7 +992,7 @@ onMounted(() => {
       margin: 0;
       font-size: 24px;
       font-weight: 600;
-      color: #303133;
+      color: #1A2332;
     }
 
     .subtitle {
@@ -1022,7 +1032,7 @@ onMounted(() => {
       align-items: center;
       gap: 4px;
       font-size: 13px;
-      color: #606266;
+      color: #4A5568;
       white-space: nowrap;
     }
   }
@@ -1036,7 +1046,7 @@ onMounted(() => {
 
   .datasource-meta {
     font-size: 12px;
-    color: #909399;
+    color: #7A8599;
   }
 }
 
@@ -1090,19 +1100,19 @@ onMounted(() => {
   }
 
   &.revenue .kpi-icon {
-    background: linear-gradient(135deg, #409EFF, #79bbff);
+    background: linear-gradient(135deg, #1B65A8, #4C9AFF);
   }
 
   &.profit .kpi-icon {
-    background: linear-gradient(135deg, #67C23A, #95d475);
+    background: linear-gradient(135deg, #36B37E, #57D9A3);
   }
 
   &.orders .kpi-icon {
-    background: linear-gradient(135deg, #E6A23C, #eebe77);
+    background: linear-gradient(135deg, #FFAB00, #FFC400);
   }
 
   &.customers .kpi-icon {
-    background: linear-gradient(135deg, #F56C6C, #fab6b6);
+    background: linear-gradient(135deg, #FF5630, #FF8B6A);
   }
 
   .kpi-content {
@@ -1118,7 +1128,7 @@ onMounted(() => {
       font-size: var(--font-size-2xl);
       font-weight: 600;
       font-variant-numeric: tabular-nums;
-      color: #303133;
+      color: #1A2332;
       margin-bottom: 4px;
     }
 
@@ -1129,15 +1139,15 @@ onMounted(() => {
       font-size: 13px;
 
       &.growth-up {
-        color: #67C23A;
+        color: #36B37E;
       }
 
       &.growth-down {
-        color: #F56C6C;
+        color: #FF5630;
       }
 
       .vs-label {
-        color: #C0C4CC;
+        color: #A0AEC0;
         margin-left: 4px;
       }
     }
@@ -1163,7 +1173,7 @@ onMounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #409EFF;
+      color: #1B65A8;
     }
   }
 
@@ -1172,7 +1182,7 @@ onMounted(() => {
       display: flex;
       align-items: center;
       padding: 12px 0;
-      border-bottom: 1px solid #f0f2f5;
+      border-bottom: 1px solid #F4F6F9;
 
       &:last-child {
         border-bottom: none;
@@ -1188,7 +1198,7 @@ onMounted(() => {
       justify-content: center;
       font-size: 12px;
       font-weight: 600;
-      background: #f0f2f5;
+      background: #F4F6F9;
       color: var(--color-text-secondary);
 
       &.rank-1 {
@@ -1213,7 +1223,7 @@ onMounted(() => {
 
       .rank-name {
         font-size: 14px;
-        color: #303133;
+        color: #1A2332;
         font-weight: 500;
       }
 
@@ -1228,11 +1238,11 @@ onMounted(() => {
       font-weight: 500;
 
       &.growth-up {
-        color: #67C23A;
+        color: #36B37E;
       }
 
       &.growth-down {
-        color: #F56C6C;
+        color: #FF5630;
       }
     }
 
@@ -1240,20 +1250,20 @@ onMounted(() => {
       .region-name {
         width: 80px;
         font-size: 14px;
-        color: #303133;
+        color: #1A2332;
       }
 
       .region-bar-wrapper {
         flex: 1;
         height: 8px;
-        background: #f0f2f5;
+        background: #F4F6F9;
         border-radius: 4px;
         margin: 0 12px;
         overflow: hidden;
 
         .region-bar {
           height: 100%;
-          background: linear-gradient(90deg, #409EFF, #79bbff);
+          background: linear-gradient(90deg, #1B65A8, #4C9AFF);
           border-radius: 4px;
           transition: width 0.3s ease;
         }
@@ -1265,7 +1275,7 @@ onMounted(() => {
 
         .value {
           font-size: 14px;
-          color: #303133;
+          color: #1A2332;
           font-weight: 500;
         }
 
@@ -1298,7 +1308,7 @@ onMounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #409EFF;
+      color: #1B65A8;
     }
   }
 
@@ -1323,7 +1333,7 @@ onMounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #409EFF;
+      color: #1B65A8;
     }
   }
 
@@ -1334,7 +1344,7 @@ onMounted(() => {
       flex-wrap: wrap;
       gap: 12px;
       padding: 12px 0;
-      border-bottom: 1px solid #f0f2f5;
+      border-bottom: 1px solid #F4F6F9;
 
       &:last-child {
         border-bottom: none;
@@ -1346,7 +1356,7 @@ onMounted(() => {
 
       .insight-content {
         font-size: 14px;
-        color: #606266;
+        color: #4A5568;
         line-height: 1.6;
         flex: 1;
         min-width: 200px;
@@ -1374,7 +1384,7 @@ onMounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #409EFF;
+      color: #1B65A8;
     }
   }
 

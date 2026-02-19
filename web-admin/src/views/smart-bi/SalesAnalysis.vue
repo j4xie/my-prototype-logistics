@@ -111,6 +111,14 @@ const kpiCards = ref<KPICard[]>([]);
 // 是否有真实销售数据 (区分"加载失败"和"无数据")
 const hasSystemData = ref(false);
 
+// No real system sales data — all KPIs zero or no KPI cards
+const noSystemSalesData = computed(() => {
+  if (loading.value || kpiLoading.value) return false;
+  if (selectedDataSource.value !== 'system') return false;
+  if (kpiCards.value.length === 0) return true;
+  return kpiCards.value.every(c => c.rawValue == null || c.rawValue === 0);
+});
+
 // 销售员排行 (来自 API)
 interface SalesPersonRank {
   name: string;
@@ -530,6 +538,14 @@ async function loadSalesData() {
     }
     if (tasks.length > 0) {
       await Promise.allSettled(tasks);
+    }
+    // Auto-switch to uploaded data if system data is empty and uploads exist
+    const allZero = kpiCards.value.length === 0 || kpiCards.value.every(c => c.rawValue == null || c.rawValue === 0);
+    if (allZero && dataSources.value.length > 0) {
+      const firstUpload = dataSources.value[0];
+      selectedDataSource.value = String(firstUpload.id);
+      await loadDynamicSalesData(firstUpload.id);
+      return;
     }
   } catch (error) {
     loadError.value = '加载销售数据失败，请检查网络连接后重试';
@@ -1241,6 +1257,17 @@ onUnmounted(() => {
       <el-button size="small" type="primary" @click="handleRefresh" style="margin-top: 8px">重试</el-button>
     </el-alert>
 
+    <!-- 系统数据为空提示 -->
+    <el-alert
+      v-if="noSystemSalesData && !loading"
+      type="info"
+      title="暂无系统销售数据"
+      description="系统销售数据为空，请联系管理员导入数据，或切换到已上传的 Excel 数据源进行分析。"
+      show-icon
+      :closable="false"
+      style="margin-bottom: 16px"
+    />
+
     <!-- KPI 卡片 -->
     <el-row :gutter="16" class="kpi-section" v-loading="kpiLoading">
       <el-col
@@ -1261,7 +1288,7 @@ onUnmounted(() => {
               {{ card.changeRate >= 0 ? '+' : '' }}{{ Number(card.changeRate).toFixed(1) }}%
             </span>
             <span v-else-if="card.rawValue == null" class="no-data-text">暂无数据</span>
-            <span v-if="card.compareText" class="compare-text">{{ card.compareText }}</span>
+            <span v-else-if="card.compareText" class="compare-text">{{ card.compareText }}</span>
           </div>
         </el-card>
       </el-col>

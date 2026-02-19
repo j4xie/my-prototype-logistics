@@ -195,9 +195,6 @@ const sparklineColor = computed(() => {
 // Period-over-period change display (FineBI + Power BI + Grafana)
 const formattedChange = computed(() => {
   if (props.changeRate == null || !Number.isFinite(props.changeRate)) return null;
-  // Guard: extreme values are data artifacts, not real time trends
-  // For financial data, real MoM changes rarely exceed ±80%
-  if (Math.abs(props.changeRate) >= 80) return null;
   const sign = props.changeRate > 0 ? '+' : '';
   return `${sign}${props.changeRate.toFixed(1)}%`;
 });
@@ -209,10 +206,9 @@ const changeColor = computed(() => {
   return '#909399';
 });
 
-// Guard: hide trend when changeRate is extreme (data artifact)
+// Show trend indicator (always show when data exists)
 const isReasonableTrend = computed(() => {
-  if (props.changeRate == null) return true; // no changeRate = rely on trend prop
-  return Math.abs(props.changeRate) < 80;
+  return true;
 });
 
 // Progress bar display mode color
