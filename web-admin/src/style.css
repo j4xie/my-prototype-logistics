@@ -1,49 +1,158 @@
 /*
  * 全局样式 - 白垩纪管理系统
- * 覆盖 Vite 默认样式，适配 Element Plus 管理后台布局
+ * 现代商务风格 Design Token System
  */
 
-/* CSS 变量 */
+/* ============================================================
+ * Design Tokens — Single Source of Truth
+ * ============================================================ */
 :root {
-  /* 主题色 */
-  --primary-color: #409eff;
-  --success-color: #67c23a;
-  --warning-color: #e6a23c;
-  --danger-color: #f56c6c;
-  --info-color: #909399;
+  /* ---- Brand / Theme Colors ---- */
+  --primary-color: #1B65A8;
+  --color-primary: #1B65A8;
+  --color-primary-light: #2B7EC1;
+  --color-primary-dark: #14507F;
+  --color-success: #36B37E;
+  --color-warning: #FFAB00;
+  --color-danger: #FF5630;
+  --color-info: #6B778C;
+  --success-color: #36B37E;
+  --warning-color: #FFAB00;
+  --danger-color: #FF5630;
+  --info-color: #6B778C;
 
-  /* 背景色 */
-  --bg-color: #f5f7fa;
-  --bg-color-page: #f0f2f5;
+  /* ---- Text ---- */
+  --text-color-primary: #1A2332;
+  --text-color-regular: #4A5568;
+  --text-color-secondary: #7A8599;
+  --text-color-placeholder: #A0AEC0;
+  --color-text-primary: #1A2332;
+  --color-text-regular: #4A5568;
+  --color-text-secondary: #7A8599;
+  --color-text-placeholder: #A0AEC0;
+
+  /* ---- Background ---- */
+  --bg-color: #F4F6F9;
+  --bg-color-page: #F4F6F9;
   --bg-color-overlay: #ffffff;
+  --color-bg-page: #F4F6F9;
+  --color-bg-card: #ffffff;
+  --color-bg-hover: #EDF2F7;
 
-  /* 文字色 */
-  --text-color-primary: #303133;
-  --text-color-regular: #606266;
-  --text-color-secondary: #909399;
-  --text-color-placeholder: #c0c4cc;
+  /* ---- Border ---- */
+  --border-color: #E2E8F0;
+  --border-color-light: #EDF2F7;
+  --border-color-lighter: #F4F6F9;
+  --color-border: #E2E8F0;
+  --color-border-light: #EDF2F7;
+  --color-border-lighter: #F4F6F9;
 
-  /* 边框色 */
-  --border-color: #dcdfe6;
-  --border-color-light: #e4e7ed;
-  --border-color-lighter: #ebeef5;
+  /* ---- Data Visualization ---- */
+  --color-positive: #36B37E;
+  --color-negative: #FF5630;
 
-  /* 阴影 */
-  --box-shadow-base: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  --box-shadow-light: 0 2px 4px rgba(0, 0, 0, 0.12);
+  /* ---- Chart Palette ---- */
+  --chart-color-1: #1B65A8;
+  --chart-color-2: #36B37E;
+  --chart-color-3: #FFAB00;
+  --chart-color-4: #FF5630;
+  --chart-color-5: #6B778C;
 
-  /* 布局 */
+  /* ---- Element Plus CSS Variable Overrides ---- */
+  --el-color-primary: #1B65A8;
+  --el-color-primary-light-3: #4A8DC4;
+  --el-color-primary-light-5: #8DB2D4;
+  --el-color-primary-light-7: #BDD3E7;
+  --el-color-primary-light-8: #D3E2EF;
+  --el-color-primary-light-9: #E9F0F7;
+  --el-color-primary-dark-2: #165286;
+  --el-color-success: #36B37E;
+  --el-color-success-light-3: #6DC9A0;
+  --el-color-success-light-5: #9BD9BF;
+  --el-color-success-light-9: #EAFAF2;
+  --el-color-warning: #FFAB00;
+  --el-color-warning-light-3: #FFC247;
+  --el-color-warning-light-5: #FFD580;
+  --el-color-warning-light-9: #FFF8E6;
+  --el-color-danger: #FF5630;
+  --el-color-danger-light-3: #FF8A6D;
+  --el-color-danger-light-5: #FFAB98;
+  --el-color-danger-light-9: #FFF0EC;
+  --el-color-info: #6B778C;
+  --el-text-color-primary: #1A2332;
+  --el-text-color-regular: #4A5568;
+  --el-text-color-secondary: #7A8599;
+  --el-text-color-placeholder: #A0AEC0;
+  --el-border-color: #E2E8F0;
+  --el-border-color-light: #EDF2F7;
+  --el-border-color-lighter: #F4F6F9;
+  --el-bg-color: #ffffff;
+  --el-bg-color-page: #F4F6F9;
+  --el-fill-color-light: #F4F6F9;
+  --el-font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* ---- Typography ---- */
+  --font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-base: 'Noto Sans SC', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-size-3xl: 48px;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ---- Spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --page-padding: 20px;
+  --card-padding: 20px;
+  --section-gap: 24px;
+
+  /* ---- Layout ---- */
   --header-height: 64px;
   --sidebar-width: 220px;
   --sidebar-collapsed-width: 64px;
 
-  /* 字体 */
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  /* ---- Elevation (blue-tinted shadows) ---- */
+  --shadow-sm: 0 1px 3px rgba(27, 101, 168, 0.06);
+  --shadow-md: 0 2px 8px rgba(27, 101, 168, 0.08);
+  --shadow-lg: 0 4px 16px rgba(27, 101, 168, 0.10);
+  --shadow-xl: 0 8px 28px rgba(27, 101, 168, 0.14);
+  --box-shadow-base: 0 2px 12px rgba(27, 101, 168, 0.08);
+  --box-shadow-light: 0 2px 8px rgba(27, 101, 168, 0.06);
+
+  /* ---- Border Radius ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-full: 9999px;
+
+  /* ---- Transition ---- */
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.3s ease-in-out;
 }
 
-/* 全局重置 */
+/* ============================================================
+ * Global Reset
+ * ============================================================ */
 *,
 *::before,
 *::after {
@@ -76,48 +185,61 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 链接样式 */
+/* ============================================================
+ * Links
+ * ============================================================ */
 a {
   color: var(--primary-color);
   text-decoration: none;
-  transition: color 0.2s;
+  transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: #66b1ff;
+  color: var(--color-primary-light);
 }
 
-/* 滚动条样式 */
+/* ============================================================
+ * Scrollbar
+ * ============================================================ */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c0c4cc;
+  background: #B0BEC5;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #909399;
+  background: #7A8599;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f5f7fa;
+  background: var(--bg-color);
 }
 
-/* Element Plus 覆盖 */
+/* ============================================================
+ * Element Plus Overrides
+ * ============================================================ */
 .el-card {
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: none;
   box-shadow: var(--box-shadow-light);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.el-card:hover {
+  box-shadow: var(--shadow-lg);
 }
 
 .el-table {
   --el-table-border-color: var(--border-color-lighter);
 }
 
-/* 页面容器基础样式 */
+/* ============================================================
+ * Page Container
+ * ============================================================ */
 .page-container {
   height: 100%;
   width: 100%;
@@ -125,10 +247,12 @@ a:hover {
   flex-direction: column;
 }
 
-/* 过渡动画 */
+/* ============================================================
+ * Transitions
+ * ============================================================ */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--transition-fast);
 }
 
 .fade-enter-from,
@@ -136,7 +260,9 @@ a:hover {
   opacity: 0;
 }
 
-/* 工具类 */
+/* ============================================================
+ * Utility Classes
+ * ============================================================ */
 .flex {
   display: flex;
 }
@@ -169,115 +295,20 @@ a:hover {
   text-align: center;
 }
 
-/* ============================================================
- * Design Tokens
- * ============================================================ */
-:root {
-  /* Color Tokens */
-  --color-primary: #409eff;
-  --color-primary-light: #66b1ff;
-  --color-primary-dark: #337ecc;
-  --color-success: #67c23a;
-  --color-warning: #e6a23c;
-  --color-danger: #f56c6c;
-  --color-info: #909399;
-
-  /* Text */
-  --color-text-primary: #303133;
-  --color-text-regular: #606266;
-  --color-text-secondary: #86909c;
-  --color-text-placeholder: #a8abb2;
-
-  /* Background */
-  --color-bg-page: #f5f7fa;
-  --color-bg-card: #ffffff;
-  --color-bg-hover: #f5f7fa;
-
-  /* Border */
-  --color-border: #dcdfe6;
-  --color-border-light: #e4e7ed;
-  --color-border-lighter: #ebeef5;
-
-  /* Data Visualization */
-  --color-positive: #67c23a;
-  --color-negative: #f56c6c;
-
-  /* Chart Palette */
-  --chart-color-1: #409eff;
-  --chart-color-2: #67c23a;
-  --chart-color-3: #e6a23c;
-  --chart-color-4: #f56c6c;
-  --chart-color-5: #909399;
-
-  /* Typography */
-  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
-  --font-family-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
-
-  --font-size-xs: 10px;
-  --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-md: 16px;
-  --font-size-lg: 20px;
-  --font-size-xl: 24px;
-  --font-size-2xl: 32px;
-  --font-size-3xl: 48px;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  /* Spacing */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
-
-  --page-padding: 20px;
-  --card-padding: 20px;
-  --section-gap: 24px;
-
-  /* Elevation */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.16);
-
-  /* Border Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
-
-  /* Transition Tokens (AUDIT-084) */
-  --transition-fast: 0.2s ease;
-  --transition-base: 0.3s ease;
-  --transition-slow: 0.3s ease-in-out;
-}
-
-/* ============================================================
- * Utility: Tabular Nums (AUDIT-080)
- * Apply to any numeric display for aligned digits.
- * ============================================================ */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
 /* ============================================================
  * Section Badges (AUDIT-088)
- * Replace emoji decorators with styled HTML badges.
  * ============================================================ */
 .section-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border-radius: var(--radius-sm, 4px);
-  font-size: var(--font-size-xs, 10px);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
   font-weight: 500;
 }
 
@@ -286,34 +317,34 @@ a:hover {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--color-primary, #409eff);
+  background: var(--color-primary);
 }
 
 .section-badge--chart::before {
-  background: var(--chart-color-1, #409eff);
+  background: var(--chart-color-1);
 }
 
 .section-badge--data::before {
-  background: var(--chart-color-2, #67c23a);
+  background: var(--chart-color-2);
 }
 
 .section-badge--insight::before {
-  background: var(--chart-color-3, #e6a23c);
+  background: var(--chart-color-3);
 }
 
 .section-badge--warning::before {
-  background: var(--color-warning, #e6a23c);
+  background: var(--color-warning);
 }
 
 .section-badge--ai::before {
-  background: var(--color-primary, #409eff);
+  background: var(--color-primary);
 }
 
 /* ============================================================
  * Keyboard Focus Styles (WCAG 2.1)
  * ============================================================ */
 *:focus-visible {
-  outline: 2px solid var(--color-primary, #409eff);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -323,7 +354,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--color-primary, #409eff);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-  border-radius: var(--radius-sm, 4px);
+  border-radius: var(--radius-sm);
 }

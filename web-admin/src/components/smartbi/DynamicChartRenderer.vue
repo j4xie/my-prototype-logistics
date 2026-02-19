@@ -26,6 +26,11 @@ let chartInstance: echarts.ECharts | null = null;
 
 const PIE_COLORS = CHART_COLORS;
 
+/** Extract axis field from config, handling camelCase/lowercase variants from API */
+function extractField(config: Record<string, unknown>, primary: string, fallback: string, defaultVal: string): string {
+  return (config[primary] as string | undefined) || (config[fallback] as string | undefined) || defaultVal;
+}
+
 onMounted(() => {
   initChart();
   window.addEventListener('resize', handleResize);
@@ -300,8 +305,8 @@ function buildFromLegacyConfig(config: LegacyChartConfig): echarts.EChartsOption
   }
 
   // Support both camelCase (xAxisField) and lowercase (xaxisField) from API
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
 
   const xData = config.data.map(item => String(item[xField] || ''));
   const yData = config.data.map(item => Number(item[yField] || 0));
@@ -325,8 +330,8 @@ function buildFromLegacyConfig(config: LegacyChartConfig): echarts.EChartsOption
 
 /** Build waterfall chart for budget execution */
 function buildWaterfallChart(config: LegacyChartConfig): echarts.EChartsOption {
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
 
   const xData = config.data.map(item => String(item[xField] || ''));
   const yData = config.data.map(item => Number(item[yField] || 0));
@@ -347,10 +352,64 @@ function buildWaterfallChart(config: LegacyChartConfig): echarts.EChartsOption {
   };
 }
 
-/** Build budget achievement chart with bars and line */
+/** Build LINE_BAR chart — reads series metadata from options.series when available */
 function buildLineBudgetChart(config: LegacyChartConfig): echarts.EChartsOption {
-  // For budget achievement: month, budget, actual, achievementRate
-  const xData = config.data.map(item => String(item.month || ''));
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'month');
+  const xData = config.data.map(item => String(item[xField] || ''));
+
+  // Read series definitions from options.series (backend provides field→name mapping)
+  const optSeries = (config.options as Record<string, unknown>)?.series as Array<Record<string, unknown>> | undefined;
+  const optYAxis = (config.options as Record<string, unknown>)?.yAxis as Array<Record<string, unknown>> | undefined;
+
+  if (optSeries && optSeries.length > 0) {
+    // Generic path: build series from options.series metadata
+    const dataKeys = Object.keys(config.data[0] || {}).filter(k => k !== xField);
+    const seriesColors = ['#5470c6', '#91cc75', '#ee6666', '#fac858', '#73c0de'];
+    const legendData: string[] = [];
+
+    const series = optSeries.map((sDef, idx) => {
+      const name = String(sDef.name || `系列${idx + 1}`);
+      const type = String(sDef.type || 'bar');
+      const yAxisIndex = Number(sDef.yAxisIndex || 0);
+      legendData.push(name);
+
+      // Match series to data field by index position in dataKeys
+      const fieldKey = dataKeys[idx] || '';
+      const seriesData = config.data.map(item => Number(item[fieldKey] || 0));
+
+      return {
+        name,
+        type: type as 'bar' | 'line',
+        data: seriesData,
+        yAxisIndex,
+        smooth: type === 'line',
+        itemStyle: { color: seriesColors[idx % seriesColors.length] },
+      };
+    });
+
+    // Build yAxis from options.yAxis or default
+    const yAxis = optYAxis && optYAxis.length > 0
+      ? optYAxis.map(ax => ({
+          type: 'value' as const,
+          name: String(ax.name || ''),
+          position: ax.position as 'left' | 'right' || undefined,
+          axisLabel: { formatter: (v: number) => String(ax.name || '').includes('%')
+            ? `${v}%`
+            : formatAxisValue(v) },
+        }))
+      : [{ type: 'value' as const, name: '金额', axisLabel: { formatter: (v: number) => formatAxisValue(v) } }];
+
+    return {
+      tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+      legend: { data: legendData, bottom: 0 },
+      grid: { left: '3%', right: '8%', bottom: '15%', top: '10%', containLabel: true },
+      xAxis: { type: 'category', data: xData },
+      yAxis,
+      series,
+    };
+  }
+
+  // Fallback: hardcoded budget achievement fields
   const budgetData = config.data.map(item => Number(item.budget || 0));
   const actualData = config.data.map(item => Number(item.actual || 0));
   const rateData = config.data.map(item => Number(item.achievementRate || 0));
@@ -374,8 +433,8 @@ function buildLineBudgetChart(config: LegacyChartConfig): echarts.EChartsOption 
 
 /** Build radar/spider chart */
 function buildRadarChart(config: LegacyChartConfig): echarts.EChartsOption {
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
 
   // Build radar indicator from data
   const indicator = config.data.map(item => ({
@@ -408,8 +467,8 @@ function buildRadarChart(config: LegacyChartConfig): echarts.EChartsOption {
 
 /** Build scatter plot chart */
 function buildScatterChart(config: LegacyChartConfig): echarts.EChartsOption {
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'x';
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'y';
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'x');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'y');
 
   const scatterData = config.data.map(item => [
     Number(item[xField] || 0),
@@ -435,8 +494,8 @@ function buildScatterChart(config: LegacyChartConfig): echarts.EChartsOption {
 
 /** Build area chart (line with filled area) */
 function buildAreaChart(config: LegacyChartConfig): echarts.EChartsOption {
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
 
   const xData = config.data.map(item => String(item[xField] || ''));
   const yData = config.data.map(item => Number(item[yField] || 0));
@@ -464,8 +523,8 @@ function buildAreaChart(config: LegacyChartConfig): echarts.EChartsOption {
 
 /** Build gauge/meter chart */
 function buildGaugeChart(config: LegacyChartConfig): echarts.EChartsOption {
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
 
   // Use first data item for gauge value
   const firstItem = config.data[0] || {};
@@ -511,8 +570,8 @@ function buildGaugeChart(config: LegacyChartConfig): echarts.EChartsOption {
 
 /** Build funnel chart */
 function buildFunnelChart(config: LegacyChartConfig): echarts.EChartsOption {
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
 
   const funnelData = config.data.map((item, index) => ({
     name: String(item[xField] || ''),
@@ -542,7 +601,7 @@ function buildFunnelChart(config: LegacyChartConfig): echarts.EChartsOption {
 
 /** Build stacked bar chart */
 function buildStackedBarChart(config: LegacyChartConfig): echarts.EChartsOption {
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
 
   // Get all keys except xField for stacking
   const allKeys = config.data.length > 0 ? Object.keys(config.data[0]) : [];
@@ -571,8 +630,8 @@ function buildStackedBarChart(config: LegacyChartConfig): echarts.EChartsOption 
 
 /** Build doughnut chart (pie with inner radius) */
 function buildDoughnutChart(config: LegacyChartConfig): echarts.EChartsOption {
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
 
   const pieData = config.data.map((item, index) => ({
     name: String(item[xField] || ''),
@@ -619,8 +678,8 @@ function buildDoughnutChart(config: LegacyChartConfig): echarts.EChartsOption {
 
 /** Build treemap chart for hierarchical data */
 function buildTreemapChart(config: LegacyChartConfig): echarts.EChartsOption {
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
 
   const treemapData = config.data.map((item, index) => ({
     name: String(item[xField] || ''),
@@ -658,8 +717,8 @@ function buildMapChart(config: LegacyChartConfig): echarts.EChartsOption {
   // Register China map if not already registered
   registerChinaMap();
 
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
 
   // Normalize province names and build map data
   const mapData = config.data.map(item => ({
@@ -718,8 +777,8 @@ function buildMapChart(config: LegacyChartConfig): echarts.EChartsOption {
 
 function buildLegacyPie(config: LegacyChartConfig): echarts.EChartsOption {
   // Support both camelCase (xAxisField) and lowercase (xaxisField) from API
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
 
   const pieData = config.data?.map((item, index) => ({
     name: String(item[xField] || ''),

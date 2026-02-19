@@ -124,6 +124,28 @@ const businessRoutes: RouteRecordRaw[] = [
         ]
       },
 
+      // 调拨管理
+      {
+        path: 'transfer',
+        name: 'Transfer',
+        redirect: '/transfer/list',
+        meta: { requiresAuth: true, title: '调拨管理', icon: 'Sell', module: 'warehouse' },
+        children: [
+          {
+            path: 'list',
+            name: 'TransferList',
+            component: () => import('@/views/transfer/list.vue'),
+            meta: { requiresAuth: true, title: '调拨单列表', module: 'warehouse' }
+          },
+          {
+            path: ':id',
+            name: 'TransferDetail',
+            component: () => import('@/views/transfer/detail.vue'),
+            meta: { requiresAuth: true, title: '调拨详情', module: 'warehouse', hidden: true }
+          }
+        ]
+      },
+
       // 质量管理
       {
         path: 'quality',
@@ -150,14 +172,32 @@ const businessRoutes: RouteRecordRaw[] = [
       {
         path: 'procurement',
         name: 'Procurement',
-        redirect: '/procurement/suppliers',
+        redirect: '/procurement/orders',
         meta: { requiresAuth: true, title: '采购管理', icon: 'ShoppingCart', module: 'procurement' },
         children: [
+          {
+            path: 'orders',
+            name: 'ProcurementOrders',
+            component: () => import('@/views/procurement/orders/list.vue'),
+            meta: { requiresAuth: true, title: '采购订单', module: 'procurement' }
+          },
+          {
+            path: 'orders/:id',
+            name: 'ProcurementOrderDetail',
+            component: () => import('@/views/procurement/orders/detail.vue'),
+            meta: { requiresAuth: true, title: '采购订单详情', module: 'procurement', hidden: true }
+          },
           {
             path: 'suppliers',
             name: 'ProcurementSuppliers',
             component: () => import('@/views/procurement/suppliers/list.vue'),
             meta: { requiresAuth: true, title: '供应商管理', module: 'procurement' }
+          },
+          {
+            path: 'price-lists',
+            name: 'ProcurementPriceLists',
+            component: () => import('@/views/procurement/price-lists/list.vue'),
+            meta: { requiresAuth: true, title: '价格表管理', module: 'procurement' }
           }
         ]
       },
@@ -166,9 +206,27 @@ const businessRoutes: RouteRecordRaw[] = [
       {
         path: 'sales',
         name: 'Sales',
-        redirect: '/sales/customers',
+        redirect: '/sales/orders',
         meta: { requiresAuth: true, title: '销售管理', icon: 'Goods', module: 'sales' },
         children: [
+          {
+            path: 'orders',
+            name: 'SalesOrders',
+            component: () => import('@/views/sales/orders/list.vue'),
+            meta: { requiresAuth: true, title: '销售订单', module: 'sales' }
+          },
+          {
+            path: 'orders/:id',
+            name: 'SalesOrderDetail',
+            component: () => import('@/views/sales/orders/detail.vue'),
+            meta: { requiresAuth: true, title: '销售订单详情', module: 'sales', hidden: true }
+          },
+          {
+            path: 'finished-goods',
+            name: 'SalesFinishedGoods',
+            component: () => import('@/views/sales/finished-goods/list.vue'),
+            meta: { requiresAuth: true, title: '成品库存', module: 'sales' }
+          },
           {
             path: 'customers',
             name: 'SalesCustomers',
@@ -258,6 +316,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'FinanceReports',
             component: () => import('@/views/finance/reports/index.vue'),
             meta: { requiresAuth: true, title: '财务报表', module: 'finance' }
+          },
+          {
+            path: 'ar-ap',
+            name: 'FinanceArAp',
+            component: () => import('@/views/finance/ar-ap/index.vue'),
+            meta: { requiresAuth: true, title: '应收应付', module: 'finance' }
           }
         ]
       },
@@ -310,6 +374,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SystemFeatures',
             component: () => import('@/views/system/features/index.vue'),
             meta: { requiresAuth: true, title: '功能模块配置', module: 'system' }
+          },
+          {
+            path: 'pos',
+            name: 'SystemPos',
+            component: () => import('@/views/system/pos/list.vue'),
+            meta: { requiresAuth: true, title: 'POS集成', module: 'system' }
           }
         ]
       },

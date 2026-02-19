@@ -47,11 +47,13 @@ interface FeedbackWidgetProps {
   answer: string;
   /** 会话ID（用于隐式反馈检测） */
   sessionId?: string;
+  /** 意图代码（用于反馈追溯） */
+  intentCode?: string;
   /** 食品知识库查询元数据（用于 log-query） */
   foodKbMetadata?: FoodKBQueryMetadata;
 }
 
-export function FeedbackWidget({ queryId, question, answer, sessionId, foodKbMetadata }: FeedbackWidgetProps) {
+export function FeedbackWidget({ queryId, question, answer, sessionId, intentCode, foodKbMetadata }: FeedbackWidgetProps) {
   const { factoryId, token } = useAuthStore();
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -125,6 +127,13 @@ export function FeedbackWidget({ queryId, question, answer, sessionId, foodKbMet
         feedbackTags: helpful ? [] : selectedTags,
         feedbackText: helpful ? null : feedbackText || null,
         sessionId: sessionId || undefined,
+        intentCode: intentCode || undefined,
+        retrievedDocIds: foodKbMetadata?.citations
+          ?.map((c) => c.index)
+          .filter((id): id is number => id != null),
+        retrievedDocTitles: foodKbMetadata?.citations
+          ?.map((c) => c.title)
+          .filter((t): t is string => !!t),
       };
 
       const response = await apiClient.post(

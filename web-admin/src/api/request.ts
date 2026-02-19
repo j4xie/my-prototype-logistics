@@ -166,7 +166,10 @@ request.interceptors.response.use(
 
     // 其他错误
     const message = error.response?.data?.message || error.message || '网络请求失败';
-    showMessage(message, 'error');
+    // Allow callers to suppress error toast via _silent config flag
+    if (!originalRequest._silent) {
+      showMessage(message, 'error');
+    }
 
     return Promise.reject(new ApiError(message, error.response?.data?.code, status));
   }

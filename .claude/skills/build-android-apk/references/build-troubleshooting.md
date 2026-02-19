@@ -4,17 +4,19 @@
 
 | 问题 | 解决方案 |
 |------|----------|
-| `JAVA_HOME is not set` | `export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home` |
-| `Android SDK not found` | `export ANDROID_HOME=$HOME/Library/Android/sdk` |
+| `JAVA_HOME is not set` | `export JAVA_HOME="C:/Program Files/Java/jdk-17"` |
+| `Android SDK not found` | `export ANDROID_HOME="C:\Users\Steve\AppData\Local\Android\Sdk"` |
 | `Build tools not found` | Android Studio → SDK Manager → 安装 Build-Tools 34.0.0+ |
+| CMake path too long (250 chars) | 添加 `buildStagingDirectory = file("C:/b/${subproject.name}")` 到 build.gradle |
 
 ## Gradle 构建问题
 
 | 问题 | 解决方案 |
 |------|----------|
-| `Could not resolve all files` | `./gradlew clean && ./gradlew --refresh-dependencies` |
-| `mergeReleaseResources failed` | 清理: `./gradlew clean && rm -rf ~/.gradle/caches/` |
+| `Could not resolve all files` | `gradlew.bat clean && gradlew.bat --refresh-dependencies` |
+| `mergeReleaseResources failed` | 清理: `gradlew.bat clean && rm -rf ~/.gradle/caches/` |
 | `Out of memory: Java heap` | `gradle.properties` 添加: `org.gradle.jvmargs=-Xmx4096m` |
+| CMake 路径错误 | `rm -rf node_modules/react-native-reanimated/android/.cxx` |
 
 ## 签名问题
 
@@ -37,7 +39,9 @@ cd frontend/CretasFoodTrace
 rm -rf node_modules android .expo
 npm install
 npx expo prebuild --clean --platform android
-cd android && ./gradlew clean && ./gradlew assembleRelease
+ANDROID_HOME="C:\\Users\\Steve\\AppData\\Local\\Android\\Sdk" \
+JAVA_HOME="C:/Program Files/Java/jdk-17" \
+cmd //c "cd android && gradlew.bat clean && gradlew.bat assembleRelease"
 ```
 
 ## Gradle 性能配置
@@ -53,8 +57,9 @@ org.gradle.jvmargs=-Xmx4096m
 ## 快速检查清单
 
 - [ ] Java 17+ (`java -version`)
-- [ ] Android SDK 配置 (`echo $ANDROID_HOME`)
+- [ ] ANDROID_HOME 设置 (`echo $ANDROID_HOME`)
 - [ ] node_modules 完整 (`npm install`)
 - [ ] android 目录存在 (`npx expo prebuild`)
-- [ ] Gradle 缓存清理 (`./gradlew clean`)
+- [ ] CMake workaround 已添加 (build.gradle)
+- [ ] Gradle 缓存清理 (`gradlew.bat clean`)
 - [ ] 签名配置正确

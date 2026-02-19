@@ -103,10 +103,20 @@ class ForecastService:
             }
 
     def _clean_data(self, data: list) -> np.ndarray:
-        """Clean and validate input data"""
+        """Clean and validate input data. Returns empty array if data is all-NaN."""
         arr = np.array(data, dtype=float)
-        # Replace inf with nan, then interpolate
+        # Replace inf with nan
         arr[np.isinf(arr)] = np.nan
+
+        # All-NaN check: return empty array so caller can handle gracefully
+        if np.all(np.isnan(arr)):
+            return np.array([])
+
+        # Need at least 2 valid points to interpolate
+        valid_count = np.sum(~np.isnan(arr))
+        if valid_count < 2:
+            # Not enough valid points, return only the valid ones
+            return arr[~np.isnan(arr)]
 
         # Simple linear interpolation for missing values
         if np.isnan(arr).any():

@@ -16,38 +16,48 @@ allowed-tools:
 ## Rules 目录
 
 ```
-/Users/jietaoxie/my-prototype-logistics/.claude/rules/
+.claude/rules/
 ```
 
-## 一键检查脚本
+## 检查步骤
 
-```bash
-RULES_DIR="/Users/jietaoxie/my-prototype-logistics/.claude/rules"
-FRONTEND_SRC="/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/src"
-BACKEND_SRC="/Users/jietaoxie/my-prototype-logistics/backend-java/src"
+### 1. 代码库统计
 
-echo "=== Rules 维护检查 $(date +%Y-%m-%d) ==="
-echo ""
+使用 Grep 工具收集以下统计数据：
 
-# 1. 代码库统计
-echo "📊 代码库统计:"
-echo "   'as any' 使用: $(grep -r 'as any' $FRONTEND_SRC --include='*.ts' --include='*.tsx' 2>/dev/null | wc -l | tr -d ' ') 处"
-echo "   Controller: $(ls $BACKEND_SRC/main/java/com/cretas/aims/controller/*.java 2>/dev/null | wc -l | tr -d ' ') 个"
-echo "   API 端点: $(grep -r '@.*Mapping' $BACKEND_SRC/main/java/com/cretas/aims/controller --include='*.java' 2>/dev/null | wc -l | tr -d ' ') 个"
-echo ""
+| 指标 | Grep 模式 | 搜索范围 |
+|------|----------|----------|
+| `as any` 使用数 | `as any` | `frontend/CretasFoodTrace/src/` (*.ts, *.tsx) |
+| Controller 数量 | `@RestController\|@Controller` | `backend-java/src/` (*.java) |
+| API 端点数 | `@.*Mapping` | `backend-java/src/.../controller/` (*.java) |
+| 硬编码密码 | `password.*=.*["']` | `backend-java/` |
+| Hermes 不兼容 | `toLocaleString\|toLocaleDateString` | `frontend/CretasFoodTrace/src/` |
 
-# 2. Rules 格式检查
-echo "📋 Rules 格式:"
-for f in $RULES_DIR/*.md; do
-  filename=$(basename "$f")
-  has_update=$(grep -c "最后更新" "$f" || echo 0)
-  days_ago=$(( ($(date +%s) - $(stat -f '%m' "$f")) / 86400 ))
-  status="✅"
-  [ "$has_update" -eq 0 ] && status="⚠️ 缺更新日期"
-  [ $days_ago -gt 7 ] && status="🔴 超7天未更新"
-  printf "   %-35s %s\n" "$filename" "$status"
-done
-```
+### 2. Rules 格式检查
+
+对 `.claude/rules/` 中每个 `.md` 文件检查:
+
+- [ ] 包含 `**最后更新**` 日期标记
+- [ ] 内容与当前代码库一致
+- [ ] 引用的文件路径仍然有效
+- [ ] 统计数据未过时
+
+### 3. 同步检查项
+
+| Rule 文件 | 需要检查的统计数据 |
+|-----------|-------------------|
+| `api-response-handling.md` | Controller 数量、API 端点数 |
+| `typescript-type-safety.md` | `as any` 使用数 |
+| `server-operations.md` | 服务器 IP、端口、目录结构 |
+| `aliyun-credentials.md` | 服务器到期时间、实例信息 |
+| `CREDENTIAL-MANAGEMENT.md` | 环境变量列表 |
+
+### 4. MEMORY.md 检查
+
+同时检查 auto memory 文件是否需要更新:
+- 路径: `.claude/projects/C--Users-Steve-my-prototype-logistics/memory/MEMORY.md`
+- 确保不超过 200 行限制
+- 过时信息应移入主题文件或删除
 
 ## 更新操作
 
@@ -72,6 +82,7 @@ done
 ## 检查清单
 
 - [ ] 统计数据是否与代码库一致
-- [ ] 文件引用是否有效
-- [ ] 是否超过7天未更新
+- [ ] 文件引用路径是否有效
+- [ ] 服务器信息是否为最新 (47.100.235.168)
+- [ ] 数据库引用是否为 PostgreSQL (非 MySQL)
 - [ ] 格式是否完整 (概述/Rule章节/相关文件)

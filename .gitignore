@@ -126,10 +126,12 @@ web-admin-dist.tar.gz
 # 临时分析和调试文件
 *.xml
 configs.json
-1.md
 redundancy_analysis.txt
 rag_test_results.py
-CUsersStevemy-prototype-logisticstmp_login.json
+tmp_*
+test-output/
+test-results/
+smartbi_server.log
 
 # 产品图片目录（不推送到仓库）
 MallCenter/product image/

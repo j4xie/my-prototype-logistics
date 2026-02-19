@@ -69,6 +69,16 @@ import { UnifiedDeviceDiscoveryScreen } from "../../screens/factory-admin/camera
 // NFC 标签管理
 import NfcTagManagementScreen from "../../screens/processing/NfcTagManagementScreen";
 
+// 进销存管理
+import PurchaseOrderListScreen from "../../screens/factory-admin/inventory/PurchaseOrderListScreen";
+import PurchaseOrderDetailScreen from "../../screens/factory-admin/inventory/PurchaseOrderDetailScreen";
+import SalesOrderListScreen from "../../screens/factory-admin/inventory/SalesOrderListScreen";
+import SalesOrderDetailScreen from "../../screens/factory-admin/inventory/SalesOrderDetailScreen";
+import FinishedGoodsListScreen from "../../screens/factory-admin/inventory/FinishedGoodsListScreen";
+import TransferListScreen from "../../screens/factory-admin/inventory/TransferListScreen";
+import TransferDetailScreen from "../../screens/factory-admin/inventory/TransferDetailScreen";
+import ArApOverviewScreen from "../../screens/factory-admin/inventory/ArApOverviewScreen";
+
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
 export function FAManagementStackNavigator() {
@@ -352,6 +362,48 @@ export function FAManagementStackNavigator() {
         name="NfcTagManagement"
         component={NfcTagManagementScreen}
         options={{ title: "NFC标签管理" }}
+      />
+
+      {/* 进销存管理 */}
+      <Stack.Screen
+        name="PurchaseOrderList"
+        component={PurchaseOrderListScreen}
+        options={{ title: "采购订单" }}
+      />
+      <Stack.Screen
+        name="PurchaseOrderDetail"
+        component={PurchaseOrderDetailScreen}
+        options={{ title: "采购单详情" }}
+      />
+      <Stack.Screen
+        name="SalesOrderList"
+        component={SalesOrderListScreen}
+        options={{ title: "销售订单" }}
+      />
+      <Stack.Screen
+        name="SalesOrderDetail"
+        component={SalesOrderDetailScreen}
+        options={{ title: "销售单详情" }}
+      />
+      <Stack.Screen
+        name="FinishedGoodsList"
+        component={FinishedGoodsListScreen}
+        options={{ title: "成品库存" }}
+      />
+      <Stack.Screen
+        name="TransferList"
+        component={TransferListScreen}
+        options={{ title: "调拨管理" }}
+      />
+      <Stack.Screen
+        name="TransferDetail"
+        component={TransferDetailScreen}
+        options={{ title: "调拨详情" }}
+      />
+      <Stack.Screen
+        name="ArApOverview"
+        component={ArApOverviewScreen}
+        options={{ title: "应收应付" }}
       />
     </Stack.Navigator>
   );

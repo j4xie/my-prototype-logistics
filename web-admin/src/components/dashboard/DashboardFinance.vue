@@ -15,6 +15,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const loading = ref(false);
+const loadError = ref('');
 const factoryId = computed(() => authStore.factoryId);
 
 // 财务统计数据
@@ -75,11 +76,18 @@ async function loadFinanceData() {
   if (!factoryId.value) return;
 
   loading.value = true;
+  loadError.value = '';
   try {
-    // 使用 SmartBI 财务分析端点
-    const response = await get<any>(`/${factoryId.value}/smart-bi/analysis/finance`);
+    // Default date range: first day of current month to today
+    const now = new Date();
+    const startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const endDate = now.toISOString().split('T')[0];
+
+    const response = await get<any>(
+      `/${factoryId.value}/smart-bi/analysis/finance`,
+      { params: { startDate, endDate, analysisType: 'profit' } }
+    );
     if (response.success && response.data) {
-      // 从 SmartBI 响应中提取财务数据
       const data = response.data;
       financeStats.value = {
         totalRevenue: (data.totalRevenue ?? data.revenue ?? 0) / 10000,
@@ -88,22 +96,11 @@ async function loadFinanceData() {
         profitMargin: data.profitMargin ?? data.profitRate ?? 0
       };
     } else {
-      // 使用模拟数据
-      financeStats.value = {
-        totalRevenue: 125,
-        totalCost: 87.5,
-        grossProfit: 37.5,
-        profitMargin: 30
-      };
+      loadError.value = response.message || '暂无财务数据';
     }
-  } catch (error) {
-    // 静默处理 - 使用模拟数据 (端点需要认证或暂无数据时)
-    financeStats.value = {
-      totalRevenue: 125,
-      totalCost: 87.5,
-      grossProfit: 37.5,
-      profitMargin: 30
-    };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : '加载财务数据失败';
+    loadError.value = msg;
   } finally {
     loading.value = false;
   }
@@ -134,6 +131,16 @@ function navigateTo(route: string) {
       </div>
     </div>
 
+    <!-- 错误提示 -->
+    <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" style="margin-bottom: 16px">
+      <template #default>
+        <el-button type="primary" link @click="loadFinanceData()">重试</el-button>
+        <span style="margin-left: 8px; color: #909399;">或前往</span>
+        <el-button type="primary" link @click="navigateTo('/smart-bi/finance')">财务分析</el-button>
+        <span style="color: #909399;">查看详情</span>
+      </template>
+    </el-alert>
+
     <!-- 统计卡片 -->
     <el-row :gutter="20" class="stat-cards">
       <el-col v-for="card in statCards" :key="card.title" :xs="24" :sm="12" :md="6">
@@ -142,8 +149,11 @@ function navigateTo(route: string) {
             <div class="stat-info">
               <span class="stat-title">{{ card.title }}</span>
               <span class="stat-value" :style="{ color: card.color }">
-                {{ card.value.toFixed(1) }}
-                <small>{{ card.unit }}</small>
+                <template v-if="loadError">--</template>
+                <template v-else>
+                  {{ card.value.toFixed(1) }}
+                  <small>{{ card.unit }}</small>
+                </template>
               </span>
             </div>
             <el-icon class="stat-icon" :style="{ backgroundColor: card.color + '20', color: card.color }">
@@ -192,16 +202,17 @@ function navigateTo(route: string) {
             </div>
           </template>
           <div class="revenue-overview">
-            <div class="overview-chart">
+            <el-empty v-if="loadError || financeStats.totalRevenue === 0" description="暂无本月收支数据" :image-size="80" />
+            <div v-else class="overview-chart">
               <div class="chart-bar revenue" :style="{ width: '100%' }">
                 <span class="label">收入</span>
                 <span class="value">¥{{ (financeStats.totalRevenue * 10000).toLocaleString() }}</span>
               </div>
-              <div class="chart-bar cost" :style="{ width: `${(financeStats.totalCost / financeStats.totalRevenue) * 100}%` }">
+              <div class="chart-bar cost" :style="{ width: `${financeStats.totalRevenue ? (financeStats.totalCost / financeStats.totalRevenue) * 100 : 0}%` }">
                 <span class="label">成本</span>
                 <span class="value">¥{{ (financeStats.totalCost * 10000).toLocaleString() }}</span>
               </div>
-              <div class="chart-bar profit" :style="{ width: `${(financeStats.grossProfit / financeStats.totalRevenue) * 100}%` }">
+              <div class="chart-bar profit" :style="{ width: `${financeStats.totalRevenue ? (financeStats.grossProfit / financeStats.totalRevenue) * 100 : 0}%` }">
                 <span class="label">利润</span>
                 <span class="value">¥{{ (financeStats.grossProfit * 10000).toLocaleString() }}</span>
               </div>

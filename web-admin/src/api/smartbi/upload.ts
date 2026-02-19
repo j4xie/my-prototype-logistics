@@ -5,6 +5,7 @@
 import {
   request, get, post,
   getSmartBIBasePath,
+  pythonFetch,
   type AnalysisResult,
   type ChartConfig,
   type UploadHistoryItem,
@@ -146,10 +147,25 @@ export function confirmUploadAndPersist(data: {
 }
 
 /**
- * Get upload history list
+ * Get upload history list.
+ * Tries Python SmartBI service first (direct DB access), falls back to Java backend.
  */
-export function getUploadHistory(params?: { status?: string }) {
-  return get<UploadHistoryItem[]>(`${getSmartBIBasePath()}/uploads`, { params });
+export async function getUploadHistory(params?: { status?: string }): Promise<{ success: boolean; data: UploadHistoryItem[] }> {
+  try {
+    const qs = params?.status ? `?status=${encodeURIComponent(params.status)}` : '';
+    const result = await pythonFetch(`/api/excel/uploads${qs}`) as { success: boolean; data: UploadHistoryItem[] };
+    if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+      return result;
+    }
+  } catch {
+    // Python service unavailable, fall through to Java
+  }
+  // Fallback to Java backend
+  try {
+    return await get<UploadHistoryItem[]>(`${getSmartBIBasePath()}/uploads`, { params, _silent: true } as Record<string, unknown>);
+  } catch {
+    return { success: false, data: [] };
+  }
 }
 
 /**
@@ -220,4 +236,19 @@ export function getDynamicAnalysis(uploadId: number, analysisType: string = 'aut
   return get<DynamicAnalysisResponse>(`${getSmartBIBasePath()}/analysis/dynamic`, {
     params: { uploadId, analysisType }
   });
+}
+
+/**
+ * Deduplicate upload history: group by fileName+sheetName, keep latest uploadId.
+ */
+export function deduplicateUploads(uploads: UploadHistoryItem[]): UploadHistoryItem[] {
+  const map = new Map<string, UploadHistoryItem>();
+  for (const item of uploads) {
+    const key = `${item.fileName}|${item.sheetName || ''}`;
+    const existing = map.get(key);
+    if (!existing || item.id > existing.id) {
+      map.set(key, item);
+    }
+  }
+  return Array.from(map.values());
 }

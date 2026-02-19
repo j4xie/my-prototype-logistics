@@ -45,20 +45,31 @@ class CrossSheetAggregator:
             Dict with kpiComparison, charts, aiSummary
         """
         try:
-            # 1. Fetch data for each upload
+            # 1. Fetch data for each upload, tracking failures
             all_sheet_data: List[Dict[str, Any]] = []
+            fetch_errors: List[Dict[str, Any]] = []
             for i, upload_id in enumerate(upload_ids):
                 name = sheet_names[i] if i < len(sheet_names) else f"Sheet {i + 1}"
-                sheet_data = await self._fetch_sheet_data(upload_id, factory_id)
-                if sheet_data is not None and len(sheet_data) > 0:
-                    all_sheet_data.append({
-                        "uploadId": upload_id,
-                        "sheetName": name,
-                        "data": sheet_data
-                    })
+                try:
+                    sheet_data = await self._fetch_sheet_data(upload_id, factory_id)
+                    if sheet_data is not None and len(sheet_data) > 0:
+                        all_sheet_data.append({
+                            "uploadId": upload_id,
+                            "sheetName": name,
+                            "data": sheet_data
+                        })
+                    else:
+                        fetch_errors.append({"sheetName": name, "error": "无数据"})
+                except Exception as e:
+                    fetch_errors.append({"sheetName": name, "error": str(e)})
+                    logger.error(f"Failed to process upload {upload_id}: {e}")
 
             if not all_sheet_data:
-                return {"success": False, "error": "无法获取任何 Sheet 数据"}
+                return {
+                    "success": False,
+                    "error": "无法获取任何 Sheet 数据",
+                    "fetchErrors": fetch_errors
+                }
 
             # 2. Extract KPIs per sheet
             kpi_comparison = self._extract_kpis(all_sheet_data)
@@ -66,15 +77,27 @@ class CrossSheetAggregator:
             # 3. Build comparison charts
             charts = self._build_comparison_charts(kpi_comparison, all_sheet_data)
 
-            # 4. Generate AI summary
-            ai_summary = await self._generate_ai_summary(kpi_comparison, all_sheet_data)
+            # 4. Generate AI summary (with fallback tracking)
+            ai_summary = None
+            llm_fallback = False
+            try:
+                ai_summary = await self._generate_ai_summary(kpi_comparison, all_sheet_data)
+            except Exception as e:
+                logger.error(f"LLM summary failed, using statistical fallback: {e}")
+                ai_summary = self._generate_statistical_summary(kpi_comparison)
+                llm_fallback = True
 
-            return {
+            result: Dict[str, Any] = {
                 "success": True,
                 "kpiComparison": kpi_comparison,
                 "charts": charts,
-                "aiSummary": ai_summary
+                "aiSummary": ai_summary,
             }
+            if fetch_errors:
+                result["fetchErrors"] = fetch_errors
+            if llm_fallback:
+                result["llmFallback"] = True
+            return result
 
         except Exception as e:
             logger.error(f"Cross-sheet aggregation failed: {e}", exc_info=True)
@@ -371,7 +394,7 @@ class CrossSheetAggregator:
                     "config": {
                         "tooltip": {
                             "trigger": "item",
-                            "formatter": "__FUNC__function(p){return p.data[2]+'<br/>收入: '+p.data[0].toLocaleString()+'<br/>利润率: '+p.data[1]+'%'}"
+                            "formatter": "__FMT__quadrant_scatter_tooltip"
                         },
                         "grid": {"left": "3%", "right": "4%", "bottom": "3%", "top": 50, "containLabel": True},
                         "xAxis": {"type": "value", "name": "收入",
@@ -383,7 +406,7 @@ class CrossSheetAggregator:
                             "symbolSize": 20,
                             "data": [[scatter_data[i][0], scatter_data[i][1], scatter_names[i]]
                                      for i in range(len(scatter_data))],
-                            "label": {"show": True, "formatter": "__FUNC__function(p){return p.data[2]}",
+                            "label": {"show": True, "formatter": "__FMT__quadrant_scatter_label",
                                       "position": "top", "fontSize": 11},
                             "markLine": {
                                 "silent": True,
@@ -494,10 +517,11 @@ class CrossSheetAggregator:
 {kpi_overview}
 {derived_text}
 
-## 行业参考基准（食品加工）
-- 毛利率: 25-35%
+## 参考范围（食品加工通用，子行业差异大）
+- 毛利率: 15-35%（禽类6-10%，乳制品10-15%，预制菜15-25%，调味品35-43%）
 - 净利率: 3-8%
 - 费用率: 15-25%
+注意：请根据数据内容判断所属子行业特征，避免机械对标。
 
 ## 分析要求（严格遵守）
 
@@ -505,7 +529,7 @@ class CrossSheetAggregator:
 2. **分部排名与对标**:
    - 按收入和利润率排序各分部
    - 标注表现最好和最差的分部，差距是多少
-   - 与行业基准对比
+   - 与参考范围对比，注明所属子行业
 3. **关键发现**（每条含具体数字）:
    - 亏损分部：哪些分部净利润为负？亏损金额是多少？
    - 费用结构：各分部费用率是否合理？
@@ -551,7 +575,7 @@ class CrossSheetAggregator:
 
         except Exception as e:
             logger.error(f"LLM cross-sheet summary failed: {e}")
-            return self._generate_statistical_summary(kpi_comparison)
+            raise
 
     def _generate_statistical_summary(
         self,

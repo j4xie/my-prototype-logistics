@@ -2955,3 +2955,43 @@ async def analyze_workbook(
             error="Excel处理失败，请检查文件格式后重试",
             processingTimeMs=int((time.time() - start_time) * 1000)
         )
+
+
+# ==================== Upload History ====================
+
+@router.get("/uploads")
+async def list_uploads(status: Optional[str] = Query(None)):
+    """List uploaded Excel files from the SmartBI database."""
+    try:
+        from smartbi.config import get_settings
+        import asyncpg
+        url = get_settings().postgres_url
+        conn = await asyncpg.connect(url)
+        try:
+            query = """
+                SELECT id, file_name, sheet_name, row_count, column_count, upload_status, created_at
+                FROM smart_bi_pg_excel_uploads
+            """
+            params = []
+            if status:
+                query += " WHERE upload_status = $1"
+                params.append(status)
+            query += " ORDER BY created_at DESC LIMIT 50"
+            rows = await conn.fetch(query, *params)
+            items = []
+            for r in rows:
+                items.append({
+                    "id": r["id"],
+                    "fileName": r.get("file_name", ""),
+                    "sheetName": r.get("sheet_name", ""),
+                    "rowCount": r.get("row_count", 0),
+                    "columnCount": r.get("column_count", 0),
+                    "status": r.get("upload_status", ""),
+                    "createdAt": r["created_at"].isoformat() if r.get("created_at") else "",
+                })
+            return {"success": True, "data": items}
+        finally:
+            await conn.close()
+    except Exception as e:
+        logger.error(f"List uploads failed: {e}")
+        return {"success": False, "data": [], "error": str(e)}

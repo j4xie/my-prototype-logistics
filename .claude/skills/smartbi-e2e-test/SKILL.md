@@ -1,3 +1,13 @@
+---
+name: smartbi-e2e-test
+description: SmartBI Chrome 自动化测试工具。使用 Playwright 进行 E2E 测试，支持 Ralph Loop 持续循环测试。适用于 SmartBI 功能验证、图表渲染检查、AI 问答测试。
+allowed-tools:
+  - Bash
+  - Read
+  - Grep
+  - Glob
+---
+
 # SmartBI E2E 自动化测试 Skill
 
 SmartBI Chrome 自动化测试工具。使用 Playwright 进行 E2E 测试，支持 Ralph Loop 持续循环测试。
@@ -19,11 +29,12 @@ SmartBI Chrome 自动化测试工具。使用 Playwright 进行 E2E 测试，支
 | 模块 | 测试内容 |
 |------|----------|
 | 登录 | 快捷登录、表单登录 |
-| Excel 上传 | 文件上传、解析、分析 |
+| Excel 上传 | 文件上传、解析、分析 (11 sheets) |
 | AI 问答 | 发送问题、快捷问题、清空 |
 | 经营驾驶舱 | KPI、排行榜、图表、刷新 |
 | 销售分析 | 筛选、维度切换、导出 |
 | 财务分析 | 周期切换、预算对比、同比环比 |
+| 图表渲染 | 51+ charts, 6 chart types, 11/11 KPIs |
 
 ## 使用方法
 
@@ -53,17 +64,19 @@ npm run report
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `BASE_URL` | `http://139.196.165.140:8086` | 测试目标地址 |
+| `BASE_URL` | `http://localhost:5173` | 测试目标 (本地 Vite dev server) |
 | `HEADED` | `false` | 是否显示浏览器 |
 | `SLOW_MO` | `0` | 操作延迟(ms) |
 | `LOOPS` | `0` (无限) | Ralph Loop 最大轮数 |
 | `PAUSE_ON_ERROR` | `false` | 错误时暂停 |
 
+**生产环境测试**: `BASE_URL=http://47.100.235.168:8088 npm test`
+
 ## 测试数据
 
 将测试用 Excel 文件放入 `tests/e2e-smartbi/test-data/` 目录：
-- `test-sales.xlsx` - 销售数据
-- `test-finance.xlsx` - 财务数据
+- `Test.xlsx` - 主测试文件 (11 sheets: 1 index, 8 profit statements, 1 data, 1 detail)
+- 264-row sheets 的 enrichment 约需 30-40s
 
 ## 报告输出
 
@@ -78,3 +91,5 @@ npm run report
 2. 登录状态会自动保存复用
 3. Ralph Loop 会持续运行直到手动 Ctrl+C 停止
 4. 错误时自动截图保存到 reports/screenshots/
+5. Vite 常在 5173/5174/5175 端口切换，注意检查实际端口
+6. ECharts canvas 点击需精确数据点定位 (非 DOM 元素)

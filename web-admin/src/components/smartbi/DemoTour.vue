@@ -111,22 +111,11 @@ const activeSteps = computed(() => {
   });
 });
 
-/** 首次访问自动触发 */
-watch(() => props.dataReady, (ready) => {
-  if (ready && !localStorage.getItem(TOUR_SHOWN_KEY)) {
-    // 清理之前的定时器（防止多次触发）
-    if (autoStartTimer) clearTimeout(autoStartTimer);
-    // 等待 DOM 完全渲染 (图表需要额外时间)
-    autoStartTimer = setTimeout(() => {
-      // 确保组件仍然挂载中
-      if (!isMounted) return;
-      // 至少要有 3 个步骤的目标可见才启动 tour
-      if (activeSteps.value.length >= 3) {
-        visible.value = true;
-      }
-    }, 1200);
-  }
-}, { immediate: true });
+/**
+ * Tour no longer auto-starts on first visit.
+ * Users can trigger it manually via the "?" button in the header.
+ * Auto-start was blocking interaction with file cards on first visit.
+ */
 
 /** 关闭 tour 时标记已展示 */
 const handleClose = () => {

@@ -31,7 +31,7 @@ const statCards = computed(() => [
     value: overview.value?.todayOutput ?? 0,
     unit: 'kg',
     icon: TrendCharts,
-    color: '#409eff',
+    color: '#1B65A8',
     route: '/production/batches'
   },
   {
@@ -39,7 +39,7 @@ const statCards = computed(() => [
     value: overview.value?.completedBatches ?? 0,
     unit: '个',
     icon: DataLine,
-    color: '#67c23a',
+    color: '#36B37E',
     route: '/production/batches'
   },
   {
@@ -47,7 +47,7 @@ const statCards = computed(() => [
     value: equipmentStats.value?.running ?? 0,
     unit: '台',
     icon: Timer,
-    color: '#e6a23c',
+    color: '#FFAB00',
     route: '/equipment/list'
   },
   {
@@ -55,18 +55,18 @@ const statCards = computed(() => [
     value: equipmentStats.value?.activeAlerts ?? 0,
     unit: '条',
     icon: Warning,
-    color: '#f56c6c',
+    color: '#FF5630',
     route: '/equipment/alerts'
   }
 ]);
 
 // 快捷操作 - 管理员专属
 const quickActions = [
-  { title: '生产管理', icon: TrendCharts, route: '/production/batches', color: '#409eff' },
-  { title: '仓储管理', icon: Box, route: '/warehouse/materials', color: '#67c23a' },
-  { title: '人员管理', icon: User, route: '/hr/employees', color: '#e6a23c' },
-  { title: '财务报表', icon: Money, route: '/finance/reports', color: '#f56c6c' },
-  { title: '系统设置', icon: Setting, route: '/system/settings', color: '#909399' }
+  { title: '生产管理', icon: TrendCharts, route: '/production/batches', color: '#1B65A8' },
+  { title: '仓储管理', icon: Box, route: '/warehouse/materials', color: '#36B37E' },
+  { title: '人员管理', icon: User, route: '/hr/employees', color: '#FFAB00' },
+  { title: '财务报表', icon: Money, route: '/finance/reports', color: '#FF5630' },
+  { title: '系统设置', icon: Setting, route: '/system/settings', color: '#6B778C' }
 ];
 
 onMounted(async () => {
@@ -221,157 +221,16 @@ function navigateTo(route: string) {
 </template>
 
 <style lang="scss" scoped>
+@import './dashboard-shared.scss';
+
 .dashboard-admin {
   min-height: calc(100vh - 144px);
 }
 
-.welcome-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 16px;
-
-  .welcome-info {
-    h1 {
-      font-size: 24px;
-      color: #333;
-      margin: 0 0 8px;
-    }
-
-    p {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 0;
-      color: #999;
-      font-size: 14px;
-    }
-  }
-}
-
-.stat-cards {
-  margin-bottom: 24px;
-
-  .stat-card {
-    margin-bottom: 20px;
-    cursor: pointer;
-    transition: transform 0.2s;
-
-    &:hover {
-      transform: translateY(-2px);
-    }
-  }
-
-  .stat-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .stat-info {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .stat-title {
-    font-size: 14px;
-    color: #999;
-    margin-bottom: 8px;
-  }
-
-  .stat-value {
-    font-size: 28px;
-    font-weight: 600;
-
-    small {
-      font-size: 14px;
-      font-weight: 400;
-      margin-left: 4px;
-    }
-  }
-
-  .stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-  }
-}
-
-.quick-actions-card {
-  margin-bottom: 24px;
-
-  .quick-actions {
-    display: flex;
-    gap: 24px;
-    flex-wrap: wrap;
-  }
-
-  .action-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 16px 24px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-
-    &:hover {
-      background-color: #f5f7fa;
-    }
-
-    span {
-      font-size: 14px;
-      color: #606266;
-    }
-  }
-}
-
 .overview-section {
-  .el-card {
-    margin-bottom: 20px;
-  }
-
   .overview-content {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .overview-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px dashed #ebeef5;
-
-    &:last-child {
-      border-bottom: none;
-    }
-
-    .label {
-      color: #909399;
-      font-size: 14px;
-    }
-
-    .value {
-      font-size: 16px;
-      font-weight: 500;
-      color: #303133;
-
-      &.text-success {
-        color: #67c23a;
-      }
-
-      &.text-danger {
-        color: #f56c6c;
-      }
+    .overview-item {
+      border-bottom-style: solid;
     }
   }
 }
