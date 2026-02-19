@@ -6,7 +6,7 @@ import AppHeader from './AppHeader.vue';
 
 const appStore = useAppStore();
 
-// SmartBI pages with heavy ECharts — preserve state across navigation
+// Keep SmartBIAnalysis in cache to avoid heavy unmount side effects
 const keepAliveViews = ['SmartBIAnalysis'];
 
 const mainStyle = computed(() => ({
@@ -28,11 +28,9 @@ const mainStyle = computed(() => ({
       <!-- 内容区 -->
       <main class="app-content">
         <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
-            <keep-alive :include="keepAliveViews" :max="5">
-              <component :is="Component" />
-            </keep-alive>
-          </transition>
+          <keep-alive :include="keepAliveViews" :max="5">
+            <component :is="Component" :key="$route.name" />
+          </keep-alive>
         </router-view>
       </main>
     </div>
@@ -43,7 +41,7 @@ const mainStyle = computed(() => ({
 .app-layout {
   min-height: 100vh;
   width: 100%;
-  background-color: var(--bg-color-page, #f0f2f5);
+  background-color: var(--bg-color-page, #F4F6F9);
 }
 
 .app-main {
@@ -54,25 +52,16 @@ const mainStyle = computed(() => ({
 
 .app-content {
   flex: 1;
-  padding: 16px;
+  padding: 20px;
   overflow-y: auto;
-  background-color: var(--bg-color-page, #f0f2f5);
+  background-color: var(--bg-color-page, #F4F6F9);
 
   // 确保内容区域正确展示
   > * {
-    height: 100%;
+    min-height: 100%;
     width: 100%;
   }
 }
 
-// 过渡动画
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+// Transition removed — caused blank pages when navigating from heavy components (SmartBIAnalysis)
 </style>
