@@ -5,7 +5,7 @@
 
 set -e
 
-SERVER="root@139.196.165.140"
+SERVER="root@47.100.235.168"
 REMOTE_MODEL_DIR="/www/wwwroot/cretas/models"
 MODEL_NAME="gte-base-zh-finetuned-contrastive"
 LOCAL_MODEL_DIR="scripts/finetune/models/$MODEL_NAME"
