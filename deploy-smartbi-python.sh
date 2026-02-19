@@ -4,28 +4,38 @@
 
 set -e
 
+# 加载共享函数库
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/scripts/lib/deploy-common.sh" ]; then
+    source "$SCRIPT_DIR/scripts/lib/deploy-common.sh"
+else
+    echo "警告: 未找到 scripts/lib/deploy-common.sh，使用内联函数"
+    log() { echo "[$(date '+%Y-%m-%dT%H:%M:%S')] [$1] ${*:2}"; }
+fi
+
 # 配置
 SERVER="root@47.100.235.168"
 REMOTE_DIR="/www/wwwroot/cretas/code/backend/python"
 LOCAL_DIR="backend/python"
+SERVER_IP="${SERVER#*@}"
 
 echo "=========================================="
 echo "Python Services 部署 (SmartBI + Modules)"
 echo "=========================================="
 
 # 1. 检查本地文件
-echo "[1/5] 检查本地文件..."
+log "INFO" "[1/5] 检查本地文件..."
 if [ ! -d "$LOCAL_DIR" ]; then
-    echo "错误: 找不到 $LOCAL_DIR 目录"
+    log "ERROR" "找不到 $LOCAL_DIR 目录"
     exit 1
 fi
 
 # 2. 创建远程目录
-echo "[2/5] 创建远程目录..."
+log "INFO" "[2/5] 创建远程目录..."
 ssh $SERVER "mkdir -p $REMOTE_DIR"
 
 # 3. 同步文件到服务器
-echo "[3/5] 同步文件到服务器..."
+log "INFO" "[3/5] 同步文件到服务器..."
 # 打包本地文件 (排除不需要的文件)
 cd $LOCAL_DIR
 tar --exclude='__pycache__' --exclude='*.pyc' --exclude='.env' \
@@ -39,7 +49,7 @@ ssh $SERVER "cd $REMOTE_DIR && tar -xzf smartbi-python.tar.gz && rm smartbi-pyth
 rm -f smartbi-python.tar.gz
 
 # 4. 在服务器上安装依赖和启动服务
-echo "[4/5] 安装依赖并启动服务..."
+log "INFO" "[4/5] 安装依赖并启动服务..."
 ssh $SERVER << ENDSSH
 cd $REMOTE_DIR
 
@@ -89,15 +99,17 @@ fi
 ENDSSH
 
 # 5. 验证服务
-echo "[5/5] 验证服务..."
-echo ""
-echo "服务状态:"
-ssh $SERVER "curl -s http://localhost:8083/health || echo '服务未响应'"
+log "INFO" "[5/5] 验证服务..."
+if wait_for_health "http://${SERVER_IP}:8083/health" 15 2; then
+    log "INFO" "Python 服务部署成功"
+else
+    log "WARN" "健康检查超时，请手动检查日志"
+fi
 
 echo ""
 echo "=========================================="
 echo "部署完成!"
-echo "服务地址: http://47.100.235.168:8083"
-echo "健康检查: http://47.100.235.168:8083/health"
-echo "API 文档: http://47.100.235.168:8083/docs"
+echo "服务地址: http://${SERVER_IP}:8083"
+echo "健康检查: http://${SERVER_IP}:8083/health"
+echo "API 文档: http://${SERVER_IP}:8083/docs"
 echo "=========================================="

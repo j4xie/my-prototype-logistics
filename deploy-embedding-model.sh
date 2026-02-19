@@ -5,6 +5,14 @@
 
 set -e
 
+# 加载共享函数库
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/scripts/lib/deploy-common.sh" ]; then
+    source "$SCRIPT_DIR/scripts/lib/deploy-common.sh"
+else
+    log() { echo "[$(date '+%Y-%m-%dT%H:%M:%S')] [$1] ${*:2}"; }
+fi
+
 SERVER="root@47.100.235.168"
 REMOTE_MODEL_DIR="/www/wwwroot/cretas/models"
 MODEL_NAME="gte-base-zh-finetuned-contrastive"
@@ -35,8 +43,8 @@ ssh $SERVER "mkdir -p $REMOTE_MODEL_DIR/$MODEL_NAME"
 echo "2. 压缩模型文件..."
 MODEL_TAR="$MODEL_NAME.tar.gz"
 tar -czf "/tmp/$MODEL_TAR" -C "scripts/finetune/models" "$MODEL_NAME"
-TAR_SIZE=$(du -h "/tmp/$MODEL_TAR" | cut -f1)
-echo "   压缩完成: $TAR_SIZE"
+TAR_SIZE=$(get_file_size_human "/tmp/$MODEL_TAR")
+log "INFO" "压缩完成: $TAR_SIZE"
 
 echo ""
 echo "3. 并行上传 (使用多种方式，取最快)..."
