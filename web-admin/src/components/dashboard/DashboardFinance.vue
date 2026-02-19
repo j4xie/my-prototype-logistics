@@ -33,7 +33,7 @@ const statCards = computed(() => [
     unit: '万元',
     icon: Money,
     color: '#409eff',
-    route: '/finance/reports'
+    route: '/smart-bi/finance'
   },
   {
     title: '本月成本',
@@ -41,7 +41,7 @@ const statCards = computed(() => [
     unit: '万元',
     icon: Coin,
     color: '#e6a23c',
-    route: '/finance/costs'
+    route: '/smart-bi/finance?tab=cost'
   },
   {
     title: '毛利润',
@@ -49,7 +49,7 @@ const statCards = computed(() => [
     unit: '万元',
     icon: TrendCharts,
     color: '#67c23a',
-    route: '/finance/reports'
+    route: '/smart-bi/finance'
   },
   {
     title: '利润率',
@@ -57,14 +57,14 @@ const statCards = computed(() => [
     unit: '%',
     icon: Document,
     color: '#909399',
-    route: '/finance/reports'
+    route: '/smart-bi/finance'
   }
 ]);
 
 // 快捷操作
 const quickActions = [
-  { title: '成本分析', icon: TrendCharts, route: '/finance/costs', color: '#409eff', badge: 'AI' },
-  { title: '财务报表', icon: Document, route: '/finance/reports', color: '#67c23a' }
+  { title: '成本分析', icon: TrendCharts, route: '/smart-bi/finance?tab=cost', color: '#409eff', badge: 'AI' },
+  { title: '财务报表', icon: Document, route: '/smart-bi/finance', color: '#67c23a' }
 ];
 
 onMounted(async () => {
@@ -127,7 +127,7 @@ function navigateTo(route: string) {
         </p>
       </div>
       <div class="ai-entry">
-        <el-button type="primary" @click="navigateTo('/finance/costs')">
+        <el-button type="primary" @click="navigateTo('/smart-bi/finance?tab=cost')">
           <el-icon><TrendCharts /></el-icon>
           AI 成本分析
         </el-button>
@@ -186,7 +186,7 @@ function navigateTo(route: string) {
           <template #header>
             <div class="card-header">
               <span>本月收支概览</span>
-              <el-button type="primary" link @click="navigateTo('/finance/reports')">
+              <el-button type="primary" link @click="navigateTo('/smart-bi/finance')">
                 查看详情
               </el-button>
             </div>
@@ -214,7 +214,7 @@ function navigateTo(route: string) {
           <template #header>
             <div class="card-header">
               <span>AI 成本分析</span>
-              <el-button type="primary" link @click="navigateTo('/finance/costs')">
+              <el-button type="primary" link @click="navigateTo('/smart-bi/finance?tab=cost')">
                 开始分析
               </el-button>
             </div>
@@ -222,7 +222,7 @@ function navigateTo(route: string) {
           <div class="ai-analysis-preview">
             <el-icon :size="48" color="#409eff"><TrendCharts /></el-icon>
             <p>使用 AI 智能分析成本结构，获取优化建议</p>
-            <el-button type="primary" @click="navigateTo('/finance/costs')">
+            <el-button type="primary" @click="navigateTo('/smart-bi/finance?tab=cost')">
               立即分析
             </el-button>
           </div>

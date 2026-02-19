@@ -4,6 +4,7 @@
  * 根据 API 返回的 KPICard[] 动态渲染，自动计算列宽
  */
 import type { KPICard } from '@/types/smartbi';
+import { Warning } from '@element-plus/icons-vue';
 
 interface Props {
   cards: KPICard[];
@@ -30,16 +31,16 @@ function formatValue(card: KPICard): string {
 
 function formatChangeRate(rate: number | undefined | null): string {
   if (rate == null) return '';
-  // Guard: -100% or +100% with no meaningful comparison → show "—"
-  if (Math.abs(rate) >= 100) return '—';
+  // Show actual value — never silently hide real data
+  if (rate > 999) return '>+999%';
+  if (rate < -999) return '<-999%';
   return (rate >= 0 ? '+' : '') + rate.toFixed(1) + '%';
 }
 
 /** True if the change rate is valid and should be displayed */
 function isChangeRateValid(rate: number | undefined | null): boolean {
   if (rate == null) return false;
-  // -100% / +100% typically means missing comparison period
-  return Math.abs(rate) < 100;
+  return true;  // Always show non-null changeRate — never filter by magnitude
 }
 
 function getTrendClass(card: KPICard): string {
@@ -71,10 +72,10 @@ function getTrendClass(card: KPICard): string {
           v-if="card.changeRate != null && isChangeRateValid(card.changeRate)"
         >
           <span>{{ formatChangeRate(card.changeRate) }}</span>
+          <el-tooltip v-if="Math.abs(card.changeRate) >= 500" content="异常波动，可能源于季节性或数据变化" placement="top">
+            <el-icon class="anomaly-icon"><Warning /></el-icon>
+          </el-tooltip>
           <span v-if="card.compareText" class="compare-text">{{ card.compareText }}</span>
-        </div>
-        <div class="kpi-trend" v-else-if="card.changeRate != null && !isChangeRateValid(card.changeRate)">
-          <span style="color: #86909c">—</span>
         </div>
       </el-card>
     </el-col>
@@ -129,6 +130,13 @@ function getTrendClass(card: KPICard): string {
 
     &.growth-down {
       color: #F56C6C;
+    }
+
+    .anomaly-icon {
+      margin-left: 4px;
+      color: #E6A23C;
+      vertical-align: middle;
+      font-size: 14px;
     }
 
     .compare-text {

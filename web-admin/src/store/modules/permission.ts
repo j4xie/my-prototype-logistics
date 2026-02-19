@@ -83,9 +83,9 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
     finance: '-', system: '-', analytics: '-', scheduling: '-'
   },
   finance_manager: {
-    dashboard: 'r', production: 'r', warehouse: 'r', quality: '-',
-    procurement: 'r', sales: 'r', hr: 'r', equipment: '-',
-    finance: 'rw', system: '-', analytics: 'r', scheduling: 'r'
+    dashboard: 'r', production: '-', warehouse: '-', quality: '-',
+    procurement: '-', sales: 'r', hr: '-', equipment: '-',
+    finance: 'rw', system: '-', analytics: 'r', scheduling: '-'
   },
 
   // Level 20 - 车间管理

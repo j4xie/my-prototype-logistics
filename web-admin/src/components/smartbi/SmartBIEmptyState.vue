@@ -104,6 +104,24 @@
         <path d="M 75 50 L 78 45 L 72 47 Z" fill="url(#grad-error)" opacity="0.5"/>
       </svg>
 
+      <svg v-else-if="type === 'read-only'" width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad-readonly" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#409eff;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#667eea;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <!-- Eye/view icon -->
+        <ellipse cx="60" cy="60" rx="30" ry="20" fill="url(#grad-readonly)" opacity="0.2"/>
+        <ellipse cx="60" cy="60" rx="30" ry="20" fill="none" stroke="url(#grad-readonly)" stroke-width="2.5"/>
+        <circle cx="60" cy="60" r="10" fill="url(#grad-readonly)" opacity="0.4"/>
+        <circle cx="60" cy="60" r="5" fill="url(#grad-readonly)"/>
+        <!-- Lock indicator -->
+        <rect x="78" y="72" width="18" height="14" rx="3" fill="url(#grad-readonly)" opacity="0.7"/>
+        <path d="M 82 72 V 67 A 5 5 0 0 1 92 67 V 72" fill="none" stroke="url(#grad-readonly)" stroke-width="2" opacity="0.7"/>
+        <circle cx="87" cy="79" r="2" fill="white"/>
+      </svg>
+
       <svg v-else-if="type === 'loading-failed'" width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="grad-failed" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -143,7 +161,7 @@ import { computed } from 'vue';
 import { Upload, RefreshRight, Connection, Search, DocumentAdd } from '@element-plus/icons-vue';
 
 interface Props {
-  type: 'no-data' | 'no-upload' | 'no-charts' | 'no-analysis' | 'error' | 'loading-failed';
+  type: 'no-data' | 'no-upload' | 'no-charts' | 'no-analysis' | 'error' | 'loading-failed' | 'read-only';
   title?: string;
   description?: string;
   showAction?: boolean;
@@ -189,6 +207,12 @@ const defaultContent = {
     description: '数据加载遇到问题，请检查网络连接后重试',
     actionText: '重新加载',
     actionIcon: RefreshRight,
+  },
+  'read-only': {
+    title: '暂无分析数据',
+    description: '请联系管理员上传 Excel 文件后查看分析结果',
+    actionText: '查看帮助',
+    actionIcon: Search,
   },
   'loading-failed': {
     title: '服务不可用',

@@ -5,10 +5,12 @@
  * Phase 6: Enhanced with DynamicChartRenderer + ChartTypeSelector for dynamic chart views
  */
 import { ref, computed, onMounted, watch, onUnmounted, nextTick } from 'vue';
+import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import {
   getUploadHistory,
+  deduplicateUploads,
   getDynamicAnalysis,
   getUploadTableData,
   type UploadHistoryItem,
@@ -34,17 +36,21 @@ import {
   Close
 } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
+import { formatNumber } from '@/utils/format-number';
 import DynamicChartRenderer from '@/components/smartbi/DynamicChartRenderer.vue';
 import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 import type { ChartConfig } from '@/types/smartbi';
 
+const route = useRoute();
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
 
 // 分析类型
 type AnalysisType = 'profit' | 'cost' | 'receivable' | 'payable' | 'budget';
-const analysisType = ref<AnalysisType>('profit');
+const validTabs: AnalysisType[] = ['profit', 'cost', 'receivable', 'payable', 'budget'];
+const initTab = validTabs.includes(route.query.tab as AnalysisType) ? (route.query.tab as AnalysisType) : 'profit';
+const analysisType = ref<AnalysisType>(initTab);
 
 // 日期范围
 const dateRange = ref<[Date, Date] | null>(null);
@@ -99,6 +105,40 @@ const shortcuts = [
 // 加载状态
 const loading = ref(false);
 const loadError = ref('');
+const noSystemData = ref(false);
+
+// Data quality check: flag extreme values or all-zero tabs
+const dataQualityWarning = computed(() => {
+  if (selectedDataSource.value !== 'system') return '';
+  if (loading.value) return '';
+  const kpi = kpiData.value;
+  // Extremely negative profit values indicate incorrect data
+  if ((kpi.grossProfit && kpi.grossProfit < -100000000) || (kpi.netProfit && kpi.netProfit < -100000000)) {
+    return '系统财务数据可能不完整，显示的利润值异常偏大。建议切换到"上传数据"模式获取准确分析。';
+  }
+  // Per-tab zero checks
+  const tab = analysisType.value;
+  if (tab === 'cost' && kpi.totalCost === 0 && kpi.materialCost === 0 && kpi.laborCost === 0) {
+    return '当前无成本数据，请确认系统数据已导入或切换到上传数据模式。';
+  }
+  if (tab === 'receivable' && kpi.totalReceivable === 0 && kpi.receivableAge30 === 0 && kpi.receivableAge90Plus === 0) {
+    return '当前无应收账款数据，请确认系统数据已导入或切换到上传数据模式。';
+  }
+  if (tab === 'payable' && kpi.totalPayable === 0 && kpi.payableAge30 === 0 && kpi.payableAge90Plus === 0) {
+    return '当前无应付账款数据，请确认系统数据已导入或切换到上传数据模式。';
+  }
+  if (tab === 'budget' && kpi.budgetTotal === 0 && kpi.budgetUsed === 0 && kpi.budgetRemaining === 0) {
+    return '当前无预算数据，请确认系统数据已导入或切换到上传数据模式。';
+  }
+  return '';
+});
+
+// Whether the current tab has no chart to display (after loading completes)
+const noChartForTab = computed(() => {
+  if (loading.value) return false;
+  if (selectedDataSource.value !== 'system') return false;
+  return !chartConfig.value && !mainDynamicConfig.value;
+});
 
 // 数据源选择 — default empty, will be set after loading sources
 const dataSources = ref<UploadHistoryItem[]>([]);
@@ -436,10 +476,10 @@ async function loadDataSources() {
   try {
     const res = await getUploadHistory();
     if (res.success && res.data) {
-      // 只显示处理成功的上传记录
-      dataSources.value = res.data.filter(
+      // 只显示处理成功的上传记录，按 fileName+sheetName 去重
+      dataSources.value = deduplicateUploads(res.data.filter(
         (item: UploadHistoryItem) => item.status === 'COMPLETED' || item.status === 'SUCCESS'
-      );
+      ));
     }
   } catch (error) {
     console.warn('加载数据源列表失败:', error);
@@ -495,11 +535,21 @@ async function loadDynamicData(uploadId: number) {
         updateChartFromDynamicData(data.charts);
       }
 
-      // Phase 6: Fetch raw data for exploration charts
+      // Phase 6: Fetch raw data for exploration charts + KPI fallback
       try {
-        const tableRes = await getUploadTableData(uploadId, 0, 200);
+        const tableRes = await getUploadTableData(uploadId, 0, 2000);
         if (tableRes.success && tableRes.data && tableRes.data.data.length > 0) {
-          buildExplorationCharts(tableRes.data.data as Record<string, unknown>[]);
+          const rawRows = tableRes.data.data as Record<string, unknown>[];
+          buildExplorationCharts(rawRows);
+
+          // P1-1 fallback: if backend returned no/empty KPIs, compute from raw data
+          const kpi = kpiData.value;
+          const allZero = kpi.grossProfit === 0 && kpi.netProfit === 0 &&
+            kpi.totalCost === 0 && kpi.totalReceivable === 0 &&
+            kpi.totalPayable === 0 && kpi.budgetTotal === 0;
+          if (allZero) {
+            computeKpiFromRawData(rawRows);
+          }
         }
       } catch (e) {
         console.warn('加载探索图表数据失败:', e);
@@ -578,6 +628,136 @@ function updateKpiFromDynamicData(kpiCards: DynamicAnalysisResponse['kpiCards'])
   }
 }
 
+// P1-1: Compute KPIs from raw uploaded data when backend returns empty kpiCards
+// Handles two layouts:
+//   A) Column-oriented: column names contain financial keywords (e.g. "营业收入" column)
+//   B) Row-oriented (profit tables): a text column contains row labels like "营业收入"
+//      These labels may have encoding issues but partial Chinese text survives
+function computeKpiFromRawData(rows: Record<string, unknown>[]) {
+  if (!rows.length) return;
+  const columns = Object.keys(rows[0]);
+
+  const keywordMap: Array<{ keywords: string[]; field: keyof typeof kpiData.value; isRate?: boolean }> = [
+    { keywords: ['毛利率', '毛利润率'], field: 'grossProfitMargin', isRate: true },
+    { keywords: ['毛利'], field: 'grossProfit' },
+    { keywords: ['净利率', '净利润率'], field: 'netProfitMargin', isRate: true },
+    { keywords: ['净利'], field: 'netProfit' },
+    { keywords: ['营业收入', '营业收', '销售收入', '主营收入'], field: 'grossProfit' },
+    { keywords: ['营业成本', '营业成', '主营成本', '成本合计'], field: 'totalCost' },
+    { keywords: ['应收'], field: 'totalReceivable' },
+    { keywords: ['应付'], field: 'totalPayable' },
+    { keywords: ['预算'], field: 'budgetTotal' },
+  ];
+
+  // Strategy A: Column-oriented — scan column names for keywords
+  let matched = false;
+  for (const col of columns) {
+    for (const mapping of keywordMap) {
+      if (mapping.keywords.some(kw => col.includes(kw))) {
+        if ((kpiData.value[mapping.field] as number) !== 0) continue;
+        if (mapping.isRate) {
+          const lastRow = rows[rows.length - 1];
+          const val = Number(lastRow[col]);
+          if (!isNaN(val)) (kpiData.value[mapping.field] as number) = val > 1 ? val : val * 100;
+        } else {
+          let sum = 0;
+          for (const row of rows) { const val = Number(row[col]); if (!isNaN(val)) sum += val; }
+          (kpiData.value[mapping.field] as number) = sum;
+        }
+        matched = true;
+        break;
+      }
+    }
+  }
+  // Only skip Strategy B if primary KPIs (grossProfit or netProfit) were populated
+  const primaryPopulated = kpiData.value.grossProfit !== 0 || kpiData.value.netProfit !== 0;
+  if (matched && primaryPopulated) {
+    console.log('[FinanceAnalysis] KPI fallback Strategy A (column names):', { ...kpiData.value });
+    return;
+  }
+
+  // Strategy B: Row-oriented (profit tables) — scan ALL text column values for keywords
+  // Find text columns: have diverse string values (not just numbers-as-strings)
+  const textCols: string[] = [];
+  const numericCols: string[] = [];
+  for (const col of columns) {
+    const sampleVals = rows.slice(0, Math.min(20, rows.length)).map(r => r[col]);
+    const nonNull = sampleVals.filter(v => v !== null && v !== undefined && String(v) !== '');
+    if (nonNull.length === 0) continue;
+
+    const numericCount = nonNull.filter(v => !isNaN(Number(v))).length;
+    if (numericCount >= nonNull.length * 0.7) {
+      numericCols.push(col);
+    } else {
+      // Check it has Chinese-like text (non-ASCII chars, length > 1)
+      const hasText = nonNull.some(v => String(v).length > 1 && /[^\x00-\x7F]/.test(String(v)));
+      if (hasText) textCols.push(col);
+    }
+  }
+
+  // Prefer an "annual total actual" column for the value
+  // Collect candidates containing '合' + ('实际'|'年'), then rank:
+  //   1. Contains '本年实际' (best: annual actual total)
+  //   2. Contains '实际' but not '预算' (actual, not budget)
+  //   3. Any other match (fallback)
+  let totalCol = '';
+  const totalCandidates: string[] = [];
+  for (const col of numericCols) {
+    if (col.includes('合') && (col.includes('实') || col.includes('年'))) {
+      totalCandidates.push(col);
+    }
+  }
+  if (totalCandidates.length > 0) {
+    // Rank by preference: 本年实际 > 实际 (non-预算) > anything
+    totalCol = totalCandidates.find(c => c.includes('本年实际'))
+      || totalCandidates.find(c => c.includes('实际') && !c.includes('预算'))
+      || totalCandidates.find(c => c.includes('实际'))
+      || totalCandidates[0];
+  }
+
+  if (textCols.length > 0 && numericCols.length > 0) {
+    for (const row of rows) {
+      // Check all text columns for keyword matches
+      let rowLabel = '';
+      for (const tc of textCols) {
+        const val = String(row[tc] || '').trim();
+        if (val && val.length > 1) { rowLabel = val; break; }
+      }
+      if (!rowLabel) continue;
+
+      for (const mapping of keywordMap) {
+        if (mapping.keywords.some(kw => rowLabel.includes(kw))) {
+          if ((kpiData.value[mapping.field] as number) !== 0) continue;
+
+          if (mapping.isRate) {
+            // For rates, prefer the total column or last numeric column
+            const src = totalCol || numericCols[numericCols.length - 1];
+            const val = Number(row[src]);
+            if (!isNaN(val) && val !== 0) {
+              (kpiData.value[mapping.field] as number) = Math.abs(val) <= 1 ? val * 100 : val;
+            }
+          } else {
+            // For amounts, prefer annual total column; fallback to sum of numeric cols
+            if (totalCol) {
+              const val = Number(row[totalCol]);
+              if (!isNaN(val)) (kpiData.value[mapping.field] as number) = val;
+            } else {
+              let rowSum = 0;
+              for (const nc of numericCols) {
+                const val = Number(row[nc]);
+                if (!isNaN(val)) rowSum += val;
+              }
+              (kpiData.value[mapping.field] as number) = rowSum;
+            }
+          }
+          break;
+        }
+      }
+    }
+    console.log('[FinanceAnalysis] KPI fallback Strategy B (row labels):', { ...kpiData.value });
+  }
+}
+
 // 从动态数据更新图表
 function updateChartFromDynamicData(charts: DynamicAnalysisResponse['charts']) {
   if (charts.length === 0) return;
@@ -650,7 +830,9 @@ function updateChartFromDynamicData(charts: DynamicAnalysisResponse['charts']) {
           type: 'value',
           axisLabel: {
             formatter: (value: number) => {
-              if (value >= 10000) return (value / 10000).toFixed(0) + '万';
+              const abs = Math.abs(value);
+              if (abs >= 100000000) return (value / 100000000).toFixed(1) + '亿';
+              if (abs >= 10000) return (value / 10000).toFixed(0) + '万';
               return String(value);
             }
           }
@@ -686,6 +868,11 @@ async function loadFinanceData() {
 
   loading.value = true;
   loadError.value = '';
+  // Reset previous chart/warnings to avoid stale data when switching analysis types
+  chartConfig.value = null;
+  warnings.value = [];
+  mainDynamicConfig.value = null;
+  useDynamicRenderer.value = false;
   try {
     const startDate = formatDate(dateRange.value[0]);
     const endDate = formatDate(dateRange.value[1]);
@@ -710,8 +897,49 @@ async function loadFinanceData() {
 
       // 提取 metrics 数据到 kpiData
       if (data.metrics) {
-        const metrics = data.metrics as Record<string, unknown>;
-        updateKpiDataFromMetrics(metrics);
+        if (Array.isArray(data.metrics)) {
+          // Backend returns List<MetricResult> — convert metricCode→value map
+          const metricCodeMap: Record<string, string> = {
+            'AR_BALANCE': 'totalReceivable',
+            'COLLECTION_RATE': 'collectionRate',
+            'AGING_30_RATIO': 'receivableAge30Ratio',
+            'AGING_60_RATIO': 'receivableAge60Ratio',
+            'AGING_90_RATIO': 'receivableAge90Ratio',
+            'AP_BALANCE': 'totalPayable',
+            'BUDGET_TOTAL': 'budgetTotal',
+            'BUDGET_USED': 'budgetUsed',
+            'BUDGET_REMAINING': 'budgetRemaining',
+            'BUDGET_USAGE_RATE': 'budgetUsageRate',
+            'GROSS_PROFIT': 'grossProfit',
+            'GROSS_MARGIN': 'grossProfitMargin',
+            'NET_PROFIT': 'netProfit',
+            'NET_MARGIN': 'netProfitMargin',
+            'TOTAL_COST': 'totalCost',
+          };
+          const flat: Record<string, unknown> = {};
+          for (const m of data.metrics as Array<Record<string, unknown>>) {
+            const code = String(m.metricCode || '');
+            const mappedKey = metricCodeMap[code];
+            if (mappedKey) flat[mappedKey] = m.value;
+          }
+          updateKpiDataFromMetrics(flat);
+        } else {
+          updateKpiDataFromMetrics(data.metrics as Record<string, unknown>);
+        }
+      }
+
+      // Extract aging bucket AMOUNTS from agingChart.data into KPI cards
+      if (data.agingChart && typeof data.agingChart === 'object') {
+        const agingData = (data.agingChart as Record<string, unknown>).data;
+        if (Array.isArray(agingData)) {
+          for (const bucket of agingData as Array<Record<string, unknown>>) {
+            const label = String(bucket.agingBucket || '');
+            const amount = Number(bucket.amount || 0);
+            if (label.includes('0-30')) kpiData.value.receivableAge30 = amount;
+            else if (label.includes('31-60') || label.includes('30-60')) kpiData.value.receivableAge60 = amount;
+            else if (label.includes('90')) kpiData.value.receivableAge90Plus = amount;
+          }
+        }
       }
 
       // 提取 overview 数据 (当没有 analysisType 时)
@@ -720,23 +948,48 @@ async function loadFinanceData() {
         if (overview.kpiCards) {
           updateKpiDataFromKpiCards(overview.kpiCards as Array<Record<string, unknown>>);
         }
-        // Extract chart from overview.charts map
+        // Extract chart from overview.charts map — pick chart matching current analysisType
         if (overview.charts && typeof overview.charts === 'object') {
           const charts = overview.charts as Record<string, unknown>;
-          const trendKey = Object.keys(charts).find(k => k.includes('趋势') || k.includes('利润'));
-          if (trendKey) {
-            chartConfig.value = charts[trendKey] as ChartConfig | DynamicChartConfig;
+          const chartKeys = Object.keys(charts);
+          // Map analysis type to chart keyword priorities
+          const keywordMap: Record<string, string[]> = {
+            profit: ['利润', '趋势'],
+            cost: ['成本', '结构'],
+            receivable: ['应收', '账龄'],
+            payable: ['应付', '账龄'],
+            budget: ['预算', '执行', '达成'],
+          };
+          const keywords = keywordMap[analysisType.value] || ['趋势', '利润'];
+          const matchKey = chartKeys.find(k => keywords.some(kw => k.includes(kw)));
+          // No fallback to chartKeys[0] — prevents budget tab showing profit chart
+          if (matchKey && charts[matchKey]) {
+            chartConfig.value = charts[matchKey] as ChartConfig | DynamicChartConfig;
             updateChart();
           }
         }
-        // Extract AI insights as warnings
+        // Extract AI insights as warnings — filtered by current analysisType
         if (overview.aiInsights && Array.isArray(overview.aiInsights)) {
-          warnings.value = (overview.aiInsights as Array<Record<string, unknown>>).map(insight => ({
-            level: String(insight.level || 'info').toLowerCase() === 'red' ? 'danger' : 'warning',
+          const typeKeywords: Record<string, string[]> = {
+            profit: ['利润', '毛利', '净利', '营收', '收入', '盈利', 'profit', 'revenue', 'margin'],
+            cost: ['成本', '费用', '支出', '开销', 'cost', 'expense'],
+            receivable: ['应收', '回款', '账龄', '逾期', 'receivable', 'overdue'],
+            payable: ['应付', '付款', '账期', 'payable', 'payment'],
+            budget: ['预算', '达成', '偏差', 'budget', 'variance'],
+          };
+          const keywords = typeKeywords[analysisType.value] || [];
+          const allInsights = (overview.aiInsights as Array<Record<string, unknown>>).map(insight => ({
+            level: String(insight.level || 'info').toLowerCase() === 'red' ? 'danger' as const : 'warning' as const,
             title: String(insight.category || ''),
             description: String(insight.message || ''),
             amount: 0
-          })) as WarningItem[];
+          }));
+          // Filter: only show warnings relevant to current tab (by keyword match in title or description)
+          const filtered = keywords.length > 0
+            ? allInsights.filter(w => keywords.some(kw => w.title.includes(kw) || w.description.includes(kw)))
+            : allInsights;
+          // Only show warnings relevant to current tab — no fallback to unrelated warnings
+          warnings.value = filtered;
         }
       }
 
@@ -745,29 +998,24 @@ async function loadFinanceData() {
         updateKpiDataFromKpiCards(data.profitMetrics as Array<Record<string, unknown>>);
       }
 
-      // 提取图表配置 (direct keys or top-level)
+      // 提取图表配置 (按analysisType优先匹配, 避免budget显示profit趋势)
       if (!chartConfig.value) {
-        if (data.trendChart) {
-          chartConfig.value = data.trendChart as ChartConfig | DynamicChartConfig;
-          updateChart();
-        } else if (data.costStructure) {
-          chartConfig.value = data.costStructure as ChartConfig | DynamicChartConfig;
-          updateChart();
-        } else if (data.receivableAging) {
-          chartConfig.value = data.receivableAging as ChartConfig | DynamicChartConfig;
-          updateChart();
-        } else if (data.structureChart) {
-          chartConfig.value = data.structureChart as ChartConfig | DynamicChartConfig;
-          updateChart();
-        } else if (data.agingChart) {
-          chartConfig.value = data.agingChart as ChartConfig | DynamicChartConfig;
-          updateChart();
-        } else if (data.waterfall) {
-          chartConfig.value = data.waterfall as ChartConfig | DynamicChartConfig;
-          updateChart();
-        } else if (data.comparison) {
-          chartConfig.value = data.comparison as ChartConfig | DynamicChartConfig;
-          updateChart();
+        // Type-specific chart priority map
+        const chartPriorityMap: Record<string, string[]> = {
+          profit: ['trendChart', 'waterfall', 'comparison'],
+          cost: ['costStructure', 'structureChart', 'trendChart'],
+          receivable: ['receivableAging', 'agingChart', 'trendChart'],
+          payable: ['agingChart', 'structureChart', 'trendChart'],
+          budget: ['waterfall', 'comparison', 'structureChart', 'trendChart'],
+        };
+        const priorities = chartPriorityMap[analysisType.value] || Object.keys(chartPriorityMap.profit);
+        // Only try type-specific keys — no generic fallback to avoid cross-type chart leaking
+        for (const key of priorities) {
+          if (data[key]) {
+            chartConfig.value = data[key] as ChartConfig | DynamicChartConfig;
+            updateChart();
+            break;
+          }
         }
       }
 
@@ -784,6 +1032,19 @@ async function loadFinanceData() {
             amount: Number(item.overdueAmount || 0)
           })) as WarningItem[];
         }
+      }
+
+      // Check if system data is effectively empty (no charts, all KPIs zero)
+      const hasChart = !!chartConfig.value;
+      const hasNonZeroKpi = Object.values(kpiData.value).some(v => typeof v === 'number' && v !== 0);
+      noSystemData.value = !hasChart && !hasNonZeroKpi;
+
+      // Auto-switch to uploaded data if system data is empty and uploads exist
+      if (noSystemData.value && dataSources.value.length > 0) {
+        const firstUpload = dataSources.value[0];
+        selectedDataSource.value = String(firstUpload.id);
+        await loadDynamicData(firstUpload.id);
+        return;
       }
     } else {
       loadError.value = response.message || '加载财务数据失败';
@@ -1029,8 +1290,8 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
 }
 
 function buildPieChart(config: ChartConfig_Local): echarts.EChartsOption {
-  const xField = config.xAxisField || 'name';
-  const yField = config.yAxisField || 'value';
+  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
+  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
 
   const pieData = config.data?.map(item => ({
     name: String(item[xField] || ''),
@@ -1066,8 +1327,8 @@ function buildPieChart(config: ChartConfig_Local): echarts.EChartsOption {
 }
 
 function buildAxisChart(config: ChartConfig_Local): echarts.EChartsOption {
-  const xField = config.xAxisField || 'name';
-  const yField = config.yAxisField || 'value';
+  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
+  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
   const chartType = config.chartType?.toLowerCase() || 'bar';
 
   const xData = config.data?.map(item => String(item[xField] || '')) || [];
@@ -1130,12 +1391,8 @@ function handleResize() {
 }
 
 function formatMoney(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '--';
-  if (Math.abs(value) >= 10000) {
-    return (value / 10000).toFixed(1) + '万';
-  }
-  if (value === 0) return '0';
-  return value.toLocaleString();
+  if (value == null) return '--';
+  return formatNumber(value, 1);
 }
 
 function formatPercent(value: number): string {
@@ -1314,6 +1571,28 @@ onUnmounted(() => {
       <el-button size="small" type="primary" @click="handleRefresh" style="margin-top: 8px">重试</el-button>
     </el-alert>
 
+    <!-- 系统数据为空提示 -->
+    <el-alert
+      v-if="noSystemData && selectedDataSource === 'system' && !loading"
+      type="info"
+      title="暂无系统财务数据"
+      description="系统财务数据表为空，请联系管理员导入数据，或切换到已上传的 Excel 数据源进行分析。"
+      show-icon
+      :closable="false"
+      style="margin-bottom: 16px"
+    />
+
+    <!-- 数据质量警告 -->
+    <el-alert
+      v-if="dataQualityWarning && !loading"
+      type="warning"
+      title="数据质量提示"
+      :description="dataQualityWarning"
+      show-icon
+      :closable="true"
+      style="margin-bottom: 16px"
+    />
+
     <!-- 财务 KPI -->
     <el-row :gutter="16" class="kpi-section" v-loading="loading">
       <!-- 利润分析 KPI -->
@@ -1480,6 +1759,16 @@ onUnmounted(() => {
             :config="mainDynamicConfig"
             :height="360"
           />
+          <!-- No chart data for this tab -->
+          <div v-else-if="noChartForTab" class="chart-empty-hint">
+            <el-icon style="font-size: 40px; color: #C0C4CC;"><TrendCharts /></el-icon>
+            <p style="color: #909399; margin-top: 12px;">
+              当前{{ analysisTypes.find(t => t.type === analysisType)?.label || '' }}暂无图表数据
+            </p>
+            <p v-if="dataSources.length > 0" style="color: #409EFF; font-size: 12px; cursor: pointer;" @click="selectedDataSource = String(dataSources[0].id)">
+              切换到上传数据查看分析
+            </p>
+          </div>
           <!-- Legacy fallback: raw echarts container -->
           <div v-else id="finance-main-chart" class="chart-container"></div>
         </el-card>
@@ -1510,7 +1799,10 @@ onUnmounted(() => {
                 </div>
               </div>
             </div>
-            <el-empty v-if="warnings.length === 0" description="暂无预警" :image-size="80" />
+            <div v-if="warnings.length === 0" class="no-warning-hint">
+              <el-icon style="font-size: 20px; color: #67C23A;"><View /></el-icon>
+              <span style="color: #909399; font-size: 13px; margin-left: 6px;">当前无风险预警，经营状况良好</span>
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -1815,6 +2107,14 @@ onUnmounted(() => {
 .chart-container {
   height: 360px;
   width: 100%;
+}
+
+.chart-empty-hint {
+  height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .warning-list {
