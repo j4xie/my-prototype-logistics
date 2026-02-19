@@ -541,8 +541,11 @@ class ChartBuilder:
         series_field: Optional[str]
     ) -> dict:
         """Build scatter chart configuration"""
-        x_col = x_field or df.select_dtypes(include=[np.number]).columns[0]
-        y_col = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[1] if len(df.select_dtypes(include=[np.number]).columns) > 1 else x_col
+        x_col = self._ensure_numeric_field(df, x_field)
+        if x_col is None:
+            return {"series": [], "xAxis": {"type": "value"}, "yAxis": {"type": "value"}}
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        y_col = y_fields[0] if y_fields else (numeric_cols[1] if len(numeric_cols) > 1 else x_col)
 
         series = []
         if series_field and series_field in df.columns:
@@ -720,7 +723,9 @@ class ChartBuilder:
     ) -> dict:
         """Build funnel chart configuration"""
         name_field = x_field or df.columns[0]
-        value_field = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+        value_field = self._ensure_numeric_field(df, y_fields[0] if y_fields else None)
+        if value_field is None:
+            return {"series": [], "tooltip": {"trigger": "item"}}
 
         data = sorted([
             {"name": str(row[name_field]), "value": float(row[value_field])}
@@ -752,7 +757,9 @@ class ChartBuilder:
         y_fields: Optional[List[str]]
     ) -> dict:
         """Build gauge chart configuration"""
-        value_field = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+        value_field = self._ensure_numeric_field(df, y_fields[0] if y_fields else None)
+        if value_field is None:
+            return {"series": [{"type": "gauge", "data": [{"value": 0}]}]}
         value = float(df[value_field].iloc[0]) if len(df) > 0 else 0
 
         return {
@@ -976,7 +983,9 @@ class ChartBuilder:
         if not hierarchy_cols:
             hierarchy_cols = df.columns[:2].tolist()
 
-        value_field = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+        value_field = self._ensure_numeric_field(df, y_fields[0] if y_fields else None)
+        if value_field is None:
+            return {"series": [{"type": "sunburst", "data": []}]}
 
         # Build hierarchical data
         def build_tree(df, level_cols, value_col):
@@ -1291,7 +1300,9 @@ class ChartBuilder:
         """Build nested donut chart for hierarchical comparison"""
         inner_field = x_field or df.columns[0]
         outer_field = series_field or (df.columns[1] if len(df.columns) > 1 else inner_field)
-        value_field = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+        value_field = self._ensure_numeric_field(df, y_fields[0] if y_fields else None)
+        if value_field is None:
+            return {"series": []}
 
         # Inner ring data (aggregated by inner_field)
         inner_data = df.groupby(inner_field)[value_field].sum().reset_index()

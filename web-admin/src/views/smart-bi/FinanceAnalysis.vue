@@ -635,7 +635,7 @@ function updateKpiFromDynamicData(kpiCards: DynamicAnalysisResponse['kpiCards'])
 
   // If no KPI titles matched, assign first available cards to primary financial KPIs
   if (matchedCount === 0 && kpiCards.length > 0) {
-    console.log('[FinanceAnalysis] No KPI title matches; using positional fallback for', kpiCards.length, 'cards');
+    // no KPI title matches, using positional fallback
     if (kpiCards[0]) kpiData.value.grossProfit = kpiCards[0].rawValue ?? 0;
     if (kpiCards[1]) kpiData.value.netProfit = kpiCards[1].rawValue ?? 0;
     if (kpiCards[2]) kpiData.value.totalCost = kpiCards[2].rawValue ?? 0;
@@ -686,7 +686,7 @@ function computeKpiFromRawData(rows: Record<string, unknown>[]) {
   // Only skip Strategy B if primary KPIs (grossProfit or netProfit) were populated
   const primaryPopulated = kpiData.value.grossProfit !== 0 || kpiData.value.netProfit !== 0;
   if (matched && primaryPopulated) {
-    console.log('[FinanceAnalysis] KPI fallback Strategy A (column names):', { ...kpiData.value });
+    // KPI fallback Strategy A (column names) applied
     return;
   }
 
@@ -768,7 +768,7 @@ function computeKpiFromRawData(rows: Record<string, unknown>[]) {
         }
       }
     }
-    console.log('[FinanceAnalysis] KPI fallback Strategy B (row labels):', { ...kpiData.value });
+    // KPI fallback Strategy B (row labels) applied
   }
 }
 
@@ -1570,10 +1570,6 @@ onUnmounted(() => {
   <div class="finance-analysis-page">
     <div class="page-header">
       <div class="header-left">
-        <el-breadcrumb separator="/">
-          <el-breadcrumb-item :to="{ path: '/smart-bi' }">Smart BI</el-breadcrumb-item>
-          <el-breadcrumb-item>财务分析</el-breadcrumb-item>
-        </el-breadcrumb>
         <h1>财务分析</h1>
       </div>
       <div class="header-right">
@@ -1695,14 +1691,14 @@ onUnmounted(() => {
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">毛利润</div>
-            <div class="kpi-value" :style="{ color: kpiData.grossProfit < 0 ? '#dc2626' : undefined }">{{ formatMoney(kpiData.grossProfit) }}</div>
+            <div class="kpi-value" :style="{ color: kpiData.grossProfit < 0 ? '#dc2626' : undefined }">{{ formatMoney(kpiData.grossProfit) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">毛利率 {{ formatPercent(kpiData.grossProfitMargin) }}</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">净利润</div>
-            <div class="kpi-value" :style="{ color: kpiData.netProfit < 0 ? '#dc2626' : undefined }">{{ formatMoney(kpiData.netProfit) }}</div>
+            <div class="kpi-value" :style="{ color: kpiData.netProfit < 0 ? '#dc2626' : undefined }">{{ formatMoney(kpiData.netProfit) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">净利率 {{ formatPercent(kpiData.netProfitMargin) }}</div>
           </el-card>
         </el-col>
@@ -1713,7 +1709,7 @@ onUnmounted(() => {
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">总成本</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.totalCost) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.totalCost) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub" :class="kpiData.costGrowth >= 0 ? 'growth-down' : 'growth-up'">
               环比 {{ kpiData.costGrowth >= 0 ? '+' : '' }}{{ kpiData.costGrowth }}%
             </div>
@@ -1830,7 +1826,7 @@ onUnmounted(() => {
             <div class="kpi-label">预算进度</div>
             <el-progress
               :percentage="kpiData.budgetUsageRate"
-              :status="kpiData.budgetUsageRate > 90 ? 'exception' : kpiData.budgetUsageRate > 75 ? 'warning' : 'success'"
+              :status="kpiData.budgetUsageRate === 0 ? undefined : kpiData.budgetUsageRate > 90 ? 'exception' : kpiData.budgetUsageRate > 75 ? 'warning' : 'success'"
               :stroke-width="12"
             />
           </el-card>
@@ -2160,6 +2156,13 @@ onUnmounted(() => {
     font-weight: 600;
     color: #303133;
     margin-bottom: 4px;
+
+    .kpi-unit {
+      font-size: 14px;
+      font-weight: 400;
+      color: #909399;
+      margin-left: 2px;
+    }
   }
 
   .kpi-sub {

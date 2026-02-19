@@ -7,7 +7,7 @@
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
-import { formatNumber } from '@/utils/format-number';
+import { formatNumber, formatCount } from '@/utils/format-number';
 import { ElMessage } from 'element-plus';
 import {
   Refresh,
@@ -351,19 +351,17 @@ function updateChartsFromDynamicData(charts: DynamicAnalysisResponse['charts']) 
     const labels2 = secondChart.data?.labels || [];
     const datasets2 = secondChart.data?.datasets || [];
 
-    if (secondChart.type === 'pie' || true) {
-      const pieData2 = labels2.map((label, idx) => ({
-        name: label,
-        value: datasets2[0]?.data?.[idx] || 0
-      }));
-      pieDynamicConfig.value = {
-        chartType: secondChart.type || 'pie',
-        title: secondChart.title,
-        xAxisField: 'name',
-        yAxisField: 'value',
-        data: pieData2,
-      } as SmartBIChartConfig;
-    }
+    const pieData2 = labels2.map((label, idx) => ({
+      name: label,
+      value: datasets2[0]?.data?.[idx] || 0
+    }));
+    pieDynamicConfig.value = {
+      chartType: secondChart.type || 'pie',
+      title: secondChart.title,
+      xAxisField: 'name',
+      yAxisField: 'value',
+      data: pieData2,
+    } as SmartBIChartConfig;
     useDynamicPie.value = true;
   }
 }
@@ -916,7 +914,18 @@ function updateTrendChart() {
           ])
         },
         lineStyle: { width: 3, color: '#409EFF' },
-        itemStyle: { color: '#409EFF' }
+        itemStyle: { color: '#409EFF' },
+        markPoint: salesData.some(v => v < 0) ? {
+          data: [
+            { type: 'min', name: '最低值', symbol: 'pin', symbolSize: 40, label: { formatter: '{c}', fontSize: 10 } }
+          ],
+          itemStyle: { color: '#F56C6C' }
+        } : undefined,
+        markLine: salesData.some(v => v < 0) ? {
+          silent: true,
+          data: [{ yAxis: 0, lineStyle: { color: '#E6A23C', type: 'dashed', width: 1 } }],
+          label: { show: false }
+        } : undefined
       },
       {
         name: '订单数',
@@ -945,7 +954,18 @@ function updateTrendChart() {
           ])
         },
         lineStyle: { width: 3, color: '#409EFF' },
-        itemStyle: { color: '#409EFF' }
+        itemStyle: { color: '#409EFF' },
+        markPoint: salesData.some(v => v < 0) ? {
+          data: [
+            { type: 'min', name: '最低值', symbol: 'pin', symbolSize: 40, label: { formatter: '{c}', fontSize: 10 } }
+          ],
+          itemStyle: { color: '#F56C6C' }
+        } : undefined,
+        markLine: salesData.some(v => v < 0) ? {
+          silent: true,
+          data: [{ yAxis: 0, lineStyle: { color: '#E6A23C', type: 'dashed', width: 1 } }],
+          label: { show: false }
+        } : undefined
       }
     ]
   };
@@ -1045,13 +1065,23 @@ function handleResize() {
  * Shows the backend-formatted value if available.
  */
 function formatKpiValue(card: KPICard): string {
-  // Prefer rawValue + formatMoney for consistent 万/亿 formatting
+  // Prefer rawValue for consistent formatting
   if (card.rawValue != null) {
     if (card.rawValue === 0) {
       if (card.unit === '%') return '0.0%';
       return '0';
     }
-    return formatMoney(card.rawValue) + (card.unit && card.unit !== '元' && card.unit !== '个' ? card.unit : '');
+    // Count-type KPIs: integer display, no decimals
+    const countUnits = ['单', '个', '条', '次', '人', '家'];
+    if (card.unit && countUnits.includes(card.unit)) {
+      return formatCount(card.rawValue) + card.unit;
+    }
+    const formatted = formatMoney(card.rawValue);
+    if (card.unit === '元') {
+      // Only append 元 when value isn't already abbreviated (万/亿)
+      return formatted.includes('万') || formatted.includes('亿') ? formatted : formatted + '元';
+    }
+    return formatted + (card.unit || '');
   }
   // rawValue missing — truly no data
   return '--';
@@ -1155,10 +1185,6 @@ onUnmounted(() => {
   <div class="sales-analysis-page">
     <div class="page-header">
       <div class="header-left">
-        <el-breadcrumb separator="/">
-          <el-breadcrumb-item :to="{ path: '/smart-bi' }">Smart BI</el-breadcrumb-item>
-          <el-breadcrumb-item>销售分析</el-breadcrumb-item>
-        </el-breadcrumb>
         <h1>销售分析</h1>
       </div>
       <div class="header-right">
@@ -1277,9 +1303,9 @@ onUnmounted(() => {
       <el-col
         v-for="card in kpiCards"
         :key="card.key"
-        :xs="24"
-        :sm="12"
-        :md="6"
+        :xs="12"
+        :sm="8"
+        class="kpi-col-5"
       >
         <el-card class="kpi-card" :class="{ 'kpi-no-data': card.rawValue == null }">
           <div class="kpi-label">{{ card.title }}</div>
@@ -1288,7 +1314,8 @@ onUnmounted(() => {
             class="kpi-trend"
             :class="card.trend === 'up' ? 'growth-up' : card.trend === 'down' ? 'growth-down' : ''"
           >
-            <span v-if="card.changeRate != null && card.changeRate !== 0">
+            <!-- Skip changeRate display when main value is already a % (avoid duplicate) -->
+            <span v-if="card.unit !== '%' && card.changeRate != null && card.changeRate !== 0">
               {{ card.changeRate >= 0 ? '+' : '' }}{{ Number(card.changeRate).toFixed(1) }}%
             </span>
             <span v-else-if="card.rawValue == null" class="no-data-text">暂无数据</span>
@@ -1387,12 +1414,21 @@ onUnmounted(() => {
               <span>产品类别销售占比</span>
             </div>
           </template>
-          <!-- Phase 6: DynamicChartRenderer when config available -->
+          <!-- Phase 6: DynamicChartRenderer when config available (skip for single category) -->
           <DynamicChartRenderer
-            v-if="useDynamicPie && pieDynamicConfig"
+            v-if="useDynamicPie && pieDynamicConfig && (pieDynamicConfig.data?.length ?? 0) > 1"
             :config="pieDynamicConfig"
             :height="350"
           />
+          <!-- Single category: show stat instead of useless full-circle pie -->
+          <div v-else-if="useDynamicPie && pieDynamicConfig && pieDynamicConfig.data?.length === 1" class="single-category-stat">
+            <el-icon :size="40" color="#409EFF"><TrendCharts /></el-icon>
+            <div class="stat-info">
+              <div class="stat-label">{{ pieDynamicConfig.data[0]?.[pieDynamicConfig.xAxisField || 'name'] || '产品类别' }}</div>
+              <div class="stat-value">100%</div>
+              <div class="stat-hint">仅1个产品类别，无需占比分析</div>
+            </div>
+          </div>
           <!-- Empty state for dynamic mode with no charts -->
           <el-empty
             v-else-if="isDynamicMode && !pieLoading"
@@ -1576,6 +1612,14 @@ onUnmounted(() => {
   .el-col {
     margin-bottom: 16px;
   }
+
+  // 5-column responsive layout
+  .kpi-col-5 {
+    @media (min-width: 992px) {
+      flex: 0 0 20%;
+      max-width: 20%;
+    }
+  }
 }
 
 .kpi-card {
@@ -1701,6 +1745,38 @@ onUnmounted(() => {
 .pie-chart-container {
   height: 350px;
   width: 100%;
+}
+
+.single-category-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: 16px;
+
+  .stat-info {
+    text-align: center;
+  }
+
+  .stat-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #303133;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #409EFF;
+    margin-bottom: 4px;
+  }
+
+  .stat-hint {
+    font-size: 12px;
+    color: #909399;
+  }
 }
 
 // Phase 6: 数据源选择器

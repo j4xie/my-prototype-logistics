@@ -39,7 +39,20 @@ When triggered, execute the following phases in order. The argument after `/agen
 
    Pass to ALL agent prompts. When `CODEBASE_GROUNDING=true`, add to the announce block:
    > Grounding: ENABLED — agents will verify claims against actual source code
-5. **Assess complexity** to select mode using these heuristics:
+5. **Detect competitor topic**: Set `COMPETITOR_MODE=true` if topic matches ANY:
+   - 竞品关键词: `竞品`、`竞争对手`、`competitor`、`vs`、`对比`、`比较`、`替代方案`、`alternative`
+   - 产品比较: `A还是B`、`哪个更好`、`选型`、`选择`
+   - 市场分析: `市场份额`、`market share`、`competitive landscape`
+
+   Default: `COMPETITOR_MODE=false`
+6. **Detect fact-check need**: Set `FACT_CHECK=true` when ANY of these conditions hold:
+   - Topic involves technical specifications, benchmarks, or version numbers
+   - Topic involves statistics, dates, or quantitative claims
+   - User explicitly requests verification
+   - `CODEBASE_GROUNDING=false` (external claims are more likely to be outdated)
+
+   Default: `FACT_CHECK=true` in Full mode, `false` in Quick mode.
+7. **Assess complexity** to select mode using these heuristics:
    - **Quick mode** (2 agents) — select when ALL of these are true:
      - Topic is a single factual question or explanation ("what is X", "explain Y", "how does Z work")
      - No comparison keywords: `vs`、`对比`、`比较`、`A还是B`、`哪个更好`、`优缺点`、`选择`
@@ -54,19 +67,20 @@ When triggered, execute the following phases in order. The argument after `/agen
      - `CODEBASE_GROUNDING=true`
      → Full 4-phase pipeline as below
    - **When in doubt, choose Full mode** — it's better to over-research than under-research
-6. Break the topic into 2-3 **independent research angles** suitable for parallel investigation
-7. Announce the plan to the user:
+8. Break the topic into 2-3 **independent research angles** suitable for parallel investigation
+9. Announce the plan to the user:
    ```
    ## Agent Team: [topic]
 
    Mode: [Quick/Full] | Language: [Chinese/English]
+   Enhancements: [Competitor profiles: ON/OFF] | [Fact-check: ON/OFF]
 
    Research angles:
    1. [Angle A] — official docs & technical specs
    2. [Angle B] — community experience & real-world usage
    3. [Angle C] — alternatives & competitive landscape  (Full mode only)
 
-   Phases: Research (parallel) → Analysis → Critique → Integration
+   Phases: Research (parallel) → Analysis → Critique → Integration [→ Fact-Check]
    ```
 
 ---
@@ -103,6 +117,20 @@ MANDATORY: Before any web search, spend your first 2-3 turns exploring the actua
 - Use Grep to find class/function/config references
 - Use Read to examine the 2-4 most relevant files in detail
 Document your codebase findings as "Codebase Evidence" (★★★★★ reliability) FIRST in your Key Findings table, then supplement with web search sources.
+[End conditional block]
+
+[ONLY include the following block when COMPETITOR_MODE=true]
+Competitor analysis mode: ENABLED.
+MANDATORY additional steps:
+- For each competitor/option found, collect:
+  1. Official repository/website URL
+  2. GitHub stars / npm downloads / adoption metrics (if applicable)
+  3. Last release date and version
+  4. Key differentiators (3-5 bullet points)
+  5. Known limitations or complaints from community
+- Organize findings as a "Competitor Profile" subsection within your output
+- Cite actual repository/documentation pages (★★★★★) over blog opinions (★★★☆☆)
+- If a competitor has a public GitHub repo, note: repo URL, language, license, contributor count
 [End conditional block]
 
 CRITICAL: Your FINAL message must be your complete structured output (starting with "## Researcher Output"). Do NOT end with a question or status update. The LAST thing you write must be the full formatted report.
@@ -286,6 +314,74 @@ CRITICAL: Your FINAL message must be your complete structured output (starting w
 
 ---
 
+### Phase 4.5: Fact Verification (Optional) — Full mode only
+
+**Activation**: Run this phase when `FACT_CHECK=true` (see Phase 0 step 6).
+
+Launch a single **Task** call with `subagent_type: "general-purpose"` and `model: "sonnet"`:
+
+**Prompt template:**
+```
+You are a Fact-Check Verification agent. Your job is to verify factual claims in a research report.
+
+Research topic: [TOPIC]
+Output language: [OUTPUT_LANGUAGE] — write your ENTIRE output in this language.
+
+Below is the integrated report to verify:
+
+=== INTEGRATED REPORT (condensed) ===
+[paste the Integrator's Executive Summary + Confidence Assessment + Recommendations sections]
+
+Instructions:
+1. Extract ALL verifiable factual claims from the report. Focus on:
+   - Version numbers (e.g., "React 18.3", "Python 3.12")
+   - Release dates (e.g., "released in March 2025")
+   - Statistics and percentages (e.g., "70% market share", "2x faster")
+   - Technical specifications (e.g., "supports WebSocket", "uses AES-256")
+   - Benchmark numbers (e.g., "500ms latency", "10k requests/sec")
+   - Company/project claims (e.g., "acquired by X", "open-sourced in 2024")
+2. For EACH claim, use WebSearch to verify against official sources (docs, GitHub, release notes)
+3. Rate each claim: ✅ Verified | ❌ Incorrect | ⚠️ Outdated | ❓ Unverifiable
+4. For ❌ or ⚠️ claims, provide the correct information with source URL
+
+Output format:
+## Fact-Check Report
+
+| # | Claim | Status | Source | Correction (if needed) |
+|---|-------|--------|--------|----------------------|
+| 1 | [claim text] | ✅/❌/⚠️/❓ | [URL] | [correction or "—"] |
+| 2 | ... | ... | ... | ... |
+
+### Summary
+- Total claims checked: N
+- ✅ Verified: N
+- ❌ Incorrect: N
+- ⚠️ Outdated: N
+- ❓ Unverifiable: N
+
+### Critical Issues (if any)
+[List any ❌ claims that should be corrected in the report]
+
+CRITICAL: Your FINAL message must be your complete structured output (starting with "## Fact-Check Report"). Do NOT end with a question or status update.
+```
+
+Set `max_turns: 8` (needs multiple WebSearch rounds).
+
+**After Phase 4.5, output progress to the user:**
+> Fact-check complete — N claims verified, M issues found.
+
+**Output integration**:
+- If any ❌ (incorrect) claims were found, insert a warning block after the Executive Summary in Phase 5:
+  ```
+  > ⚠️ **Fact-check notice**: M claims were found to be incorrect or outdated. See corrections below.
+  ```
+- Append the full Fact-Check Report as an appendix at the bottom of the saved report file
+- Add fact-check stats to the Process Note (see Phase 5)
+
+**Output validation**: If the Task result does NOT contain "## Fact-Check Report", skip fact-check gracefully — note "Fact-check: skipped (agent error)" in the Process Note and proceed to Phase 5.
+
+---
+
 ### Phase 5: Present Results (You — the Manager)
 
 After all agents complete:
@@ -300,7 +396,9 @@ After all agents complete:
    - Researchers deployed: N
    - Total sources found: N
    - Key disagreements: N resolved, N unresolved
-   - Phases completed: Research → Analysis → Critique → Integration
+   - Phases completed: Research → Analysis → Critique → Integration [→ Fact-Check]
+   - Fact-check: N claims verified, M issues found (if applicable, or "disabled" for Quick mode)
+   - Competitor profiles: N competitors analyzed (if applicable, or "N/A")
    ```
 4. **Save the full report** using the Write tool to:
    `.claude/agent-team-outputs/YYYY-MM-DD_topic-slug.md`

@@ -266,10 +266,10 @@
               <div class="sheet-info">
                 <el-descriptions :column="3" border>
                   <el-descriptions-item label="数据类型">
-                    <el-tag>{{ sheet.detectedDataType || 'UNKNOWN' }}</el-tag>
+                    <el-tag>{{ sheet.detectedDataType && sheet.detectedDataType !== 'UNKNOWN' ? sheet.detectedDataType : '通用数据' }}</el-tag>
                   </el-descriptions-item>
                   <el-descriptions-item label="推荐图表">
-                    <el-tag type="success">{{ sheet.flowResult?.recommendedChartType || 'N/A' }}</el-tag>
+                    <el-tag type="success">{{ sheet.flowResult?.recommendedChartType && sheet.flowResult.recommendedChartType !== 'N/A' ? sheet.flowResult.recommendedChartType : '自动推荐' }}</el-tag>
                   </el-descriptions-item>
                   <el-descriptions-item label="保存行数">
                     {{ sheet.savedRows }}
@@ -1573,7 +1573,11 @@ const getStructuredInsight = (sheet: SheetResult): AIInsight | null => {
   if (aiText) {
     const lines = aiText.split('\n\n').filter(Boolean);
     for (const line of lines) {
-      const cleanLine = line.replace(/\*\*/g, '').trim();
+      // Post-process: humanize raw column name patterns like "8的2025-01-01_预算数"
+      let cleanLine = line.replace(/\*\*/g, '').trim();
+      cleanLine = cleanLine.replace(/\d+的(\d{4}-\d{2}-\d{2})[_]?([^\s,，。;；]*)/g, (_m, date, suffix) => {
+        return humanizeColumnName(date) + (suffix ? humanizeColumnName(suffix) : '');
+      });
       if (!cleanLine) continue;
 
       // 启发式分类（R-20: 先检查负面关键词，避免"增长下降"误判为正面）
@@ -4189,10 +4193,13 @@ onMounted(() => {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
 
       .title {
         font-size: 18px;
         font-weight: bold;
+        white-space: nowrap;
       }
     }
   }
@@ -4821,6 +4828,7 @@ onMounted(() => {
         display: flex;
         gap: 8px;
         align-items: center;
+        flex-wrap: wrap;
       }
 
       // 索引页视图样式

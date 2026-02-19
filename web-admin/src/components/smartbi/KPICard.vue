@@ -5,6 +5,7 @@
  * Display Modes: default, sparkline, progressBar, waterWave
  */
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { formatPlainNumber } from '@/utils/format-number';
 
 // Types
 export type TrendDirection = 'up' | 'down' | 'flat';
@@ -127,13 +128,7 @@ const formattedValue = computed(() => {
       break;
     case 'number':
     default:
-      if (val >= 1000000) {
-        formatted = (val / 1000000).toFixed(1) + 'M';
-      } else if (val >= 1000) {
-        formatted = (val / 1000).toFixed(1) + 'K';
-      } else {
-        formatted = val.toFixed(props.precision);
-      }
+      formatted = formatPlainNumber(val, props.precision || 0);
   }
 
   return `${props.prefix}${formatted}${props.suffix}`;
@@ -206,11 +201,6 @@ const changeColor = computed(() => {
   return '#909399';
 });
 
-// Show trend indicator (always show when data exists)
-const isReasonableTrend = computed(() => {
-  return true;
-});
-
 // Progress bar display mode color
 const displayProgressColor = computed(() => {
   if (props.progressColor) return props.progressColor;
@@ -279,7 +269,7 @@ function handleClick() {
         </span>
         <span>{{ title }}</span>
       </div>
-      <div v-if="isReasonableTrend && (trend || formattedChange)" class="kpi-trend" :style="{ color: formattedChange ? changeColor : trendColors[trend!] }">
+      <div v-if="trend || formattedChange" class="kpi-trend" :style="{ color: formattedChange ? changeColor : trendColors[trend!] }">
         <span class="trend-arrow">
           <template v-if="(changeRate != null ? changeRate > 0 : trend === 'up')">&#9650;</template>
           <template v-else-if="(changeRate != null ? changeRate < 0 : trend === 'down')">&#9660;</template>
