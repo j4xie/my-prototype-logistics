@@ -1045,21 +1045,16 @@ function handleResize() {
  * Shows the backend-formatted value if available.
  */
 function formatKpiValue(card: KPICard): string {
-  // Backend already formatted the value string
-  if (card.value && card.value !== '0' && card.value !== '0.00' && card.value !== '--') {
-    return card.value;
+  // Prefer rawValue + formatMoney for consistent 万/亿 formatting
+  if (card.rawValue != null) {
+    if (card.rawValue === 0) {
+      if (card.unit === '%') return '0.0%';
+      return '0';
+    }
+    return formatMoney(card.rawValue) + (card.unit && card.unit !== '元' && card.unit !== '个' ? card.unit : '');
   }
-  // If rawValue is null/undefined, data is truly missing
-  if (card.rawValue == null) {
-    return '--';
-  }
-  // rawValue is 0 - could be legitimate zero
-  if (card.rawValue === 0) {
-    if (card.unit === '%') return '0.0%';
-    return '0';
-  }
-  // Format the raw value
-  return formatMoney(card.rawValue) + (card.unit && card.unit !== '元' ? card.unit : '');
+  // rawValue missing — truly no data
+  return '--';
 }
 
 function formatMoney(value: number | null | undefined): string {
