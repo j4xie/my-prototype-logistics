@@ -59,9 +59,9 @@ const activeNames = ref(['positive', 'negative', 'suggestions']);
 const hasContent = computed(() => {
   if (!props.insight) return false;
   return (
-    props.insight.positive.items.length > 0 ||
-    props.insight.negative.items.length > 0 ||
-    props.insight.suggestions.items.length > 0
+    (props.insight.positive?.items?.length ?? 0) > 0 ||
+    (props.insight.negative?.items?.length ?? 0) > 0 ||
+    (props.insight.suggestions?.items?.length ?? 0) > 0
   );
 });
 
@@ -180,7 +180,7 @@ function handleRefresh() {
       <!-- Insight content -->
       <template v-else>
         <!-- Positive Section -->
-        <div v-if="insight!.positive.items.length > 0" class="insight-section positive">
+        <div v-if="insight?.positive?.items?.length" class="insight-section positive">
           <div class="section-header">
             <el-icon :size="16" color="#67c23a"><CircleCheckFilled /></el-icon>
             <span class="section-title">{{ insight!.positive.title || '好的方面' }}</span>
@@ -195,7 +195,7 @@ function handleRefresh() {
         </div>
 
         <!-- Negative Section -->
-        <div v-if="insight!.negative.items.length > 0" class="insight-section negative">
+        <div v-if="insight?.negative?.items?.length" class="insight-section negative">
           <div class="section-header">
             <el-icon :size="16" color="#e6a23c"><WarningFilled /></el-icon>
             <span class="section-title">{{ insight!.negative.title || '需关注' }}</span>
@@ -210,7 +210,7 @@ function handleRefresh() {
         </div>
 
         <!-- Suggestions Section -->
-        <div v-if="insight!.suggestions.items.length > 0" class="insight-section suggestions">
+        <div v-if="insight?.suggestions?.items?.length" class="insight-section suggestions">
           <div class="section-header">
             <el-icon :size="16" color="#409eff"><InfoFilled /></el-icon>
             <span class="section-title">{{ insight!.suggestions.title || '建议' }}</span>

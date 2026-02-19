@@ -5,6 +5,7 @@
  */
 import type { KPICard } from '@/types/smartbi';
 import { Warning } from '@element-plus/icons-vue';
+import { formatPlainNumber } from '@/utils/format-number';
 
 interface Props {
   cards: KPICard[];
@@ -23,10 +24,15 @@ function getColSpan(count: number): number {
 }
 
 function formatValue(card: KPICard): string {
+  // Always use rawValue (avoid backend pre-formatted strings like "9.9K")
+  // Use formatPlainNumber (no 万/亿) since the template appends unit separately
+  if (card.rawValue != null) {
+    if (card.rawValue === 0) return '0';
+    return formatPlainNumber(card.rawValue, 1);
+  }
+  // Fallback to backend string only if rawValue missing
   if (card.value) return card.value;
-  if (card.rawValue == null) return '--';
-  if (card.rawValue >= 10000) return (card.rawValue / 10000).toFixed(1) + '万';
-  return card.rawValue.toLocaleString();
+  return '--';
 }
 
 function formatChangeRate(rate: number | undefined | null): string {

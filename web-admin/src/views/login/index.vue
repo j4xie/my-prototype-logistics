@@ -149,7 +149,7 @@ function quickLogin(username: string) {
 
       <!-- 底部信息 -->
       <div class="login-footer">
-        <p>© 2025 白垩纪食品科技. All rights reserved.</p>
+        <p>© 2026 白垩纪食品科技. All rights reserved.</p>
       </div>
     </div>
   </div>

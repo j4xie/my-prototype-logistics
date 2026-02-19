@@ -311,6 +311,7 @@ function buildFromLegacyConfig(config: LegacyChartConfig): echarts.EChartsOption
   const xData = config.data.map(item => String(item[xField] || ''));
   const yData = config.data.map(item => Number(item[yField] || 0));
 
+  const hasNegative = yData.some(v => v < 0);
   return {
     tooltip: {
       trigger: 'axis',
@@ -324,6 +325,17 @@ function buildFromLegacyConfig(config: LegacyChartConfig): echarts.EChartsOption
       data: yData,
       smooth: chartType === 'line',
       itemStyle: { color: '#409EFF' },
+      ...(chartType === 'line' && hasNegative ? {
+        markPoint: {
+          data: [{ type: 'min', name: '最低值', symbol: 'pin', symbolSize: 40, label: { formatter: '{c}', fontSize: 10 } }],
+          itemStyle: { color: '#F56C6C' },
+        },
+        markLine: {
+          silent: true,
+          data: [{ yAxis: 0, lineStyle: { color: '#E6A23C', type: 'dashed', width: 1 } }],
+          label: { show: false },
+        },
+      } : {}),
     }],
   };
 }

@@ -813,6 +813,13 @@ export function humanizeColumnName(col: string): string {
   // Strip "YYYY年合计" prefix but keep the rest
   cleaned = cleaned.replace(/^\d{4}年合计/, '年度合计');
 
+  // Strip verbose "年度合计" prefix for KPI readability
+  // "年度合计 预算数" → "预算数", "年度合计(验证) 本月实际" → "本月实际(验证)"
+  const ydMatch = cleaned.match(/^年度合计\s*(?:[(（](验证)[)）])?\s*(.+)$/);
+  if (ydMatch) {
+    cleaned = ydMatch[2] + (ydMatch[1] ? `(${ydMatch[1]})` : '');
+  }
+
   const dateMatch = cleaned.match(/^(\d{4})-(\d{2})-(\d{2})(?:_(\d+))?$/);
   if (dateMatch) {
     const month = parseInt(dateMatch[2]);

@@ -518,10 +518,6 @@ function handleKeydown(event: KeyboardEvent) {
   <div class="ai-query-page">
     <div class="page-header">
       <div class="header-left">
-        <el-breadcrumb separator="/">
-          <el-breadcrumb-item :to="{ path: '/smart-bi' }">Smart BI</el-breadcrumb-item>
-          <el-breadcrumb-item>AI 问答</el-breadcrumb-item>
-        </el-breadcrumb>
         <h1>
           <el-icon><ChatDotRound /></el-icon>
           AI 智能问答
@@ -650,8 +646,8 @@ function handleKeydown(event: KeyboardEvent) {
         </div>
       </div>
 
-      <!-- 快捷问题 -->
-      <div class="quick-questions">
+      <!-- 快捷问题 (hide when conversation has started to save space) -->
+      <div v-if="chatHistory.length <= 2" class="quick-questions">
         <span class="label">快捷问题:</span>
         <div class="questions-list">
           <el-button

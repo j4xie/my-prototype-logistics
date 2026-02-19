@@ -30,7 +30,7 @@ import {
   Document
 } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
-import { formatNumber } from '@/utils/format-number';
+import { formatNumber, formatCount } from '@/utils/format-number';
 import { CHART_COLORS } from '@/constants/chart-colors';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 
@@ -277,7 +277,7 @@ async function loadDashboardData() {
         ? raw.data
         : raw;
       dashboardData.value = actualData as DashboardResponse;
-      console.log('[Dashboard] Loaded data:', Object.keys(actualData));
+      // data loaded
 
       // Auto-switch: if system data is effectively empty (no KPIs with real values),
       // fall back to the best available uploaded data source
@@ -288,7 +288,7 @@ async function loadDashboardData() {
         Object.values(charts).some(c => c?.series && c.series.length > 0);
 
       if (!hasRealKpi && !hasCharts && dataSources.value.length > 0) {
-        console.log('[Dashboard] System data empty, auto-switching to uploaded data');
+        // system data empty, auto-switch to uploaded data
         const best = dataSources.value[0];
         selectedDataSource.value = String(best.id);
         await loadDynamicDashboardData(best.id);
@@ -306,7 +306,7 @@ async function loadDashboardData() {
 
     // On error, also try uploaded data as fallback
     if (dataSources.value.length > 0) {
-      console.log('[Dashboard] System API failed, falling back to uploaded data');
+      // system API failed, falling back to uploaded data
       hasError.value = false;
       errorMessage.value = '';
       const best = dataSources.value[0];
@@ -429,7 +429,7 @@ async function loadDynamicDashboardData(uploadId: number) {
         lastUpdated: new Date().toISOString(),
       } as unknown as DashboardResponse;
 
-      console.log('[Dashboard] Loaded dynamic data from upload:', uploadId, 'KPIs:', kpiCards.length, 'Charts:', Object.keys(charts).length);
+      // dynamic data loaded from upload
     } else {
       throw new Error(res.message || '加载上传数据分析失败');
     }
@@ -716,7 +716,7 @@ onMounted(() => {
     <div class="page-header">
       <div class="header-left">
         <h1>经营驾驶舱</h1>
-        <span class="subtitle">Smart BI - Business Intelligence Dashboard</span>
+        <span class="subtitle">智能数据分析 · 业务经营一站式洞察</span>
       </div>
       <div class="header-right">
         <el-button type="primary" :icon="Refresh" @click="handleRefresh" :loading="loading">刷新数据</el-button>
@@ -826,7 +826,7 @@ onMounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">订单数量</div>
-            <div class="kpi-value">{{ formatKpiValue(kpiData.orderCount) }}</div>
+            <div class="kpi-value">{{ kpiData.orderCount != null ? formatCount(kpiData.orderCount) : '--' }}</div>
             <div class="kpi-trend" :class="getGrowthClass(kpiData.orderGrowth!)" v-if="kpiData.orderCount !== null && kpiData.orderGrowth != null && kpiData.orderGrowth !== 0">
               <el-icon v-if="kpiData.orderGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
@@ -846,7 +846,7 @@ onMounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">活跃客户</div>
-            <div class="kpi-value">{{ formatKpiValue(kpiData.customerCount) }}</div>
+            <div class="kpi-value">{{ kpiData.customerCount != null ? formatCount(kpiData.customerCount) : '--' }}</div>
             <div class="kpi-trend" :class="getGrowthClass(kpiData.customerGrowth!)" v-if="kpiData.customerCount !== null && kpiData.customerGrowth != null && kpiData.customerGrowth !== 0">
               <el-icon v-if="kpiData.customerGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
@@ -889,7 +889,10 @@ onMounted(() => {
               </div>
             </div>
           </div>
-          <SmartBIEmptyState v-else type="no-data" :show-action="false" />
+          <div v-else class="compact-empty">
+            <el-icon :size="24" color="#c0c4cc"><Medal /></el-icon>
+            <span>暂无部门业绩数据</span>
+          </div>
         </el-card>
       </el-col>
       <el-col :xs="24" :md="12">
@@ -916,7 +919,10 @@ onMounted(() => {
               </div>
             </div>
           </div>
-          <SmartBIEmptyState v-else type="no-data" :show-action="false" />
+          <div v-else class="compact-empty">
+            <el-icon :size="24" color="#c0c4cc"><Location /></el-icon>
+            <span>暂无区域销售数据</span>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -1188,6 +1194,16 @@ onMounted(() => {
   .el-col {
     margin-bottom: 16px;
   }
+}
+
+.compact-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  color: #c0c4cc;
+  font-size: 13px;
 }
 
 .ranking-card {
