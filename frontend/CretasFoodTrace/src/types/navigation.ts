@@ -374,6 +374,7 @@ export type FAManagementStackParamList = {
   TransferList: undefined;
   TransferDetail: { transferId: string };
   ArApOverview: undefined;
+  PriceList: undefined;
 };
 
 export type FAProfileStackParamList = {
@@ -562,6 +563,7 @@ export type WHInventoryStackParamList = {
   // 库存预警管理
   WHInventoryAlert: undefined;  // 库存预警列表
   WHAlertDetail: { alertId: string; alertType: 'low_stock' | 'expiring' | 'expired' | 'quality'; batchNumber: string };  // 预警详情处理
+  WHInventoryWarnings: undefined;  // 库存预警/过期综合管理（3 Tab）
 };
 
 export type WHProfileStackParamList = {
@@ -569,6 +571,9 @@ export type WHProfileStackParamList = {
   WHProfileEdit: undefined;
   WHSettings: undefined;
   WHOperationLog: undefined;
+  WHIOStatistics: undefined;
+  WHInventoryCheck: undefined;
+  WHExpireHandle: { batchId?: string; batchNumber?: string };
   WHAlertList: undefined;
   WHAlertHandle: { alertId: string };
   WHRecallManage: undefined;

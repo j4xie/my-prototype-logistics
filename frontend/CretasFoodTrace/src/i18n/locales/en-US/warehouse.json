@@ -402,7 +402,8 @@
       "recall": "Recall Management",
       "help": "Help",
       "feedback": "Feedback",
-      "about": "About"
+      "about": "About",
+      "language": "Language"
     },
     "dialogs": {
       "helpTitle": "Help",

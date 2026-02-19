@@ -20,6 +20,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHOutboundStackParamList } from "../../../types/navigation";
 import { shipmentApiClient, ShipmentRecord } from "../../../services/api/shipmentApiClient";
 import { handleError } from "../../../utils/errorHandler";
+import { formatDateTime as fmtDateTime, formatNumberWithCommas } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHOutboundStackParamList>;
 type RouteType = RouteProp<WHOutboundStackParamList, "WHOutboundDetail">;
@@ -52,11 +53,7 @@ const getStatusInfo = (status?: string): {
  */
 const formatDateTime = (dateStr?: string): string => {
   if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit'
-  });
+  return fmtDateTime(dateStr);
 };
 
 /**
@@ -316,7 +313,7 @@ export function WHOutboundDetailScreen() {
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>订单金额</Text>
               <Text style={[styles.infoValue, styles.amountValue]}>
-                ¥{detail.totalAmount.toLocaleString()}
+                ¥{formatNumberWithCommas(detail.totalAmount)}
               </Text>
             </View>
             <View style={styles.infoItem}>

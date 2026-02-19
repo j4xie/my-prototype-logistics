@@ -21,6 +21,7 @@ import { WHInventoryStackParamList } from "../../../types/navigation";
 import { alertApiClient, AlertDTO } from "../../../services/api/alertApiClient";
 import { handleError } from "../../../utils/errorHandler";
 import { useAuthStore } from "../../../store/authStore";
+import { formatDateTimeFull } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -134,14 +135,14 @@ export function WHAlertListScreen() {
       { label: '告警信息', value: alert.message || '-' },
       {
         label: '触发时间',
-        value: alert.triggeredAt ? new Date(alert.triggeredAt).toLocaleString('zh-CN') : '-'
+        value: alert.triggeredAt ? formatDateTimeFull(alert.triggeredAt) : '-'
       },
     ];
 
     if (alert.status === 'RESOLVED' && alert.resolvedAt) {
       rows.push({
         label: '解决时间',
-        value: new Date(alert.resolvedAt).toLocaleString('zh-CN'),
+        value: formatDateTimeFull(alert.resolvedAt),
         type: 'success',
       });
     }

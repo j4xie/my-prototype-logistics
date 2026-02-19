@@ -57,6 +57,20 @@ export interface UndoFrozenRequest {
   reason: string;
 }
 
+// 库存预警综合接口返回的单条预警
+export interface InventoryAlert {
+  alertType: 'LOW_STOCK' | 'EXPIRING' | 'EXPIRED';
+  batchId: string | null;
+  materialTypeName: string;
+  batchNumber: string | null;
+  currentQuantity: number | null;
+  minQuantity: number | null;
+  expiryDate: string | null;
+  daysUntilExpiry: number | null;
+  storageLocation: string | null;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+}
+
 class MaterialBatchApiClient {
   private getPath(factoryId?: string) {
     const currentFactoryId = getCurrentFactoryId(factoryId);
@@ -166,9 +180,12 @@ class MaterialBatchApiClient {
     return await apiClient.get(`${this.getPath(factoryId)}/expired`);
   }
 
-  // 17. 处理过期批次
-  async handleExpiredBatches(factoryId?: string): Promise<ApiResponse<{ processed: number }>> {
-    return await apiClient.post(`${this.getPath(factoryId)}/handle-expired`);
+  // 17. 处理过期批次（自动处理所有已过期批次，或指定 batchIds 和 action 仅处理部分）
+  async handleExpiredBatches(
+    options?: { batchIds?: string[]; action?: string },
+    factoryId?: string
+  ): Promise<ApiResponse<number>> {
+    return await apiClient.post(`${this.getPath(factoryId)}/handle-expired`, options ?? {});
   }
 
   // 18. 获取批次使用历史
@@ -179,6 +196,13 @@ class MaterialBatchApiClient {
   // 19. 获取低库存警告
   async getLowStockBatches(factoryId?: string): Promise<{ success: boolean; data: MaterialBatch[]; message?: string }> {
     return await apiClient.get(`${this.getPath(factoryId)}/low-stock`);
+  }
+
+  // 19b. 获取综合库存预警（低库存 + 即将过期 + 已过期）
+  async getInventoryWarnings(days?: number, factoryId?: string): Promise<{ success: boolean; data: InventoryAlert[]; message?: string }> {
+    return await apiClient.get(`${this.getPath(factoryId)}/inventory/alerts`, {
+      params: days !== undefined ? { days } : undefined,
+    });
   }
 
   // 20. 获取库存统计

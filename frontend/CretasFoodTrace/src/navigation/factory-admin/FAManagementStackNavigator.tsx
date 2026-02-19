@@ -78,6 +78,7 @@ import FinishedGoodsListScreen from "../../screens/factory-admin/inventory/Finis
 import TransferListScreen from "../../screens/factory-admin/inventory/TransferListScreen";
 import TransferDetailScreen from "../../screens/factory-admin/inventory/TransferDetailScreen";
 import ArApOverviewScreen from "../../screens/factory-admin/inventory/ArApOverviewScreen";
+import PriceListScreen from "../../screens/factory-admin/inventory/PriceListScreen";
 
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
@@ -404,6 +405,11 @@ export function FAManagementStackNavigator() {
         name="ArApOverview"
         component={ArApOverviewScreen}
         options={{ title: "应收应付" }}
+      />
+      <Stack.Screen
+        name="PriceList"
+        component={PriceListScreen}
+        options={{ title: "价格表" }}
       />
     </Stack.Navigator>
   );

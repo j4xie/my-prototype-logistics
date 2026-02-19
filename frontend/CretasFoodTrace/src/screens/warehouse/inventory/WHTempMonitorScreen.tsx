@@ -20,6 +20,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
 import { alertApiClient, AlertDTO } from "../../../services/api/alertApiClient";
 import { handleError } from "../../../utils/errorHandler";
+import { formatShortDateTime, formatTimeFull } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -127,7 +128,7 @@ export function WHTempMonitorScreen() {
       setAlertRecords(records.length > 0 ? records : [
         {
           id: "1",
-          time: new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-'),
+          time: formatShortDateTime(new Date()),
           level: "info",
           title: "系统正常",
           description: "暂无温度异常告警",
@@ -144,13 +145,13 @@ export function WHTempMonitorScreen() {
       setAlertRecords([
         {
           id: "1",
-          time: new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-'),
+          time: formatShortDateTime(new Date()),
           level: "info",
           title: "暂无告警",
           description: "温度监控系统运行正常",
         }
       ]);
-      setLastUpdate(new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setLastUpdate(formatTimeFull(new Date()));
     } finally {
       setLoading(false);
     }

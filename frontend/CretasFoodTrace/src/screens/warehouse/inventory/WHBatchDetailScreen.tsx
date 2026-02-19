@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { WHInventoryStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
+import { formatNumberWithCommas } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 type RouteType = RouteProp<WHInventoryStackParamList, "WHBatchDetail">;
@@ -379,7 +380,7 @@ export function WHBatchDetailScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('batch.detail.batchValue')}</Text>
             <Text style={[styles.infoValue, styles.highlightValue]}>
-              ¥{batchDetail.batchValue.toLocaleString()}
+              ¥{formatNumberWithCommas(batchDetail.batchValue)}
             </Text>
           </View>
         </View>

@@ -95,13 +95,24 @@ class ShipmentApiClient {
     );
 
     // 处理后端返回格式
+    // 格式1: { data: ShipmentRecord[] } (直接数组包装)
     if (apiResponse.data && Array.isArray(apiResponse.data)) {
       return {
         data: apiResponse.data,
         totalElements: apiResponse.totalElements || apiResponse.data.length,
         totalPages: apiResponse.totalPages || 1
       };
-    } else if (Array.isArray(apiResponse)) {
+    }
+    // 格式2: Spring Boot Page { content: [...], totalElements, totalPages }
+    if (apiResponse.content && Array.isArray(apiResponse.content)) {
+      return {
+        data: apiResponse.content,
+        totalElements: apiResponse.totalElements || apiResponse.content.length,
+        totalPages: apiResponse.totalPages || 1
+      };
+    }
+    // 格式3: 直接数组
+    if (Array.isArray(apiResponse)) {
       return { data: apiResponse, totalElements: apiResponse.length, totalPages: 1 };
     }
 

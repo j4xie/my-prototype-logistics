@@ -32,6 +32,7 @@ import { WHInboundStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
 import { logger } from "../../../utils/logger";
+import { formatShortDateTime } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHInboundStackParamList>;
 
@@ -105,7 +106,7 @@ export function WHInboundListScreen() {
         quantity: b.inboundQuantity || 0,
         status: mapBatchStatusToInbound(b.status),
         createdAt: b.inboundDate
-          ? new Date(b.inboundDate).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+          ? formatShortDateTime(b.inboundDate)
           : '未知时间',
         location: b.storageLocation,
         inspectResult: b.qualityGrade ? `质量等级: ${b.qualityGrade}` : undefined,

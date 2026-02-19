@@ -18,6 +18,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Picker } from "@react-native-picker/picker";
 import { WHInventoryStackParamList } from "../../../types/navigation";
+import { formatNumberWithCommas } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -108,7 +109,7 @@ export function WHAlertHandleScreen() {
   const calculateTotal = () => {
     const qty = parseFloat(purchaseQty) || 0;
     const price = parseFloat(unitPrice) || 0;
-    return (qty * price).toLocaleString();
+    return formatNumberWithCommas(qty * price);
   };
 
   const handleSubmit = () => {

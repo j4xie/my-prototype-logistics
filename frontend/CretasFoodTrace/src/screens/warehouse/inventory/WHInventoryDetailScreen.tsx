@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { WHInventoryStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
+import { formatNumberWithCommas } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 type RouteType = RouteProp<WHInventoryStackParamList, "WHInventoryDetail">;
@@ -321,7 +322,7 @@ export function WHInventoryDetailScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('inventoryDetail.totalValue')}</Text>
             <Text style={[styles.infoValue, styles.highlightValue]}>
-              ¥{inventoryDetail.totalValue.toLocaleString()}
+              ¥{formatNumberWithCommas(inventoryDetail.totalValue)}
             </Text>
           </View>
         </View>

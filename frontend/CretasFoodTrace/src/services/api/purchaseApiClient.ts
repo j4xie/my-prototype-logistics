@@ -70,12 +70,62 @@ export interface CreatePurchaseOrderRequest {
   }[];
 }
 
+export interface CreateReceiveRecordRequest {
+  /** 关联采购订单ID（可选，支持无单入库） */
+  purchaseOrderId?: string;
+  supplierId: string;
+  receiveDate: string; // ISO date string: YYYY-MM-DD
+  warehouseId?: string;
+  remark?: string;
+  items: {
+    materialTypeId: string;
+    materialName?: string;
+    receivedQuantity: number;
+    unit: string;
+    unitPrice?: number;
+    qcResult?: string;
+    remark?: string;
+  }[];
+}
+
 export interface PageResponse<T> {
   content: T[];
   totalElements: number;
   totalPages: number;
   size: number;
   number: number;
+}
+
+// ========== 价格表类型定义 ==========
+
+export type PriceType = 'PURCHASE_PRICE' | 'SELLING_PRICE' | 'TRANSFER_PRICE';
+
+export interface PriceListItem {
+  id: number;
+  priceListId: string;
+  materialTypeId: string | null;
+  productTypeId: string | null;
+  itemName: string | null;
+  unit: string | null;
+  standardPrice: number;
+  minPrice: number | null;
+  maxPrice: number | null;
+  remark: string | null;
+}
+
+export interface PriceList {
+  id: string;
+  factoryId: string;
+  name: string;
+  priceType: PriceType;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  isActive: boolean;
+  createdBy: number | null;
+  remark: string | null;
+  items: PriceListItem[];
+  createdAt: string;
+  updatedAt: string | null;
 }
 
 // ========== API客户端类 ==========
@@ -114,19 +164,91 @@ class PurchaseApiClient {
     return apiClient.post(this.getPath(factoryId) + `/orders/${orderId}/approve`);
   }
 
-  /** 驳回 */
-  async rejectOrder(orderId: string, factoryId?: string): Promise<{ success: boolean; data: PurchaseOrder }> {
-    return apiClient.post(this.getPath(factoryId) + `/orders/${orderId}/reject`);
-  }
-
   /** 取消 */
   async cancelOrder(orderId: string, factoryId?: string): Promise<{ success: boolean; data: PurchaseOrder }> {
     return apiClient.post(this.getPath(factoryId) + `/orders/${orderId}/cancel`);
   }
 
-  /** 收货 */
-  async receiveOrder(orderId: string, items: { materialTypeId: string; receivedQuantity: number; unit: string }[], factoryId?: string): Promise<{ success: boolean; data: PurchaseReceiveRecord }> {
-    return apiClient.post(this.getPath(factoryId) + `/orders/${orderId}/receive`, { items });
+  /** 按状态查询采购单列表 */
+  async getOrdersByStatus(status: PurchaseOrder['status'], params?: { page?: number; size?: number }, factoryId?: string): Promise<{ success: boolean; data: PageResponse<PurchaseOrder> }> {
+    return apiClient.get(this.getPath(factoryId) + '/orders/by-status', { params: { status, ...params } });
+  }
+
+  // ========== 入库单 (receives) ==========
+
+  /** 创建入库单 */
+  async createReceive(data: CreateReceiveRecordRequest, factoryId?: string): Promise<{ success: boolean; data: PurchaseReceiveRecord }> {
+    return apiClient.post(this.getPath(factoryId) + '/receives', data);
+  }
+
+  /** 入库单列表 */
+  async getReceives(params?: { page?: number; size?: number }, factoryId?: string): Promise<{ success: boolean; data: PageResponse<PurchaseReceiveRecord> }> {
+    return apiClient.get(this.getPath(factoryId) + '/receives', { params });
+  }
+
+  /** 入库单详情 */
+  async getReceive(receiveId: string, factoryId?: string): Promise<{ success: boolean; data: PurchaseReceiveRecord }> {
+    return apiClient.get(this.getPath(factoryId) + `/receives/${receiveId}`);
+  }
+
+  /** 确认入库（触发物料批次创建） */
+  async confirmReceive(receiveId: string, factoryId?: string): Promise<{ success: boolean; data: PurchaseReceiveRecord }> {
+    return apiClient.post(this.getPath(factoryId) + `/receives/${receiveId}/confirm`);
+  }
+
+  /** 按采购单查询关联入库记录 */
+  async getReceivesByOrder(orderId: string, factoryId?: string): Promise<{ success: boolean; data: PurchaseReceiveRecord[] }> {
+    return apiClient.get(this.getPath(factoryId) + `/receives/by-order/${orderId}`);
+  }
+
+  // ========== 统计 ==========
+
+  /** 采购统计数据 */
+  async getStatistics(factoryId?: string): Promise<{ success: boolean; data: Record<string, unknown> }> {
+    return apiClient.get(this.getPath(factoryId) + '/statistics');
+  }
+
+  // ========== 价格表 (price-lists) ==========
+
+  /** 获取价格表列表（分页） */
+  async getPriceLists(
+    params?: { page?: number; size?: number },
+    factoryId?: string,
+  ): Promise<{ success: boolean; data: PageResponse<PriceList> }> {
+    const basePath = this.getPriceListPath(factoryId);
+    return apiClient.get(basePath, { params });
+  }
+
+  /** 获取当前生效的价格表列表 */
+  async getEffectivePriceLists(factoryId?: string): Promise<{ success: boolean; data: PriceList[] }> {
+    const basePath = this.getPriceListPath(factoryId);
+    return apiClient.get(basePath + '/effective');
+  }
+
+  /** 获取价格表详情 */
+  async getPriceList(
+    priceListId: string,
+    factoryId?: string,
+  ): Promise<{ success: boolean; data: PriceList }> {
+    const basePath = this.getPriceListPath(factoryId);
+    return apiClient.get(basePath + `/${priceListId}`);
+  }
+
+  /** 删除价格表 */
+  async deletePriceList(
+    priceListId: string,
+    factoryId?: string,
+  ): Promise<{ success: boolean; data: null }> {
+    const basePath = this.getPriceListPath(factoryId);
+    return apiClient.delete(basePath + `/${priceListId}`);
+  }
+
+  private getPriceListPath(factoryId?: string): string {
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return `/api/mobile/${currentFactoryId}/price-lists`;
   }
 }
 

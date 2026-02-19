@@ -18,6 +18,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTranslation } from 'react-i18next';
 import { WHInventoryStackParamList } from "../../../types/navigation";
+import { formatNumberWithCommas } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -160,7 +161,7 @@ export function WHIOStatisticsScreen() {
               <View style={styles.overviewContent}>
                 <Text style={styles.overviewLabel}>{t('ioStatistics.totalInbound')}</Text>
                 <Text style={styles.overviewValue}>
-                  {overviewData.inboundTotal.toLocaleString()} kg
+                  {formatNumberWithCommas(overviewData.inboundTotal)} kg
                 </Text>
                 <Text style={styles.overviewChangePositive}>
                   ↑ {overviewData.inboundChange}%
@@ -179,7 +180,7 @@ export function WHIOStatisticsScreen() {
               <View style={styles.overviewContent}>
                 <Text style={styles.overviewLabel}>{t('ioStatistics.totalOutbound')}</Text>
                 <Text style={styles.overviewValue}>
-                  {overviewData.outboundTotal.toLocaleString()} kg
+                  {formatNumberWithCommas(overviewData.outboundTotal)} kg
                 </Text>
                 <Text style={styles.overviewChangePositive}>
                   ↑ {overviewData.outboundChange}%

@@ -12,6 +12,9 @@ import WHProfileScreen from "../../screens/warehouse/profile/WHProfileScreen";
 import WHProfileEditScreen from "../../screens/warehouse/profile/WHProfileEditScreen";
 import WHSettingsScreen from "../../screens/warehouse/profile/WHSettingsScreen";
 import WHOperationLogScreen from "../../screens/warehouse/profile/WHOperationLogScreen";
+import WHIOStatisticsScreen from "../../screens/warehouse/inventory/WHIOStatisticsScreen";
+import WHInventoryCheckScreen from "../../screens/warehouse/inventory/WHInventoryCheckScreen";
+import WHExpireHandleScreen from "../../screens/warehouse/inventory/WHExpireHandleScreen";
 import WHAlertListScreen from "../../screens/warehouse/shared/WHAlertListScreen";
 import WHAlertHandleScreen from "../../screens/warehouse/shared/WHAlertHandleScreen";
 import WHRecallManageScreen from "../../screens/warehouse/shared/WHRecallManageScreen";
@@ -52,6 +55,27 @@ export function WHProfileStackNavigator() {
         name="WHOperationLog"
         component={WHOperationLogScreen}
         options={{ title: "操作记录" }}
+      />
+
+      {/* 出入库统计 */}
+      <Stack.Screen
+        name="WHIOStatistics"
+        component={WHIOStatisticsScreen}
+        options={{ title: "出入库统计" }}
+      />
+
+      {/* 盘点记录 */}
+      <Stack.Screen
+        name="WHInventoryCheck"
+        component={WHInventoryCheckScreen}
+        options={{ title: "盘点记录" }}
+      />
+
+      {/* 过期处理 */}
+      <Stack.Screen
+        name="WHExpireHandle"
+        component={WHExpireHandleScreen}
+        options={{ title: "过期处理" }}
       />
 
       {/* 预警列表 */}

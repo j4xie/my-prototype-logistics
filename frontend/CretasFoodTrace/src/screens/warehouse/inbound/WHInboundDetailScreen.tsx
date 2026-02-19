@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { WHInboundStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
+import { formatDate as fmtDate, formatDateTime as fmtDateTime, formatNumberWithCommas } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHInboundStackParamList>;
 type RouteType = RouteProp<WHInboundStackParamList, "WHInboundDetail">;
@@ -61,20 +62,12 @@ const getStorageTemp = (storageType?: string): string => {
  */
 const formatDate = (dateStr?: string): string => {
   if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  return fmtDate(dateStr);
 };
 
-/**
- * 格式化日期时间
- */
 const formatDateTime = (dateStr?: string): string => {
   if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit'
-  });
+  return fmtDateTime(dateStr);
 };
 
 interface InboundDetail {
@@ -268,7 +261,7 @@ export function WHInboundDetailScreen() {
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>{t('inbound.detail.amount')}</Text>
               <Text style={[styles.infoValue, styles.amountValue]}>
-                ¥{detail.totalAmount.toLocaleString()}
+                ¥{formatNumberWithCommas(detail.totalAmount)}
               </Text>
             </View>
           </View>
