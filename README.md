@@ -47,11 +47,11 @@ cd frontend/CretasFoodTrace
 npm start
 
 # 后端
-cd backend-java
-mvn spring-boot:run
+cd backend/java/cretas-api
+./mvnw.cmd spring-boot:run
 
 # 部署
-scp target/*.jar root@139.196.165.140:/www/wwwroot/cretas/
+scp target/*.jar root@47.100.235.168:/www/wwwroot/cretas/
 ```
 
 ---

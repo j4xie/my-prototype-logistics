@@ -59,7 +59,7 @@ cd web-admin && npx vue-tsc --noEmit
 - `TODO|FIXME` → Grep pattern `TODO|FIXME` in `frontend/CretasFoodTrace/src/`
 - `AsyncStorage.*token` → Grep pattern `AsyncStorage.*token` in `frontend/CretasFoodTrace/src/`
 - `toLocaleString` → Grep pattern `toLocaleString|toLocaleDateString|toLocaleTimeString` in `frontend/CretasFoodTrace/src/`
-- 硬编码密码 → Grep pattern `password.*=.*["']` in `backend-java/src/`
+- 硬编码密码 → Grep pattern `password.*=.*["']` in `backend/java/cretas-api/src/`
 
 ## 项目特定规则
 

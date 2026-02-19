@@ -42,7 +42,7 @@ fi
 # 3. SQL Injection
 echo ""
 echo "[3/6] Checking for SQL injection risks..."
-SQL_CONCAT=$(grep -rn "\".*+.*\"\s*[+]" "$TARGET_DIR/backend-java" --include="*.java" 2>/dev/null | grep -i "select\|insert\|update\|delete" | head -5)
+SQL_CONCAT=$(grep -rn "\".*+.*\"\s*[+]" "$TARGET_DIR/backend/java/cretas-api" --include="*.java" 2>/dev/null | grep -i "select\|insert\|update\|delete" | head -5)
 
 if [ -n "$SQL_CONCAT" ]; then
     echo "  WARNING: Potential SQL injection (string concatenation):"

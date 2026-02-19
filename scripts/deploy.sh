@@ -32,8 +32,8 @@ fi
 
 # 2. Maven 打包
 log "Maven 打包..."
-cd "$CODE_DIR/backend-java"
-mvn clean package -DskipTests -q
+cd "$CODE_DIR/backend/java/cretas-api"
+./mvnw clean package -Dmaven.test.skip=true -q
 
 # 3. 停止旧服务 (先 SIGTERM，等待优雅关闭，再 SIGKILL)
 log "停止旧服务..."
@@ -65,7 +65,7 @@ fi
 
 # 5. 复制新 JAR
 log "部署新 JAR..."
-cp "$CODE_DIR/backend-java/target/$JAR_NAME" "$DEPLOY_DIR/"
+cp "$CODE_DIR/backend/java/cretas-api/target/$JAR_NAME" "$DEPLOY_DIR/"
 
 # 6. 启动服务
 log "启动服务..."
@@ -79,7 +79,7 @@ nohup java -jar $JAR_NAME \
 
 # 7. 清理构建产物
 log "清理构建产物..."
-rm -rf "$CODE_DIR/backend-java/target"
+rm -rf "$CODE_DIR/backend/java/cretas-api/target"
 
 # 8. 等待启动 (最多60秒，每2秒检查一次)
 log "等待服务启动..."

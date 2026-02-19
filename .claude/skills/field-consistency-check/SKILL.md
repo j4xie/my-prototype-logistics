@@ -41,7 +41,7 @@ allowed-tools:
 使用 Grep/Glob 工具而非 bash 命令进行检查:
 
 1. **提取后端字段**: 用 Read 工具读取 Entity 文件
-   - Entity 路径: `backend-java/src/main/java/com/cretas/aims/entity/`
+   - Entity 路径: `backend/java/cretas-api/src/main/java/com/cretas/aims/entity/`
    - 查找 `private` 字段声明
 
 2. **提取前端字段**: 用 Read 工具读取 Interface 文件
@@ -77,6 +77,6 @@ allowed-tools:
 
 ## 相关路径
 
-- 后端 Entity: `backend-java/src/main/java/com/cretas/aims/entity/`
+- 后端 Entity: `backend/java/cretas-api/src/main/java/com/cretas/aims/entity/`
 - 前端 RN API: `frontend/CretasFoodTrace/src/services/api/`
 - 前端 Vue API: `web-admin/src/api/`

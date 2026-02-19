@@ -91,17 +91,17 @@ start_spring_boot() {
         return
     fi
 
-    cd "$PROJECT_ROOT/backend-java"
+    cd "$PROJECT_ROOT/backend/java/cretas-api"
 
     # 编译 (如果需要)
     if [ ! -d "target" ]; then
         echo "  编译 Spring Boot 项目..."
-        mvn clean package -DskipTests -q
+        ./mvnw clean package -Dmaven.test.skip=true -q
     fi
 
     # 启动服务 (后台运行)
     echo "  启动 Spring Boot 服务..."
-    nohup mvn spring-boot:run > backend.log 2>&1 &
+    nohup ./mvnw spring-boot:run > backend.log 2>&1 &
     BACKEND_PID=$!
     echo "  后端服务 PID: $BACKEND_PID"
 
@@ -173,7 +173,7 @@ show_summary() {
     echo "  后端健康检查: curl http://localhost:10010/api/mobile/health"
     echo ""
     echo -e "${BLUE}日志文件:${NC}"
-    echo "  后端日志: backend-java/backend.log"
+    echo "  后端日志: backend/java/cretas-api/backend.log"
     echo ""
     echo -e "${YELLOW}进程管理:${NC}"
     echo "  查看运行进程: lsof -i :10010"
