@@ -137,7 +137,20 @@ const dataQualityWarning = computed(() => {
 const noChartForTab = computed(() => {
   if (loading.value) return false;
   if (selectedDataSource.value !== 'system') return false;
-  return !chartConfig.value && !mainDynamicConfig.value;
+  if (!chartConfig.value && !mainDynamicConfig.value) return true;
+  // Also treat charts with empty or all-zero data as "no chart"
+  if (chartConfig.value && 'data' in chartConfig.value) {
+    const data = (chartConfig.value as Record<string, unknown>).data;
+    if (Array.isArray(data)) {
+      if (data.length === 0) return true;
+      // All-zero data: every numeric value in every item is 0
+      const allZero = data.every((item: Record<string, unknown>) =>
+        Object.values(item).every(v => typeof v === 'string' || v === 0 || v === null)
+      );
+      if (allZero) return true;
+    }
+  }
+  return false;
 });
 
 // 数据源选择 — default empty, will be set after loading sources
@@ -933,12 +946,19 @@ async function loadFinanceData() {
       if (data.agingChart && typeof data.agingChart === 'object') {
         const agingData = (data.agingChart as Record<string, unknown>).data;
         if (Array.isArray(agingData)) {
+          const isPayable = analysisType.value === 'payable';
           for (const bucket of agingData as Array<Record<string, unknown>>) {
             const label = String(bucket.agingBucket || '');
             const amount = Number(bucket.amount || 0);
-            if (label.includes('0-30')) kpiData.value.receivableAge30 = amount;
-            else if (label.includes('31-60') || label.includes('30-60')) kpiData.value.receivableAge60 = amount;
-            else if (label.includes('90')) kpiData.value.receivableAge90Plus = amount;
+            if (isPayable) {
+              if (label.includes('0-30')) kpiData.value.payableAge30 = amount;
+              else if (label.includes('31-60') || label.includes('30-60')) kpiData.value.payableAge60 = amount;
+              else if (label.includes('90')) kpiData.value.payableAge90Plus = amount;
+            } else {
+              if (label.includes('0-30')) kpiData.value.receivableAge30 = amount;
+              else if (label.includes('31-60') || label.includes('30-60')) kpiData.value.receivableAge60 = amount;
+              else if (label.includes('90')) kpiData.value.receivableAge90Plus = amount;
+            }
           }
         }
       }
@@ -1064,9 +1084,17 @@ async function loadFinanceData() {
 function updateKpiDataFromMetrics(metrics: Record<string, unknown>) {
   // 利润相关
   if (metrics.grossProfit !== undefined) kpiData.value.grossProfit = Number(metrics.grossProfit);
-  if (metrics.grossProfitMargin !== undefined) kpiData.value.grossProfitMargin = Number(metrics.grossProfitMargin);
   if (metrics.netProfit !== undefined) kpiData.value.netProfit = Number(metrics.netProfit);
-  if (metrics.netProfitMargin !== undefined) kpiData.value.netProfitMargin = Number(metrics.netProfitMargin);
+  // Margin: backend returns 0 when revenue=0 (division undefined). Treat as null when
+  // margin=0 but profit is non-zero — indicates incalculable, not a real 0% margin.
+  if (metrics.grossProfitMargin !== undefined) {
+    const v = Number(metrics.grossProfitMargin);
+    kpiData.value.grossProfitMargin = (v === 0 && kpiData.value.grossProfit !== 0) ? null : v;
+  }
+  if (metrics.netProfitMargin !== undefined) {
+    const v = Number(metrics.netProfitMargin);
+    kpiData.value.netProfitMargin = (v === 0 && kpiData.value.netProfit !== 0) ? null : v;
+  }
 
   // 成本相关
   if (metrics.totalCost !== undefined) kpiData.value.totalCost = Number(metrics.totalCost);
@@ -1110,11 +1138,11 @@ function updateKpiDataFromKpiCards(kpiCards: Array<Record<string, unknown>>) {
     const value = typeof rawVal === 'string' ? Number(String(rawVal).replace(/[,%]/g, '')) : Number(rawVal);
 
     if (label.includes('毛利') && label.includes('率')) {
-      kpiData.value.grossProfitMargin = value;
+      kpiData.value.grossProfitMargin = (value === 0 && kpiData.value.grossProfit !== 0) ? null : value;
     } else if (label.includes('毛利')) {
       kpiData.value.grossProfit = value;
     } else if (label.includes('净利') && label.includes('率')) {
-      kpiData.value.netProfitMargin = value;
+      kpiData.value.netProfitMargin = (value === 0 && kpiData.value.netProfit !== 0) ? null : value;
     } else if (label.includes('净利')) {
       kpiData.value.netProfit = value;
     } else if (label.includes('总成本')) {
@@ -1169,9 +1197,13 @@ function generateSmartWarnings() {
     });
   }
 
-  // Append auto-warnings to existing warnings (don't overwrite backend AI warnings)
+  // Append auto-warnings, dedup by title to avoid duplicating backend AI warnings
   if (autoWarnings.length > 0) {
-    warnings.value = [...warnings.value, ...autoWarnings];
+    const existingTitles = new Set(warnings.value.map(w => w.title));
+    const unique = autoWarnings.filter(w => !existingTitles.has(w.title));
+    if (unique.length > 0) {
+      warnings.value = [...warnings.value, ...unique];
+    }
   }
 }
 
@@ -1212,6 +1244,22 @@ function initChart() {
 }
 
 function updateChart() {
+  // Skip rendering if chart data is all zeros (e.g. empty budget/payable)
+  if (chartConfig.value && 'data' in chartConfig.value) {
+    const data = (chartConfig.value as Record<string, unknown>).data;
+    if (Array.isArray(data) && data.length > 0) {
+      const allZero = data.every((item: Record<string, unknown>) =>
+        Object.values(item).every(v => typeof v === 'string' || v === 0 || v === null)
+      );
+      if (allZero) {
+        chartConfig.value = null;
+        mainDynamicConfig.value = null;
+        useDynamicRenderer.value = false;
+        return;
+      }
+    }
+  }
+
   // Phase 6: Try DynamicChartRenderer first
   const dynamicCfg = convertToDynamicConfig(chartConfig.value);
   if (dynamicCfg) {

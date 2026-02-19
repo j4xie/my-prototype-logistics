@@ -124,6 +124,43 @@ export function FAManagementScreen() {
           </View>
         </View>
 
+        {/* 进销存管理 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>进销存管理</Text>
+          <View style={styles.grid}>
+            <GridItem
+              icon="cart-arrow-down"
+              title="采购订单"
+              color="#409eff"
+              onPress={() => navigation.navigate('PurchaseOrderList')}
+            />
+            <GridItem
+              icon="cart-arrow-up"
+              title="销售订单"
+              color="#67c23a"
+              onPress={() => navigation.navigate('SalesOrderList')}
+            />
+            <GridItem
+              icon="package-variant-closed"
+              title="成品库存"
+              color="#722ed1"
+              onPress={() => navigation.navigate('FinishedGoodsList')}
+            />
+            <GridItem
+              icon="swap-horizontal-bold"
+              title="调拨管理"
+              color="#fa8c16"
+              onPress={() => navigation.navigate('TransferList')}
+            />
+            <GridItem
+              icon="cash-multiple"
+              title="应收应付"
+              color="#eb2f96"
+              onPress={() => navigation.navigate('ArApOverview')}
+            />
+          </View>
+        </View>
+
         {/* 系统配置 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('management.systemConfig')}</Text>

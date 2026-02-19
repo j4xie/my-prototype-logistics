@@ -365,6 +365,15 @@ export type FAManagementStackParamList = {
   UnifiedDeviceDiscovery: undefined;
   // NFC 标签管理 (factory_admin)
   NfcTagManagement: undefined;
+  // 进销存管理
+  PurchaseOrderList: undefined;
+  PurchaseOrderDetail: { orderId: string };
+  SalesOrderList: undefined;
+  SalesOrderDetail: { orderId: string };
+  FinishedGoodsList: undefined;
+  TransferList: undefined;
+  TransferDetail: { transferId: string };
+  ArApOverview: undefined;
 };
 
 export type FAProfileStackParamList = {

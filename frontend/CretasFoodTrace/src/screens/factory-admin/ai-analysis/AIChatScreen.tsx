@@ -56,8 +56,12 @@ interface Message {
   sessionIdForReply?: string;
   /** 意图类别（用于判断是否显示反馈组件） */
   intentCategory?: string;
+  /** 意图代码（用于反馈追溯） */
+  intentCode?: string;
   /** 用户原始问题（用于反馈组件） */
   userQuestion?: string;
+  /** 食品知识库查询元数据（用于反馈组件） */
+  foodKbMetadata?: FoodKBQueryMetadata;
 }
 
 export default function AIChatScreen() {
@@ -310,6 +314,29 @@ export default function AIChatScreen() {
         replyMessage = result.errorMessage || (innerData?.message as string) || (responseData?.message as string) || t('aiChat.networkError');
       }
 
+      // 提取食品知识库元数据（用于反馈组件）
+      let extractedIntentCode: string | undefined;
+      let extractedFoodKbMetadata: FoodKBQueryMetadata | undefined;
+      if (result.data && typeof result.data === 'object') {
+        const rd = result.data as unknown as Record<string, unknown>;
+        const id = rd.data as Record<string, unknown> | undefined;
+        extractedIntentCode = id?.intentCode as string | undefined;
+        const resultData = id?.resultData as Record<string, unknown> | undefined;
+        if (resultData?.citations && Array.isArray(resultData.citations)) {
+          extractedFoodKbMetadata = {
+            responseTimeMs: (resultData.latencyMs as number) || result.responseTimeMs,
+            documentCount: resultData.documentCount as number,
+            citations: (resultData.citations as Array<Record<string, unknown>>).map(c => ({
+              index: (c.index as number) || 0,
+              title: (c.title as string) || '',
+              source: (c.source as string) || '',
+              category: (c.category as string) || '',
+              similarity: (c.similarity as number) || 0,
+            })),
+          };
+        }
+      }
+
       // 更新消息，添加模式、响应时间、建议操作和意图类别
       setMessages((prev) =>
         prev.map((msg) =>
@@ -323,7 +350,9 @@ export default function AIChatScreen() {
                 intentCategory: result.data && typeof result.data === 'object'
                   ? ((result.data as Record<string, unknown>).data as Record<string, unknown> | undefined)?.intentCategory as string | undefined
                   : undefined,
+                intentCode: extractedIntentCode,
                 userQuestion: messageText,
+                foodKbMetadata: extractedFoodKbMetadata,
               }
             : msg
         )
@@ -447,6 +476,9 @@ export default function AIChatScreen() {
                 queryId={message.id}
                 question={message.userQuestion}
                 answer={message.content}
+                sessionId={message.sessionIdForReply || sessionId || undefined}
+                intentCode={message.intentCode}
+                foodKbMetadata={message.foodKbMetadata}
               />
             )}
           {!message.isLoading && (

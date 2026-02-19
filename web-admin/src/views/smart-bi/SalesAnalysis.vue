@@ -7,6 +7,7 @@
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
+import { formatNumber } from '@/utils/format-number';
 import { ElMessage } from 'element-plus';
 import {
   Refresh,
@@ -166,6 +167,7 @@ const useDynamicPie = ref(false);
 // Data source selection (uploaded data)
 const dataSources = ref<UploadHistoryItem[]>([]);
 const selectedDataSource = ref<string>('system');
+const isDynamicMode = computed(() => selectedDataSource.value !== 'system');
 
 // AI insights from dynamic data
 const aiInsights = ref<string[]>([]);
@@ -246,6 +248,16 @@ async function loadDynamicSalesData(uploadId: number) {
   loadError.value = '';
   aiInsights.value = [];
 
+  // Reset chart state from any prior system data to avoid stale zero-value charts
+  useDynamicTrend.value = false;
+  useDynamicPie.value = false;
+  trendDynamicConfig.value = null;
+  pieDynamicConfig.value = null;
+  trendChartConfig.value = null;
+  pieChartConfig.value = null;
+  if (trendChart) trendChart.clear();
+  if (pieChart) pieChart.clear();
+
   try {
     const res = await getDynamicAnalysis(uploadId, 'sales');
     if (res.success && res.data) {
@@ -276,6 +288,8 @@ async function loadDynamicSalesData(uploadId: number) {
       if (data.charts && data.charts.length > 0) {
         updateChartsFromDynamicData(data.charts);
       }
+
+      // Note: legacy ECharts already cleared at function start
 
       // Fetch raw data for exploration charts
       try {
@@ -605,10 +619,10 @@ function parseUnifiedResponse(data: Record<string, unknown>) {
     for (const [key, chart] of Object.entries(chartsSource)) {
       if (!chart) continue;
       const chartObj = chart as ChartConfig;
-      if (key.includes('trend') || key.includes('趋势') || chartObj.chartType === 'line') {
+      if (key.includes('trend') || key.includes('趋势') || chartObj.chartType?.toLowerCase() === 'line') {
         trendChartConfig.value = chartObj;
         updateTrendChart();
-      } else if (key.includes('pie') || key.includes('分布') || key.includes('占比') || chartObj.chartType === 'pie') {
+      } else if (key.includes('pie') || key.includes('分布') || key.includes('占比') || chartObj.chartType?.toLowerCase() === 'pie') {
         pieChartConfig.value = chartObj;
         updatePieChart();
       }
@@ -819,8 +833,9 @@ function updateTrendChart() {
   }
 
   // 从 API 数据中提取 X 轴和 Y 轴数据
-  const xAxisField = config.xAxisField || 'date';
-  const yAxisField = config.yAxisField || 'value';
+  // Note: Jackson serializes xAxisField as xaxisField (lowercase), handle both
+  const xAxisField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'date';
+  const yAxisField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
 
   const xAxisData = config.data.map(item => String(item[xAxisField] || ''));
   const salesData = config.data.map(item => Number(item[yAxisField]) || 0);
@@ -830,11 +845,12 @@ function updateTrendChart() {
   const hasOrderData = orderData.some(v => v > 0);
 
   // Phase 6: Set DynamicChartRenderer config (LegacyChartConfig format)
+  // Pass resolved field names so DynamicChartRenderer gets correct xAxisField/yAxisField
   trendDynamicConfig.value = {
     chartType: 'line',
     title: '销售趋势',
-    xAxisField: xAxisField,
-    yAxisField: yAxisField,
+    xAxisField,
+    yAxisField,
     data: config.data,
   } as SmartBIChartConfig;
   useDynamicTrend.value = true;
@@ -1049,14 +1065,7 @@ function formatKpiValue(card: KPICard): string {
 function formatMoney(value: number | null | undefined): string {
   if (value == null) return '--';
   if (value === 0) return '0';
-  if (Math.abs(value) >= 100000000) {
-    return (value / 100000000).toFixed(2) + '亿';
-  }
-  if (Math.abs(value) >= 10000) {
-    return (value / 10000).toFixed(1) + '万';
-  }
-  // Use manual formatting (safe for all browsers)
-  return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return formatNumber(value, 1);
 }
 
 function formatPercent(value: number | null | undefined): string {
@@ -1361,7 +1370,13 @@ onUnmounted(() => {
             :config="trendDynamicConfig"
             :height="320"
           />
-          <!-- Legacy fallback -->
+          <!-- Empty state for dynamic mode with no charts -->
+          <el-empty
+            v-else-if="isDynamicMode && !trendLoading"
+            description="当前数据源暂无趋势图表，请查看下方探索图表"
+            :image-size="80"
+          />
+          <!-- Legacy ECharts for system data mode -->
           <div v-else id="sales-trend-chart" class="chart-container"></div>
         </el-card>
       </el-col>
@@ -1383,7 +1398,13 @@ onUnmounted(() => {
             :config="pieDynamicConfig"
             :height="350"
           />
-          <!-- Legacy fallback -->
+          <!-- Empty state for dynamic mode with no charts -->
+          <el-empty
+            v-else-if="isDynamicMode && !pieLoading"
+            description="当前数据源暂无产品分布图表"
+            :image-size="80"
+          />
+          <!-- Legacy ECharts for system data mode -->
           <div v-else id="sales-pie-chart" class="pie-chart-container"></div>
         </el-card>
       </el-col>

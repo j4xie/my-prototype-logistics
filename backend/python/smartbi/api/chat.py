@@ -742,6 +742,13 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
             numeric_cols = [c for c in numeric_cols if not _is_index_column(c, df[c])]
             non_numeric_cols = [c for c in non_numeric_cols if not _is_index_column(c, df[c])]
 
+            # Deprioritize auto-generated Column_XX columns (from merged cells / missing headers)
+            # Move them to end so meaningful columns are preferred for chart series
+            _column_xx_pat = _re.compile(r'^[Cc]olumn[_\s]?\d+$')
+            named_numeric = [c for c in numeric_cols if not _column_xx_pat.match(c)]
+            unnamed_numeric = [c for c in numeric_cols if _column_xx_pat.match(c)]
+            numeric_cols = named_numeric + unnamed_numeric  # named first, Column_XX as fallback
+
             # Pick a label field: prefer columns with non-numeric text values
             label_field = None
             for col in non_numeric_cols:

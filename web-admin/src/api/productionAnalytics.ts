@@ -9,7 +9,7 @@ function getFactoryId(): string {
     const userStr = localStorage.getItem('cretas_user');
     if (userStr) {
       const user = JSON.parse(userStr);
-      return user.factoryId || 'F001';
+      return user.factoryId || user.factoryUser?.factoryId || 'F001';
     }
   } catch {
     // ignore

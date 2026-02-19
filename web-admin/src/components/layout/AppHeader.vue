@@ -113,8 +113,10 @@ async function handleLogout() {
 <style lang="scss" scoped>
 .app-header {
   height: 64px;
-  background-color: #fff;
-  border-bottom: 1px solid #e8e8e8;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color-light, #EDF2F7);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -132,11 +134,11 @@ async function handleLogout() {
   .collapse-btn {
     font-size: 20px;
     cursor: pointer;
-    color: #666;
+    color: var(--color-text-secondary, #7A8599);
     transition: color 0.2s;
 
     &:hover {
-      color: #1890ff;
+      color: var(--color-primary, #1B65A8);
     }
   }
 }
@@ -149,14 +151,14 @@ async function handleLogout() {
   .header-action {
     font-size: 18px;
     cursor: pointer;
-    color: #666;
+    color: var(--color-text-secondary, #7A8599);
     padding: 8px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm, 6px);
     transition: all 0.2s;
 
     &:hover {
-      background-color: #f5f5f5;
-      color: #1890ff;
+      background-color: var(--color-bg-hover, #EDF2F7);
+      color: var(--color-primary, #1B65A8);
     }
   }
 }
@@ -167,11 +169,16 @@ async function handleLogout() {
   gap: 8px;
   cursor: pointer;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 6px);
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #f5f5f5;
+    background-color: var(--color-bg-hover, #EDF2F7);
+  }
+
+  :deep(.el-avatar) {
+    background: linear-gradient(135deg, #1B65A8, #2B7EC1);
+    color: #fff;
   }
 
   .user-detail {
@@ -181,12 +188,12 @@ async function handleLogout() {
 
     .user-name {
       font-size: 14px;
-      color: #333;
+      color: var(--color-text-primary, #1A2332);
     }
 
     .user-role {
       font-size: 12px;
-      color: #999;
+      color: var(--color-text-secondary, #7A8599);
     }
   }
 }

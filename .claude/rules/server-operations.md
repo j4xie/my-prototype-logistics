@@ -1,66 +1,62 @@
 # 服务器运维规范
 
-## 服务器信息
+**最后更新**: 2026-02-19
 
-| 项目 | 值 |
-|------|-----|
-| IP | 139.196.165.140 |
-| 系统 | CentOS / Alibaba Cloud Linux |
-| 面板 | 宝塔 (端口 17400) |
-| 内存 | 7.3GB |
-| 磁盘 | 40GB |
+## 服务器架构
+
+| 服务器 | IP | 配置 | 用途 | 状态 |
+|--------|-----|------|------|------|
+| **新服务器 (主)** | `47.100.235.168` | 8C/16GB/100GB | Java + Python + Web + DB | 运行中 |
+| **旧服务器** | `139.196.165.140` | 4C/8GB/40GB | Nginx 反代 + web-admin 静态 | 仅代理 |
 
 ---
 
-## 目录结构
+## 新服务器目录结构 (47.100.235.168)
 
 ```
 /www/wwwroot/
-├── cretas/          # Cretas 食品溯源 (主项目)
-├── mall/            # 商城系统
-│   ├── admin/       # 前端
-│   ├── backend/     # 后端
-│   └── data/        # 数据
-├── showcase/        # 展示站点
-└── web-admin/       # Web 管理
+├── cretas/                          # Cretas 食品溯源 (主项目)
+│   ├── aims-0.0.1-SNAPSHOT.jar      # Java 后端 JAR
+│   ├── restart.sh                   # 重启 Java + Python
+│   ├── cretas-backend.log           # Java 日志
+│   └── code/backend/python/         # Python 服务代码
+├── web-admin/                       # Web 前端 (Vue dist)
+└── python-services/                 # Python 独立服务 (food_kb)
 ```
 
 ---
 
 ## 服务管理
 
-| 服务 | 端口 | 管理方式 | 命令 |
-|------|------|----------|------|
-| Mall 后端 | 8080 | systemd | `systemctl restart mall-backend` |
-| Cretas 后端 | 10010 | 脚本 | `bash /www/wwwroot/cretas/restart.sh` |
-| Nginx | 80/443 | systemd | `systemctl restart nginx` |
-| MySQL | 3306 | systemd | `systemctl restart mysql` |
-| Redis | 6379 | systemd | `systemctl restart redis` |
-| FRP | 7501 | systemd | `systemctl restart frps` |
+| 服务 | 端口 | 服务器 | 管理方式 | 命令 |
+|------|------|--------|----------|------|
+| Java 后端 | 10010 | 47.100.235.168 | 脚本 | `bash /www/wwwroot/cretas/restart.sh` |
+| Python 服务 | 8083 | 47.100.235.168 | restart.sh 同时管理 | (同上) |
+| PostgreSQL | 5432 | 47.100.235.168 | systemd | `systemctl restart postgresql` |
+| Redis | 6379 | 47.100.235.168 | systemd | `systemctl restart redis` |
+| Nginx | 8088 | 47.100.235.168 | systemd | `systemctl restart nginx` |
 
 ---
 
 ## 常用运维命令
 
 ```bash
-# 磁盘空间
-df -h
+# 健康检查
+curl -s http://47.100.235.168:10010/api/mobile/health   # Java
+curl -s http://47.100.235.168:8083/health                # Python
 
-# 内存使用
-free -h
+# 查看进程
+ssh root@47.100.235.168 "ps aux | grep -E 'java|uvicorn' | grep -v grep"
 
-# 查看 Java 进程
-ps aux | grep java
+# 端口监听
+ssh root@47.100.235.168 "ss -tlnp | grep -E '10010|8083|5432|6379'"
 
-# 查看端口占用
-netstat -tlnp | grep LISTEN
-
-# 清理临时文件
-rm -rf /tmp/onnxruntime-*
+# 磁盘和内存
+ssh root@47.100.235.168 "df -h && echo '---' && free -h"
 
 # 查看日志
-tail -f /www/wwwroot/cretas/cretas-backend.log
-tail -f /www/wwwroot/mall/backend/mall-admin.log
+ssh root@47.100.235.168 "tail -100 /www/wwwroot/cretas/cretas-backend.log"
+ssh root@47.100.235.168 "tail -100 /www/wwwroot/cretas/code/backend/python/python-services.log"
 ```
 
 ---
@@ -68,6 +64,7 @@ tail -f /www/wwwroot/mall/backend/mall-admin.log
 ## 注意事项
 
 1. **不要直接删除** `/www/wwwroot` 下的目录，先确认内容
-2. **备份 jar 包**会自动生成 `.bak.*` 文件，定期清理
+2. **备份 jar 包**会自动生成 `.bak.*` 文件，保留最近 3 份，定期清理旧的
 3. **日志文件**在 `logs/` 目录，会持续增长，需定期清理
-4. **SSL 证书**在宝塔面板管理，注意过期时间
+4. **数据库**: 已迁移到 PostgreSQL，不再使用 MySQL
+5. **旧服务器**: 后端已停用，仅保留 Nginx 反代到新服务器

@@ -16,10 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 def _sanitize_for_json(obj):
-    """Replace NaN/Infinity/-Infinity and non-serializable types with JSON-safe values."""
+    """Replace NaN/Infinity/-Infinity and non-serializable types with JSON-safe values.
+
+    NaN → None (JSON null) so frontend can distinguish missing data from zero.
+    Infinity → None (not a valid chart value).
+    """
     if isinstance(obj, float):
         if math.isnan(obj) or math.isinf(obj):
-            return 0
+            return None
         return obj
     if isinstance(obj, dict):
         return {k: _sanitize_for_json(v) for k, v in obj.items()}
@@ -36,7 +40,7 @@ def _sanitize_for_json(obj):
     if isinstance(obj, np.floating):
         val = float(obj)
         if math.isnan(val) or math.isinf(val):
-            return 0
+            return None
         return val
     if isinstance(obj, np.integer):
         return int(obj)
@@ -126,7 +130,7 @@ class ChartBuilder:
         "bar": {
             "animationDuration": 800,
             "animationEasing": "elasticOut",
-            "animationDelay": "__FUNC__function(idx){return idx*80}",
+            "animationDelay": "__ANIM__stagger_80",
         },
         "line": {
             "animationDuration": 1200,
@@ -140,7 +144,7 @@ class ChartBuilder:
         "scatter": {
             "animationDuration": 600,
             "animationEasing": "elasticOut",
-            "animationDelayUpdate": "__FUNC__function(idx){return idx*5}",
+            "animationDelayUpdate": "__ANIM__stagger_5",
         },
         "area": {
             "animationDuration": 1200,
@@ -149,7 +153,7 @@ class ChartBuilder:
         "waterfall": {
             "animationDuration": 800,
             "animationEasing": "cubicOut",
-            "animationDelay": "__FUNC__function(idx){return idx*60}",
+            "animationDelay": "__ANIM__stagger_60",
         },
     }
 
@@ -171,7 +175,8 @@ class ChartBuilder:
             elif max_val >= 1e4:
                 return {"divisor": 1e4, "suffix": "万", "name_suffix": " (万)"}
             return {"divisor": 1, "suffix": "", "name_suffix": ""}
-        except Exception:
+        except Exception as e:
+            logger.debug(f"_detect_value_scale failed for {len(values)} items: {e}")
             return {"divisor": 1, "suffix": "", "name_suffix": ""}
 
     @staticmethod
@@ -564,10 +569,14 @@ class ChartBuilder:
     ) -> dict:
         """Build pie chart configuration"""
         name_field = x_field or df.columns[0]
-        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         if not y_fields and len(numeric_cols) == 0:
             return self._empty_chart_config(None)
-        value_field = y_fields[0] if y_fields else numeric_cols[0]
+        value_field = (y_fields[0] if y_fields
+                       else numeric_cols[0] if numeric_cols
+                       else None)
+        if value_field is None:
+            return self._empty_chart_config(None)
 
         data = [
             {"name": str(row[name_field]), "value": round(float(row[value_field]), 2)}
@@ -659,6 +668,7 @@ class ChartBuilder:
                         all_x.append(xv)
                         all_y.append(yv)
                     except (ValueError, TypeError):
+                        logger.debug(f"Scatter skip row: {x_col}={row.get(x_col)}, {y_col}={row.get(y_col)}")
                         continue
                 series.append({
                     "name": str(name),
@@ -675,6 +685,7 @@ class ChartBuilder:
                     all_x.append(xv)
                     all_y.append(yv)
                 except (ValueError, TypeError):
+                    logger.debug(f"Scatter skip row: {x_col}={row.get(x_col)}, {y_col}={row.get(y_col)}")
                     continue
             series.append({
                 "name": f"{x_col} vs {y_col}",
@@ -700,8 +711,8 @@ class ChartBuilder:
                     "lineStyle": {"type": "dashed", "color": "#ff7875", "width": 2},
                     "tooltip": {"show": False}
                 })
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Trendline polyfit failed with {len(all_x)} pts: {e}")
 
         return {
             "xAxis": {"type": "value", "name": x_col},
@@ -1079,7 +1090,7 @@ class ChartBuilder:
         preset = self.ANIMATION_PRESETS.get(chart_type, {})
         config["animationDuration"] = preset.get("animationDuration", 800)
         config["animationEasing"] = preset.get("animationEasing", "cubicOut")
-        # JS function refs are serialized as "__FUNC__..." strings — frontend handles eval
+        # Named refs (__ANIM__/...) are resolved by frontend registry (no eval)
         for anim_key in ("animationDelay", "animationDelayUpdate"):
             if anim_key in preset:
                 config[anim_key] = preset[anim_key]
@@ -1517,7 +1528,7 @@ class ChartBuilder:
         if not y_fields:
             y_fields = df.select_dtypes(include=['number']).columns.tolist()[:6]
         if not y_fields:
-            return self._build_bar_chart(df, x_field, y_fields, series_field)
+            return self._empty_chart_config(None)
 
         # Compute boxplot statistics for each numeric column
         box_data = []
@@ -1542,7 +1553,7 @@ class ChartBuilder:
                 outlier_data.append([i, round(float(v), 2)])
 
         if not box_data:
-            return self._build_bar_chart(df, x_field, y_fields, series_field)
+            return self._empty_chart_config(None)
 
         config = {
             "xAxis": {
@@ -1560,7 +1571,7 @@ class ChartBuilder:
                     "data": box_data,
                     "itemStyle": {"color": palette[0], "borderColor": palette[1]},
                     "tooltip": {
-                        "formatter": "__FUNC__function(p){var d=p.data;return p.name+'<br/>最小: '+d[0]+'<br/>Q1: '+d[1]+'<br/>中位数: '+d[2]+'<br/>Q3: '+d[3]+'<br/>最大: '+d[4]}"
+                        "formatter": "__FMT__boxplot_tooltip"
                     }
                 }
             ]
@@ -1590,7 +1601,7 @@ class ChartBuilder:
         if not y_fields:
             y_fields = df.select_dtypes(include=['number']).columns.tolist()[:8]
         if len(y_fields) < 3:
-            return self._build_bar_chart(df, x_field, y_fields, series_field)
+            return self._empty_chart_config(None)
 
         # Build parallel axes
         parallel_axis = []
@@ -1608,7 +1619,7 @@ class ChartBuilder:
             })
 
         if len(parallel_axis) < 3:
-            return self._build_bar_chart(df, x_field, y_fields, series_field)
+            return self._empty_chart_config(None)
 
         # Build data rows (limit to 50 for readability)
         data_rows = []
@@ -1697,7 +1708,7 @@ class ChartBuilder:
             },
             "tooltip": {
                 "trigger": "item",
-                "formatter": "__FUNC__function(p){return p.data[2].toFixed(2)}"
+                "formatter": "__FMT__correlation_tooltip"
             },
             "grid": {"left": "15%", "right": "10%", "bottom": "20%", "top": "5%"},
             "visualMap": {
@@ -1719,7 +1730,7 @@ class ChartBuilder:
                 "label": {
                     "show": True,
                     "fontSize": 10,
-                    "formatter": "__FUNC__function(p){return p.data[2].toFixed(1)}"
+                    "formatter": "__FMT__correlation_label"
                 },
                 "emphasis": {
                     "itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.3)"}

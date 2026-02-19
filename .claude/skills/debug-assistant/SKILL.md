@@ -12,60 +12,91 @@ allowed-tools:
 
 ## 服务架构
 
-| 服务 | 端口 | 日志位置 | 健康检查 |
-|------|------|----------|----------|
-| Cretas Backend | 10010 | `/www/wwwroot/cretas/cretas-backend.log` | `/api/mobile/health` |
-| AI Service | 8085 | `/www/wwwroot/cretas/ai-service/ai-service.log` | `/health` |
-| Mall Backend | 7500 | `/www/wwwroot/mall-admin/mall-admin.log` | `/actuator/health` |
-| React Native | 3010 | Metro bundler 控制台 | N/A |
+| 服务 | 端口 | 服务器 | 日志位置 | 健康检查 |
+|------|------|--------|----------|----------|
+| Java 后端 | 10010 | 47.100.235.168 | `/www/wwwroot/cretas/cretas-backend.log` | `/api/mobile/health` |
+| Python 服务 | 8083 | 47.100.235.168 | `/www/wwwroot/cretas/code/backend/python/python-services.log` | `/health` |
+| Web 前端 | 8088 | 47.100.235.168 (Nginx) | `/www/wwwlogs/47.100.235.168.log` | HTTP 200 |
+| PostgreSQL | 5432 | 47.100.235.168 (本机) | `journalctl -u postgresql` | `SELECT 1` |
+| React Native | 3010 | 本地开发 | Metro bundler 控制台 | N/A |
+
+> **注意**: 旧服务器 `139.196.165.140` 仅运行 Nginx 反代 + web-admin 静态文件，后端已迁移到 `47.100.235.168`。
+
+---
 
 ## 快速诊断命令
 
 ### 服务状态检查
 
 ```bash
-# 检查端口
-nc -zv 139.196.165.140 10010
+# 一键健康检查 (全部服务)
+echo "=== Health Check ===" && \
+echo -n "Java:   " && curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:10010/api/mobile/health && echo "" && \
+echo -n "Python: " && curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:8083/health && echo "" && \
+echo -n "Web:    " && curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:8088/ && echo ""
 
-# 健康检查
-curl -s http://139.196.165.140:10010/api/mobile/health
-curl -s http://139.196.165.140:8085/health
-curl -s http://139.196.165.140:7500/actuator/health
+# 检查进程
+ssh root@47.100.235.168 "ps aux | grep -E 'java|uvicorn' | grep -v grep"
+
+# 检查端口监听
+ssh root@47.100.235.168 "ss -tlnp | grep -E '10010|8083|5432|6379'"
+
+# 磁盘和内存
+ssh root@47.100.235.168 "df -h && echo '---' && free -h"
 ```
 
 ### 查看日志
 
 ```bash
-# Cretas 后端日志
-ssh root@139.196.165.140 "tail -100 /www/wwwroot/cretas/cretas-backend.log"
+# Java 后端日志
+ssh root@47.100.235.168 "tail -100 /www/wwwroot/cretas/cretas-backend.log"
 
 # 过滤 ERROR
-ssh root@139.196.165.140 "tail -500 /www/wwwroot/cretas/cretas-backend.log | grep -A5 'ERROR'"
+ssh root@47.100.235.168 "tail -500 /www/wwwroot/cretas/cretas-backend.log | grep -A5 'ERROR'"
 
-# AI 服务日志
-ssh root@139.196.165.140 "tail -100 /www/wwwroot/cretas/ai-service/ai-service.log"
+# Python 服务日志
+ssh root@47.100.235.168 "tail -100 /www/wwwroot/cretas/code/backend/python/python-services.log"
+
+# Nginx 访问/错误日志
+ssh root@47.100.235.168 "tail -50 /www/wwwlogs/47.100.235.168.log"
+ssh root@47.100.235.168 "tail -50 /www/wwwlogs/47.100.235.168.error.log"
 ```
 
 ### 数据库检查
 
 ```bash
-ssh root@139.196.165.140 "mysql -u root -p cretas_db -e 'SELECT 1'"
+# PostgreSQL 连接测试
+ssh root@47.100.235.168 "sudo -u postgres psql cretas_db -c 'SELECT 1'"
+
+# 查看表列表
+ssh root@47.100.235.168 "sudo -u postgres psql cretas_db -c '\dt'"
+
+# SmartBI 数据库
+ssh root@47.100.235.168 "sudo -u postgres psql smartbi_db -c '\dt'"
 ```
+
+---
 
 ## 常见错误速查
 
 | 错误 | 检查命令 | 常见原因 |
 |------|----------|----------|
-| 500 Error | `grep ERROR backend.log` | Entity字段缺失、NPE、JSON错误 |
-| 401 Unauthorized | `echo TOKEN \| cut -d'.' -f2 \| base64 -d` | Token过期/格式错误/权限不足 |
-| 网络失败 | `nc -zv 139.196.165.140 10010` | 端口未开放/防火墙 |
+| 500 Error | `grep ERROR cretas-backend.log` | Entity字段缺失、NPE、JSON错误 |
+| 401 Unauthorized | 解码 JWT payload | Token过期/格式错误/权限不足 |
+| 网络失败 | `curl -s http://47.100.235.168:10010/api/mobile/health` | 端口未开放/服务未启动 |
+| Python 502 | `ssh ... "ps aux \| grep uvicorn"` | Python 进程挂了/依赖缺失 |
+| 前端白屏 | 浏览器 F12 Console | API 地址错误/Nginx 配置 |
 | RN 白屏 | `npx expo start --clear` | Metro 编译错误 |
+
+---
 
 ## JWT Token 调试
 
 ```bash
 # 解码 JWT payload
 echo "YOUR_TOKEN" | cut -d'.' -f2 | base64 -d 2>/dev/null | jq
+
+# Payload 结构: { role, factoryId, userId, username }
 ```
 
 ## React Native 调试
@@ -75,6 +106,16 @@ cd frontend/CretasFoodTrace
 npx expo start --clear          # 清除缓存启动
 npx expo doctor                 # 检查环境
 ```
+
+## 故障排查流程
+
+| 症状 | 排查步骤 |
+|------|----------|
+| Java 无法启动 | 1. `ss -tlnp \| grep 10010` → 2. `tail -50 cretas-backend.log` → 3. `env \| grep DB_` |
+| Python 502 | 1. `ps aux \| grep uvicorn` → 2. `tail -50 python-services.log` → 3. `ss -tlnp \| grep 8083` |
+| 前端白屏 | 1. `nginx -t` → 2. `ls /www/wwwroot/web-admin/index.html` → 3. Nginx 日志 |
+| DB 连接失败 | 1. `systemctl status postgresql` → 2. 检查 pg_hba.conf → 3. 检查密码环境变量 |
+| 磁盘满 | `du -sh /www/wwwroot/cretas/logs/* \| sort -rh \| head` → 清理旧日志 |
 
 ## 参考文档
 

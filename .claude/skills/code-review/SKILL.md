@@ -31,31 +31,35 @@ allowed-tools:
 
 ### 配置管理
 - [ ] 没有硬编码超时/重试次数
-- [ ] 没有硬编码 GPS/URL
+- [ ] 没有硬编码 GPS/URL/密码
 - [ ] 角色判断使用枚举
 
 ### TODO/安全
 - [ ] 生产代码没有 TODO/FIXME
 - [ ] Token 使用 SecureStore
 - [ ] 不记录敏感信息到日志
+- [ ] 没有硬编码凭证 (DB 密码等)
+
+### Hermes 兼容性 (React Native)
+- [ ] 没有 `toLocaleString` / `toLocaleDateString` / `toLocaleTimeString`
+- [ ] 使用 `src/utils/formatters.ts` 中的安全函数替代
 
 ## 自动化检查命令
 
 ```bash
-cd /Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace
+# TypeScript 检查 (RN 前端)
+cd frontend/CretasFoodTrace && npx tsc --noEmit --skipLibCheck
 
-# TypeScript 检查
-npx tsc --noEmit --skipLibCheck
-
-# 查找反模式
-grep -r "as any" src/ --include="*.ts" --include="*.tsx" | head -20
-grep -r "TODO\|FIXME" src/ --include="*.ts" --include="*.tsx" | head -20
-grep -r "setTimeout.*[0-9]\{4,\}" src/ --include="*.ts" --include="*.tsx"
-grep -r "AsyncStorage.*token" src/ --include="*.ts" --include="*.tsx"
-
-# 查找大文件
-find src/ -name "*.ts" -o -name "*.tsx" | xargs wc -l | sort -rn | head -10
+# TypeScript 检查 (Vue Web Admin)
+cd web-admin && npx vue-tsc --noEmit
 ```
+
+使用 Grep 工具检查反模式:
+- `as any` → Grep pattern `as any` in `frontend/CretasFoodTrace/src/`
+- `TODO|FIXME` → Grep pattern `TODO|FIXME` in `frontend/CretasFoodTrace/src/`
+- `AsyncStorage.*token` → Grep pattern `AsyncStorage.*token` in `frontend/CretasFoodTrace/src/`
+- `toLocaleString` → Grep pattern `toLocaleString|toLocaleDateString|toLocaleTimeString` in `frontend/CretasFoodTrace/src/`
+- 硬编码密码 → Grep pattern `password.*=.*["']` in `backend-java/src/`
 
 ## 项目特定规则
 
@@ -75,5 +79,5 @@ find src/ -name "*.ts" -o -name "*.tsx" | xargs wc -l | sort -rn | head -10
 
 ## 参考
 
-- 详细规范: `CLAUDE.md` 中的 "禁止的开发模式"
+- 规范文件: `.claude/rules/` 目录
 - ESLint: `.eslintrc.js`

@@ -49,7 +49,8 @@ from smartbi.api import (
     statistical,
     analysis_cache,
     ai_proxy,
-    benchmark
+    benchmark,
+    finance_extract
 )
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
@@ -253,6 +254,7 @@ app.include_router(yoy.router, prefix="/api/smartbi", tags=["YoY Comparison"])
 app.include_router(statistical.router, prefix="/api/statistical", tags=["Statistical Analysis"])
 app.include_router(analysis_cache.router, prefix="/api/smartbi", tags=["Analysis Cache"])
 app.include_router(benchmark.router, prefix="/api/smartbi", tags=["Industry Benchmark"])
+app.include_router(finance_extract.router, prefix="/api/finance", tags=["Finance Extract"])
 
 # =====================================================
 # AI Proxy Routes (called by Java backend)

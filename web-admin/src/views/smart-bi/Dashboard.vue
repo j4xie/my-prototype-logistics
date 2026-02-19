@@ -238,10 +238,10 @@ let pieChart: echarts.ECharts | null = null;
 // ==================== 生命周期 ====================
 
 onMounted(async () => {
-  // Load upload list in background (for the dropdown)
-  loadDataSources();
+  // Load upload list first (needed for auto-switch fallback)
+  await loadDataSources();
 
-  // Always default to system data for reliable KPI display
+  // Default to system data, auto-switch to uploads if system is empty
   selectedDataSource.value = 'system';
   await loadDashboardData();
 });
@@ -278,6 +278,22 @@ async function loadDashboardData() {
         : raw;
       dashboardData.value = actualData as DashboardResponse;
       console.log('[Dashboard] Loaded data:', Object.keys(actualData));
+
+      // Auto-switch: if system data is effectively empty (no KPIs with real values),
+      // fall back to the best available uploaded data source
+      const kpiCards = (actualData as DashboardResponse).kpiCards || [];
+      const hasRealKpi = kpiCards.some(c => c.rawValue != null && c.rawValue !== 0);
+      const charts = (actualData as DashboardResponse).charts || {};
+      const hasCharts = Object.keys(charts).length > 0 &&
+        Object.values(charts).some(c => c?.series && c.series.length > 0);
+
+      if (!hasRealKpi && !hasCharts && dataSources.value.length > 0) {
+        console.log('[Dashboard] System data empty, auto-switching to uploaded data');
+        const best = dataSources.value[0];
+        selectedDataSource.value = String(best.id);
+        await loadDynamicDashboardData(best.id);
+        return;
+      }
     } else {
       throw new Error(response.message || '获取驾驶舱数据失败');
     }
@@ -287,6 +303,17 @@ async function loadDashboardData() {
     errorMessage.value = error instanceof Error ? error.message : '加载数据失败，请稍后重试';
     ElMessage.error(errorMessage.value);
     dashboardData.value = null;
+
+    // On error, also try uploaded data as fallback
+    if (dataSources.value.length > 0) {
+      console.log('[Dashboard] System API failed, falling back to uploaded data');
+      hasError.value = false;
+      errorMessage.value = '';
+      const best = dataSources.value[0];
+      selectedDataSource.value = String(best.id);
+      await loadDynamicDashboardData(best.id);
+      return;
+    }
   } finally {
     loading.value = false;
   }

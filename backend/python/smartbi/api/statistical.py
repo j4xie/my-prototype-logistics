@@ -94,7 +94,9 @@ async def analyze(request: StatisticalRequest) -> StatisticalResponse:
         measures = request.measures
         if not measures:
             numeric_df = df.apply(pd.to_numeric, errors='coerce')
-            measures = [c for c in numeric_df.columns if numeric_df[c].notna().sum() > df.shape[0] * 0.3]
+            # Require at least 3 valid values OR 20% of rows (whichever is larger)
+            min_valid = max(3, int(df.shape[0] * 0.2))
+            measures = [c for c in numeric_df.columns if numeric_df[c].notna().sum() >= min_valid]
 
         if not measures:
             return StatisticalResponse(

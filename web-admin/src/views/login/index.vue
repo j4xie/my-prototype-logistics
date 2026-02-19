@@ -66,12 +66,16 @@ function quickLogin(username: string) {
 
 <template>
   <div class="login-page">
+    <!-- Geometric pattern overlay -->
+    <div class="login-bg-pattern"></div>
     <div class="login-container">
       <!-- Logo 区域 -->
       <div class="login-header">
-        <img src="/logo.svg" alt="Logo" class="login-logo" />
+        <div class="login-logo-wrap">
+          <img src="/logo.svg" alt="Logo" class="login-logo" />
+        </div>
         <h1 class="login-title">白垩纪食品溯源系统</h1>
-        <p class="login-subtitle">Web 管理后台</p>
+        <p class="login-subtitle">企业级智能管理平台</p>
       </div>
 
       <!-- 登录表单 -->
@@ -157,58 +161,123 @@ function quickLogin(username: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0C1929 0%, #14507F 50%, #1B65A8 100%);
   padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-bg-pattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
 }
 
 .login-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   background: #fff;
-  border-radius: 12px;
-  padding: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  padding: 48px 40px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+  position: relative;
+  z-index: 1;
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
+
+  .login-logo-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #1B65A8, #2B7EC1);
+    box-shadow: 0 8px 24px rgba(27, 101, 168, 0.3);
+    margin-bottom: 20px;
+  }
 
   .login-logo {
-    width: 64px;
-    height: 64px;
-    margin-bottom: 16px;
+    width: 42px;
+    height: 42px;
+    filter: brightness(0) invert(1);
   }
 
   .login-title {
     font-size: 24px;
-    font-weight: 600;
-    color: #333;
+    font-weight: 700;
+    color: var(--color-text-primary, #1A2332);
     margin: 0 0 8px;
   }
 
   .login-subtitle {
     font-size: 14px;
-    color: #999;
+    color: var(--color-text-secondary, #7A8599);
     margin: 0;
+    letter-spacing: 0.5px;
   }
 }
 
 .login-form {
+  :deep(.el-input__wrapper) {
+    transition: box-shadow 0.25s ease;
+
+    &:focus-within {
+      box-shadow: 0 0 0 2px rgba(27, 101, 168, 0.2) !important;
+    }
+  }
+
   .login-button {
     width: 100%;
-    margin-top: 8px;
+    margin-top: 12px;
+    height: 44px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    border-radius: var(--radius-sm, 6px);
+    background: linear-gradient(135deg, #1B65A8, #2B7EC1);
+    border: none;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(27, 101, 168, 0.35);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
   }
 }
 
 .quick-login {
-  margin-top: 24px;
+  margin-top: 28px;
   padding-top: 24px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-color-light, #EDF2F7);
 
   .quick-title {
     font-size: 12px;
-    color: #999;
+    color: var(--color-text-secondary, #7A8599);
     text-align: center;
     margin: 0 0 12px;
   }
@@ -222,7 +291,7 @@ function quickLogin(username: string) {
 
   .quick-note {
     font-size: 11px;
-    color: #c0c4cc;
+    color: var(--color-text-placeholder, #A0AEC0);
     text-align: center;
     margin: 12px 0 0;
   }
@@ -234,7 +303,7 @@ function quickLogin(username: string) {
 
   p {
     font-size: 12px;
-    color: #999;
+    color: var(--color-text-secondary, #7A8599);
     margin: 0;
   }
 }

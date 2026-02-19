@@ -43,7 +43,7 @@ interface MenuItem {
 const financeManagerMenu: MenuItem[] = [
   { path: '/smart-bi/dashboard', title: '经营驾驶舱', icon: 'Odometer', module: 'analytics' },
   { path: '/smart-bi/finance', title: '财务分析', icon: 'Money', module: 'analytics' },
-  { path: '/smart-bi/sales', title: '销售分析', icon: 'TrendCharts', module: 'analytics' },
+  { path: '/smart-bi/sales', title: '销售分析', icon: 'TrendCharts', module: 'sales' },
   { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
   { path: '/smart-bi/query-templates', title: '查询模板管理', icon: 'Tickets', module: 'analytics' },
   { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' }
@@ -78,12 +78,16 @@ const menuConfig: MenuItem[] = [
   {
     path: '/procurement', title: '采购管理', icon: 'ShoppingCart', module: 'procurement',
     children: [
-      { path: '/procurement/suppliers', title: '供应商管理', icon: '', module: 'procurement' }
+      { path: '/procurement/orders', title: '采购订单', icon: '', module: 'procurement' },
+      { path: '/procurement/suppliers', title: '供应商管理', icon: '', module: 'procurement' },
+      { path: '/procurement/price-lists', title: '价格表管理', icon: '', module: 'procurement' }
     ]
   },
   {
     path: '/sales', title: '销售管理', icon: 'Goods', module: 'sales',
     children: [
+      { path: '/sales/orders', title: '销售订单', icon: '', module: 'sales' },
+      { path: '/sales/finished-goods', title: '成品库存', icon: '', module: 'sales' },
       { path: '/sales/customers', title: '客户管理', icon: '', module: 'sales' },
       { path: '/sales/smart-analysis', title: '智能销售分析', icon: 'TrendCharts', module: 'sales' }
     ]
@@ -95,6 +99,12 @@ const menuConfig: MenuItem[] = [
       { path: '/hr/attendance', title: '考勤管理', icon: '', module: 'hr' },
       { path: '/hr/whitelist', title: '白名单管理', icon: '', module: 'hr' },
       { path: '/hr/departments', title: '部门管理', icon: '', module: 'hr' }
+    ]
+  },
+  {
+    path: '/transfer', title: '调拨管理', icon: 'Sell', module: 'warehouse',
+    children: [
+      { path: '/transfer/list', title: '调拨单列表', icon: '', module: 'warehouse' }
     ]
   },
   {
@@ -110,6 +120,7 @@ const menuConfig: MenuItem[] = [
     children: [
       { path: '/finance/costs', title: '成本分析', icon: '', module: 'finance' },
       { path: '/finance/reports', title: '财务报表', icon: '', module: 'finance' },
+      { path: '/finance/ar-ap', title: '应收应付', icon: '', module: 'finance' },
       { path: '/finance/smart-analysis', title: '智能财务分析', icon: 'TrendCharts', module: 'finance' }
     ]
   },
@@ -122,7 +133,8 @@ const menuConfig: MenuItem[] = [
       { path: '/system/settings', title: '系统设置', icon: '', module: 'system' },
       { path: '/system/ai-intents', title: 'AI意图配置', icon: '', module: 'system' },
       { path: '/system/products', title: '产品信息管理', icon: '', module: 'system' },
-      { path: '/system/features', title: '功能模块配置', icon: '', module: 'system' }
+      { path: '/system/features', title: '功能模块配置', icon: '', module: 'system' },
+      { path: '/system/pos', title: 'POS集成', icon: '', module: 'system' }
     ]
   },
   {
@@ -242,7 +254,7 @@ function handleSelect(path: string) {
         :default-openeds="defaultOpeneds"
         :collapse="appStore.sidebarCollapsed"
         unique-opened
-        background-color="#001529"
+        background-color="transparent"
         text-color="#ffffffa6"
         active-text-color="#ffffff"
         @select="handleSelect"
@@ -282,7 +294,7 @@ function handleSelect(path: string) {
   left: 0;
   bottom: 0;
   width: 220px;
-  background-color: #001529;
+  background: linear-gradient(180deg, #0C1929 0%, #132238 60%, #0F1D2E 100%);
   transition: width 0.3s;
   z-index: 100;
   display: flex;
@@ -299,7 +311,18 @@ function handleSelect(path: string) {
   align-items: center;
   justify-content: center;
   padding: 0 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+
+  // Gradient glow line instead of solid border
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(43, 126, 193, 0.4), transparent);
+  }
 
   .logo-icon {
     width: 32px;
@@ -313,12 +336,14 @@ function handleSelect(path: string) {
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
+    letter-spacing: 0.5px;
   }
 }
 
 .sidebar-menu-wrap {
   flex: 1;
   overflow-y: auto;
+  padding: 8px;
 }
 
 :deep(.el-menu) {
@@ -326,20 +351,43 @@ function handleSelect(path: string) {
 
   .el-menu-item,
   .el-sub-menu__title {
+    margin: 2px 0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+
     &:hover {
-      background-color: #000c17 !important;
+      background-color: rgba(255, 255, 255, 0.06) !important;
     }
   }
 
   .el-menu-item.is-active {
-    background-color: #1890ff !important;
+    background-color: rgba(27, 101, 168, 0.25) !important;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 25%;
+      height: 50%;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: #2B7EC1;
+    }
+  }
+
+  // Nested sub-menu items
+  .el-sub-menu .el-menu-item {
+    margin: 1px 4px;
+    border-radius: 6px;
+    padding-left: 48px !important;
   }
 }
 
 .menu-group-label {
-  padding: 8px 20px 4px 44px;
+  padding: 8px 12px 4px 36px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.3);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   line-height: 1;
@@ -349,7 +397,7 @@ function handleSelect(path: string) {
 
   &:not(:first-child) {
     margin-top: 4px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     padding-top: 10px;
   }
 }

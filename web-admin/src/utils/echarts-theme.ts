@@ -10,16 +10,16 @@
 import echarts from '@/utils/echarts'
 
 const CHART_COLORS = [
-  '#409eff', // primary blue    (--chart-color-1)
-  '#67c23a', // success green   (--chart-color-2)
-  '#e6a23c', // warning orange  (--chart-color-3)
-  '#f56c6c', // danger red      (--chart-color-4)
-  '#909399', // info gray       (--chart-color-5)
-  '#5470c6', // deeper blue     (--chart-color-6)
-  '#91cc75', // lighter green   (--chart-color-7)
-  '#fac858', // yellow          (--chart-color-8)
-  '#ee6666', // lighter red     (--chart-color-9)
-  '#73c0de', // cyan            (--chart-color-10)
+  '#1B65A8', // brand blue        (--chart-color-1)
+  '#36B37E', // success green     (--chart-color-2)
+  '#FFAB00', // amber warning     (--chart-color-3)
+  '#FF5630', // tomato red        (--chart-color-4)
+  '#6B778C', // slate gray        (--chart-color-5)
+  '#2B7EC1', // primary light     (--chart-color-6)
+  '#57D9A3', // mint green        (--chart-color-7)
+  '#FFC400', // golden yellow     (--chart-color-8)
+  '#FF8B6A', // salmon            (--chart-color-9)
+  '#4C9AFF', // sky blue          (--chart-color-10)
 ]
 
 const theme: Record<string, unknown> = {
@@ -27,36 +27,36 @@ const theme: Record<string, unknown> = {
   backgroundColor: 'transparent',
   textStyle: {
     fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    color: '#606266',
+      '"Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    color: '#4A5568',
   },
   title: {
     textStyle: {
-      color: '#303133',
+      color: '#1A2332',
       fontSize: 16,
       fontWeight: 600,
     },
     subtextStyle: {
-      color: '#86909c',
+      color: '#7A8599',
       fontSize: 13,
     },
   },
   legend: {
     textStyle: {
-      color: '#606266',
+      color: '#4A5568',
       fontSize: 12,
     },
   },
   tooltip: {
     backgroundColor: 'rgba(255, 255, 255, 0.96)',
-    borderColor: '#ebeef5',
+    borderColor: '#E2E8F0',
     borderWidth: 1,
     textStyle: {
-      color: '#303133',
+      color: '#1A2332',
       fontSize: 13,
     },
     extraCssText:
-      'box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); border-radius: 6px;',
+      'box-shadow: 0 6px 20px rgba(27, 101, 168, 0.12); border-radius: 10px; backdrop-filter: blur(8px);',
   },
   grid: {
     left: '3%',
@@ -66,16 +66,16 @@ const theme: Record<string, unknown> = {
     containLabel: true,
   },
   categoryAxis: {
-    axisLine: { lineStyle: { color: '#dcdfe6' } },
-    axisTick: { lineStyle: { color: '#dcdfe6' } },
-    axisLabel: { color: '#86909c', fontSize: 12 },
-    splitLine: { lineStyle: { color: '#ebeef5', type: 'dashed' } },
+    axisLine: { lineStyle: { color: '#E2E8F0' } },
+    axisTick: { lineStyle: { color: '#E2E8F0' } },
+    axisLabel: { color: '#7A8599', fontSize: 12 },
+    splitLine: { lineStyle: { color: '#EDF2F7', type: 'dashed' } },
   },
   valueAxis: {
     axisLine: { show: false },
     axisTick: { show: false },
-    axisLabel: { color: '#86909c', fontSize: 12 },
-    splitLine: { lineStyle: { color: '#ebeef5', type: 'dashed' } },
+    axisLabel: { color: '#7A8599', fontSize: 12 },
+    splitLine: { lineStyle: { color: '#EDF2F7', type: 'dashed' } },
   },
   line: {
     smooth: false,
@@ -84,7 +84,7 @@ const theme: Record<string, unknown> = {
   },
   bar: {
     barMaxWidth: 40,
-    itemStyle: { borderRadius: [4, 4, 0, 0] },
+    itemStyle: { borderRadius: [6, 6, 0, 0] },
   },
   pie: {
     itemStyle: { borderColor: '#ffffff', borderWidth: 2 },
