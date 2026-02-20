@@ -107,7 +107,7 @@ scripts/food-kb/models/
 scripts/food-kb/__pycache__/
 
 # 大文件和数据目录
-backend/java/
+# backend/java/ — 已纳入 git 管理 (2026-02-19)
 backend/python/smartbi/exports/
 backend/python/smartbi/services/temp_frames/
 backend/python/smartbi/smartbi_cache/

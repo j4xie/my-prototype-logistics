@@ -1,0 +1,286 @@
+{
+  "category": "complex_language",
+  "description": "复杂语言模式测试 - 反问、转折、双重否定、省略",
+  "testCases": [
+    {
+      "id": "L001",
+      "input": "难道今天没有任何原料到货吗？我记得明明安排了三批带鱼的进货计划，怎么系统里一条记录都查不到呢？",
+      "expectedIntent": "MATERIAL_BATCH_QUERY",
+      "description": "反问句式 - 理解'没有...吗'为查询意图",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L002",
+      "input": "设备不是刚做过保养吗？怎么又报故障了？上周二不是刚换过滤芯的吗？我想看看这台设备最近三个月的维护记录",
+      "expectedIntent": "EQUIPMENT_MAINTENANCE_QUERY",
+      "description": "反问句式 - 提取时间范围'三个月'",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L003",
+      "input": "质检难道不应该在投料之前就完成的吗？为什么这批墨鱼的质检报告到现在还没出来？能不能帮我查一下这批货的质检进度？",
+      "expectedIntent": "QUALITY_CHECK_QUERY",
+      "description": "反问句式 - 提取'墨鱼'作为物料筛选条件",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L004",
+      "input": "这个月的出货量难道还不如上个月？我记得业务部说订单增长了20%啊，帮我对比一下这两个月的出货数据",
+      "expectedIntent": "SHIPMENT_STATS",
+      "description": "反问句式 - 识别比较意图",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L005",
+      "input": "考勤系统不是早就修好了吗？怎么还有人反映打卡打不上？麻烦帮我看看今天有多少人出现打卡异常",
+      "expectedIntent": "ATTENDANCE_ANOMALY",
+      "description": "反问句式 - 筛选当日异常记录",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L006",
+      "input": "这批带鱼的保质期难道不是六个月吗？为什么系统显示还有不到一周就过期了？帮我核实一下批次号MB-2025-001的实际效期",
+      "expectedIntent": "MATERIAL_BATCH_QUERY",
+      "description": "反问句式 - 精确匹配批次号效期查询",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L007",
+      "input": "生产计划不是已经排好了吗？为什么车间主管说不知道明天要生产什么？能不能把明天的排产计划发给我看看？",
+      "expectedIntent": "SCHEDULE_QUERY",
+      "description": "反问句式 - 提取'明天'时间范围",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L008",
+      "input": "库存预警难道失效了？明明黄鱼已经低于安全库存了，怎么没有收到任何提醒？帮我查一下当前所有低库存的原料",
+      "expectedIntent": "MATERIAL_LOW_STOCK_ALERT",
+      "description": "反问句式 - 低库存预警查询",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L009",
+      "input": "审批流程不是说简化了吗？为什么我提交的调拨申请三天了还没有人处理？能帮我查一下这个申请现在卡在哪个环节吗？",
+      "expectedIntent": "APPROVAL_STATUS_QUERY",
+      "description": "反问句式 - 审批状态查询",
+      "minConfidence": 0.6
+    },
+    {
+      "id": "L010",
+      "input": "发货单难道可以没有客户信息吗？我看到有几张单子的收货方是空的，这是怎么回事？帮我筛选出所有客户信息不完整的发货记录",
+      "expectedIntent": "SHIPMENT_QUERY",
+      "description": "反问句式 - 数据质量筛选",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L011",
+      "input": "虽然上个月的产量达标了，但是不合格品率好像上升了不少。我想看看上个月各产线的质量数据，重点关注返工率和报废率的变化趋势",
+      "expectedIntent": "QUALITY_STATS",
+      "description": "转折句式 - 提取'上个月'时间范围",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L012",
+      "input": "尽管这批原料的价格比较便宜，可是质量报告显示各项指标都在临界值附近。我想对比一下这批货和之前同供应商的历史批次质量数据",
+      "expectedIntent": "QUALITY_CHECK_QUERY",
+      "description": "转折句式 - 需要clarification获取供应商信息",
+      "minConfidence": 0.6
+    },
+    {
+      "id": "L013",
+      "input": "虽然系统显示库存充足，然而实际盘点发现账实不符。能不能帮我生成一份这个月所有原料的账面库存和实际库存对比报告？",
+      "expectedIntent": "MATERIAL_INVENTORY_QUERY",
+      "description": "转折句式 - 库存盘点查询",
+      "minConfidence": 0.6
+    },
+    {
+      "id": "L014",
+      "input": "虽然张师傅这个月全勤，但是他的加班时长好像超标了。帮我查一下他这个月的加班明细，另外也看看其他加班超过40小时的员工",
+      "expectedIntent": "ATTENDANCE_HISTORY",
+      "description": "转折句式 - 提取员工姓名和时长条件",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L015",
+      "input": "尽管我们已经增加了质检频次，不过客户投诉还是没有减少。能不能帮我分析一下最近三个月的质检数据和客户投诉的关联性？",
+      "expectedIntent": "QUALITY_ANALYSIS",
+      "description": "转折句式 - 复合分析意图",
+      "minConfidence": 0.6
+    },
+    {
+      "id": "L016",
+      "input": "虽然设备的OEE看起来不错，但是计划外停机的次数明显增加了。我想看看这个月每台设备的停机原因分布",
+      "expectedIntent": "EQUIPMENT_STATUS_QUERY",
+      "description": "转折句式 - 停机分析",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L017",
+      "input": "尽管供应商按时交货了，然而来料检验发现有15%不合格。我要查一下这个供应商最近半年的来料合格率趋势",
+      "expectedIntent": "QUALITY_CHECK_QUERY",
+      "description": "转折句式 - 供应商分析",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L018",
+      "input": "虽然订单数量增加了，可是发货效率反而下降了。帮我对比一下这个月和上个月的平均发货周期",
+      "expectedIntent": "SHIPMENT_STATS",
+      "description": "转折句式 - 效率分析",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L019",
+      "input": "尽管我们采用了先进先出的原则，但是还是有临期原料没有被及时使用。能不能列出所有30天内即将过期但还没有排产计划的原料批次？",
+      "expectedIntent": "MATERIAL_EXPIRING_ALERT",
+      "description": "转折句式 - 临期原料+排产组合查询",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L020",
+      "input": "虽然系统记录显示这批货已经发出，然而客户说还没收到。我需要追踪一下单号SHP-2026-0122-001的物流状态",
+      "expectedIntent": "SHIPMENT_QUERY",
+      "description": "转折句式 - 精确匹配单号",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L021",
+      "input": "不是不想用这批原料，只是担心质量不过关。能不能帮我确认一下这批带鱼的检验报告是不是都合格了？",
+      "expectedIntent": "QUALITY_CHECK_QUERY",
+      "description": "双重否定 - 理解为查询意图",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L022",
+      "input": "我不是不知道要提前报备，问题是系统根本没有提醒功能啊。现在帮我查一下有没有什么即将到期需要处理的事项",
+      "expectedIntent": "ALERT_QUERY",
+      "description": "双重否定 - 待办/预警查询",
+      "minConfidence": 0.6
+    },
+    {
+      "id": "L023",
+      "input": "并非所有员工都不满意新的排班，只是希望能看到更长期的计划。能不能显示下个月的初步排班表？",
+      "expectedIntent": "SCHEDULE_QUERY",
+      "description": "双重否定 - 时间范围'下个月'",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L024",
+      "input": "不能说这批货完全没有问题，但也不是不能用。我想看看如果降级使用需要走什么流程，另外查一下类似情况的历史处理记录",
+      "expectedIntent": "QUALITY_DISPOSITION_QUERY",
+      "description": "双重否定 - 质量处置查询",
+      "minConfidence": 0.6
+    },
+    {
+      "id": "L025",
+      "input": "我们不是没有做过成本分析，只是数据不够全面。能不能帮我生成一份包含直接材料、人工和制造费用的完整成本报告？",
+      "expectedIntent": "COST_ANALYSIS",
+      "description": "双重否定 - 成本分析查询",
+      "minConfidence": 0.6
+    },
+    {
+      "id": "L026",
+      "input": "不是不信任新员工，但毕竟缺乏经验。帮我筛选一下所有入职不满三个月的员工，看看他们的培训完成情况",
+      "expectedIntent": "HR_QUERY",
+      "description": "双重否定 - HR查询+培训状态",
+      "minConfidence": 0.6
+    },
+    {
+      "id": "L027",
+      "input": "并不是说现有的库存管理有问题，而是想优化周转率。能不能分析一下哪些原料的库存周转天数超过平均水平？",
+      "expectedIntent": "MATERIAL_INVENTORY_QUERY",
+      "description": "双重否定 - 库存分析",
+      "minConfidence": 0.6
+    },
+    {
+      "id": "L028",
+      "input": "我不否认上个月的产量确实提高了，但是能耗也上去了不少。帮我对比一下产量增长率和能耗增长率的数据",
+      "expectedIntent": "PRODUCTION_STATS",
+      "description": "双重否定 - 生产效率分析",
+      "minConfidence": 0.6
+    },
+    {
+      "id": "L029",
+      "input": "不是不想按时发货，实在是原料供应跟不上。能不能帮我查一下目前有多少订单因为缺料而无法按时交付？",
+      "expectedIntent": "SHIPMENT_QUERY",
+      "description": "双重否定 - 订单/发货查询+缺料分析",
+      "minConfidence": 0.6
+    },
+    {
+      "id": "L030",
+      "input": "并非所有设备都不需要维护，只是维护周期可能需要调整。帮我列出所有超过计划维护时间但还没有执行保养的设备",
+      "expectedIntent": "EQUIPMENT_MAINTENANCE_QUERY",
+      "description": "双重否定 - 维护查询",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "L031",
+      "input": "刚才那批，就是上午10点到的那批带鱼，质检结果出来了吗？如果合格的话我想直接安排入库",
+      "expectedIntent": "NEED_CLARIFICATION",
+      "description": "省略指代 - 需要上下文解析'刚才那批'",
+      "minConfidence": 0.5
+    },
+    {
+      "id": "L032",
+      "input": "跟之前一样，帮我查一下。",
+      "expectedIntent": "NEED_CLARIFICATION",
+      "description": "省略指代 - 缺乏上下文",
+      "minConfidence": 0.5
+    },
+    {
+      "id": "L033",
+      "input": "那个，就是昨天说的那个事情，处理好了没？",
+      "expectedIntent": "NEED_CLARIFICATION",
+      "description": "省略指代 - 指代不明确",
+      "minConfidence": 0.5
+    },
+    {
+      "id": "L034",
+      "input": "上次那个供应商，就是出过质量问题的那家，他们最近有新的供货吗？",
+      "expectedIntent": "NEED_CLARIFICATION",
+      "description": "省略指代 - 需要clarification确认供应商身份",
+      "minConfidence": 0.5
+    },
+    {
+      "id": "L035",
+      "input": "把它改成已完成状态",
+      "expectedIntent": "NEED_CLARIFICATION",
+      "description": "省略指代 - '它'指代不明",
+      "minConfidence": 0.5
+    },
+    {
+      "id": "L036",
+      "input": "跟上一批一样处理就行",
+      "expectedIntent": "NEED_CLARIFICATION",
+      "description": "省略指代 - 需要上下文",
+      "minConfidence": 0.5
+    },
+    {
+      "id": "L037",
+      "input": "那几个人今天怎么样？",
+      "expectedIntent": "NEED_CLARIFICATION",
+      "description": "省略指代 - '那几个人'指代不明",
+      "minConfidence": 0.5
+    },
+    {
+      "id": "L038",
+      "input": "就用标准流程处理吧，具体数量你看着定",
+      "expectedIntent": "NEED_CLARIFICATION",
+      "description": "省略指代 - 缺乏关键参数",
+      "minConfidence": 0.5
+    },
+    {
+      "id": "L039",
+      "input": "这个可以，那个不行，帮我记录一下",
+      "expectedIntent": "NEED_CLARIFICATION",
+      "description": "省略指代 - 多重指代",
+      "minConfidence": 0.5
+    },
+    {
+      "id": "L040",
+      "input": "跟老王说的那个方案，能不能帮我查一下进度？",
+      "expectedIntent": "NEED_CLARIFICATION",
+      "description": "省略指代 - 人物指代+方案指代",
+      "minConfidence": 0.5
+    }
+  ]
+}
