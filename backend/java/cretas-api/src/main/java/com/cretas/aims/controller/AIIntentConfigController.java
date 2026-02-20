@@ -1,0 +1,670 @@
+package com.cretas.aims.controller;
+
+import com.cretas.aims.dto.ai.IntentExecuteRequest;
+import com.cretas.aims.dto.ai.IntentExecuteResponse;
+import com.cretas.aims.dto.ai.ParameterConfirmationRequest;
+import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.dto.intent.CleanupRequest;
+import com.cretas.aims.dto.intent.IntentFeedbackRequest;
+import com.cretas.aims.dto.intent.IntentMatchResult;
+import com.cretas.aims.entity.config.AIIntentConfig;
+import com.cretas.aims.entity.intent.KeywordEffectiveness;
+import com.cretas.aims.utils.JwtUtil;
+import com.cretas.aims.service.AIIntentService;
+import com.cretas.aims.service.IntentExecutorService;
+import com.cretas.aims.service.KeywordEffectivenessService;
+import com.cretas.aims.service.ParameterExtractionLearningService;
+import com.cretas.aims.service.impl.IntentConfigRollbackService;
+import com.cretas.aims.entity.learning.ParameterExtractionRule;
+import com.cretas.aims.entity.config.AIIntentConfigHistory;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * AI意图配置控制器
+ *
+ * 提供AI意图识别配置的管理API:
+ * - 意图配置的CRUD操作
+ * - 意图识别测试
+ * - 分类和权限查询
+ *
+ * @author Cretas Team
+ * @version 1.0.0
+ * @since 2025-12-31
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/mobile/{factoryId}/ai-intents")
+@RequiredArgsConstructor
+@Tag(name = "AI意图配置", description = "AI意图识别配置管理API")
+public class AIIntentConfigController {
+
+    private final AIIntentService aiIntentService;
+    private final IntentExecutorService intentExecutorService;
+    private final KeywordEffectivenessService keywordEffectivenessService;
+    private final IntentConfigRollbackService rollbackService;
+    private final ParameterExtractionLearningService parameterExtractionLearningService;
+    private final JwtUtil jwtUtil;
+
+    // ==================== 意图查询 ====================
+
+    @GetMapping
+    @Operation(summary = "获取所有意图配置", description = "获取所有启用的AI意图配置列表（租户隔离）")
+    public ResponseEntity<ApiResponse<List<AIIntentConfig>>> getAllIntents(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId) {
+
+        List<AIIntentConfig> intents = aiIntentService.getAllIntents(factoryId);
+        return ResponseEntity.ok(ApiResponse.success(intents));
+    }
+
+    @GetMapping("/category/{category}")
+    @Operation(summary = "按分类获取意图", description = "根据分类获取意图配置列表（租户隔离）")
+    public ResponseEntity<ApiResponse<List<AIIntentConfig>>> getIntentsByCategory(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图分类 (ANALYSIS, DATA_OP, FORM, SCHEDULE, SYSTEM)")
+            @PathVariable String category) {
+
+        List<AIIntentConfig> intents = aiIntentService.getIntentsByCategory(factoryId, category);
+        return ResponseEntity.ok(ApiResponse.success(intents));
+    }
+
+    @GetMapping("/categories")
+    @Operation(summary = "获取所有分类", description = "获取所有可用的意图分类列表（租户隔离）")
+    public ResponseEntity<ApiResponse<List<String>>> getAllCategories(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId) {
+
+        List<String> categories = aiIntentService.getAllCategories(factoryId);
+        return ResponseEntity.ok(ApiResponse.success(categories));
+    }
+
+    @GetMapping("/sensitivity/{level}")
+    @Operation(summary = "按敏感度获取意图", description = "根据敏感度级别获取意图配置（租户隔离）")
+    public ResponseEntity<ApiResponse<List<AIIntentConfig>>> getIntentsBySensitivity(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "敏感度级别 (LOW, MEDIUM, HIGH, CRITICAL)")
+            @PathVariable String level) {
+
+        List<AIIntentConfig> intents = aiIntentService.getIntentsBySensitivity(factoryId, level);
+        return ResponseEntity.ok(ApiResponse.success(intents));
+    }
+
+    @GetMapping("/keyword-stats")
+    @Operation(summary = "获取关键词效果统计", description = "获取指定意图的关键词效果统计数据")
+    public ResponseEntity<ApiResponse<List<KeywordEffectiveness>>> getKeywordStats(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @RequestParam(required = false) String intentCode,
+            @Parameter(description = "效果阈值") @RequestParam(required = false, defaultValue = "0") java.math.BigDecimal threshold) {
+
+        List<KeywordEffectiveness> stats = keywordEffectivenessService.getEffectiveKeywords(
+                factoryId, intentCode, threshold);
+        return ResponseEntity.ok(ApiResponse.success(stats));
+    }
+
+    @GetMapping("/keyword-stats/count")
+    @Operation(summary = "获取关键词数量", description = "获取指定意图的关键词数量")
+    public ResponseEntity<ApiResponse<Long>> getKeywordCount(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @RequestParam(required = false) String intentCode) {
+
+        long count = keywordEffectivenessService.countKeywords(factoryId, intentCode);
+        return ResponseEntity.ok(ApiResponse.success(count));
+    }
+
+    @PostMapping("/keywords/cleanup")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "清理低效关键词", description = "清理效果评分低于阈值的关键词（仅工厂管理员）")
+    public ResponseEntity<ApiResponse<Integer>> cleanupLowEffectivenessKeywords(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody CleanupRequest request) {
+
+        int cleaned = keywordEffectivenessService.cleanupLowEffectivenessKeywords(
+                factoryId, request.getThreshold(), request.getMinNegative());
+        log.info("Cleaned {} low-effectiveness keywords for factory {}", cleaned, factoryId);
+        return ResponseEntity.ok(ApiResponse.success("清理完成，共删除 " + cleaned + " 个低效关键词", cleaned));
+    }
+
+    @GetMapping("/{intentCode}")
+    @Operation(summary = "获取单个意图", description = "根据意图代码获取意图配置详情")
+    public ResponseEntity<ApiResponse<AIIntentConfig>> getIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @PathVariable String intentCode) {
+
+        return aiIntentService.getIntentByCode(factoryId, intentCode)
+                .map(i -> ResponseEntity.ok(ApiResponse.success(i)))
+                .orElse(ResponseEntity.ok(ApiResponse.error("意图配置不存在: " + intentCode)));
+    }
+
+    // ==================== 意图识别 ====================
+
+    @PostMapping("/recognize")
+    @Operation(summary = "测试意图识别", description = "输入文本测试意图识别结果（支持操作类型检测）")
+    public ResponseEntity<ApiResponse<IntentRecognitionResult>> recognizeIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody IntentRecognitionRequest request) {
+
+        log.debug("Recognizing intent for input: {}", request.getUserInput());
+
+        // 使用带操作类型检测的增强版识别方法 (BUG-001/002 修复)
+        IntentMatchResult matchResult = aiIntentService.recognizeIntentWithConfidence(
+                request.getUserInput(), factoryId, 1, null, null);
+
+        IntentRecognitionResult result = new IntentRecognitionResult();
+        result.setUserInput(request.getUserInput());
+        result.setMatched(matchResult.hasMatch());
+
+        if (matchResult.hasMatch()) {
+            AIIntentConfig intent = matchResult.getBestMatch();
+            result.setIntentCode(intent.getIntentCode());
+            result.setIntentName(intent.getIntentName());
+            result.setCategory(intent.getIntentCategory());
+            result.setSensitivityLevel(intent.getSensitivityLevel());
+            result.setQuotaCost(intent.getQuotaCost());
+            result.setRequiresApproval(intent.needsApproval());
+            // 额外添加置信度和匹配方法信息
+            result.setConfidence(matchResult.getConfidence());
+            result.setMatchMethod(matchResult.getMatchMethod() != null ?
+                    matchResult.getMatchMethod().name() : null);
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @PostMapping("/recognize-all")
+    @Operation(summary = "识别所有匹配意图", description = "获取所有可能匹配的意图列表")
+    public ResponseEntity<ApiResponse<List<AIIntentConfig>>> recognizeAllIntents(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody IntentRecognitionRequest request) {
+
+        List<AIIntentConfig> matchedIntents = aiIntentService.recognizeAllIntents(factoryId, request.getUserInput());
+        return ResponseEntity.ok(ApiResponse.success(matchedIntents));
+    }
+
+    // ==================== 意图执行 ====================
+
+    @PostMapping("/execute")
+    @Operation(summary = "执行AI意图", description = "识别用户输入的意图并执行对应操作")
+    public ResponseEntity<ApiResponse<IntentExecuteResponse>> executeIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody IntentExecuteRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        // 从JWT获取用户信息
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String userRole = jwtUtil.getRoleFromToken(token);
+
+        log.info("执行AI意图: factoryId={}, userInput={}, userId={}, role={}",
+                factoryId,
+                request.getUserInput().length() > 30 ?
+                        request.getUserInput().substring(0, 30) + "..." : request.getUserInput(),
+                userId, userRole);
+
+        IntentExecuteResponse response = intentExecutorService.execute(factoryId, request, userId, userRole);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/execute/multi")
+    @Operation(summary = "执行多意图 (Multi-Label Classification)",
+               description = "使用 Sigmoid-based 多标签分类识别并执行多个意图")
+    public ResponseEntity<ApiResponse<IntentExecuteResponse>> executeMultiIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody IntentExecuteRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        // 从JWT获取用户信息
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String userRole = jwtUtil.getRoleFromToken(token);
+
+        log.info("执行多意图: factoryId={}, userInput={}, userId={}, role={}",
+                factoryId,
+                request.getUserInput().length() > 30 ?
+                        request.getUserInput().substring(0, 30) + "..." : request.getUserInput(),
+                userId, userRole);
+
+        IntentExecuteResponse response = intentExecutorService.executeMultiIntent(factoryId, request, userId, userRole);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping(value = "/execute/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "流式执行AI意图 (SSE)", description = "通过 Server-Sent Events 实时返回执行进度")
+    public SseEmitter executeIntentStream(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody IntentExecuteRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        // 从JWT获取用户信息
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String userRole = jwtUtil.getRoleFromToken(token);
+
+        log.info("流式执行AI意图: factoryId={}, userInput={}, userId={}, role={}",
+                factoryId,
+                request.getUserInput().length() > 30 ?
+                        request.getUserInput().substring(0, 30) + "..." : request.getUserInput(),
+                userId, userRole);
+
+        return intentExecutorService.executeStream(factoryId, request, userId, userRole);
+    }
+
+    @PostMapping("/preview")
+    @Operation(summary = "预览AI意图执行结果", description = "识别意图并预览执行结果，不实际执行")
+    public ResponseEntity<ApiResponse<IntentExecuteResponse>> previewIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody IntentExecuteRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String userRole = jwtUtil.getRoleFromToken(token);
+
+        log.info("预览AI意图: factoryId={}, userInput={}", factoryId, request.getUserInput());
+
+        IntentExecuteResponse response = intentExecutorService.preview(factoryId, request, userId, userRole);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/confirm/{confirmToken}")
+    @Operation(summary = "确认执行预览的意图", description = "确认执行之前预览的意图操作")
+    public ResponseEntity<ApiResponse<IntentExecuteResponse>> confirmIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "确认Token") @PathVariable String confirmToken,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String userRole = jwtUtil.getRoleFromToken(token);
+
+        log.info("确认执行AI意图: factoryId={}, confirmToken={}", factoryId, confirmToken);
+
+        IntentExecuteResponse response = intentExecutorService.confirm(factoryId, confirmToken, userId, userRole);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    // ==================== 参数确认和规则学习 ====================
+
+    @PostMapping("/params/confirm")
+    @Operation(summary = "确认参数并学习规则",
+               description = "用户确认 LLM 提取的参数后，系统学习提取规则，下次可直接使用规则提取（无需调用 LLM）")
+    public ResponseEntity<ApiResponse<IntentExecuteResponse>> confirmParameters(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody ParameterConfirmationRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String userRole = jwtUtil.getRoleFromToken(token);
+
+        log.info("确认参数并学习规则: factoryId={}, intentCode={}, params={}",
+                factoryId, request.getIntentCode(), request.getConfirmedParams().keySet());
+
+        // 1. 学习提取规则
+        parameterExtractionLearningService.learnAndConfirm(
+                factoryId,
+                request.getIntentCode(),
+                request.getUserInput(),
+                request.getConfirmedParams());
+
+        // 2. 如果需要执行，构建执行请求
+        if (Boolean.TRUE.equals(request.getExecuteAfterConfirm())) {
+            IntentExecuteRequest executeRequest = IntentExecuteRequest.builder()
+                    .userInput(request.getUserInput())
+                    .intentCode(request.getIntentCode())
+                    .context(request.getConfirmedParams())
+                    .build();
+
+            IntentExecuteResponse response = intentExecutorService.execute(factoryId, executeRequest, userId, userRole);
+            return ResponseEntity.ok(ApiResponse.success("参数已确认并执行", response));
+        }
+
+        // 只学习规则，不执行
+        return ResponseEntity.ok(ApiResponse.success("参数已确认，规则已学习", null));
+    }
+
+    @GetMapping("/params/rules/{intentCode}")
+    @Operation(summary = "获取意图的参数提取规则", description = "获取指定意图的所有活跃参数提取规则")
+    public ResponseEntity<ApiResponse<List<ParameterExtractionRule>>> getExtractionRules(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @PathVariable String intentCode) {
+
+        List<ParameterExtractionRule> rules = parameterExtractionLearningService.getActiveRules(factoryId, intentCode);
+        return ResponseEntity.ok(ApiResponse.success(rules));
+    }
+
+    @DeleteMapping("/params/rules/{ruleId}")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "删除参数提取规则", description = "删除指定的参数提取规则（仅管理员）")
+    public ResponseEntity<ApiResponse<Void>> deleteExtractionRule(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "规则ID") @PathVariable String ruleId) {
+
+        log.info("删除参数提取规则: factoryId={}, ruleId={}", factoryId, ruleId);
+        parameterExtractionLearningService.deleteRule(ruleId);
+        return ResponseEntity.ok(ApiResponse.success("规则已删除", null));
+    }
+
+    @PostMapping("/params/rules/cleanup")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "清理低成功率规则", description = "清理成功率低于阈值的参数提取规则")
+    public ResponseEntity<ApiResponse<Integer>> cleanupLowSuccessRules(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "最小命中次数") @RequestParam(defaultValue = "10") int minHitCount,
+            @Parameter(description = "最大成功率阈值") @RequestParam(defaultValue = "0.3") double maxSuccessRate) {
+
+        log.info("清理低成功率规则: factoryId={}, minHitCount={}, maxSuccessRate={}",
+                factoryId, minHitCount, maxSuccessRate);
+        int count = parameterExtractionLearningService.cleanupLowSuccessRules(minHitCount, maxSuccessRate);
+        return ResponseEntity.ok(ApiResponse.success("已清理 " + count + " 条规则", count));
+    }
+
+    // ==================== 权限查询 ====================
+
+    @GetMapping("/{intentCode}/permission")
+    @Operation(summary = "检查意图权限", description = "检查指定角色是否有权限执行意图")
+    public ResponseEntity<ApiResponse<PermissionCheckResult>> checkPermission(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @PathVariable String intentCode,
+            @Parameter(description = "用户角色") @RequestParam String userRole) {
+
+        boolean hasPermission = aiIntentService.hasPermission(intentCode, userRole);
+        boolean requiresApproval = aiIntentService.requiresApproval(intentCode);
+        int quotaCost = aiIntentService.getQuotaCost(intentCode);
+
+        PermissionCheckResult result = new PermissionCheckResult();
+        result.setIntentCode(intentCode);
+        result.setUserRole(userRole);
+        result.setHasPermission(hasPermission);
+        result.setRequiresApproval(requiresApproval);
+        result.setQuotaCost(quotaCost);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    // ==================== 意图管理 ====================
+
+    @PostMapping
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "创建意图配置", description = "创建新的AI意图配置（仅工厂管理员）")
+    public ResponseEntity<ApiResponse<AIIntentConfig>> createIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody AIIntentConfig intentConfig) {
+
+        AIIntentConfig created = aiIntentService.createIntent(intentConfig);
+        log.info("Created AI intent: {} for factory context: {}", intentConfig.getIntentCode(), factoryId);
+        return ResponseEntity.ok(ApiResponse.success("意图配置创建成功", created));
+    }
+
+    @PutMapping("/{intentCode}")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "更新意图配置", description = "更新现有的AI意图配置（仅工厂管理员）")
+    public ResponseEntity<ApiResponse<AIIntentConfig>> updateIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @PathVariable String intentCode,
+            @RequestBody AIIntentConfig intentConfig) {
+
+        intentConfig.setIntentCode(intentCode);
+        AIIntentConfig updated = aiIntentService.updateIntent(intentConfig);
+        log.info("Updated AI intent: {}", intentCode);
+        return ResponseEntity.ok(ApiResponse.success("意图配置更新成功", updated));
+    }
+
+    @PatchMapping("/{intentCode}/active")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "启用/禁用意图", description = "切换意图的启用状态（仅工厂管理员）")
+    public ResponseEntity<ApiResponse<Void>> setIntentActive(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @PathVariable String intentCode,
+            @RequestBody ActiveStatusRequest request) {
+
+        aiIntentService.setIntentActive(intentCode, request.isActive());
+        String action = request.isActive() ? "启用" : "禁用";
+        log.info("{} AI intent: {}", action, intentCode);
+        return ResponseEntity.ok(ApiResponse.successMessage("意图已" + action));
+    }
+
+    @DeleteMapping("/{intentCode}")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "删除意图配置", description = "软删除意图配置（仅工厂管理员）")
+    public ResponseEntity<ApiResponse<Void>> deleteIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @PathVariable String intentCode) {
+
+        aiIntentService.deleteIntent(intentCode);
+        log.info("Deleted AI intent: {}", intentCode);
+        return ResponseEntity.ok(ApiResponse.successMessage("意图配置删除成功"));
+    }
+
+    // ==================== 版本回滚 ====================
+
+    @PostMapping("/{intentCode}/rollback")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "回滚意图配置", description = "回滚单个意图配置到上个版本（仅工厂管理员）")
+    public ResponseEntity<ApiResponse<AIIntentConfig>> rollbackIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @PathVariable String intentCode,
+            @RequestBody RollbackRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String username = jwtUtil.getUsernameFromToken(token);
+
+        // 先获取配置ID
+        AIIntentConfig config = aiIntentService.getIntentByCode(factoryId, intentCode)
+                .orElseThrow(() -> new IllegalArgumentException("意图配置不存在: " + intentCode));
+
+        AIIntentConfig rolled = rollbackService.rollbackToLastVersion(
+                config.getId(), userId, username, request.getReason());
+
+        log.info("Rolled back AI intent: {} to version {}", intentCode, rolled.getConfigVersion());
+        return ResponseEntity.ok(ApiResponse.success("意图配置回滚成功", rolled));
+    }
+
+    @GetMapping("/{intentCode}/history")
+    @Operation(summary = "获取版本历史", description = "获取意图配置的版本历史记录")
+    public ResponseEntity<ApiResponse<java.util.List<AIIntentConfigHistory>>> getVersionHistory(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @PathVariable String intentCode) {
+
+        AIIntentConfig config = aiIntentService.getIntentByCode(factoryId, intentCode)
+                .orElseThrow(() -> new IllegalArgumentException("意图配置不存在: " + intentCode));
+
+        java.util.List<AIIntentConfigHistory> history = rollbackService.getVersionHistory(config.getId());
+        return ResponseEntity.ok(ApiResponse.success(history));
+    }
+
+    @PostMapping("/rollback-all")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "批量回滚工厂意图", description = "回滚工厂的所有意图配置到上个版本（仅工厂管理员）")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> rollbackAllIntents(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody RollbackRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String username = jwtUtil.getUsernameFromToken(token);
+
+        java.util.Map<String, Object> result = rollbackService.rollbackFactoryToLastVersion(
+                factoryId, userId, username, request.getReason());
+
+        log.info("Batch rollback for factory {}: {}", factoryId, result);
+        return ResponseEntity.ok(ApiResponse.success("批量回滚完成", result));
+    }
+
+    // ==================== 反馈记录 ====================
+
+    @PostMapping("/feedback/positive")
+    @Operation(summary = "记录正向反馈", description = "当用户确认意图匹配正确时调用，用于关键词效果追踪")
+    public ResponseEntity<ApiResponse<Void>> recordPositiveFeedback(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody PositiveFeedbackRequest request) {
+
+        log.info("记录正向反馈: factoryId={}, intentCode={}, keywords={}",
+                factoryId, request.getIntentCode(), request.getMatchedKeywords());
+
+        aiIntentService.recordPositiveFeedback(
+                factoryId,
+                request.getIntentCode(),
+                request.getMatchedKeywords());
+
+        return ResponseEntity.ok(ApiResponse.successMessage("正向反馈已记录"));
+    }
+
+    @PostMapping("/feedback/negative")
+    @Operation(summary = "记录负向反馈", description = "当用户拒绝匹配结果并选择其他意图时调用")
+    public ResponseEntity<ApiResponse<Void>> recordNegativeFeedback(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody NegativeFeedbackRequest request) {
+
+        log.info("记录负向反馈: factoryId={}, rejected={}, selected={}, keywords={}",
+                factoryId, request.getRejectedIntentCode(),
+                request.getSelectedIntentCode(), request.getMatchedKeywords());
+
+        aiIntentService.recordNegativeFeedback(
+                factoryId,
+                request.getRejectedIntentCode(),
+                request.getSelectedIntentCode(),
+                request.getMatchedKeywords());
+
+        return ResponseEntity.ok(ApiResponse.successMessage("负向反馈已记录"));
+    }
+
+    /**
+     * 意图识别反馈接口
+     * 用户可以纠正错误的意图识别结果，系统自动学习
+     */
+    @PostMapping("/feedback")
+    @Operation(summary = "提交意图识别反馈", description = "用户可以纠正错误的意图识别结果，系统自动学习")
+    public ResponseEntity<ApiResponse<Void>> submitIntentFeedback(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody IntentFeedbackRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+
+        log.info("提交意图反馈: factoryId={}, userId={}, input='{}', matched={}, correct={}, isCorrect={}",
+                factoryId, userId, request.getUserInput(), request.getMatchedIntentCode(),
+                request.getCorrectIntentCode(), request.getIsCorrect());
+
+        aiIntentService.processIntentFeedback(factoryId, userId, request);
+
+        return ResponseEntity.ok(ApiResponse.successMessage("反馈已记录，系统将自动学习"));
+    }
+
+    // ==================== 缓存管理 ====================
+
+    @PostMapping("/cache/refresh")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "刷新意图缓存", description = "清除并重新加载意图配置缓存（仅工厂管理员）")
+    public ResponseEntity<ApiResponse<Void>> refreshCache(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId) {
+
+        aiIntentService.refreshCache();
+        log.info("Refreshed AI intent cache");
+        return ResponseEntity.ok(ApiResponse.successMessage("意图缓存已刷新"));
+    }
+
+    @PostMapping("/cache/clear")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "清除意图缓存", description = "清除意图配置缓存（仅工厂管理员）")
+    public ResponseEntity<ApiResponse<Void>> clearCache(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId) {
+
+        aiIntentService.clearCache();
+        log.info("Cleared AI intent cache");
+        return ResponseEntity.ok(ApiResponse.successMessage("意图缓存已清除"));
+    }
+
+    // ==================== DTO Classes ====================
+
+    /**
+     * 意图识别请求
+     */
+    @lombok.Data
+    public static class IntentRecognitionRequest {
+        private String userInput;
+    }
+
+    /**
+     * 意图识别结果
+     */
+    @lombok.Data
+    public static class IntentRecognitionResult {
+        private String userInput;
+        private boolean matched;
+        private String intentCode;
+        private String intentName;
+        private String category;
+        private String sensitivityLevel;
+        private Integer quotaCost;
+        private Boolean requiresApproval;
+        private Double confidence;      // 匹配置信度 (BUG-001/002 修复新增)
+        private String matchMethod;     // 匹配方法 (REGEX/KEYWORD/SEMANTIC/LLM)
+    }
+
+    /**
+     * 权限检查结果
+     */
+    @lombok.Data
+    public static class PermissionCheckResult {
+        private String intentCode;
+        private String userRole;
+        private boolean hasPermission;
+        private boolean requiresApproval;
+        private int quotaCost;
+    }
+
+    /**
+     * 启用状态请求
+     */
+    @lombok.Data
+    public static class ActiveStatusRequest {
+        private boolean active;
+    }
+
+    /**
+     * 正向反馈请求
+     */
+    @lombok.Data
+    public static class PositiveFeedbackRequest {
+        /** 意图代码 */
+        private String intentCode;
+        /** 匹配到的关键词列表 */
+        private java.util.List<String> matchedKeywords;
+    }
+
+    /**
+     * 负向反馈请求
+     */
+    @lombok.Data
+    public static class NegativeFeedbackRequest {
+        /** 被拒绝的意图代码 */
+        private String rejectedIntentCode;
+        /** 用户选择的正确意图代码 */
+        private String selectedIntentCode;
+        /** 原匹配到的关键词列表 */
+        private java.util.List<String> matchedKeywords;
+    }
+
+    /**
+     * 回滚请求
+     */
+    @lombok.Data
+    public static class RollbackRequest {
+        /** 回滚原因 */
+        private String reason;
+    }
+}
