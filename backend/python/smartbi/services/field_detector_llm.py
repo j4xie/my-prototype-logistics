@@ -406,7 +406,7 @@ class LLMFieldDetector:
                     max_year = valid_dates.max().year
                     if 1900 <= min_year <= 2100 and 1900 <= max_year <= 2100:
                         return "date"
-        except:
+        except Exception:
             pass
 
         return "string"

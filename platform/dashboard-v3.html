@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard 演示 | 白垩纪AI</title>
+    <meta name="description" content="白垩纪AI工厂操作系统 - 实时数据看板演示">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://cretaceousfuture.com/dashboard-v3/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cretaceousfuture.com/dashboard-v3/">
+    <meta property="og:title" content="Dashboard 演示 | 白垩纪AI">
+    <meta property="og:description" content="白垩纪AI工厂操作系统 - 实时数据看板演示">
+    <meta property="og:image" content="https://cretaceousfuture.com/share-image.png">
+
+    <link rel="stylesheet" href="/css/v3-design.css">
+    <link rel="stylesheet" href="/css/v3-subpages.css">
+    <script src="/js/v3-engine.js" defer></script>
+    <style>
+        /* Page-specific overrides for dashboard light theme */
+        .page-view { display: none; }
+        .page-view.active { display: block; }
+
+        .live-feed {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .live-feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #2D6A4F;
+        }
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #2D6A4F;
+            border-radius: 50%;
+            animation: live-pulse 2s infinite;
+        }
+        @keyframes live-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .live-feed-body {
+            position: relative;
+            aspect-ratio: 16/9;
+            background: #1a1a1a;
+        }
+        .live-feed-body img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .live-overlay {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .live-stat {
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: white;
+            font-family: var(--font-mono, 'JetBrains Mono', monospace);
+        }
+        .vision-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .vision-box {
+            position: absolute;
+            border: 2px solid #C45C26;
+            background: rgba(196, 92, 38, 0.1);
+            border-radius: 4px;
+        }
+        .vision-label {
+            position: absolute;
+            top: -22px;
+            left: -2px;
+            background: #C45C26;
+            color: white;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 600;
+            border-radius: 4px 4px 0 0;
+            white-space: nowrap;
+        }
+        .vision-heatmap {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 30% 40%, rgba(255,0,0,0.2), transparent 40%),
+                        radial-gradient(circle at 70% 60%, rgba(255,165,0,0.2), transparent 30%);
+            mix-blend-mode: color;
+            opacity: 0.6;
+            display: none;
+        }
+
+        /* Data card */
+        .data-card {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .data-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        .data-card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1A1814;
+        }
+
+        /* Page header */
+        .page-header { margin-bottom: 24px; }
+        .page-title {
+            font-size: clamp(22px, 4vw, 32px);
+            font-weight: 700;
+            color: #1A1814;
+            margin-bottom: 6px;
+        }
+        .page-desc { font-size: 14px; color: rgba(0,0,0,0.5); }
+
+        /* Grid helpers */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+
+        /* Form elements */
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 14px; font-weight: 500; color: #1A1814; margin-bottom: 8px; }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid rgba(0,0,0,0.12);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #1A1814;
+            background: white;
+            box-sizing: border-box;
+        }
+        .form-input:focus, .form-select:focus { outline: none; border-color: #C45C26; }
+
+        /* Inline code-style badge */
+        .tag-badge {
+            font-size: 12px;
+            border: 1px solid rgba(0,0,0,0.12);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: var(--font-mono, monospace);
+        }
+
+        /* Status badge variants matching old names */
+        .status-badge.running { background: rgba(45,106,79,0.1); color: #2D6A4F; }
+        .status-badge.pending { background: rgba(233,196,106,0.15); color: #9A6700; }
+        .status-badge.complete { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.5); }
+        .status-badge.error { background: rgba(188,71,73,0.1); color: #BC4749; }
+
+        /* AI toggle floating btn */
+        .ai-toggle-btn {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #C45C26, #D96B35);
+            color: white;
+            border: none;
+            cursor: pointer;
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px rgba(196,92,38,0.35);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .ai-toggle-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(196,92,38,0.45); }
+
+        /* AI panel chat elements */
+        .chat-message { margin-bottom: 16px; }
+        .chat-message.user { text-align: right; }
+        .chat-bubble {
+            display: inline-block;
+            max-width: 86%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.55;
+        }
+        .chat-message.ai .chat-bubble { background: rgba(0,0,0,0.04); border-bottom-left-radius: 4px; }
+        .chat-message.user .chat-bubble { background: #C45C26; color: white; border-bottom-right-radius: 4px; }
+        .chat-input-wrap { display: flex; gap: 8px; }
+        .chat-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid rgba(0,0,0,0.12);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .chat-input:focus { outline: none; border-color: #C45C26; }
+        .chat-send {
+            width: 42px; height: 42px;
+            border-radius: 10px;
+            background: #C45C26;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Responsive: hide AI panel and sidebar on smaller screens */
+        @media (max-width: 1400px) {
+            .dashboard-ai-panel { display: none; }
+            .dashboard-ai-panel.active { display: flex; }
+            .dashboard-main { margin-right: 0; }
+            .ai-toggle-btn { display: flex !important; }
+        }
+        @media (max-width: 900px) {
+            .dashboard-sidebar { display: none; }
+            .dashboard-sidebar.active { display: block; }
+            .dashboard-main { margin-left: 0; padding: 16px; }
+        }
+        @media (max-width: 640px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+
+<body class="glow-cursor">
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="/index-v3/" class="logo">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 4 L36 12 L20 20 L4 12 Z" fill="#E8E8E8" />
+                        <path d="M20 10 L36 18 L20 26 L4 18 Z" fill="#A0A0A0" />
+                        <path d="M20 16 L36 24 L20 32 L4 24 Z" fill="#707070" />
+                        <path d="M20 22 L36 30 L20 38 L4 30 Z" fill="#404040" />
+                    </svg>
+                </div>
+                <span class="logo-text">CRETACEOUS</span>
+            </a>
+            <div class="nav-links">
+                <a href="/index-v3/" class="nav-link">首页</a>
+                <a href="/ai-bi-v3/" class="nav-link">智能分析</a>
+                <a href="/ai-scheduling-v3/" class="nav-link">AI调度</a>
+                <a href="/ai-calibration-v3/" class="nav-link">AI定标</a>
+                <a href="/dashboard-v3/" class="btn btn-primary">进入演示</a>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="菜单">
+                <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                <svg class="close-icon" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+        <div class="mobile-menu" id="mobileMenu">
+            <a href="/index-v3/" class="mobile-nav-link" onclick="closeMobileMenu()">首页</a>
+            <a href="/ai-bi-v3/" class="mobile-nav-link" onclick="closeMobileMenu()">智能分析</a>
+            <a href="/ai-scheduling-v3/" class="mobile-nav-link" onclick="closeMobileMenu()">AI调度</a>
+            <a href="/ai-calibration-v3/" class="mobile-nav-link" onclick="closeMobileMenu()">AI定标</a>
+            <a href="/dashboard-v3/" class="btn btn-primary" style="width:100%; margin-top:var(--space-4);">进入演示</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <!-- Left Sidebar -->
+        <aside class="dashboard-sidebar" id="dashboardSidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-label">生产管理</div>
+                <div class="sidebar-item active" data-page="dashboard">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                    实时驾驶舱
+                </div>
+                <div class="sidebar-item" data-page="scheduling-analysis">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M9 15h12"/><path d="M9 9h12"/></svg>
+                    调度分析
+                </div>
+                <div class="sidebar-item" data-page="efficiency-analysis">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+                    人效分析
+                </div>
+                <div class="sidebar-item" data-page="schedule">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
+                    生产排程
+                </div>
+                <div class="sidebar-item" data-page="batch">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                    批次追踪
+                </div>
+                <div class="sidebar-item" data-page="quality">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
+                    质量检测
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-label">仓储物流</div>
+                <div class="sidebar-item" data-page="inventory">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><rect width="12" height="12" x="6" y="10"/></svg>
+                    库存管理
+                </div>
+                <div class="sidebar-item" data-page="material">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+                    物料流转
+                </div>
+                <div class="sidebar-item" data-page="trace">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8h8"/><path d="M7 12h10"/><path d="M7 16h6"/></svg>
+                    追溯查询
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-label">系统设置</div>
+                <div class="sidebar-item" data-page="users">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    用户管理
+                </div>
+                <div class="sidebar-item" data-page="settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                    系统配置
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+
+            <!-- Page: 实时驾驶舱 (default active) -->
+            <div class="page-view active" id="page-dashboard">
+                <div class="page-header">
+                    <h1 class="page-title">实时驾驶舱</h1>
+                    <p class="page-desc">全局数据监控与实时生产状态</p>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">今日产量 (瓶/件)</div>
+                        <div class="kpi-value">12,847</div>
+                        <div class="kpi-change positive">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                            +8.2%
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">出成率 (Yield)</div>
+                        <div class="kpi-value">84.2%</div>
+                        <div class="kpi-change positive">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                            +1.5%
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">良品率 (Pass Rate)</div>
+                        <div class="kpi-value">99.7%</div>
+                        <div class="kpi-change positive">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                            +0.3%
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">冷链温控稳定性</div>
+                        <div class="kpi-value">99.2%</div>
+                        <div class="kpi-change positive">稳定</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">设备稼动率 (OEE)</div>
+                        <div class="kpi-value">94.2%</div>
+                        <div class="kpi-change negative">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+                            -1.1%
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">AI 自动干预次数</div>
+                        <div class="kpi-value">124</div>
+                        <div class="kpi-change positive">运行中</div>
+                    </div>
+                </div>
+
+                <div class="live-feed">
+                    <div class="live-feed-header">
+                        <span class="data-card-title">生产线实时监控</span>
+                        <div class="live-indicator"><span class="live-dot"></span> 实时画面</div>
+                    </div>
+                    <div class="live-feed-body" id="visionContainer">
+                        <picture>
+                            <source srcset="assets/images/webp/dashboard_live_feed.webp" type="image/webp">
+                            <img src="assets/images/dashboard_live_feed.png" alt="生产线实时监控画面 - 多路视频流汇聚" loading="lazy" width="800" height="450">
+                        </picture>
+                        <div class="vision-overlay">
+                            <div class="vision-box" style="top:28%;left:10%;width:34%;height:42%;">
+                                <div class="vision-label">全自动罐装单元: 运行中</div>
+                            </div>
+                            <div class="vision-box" style="top:62%;left:15%;width:12%;height:28%;">
+                                <div class="vision-label">灌装批次: OK</div>
+                            </div>
+                            <div class="vision-box" style="top:85%;left:52%;width:10%;height:12%;">
+                                <div class="vision-label">传感器 B4: 18.5°C</div>
+                            </div>
+                            <div class="vision-heatmap" id="thermalMap"></div>
+                        </div>
+                        <div class="live-overlay">
+                            <div class="live-stat">温度: <span id="liveTemp">18.5</span>°C</div>
+                            <div class="live-stat">湿度: 62%</div>
+                            <div class="live-stat">产线速度: 124 件/分</div>
+                            <div class="live-stat">AI检测: <span style="color:#4ade80;">正常</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <!-- AI Orchestration Card -->
+                    <div class="data-card">
+                        <div class="data-card-header">
+                            <span class="data-card-title">AI 智能调度中枢</span>
+                            <span class="status-badge running">算法优化中</span>
+                        </div>
+                        <div class="live-feed-body" style="aspect-ratio:16/10;">
+                            <picture>
+                                <source srcset="assets/images/webp/dashboard_scheduling.webp" type="image/webp">
+                                <img src="assets/images/dashboard_scheduling.png" alt="AI智能排产调度中心 - 订单与产能实时匹配" loading="lazy" width="600" height="400">
+                            </picture>
+                            <div class="vision-overlay">
+                                <div class="vision-box" style="top:15%;left:20%;width:60%;height:50%;border-style:dashed;opacity:0.6;">
+                                    <div class="vision-label">数字孪生同步: 99.8%</div>
+                                </div>
+                            </div>
+                            <div class="live-overlay">
+                                <div class="live-stat" style="background:#C45C26;">排程推荐: 批次 2026-A4 提前 5min</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Human Efficiency Card -->
+                    <div class="data-card">
+                        <div class="data-card-header">
+                            <span class="data-card-title">人效实时分析</span>
+                            <span class="status-badge running">Tracking Active</span>
+                        </div>
+                        <div class="live-feed-body" style="aspect-ratio:16/10;">
+                            <picture>
+                                <source srcset="assets/images/webp/dashboard_efficiency.webp" type="image/webp">
+                                <img src="assets/images/dashboard_efficiency.png" alt="生产效率分析仪表盘 - OEE与产能利用率" loading="lazy" width="600" height="400">
+                            </picture>
+                            <div class="vision-overlay">
+                                <div class="vision-box" style="top:10%;left:55%;width:15%;height:30%;border-color:#2D6A4F;">
+                                    <div class="vision-label">效率: 92% (High)</div>
+                                </div>
+                                <div class="vision-box" style="top:50%;left:10%;width:15%;height:35%;border-color:#E9C46A;">
+                                    <div class="vision-label">工序: 质量抽检</div>
+                                </div>
+                            </div>
+                            <div class="live-overlay">
+                                <div class="live-stat">实时人效指数: 0.94</div>
+                                <div class="live-stat">平均停留时长: 242s</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page: 调度分析 -->
+            <div class="page-view" id="page-scheduling-analysis" style="display:none;">
+                <div class="page-header">
+                    <h1 class="page-title">AI 智能调度分析</h1>
+                    <p class="page-desc">基于数字孪生与前瞻算法的生产排程优化</p>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">排程符合度</div>
+                        <div class="kpi-value">98.5%</div>
+                        <div class="kpi-change positive">极高</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">预测等待耗时</div>
+                        <div class="kpi-value">-12%</div>
+                        <div class="kpi-change positive">优化中</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">资源利用率</div>
+                        <div class="kpi-value">94.2%</div>
+                        <div class="kpi-change positive">+3.1%</div>
+                    </div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <span class="data-card-title">中枢调度实时快照</span>
+                        <span class="status-badge running">算法优化中</span>
+                    </div>
+                    <div class="live-feed-body" style="aspect-ratio:16/9;">
+                        <picture>
+                            <source srcset="assets/images/webp/dashboard_scheduling.webp" type="image/webp">
+                            <img src="assets/images/dashboard_scheduling.png" alt="AI智能排产调度中心 - 订单与产能实时匹配" loading="lazy" width="600" height="400">
+                        </picture>
+                        <div class="vision-overlay">
+                            <div class="vision-box" style="top:15%;left:20%;width:60%;height:50%;border-style:dashed;opacity:0.6;">
+                                <div class="vision-label">数字孪生同步: 99.8%</div>
+                            </div>
+                        </div>
+                        <div class="live-overlay">
+                            <div class="live-stat" style="background:#C45C26;">排程推荐: 批次 2026-A4 提前 5min</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-table-wrap">
+                    <div class="data-card-header">
+                        <span class="data-card-title">基于生成式 AI 的排程演化建议</span>
+                        <span class="status-badge success">AI 推荐引擎已就绪</span>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>排程批次</th>
+                                <th>原始计划</th>
+                                <th>AI 优化后</th>
+                                <th>收益预估</th>
+                                <th>决策逻辑 (Generative Reasoning)</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">#2026-0107-A4</td>
+                                <td>14:00 - 18:00</td>
+                                <td style="color:#C45C26;font-weight:600;">13:45 - 17:30</td>
+                                <td>+25min 冗余</td>
+                                <td style="font-size:13px;color:rgba(0,0,0,0.5);">根据前序 A2 批次清洗提前完成，建议平滑切入以避免 15min 设备空置。</td>
+                                <td><button class="btn btn-primary" style="padding:4px 12px;font-size:12px;">执行建议</button></td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">#2026-0108-B1</td>
+                                <td>1号产线</td>
+                                <td style="color:#C45C26;font-weight:600;">2号产线 (主调)</td>
+                                <td>-8% 能耗</td>
+                                <td style="font-size:13px;color:rgba(0,0,0,0.5);">2号线伺服电机热损耗较低，适合跨度大于 6 小时的长持续订单。</td>
+                                <td><button class="btn btn-secondary" style="padding:4px 12px;font-size:12px;">详情</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page: 人效分析 -->
+            <div class="page-view" id="page-efficiency-analysis" style="display:none;">
+                <div class="page-header">
+                    <h1 class="page-title">人效实时分析</h1>
+                    <p class="page-desc">工序合规性、作业强度与产线平衡度监控</p>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">实时人效指数</div>
+                        <div class="kpi-value">0.94</div>
+                        <div class="kpi-change positive">稳定</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">平均动作循环</div>
+                        <div class="kpi-value">24.5s</div>
+                        <div class="kpi-change positive">-0.8s</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">异常工时占比</div>
+                        <div class="kpi-value">2.1%</div>
+                        <div class="kpi-change negative">关注</div>
+                    </div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <span class="data-card-title">工位作业跟踪</span>
+                        <span class="status-badge running">Tracking Active</span>
+                    </div>
+                    <div class="live-feed-body" style="aspect-ratio:16/9;">
+                        <picture>
+                            <source srcset="assets/images/webp/dashboard_efficiency.webp" type="image/webp">
+                            <img src="assets/images/dashboard_efficiency.png" alt="生产效率分析仪表盘 - OEE与产能利用率" loading="lazy" width="600" height="400">
+                        </picture>
+                        <div class="vision-overlay">
+                            <div class="vision-box" style="top:10%;left:55%;width:15%;height:30%;border-color:#2D6A4F;">
+                                <div class="vision-label">效率: 92% (High)</div>
+                            </div>
+                            <div class="vision-box" style="top:50%;left:10%;width:15%;height:35%;border-color:#E9C46A;">
+                                <div class="vision-label">工序: 质量抽检</div>
+                            </div>
+                        </div>
+                        <div class="live-overlay">
+                            <div class="live-stat">区域: 包装车间</div>
+                            <div class="live-stat">平均停留时长: 242s</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-table-wrap">
+                    <div class="data-card-header">
+                        <span class="data-card-title">班组员工作效矩阵 (Individual Matrix)</span>
+                        <span class="status-badge running">实时数据同步</span>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>员工姓名</th>
+                                <th>所属岗位</th>
+                                <th>当前任务 (Batch)</th>
+                                <th>实时效率指数</th>
+                                <th>标准作业偏差</th>
+                                <th>协作状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>陈志强</td>
+                                <td><span class="tag-badge">中控巡检</span></td>
+                                <td style="font-family:var(--font-mono,monospace);">#A3 (灌装)</td>
+                                <td style="font-weight:600;color:#2D6A4F;">0.98</td>
+                                <td style="color:rgba(0,0,0,0.4);">±2.1% (Low)</td>
+                                <td><span class="status-badge running" style="padding:2px 8px;">活跃</span></td>
+                            </tr>
+                            <tr>
+                                <td>林晓梅</td>
+                                <td><span class="tag-badge">灌装主操</span></td>
+                                <td style="font-family:var(--font-mono,monospace);">#A3 (灌装)</td>
+                                <td style="font-weight:600;color:#C45C26;">0.85</td>
+                                <td style="color:#BC4749;">+8.4% (高偏差)</td>
+                                <td><span class="status-badge warning" style="padding:2px 8px;">协助中</span></td>
+                            </tr>
+                            <tr>
+                                <td>王五</td>
+                                <td><span class="tag-badge">末端装箱</span></td>
+                                <td style="font-family:var(--font-mono,monospace);">#A2 (已完成)</td>
+                                <td style="font-weight:600;color:#2D6A4F;">0.96</td>
+                                <td style="color:rgba(0,0,0,0.4);">±1.5%</td>
+                                <td><span class="status-badge info" style="padding:2px 8px;">准备中</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page: 生产排程 -->
+            <div class="page-view" id="page-schedule" style="display:none;">
+                <div class="page-header">
+                    <h1 class="page-title">生产排程</h1>
+                    <p class="page-desc">管理和优化生产计划安排</p>
+                </div>
+                <div class="data-table-wrap">
+                    <div class="data-card-header">
+                        <span class="data-card-title">本周排程计划</span>
+                        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                            新建排程
+                        </button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>批次</th>
+                                <th>产品</th>
+                                <th>计划产量</th>
+                                <th>产线</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2026-01-07</td>
+                                <td style="font-family:var(--font-mono,monospace);">A3</td>
+                                <td>蒜蓉辣酱 300g</td>
+                                <td style="font-family:var(--font-mono,monospace);">6,000</td>
+                                <td>1号线</td>
+                                <td><span class="status-badge running"><span class="live-dot" style="width:6px;height:6px;margin-right:4px;"></span>进行中</span></td>
+                            </tr>
+                            <tr>
+                                <td>2026-01-07</td>
+                                <td style="font-family:var(--font-mono,monospace);">A4</td>
+                                <td>豆瓣酱 1kg</td>
+                                <td style="font-family:var(--font-mono,monospace);">3,000</td>
+                                <td>2号线</td>
+                                <td><span class="status-badge warning">待开始</span></td>
+                            </tr>
+                            <tr>
+                                <td>2026-01-08</td>
+                                <td style="font-family:var(--font-mono,monospace);">B1</td>
+                                <td>红烧牛肉酱 500g</td>
+                                <td style="font-family:var(--font-mono,monospace);">8,000</td>
+                                <td>1号线</td>
+                                <td><span class="status-badge info">已排程</span></td>
+                            </tr>
+                            <tr>
+                                <td>2026-01-08</td>
+                                <td style="font-family:var(--font-mono,monospace);">B2</td>
+                                <td>香辣鸡丁酱 250g</td>
+                                <td style="font-family:var(--font-mono,monospace);">10,000</td>
+                                <td>2号线</td>
+                                <td><span class="status-badge info">已排程</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page: 批次追踪 -->
+            <div class="page-view" id="page-batch" style="display:none;">
+                <div class="page-header">
+                    <h1 class="page-title">批次追踪</h1>
+                    <p class="page-desc">查看所有生产批次的详细信息</p>
+                </div>
+                <div class="data-table-wrap">
+                    <div class="data-card-header">
+                        <span class="data-card-title">今日批次列表</span>
+                        <button class="btn btn-secondary" style="padding:8px 16px;font-size:13px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                            筛选
+                        </button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>批次编号</th>
+                                <th>产品名称</th>
+                                <th>计划产量</th>
+                                <th>实际产量</th>
+                                <th>完成率</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">2026-0107-A1</td>
+                                <td>红烧牛肉酱 500g</td>
+                                <td style="font-family:var(--font-mono,monospace);">5,000</td>
+                                <td style="font-family:var(--font-mono,monospace);">5,120</td>
+                                <td style="font-family:var(--font-mono,monospace);">102.4%</td>
+                                <td><span class="status-badge complete">已完成</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">2026-0107-A2</td>
+                                <td>香辣鸡丁酱 250g</td>
+                                <td style="font-family:var(--font-mono,monospace);">8,000</td>
+                                <td style="font-family:var(--font-mono,monospace);">7,847</td>
+                                <td style="font-family:var(--font-mono,monospace);">98.1%</td>
+                                <td><span class="status-badge complete">已完成</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">2026-0107-A3</td>
+                                <td>蒜蓉辣酱 300g</td>
+                                <td style="font-family:var(--font-mono,monospace);">6,000</td>
+                                <td style="font-family:var(--font-mono,monospace);">4,280</td>
+                                <td style="font-family:var(--font-mono,monospace);">71.3%</td>
+                                <td><span class="status-badge running"><span class="live-dot" style="width:6px;height:6px;margin-right:4px;"></span>进行中</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">2026-0107-A4</td>
+                                <td>豆瓣酱 1kg</td>
+                                <td style="font-family:var(--font-mono,monospace);">3,000</td>
+                                <td style="font-family:var(--font-mono,monospace);">—</td>
+                                <td style="font-family:var(--font-mono,monospace);">—</td>
+                                <td><span class="status-badge warning">待开始</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page: 质量检测 -->
+            <div class="page-view" id="page-quality" style="display:none;">
+                <div class="page-header">
+                    <h1 class="page-title">质量检测</h1>
+                    <p class="page-desc">产品质量检测记录与分析</p>
+                </div>
+                <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);">
+                    <div class="kpi-card">
+                        <div class="kpi-label">今日检测数</div>
+                        <div class="kpi-value">1,247</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">合格率</div>
+                        <div class="kpi-value">99.2%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">待处理异常</div>
+                        <div class="kpi-value" style="color:#BC4749;">3</div>
+                    </div>
+                </div>
+                <div class="data-table-wrap">
+                    <div class="data-card-header">
+                        <span class="data-card-title">检测记录</span>
+                        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                            新增检测
+                        </button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>检测编号</th>
+                                <th>批次</th>
+                                <th>检测项目</th>
+                                <th>检测值</th>
+                                <th>标准范围</th>
+                                <th>结果</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">QC-0107-001</td>
+                                <td style="font-family:var(--font-mono,monospace);">A3</td>
+                                <td>盐分含量</td>
+                                <td style="font-family:var(--font-mono,monospace);">12.3%</td>
+                                <td style="font-family:var(--font-mono,monospace);">11-13%</td>
+                                <td><span class="status-badge success">合格</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">QC-0107-002</td>
+                                <td style="font-family:var(--font-mono,monospace);">A3</td>
+                                <td>pH值</td>
+                                <td style="font-family:var(--font-mono,monospace);">4.2</td>
+                                <td style="font-family:var(--font-mono,monospace);">4.0-4.5</td>
+                                <td><span class="status-badge success">合格</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">QC-0107-003</td>
+                                <td style="font-family:var(--font-mono,monospace);">A2</td>
+                                <td>菌落总数</td>
+                                <td style="font-family:var(--font-mono,monospace);">850 CFU/g</td>
+                                <td style="font-family:var(--font-mono,monospace);">&lt;1000</td>
+                                <td><span class="status-badge success">合格</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">QC-0107-004</td>
+                                <td style="font-family:var(--font-mono,monospace);">A1</td>
+                                <td>水分含量</td>
+                                <td style="font-family:var(--font-mono,monospace);">68.5%</td>
+                                <td style="font-family:var(--font-mono,monospace);">65-70%</td>
+                                <td><span class="status-badge success">合格</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page: 库存管理 -->
+            <div class="page-view" id="page-inventory" style="display:none;">
+                <div class="page-header">
+                    <h1 class="page-title">库存管理</h1>
+                    <p class="page-desc">原料与成品库存实时监控</p>
+                </div>
+                <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);">
+                    <div class="kpi-card">
+                        <div class="kpi-label">原料库存金额</div>
+                        <div class="kpi-value">¥2.4M</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">成品库存数量</div>
+                        <div class="kpi-value">48,320</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">库存周转天数</div>
+                        <div class="kpi-value">12.5</div>
+                    </div>
+                </div>
+                <div class="data-table-wrap">
+                    <div class="data-card-header">
+                        <span class="data-card-title">库存预警</span>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>物料编码</th>
+                                <th>物料名称</th>
+                                <th>当前库存</th>
+                                <th>安全库存</th>
+                                <th>状态</th>
+                                <th>建议</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">RM-001</td>
+                                <td>生姜</td>
+                                <td style="font-family:var(--font-mono,monospace);">120 kg</td>
+                                <td style="font-family:var(--font-mono,monospace);">200 kg</td>
+                                <td><span class="status-badge danger">低于安全库存</span></td>
+                                <td>建议3天内补货</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">RM-002</td>
+                                <td>大蒜</td>
+                                <td style="font-family:var(--font-mono,monospace);">85 kg</td>
+                                <td style="font-family:var(--font-mono,monospace);">150 kg</td>
+                                <td><span class="status-badge danger">低于安全库存</span></td>
+                                <td>建议3天内补货</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">RM-003</td>
+                                <td>辣椒粉</td>
+                                <td style="font-family:var(--font-mono,monospace);">450 kg</td>
+                                <td style="font-family:var(--font-mono,monospace);">300 kg</td>
+                                <td><span class="status-badge success">正常</span></td>
+                                <td>—</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">PM-001</td>
+                                <td>500g玻璃瓶</td>
+                                <td style="font-family:var(--font-mono,monospace);">12,000</td>
+                                <td style="font-family:var(--font-mono,monospace);">10,000</td>
+                                <td><span class="status-badge success">正常</span></td>
+                                <td>—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page: 物料流转 -->
+            <div class="page-view" id="page-material" style="display:none;">
+                <div class="page-header">
+                    <h1 class="page-title">物料流转</h1>
+                    <p class="page-desc">跟踪物料在各工序间的流动</p>
+                </div>
+                <div class="data-table-wrap">
+                    <div class="data-card-header">
+                        <span class="data-card-title">今日物料流转记录</span>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>物料</th>
+                                <th>数量</th>
+                                <th>从</th>
+                                <th>到</th>
+                                <th>操作人</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">14:32</td>
+                                <td>蒜蓉辣酱半成品</td>
+                                <td style="font-family:var(--font-mono,monospace);">500 kg</td>
+                                <td>配料车间</td>
+                                <td>灌装车间</td>
+                                <td>张三</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">13:15</td>
+                                <td>辣椒粉</td>
+                                <td style="font-family:var(--font-mono,monospace);">100 kg</td>
+                                <td>原料仓库</td>
+                                <td>配料车间</td>
+                                <td>李四</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">11:20</td>
+                                <td>红烧牛肉酱成品</td>
+                                <td style="font-family:var(--font-mono,monospace);">5,120 瓶</td>
+                                <td>包装车间</td>
+                                <td>成品仓库</td>
+                                <td>王五</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">09:45</td>
+                                <td>牛肉</td>
+                                <td style="font-family:var(--font-mono,monospace);">300 kg</td>
+                                <td>冷库</td>
+                                <td>解冻室</td>
+                                <td>张三</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page: 追溯查询 -->
+            <div class="page-view" id="page-trace" style="display:none;">
+                <div class="page-header">
+                    <h1 class="page-title">追溯查询</h1>
+                    <p class="page-desc">产品全链路追溯查询</p>
+                </div>
+                <div class="data-card" style="padding:24px;">
+                    <h3 style="font-size:15px;font-weight:700;color:#1A1814;margin-bottom:20px;">输入批次号或扫码查询</h3>
+                    <div style="display:flex;gap:12px;margin-bottom:24px;">
+                        <input type="text" class="form-input" placeholder="输入批次号，如：2026-0107-A1" value="2026-0107-A1" style="max-width:400px;">
+                        <button class="btn btn-primary" style="padding:10px 20px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            查询
+                        </button>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.03);border-radius:12px;padding:20px;">
+                        <h4 style="font-size:14px;font-weight:700;color:#1A1814;margin-bottom:16px;">追溯结果：批次 2026-0107-A1</h4>
+                        <div class="grid-2" style="gap:12px 24px;">
+                            <div style="font-size:14px;"><strong>产品名称：</strong>红烧牛肉酱 500g</div>
+                            <div style="font-size:14px;"><strong>生产日期：</strong>2026-01-07</div>
+                            <div style="font-size:14px;"><strong>生产产线：</strong>1号灌装线</div>
+                            <div style="font-size:14px;"><strong>操作班组：</strong>甲班</div>
+                            <div style="font-size:14px;"><strong>原料批次：</strong>牛肉 #RM-2026-0105-B2</div>
+                            <div style="font-size:14px;"><strong>质检结果：</strong>全部合格 (4/4)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page: 用户管理 -->
+            <div class="page-view" id="page-users" style="display:none;">
+                <div class="page-header">
+                    <h1 class="page-title">用户管理</h1>
+                    <p class="page-desc">管理系统用户与权限</p>
+                </div>
+                <div class="data-table-wrap">
+                    <div class="data-card-header">
+                        <span class="data-card-title">系统用户</span>
+                        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+                            添加用户
+                        </button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>用户名</th>
+                                <th>姓名</th>
+                                <th>角色</th>
+                                <th>部门</th>
+                                <th>最后登录</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">admin</td>
+                                <td>系统管理员</td>
+                                <td>超级管理员</td>
+                                <td>信息部</td>
+                                <td style="font-family:var(--font-mono,monospace);">2026-01-07 14:32</td>
+                                <td><span class="status-badge running">在线</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">zhangsan</td>
+                                <td>张三</td>
+                                <td>生产主管</td>
+                                <td>生产部</td>
+                                <td style="font-family:var(--font-mono,monospace);">2026-01-07 13:45</td>
+                                <td><span class="status-badge running">在线</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">lisi</td>
+                                <td>李四</td>
+                                <td>质检员</td>
+                                <td>质量部</td>
+                                <td style="font-family:var(--font-mono,monospace);">2026-01-07 11:20</td>
+                                <td><span class="status-badge complete">离线</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:var(--font-mono,monospace);">wangwu</td>
+                                <td>王五</td>
+                                <td>仓库管理员</td>
+                                <td>仓储部</td>
+                                <td style="font-family:var(--font-mono,monospace);">2026-01-06 17:30</td>
+                                <td><span class="status-badge complete">离线</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page: 系统配置 -->
+            <div class="page-view" id="page-settings" style="display:none;">
+                <div class="page-header">
+                    <h1 class="page-title">系统配置</h1>
+                    <p class="page-desc">系统参数与基础数据设置</p>
+                </div>
+                <div class="grid-2">
+                    <div class="data-card" style="padding:24px;">
+                        <h4 style="font-size:15px;font-weight:700;color:#1A1814;margin-bottom:20px;">基础配置</h4>
+                        <div class="form-group">
+                            <label class="form-label">工厂名称</label>
+                            <input type="text" class="form-input" value="白垩纪智能工厂（演示）">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">时区设置</label>
+                            <select class="form-select">
+                                <option>Asia/Shanghai (UTC+8)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">系统语言</label>
+                            <select class="form-select">
+                                <option>简体中文</option>
+                                <option>English</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary">保存设置</button>
+                    </div>
+                    <div class="data-card" style="padding:24px;">
+                        <h4 style="font-size:15px;font-weight:700;color:#1A1814;margin-bottom:20px;">IoT设备状态</h4>
+                        <div style="display:flex;flex-direction:column;gap:10px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:rgba(0,0,0,0.03);border-radius:8px;">
+                                <span style="font-size:14px;">Edge Gateway #1</span>
+                                <span class="status-badge running">在线</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:rgba(0,0,0,0.03);border-radius:8px;">
+                                <span style="font-size:14px;">柯力电子秤 x4</span>
+                                <span class="status-badge running">在线</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:rgba(0,0,0,0.03);border-radius:8px;">
+                                <span style="font-size:14px;">海康摄像头 x2</span>
+                                <span class="status-badge running">在线</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:rgba(0,0,0,0.03);border-radius:8px;">
+                                <span style="font-size:14px;">温湿度传感器 x8</span>
+                                <span class="status-badge running">在线</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Right AI Panel -->
+        <aside class="dashboard-ai-panel" id="dashboardAiPanel">
+            <div class="ai-panel-header">
+                <div style="width:36px;height:36px;background:rgba(196,92,38,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C45C26" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+                </div>
+                <div>
+                    <div style="font-size:15px;font-weight:700;color:#1A1814;">AI 生产助手</div>
+                    <div style="font-size:12px;color:rgba(0,0,0,0.4);">基于 DashScope 大模型</div>
+                </div>
+            </div>
+            <div class="ai-panel-body" id="chatBody">
+                <div class="chat-message ai">
+                    <div class="chat-bubble">您好！我是您的AI生产助手。我可以帮您：<br><br>• 分析生产数据<br>• 预测设备故障<br>• 优化排程计划<br><br>请问有什么可以帮您？</div>
+                </div>
+            </div>
+            <div class="ai-panel-input">
+                <div class="chat-input-wrap">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="输入问题，按回车发送...">
+                    <button class="chat-send" id="chatSend">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- AI Toggle Button (mobile/tablet) -->
+    <button class="ai-toggle-btn" id="aiToggleBtn" aria-label="AI助手">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 8V4H8"/>
+            <rect width="16" height="12" x="4" y="8" rx="2"/>
+            <path d="M2 14h2"/>
+            <path d="M20 14h2"/>
+            <path d="M15 13v2"/>
+            <path d="M9 13v2"/>
+        </svg>
+    </button>
+
+    <script>
+        // =============================================
+        // Sidebar Navigation
+        // =============================================
+        const sidebarItems = document.querySelectorAll('.sidebar-item[data-page]');
+        const pageViews = document.querySelectorAll('.page-view');
+        const dashboardSidebar = document.getElementById('dashboardSidebar');
+        const dashboardAiPanel = document.getElementById('dashboardAiPanel');
+        const aiToggleBtn = document.getElementById('aiToggleBtn');
+
+        sidebarItems.forEach(function(item) {
+            item.addEventListener('click', function() {
+                // Update active sidebar item
+                sidebarItems.forEach(function(i) { i.classList.remove('active'); });
+                this.classList.add('active');
+
+                // Show the corresponding page view
+                var pageName = this.getAttribute('data-page');
+                pageViews.forEach(function(page) {
+                    page.style.display = 'none';
+                    page.classList.remove('active');
+                });
+                var targetPage = document.getElementById('page-' + pageName);
+                if (targetPage) {
+                    targetPage.style.display = 'block';
+                    targetPage.classList.add('active');
+                }
+
+                // Close sidebar on mobile after selection
+                if (window.innerWidth <= 900) {
+                    dashboardSidebar.classList.remove('active');
+                    dashboardSidebar.style.display = '';
+                }
+            });
+        });
+
+        // AI panel toggle (mobile/tablet)
+        if (aiToggleBtn) {
+            aiToggleBtn.addEventListener('click', function() {
+                if (dashboardAiPanel.style.display === 'flex') {
+                    dashboardAiPanel.style.display = '';
+                    dashboardAiPanel.classList.remove('active');
+                } else {
+                    dashboardAiPanel.style.display = 'flex';
+                    dashboardAiPanel.classList.add('active');
+                }
+            });
+        }
+
+        // Close panels when clicking outside on mobile
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 900) {
+                if (dashboardSidebar.classList.contains('active') &&
+                    !dashboardSidebar.contains(e.target) &&
+                    !e.target.closest('.mobile-menu-btn')) {
+                    dashboardSidebar.classList.remove('active');
+                }
+            }
+        });
+
+        // =============================================
+        // AI Chat Simulation
+        // =============================================
+        var chatInput = document.getElementById('chatInput');
+        var chatSend = document.getElementById('chatSend');
+        var chatBody = document.getElementById('chatBody');
+        var thermalMap = document.getElementById('thermalMap');
+        var liveTemp = document.getElementById('liveTemp');
+
+        var aiResponses = {
+            '产量': '当前实时产量 12,847 件，达成率 102.4%。A1 灌装线运行平稳。',
+            '出成率': '当前出成率为 84.2%，较上个批次提升 1.5%。AI 优化了切割机器人的压力参数，减少了约 12kg 的原料损耗。',
+            '良品率': '良品率 99.7% 极佳。视觉 AI 成功拦截了 3 例封口不严的残次品。',
+            '温控': '冷链系统当前 18.5°C。已为您开启热成像模式进行实时监控。',
+            '温度': '冷链系统当前 18.5°C。已为您开启热成像模式进行实时监控。',
+            '故障': '预测 3 号电机在接下来的 24 小时内有 15% 的过载风险。建议在今晚 22:00 进行常规检查。',
+            '干预': '今日 AI 自动干预 124 次，主要为皮带调速和温控补偿。无需人工介入。',
+            'default': '作为白垩纪 AI 助手，我正在实时监控您的工厂。您可以询问关于"出成率"、"温控"或"自动干预"的细节。'
+        };
+
+        // Random temperature fluctuation
+        setInterval(function() {
+            if (!liveTemp) return;
+            var current = parseFloat(liveTemp.innerText);
+            if (isNaN(current)) return;
+            var next = (current + (Math.random() * 0.4 - 0.2)).toFixed(1);
+            liveTemp.innerText = next;
+        }, 3000);
+
+        function sendMessage() {
+            var message = chatInput.value.trim();
+            if (!message) return;
+
+            chatBody.innerHTML += '<div class="chat-message user"><div class="chat-bubble">' + message + '</div></div>';
+            chatInput.value = '';
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            // Trigger thermal overlay for temperature queries
+            if (message.includes('温控') || message.includes('温度')) {
+                if (thermalMap) {
+                    thermalMap.style.display = 'block';
+                    setTimeout(function() { thermalMap.style.display = 'none'; }, 10000);
+                }
+            }
+
+            setTimeout(function() {
+                var response = aiResponses['default'];
+                for (var keyword in aiResponses) {
+                    if (keyword !== 'default' && message.includes(keyword)) {
+                        response = aiResponses[keyword];
+                        break;
+                    }
+                }
+                chatBody.innerHTML += '<div class="chat-message ai"><div class="chat-bubble">' + response + '</div></div>';
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }, 800);
+        }
+
+        chatSend.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') sendMessage(); });
+    </script>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <div class="footer-brand">
+                        <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+                            <rect width="36" height="36" rx="8" fill="#C45C26" />
+                            <path d="M8 28V8h4v8h12V8h4v20h-4v-8H12v8H8z" fill="white" />
+                        </svg>
+                        白垩纪
+                    </div>
+                    <p class="footer-desc">新一代工厂操作系统，让每一座工厂都拥有智慧大脑。</p>
+                </div>
+                <div class="footer-col">
+                    <h4>产品</h4>
+                    <a href="/index-v3/#features" class="footer-link">Factory OS</a>
+                    <a href="/ai-bi-v3/" class="footer-link">SmartBI</a>
+                    <a href="/ai-scheduling-v3/" class="footer-link">AI调度</a>
+                    <a href="/ai-calibration-v3/" class="footer-link">AI定标</a>
+                </div>
+                <div class="footer-col">
+                    <h4>资源</h4>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">文档中心</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">API参考</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">客户案例</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">博客</a>
+                </div>
+                <div class="footer-col">
+                    <h4>公司</h4>
+                    <a href="/index-v3/#about" class="footer-link">关于我们</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">加入团队</a>
+                    <a href="/index-v3/#contact" class="footer-link">联系我们</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">合作伙伴</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>© 2026 白垩纪AI智能体. All rights reserved.</span>
+                <span>上海 · 北京 · 深圳</span>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

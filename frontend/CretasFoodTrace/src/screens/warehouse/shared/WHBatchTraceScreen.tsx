@@ -3,13 +3,14 @@
  * 对应原型: warehouse/batch-trace.html
  */
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Text, Surface, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,6 +18,10 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { traceabilityApiClient, FullTraceResponse } from "../../../services/api/traceabilityApiClient";
+import { handleError } from "../../../utils/errorHandler";
+import { formatDate, formatDateTime } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 type RouteType = RouteProp<WHInventoryStackParamList, "WHBatchTrace">;
@@ -39,82 +44,175 @@ export function WHBatchTraceScreen() {
   const route = useRoute<RouteType>();
   const { batchId, batchNumber } = route.params;
 
-  const traceData = {
-    batchNumber: batchNumber || "MB-20251223-001",
-    productName: "带鱼 (鲜品)",
-    initialQty: 300,
-    currentQty: 256,
-  };
+  const [loading, setLoading] = useState(true);
+  const [traceData, setTraceData] = useState<{
+    batchNumber: string;
+    productName: string;
+    initialQty: number;
+    currentQty: number;
+  } | null>(null);
+  const [traceNodes, setTraceNodes] = useState<TraceNode[]>([]);
 
-  const traceNodes: TraceNode[] = [
-    {
-      step: 1,
-      title: "原料来源",
-      type: "source",
-      content: [
-        { label: "供应商", value: "舟山渔业合作社" },
-        { label: "捕捞日期", value: "2025-12-23" },
-        { label: "捕捞区域", value: "东海渔场" },
-        { label: "检验报告", value: "查看报告 >", status: "clickable" },
-      ],
-    },
-    {
-      step: 2,
-      title: "入库验收",
-      type: "inbound",
-      content: [
-        { label: "入库时间", value: "2025-12-23 08:30" },
-        { label: "入库数量", value: "300 kg" },
-        { label: "质检员", value: "李质检" },
-        { label: "质量等级", value: "A级" },
-        { label: "库位", value: "A区-冷藏库-01" },
-      ],
-    },
-    {
-      step: 3,
-      title: "仓储管理",
-      type: "storage",
-      content: [
-        { label: "储存温度", value: "2°C (符合要求)", status: "success" },
-        { label: "温控记录", value: "查看记录 >", status: "clickable" },
-        { label: "存储天数", value: "3天" },
-      ],
-    },
-    {
-      step: 4,
-      title: "出库记录",
-      type: "outbound",
-      content: [],
-      subItems: [
-        {
-          header: "订单: SH-20251225-001",
-          qty: "-30kg",
-          rows: [
-            { label: "客户", value: "鲜味餐厅" },
-            { label: "出库时间", value: "2025-12-25 15:00" },
-          ],
-        },
-        {
-          header: "生产批次: PB-001",
-          qty: "-14kg",
-          rows: [
-            { label: "产品", value: "带鱼片" },
-            { label: "消耗时间", value: "2025-12-24 14:00" },
-          ],
-        },
-      ],
-    },
-    {
-      step: 5,
-      title: "当前状态",
-      type: "current",
-      content: [
-        { label: "剩余数量", value: "256 kg" },
-        { label: "到期时间", value: "2025-12-30 (3天后)", status: "warning" },
-        { label: "库位", value: "A区-冷藏库-01" },
-      ],
-    },
-  ];
+  const loadTraceData = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const [batchResult, fullTraceResult, usageResult] = await Promise.allSettled([
+        materialBatchApiClient.getBatchById(batchId),
+        traceabilityApiClient.getFullTrace(batchNumber),
+        materialBatchApiClient.getBatchUsageHistory(batchId),
+      ]);
+
+      // Extract batch info
+      const batch: MaterialBatch | null =
+        batchResult.status === 'fulfilled' && batchResult.value?.data
+          ? batchResult.value.data
+          : null;
+
+      const fullTrace: FullTraceResponse | null =
+        fullTraceResult.status === 'fulfilled' ? fullTraceResult.value : null;
+
+      const usageHistory: any[] =
+        usageResult.status === 'fulfilled' && usageResult.value?.data
+          ? (Array.isArray(usageResult.value.data) ? usageResult.value.data : [])
+          : [];
+
+      if (!batch) {
+        setTraceData(null);
+        setTraceNodes([]);
+        return;
+      }
+
+      // Build trace overview
+      setTraceData({
+        batchNumber: batch.batchNumber,
+        productName: batch.materialName || batch.materialCategory || '-',
+        initialQty: batch.inboundQuantity ?? 0,
+        currentQty: batch.remainingQuantity ?? 0,
+      });
+
+      // Build trace nodes from real data
+      const nodes: TraceNode[] = [];
+
+      // Node 1: 原料来源
+      nodes.push({
+        step: 1,
+        title: "原料来源",
+        type: "source",
+        content: [
+          { label: "供应商", value: batch.supplierName || '-' },
+          { label: "入库日期", value: batch.inboundDate ? formatDate(batch.inboundDate) : '-' },
+          { label: "库位", value: batch.storageLocation || '-' },
+          ...(batch.productionDate
+            ? [{ label: "生产日期", value: formatDate(batch.productionDate) }]
+            : []),
+        ],
+      });
+
+      // Node 2: 入库验收
+      const firstQC = fullTrace?.qualityInspections?.[0];
+      nodes.push({
+        step: 2,
+        title: "入库验收",
+        type: "inbound",
+        content: [
+          { label: "入库时间", value: batch.inboundDate ? formatDateTime(batch.inboundDate) : '-' },
+          { label: "入库数量", value: `${batch.inboundQuantity ?? 0} kg` },
+          ...(firstQC ? [
+            { label: "质检员", value: firstQC.inspectorName || '-' },
+            { label: "质检结果", value: firstQC.result || '-', status: firstQC.result === '合格' ? 'success' as const : undefined },
+          ] : []),
+          { label: "库位", value: batch.storageLocation || '-' },
+        ],
+      });
+
+      // Node 3: 仓储管理
+      const daysSinceReceipt = batch.inboundDate
+        ? Math.max(0, Math.floor((Date.now() - new Date(batch.inboundDate).getTime()) / (1000 * 60 * 60 * 24)))
+        : 0;
+      const storageTypeLabel = batch.storageType === 'frozen' ? '冷冻' : batch.storageType === 'fresh' ? '冷藏' : batch.storageType === 'dry' ? '常温' : '-';
+      nodes.push({
+        step: 3,
+        title: "仓储管理",
+        type: "storage",
+        content: [
+          { label: "存储类型", value: storageTypeLabel },
+          { label: "存储天数", value: `${daysSinceReceipt}天` },
+          { label: "库位", value: batch.storageLocation || '-' },
+        ],
+      });
+
+      // Node 4: 出库记录
+      const outboundSubItems: TraceNode['subItems'] = [];
+
+      // From usage history
+      if (usageHistory.length > 0) {
+        for (const record of usageHistory) {
+          outboundSubItems.push({
+            header: record.productionPlanId ? `生产计划: ${record.productionPlanId}` : `使用记录`,
+            qty: `-${record.quantity ?? record.usedQuantity ?? 0}kg`,
+            rows: [
+              ...(record.reason ? [{ label: "用途", value: record.reason }] : []),
+              ...(record.createdAt ? [{ label: "时间", value: formatDateTime(record.createdAt) }] : []),
+            ],
+          });
+        }
+      }
+
+      // From fullTrace shipments
+      if (fullTrace?.shipments?.length) {
+        for (const shipment of fullTrace.shipments) {
+          outboundSubItems.push({
+            header: `出货: ${shipment.shipmentNumber}`,
+            qty: shipment.quantity ? `-${shipment.quantity}kg` : '-',
+            rows: [
+              { label: "客户", value: shipment.customerName || '-' },
+              { label: "出库时间", value: shipment.shipmentDate ? formatDateTime(shipment.shipmentDate) : '-' },
+            ],
+          });
+        }
+      }
+
+      nodes.push({
+        step: 4,
+        title: "出库记录",
+        type: "outbound",
+        content: outboundSubItems.length === 0
+          ? [{ label: "记录", value: "暂无出库记录" }]
+          : [],
+        subItems: outboundSubItems.length > 0 ? outboundSubItems : undefined,
+      });
+
+      // Node 5: 当前状态
+      const daysUntilExpiry = batch.expiryDate
+        ? Math.ceil((new Date(batch.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        : null;
+      const expiryDisplay = batch.expiryDate
+        ? `${formatDate(batch.expiryDate)}${daysUntilExpiry !== null ? ` (${daysUntilExpiry > 0 ? daysUntilExpiry + '天后' : '已过期'})` : ''}`
+        : '-';
+      nodes.push({
+        step: 5,
+        title: "当前状态",
+        type: "current",
+        content: [
+          { label: "剩余数量", value: `${batch.remainingQuantity ?? 0} kg` },
+          { label: "到期时间", value: expiryDisplay, status: daysUntilExpiry !== null && daysUntilExpiry <= 7 ? "warning" : undefined },
+          { label: "库位", value: batch.storageLocation || '-' },
+          { label: "状态", value: batch.status || '-' },
+        ],
+      });
+
+      setTraceNodes(nodes);
+    } catch (error) {
+      handleError(error, { title: '加载追溯数据失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, [batchId, batchNumber]);
+
+  useEffect(() => {
+    loadTraceData();
+  }, [loadTraceData]);
 
   const getNodeStyle = (type: TraceNode["type"]) => {
     switch (type) {
@@ -206,6 +304,50 @@ export function WHBatchTraceScreen() {
       </View>
     );
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>批次追溯</Text>
+            <Text style={styles.headerSubtitle}>{batchNumber || '-'}</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载追溯数据...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Empty state
+  if (!traceData) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>批次追溯</Text>
+            <Text style={styles.headerSubtitle}>{batchNumber || '-'}</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="file-search-outline" size={64} color="#ddd" />
+          <Text style={styles.loadingText}>未找到批次数据</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -301,6 +443,16 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     width: 28,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   content: {
     flex: 1,

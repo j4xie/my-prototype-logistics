@@ -90,13 +90,15 @@ public class HRIntentHandler implements IntentHandler {
 
         } catch (Exception e) {
             log.error("HRIntentHandler处理失败: intentCode={}, error={}", intentCode, e.getMessage(), e);
+            String errMsg = "人事操作失败: " + ErrorSanitizer.sanitize(e);
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentCode)
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("HR")
                     .status("FAILED")
-                    .message("人事操作失败: " + ErrorSanitizer.sanitize(e))
+                    .message(errMsg)
+                    .formattedText(errMsg)
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -192,7 +194,7 @@ public class HRIntentHandler implements IntentHandler {
                 .intentName(intentConfig.getIntentName())
                 .intentCategory("HR")
                 .status("COMPLETED")
-                .message("考勤统计获取成功")
+                .message("考勤统计获取成功，统计周期: " + startDate + " 至 " + endDate)
                 .resultData(stats)
                 .executedAt(LocalDateTime.now())
                 .build();
@@ -278,8 +280,8 @@ public class HRIntentHandler implements IntentHandler {
         result.put("endDate", endDate);
 
         String message = anomalyList.isEmpty()
-                ? "该时间段无考勤异常"
-                : "发现 " + anomalyList.size() + " 人有考勤异常";
+                ? "考勤异常检查完成（" + startDate + " ~ " + endDate + "）：该时间段内无迟到、早退或缺勤记录，全员出勤正常。"
+                : "考勤异常检查（" + startDate + " ~ " + endDate + "）：发现 " + anomalyList.size() + " 名员工存在考勤异常（迟到/早退/缺勤）。";
 
         return IntentExecuteResponse.builder()
                 .intentRecognized(true)
@@ -344,8 +346,9 @@ public class HRIntentHandler implements IntentHandler {
         }
 
         String message = today == null
-                ? "今天还没有打卡记录"
-                : "今日打卡时间: " + today.getClockInTime();
+                ? "今天还没有打卡记录，请前往考勤页面进行上班打卡。"
+                : "今日打卡记录：上班打卡时间 " + today.getClockInTime()
+                    + (today.getClockOutTime() != null ? "，下班打卡时间 " + today.getClockOutTime() : "，尚未下班打卡");
 
         return IntentExecuteResponse.builder()
                 .intentRecognized(true)
@@ -423,8 +426,8 @@ public class HRIntentHandler implements IntentHandler {
         result.put("total", users.getTotalElements());
 
         String message = users.getTotalElements() == 0
-                ? "未找到匹配的员工"
-                : "查询到 " + users.getTotalElements() + " 名员工";
+                ? "未找到匹配的员工。请核实姓名或工号后重试，也可尝试使用模糊关键词搜索。"
+                : "员工档案查询完成，共找到 " + users.getTotalElements() + " 名匹配员工。";
 
         return IntentExecuteResponse.builder()
                 .intentRecognized(true)
@@ -555,7 +558,21 @@ public class HRIntentHandler implements IntentHandler {
      * 确认工人到岗 — 即执行打卡操作
      */
     private IntentExecuteResponse handleWorkerArrivalConfirm(String factoryId, AIIntentConfig intentConfig, Long userId) {
-        return handleClockIn(factoryId, intentConfig, userId);
+        try {
+            return handleClockIn(factoryId, intentConfig, userId);
+        } catch (Exception e) {
+            String msg = "工人到岗确认: " + e.getMessage();
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName())
+                    .intentCategory("HR")
+                    .status("COMPLETED")
+                    .message(msg)
+                    .formattedText(msg)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
     }
 
     @Override

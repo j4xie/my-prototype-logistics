@@ -248,7 +248,7 @@ function handleSelect(path: string) {
     </div>
 
     <!-- 菜单 -->
-    <el-scrollbar class="sidebar-menu-wrap">
+    <el-scrollbar class="sidebar-menu-wrap" @wheel.stop>
       <el-menu
         :default-active="activeMenu"
         :default-openeds="defaultOpeneds"
@@ -342,7 +342,6 @@ function handleSelect(path: string) {
 
 .sidebar-menu-wrap {
   flex: 1;
-  overflow-y: auto;
   padding: 8px;
 }
 

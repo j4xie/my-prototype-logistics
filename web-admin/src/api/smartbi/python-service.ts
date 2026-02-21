@@ -6,7 +6,8 @@
 import {
   pythonFetch,
   PYTHON_SMARTBI_URL,
-  PYTHON_HEADERS,
+  getPythonAuthHeaders,
+  PYTHON_LLM_TIMEOUT_MS,
   type AnalysisResult,
   type StatisticalResult,
   type CorrelationResult,
@@ -98,6 +99,7 @@ export async function smartRecommendChart(params: {
   try {
     const result = await pythonFetch('/api/chart/smart-recommend', {
       method: 'POST',
+      timeoutMs: PYTHON_LLM_TIMEOUT_MS,
       body: JSON.stringify({
         data: params.data,
         sheetName: params.sheetName,
@@ -145,6 +147,7 @@ export async function batchBuildCharts(plans: Array<{
   try {
     const result = await pythonFetch('/api/chart/batch', {
       method: 'POST',
+      timeoutMs: PYTHON_LLM_TIMEOUT_MS,
       body: JSON.stringify(plans.map(p => ({
         chartType: p.chartType,
         data: p.data,
@@ -189,6 +192,7 @@ export async function generateInsights(params: {
   try {
     return await pythonFetch('/api/insight/generate', {
       method: 'POST',
+      timeoutMs: PYTHON_LLM_TIMEOUT_MS,
       body: JSON.stringify({
         data: params.data,
         analysisContext: params.analysisContext,
@@ -206,17 +210,22 @@ export async function generateInsights(params: {
 
 /**
  * Quick statistical summary (no LLM, ~100ms)
+ * When uploadId is provided, Python loads data from PG directly (avoids large POST body).
  */
-export async function quickSummary(data: unknown[], signal?: AbortSignal): Promise<{
+export async function quickSummary(data: unknown[], signal?: AbortSignal, uploadId?: number): Promise<{
   success: boolean;
   rowCount: number;
   columnCount: number;
   columns: ColumnSummary[];
 }> {
   try {
+    // Prefer server-side data loading when uploadId is available
+    const body = uploadId
+      ? JSON.stringify({ upload_id: uploadId })
+      : JSON.stringify(data);
     return await pythonFetch('/api/insight/quick-summary', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body,
       signal
     }) as { success: boolean; rowCount: number; columnCount: number; columns: ColumnSummary[] };
   } catch (error) {
@@ -403,7 +412,7 @@ export async function generateInsightsStream(params: {
   try {
     const response = await fetch(`${PYTHON_SMARTBI_URL}/api/insight/generate-stream`, {
       method: 'POST',
-      headers: PYTHON_HEADERS,
+      headers: getPythonAuthHeaders(),
       body: JSON.stringify({
         data: params.data,
         analysisContext: params.analysisContext,
@@ -564,7 +573,7 @@ export interface FoodIndustryDetection {
 export async function fetchFoodBenchmarks(): Promise<{ success: boolean; data?: FoodBenchmarkData }> {
   try {
     const res = await fetch(`${PYTHON_SMARTBI_URL}/smartbi/benchmark/food-processing`, {
-      headers: PYTHON_HEADERS,
+      headers: getPythonAuthHeaders(),
     });
     if (!res.ok) return { success: false };
     const json = await res.json();
@@ -582,7 +591,7 @@ export async function compareBenchmarks(
   try {
     const res = await fetch(`${PYTHON_SMARTBI_URL}/smartbi/benchmark/compare`, {
       method: 'POST',
-      headers: PYTHON_HEADERS,
+      headers: getPythonAuthHeaders(),
       body: JSON.stringify({ metrics, sub_sector: subSector }),
     });
     if (!res.ok) return { success: false };

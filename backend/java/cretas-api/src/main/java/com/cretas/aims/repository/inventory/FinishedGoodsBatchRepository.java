@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +27,15 @@ public interface FinishedGoodsBatchRepository extends JpaRepository<FinishedGood
             "AND (b.producedQuantity - b.shippedQuantity - b.reservedQuantity) > 0 " +
             "ORDER BY b.expireDate ASC NULLS LAST, b.productionDate ASC")
     List<FinishedGoodsBatch> findAvailableBatches(
+            @Param("factoryId") String factoryId,
+            @Param("productTypeId") String productTypeId);
+
+    /** 汇总指定产品类型的可用成品库存总量（用于销售订单库存检查） */
+    @Query("SELECT COALESCE(SUM(b.producedQuantity - b.shippedQuantity - b.reservedQuantity), 0) " +
+            "FROM FinishedGoodsBatch b WHERE b.factoryId = :factoryId " +
+            "AND b.productTypeId = :productTypeId AND b.status = 'AVAILABLE' " +
+            "AND (b.producedQuantity - b.shippedQuantity - b.reservedQuantity) > 0")
+    BigDecimal sumAvailableQuantityByProductType(
             @Param("factoryId") String factoryId,
             @Param("productTypeId") String productTypeId);
 }

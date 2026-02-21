@@ -36,7 +36,7 @@ import {
   Close
 } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
-import { formatNumber } from '@/utils/format-number';
+import { formatNumber, formatAxisValue } from '@/utils/format-number';
 import DynamicChartRenderer from '@/components/smartbi/DynamicChartRenderer.vue';
 import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
@@ -842,14 +842,7 @@ function updateChartFromDynamicData(charts: DynamicAnalysisResponse['charts']) {
         xAxis: { type: 'category', data: labels },
         yAxis: {
           type: 'value',
-          axisLabel: {
-            formatter: (value: number) => {
-              const abs = Math.abs(value);
-              if (abs >= 100000000) return (value / 100000000).toFixed(1) + '亿';
-              if (abs >= 10000) return (value / 10000).toFixed(0) + '万';
-              return String(value);
-            }
-          }
+          axisLabel: { formatter: formatAxisValue }
         },
         series: datasets.map(ds => ({
           name: ds.label,
@@ -924,6 +917,10 @@ async function loadFinanceData() {
             'BUDGET_USED': 'budgetUsed',
             'BUDGET_REMAINING': 'budgetRemaining',
             'BUDGET_USAGE_RATE': 'budgetUsageRate',
+            // Backend actual codes (getBudgetMetrics returns these):
+            'BUDGET_EXECUTION': 'budgetUsageRate',
+            'BUDGET_VARIANCE': '_budgetVariance',
+            'BUDGET_VARIANCE_RATE': '_budgetVarianceRate',
             'GROSS_PROFIT': 'grossProfit',
             'GROSS_MARGIN': 'grossProfitMargin',
             'NET_PROFIT': 'netProfit',
@@ -935,6 +932,25 @@ async function loadFinanceData() {
             const code = String(m.metricCode || '');
             const mappedKey = metricCodeMap[code];
             if (mappedKey) flat[mappedKey] = m.value;
+          }
+          // Derive budgetTotal and budgetUsed from BUDGET_REMAINING + BUDGET_EXECUTION
+          // remaining = budget - actual, execution = actual/budget * 100
+          // → actual = remaining * execution / (100 - execution), budget = remaining + actual
+          const remaining = Number(flat.budgetRemaining || 0);
+          const execution = Number(flat.budgetUsageRate || 0);
+          if (remaining !== 0 && execution > 0 && execution < 100 && !flat.budgetTotal) {
+            const actual = remaining * execution / (100 - execution);
+            flat.budgetTotal = remaining + actual;
+            flat.budgetUsed = actual;
+          } else if (remaining !== 0 && execution >= 100 && !flat.budgetTotal) {
+            // Over-budget: variance = actual - budget (negative remaining means overspent)
+            const variance = Number(flat._budgetVariance || 0);
+            if (variance !== 0) {
+              // actual = budget + variance, remaining = budget - actual = -variance
+              const budget = -remaining + variance !== 0 ? (-remaining * 100) / execution : 0;
+              flat.budgetTotal = budget;
+              flat.budgetUsed = budget + variance;
+            }
           }
           updateKpiDataFromMetrics(flat);
         } else {
@@ -1072,9 +1088,17 @@ async function loadFinanceData() {
       resetData();
     }
   } catch (error) {
-    console.error('加载财务数据失败:', error);
-    loadError.value = '加载财务数据失败，请检查网络连接后重试';
+    console.warn('加载系统财务数据失败:', error);
     resetData();
+    // 如果有上传数据，自动切换而非显示错误横幅
+    if (dataSources.value.length > 0) {
+      const firstUpload = dataSources.value[0];
+      selectedDataSource.value = String(firstUpload.id);
+      await loadDynamicData(firstUpload.id);
+      return;
+    }
+    // 无上传数据时才显示友好提示（info 而非 error）
+    loadError.value = '系统财务数据暂不可用，请上传 Excel 数据进行分析';
   } finally {
     loading.value = false;
     generateSmartWarnings();
@@ -1194,6 +1218,30 @@ function generateSmartWarnings() {
       title: '存在高风险逾期应收',
       description: `90天以上应收账款 ${formatMoney(kpi.receivableAge90Plus)}，建议加强催收`,
       amount: kpi.receivableAge90Plus,
+    });
+  }
+
+  if (analysisType.value === 'budget') {
+    if (kpi.budgetUsageRate > 90) {
+      autoWarnings.push({
+        level: 'danger',
+        title: '预算超支风险',
+        description: `预算使用率已达 ${kpi.budgetUsageRate.toFixed(1)}%，剩余 ${formatMoney(kpi.budgetRemaining)}，建议严控支出`,
+      });
+    } else if (kpi.budgetUsageRate > 75) {
+      autoWarnings.push({
+        level: 'warning',
+        title: '预算使用率偏高',
+        description: `预算使用率 ${kpi.budgetUsageRate.toFixed(1)}%，建议关注后续支出节奏`,
+      });
+    }
+  }
+
+  if (analysisType.value === 'cost' && kpi.costGrowth > 20) {
+    autoWarnings.push({
+      level: 'warning',
+      title: '成本增速过快',
+      description: `成本环比增长 ${kpi.costGrowth.toFixed(1)}%，超过20%预警线`,
     });
   }
 
@@ -1349,11 +1397,9 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
       position: axis.position as 'left' | 'right' || undefined,
       min: axis.min,
       max: axis.max,
-      axisLabel: axis.axisLabel || {
-        formatter: (value: number) => {
-          if (value >= 10000) return (value / 10000).toFixed(0) + '万';
-          return String(value);
-        }
+      axisLabel: {
+        ...(axis.axisLabel || {}),
+        formatter: formatAxisValue
       }
     }));
   }
@@ -1369,7 +1415,12 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
         stack: s.stack,
         smooth: s.smooth,
         itemStyle: s.itemStyle,
-        label: s.label
+        label: s.label ? {
+          ...s.label,
+          // Prevent label overlap on dense bar charts: only show label if bar is wide enough
+          formatter: (params: { value: number | string }) => formatAxisValue(Number(params.value)),
+          fontSize: 10,
+        } : undefined
       };
 
       if (s.areaStyle && s.type === 'line') {
@@ -1428,29 +1479,46 @@ function buildAxisChart(config: ChartConfig_Local): echarts.EChartsOption {
   const xData = config.data?.map(item => String(item[xField] || '')) || [];
   const yData = config.data?.map(item => Number(item[yField] || 0)) || [];
 
+  // Truncate long X-axis labels and rotate if many items
+  const needsRotation = xData.length > 6 || xData.some(s => s.length > 8);
+  const truncatedXData = xData.map(s => s.length > 12 ? s.slice(0, 12) + '…' : s);
+
   return {
     tooltip: {
       trigger: 'axis',
-      axisPointer: { type: chartType === 'line' ? 'cross' : 'shadow' }
+      axisPointer: { type: chartType === 'line' ? 'cross' : 'shadow' },
+      formatter: (params: unknown) => {
+        const items = Array.isArray(params) ? params : [params];
+        const lines = items.map((p: Record<string, unknown>) => {
+          const val = Number(p.value || 0);
+          const formatted = formatAxisValue(val);
+          return `${p.seriesName || ''}: ${formatted}`;
+        });
+        // Use original label (not truncated) in tooltip
+        const idx = (items[0] as Record<string, unknown>)?.dataIndex as number;
+        return `<strong>${xData[idx] || ''}</strong><br/>${lines.join('<br/>')}`;
+      }
     },
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '15%',
+      bottom: needsRotation ? '20%' : '15%',
       top: '10%',
       containLabel: true
     },
     xAxis: {
       type: 'category',
-      data: xData
+      data: truncatedXData,
+      axisLabel: {
+        rotate: needsRotation ? 30 : 0,
+        fontSize: 11,
+        interval: 0
+      }
     },
     yAxis: {
       type: 'value',
       axisLabel: {
-        formatter: (value: number) => {
-          if (value >= 10000) return (value / 10000).toFixed(0) + '万';
-          return String(value);
-        }
+        formatter: formatAxisValue
       }
     },
     series: [
@@ -1649,17 +1717,22 @@ onUnmounted(() => {
       </div>
     </el-card>
 
-    <!-- 加载错误提示 -->
+    <!-- 加载错误提示 (友好模式：系统不可用时显示 info；真实错误显示 error) -->
     <el-alert
       v-if="loadError"
-      type="error"
+      :type="loadError.includes('暂不可用') ? 'info' : 'error'"
       :title="loadError"
       show-icon
       closable
       style="margin-bottom: 16px"
       @close="loadError = ''"
     >
-      <el-button size="small" type="primary" @click="handleRefresh" style="margin-top: 8px">重试</el-button>
+      <template v-if="!loadError.includes('暂不可用')">
+        <el-button size="small" type="primary" @click="handleRefresh" style="margin-top: 8px">重试</el-button>
+      </template>
+      <template v-else-if="dataSources.length === 0">
+        <el-button size="small" type="primary" @click="$router.push('/smart-bi/analysis')" style="margin-top: 8px">上传数据</el-button>
+      </template>
     </el-alert>
 
     <!-- 系统数据为空提示 -->
@@ -1718,21 +1791,21 @@ onUnmounted(() => {
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">原材料成本</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.materialCost) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.materialCost) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">占比 {{ kpiData.totalCost > 0 ? ((kpiData.materialCost / kpiData.totalCost) * 100).toFixed(0) : 0 }}%</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">人工成本</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.laborCost) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.laborCost) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">占比 {{ kpiData.totalCost > 0 ? ((kpiData.laborCost / kpiData.totalCost) * 100).toFixed(0) : 0 }}%</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">间接成本</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.overheadCost) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.overheadCost) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">占比 {{ kpiData.totalCost > 0 ? ((kpiData.overheadCost / kpiData.totalCost) * 100).toFixed(0) : 0 }}%</div>
           </el-card>
         </el-col>
@@ -1743,27 +1816,27 @@ onUnmounted(() => {
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">应收总额</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.totalReceivable) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.totalReceivable) }}<small class="kpi-unit">元</small></div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card success">
             <div class="kpi-label">30天内</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.receivableAge30) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.receivableAge30) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">正常账期</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card warning">
             <div class="kpi-label">逾期30-60天</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.receivableAge60) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.receivableAge60) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">需关注</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card danger">
             <div class="kpi-label">逾期90天+</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.receivableAge90Plus) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.receivableAge90Plus) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">高风险</div>
           </el-card>
         </el-col>
@@ -1774,27 +1847,27 @@ onUnmounted(() => {
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">应付总额</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.totalPayable) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.totalPayable) }}<small class="kpi-unit">元</small></div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card success">
             <div class="kpi-label">30天内</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.payableAge30) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.payableAge30) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">正常账期</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card warning">
             <div class="kpi-label">30-60天</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.payableAge60) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.payableAge60) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">即将到期</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card danger">
             <div class="kpi-label">逾期90天+</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.payableAge90Plus) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.payableAge90Plus) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">需立即处理</div>
           </el-card>
         </el-col>
@@ -1805,20 +1878,20 @@ onUnmounted(() => {
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">年度预算</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.budgetTotal) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.budgetTotal) }}<small class="kpi-unit">元</small></div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">已使用</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.budgetUsed) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.budgetUsed) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">使用率 {{ formatPercent(kpiData.budgetUsageRate) }}</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card success">
             <div class="kpi-label">剩余预算</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.budgetRemaining) }}</div>
+            <div class="kpi-value">{{ formatMoney(kpiData.budgetRemaining) }}<small class="kpi-unit">元</small></div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
@@ -1891,8 +1964,14 @@ onUnmounted(() => {
               </div>
             </div>
             <div v-if="warnings.length === 0" class="no-warning-hint">
-              <el-icon style="font-size: 20px; color: #67C23A;"><View /></el-icon>
-              <span style="color: #909399; font-size: 13px; margin-left: 6px;">当前无风险预警，经营状况良好</span>
+              <template v-if="dataQualityWarning">
+                <el-icon style="font-size: 20px; color: #E6A23C;"><Warning /></el-icon>
+                <span style="color: #909399; font-size: 13px; margin-left: 6px;">暂无数据，无法生成预警分析</span>
+              </template>
+              <template v-else>
+                <el-icon style="font-size: 20px; color: #67C23A;"><View /></el-icon>
+                <span style="color: #909399; font-size: 13px; margin-left: 6px;">当前无风险预警，经营状况良好</span>
+              </template>
             </div>
           </div>
         </el-card>

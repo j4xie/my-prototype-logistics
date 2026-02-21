@@ -8,7 +8,7 @@ import logging
 import json
 from typing import Any, Optional, List, Dict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -190,17 +190,60 @@ async def analyze_metrics(metrics: List[dict]):
         return InsightResponse(success=False, error="分析生成失败，请稍后重试")
 
 
+async def _load_upload_data(upload_id: int, limit: int = 2000) -> List[Dict[str, Any]]:
+    """Load upload data from PostgreSQL by upload_id."""
+    try:
+        from smartbi.config import get_settings
+        import asyncpg
+        import json as _json
+
+        pg_url = get_settings().postgres_url
+        if not pg_url:
+            return []
+        conn = await asyncpg.connect(pg_url)
+        try:
+            rows = await conn.fetch(
+                "SELECT row_data FROM smart_bi_dynamic_data WHERE upload_id = $1 LIMIT $2",
+                upload_id, limit
+            )
+            if rows:
+                return [_json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in rows]
+        finally:
+            await conn.close()
+    except Exception as e:
+        logger.warning(f"_load_upload_data({upload_id}) failed: {e}")
+    return []
+
+
 @router.post("/quick-summary")
-async def quick_summary(data: List[Dict[str, Any]]):
+async def quick_summary(request: Request):
     """
-    Generate a quick summary of the data
+    Generate a quick summary of the data.
+
+    Accepts EITHER:
+    - A raw JSON array of rows (backward compat)
+    - A JSON object with optional `upload_id` (loads from PG) and/or `data` array
 
     Returns basic statistical insights without LLM analysis.
     Faster than full insight generation.
     """
     try:
+        body = await request.json()
+
+        # Determine data source
+        data: List[Dict[str, Any]] = []
+        if isinstance(body, list):
+            data = body
+        elif isinstance(body, dict):
+            data = body.get("data", [])
+            upload_id = body.get("upload_id")
+            if not data and upload_id:
+                data = await _load_upload_data(upload_id)
+        else:
+            raise HTTPException(status_code=400, detail="Expected JSON array or object with upload_id")
+
         if not data:
-            raise HTTPException(status_code=400, detail="Data is required")
+            raise HTTPException(status_code=400, detail="Data is required (provide data array or valid upload_id)")
 
         import pandas as pd
         import numpy as np

@@ -103,7 +103,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
         Integer totalPages = getInteger(data, "totalPages");
 
         if (content == null || content.isEmpty()) {
-            return "暂无出货记录";
+            return "当前暂无出货记录。可在出货管理模块创建新的出货单。";
         }
 
         sb.append(String.format("查询到 %d 条出货记录", total != null ? total : content.size()));
@@ -170,6 +170,11 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
         if (totalQuantity != null) sb.append(String.format("• 总出货数量：%s\n", QUANTITY_FORMATTER.format(totalQuantity)));
         if (totalAmount != null) sb.append(String.format("• 总金额：¥%s", AMOUNT_FORMATTER.format(totalAmount)));
 
+        // 空数据兜底：避免返回仅 "出货统计：\n"
+        if (totalCount == null && totalAmount == null && totalQuantity == null) {
+            sb.append("当前查询周期内暂无出货记录。可在出货管理模块查看历史出货数据。");
+        }
+
         return sb.toString();
     }
 
@@ -178,6 +183,14 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
         String batchNumber = getString(data, "batchNumber");
         if (batchNumber != null) {
             sb.append(String.format("批次号：%s\n", batchNumber));
+        }
+        String materialName = getString(data, "materialName");
+        if (materialName != null) sb.append(String.format("物料名称：%s\n", materialName));
+        String status = getString(data, "status");
+        if (status != null) sb.append(String.format("状态：%s\n", translateStatus(status)));
+        // 空数据兜底
+        if (batchNumber == null && materialName == null) {
+            sb.append("请提供批次号或物料名称以查询溯源信息。示例：「溯源 BAT-20250101-001」");
         }
         return sb.toString();
     }
@@ -244,7 +257,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
     private String formatLowStockAlert(Map<String, Object> data) {
         List<Map<String, Object>> alerts = getList(data, "alerts");
         if (alerts == null || alerts.isEmpty()) {
-            return "当前没有库存预警";
+            return "库存预警检查完成：当前所有原材料库存充足，暂无低库存预警项。系统将持续监控库存水位。";
         }
 
         StringBuilder sb = new StringBuilder(String.format("发现 %d 项库存预警：\n\n", alerts.size()));
@@ -267,7 +280,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
         if (total == null) total = getInteger(data, "total");
 
         if (content == null || content.isEmpty()) {
-            return "暂无生产批次记录";
+            return "暂无生产批次记录。可在生产管理模块创建新的生产批次。";
         }
 
         int totalCount = total != null ? total : content.size();
@@ -360,7 +373,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
         if (message != null) {
             sb.append(message).append("\n\n");
         } else if (content == null || content.isEmpty()) {
-            return "暂无质检记录";
+            return "当前暂无质检记录。可在质检管理模块创建新的质检任务。";
         } else {
             sb.append(String.format("查询到 %d 条质检记录：\n\n", total != null ? total : content.size()));
         }
@@ -792,20 +805,22 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
     @SuppressWarnings("unchecked")
     private String formatTrendsReport(Map<String, Object> data) {
         Object trendDataObj = data.get("trendData");
-        if (!(trendDataObj instanceof List)) return null;
-
-        List<Map<String, Object>> trendData = (List<Map<String, Object>>) trendDataObj;
-        if (trendData.isEmpty()) return null;
-
-        StringBuilder sb = new StringBuilder("趋势分析\n");
-        sb.append("数据点: ").append(trendData.size()).append("个");
-        BigDecimal first = getBigDecimal(trendData.get(0), "value");
-        BigDecimal last = getBigDecimal(trendData.get(trendData.size() - 1), "value");
-        if (first != null && last != null) {
-            sb.append(" | 起始: ").append(QUANTITY_FORMATTER.format(first));
-            sb.append(" | 最新: ").append(QUANTITY_FORMATTER.format(last));
+        if (trendDataObj instanceof List) {
+            List<Map<String, Object>> trendData = (List<Map<String, Object>>) trendDataObj;
+            if (!trendData.isEmpty()) {
+                StringBuilder sb = new StringBuilder("趋势分析\n");
+                sb.append("数据点: ").append(trendData.size()).append("个");
+                BigDecimal first = getBigDecimal(trendData.get(0), "value");
+                BigDecimal last = getBigDecimal(trendData.get(trendData.size() - 1), "value");
+                if (first != null && last != null) {
+                    sb.append(" | 起始: ").append(QUANTITY_FORMATTER.format(first));
+                    sb.append(" | 最新: ").append(QUANTITY_FORMATTER.format(last));
+                }
+                return sb.toString();
+            }
         }
-        return sb.toString();
+        // Fallback: summarize whatever data keys are present
+        return formatDataSummary("趋势分析报告", data);
     }
 
     private String formatCostQueryResult(Map<String, Object> data) {
@@ -954,7 +969,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
     private String formatWorkerList(Map<String, Object> data) {
         List<Map<String, Object>> content = getList(data, "content");
         if (content == null || content.isEmpty()) {
-            return "暂无员工信息";
+            return "暂无匹配的员工信息。请核实查询条件后重试。";
         }
 
         StringBuilder sb = new StringBuilder(String.format("查询到 %d 名员工：\n\n", content.size()));
@@ -982,6 +997,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
             case "CUSTOMER_LIST", "CUSTOMER_ACTIVE", "CUSTOMER_QUERY", "CUSTOMER_SEARCH" -> formatCustomerList(data);
             case "ORDER_LIST", "ORDER_STATS" -> formatOrderList(data);
             case "SUPPLIER_LIST" -> formatSupplierList(data);
+            case "SUPPLIER_RANKING" -> formatSupplierRanking(data);
             case "CUSTOMER_STATS" -> formatCustomerStats(data);
             case "SALES_STATS", "SALES_RANKING", "PRODUCT_SALES_RANKING" -> formatSalesStats(data);
             default -> formatGenericList(data);
@@ -1058,7 +1074,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
         if (total == null) total = getInteger(data, "total");
 
         if (content == null || content.isEmpty()) {
-            return "供应商列表查询完成，暂无供应商数据";
+            return "供应商列表查询完成，暂无供应商数据。请先在供应商管理中添加供应商信息。";
         }
 
         int totalCount = total != null ? total : content.size();
@@ -1074,6 +1090,31 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
             sb.append(String.format("%d. %s", ++count, name != null ? name : "未知"));
             if (level != null) sb.append(" [").append(level).append("]");
             if (contact != null) sb.append(" | 联系人：").append(contact);
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    private String formatSupplierRanking(Map<String, Object> data) {
+        List<Map<String, Object>> ranking = getList(data, "ranking");
+        if (ranking == null || ranking.isEmpty()) {
+            return "供应商排名查询完成，暂无可排名的供应商数据。请先录入供应商订单信息。";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("供应商排名（TOP %d）\n\n", ranking.size()));
+        int idx = 0;
+        for (Map<String, Object> item : ranking) {
+            if (idx >= 10) break;
+            String name = getString(item, "name");
+            Integer totalOrders = getInteger(item, "totalOrders");
+            BigDecimal totalAmount = getBigDecimal(item, "totalAmount");
+            Integer rating = getInteger(item, "rating");
+
+            sb.append(String.format("%d. %s", ++idx, name != null ? name : "未知"));
+            if (totalAmount != null) sb.append(" | 总金额: ¥").append(AMOUNT_FORMATTER.format(totalAmount));
+            if (totalOrders != null) sb.append(" | 订单数: ").append(totalOrders);
+            if (rating != null) sb.append(" | 评分: ").append(rating);
             sb.append("\n");
         }
         return sb.toString();
@@ -1108,7 +1149,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
         if (totalAmount == null && orderCount == null) {
             List<Map<String, Object>> content = getList(data, "content");
             if (content == null || content.isEmpty()) {
-                return "当前暂无销售统计数据。";
+                return "当前暂无销售统计数据。可在销售管理模块录入订单后查看统计分析。";
             }
             return formatGenericList(data);
         }
@@ -1176,7 +1217,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
             if (total != null && total > 0) {
                 return String.format("共 %d 条告警记录（详情请在告警页面查看）", total);
             }
-            return "当前没有未处理的告警";
+            return "告警检查完成：当前没有未处理的告警，所有设备运行正常。";
         }
 
         StringBuilder sb = new StringBuilder(String.format("发现 %d 条告警：\n\n", alerts.size()));
@@ -1253,7 +1294,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
         if (equipment == null) equipment = getList(data, "equipment");
 
         if (equipment == null || equipment.isEmpty()) {
-            return "暂无设备信息";
+            return "暂无匹配的设备信息。请核实设备名称或编号后重试。";
         }
 
         StringBuilder sb = new StringBuilder(String.format("查询到 %d 台设备：\n\n", equipment.size()));
@@ -1300,15 +1341,76 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
         Integer total = getInteger(data, "totalElements");
         String message = getString(data, "message");
 
-        if (message != null) {
+        if (message != null && message.length() >= 20) {
             return message;
         }
 
-        if (content == null || content.isEmpty()) {
-            return "查询完成，暂无数据";
+        if (content != null && !content.isEmpty()) {
+            int count = total != null ? total : content.size();
+            // 列出前几条摘要避免过短
+            StringBuilder sb = new StringBuilder(String.format("查询到 %d 条记录：\n", count));
+            int shown = 0;
+            for (Map<String, Object> item : content) {
+                if (shown >= 3) break;
+                String name = getString(item, "name");
+                if (name == null) name = getString(item, "title");
+                if (name == null) name = getString(item, "deviceName");
+                if (name == null) name = getString(item, "batchNumber");
+                if (name != null) {
+                    sb.append("• ").append(name).append("\n");
+                    shown++;
+                }
+            }
+            if (shown == 0) {
+                sb.append("可在对应管理模块查看详细信息。");
+            }
+            return sb.toString().trim();
         }
 
-        return String.format("查询到 %d 条记录", total != null ? total : content.size());
+        // Summarize available data keys to avoid generic "暂无数据"
+        return formatDataSummary("查询完成", data);
+    }
+
+    /**
+     * 从 data Map 的键值生成摘要文本，避免通用 "暂无数据" 回复
+     */
+    private String formatDataSummary(String prefix, Map<String, Object> data) {
+        if (data == null || data.isEmpty()) return prefix + "，当前暂无相关数据记录。";
+
+        StringBuilder sb = new StringBuilder(prefix).append("\n");
+        int numericCount = 0;
+        int listCount = 0;
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
+            Object val = entry.getValue();
+            if (val instanceof Number && numericCount < 5) {
+                sb.append("- ").append(humanizeKey(entry.getKey())).append(": ")
+                  .append(QUANTITY_FORMATTER.format(((Number) val).doubleValue())).append("\n");
+                numericCount++;
+            } else if (val instanceof List && listCount < 2) {
+                sb.append("- ").append(humanizeKey(entry.getKey())).append(": ")
+                  .append(((List<?>) val).size()).append("条\n");
+                listCount++;
+            }
+        }
+        if (numericCount == 0 && listCount == 0) {
+            sb.append("包含 ").append(data.size()).append(" 项数据指标，可在报表模块查看详情。");
+        }
+        return sb.toString().trim();
+    }
+
+    private String humanizeKey(String key) {
+        return switch (key) {
+            case "totalOutput" -> "总产量";
+            case "totalOrders" -> "总订单数";
+            case "totalRevenue" -> "总收入";
+            case "totalCost" -> "总成本";
+            case "passRate" -> "合格率(%)";
+            case "defectRate" -> "不良率(%)";
+            case "utilizationRate" -> "利用率(%)";
+            case "activeCount" -> "活跃数量";
+            case "pendingCount" -> "待处理数量";
+            default -> key;
+        };
     }
 
     // ==================== 工具方法 ====================

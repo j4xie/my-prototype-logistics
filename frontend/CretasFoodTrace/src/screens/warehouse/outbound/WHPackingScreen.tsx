@@ -26,6 +26,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHOutboundStackParamList } from "../../../types/navigation";
 import { shipmentApiClient, ShipmentRecord } from "../../../services/api/shipmentApiClient";
+import { salesApiClient, FinishedGoodsBatch } from "../../../services/api/salesApiClient";
 import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHOutboundStackParamList>;
@@ -75,12 +76,60 @@ export function WHPackingScreen() {
         const shipDate = new Date(shipment.shipmentDate);
         const dispatchTime = `${shipDate.getHours()}:${String(shipDate.getMinutes()).padStart(2, '0')} 前发出`;
 
+        const shipmentQty = shipment.quantity || 0;
         setOrderInfo({
           orderNumber: shipment.shipmentNumber || shipment.orderNumber || `SH-${shipment.id}`,
           customer: shipment.deliveryAddress || '未知客户',
           dispatchTime: dispatchTime,
-          totalQuantity: shipment.quantity || 0,
+          totalQuantity: shipmentQty,
         });
+
+        // Load packing items from finished goods (FEFO sorted)
+        try {
+          const goodsResp = await salesApiClient.getFinishedGoods({ page: 1, size: 50 });
+          if (goodsResp?.success && goodsResp.data?.content) {
+            const productName = (shipment as any).productName || '';
+            let batches = goodsResp.data.content.filter(
+              (b: FinishedGoodsBatch) => b.availableQuantity > 0
+            );
+
+            // Filter by product name if available
+            if (productName) {
+              const matched = batches.filter((b: FinishedGoodsBatch) =>
+                b.productTypeName?.toLowerCase().includes(productName.toLowerCase())
+              );
+              if (matched.length > 0) batches = matched;
+            }
+
+            // Sort by expiryDate ASC (FEFO — earliest expiry first, nulls last)
+            batches.sort((a: FinishedGoodsBatch, b: FinishedGoodsBatch) => {
+              if (!a.expiryDate && !b.expiryDate) return 0;
+              if (!a.expiryDate) return 1;
+              if (!b.expiryDate) return -1;
+              return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
+            });
+
+            // Greedy-select batches until cumulative quantity >= shipment quantity
+            const selected: PackingItem[] = [];
+            let cumulative = 0;
+            for (const batch of batches) {
+              selected.push({
+                id: batch.id,
+                name: batch.productTypeName || '-',
+                batchNumber: batch.batchNumber,
+                quantity: batch.availableQuantity,
+                location: batch.storageLocation ?? '-',
+                packed: false,
+              });
+              cumulative += batch.availableQuantity;
+              if (shipmentQty > 0 && cumulative >= shipmentQty) break;
+            }
+
+            setPackingItems(selected);
+          }
+        } catch (batchError) {
+          console.warn('[WHPacking] 加载成品批次失败:', batchError);
+        }
       }
     } catch (error) {
       handleError(error, { title: '加载出货单信息失败' });
@@ -93,34 +142,7 @@ export function WHPackingScreen() {
     loadShipmentData();
   }, [loadShipmentData]);
 
-  // TODO: 打包项目需要从后端获取订单关联的批次列表
-  // 当前使用模拟数据，后续需要接入订单明细 API
-  const [packingItems, setPackingItems] = useState<PackingItem[]>([
-    {
-      id: "1",
-      name: "鲈鱼片",
-      batchNumber: "PB-20251225-003",
-      quantity: 50,
-      location: "A区-冷藏库-01",
-      packed: false,
-    },
-    {
-      id: "2",
-      name: "鲈鱼片",
-      batchNumber: "PB-20251225-004",
-      quantity: 50,
-      location: "A区-冷藏库-02",
-      packed: false,
-    },
-    {
-      id: "3",
-      name: "鲈鱼片",
-      batchNumber: "PB-20251225-005",
-      quantity: 50,
-      location: "A区-冷藏库-03",
-      packed: false,
-    },
-  ]);
+  const [packingItems, setPackingItems] = useState<PackingItem[]>([]);
 
   const toggleItem = (id: string) => {
     setPackingItems((prev) =>
@@ -132,8 +154,8 @@ export function WHPackingScreen() {
 
   const packedCount = packingItems.filter((item) => item.packed).length;
   const totalCount = packingItems.length;
-  const progress = packedCount / totalCount;
-  const allPacked = packedCount === totalCount;
+  const progress = totalCount > 0 ? packedCount / totalCount : 0;
+  const allPacked = totalCount > 0 && packedCount === totalCount;
 
   // 完成打包操作
   const completePacking = async () => {
@@ -258,6 +280,22 @@ export function WHPackingScreen() {
         {/* 打包列表 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>商品列表</Text>
+
+          {/* FEFO 排序提示 */}
+          {packingItems.length > 0 && (
+            <View style={styles.fefoBanner}>
+              <MaterialCommunityIcons name="sort-calendar-ascending" size={16} color="#1976d2" />
+              <Text style={styles.fefoBannerText}>按先到期先出 (FEFO) 排序</Text>
+            </View>
+          )}
+
+          {/* 空状态 */}
+          {packingItems.length === 0 && (
+            <View style={styles.emptyBatches}>
+              <MaterialCommunityIcons name="package-variant" size={48} color="#ddd" />
+              <Text style={styles.emptyBatchesText}>暂无可用批次</Text>
+            </View>
+          )}
 
           {packingItems.map((item) => (
             <TouchableOpacity
@@ -493,6 +531,28 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#999",
     marginBottom: 12,
+  },
+  fefoBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e3f2fd",
+    borderRadius: 6,
+    padding: 8,
+    marginBottom: 12,
+    gap: 6,
+  },
+  fefoBannerText: {
+    fontSize: 12,
+    color: "#1976d2",
+  },
+  emptyBatches: {
+    alignItems: "center",
+    paddingVertical: 32,
+  },
+  emptyBatchesText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: "#999",
   },
   packingItem: {
     flexDirection: "row",

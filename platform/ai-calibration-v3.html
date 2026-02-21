@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能定标 | 白垩纪AI</title>
+    <meta name="description" content="AI智能定标 - 用AI重新定义工厂计件标准">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://cretaceousfuture.com/ai-calibration-v3/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cretaceousfuture.com/ai-calibration-v3/">
+    <meta property="og:title" content="AI智能定标 | 白垩纪AI">
+    <meta property="og:description" content="说错了？AI帮你自动改。意图自动识别，错误自动修复，让AI助手越用越聪明。">
+    <meta property="og:image" content="https://cretaceousfuture.com/share-image.png">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="AI智能定标 | 白垩纪AI">
+    <meta name="twitter:description" content="说错了？AI帮你自动改。意图自动识别，错误自动修复。">
+    <meta name="twitter:image" content="https://cretaceousfuture.com/share-image.png">
+
+    <link rel="stylesheet" href="/css/v3-design.css">
+    <link rel="stylesheet" href="/css/v3-subpages.css">
+    <script src="/js/v3-engine.js" defer></script>
+</head>
+<body class="page-dark glow-cursor">
+
+    <!-- Film grain -->
+    <div class="film-grain" aria-hidden="true"></div>
+    <div id="spotlight" class="spotlight" aria-hidden="true"></div>
+
+    <!-- NAV -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="/index-v3/" class="logo">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 4 L36 12 L20 20 L4 12 Z" fill="#E8E8E8" />
+                        <path d="M20 10 L36 18 L20 26 L4 18 Z" fill="#A0A0A0" />
+                        <path d="M20 16 L36 24 L20 32 L4 24 Z" fill="#707070" />
+                        <path d="M20 22 L36 30 L20 38 L4 30 Z" fill="#404040" />
+                    </svg>
+                </div>
+                <span class="logo-text">CRETACEOUS</span>
+            </a>
+            <div class="nav-links">
+                <a href="/index-v3/" class="nav-link">首页</a>
+                <a href="/ai-bi-v3/" class="nav-link">智能分析</a>
+                <a href="/ai-scheduling-v3/" class="nav-link">AI调度</a>
+                <a href="/ai-calibration-v3/" class="nav-link active" style="color: var(--accent); font-weight: 600;">AI定标</a>
+                <a href="/dashboard-v3/" class="btn btn-primary">进入演示</a>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="菜单">
+                <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                <svg class="close-icon" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+        <div class="mobile-menu" id="mobileMenu">
+            <a href="/index-v3/" class="mobile-nav-link" onclick="closeMobileMenu()">首页</a>
+            <a href="/ai-bi-v3/" class="mobile-nav-link" onclick="closeMobileMenu()">智能分析</a>
+            <a href="/ai-scheduling-v3/" class="mobile-nav-link" onclick="closeMobileMenu()">AI调度</a>
+            <a href="/ai-calibration-v3/" class="mobile-nav-link" onclick="closeMobileMenu()" style="color: var(--accent); font-weight: 600;">AI定标</a>
+            <a href="/dashboard-v3/" class="btn btn-primary" style="width:100%; margin-top:var(--space-4);">进入演示</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="smartbi-hero">
+        <div class="hero-orb hero-orb-1" aria-hidden="true"></div>
+        <div class="hero-orb hero-orb-2" aria-hidden="true"></div>
+        <div class="hero-orb hero-orb-3" aria-hidden="true"></div>
+
+        <div class="container">
+            <div class="grid-asymmetric">
+                <div class="hero-content">
+                    <div class="hero-eyebrow">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <circle cx="8" cy="8" r="6" stroke="#C45C26" stroke-width="1.5"/>
+                            <path d="M8 5v3l2 2" stroke="#C45C26" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        AI驱动 · 智能纠错
+                    </div>
+                    <h1 class="hero-title">说错了？<br><span>AI 帮你自动改</span></h1>
+                    <p class="hero-desc">不用担心说不准确、记不住参数。我们的 AI 能理解你的真实意图，即使查询出错也能自动修正，确保每次都返回你真正想要的结果。</p>
+                    <div class="hero-actions">
+                        <a href="#cta" class="btn-accent">立即体验</a>
+                        <a href="#how-it-works" class="btn-secondary">工作原理</a>
+                    </div>
+                    <div class="hero-stats-inline">
+                        <div class="stat-item">
+                            <span class="stat-value">95%+</span>
+                            <span class="stat-label">查询准确率</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">85%</span>
+                            <span class="stat-label">错误自动修复</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">&lt;2s</span>
+                            <span class="stat-label">纠正响应</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">持续</span>
+                            <span class="stat-label">自我学习</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-visual">
+                    <div class="hero-dashboard-preview">
+                        <div class="dashboard-header">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <div class="dashboard-body">
+                            <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="AI智能纠错演示界面">
+                                <!-- Background -->
+                                <rect width="400" height="280" fill="#0D0D0F"/>
+
+                                <!-- User Input Section -->
+                                <rect x="16" y="16" width="368" height="50" rx="8" fill="#161618" stroke="rgba(255,255,255,0.08)"/>
+                                <circle cx="40" cy="41" r="12" fill="#2D6A4F"/>
+                                <text x="40" y="45" text-anchor="middle" fill="white" font-size="10" font-weight="600">U</text>
+                                <rect x="60" y="33" width="120" height="8" rx="2" fill="rgba(255,255,255,0.6)"/>
+                                <rect x="60" y="45" width="80" height="6" rx="2" fill="rgba(255,255,255,0.3)"/>
+
+                                <!-- Error Detection -->
+                                <rect x="16" y="76" width="176" height="80" rx="8" fill="#161618" stroke="rgba(188,71,73,0.3)"/>
+                                <rect x="24" y="84" width="60" height="6" rx="2" fill="#BC4749"/>
+                                <text x="24" y="106" fill="rgba(255,255,255,0.5)" font-size="9">执行结果</text>
+                                <rect x="24" y="114" width="140" height="6" rx="2" fill="rgba(255,255,255,0.2)"/>
+                                <rect x="24" y="124" width="100" height="6" rx="2" fill="rgba(255,255,255,0.2)"/>
+                                <rect x="24" y="134" width="120" height="6" rx="2" fill="rgba(255,255,255,0.2)"/>
+                                <!-- Error badge -->
+                                <rect x="130" y="82" width="54" height="16" rx="8" fill="rgba(188,71,73,0.2)"/>
+                                <text x="157" y="93" text-anchor="middle" fill="#BC4749" font-size="8">条件丢失</text>
+
+                                <!-- Calibration Process -->
+                                <rect x="208" y="76" width="176" height="80" rx="8" fill="#161618" stroke="rgba(196,92,38,0.3)"/>
+                                <rect x="216" y="84" width="60" height="6" rx="2" fill="#C45C26"/>
+                                <text x="216" y="106" fill="rgba(255,255,255,0.5)" font-size="9">智能纠错中</text>
+
+                                <!-- Sync animation icon -->
+                                <circle cx="296" cy="120" r="20" fill="rgba(196,92,38,0.1)" stroke="rgba(196,92,38,0.3)" stroke-width="2"/>
+                                <path d="M288 120 L296 112 L304 120" stroke="#C45C26" stroke-width="2" fill="none" stroke-linecap="round"/>
+                                <path d="M304 120 L296 128 L288 120" stroke="#C45C26" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+
+                                <!-- Arrow -->
+                                <path d="M200 116 L204 120 L200 124" stroke="rgba(196,92,38,0.5)" stroke-width="2" fill="none"/>
+
+                                <!-- Success Result -->
+                                <rect x="16" y="166" width="368" height="98" rx="8" fill="#161618" stroke="rgba(45,106,79,0.3)"/>
+                                <rect x="24" y="174" width="80" height="6" rx="2" fill="#2D6A4F"/>
+
+                                <!-- Result cards -->
+                                <rect x="24" y="190" width="168" height="60" rx="6" fill="rgba(45,106,79,0.1)"/>
+                                <text x="32" y="208" fill="#2D6A4F" font-size="9" font-weight="600">MB-001 批次详情</text>
+                                <rect x="32" y="216" width="100" height="5" rx="2" fill="rgba(255,255,255,0.3)"/>
+                                <rect x="32" y="226" width="80" height="5" rx="2" fill="rgba(255,255,255,0.2)"/>
+                                <rect x="32" y="236" width="60" height="5" rx="2" fill="rgba(255,255,255,0.2)"/>
+
+                                <rect x="208" y="190" width="168" height="60" rx="6" fill="rgba(255,255,255,0.03)"/>
+                                <text x="216" y="208" fill="rgba(255,255,255,0.5)" font-size="9">纠错记录</text>
+                                <rect x="216" y="218" width="60" height="4" rx="2" fill="rgba(255,255,255,0.15)"/>
+                                <rect x="280" y="218" width="40" height="4" rx="2" fill="#2D6A4F"/>
+                                <rect x="216" y="228" width="50" height="4" rx="2" fill="rgba(255,255,255,0.15)"/>
+                                <rect x="270" y="228" width="50" height="4" rx="2" fill="#C45C26"/>
+                                <rect x="216" y="238" width="70" height="4" rx="2" fill="rgba(255,255,255,0.15)"/>
+                                <rect x="290" y="238" width="30" height="4" rx="2" fill="#2D6A4F"/>
+
+                                <!-- Success badge -->
+                                <rect x="310" y="172" width="66" height="16" rx="8" fill="rgba(45,106,79,0.2)"/>
+                                <text x="343" y="183" text-anchor="middle" fill="#2D6A4F" font-size="8">已自动修正</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pain Points Section -->
+    <section class="section-dark reveal-hidden" style="padding: 100px 0;">
+        <div class="container">
+            <div class="section-header">
+                <div class="eyebrow">您是否遇到过这些问题？</div>
+                <h2 class="section-title">传统 AI 助手的痛点</h2>
+                <p class="section-desc">这些场景是不是很熟悉？</p>
+            </div>
+
+            <div class="pain-grid">
+                <div class="pain-card">
+                    <span class="pain-icon" aria-hidden="true">⚠️</span>
+                    <h3>查询条件被忽略</h3>
+                    <p>明明说了"查批次 MB-001"，结果返回了所有批次的数据。AI 听懂了，但执行时把关键条件丢了。</p>
+                    <div class="pain-stat">影响：用户需手动筛选 100+ 条记录</div>
+                </div>
+
+                <div class="pain-card">
+                    <span class="pain-icon" aria-hidden="true">🔤</span>
+                    <h3>参数格式不对</h3>
+                    <p>说"上周的数据"，AI 不知道怎么转成日期。说"带鱼库存"，AI 找不到对应的物料编码。</p>
+                    <div class="pain-stat">影响：查询失败，返回空结果</div>
+                </div>
+
+                <div class="pain-card">
+                    <span class="pain-icon" aria-hidden="true">🔁</span>
+                    <h3>同样的问题反复问</h3>
+                    <p>刚问完"查一下库存"，换个说法"看下存货"，AI 又要重新理解。没有记忆，不会学习。</p>
+                    <div class="pain-stat">影响：重复操作，效率低下</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="section-dark reveal-hidden" style="padding: 100px 0; background: linear-gradient(180deg, #0D0D0F 0%, #161618 100%);">
+        <div class="container">
+            <div class="section-header">
+                <div class="eyebrow">智能纠错引擎</div>
+                <h2 class="section-title">三步自动修正，确保结果准确</h2>
+                <p class="section-desc">无需人工干预，AI 自动检测问题并修复</p>
+            </div>
+
+            <div class="solution-flow-v">
+                <div class="flow-step">
+                    <div class="step-number">1</div>
+                    <h4>理解你的真实意图</h4>
+                    <p>AI 不只是听你说了什么，更能理解你想要什么。即使表达不准确，也能提取出关键信息。</p>
+                    <div class="step-example">
+                        <strong>示例</strong><br>
+                        你说: "看下那个批次的东西"<br>
+                        AI 理解: 查询最近操作的批次详情
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">2</div>
+                    <h4>执行后自动验证</h4>
+                    <p>每次查询执行后，AI 会自动检查结果是否符合你的意图。如果发现条件被忽略或结果不对，立即触发修正。</p>
+                    <div class="step-example">
+                        <strong>自动检测</strong><br>
+                        用户要求: 批次 MB-001<br>
+                        返回结果: MB-100, MB-101, MB-102<br>
+                        检测结果: 条件被忽略，需要纠正
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">3</div>
+                    <h4>智能修正，返回正确结果</h4>
+                    <p>发现问题后，AI 会自动调整查询条件重新执行，直到返回符合你意图的结果。整个过程无需你干预。</p>
+                    <div class="step-example">
+                        <strong>最终结果</strong><br>
+                        返回: 批次 MB-001 的完整信息<br>
+                        耗时: 自动修正 + 返回，用户无感知
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="section-dark reveal-hidden" style="padding: 100px 0;">
+        <div class="container">
+            <div class="section-header">
+                <div class="eyebrow">效果数据</div>
+                <h2 class="section-title">让 AI 助手真正可靠</h2>
+            </div>
+
+            <div class="benefit-grid">
+                <div class="benefit-card">
+                    <span class="benefit-stat">95%+</span>
+                    <h3>查询准确率</h3>
+                    <p>通过意图识别与结果验证双重保障，确保每次查询返回正确数据。</p>
+                </div>
+
+                <div class="benefit-card">
+                    <span class="benefit-stat">85%</span>
+                    <h3>错误自动修复率</h3>
+                    <p>绝大多数条件丢失、参数格式错误，AI 无需用户干预，自动识别并修正。</p>
+                </div>
+
+                <div class="benefit-card">
+                    <span class="benefit-stat">&lt;2s</span>
+                    <h3>纠正响应时间</h3>
+                    <p>从检测到错误到返回正确结果，整个纠错流程在 2 秒内完成，用户几乎无感知。</p>
+                </div>
+
+                <div class="benefit-card">
+                    <span class="benefit-stat">持续</span>
+                    <h3>自我学习优化</h3>
+                    <p>每次纠错记录都成为训练数据，AI 越用越聪明，针对你的工厂场景持续优化。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scenarios Section -->
+    <section class="section-dark reveal-hidden" style="padding: 100px 0; background: linear-gradient(180deg, #0D0D0F 0%, #161618 100%);">
+        <div class="container">
+            <div class="section-header">
+                <div class="eyebrow">真实场景</div>
+                <h2 class="section-title">智能纠错实战案例</h2>
+                <p class="section-desc">看看 AI 如何在实际工作中帮你自动修正</p>
+            </div>
+
+            <div class="scenario-grid-dark">
+                <div class="scenario-card-dark">
+                    <span class="scenario-icon" aria-hidden="true">📦</span>
+                    <h3>批次查询：条件被忽略</h3>
+                    <p>用户指定批次号，传统 AI 返回所有批次；白垩纪 AI 自动检测条件丢失并重新精确查询。</p>
+                    <div class="comparison-box">
+                        <div class="box-before">
+                            <span class="box-label">传统 AI 助手</span>
+                            <strong>用户:</strong> 查一下批次 MB-2026-001<br><br>
+                            <strong>返回:</strong> 所有 100 个批次的列表<br><br>
+                            <strong>问题:</strong> 批次条件被忽略，需要用户自己筛选
+                        </div>
+                        <div class="box-after">
+                            <span class="box-label">白垩纪 AI</span>
+                            <strong>用户:</strong> 查一下批次 MB-2026-001<br><br>
+                            <strong>返回:</strong> MB-2026-001 的详细信息<br><br>
+                            <strong>过程:</strong> 自动检测到条件被忽略，重新查询后返回正确结果
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scenario-card-dark">
+                    <span class="scenario-icon" aria-hidden="true">🐟</span>
+                    <h3>库存查询：物料名称模糊</h3>
+                    <p>用户使用口语化物料名称，传统 AI 无法映射编码；白垩纪 AI 自动关联物料名称，返回准确库存。</p>
+                    <div class="comparison-box">
+                        <div class="box-before">
+                            <span class="box-label">传统 AI 助手</span>
+                            <strong>用户:</strong> 带鱼还有多少？<br><br>
+                            <strong>返回:</strong> "未找到物料"<br><br>
+                            <strong>问题:</strong> 无法将口语"带鱼"映射到物料编码
+                        </div>
+                        <div class="box-after">
+                            <span class="box-label">白垩纪 AI</span>
+                            <strong>用户:</strong> 带鱼还有多少？<br><br>
+                            <strong>返回:</strong> 冷冻带鱼(M-001) 库存 500kg<br><br>
+                            <strong>过程:</strong> 自动关联物料名称，返回准确库存
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scenario-card-dark">
+                    <span class="scenario-icon" aria-hidden="true">📅</span>
+                    <h3>日期查询：时间表述不清</h3>
+                    <p>用户使用自然语言描述时间段，传统 AI 要求手动输入；白垩纪 AI 自动将"上周"转换为精确日期范围。</p>
+                    <div class="comparison-box">
+                        <div class="box-before">
+                            <span class="box-label">传统 AI 助手</span>
+                            <strong>用户:</strong> 上周的生产数据<br><br>
+                            <strong>返回:</strong> "请输入开始日期和结束日期"<br><br>
+                            <strong>问题:</strong> 需要用户手动计算日期范围
+                        </div>
+                        <div class="box-after">
+                            <span class="box-label">白垩纪 AI</span>
+                            <strong>用户:</strong> 上周的生产数据<br><br>
+                            <strong>返回:</strong> 1月13日-1月19日生产报表<br><br>
+                            <strong>过程:</strong> 自动转换"上周"为具体日期范围
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="cta" class="section-dark reveal-hidden" style="padding: 80px 0;">
+        <div class="container">
+            <div class="cta-dark">
+                <h2>让 AI 助手真正懂你</h2>
+                <p>不再为表达不准确而烦恼，立即体验智能纠错</p>
+                <div class="cta-buttons">
+                    <a href="/index-v3/#contact" class="btn-accent">预约演示</a>
+                    <a href="/index-v3/" class="btn-secondary">返回首页</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <div class="footer-brand">
+                        <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+                            <rect width="36" height="36" rx="8" fill="#C45C26" />
+                            <path d="M8 28V8h4v8h12V8h4v20h-4v-8H12v8H8z" fill="white" />
+                        </svg>
+                        白垩纪
+                    </div>
+                    <p class="footer-desc">新一代工厂操作系统，让每一座工厂都拥有智慧大脑。</p>
+                </div>
+                <div class="footer-col">
+                    <h4>产品</h4>
+                    <a href="/index-v3/#features" class="footer-link">Factory OS</a>
+                    <a href="/ai-bi-v3/" class="footer-link">SmartBI</a>
+                    <a href="/ai-scheduling-v3/" class="footer-link">AI调度</a>
+                    <a href="/ai-calibration-v3/" class="footer-link">AI定标</a>
+                </div>
+                <div class="footer-col">
+                    <h4>资源</h4>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">文档中心</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">API参考</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">客户案例</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">博客</a>
+                </div>
+                <div class="footer-col">
+                    <h4>公司</h4>
+                    <a href="/index-v3/#about" class="footer-link">关于我们</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">加入团队</a>
+                    <a href="/index-v3/#contact" class="footer-link">联系我们</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">合作伙伴</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>© 2026 白垩纪AI智能体. All rights reserved.</span>
+                <span>上海 · 北京 · 深圳</span>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

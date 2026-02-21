@@ -188,6 +188,17 @@ export interface AlertsDashboardData {
 }
 
 /**
+ * 餐饮看板汇总数据
+ * 对应后端 RestaurantDashboardServiceImpl.getSummary 返回结构
+ */
+export interface RestaurantDashboardSummary {
+  todayRequisitionCount: number;
+  pendingApprovalCount: number;
+  thisMonthWastageCost: number | null;
+  latestStocktakingDate: string | null;
+}
+
+/**
  * 趋势分析数据
  */
 export interface TrendAnalysisData {
@@ -324,6 +335,24 @@ export const dashboardAPI = {
     }>(`/api/mobile/${currentFactoryId}/reports/dashboard/alerts`, {
       params: { period },
     });
+    return response;
+  },
+
+  /**
+   * 获取餐饮看板汇总
+   * @param factoryId - 工厂/餐厅ID（可选，将从登录用户信息中获取）
+   */
+  getRestaurantDashboardSummary: async (factoryId?: string): Promise<{
+    success: boolean;
+    data: RestaurantDashboardSummary;
+    message?: string;
+  }> => {
+    const currentFactoryId = requireFactoryId(factoryId);
+    const response = await apiClient.get<{
+      success: boolean;
+      data: RestaurantDashboardSummary;
+      message?: string;
+    }>(`/api/mobile/${currentFactoryId}/restaurant-dashboard/summary`);
     return response;
   },
 

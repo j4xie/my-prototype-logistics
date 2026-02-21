@@ -568,8 +568,8 @@ function handleKeydown(event: KeyboardEvent) {
               <template v-else>
                 <div class="message-text">{{ message.content }}</div>
 
-                <!-- AI 洞察面板 -->
-                <div v-if="message.insights" class="message-insights">
+                <!-- AI 洞察面板 (only show if insights has actual content) -->
+                <div v-if="message.insights && ((message.insights.positive?.items?.length ?? 0) > 0 || (message.insights.negative?.items?.length ?? 0) > 0 || (message.insights.suggestions?.items?.length ?? 0) > 0)" class="message-insights">
                   <AIInsightPanel
                     :insight="message.insights"
                     title="AI 分析洞察"

@@ -6,6 +6,8 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { FAManagementStackParamList } from "../../types/navigation";
+import { useAuthStore } from "../../store/authStore";
+import { isRestaurant } from "../../utils/factoryType";
 
 // 导入页面组件
 import FAManagementScreen from "../../screens/factory-admin/management/FAManagementScreen";
@@ -79,10 +81,16 @@ import TransferListScreen from "../../screens/factory-admin/inventory/TransferLi
 import TransferDetailScreen from "../../screens/factory-admin/inventory/TransferDetailScreen";
 import ArApOverviewScreen from "../../screens/factory-admin/inventory/ArApOverviewScreen";
 import PriceListScreen from "../../screens/factory-admin/inventory/PriceListScreen";
+import ReturnOrderListScreen from "../../screens/factory-admin/inventory/ReturnOrderListScreen";
+import ReturnOrderDetailScreen from "../../screens/factory-admin/inventory/ReturnOrderDetailScreen";
+import WorkReportApprovalScreen from "../../screens/factory-admin/management/WorkReportApprovalScreen";
 
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
 export function FAManagementStackNavigator() {
+  const user = useAuthStore(state => state.user);
+  const isRestaurantMode = isRestaurant(user);
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -99,20 +107,6 @@ export function FAManagementStackNavigator() {
         options={{ title: "员工管理" }}
       />
 
-      {/* 设备管理 (复用现有) */}
-      <Stack.Screen
-        name="EquipmentList"
-        component={EquipmentManagementScreen}
-        options={{ title: "设备管理" }}
-      />
-
-      {/* 设备智能分析 */}
-      <Stack.Screen
-        name="EquipmentAnalysis"
-        component={EquipmentAnalysisScreen}
-        options={{ title: "设备智能分析" }}
-      />
-
       {/* 员工详情 - 临时使用员工列表 */}
       <Stack.Screen
         name="EmployeeDetail"
@@ -120,12 +114,166 @@ export function FAManagementStackNavigator() {
         options={{ title: "员工详情" }}
       />
 
-      {/* 设备详情 (复用现有) */}
-      <Stack.Screen
-        name="EquipmentDetail"
-        component={EquipmentDetailScreen}
-        options={{ title: "设备详情" }}
-      />
+      {/* 工厂专属路由 - 餐饮版不注册，防止路由泄露 */}
+      {!isRestaurantMode && (
+        <>
+          {/* 设备管理 (复用现有) */}
+          <Stack.Screen
+            name="EquipmentList"
+            component={EquipmentManagementScreen}
+            options={{ title: "设备管理" }}
+          />
+
+          {/* 设备智能分析 */}
+          <Stack.Screen
+            name="EquipmentAnalysis"
+            component={EquipmentAnalysisScreen}
+            options={{ title: "设备智能分析" }}
+          />
+
+          {/* 设备详情 (复用现有) */}
+          <Stack.Screen
+            name="EquipmentDetail"
+            component={EquipmentDetailScreen}
+            options={{ title: "设备详情" }}
+          />
+
+          {/* 统一设备管理中心 */}
+          <Stack.Screen
+            name="UnifiedDeviceManagement"
+            component={UnifiedDeviceManagementScreen}
+            options={{ title: "设备中心" }}
+          />
+
+          {/* IoT 电子秤设备管理 */}
+          <Stack.Screen
+            name="IotDeviceList"
+            component={IotDeviceListScreen}
+            options={{ title: "IoT 设备管理" }}
+          />
+          <Stack.Screen
+            name="IotDeviceDetail"
+            component={IotDeviceDetailScreen}
+            options={{ title: "设备详情" }}
+          />
+          <Stack.Screen
+            name="IotDeviceCreate"
+            component={IotDeviceCreateScreen}
+            options={{ title: "添加设备" }}
+          />
+          <Stack.Screen
+            name="ScaleTest"
+            component={ScaleTestScreen}
+            options={{ title: "秤数据测试" }}
+          />
+
+          {/* ISAPI 海康威视摄像头设备管理 */}
+          <Stack.Screen
+            name="IsapiDeviceList"
+            component={IsapiDeviceListScreen}
+            options={{ title: "摄像头管理" }}
+          />
+          <Stack.Screen
+            name="IsapiDeviceDetail"
+            component={IsapiDeviceDetailScreen}
+            options={{ title: "摄像头详情" }}
+          />
+          <Stack.Screen
+            name="IsapiDeviceCreate"
+            component={IsapiDeviceCreateScreen}
+            options={{ title: "添加摄像头" }}
+          />
+          {/* 旧路由重定向到统一发现页面，保持兼容性 */}
+          <Stack.Screen
+            name="IsapiDeviceDiscovery"
+            component={UnifiedDeviceDiscoveryScreen}
+            options={{ title: "设备发现" }}
+          />
+          <Stack.Screen
+            name="IsapiSmartConfig"
+            component={IsapiSmartConfigScreen}
+            options={{ title: "智能分析配置" }}
+          />
+          <Stack.Screen
+            name="DeviceSetupWizard"
+            component={DeviceSetupWizardScreen}
+            options={{ title: "设备配置向导" }}
+          />
+
+          {/* 智能设备添加 */}
+          <Stack.Screen
+            name="SmartDeviceAdd"
+            component={SmartDeviceAddScreen}
+            options={{ title: "添加设备" }}
+          />
+          <Stack.Screen
+            name="CameraAddMethod"
+            component={CameraAddMethodScreen}
+            options={{ title: "添加摄像头" }}
+          />
+          <Stack.Screen
+            name="AIDeviceInput"
+            component={AIDeviceInputScreen}
+            options={{ title: "AI识别添加" }}
+          />
+
+          {/* 标签自动识别监控 */}
+          <Stack.Screen
+            name="LabelRecognitionMonitor"
+            component={LabelRecognitionMonitorScreen}
+            options={{ title: "标签识别监控" }}
+          />
+
+          {/* 统一多品牌设备发现 */}
+          <Stack.Screen
+            name="UnifiedDeviceDiscovery"
+            component={UnifiedDeviceDiscoveryScreen}
+            options={{ title: "设备发现" }}
+          />
+
+          {/* NFC 标签管理 */}
+          <Stack.Screen
+            name="NfcTagManagement"
+            component={NfcTagManagementScreen}
+            options={{ title: "NFC标签管理" }}
+          />
+
+          {/* 转换率管理 (工厂专属) */}
+          <Stack.Screen
+            name="ConversionRate"
+            component={ConversionRateScreen}
+            options={{ title: "转换率配置" }}
+          />
+
+          {/* 质检项配置 (工厂专属) */}
+          <Stack.Screen
+            name="QualityCheckItemConfig"
+            component={QualityCheckItemConfigScreen}
+            options={{ title: "质检项配置" }}
+          />
+
+          {/* 质检项详情 (工厂专属) */}
+          <Stack.Screen
+            name="QualityCheckItemDetail"
+            component={QualityCheckItemDetailScreen}
+            options={{ title: "质检项详情" }}
+          />
+
+          {/* SOP 流程配置 (工厂专属) */}
+          <Stack.Screen
+            name="SopConfig"
+            component={SopConfigScreen}
+            options={{ title: "SOP配置" }}
+          />
+
+          {/* 报工审批 (工厂专属) */}
+          <Stack.Screen
+            name="WorkReportApproval"
+            component={WorkReportApprovalScreen}
+            options={{ title: "报工审批" }}
+          />
+        </>
+      )}
 
       {/* 产品类型管理 (复用现有) */}
       <Stack.Screen
@@ -167,13 +315,6 @@ export function FAManagementStackNavigator() {
         name="ShipmentManagement"
         component={ShipmentManagementScreen}
         options={{ title: "出货管理" }}
-      />
-
-      {/* 转换率管理 (复用现有) */}
-      <Stack.Screen
-        name="ConversionRate"
-        component={ConversionRateScreen}
-        options={{ title: "转换率配置" }}
       />
 
       {/* 报废记录管理 (复用现有) */}
@@ -230,27 +371,6 @@ export function FAManagementStackNavigator() {
         options={{ title: "编码规则详情" }}
       />
 
-      {/* 质检项配置 */}
-      <Stack.Screen
-        name="QualityCheckItemConfig"
-        component={QualityCheckItemConfigScreen}
-        options={{ title: "质检项配置" }}
-      />
-
-      {/* 质检项详情 */}
-      <Stack.Screen
-        name="QualityCheckItemDetail"
-        component={QualityCheckItemDetailScreen}
-        options={{ title: "质检项详情" }}
-      />
-
-      {/* SOP 流程配置 */}
-      <Stack.Screen
-        name="SopConfig"
-        component={SopConfigScreen}
-        options={{ title: "SOP配置" }}
-      />
-
       {/* 意图配置查看 (只读) */}
       <Stack.Screen
         name="IntentView"
@@ -265,107 +385,7 @@ export function FAManagementStackNavigator() {
         options={{ title: "意图详情" }}
       />
 
-      {/* 统一设备管理中心 */}
-      <Stack.Screen
-        name="UnifiedDeviceManagement"
-        component={UnifiedDeviceManagementScreen}
-        options={{ title: "设备中心" }}
-      />
-
-      {/* IoT 电子秤设备管理 */}
-      <Stack.Screen
-        name="IotDeviceList"
-        component={IotDeviceListScreen}
-        options={{ title: "IoT 设备管理" }}
-      />
-      <Stack.Screen
-        name="IotDeviceDetail"
-        component={IotDeviceDetailScreen}
-        options={{ title: "设备详情" }}
-      />
-      <Stack.Screen
-        name="IotDeviceCreate"
-        component={IotDeviceCreateScreen}
-        options={{ title: "添加设备" }}
-      />
-      <Stack.Screen
-        name="ScaleTest"
-        component={ScaleTestScreen}
-        options={{ title: "秤数据测试" }}
-      />
-
-      {/* ISAPI 海康威视摄像头设备管理 */}
-      <Stack.Screen
-        name="IsapiDeviceList"
-        component={IsapiDeviceListScreen}
-        options={{ title: "摄像头管理" }}
-      />
-      <Stack.Screen
-        name="IsapiDeviceDetail"
-        component={IsapiDeviceDetailScreen}
-        options={{ title: "摄像头详情" }}
-      />
-      <Stack.Screen
-        name="IsapiDeviceCreate"
-        component={IsapiDeviceCreateScreen}
-        options={{ title: "添加摄像头" }}
-      />
-      {/* 旧路由重定向到统一发现页面，保持兼容性 */}
-      <Stack.Screen
-        name="IsapiDeviceDiscovery"
-        component={UnifiedDeviceDiscoveryScreen}
-        options={{ title: "设备发现" }}
-      />
-      <Stack.Screen
-        name="IsapiSmartConfig"
-        component={IsapiSmartConfigScreen}
-        options={{ title: "智能分析配置" }}
-      />
-      <Stack.Screen
-        name="DeviceSetupWizard"
-        component={DeviceSetupWizardScreen}
-        options={{ title: "设备配置向导" }}
-      />
-
-      {/* 智能设备添加 */}
-      <Stack.Screen
-        name="SmartDeviceAdd"
-        component={SmartDeviceAddScreen}
-        options={{ title: "添加设备" }}
-      />
-      <Stack.Screen
-        name="CameraAddMethod"
-        component={CameraAddMethodScreen}
-        options={{ title: "添加摄像头" }}
-      />
-      <Stack.Screen
-        name="AIDeviceInput"
-        component={AIDeviceInputScreen}
-        options={{ title: "AI识别添加" }}
-      />
-
-      {/* 标签自动识别监控 */}
-      <Stack.Screen
-        name="LabelRecognitionMonitor"
-        component={LabelRecognitionMonitorScreen}
-        options={{ title: "标签识别监控" }}
-      />
-
-      {/* 统一多品牌设备发现 */}
-      <Stack.Screen
-        name="UnifiedDeviceDiscovery"
-        component={UnifiedDeviceDiscoveryScreen}
-        options={{ title: "设备发现" }}
-      />
-
-      {/* NFC 标签管理 */}
-      <Stack.Screen
-        name="NfcTagManagement"
-        component={NfcTagManagementScreen}
-        options={{ title: "NFC标签管理" }}
-      />
-
-      {/* 进销存管理 */}
+      {/* 进销存管理 (工厂版 + 餐饮版通用) */}
       <Stack.Screen
         name="PurchaseOrderList"
         component={PurchaseOrderListScreen}
@@ -410,6 +430,16 @@ export function FAManagementStackNavigator() {
         name="PriceList"
         component={PriceListScreen}
         options={{ title: "价格表" }}
+      />
+      <Stack.Screen
+        name="ReturnOrderList"
+        component={ReturnOrderListScreen}
+        options={{ title: "退货管理" }}
+      />
+      <Stack.Screen
+        name="ReturnOrderDetail"
+        component={ReturnOrderDetailScreen}
+        options={{ title: "退货详情" }}
       />
     </Stack.Navigator>
   );

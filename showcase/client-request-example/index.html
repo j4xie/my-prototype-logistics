@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>白垩纪食品溯源系统 — 企业级智能管理平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===== RESET & VARIABLES ===== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  /* Factory — deep midnight + electric blue-cyan */
+  --f-bg: #050810;
+  --f-surface: #0b1120;
+  --f-surface-alt: #111a2e;
+  --f-border: rgba(59, 130, 246, 0.08);
+  --f-border-hover: rgba(59, 130, 246, 0.25);
+  --f-accent: #3b82f6;
+  --f-accent2: #22d3ee;
+  --f-text: #e8edf5;
+  --f-text-secondary: #94a3b8;
+  --f-muted: #64748b;
+
+  /* Restaurant — warm cream + amber-terracotta */
+  --r-bg: #faf6f0;
+  --r-surface: #ffffff;
+  --r-border: rgba(180, 83, 9, 0.08);
+  --r-border-hover: rgba(217, 119, 6, 0.3);
+  --r-accent: #d97706;
+  --r-accent2: #ef4444;
+  --r-text: #1c1917;
+  --r-text-secondary: #78716c;
+  --r-muted: #a8a29e;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Outfit', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow-x: hidden;
+  background: var(--f-bg);
+  color: var(--f-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: #fff;
+}
+
+/* ===== NOISE TEXTURE OVERLAY ===== */
+.noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* ===== NAVIGATION ===== */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 0 clamp(1rem, 4vw, 3rem);
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  background: rgba(5, 8, 16, 0.7);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: all 0.6s var(--ease-out-expo);
+}
+.nav.scrolled {
+  background: rgba(5, 8, 16, 0.9);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04);
+}
+.nav.light {
+  background: rgba(250, 246, 240, 0.85);
+  border-bottom-color: rgba(180, 83, 9, 0.06);
+}
+.nav.light.scrolled {
+  background: rgba(250, 246, 240, 0.95);
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.02em;
+  color: var(--f-text);
+  text-decoration: none;
+  transition: color 0.5s;
+}
+.nav.light .nav-logo { color: var(--r-text); }
+.nav-logo-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--f-accent), var(--f-accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: white;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+}
+.nav-links {
+  display: flex;
+  gap: 1px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  padding: 3px;
+}
+.nav.light .nav-links { background: rgba(0,0,0,0.03); }
+.nav-link {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--f-muted);
+  text-decoration: none;
+  transition: all 0.25s;
+  letter-spacing: 0.01em;
+}
+.nav-link:hover, .nav-link.active {
+  color: var(--f-text);
+  background: rgba(255,255,255,0.06);
+}
+.nav.light .nav-link { color: var(--r-text-secondary); }
+.nav.light .nav-link:hover, .nav.light .nav-link.active {
+  color: var(--r-text);
+  background: rgba(0,0,0,0.04);
+}
+
+/* ===== HERO ===== */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px clamp(1rem, 4vw, 2rem) 80px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+/* Animated gradient mesh */
+.hero-mesh {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.hero-mesh .orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  will-change: transform;
+}
+.hero-mesh .orb-1 {
+  width: 600px;
+  height: 500px;
+  background: rgba(59, 130, 246, 0.12);
+  top: -10%;
+  left: 20%;
+  animation: orbFloat1 25s ease-in-out infinite;
+}
+.hero-mesh .orb-2 {
+  width: 500px;
+  height: 500px;
+  background: rgba(34, 211, 238, 0.08);
+  top: 40%;
+  right: 10%;
+  animation: orbFloat2 30s ease-in-out infinite;
+}
+.hero-mesh .orb-3 {
+  width: 400px;
+  height: 350px;
+  background: rgba(139, 92, 246, 0.06);
+  bottom: 10%;
+  left: 10%;
+  animation: orbFloat3 20s ease-in-out infinite;
+}
+
+/* Dot grid */
+.hero-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(59, 130, 246, 0.12) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 45%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 45%, black 20%, transparent 70%);
+}
+
+/* Edge glow lines */
+.hero-line {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.15), transparent);
+  height: 1px;
+  width: 80%;
+  left: 10%;
+}
+.hero-line-top { top: 30%; }
+.hero-line-bot { bottom: 25%; }
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px 5px 7px;
+  border-radius: 100px;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.12);
+  font-family: 'Azeret Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--f-accent);
+  margin-bottom: 36px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  animation: fadeInUp 0.8s var(--ease-out-expo) both;
+}
+.hero-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--f-accent);
+  box-shadow: 0 0 8px var(--f-accent);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+.hero h1 {
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  margin-bottom: 24px;
+  animation: fadeInUp 0.8s var(--ease-out-expo) 0.1s both;
+}
+.hero h1 .gradient-text {
+  background: linear-gradient(135deg, #3b82f6 0%, #22d3ee 50%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  color: var(--f-text-secondary);
+  max-width: 520px;
+  line-height: 1.75;
+  font-weight: 400;
+  margin-bottom: 44px;
+  animation: fadeInUp 0.8s var(--ease-out-expo) 0.2s both;
+}
+
+.hero-ctas {
+  display: flex;
+  gap: 10px;
+  animation: fadeInUp 0.8s var(--ease-out-expo) 0.3s both;
+}
+.hero-cta {
+  position: relative;
+  padding: 13px 28px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s var(--ease-out-expo);
+  letter-spacing: 0.01em;
+  overflow: hidden;
+}
+.hero-cta.primary {
+  background: linear-gradient(135deg, var(--f-accent), #2563eb);
+  color: white;
+  box-shadow: 0 2px 20px rgba(59, 130, 246, 0.25), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+.hero-cta.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+/* Shimmer effect */
+.hero-cta.primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  transition: left 0.5s;
+}
+.hero-cta.primary:hover::after { left: 120%; }
+.hero-cta.secondary {
+  background: rgba(255,255,255,0.04);
+  color: var(--f-text-secondary);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.hero-cta.secondary:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--f-text);
+  border-color: rgba(255,255,255,0.12);
+}
+
+/* Hero screenshot */
+.hero-screenshot {
+  margin-top: 72px;
+  position: relative;
+  animation: fadeInUp 1s var(--ease-out-expo) 0.5s both;
+  perspective: 1200px;
+}
+.hero-screenshot-inner {
+  position: relative;
+  transform: rotateX(4deg) rotateY(0deg);
+  transition: transform 0.6s var(--ease-out-expo);
+}
+.hero-screenshot-inner:hover {
+  transform: rotateX(1deg) rotateY(0deg);
+}
+.hero-screenshot img {
+  width: min(90vw, 820px);
+  border-radius: 16px;
+  display: block;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 4px 16px rgba(0,0,0,0.2),
+    0 24px 80px rgba(0,0,0,0.5);
+}
+.hero-screenshot-glow {
+  position: absolute;
+  inset: -60px;
+  background: radial-gradient(ellipse 60% 40% at 50% 30%, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+  z-index: -1;
+  pointer-events: none;
+}
+/* Reflection */
+.hero-screenshot-reflect {
+  position: absolute;
+  bottom: -40%;
+  left: 0;
+  right: 0;
+  height: 40%;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.12), transparent 60%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.12), transparent 60%);
+}
+.hero-screenshot-reflect img {
+  width: 100%;
+  border-radius: 16px;
+  transform: scaleY(-1);
+  filter: blur(2px);
+}
+
+/* ===== STATS ===== */
+.stats {
+  position: relative;
+  padding: 80px clamp(1rem, 4vw, 2rem);
+  background: var(--f-surface);
+  border-top: 1px solid var(--f-border);
+  border-bottom: 1px solid var(--f-border);
+}
+.stats-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--f-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.stat-card {
+  background: var(--f-surface);
+  padding: 36px 24px;
+  text-align: center;
+  position: relative;
+  transition: background 0.3s;
+}
+.stat-card:hover {
+  background: var(--f-surface-alt);
+}
+.stat-icon {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.08);
+}
+.stat-number {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, var(--f-accent), var(--f-accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+.stat-label {
+  font-size: 13px;
+  color: var(--f-muted);
+  margin-top: 6px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+/* ===== SECTION SHARED ===== */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Azeret Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.section-label::before {
+  content: '';
+  width: 28px;
+  height: 1px;
+}
+.section-title {
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin-bottom: 18px;
+}
+.section-desc {
+  font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+  line-height: 1.75;
+  font-weight: 400;
+  max-width: 580px;
+}
+
+/* ===== FACTORY ===== */
+.factory {
+  background: var(--f-bg);
+  padding: 120px 0 100px;
+  position: relative;
+}
+.factory .section-label { color: var(--f-accent); }
+.factory .section-label::before { background: var(--f-accent); }
+.factory .section-desc { color: var(--f-text-secondary); }
+.factory-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, 2rem);
+}
+.factory-header { margin-bottom: 64px; }
+
+/* ===== BENTO GRID ===== */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto auto;
+  gap: 10px;
+  margin-bottom: 96px;
+}
+.bento-card {
+  background: var(--f-surface);
+  border: 1px solid var(--f-border);
+  border-radius: 14px;
+  padding: 32px 28px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s var(--ease-out-expo);
+  cursor: default;
+}
+.bento-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(34, 211, 238, 0.1), transparent 50%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+}
+.bento-card:hover::before { opacity: 1; }
+.bento-card:hover {
+  background: var(--f-surface-alt);
+  border-color: var(--f-border-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2), 0 0 48px rgba(59, 130, 246, 0.04);
+}
+
+/* Featured card spans 2 columns */
+.bento-card.featured {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.bento-card.featured .bento-text { padding-top: 4px; }
+
+.bento-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 18px;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.08);
+  flex-shrink: 0;
+}
+.bento-card.featured .bento-icon {
+  width: 52px;
+  height: 52px;
+  font-size: 24px;
+  margin-bottom: 0;
+}
+.bento-card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+  color: var(--f-text);
+}
+.bento-card.featured h3 { font-size: 18px; }
+.bento-card p {
+  font-size: 13px;
+  color: var(--f-text-secondary);
+  line-height: 1.65;
+  font-weight: 400;
+}
+.bento-card.featured p { font-size: 14px; }
+
+/* ===== GALLERY ===== */
+.gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.gallery-header h3 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.gallery-tabs {
+  display: flex;
+  gap: 0;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  padding: 3px;
+  border: 1px solid var(--f-border);
+}
+.gallery-tab {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--f-muted);
+  cursor: pointer;
+  transition: all 0.25s;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+.gallery-tab.active {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--f-accent);
+}
+.gallery-tab:hover:not(.active) {
+  color: var(--f-text-secondary);
+}
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.gallery-item {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--f-border);
+  cursor: pointer;
+  aspect-ratio: 16/10;
+  transition: all 0.5s var(--ease-out-expo);
+}
+.gallery-item:hover {
+  border-color: var(--f-border-hover);
+  transform: translateY(-4px) scale(1.005);
+  box-shadow:
+    0 16px 48px rgba(0,0,0,0.25),
+    0 0 32px rgba(59, 130, 246, 0.06);
+}
+.gallery-item.featured {
+  grid-column: span 2;
+  aspect-ratio: 16/8.5;
+}
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+  transition: transform 0.7s var(--ease-out-expo);
+}
+.gallery-item:hover img { transform: scale(1.04); }
+.gallery-item-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 28px 24px 20px;
+  background: linear-gradient(transparent, rgba(5, 8, 16, 0.85));
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.4s var(--ease-out-expo);
+}
+.gallery-item:hover .gallery-item-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+.gallery-item-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+.gallery-item-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  margin-top: 4px;
+  font-weight: 400;
+}
+/* Filter animation */
+.gallery-item.hiding {
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
+}
+
+/* ===== TRANSITION ===== */
+.transition-zone {
+  height: 180px;
+  position: relative;
+  overflow: hidden;
+  background: var(--f-bg);
+}
+.transition-zone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--f-bg) 0%, var(--r-bg) 100%);
+}
+.transition-accent {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.transition-line {
+  width: 1px;
+  height: 60px;
+  background: linear-gradient(180deg, var(--f-accent), var(--r-accent));
+  position: relative;
+}
+.transition-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.transition-dot.top {
+  background: var(--f-accent);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+}
+.transition-dot.bot {
+  background: var(--r-accent);
+  box-shadow: 0 0 12px rgba(217, 119, 6, 0.5);
+}
+
+/* ===== RESTAURANT ===== */
+.restaurant {
+  background: var(--r-bg);
+  color: var(--r-text);
+  padding: 120px 0 100px;
+  position: relative;
+  overflow: hidden;
+}
+.restaurant-pattern {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(217, 119, 6, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 85% 75%, rgba(239, 68, 68, 0.03) 0%, transparent 40%);
+  pointer-events: none;
+}
+/* Dot pattern for restaurant (warm) */
+.restaurant-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(217, 119, 6, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 50% 40% at 80% 30%, black 10%, transparent 60%);
+  -webkit-mask-image: radial-gradient(ellipse 50% 40% at 80% 30%, black 10%, transparent 60%);
+  pointer-events: none;
+}
+.restaurant-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, 2rem);
+  position: relative;
+}
+.restaurant .section-label { color: var(--r-accent); }
+.restaurant .section-label::before { background: var(--r-accent); }
+.restaurant .section-desc { color: var(--r-text-secondary); }
+.restaurant .section-title { color: var(--r-text); }
+
+/* Restaurant features */
+.r-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 60px 0 96px;
+}
+.r-feature {
+  background: var(--r-surface);
+  border-radius: 14px;
+  padding: 30px 26px;
+  border: 1px solid var(--r-border);
+  transition: all 0.4s var(--ease-out-expo);
+  position: relative;
+  overflow: hidden;
+}
+.r-feature::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 24%;
+  right: 24%;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(90deg, var(--r-accent), var(--r-accent2));
+  opacity: 0;
+  transition: all 0.4s var(--ease-out-expo);
+}
+.r-feature:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(217, 119, 6, 0.06);
+  border-color: var(--r-border-hover);
+}
+.r-feature:hover::after { opacity: 1; left: 0; right: 0; }
+.r-feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 18px;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.07), rgba(239, 68, 68, 0.03));
+  border: 1px solid rgba(217, 119, 6, 0.06);
+}
+.r-feature h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--r-text);
+  letter-spacing: -0.01em;
+}
+.r-feature p {
+  font-size: 13px;
+  color: var(--r-text-secondary);
+  line-height: 1.65;
+}
+
+/* ===== PHONE SHOWCASE ===== */
+.phone-showcase {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 72px;
+  align-items: center;
+}
+.phone-info h3 {
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  margin-bottom: 20px;
+  color: var(--r-text);
+}
+.phone-info h3 .accent { color: var(--r-accent); }
+.phone-info > p {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--r-text-secondary);
+  margin-bottom: 32px;
+}
+.phone-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.phone-highlight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--r-text);
+}
+.phone-highlight-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--r-accent);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(217, 119, 6, 0.3);
+}
+.phone-mockups {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+.phone-frame {
+  width: 260px;
+  padding: 10px;
+  background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
+  border-radius: 32px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 20px 60px rgba(0,0,0,0.2),
+    0 4px 16px rgba(0,0,0,0.15);
+  position: relative;
+  transition: transform 0.5s var(--ease-out-expo);
+}
+.phone-frame:hover { transform: translateY(-4px); }
+.phone-frame::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 72px;
+  height: 22px;
+  background: #0f0f1e;
+  border-radius: 0 0 14px 14px;
+  z-index: 10;
+}
+.phone-frame img {
+  width: 100%;
+  border-radius: 22px;
+  display: block;
+}
+.phone-frame:nth-child(2) {
+  margin-top: 48px;
+}
+
+/* ===== FOOTER ===== */
+.footer {
+  padding: 64px clamp(1rem, 4vw, 2rem) 48px;
+  background: #030508;
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,0.03);
+}
+.footer-inner {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.footer-logo {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--f-text);
+  margin-bottom: 10px;
+  letter-spacing: -0.02em;
+}
+.footer p {
+  font-size: 13px;
+  color: var(--f-muted);
+  line-height: 1.8;
+}
+.footer-divider {
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--f-muted), transparent);
+  margin: 20px auto;
+}
+
+/* ===== LIGHTBOX ===== */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(3, 5, 8, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s;
+  cursor: zoom-out;
+}
+.lightbox.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.lightbox img {
+  max-width: 92vw;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+  transform: scale(0.92);
+  transition: transform 0.4s var(--ease-out-expo);
+}
+.lightbox.active img { transform: scale(1); }
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.6);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s;
+  font-family: inherit;
+}
+.lightbox-close:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+.lightbox-caption {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  font-weight: 400;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ===== SCROLL REVEAL ===== */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s var(--ease-out-expo), transform 0.7s var(--ease-out-expo);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-d1 { transition-delay: 0.06s; }
+.reveal-d2 { transition-delay: 0.12s; }
+.reveal-d3 { transition-delay: 0.18s; }
+.reveal-d4 { transition-delay: 0.24s; }
+.reveal-d5 { transition-delay: 0.30s; }
+
+/* ===== KEYFRAMES ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(80px, 40px) scale(1.05); }
+  50% { transform: translate(-30px, 80px) scale(0.95); }
+  75% { transform: translate(50px, -20px) scale(1.02); }
+}
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(-60px, -50px) scale(1.08); }
+  50% { transform: translate(40px, -30px) scale(0.92); }
+  75% { transform: translate(-40px, 40px) scale(1.05); }
+}
+@keyframes orbFloat3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(50px, -40px) scale(1.1); }
+  66% { transform: translate(-30px, 30px) scale(0.95); }
+}
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .bento-card.featured {
+    grid-column: span 2;
+  }
+  .r-features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stats-inner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+  .bento-card.featured {
+    grid-column: span 1;
+    grid-template-columns: 1fr;
+  }
+  .bento-card.featured .bento-icon {
+    margin-bottom: 16px;
+  }
+  .r-features {
+    grid-template-columns: 1fr;
+  }
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+  .gallery-item.featured {
+    grid-column: span 1;
+  }
+  .phone-showcase {
+    grid-template-columns: 1fr;
+    gap: 48px;
+    text-align: center;
+  }
+  .phone-highlights { align-items: center; }
+  .phone-mockups {
+    flex-direction: row;
+    justify-content: center;
+  }
+  .phone-frame { width: 180px; }
+  .phone-frame:nth-child(2) { margin-top: 32px; }
+  .stats-inner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .nav-links { display: none; }
+  .gallery-header {
+    flex-direction: column;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .hero h1 { font-size: 2.4rem; }
+  .hero-sub { font-size: 0.95rem; }
+  .hero-ctas { flex-direction: column; width: 100%; max-width: 280px; }
+  .hero-cta { text-align: center; }
+}
+
+@media (max-width: 480px) {
+  .phone-mockups { gap: 12px; }
+  .phone-frame { width: 150px; padding: 8px; border-radius: 24px; }
+  .phone-frame::before { width: 56px; height: 18px; border-radius: 0 0 10px 10px; }
+  .phone-frame img { border-radius: 18px; }
+  .stats-inner { grid-template-columns: repeat(2, 1fr); }
+  .stat-card { padding: 24px 16px; }
+  .hero-screenshot img { border-radius: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Noise texture overlay -->
+<div class="noise" aria-hidden="true"></div>
+
+<!-- Navigation -->
+<nav class="nav" id="nav">
+  <a href="#hero" class="nav-logo">
+    <div class="nav-logo-icon">C</div>
+    <span>白垩纪食品溯源</span>
+  </a>
+  <div class="nav-links">
+    <a href="#hero" class="nav-link active">首页</a>
+    <a href="#factory" class="nav-link">工厂管理</a>
+    <a href="#restaurant" class="nav-link">餐饮管理</a>
+    <a href="#stats" class="nav-link">数据概览</a>
+  </div>
+</nav>
+
+<!-- ============== HERO ============== -->
+<section class="hero" id="hero">
+  <!-- Animated gradient mesh -->
+  <div class="hero-mesh" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <!-- Dot grid -->
+  <div class="hero-dots" aria-hidden="true"></div>
+  <!-- Horizontal accent lines -->
+  <div class="hero-line hero-line-top" aria-hidden="true"></div>
+  <div class="hero-line hero-line-bot" aria-hidden="true"></div>
+
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Enterprise-Grade Platform
+    </div>
+    <h1>
+      <span class="gradient-text">白垩纪</span>食品溯源系统
+    </h1>
+    <p class="hero-sub">
+      覆盖工厂生产、餐饮门店全场景的智能管理解决方案。<br>
+      AI 驱动的数据分析，让每一个经营决策都有据可依。
+    </p>
+    <div class="hero-ctas">
+      <a href="#factory" class="hero-cta primary">工厂管理平台 →</a>
+      <a href="#restaurant" class="hero-cta secondary">餐饮门店方案</a>
+    </div>
+    <div class="hero-screenshot">
+      <div class="hero-screenshot-glow" aria-hidden="true"></div>
+      <div class="hero-screenshot-inner">
+        <img src="./screenshots/login-page.png" alt="系统登录界面" loading="eager">
+      </div>
+      <div class="hero-screenshot-reflect" aria-hidden="true">
+        <img src="./screenshots/login-page.png" alt="" loading="lazy">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== STATS ============== -->
+<section class="stats" id="stats">
+  <div class="stats-inner">
+    <div class="stat-card reveal">
+      <div class="stat-icon">&#9641;</div>
+      <div class="stat-number" data-target="16" data-suffix="+">0</div>
+      <div class="stat-label">功能模块</div>
+    </div>
+    <div class="stat-card reveal reveal-d1">
+      <div class="stat-icon">&#8644;</div>
+      <div class="stat-number" data-target="1300" data-suffix="+">0</div>
+      <div class="stat-label">API 端点</div>
+    </div>
+    <div class="stat-card reveal reveal-d2">
+      <div class="stat-icon">&#9672;</div>
+      <div class="stat-number" data-target="140" data-suffix="">0</div>
+      <div class="stat-label">AI 意图组</div>
+    </div>
+    <div class="stat-card reveal reveal-d3">
+      <div class="stat-icon">&#9670;</div>
+      <div class="stat-number" data-target="10" data-suffix="+">0</div>
+      <div class="stat-label">角色权限</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FACTORY ============== -->
+<section class="factory" id="factory">
+  <div class="factory-inner">
+    <div class="factory-header reveal">
+      <div class="section-label">Factory Management</div>
+      <h2 class="section-title">工厂管理平台</h2>
+      <p class="section-desc">
+        从生产计划到成品出库，从原料采购到财务分析——全链路数字化管理，
+        配合 AI 智能洞察，让工厂运营效率提升一个量级。
+      </p>
+    </div>
+
+    <!-- Bento Feature Grid -->
+    <div class="bento-grid">
+      <div class="bento-card featured reveal">
+        <div class="bento-icon">&#x1F4CA;</div>
+        <div class="bento-text">
+          <h3>智能 BI 驾驶舱</h3>
+          <p>经营数据一站式洞察，KPI 卡片、趋势图表、区域排行，AI 自动生成分析结论与预警建议。上传 Excel 即可自动解析，支持多维度数据钻取与跨 Sheet 分析。</p>
+        </div>
+      </div>
+      <div class="bento-card reveal reveal-d1">
+        <div class="bento-icon">&#x1F3ED;</div>
+        <h3>生产管理</h3>
+        <p>批次追踪、计划排程、BOM 成本管理、转换率配置，车间报工自动触发成品入库。</p>
+      </div>
+      <div class="bento-card reveal reveal-d2">
+        <div class="bento-icon">&#x1F4E6;</div>
+        <h3>仓储管理</h3>
+        <p>原料入库、成品出库、库存预警、批次溯源，支持调拨管理与盘点作业。</p>
+      </div>
+      <div class="bento-card reveal reveal-d3">
+        <div class="bento-icon">&#x1F4B0;</div>
+        <h3>财务分析</h3>
+        <p>利润分析、成本分析、应收应付、预算对比，多维度财务报表自动生成。</p>
+      </div>
+      <div class="bento-card reveal reveal-d4">
+        <div class="bento-icon">&#x1F4C8;</div>
+        <h3>销售分析</h3>
+        <p>销售排行、客单价分析、目标完成率追踪、产品类别占比，按日/周/月多维统计。</p>
+      </div>
+      <div class="bento-card reveal reveal-d5">
+        <div class="bento-icon">&#x1F916;</div>
+        <h3>AI 智能问答</h3>
+        <p>自然语言提问、多图表可视化、钻取分析与预测，支持 140+ 意图识别。</p>
+      </div>
+    </div>
+
+    <!-- Screenshot Gallery -->
+    <div class="gallery-header reveal">
+      <h3>系统界面预览</h3>
+      <div class="gallery-tabs">
+        <button class="gallery-tab active" data-filter="all">全部</button>
+        <button class="gallery-tab" data-filter="dashboard">驾驶舱</button>
+        <button class="gallery-tab" data-filter="analysis">数据分析</button>
+        <button class="gallery-tab" data-filter="operation">运营管理</button>
+      </div>
+    </div>
+    <div class="gallery-grid reveal">
+      <div class="gallery-item featured" data-category="dashboard" onclick="openLightbox(this)">
+        <img src="./screenshots/factory-smartbi-dashboard.png" alt="经营驾驶舱" loading="lazy">
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-label">经营驾驶舱</div>
+          <div class="gallery-item-sub">KPI 指标 · 区域排行 · 趋势图表 · AI 洞察</div>
+        </div>
+      </div>
+      <div class="gallery-item" data-category="analysis" onclick="openLightbox(this)">
+        <img src="./screenshots/factory-sales-analysis.png" alt="销售数据分析" loading="lazy">
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-label">销售数据分析</div>
+          <div class="gallery-item-sub">销售排行 · 趋势分析 · 产品占比</div>
+        </div>
+      </div>
+      <div class="gallery-item" data-category="analysis" onclick="openLightbox(this)">
+        <img src="./screenshots/factory-finance-analysis.png" alt="财务数据分析" loading="lazy">
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-label">财务数据分析</div>
+          <div class="gallery-item-sub">利润分析 · 成本分析 · 预警提醒</div>
+        </div>
+      </div>
+      <div class="gallery-item featured" data-category="analysis" onclick="openLightbox(this)">
+        <img src="./screenshots/factory-smartbi-analysis.png" alt="智能数据分析" loading="lazy">
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-label">智能数据分析</div>
+          <div class="gallery-item-sub">Excel 上传 · 自动图表 · AI 分析结论 · KPI 摘要</div>
+        </div>
+      </div>
+      <div class="gallery-item" data-category="dashboard" onclick="openLightbox(this)">
+        <img src="./screenshots/factory-dashboard.png" alt="工厂首页" loading="lazy">
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-label">工厂管理首页</div>
+          <div class="gallery-item-sub">今日产量 · 快捷操作 · 生产概览 · 质量统计</div>
+        </div>
+      </div>
+      <div class="gallery-item" data-category="operation" onclick="openLightbox(this)">
+        <img src="./screenshots/factory-production.png" alt="生产批次管理" loading="lazy">
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-label">生产批次管理</div>
+          <div class="gallery-item-sub">批次追踪 · 状态管理 · 产量监控</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== TRANSITION ============== -->
+<div class="transition-zone" aria-hidden="true">
+  <div class="transition-accent">
+    <div class="transition-dot top"></div>
+    <div class="transition-line"></div>
+    <div class="transition-dot bot"></div>
+  </div>
+</div>
+
+<!-- ============== RESTAURANT ============== -->
+<section class="restaurant" id="restaurant">
+  <div class="restaurant-pattern" aria-hidden="true"></div>
+  <div class="restaurant-dots" aria-hidden="true"></div>
+  <div class="restaurant-inner">
+    <div class="reveal">
+      <div class="section-label">Restaurant Solution</div>
+      <h2 class="section-title">餐饮门店管理</h2>
+      <p class="section-desc">
+        专为餐饮场景设计的轻量化管理方案。移除工厂生产模块，
+        聚焦菜品管理、食材采购、门店进销存——让餐饮经营化繁为简。
+      </p>
+    </div>
+
+    <!-- Restaurant Features -->
+    <div class="r-features">
+      <div class="r-feature reveal">
+        <div class="r-feature-icon">&#x1F35C;</div>
+        <h3>菜品管理</h3>
+        <p>菜品分类、定价管理、保质期追踪，支持热菜/凉菜/主食/汤类/甜品等分类体系。</p>
+      </div>
+      <div class="r-feature reveal reveal-d1">
+        <div class="r-feature-icon">&#x1F96C;</div>
+        <h3>食材采购</h3>
+        <p>食材类型管理、供应商对接、采购订单全流程，冷冻/生鲜/干货分类存储管理。</p>
+      </div>
+      <div class="r-feature reveal reveal-d2">
+        <div class="r-feature-icon">&#x1F4CB;</div>
+        <h3>门店进销存</h3>
+        <p>采购订单、销售订单、半成品库存、调拨管理、应收应付、价格表——一站式进销存闭环。</p>
+      </div>
+      <div class="r-feature reveal reveal-d3">
+        <div class="r-feature-icon">&#x1F4CA;</div>
+        <h3>AI 数据分析</h3>
+        <p>共享工厂级 SmartBI 分析能力，上传 Excel 自动生成图表、AI 洞察与经营建议。</p>
+      </div>
+      <div class="r-feature reveal reveal-d4">
+        <div class="r-feature-icon">&#x1F69B;</div>
+        <h3>供应商管理</h3>
+        <p>供应商档案、联系信息、供货记录追踪，食材配送中心与蔬菜批发双渠道管理。</p>
+      </div>
+      <div class="r-feature reveal reveal-d5">
+        <div class="r-feature-icon">&#x21A9;&#xFE0F;</div>
+        <h3>退货管理</h3>
+        <p>退货订单全流程管理，支持采购退货与销售退货，自动关联原订单并更新库存。</p>
+      </div>
+    </div>
+
+    <!-- Phone Showcase -->
+    <div class="phone-showcase">
+      <div class="phone-info reveal">
+        <h3>移动端<span class="accent">优先</span>的<br>餐饮管理体验</h3>
+        <p>
+          餐饮场景下，系统自动隐藏生产制造、设备管理等工业模块，
+          将产品类型重命名为"菜品管理"，原材料改为"食材类型"，
+          打造贴合餐饮行业的操作界面。
+        </p>
+        <div class="phone-highlights">
+          <div class="phone-highlight">
+            <div class="phone-highlight-dot"></div>
+            按 FactoryType 自动切换界面布局
+          </div>
+          <div class="phone-highlight">
+            <div class="phone-highlight-dot"></div>
+            隐藏设备分析、SOP配置、质检项管理
+          </div>
+          <div class="phone-highlight">
+            <div class="phone-highlight-dot"></div>
+            成品库存 → 半成品库存，进销存 → 门店进销存
+          </div>
+          <div class="phone-highlight">
+            <div class="phone-highlight-dot"></div>
+            首页卡片：今日订单、食材库存预警
+          </div>
+        </div>
+      </div>
+      <div class="phone-mockups reveal reveal-d2">
+        <div class="phone-frame" style="animation: floatSlow 7s ease-in-out infinite;">
+          <img src="./screenshots/restaurant-dashboard-web.png" alt="餐饮管理首页" loading="lazy">
+        </div>
+        <div class="phone-frame" style="animation: floatSlow 7s ease-in-out 2s infinite;">
+          <img src="./screenshots/restaurant-ai-query.png" alt="AI 智能问答" loading="lazy">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FOOTER ============== -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-logo">白垩纪食品科技</div>
+    <div class="footer-divider"></div>
+    <p>
+      企业级食品溯源与智能管理平台<br>
+      &copy; 2026 Cretaceous Future Food Technology. All rights reserved.
+    </p>
+  </div>
+</footer>
+
+<!-- ============== LIGHTBOX ============== -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()" aria-label="关闭">&#x2715;</button>
+  <img id="lightbox-img" src="" alt="">
+  <div class="lightbox-caption" id="lightbox-caption"></div>
+</div>
+
+<script>
+/* ===== SCROLL REVEAL ===== */
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -32px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+/* ===== ANIMATED COUNTERS ===== */
+let countersAnimated = false;
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && !countersAnimated) {
+      countersAnimated = true;
+      document.querySelectorAll('.stat-number[data-target]').forEach(el => {
+        animateCounter(el);
+      });
+    }
+  });
+}, { threshold: 0.3 });
+
+document.querySelectorAll('.stats').forEach(el => counterObserver.observe(el));
+
+function animateCounter(element) {
+  const target = parseInt(element.dataset.target);
+  const suffix = element.dataset.suffix || '';
+  const duration = target > 100 ? 2200 : 1600;
+  const startTime = performance.now();
+
+  function update(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // easeOutExpo
+    const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+    const current = Math.round(target * eased);
+    element.textContent = current.toLocaleString('en-US') + suffix;
+    if (progress < 1) requestAnimationFrame(update);
+  }
+
+  requestAnimationFrame(update);
+}
+
+/* ===== NAV STATE ===== */
+const nav = document.getElementById('nav');
+const restaurantSection = document.getElementById('restaurant');
+
+// Scrolled state
+let lastScrollY = 0;
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+  lastScrollY = window.scrollY;
+}, { passive: true });
+
+// Light/dark theme based on restaurant section visibility
+const navThemeObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    nav.classList.toggle('light', entry.isIntersecting);
+  });
+}, { threshold: 0.25 });
+navThemeObserver.observe(restaurantSection);
+
+// Active nav link
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-link');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(section => {
+    const top = section.offsetTop - 120;
+    if (window.scrollY >= top) current = section.getAttribute('id');
+  });
+  navLinks.forEach(link => {
+    link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+  });
+}, { passive: true });
+
+/* ===== GALLERY FILTER ===== */
+const galleryTabs = document.querySelectorAll('.gallery-tab');
+const galleryItems = document.querySelectorAll('.gallery-item');
+
+galleryTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    galleryTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const filter = tab.dataset.filter;
+
+    galleryItems.forEach(item => {
+      const match = filter === 'all' || item.dataset.category === filter;
+      if (!match) {
+        item.classList.add('hiding');
+        setTimeout(() => { item.style.display = 'none'; }, 300);
+      } else {
+        item.style.display = '';
+        // Force reflow before removing class
+        item.offsetHeight;
+        item.classList.remove('hiding');
+      }
+    });
+  });
+});
+
+/* ===== LIGHTBOX ===== */
+function openLightbox(el) {
+  const img = el.querySelector('img');
+  const label = el.querySelector('.gallery-item-label');
+  const lightbox = document.getElementById('lightbox');
+  document.getElementById('lightbox-img').src = img.src;
+  document.getElementById('lightbox-caption').textContent = label ? label.textContent : '';
+  lightbox.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeLightbox();
+});
+
+// Prevent propagation from close button
+document.querySelector('.lightbox-close').addEventListener('click', e => {
+  e.stopPropagation();
+  closeLightbox();
+});
+</script>
+
+</body>
+</html>

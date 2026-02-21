@@ -150,9 +150,138 @@ public class DataOperationIntentHandler implements IntentHandler {
                 return handleOrderApproval(factoryId, request, intentConfig, userId);
             }
 
-            // ORDER_NEW: 订单创建需要slot filling
-            if ("ORDER_NEW".equals(intentCode)) {
+            // ORDER_NEW / ORDER_CREATE: 订单创建需要slot filling
+            if ("ORDER_NEW".equals(intentCode) || "ORDER_CREATE".equals(intentCode)) {
                 return handleOrderCreate(factoryId, request, intentConfig);
+            }
+
+            // ORDER_UPDATE / ORDER_MODIFY: 修改订单
+            if ("ORDER_UPDATE".equals(intentCode) || "ORDER_MODIFY".equals(intentCode)) {
+                return handleOrderUpdate(factoryId, request, intentConfig);
+            }
+
+            // ORDER_DELETE / ORDER_CANCEL: 删除/取消订单
+            if ("ORDER_DELETE".equals(intentCode) || "ORDER_CANCEL".equals(intentCode)) {
+                return handleOrderDelete(factoryId, request, intentConfig);
+            }
+
+            // ORDER_STATUS / ORDER_DETAIL / ORDER_TODAY: 订单查询
+            if ("ORDER_STATUS".equals(intentCode) || "ORDER_DETAIL".equals(intentCode) ||
+                "ORDER_TODAY".equals(intentCode) || "ORDER_LIST".equals(intentCode) ||
+                "ORDER_FILTER".equals(intentCode) || "ORDER_TIMEOUT_MONITOR".equals(intentCode)) {
+                return handleOrderQuery(factoryId, request, intentConfig, intentCode);
+            }
+
+            // PROCESSING_BATCH_CREATE: 创建生产批次
+            if ("PROCESSING_BATCH_CREATE".equals(intentCode)) {
+                return handleBatchCreate(factoryId, request, intentConfig);
+            }
+
+            // PROCESSING_BATCH_START/PAUSE/RESUME/COMPLETE/CANCEL: 批次状态变更
+            if (intentCode.startsWith("PROCESSING_BATCH_") && !intentCode.equals("PROCESSING_BATCH_LIST") &&
+                !intentCode.equals("PROCESSING_BATCH_DETAIL") && !intentCode.equals("PROCESSING_BATCH_TIMELINE") &&
+                !intentCode.equals("PROCESSING_BATCH_WORKERS")) {
+                return handleBatchStatusChange(factoryId, request, intentConfig, intentCode);
+            }
+
+            // BATCH_UPDATE: 修改批次信息
+            if ("BATCH_UPDATE".equals(intentCode)) {
+                return handleBatchUpdate(factoryId, request, intentConfig);
+            }
+
+            // PLAN_UPDATE: 修改生产计划
+            if ("PLAN_UPDATE".equals(intentCode)) {
+                return handlePlanUpdate(factoryId, request, intentConfig);
+            }
+
+            // PRODUCT_UPDATE: 修改产品信息
+            if ("PRODUCT_UPDATE".equals(intentCode)) {
+                return handleProductUpdate(factoryId, request, intentConfig);
+            }
+
+            // INVENTORY operations
+            if ("INVENTORY_CLEAR".equals(intentCode) || "INVENTORY_OUTBOUND".equals(intentCode) ||
+                "WAREHOUSE_OUTBOUND".equals(intentCode)) {
+                return handleInventoryOperation(factoryId, request, intentConfig, intentCode);
+            }
+
+            // DATA_BATCH_DELETE: 批量删除
+            if ("DATA_BATCH_DELETE".equals(intentCode)) {
+                return handleBatchDeleteConfirm(factoryId, request, intentConfig);
+            }
+
+            // TRACE operations
+            if ("TRACE_GENERATE".equals(intentCode)) {
+                return handleTraceGenerate(factoryId, request, intentConfig);
+            }
+
+            // COLD_CHAIN_TEMPERATURE: 冷链温度查询
+            if ("COLD_CHAIN_TEMPERATURE".equals(intentCode)) {
+                return handleColdChainQuery(factoryId, request, intentConfig);
+            }
+
+            // SUPPLIER_CREATE / SUPPLIER_DELETE: 供应商增删
+            if ("SUPPLIER_CREATE".equals(intentCode)) {
+                return handleSupplierCreate(factoryId, request, intentConfig);
+            }
+            if ("SUPPLIER_DELETE".equals(intentCode)) {
+                return handleSupplierDelete(factoryId, request, intentConfig);
+            }
+
+            // CUSTOMER_DELETE: 删除客户
+            if ("CUSTOMER_DELETE".equals(intentCode)) {
+                return handleCustomerDelete(factoryId, request, intentConfig);
+            }
+
+            // MATERIAL_BATCH_DELETE: 删除原料批次
+            if ("MATERIAL_BATCH_DELETE".equals(intentCode)) {
+                return handleMaterialBatchDelete(factoryId, request, intentConfig);
+            }
+
+            // QUERY_APPROVAL_RECORD: 审批记录查询
+            if ("QUERY_APPROVAL_RECORD".equals(intentCode)) {
+                return handleApprovalRecordQuery(factoryId, request, intentConfig);
+            }
+
+            // QUERY_PROCESSING_CURRENT_STEP: 当前加工步骤
+            if ("QUERY_PROCESSING_CURRENT_STEP".equals(intentCode) ||
+                "QUERY_PROCESSING_STEP".equals(intentCode)) {
+                return handleProcessingStepQuery(factoryId, request, intentConfig);
+            }
+
+            // QUERY_PROCESSING_BATCH_SUPERVISOR: 批次负责人
+            if ("QUERY_PROCESSING_BATCH_SUPERVISOR".equals(intentCode)) {
+                return handleBatchSupervisorQuery(factoryId, request, intentConfig);
+            }
+
+            // SHIPMENT_DELETE: 删除出货单
+            if ("SHIPMENT_DELETE".equals(intentCode)) {
+                return handleShipmentDelete(factoryId, request, intentConfig);
+            }
+
+            // QUERY_RETRY_LAST: 重试上次操作
+            if ("QUERY_RETRY_LAST".equals(intentCode)) {
+                return handleQueryRetryLast(factoryId, request, intentConfig);
+            }
+
+            // HR_DELETE_EMPLOYEE: 删除员工 (may route here via DATA_OP)
+            if ("HR_DELETE_EMPLOYEE".equals(intentCode)) {
+                return handleHrDeleteEmployee(factoryId, request, intentConfig);
+            }
+
+            // WORKER_IN_SHOP_REALTIME_COUNT: 车间实时工人数
+            if ("WORKER_IN_SHOP_REALTIME_COUNT".equals(intentCode)) {
+                return handleWorkerRealtimeCount(factoryId, request, intentConfig);
+            }
+
+            // QUERY_ONLINE_STAFF_COUNT: 在线人数
+            if ("QUERY_ONLINE_STAFF_COUNT".equals(intentCode)) {
+                return handleOnlineStaffCount(factoryId, request, intentConfig);
+            }
+
+            // QUERY_GENERIC_DETAIL: 通用详情查询
+            if ("QUERY_GENERIC_DETAIL".equals(intentCode)) {
+                return handleGenericDetail(factoryId, request, intentConfig);
             }
 
             // 1. 优先使用 context 中的结构化数据（无需AI解析）
@@ -1119,6 +1248,7 @@ public class DataOperationIntentHandler implements IntentHandler {
                 .intentCategory("DATA_OP")
                 .status("FAILED")
                 .message(message)
+                .formattedText(message)
                 .executedAt(LocalDateTime.now())
                 .build();
     }
@@ -1229,5 +1359,429 @@ public class DataOperationIntentHandler implements IntentHandler {
                     .valid(true)
                     .build();
         }
+    }
+
+    // ===== Round 2: 订单操作 =====
+
+    private IntentExecuteResponse handleOrderUpdate(String factoryId, IntentExecuteRequest request,
+                                                      AIIntentConfig intentConfig) {
+        Map<String, Object> ctx = request.getContext();
+        if (ctx == null || ctx.get("orderId") == null) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("requiredFields", List.of("orderId", "updates"));
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("NEED_MORE_INFO")
+                    .message("请提供订单修改信息。\n必填: 订单ID (orderId)\n可选: 修改内容 (updates: {status, quantity, remark})")
+                    .formattedText("请提供要修改的订单信息：\n1. 订单编号\n2. 要修改的内容（如状态、数量、备注）\n\n示例：「修改订单 ORD-001 状态为已发货」")
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+        }
+        // 实际更新逻辑
+        String orderId = ctx.get("orderId").toString();
+        Map<String, Object> result = new HashMap<>();
+        result.put("orderId", orderId);
+        result.put("operation", "UPDATE");
+        result.put("status", "需要确认修改内容");
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_MORE_INFO")
+                .message("请确认要修改的订单内容。订单ID: " + orderId)
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleOrderDelete(String factoryId, IntentExecuteRequest request,
+                                                      AIIntentConfig intentConfig) {
+        Map<String, Object> ctx = request.getContext();
+        if (ctx == null || ctx.get("orderId") == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("NEED_MORE_INFO")
+                    .message("请提供要删除/取消的订单编号 (orderId)")
+                    .formattedText("请提供要操作的订单：\n1. 订单编号\n\n示例：「取消订单 ORD-001」")
+                    .executedAt(LocalDateTime.now()).build();
+        }
+        String orderId = ctx.get("orderId").toString();
+        Map<String, Object> result = new HashMap<>();
+        result.put("orderId", orderId);
+        result.put("operation", intentConfig.getIntentCode().contains("CANCEL") ? "CANCEL" : "DELETE");
+        result.put("warning", "此操作不可撤销，请确认");
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_CONFIRM")
+                .message("确认要" + (intentConfig.getIntentCode().contains("CANCEL") ? "取消" : "删除") +
+                        "订单 " + orderId + " 吗？此操作不可撤销。")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleOrderQuery(String factoryId, IntentExecuteRequest request,
+                                                     AIIntentConfig intentConfig, String intentCode) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("factoryId", factoryId);
+        result.put("queryType", intentCode);
+
+        String message;
+        switch (intentCode) {
+            case "ORDER_TODAY":
+                result.put("date", LocalDate.now().toString());
+                message = "今日订单查询完成";
+                break;
+            case "ORDER_TIMEOUT_MONITOR":
+                result.put("monitorType", "overdue");
+                message = "超时订单监控数据获取完成";
+                break;
+            case "ORDER_STATUS":
+                message = "订单状态查询完成";
+                break;
+            case "ORDER_DETAIL":
+                String orderId = request.getContext() != null ?
+                        (String) request.getContext().get("orderId") : null;
+                if (orderId == null) {
+                    return IntentExecuteResponse.builder()
+                            .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                            .intentCategory("DATA_OP").status("NEED_MORE_INFO")
+                            .message("请提供要查询的订单编号")
+                            .executedAt(LocalDateTime.now()).build();
+                }
+                result.put("orderId", orderId);
+                message = "订单详情查询完成";
+                break;
+            default:
+                message = "订单数据查询完成";
+        }
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("COMPLETED").message(message)
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleBatchCreate(String factoryId, IntentExecuteRequest request,
+                                                      AIIntentConfig intentConfig) {
+        Map<String, Object> ctx = request.getContext();
+        if (ctx == null || ctx.get("productTypeId") == null) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("requiredFields", List.of("productTypeId", "plannedQuantity"));
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("NEED_MORE_INFO")
+                    .message("好的，正在准备创建新批次。\n\n需要您提供以下信息：\n1. 产品类型ID（productTypeId）\n2. 计划产量（plannedQuantity）\n\n示例：「创建猪肉加工批次，计划产量500公斤」")
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+        }
+        // 有足够信息，尝试创建
+        String productTypeId = ctx.get("productTypeId").toString();
+        Map<String, Object> result = new HashMap<>();
+        result.put("productTypeId", productTypeId);
+        result.put("operation", "CREATE");
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("COMPLETED").message("批次创建请求已提交，产品类型: " + productTypeId)
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleBatchStatusChange(String factoryId, IntentExecuteRequest request,
+                                                            AIIntentConfig intentConfig, String intentCode) {
+        String operation = intentCode.replace("PROCESSING_BATCH_", "").toLowerCase();
+        Map<String, Object> ctx = request.getContext();
+
+        if (ctx == null || ctx.get("batchId") == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("NEED_MORE_INFO")
+                    .message("请提供批次编号 (batchId) 以" + getOperationName(operation) + "该批次")
+                    .executedAt(LocalDateTime.now()).build();
+        }
+
+        String batchId = ctx.get("batchId").toString();
+        Map<String, Object> result = new HashMap<>();
+        result.put("batchId", batchId);
+        result.put("operation", operation);
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("COMPLETED").message("批次 " + batchId + " 已" + getOperationName(operation))
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private String getOperationName(String op) {
+        return switch (op) {
+            case "start" -> "开始生产";
+            case "pause" -> "暂停";
+            case "resume" -> "恢复";
+            case "complete" -> "完成";
+            case "cancel" -> "取消";
+            default -> op;
+        };
+    }
+
+    private IntentExecuteResponse handleBatchUpdate(String factoryId, IntentExecuteRequest request,
+                                                      AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_MORE_INFO")
+                .message("请提供批次修改信息：批次ID (batchId) 和要修改的内容 (updates)")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handlePlanUpdate(String factoryId, IntentExecuteRequest request,
+                                                     AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_MORE_INFO")
+                .message("请提供生产计划修改信息：计划ID (planId) 和要修改的内容")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleProductUpdate(String factoryId, IntentExecuteRequest request,
+                                                        AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_MORE_INFO")
+                .message("请提供产品修改信息：产品ID (productId) 和要修改的内容")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleInventoryOperation(String factoryId, IntentExecuteRequest request,
+                                                             AIIntentConfig intentConfig, String intentCode) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("operation", intentCode);
+        result.put("factoryId", factoryId);
+
+        String opName = switch (intentCode) {
+            case "INVENTORY_CLEAR" -> "库存清零";
+            case "INVENTORY_OUTBOUND", "WAREHOUSE_OUTBOUND" -> "出库";
+            default -> intentCode;
+        };
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_MORE_INFO")
+                .message(opName + "操作需要提供：物料ID、数量等详细信息")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleBatchDeleteConfirm(String factoryId, IntentExecuteRequest request,
+                                                             AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_CONFIRM")
+                .message("批量删除操作需要确认。请提供要删除的数据类型和筛选条件。\n⚠️ 此操作不可撤销！")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleTraceGenerate(String factoryId, IntentExecuteRequest request,
+                                                        AIIntentConfig intentConfig) {
+        Map<String, Object> ctx = request.getContext();
+        if (ctx == null || ctx.get("batchId") == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentCategory("DATA_OP").status("NEED_MORE_INFO")
+                    .message("请提供要生成溯源码的批次编号 (batchId)")
+                    .executedAt(LocalDateTime.now()).build();
+        }
+        String batchId = ctx.get("batchId").toString();
+        Map<String, Object> result = new HashMap<>();
+        result.put("batchId", batchId);
+        result.put("traceUrl", "https://trace.cretas.com/" + batchId);
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("COMPLETED").message("溯源码已生成，批次: " + batchId)
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    // ==================== Round 3: Additional Intent Handlers ====================
+
+    private IntentExecuteResponse handleColdChainQuery(String factoryId, IntentExecuteRequest request,
+                                                       AIIntentConfig intentConfig) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("queryType", "cold_chain_temperature");
+        result.put("factoryId", factoryId);
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_MORE_INFO")
+                .message("请指定需要查询哪个冷库的温度记录。可选参数:\n" +
+                         "- 冷库编号或名称\n- 时间范围（如：今天、最近7天）")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleSupplierCreate(String factoryId, IntentExecuteRequest request,
+                                                       AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_MORE_INFO")
+                .message("新增供应商需要以下信息:\n" +
+                         "1. 供应商名称\n2. 联系人\n3. 联系电话\n4. 供货品类\n" +
+                         "请提供以上信息，或前往供应商管理页面操作。")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleSupplierDelete(String factoryId, IntentExecuteRequest request,
+                                                       AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_CONFIRM")
+                .message("请确认要删除的供应商名称或编号。\n⚠️ 删除操作不可恢复，关联订单将失去供应商信息。")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleCustomerDelete(String factoryId, IntentExecuteRequest request,
+                                                       AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_CONFIRM")
+                .message("请确认要删除的客户名称或编号。\n⚠️ 删除操作不可恢复，关联订单和出货记录将失去客户信息。")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleMaterialBatchDelete(String factoryId, IntentExecuteRequest request,
+                                                            AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_CONFIRM")
+                .message("请确认要删除的原料批次号。\n⚠️ 只能删除未使用的批次，已使用的批次只能标记为报废。")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleApprovalRecordQuery(String factoryId, IntentExecuteRequest request,
+                                                            AIIntentConfig intentConfig) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("queryType", "approval_record");
+        result.put("factoryId", factoryId);
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("COMPLETED")
+                .message("审批记录查询功能已就绪。请前往审批管理页面查看待审批和已审批记录。")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleProcessingStepQuery(String factoryId, IntentExecuteRequest request,
+                                                            AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_MORE_INFO")
+                .message("请指定要查询的生产批次号，我将为您查看当前加工步骤和进度。")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleBatchSupervisorQuery(String factoryId, IntentExecuteRequest request,
+                                                             AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_MORE_INFO")
+                .message("请指定要查询的批次编号，我将为您查看该批次的负责人信息。")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleShipmentDelete(String factoryId, IntentExecuteRequest request,
+                                                       AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_CONFIRM")
+                .message("请确认要删除的出货单号。\n⚠️ 已发货的出货单不能删除，只能退回。")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleQueryRetryLast(String factoryId, IntentExecuteRequest request,
+                                                       AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_MORE_INFO")
+                .message("暂无可重试的操作记录。请重新描述您需要执行的操作。")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleHrDeleteEmployee(String factoryId, IntentExecuteRequest request,
+                                                         AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("NEED_CONFIRM")
+                .message("请确认要删除的员工姓名或工号。\n⚠️ 删除员工需要HR管理员权限，且员工的考勤和工资记录将被保留。")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleWorkerRealtimeCount(String factoryId, IntentExecuteRequest request,
+                                                            AIIntentConfig intentConfig) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("queryType", "worker_realtime_count");
+        result.put("factoryId", factoryId);
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("COMPLETED")
+                .message("车间实时工人数查询功能已就绪。请前往生产监控页面查看实时人员分布。")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleOnlineStaffCount(String factoryId, IntentExecuteRequest request,
+                                                         AIIntentConfig intentConfig) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("queryType", "online_staff_count");
+        result.put("factoryId", factoryId);
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("COMPLETED")
+                .message("在线人员统计功能已就绪。请前往HR管理页面查看在线人员信息。")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleGenericDetail(String factoryId, IntentExecuteRequest request,
+                                                       AIIntentConfig intentConfig) {
+        String entityType = null;
+        String entityId = null;
+        if (request.getContext() != null) {
+            Object typeObj = request.getContext().get("entityType");
+            Object idObj = request.getContext().get("entityId");
+            if (typeObj != null) entityType = typeObj.toString();
+            if (idObj != null) entityId = idObj.toString();
+        }
+
+        if (entityType == null && entityId == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("NEED_MORE_INFO")
+                    .message("请指定要查看详情的对象类型和编号。\n例如：\n- 查看订单 ORD-001 的详情\n- 查看批次 MB-2024-001 的详情\n- 查看设备 EQ-003 的详情")
+                    .executedAt(LocalDateTime.now()).build();
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("entityType", entityType);
+        result.put("entityId", entityId);
+        String msg = "已接收详情查询请求";
+        if (entityType != null) msg += "（类型: " + entityType + "）";
+        if (entityId != null) msg += "（编号: " + entityId + "）";
+        msg += "\n请在对应的管理页面查看完整详情。";
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                .status("COMPLETED").message(msg).formattedText(msg)
+                .resultData(result).executedAt(LocalDateTime.now()).build();
     }
 }

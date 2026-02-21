@@ -60,8 +60,21 @@
     "currentPassword": "当前密码",
     "newPassword": "新密码",
     "confirmPassword": "确认新密码",
+    "currentPasswordPlaceholder": "请输入当前密码",
+    "newPasswordPlaceholder": "请输入新密码",
+    "confirmPasswordPlaceholder": "请确认新密码",
     "submit": "确认修改",
-    "passwordHint": "密码长度至少8位，包含字母和数字"
+    "submitting": "提交中...",
+    "confirm": "确定",
+    "passwordHint": "密码长度至少6位",
+    "errors": {
+      "oldPasswordRequired": "请输入当前密码",
+      "newPasswordRequired": "请输入新密码",
+      "confirmPasswordRequired": "请确认新密码",
+      "passwordTooShort": "密码至少6位",
+      "changeFailed": "修改密码失败",
+      "changeFailedTitle": "修改失败"
+    }
   },
   "notificationSettings": {
     "title": "通知设置",
@@ -100,12 +113,6 @@
     "userGuide": "使用指南",
     "contactSupport": "联系客服"
   },
-  "feedback": {
-    "title": "意见反馈",
-    "placeholder": "请输入您的意见或建议...",
-    "submit": "提交",
-    "thankYou": "感谢您的反馈！"
-  },
   "about": {
     "title": "关于",
     "version": "版本",
@@ -113,7 +120,11 @@
     "copyright": "版权所有",
     "privacyPolicy": "隐私政策",
     "termsOfService": "服务条款",
-    "checkUpdate": "检查更新"
+    "checkUpdate": "检查更新",
+    "productIntro": "产品介绍",
+    "productDescription": "白垩纪食品溯源系统是一款专注于食品行业的全链路溯源管理平台，助力企业实现从原材料到成品的全流程追踪。",
+    "userAgreement": "用户协议",
+    "latestVersion": "已是最新版本"
   },
   "logout": {
     "confirmTitle": "退出登录",

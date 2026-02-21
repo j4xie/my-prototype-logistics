@@ -3273,6 +3273,20 @@ public class IntentKnowledgeBase {
         // v11.12新增：角色分配
         phraseToIntentMapping.put("角色分配", "USER_ROLE_ASSIGN");
         phraseToIntentMapping.put("分配角色", "USER_ROLE_ASSIGN");
+        // v27: AB10 用户管理补充
+        phraseToIntentMapping.put("禁用账号", "USER_DISABLE");
+        phraseToIntentMapping.put("用户账号", "USER_DISABLE");
+        phraseToIntentMapping.put("封禁账号", "USER_DISABLE");
+        phraseToIntentMapping.put("封禁用户", "USER_DISABLE");
+        phraseToIntentMapping.put("封禁员工", "USER_DISABLE");
+        phraseToIntentMapping.put("分配权限", "USER_ROLE_ASSIGN");
+        phraseToIntentMapping.put("修改用户角色", "USER_ROLE_ASSIGN");
+        phraseToIntentMapping.put("修改角色", "USER_ROLE_ASSIGN");
+        phraseToIntentMapping.put("用户角色", "USER_ROLE_ASSIGN");
+        phraseToIntentMapping.put("创建新用户", "USER_CREATE");
+        phraseToIntentMapping.put("新用户账号", "USER_CREATE");
+        phraseToIntentMapping.put("创建账号", "USER_CREATE");
+        phraseToIntentMapping.put("重置密码", "CONFIG_RESET");
 
         // v11.12新增：供应商搜索
         phraseToIntentMapping.put("供应商搜索", "SUPPLIER_SEARCH");
@@ -4855,6 +4869,343 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("销售额统计", "SALES_STATS");
         phraseToIntentMapping.put("销售统计", "SALES_STATS");
 
+        // OUT_OF_DOMAIN: 噪音/闲聊/非业务 — 确保短输入绕过澄清检测
+        phraseToIntentMapping.put("你好", "OUT_OF_DOMAIN");
+        phraseToIntentMapping.put("谢谢", "OUT_OF_DOMAIN");
+        phraseToIntentMapping.put("你是谁", "OUT_OF_DOMAIN");
+        phraseToIntentMapping.put("哈哈", "OUT_OF_DOMAIN");
+        phraseToIntentMapping.put("嗯嗯", "OUT_OF_DOMAIN");
+        phraseToIntentMapping.put("哈哈哈", "OUT_OF_DOMAIN");
+        phraseToIntentMapping.put("好的", "OUT_OF_DOMAIN");
+        phraseToIntentMapping.put("嗯", "OUT_OF_DOMAIN");
+        phraseToIntentMapping.put("哦", "OUT_OF_DOMAIN");
+        phraseToIntentMapping.put("666", "OUT_OF_DOMAIN");
+
+        // CONTEXT_CONTINUE: 上下文省略/追问
+        phraseToIntentMapping.put("同上", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("继续", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("接着", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("然后呢", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("详细的呢", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("跟刚才一样", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("还是之前那个", "CONTEXT_CONTINUE");
+
+        // ==================== v28: 新模块短语映射 ====================
+
+        // CAMERA 摄像头模块
+        phraseToIntentMapping.put("摄像头列表", "CAMERA_LIST");
+        phraseToIntentMapping.put("查看摄像头", "CAMERA_LIST");
+        phraseToIntentMapping.put("摄像头状态", "CAMERA_STATUS");
+        phraseToIntentMapping.put("摄像头在线", "CAMERA_STATUS");
+        phraseToIntentMapping.put("摄像头详情", "CAMERA_DETAIL");
+        phraseToIntentMapping.put("摄像头连接", "CAMERA_TEST_CONNECTION");
+        phraseToIntentMapping.put("摄像头事件", "CAMERA_EVENTS");
+        phraseToIntentMapping.put("摄像头告警", "CAMERA_EVENTS");
+        phraseToIntentMapping.put("添加摄像头", "CAMERA_ADD");
+        phraseToIntentMapping.put("新增摄像头", "CAMERA_ADD");
+        phraseToIntentMapping.put("抓拍", "CAMERA_CAPTURE");
+        phraseToIntentMapping.put("截图摄像头", "CAMERA_CAPTURE");
+        phraseToIntentMapping.put("流媒体地址", "CAMERA_STREAMS");
+        phraseToIntentMapping.put("订阅摄像头", "CAMERA_SUBSCRIBE");
+        phraseToIntentMapping.put("取消摄像头订阅", "CAMERA_UNSUBSCRIBE");
+
+        // RESTAURANT 餐饮模块
+        phraseToIntentMapping.put("菜品列表", "RESTAURANT_DISH_LIST");
+        phraseToIntentMapping.put("菜品查询", "RESTAURANT_DISH_LIST");
+        phraseToIntentMapping.put("有哪些菜品", "RESTAURANT_DISH_LIST");
+        phraseToIntentMapping.put("畅销菜", "RESTAURANT_BESTSELLER_QUERY");
+        phraseToIntentMapping.put("畅销菜品", "RESTAURANT_BESTSELLER_QUERY");
+        phraseToIntentMapping.put("销量最好的菜", "RESTAURANT_DISH_SALES_RANKING");
+        phraseToIntentMapping.put("菜品销量", "RESTAURANT_DISH_SALES_RANKING");
+        phraseToIntentMapping.put("哪个菜卖不动", "RESTAURANT_SLOW_SELLER_QUERY");
+        phraseToIntentMapping.put("滞销菜", "RESTAURANT_SLOW_SELLER_QUERY");
+        phraseToIntentMapping.put("菜品成本", "RESTAURANT_DISH_COST_ANALYSIS");
+        phraseToIntentMapping.put("成本分析", "RESTAURANT_DISH_COST_ANALYSIS");
+        phraseToIntentMapping.put("食材库存", "RESTAURANT_INGREDIENT_STOCK");
+        phraseToIntentMapping.put("食材还剩", "RESTAURANT_INGREDIENT_STOCK");
+        phraseToIntentMapping.put("食材过期", "RESTAURANT_INGREDIENT_EXPIRY_ALERT");
+        phraseToIntentMapping.put("食材快过期", "RESTAURANT_INGREDIENT_EXPIRY_ALERT");
+        phraseToIntentMapping.put("低库存食材", "RESTAURANT_INGREDIENT_LOW_STOCK");
+        phraseToIntentMapping.put("食材成本趋势", "RESTAURANT_INGREDIENT_COST_TREND");
+        phraseToIntentMapping.put("食材成本", "RESTAURANT_INGREDIENT_COST_TREND");
+        phraseToIntentMapping.put("营业额", "RESTAURANT_DAILY_REVENUE");
+        phraseToIntentMapping.put("今天营业额", "RESTAURANT_DAILY_REVENUE");
+        phraseToIntentMapping.put("营业额趋势", "RESTAURANT_REVENUE_TREND");
+        phraseToIntentMapping.put("接了多少单", "RESTAURANT_ORDER_STATISTICS");
+        phraseToIntentMapping.put("订单统计", "RESTAURANT_ORDER_STATISTICS");
+        phraseToIntentMapping.put("高峰时段", "RESTAURANT_PEAK_HOURS_ANALYSIS");
+        phraseToIntentMapping.put("客人最多", "RESTAURANT_PEAK_HOURS_ANALYSIS");
+        phraseToIntentMapping.put("毛利率", "RESTAURANT_MARGIN_ANALYSIS");
+        phraseToIntentMapping.put("损耗汇总", "RESTAURANT_WASTAGE_SUMMARY");
+        phraseToIntentMapping.put("食材损耗", "RESTAURANT_WASTAGE_SUMMARY");
+        phraseToIntentMapping.put("损耗率", "RESTAURANT_WASTAGE_RATE");
+        phraseToIntentMapping.put("异常损耗", "RESTAURANT_WASTAGE_ANOMALY");
+        phraseToIntentMapping.put("浪费食材", "RESTAURANT_WASTAGE_SUMMARY");
+        phraseToIntentMapping.put("采购建议", "RESTAURANT_PROCUREMENT_SUGGESTION");
+        phraseToIntentMapping.put("进货建议", "RESTAURANT_PROCUREMENT_SUGGESTION");
+
+        // SCALE 秤协议模块
+        phraseToIntentMapping.put("秤协议", "SCALE_LIST_PROTOCOLS");
+        phraseToIntentMapping.put("协议列表", "SCALE_LIST_PROTOCOLS");
+        phraseToIntentMapping.put("识别秤协议", "SCALE_PROTOCOL_DETECT");
+        phraseToIntentMapping.put("协议识别", "SCALE_PROTOCOL_DETECT");
+        phraseToIntentMapping.put("秤数据解析", "SCALE_TEST_PARSE");
+        phraseToIntentMapping.put("解析测试", "SCALE_TEST_PARSE");
+        phraseToIntentMapping.put("秤型号", "SCALE_ADD_MODEL");
+        phraseToIntentMapping.put("添加秤型号", "SCALE_ADD_MODEL");
+        phraseToIntentMapping.put("秤配置", "SCALE_CONFIG_GENERATE");
+        phraseToIntentMapping.put("生成秤配置", "SCALE_CONFIG_GENERATE");
+        phraseToIntentMapping.put("校准秤", "SCALE_CALIBRATE");
+        phraseToIntentMapping.put("秤校准", "SCALE_CALIBRATE");
+        phraseToIntentMapping.put("秤故障", "SCALE_TROUBLESHOOT");
+        phraseToIntentMapping.put("秤不准", "SCALE_TROUBLESHOOT");
+        phraseToIntentMapping.put("秤读数异常", "SCALE_TROUBLESHOOT");
+        phraseToIntentMapping.put("秤显示不对", "SCALE_TROUBLESHOOT");
+        phraseToIntentMapping.put("视觉识别秤", "SCALE_ADD_DEVICE_VISION");
+
+        // WORK_REPORT 生产报工模块
+        phraseToIntentMapping.put("生产进度报告", "PRODUCTION_PROGRESS_REPORT");
+        phraseToIntentMapping.put("进度报告", "PRODUCTION_PROGRESS_REPORT");
+        phraseToIntentMapping.put("产出进度", "PRODUCTION_PROGRESS_REPORT");
+        phraseToIntentMapping.put("工时统计", "PRODUCTION_HOURS_REPORT");
+        phraseToIntentMapping.put("工时报告", "PRODUCTION_HOURS_REPORT");
+        phraseToIntentMapping.put("完成工时", "PRODUCTION_HOURS_REPORT");
+        phraseToIntentMapping.put("生产汇总", "PRODUCTION_DAILY_SUMMARY");
+        phraseToIntentMapping.put("每日汇总", "PRODUCTION_DAILY_SUMMARY");
+        phraseToIntentMapping.put("日报汇总", "PRODUCTION_DAILY_SUMMARY");
+
+        // ALERT 告警诊断/分诊
+        phraseToIntentMapping.put("告警分诊", "ALERT_TRIAGE");
+        phraseToIntentMapping.put("告警分级", "ALERT_TRIAGE");
+        phraseToIntentMapping.put("告警原因", "ALERT_DIAGNOSE");
+        phraseToIntentMapping.put("告警诊断", "ALERT_DIAGNOSE");
+        phraseToIntentMapping.put("智能诊断", "ALERT_DIAGNOSE");
+
+        // ATTENDANCE_STATUS 打卡状态
+        phraseToIntentMapping.put("打卡状态", "ATTENDANCE_STATUS");
+        phraseToIntentMapping.put("打卡了吗", "ATTENDANCE_STATUS");
+        phraseToIntentMapping.put("签到了吗", "ATTENDANCE_STATUS");
+
+        // ORDER_TODAY / ORDER_STATS
+        phraseToIntentMapping.put("今天的订单", "ORDER_TODAY");
+        phraseToIntentMapping.put("今日订单", "ORDER_TODAY");
+        phraseToIntentMapping.put("订单数量统计", "ORDER_STATS");
+
+        // SHIPMENT_BY_DATE
+        phraseToIntentMapping.put("按日期发货", "SHIPMENT_BY_DATE");
+
+        // CUSTOMER_FEEDBACK
+        phraseToIntentMapping.put("客户反馈", "CUSTOMER_FEEDBACK");
+        phraseToIntentMapping.put("客户投诉", "CUSTOMER_FEEDBACK");
+
+        // PRODUCT_TYPE_QUERY / PRODUCT_UPDATE
+        phraseToIntentMapping.put("产品类型", "PRODUCT_TYPE_QUERY");
+        phraseToIntentMapping.put("产品种类", "PRODUCT_TYPE_QUERY");
+        phraseToIntentMapping.put("更新产品", "PRODUCT_UPDATE");
+
+        // INVENTORY_CLEAR
+        phraseToIntentMapping.put("清空库存", "INVENTORY_CLEAR");
+        phraseToIntentMapping.put("库存清零", "INVENTORY_CLEAR");
+        phraseToIntentMapping.put("库存归零", "INVENTORY_CLEAR");
+
+        // MATERIAL_BATCH_USE
+        phraseToIntentMapping.put("投料", "MATERIAL_BATCH_USE");
+        phraseToIntentMapping.put("领用", "MATERIAL_BATCH_USE");
+
+        // FACTORY_NOTIFICATION_CONFIG
+        phraseToIntentMapping.put("通知配置", "FACTORY_NOTIFICATION_CONFIG");
+        phraseToIntentMapping.put("通知设置", "FACTORY_NOTIFICATION_CONFIG");
+
+        // v29: 财务/成本 — 防止 N/A
+        phraseToIntentMapping.put("毛利率", "PROFIT_TREND_ANALYSIS");
+        phraseToIntentMapping.put("净利率", "PROFIT_TREND_ANALYSIS");
+        phraseToIntentMapping.put("利润率", "PROFIT_TREND_ANALYSIS");
+        phraseToIntentMapping.put("利润分析", "PROFIT_TREND_ANALYSIS");
+        phraseToIntentMapping.put("利润趋势", "PROFIT_TREND_ANALYSIS");
+        phraseToIntentMapping.put("财务指标", "REPORT_FINANCE");
+        phraseToIntentMapping.put("财务概况", "REPORT_FINANCE");
+        phraseToIntentMapping.put("财务总结", "REPORT_FINANCE");
+        phraseToIntentMapping.put("营业额", "REPORT_KPI");
+        phraseToIntentMapping.put("营收", "REPORT_KPI");
+        phraseToIntentMapping.put("成本对比", "COST_TREND_ANALYSIS");
+        phraseToIntentMapping.put("成本分析", "COST_TREND_ANALYSIS");
+
+        // v29: 生产/产量 — 防止 N/A
+        phraseToIntentMapping.put("今天产量", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("产量多少", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("产线绩效", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("生产效率", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("生产进度", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("工时统计", "ATTENDANCE_STATS");
+        phraseToIntentMapping.put("工时", "ATTENDANCE_STATS");
+        phraseToIntentMapping.put("生产汇总", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("产出进度", "PRODUCTION_STATUS_QUERY");
+
+        // v29: HR/招聘 — 防止 N/A
+        phraseToIntentMapping.put("招聘", "QUERY_EMPLOYEE_PROFILE");
+        phraseToIntentMapping.put("绩效", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("绩效评分", "QUERY_EMPLOYEE_PROFILE");
+        phraseToIntentMapping.put("工资", "QUERY_EMPLOYEE_PROFILE");
+        phraseToIntentMapping.put("薪资", "QUERY_EMPLOYEE_PROFILE");
+
+        // v29: 订单/发货时间
+        phraseToIntentMapping.put("发货时间", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("出货时间", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("发货记录", "SHIPMENT_BY_DATE");
+        phraseToIntentMapping.put("出货记录", "SHIPMENT_BY_DATE");
+        phraseToIntentMapping.put("今天订单", "ORDER_TODAY");
+        phraseToIntentMapping.put("今日订单", "ORDER_TODAY");
+        phraseToIntentMapping.put("订单统计", "ORDER_LIST");
+        phraseToIntentMapping.put("订单数量", "ORDER_LIST");
+        phraseToIntentMapping.put("下单情况", "ORDER_TODAY");
+
+        // v29: 客户反馈
+        phraseToIntentMapping.put("客户反馈", "CUSTOMER_STATS");
+        phraseToIntentMapping.put("客户投诉", "CUSTOMER_STATS");
+        phraseToIntentMapping.put("投诉记录", "CUSTOMER_STATS");
+
+        // v29: 注册信息
+        phraseToIntentMapping.put("注册信息", "QUERY_EMPLOYEE_PROFILE");
+
+        // v29: 销售对比/统计
+        phraseToIntentMapping.put("销售对比", "REPORT_TRENDS");
+        phraseToIntentMapping.put("销售额统计", "REPORT_KPI");
+        phraseToIntentMapping.put("销量排名", "PRODUCT_SALES_RANKING");
+        phraseToIntentMapping.put("销售排名", "PRODUCT_SALES_RANKING");
+        phraseToIntentMapping.put("产品排名", "PRODUCT_SALES_RANKING");
+
+        // v29: 同比/环比
+        phraseToIntentMapping.put("同比", "REPORT_TRENDS");
+        phraseToIntentMapping.put("环比", "REPORT_TRENDS");
+        phraseToIntentMapping.put("去年对比", "REPORT_TRENDS");
+
+        // v29: 摄像头 — 映射到设备系统
+        phraseToIntentMapping.put("摄像头列表", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("摄像头状态", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("摄像头在线", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("摄像头详情", "EQUIPMENT_DETAIL");
+        phraseToIntentMapping.put("添加摄像头", "OPEN_CAMERA");
+        phraseToIntentMapping.put("抓拍", "EQUIPMENT_CAMERA_START");
+
+        // v29: 秤设备 — 映射到秤管理
+        phraseToIntentMapping.put("秤型号", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤协议", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤校准", "SCALE_UPDATE_DEVICE");
+        phraseToIntentMapping.put("秤故障", "EQUIPMENT_HEALTH_DIAGNOSIS");
+        phraseToIntentMapping.put("称重异常", "EQUIPMENT_HEALTH_DIAGNOSIS");
+
+        // v29: 损耗率/出货
+        phraseToIntentMapping.put("损耗率", "REPORT_ANOMALY");
+        phraseToIntentMapping.put("损耗", "REPORT_ANOMALY");
+        phraseToIntentMapping.put("今天出货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("出了多少货", "SHIPMENT_QUERY");
+
+        // v29: 已检验/标记
+        phraseToIntentMapping.put("标记已检验", "QUALITY_BATCH_MARK_AS_INSPECTED");
+        phraseToIntentMapping.put("已检验", "QUALITY_BATCH_MARK_AS_INSPECTED");
+
+        // v30: 库存/仓库 — 防止 FOOD_KNOWLEDGE 截获
+        phraseToIntentMapping.put("还剩多少", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("库房还有", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("存货查询", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("还有没有", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("库房里还", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("还剩", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("盘一下", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("仓库满了", "REPORT_INVENTORY");
+
+        // v30: 物料操作 — 消耗/预留/使用
+        phraseToIntentMapping.put("消耗", "MATERIAL_BATCH_CONSUME");
+        phraseToIntentMapping.put("预留", "MATERIAL_BATCH_RESERVE");
+        phraseToIntentMapping.put("使用这批", "MATERIAL_BATCH_USE");
+        phraseToIntentMapping.put("把这批", "MATERIAL_BATCH_CONSUME");
+        phraseToIntentMapping.put("领用一批", "MATERIAL_BATCH_USE");
+
+        // v30: 考勤/HR
+        phraseToIntentMapping.put("谁没来", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("谁没到", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("没到岗", "ATTENDANCE_TODAY");
+
+        // v30: 工人管理
+        phraseToIntentMapping.put("工人到岗", "WORKER_ARRIVAL_CONFIRM");
+        phraseToIntentMapping.put("人员已就位", "PRODUCTION_CONFIRM_WORKERS_PRESENT");
+        phraseToIntentMapping.put("签退下线", "PROCESSING_WORKER_CHECKOUT");
+        phraseToIntentMapping.put("工人签退", "PROCESSING_WORKER_CHECKOUT");
+
+        // v30: 发货
+        phraseToIntentMapping.put("发货清单", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("发货汇总", "SHIPMENT_BY_DATE");
+
+        // v30: 告警诊断
+        phraseToIntentMapping.put("告警原因", "ALERT_DIAGNOSE");
+        phraseToIntentMapping.put("告警分诊", "ALERT_TRIAGE");
+        phraseToIntentMapping.put("告警级别", "ALERT_BY_LEVEL");
+        phraseToIntentMapping.put("告警诊断", "ALERT_DIAGNOSE");
+
+        // v30b: 绩效查询 — 防止 unmatched
+        phraseToIntentMapping.put("查看绩效", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("的绩效", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("绩效怎么样", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("绩效如何", "REPORT_EFFICIENCY");
+
+        // v30b: 消耗操作（含数量+食材）
+        phraseToIntentMapping.put("消耗掉", "MATERIAL_BATCH_CONSUME");
+        phraseToIntentMapping.put("斤面粉", "MATERIAL_BATCH_CONSUME");
+        phraseToIntentMapping.put("斤猪肉", "MATERIAL_BATCH_CONSUME");
+        phraseToIntentMapping.put("斤牛肉", "MATERIAL_BATCH_CONSUME");
+
+        // v30b→v30c: 夜班/排班 (SCHEDULING_QUERY不在DB, 用SCHEDULING_LIST)
+        phraseToIntentMapping.put("夜班人员", "SCHEDULING_LIST");
+        phraseToIntentMapping.put("夜班安排", "SCHEDULING_LIST");
+        phraseToIntentMapping.put("夜班", "SCHEDULING_LIST");
+        phraseToIntentMapping.put("排班覆盖", "SCHEDULING_LIST");
+        phraseToIntentMapping.put("覆盖情况", "SCHEDULING_LIST");
+        phraseToIntentMapping.put("取消排班", "SCHEDULING_SET_MANUAL");
+        phraseToIntentMapping.put("取消今天的排班", "SCHEDULING_SET_MANUAL");
+
+        // v30b: 同比分析
+        phraseToIntentMapping.put("同比去年", "PROFIT_TREND_ANALYSIS");
+        phraseToIntentMapping.put("同比", "PROFIT_TREND_ANALYSIS");
+        phraseToIntentMapping.put("去年同期", "PROFIT_TREND_ANALYSIS");
+
+        // v30b: 库存阈值查询
+        phraseToIntentMapping.put("低于50", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("库存低于", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("低库存", "MATERIAL_BATCH_QUERY");
+
+        // v30b→v30c: 批次标记检验
+        phraseToIntentMapping.put("标记这个批次", "QUALITY_BATCH_MARK_AS_INSPECTED");
+        phraseToIntentMapping.put("标记批次", "QUALITY_BATCH_MARK_AS_INSPECTED");
+        phraseToIntentMapping.put("为已检验", "QUALITY_BATCH_MARK_AS_INSPECTED");
+
+        // v30b: 采购操作（含食材名称）
+        phraseToIntentMapping.put("采购一", "ORDER_CREATE");
+        phraseToIntentMapping.put("买一批", "ORDER_CREATE");
+
+        // v30b: 质检操作
+        phraseToIntentMapping.put("叫质检员", "QUALITY_CHECK_EXECUTE");
+        phraseToIntentMapping.put("检一下", "QUALITY_CHECK_EXECUTE");
+        phraseToIntentMapping.put("去检", "QUALITY_CHECK_EXECUTE");
+
+        // v30b: 生产数据查询
+        phraseToIntentMapping.put("生产数据", "PRODUCTION_QUERY");
+        phraseToIntentMapping.put("上周的", "PRODUCTION_QUERY");
+
+        // v30b: 溯源查询
+        phraseToIntentMapping.put("从哪里来", "TRACE_FULL");
+        phraseToIntentMapping.put("哪里来的", "TRACE_FULL");
+        phraseToIntentMapping.put("来源追溯", "TRACE_FULL");
+        phraseToIntentMapping.put("追溯二维码", "TRACE_PUBLIC");
+        phraseToIntentMapping.put("生成追溯", "TRACE_PUBLIC");
+
+        // v30c: 加工/生产（含食材名称）
+        phraseToIntentMapping.put("加工数量", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("加工了多少", "PRODUCTION_STATUS_QUERY");
+
+        // v30c: 客户投诉
+        phraseToIntentMapping.put("投诉", "CUSTOMER_STATS");
+        phraseToIntentMapping.put("客户投诉", "CUSTOMER_STATS");
+
         log.debug("短语映射初始化完成，共 {} 条映射", phraseToIntentMapping.size());
     }
 
@@ -5982,7 +6333,28 @@ public class IntentKnowledgeBase {
             "超标", "合格率", "不合格", "检查记录", "检测记录", "检验记录",
             "查询记录", "查看记录", "保质期查询", "库存查询",
             // v18: 扩展测试补充
-            "批次状态", "检查结果", "检测报告", "检验报告", "用了多少"
+            "批次状态", "检查结果", "检测报告", "检验报告", "用了多少",
+            // v28: 仓储/物料操作指标 — 防止 FOOD_KNOWLEDGE 截获库存操作
+            "还剩", "有没有", "库存", "仓库", "仓位", "冷库", "存货",
+            "入库", "出库", "预留", "领用", "投料", "备货", "消耗",
+            "使用这批", "用掉", "调整", "释放",
+            // v30: 补充仓库/操作同义词
+            "库房", "还有啥", "还有没", "盘一下", "盘点",
+            // v30b: 采购/质检/生产/溯源操作
+            "采购", "买一批", "质检员", "检一下", "生产数据",
+            "从哪里来", "哪里来的", "来源", "上周的", "同比",
+            "绩效", "排班", "夜班", "低于",
+            // v30c: 加工/投诉
+            "加工数量", "车间总", "投诉", "追溯二维码",
+            // v28: 人员/车间操作
+            "工人", "车间", "到岗", "就位", "签退", "下线", "分配",
+            "确认人员", "确认工人", "确认生产",
+            // v28: 溯源/追溯操作
+            "溯源", "追溯", "流转", "溯源码", "二维码",
+            // v28: 餐饮食材操作（区分食品知识vs食材管理）
+            "食材", "菜品", "营业额", "损耗", "采购什么",
+            // v28: 数量/单位 (中文数字+单位 → 操作，非知识)
+            "公斤", "千克", "斤", "吨", "箱"
     );
 
     /**

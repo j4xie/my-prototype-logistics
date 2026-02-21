@@ -59,6 +59,36 @@ export default function PurchaseOrderDetailScreen() {
     ]);
   };
 
+  const handleEditDraft = () => {
+    if (!order) return;
+    Alert.prompt(
+      '编辑备注',
+      '修改采购单备注（其他字段请在Web端编辑）',
+      [
+        { text: '取消', style: 'cancel' },
+        { text: '保存', onPress: async (newRemark) => {
+          try {
+            const items = (order.items || []).map(item => ({
+              materialTypeId: item.materialTypeId,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              unit: item.unit || 'kg',
+            }));
+            const res = await purchaseApiClient.updateOrder(orderId, {
+              supplierId: order.supplierId,
+              orderDate: order.orderDate as any,
+              items,
+              remark: newRemark || order.remark,
+            });
+            if (res?.success) { Alert.alert('成功', '已更新'); loadOrder(); }
+          } catch { Alert.alert('错误', '更新失败'); }
+        }},
+      ],
+      'plain-text',
+      order.remark || '',
+    );
+  };
+
   if (loading) return (
     <View style={styles.container}>
       <Appbar.Header><Appbar.BackAction onPress={() => navigation.goBack()} /><Appbar.Content title="采购单详情" /></Appbar.Header>
@@ -151,6 +181,7 @@ export default function PurchaseOrderDetailScreen() {
           {order.status === 'DRAFT' && (
             <>
               <Button mode="contained" onPress={() => handleAction('submit')} style={styles.actionBtn}>提交审批</Button>
+              <Button mode="contained-tonal" onPress={handleEditDraft} style={styles.actionBtn}>编辑</Button>
               <Button mode="outlined" onPress={() => handleAction('cancel')} style={styles.actionBtn}>取消</Button>
             </>
           )}

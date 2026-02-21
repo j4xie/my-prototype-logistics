@@ -306,9 +306,13 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         List<MetricResult> metrics = new ArrayList<>();
 
         BigDecimal grossProfit = totalRevenue.subtract(totalCost);
-        BigDecimal grossMargin = totalRevenue.compareTo(BigDecimal.ZERO) > 0
+        BigDecimal grossMarginRaw = totalRevenue.compareTo(BigDecimal.ZERO) > 0
                 ? grossProfit.divide(totalRevenue, SCALE, ROUNDING_MODE).multiply(new BigDecimal("100"))
                 : BigDecimal.ZERO;
+        // T1.1: 毛利率>100%属于异常数据（数据录入错误），设为null让前端显示N/A
+        BigDecimal grossMargin = (grossMarginRaw.compareTo(new BigDecimal("100")) > 0
+                || grossMarginRaw.compareTo(new BigDecimal("-100")) < 0)
+                ? null : grossMarginRaw;
 
         // 毛利额
         metrics.add(MetricResult.builder()
@@ -322,36 +326,42 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                 .build());
 
         // 毛利率
-        String marginAlertLevel = determineGrossMarginAlertLevel(grossMargin);
+        String marginAlertLevel = grossMargin != null
+                ? determineGrossMarginAlertLevel(grossMargin)
+                : MetricResult.AlertLevel.RED.name();
         metrics.add(MetricResult.builder()
                 .metricCode(MetricCalculatorService.GROSS_MARGIN)
                 .metricName("毛利率")
-                .value(grossMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE))
-                .formattedValue(grossMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE) + "%")
+                .value(grossMargin != null ? grossMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE) : null)
+                .formattedValue(grossMargin != null ? grossMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE) + "%" : "N/A")
                 .unit("%")
                 .alertLevel(marginAlertLevel)
                 .description("毛利额占销售收入的比例")
                 .build());
 
         // 净利润
-        if (netProfit == null || netProfit.compareTo(BigDecimal.ZERO) == 0) {
-            // 回退：假设费用为毛利的30%
-            BigDecimal expenses = grossProfit.multiply(new BigDecimal("0.30"));
-            netProfit = grossProfit.subtract(expenses);
-        }
-        BigDecimal netMargin = totalRevenue.compareTo(BigDecimal.ZERO) > 0
+        // T1.4: 无净利数据时，不虚构数据，设为null让前端显示N/A
+        // netProfit remains null if not provided — do NOT fabricate from grossProfit * 0.70
+        BigDecimal netMarginRaw = (netProfit != null && totalRevenue.compareTo(BigDecimal.ZERO) > 0)
                 ? netProfit.divide(totalRevenue, SCALE, ROUNDING_MODE).multiply(new BigDecimal("100"))
-                : BigDecimal.ZERO;
+                : null;
+        // T1.1: 净利率超出合理范围（>100%或<-100%）视为数据异常，设为null
+        BigDecimal netMargin = (netMarginRaw != null
+                && (netMarginRaw.compareTo(new BigDecimal("100")) > 0
+                    || netMarginRaw.compareTo(new BigDecimal("-100")) < 0))
+                ? null : netMarginRaw;
 
         metrics.add(MetricResult.builder()
                 .metricCode(MetricCalculatorService.NET_PROFIT)
                 .metricName("净利润")
-                .value(netProfit.setScale(DISPLAY_SCALE, ROUNDING_MODE))
-                .formattedValue(formatCurrency(netProfit))
+                .value(netProfit != null ? netProfit.setScale(DISPLAY_SCALE, ROUNDING_MODE) : null)
+                .formattedValue(netProfit != null ? formatCurrency(netProfit) : "N/A")
                 .unit("元")
-                .alertLevel(netProfit.compareTo(BigDecimal.ZERO) >= 0
-                        ? MetricResult.AlertLevel.GREEN.name()
-                        : MetricResult.AlertLevel.RED.name())
+                .alertLevel(netProfit != null
+                        ? (netProfit.compareTo(BigDecimal.ZERO) >= 0
+                                ? MetricResult.AlertLevel.GREEN.name()
+                                : MetricResult.AlertLevel.RED.name())
+                        : MetricResult.AlertLevel.GREEN.name())
                 .description("毛利减去各项费用后的利润")
                 .build());
 
@@ -359,8 +369,8 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         metrics.add(MetricResult.builder()
                 .metricCode(MetricCalculatorService.NET_MARGIN)
                 .metricName("净利率")
-                .value(netMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE))
-                .formattedValue(netMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE) + "%")
+                .value(netMargin != null ? netMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE) : null)
+                .formattedValue(netMargin != null ? netMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE) + "%" : "N/A")
                 .unit("%")
                 .alertLevel(MetricResult.AlertLevel.GREEN.name())
                 .description("净利润占销售收入的比例")

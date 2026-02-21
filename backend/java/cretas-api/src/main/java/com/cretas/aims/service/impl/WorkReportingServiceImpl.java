@@ -6,12 +6,15 @@ import com.cretas.aims.entity.BatchWorkSession;
 import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.entity.ProductionReport;
 import com.cretas.aims.entity.User;
+import com.cretas.aims.entity.enums.ProductionBatchStatus;
+import com.cretas.aims.event.BatchCompletedEvent;
 import com.cretas.aims.repository.BatchWorkSessionRepository;
 import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.ProductionReportRepository;
 import com.cretas.aims.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -32,6 +35,7 @@ public class WorkReportingServiceImpl {
     private final BatchWorkSessionRepository batchWorkSessionRepository;
     private final ProductionBatchRepository productionBatchRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 提交报工
@@ -220,7 +224,7 @@ public class WorkReportingServiceImpl {
     }
 
     /**
-     * 获取汇总统计
+     * 获取汇总统计（含报工看板增强字段）
      */
     public Map<String, Object> getSummary(String factoryId, LocalDate startDate, LocalDate endDate) {
         if (startDate == null) startDate = LocalDate.now().minusDays(7);
@@ -230,6 +234,33 @@ public class WorkReportingServiceImpl {
         summary.put("progressSummary", reportRepository.getProgressSummary(factoryId, startDate, endDate));
         summary.put("hoursSummary", reportRepository.getHoursSummary(factoryId, startDate, endDate));
         summary.put("todayCount", reportRepository.countByFactoryIdAndDate(factoryId, LocalDate.now()));
+
+        // 报工看板增强字段
+        summary.put("pendingApprovalCount", countPendingReports(factoryId));
+
+        // 今日产出与良品率
+        Map<String, Object> todayProgress = reportRepository.getProgressSummary(
+                factoryId, LocalDate.now(), LocalDate.now());
+        BigDecimal todayOutput = BigDecimal.ZERO;
+        BigDecimal todayGood = BigDecimal.ZERO;
+        if (todayProgress != null) {
+            Object outputObj = todayProgress.get("total_output");
+            Object goodObj = todayProgress.get("total_good");
+            if (outputObj != null) todayOutput = new BigDecimal(outputObj.toString());
+            if (goodObj != null) todayGood = new BigDecimal(goodObj.toString());
+        }
+        summary.put("todayOutputTotal", todayOutput);
+        BigDecimal yieldRate = BigDecimal.ZERO;
+        if (todayOutput.compareTo(BigDecimal.ZERO) > 0) {
+            yieldRate = todayGood.multiply(BigDecimal.valueOf(100))
+                    .divide(todayOutput, 1, java.math.RoundingMode.HALF_UP);
+        }
+        summary.put("todayYieldRate", yieldRate);
+
+        // 近7天每日产出（用于趋势图）
+        LocalDate weekStart = LocalDate.now().minusDays(6);
+        summary.put("weeklyOutput", reportRepository.getDailyProductionTrend(factoryId, weekStart, LocalDate.now()));
+
         return summary;
     }
 
@@ -243,10 +274,85 @@ public class WorkReportingServiceImpl {
                 BigDecimal current = batch.getActualQuantity() != null ? batch.getActualQuantity() : BigDecimal.ZERO;
                 batch.setActualQuantity(current.add(outputQuantity));
                 productionBatchRepository.save(batch);
+
+                // 自动完成：累计产量达到计划量 → 完成批次 → 发布事件
+                checkAndCompleteBatch(batch);
             }
         } catch (Exception e) {
             log.warn("更新批次实际产量失败: batchId={}, error={}", batchId, e.getMessage());
         }
+    }
+
+    /**
+     * 检查并完成批次：若 actualQuantity >= plannedQuantity 且状态非 COMPLETED，则自动完成
+     */
+    private void checkAndCompleteBatch(ProductionBatch batch) {
+        if (batch.getStatus() == ProductionBatchStatus.COMPLETED) {
+            return; // 幂等：已完成不重复触发
+        }
+        if (batch.getPlannedQuantity() == null || batch.getActualQuantity() == null) {
+            return;
+        }
+        if (batch.getActualQuantity().compareTo(batch.getPlannedQuantity()) >= 0) {
+            batch.setStatus(ProductionBatchStatus.COMPLETED);
+            batch.setEndTime(LocalDateTime.now());
+            // 如果 goodQuantity 未设置，默认等于 actualQuantity
+            if (batch.getGoodQuantity() == null) {
+                batch.setGoodQuantity(batch.getActualQuantity());
+            }
+            productionBatchRepository.save(batch);
+            log.info("报工触发批次自动完成: batchId={}, actual={}, planned={}",
+                    batch.getId(), batch.getActualQuantity(), batch.getPlannedQuantity());
+
+            // 发布 BatchCompletedEvent → SupplyChainOrchestrator.onBatchCompleted()
+            eventPublisher.publishEvent(new BatchCompletedEvent(this, batch));
+        }
+    }
+
+    /**
+     * 手动完成批次（管理员操作：部分生产、物料不足等场景）
+     */
+    @Transactional
+    public void manualCompleteBatch(String factoryId, Long batchId) {
+        ProductionBatch batch = productionBatchRepository.findById(batchId)
+                .orElseThrow(() -> new RuntimeException("生产批次不存在: " + batchId));
+        if (!batch.getFactoryId().equals(factoryId)) {
+            throw new RuntimeException("无权操作此批次");
+        }
+        if (batch.getStatus() == ProductionBatchStatus.COMPLETED) {
+            throw new RuntimeException("批次已完成，无需重复操作");
+        }
+        if (batch.getStatus() != ProductionBatchStatus.IN_PROGRESS) {
+            throw new RuntimeException("仅进行中的批次可标记完成，当前状态: " + batch.getStatus());
+        }
+
+        batch.setStatus(ProductionBatchStatus.COMPLETED);
+        batch.setEndTime(LocalDateTime.now());
+        if (batch.getGoodQuantity() == null) {
+            batch.setGoodQuantity(batch.getActualQuantity() != null ? batch.getActualQuantity() : BigDecimal.ZERO);
+        }
+        productionBatchRepository.save(batch);
+        log.info("手动完成批次: batchId={}, actual={}", batch.getId(), batch.getActualQuantity());
+
+        eventPublisher.publishEvent(new BatchCompletedEvent(this, batch));
+    }
+
+    /**
+     * 查询待审批报工列表
+     */
+    public Page<WorkReportResponse> getPendingReports(String factoryId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return reportRepository.findByFactoryIdAndStatusAndDeletedAtIsNull(
+                factoryId, ProductionReport.Status.SUBMITTED, pageRequest)
+                .map(this::toResponse);
+    }
+
+    /**
+     * 统计待审批报工数
+     */
+    public long countPendingReports(String factoryId) {
+        return reportRepository.countByFactoryIdAndStatusAndDeletedAtIsNull(
+                factoryId, ProductionReport.Status.SUBMITTED);
     }
 
     private WorkReportResponse toResponse(ProductionReport r) {

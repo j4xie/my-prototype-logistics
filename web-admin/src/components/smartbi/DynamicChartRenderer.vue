@@ -118,6 +118,7 @@ function buildFromDashboardConfig(config: DashboardChartConfig): echarts.ECharts
       type: 'category',
       boundaryGap: false,
       data: config.xAxis?.data || [],
+      axisLabel: { rotate: 30, hideOverlap: true },
     },
     yAxis: config.series.length > 1
       ? config.series.map((s, i) => ({
@@ -211,7 +212,10 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
       position: (axis.position as 'left' | 'right') || undefined,
       min: axis.min,
       max: axis.max,
-      axisLabel: axis.axisLabel || { formatter: (v: number) => formatAxisValue(v) },
+      axisLabel: {
+        ...(axis.axisLabel || {}),
+        formatter: (v: number) => formatAxisValue(v),
+      },
     }));
   }
 
@@ -225,7 +229,18 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
         stack: s.stack,
         smooth: s.smooth,
         itemStyle: s.itemStyle,
-        label: s.label,
+        label: s.label ? {
+          ...s.label,
+          formatter: (params: { value: number | string }) => {
+            const v = Number(params.value);
+            if (isNaN(v)) return String(params.value);
+            const abs = Math.abs(v);
+            if (abs >= 100000000) return (v / 100000000).toFixed(1) + '亿';
+            if (abs >= 10000) return (v / 10000).toFixed(0) + '万';
+            return String(v);
+          },
+          fontSize: 10,
+        } : undefined,
       };
       if (s.areaStyle && s.type === 'line') {
         (item as echarts.LineSeriesOption).areaStyle = {};
@@ -318,7 +333,7 @@ function buildFromLegacyConfig(config: LegacyChartConfig): echarts.EChartsOption
       axisPointer: { type: chartType === 'line' ? 'cross' : 'shadow' },
     },
     grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
-    xAxis: { type: 'category', data: xData },
+    xAxis: { type: 'category', data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
     yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
     series: [{
       type: chartType as 'bar' | 'line',
@@ -351,7 +366,7 @@ function buildWaterfallChart(config: LegacyChartConfig): echarts.EChartsOption {
   return {
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
-    xAxis: { type: 'category', data: xData },
+    xAxis: { type: 'category', data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
     yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
     series: [{
       type: 'bar',
@@ -415,7 +430,7 @@ function buildLineBudgetChart(config: LegacyChartConfig): echarts.EChartsOption 
       tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
       legend: { data: legendData, bottom: 0 },
       grid: { left: '3%', right: '8%', bottom: '15%', top: '10%', containLabel: true },
-      xAxis: { type: 'category', data: xData },
+      xAxis: { type: 'category', data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
       yAxis,
       series,
     };
@@ -430,7 +445,7 @@ function buildLineBudgetChart(config: LegacyChartConfig): echarts.EChartsOption 
     tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
     legend: { data: ['预算', '实际', '达成率'], bottom: 0 },
     grid: { left: '3%', right: '8%', bottom: '15%', top: '10%', containLabel: true },
-    xAxis: { type: 'category', data: xData },
+    xAxis: { type: 'category', data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
     yAxis: [
       { type: 'value', name: '金额', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
       { type: 'value', name: '达成率(%)', min: 0, max: 200, position: 'right', axisLabel: { formatter: '{value}%' } },
@@ -515,7 +530,7 @@ function buildAreaChart(config: LegacyChartConfig): echarts.EChartsOption {
   return {
     tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
     grid: { left: '3%', right: '4%', bottom: '10%', top: '10%', containLabel: true },
-    xAxis: { type: 'category', boundaryGap: false, data: xData },
+    xAxis: { type: 'category', boundaryGap: false, data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
     yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
     series: [{
       type: 'line',
@@ -814,7 +829,9 @@ function buildLegacyPie(config: LegacyChartConfig): echarts.EChartsOption {
 }
 
 function formatAxisValue(value: number): string {
-  if (value >= 10000) return (value / 10000).toFixed(0) + '万';
+  const abs = Math.abs(value);
+  if (abs >= 100000000) return (value / 100000000).toFixed(1) + '亿';
+  if (abs >= 10000) return (value / 10000).toFixed(0) + '万';
   return String(value);
 }
 </script>

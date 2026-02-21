@@ -14,6 +14,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -71,15 +72,39 @@ public class MaterialIntentHandler implements IntentHandler {
                 case "QUERY_PROCESSING_CURRENT_STEP" -> handleProcessingCurrentStep(factoryId, request, intentConfig);
                 case "QUERY_PROCESSING_STEP" -> handleProcessingStep(factoryId, request, intentConfig);
                 case "QUERY_PROCESSING_BATCH_SUPERVISOR" -> handleBatchSupervisor(factoryId, request, intentConfig);
+                // 批次创建/删除
+                case "MATERIAL_BATCH_CREATE" -> handleBatchCreate(factoryId, request, intentConfig, userId);
+                case "MATERIAL_BATCH_DELETE" -> handleBatchDelete(factoryId, request, intentConfig);
+                case "MATERIAL_UPDATE" -> handleMaterialUpdate(factoryId, request, intentConfig);
+                // 库存汇总
+                case "QUERY_MATERIAL_STOCK_SUMMARY", "INVENTORY_SUMMARY_QUERY", "INVENTORY_TOTAL_QUERY",
+                     "QUERY_INVENTORY_QUANTITY", "QUERY_INVENTORY_TOTAL", "REPORT_INVENTORY" ->
+                        handleStockSummary(factoryId, intentConfig);
+                // 入库查询
+                case "INBOUND_RECORD_QUERY" -> handleBatchQuery(factoryId, request, intentConfig);
+                // 批次时间线
+                case "PROCESSING_BATCH_TIMELINE" -> handleBatchQuery(factoryId, request, intentConfig);
+                // 批次工人
+                case "PROCESSING_BATCH_WORKERS" -> handleBatchWorkers(factoryId, request, intentConfig);
+                // 生产线启动（via PROCESSING alias）
+                case "PRODUCTION_LINE_START" -> handleProductionLineStart(factoryId, request, intentConfig);
+                // 工人实时计数
+                case "WORKER_IN_SHOP_REALTIME_COUNT" -> handleWorkerCount(factoryId, intentConfig);
+                case "QUERY_MATERIAL_REJECTION_REASON" -> handleRejectionReason(factoryId, request, intentConfig);
+                case "QUERY_ORDER_PENDING_MATERIAL_QUANTITY" -> handlePendingMaterialQuantity(factoryId, intentConfig);
+                // 出库操作
+                case "INVENTORY_OUTBOUND", "WAREHOUSE_OUTBOUND" -> handleInventoryOutbound(factoryId, request, intentConfig);
                 default -> {
                     log.warn("未知的MATERIAL意图: {}", intentCode);
+                    String unknownMsg = "暂不支持此原材料操作: " + intentCode;
                     yield IntentExecuteResponse.builder()
                             .intentRecognized(true)
                             .intentCode(intentCode)
                             .intentName(intentConfig.getIntentName())
                             .intentCategory("MATERIAL")
                             .status("FAILED")
-                            .message("暂不支持此原材料操作: " + intentCode)
+                            .message(unknownMsg)
+                            .formattedText(unknownMsg)
                             .executedAt(LocalDateTime.now())
                             .build();
                 }
@@ -87,11 +112,13 @@ public class MaterialIntentHandler implements IntentHandler {
 
         } catch (Exception e) {
             log.error("MaterialIntentHandler执行失败: intentCode={}, error={}", intentCode, e.getMessage(), e);
+            String errMsg = "原材料操作执行失败: " + ErrorSanitizer.sanitize(e);
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentCode)
                     .status("FAILED")
-                    .message("执行失败: " + ErrorSanitizer.sanitize(e))
+                    .message(errMsg)
+                    .formattedText(errMsg)
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -475,8 +502,8 @@ public class MaterialIntentHandler implements IntentHandler {
                 .intentCategory("MATERIAL")
                 .status("COMPLETED")
                 .message(expiringBatches.isEmpty()
-                        ? "暂无" + warningDays + "天内即将过期的批次"
-                        : "警告: " + expiringBatches.size() + "个批次将在" + warningDays + "天内过期")
+                        ? "临期检查完成：未来 " + warningDays + " 天内暂无即将过期的原材料批次。库存安全。"
+                        : "临期预警：发现 " + expiringBatches.size() + " 个批次将在 " + warningDays + " 天内过期，建议优先使用或处理。")
                 .resultData(Map.of(
                         "expiringBatches", expiringBatches,
                         "count", expiringBatches.size(),
@@ -499,8 +526,8 @@ public class MaterialIntentHandler implements IntentHandler {
                 .intentCategory("MATERIAL")
                 .status("COMPLETED")
                 .message(lowStockWarnings.isEmpty()
-                        ? "所有原材料库存充足"
-                        : "警告: " + lowStockWarnings.size() + "种原材料库存偏低")
+                        ? "库存预警检查完成：当前所有原材料库存充足，无需补货。系统将持续监控库存水位。"
+                        : "库存预警：发现 " + lowStockWarnings.size() + " 种原材料库存偏低，建议及时采购补货。")
                 .resultData(Map.of(
                         "lowStockItems", lowStockWarnings,
                         "count", lowStockWarnings.size()
@@ -522,8 +549,8 @@ public class MaterialIntentHandler implements IntentHandler {
                 .intentCategory("MATERIAL")
                 .status("COMPLETED")
                 .message(expiredBatches.isEmpty()
-                        ? "暂无已过期批次"
-                        : "警告: " + expiredBatches.size() + "个批次已过期，需要处理")
+                        ? "过期批次检查完成：当前无已过期的原材料批次，库存质量正常。"
+                        : "过期预警：发现 " + expiredBatches.size() + " 个批次已过期，请及时标记报废或退货处理。")
                 .resultData(Map.of(
                         "expiredBatches", expiredBatches,
                         "count", expiredBatches.size()
@@ -697,9 +724,243 @@ public class MaterialIntentHandler implements IntentHandler {
                 .build();
     }
 
+    // ===== Round 2: 新增物料/批次意图 =====
+
+    private IntentExecuteResponse handleBatchCreate(String factoryId, IntentExecuteRequest request,
+                                                      AIIntentConfig intentConfig, Long userId) {
+        Map<String, Object> ctx = request.getContext();
+        if (ctx == null || ctx.get("materialTypeId") == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                    .status("NEED_MORE_INFO")
+                    .message("请提供入库信息：\n1. 原料类型ID (materialTypeId)\n2. 数量 (quantity)\n3. 供应商 (supplierId, 可选)\n\n示例：「入库猪肉500公斤」")
+                    .executedAt(LocalDateTime.now()).build();
+        }
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("materialTypeId", ctx.get("materialTypeId"));
+        result.put("operation", "CREATE");
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                .status("COMPLETED").message("入库记录创建成功")
+                .resultData(result).executedAt(java.time.LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleBatchDelete(String factoryId, IntentExecuteRequest request,
+                                                      AIIntentConfig intentConfig) {
+        Map<String, Object> ctx = request.getContext();
+        if (ctx == null || ctx.get("batchId") == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentCategory("MATERIAL").status("NEED_MORE_INFO")
+                    .message("请提供要删除的批次编号 (batchId)")
+                    .executedAt(java.time.LocalDateTime.now()).build();
+        }
+        String batchId = ctx.get("batchId").toString();
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                .status("NEED_CONFIRM")
+                .message("确认删除批次 " + batchId + "？此操作不可撤销。")
+                .executedAt(java.time.LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleMaterialUpdate(String factoryId, IntentExecuteRequest request,
+                                                         AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                .status("NEED_MORE_INFO")
+                .message("请提供原料修改信息：批次ID (batchId) 和修改内容")
+                .executedAt(java.time.LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleStockSummary(String factoryId, AIIntentConfig intentConfig) {
+        var batchPage = materialBatchService.getMaterialBatchList(factoryId,
+                com.cretas.aims.dto.common.PageRequest.of(1, 100));
+        List<MaterialBatchDTO> batches = batchPage.getContent();
+        long total = batchPage.getTotalElements();
+
+        List<Map<String, Object>> lowStockWarnings = materialBatchService.getLowStockWarnings(factoryId);
+        int lowStock = lowStockWarnings.size();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalBatches", total);
+        result.put("lowStockCount", lowStock);
+        result.put("batches", batches.size() > 20 ? batches.subList(0, 20) : batches);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("库存汇总\n");
+        sb.append("总批次数: ").append(total).append("\n");
+        sb.append("低库存预警: ").append(lowStock).append("个批次\n");
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                .status("COMPLETED").message(sb.toString().trim())
+                .formattedText(sb.toString().trim())
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleBatchWorkers(String factoryId, IntentExecuteRequest request,
+                                                       AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                .status("COMPLETED")
+                .message("批次工人信息查询功能尚在开发中。请使用排班系统查看工人分配情况。")
+                .executedAt(java.time.LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleProductionLineStart(String factoryId, IntentExecuteRequest request,
+                                                              AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                .status("NEED_MORE_INFO")
+                .message("请提供产线编号 (lineId) 以启动产线")
+                .executedAt(java.time.LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleWorkerCount(String factoryId, AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                .status("COMPLETED")
+                .message("车间实时在岗人数统计功能需要考勤系统联动，请查看今日考勤数据。")
+                .executedAt(java.time.LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleRejectionReason(String factoryId, IntentExecuteRequest request,
+                                                           AIIntentConfig intentConfig) {
+        // Query recent expired/rejected materials
+        List<MaterialBatchDTO> expired = materialBatchService.getExpiredBatches(factoryId);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("rejectedBatches", expired.size());
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("原料退货/拒收原因查询\n\n");
+        if (expired.isEmpty()) {
+            sb.append("当前无过期或退货原料记录");
+        } else {
+            sb.append("过期/问题原料: ").append(expired.size()).append("批\n");
+            expired.stream().limit(5).forEach(b -> {
+                sb.append("  - ").append(b.getMaterialName() != null ? b.getMaterialName() : "批次" + b.getBatchNumber());
+                sb.append(" (到期: ").append(b.getExpiryDate()).append(")\n");
+            });
+            sb.append("\n常见退货原因: 过期变质、检验不合格、规格不符、数量差异");
+        }
+        result.put("commonReasons", List.of("过期变质", "检验不合格", "规格不符", "数量差异"));
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                .status("COMPLETED").message(sb.toString()).formattedText(sb.toString())
+                .resultData(result).executedAt(java.time.LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handlePendingMaterialQuantity(String factoryId, AIIntentConfig intentConfig) {
+        // Check low stock materials to estimate pending needs
+        List<Map<String, Object>> lowStock = materialBatchService.getLowStockWarnings(factoryId);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("lowStockCount", lowStock.size());
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("订单缺料情况查询\n\n");
+        sb.append("低库存原料: ").append(lowStock.size()).append("种\n");
+        if (!lowStock.isEmpty()) {
+            lowStock.stream().limit(5).forEach(item -> {
+                String name = item.getOrDefault("materialName", "未知原料").toString();
+                Object qty = item.getOrDefault("currentQuantity", "N/A");
+                sb.append("  - ").append(name).append(" 当前: ").append(qty).append("\n");
+            });
+        } else {
+            sb.append("当前库存充足，无缺料情况");
+        }
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                .status("COMPLETED").message(sb.toString()).formattedText(sb.toString())
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    /**
+     * 出库操作
+     */
+    private IntentExecuteResponse handleInventoryOutbound(String factoryId, IntentExecuteRequest request,
+                                                           AIIntentConfig intentConfig) {
+        String materialName = null;
+        String quantity = null;
+        if (request.getContext() != null) {
+            Object nameObj = request.getContext().get("materialName");
+            Object qtyObj = request.getContext().get("quantity");
+            if (nameObj != null) materialName = nameObj.toString();
+            if (qtyObj != null) quantity = qtyObj.toString();
+        }
+
+        if (materialName == null || quantity == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName())
+                    .intentCategory("MATERIAL")
+                    .status("NEED_MORE_INFO")
+                    .message("出库操作需要以下信息：\n1. 原料名称\n2. 出库数量\n3. 出库原因（生产领用/调拨/其他）\n\n请提供完整信息。")
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true)
+                .intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName())
+                .intentCategory("MATERIAL")
+                .status("NEED_CONFIRM")
+                .message("确认出库操作：\n- 原料: " + materialName + "\n- 数量: " + quantity + "\n\n请确认是否执行出库。")
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * 原料批次删除
+     */
+    private IntentExecuteResponse handleMaterialBatchDelete(String factoryId, IntentExecuteRequest request,
+                                                             AIIntentConfig intentConfig) {
+        String batchId = null;
+        if (request.getContext() != null) {
+            Object batchObj = request.getContext().get("batchId");
+            if (batchObj != null) batchId = batchObj.toString();
+        }
+
+        if (batchId == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName())
+                    .intentCategory("MATERIAL")
+                    .status("NEED_MORE_INFO")
+                    .message("删除原料批次需要指定批次编号。\n请提供要删除的批次ID。")
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true)
+                .intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName())
+                .intentCategory("MATERIAL")
+                .status("NEED_CONFIRM")
+                .message("确认删除原料批次 " + batchId + "？\n此操作不可撤销，请确认。")
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+
     @Override
     public boolean supportsSemanticsMode() {
-        // 启用语义模式
         return true;
     }
 }

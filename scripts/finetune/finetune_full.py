@@ -50,12 +50,12 @@ OUTPUT_DIR = BASE_DIR / "models" / "chinese-roberta-wwm-ext-classifier" / "final
 BASE_MODEL = "hfl/chinese-roberta-wwm-ext"  # HuggingFace model ID
 
 # Training hyperparameters
-EPOCHS = 8
+EPOCHS = 10
 BATCH_SIZE = 32
 LEARNING_RATE = 2e-5
 WEIGHT_DECAY = 0.01
 WARMUP_RATIO = 0.1
-MAX_LENGTH = 64
+MAX_LENGTH = 80
 SEED = 42
 EVAL_SPLIT = 0.1  # 10% for validation
 

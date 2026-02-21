@@ -30,7 +30,7 @@ import {
   Document
 } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
-import { formatNumber, formatCount } from '@/utils/format-number';
+import { formatNumber, formatCount, formatAxisValue } from '@/utils/format-number';
 import { CHART_COLORS } from '@/constants/chart-colors';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 
@@ -139,15 +139,23 @@ const kpiData = computed(() => {
     };
   }
 
+  // Fallback: if profit/customer KPIs not available, use TARGET_COMPLETION/MOM_GROWTH
+  const targetCard = findCard('TARGET_COMPLETION') || findByTitle('目标') || findByTitle('完成率');
+  const growthCard = findCard('MOM_GROWTH') || findByTitle('环比') || findByTitle('增长');
+
   return {
     totalRevenue: salesCard?.rawValue ?? null,
     revenueGrowth: salesCard?.changeRate ?? null,
-    totalProfit: profitCard?.rawValue ?? null,
+    totalProfit: profitCard?.rawValue ?? (targetCard?.rawValue ?? null),
     profitGrowth: profitCard?.changeRate ?? null,
+    profitLabel: profitCard ? '本月利润' : (targetCard ? '目标完成率' : '本月利润'),
+    profitUnit: profitCard ? '' : (targetCard ? '%' : ''),
     orderCount: orderCard?.rawValue ?? null,
     orderGrowth: orderCard?.changeRate ?? null,
-    customerCount: customerCard?.rawValue ?? null,
+    customerCount: customerCard?.rawValue ?? (growthCard?.rawValue ?? null),
     customerGrowth: customerCard?.changeRate ?? null,
+    customerLabel: customerCard ? '活跃客户' : (growthCard ? '环比增长' : '活跃客户'),
+    customerUnit: customerCard ? '' : (growthCard ? '%' : ''),
   };
 });
 
@@ -186,16 +194,34 @@ const regionRanking = computed<RegionRank[]>(() => {
   }));
 });
 
-// AI 洞察 (从 aiInsights 提取, 去重)
+// AI 洞察 (从 aiInsights 提取, 去重 — 精确去重 + 相似内容去重)
 const aiInsights = computed<AIInsight[]>(() => {
   if (!dashboardData.value?.aiInsights) return [];
 
   const seen = new Set<string>();
+  const seenKeywords: string[][] = []; // track key metrics to avoid similar insights
+
+  // Extract key numbers from a message (e.g. "-34.7%" → "34.7")
+  const extractNumbers = (text: string) => {
+    const matches = text.match(/[\d.]+%/g) || [];
+    return matches.map(m => m.replace('%', ''));
+  };
+
   return dashboardData.value.aiInsights
     .filter(insight => {
       const key = insight.message;
       if (seen.has(key)) return false;
       seen.add(key);
+
+      // Similarity check: skip if another insight mentions the same key percentages
+      const nums = extractNumbers(key);
+      if (nums.length > 0) {
+        for (const prev of seenKeywords) {
+          const overlap = nums.filter(n => prev.includes(n));
+          if (overlap.length >= 1 && overlap.length >= nums.length * 0.5) return false;
+        }
+        seenKeywords.push(nums);
+      }
       return true;
     })
     .map(insight => ({
@@ -214,6 +240,30 @@ const hasData = computed(() => {
     || dynamicInsights.value.length > 0
     || (dashboardData.value?.kpiCards && dashboardData.value.kpiCards.length > 0);
 });
+
+// Detect "partial" system data: some KPIs present but charts/ranking mostly empty
+const hasPartialSystemData = computed(() => {
+  if (selectedDataSource.value !== 'system') return false;
+  if (!dashboardData.value) return false;
+  const kd = kpiData.value;
+  const hasAnyKpi = kd.totalRevenue !== null || kd.orderCount !== null;
+  const missingKpi = kd.totalProfit === null || kd.customerCount === null;
+  const charts = dashboardData.value.charts || {};
+  const hasCharts = Object.keys(charts).length > 0 &&
+    Object.values(charts).some(c =>
+      (c && 'series' in c && Array.isArray(c.series) && c.series.length > 0) ||
+      (c && 'data' in c && Array.isArray(c.data) && c.data.length > 0)
+    );
+  return hasAnyKpi && (missingKpi || !hasCharts) && dataSources.value.length > 0;
+});
+
+function switchToBestUpload() {
+  if (dataSources.value.length > 0) {
+    const best = dataSources.value[0];
+    selectedDataSource.value = String(best.id);
+    loadDynamicDashboardData(best.id);
+  }
+}
 
 function goToUpload() {
   router.push({ name: 'SmartBIAnalysis' });
@@ -285,7 +335,10 @@ async function loadDashboardData() {
       const hasRealKpi = kpiCards.some(c => c.rawValue != null && c.rawValue !== 0);
       const charts = (actualData as DashboardResponse).charts || {};
       const hasCharts = Object.keys(charts).length > 0 &&
-        Object.values(charts).some(c => c?.series && c.series.length > 0);
+        Object.values(charts).some(c =>
+          (c && 'series' in c && Array.isArray(c.series) && c.series.length > 0) ||
+          (c && 'data' in c && Array.isArray(c.data) && c.data.length > 0)
+        );
 
       if (!hasRealKpi && !hasCharts && dataSources.value.length > 0) {
         // system data empty, auto-switch to uploaded data
@@ -325,9 +378,17 @@ async function loadDataSources() {
   try {
     const res = await getUploadHistory();
     if (res.success && res.data) {
-      dataSources.value = res.data.filter(
+      const completed = res.data.filter(
         (item: UploadHistoryItem) => item.status === 'COMPLETED' || item.status === 'SUCCESS'
       );
+      // Deduplicate by fileName + sheetName, keep the latest (first) entry
+      const seen = new Set<string>();
+      dataSources.value = completed.filter((item: UploadHistoryItem) => {
+        const key = `${item.fileName}||${item.sheetName || ''}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     }
   } catch (error) {
     console.warn('加载数据源列表失败:', error);
@@ -375,13 +436,16 @@ async function loadDynamicDashboardData(uploadId: number) {
       // Map dynamic charts → DashboardResponse.charts
       const charts: Record<string, ChartConfig> = {};
       if (data.charts && data.charts.length > 0) {
-        data.charts.forEach((chart, idx) => {
+        // Assign first pie chart to category_distribution, first non-pie to sales_trend
+        let hasTrend = false;
+        let hasPie = false;
+        data.charts.forEach((chart) => {
           const labels = chart.data?.labels || [];
           const datasets = chart.data?.datasets || [];
-          const key = idx === 0 ? 'sales_trend' : 'category_distribution';
 
-          if (chart.type === 'pie' && datasets.length > 0) {
-            charts[key] = {
+          if (chart.type === 'pie' && datasets.length > 0 && !hasPie) {
+            hasPie = true;
+            charts['category_distribution'] = {
               chartType: 'pie',
               title: chart.title || '',
               xAxis: { data: labels },
@@ -394,8 +458,9 @@ async function loadDynamicDashboardData(uploadId: number) {
                 })),
               }],
             } as unknown as ChartConfig;
-          } else {
-            charts[key] = {
+          } else if (datasets.length > 0 && !hasTrend) {
+            hasTrend = true;
+            charts['sales_trend'] = {
               chartType: chart.type || 'bar',
               title: chart.title || '',
               xAxis: { type: 'category', data: labels },
@@ -407,6 +472,38 @@ async function loadDynamicDashboardData(uploadId: number) {
             } as unknown as ChartConfig;
           }
         });
+      }
+
+      // Fallback: generate summary charts from KPIs when no charts available
+      if (Object.keys(charts).length === 0 && kpiCards.length > 0) {
+        const validKpis = kpiCards.filter(k => k.rawValue != null && k.rawValue !== 0);
+        if (validKpis.length >= 2) {
+          // Bar chart of KPI values
+          charts['sales_trend'] = {
+            chartType: 'bar',
+            title: '核心指标概览',
+            xAxis: { type: 'category', data: validKpis.map(k => k.title) },
+            series: [{
+              name: '数值',
+              type: 'bar',
+              data: validKpis.map(k => k.rawValue),
+            }],
+          } as unknown as ChartConfig;
+          // Pie chart of absolute values for composition
+          charts['category_distribution'] = {
+            chartType: 'pie',
+            title: '指标构成',
+            xAxis: { data: validKpis.map(k => k.title) },
+            series: [{
+              name: '构成',
+              type: 'pie',
+              data: validKpis.map(k => ({
+                name: k.title,
+                value: Math.abs(k.rawValue),
+              })),
+            }],
+          } as unknown as ChartConfig;
+        }
       }
 
       // Store AI insights from dynamic source
@@ -461,9 +558,40 @@ function detectKpiKey(title: string): string {
 
 // ==================== 图表初始化 ====================
 
+/**
+ * Convert backend LegacyChartConfig (data[] + xAxisField/yAxisField) to
+ * DashboardChartConfig format (series[] + xAxis.data) that the render
+ * functions expect.
+ */
+function normalizeLegacyChart(config: ChartConfig): ChartConfig {
+  if ('series' in config && Array.isArray(config.series)) return config; // already in new format
+  if (!('data' in config) || !Array.isArray(config.data) || config.data.length === 0) return config;
+
+  const legacy = config as { chartType: string; title?: string; xAxisField?: string; yAxisField?: string; data: Array<Record<string, unknown>> };
+  const xField = legacy.xAxisField || 'date';
+  const yField = legacy.yAxisField || 'amount';
+
+  const xData = legacy.data.map(d => String(d[xField] || ''));
+  const yData = legacy.data.map(d => Number(d[yField]) || 0);
+
+  return {
+    chartType: legacy.chartType,
+    title: legacy.title,
+    xAxis: { data: xData },
+    series: [{
+      name: legacy.title || '数据',
+      type: (legacy.chartType || 'line').toLowerCase(),
+      data: yData,
+    }],
+  } as ChartConfig;
+}
+
 function initCharts(charts?: Record<string, ChartConfig>) {
-  initTrendChart(charts?.['sales_trend'] || charts?.['销售趋势']);
-  initPieChart(charts?.['category_distribution'] || charts?.['产品占比'] || charts?.['类别分布']);
+  const trend = charts?.['sales_trend'] || charts?.['销售趋势'];
+  const pie = charts?.['category_distribution'] || charts?.['产品占比']
+    || charts?.['类别分布'] || charts?.['产品销售占比'];
+  initTrendChart(trend ? normalizeLegacyChart(trend) : undefined);
+  initPieChart(pie ? normalizeLegacyChart(pie) : undefined);
 }
 
 function initTrendChart(chartConfig?: ChartConfig) {
@@ -502,20 +630,20 @@ function initTrendChart(chartConfig?: ChartConfig) {
           type: 'value',
           name: chartConfig.series[0]?.name || '销售额',
           axisLabel: {
-            formatter: (value: number) => (value / 10000).toFixed(0) + '万'
+            formatter: formatAxisValue
           }
         },
         {
           type: 'value',
           name: chartConfig.series[1]?.name || '利润',
           axisLabel: {
-            formatter: (value: number) => (value / 10000).toFixed(0) + '万'
+            formatter: formatAxisValue
           }
         }
       ] : {
         type: 'value',
         axisLabel: {
-          formatter: (value: number) => (value / 10000).toFixed(0) + '万'
+          formatter: formatAxisValue
         }
       },
       series: chartConfig.series.map((s, index) => ({
@@ -566,11 +694,17 @@ function initPieChart(chartConfig?: ChartConfig) {
     const seriesData = chartConfig.series[0];
     // 假设后端返回的数据格式是 { name, data } 或 { data: [{name, value}] }
     const pieData = Array.isArray(seriesData.data)
-      ? seriesData.data.map((value, index) => ({
-          value: typeof value === 'number' ? value : (value as { value: number }).value,
-          name: chartConfig.xAxis?.data?.[index] || `类别${index + 1}`,
-          itemStyle: { color: getPieColor(index) }
-        }))
+      ? seriesData.data.map((value, index) => {
+          // Support multiple data formats: number, {value}, {name, value}
+          const isObj = typeof value === 'object' && value !== null;
+          const numValue = typeof value === 'number' ? value : (isObj ? Number((value as Record<string, unknown>).value || 0) : 0);
+          const nameFromData = isObj ? String((value as Record<string, unknown>).name || '') : '';
+          return {
+            value: numValue,
+            name: nameFromData || chartConfig.xAxis?.data?.[index] || seriesData.name || `产品${index + 1}`,
+            itemStyle: { color: getPieColor(index) }
+          };
+        })
       : [];
 
     const option: echarts.EChartsOption = {
@@ -769,6 +903,29 @@ onMounted(() => {
       <el-button size="small" type="primary" @click="handleRefresh" style="margin-top: 8px;">重试</el-button>
     </el-alert>
 
+    <!-- Partial data guidance: system has some KPIs but charts/other KPIs are missing -->
+    <el-alert
+      v-if="!loading && hasPartialSystemData"
+      title="系统数据不完整"
+      description="当前系统数据仅包含部分指标，上传 Excel 报表可获得完整的趋势图表和 AI 分析。"
+      type="info"
+      show-icon
+      :closable="true"
+      class="partial-data-alert"
+    >
+      <template #default>
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <el-button size="small" type="primary" @click="switchToBestUpload">
+            切换到上传数据
+          </el-button>
+          <el-button size="small" @click="goToUpload">
+            <el-icon><Upload /></el-icon>
+            上传新数据
+          </el-button>
+        </div>
+      </template>
+    </el-alert>
+
     <!-- Empty state guidance when no data -->
     <SmartBIEmptyState
       v-if="!loading && !hasError && !hasData"
@@ -805,8 +962,8 @@ onMounted(() => {
             <el-icon><Histogram /></el-icon>
           </div>
           <div class="kpi-content">
-            <div class="kpi-label">本月利润</div>
-            <div class="kpi-value">{{ formatKpiValue(kpiData.totalProfit) }}</div>
+            <div class="kpi-label">{{ kpiData.profitLabel || '本月利润' }}</div>
+            <div class="kpi-value">{{ kpiData.profitUnit === '%' ? (kpiData.totalProfit != null ? kpiData.totalProfit.toFixed(1) + '%' : '--') : formatKpiValue(kpiData.totalProfit) }}</div>
             <div class="kpi-trend" :class="getGrowthClass(kpiData.profitGrowth!)" v-if="kpiData.totalProfit !== null && kpiData.profitGrowth != null && kpiData.profitGrowth !== 0">
               <el-icon v-if="kpiData.profitGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
@@ -845,8 +1002,8 @@ onMounted(() => {
             <el-icon><Medal /></el-icon>
           </div>
           <div class="kpi-content">
-            <div class="kpi-label">活跃客户</div>
-            <div class="kpi-value">{{ kpiData.customerCount != null ? formatCount(kpiData.customerCount) : '--' }}</div>
+            <div class="kpi-label">{{ kpiData.customerLabel || '活跃客户' }}</div>
+            <div class="kpi-value" :class="kpiData.customerUnit === '%' && kpiData.customerCount != null ? getGrowthClass(kpiData.customerCount) : ''">{{ kpiData.customerUnit === '%' ? (kpiData.customerCount != null ? (kpiData.customerCount >= 0 ? '+' : '') + kpiData.customerCount.toFixed(1) + '%' : '--') : (kpiData.customerCount != null ? formatCount(kpiData.customerCount) : '--') }}</div>
             <div class="kpi-trend" :class="getGrowthClass(kpiData.customerGrowth!)" v-if="kpiData.customerCount !== null && kpiData.customerGrowth != null && kpiData.customerGrowth !== 0">
               <el-icon v-if="kpiData.customerGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
@@ -863,7 +1020,7 @@ onMounted(() => {
 
     <!-- 排行榜区 -->
     <el-row :gutter="16" class="ranking-section" v-loading="loading" aria-label="排行榜">
-      <el-col :xs="24" :md="12">
+      <el-col v-if="departmentRanking.length > 0" :xs="24" :md="12">
         <el-card class="ranking-card">
           <template #header>
             <div class="card-header">
@@ -871,7 +1028,7 @@ onMounted(() => {
               <span>部门业绩排行</span>
             </div>
           </template>
-          <div class="ranking-list" v-if="departmentRanking.length > 0">
+          <div class="ranking-list">
             <div
               v-for="(item, index) in departmentRanking"
               :key="item.name"
@@ -889,13 +1046,9 @@ onMounted(() => {
               </div>
             </div>
           </div>
-          <div v-else class="compact-empty">
-            <el-icon :size="24" color="#c0c4cc"><Medal /></el-icon>
-            <span>暂无部门业绩数据</span>
-          </div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :md="12">
+      <el-col :xs="24" :md="departmentRanking.length > 0 ? 12 : 24">
         <el-card class="ranking-card">
           <template #header>
             <div class="card-header">
@@ -1163,6 +1316,9 @@ onMounted(() => {
       font-variant-numeric: tabular-nums;
       color: #1A2332;
       margin-bottom: 4px;
+
+      &.growth-up { color: #36B37E; }
+      &.growth-down { color: #FF5630; }
     }
 
     .kpi-trend {

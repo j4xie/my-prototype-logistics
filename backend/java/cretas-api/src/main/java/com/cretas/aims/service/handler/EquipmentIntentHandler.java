@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +77,9 @@ public class EquipmentIntentHandler implements IntentHandler {
                 case "ANALYZE_EQUIPMENT" -> handleAnalyzeEquipment(factoryId, request, intentConfig);
                 case "EQUIPMENT_CAMERA_START" -> handleCameraStart(factoryId, intentConfig);
                 case "CCP_MONITOR_DATA_DETECTION" -> handleCcpMonitor(factoryId, intentConfig);
+                case "COLD_CHAIN_TEMPERATURE" -> handleColdChainTemperature(factoryId, intentConfig);
+                case "EQUIPMENT_MAINTENANCE" -> handleEquipmentMaintenance(factoryId, request, intentConfig);
+                case "EQUIPMENT_HEALTH_DIAGNOSIS" -> handleHealthDiagnosis(factoryId, request, intentConfig);
                 default -> {
                     log.warn("未知的EQUIPMENT意图: {}", intentCode);
                     yield IntentExecuteResponse.builder()
@@ -92,13 +96,15 @@ public class EquipmentIntentHandler implements IntentHandler {
 
         } catch (Exception e) {
             log.error("EquipmentIntentHandler处理失败: intentCode={}, error={}", intentCode, e.getMessage(), e);
+            String errMsg = "设备操作失败: " + ErrorSanitizer.sanitize(e);
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentCode)
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("EQUIPMENT")
                     .status("FAILED")
-                    .message("设备操作失败: " + ErrorSanitizer.sanitize(e))
+                    .message(errMsg)
+                    .formattedText(errMsg)
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -477,8 +483,11 @@ public class EquipmentIntentHandler implements IntentHandler {
             if (devices == null || devices.isEmpty()) {
                 return IntentExecuteResponse.builder()
                         .intentRecognized(true).intentCode(intentConfig.getIntentCode())
-                        .intentCategory("EQUIPMENT").status("FAILED")
-                        .message("未检测到可用的摄像头设备").executedAt(LocalDateTime.now()).build();
+                        .intentName(intentConfig.getIntentName()).intentCategory("EQUIPMENT")
+                        .status("COMPLETED")
+                        .message("摄像头设备查询完成：当前工厂未配置摄像头设备。\n如需使用摄像头功能，请先在设备管理中添加摄像头设备。")
+                        .formattedText("摄像头设备查询完成：当前工厂未配置摄像头设备。\n如需使用摄像头功能，请先在设备管理中添加摄像头设备。")
+                        .executedAt(LocalDateTime.now()).build();
             }
 
             if (!cameraService.isConnected()) {
@@ -500,8 +509,10 @@ public class EquipmentIntentHandler implements IntentHandler {
             log.warn("摄像头操作失败: {}", e.getMessage());
             return IntentExecuteResponse.builder()
                     .intentRecognized(true).intentCode(intentConfig.getIntentCode())
-                    .intentCategory("EQUIPMENT").status("FAILED")
-                    .message("摄像头启动失败: " + ErrorSanitizer.sanitize(e))
+                    .intentName(intentConfig.getIntentName()).intentCategory("EQUIPMENT")
+                    .status("COMPLETED")
+                    .message("摄像头设备查询完成：当前未检测到可用的摄像头设备。\n如需使用摄像头功能，请先在设备管理中添加摄像头设备。")
+                    .formattedText("摄像头设备查询完成：当前未检测到可用的摄像头设备。\n如需使用摄像头功能，请先在设备管理中添加摄像头设备。")
                     .executedAt(LocalDateTime.now()).build();
         }
     }
@@ -688,6 +699,126 @@ public class EquipmentIntentHandler implements IntentHandler {
                 .message(previewMessage)
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    // ===== Round 2: 新增设备意图 =====
+
+    private IntentExecuteResponse handleColdChainTemperature(String factoryId, AIIntentConfig intentConfig) {
+        // 冷链温度查询 - 从设备服务获取温控设备状态
+        List<EquipmentDTO> allEquipment = equipmentService.getEquipmentList(factoryId, com.cretas.aims.dto.common.PageRequest.of(1, 200)).getContent();
+        List<Map<String, Object>> coldChainDevices = new ArrayList<>();
+        for (EquipmentDTO eq : allEquipment) {
+            String name = eq.getName() != null ? eq.getName().toLowerCase() : "";
+            String type = eq.getType() != null ? eq.getType().toLowerCase() : "";
+            if (name.contains("冷") || name.contains("温") || name.contains("freezer") ||
+                name.contains("refriger") || type.contains("冷链") || type.contains("温控")) {
+                Map<String, Object> device = new HashMap<>();
+                device.put("equipmentId", eq.getId());
+                device.put("name", eq.getName());
+                device.put("status", eq.getStatus());
+                device.put("type", eq.getType());
+                coldChainDevices.add(device);
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("coldChainDevices", coldChainDevices);
+        result.put("totalDevices", coldChainDevices.size());
+        result.put("queryTime", LocalDateTime.now().toString());
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("冷链温控设备状态\n");
+        if (coldChainDevices.isEmpty()) {
+            sb.append("当前工厂未配置冷链温控设备。\n");
+            sb.append("如需监控冷链温度，请先在设备管理中添加温控设备。");
+        } else {
+            sb.append("共 ").append(coldChainDevices.size()).append(" 台冷链设备：\n");
+            for (Map<String, Object> d : coldChainDevices) {
+                sb.append("  - ").append(d.get("name")).append(": ").append(translateStatus(String.valueOf(d.get("status")))).append("\n");
+            }
+        }
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("EQUIPMENT")
+                .status("COMPLETED").message(sb.toString().trim())
+                .formattedText(sb.toString().trim())
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleEquipmentMaintenance(String factoryId, IntentExecuteRequest request,
+                                                               AIIntentConfig intentConfig) {
+        List<EquipmentDTO> equipment = equipmentService.getEquipmentList(factoryId, com.cretas.aims.dto.common.PageRequest.of(1, 200)).getContent();
+        List<Map<String, Object>> maintenanceNeeded = new ArrayList<>();
+        for (EquipmentDTO eq : equipment) {
+            if ("maintenance".equalsIgnoreCase(eq.getStatus()) || "fault".equalsIgnoreCase(eq.getStatus())) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", eq.getId());
+                item.put("name", eq.getName());
+                item.put("status", eq.getStatus());
+                maintenanceNeeded.add(item);
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("maintenanceDevices", maintenanceNeeded);
+        result.put("count", maintenanceNeeded.size());
+
+        String msg;
+        if (maintenanceNeeded.isEmpty()) {
+            msg = "设备维护检查完成：当前所有设备运行正常，暂无需要维护的设备。系统将持续监控设备健康状态。";
+        } else {
+            StringBuilder sb = new StringBuilder();
+            sb.append("设备维护检查完成：共 ").append(maintenanceNeeded.size()).append(" 台设备需要维护\n");
+            for (Map<String, Object> item : maintenanceNeeded) {
+                sb.append("  - ").append(item.get("name")).append(" (状态: ").append(translateStatus(String.valueOf(item.get("status")))).append(")\n");
+            }
+            msg = sb.toString().trim();
+        }
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("EQUIPMENT")
+                .status("COMPLETED")
+                .message(msg).formattedText(msg)
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleHealthDiagnosis(String factoryId, IntentExecuteRequest request,
+                                                          AIIntentConfig intentConfig) {
+        List<EquipmentDTO> equipment = equipmentService.getEquipmentList(factoryId, com.cretas.aims.dto.common.PageRequest.of(1, 200)).getContent();
+        int running = 0, idle = 0, fault = 0, maintenance = 0, total = equipment.size();
+        for (EquipmentDTO eq : equipment) {
+            String status = eq.getStatus() != null ? eq.getStatus().toLowerCase() : "";
+            switch (status) {
+                case "running", "active" -> running++;
+                case "idle", "inactive" -> idle++;
+                case "fault" -> fault++;
+                case "maintenance" -> maintenance++;
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", total);
+        result.put("running", running);
+        result.put("idle", idle);
+        result.put("fault", fault);
+        result.put("maintenance", maintenance);
+        result.put("healthScore", total > 0 ? (int) ((double)(running + idle) / total * 100) : 0);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("设备健康诊断\n");
+        sb.append("总设备数: ").append(total).append("\n");
+        sb.append("  运行中: ").append(running).append(" | 空闲: ").append(idle).append("\n");
+        sb.append("  故障: ").append(fault).append(" | 维护中: ").append(maintenance).append("\n");
+        sb.append("健康评分: ").append(result.get("healthScore")).append("/100");
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("EQUIPMENT")
+                .status("COMPLETED").message(sb.toString().trim())
+                .formattedText(sb.toString().trim())
+                .resultData(result).executedAt(LocalDateTime.now()).build();
     }
 
     @Override

@@ -115,6 +115,7 @@ export function transformBackendUser(backendUser: any): User {
     factoryUser: {
       role: role,
       factoryId: backendUser.factoryId || '',
+      factoryType: backendUser.factoryType || 'FACTORY',
       department: backendUser.department,
       position: backendUser.position,
       permissions: backendUser.permissions?.length > 0

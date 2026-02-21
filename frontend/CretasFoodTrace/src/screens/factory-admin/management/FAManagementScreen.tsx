@@ -9,6 +9,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { FAManagementStackParamList } from '../../../types/navigation';
+import { useAuthStore } from '../../../store/authStore';
+import { isRestaurant } from '../../../utils/factoryType';
 
 type NavigationProp = NativeStackNavigationProp<FAManagementStackParamList, 'FAManagement'>;
 
@@ -33,6 +35,8 @@ function GridItem({ icon, title, color, onPress }: GridItemProps) {
 export function FAManagementScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation('home');
+  const user = useAuthStore(state => state.user);
+  const isRestaurantMode = isRestaurant(user);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -53,18 +57,30 @@ export function FAManagementScreen() {
               color="#667eea"
               onPress={() => navigation.navigate('EmployeeList')}
             />
+            {!isRestaurantMode && (
             <GridItem
               icon="devices"
               title={t('management.deviceCenter', '设备中心')}
               color="#52c41a"
               onPress={() => navigation.navigate('UnifiedDeviceManagement')}
             />
+            )}
+            {!isRestaurantMode && (
             <GridItem
               icon="chart-line"
               title={t('management.equipmentAnalysis', '设备分析')}
               color="#667eea"
               onPress={() => navigation.navigate('EquipmentAnalysis')}
             />
+            )}
+            {!isRestaurantMode && (
+            <GridItem
+              icon="clipboard-check"
+              title={t('management.workReport', '生产报工')}
+              color="#ff7043"
+              onPress={() => navigation.navigate('WorkReportApproval')}
+            />
+            )}
             <GridItem
               icon="domain"
               title={t('management.departmentManagement')}
@@ -80,22 +96,24 @@ export function FAManagementScreen() {
           <View style={styles.grid}>
             <GridItem
               icon="cube-outline"
-              title={t('management.productTypeManagement')}
+              title={isRestaurantMode ? t('management.dishManagement', '菜品管理') : t('management.productTypeManagement')}
               color="#1890ff"
               onPress={() => navigation.navigate('ProductTypeManagement')}
             />
             <GridItem
               icon="package-variant"
-              title={t('management.materialTypeManagement')}
+              title={isRestaurantMode ? t('management.ingredientTypeManagement', '食材类型') : t('management.materialTypeManagement')}
               color="#eb2f96"
               onPress={() => navigation.navigate('MaterialTypeManagement')}
             />
+            {!isRestaurantMode && (
             <GridItem
               icon="swap-horizontal"
               title={t('management.conversionRate')}
               color="#722ed1"
               onPress={() => navigation.navigate('ConversionRate')}
             />
+            )}
           </View>
         </View>
 
@@ -126,7 +144,7 @@ export function FAManagementScreen() {
 
         {/* 进销存管理 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>进销存管理</Text>
+          <Text style={styles.sectionTitle}>{isRestaurantMode ? t('management.storeInventory', '门店进销存') : t('management.inventoryManagement', '进销存管理')}</Text>
           <View style={styles.grid}>
             <GridItem
               icon="cart-arrow-down"
@@ -142,7 +160,7 @@ export function FAManagementScreen() {
             />
             <GridItem
               icon="package-variant-closed"
-              title="成品库存"
+              title={isRestaurantMode ? t('management.semiFinishedGoods', '半成品库存') : t('management.finishedGoods', '成品库存')}
               color="#722ed1"
               onPress={() => navigation.navigate('FinishedGoodsList')}
             />
@@ -163,6 +181,12 @@ export function FAManagementScreen() {
               title="价格表"
               color="#13c2c2"
               onPress={() => navigation.navigate('PriceList')}
+            />
+            <GridItem
+              icon="keyboard-return"
+              title="退货管理"
+              color="#f56c6c"
+              onPress={() => navigation.navigate('ReturnOrderList')}
             />
           </View>
         </View>
@@ -201,18 +225,22 @@ export function FAManagementScreen() {
               color="#fa8c16"
               onPress={() => navigation.navigate('EncodingRuleConfig')}
             />
+            {!isRestaurantMode && (
             <GridItem
               icon="clipboard-check-outline"
               title={t('qualityCheckItemConfig.title')}
               color="#52c41a"
               onPress={() => navigation.navigate('QualityCheckItemConfig')}
             />
+            )}
+            {!isRestaurantMode && (
             <GridItem
               icon="clipboard-flow-outline"
               title={t('management.sopConfig')}
               color="#13c2c2"
               onPress={() => navigation.navigate('SopConfig')}
             />
+            )}
             <GridItem
               icon="robot-outline"
               title={t('management.intentView', 'AI意图查看')}

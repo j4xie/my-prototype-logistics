@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
  * @version 1.0.0
  * @since 2026-01-21
  */
-@Entity(name = "SmartBiSkuComplexity")
+@Entity
 @Table(name = "smart_bi_sku_complexity",
        indexes = {
            @Index(name = "idx_sku_complexity_factory", columnList = "factory_id"),

@@ -170,6 +170,13 @@ class MaterialBatchApiClient {
     });
   }
 
+  // 14b. 获取FEFO批次（先到期先出）
+  async getFefoBatches(materialTypeId: string, quantity?: number, factoryId?: string): Promise<ApiResponse<MaterialBatch[]>> {
+    return await apiClient.get(`${this.getPath(factoryId)}/fefo/${materialTypeId}`, {
+      params: { quantity }
+    });
+  }
+
   // 15. 获取即将过期的批次
   async getExpiringBatches(days?: number, factoryId?: string): Promise<{ success: boolean; data: MaterialBatch[]; message?: string }> {
     return await apiClient.get(`${this.getPath(factoryId)}/expiring`, { params: { days } });

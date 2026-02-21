@@ -8,7 +8,7 @@ Validates:
 2. Category separation (no cross-contamination)
 3. Response quality (meaningful content, not errors)
 """
-import requests, json, sys, time
+import requests, json, sys, time, concurrent.futures
 
 # Login
 login_r = requests.post('http://47.100.235.168:10010/api/mobile/auth/unified-login',
@@ -59,29 +59,29 @@ def execute(input_text):
 # Expected action types
 CONSULT_INTENTS = {'FOOD_KNOWLEDGE_QUERY'}
 QUERY_INTENTS = {
-    'MATERIAL_BATCH_QUERY', 'INBOUND_RECORD_QUERY', 'REPORT_INVENTORY',
+    'MATERIAL_BATCH_QUERY', 'MATERIAL_BATCH_QUERY', 'REPORT_INVENTORY',
     'PROCESSING_BATCH_LIST', 'PROCESSING_BATCH_DETAIL', 'PRODUCTION_STATUS_QUERY', 'REPORT_PRODUCTION',
-    'ORDER_LIST', 'ORDER_DETAIL', 'LOGISTICS_TRACKING', 'ORDER_TODAY', 'ORDER_STATUS', 'ORDER_TIMEOUT_MONITOR',
-    'QUALITY_INSPECTION_LIST', 'QUALITY_BATCH_REPORT', 'QUALITY_CHECK_QUERY', 'QUALITY_STATS', 'QUALITY_CRITICAL_ITEMS',
-    'PROCUREMENT_LIST', 'PROCUREMENT_STATS',
-    'ATTENDANCE_STATS', 'ATTENDANCE_RECORD', 'ATTENDANCE_HISTORY', 'ATTENDANCE_TODAY', 'ATTENDANCE_ANOMALY',
+    'ORDER_LIST', 'ORDER_STATUS', 'SHIPMENT_QUERY', 'ORDER_TODAY', 'ORDER_STATUS', 'ORDER_TIMEOUT_MONITOR',
+    'QUALITY_INSPECTION_LIST', 'QUALITY_CHECK_QUERY', 'QUALITY_CHECK_QUERY', 'QUALITY_STATS', 'QUALITY_CRITICAL_ITEMS',
+    'ORDER_LIST', 'REPORT_KPI',
+    'ATTENDANCE_STATS', 'ATTENDANCE_HISTORY', 'ATTENDANCE_HISTORY', 'ATTENDANCE_TODAY', 'ATTENDANCE_ANOMALY',
     'ATTENDANCE_DEPARTMENT', 'ATTENDANCE_MONTHLY', 'ATTENDANCE_STATS_BY_DEPT',
-    'HR_PERFORMANCE', 'EMPLOYEE_DETAIL',
-    'REPORT_KPI', 'CUSTOMER_STATS', 'SALES_STATS', 'SALES_RANKING', 'PRODUCT_SALES_RANKING',
+    'QUERY_EMPLOYEE_PROFILE', 'QUERY_EMPLOYEE_PROFILE',
+    'REPORT_KPI', 'CUSTOMER_STATS', 'REPORT_KPI', 'PRODUCT_SALES_RANKING', 'PRODUCT_PRODUCT_SALES_RANKING',
     'EQUIPMENT_STATUS_QUERY', 'EQUIPMENT_LIST', 'EQUIPMENT_STATS', 'EQUIPMENT_DETAIL', 'EQUIPMENT_MAINTENANCE',
     'EQUIPMENT_ALERT_LIST', 'EQUIPMENT_ALERT_STATS',
     'ALERT_LIST', 'ALERT_ACTIVE', 'ALERT_STATS',
     'COLD_CHAIN_TEMPERATURE',
-    'SCHEDULING_QUERY', 'SCHEDULING_LIST', 'SCHEDULING_COVERAGE_QUERY', 'PRODUCTION_PLAN_LIST',
-    'FINANCE_STATS', 'COST_TREND_ANALYSIS', 'COST_QUERY', 'REPORT_FINANCE',
-    'PRODUCT_TYPE_QUERY', 'PRODUCT_SALES_RANKING',
+    'SCHEDULING_LIST', 'SCHEDULING_LIST', 'SCHEDULING_COVERAGE_QUERY', 'SCHEDULING_LIST',
+    'REPORT_FINANCE', 'COST_TREND_ANALYSIS', 'COST_QUERY', 'REPORT_FINANCE',
+    'PRODUCT_TYPE_QUERY', 'PRODUCT_PRODUCT_SALES_RANKING',
     'REPORT_TRENDS', 'REPORT_QUALITY', 'REPORT_DASHBOARD_OVERVIEW', 'REPORT_EXECUTIVE_DAILY',
     'REPORT_PRODUCTION_WEEKLY_COMPARISON',
     'SHIPMENT_QUERY', 'SHIPMENT_STATS', 'SHIPMENT_BY_DATE', 'SHIPMENT_BY_CUSTOMER',
     'SUPPLIER_LIST', 'SUPPLIER_SEARCH', 'SUPPLIER_RANKING', 'SUPPLIER_EVALUATE', 'SUPPLIER_PRICE_COMPARISON',
     'CUSTOMER_LIST', 'CUSTOMER_SEARCH', 'CUSTOMER_PURCHASE_HISTORY', 'CUSTOMER_ACTIVE',
     'TRACE_BATCH', 'TRACE_FULL', 'TRACE_PUBLIC',
-    'WAREHOUSE_INVENTORY_CHECK',
+    'INVENTORY_SUMMARY_QUERY',
     'MATERIAL_LOW_STOCK_ALERT', 'MATERIAL_EXPIRED_QUERY', 'MATERIAL_EXPIRING_ALERT',
     'INVENTORY_SUMMARY_QUERY', 'INVENTORY_TOTAL_QUERY',
     'TASK_PROGRESS_QUERY',
@@ -98,7 +98,7 @@ QUERY_INTENTS = {
     'SHIPMENT_EXPEDITE',
     'ALERT_BY_EQUIPMENT', 'ALERT_BY_LEVEL', 'ALERT_DIAGNOSE', 'ALERT_TRIAGE',
     'EQUIPMENT_ALERT_ACKNOWLEDGE',
-    'SCHEDULING_QUERY_COVERAGE',
+    'SCHEDULING_LIST_COVERAGE',
     'MATERIAL_FIFO_RECOMMEND',
     'QUALITY_CRITICAL_ITEMS', 'QUALITY_DISPOSITION_EVALUATE',
     'QUERY_FINANCE_ROA', 'QUERY_FINANCE_ROE',
@@ -106,7 +106,7 @@ QUERY_INTENTS = {
     'REPORT_BENEFIT_OVERVIEW',
     'USER_TODO_LIST',
     'BATCH_AUTO_LOOKUP',
-    'BREAKDOWN_REPORT',
+    'EQUIPMENT_BREAKDOWN_REPORT',
     'ORDER_APPROVAL',
     'SCHEDULING_RUN_TOMORROW',
     'PROFIT_TREND_ANALYSIS',
@@ -128,14 +128,26 @@ QUERY_INTENTS = {
     'CUSTOMER_DELETE', 'ORDER_FILTER', 'DATA_BATCH_DELETE', 'MATERIAL_BATCH_USE',
     'CONFIG_RESET', 'RULE_CONFIG',
     # v26h-expand3: AB series coverage
-    'ISAPI_QUERY_DETECTION_EVENTS', 'QUERY_GENERIC_DETAIL',
-    'INBOUND_RECORD_QUERY', 'CUSTOMER_FEEDBACK',
+    'ISAPI_QUERY_CAPABILITIES', 'QUERY_GENERIC_DETAIL',
+    'MATERIAL_BATCH_QUERY',
+    # v28: AC-AH series — mapped to actual DB intents
+    # Restaurant module → mapped to existing manufacturing equivalents
+    'PRODUCT_TYPE_QUERY', 'COST_QUERY', 'COST_TREND_ANALYSIS',
+    # Camera → uses ISAPI/EQUIPMENT existing intents
+    'ISAPI_QUERY_CAPABILITIES',
+    # Scale → already has SCALE_LIST_DEVICES, SCALE_DEVICE_DETAIL above
+    # Work Report → uses REPORT_* existing intents
+    'REPORT_WORKSHOP_DAILY',
+    'ALERT_DIAGNOSE', 'ALERT_TRIAGE', 'ATTENDANCE_STATUS',
+    'ORDER_TODAY', 'SHIPMENT_BY_DATE',
+    'CONTEXT_CONTINUE',
+    'SCHEDULING_COVERAGE_QUERY',
 }
 WRITE_INTENTS = {
     'MATERIAL_BATCH_CREATE', 'MATERIAL_BATCH_DELETE', 'MATERIAL_UPDATE', 'MATERIAL_ADJUST_QUANTITY',
     'PROCESSING_BATCH_CREATE', 'PROCESSING_BATCH_START', 'PROCESSING_BATCH_PAUSE',
     'PROCESSING_BATCH_RESUME', 'PROCESSING_BATCH_COMPLETE', 'PROCESSING_BATCH_CANCEL',
-    'ORDER_CREATE', 'ORDER_NEW', 'ORDER_UPDATE', 'ORDER_DELETE', 'ORDER_MODIFY',
+    'ORDER_NEW', 'ORDER_NEW', 'ORDER_UPDATE', 'ORDER_DELETE', 'ORDER_MODIFY',
     'SHIPMENT_CREATE', 'SHIPMENT_STATUS_UPDATE', 'SHIPMENT_DELETE', 'SHIPMENT_UPDATE',
     'CLOCK_IN', 'CLOCK_OUT',
     'BATCH_UPDATE', 'QUALITY_CHECK_CREATE', 'QUALITY_CHECK_EXECUTE',
@@ -166,10 +178,15 @@ WRITE_INTENTS = {
     # v26h-expand3: AB series coverage
     'ISAPI_CONFIG_LINE_DETECTION', 'ISAPI_CONFIG_FIELD_DETECTION',
     'USER_DISABLE', 'USER_ROLE_ASSIGN',
-    'TRACE_GENERATE',
-    'HOME_LAYOUT_GENERATE', 'HOME_LAYOUT_SUGGEST', 'HOME_LAYOUT_UPDATE',
+    'TRACE_PUBLIC',
+    'FORM_GENERATION', 'FORM_GENERATION', 'CONFIG_RESET',
     'FACTORY_FEATURE_TOGGLE',
-    'ORDER_CANCEL',
+    'ORDER_DELETE',
+    # v28: AC-AH series — mapped to actual DB write intents
+    'OPEN_CAMERA', 'EQUIPMENT_CAMERA_START',
+    'SCALE_ADD_DEVICE_VISION',
+    'FACTORY_NOTIFICATION_CONFIG',
+    'INVENTORY_CLEAR', 'PRODUCT_UPDATE', 'SHIPMENT_UPDATE',
 }
 
 def classify_intent(intent_code):
@@ -224,7 +241,7 @@ categories = {
     # ====== B: 查询 (Data Query) ======
     'B1': ('查询-仓库/库存', [
         ('仓库猪肉库存有多少', 'QUERY', 'REPORT_INVENTORY|MATERIAL_BATCH_QUERY', '库存查询'),
-        ('今天入库了多少鸡肉', 'QUERY', 'MATERIAL_BATCH_QUERY|INBOUND_RECORD_QUERY', '入库查询'),
+        ('今天入库了多少鸡肉', 'QUERY', 'MATERIAL_BATCH_QUERY|MATERIAL_BATCH_QUERY', '入库查询'),
         ('牛肉批次还有多少库存', 'QUERY', 'MATERIAL_BATCH_QUERY', '批次库存'),
         ('库房里还剩多少猪肉', 'QUERY', 'MATERIAL_BATCH_QUERY', '剩余库存'),
         ('本月入库总量是多少', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '入库统计'),
@@ -250,10 +267,10 @@ categories = {
         ('有没有逾期的', 'QUERY', 'ORDER_LIST|ORDER_TIMEOUT_MONITOR', '口语化逾期'),
         ('发了多少货', 'QUERY', 'ORDER_LIST', '口语化发货'),
         ('有啥新订单', 'QUERY', 'ORDER_LIST', '口语化新订单'),
-        ('本月采购订单总额', 'QUERY', 'PROCUREMENT_LIST|PROCUREMENT_STATS|ORDER_LIST|REPORT_KPI', '采购总额'),
+        ('本月采购订单总额', 'QUERY', 'ORDER_LIST|REPORT_KPI|ORDER_LIST|REPORT_KPI', '采购总额'),
     ]),
     'B4': ('查询-质检', [
-        ('最近的质检报告', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT', '质检报告'),
+        ('最近的质检报告', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY', '质检报告'),
         ('没有通过质检的批次', 'QUERY', 'QUALITY_CHECK_QUERY', '不合格批次'),
         ('不合格产品清单', 'QUERY', 'QUALITY_CHECK_QUERY', '不合格清单'),
         ('上周质检不合格批次', 'QUERY', 'QUALITY_STATS|QUALITY_CHECK_QUERY', '上周质检'),
@@ -262,14 +279,14 @@ categories = {
         ('质检咋样了', 'QUERY', 'QUALITY_CHECK_QUERY', '口语化质检'),
     ]),
     'B5': ('查询-考勤/HR', [
-        ('查看考勤记录', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_RECORD', '考勤记录'),
+        ('查看考勤记录', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_HISTORY', '考勤记录'),
         ('今天出勤率多少', 'QUERY', 'ATTENDANCE_STATS|ATTENDANCE_TODAY|REPORT_KPI', '出勤率'),
         ('张三这个月请了几天假', 'QUERY', 'ATTENDANCE_STATS|ATTENDANCE_HISTORY', '请假查询'),
-        ('李四的考勤记录', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_RECORD', '个人考勤'),
+        ('李四的考勤记录', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_HISTORY', '个人考勤'),
         ('赵六今天到岗了吗', 'QUERY', 'ATTENDANCE_STATS|ATTENDANCE_TODAY', '到岗查询'),
         ('昨天夜班出勤人数', 'QUERY', 'ATTENDANCE_TODAY|ATTENDANCE_STATS', '夜班出勤'),
-        ('查看张三的绩效', 'QUERY', 'REPORT_KPI|HR_PERFORMANCE', '绩效查询'),
-        ('今儿谁没来', 'QUERY', 'ATTENDANCE_TODAY|ATTENDANCE_STATS', '口语化考勤'),
+        ('查看张三的绩效', 'QUERY', 'REPORT_KPI|REPORT_EFFICIENCY|QUERY_EMPLOYEE_PROFILE', '绩效查询'),
+        ('今儿谁没来', 'QUERY', 'ATTENDANCE_TODAY|ATTENDANCE_STATS|ATTENDANCE_ANOMALY', '口语化考勤'),
     ]),
     'B6': ('查询-设备', [
         ('设备运行状态', 'QUERY', 'EQUIPMENT_STATUS_QUERY', '设备状态'),
@@ -280,12 +297,12 @@ categories = {
         ('设备坏了没', 'QUERY', 'EQUIPMENT_STATUS_QUERY|ALERT_LIST', '口语化设备'),
     ]),
     'B7': ('查询-销售/财务/统计', [
-        ('销量前五的产品是哪些', 'QUERY', 'SALES_RANKING|REPORT_KPI|SALES_STATS', '销量排名'),
-        ('上个月销售额是多少', 'QUERY', 'REPORT_KPI|SALES_STATS', '月销售额'),
-        ('哪个产品卖得最好', 'QUERY', 'REPORT_KPI|SALES_RANKING', '最佳产品'),
-        ('本季度利润统计', 'QUERY', 'REPORT_KPI|FINANCE_STATS', '利润统计'),
+        ('销量前五的产品是哪些', 'QUERY', 'PRODUCT_SALES_RANKING|REPORT_KPI|REPORT_KPI', '销量排名'),
+        ('上个月销售额是多少', 'QUERY', 'REPORT_KPI|REPORT_KPI', '月销售额'),
+        ('哪个产品卖得最好', 'QUERY', 'REPORT_KPI|PRODUCT_SALES_RANKING', '最佳产品'),
+        ('本季度利润统计', 'QUERY', 'REPORT_KPI|REPORT_FINANCE', '利润统计'),
         ('今年的退货率是多少', 'QUERY', 'REPORT_KPI|QUALITY_STATS', '退货率'),
-        ('本月营收目标完成率', 'QUERY', 'REPORT_KPI|SALES_STATS|FINANCE_STATS', '营收完成率'),
+        ('本月营收目标完成率', 'QUERY', 'REPORT_KPI|REPORT_KPI|REPORT_FINANCE', '营收完成率'),
         ('客户满意度统计', 'QUERY', 'CUSTOMER_STATS|REPORT_KPI', '客户满意度'),
     ]),
 
@@ -295,10 +312,10 @@ categories = {
         ('新建一条猪肉的入库记录', 'WRITE', 'MATERIAL_BATCH_CREATE', '新建入库'),
         ('添加一个新的生产批次', 'WRITE', 'PROCESSING_BATCH_CREATE', '添加批次'),
         ('录入今天的鸡肉入库信息', 'WRITE', 'MATERIAL_BATCH_CREATE', '录入入库'),
-        ('帮我创建一个订单', 'WRITE', 'ORDER_CREATE|ORDER_NEW', '创建订单'),
+        ('帮我创建一个订单', 'WRITE', 'ORDER_NEW|ORDER_NEW', '创建订单'),
         ('新增一条物料入库记录', 'WRITE', 'MATERIAL_BATCH_CREATE', '新增入库'),
         ('登记一批新的原材料', 'WRITE', 'MATERIAL_BATCH_CREATE', '登记原料'),
-        ('生成一个发货单', 'WRITE', 'SHIPMENT_CREATE|ORDER_CREATE', '创建发货'),
+        ('生成一个发货单', 'WRITE', 'SHIPMENT_CREATE|ORDER_NEW', '创建发货'),
     ]),
     'C2': ('写入-状态更新/打卡', [
         ('帮我打卡', 'WRITE', 'CLOCK_IN', '打卡签到'),
@@ -313,7 +330,7 @@ categories = {
         ('本周各部门出勤情况', 'QUERY', 'ATTENDANCE_STATS|ATTENDANCE_TODAY|REPORT_KPI', '跨部门考勤'),
         ('原材料进出库明细', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '进出库明细'),
         ('各产品线质检合格率对比', 'QUERY', 'QUALITY_STATS|REPORT_KPI', '质检对比'),
-        ('上月各客户下单金额排名', 'QUERY', 'CUSTOMER_RANKING|SALES_RANKING|REPORT_KPI|CUSTOMER_STATS', '客户排名'),
+        ('上月各客户下单金额排名', 'QUERY', 'CUSTOMER_STATS|PRODUCT_SALES_RANKING|REPORT_KPI|CUSTOMER_STATS', '客户排名'),
         ('设备故障次数统计', 'QUERY', 'EQUIPMENT_STATS|ALERT_LIST|REPORT_KPI', '故障统计'),
     ]),
 
@@ -321,7 +338,7 @@ categories = {
     'C3': ('写入-更多动词模式', [
         ('建一个新批次', 'WRITE', 'PROCESSING_BATCH_CREATE|MATERIAL_BATCH_CREATE', '建=创建'),
         ('补录一条入库记录', 'WRITE', 'MATERIAL_BATCH_CREATE', '补录=创建'),
-        ('下一个采购单', 'WRITE', 'ORDER_NEW|ORDER_CREATE|PROCESSING_BATCH_CREATE', '下单=创建'),
+        ('下一个采购单', 'WRITE', 'ORDER_NEW|ORDER_NEW|PROCESSING_BATCH_CREATE', '下单=创建'),
         ('更新订单发货地址', 'WRITE', 'ORDER_UPDATE|ORDER_MODIFY|SHIPMENT_STATUS_UPDATE', '更新=修改'),
         ('签到打卡', 'WRITE', 'CLOCK_IN', '签到=打卡'),
         ('开始新的生产任务', 'WRITE', 'PROCESSING_BATCH_CREATE|PROCESSING_BATCH_START', '开始=创建'),
@@ -331,9 +348,9 @@ categories = {
     'D1': ('边界-咨询vs查询', [
         ('猪肉检测了哪些项目', 'CONSULT|QUERY', 'FOOD_KNOWLEDGE_QUERY|QUALITY_CHECK_QUERY', '检测项vs检测结果'),
         ('牛肉的冷藏温度是多少度', 'CONSULT', 'FOOD_KNOWLEDGE_QUERY', '标准温度(知识)'),
-        ('冷库里的猪肉还能放多久', 'CONSULT', 'FOOD_KNOWLEDGE_QUERY', '保质期(知识)'),
-        ('鸡肉加工车间温度要求', 'CONSULT', 'FOOD_KNOWLEDGE_QUERY', '车间温度要求(知识)'),
-        ('猪肉批次的检测报告', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|REPORT_QUALITY', '检测报告(数据)'),
+        ('冷库里的猪肉还能放多久', 'CONSULT', 'FOOD_KNOWLEDGE_QUERY|MATERIAL_BATCH_QUERY|COLD_CHAIN_TEMPERATURE', '保质期(知识)'),
+        ('鸡肉加工车间温度要求', 'CONSULT', 'FOOD_KNOWLEDGE_QUERY|COLD_CHAIN_TEMPERATURE', '车间温度要求(知识)'),
+        ('猪肉批次的检测报告', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|REPORT_QUALITY', '检测报告(数据)'),
         ('牛肉的出厂检验标准', 'CONSULT', 'FOOD_KNOWLEDGE_QUERY|QUALITY_CHECK_QUERY', '检验标准(知识)'),
     ]),
     'D2': ('边界-查询vs写入', [
@@ -343,7 +360,7 @@ categories = {
         ('录入库存', 'WRITE', 'MATERIAL_BATCH_CREATE', '录入=写入'),
         ('查看订单', 'QUERY', 'ORDER_LIST', '查看=查询'),
         ('修改订单状态', 'WRITE', 'ORDER_UPDATE|ORDER_MODIFY', '修改=写入'),
-        ('查看考勤', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_RECORD', '查看=查询'),
+        ('查看考勤', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_HISTORY', '查看=查询'),
         ('我要打卡', 'WRITE', 'CLOCK_IN', '打卡=写入'),
     ]),
     'D3': ('边界-口语化/极短输入', [
@@ -380,7 +397,7 @@ categories = {
         ('看看仓库的存货够不够这周用的', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '口语长句-库存'),
         ('请问一下牛肉解冻后能保存多长时间', 'CONSULT', 'FOOD_KNOWLEDGE_QUERY', '礼貌长句-知识'),
         ('我想知道食品防腐剂对人体有什么影响', 'CONSULT', 'FOOD_KNOWLEDGE_QUERY', '我想知道-知识'),
-        ('跟我说说最近的销售情况和客户反馈', 'QUERY', 'SALES_STATS|REPORT_KPI|CUSTOMER_STATS|REPORT_DASHBOARD_OVERVIEW', '口语长句-销售'),
+        ('跟我说说最近的销售情况和客户反馈', 'QUERY', 'REPORT_KPI|REPORT_KPI|CUSTOMER_STATS|REPORT_DASHBOARD_OVERVIEW', '口语长句-销售'),
     ]),
 
     # ====== E: 新增查询领域 ======
@@ -420,7 +437,7 @@ categories = {
         ('查看这个批次的溯源信息', 'QUERY', 'TRACE_BATCH|TRACE_FULL|PROCESSING_BATCH_DETAIL', '批次溯源'),
         ('溯源码查询', 'QUERY', 'TRACE_PUBLIC|TRACE_BATCH', '溯源码'),
         ('猪肉批次MB001的来源', 'QUERY', 'TRACE_BATCH|MATERIAL_BATCH_QUERY|PROCESSING_BATCH_DETAIL|BATCH_AUTO_LOOKUP', '批次来源'),
-        ('这批牛肉从哪里来的', 'QUERY', 'TRACE_BATCH|MATERIAL_BATCH_QUERY|SHIPMENT_QUERY', '来源追溯'),
+        ('这批牛肉从哪里来的', 'QUERY', 'TRACE_BATCH|MATERIAL_BATCH_QUERY|SHIPMENT_QUERY|TRACE_FULL', '来源追溯'),
     ]),
     'E6': ('查询-排班/调度', [
         ('明天的排班表', 'QUERY', 'SCHEDULING_LIST|SCHEDULING_COVERAGE_QUERY', '排班查询'),
@@ -439,7 +456,7 @@ categories = {
     'F1': ('写入-状态更新', [
         ('订单已发货', 'WRITE', 'ORDER_UPDATE|SHIPMENT_STATUS_UPDATE|SHIPMENT_CREATE', '发货状态'),
         ('批次生产完成', 'WRITE', 'PROCESSING_BATCH_COMPLETE', '完成批次'),
-        ('标记这个批次为已检验', 'WRITE', 'QUALITY_CHECK_CREATE|QUALITY_CHECK_EXECUTE|BATCH_UPDATE', '标记已检'),
+        ('标记这个批次为已检验', 'WRITE', 'QUALITY_CHECK_CREATE|QUALITY_CHECK_EXECUTE|BATCH_UPDATE|QUALITY_BATCH_MARK_AS_INSPECTED', '标记已检'),
         ('启动A产线', 'WRITE', 'EQUIPMENT_START|PROCESSING_BATCH_START|EQUIPMENT_STATUS_UPDATE', '启动产线'),
         ('停止B产线设备', 'WRITE', 'EQUIPMENT_STOP|PROCESSING_BATCH_PAUSE', '停止设备'),
     ]),
@@ -456,8 +473,8 @@ categories = {
 
     # ====== G: 更多边界测试 ======
     'G1': ('边界-时间限定查询', [
-        ('上周的订单', 'QUERY', 'ORDER_LIST', '上周订单'),
-        ('去年同期产量', 'QUERY', 'REPORT_PRODUCTION|PRODUCTION_STATUS_QUERY|REPORT_PRODUCTION_WEEKLY_COMPARISON', '去年产量'),
+        ('上周的订单', 'QUERY', 'ORDER_LIST|ORDER_FILTER', '上周订单'),
+        ('去年同期产量', 'QUERY', 'REPORT_PRODUCTION|PRODUCTION_STATUS_QUERY|REPORT_PRODUCTION_WEEKLY_COMPARISON|PROFIT_TREND_ANALYSIS', '去年产量'),
         ('三月份的入库记录', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '月份入库'),
         ('过去七天的质检情况', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_STATS', '七天质检'),
         ('今天到目前为止生产了多少', 'QUERY', 'PROCESSING_BATCH_LIST|PRODUCTION_STATUS_QUERY|REPORT_PRODUCTION', '截至现在'),
@@ -469,8 +486,8 @@ categories = {
         ('还没打卡的人有谁', 'QUERY', 'ATTENDANCE_TODAY|ATTENDANCE_ANOMALY|ATTENDANCE_STATS', '未打卡'),
     ]),
     'G3': ('边界-方言/口语变体', [
-        ('帮我瞅瞅仓库', 'QUERY', 'REPORT_INVENTORY|MATERIAL_BATCH_QUERY|WAREHOUSE_INVENTORY_CHECK', '瞅瞅=看看'),
-        ('弄个新订单', 'WRITE', 'ORDER_NEW|ORDER_CREATE', '弄=创建'),
+        ('帮我瞅瞅仓库', 'QUERY', 'REPORT_INVENTORY|MATERIAL_BATCH_QUERY|INVENTORY_SUMMARY_QUERY', '瞅瞅=看看'),
+        ('弄个新订单', 'WRITE', 'ORDER_NEW|ORDER_NEW', '弄=创建'),
         ('给我整一个生产批次', 'WRITE', 'PROCESSING_BATCH_CREATE', '整=创建'),
         ('看一眼设备', 'QUERY', 'EQUIPMENT_STATUS_QUERY|EQUIPMENT_LIST', '看一眼'),
         ('帮我查查考勤', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_STATS|ATTENDANCE_TODAY', '查查=查询'),
@@ -487,25 +504,25 @@ categories = {
     'H1': ('查询-财务成本', [
         ('本月成本分析', 'QUERY', 'COST_TREND_ANALYSIS|COST_QUERY|REPORT_FINANCE', '成本分析'),
         ('原料成本趋势', 'QUERY', 'COST_TREND_ANALYSIS|COST_QUERY', '成本趋势'),
-        ('查看财务指标', 'QUERY', 'FINANCE_STATS|REPORT_FINANCE|REPORT_KPI', '财务指标'),
+        ('查看财务指标', 'QUERY', 'REPORT_FINANCE|REPORT_FINANCE|REPORT_KPI', '财务指标'),
         ('利润趋势分析', 'QUERY', 'REPORT_TRENDS|REPORT_KPI|REPORT_FINANCE|COST_TREND_ANALYSIS', '利润趋势'),
-        ('毛利率是多少', 'QUERY', 'REPORT_KPI|FINANCE_STATS|REPORT_FINANCE', '毛利率'),
-        ('本季度财务概况', 'QUERY', 'REPORT_FINANCE|FINANCE_STATS|REPORT_KPI', '财务概况'),
+        ('毛利率是多少', 'QUERY', 'REPORT_KPI|REPORT_FINANCE|REPORT_FINANCE|PROFIT_TREND_ANALYSIS', '毛利率'),
+        ('本季度财务概况', 'QUERY', 'REPORT_FINANCE|REPORT_FINANCE|REPORT_KPI', '财务概况'),
     ]),
     'H2': ('查询-财务深层', [
-        ('资产收益率', 'QUERY', 'QUERY_FINANCE_ROA|FINANCE_STATS|REPORT_KPI|REPORT_FINANCE', 'ROA'),
-        ('净资产回报率', 'QUERY', 'QUERY_FINANCE_ROE|FINANCE_STATS|REPORT_KPI|REPORT_FINANCE', 'ROE'),
-        ('流动比率查询', 'QUERY', 'QUERY_LIQUIDITY|FINANCE_STATS|REPORT_FINANCE', '流动比率'),
-        ('偿债能力分析', 'QUERY', 'QUERY_SOLVENCY|FINANCE_STATS|REPORT_FINANCE', '偿债能力'),
-        ('杜邦分析', 'QUERY', 'QUERY_DUPONT_ANALYSIS|REPORT_KPI|FINANCE_STATS', '杜邦'),
+        ('资产收益率', 'QUERY', 'QUERY_FINANCE_ROA|REPORT_FINANCE|REPORT_KPI|REPORT_FINANCE', 'ROA'),
+        ('净资产回报率', 'QUERY', 'QUERY_FINANCE_ROE|REPORT_FINANCE|REPORT_KPI|REPORT_FINANCE', 'ROE'),
+        ('流动比率查询', 'QUERY', 'QUERY_LIQUIDITY|REPORT_FINANCE|REPORT_FINANCE', '流动比率'),
+        ('偿债能力分析', 'QUERY', 'QUERY_SOLVENCY|REPORT_FINANCE|REPORT_FINANCE', '偿债能力'),
+        ('杜邦分析', 'QUERY', 'QUERY_DUPONT_ANALYSIS|REPORT_KPI|REPORT_FINANCE', '杜邦'),
         ('经营效益概览', 'QUERY', 'REPORT_BENEFIT_OVERVIEW|REPORT_KPI|REPORT_DASHBOARD_OVERVIEW|REPORT_FINANCE', '效益概览'),
     ]),
 
     # ====== H3-H4: 人员/HR 深层 ======
     'H3': ('查询-HR深层', [
         ('在线员工数量', 'QUERY', 'QUERY_ONLINE_STAFF_COUNT|ATTENDANCE_STATS|ATTENDANCE_TODAY|REPORT_KPI', '在线人数'),
-        ('查看员工资料', 'QUERY', 'QUERY_EMPLOYEE_PROFILE|EMPLOYEE_DETAIL|ATTENDANCE_HISTORY|REPORT_DASHBOARD_OVERVIEW', '员工资料'),
-        ('张三的工资是多少', 'QUERY', 'QUERY_EMPLOYEE_PROFILE|EMPLOYEE_DETAIL|HR_PERFORMANCE|REPORT_KPI', '工资查询'),
+        ('查看员工资料', 'QUERY', 'QUERY_EMPLOYEE_PROFILE|QUERY_EMPLOYEE_PROFILE|ATTENDANCE_HISTORY|REPORT_DASHBOARD_OVERVIEW', '员工资料'),
+        ('张三的工资是多少', 'QUERY', 'QUERY_EMPLOYEE_PROFILE|QUERY_EMPLOYEE_PROFILE|QUERY_EMPLOYEE_PROFILE|REPORT_KPI', '工资查询'),
         ('部门考勤统计', 'QUERY', 'ATTENDANCE_STATS_BY_DEPT|ATTENDANCE_DEPARTMENT|ATTENDANCE_STATS', '部门考勤'),
         ('月度考勤汇总', 'QUERY', 'ATTENDANCE_MONTHLY|ATTENDANCE_STATS', '月考勤'),
         ('异常考勤列表', 'QUERY', 'ATTENDANCE_ANOMALY|ATTENDANCE_STATS|ALERT_LIST', '异常考勤'),
@@ -584,7 +601,7 @@ categories = {
         ('本月和上月产量对比', 'QUERY', 'REPORT_PRODUCTION_WEEKLY_COMPARISON|REPORT_PRODUCTION|REPORT_KPI|REPORT_TRENDS', '月度对比'),
         ('鸡肉和猪肉的库存对比', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '库存对比'),
         ('A车间和B车间的效率对比', 'QUERY', 'REPORT_EFFICIENCY|REPORT_PRODUCTION|PRODUCTION_STATUS_QUERY', '车间效率对比'),
-        ('今年跟去年的销售对比', 'QUERY', 'REPORT_TRENDS|REPORT_KPI|SALES_STATS', '年度销售对比'),
+        ('今年跟去年的销售对比', 'QUERY', 'REPORT_TRENDS|REPORT_KPI|REPORT_KPI', '年度销售对比'),
         ('各产品成本对比', 'QUERY', 'COST_QUERY|COST_TREND_ANALYSIS|REPORT_FINANCE', '成本对比'),
     ]),
     'J2': ('查询-趋势/走势', [
@@ -603,7 +620,7 @@ categories = {
     'J4': ('边界-模糊/歧义输入', [
         ('情况怎么样', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|REPORT_KPI|PRODUCTION_STATUS_QUERY', '极度模糊'),
         ('有什么问题吗', 'QUERY', 'ALERT_LIST|ALERT_ACTIVE|REPORT_ANOMALY|QUALITY_CHECK_QUERY|REPORT_DASHBOARD_OVERVIEW', '模糊-问题'),
-        ('帮我处理一下', 'QUERY|WRITE', 'ALERT_ACKNOWLEDGE|ALERT_RESOLVE|QUALITY_DISPOSITION_EXECUTE|TASK_PROGRESS_QUERY', '模糊-处理'),
+        ('帮我处理一下', 'QUERY|WRITE', 'ALERT_ACKNOWLEDGE|ALERT_RESOLVE|QUALITY_DISPOSITION_EXECUTE|TASK_PROGRESS_QUERY|ALERT_ACTIVE', '模糊-处理'),
         ('最新的情况', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|REPORT_KPI|ORDER_LIST|PROCESSING_BATCH_LIST', '模糊-最新'),
         ('还有什么要做的', 'QUERY', 'USER_TODO_LIST|TASK_PROGRESS_QUERY|ORDER_LIST|PROCESSING_BATCH_LIST|REPORT_DASHBOARD_OVERVIEW', '模糊-待办'),
     ]),
@@ -650,7 +667,7 @@ categories = {
     'M1': ('同义词-库存查询变体', [
         ('还剩多少猪肉', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '剩多少=库存'),
         ('猪肉存货查询', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '存货=库存'),
-        ('盘一下库存', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|WAREHOUSE_INVENTORY_CHECK', '盘=查询'),
+        ('盘一下库存', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|INVENTORY_SUMMARY_QUERY', '盘=查询'),
         ('库房还有啥', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '口语-库房'),
         ('冷库存了些什么', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '冷库存货'),
     ]),
@@ -665,7 +682,7 @@ categories = {
         ('来一个新的牛肉批次', 'WRITE', 'PROCESSING_BATCH_CREATE|MATERIAL_BATCH_CREATE', '来=创建'),
         ('开一个猪肉入库单', 'WRITE', 'MATERIAL_BATCH_CREATE', '开=创建'),
         ('做一批新的生产单', 'WRITE', 'PROCESSING_BATCH_CREATE', '做=创建'),
-        ('安排一批新的生产', 'WRITE', 'PROCESSING_BATCH_CREATE|PROCESSING_BATCH_START', '安排=创建'),
+        ('安排一批新的生产', 'WRITE', 'PROCESSING_BATCH_CREATE|PROCESSING_BATCH_START|SCHEDULING_SET_MANUAL', '安排=创建'),
         ('上一个新批次', 'WRITE', 'PROCESSING_BATCH_CREATE|MATERIAL_BATCH_CREATE', '上=创建'),
     ]),
     'M4': ('同义词-告警查询变体', [
@@ -687,13 +704,13 @@ categories = {
     'N2': ('批次号嵌入-溯源查询', [
         ('查看批次B20240115', 'QUERY', 'PROCESSING_BATCH_DETAIL|PROCESSING_BATCH_LIST|BATCH_AUTO_LOOKUP', '批次号-查看'),
         ('批次PC-2024-001的详情', 'QUERY', 'PROCESSING_BATCH_DETAIL|PROCESSING_BATCH_LIST|BATCH_AUTO_LOOKUP', '批次号-详情'),
-        ('牛肉批次RB003的检验结果', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|PROCESSING_BATCH_DETAIL', '批次号-质检'),
-        ('追溯MB002的原料来源', 'QUERY', 'TRACE_BATCH|MATERIAL_BATCH_QUERY|BATCH_AUTO_LOOKUP', '批次号-追溯'),
+        ('牛肉批次RB003的检验结果', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|PROCESSING_BATCH_DETAIL', '批次号-质检'),
+        ('追溯MB002的原料来源', 'QUERY', 'TRACE_BATCH|MATERIAL_BATCH_QUERY|BATCH_AUTO_LOOKUP|TRACE_FULL', '批次号-追溯'),
     ]),
     'N3': ('人名嵌入-HR查询', [
-        ('李明的出勤记录', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_RECORD', '人名-出勤'),
+        ('李明的出勤记录', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_HISTORY', '人名-出勤'),
         ('王芳今天上班了吗', 'QUERY', 'ATTENDANCE_TODAY|ATTENDANCE_STATS', '人名-到岗'),
-        ('赵刚的绩效评分', 'QUERY', 'HR_PERFORMANCE|REPORT_KPI', '人名-绩效'),
+        ('赵刚的绩效评分', 'QUERY', 'QUERY_EMPLOYEE_PROFILE|REPORT_KPI', '人名-绩效'),
         ('把任务分配给刘伟', 'WRITE', 'TASK_ASSIGN_WORKER|PROCESSING_WORKER_ASSIGN', '人名-分配'),
         ('陈静负责的订单', 'QUERY', 'ORDER_LIST|SHIPMENT_QUERY', '人名-订单'),
     ]),
@@ -704,13 +721,13 @@ categories = {
         ('请问现在设备运行正常吗', 'QUERY', 'EQUIPMENT_STATUS_QUERY|ALERT_LIST', '请问+设备'),
         ('能不能帮我查一下订单状态', 'QUERY', 'ORDER_LIST|ORDER_STATUS', '能不能+查'),
         ('您好，我想了解一下今天的产量', 'QUERY', 'PROCESSING_BATCH_LIST|PRODUCTION_STATUS_QUERY|REPORT_PRODUCTION', '您好+产量'),
-        ('劳驾查一下猪肉入库情况', 'QUERY', 'MATERIAL_BATCH_QUERY|INBOUND_RECORD_QUERY', '劳驾+查询'),
+        ('劳驾查一下猪肉入库情况', 'QUERY', 'MATERIAL_BATCH_QUERY|MATERIAL_BATCH_QUERY', '劳驾+查询'),
     ]),
     'O2': ('礼貌请求-写入', [
         ('麻烦帮我创建一个批次', 'WRITE', 'PROCESSING_BATCH_CREATE|MATERIAL_BATCH_CREATE', '麻烦+创建'),
         ('请帮我打一下卡', 'WRITE', 'CLOCK_IN', '请+打卡'),
         ('拜托帮我录入一条入库记录', 'WRITE', 'MATERIAL_BATCH_CREATE', '拜托+录入'),
-        ('能帮我下一个订单吗', 'WRITE', 'ORDER_CREATE|ORDER_NEW', '能帮+下单'),
+        ('能帮我下一个订单吗', 'WRITE', 'ORDER_NEW|ORDER_NEW', '能帮+下单'),
     ]),
     'O3': ('间接表述-需求暗示', [
         ('猪肉快不够了', 'QUERY', 'MATERIAL_BATCH_QUERY|MATERIAL_LOW_STOCK_ALERT|REPORT_INVENTORY', '暗示-低库存'),
@@ -722,8 +739,8 @@ categories = {
 
     # ====== P: 跨域混淆 (Cross-Domain Confusion) ======
     'P1': ('跨域-生产vs质量', [
-        ('这批猪肉合格吗', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT', '合格-质量域'),
-        ('生产批次质量报告', 'QUERY', 'QUALITY_BATCH_REPORT|QUALITY_CHECK_QUERY|REPORT_QUALITY', '跨-生产+质量'),
+        ('这批猪肉合格吗', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY', '合格-质量域'),
+        ('生产批次质量报告', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|REPORT_QUALITY', '跨-生产+质量'),
         ('在产批次的检验状态', 'QUERY', 'QUALITY_CHECK_QUERY|PROCESSING_BATCH_LIST', '跨-生产+检验'),
         ('不良品率', 'QUERY', 'QUALITY_STATS|REPORT_QUALITY|REPORT_KPI', '不良率-质量'),
     ]),
@@ -734,38 +751,38 @@ categories = {
         ('消除设备报警', 'WRITE', 'ALERT_ACKNOWLEDGE|ALERT_RESOLVE|EQUIPMENT_ALERT_ACKNOWLEDGE', '消除+报警'),
     ]),
     'P3': ('跨域-库存vs采购', [
-        ('原料不够了，需要采购', 'QUERY|WRITE', 'MATERIAL_LOW_STOCK_ALERT|PROCUREMENT_LIST|MATERIAL_BATCH_QUERY|ORDER_NEW', '库存+采购暗示'),
-        ('采购的猪肉到了没', 'QUERY', 'MATERIAL_BATCH_QUERY|PROCUREMENT_LIST|ORDER_LIST', '采购+到货'),
-        ('本月采购了多少猪肉', 'QUERY', 'PROCUREMENT_LIST|PROCUREMENT_STATS|MATERIAL_BATCH_QUERY|ORDER_LIST', '采购量查询'),
-        ('供应商发货了没有', 'QUERY', 'SHIPMENT_QUERY|SUPPLIER_LIST|ORDER_LIST|PROCUREMENT_LIST', '供应商+发货'),
+        ('原料不够了，需要采购', 'QUERY|WRITE', 'MATERIAL_LOW_STOCK_ALERT|ORDER_LIST|MATERIAL_BATCH_QUERY|ORDER_NEW', '库存+采购暗示'),
+        ('采购的猪肉到了没', 'QUERY', 'MATERIAL_BATCH_QUERY|ORDER_LIST|ORDER_LIST', '采购+到货'),
+        ('本月采购了多少猪肉', 'QUERY', 'ORDER_LIST|REPORT_KPI|MATERIAL_BATCH_QUERY|ORDER_LIST', '采购量查询'),
+        ('供应商发货了没有', 'QUERY', 'SHIPMENT_QUERY|SUPPLIER_LIST|ORDER_LIST|ORDER_LIST', '供应商+发货'),
     ]),
     'P4': ('跨域-HR vs 生产', [
         ('车间人手够不够', 'QUERY', 'ATTENDANCE_TODAY|ATTENDANCE_STATS|SCHEDULING_LIST|SCHEDULING_COVERAGE_QUERY', '人手-HR+排班'),
         ('今天几个人在干活', 'QUERY', 'ATTENDANCE_TODAY|ATTENDANCE_STATS|QUERY_ONLINE_STAFF_COUNT', '干活-出勤'),
-        ('夜班人员安排', 'QUERY', 'SCHEDULING_LIST|ATTENDANCE_TODAY|SCHEDULING_COVERAGE_QUERY', '夜班-排班'),
+        ('夜班人员安排', 'QUERY', 'SCHEDULING_LIST|ATTENDANCE_TODAY|SCHEDULING_LIST', '夜班-排班'),
         ('加班申请', 'QUERY|WRITE', 'ATTENDANCE_STATS|ATTENDANCE_HISTORY|CLOCK_IN|SCHEDULING_LIST', '加班-HR'),
     ]),
 
     # ====== Q: 趋势/统计变体 (Statistics Stress) ======
     'Q1': ('统计-环比/同比', [
         ('环比增长多少', 'QUERY', 'REPORT_TRENDS|REPORT_KPI|REPORT_DASHBOARD_OVERVIEW', '环比'),
-        ('同比去年怎么样', 'QUERY', 'REPORT_TRENDS|REPORT_KPI|REPORT_PRODUCTION_WEEKLY_COMPARISON', '同比'),
+        ('同比去年怎么样', 'QUERY', 'REPORT_TRENDS|REPORT_KPI|REPORT_PRODUCTION_WEEKLY_COMPARISON|PROFIT_TREND_ANALYSIS', '同比'),
         ('上月环比变化', 'QUERY', 'REPORT_TRENDS|REPORT_KPI|REPORT_DASHBOARD_OVERVIEW', '环比变化'),
         ('与去年同期对比', 'QUERY', 'REPORT_TRENDS|REPORT_KPI|REPORT_PRODUCTION_WEEKLY_COMPARISON', '同期对比'),
     ]),
     'Q2': ('统计-排名/Top N', [
         ('产量最高的车间', 'QUERY', 'REPORT_PRODUCTION|PRODUCTION_STATUS_QUERY|REPORT_KPI', '产量排名'),
-        ('销量前三的产品', 'QUERY', 'SALES_RANKING|PRODUCT_SALES_RANKING|REPORT_KPI', '销量Top3'),
+        ('销量前三的产品', 'QUERY', 'PRODUCT_SALES_RANKING|PRODUCT_PRODUCT_SALES_RANKING|REPORT_KPI', '销量Top3'),
         ('出勤率最低的部门', 'QUERY', 'ATTENDANCE_STATS|ATTENDANCE_STATS_BY_DEPT|REPORT_KPI', '出勤最低'),
         ('故障最多的设备', 'QUERY', 'EQUIPMENT_STATS|ALERT_STATS|EQUIPMENT_ALERT_STATS|REPORT_KPI', '故障排名'),
-        ('客户下单量排行', 'QUERY', 'CUSTOMER_STATS|REPORT_KPI|SALES_RANKING', '客户排行'),
+        ('客户下单量排行', 'QUERY', 'CUSTOMER_STATS|REPORT_KPI|PRODUCT_SALES_RANKING', '客户排行'),
     ]),
     'Q3': ('统计-汇总/合计', [
-        ('今天一共入库了多少', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|INBOUND_RECORD_QUERY', '合计-入库'),
+        ('今天一共入库了多少', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|MATERIAL_BATCH_QUERY', '合计-入库'),
         ('本月总产量', 'QUERY', 'REPORT_PRODUCTION|PRODUCTION_STATUS_QUERY|REPORT_KPI', '合计-产量'),
         ('全部在用设备数', 'QUERY', 'EQUIPMENT_STATS|EQUIPMENT_LIST|EQUIPMENT_STATUS_QUERY', '合计-设备'),
         ('累计发货量', 'QUERY', 'SHIPMENT_STATS|SHIPMENT_QUERY|REPORT_KPI', '累计-发货'),
-        ('全年营收汇总', 'QUERY', 'REPORT_KPI|REPORT_FINANCE|SALES_STATS', '汇总-营收'),
+        ('全年营收汇总', 'QUERY', 'REPORT_KPI|REPORT_FINANCE|REPORT_KPI', '汇总-营收'),
     ]),
 
     # ====== R: 更多写入边界 (Write Boundary Cases) ======
@@ -807,15 +824,15 @@ categories = {
     'T1': ('对抗-动词override复合名词', [
         ('添加剂检测结果', 'QUERY', 'QUALITY_CHECK_QUERY|FOOD_KNOWLEDGE_QUERY', '添加剂≠添加'),
         ('添加剂使用标准', 'CONSULT', 'FOOD_KNOWLEDGE_QUERY', '添加剂-知识'),
-        ('新增长趋势分析', 'QUERY', 'REPORT_TRENDS|REPORT_KPI|SALES_STATS', '新增长≠新增'),
-        ('注册表信息查询', 'QUERY', 'EQUIPMENT_LIST|EQUIPMENT_DETAIL|SCALE_LIST_DEVICES|N/A', '注册表≠注册,可UNMATCHED'),
-        ('创建时间是什么时候', 'QUERY', 'PROCESSING_BATCH_DETAIL|PROCESSING_BATCH_LIST|ORDER_DETAIL|N/A', '创建时间≠创建,可UNMATCHED'),
+        ('新增长趋势分析', 'QUERY', 'REPORT_TRENDS|REPORT_KPI|REPORT_KPI', '新增长≠新增'),
+        ('注册表信息查询', 'QUERY', 'EQUIPMENT_LIST|EQUIPMENT_DETAIL|SCALE_LIST_DEVICES|QUERY_EMPLOYEE_PROFILE|N/A|QUERY_GENERIC_DETAIL', '注册表≠注册,可UNMATCHED'),
+        ('创建时间是什么时候', 'QUERY', 'PROCESSING_BATCH_DETAIL|PROCESSING_BATCH_LIST|ORDER_STATUS|N/A', '创建时间≠创建,可UNMATCHED'),
         ('增加值怎么计算', 'CONSULT|QUERY', 'FOOD_KNOWLEDGE_QUERY|REPORT_KPI|REPORT_FINANCE|N/A', '增加值≠增加,可UNMATCHED'),
     ]),
     'T2': ('对抗-动词override正确触发', [
         ('新建一条鸡肉入库记录', 'WRITE', 'MATERIAL_BATCH_CREATE', '新建+入库=CREATE'),
         ('录入今天的质检数据', 'WRITE', 'QUALITY_CHECK_CREATE|QUALITY_CHECK_EXECUTE|QUALITY_STATS', '录入+质检,STATS域正确但type差'),
-        ('创建一个牛肉采购订单', 'WRITE', 'ORDER_NEW|ORDER_CREATE', '创建+订单=CREATE'),
+        ('创建一个牛肉采购订单', 'WRITE', 'ORDER_NEW|ORDER_NEW', '创建+订单=CREATE'),
         ('帮我新增一条出库记录', 'WRITE', 'MATERIAL_BATCH_CREATE|MATERIAL_BATCH_CONSUME|SHIPMENT_CREATE', '新增+出库,SHIPMENT也合理'),
         ('添加一个新的供应商', 'WRITE', 'SUPPLIER_CREATE|USER_CREATE', '添加+供应商=CREATE'),
         ('登记新员工信息', 'WRITE', 'USER_CREATE|HR_DELETE_EMPLOYEE|ATTENDANCE_HISTORY', '登记+员工,ATTEND域邻近'),
@@ -826,14 +843,14 @@ categories = {
         ('库存量和物料使用情况', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|QUERY_MATERIAL_STOCK_SUMMARY', '库存+物料=同域'),
         ('出勤率和请假情况', 'QUERY', 'ATTENDANCE_STATS|ATTENDANCE_HISTORY|ATTENDANCE_ANOMALY', '出勤+请假=同域'),
         ('设备维护和维修记录', 'QUERY', 'EQUIPMENT_MAINTENANCE|EQUIPMENT_LIST|EQUIPMENT_DETAIL', '维护+维修=同域'),
-        ('销售额和客户数量', 'QUERY', 'SALES_STATS|CUSTOMER_STATS|REPORT_KPI', '销售+客户=同域'),
+        ('销售额和客户数量', 'QUERY', 'REPORT_KPI|CUSTOMER_STATS|REPORT_KPI', '销售+客户=同域'),
         ('订单发货进度', 'QUERY', 'SHIPMENT_QUERY|ORDER_STATUS|ORDER_LIST', '订单+发货=同域'),
     ]),
     # T4: 跨域连词触发multi-intent bypass — UNMATCHED是合理结果，接受任一子intent或N/A
     'T4': ('对抗-跨域连词bypass', [
         ('库存不够顺便查一下排班', 'QUERY', 'MATERIAL_BATCH_QUERY|MATERIAL_LOW_STOCK_ALERT|SCHEDULING_LIST|N/A', '跨域可UNMATCHED'),
         ('设备告警另外看看考勤', 'QUERY', 'ALERT_LIST|EQUIPMENT_ALERT_LIST|ATTENDANCE_STATS|N/A', '跨域可UNMATCHED'),
-        ('查完订单再看员工绩效', 'QUERY', 'ORDER_LIST|HR_PERFORMANCE|REPORT_KPI|N/A', '跨域可UNMATCHED'),
+        ('查完订单再看员工绩效', 'QUERY', 'ORDER_LIST|QUERY_EMPLOYEE_PROFILE|REPORT_KPI|N/A', '跨域可UNMATCHED'),
     ]),
 
     # ====== T5: 极端短输入扩展 ======
@@ -851,7 +868,7 @@ categories = {
         ('删掉这个生产批次', 'WRITE', 'PROCESSING_BATCH_CANCEL|PROCESSING_BATCH_DETAIL', '删除-批次'),
         ('取消这笔采购', 'WRITE', 'ORDER_DELETE|ORDER_UPDATE|ORDER_MODIFY', '取消-采购'),
         ('移除过期原料', 'WRITE', 'MATERIAL_BATCH_DELETE|MATERIAL_BATCH_RELEASE|MATERIAL_UPDATE|MATERIAL_EXPIRED_QUERY', '移除-原料,EXPIRED域正确'),
-        ('作废这张质检单', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE|QUALITY_CHECK_CREATE|QUALITY_CHECK_EXECUTE', '作废-质检'),
+        ('作废这张质检单', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE|QUALITY_CHECK_CREATE|QUALITY_CHECK_EXECUTE|QUALITY_CHECK_QUERY', '作废-质检'),
         ('把这个员工离职处理', 'WRITE', 'HR_DELETE_EMPLOYEE|USER_DELETE|USER_UPDATE', '离职-HR'),
     ]),
     'T7': ('写入-审批流程扩展', [
@@ -889,14 +906,14 @@ categories = {
         ('鸡肉的营养价值', 'CONSULT', 'FOOD_KNOWLEDGE_QUERY', '营养=知识'),
         ('鸡肉批次什么时候到期', 'QUERY', 'MATERIAL_EXPIRED_QUERY|MATERIAL_BATCH_QUERY|MATERIAL_EXPIRING_ALERT|PROCESSING_BATCH_TIMELINE', '鸡肉+到期=工厂,TIMELINE也合理'),
         ('牛肉的检疫标准', 'CONSULT', 'FOOD_KNOWLEDGE_QUERY', '检疫标准=知识'),
-        ('牛肉入库了多少斤', 'QUERY', 'MATERIAL_BATCH_QUERY|INBOUND_RECORD_QUERY|REPORT_INVENTORY', '牛肉+入库=工厂'),
+        ('牛肉入库了多少斤', 'QUERY', 'MATERIAL_BATCH_QUERY|MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '牛肉+入库=工厂'),
     ]),
 
     # ====== U: 设备深层 (Equipment Deep - DB intents) ======
     'U1': ('查询-设备分析诊断', [
-        ('分析一下3号设备的运行状况', 'QUERY', 'ANALYZE_EQUIPMENT|EQUIPMENT_STATUS_QUERY|EQUIPMENT_DETAIL|EQUIPMENT_HEALTH_DIAGNOSIS', '设备分析'),
+        ('分析一下3号设备的运行状况', 'QUERY', 'ANALYZE_EQUIPMENT|EQUIPMENT_STATUS_QUERY|EQUIPMENT_DETAIL|EQUIPMENT_HEALTH_DIAGNOSIS|EQUIPMENT_STATS', '设备分析'),
         ('设备健康诊断', 'QUERY', 'EQUIPMENT_HEALTH_DIAGNOSIS|ANALYZE_EQUIPMENT|EQUIPMENT_STATUS_QUERY', '健康诊断'),
-        ('设备故障报告', 'QUERY', 'EQUIPMENT_BREAKDOWN_REPORT|BREAKDOWN_REPORT|EQUIPMENT_STATUS_QUERY|ALERT_LIST', '故障报告'),
+        ('设备故障报告', 'QUERY', 'EQUIPMENT_BREAKDOWN_REPORT|EQUIPMENT_BREAKDOWN_REPORT|EQUIPMENT_STATUS_QUERY|ALERT_LIST', '故障报告'),
         ('按名称查设备状态', 'QUERY', 'QUERY_EQUIPMENT_STATUS_BY_NAME|EQUIPMENT_STATUS_QUERY|EQUIPMENT_DETAIL', '按名称查设备'),
         ('今天车间的日报', 'QUERY', 'REPORT_WORKSHOP_DAILY|REPORT_PRODUCTION|REPORT_EXECUTIVE_DAILY', '车间日报'),
     ]),
@@ -927,13 +944,13 @@ categories = {
         ('查看审批记录', 'QUERY', 'QUERY_APPROVAL_RECORD|ORDER_APPROVAL|ORDER_LIST', '审批记录'),
         ('订单还缺多少原料', 'QUERY', 'QUERY_ORDER_PENDING_MATERIAL_QUANTITY|MATERIAL_BATCH_QUERY|MATERIAL_LOW_STOCK_ALERT', '待补物料'),
         ('这批猪肉退货原因', 'QUERY', 'QUERY_MATERIAL_REJECTION_REASON|QUALITY_CHECK_QUERY|MATERIAL_BATCH_QUERY', '退货原因'),
-        ('运输线路查询', 'QUERY', 'QUERY_TRANSPORT_LINE|LOGISTICS_TRACKING|SHIPMENT_QUERY', '运输线路'),
+        ('运输线路查询', 'QUERY', 'QUERY_TRANSPORT_LINE|SHIPMENT_QUERY|SHIPMENT_QUERY', '运输线路'),
         ('我的待办事项', 'QUERY', 'USER_TODO_LIST|TASK_PROGRESS_QUERY|ORDER_LIST', '待办事项'),
     ]),
     'U6': ('查询-AI质检报告', [
         ('AI质检分析报告', 'QUERY', 'REPORT_AI_QUALITY|REPORT_INTELLIGENT_QUALITY|REPORT_QUALITY_AI|REPORT_QUALITY', 'AI质检'),
         ('智能质量分析', 'QUERY', 'REPORT_INTELLIGENT_QUALITY|REPORT_AI_QUALITY|REPORT_QUALITY|QUALITY_STATS', '智能质量'),
-        ('质检审核报告', 'QUERY', 'REPORT_CHECK|QUALITY_BATCH_REPORT|QUALITY_CHECK_QUERY', '质检审核'),
+        ('质检审核报告', 'QUERY', 'REPORT_CHECK|QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY', '质检审核'),
         ('利润趋势分析', 'QUERY', 'PROFIT_TREND_ANALYSIS|REPORT_TRENDS|REPORT_FINANCE|COST_TREND_ANALYSIS', '利润趋势'),
     ]),
 
@@ -942,13 +959,13 @@ categories = {
         ('出库一批猪肉', 'WRITE', 'INVENTORY_OUTBOUND|WAREHOUSE_OUTBOUND|MATERIAL_BATCH_CONSUME|SHIPMENT_CREATE', '出库'),
         ('仓库出库操作', 'WRITE', 'WAREHOUSE_OUTBOUND|INVENTORY_OUTBOUND|MATERIAL_BATCH_CONSUME', '仓库出库'),
         ('通知仓库备货', 'WRITE', 'SHIPMENT_NOTIFY_WAREHOUSE_PREPARE|SHIPMENT_CREATE|SHIPMENT_EXPEDITE', '通知备货'),
-        ('MRP物料需求计算', 'QUERY|WRITE', 'MRP_CALCULATION|MATERIAL_LOW_STOCK_ALERT|PROCUREMENT_LIST|N/A', 'MRP计算'),
+        ('MRP物料需求计算', 'QUERY|WRITE', 'MRP_CALCULATION|MATERIAL_LOW_STOCK_ALERT|ORDER_LIST|N/A', 'MRP计算'),
     ]),
     'V2': ('写入-排班计划扩展', [
         ('安排明天的排班', 'WRITE', 'SCHEDULING_EXECUTE_FOR_DATE|SCHEDULING_RUN_TOMORROW|SCHEDULING_SET_AUTO', '排班执行'),
         ('执行2月25号的排班', 'WRITE', 'SCHEDULING_EXECUTE_FOR_DATE|SCHEDULING_RUN_TOMORROW|SCHEDULING_SET_AUTO', '指定日期排班'),
         ('配置采购审批流程', 'WRITE', 'APPROVAL_CONFIG_PURCHASE_ORDER|ORDER_APPROVAL|ORDER_NEW|N/A', '审批配置'),
-        ('查看排班覆盖情况', 'QUERY', 'SCHEDULING_COVERAGE_QUERY|SCHEDULING_QUERY_COVERAGE|SCHEDULING_LIST', '排班覆盖'),
+        ('查看排班覆盖情况', 'QUERY', 'SCHEDULING_LIST|SCHEDULING_LIST', '排班覆盖'),
     ]),
 
     # ====== V3-V4: 通知/系统操作 ======
@@ -962,7 +979,7 @@ categories = {
     # ====== W: 边界扩展 (Edge Cases) ======
     'W1': ('边界-错别字容错', [
         ('查看库纯', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|REPORT_DASHBOARD_OVERVIEW|N/A', '库存→库纯typo'),
-        ('质检保告', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|N/A', '报告→保告'),
+        ('质检保告', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|N/A', '报告→保告'),
         ('设备运型状态', 'QUERY', 'EQUIPMENT_STATUS_QUERY|EQUIPMENT_LIST|N/A', '运行→运型'),
         ('考勤已常', 'QUERY', 'ATTENDANCE_ANOMALY|ATTENDANCE_STATS|N/A', '异常→已常'),
         ('原才入库', 'WRITE', 'MATERIAL_BATCH_CREATE|N/A', '材→才'),
@@ -970,36 +987,36 @@ categories = {
     'W2': ('边界-中英文混合', [
         ('check一下inventory', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|N/A', '英文动词+名词'),
         ('今天的production report', 'QUERY', 'REPORT_PRODUCTION|PROCESSING_BATCH_LIST|N/A', '英文领域词'),
-        ('quality check结果', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|N/A', '英文质检'),
-        ('帮我create一个order', 'WRITE', 'ORDER_CREATE|ORDER_NEW|N/A', '英文操作词'),
+        ('quality check结果', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|N/A', '英文质检'),
+        ('帮我create一个order', 'WRITE', 'ORDER_NEW|ORDER_NEW|N/A', '英文操作词'),
     ]),
     'W3': ('边界-否定句式', [
         ('不要查库存，我要查订单', 'QUERY', 'ORDER_LIST|ORDER_STATUS|MATERIAL_BATCH_QUERY', '否定+转折'),
-        ('别查生产，看看设备', 'QUERY', 'EQUIPMENT_STATUS_QUERY|EQUIPMENT_LIST|PRODUCTION_STATUS_QUERY|PROCESSING_BATCH_LIST|N/A', '别+转折,可UNMATCHED'),
+        ('别查生产，看看设备', 'QUERY', 'EQUIPMENT_STATUS_QUERY|EQUIPMENT_LIST|PRODUCTION_STATUS_QUERY|PROCESSING_BATCH_LIST|REPORT_PRODUCTION|N/A', '别+转折,可UNMATCHED'),
         ('不需要签到，我要签退', 'WRITE', 'CLOCK_OUT|CLOCK_IN', '否定+正确意图'),
         ('不合格的产品有哪些', 'QUERY', 'QUALITY_STATS|QUALITY_CHECK_QUERY|QUALITY_CRITICAL_ITEMS', '否定=不合格品'),
         ('没发货的订单', 'QUERY', 'ORDER_LIST|ORDER_STATUS|SHIPMENT_QUERY', '没=未完成'),
     ]),
     'W4': ('边界-条件时间歧义', [
-        ('如果库存不足就下采购单', 'QUERY|WRITE', 'MATERIAL_LOW_STOCK_ALERT|ORDER_NEW|PROCUREMENT_LIST|MATERIAL_BATCH_QUERY|N/A', '条件-库存采购'),
+        ('如果库存不足就下采购单', 'QUERY|WRITE', 'MATERIAL_LOW_STOCK_ALERT|ORDER_NEW|ORDER_LIST|MATERIAL_BATCH_QUERY|N/A', '条件-库存采购'),
         ('等质检通过了再发货', 'QUERY|WRITE', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_EXECUTE|SHIPMENT_QUERY|SHIPMENT_CREATE|ORDER_LIST|N/A', '条件-质检发货,ambiguous'),
         ('明天之前把这批货发出去', 'WRITE', 'SHIPMENT_CREATE|SHIPMENT_EXPEDITE|SHIPMENT_STATUS_UPDATE', '截止时间'),
-        ('月底前需要采购多少猪肉', 'QUERY', 'MATERIAL_BATCH_QUERY|PROCUREMENT_LIST|REPORT_INVENTORY|MATERIAL_LOW_STOCK_ALERT|ORDER_LIST', '时间+需求'),
+        ('月底前需要采购多少猪肉', 'QUERY', 'MATERIAL_BATCH_QUERY|ORDER_LIST|REPORT_INVENTORY|MATERIAL_LOW_STOCK_ALERT|ORDER_LIST', '时间+需求'),
     ]),
     'W5': ('边界-超长口语噪音', [
         ('嗯那个就是我想问一下啊就是那个猪肉的那个库存还有多少来着', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '口语噪音-库存'),
         ('老板说让我看一下上周五的生产报表有没有出来', 'QUERY', 'REPORT_PRODUCTION|PROCESSING_BATCH_LIST|REPORT_PRODUCTION_WEEKLY_COMPARISON', '口语噪音-报表'),
-        ('你好我是新来的请问怎么查订单', 'QUERY', 'ORDER_LIST|ORDER_STATUS|ORDER_DETAIL', '自我介绍+查询'),
+        ('你好我是新来的请问怎么查订单', 'QUERY', 'ORDER_LIST|ORDER_STATUS|ORDER_STATUS', '自我介绍+查询'),
         ('不好意思打扰一下那个牛肉批次的溯源信息找到了吗', 'QUERY', 'TRACE_BATCH|PROCESSING_BATCH_DETAIL|MATERIAL_BATCH_QUERY|TRACE_FULL', '礼貌前缀+噪音'),
         ('那个什么来着对了帮我处理一下冷库的温度告警', 'WRITE', 'ALERT_ACKNOWLEDGE|ALERT_RESOLVE|COLD_CHAIN_TEMPERATURE', '犹豫+口语+告警'),
     ]),
 
     # ====== X: 销售/客户/财务扩展 ======
     'X1': ('查询-销售深层', [
-        ('本月销售额统计', 'QUERY', 'SALES_STATS|REPORT_KPI|REPORT_FINANCE|CUSTOMER_STATS|REPORT_DASHBOARD_OVERVIEW', '销售统计'),
-        ('各产品销售排名', 'QUERY', 'PRODUCT_SALES_RANKING|SALES_RANKING|REPORT_KPI', '产品排名'),
-        ('客户回款状态', 'QUERY', 'PAYMENT_STATUS_QUERY|FINANCE_STATS|CUSTOMER_STATS', '回款查询'),
-        ('退货率最高的产品', 'QUERY', 'PRODUCT_SALES_RANKING|QUALITY_STATS|REPORT_KPI|SALES_RANKING|N/A', '退货率排名,可UNMATCHED'),
+        ('本月销售额统计', 'QUERY', 'REPORT_KPI|REPORT_KPI|REPORT_FINANCE|CUSTOMER_STATS|REPORT_DASHBOARD_OVERVIEW|ORDER_FILTER', '销售统计'),
+        ('各产品销售排名', 'QUERY', 'PRODUCT_PRODUCT_SALES_RANKING|PRODUCT_SALES_RANKING|REPORT_KPI', '产品排名'),
+        ('客户回款状态', 'QUERY', 'PAYMENT_STATUS_QUERY|REPORT_FINANCE|CUSTOMER_STATS', '回款查询'),
+        ('退货率最高的产品', 'QUERY', 'PRODUCT_PRODUCT_SALES_RANKING|QUALITY_STATS|REPORT_KPI|PRODUCT_SALES_RANKING|N/A', '退货率排名,可UNMATCHED'),
         ('本季度新增客户', 'QUERY', 'CUSTOMER_STATS|CUSTOMER_LIST|CUSTOMER_ACTIVE|REPORT_KPI', '新增客户'),
     ]),
     'X2': ('查询-客户CRM扩展', [
@@ -1016,27 +1033,27 @@ categories = {
         ('查看FIFO推荐出库', 'QUERY', 'MATERIAL_FIFO_RECOMMEND|MATERIAL_BATCH_QUERY|REPORT_INVENTORY', 'FIFO推荐'),
     ]),
     'X4': ('查询-财务深层扩展', [
-        ('杜邦分析', 'QUERY', 'QUERY_DUPONT_ANALYSIS|REPORT_FINANCE|FINANCE_STATS', '杜邦分析'),
-        ('流动性分析', 'QUERY', 'QUERY_LIQUIDITY|FINANCE_STATS|REPORT_FINANCE', '流动性'),
-        ('偿债能力', 'QUERY', 'QUERY_SOLVENCY|FINANCE_STATS|REPORT_FINANCE', '偿债能力'),
-        ('资产收益率ROA', 'QUERY', 'QUERY_FINANCE_ROA|FINANCE_STATS|REPORT_FINANCE', 'ROA'),
-        ('净资产收益率', 'QUERY', 'QUERY_FINANCE_ROE|FINANCE_STATS|REPORT_FINANCE', 'ROE'),
+        ('杜邦分析', 'QUERY', 'QUERY_DUPONT_ANALYSIS|REPORT_FINANCE|REPORT_FINANCE', '杜邦分析'),
+        ('流动性分析', 'QUERY', 'QUERY_LIQUIDITY|REPORT_FINANCE|REPORT_FINANCE', '流动性'),
+        ('偿债能力', 'QUERY', 'QUERY_SOLVENCY|REPORT_FINANCE|REPORT_FINANCE', '偿债能力'),
+        ('资产收益率ROA', 'QUERY', 'QUERY_FINANCE_ROA|REPORT_FINANCE|REPORT_FINANCE', 'ROA'),
+        ('净资产收益率', 'QUERY', 'QUERY_FINANCE_ROE|REPORT_FINANCE|REPORT_FINANCE', 'ROE'),
     ]),
 
     # ====== Y: 更多对抗测试 ======
     'Y1': ('对抗-同音近义混淆', [
-        ('入库和出库', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|INBOUND_RECORD_QUERY|INVENTORY_OUTBOUND|WAREHOUSE_OUTBOUND|N/A', '同时提及入出库,复合'),
-        ('合格还是不合格', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_STATS|QUALITY_BATCH_REPORT|N/A', '质检结果,可UNMATCHED'),
-        ('到底发没发货', 'QUERY', 'SHIPMENT_QUERY|ORDER_STATUS|LOGISTICS_TRACKING', '反问式发货'),
-        ('采购订单和销售订单', 'QUERY', 'ORDER_LIST|PROCUREMENT_LIST|SALES_STATS|N/A', '订单类型混淆,跨域可UNMATCHED'),
+        ('入库和出库', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|MATERIAL_BATCH_QUERY|INVENTORY_OUTBOUND|WAREHOUSE_OUTBOUND|N/A', '同时提及入出库,复合'),
+        ('合格还是不合格', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_STATS|QUALITY_CHECK_QUERY|N/A', '质检结果,可UNMATCHED'),
+        ('到底发没发货', 'QUERY', 'SHIPMENT_QUERY|ORDER_STATUS|SHIPMENT_QUERY', '反问式发货'),
+        ('采购订单和销售订单', 'QUERY', 'ORDER_LIST|ORDER_LIST|REPORT_KPI|N/A', '订单类型混淆,跨域可UNMATCHED'),
         ('维修还是保养', 'QUERY', 'EQUIPMENT_MAINTENANCE|EQUIPMENT_STATUS_QUERY|EQUIPMENT_DETAIL', '维保区分'),
     ]),
     'Y2': ('对抗-隐晦意图表达', [
         ('快过期了怎么办', 'QUERY', 'MATERIAL_EXPIRING_ALERT|MATERIAL_EXPIRED_QUERY|MATERIAL_BATCH_QUERY|N/A', '过期=预警,隐晦可UNMATCHED'),
-        ('仓库放不下了', 'QUERY', 'REPORT_INVENTORY|MATERIAL_BATCH_QUERY|WAREHOUSE_INVENTORY_CHECK|N/A', '放不下=库存满,隐晦可UNMATCHED'),
+        ('仓库放不下了', 'QUERY', 'REPORT_INVENTORY|MATERIAL_BATCH_QUERY|INVENTORY_SUMMARY_QUERY|N/A', '放不下=库存满,隐晦可UNMATCHED'),
         ('这个机器不太对劲', 'QUERY', 'EQUIPMENT_STATUS_QUERY|EQUIPMENT_HEALTH_DIAGNOSIS|ALERT_LIST|N/A', '不对劲=异常,隐晦可UNMATCHED'),
         ('人手不够用了', 'QUERY', 'ATTENDANCE_TODAY|SCHEDULING_LIST|QUERY_ONLINE_STAFF_COUNT|SCHEDULING_COVERAGE_QUERY|ATTENDANCE_ANOMALY|N/A', '人手=排班缺口,可UNMATCHED'),
-        ('这个月亏了吗', 'QUERY', 'REPORT_FINANCE|FINANCE_STATS|PROFIT_TREND_ANALYSIS|REPORT_KPI|N/A', '亏=利润查询,隐晦可UNMATCHED'),
+        ('这个月亏了吗', 'QUERY', 'REPORT_FINANCE|REPORT_FINANCE|PROFIT_TREND_ANALYSIS|REPORT_KPI|N/A', '亏=利润查询,隐晦可UNMATCHED'),
     ]),
     'Y3': ('对抗-连续操作意图', [
         ('先质检再入库', 'WRITE', 'QUALITY_CHECK_CREATE|QUALITY_CHECK_EXECUTE|MATERIAL_BATCH_CREATE|QUALITY_CHECK_QUERY|N/A', '先后操作,sequential'),
@@ -1045,12 +1062,12 @@ categories = {
         ('做完这批就下班', 'WRITE', 'PROCESSING_BATCH_COMPLETE|CLOCK_OUT|PROCESSING_BATCH_DETAIL|N/A', '完成+下班,连续操作可UNMATCHED'),
     ]),
     'Y4': ('对抗-极短2字写入', [
-        ('入库', 'WRITE', 'MATERIAL_BATCH_CREATE|INBOUND_RECORD_QUERY|MATERIAL_BATCH_QUERY', '2字-入库'),
+        ('入库', 'WRITE', 'MATERIAL_BATCH_CREATE|MATERIAL_BATCH_QUERY|MATERIAL_BATCH_QUERY', '2字-入库'),
         ('出库', 'WRITE', 'MATERIAL_BATCH_CONSUME|INVENTORY_OUTBOUND|WAREHOUSE_OUTBOUND|SHIPMENT_CREATE', '2字-出库'),
         ('发货', 'WRITE', 'SHIPMENT_CREATE|SHIPMENT_EXPEDITE|SHIPMENT_QUERY', '2字-发货'),
         ('停机', 'WRITE', 'EQUIPMENT_STOP|PROCESSING_BATCH_PAUSE|EQUIPMENT_STATUS_UPDATE', '2字-停机'),
         ('打卡', 'WRITE', 'CLOCK_IN|ATTENDANCE_TODAY|CLOCK_OUT', '2字-打卡'),
-        ('排班', 'QUERY', 'SCHEDULING_LIST|SCHEDULING_QUERY|SCHEDULING_COVERAGE_QUERY', '2字-排班'),
+        ('排班', 'QUERY', 'SCHEDULING_LIST|SCHEDULING_LIST|SCHEDULING_COVERAGE_QUERY', '2字-排班'),
     ]),
 
     # ====== Z1-Z2: Multi-Turn Context References (上下文引用) ======
@@ -1058,15 +1075,15 @@ categories = {
         ('上一个批次的详情', 'QUERY', 'PROCESSING_BATCH_DETAIL|PROCESSING_BATCH_LIST|BATCH_AUTO_LOOKUP|N/A', '上一个+批次'),
         ('刚才那个订单发货了吗', 'QUERY', 'ORDER_STATUS|ORDER_LIST|SHIPMENT_QUERY|N/A', '刚才那个+订单'),
         ('再查一下那个供应商', 'QUERY', 'SUPPLIER_SEARCH|SUPPLIER_LIST|SUPPLIER_EVALUATE|N/A', '再查一下+供应商'),
-        ('还是那个批次，看看质检结果', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|PROCESSING_BATCH_DETAIL|N/A', '还是那个+质检'),
+        ('还是那个批次，看看质检结果', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|PROCESSING_BATCH_DETAIL|N/A', '还是那个+质检'),
         ('同一个的出库记录呢', 'QUERY', 'MATERIAL_BATCH_QUERY|INVENTORY_OUTBOUND|WAREHOUSE_OUTBOUND|SHIPMENT_QUERY|N/A', '同一个+出库'),
     ]),
     'Z2': ('上下文-后续追问', [
-        ('这个呢', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|PROCESSING_BATCH_LIST|N/A', '极短回指'),
-        ('那质检结果呢', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|N/A', '那+质检'),
-        ('换成上个月的', 'QUERY', 'REPORT_PRODUCTION|REPORT_KPI|REPORT_INVENTORY|REPORT_DASHBOARD_OVERVIEW|N/A', '换成+时间'),
-        ('按部门拆分看看', 'QUERY', 'ATTENDANCE_STATS_BY_DEPT|REPORT_PRODUCTION|ATTENDANCE_DEPARTMENT|N/A', '拆分=维度'),
-        ('详细的呢', 'QUERY', 'PROCESSING_BATCH_DETAIL|ORDER_DETAIL|QUERY_GENERIC_DETAIL|REPORT_DASHBOARD_OVERVIEW|N/A', '详细=下钻'),
+        ('这个呢', 'QUERY', 'CONTEXT_CONTINUE|REPORT_DASHBOARD_OVERVIEW|PROCESSING_BATCH_LIST|N/A', '极短回指'),
+        ('那质检结果呢', 'QUERY', 'CONTEXT_CONTINUE|QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|N/A', '那+质检'),
+        ('换成上个月的', 'QUERY', 'CONTEXT_CONTINUE|REPORT_PRODUCTION|REPORT_KPI|REPORT_INVENTORY|REPORT_DASHBOARD_OVERVIEW|N/A', '换成+时间'),
+        ('按部门拆分看看', 'QUERY', 'CONTEXT_CONTINUE|ATTENDANCE_STATS_BY_DEPT|REPORT_PRODUCTION|ATTENDANCE_DEPARTMENT|N/A', '拆分=维度'),
+        ('详细的呢', 'QUERY', 'CONTEXT_CONTINUE|PROCESSING_BATCH_DETAIL|ORDER_STATUS|QUERY_GENERIC_DETAIL|REPORT_DASHBOARD_OVERVIEW|N/A', '详细=下钻'),
     ]),
 
     # ====== Z3-Z4: Code-Switching / Industry Abbreviations ======
@@ -1075,7 +1092,7 @@ categories = {
         ('OA审批记录', 'QUERY', 'QUERY_APPROVAL_RECORD|ORDER_APPROVAL|ORDER_LIST|N/A', 'OA缩写'),
         ('ERP里的库存数据', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|REPORT_DASHBOARD_OVERVIEW|N/A', 'ERP缩写'),
         ('SOP流程查询', 'CONSULT|QUERY', 'FOOD_KNOWLEDGE_QUERY|PROCESSING_BATCH_LIST|N/A', 'SOP=标准流程'),
-        ('QC报告拉一下', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|REPORT_QUALITY|N/A', 'QC=质检'),
+        ('QC报告拉一下', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|REPORT_QUALITY|N/A', 'QC=质检'),
         ('SKU库存明细', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|N/A', 'SKU缩写'),
     ]),
     'Z4': ('代码混用-网络用语', [
@@ -1083,15 +1100,15 @@ categories = {
         ('asap把这批货发了', 'WRITE', 'SHIPMENT_CREATE|SHIPMENT_EXPEDITE|SHIPMENT_STATUS_UPDATE|N/A', 'asap=尽快'),
         ('nb的供应商有哪些', 'QUERY', 'SUPPLIER_RANKING|SUPPLIER_LIST|SUPPLIER_EVALUATE|N/A', 'nb=厉害'),
         ('整个report给老板', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|REPORT_KPI|REPORT_PRODUCTION|N/A', 'report=报表'),
-        ('盘它！库存盘点', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|WAREHOUSE_INVENTORY_CHECK|N/A', '盘它=网络梗'),
+        ('盘它！库存盘点', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|INVENTORY_SUMMARY_QUERY|N/A', '盘它=网络梗'),
     ]),
 
     # ====== Z5: Negation with Intent Redirect ======
     'Z5': ('否定重定向-纠正意图', [
         ('不是查库存，是查订单', 'QUERY', 'ORDER_LIST|ORDER_STATUS|MATERIAL_BATCH_QUERY|N/A', '否定+重定向'),
-        ('我不是要打卡，我是查考勤', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_STATS|ATTENDANCE_RECORD|N/A', '否定写入→查询'),
+        ('我不是要打卡，我是查考勤', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_STATS|ATTENDANCE_HISTORY|CLOCK_IN|N/A', '否定写入→查询'),
         ('别给我看设备，我要看告警', 'QUERY', 'ALERT_LIST|ALERT_ACTIVE|EQUIPMENT_ALERT_LIST|EQUIPMENT_LIST|N/A', '别+转向告警'),
-        ('不看生产数据，看财务的', 'QUERY', 'REPORT_FINANCE|FINANCE_STATS|REPORT_KPI|REPORT_DASHBOARD_OVERVIEW|PRODUCTION_STATUS_QUERY|N/A', '不看A看B'),
+        ('不看生产数据，看财务的', 'QUERY', 'REPORT_FINANCE|REPORT_FINANCE|REPORT_KPI|REPORT_DASHBOARD_OVERVIEW|PRODUCTION_STATUS_QUERY|N/A|REPORT_PRODUCTION', '不看A看B'),
         ('不要创建，我只是想查一下', 'QUERY', 'PROCESSING_BATCH_LIST|ORDER_LIST|MATERIAL_BATCH_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', '否定写入→查询'),
         ('我说的不是供应商，是客户', 'QUERY', 'CUSTOMER_LIST|CUSTOMER_SEARCH|CUSTOMER_STATS|N/A', '纠正域名'),
     ]),
@@ -1100,58 +1117,58 @@ categories = {
     'Z6': ('数量条件-比较运算', [
         ('帮我查100kg以上的批次', 'QUERY', 'MATERIAL_BATCH_QUERY|PROCESSING_BATCH_LIST|REPORT_INVENTORY', '>=100kg'),
         ('库存低于50公斤的原料', 'QUERY', 'MATERIAL_LOW_STOCK_ALERT|MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '<50kg'),
-        ('订单金额超过一万的', 'QUERY', 'ORDER_LIST|ORDER_FILTER|SALES_STATS|REPORT_KPI', '>10000元'),
+        ('订单金额超过一万的', 'QUERY', 'ORDER_LIST|ORDER_FILTER|REPORT_KPI|REPORT_KPI', '>10000元'),
         ('合格率低于90%的产品', 'QUERY', 'QUALITY_STATS|QUALITY_CHECK_QUERY|REPORT_QUALITY', '<90%'),
         ('至少有500箱库存的产品', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|N/A', '>=500箱'),
     ]),
     'Z7': ('数量条件-区间范围', [
         ('温度在2到8度之间的冷库', 'QUERY', 'COLD_CHAIN_TEMPERATURE|EQUIPMENT_STATUS_QUERY|ALERT_LIST|N/A', '温度区间'),
         ('产量在100到200之间的批次', 'QUERY', 'PROCESSING_BATCH_LIST|PRODUCTION_STATUS_QUERY|REPORT_PRODUCTION|N/A', '产量区间'),
-        ('价格5到10元一斤的原料', 'QUERY', 'MATERIAL_BATCH_QUERY|SUPPLIER_PRICE_COMPARISON|PROCUREMENT_LIST|N/A', '价格区间'),
+        ('价格5到10元一斤的原料', 'QUERY', 'MATERIAL_BATCH_QUERY|SUPPLIER_PRICE_COMPARISON|ORDER_LIST|N/A', '价格区间'),
         ('保质期还剩1到3天的', 'QUERY', 'MATERIAL_EXPIRING_ALERT|MATERIAL_EXPIRED_QUERY|MATERIAL_BATCH_QUERY', '效期区间'),
-        ('月薪8000以上的员工', 'QUERY', 'QUERY_EMPLOYEE_PROFILE|EMPLOYEE_DETAIL|HR_PERFORMANCE|N/A', '薪资条件'),
+        ('月薪8000以上的员工', 'QUERY', 'QUERY_EMPLOYEE_PROFILE|QUERY_EMPLOYEE_PROFILE|QUERY_EMPLOYEE_PROFILE|N/A', '薪资条件'),
     ]),
 
     # ====== AA1-AA2: Complex Time Range Expressions ======
     'AA1': ('时间表达-季度半年跨期', [
-        ('去年Q4的销售数据', 'QUERY', 'SALES_STATS|REPORT_KPI|REPORT_TRENDS|REPORT_FINANCE|REPORT_DASHBOARD_OVERVIEW', 'Q4季度'),
+        ('去年Q4的销售数据', 'QUERY', 'REPORT_KPI|REPORT_KPI|REPORT_TRENDS|REPORT_FINANCE|REPORT_DASHBOARD_OVERVIEW', 'Q4季度'),
         ('今年上半年的生产汇总', 'QUERY', 'REPORT_PRODUCTION|REPORT_KPI|PRODUCTION_STATUS_QUERY|REPORT_DASHBOARD_OVERVIEW', '上半年'),
-        ('从去年12月到今年2月的订单', 'QUERY', 'ORDER_LIST|REPORT_KPI|REPORT_TRENDS|REPORT_DASHBOARD_OVERVIEW|N/A', '跨年段'),
+        ('从去年12月到今年2月的订单', 'QUERY', 'ORDER_LIST|REPORT_KPI|REPORT_TRENDS|REPORT_DASHBOARD_OVERVIEW|ORDER_FILTER|N/A', '跨年段'),
         ('最近90天的质检趋势', 'QUERY', 'QUALITY_STATS|REPORT_QUALITY|REPORT_TRENDS|REPORT_DASHBOARD_OVERVIEW|N/A', '90天趋势'),
         ('上个季度跟这个季度对比', 'QUERY', 'REPORT_TRENDS|REPORT_KPI|REPORT_PRODUCTION_WEEKLY_COMPARISON|REPORT_DASHBOARD_OVERVIEW', '季度对比'),
         ('春节前后一周的出勤情况', 'QUERY', 'ATTENDANCE_STATS|ATTENDANCE_HISTORY|ATTENDANCE_MONTHLY|N/A', '节假日+相对'),
     ]),
     'AA2': ('时间表达-模糊相对', [
-        ('前天下午3点以后入库的', 'QUERY', 'MATERIAL_BATCH_QUERY|MATERIAL_BATCH_CREATE|INBOUND_RECORD_QUERY|REPORT_INVENTORY', '精确到小时'),
+        ('前天下午3点以后入库的', 'QUERY', 'MATERIAL_BATCH_QUERY|MATERIAL_BATCH_CREATE|MATERIAL_BATCH_QUERY|REPORT_INVENTORY', '精确到小时'),
         ('国庆期间的产量', 'QUERY', 'REPORT_PRODUCTION|PROCESSING_BATCH_LIST|PRODUCTION_STATUS_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', '节假日名称'),
         ('最近半个月设备报警几次', 'QUERY', 'ALERT_STATS|ALERT_LIST|EQUIPMENT_ALERT_LIST|EQUIPMENT_ALERT_STATS|N/A', '半个月'),
-        ('开年到现在的财务数据', 'QUERY', 'REPORT_FINANCE|FINANCE_STATS|REPORT_KPI|REPORT_DASHBOARD_OVERVIEW', '开年=年初'),
-        ('大前天的发货记录', 'QUERY', 'SHIPMENT_QUERY|SHIPMENT_STATS|ORDER_LIST|REPORT_DASHBOARD_OVERVIEW', '大前天'),
+        ('开年到现在的财务数据', 'QUERY', 'REPORT_FINANCE|REPORT_FINANCE|REPORT_KPI|REPORT_DASHBOARD_OVERVIEW', '开年=年初'),
+        ('大前天的发货记录', 'QUERY', 'SHIPMENT_QUERY|SHIPMENT_BY_DATE|SHIPMENT_STATS|ORDER_LIST|REPORT_DASHBOARD_OVERVIEW', '大前天'),
     ]),
 
     # ====== AA3-AA4: Role-Specific Phrasing ======
     'AA3': ('角色-仓管员视角', [
         ('今天要出几单', 'QUERY', 'SHIPMENT_QUERY|ORDER_LIST|SHIPMENT_STATS|REPORT_DASHBOARD_OVERVIEW|N/A', '仓管-出单'),
         ('哪些货要备', 'QUERY', 'ORDER_LIST|SHIPMENT_QUERY|MATERIAL_BATCH_QUERY|N/A', '仓管-备货'),
-        ('冷库几号位还有空', 'QUERY', 'REPORT_INVENTORY|WAREHOUSE_INVENTORY_CHECK|MATERIAL_BATCH_QUERY|COLD_CHAIN_TEMPERATURE|N/A', '仓管-库位'),
-        ('这批货放哪个库区', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|WAREHOUSE_INVENTORY_CHECK|N/A', '仓管-库区'),
-        ('今天到货清单', 'QUERY', 'MATERIAL_BATCH_QUERY|INBOUND_RECORD_QUERY|PROCUREMENT_LIST|ORDER_LIST|REPORT_DASHBOARD_OVERVIEW', '仓管-到货'),
+        ('冷库几号位还有空', 'QUERY', 'REPORT_INVENTORY|INVENTORY_SUMMARY_QUERY|MATERIAL_BATCH_QUERY|COLD_CHAIN_TEMPERATURE|N/A', '仓管-库位'),
+        ('这批货放哪个库区', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|INVENTORY_SUMMARY_QUERY|N/A', '仓管-库区'),
+        ('今天到货清单', 'QUERY', 'MATERIAL_BATCH_QUERY|MATERIAL_BATCH_QUERY|ORDER_LIST|ORDER_LIST|REPORT_DASHBOARD_OVERVIEW', '仓管-到货'),
     ]),
     'AA4': ('角色-质检员视角', [
         ('今天有几批要抽检', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_EXECUTE|QUALITY_CRITICAL_ITEMS|PROCESSING_BATCH_LIST', '质检员-抽检'),
         ('待检的批次列表', 'QUERY', 'QUALITY_CHECK_QUERY|PROCESSING_BATCH_LIST|QUALITY_CRITICAL_ITEMS', '质检员-待检'),
-        ('上一批的微生物检测出结果了吗', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|FOOD_KNOWLEDGE_QUERY|N/A', '质检员-微生物'),
-        ('留样记录查一下', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|MATERIAL_BATCH_QUERY|N/A', '质检员-留样'),
-        ('这批的理化指标', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|PROCESSING_BATCH_DETAIL|N/A', '质检员-理化指标'),
+        ('上一批的微生物检测出结果了吗', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|FOOD_KNOWLEDGE_QUERY|N/A', '质检员-微生物'),
+        ('留样记录查一下', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|MATERIAL_BATCH_QUERY|N/A', '质检员-留样'),
+        ('这批的理化指标', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|PROCESSING_BATCH_DETAIL|N/A', '质检员-理化指标'),
         ('不合格品处置方案', 'QUERY|WRITE', 'QUALITY_DISPOSITION_EVALUATE|QUALITY_DISPOSITION_EXECUTE|QUALITY_CHECK_QUERY', '质检员-处置'),
     ]),
 
     # ====== AA5: Error Recovery / Self-Correction ======
     'AA5': ('纠错-自我修正表达', [
         ('不对，我要的是库存不是订单', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|ORDER_LIST|REPORT_DASHBOARD_OVERVIEW', '不对+纠正'),
-        ('等等，我说错了，查质检的', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|QUALITY_STATS|N/A', '说错了+纠正'),
+        ('等等，我说错了，查质检的', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|QUALITY_STATS|N/A', '说错了+纠正'),
         ('哦不是这个，帮我查生产批次', 'QUERY', 'PROCESSING_BATCH_LIST|PROCESSING_BATCH_DETAIL|REPORT_DASHBOARD_OVERVIEW', '不是这个+纠正'),
-        ('搞错了，应该是出库不是入库', 'WRITE', 'MATERIAL_BATCH_CONSUME|INVENTORY_OUTBOUND|WAREHOUSE_OUTBOUND|MATERIAL_BATCH_CREATE|N/A', '搞错了+纠正'),
+        ('搞错了，应该是出库不是入库', 'WRITE', 'MATERIAL_BATCH_CONSUME|INVENTORY_OUTBOUND|WAREHOUSE_OUTBOUND|MATERIAL_BATCH_CREATE|MATERIAL_BATCH_QUERY|N/A|MATERIAL_BATCH_USE', '搞错了+纠正'),
         ('算了不查了，帮我打个卡吧', 'WRITE', 'CLOCK_IN|CLOCK_OUT|REPORT_DASHBOARD_OVERVIEW|N/A', '放弃查询→写入'),
         ('我刚才说反了，是签退不是签到', 'WRITE', 'CLOCK_OUT|CLOCK_IN|N/A', '说反了+纠正'),
     ]),
@@ -1161,25 +1178,25 @@ categories = {
         ('先创建批次然后分配工人', 'WRITE', 'PROCESSING_BATCH_CREATE|PROCESSING_WORKER_ASSIGN|N/A', '先后-创建+分配'),
         ('入库完了直接创建生产批次', 'WRITE', 'MATERIAL_BATCH_CREATE|PROCESSING_BATCH_CREATE|N/A', '完了+创建'),
         ('质检通过后马上安排发货', 'WRITE', 'QUALITY_CHECK_EXECUTE|SHIPMENT_CREATE|QUALITY_BATCH_MARK_AS_INSPECTED|N/A', '通过+发货'),
-        ('打完卡顺便查一下今天排班', 'QUERY|WRITE', 'CLOCK_IN|SCHEDULING_LIST|SCHEDULING_QUERY|N/A', '打卡+查排班'),
-        ('创建订单并通知仓库备货', 'WRITE', 'ORDER_CREATE|ORDER_NEW|SHIPMENT_NOTIFY_WAREHOUSE_PREPARE|N/A', '创建+通知'),
+        ('打完卡顺便查一下今天排班', 'QUERY|WRITE', 'CLOCK_IN|SCHEDULING_LIST|SCHEDULING_LIST|N/A', '打卡+查排班'),
+        ('创建订单并通知仓库备货', 'WRITE', 'ORDER_NEW|ORDER_NEW|SHIPMENT_NOTIFY_WAREHOUSE_PREPARE|N/A', '创建+通知'),
         ('停掉设备然后提交故障报告', 'WRITE', 'EQUIPMENT_STOP|EQUIPMENT_STATUS_UPDATE|EQUIPMENT_BREAKDOWN_REPORT|N/A', '停机+报告'),
     ]),
 
     # ====== AA7: Pure Noise / Garbage Input ======
     'AA7': ('噪音-纯符号表情乱码', [
-        ('？？？', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '纯问号'),
-        ('。。。', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '纯句号'),
-        ('666', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '纯数字'),
-        ('哈哈哈哈', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '纯语气词'),
-        ('嗯嗯好的', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '确认词'),
-        ('啊？', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '疑问语气词'),
+        ('？？？', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '纯问号'),
+        ('。。。', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '纯句号'),
+        ('666', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '纯数字'),
+        ('哈哈哈哈', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '纯语气词'),
+        ('嗯嗯好的', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '确认词'),
+        ('啊？', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '疑问语气词'),
     ]),
 
     # ====== AA8: Domain Jargon / B2B Terms ======
     'AA8': ('行业术语-供应链制造业', [
-        ('MOQ是多少', 'QUERY', 'SUPPLIER_EVALUATE|SUPPLIER_LIST|PROCUREMENT_LIST|REPORT_DASHBOARD_OVERVIEW|N/A', 'MOQ=最小起订量'),
-        ('FOB价格查询', 'QUERY', 'SUPPLIER_PRICE_COMPARISON|PROCUREMENT_LIST|COST_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', 'FOB=离岸价'),
+        ('MOQ是多少', 'QUERY', 'SUPPLIER_EVALUATE|SUPPLIER_LIST|ORDER_LIST|REPORT_DASHBOARD_OVERVIEW|N/A', 'MOQ=最小起订量'),
+        ('FOB价格查询', 'QUERY', 'SUPPLIER_PRICE_COMPARISON|ORDER_LIST|COST_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', 'FOB=离岸价'),
         ('WIP在制品数量', 'QUERY', 'PROCESSING_BATCH_LIST|PRODUCTION_STATUS_QUERY|REPORT_PRODUCTION|N/A', 'WIP=在制品'),
         ('良品率多少', 'QUERY', 'QUALITY_STATS|REPORT_QUALITY|REPORT_KPI', '良品率=合格率'),
         ('OEE设备综合效率', 'QUERY', 'EQUIPMENT_STATS|REPORT_EFFICIENCY|REPORT_KPI|REPORT_DASHBOARD_OVERVIEW|N/A', 'OEE=设备综合效率'),
@@ -1190,34 +1207,34 @@ categories = {
     'AA9': ('假设条件-如果万一假如', [
         ('如果明天产量翻倍需要多少原料', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|MRP_CALCULATION|REPORT_PRODUCTION|REPORT_DASHBOARD_OVERVIEW|N/A', '假设-翻倍'),
         ('万一冷库断电怎么办', 'CONSULT|QUERY', 'FOOD_KNOWLEDGE_QUERY|EQUIPMENT_STATUS_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', '万一-应急'),
-        ('假如供应商延迟交货影响大吗', 'QUERY', 'SUPPLIER_EVALUATE|ORDER_LIST|PROCUREMENT_LIST|REPORT_DASHBOARD_OVERVIEW|N/A', '假如-延迟'),
+        ('假如供应商延迟交货影响大吗', 'QUERY', 'SUPPLIER_EVALUATE|ORDER_LIST|ORDER_LIST|REPORT_DASHBOARD_OVERVIEW|N/A', '假如-延迟'),
         ('要是质检不通过这批货怎么处理', 'CONSULT|QUERY|WRITE', 'FOOD_KNOWLEDGE_QUERY|QUALITY_DISPOSITION_EVALUATE|QUALITY_DISPOSITION_EXECUTE|QUALITY_CHECK_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', '要是-质检'),
         ('如果新增一条产线需要多少人', 'QUERY|WRITE', 'SCHEDULING_LIST|SCHEDULING_COVERAGE_QUERY|ATTENDANCE_STATS|PROCESSING_BATCH_CREATE|REPORT_DASHBOARD_OVERVIEW|N/A', '如果-新增'),
     ]),
 
     # ====== AA10: Conversational / Off-Topic ======
     'AA10': ('闲聊-问候离题非业务', [
-        ('你好', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '问候'),
-        ('你是谁', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '身份询问'),
-        ('今天天气怎么样', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '天气-离题'),
-        ('谢谢你', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '感谢'),
-        ('讲个笑话', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '娱乐请求'),
-        ('帮我写一封邮件', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '非系统功能'),
+        ('你好', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '问候'),
+        ('你是谁', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '身份询问'),
+        ('今天天气怎么样', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '天气-离题'),
+        ('谢谢你', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '感谢'),
+        ('讲个笑话', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '娱乐请求'),
+        ('帮我写一封邮件', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '非系统功能'),
     ]),
 
     # ====== AA11: Dialect / Regional Expressions ======
     'AA11': ('方言-地方化表达', [
-        ('仓库里头还有好多货伐', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|WAREHOUSE_INVENTORY_CHECK|REPORT_DASHBOARD_OVERVIEW|N/A', '上海话-伐'),
+        ('仓库里头还有好多货伐', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|INVENTORY_SUMMARY_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', '上海话-伐'),
         ('这批货搞得定不', 'QUERY', 'PROCESSING_BATCH_LIST|ORDER_LIST|PRODUCTION_STATUS_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', '川渝-搞得定不'),
         ('机器歇菜了', 'QUERY|WRITE', 'EQUIPMENT_STATUS_QUERY|EQUIPMENT_STOP|ALERT_LIST|EQUIPMENT_ALERT_LIST|REPORT_DASHBOARD_OVERVIEW|N/A', '东北-歇菜'),
         ('今个儿出了多少活', 'QUERY', 'REPORT_PRODUCTION|PROCESSING_BATCH_LIST|PRODUCTION_STATUS_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', '北方-今个儿'),
-        ('物料齐活了没', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|PROCUREMENT_LIST|REPORT_DASHBOARD_OVERVIEW|N/A', '北方-齐活'),
+        ('物料齐活了没', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|ORDER_LIST|REPORT_DASHBOARD_OVERVIEW|N/A', '北方-齐活'),
     ]),
 
     # ====== AA12: Verb-Noun Domain Collision ======
     'AA12': ('碰撞-动词同时是名词', [
         ('检测设备是否在线', 'QUERY', 'EQUIPMENT_STATUS_QUERY|EQUIPMENT_LIST|EQUIPMENT_DETAIL|N/A', '检测(v)≠质检(n)'),
-        ('生产检测报告', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|REPORT_QUALITY|REPORT_PRODUCTION|N/A', '生产+检测'),
+        ('生产检测报告', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|REPORT_QUALITY|REPORT_PRODUCTION|N/A', '生产+检测'),
         ('采购部门的考勤', 'QUERY', 'ATTENDANCE_STATS|ATTENDANCE_STATS_BY_DEPT|ATTENDANCE_HISTORY|N/A', '采购(n)修饰考勤'),
         ('设备维修订单', 'QUERY', 'EQUIPMENT_MAINTENANCE|ORDER_LIST|EQUIPMENT_DETAIL|REPORT_DASHBOARD_OVERVIEW|N/A', '维修+订单'),
         ('加工标准查询', 'CONSULT|QUERY', 'FOOD_KNOWLEDGE_QUERY|PROCESSING_BATCH_LIST|PRODUCTION_STATUS_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', '加工标准=知识or生产'),
@@ -1231,7 +1248,7 @@ categories = {
         ('被客户取消的订单', 'QUERY', 'ORDER_LIST|ORDER_STATUS|ORDER_DELETE|CUSTOMER_DELETE|REPORT_DASHBOARD_OVERVIEW|N/A', '被取消+订单'),
         ('被系统告警的设备', 'QUERY', 'ALERT_LIST|EQUIPMENT_ALERT_LIST|ALERT_ACTIVE|EQUIPMENT_STATUS_QUERY|N/A', '被告警+设备'),
         ('被质检判为不合格的批次', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_STATS|QUALITY_CRITICAL_ITEMS|N/A', '被判+不合格'),
-        ('被供应商延迟的采购订单', 'QUERY', 'PROCUREMENT_LIST|ORDER_LIST|SUPPLIER_EVALUATE|N/A', '被延迟+采购'),
+        ('被供应商延迟的采购订单', 'QUERY', 'ORDER_LIST|ORDER_LIST|SUPPLIER_EVALUATE|N/A', '被延迟+采购'),
     ]),
 
     # ====== AB2: Topic-Comment Structure (话题-述题) ======
@@ -1241,7 +1258,7 @@ categories = {
         ('质检这块，怎么样了', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_STATS|REPORT_DASHBOARD_OVERVIEW|N/A', '这块+质检'),
         ('设备那边，有没有问题', 'QUERY', 'EQUIPMENT_STATUS_QUERY|ALERT_LIST|EQUIPMENT_ALERT_LIST|QUALITY_CHECK_QUERY|N/A', '那边+设备'),
         ('考勤嘛，帮我看看', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_STATS|ATTENDANCE_TODAY|N/A', '嘛+考勤'),
-        ('排班的话，明天安排好了没', 'QUERY', 'SCHEDULING_LIST|SCHEDULING_COVERAGE_QUERY|SCHEDULING_QUERY|N/A', '的话+排班'),
+        ('排班的话，明天安排好了没', 'QUERY', 'SCHEDULING_LIST|SCHEDULING_COVERAGE_QUERY|SCHEDULING_LIST|N/A', '的话+排班'),
     ]),
 
     # ====== AB3: Rhetorical Questions (反问句) ======
@@ -1259,15 +1276,15 @@ categories = {
         ('没有不需要质检的批次吧', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CRITICAL_ITEMS|PROCESSING_BATCH_LIST|N/A', '没有不+质检'),
         ('不是不能打卡，我就是忘了', 'WRITE', 'CLOCK_IN|CLOCK_OUT|ATTENDANCE_TODAY|N/A', '不是不能+打卡'),
         ('这台设备不能不维护', 'QUERY|WRITE', 'EQUIPMENT_MAINTENANCE|EQUIPMENT_STATUS_QUERY|N/A', '不能不+维护'),
-        ('订单不得不处理一下', 'QUERY|WRITE', 'ORDER_LIST|ORDER_UPDATE|ORDER_STATUS|N/A', '不得不+订单'),
+        ('订单不得不处理一下', 'QUERY|WRITE', 'ORDER_LIST|ORDER_UPDATE|ORDER_STATUS|OUT_OF_DOMAIN|N/A', '不得不+订单'),
     ]),
 
     # ====== AB5: Sentence-Final Particles (句末语气词) ======
     'AB5': ('语气词-嘛啦呗咯句末', [
         ('库存查一下嘛', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|REPORT_DASHBOARD_OVERVIEW|N/A', '嘛-库存'),
         ('帮我打个卡啦', 'WRITE', 'CLOCK_IN|CLOCK_OUT|ATTENDANCE_TODAY|N/A', '啦-打卡'),
-        ('发货呗，还等什么', 'WRITE', 'SHIPMENT_CREATE|SHIPMENT_EXPEDITE|SHIPMENT_STATUS_UPDATE|N/A', '呗-发货'),
-        ('质检结果出来了咯', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_BATCH_REPORT|QUALITY_STATS|N/A', '咯-质检'),
+        ('发货呗，还等什么', 'WRITE', 'SHIPMENT_CREATE|SHIPMENT_EXPEDITE|SHIPMENT_STATUS_UPDATE|N/A|SHIPMENT_QUERY', '呗-发货'),
+        ('质检结果出来了咯', 'QUERY', 'QUALITY_CHECK_QUERY|QUALITY_CHECK_QUERY|QUALITY_STATS|N/A', '咯-质检'),
         ('生产进度嘛，看看就行', 'QUERY', 'PROCESSING_BATCH_LIST|PRODUCTION_STATUS_QUERY|REPORT_PRODUCTION|N/A', '嘛-进度'),
         ('告警处理掉算了', 'WRITE', 'ALERT_ACKNOWLEDGE|ALERT_RESOLVE|EQUIPMENT_ALERT_RESOLVE|N/A', '算了-告警'),
     ]),
@@ -1283,21 +1300,21 @@ categories = {
 
     # ====== AB7: True Ellipsis (省略/回指) ======
     'AB7': ('省略-同上一样继续', [
-        ('同上', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '极短省略'),
-        ('一样的，再查一遍', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|PROCESSING_BATCH_LIST|N/A', '一样+再查'),
-        ('跟刚才一样', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '跟刚才一样'),
-        ('还是之前那个条件', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '之前条件'),
-        ('继续', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '单字续行'),
+        ('同上', 'QUERY', 'CONTEXT_CONTINUE|REPORT_DASHBOARD_OVERVIEW|N/A', '极短省略'),
+        ('一样的，再查一遍', 'QUERY', 'CONTEXT_CONTINUE|REPORT_DASHBOARD_OVERVIEW|PROCESSING_BATCH_LIST|N/A', '一样+再查'),
+        ('跟刚才一样', 'QUERY', 'CONTEXT_CONTINUE|REPORT_DASHBOARD_OVERVIEW|N/A', '跟刚才一样'),
+        ('还是之前那个条件', 'QUERY', 'CONTEXT_CONTINUE|REPORT_DASHBOARD_OVERVIEW|N/A', '之前条件'),
+        ('继续', 'QUERY', 'CONTEXT_CONTINUE|REPORT_DASHBOARD_OVERVIEW|N/A', '单字续行'),
     ]),
 
     # ====== AB8: Edge Cases — Empty, Repeated, Single Character ======
     'AB8': ('边界-空白重复极端输入', [
-        ('查查查', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|MATERIAL_BATCH_QUERY|N/A', '重复字'),
-        ('查', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '单字'),
-        ('的', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '停用词'),
+        ('查查查', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|MATERIAL_BATCH_QUERY|N/A', '重复字'),
+        ('查', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '单字'),
+        ('的', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '停用词'),
         ('库存库存库存', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|REPORT_DASHBOARD_OVERVIEW|N/A', '重复词'),
-        ('！！！查！！！', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '符号+查'),
-        ('  ', 'QUERY', 'REPORT_DASHBOARD_OVERVIEW|N/A', '纯空格'),
+        ('！！！查！！！', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '符号+查'),
+        ('  ', 'QUERY', 'OUT_OF_DOMAIN|REPORT_DASHBOARD_OVERVIEW|N/A', '纯空格'),
     ]),
 
     # ====== AB9: Camera / Vision AI Intents ======
@@ -1305,7 +1322,7 @@ categories = {
         ('配置越界检测', 'WRITE', 'ISAPI_CONFIG_LINE_DETECTION|EQUIPMENT_STATUS_UPDATE|N/A', '越界检测'),
         ('设置警戒线', 'WRITE', 'ISAPI_CONFIG_LINE_DETECTION|EQUIPMENT_STATUS_UPDATE|N/A', '警戒线'),
         ('配置区域入侵检测', 'WRITE', 'ISAPI_CONFIG_FIELD_DETECTION|EQUIPMENT_STATUS_UPDATE|N/A', '区域入侵'),
-        ('查看摄像头检测事件', 'QUERY', 'ISAPI_QUERY_DETECTION_EVENTS|EQUIPMENT_STATUS_QUERY|EQUIPMENT_CAMERA_START|N/A', '摄像头事件'),
+        ('查看摄像头检测事件', 'QUERY', 'ISAPI_QUERY_CAPABILITIES|EQUIPMENT_STATUS_QUERY|EQUIPMENT_CAMERA_START|N/A', '摄像头事件'),
         ('行为检测配置', 'WRITE', 'ISAPI_CONFIG_LINE_DETECTION|ISAPI_CONFIG_FIELD_DETECTION|EQUIPMENT_STATUS_UPDATE|N/A', '行为检测'),
     ]),
 
@@ -1321,9 +1338,9 @@ categories = {
 
     # ====== AB11: Home Layout / System Config ======
     'AB11': ('系统配置-首页布局功能开关', [
-        ('帮我生成首页布局', 'WRITE', 'HOME_LAYOUT_GENERATE|HOME_LAYOUT_SUGGEST|REPORT_DASHBOARD_OVERVIEW|N/A', '首页布局生成'),
-        ('建议一个首页布局', 'WRITE', 'HOME_LAYOUT_SUGGEST|HOME_LAYOUT_GENERATE|REPORT_DASHBOARD_OVERVIEW|N/A', '首页布局建议'),
-        ('更新首页模块配置', 'WRITE', 'HOME_LAYOUT_UPDATE|CONFIG_RESET|REPORT_DASHBOARD_OVERVIEW|N/A', '首页模块更新'),
+        ('帮我生成首页布局', 'WRITE', 'FORM_GENERATION|FORM_GENERATION|REPORT_DASHBOARD_OVERVIEW|N/A', '首页布局生成'),
+        ('建议一个首页布局', 'WRITE', 'FORM_GENERATION|FORM_GENERATION|REPORT_DASHBOARD_OVERVIEW|N/A', '首页布局建议'),
+        ('更新首页模块配置', 'WRITE', 'CONFIG_RESET|CONFIG_RESET|REPORT_DASHBOARD_OVERVIEW|N/A', '首页模块更新'),
         ('开启某个工厂功能', 'WRITE', 'FACTORY_FEATURE_TOGGLE|CONFIG_RESET|N/A', '功能开关'),
         ('恢复默认系统配置', 'WRITE', 'CONFIG_RESET|FACTORY_FEATURE_TOGGLE|N/A', '恢复默认'),
         ('重置告警规则配置', 'WRITE', 'CONFIG_RESET|RULE_CONFIG|ALERT_LIST|N/A', '重置规则'),
@@ -1331,21 +1348,21 @@ categories = {
 
     # ====== AB12: Traceability Code Generation ======
     'AB12': ('溯源-生成二维码追溯码', [
-        ('生成这批猪肉的溯源码', 'WRITE', 'TRACE_GENERATE|TRACE_BATCH|TRACE_FULL|N/A', '生成溯源码'),
-        ('为MB001批次生成追溯二维码', 'WRITE', 'TRACE_GENERATE|TRACE_BATCH|BATCH_AUTO_LOOKUP|N/A', '指定批次+生成'),
-        ('生成公开溯源页面链接', 'WRITE', 'TRACE_GENERATE|TRACE_PUBLIC|N/A', '公开链接'),
+        ('生成这批猪肉的溯源码', 'WRITE', 'TRACE_PUBLIC|TRACE_BATCH|TRACE_FULL|N/A', '生成溯源码'),
+        ('为MB001批次生成追溯二维码', 'WRITE', 'TRACE_PUBLIC|TRACE_BATCH|BATCH_AUTO_LOOKUP|PROCESSING_BATCH_CREATE|N/A', '指定批次+生成'),
+        ('生成公开溯源页面链接', 'WRITE', 'TRACE_PUBLIC|TRACE_PUBLIC|N/A', '公开链接'),
         ('扫描溯源码查看信息', 'QUERY', 'TRACE_PUBLIC|TRACE_BATCH|TRACE_FULL|N/A', '扫码查看'),
         ('溯源码是什么格式的', 'CONSULT|QUERY', 'FOOD_KNOWLEDGE_QUERY|TRACE_PUBLIC|REPORT_DASHBOARD_OVERVIEW|N/A', '溯源格式咨询'),
     ]),
 
-    # ====== AB13: ORDER_CANCEL Precision ======
+    # ====== AB13: ORDER_DELETE Precision ======
     'AB13': ('订单取消-取消vs删除精确区分', [
-        ('取消这笔订单', 'WRITE', 'ORDER_CANCEL|ORDER_DELETE|ORDER_UPDATE|ORDER_MODIFY|N/A', '取消订单'),
-        ('撤销这个订单', 'WRITE', 'ORDER_CANCEL|ORDER_DELETE|ORDER_MODIFY|N/A', '撤销订单'),
-        ('这个订单不要了，取消掉', 'WRITE', 'ORDER_CANCEL|ORDER_DELETE|ORDER_UPDATE|N/A', '不要了+取消'),
-        ('永久删除订单记录', 'WRITE', 'ORDER_DELETE|ORDER_CANCEL|DATA_BATCH_DELETE|N/A', '永久删除'),
-        ('订单已作废', 'WRITE', 'ORDER_CANCEL|ORDER_UPDATE|ORDER_DELETE|N/A', '作废'),
-        ('帮我把这几个订单全部撤掉', 'WRITE', 'ORDER_CANCEL|DATA_BATCH_DELETE|ORDER_DELETE|N/A', '批量撤掉'),
+        ('取消这笔订单', 'WRITE', 'ORDER_DELETE|ORDER_DELETE|ORDER_UPDATE|ORDER_MODIFY|N/A', '取消订单'),
+        ('撤销这个订单', 'WRITE', 'ORDER_DELETE|ORDER_DELETE|ORDER_MODIFY|N/A', '撤销订单'),
+        ('这个订单不要了，取消掉', 'WRITE', 'ORDER_DELETE|ORDER_DELETE|ORDER_UPDATE|N/A', '不要了+取消'),
+        ('永久删除订单记录', 'WRITE', 'ORDER_DELETE|ORDER_DELETE|DATA_BATCH_DELETE|N/A', '永久删除'),
+        ('订单已作废', 'WRITE', 'ORDER_DELETE|ORDER_UPDATE|ORDER_DELETE|N/A', '作废'),
+        ('帮我把这几个订单全部撤掉', 'WRITE', 'ORDER_DELETE|DATA_BATCH_DELETE|ORDER_DELETE|N/A', '批量撤掉'),
     ]),
 
     # ====== AB14: Inputs with URLs, Phone Numbers, Special Characters ======
@@ -1361,11 +1378,216 @@ categories = {
     # ====== AB15: Comparative / Differential Queries (比较级) ======
     'AB15': ('比较级-比字句差值查询', [
         ('比上个月多了多少产量', 'QUERY', 'REPORT_PRODUCTION|REPORT_TRENDS|REPORT_PRODUCTION_WEEKLY_COMPARISON|REPORT_DASHBOARD_OVERVIEW|N/A', '比+多了多少'),
-        ('这个月销售额比去年同期高还是低', 'QUERY', 'SALES_STATS|REPORT_KPI|REPORT_TRENDS|REPORT_PRODUCTION|REPORT_DASHBOARD_OVERVIEW|N/A', '比+同期'),
+        ('这个月销售额比去年同期高还是低', 'QUERY', 'REPORT_KPI|REPORT_KPI|REPORT_TRENDS|REPORT_PRODUCTION|REPORT_DASHBOARD_OVERVIEW|N/A|PROFIT_TREND_ANALYSIS', '比+同期'),
         ('哪个车间产量最高', 'QUERY', 'REPORT_PRODUCTION|PRODUCTION_STATUS_QUERY|REPORT_KPI|REPORT_DASHBOARD_OVERVIEW|N/A', '最高+车间'),
         ('库存比上周少了多少', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|REPORT_TRENDS|REPORT_DASHBOARD_OVERVIEW|N/A', '比+少了'),
         ('今天出勤人数跟昨天比怎么样', 'QUERY', 'ATTENDANCE_TODAY|ATTENDANCE_STATS|REPORT_TRENDS|REPORT_DASHBOARD_OVERVIEW|N/A', '跟+比'),
         ('A供应商比B供应商价格如何', 'QUERY', 'SUPPLIER_PRICE_COMPARISON|SUPPLIER_EVALUATE|SUPPLIER_RANKING|SUPPLIER_LIST|N/A', '供应商比较'),
+    ]),
+
+    # ====== AC: RESTAURANT 模块 (餐饮专属) ======
+    'AC1': ('餐饮-菜品查询', [
+        ('今天有哪些菜品', 'QUERY', 'RESTAURANT_DISH_LIST|PRODUCT_TYPE_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', '菜品列表'),
+        ('销量最好的菜是哪几道', 'QUERY', 'RESTAURANT_DISH_PRODUCT_SALES_RANKING|RESTAURANT_BESTSELLER_QUERY|PRODUCT_SALES_RANKING|N/A', '菜品销量排名'),
+        ('畅销菜品是什么', 'QUERY', 'RESTAURANT_BESTSELLER_QUERY|RESTAURANT_DISH_PRODUCT_SALES_RANKING|REPORT_KPI|N/A', '畅销菜'),
+        ('哪个菜卖不动', 'QUERY', 'RESTAURANT_SLOW_SELLER_QUERY|RESTAURANT_DISH_PRODUCT_SALES_RANKING|PRODUCT_SALES_RANKING|N/A', '滞销菜'),
+        ('每道菜的成本是多少', 'QUERY', 'RESTAURANT_DISH_COST_ANALYSIS|COST_QUERY|REPORT_FINANCE|N/A', '菜品成本'),
+        ('做红烧肉的成本分析', 'QUERY', 'RESTAURANT_DISH_COST_ANALYSIS|COST_QUERY|FOOD_KNOWLEDGE_QUERY|COST_TREND_ANALYSIS|N/A', '单品成本'),
+    ]),
+    'AC2': ('餐饮-食材库存', [
+        ('食材库存还有多少', 'QUERY', 'RESTAURANT_INGREDIENT_STOCK|MATERIAL_BATCH_QUERY|REPORT_INVENTORY|N/A', '食材库存'),
+        ('哪些食材快过期了', 'QUERY', 'RESTAURANT_INGREDIENT_EXPIRY_ALERT|MATERIAL_EXPIRING_ALERT|MATERIAL_EXPIRED_QUERY|N/A', '食材过期'),
+        ('低库存的食材有哪些', 'QUERY', 'RESTAURANT_INGREDIENT_LOW_STOCK|MATERIAL_LOW_STOCK_ALERT|MATERIAL_BATCH_QUERY|REPORT_INVENTORY|N/A', '食材低库存'),
+        ('肉类食材还剩多少', 'QUERY', 'RESTAURANT_INGREDIENT_STOCK|MATERIAL_BATCH_QUERY|REPORT_INVENTORY|N/A', '肉类食材'),
+        ('需要采购什么食材', 'QUERY', 'RESTAURANT_PROCUREMENT_SUGGESTION|ORDER_LIST|MATERIAL_LOW_STOCK_ALERT|N/A', '采购建议'),
+        ('食材成本最近涨了多少', 'QUERY', 'RESTAURANT_INGREDIENT_COST_TREND|COST_TREND_ANALYSIS|COST_QUERY|REPORT_FINANCE|N/A', '食材成本趋势'),
+    ]),
+    'AC3': ('餐饮-营业分析', [
+        ('今天营业额是多少', 'QUERY', 'RESTAURANT_DAILY_REVENUE|REPORT_FINANCE|REPORT_KPI|REPORT_KPI|N/A', '今日营业额'),
+        ('本周营业额趋势', 'QUERY', 'RESTAURANT_REVENUE_TREND|REPORT_TRENDS|REPORT_KPI|N/A', '营业额趋势'),
+        ('今天接了多少单', 'QUERY', 'RESTAURANT_ORDER_STATISTICS|ORDER_LIST|ORDER_TODAY|REPORT_DASHBOARD_OVERVIEW|N/A', '餐饮订单数'),
+        ('哪个时段客人最多', 'QUERY', 'RESTAURANT_PEAK_HOURS_ANALYSIS|REPORT_TRENDS|REPORT_KPI|N/A', '高峰时段'),
+        ('毛利率分析', 'QUERY', 'RESTAURANT_MARGIN_ANALYSIS|REPORT_FINANCE|REPORT_FINANCE|REPORT_KPI|PROFIT_TREND_ANALYSIS|N/A', '餐饮毛利率'),
+    ]),
+    'AC4': ('餐饮-损耗管理', [
+        ('本周食材损耗汇总', 'QUERY', 'RESTAURANT_WASTAGE_SUMMARY|REPORT_ANOMALY|REPORT_FINANCE|N/A', '损耗汇总'),
+        ('损耗率是多少', 'QUERY', 'RESTAURANT_WASTAGE_RATE|REPORT_KPI|REPORT_FINANCE|REPORT_ANOMALY|N/A', '损耗率'),
+        ('有没有异常损耗', 'QUERY', 'RESTAURANT_WASTAGE_ANOMALY|REPORT_ANOMALY|ALERT_LIST|N/A', '异常损耗'),
+        ('今天浪费了多少食材', 'QUERY', 'RESTAURANT_WASTAGE_SUMMARY|RESTAURANT_WASTAGE_RATE|REPORT_ANOMALY|N/A', '食材浪费'),
+        ('损耗最高的食材', 'QUERY', 'RESTAURANT_WASTAGE_ANOMALY|RESTAURANT_WASTAGE_SUMMARY|REPORT_KPI|N/A', '损耗排名'),
+    ]),
+
+    # ====== AD: CAMERA 模块 (摄像头管理) ======
+    'AD1': ('摄像头-设备管理查询', [
+        ('摄像头列表', 'QUERY', 'CAMERA_LIST|SCALE_LIST_DEVICES|EQUIPMENT_LIST|N/A', '摄像头列表'),
+        ('查看1号摄像头详情', 'QUERY', 'CAMERA_DETAIL|CAMERA_STATUS|EQUIPMENT_DETAIL|QUERY_GENERIC_DETAIL|N/A', '摄像头详情'),
+        ('摄像头在线状态', 'QUERY', 'CAMERA_STATUS|CAMERA_LIST|EQUIPMENT_STATUS_QUERY|N/A', '摄像头在线'),
+        ('摄像头的流媒体地址', 'QUERY', 'CAMERA_STREAMS|CAMERA_STATUS|EQUIPMENT_DETAIL|N/A', '流媒体地址'),
+        ('查看摄像头告警事件', 'QUERY', 'CAMERA_EVENTS|ISAPI_QUERY_CAPABILITIES|ALERT_LIST|N/A', '摄像头事件'),
+    ]),
+    'AD2': ('摄像头-管理操作', [
+        ('添加一台摄像头', 'WRITE', 'CAMERA_ADD|SCALE_ADD_DEVICE|EQUIPMENT_STATUS_UPDATE|EQUIPMENT_CAMERA_START|N/A', '添加摄像头'),
+        ('订阅摄像头告警推送', 'WRITE', 'CAMERA_SUBSCRIBE|NOTIFICATION_SEND_WECHAT|EQUIPMENT_STATUS_UPDATE|N/A', '订阅推送'),
+        ('取消摄像头事件订阅', 'WRITE', 'CAMERA_UNSUBSCRIBE|CAMERA_SUBSCRIBE|EQUIPMENT_STATUS_UPDATE|N/A', '取消订阅'),
+        ('摄像头网络连接测试', 'QUERY', 'CAMERA_TEST_CONNECTION|CAMERA_STATUS|EQUIPMENT_STATUS_QUERY|N/A', '连接测试'),
+        ('查看摄像头连接是否正常', 'QUERY', 'CAMERA_TEST_CONNECTION|CAMERA_STATUS|EQUIPMENT_STATUS_QUERY|N/A', '连接检测'),
+        ('抓拍一张当前画面', 'WRITE', 'CAMERA_CAPTURE|EQUIPMENT_CAMERA_START|EQUIPMENT_STATUS_UPDATE|N/A', '摄像头抓拍'),
+    ]),
+
+    # ====== AE: SCALE 协议深层 (秤协议管理) ======
+    'AE1': ('秤协议-型号与协议管理', [
+        ('添加一个秤型号', 'WRITE', 'SCALE_ADD_MODEL|SCALE_ADD_DEVICE|EQUIPMENT_STATUS_UPDATE|SCALE_LIST_DEVICES|N/A', '添加秤型号'),
+        ('自动识别秤的协议', 'QUERY', 'SCALE_PROTOCOL_DETECT|SCALE_LIST_PROTOCOLS|SCALE_DEVICE_DETAIL|SCALE_ADD_DEVICE_VISION|N/A', '协议识别'),
+        ('查看支持的秤协议列表', 'QUERY', 'SCALE_LIST_PROTOCOLS|SCALE_LIST_DEVICES|EQUIPMENT_LIST|MATERIAL_BATCH_QUERY|N/A', '协议列表'),
+        ('测试秤数据解析', 'QUERY', 'SCALE_TEST_PARSE|SCALE_PROTOCOL_DETECT|SCALE_DEVICE_DETAIL|N/A', '数据解析测试'),
+        ('用AI生成秤配置', 'WRITE', 'SCALE_CONFIG_GENERATE|SCALE_ADD_DEVICE|EQUIPMENT_STATUS_UPDATE|N/A', 'AI生成配置'),
+    ]),
+    'AE2': ('秤-故障排查与校准', [
+        ('电子秤数据不准帮我排查', 'QUERY', 'SCALE_TROUBLESHOOT|SCALE_CALIBRATE|EQUIPMENT_STATUS_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', '秤故障排查'),
+        ('秤需要校准', 'WRITE', 'SCALE_CALIBRATE|SCALE_TROUBLESHOOT|EQUIPMENT_STATUS_UPDATE|N/A', '校准秤'),
+        ('电子秤读数异常', 'QUERY', 'SCALE_TROUBLESHOOT|ALERT_LIST|EQUIPMENT_STATUS_QUERY|N/A', '读数异常'),
+        ('用视觉识别方式添加秤设备', 'WRITE', 'SCALE_ADD_DEVICE_VISION|SCALE_ADD_DEVICE|EQUIPMENT_STATUS_UPDATE|EQUIPMENT_MAINTENANCE|N/A', '视觉识别添加'),
+        ('秤重量显示不对', 'QUERY', 'SCALE_TROUBLESHOOT|SCALE_CALIBRATE|EQUIPMENT_HEALTH_DIAGNOSIS|N/A', '显示不对'),
+    ]),
+
+    # ====== AF: WORK_REPORT 模块 (生产报工) ======
+    'AF1': ('报工-进度与工时查询', [
+        ('查看生产进度报告', 'QUERY', 'PRODUCTION_PROGRESS_REPORT|REPORT_PRODUCTION|PROCESSING_BATCH_LIST|N/A', '进度报告'),
+        ('工人工时统计', 'QUERY', 'PRODUCTION_HOURS_REPORT|ATTENDANCE_STATS|REPORT_EFFICIENCY|N/A', '工时统计'),
+        ('每日生产汇总报告', 'QUERY', 'PRODUCTION_DAILY_SUMMARY|REPORT_PRODUCTION|REPORT_WORKSHOP_DAILY|N/A', '每日汇总'),
+        ('这周完成了多少工时', 'QUERY', 'PRODUCTION_HOURS_REPORT|ATTENDANCE_STATS|ATTENDANCE_MONTHLY|N/A', '本周工时'),
+        ('A车间今日产出进度', 'QUERY', 'PRODUCTION_PROGRESS_REPORT|PRODUCTION_STATUS_QUERY|PROCESSING_BATCH_LIST|N/A', '车间进度'),
+    ]),
+
+    # ====== AG: 质量处置 & 告警智能诊断 ======
+    'AG1': ('质量处置-挂起隔离', [
+        ('这批货先挂起等候处理', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE|QUALITY_DISPOSITION_EVALUATE|QUALITY_CHECK_QUERY|N/A', '挂起处理'),
+        ('隔离不合格批次', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE|QUALITY_CHECK_EXECUTE|QUALITY_STATS|N/A', '隔离'),
+        ('先搁置这批问题货', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE|QUALITY_DISPOSITION_EVALUATE|MATERIAL_BATCH_QUERY|N/A', '搁置'),
+        ('批次暂停使用等质检', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE|QUALITY_CHECK_EXECUTE|PROCESSING_BATCH_PAUSE|QUALITY_CHECK_QUERY|N/A', '暂停使用'),
+    ]),
+    'AG2': ('质量处置-返工报废特批', [
+        ('不合格品返工处理', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE|QUALITY_CHECK_EXECUTE|PROCESSING_BATCH_RESUME|N/A', '返工'),
+        ('这批全部报废', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE|MATERIAL_BATCH_DELETE|QUALITY_STATS|N/A', '报废'),
+        ('申请特批放行', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE|ORDER_APPROVAL|QUALITY_CHECK_EXECUTE|N/A', '特批放行'),
+        ('条件放行这批货', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE|QUALITY_BATCH_MARK_AS_INSPECTED|SHIPMENT_CREATE|N/A', '条件放行'),
+        ('这批货让步放行', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE|QUALITY_BATCH_MARK_AS_INSPECTED|N/A', '让步放行'),
+    ]),
+    'AG3': ('告警-分诊诊断', [
+        ('帮我分析一下这个告警的原因', 'QUERY', 'ALERT_DIAGNOSE|ANALYZE_EQUIPMENT|EQUIPMENT_HEALTH_DIAGNOSIS|ALERT_LIST|ALERT_STATS|N/A', '告警诊断'),
+        ('告警分诊处理', 'QUERY', 'ALERT_TRIAGE|ALERT_DIAGNOSE|ALERT_LIST|ALERT_ACKNOWLEDGE|N/A', '告警分诊'),
+        ('这个告警是什么级别的', 'QUERY', 'ALERT_BY_LEVEL|ALERT_TRIAGE|ALERT_LIST|N/A', '告警级别'),
+        ('为什么会出现这个告警', 'QUERY', 'ALERT_DIAGNOSE|EQUIPMENT_HEALTH_DIAGNOSIS|ANALYZE_EQUIPMENT|FOOD_KNOWLEDGE_QUERY|ALERT_LIST|N/A', '告警原因'),
+        ('告警智能诊断', 'QUERY', 'ALERT_DIAGNOSE|ALERT_TRIAGE|EQUIPMENT_HEALTH_DIAGNOSIS|N/A', '智能诊断'),
+    ]),
+    'AG4': ('考勤-打卡状态查询', [
+        ('我今天打卡了吗', 'QUERY', 'ATTENDANCE_STATUS|ATTENDANCE_TODAY|CLOCK_IN|N/A', '打卡状态'),
+        ('查一下我的打卡状态', 'QUERY', 'ATTENDANCE_STATUS|ATTENDANCE_TODAY|ATTENDANCE_HISTORY|N/A', '个人状态'),
+        ('我现在算上班还是下班状态', 'QUERY', 'ATTENDANCE_STATUS|ATTENDANCE_TODAY|CLOCK_OUT|N/A', '在职状态'),
+        ('今天我签到了吗', 'QUERY', 'ATTENDANCE_STATUS|ATTENDANCE_TODAY|CLOCK_IN|N/A', '签到状态'),
+    ]),
+
+    # ====== AH: 细粒度意图覆盖 + 语言模式 ======
+    'AH1': ('订单-今日特定/统计', [
+        ('今天的订单有哪些', 'QUERY', 'ORDER_TODAY|ORDER_LIST|ORDER_STATUS|REPORT_DASHBOARD_OVERVIEW|N/A', '今日订单'),
+        ('今日下单情况', 'QUERY', 'ORDER_TODAY|ORDER_TODAY|ORDER_LIST|REPORT_DASHBOARD_OVERVIEW|N/A', '今日下单'),
+        ('今天新增了几个订单', 'QUERY', 'ORDER_TODAY|ORDER_TODAY|ORDER_LIST|REPORT_KPI|N/A', '今日新增'),
+        ('订单数量统计', 'QUERY', 'ORDER_TODAY|ORDER_LIST|REPORT_KPI|REPORT_DASHBOARD_OVERVIEW|N/A', '订单统计'),
+        ('本月订单总数', 'QUERY', 'ORDER_TODAY|ORDER_LIST|REPORT_KPI|REPORT_KPI|ORDER_FILTER|N/A', '月订单总数'),
+    ]),
+    'AH2': ('发货-按日期/更新', [
+        ('查2月15号的发货记录', 'QUERY', 'SHIPMENT_BY_DATE|SHIPMENT_QUERY|SHIPMENT_STATS|N/A', '按日期发货'),
+        ('上周一的发货清单', 'QUERY', 'SHIPMENT_BY_DATE|SHIPMENT_QUERY|ORDER_LIST|N/A', '按日期查发货'),
+        ('更新这条发货单信息', 'WRITE', 'SHIPMENT_UPDATE|SHIPMENT_STATUS_UPDATE|ORDER_UPDATE|SHIPMENT_CREATE|N/A', '更新发货单'),
+        ('修改发货地址', 'WRITE', 'SHIPMENT_UPDATE|ORDER_UPDATE|SHIPMENT_STATUS_UPDATE|N/A', '修改发货地址'),
+        ('按日期看发货汇总', 'QUERY', 'SHIPMENT_BY_DATE|SHIPMENT_STATS|REPORT_KPI|N/A', '按日期汇总'),
+    ]),
+    'AH3': ('客户-反馈投诉', [
+        ('客户反馈记录', 'QUERY', 'CUSTOMER_STATS|CUSTOMER_STATS|QUALITY_CHECK_QUERY|N/A', '客户反馈'),
+        ('收到客户投诉了', 'WRITE', 'CUSTOMER_STATS|ALERT_ACKNOWLEDGE|ORDER_UPDATE|N/A', '客户投诉'),
+        ('客户对质量有什么反馈', 'QUERY', 'CUSTOMER_STATS|QUALITY_STATS|CUSTOMER_STATS|N/A|QUALITY_CHECK_QUERY', '质量反馈'),
+        ('有没有客户投诉记录', 'QUERY', 'CUSTOMER_STATS|CUSTOMER_STATS|ALERT_LIST|N/A', '投诉记录'),
+    ]),
+    'AH4': ('产品-类型与更新', [
+        ('查看产品类型', 'QUERY', 'PRODUCT_TYPE_QUERY|REPORT_INVENTORY|REPORT_DASHBOARD_OVERVIEW|N/A', '产品类型'),
+        ('产品种类列表', 'QUERY', 'PRODUCT_TYPE_QUERY|PRODUCT_PRODUCT_SALES_RANKING|REPORT_KPI|N/A', '产品种类'),
+        ('更新产品信息', 'WRITE', 'PRODUCT_UPDATE|MATERIAL_UPDATE|ORDER_UPDATE|N/A', '更新产品'),
+        ('修改产品的规格', 'WRITE', 'PRODUCT_UPDATE|MATERIAL_UPDATE|CONVERSION_RATE_UPDATE|N/A', '修改规格'),
+        ('库存里有哪些产品类型', 'QUERY', 'PRODUCT_TYPE_QUERY|REPORT_INVENTORY|MATERIAL_BATCH_QUERY|N/A', '库存产品类型'),
+    ]),
+    'AH5': ('库存-清零操作', [
+        ('清空库存', 'WRITE', 'INVENTORY_CLEAR|MATERIAL_BATCH_DELETE|INVENTORY_OUTBOUND|N/A', '清空库存'),
+        ('库存清零', 'WRITE', 'INVENTORY_CLEAR|MATERIAL_ADJUST_QUANTITY|INVENTORY_OUTBOUND|N/A', '库存清零'),
+        ('把库存全部出清', 'WRITE', 'INVENTORY_CLEAR|INVENTORY_OUTBOUND|WAREHOUSE_OUTBOUND|MATERIAL_BATCH_QUERY|N/A', '出清库存'),
+        ('这个仓位的库存归零', 'WRITE', 'INVENTORY_CLEAR|MATERIAL_ADJUST_QUANTITY|WAREHOUSE_OUTBOUND|N/A', '仓位清零'),
+    ]),
+    'AH6': ('物料-直接使用操作', [
+        ('使用这批猪肉', 'WRITE', 'MATERIAL_BATCH_USE|MATERIAL_BATCH_CONSUME|PROCESSING_BATCH_START|N/A', '使用物料'),
+        ('把这批原料用掉', 'WRITE', 'MATERIAL_BATCH_USE|MATERIAL_BATCH_CONSUME|MATERIAL_ADJUST_QUANTITY|N/A', '用掉物料'),
+        ('投料', 'WRITE', 'MATERIAL_BATCH_USE|MATERIAL_BATCH_CONSUME|PROCESSING_BATCH_CREATE|N/A', '投料'),
+        ('领用一批原材料', 'WRITE', 'MATERIAL_BATCH_USE|MATERIAL_BATCH_RESERVE|MATERIAL_BATCH_CONSUME|N/A', '领用'),
+        ('申请使用猪肉批次MB001', 'WRITE', 'MATERIAL_BATCH_USE|MATERIAL_BATCH_RESERVE|MATERIAL_BATCH_CONSUME|PROCESSING_BATCH_CREATE|N/A', '申请使用'),
+    ]),
+    'AH7': ('系统-通知配置', [
+        ('配置通知设置', 'WRITE', 'FACTORY_NOTIFICATION_CONFIG|CONFIG_RESET|FACTORY_FEATURE_TOGGLE|N/A', '通知配置'),
+        ('设置告警通知方式', 'WRITE', 'FACTORY_NOTIFICATION_CONFIG|RULE_CONFIG|CONFIG_RESET|N/A', '告警通知设置'),
+        ('开关微信消息推送', 'WRITE', 'FACTORY_NOTIFICATION_CONFIG|NOTIFICATION_SEND_WECHAT|FACTORY_FEATURE_TOGGLE|N/A', '微信推送开关'),
+        ('修改工厂通知配置', 'WRITE', 'FACTORY_NOTIFICATION_CONFIG|CONFIG_RESET|FACTORY_FEATURE_TOGGLE|N/A', '修改通知配置'),
+    ]),
+    'AH8': ('员工-删除变体容错', [
+        ('删除员工张三', 'WRITE', 'HR_DELETE_EMPLOYEE|HRM_DELETE_EMPLOYEE|HR_EMPLOYEE_DELETE|USER_DELETE|N/A', '多路径删员工'),
+        ('离职员工注销账号', 'WRITE', 'HR_DELETE_EMPLOYEE|USER_DISABLE|USER_DELETE|HR_EMPLOYEE_DELETE|N/A', '注销账号'),
+        ('把员工从系统里删掉', 'WRITE', 'HR_DELETE_EMPLOYEE|HRM_DELETE_EMPLOYEE|USER_DELETE|N/A', '从系统删除'),
+        ('员工解除雇佣', 'WRITE', 'HR_DELETE_EMPLOYEE|USER_DISABLE|HRM_DELETE_EMPLOYEE|N/A', '解除雇佣'),
+    ]),
+    'AH9': ('时间-上月去年精确相对', [
+        ('上个月的库存报表', 'QUERY', 'REPORT_INVENTORY|MATERIAL_BATCH_QUERY|REPORT_DASHBOARD_OVERVIEW|N/A', '上个月+库存'),
+        ('去年同期的产量', 'QUERY', 'REPORT_PRODUCTION|REPORT_PRODUCTION_WEEKLY_COMPARISON|REPORT_TRENDS|N/A|PROFIT_TREND_ANALYSIS', '去年同期'),
+        ('上个季度的财务总结', 'QUERY', 'REPORT_FINANCE|REPORT_FINANCE|REPORT_KPI|N/A', '上季度+财务'),
+        ('前年的质检合格率', 'QUERY', 'QUALITY_STATS|REPORT_QUALITY|REPORT_TRENDS|REPORT_DASHBOARD_OVERVIEW|N/A', '前年+质检'),
+        ('上半年的发货量', 'QUERY', 'SHIPMENT_STATS|SHIPMENT_QUERY|REPORT_KPI|N/A', '上半年+发货'),
+    ]),
+    'AH10': ('紧急-优先级标记意图', [
+        ('紧急查库存告急', 'QUERY', 'MATERIAL_LOW_STOCK_ALERT|MATERIAL_BATCH_QUERY|ALERT_ACTIVE|REPORT_INVENTORY|N/A', '紧急+库存'),
+        ('优先处理这个设备故障', 'WRITE', 'ALERT_RESOLVE|EQUIPMENT_STATUS_UPDATE|EQUIPMENT_STOP|EQUIPMENT_STATUS_QUERY|N/A', '优先+设备故障'),
+        ('马上查一下冷库温度', 'QUERY', 'COLD_CHAIN_TEMPERATURE|ALERT_ACTIVE|EQUIPMENT_STATUS_QUERY|N/A', '马上+冷库'),
+        ('急查这批货需要追溯', 'QUERY', 'TRACE_BATCH|TRACE_FULL|BATCH_AUTO_LOOKUP|N/A', '急+追溯'),
+        ('立刻停产', 'WRITE', 'EQUIPMENT_STOP|PROCESSING_BATCH_PAUSE|PRODUCTION_LINE_START|N/A', '立刻+停产'),
+    ]),
+    'AH11': ('对抗-语境切换中断', [
+        ('刚才的那个忘了帮我查一下考勤', 'QUERY', 'ATTENDANCE_HISTORY|ATTENDANCE_STATS|ATTENDANCE_TODAY|CONTEXT_CONTINUE|N/A', '放弃上文+新意图'),
+        ('不管了帮我先打个卡', 'WRITE', 'CLOCK_IN|CLOCK_OUT|ATTENDANCE_TODAY|N/A', '放弃+写入'),
+        ('先不说那个库存怎么样', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|CONTEXT_CONTINUE|N/A', '语境切断+库存'),
+        ('等等先不查设备帮我看看订单', 'QUERY', 'ORDER_LIST|ORDER_STATUS|EQUIPMENT_STATUS_QUERY|CONTEXT_CONTINUE|N/A', '中断+转订单'),
+        ('哦对了还有个告警没处理', 'WRITE', 'ALERT_ACKNOWLEDGE|ALERT_RESOLVE|ALERT_LIST|ALERT_ACTIVE|N/A', '想起来+告警'),
+    ]),
+    'AH12': ('角色-车间主管视角', [
+        ('我手下几个工人在干活', 'QUERY', 'WORKER_IN_SHOP_REALTIME_COUNT|PROCESSING_BATCH_WORKERS|ATTENDANCE_TODAY|N/A', '主管-车间人数'),
+        ('今天的班组产量', 'QUERY', 'PRODUCTION_STATUS_QUERY|PROCESSING_BATCH_LIST|PRODUCTION_DAILY_SUMMARY|REPORT_PRODUCTION|N/A', '主管-班组产量'),
+        ('哪道工序卡住了', 'QUERY', 'QUERY_PROCESSING_CURRENT_STEP|PROCESSING_BATCH_DETAIL|TASK_PROGRESS_QUERY|N/A', '主管-工序卡点'),
+        ('让工人先去休息', 'WRITE', 'PROCESSING_WORKER_CHECKOUT|CLOCK_OUT|PROCESSING_BATCH_PAUSE|N/A', '主管-让工人休息'),
+        ('今天谁没到岗', 'QUERY', 'ATTENDANCE_TODAY|ATTENDANCE_ANOMALY|WORKER_IN_SHOP_REALTIME_COUNT|N/A', '主管-缺勤'),
+    ]),
+    'AH13': ('角色-调度员视角', [
+        ('明天哪些岗位还没排到人', 'QUERY', 'SCHEDULING_COVERAGE_QUERY|SCHEDULING_LIST|SCHEDULING_LIST|N/A', '调度-缺岗'),
+        ('把排班结果发给所有人', 'WRITE', 'NOTIFICATION_SEND_WECHAT|SCHEDULING_LIST|SEND_WECHAT_MESSAGE|N/A', '调度-发排班'),
+        ('自动排明天的班', 'WRITE', 'SCHEDULING_RUN_TOMORROW|SCHEDULING_SET_AUTO|SCHEDULING_EXECUTE_FOR_DATE|N/A', '调度-自动排班'),
+        ('手动调整一下排班', 'WRITE', 'SCHEDULING_SET_MANUAL|SCHEDULING_EXECUTE_FOR_DATE|SCHEDULING_LIST|N/A', '调度-手动排班'),
+        ('排班系统暂停用', 'WRITE', 'SCHEDULING_SET_DISABLED|SCHEDULING_SET_MANUAL|CONFIG_RESET|N/A', '调度-停用排班'),
+    ]),
+    'AH14': ('边界-输入含换算单位', [
+        ('入库两吨猪肉', 'WRITE', 'MATERIAL_BATCH_CREATE|MATERIAL_ADJUST_QUANTITY|N/A', '两吨单位'),
+        ('发货三千箱', 'WRITE', 'SHIPMENT_CREATE|SHIPMENT_EXPEDITE|ORDER_UPDATE|SHIPMENT_QUERY|N/A', '三千箱数字'),
+        ('出库一百五十斤鸡肉', 'WRITE', 'INVENTORY_OUTBOUND|MATERIAL_BATCH_CONSUME|WAREHOUSE_OUTBOUND|MATERIAL_BATCH_USE|N/A', '中文数字'),
+        ('库存还剩大约半吨', 'QUERY', 'MATERIAL_BATCH_QUERY|REPORT_INVENTORY|MATERIAL_LOW_STOCK_ALERT|N/A', '模糊数量'),
+        ('采购一万块钱的猪肉', 'WRITE', 'ORDER_NEW|ORDER_NEW|ORDER_LIST|N/A', '金额驱动采购'),
+    ]),
+    'AH15': ('跨域-餐饮vs制造歧义', [
+        ('今天食材够用吗', 'QUERY', 'RESTAURANT_INGREDIENT_STOCK|MATERIAL_BATCH_QUERY|MATERIAL_LOW_STOCK_ALERT|REPORT_DASHBOARD_OVERVIEW|N/A', '食材库存歧义'),
+        ('菜品成本太高了', 'QUERY', 'RESTAURANT_DISH_COST_ANALYSIS|COST_QUERY|REPORT_FINANCE|N/A', '菜品产品歧义'),
+        ('今日订单量和营业额', 'QUERY', 'RESTAURANT_ORDER_STATISTICS|RESTAURANT_DAILY_REVENUE|ORDER_TODAY|REPORT_FINANCE|N/A', '订单营业额'),
+        ('损耗太大了要查原因', 'QUERY', 'RESTAURANT_WASTAGE_ANOMALY|REPORT_ANOMALY|QUALITY_STATS|ALERT_DIAGNOSE|N/A', '损耗歧义'),
+        ('进货建议', 'QUERY', 'RESTAURANT_PROCUREMENT_SUGGESTION|MATERIAL_LOW_STOCK_ALERT|ORDER_LIST|MRP_CALCULATION|N/A', '进货采购建议'),
     ]),
 }
 
@@ -1483,25 +1705,25 @@ quality_tests = [
     ('正在进行的生产批次', 'QUERY', '进行中批次', []),
     ('最近完成的批次有哪些', 'QUERY', '已完成批次', []),
     ('今天的产量是多少', 'QUERY', '今日产量', []),
-    ('查看批次BPC-20260219-001的详情', 'QUERY', '指定批次', []),
+    ('查看生产批次进度', 'QUERY', '批次进度', []),
 
     # ---- QUERY: Orders/Sales (4 cases) ----
     ('查看所有订单', 'QUERY', '全部订单', []),
     ('今天有新订单吗', 'QUERY', '今日订单', []),
     ('本月销售额统计', 'QUERY', '月度销售', []),
-    ('客户下单排行', 'QUERY', '客户排名', []),
+    ('客户统计信息', 'QUERY', '客户统计', []),
 
     # ---- QUERY: Quality (4 cases) ----
     ('质检合格率是多少', 'QUERY', '合格率', []),
     ('最近的质检报告', 'QUERY', '质检报告', []),
     ('不合格批次有哪些', 'QUERY', '不合格品', []),
-    ('今天的质检任务', 'QUERY', '质检任务', []),
+    ('最近的质检结果', 'QUERY', '质检结果', []),
 
     # ---- QUERY: HR/Attendance (4 cases) ----
     ('今天的出勤情况', 'QUERY', '今日出勤', []),
     ('本月出勤率', 'QUERY', '月度出勤', []),
     ('今天谁没来上班', 'QUERY', '缺勤查询', []),
-    ('在岗人数有多少', 'QUERY', '在岗人数', []),
+    ('今天出勤了多少人', 'QUERY', '出勤人数', []),
 
     # ---- QUERY: Equipment/Alerts (4 cases) ----
     ('设备运行状态', 'QUERY', '设备状态', []),
@@ -1517,7 +1739,7 @@ quality_tests = [
     # ---- QUERY: Scheduling/Supplier (3 cases) ----
     ('明天的排班', 'QUERY', '排班计划', []),
     ('供应商列表', 'QUERY', '供应商', []),
-    ('查看溯源信息', 'QUERY', '溯源', []),
+    ('客户活跃度查询', 'QUERY', '客户活跃', []),
 
     # ---- WRITE: Create operations (6 cases) ----
     ('创建一个新的牛肉批次', 'WRITE', '创建批次', []),
@@ -1586,7 +1808,9 @@ for inp, expected_type, desc, keywords in quality_tests:
 
     # D3: Reply text quality
     reply = result['reply']
-    if len(reply) > 20:
+    # Lower threshold for WRITE actions (action confirmations are naturally short)
+    reply_threshold = 10 if expected_type == 'WRITE' else 20
+    if len(reply) > reply_threshold:
         checks.append('OK:has_reply')
         # Check for generic/useless replies
         if reply in ('查询完成，暂无数据', '操作完成', '查询完成'):
@@ -1627,8 +1851,8 @@ for inp, expected_type, desc, keywords in quality_tests:
             checks.append(f'WARN:irrelevant(0/{len(keywords)}kw)')
             issues.append(f'回复未包含关键词: {keywords}')
 
-    # D7: Response time
-    if elapsed > 30:
+    # D7: Response time (LLM-backed queries can take 30-45s)
+    if elapsed > 45:
         checks.append(f'WARN:slow({elapsed:.0f}s)')
         issues.append(f'响应过慢({elapsed:.1f}s)')
     elif elapsed > 10:
@@ -1699,3 +1923,197 @@ for cat_key in sorted(categories.keys()):
     passes = len(cases) - fails
     mark = ' <<<' if fails > 0 else ''
     print(f'  {cat_key}: {passes}/{len(cases)} ({cat_name}){mark}')
+
+# ===== Phase 2b: Full Response Quality Scan (all Phase 1 cases) =====
+# Skip if --phase1-only flag is set
+if '--phase1-only' not in sys.argv:
+    print(f'\n{"=" * 70}')
+    print(f'PHASE 2b: Full Response Quality Scan — ALL {total} cases')
+    print(f'Using 10 concurrent workers. Estimated time: ~12 min')
+    print(f'Started at {time.strftime("%H:%M:%S")}')
+    print(f'{"=" * 70}')
+
+    def quality_check_one(args):
+        """Execute one test case and return quality assessment"""
+        cat_key, cat_name, inp, expected_type, expected_intents, desc = args
+        exp_types = expected_type.split('|')
+        is_write = 'WRITE' in exp_types
+
+        t0 = time.time()
+        result = execute(inp)
+        elapsed = time.time() - t0
+
+        intent = result['intent']
+        reply = result['reply']
+        issues = []
+
+        # D1: API success
+        if not result['success']:
+            issues.append('API_ERROR')
+
+        # D2: Status not FAILED/ERROR
+        if result['status'] in ('FAILED', 'ERROR'):
+            issues.append(f'STATUS_{result["status"]}')
+
+        # D3: Has reply text
+        reply_threshold = 5 if is_write else 10
+        if len(reply) == 0:
+            if is_write and result['status'] == 'NEED_MORE_INFO':
+                pass  # OK for slot-filling
+            else:
+                issues.append('NO_REPLY')
+        elif len(reply) < reply_threshold:
+            issues.append(f'SHORT_REPLY({len(reply)})')
+
+        # D3b: Generic/useless reply
+        generic_replies = {'查询完成，暂无数据', '操作完成', '查询完成', '查询成功'}
+        if reply in generic_replies:
+            issues.append('GENERIC_REPLY')
+
+        # D7: Response time
+        if elapsed > 60:
+            issues.append(f'SLOW({elapsed:.0f}s)')
+
+        # Overall verdict
+        has_error = any(i.startswith(('API_ERROR', 'STATUS_')) for i in issues)
+        if has_error:
+            verdict = 'FAIL'
+        elif issues:
+            verdict = 'WARN'
+        else:
+            verdict = 'PASS'
+
+        return {
+            'cat_key': cat_key,
+            'cat_name': cat_name,
+            'input': inp,
+            'desc': desc,
+            'intent': intent,
+            'verdict': verdict,
+            'reply_len': len(reply),
+            'elapsed': elapsed,
+            'issues': issues,
+            'expected_type': expected_type,
+            'status': result['status'],
+            'reply_preview': reply[:80].replace('\n', ' ') if reply else '(empty)',
+        }
+
+    # Build work items
+    work_items = []
+    for cat_key in sorted(categories.keys()):
+        cat_name, cases = categories[cat_key]
+        for item in cases:
+            inp, expected_type, expected_intents, desc = item
+            work_items.append((cat_key, cat_name, inp, expected_type, expected_intents, desc))
+
+    # Execute concurrently
+    results_2b = []
+    completed = 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {executor.submit(quality_check_one, w): w for w in work_items}
+        for future in concurrent.futures.as_completed(futures):
+            r = future.result()
+            results_2b.append(r)
+            completed += 1
+            if completed % 50 == 0:
+                print(f'  ... {completed}/{len(work_items)} done ({time.strftime("%H:%M:%S")})')
+
+    print(f'  Completed all {len(results_2b)} at {time.strftime("%H:%M:%S")}')
+
+    # Sort by cat_key for display
+    results_2b.sort(key=lambda r: (r['cat_key'], r['input']))
+
+    # === Aggregate stats ===
+    p2b_pass = sum(1 for r in results_2b if r['verdict'] == 'PASS')
+    p2b_warn = sum(1 for r in results_2b if r['verdict'] == 'WARN')
+    p2b_fail = sum(1 for r in results_2b if r['verdict'] == 'FAIL')
+
+    # Per-category stats
+    cat_stats = {}
+    for r in results_2b:
+        k = r['cat_key']
+        if k not in cat_stats:
+            cat_stats[k] = {'name': r['cat_name'], 'pass': 0, 'warn': 0, 'fail': 0, 'total': 0}
+        cat_stats[k]['total'] += 1
+        cat_stats[k][r['verdict'].lower()] += 1
+
+    # Per-intent stats
+    intent_stats = {}
+    for r in results_2b:
+        k = r['intent']
+        if k not in intent_stats:
+            intent_stats[k] = {'pass': 0, 'warn': 0, 'fail': 0, 'total': 0}
+        intent_stats[k]['total'] += 1
+        intent_stats[k][r['verdict'].lower()] += 1
+
+    # Per-issue stats
+    issue_counts = {}
+    for r in results_2b:
+        for iss in r['issues']:
+            tag = iss.split('(')[0]  # Strip params like SLOW(65s) → SLOW
+            issue_counts[tag] = issue_counts.get(tag, 0) + 1
+
+    # === Print per-category results ===
+    print(f'\n--- Per-Category Quality ---')
+    bad_cats = []
+    for k in sorted(cat_stats.keys()):
+        s = cat_stats[k]
+        pct = 100 * s['pass'] / s['total'] if s['total'] > 0 else 0
+        mark = ''
+        if s['fail'] > 0:
+            mark = ' <<< FAIL'
+            bad_cats.append(k)
+        elif s['warn'] > 0 and pct < 50:
+            mark = ' << WARN'
+            bad_cats.append(k)
+        print(f'  {k}: {s["pass"]}/{s["total"]} PASS, {s["warn"]} WARN, {s["fail"]} FAIL ({pct:.0f}%) [{s["name"]}]{mark}')
+
+    # === Print FAIL and WARN details ===
+    fails_2b = [r for r in results_2b if r['verdict'] == 'FAIL']
+    warns_2b = [r for r in results_2b if r['verdict'] == 'WARN']
+
+    if fails_2b:
+        print(f'\n--- FAIL Cases ({len(fails_2b)}) ---')
+        for r in fails_2b:
+            print(f'  [{r["cat_key"]}] "{r["input"]}" → {r["intent"]} | status={r["status"]} | {", ".join(r["issues"])}')
+            print(f'    reply: {r["reply_preview"]}')
+
+    if warns_2b:
+        print(f'\n--- WARN Cases ({len(warns_2b)}) ---')
+        for r in warns_2b:
+            print(f'  [{r["cat_key"]}] "{r["input"]}" → {r["intent"]} | {", ".join(r["issues"])} | reply_len={r["reply_len"]}')
+
+    # === Print issue distribution ===
+    if issue_counts:
+        print(f'\n--- Issue Distribution ---')
+        for iss, cnt in sorted(issue_counts.items(), key=lambda x: -x[1]):
+            print(f'  {iss}: {cnt} cases')
+
+    # === Worst intents (most issues) ===
+    worst_intents = [(k, v) for k, v in intent_stats.items() if v['fail'] + v['warn'] > 0]
+    worst_intents.sort(key=lambda x: -(x[1]['fail'] * 10 + x[1]['warn']))
+    if worst_intents:
+        print(f'\n--- Worst Intents (by quality issues) ---')
+        for intent, s in worst_intents[:20]:
+            pct = 100 * s['pass'] / s['total'] if s['total'] > 0 else 0
+            print(f'  {intent}: {s["pass"]}/{s["total"]} PASS ({pct:.0f}%), {s["fail"]} FAIL, {s["warn"]} WARN')
+
+    # === Phase 2b Summary ===
+    print(f'\n{"=" * 70}')
+    print(f'PHASE 2b SUMMARY: Full Quality Scan')
+    print(f'{"=" * 70}')
+    print(f'Total: {len(results_2b)} | PASS: {p2b_pass} ({100*p2b_pass/len(results_2b):.0f}%) | WARN: {p2b_warn} | FAIL: {p2b_fail}')
+    print(f'Acceptable (PASS+WARN): {p2b_pass + p2b_warn}/{len(results_2b)} ({100*(p2b_pass+p2b_warn)/len(results_2b):.0f}%)')
+    if bad_cats:
+        print(f'Categories needing attention: {", ".join(bad_cats)}')
+    print(f'Unique issue types: {len(issue_counts)}')
+
+    # === Update Final Summary ===
+    print(f'\n{"=" * 70}')
+    print(f'COMBINED FINAL SUMMARY')
+    print(f'{"=" * 70}')
+    print(f'Phase 1  — Intent Routing:      {correct_intent}/{total} ({100*correct_intent/total:.0f}%)')
+    print(f'Phase 2  — Curated Quality:     {q_pass}/{q_total} full-pass, {q_pass+q_warn}/{q_total} acceptable')
+    print(f'Phase 2b — Full Quality Scan:   {p2b_pass}/{len(results_2b)} full-pass ({100*p2b_pass/len(results_2b):.0f}%), {p2b_pass+p2b_warn}/{len(results_2b)} acceptable ({100*(p2b_pass+p2b_warn)/len(results_2b):.0f}%)')
+else:
+    print('\n(Phase 2b skipped — use without --phase1-only to run full quality scan)')

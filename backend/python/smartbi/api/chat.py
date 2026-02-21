@@ -694,9 +694,10 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
                 """Translate raw/English column names to readable Chinese labels."""
                 if not name:
                     return name
-                # Column_XX pattern → remove prefix
+                # Column_XX pattern → try to provide a descriptive fallback
                 if _re.match(r'^[Cc]olumn[_\s]?\d+$', name):
-                    return f"指标{name.split('_')[-1] if '_' in name else name[-1]}"
+                    idx = name.split('_')[-1] if '_' in name else name[-1]
+                    return f"数据列{idx}"
                 # Date pattern YYYY-MM-DD → M月
                 m = _re.match(r'^(\d{4})-(\d{1,2})-\d{1,2}$', name)
                 if m:
@@ -747,7 +748,8 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
             _column_xx_pat = _re.compile(r'^[Cc]olumn[_\s]?\d+$')
             named_numeric = [c for c in numeric_cols if not _column_xx_pat.match(c)]
             unnamed_numeric = [c for c in numeric_cols if _column_xx_pat.match(c)]
-            numeric_cols = named_numeric + unnamed_numeric  # named first, Column_XX as fallback
+            # Use named columns first; only include up to 2 unnamed columns as fallback
+            numeric_cols = named_numeric + unnamed_numeric[:2] if named_numeric else unnamed_numeric[:5]
 
             # Pick a label field: prefer columns with non-numeric text values
             label_field = None

@@ -231,6 +231,16 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
     java.util.List<ProductionBatch> findByIdInAndFactoryId(@Param("ids") Collection<Long> ids, @Param("factoryId") String factoryId);
 
     /**
+     * 统计关联生产计划中未完成的批次数量
+     * 用于供应链联动：批次报工后判断PP是否全部完成
+     *
+     * @param productionPlanId 生产计划ID
+     * @param status 排除的状态（通常为 COMPLETED）
+     * @return 未处于指定状态的批次数量
+     */
+    long countByProductionPlanIdAndStatusNot(Integer productionPlanId, ProductionBatchStatus status);
+
+    /**
      * 按产品类型统计生产数量
      * 返回: [productTypeId, productName, SUM(actualQuantity), unit]
      *

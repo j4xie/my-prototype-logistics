@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能调度 | 白垩纪AI</title>
+    <meta name="description" content="AI智能调度 - 用AI优化生产排程">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://cretaceousfuture.com/ai-scheduling-v3/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cretaceousfuture.com/ai-scheduling-v3/">
+    <meta property="og:title" content="AI智能调度 | 白垩纪AI">
+    <meta property="og:description" content="基于12维特征预测模型的智能排产系统，实时完成概率预测、4级风险分类、自适应权重调整。">
+    <meta property="og:image" content="https://cretaceousfuture.com/share-image.png">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="AI智能调度 | 白垩纪AI">
+    <meta name="twitter:description" content="基于12维特征预测模型的智能排产系统，实时完成概率预测、4级风险分类。">
+    <meta name="twitter:image" content="https://cretaceousfuture.com/share-image.png">
+
+    <link rel="stylesheet" href="/css/v3-design.css">
+    <link rel="stylesheet" href="/css/v3-subpages.css">
+    <script src="/js/v3-engine.js" defer></script>
+</head>
+<body class="page-dark glow-cursor">
+    <div class="film-grain" aria-hidden="true"></div>
+    <div id="spotlight" class="spotlight" aria-hidden="true"></div>
+
+    <!-- NAV -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="/index-v3/" class="logo">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 4 L36 12 L20 20 L4 12 Z" fill="#E8E8E8" />
+                        <path d="M20 10 L36 18 L20 26 L4 18 Z" fill="#A0A0A0" />
+                        <path d="M20 16 L36 24 L20 32 L4 24 Z" fill="#707070" />
+                        <path d="M20 22 L36 30 L20 38 L4 30 Z" fill="#404040" />
+                    </svg>
+                </div>
+                <span class="logo-text">CRETACEOUS</span>
+            </a>
+            <div class="nav-links">
+                <a href="/index-v3/" class="nav-link">首页</a>
+                <a href="/ai-bi-v3/" class="nav-link">智能分析</a>
+                <a href="/ai-scheduling-v3/" class="nav-link active" style="color: var(--accent); font-weight: 600;">AI调度</a>
+                <a href="/ai-calibration-v3/" class="nav-link">AI定标</a>
+                <a href="/dashboard-v3/" class="btn btn-primary">进入演示</a>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="菜单">
+                <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                <svg class="close-icon" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+        <div class="mobile-menu" id="mobileMenu">
+            <a href="/index-v3/" class="mobile-nav-link" onclick="closeMobileMenu()">首页</a>
+            <a href="/ai-bi-v3/" class="mobile-nav-link" onclick="closeMobileMenu()">智能分析</a>
+            <a href="/ai-scheduling-v3/" class="mobile-nav-link" onclick="closeMobileMenu()" style="color: var(--accent); font-weight: 600;">AI调度</a>
+            <a href="/ai-calibration-v3/" class="mobile-nav-link" onclick="closeMobileMenu()">AI定标</a>
+            <a href="/dashboard-v3/" class="btn btn-primary" style="width:100%; margin-top:var(--space-4);">进入演示</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="smartbi-hero">
+        <div class="hero-orb hero-orb-1"></div>
+        <div class="hero-orb hero-orb-2"></div>
+        <div class="hero-orb hero-orb-3"></div>
+
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-eyebrow">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    AI驱动 · 自适应排产
+                </div>
+                <h1 class="hero-title">让每个任务，<br><span>都能准时完成</span></h1>
+                <p class="hero-desc">基于 12 维特征预测模型的智能排产系统，实时预测完成概率、自动风险预警、动态自适应调整。</p>
+                <div class="hero-actions">
+                    <a href="#demo" class="btn-accent">预约演示</a>
+                    <a href="#features" class="btn-secondary">了解更多</a>
+                </div>
+                <div class="hero-stats-inline">
+                    <div class="stat-item">
+                        <span class="stat-value">81.7%</span>
+                        <span class="stat-label">平均完成概率</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">93%</span>
+                        <span class="stat-label">任务按时完成率</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">12维</span>
+                        <span class="stat-label">特征预测模型</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">4级</span>
+                        <span class="stat-label">智能风险分级</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PAIN POINTS -->
+    <section class="section-dark reveal-hidden" style="padding: 100px 0;">
+        <div class="container">
+            <div class="section-header">
+                <div class="eyebrow">行业痛点</div>
+                <h2 class="section-title">您是否遇到这些问题？</h2>
+                <p class="section-desc">传统排班依赖人工经验，效率低、不透明、难以适应变化。</p>
+            </div>
+
+            <div class="pain-grid">
+                <div class="pain-card">
+                    <span class="pain-icon">👷</span>
+                    <h3>老员工总做简单活</h3>
+                    <p>老师傅习惯把简单任务留给自己，新人抱怨没机会学习新技能，技能传承断层严重。</p>
+                    <div class="pain-stat">技能传承断层率 &gt;60%</div>
+                </div>
+                <div class="pain-card">
+                    <span class="pain-icon">📋</span>
+                    <h3>临时工来了不知怎么安排</h3>
+                    <p>旺季招了一批临时工，不知道该分配什么任务，走了也没留下数据，下次还是从头开始。</p>
+                    <div class="pain-stat">旺季产能损失 &gt;25%</div>
+                </div>
+                <div class="pain-card">
+                    <span class="pain-icon">📦</span>
+                    <h3>SKU太多排班全靠经验</h3>
+                    <p>几百个SKU复杂度不同，哪个产品该给谁做全凭老师傅记忆，人一走排班就乱。</p>
+                    <div class="pain-stat">排班出错率 &gt;30%</div>
+                </div>
+                <div class="pain-card">
+                    <span class="pain-icon">⚖️</span>
+                    <h3>工人觉得分配不公平</h3>
+                    <p>有人天天加班，有人闲着没活。工人私下抱怨偏心，影响团队士气和生产积极性。</p>
+                    <div class="pain-stat">员工满意度下降 &gt;40%</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SOLUTION FLOW -->
+    <section id="features" class="section-dark reveal-hidden" style="padding: 100px 0; background: #161618;">
+        <div class="container">
+            <div class="section-header">
+                <div class="eyebrow">技术架构</div>
+                <h2 class="section-title">五层自适应排产引擎</h2>
+                <p class="section-desc">基于 12 维特征向量的逻辑回归模型，实时预测任务完成概率，智能预警并触发自适应重排。</p>
+            </div>
+
+            <div class="solution-flow-h">
+                <div class="flow-step">
+                    <div class="flow-connector"></div>
+                    <div class="step-number">1</div>
+                    <h4>实时进度采集</h4>
+                    <p>完成量 + 效率数据</p>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-connector"></div>
+                    <div class="step-number">2</div>
+                    <h4>12维特征构建</h4>
+                    <p>进度/效率/资源/历史</p>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-connector"></div>
+                    <div class="step-number">3</div>
+                    <h4>概率预测</h4>
+                    <p>逻辑回归 Sigmoid</p>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-connector"></div>
+                    <div class="step-number">4</div>
+                    <h4>风险评估</h4>
+                    <p>4级预警分类</p>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-connector"></div>
+                    <div class="step-number">5</div>
+                    <h4>自适应调整</h4>
+                    <p>权重学习 + 重排</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURE DETAIL CARDS -->
+    <section class="section-dark reveal-hidden" style="padding: 100px 0;">
+        <div class="container">
+            <div class="section-header">
+                <div class="eyebrow">核心功能</div>
+                <h2 class="section-title">六大智能排产能力</h2>
+                <p class="section-desc">从数据采集到自适应调整，全链路覆盖生产排程的每一个关键环节。</p>
+            </div>
+
+            <div class="feature-detail-grid">
+                <!-- Feature 1 -->
+                <div class="feature-detail-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                    </div>
+                    <h3>12维特征预测模型</h3>
+                    <p>基于逻辑回归的完成概率预测，综合进度、效率、资源、历史四大维度，精准预判任务风险。</p>
+                    <div class="feature-tags">
+                        <span class="feature-tag">进度百分比 +0.30</span>
+                        <span class="feature-tag">时间紧迫度 -0.20</span>
+                        <span class="feature-tag">效率偏差 +0.15</span>
+                        <span class="feature-tag">历史完成率 +0.10</span>
+                    </div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-detail-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                    <h3>4级智能风险分类</h3>
+                    <p>根据完成概率自动分级预警，从正常到紧急四档风险等级，确保问题及时发现。</p>
+                    <div class="feature-tags">
+                        <span class="feature-tag">低风险 P≥80%</span>
+                        <span class="feature-tag">中风险 50%≤P&lt;80%</span>
+                        <span class="feature-tag">高风险 30%≤P&lt;50%</span>
+                        <span class="feature-tag">紧急 P&lt;30%</span>
+                    </div>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-detail-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </div>
+                    <h3>SOP智能解析引擎</h3>
+                    <p>AI Agent 自动解析 SOP 文档，识别工序步骤与复杂度，驱动 SKU 排产参数自动更新。</p>
+                    <div class="feature-tags">
+                        <span class="feature-tag">PDF/Excel/图片多格式</span>
+                        <span class="feature-tag">Vision AI OCR 中文识别</span>
+                        <span class="feature-tag">工序复杂度自动评估</span>
+                        <span class="feature-tag">1-5级复杂度自动分级</span>
+                    </div>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-detail-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                    <h3>实时进度追踪</h3>
+                    <p>每次进度上报后立即更新完成概率，EWMA 滚动计算产线效率，动态调整预测结果。</p>
+                    <div class="feature-tags">
+                        <span class="feature-tag">进度上报即时预测</span>
+                        <span class="feature-tag">效率 EWMA 滚动计算</span>
+                        <span class="feature-tag">α=0.3 新数据权重</span>
+                        <span class="feature-tag">4小时滚动窗口</span>
+                    </div>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="feature-detail-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        </svg>
+                    </div>
+                    <h3>自适应权重调整</h3>
+                    <p>系统根据实际完成情况自动调整 12 维特征权重，学习率 0.05，越用越精准。</p>
+                    <div class="feature-tags">
+                        <span class="feature-tag">在线学习自动优化</span>
+                        <span class="feature-tag">策略效果实时评估</span>
+                        <span class="feature-tag">权重约束 [0.05, 0.40]</span>
+                        <span class="feature-tag">调整历史完整记录</span>
+                    </div>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-detail-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="1 4 1 10 7 10"/>
+                            <path d="M3.51 15a9 9 0 1 0 .49-3.93"/>
+                        </svg>
+                    </div>
+                    <h3>智能重排触发</h3>
+                    <p>当检测到高风险任务或异常情况时，系统自动评估重排收益并触发局部/全局重排。</p>
+                    <div class="feature-tags">
+                        <span class="feature-tag">P&lt;50% 触发重排检查</span>
+                        <span class="feature-tag">改善幅度&gt;10% 执行</span>
+                        <span class="feature-tag">局部重排仅影响受波及任务</span>
+                        <span class="feature-tag">紧急订单插单优先</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ALGORITHM TABLE -->
+    <section class="section-dark reveal-hidden" style="padding: 100px 0; background: #161618;">
+        <div class="container">
+            <div class="section-header">
+                <div class="eyebrow">算法详解</div>
+                <h2 class="section-title">12维特征预测模型权重</h2>
+                <p class="section-desc">基于逻辑回归的完成概率预测公式：<code style="background: rgba(196,92,38,0.15); padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 14px; color: #C45C26;">P = σ(Σ weight[i] × feature[i])</code></p>
+            </div>
+
+            <div class="algo-table-wrap">
+                <table class="algo-table">
+                    <thead>
+                        <tr>
+                            <th>特征维度</th>
+                            <th>字段名</th>
+                            <th>权重</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>进度百分比</td>
+                            <td>progress_percent</td>
+                            <td><span class="weight-bar" style="width:90px;background:linear-gradient(90deg,#2D6A4F,#52b788);"></span> <strong style="color:#2D6A4F;">+0.30</strong></td>
+                            <td>当前完成量占总目标的比例，正向最强特征</td>
+                        </tr>
+                        <tr>
+                            <td>时间紧迫度</td>
+                            <td>time_urgency</td>
+                            <td><span class="weight-bar" style="width:60px;background:linear-gradient(90deg,#BC4749,#e07070);"></span> <strong style="color:#BC4749;">-0.20</strong></td>
+                            <td>剩余时间紧迫程度，负向最强特征</td>
+                        </tr>
+                        <tr>
+                            <td>效率偏差</td>
+                            <td>efficiency_deviation</td>
+                            <td><span class="weight-bar" style="width:45px;background:linear-gradient(90deg,#2D6A4F,#52b788);"></span> <strong style="color:#2D6A4F;">+0.15</strong></td>
+                            <td>当前效率与基准效率之差</td>
+                        </tr>
+                        <tr>
+                            <td>当前延迟程度</td>
+                            <td>current_delay</td>
+                            <td><span class="weight-bar" style="width:30px;background:linear-gradient(90deg,#BC4749,#e07070);"></span> <strong style="color:#BC4749;">-0.10</strong></td>
+                            <td>已发生的延迟时长（小时）</td>
+                        </tr>
+                        <tr>
+                            <td>工人配置满足度</td>
+                            <td>worker_config</td>
+                            <td><span class="weight-bar" style="width:30px;background:linear-gradient(90deg,#2D6A4F,#52b788);"></span> <strong style="color:#2D6A4F;">+0.10</strong></td>
+                            <td>实际工人数量与需求数量之比</td>
+                        </tr>
+                        <tr>
+                            <td>历史完成率</td>
+                            <td>historical_completion_rate</td>
+                            <td><span class="weight-bar" style="width:30px;background:linear-gradient(90deg,#2D6A4F,#52b788);"></span> <strong style="color:#2D6A4F;">+0.10</strong></td>
+                            <td>该工人/产线的历史任务完成率</td>
+                        </tr>
+                        <tr>
+                            <td>物料齐套率</td>
+                            <td>material_ready_rate</td>
+                            <td><span class="weight-bar" style="width:15px;background:linear-gradient(90deg,#2D6A4F,#52b788);"></span> <strong style="color:#2D6A4F;">+0.05</strong></td>
+                            <td>所需物料已准备完毕的比例</td>
+                        </tr>
+                        <tr>
+                            <td>效率趋势</td>
+                            <td>efficiency_trend</td>
+                            <td><span class="weight-bar" style="width:15px;background:linear-gradient(90deg,#2D6A4F,#52b788);"></span> <strong style="color:#2D6A4F;">+0.05</strong></td>
+                            <td>EWMA计算的近期效率变化趋势</td>
+                        </tr>
+                        <tr>
+                            <td>紧急订单标记</td>
+                            <td>is_urgent</td>
+                            <td><span class="weight-bar" style="width:15px;background:linear-gradient(90deg,#BC4749,#e07070);"></span> <strong style="color:#BC4749;">-0.05</strong></td>
+                            <td>是否为插单/紧急订单</td>
+                        </tr>
+                        <tr>
+                            <td>冲突数量</td>
+                            <td>conflict_count</td>
+                            <td><span class="weight-bar" style="width:15px;background:linear-gradient(90deg,#BC4749,#e07070);"></span> <strong style="color:#BC4749;">-0.05</strong></td>
+                            <td>与其他任务的资源冲突次数</td>
+                        </tr>
+                        <tr>
+                            <td>时间窗口宽度</td>
+                            <td>time_window_width</td>
+                            <td><span class="weight-bar" style="width:15px;"></span> <strong style="color:rgba(255,255,255,0.5);">+0.05</strong></td>
+                            <td>可调度的时间弹性窗口大小</td>
+                        </tr>
+                        <tr>
+                            <td>偏置项</td>
+                            <td>bias</td>
+                            <td><span class="weight-bar" style="width:2px;"></span> <strong style="color:rgba(255,255,255,0.5);">0.00</strong></td>
+                            <td>模型基准偏置</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Online learning callout -->
+            <div style="margin-top: 32px; background: linear-gradient(135deg, rgba(196,92,38,0.08) 0%, rgba(45,106,79,0.08) 100%); border: 1px solid rgba(196,92,38,0.15); border-radius: 16px; padding: 32px; display: flex; align-items: center; gap: 48px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 240px;">
+                    <h5 style="font-size: 16px; font-weight: 600; margin: 0 0 10px; color: #FAFAFA;">在线学习机制</h5>
+                    <p style="font-size: 14px; color: rgba(255,255,255,0.6); margin: 0; line-height: 1.7;">
+                        每当任务完成时，系统根据实际结果自动调整权重：<br>
+                        <code style="font-family: monospace; font-size: 13px; color: #C45C26;">weight[i] += 0.05 × (actual - predicted) × feature[i]</code>
+                    </p>
+                </div>
+                <div style="display: flex; gap: 40px; flex-shrink: 0;">
+                    <div style="text-align: center;">
+                        <div style="font-family: var(--font-mono, monospace); font-size: 28px; font-weight: 700; color: #C45C26; text-shadow: 0 0 20px rgba(196,92,38,0.5);">0.05</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 4px;">学习率</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-family: var(--font-mono, monospace); font-size: 20px; font-weight: 700; color: #C45C26; text-shadow: 0 0 20px rgba(196,92,38,0.5);">[0.05, 0.40]</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 4px;">权重约束</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-family: var(--font-mono, monospace); font-size: 28px; font-weight: 700; color: #C45C26; text-shadow: 0 0 20px rgba(196,92,38,0.5);">4h</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 4px;">EWMA 窗口</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CASE STUDY -->
+    <section class="section-dark reveal-hidden" style="padding: 100px 0;">
+        <div class="container">
+            <div class="section-header">
+                <div class="eyebrow">系统实测</div>
+                <h2 class="section-title">端到端测试验证</h2>
+                <p class="section-desc">真实生产环境下的系统表现，数据来源于 2026-01-21 端到端测试报告。</p>
+            </div>
+
+            <div class="case-study-card">
+                <blockquote>
+                    系统实时预测每个任务的完成概率，当我上报进度从 20% 提升到 50% 后，完成概率立即从 90.98% 跃升到 99.5%。风险任务被自动标记，让我们提前 2 小时就能发现问题。
+                </blockquote>
+                <div class="cite">端到端测试报告 · 2026-01-21 · 43 个活跃任务 · 5 条产线</div>
+                <div class="case-study-metrics">
+                    <div>
+                        <span class="metric-value">81.7%</span>
+                        <div class="metric-label">平均完成概率</div>
+                    </div>
+                    <div>
+                        <span class="metric-value">93%</span>
+                        <div class="metric-label">任务按时完成</div>
+                    </div>
+                    <div>
+                        <span class="metric-value">12维</span>
+                        <div class="metric-label">特征向量精度</div>
+                    </div>
+                    <div>
+                        <span class="metric-value">&lt;2h</span>
+                        <div class="metric-label">风险提前预警</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section id="demo" class="section-dark reveal-hidden" style="padding: 100px 0; background: #161618;">
+        <div class="container">
+            <div class="cta-dark">
+                <div class="eyebrow" style="position:relative;z-index:1;">开始使用</div>
+                <h2>让智能排产改变您的工厂</h2>
+                <p>预约一对一演示，了解 12 维预测模型如何帮助您实现 93% 以上的任务准时完成率。</p>
+                <div class="cta-buttons">
+                    <a href="/index-v3/#contact" class="btn-accent">预约演示</a>
+                    <a href="/index-v3/#pricing" class="btn-secondary">查看定价</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <div class="footer-brand">
+                        <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+                            <rect width="36" height="36" rx="8" fill="#C45C26" />
+                            <path d="M8 28V8h4v8h12V8h4v20h-4v-8H12v8H8z" fill="white" />
+                        </svg>
+                        白垩纪
+                    </div>
+                    <p class="footer-desc">新一代工厂操作系统，让每一座工厂都拥有智慧大脑。</p>
+                </div>
+                <div class="footer-col">
+                    <h4>产品</h4>
+                    <a href="/index-v3/#features" class="footer-link">Factory OS</a>
+                    <a href="/ai-bi-v3/" class="footer-link">SmartBI</a>
+                    <a href="/ai-scheduling-v3/" class="footer-link">AI调度</a>
+                    <a href="/ai-calibration-v3/" class="footer-link">AI定标</a>
+                </div>
+                <div class="footer-col">
+                    <h4>资源</h4>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">文档中心</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">API参考</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">客户案例</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">博客</a>
+                </div>
+                <div class="footer-col">
+                    <h4>公司</h4>
+                    <a href="/index-v3/#about" class="footer-link">关于我们</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">加入团队</a>
+                    <a href="/index-v3/#contact" class="footer-link">联系我们</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">合作伙伴</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>© 2026 白垩纪AI智能体. All rights reserved.</span>
+                <span>上海 · 北京 · 深圳</span>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
