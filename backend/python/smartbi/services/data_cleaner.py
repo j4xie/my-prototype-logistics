@@ -853,7 +853,7 @@ def rule_function(data: List[Dict], columns: List[str]) -> int:
                                 row[col] = row[col]  # 可以转为datetime如果需要
                                 changes += 1
                                 break
-                            except:
+                            except Exception:
                                 pass
         return changes
 

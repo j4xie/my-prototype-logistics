@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Intent Classifier Service
 
@@ -7,7 +9,7 @@ Intent Classifier Service
 import json
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
 
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -152,7 +154,7 @@ class IntentClassifierService:
                 "top_intent": None
             }
 
-    def classify_batch(self, texts: list[str], top_k: int = 1) -> list[dict]:
+    def classify_batch(self, texts: List[str], top_k: int = 1) -> List[Dict]:
         """
         批量分类
 

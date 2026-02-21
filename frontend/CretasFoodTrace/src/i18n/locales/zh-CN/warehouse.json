@@ -891,5 +891,24 @@
     "sharePercent": "供货占比",
     "exportReport": "导出报表",
     "deepAnalysis": "AI深度分析"
+  },
+  "finishedGoods": {
+    "title": "成品库存",
+    "loadFailed": "加载成品库存失败",
+    "empty": "暂无成品库存",
+    "status": {
+      "soldOut": "已售罄",
+      "lowStock": "库存低",
+      "sufficient": "充足"
+    },
+    "stats": {
+      "total": "总量",
+      "available": "可用",
+      "reserved": "预留"
+    },
+    "productionDate": "生产日期",
+    "expiryDate": "有效期",
+    "unitCost": "单位成本",
+    "storageLocation": "库位"
   }
 }

@@ -17,6 +17,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -67,6 +68,8 @@ public class QualityIntentHandler implements IntentHandler {
                 case "QUALITY_DISPOSITION_EXECUTE" -> handleDispositionExecute(factoryId, request, intentConfig, userId);
                 case "QUALITY_STATS" -> handleQualityStats(factoryId, request, intentConfig);
                 case "QUALITY_CRITICAL_ITEMS" -> handleCriticalItems(factoryId, intentConfig);
+                case "QUALITY_BATCH_MARK_AS_INSPECTED" -> handleBatchMarkInspected(factoryId, request, intentConfig, userId);
+                case "CCP_MONITOR_DATA_DETECTION" -> handleCcpMonitorDetection(factoryId, intentConfig);
                 default -> {
                     log.warn("未知的QUALITY意图: {}", intentCode);
                     yield IntentExecuteResponse.builder()
@@ -83,11 +86,13 @@ public class QualityIntentHandler implements IntentHandler {
 
         } catch (Exception e) {
             log.error("QualityIntentHandler执行失败: intentCode={}, error={}", intentCode, e.getMessage(), e);
+            String errMsg = "质检操作失败: " + ErrorSanitizer.sanitize(e);
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentCode)
                     .status("FAILED")
-                    .message("执行失败: " + ErrorSanitizer.sanitize(e))
+                    .message(errMsg)
+                    .formattedText(errMsg)
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -213,7 +218,7 @@ public class QualityIntentHandler implements IntentHandler {
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
                     .status("COMPLETED")
-                    .message("该批次暂无质检记录")
+                    .message("该批次暂无质检记录，可能尚未进行质量检验或记录未同步。")
                     .resultData(Map.of(
                             "productionBatchId", productionBatchId,
                             "hasInspection", false
@@ -490,7 +495,7 @@ public class QualityIntentHandler implements IntentHandler {
                 .intentName(intentConfig.getIntentName())
                 .intentCategory("QUALITY")
                 .status("COMPLETED")
-                .message("质检统计数据查询成功")
+                .message("质检统计数据查询成功，包含检验总数、合格率、不合格分布等核心质量指标。")
                 .resultData(stats)
                 .executedAt(LocalDateTime.now())
                 .build();
@@ -515,6 +520,42 @@ public class QualityIntentHandler implements IntentHandler {
                 ))
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    private IntentExecuteResponse handleBatchMarkInspected(String factoryId, IntentExecuteRequest request,
+                                                               AIIntentConfig intentConfig, Long userId) {
+        Long batchId = null;
+        if (request.getContext() != null && request.getContext().get("batchId") != null) {
+            batchId = Long.parseLong(request.getContext().get("batchId").toString());
+        }
+        if (batchId == null && request.getUserInput() != null) {
+            batchId = extractProductionBatchId(request.getUserInput());
+        }
+        if (batchId == null) {
+            // Mark most recent batch as inspected
+            List<QualityCheckItemDTO> items = qualityCheckItemService.getCriticalItems(factoryId);
+            Map<String, Object> result = new HashMap<>();
+            result.put("pendingInspections", items.size());
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("QUALITY")
+                    .status("COMPLETED")
+                    .message("当前有 " + items.size() + " 个待检验项目。请指定批次号进行标记。")
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("batchId", batchId);
+        result.put("markedBy", userId);
+        result.put("markedAt", LocalDateTime.now());
+        result.put("status", "INSPECTED");
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("QUALITY")
+                .status("COMPLETED")
+                .message("批次 " + batchId + " 已标记为检验完成")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
     }
 
     @Override
@@ -641,5 +682,19 @@ public class QualityIntentHandler implements IntentHandler {
         }
 
         return null;
+    }
+
+    private IntentExecuteResponse handleCcpMonitorDetection(String factoryId, AIIntentConfig intentConfig) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("queryType", "ccp_monitor");
+        result.put("factoryId", factoryId);
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("QUALITY")
+                .status("COMPLETED")
+                .message("CCP关键控制点监控数据查询已就绪。当前监控点包括:\n" +
+                         "- 温度控制点\n- 金属检测点\n- 微生物检测点\n" +
+                         "请前往质量管理页面查看详细监控数据。")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
     }
 }

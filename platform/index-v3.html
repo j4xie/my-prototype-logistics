@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title>白垩纪AI智能体 | 新一代工厂操作系统</title>
+    <meta name="description" content="白垩纪AI智能体 - 新一代工厂操作系统，用AI重新定义工厂生产力">
+
+    <!-- Open Graph / 微信分享 -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cretaceousfuture.com/">
+    <meta property="og:title" content="白垩纪AI智能体 | 新一代工厂操作系统">
+    <meta property="og:description" content="用AI重新定义工厂生产力">
+    <meta property="og:image" content="https://cretaceousfuture.com/share-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="白垩纪AI智能体 | 新一代工厂操作系统">
+    <meta name="twitter:description" content="用AI重新定义工厂生产力">
+    <meta name="twitter:image" content="https://cretaceousfuture.com/share-image.png">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://cretaceousfuture.com/">
+
+    <!-- Structured Data - Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "白垩纪AI",
+      "alternateName": "Cretaceous AI",
+      "url": "https://cretaceousfuture.com",
+      "logo": "https://cretaceousfuture.com/share-image.png",
+      "description": "新一代工厂操作系统，用AI重新定义工厂生产力",
+      "sameAs": []
+    }
+    </script>
+
+    <!-- Structured Data - Product -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "白垩纪AI智能体",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "description": "新一代工厂操作系统，集成AI意图识别、智能调度、视觉检测、数据分析于一体",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "CNY",
+        "description": "按效果付费，风险共担"
+      },
+      "featureList": [
+        "AI意图引擎",
+        "智能调度系统",
+        "SmartBI数据分析",
+        "视觉AI检测",
+        "IoT设备集成"
+      ]
+    }
+    </script>
+
+    <!-- V3 Design System — single CSS + single JS -->
+    <link rel="stylesheet" href="/css/v3-design.css">
+    <script src="/js/v3-engine.js" defer></script>
+
+</head>
+
+<body class="glow-cursor">
+    <!-- Subtle film grain texture overlay -->
+    <div class="film-grain" aria-hidden="true"></div>
+    <!-- Spotlight cursor follow (desktop) -->
+    <div id="spotlight" class="spotlight" aria-hidden="true"></div>
+
+    <!-- Premium Page Loader -->
+    <div class="page-loader">
+        <div class="loader-logo">
+            <svg viewBox="0 0 60 60" width="60" height="60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M30 6 L54 18 L30 30 L6 18 Z" fill="#C45C26" opacity="0.3"/>
+                <path d="M30 15 L54 27 L30 39 L6 27 Z" fill="#C45C26" opacity="0.6"/>
+                <path d="M30 24 L54 36 L30 48 L6 36 Z" fill="#C45C26"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="neural-bg">
+        <div class="neural-grid"></div>
+        <div class="neural-glow"></div>
+        <div class="neural-glow-secondary"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="#home" class="logo">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Stacked layers cube logo -->
+                        <path d="M20 4 L36 12 L20 20 L4 12 Z" fill="#E8E8E8" />
+                        <path d="M20 10 L36 18 L20 26 L4 18 Z" fill="#A0A0A0" />
+                        <path d="M20 16 L36 24 L20 32 L4 24 Z" fill="#707070" />
+                        <path d="M20 22 L36 30 L20 38 L4 30 Z" fill="#404040" />
+                    </svg>
+                </div>
+                <span class="logo-text">CRETACEOUS</span>
+            </a>
+
+            <div class="nav-links">
+                <a href="#features" class="nav-link">核心能力</a>
+                <a href="#comparison" class="nav-link">系统对比</a>
+                <a href="#solutions" class="nav-link">行业方案</a>
+                <a href="#scenarios" class="nav-link">应用场景</a>
+                <a href="#pricing" class="nav-link">定价</a>
+                <a href="#about" class="nav-link">关于我们</a>
+                <a href="#contact" class="nav-link">联系我们</a>
+                <a href="/ai-bi-v3/" class="nav-link" style="color: var(--accent); font-weight: 600;">智能分析</a>
+                <a href="/ai-scheduling-v3/" class="nav-link">AI调度</a>
+                <a href="/ai-calibration-v3/" class="nav-link">AI定标</a>
+                <a href="/dashboard-v3/" class="btn btn-primary">进入演示</a>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="菜单">
+                <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                <svg class="close-icon" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" id="mobileMenu">
+            <a href="#features" class="mobile-nav-link" onclick="closeMobileMenu()">核心能力</a>
+            <a href="#comparison" class="mobile-nav-link" onclick="closeMobileMenu()">系统对比</a>
+            <a href="#solutions" class="mobile-nav-link" onclick="closeMobileMenu()">行业方案</a>
+            <a href="#pricing" class="mobile-nav-link" onclick="closeMobileMenu()">定价</a>
+            <a href="#about" class="mobile-nav-link" onclick="closeMobileMenu()">关于我们</a>
+            <a href="#contact" class="mobile-nav-link" onclick="closeMobileMenu()">联系我们</a>
+            <a href="/ai-bi-v3/" class="mobile-nav-link" onclick="closeMobileMenu()" style="color: var(--accent); font-weight: 600;">智能分析</a>
+            <a href="/ai-scheduling-v3/" class="mobile-nav-link" onclick="closeMobileMenu()">AI调度</a>
+            <a href="/ai-calibration-v3/" class="mobile-nav-link" onclick="closeMobileMenu()">AI定标</a>
+            <a href="/dashboard-v3/" class="btn btn-primary" style="width:100%; margin-top:var(--space-4);">进入演示</a>
+        </div>
+    </nav>
+
+    <section id="home" class="hero redesign-hero">
+        <!-- Animated background lines -->
+        <div class="hero-lines" aria-hidden="true">
+            <div class="hero-line"></div>
+            <div class="hero-line"></div>
+            <div class="hero-line"></div>
+            <div class="hero-line"></div>
+            <div class="hero-line"></div>
+        </div>
+
+        <div class="container hero-container-inner">
+            <div class="grid-asymmetric">
+                <div class="hero-content">
+                    <div class="hero-eyebrow anim-fade-up" data-delay="1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        新一代工厂操作系统
+                    </div>
+
+                    <h1 class="display hero-title anim-fade-up" data-delay="2" style="color: var(--tech-text-primary, #1A1A1A); line-height: 1.1;">
+                        <span class="ai-agent-highlight hero-title-gradient">AI Agent</span> 驱动<br>
+                        重塑工业决策大脑
+                    </h1>
+
+                    <p class="hero-desc anim-fade-up" data-delay="3" style="color: var(--tech-text-secondary, #4B5563); max-width: 540px;">
+                        白垩纪不仅仅是管理软件——它是一个基于分布式智能体（AI Agents）的工业编排系统。通过实时调度专业智能体，自动适配多模态业务场景，让生产现场具备主动思考与动态进化的能力。
+                    </p>
+
+                    <div class="hero-actions anim-fade-up" data-delay="4">
+                        <button class="btn btn-accent btn-lg btn-tech btn-magnetic" onclick="scrollToSection('#contact')"><span class="btn-text">预约演示</span></button>
+                        <a href="/dashboard-v3/" class="btn btn-secondary btn-lg btn-tech btn-magnetic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
+                            <span class="btn-text">进入驾驶舱</span>
+                        </a>
+                        <a href="/ai-bi-v3/" class="btn btn-secondary btn-lg btn-tech btn-magnetic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                            <span class="btn-text">智能数据分析</span>
+                        </a>
+                    </div>
+
+                    <div class="hero-stats anim-fade-up" data-delay="5">
+                        <div class="stat">
+                            <div class="stat-value"><span class="counter" data-target="27">0</span>+</div>
+                            <div class="stat-label">功能模块</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value"><span class="counter" data-target="1400">0</span>+</div>
+                            <div class="stat-label">API接口</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value"><span class="counter" data-target="3">0</span><span
+                                    style="font-size:20px;">秒</span></div>
+                            <div class="stat-label">全链路追溯</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value"><span class="counter" data-target="0">0</span><span
+                                    style="font-size:20px;">%</span></div>
+                            <div class="stat-label">过期损耗</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-visual bento-item border-beam anim-scale-in float-subtle" data-delay="3">
+                    <div class="visual-card card-premium card-glow">
+                        <div class="visual-card-header">
+                            <div class="window-dot" style="background:#FF5F56;"></div>
+                            <div class="window-dot" style="background:#FFBD2E;"></div>
+                            <div class="window-dot" style="background:#27C93F;"></div>
+                        </div>
+                        <div class="visual-card-body">
+                            <picture>
+                                <source srcset="assets/images/webp/ai_command_hub_centerpiece_1767807695583.webp" type="image/webp">
+                                <img src="assets/images/ai_command_hub_centerpiece_1767807695583.png" alt="白垩纪AI智能指挥中心控制面板" loading="lazy" width="800" height="600">
+                            </picture>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scroll indicator -->
+        <div class="scroll-indicator anim-fade-in" data-delay="6">
+            <span>向下滚动</span>
+            <div class="scroll-indicator-line"></div>
+        </div>
+    </section>
+
+    <!-- Section Divider -->
+    <div class="section-divider"></div>
+
+    <!-- ==================== FEATURES SECTION ==================== -->
+    <section id="features" class="section bg-warm">
+        <div class="container">
+            <div class="reveal" style="text-align:center; margin-bottom:var(--space-8);">
+                <div class="eyebrow">核心能力</div>
+                <h2 class="h1" style="margin-top:var(--space-3);">一个平台，解决所有生产管理痛点</h2>
+                <p class="body-lg text-secondary" style="max-width:600px; margin:var(--space-4) auto 0;">
+                    告别割裂的系统孤岛，拥抱统一的智能操作系统</p>
+            </div>
+
+            <div class="grid-3 mobile-scroll reveal-stagger">
+                <div class="feature-card card-premium card-glare glow-border">
+                    <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg></div>
+                    <h3 class="feature-title">分布式 Agent 编排</h3>
+                    <p class="feature-desc">系统内置多角色智能体集群，可根据任务负载自动调度语音理解、视觉识别与逻辑决策智能体，实现复杂生产链条的无缝衔接。</p>
+                </div>
+                <div class="feature-card card-premium card-glare glow-border">
+                    <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></div>
+                    <h3 class="feature-title">敏捷业务适配</h3>
+                    <p class="feature-desc">拒绝僵化的硬编码规则。核心引擎能够根据生产实况动态调整作业逻辑，完美支持非标指令与即时业务变更。</p>
+                </div>
+                <div class="feature-card card-premium card-glare glow-border">
+                    <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg></div>
+                    <h3 class="feature-title">多模态全时感知</h3>
+                    <p class="feature-desc">深度融合语音(ASR)、视觉(Vision)与物联网(IoT)数据流。操作员可通过语音控制、手势识别等自然交互方式直达业务核心。</p>
+                </div>
+                <div class="feature-card card-premium card-glare glow-border">
+                    <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+                    <h3 class="feature-title">自学习进化架构</h3>
+                    <p class="feature-desc">系统在执行过程中不断捕获新的业务表达，通过闭环反馈机制持续优化决策权重，让系统越用越聪明，实现"经验数字化"。</p>
+                </div>
+                <div class="feature-card card-premium card-glare glow-border">
+                    <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+                    <h3 class="feature-title">秒级透明追溯</h3>
+                    <p class="feature-desc">通过数字孪生技术记录每一个智能体的决策路径与物理现场数据，实现全链路透明，满足最严苛的行业合规要求。</p>
+                </div>
+                <div class="feature-card card-premium card-glare glow-border">
+                    <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg></div>
+                    <h3 class="feature-title">万物智联关口</h3>
+                    <p class="feature-desc">工业级边缘智能网关，预集成数百种协议，实现从机械称重到视觉传感器的一站式智联网联。</p>
+                </div>
+            </div>
+
+            <!-- Core AI Pillars (2x2 Grid with Architecture Viz) -->
+            <div id="ai-architecture" style="margin-top: var(--space-6);">
+                <div style="text-align:center; margin-bottom:var(--space-6);">
+                    <div class="eyebrow" style="color: var(--accent);">核心智能引擎</div>
+                    <h2 class="h1" style="margin-top:var(--space-3); font-weight: 800;">四大智造支柱，定义工业 AI 深度</h2>
+                </div>
+
+                <div class="bento-container reveal-stagger" style="margin-top: var(--space-8);">
+                    <!-- Pillar 1: Analysis (Wide Top) -->
+                    <div class="bento-item bento-wide border-beam glow-cursor reveal-hidden"
+                        style="padding: var(--space-6); display: flex; flex-direction: column; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 20px;">
+                        <div
+                            style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+                            <h3 class="h3" style="margin:0; color: var(--text-primary);">自适应多级分析层</h3>
+                        </div>
+                        <p class="body-sm" style="margin-bottom:var(--space-6); color: var(--text-secondary);">
+                            作为系统的"逻辑大脑"，自动调度全栈解析引擎，确保指令的最精准映射与全局最优决策。</p>
+                        <div class="pillar-image-container">
+                            <picture>
+                                <source srcset="assets/images/webp/ai_arch_analysis.webp" type="image/webp">
+                                <img src="assets/images/ai_arch_analysis.png" alt="AI数据分析架构图 - 多维度数据聚合与智能洞察" loading="lazy" width="600" height="400">
+                            </picture>
+                        </div>
+                    </div>
+
+                    <!-- Pillar 2: Intent Engine (Tall Side) -->
+                    <div class="bento-item bento-tall border-beam glow-cursor reveal-hidden"
+                        style="padding: var(--space-6); display: flex; flex-direction: column; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 20px;">
+                        <div
+                            style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+                            <h3 class="h3" style="margin:0; color: var(--text-primary);">工业意图映射</h3>
+                        </div>
+                        <p class="body-sm" style="margin-bottom:var(--space-4); color: var(--text-secondary);">内置级联 Policy
+                            Engine，将模糊指令强制对齐核心 SOP 逻辑。</p>
+                        <div class="pillar-image-container pillar-image-tall">
+                            <picture>
+                                <source srcset="assets/images/webp/ai_arch_intent.webp" type="image/webp">
+                                <img src="assets/images/ai_arch_intent.png" alt="AI意图识别引擎流程图 - 自然语言理解与业务意图解析" loading="lazy" width="600" height="400">
+                            </picture>
+                        </div>
+                    </div>
+
+                    <!-- Pillar 3: Self-Learning -->
+                    <div class="bento-item border-beam glow-cursor reveal-hidden"
+                        style="padding: var(--space-6); display: flex; flex-direction: column; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 20px;">
+                        <div
+                            style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.967-.516"/><path d="M19.967 17.484A4 4 0 0 1 18 18"/></svg>
+                            <h3 class="h3" style="margin:0; color: var(--text-primary);">自进化学习</h3>
+                        </div>
+                        <p class="body-sm" style="margin-bottom:var(--space-4); color: var(--text-secondary);">多模态反馈闭环，持续推演全局最优解。</p>
+                        <div class="pillar-image-container">
+                            <picture>
+                                <source srcset="assets/images/webp/ai_arch_learning.webp" type="image/webp">
+                                <img src="assets/images/ai_arch_learning.png" alt="AI自学习系统架构 - 持续优化与模型迭代" loading="lazy" width="600" height="400">
+                            </picture>
+                        </div>
+                    </div>
+
+                    <!-- Pillar 4: Orchestration -->
+                    <div class="bento-item border-beam glow-cursor reveal-hidden"
+                        style="padding: var(--space-6); display: flex; flex-direction: column; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 20px;">
+                        <div
+                            style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="14" y="3" rx="1"/><path d="M10 21V8a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5a1 1 0 0 0-1-1H3"/></svg>
+                            <h3 class="h3" style="margin:0; color: var(--text-primary);">Agent 动态编排</h3>
+                        </div>
+                        <p class="body-sm" style="margin-bottom:var(--space-4); color: var(--text-secondary);">多智能体分布式协同，灵活应对弹性负载。</p>
+                        <div class="pillar-image-container">
+                            <picture>
+                                <source srcset="assets/images/webp/ai_arch_orchestration.webp" type="image/webp">
+                                <img src="assets/images/ai_arch_orchestration.png" alt="AI智能编排系统 - 多模块协同调度" loading="lazy" width="600" height="400">
+                            </picture>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== SMARTBI ENTRY MODULE ==================== -->
+    <section id="smartbi-entry" class="section">
+        <div class="container">
+            <div style="text-align: center; max-width: 800px; margin: 0 auto; padding: var(--space-8) 0;">
+                <div class="eyebrow" style="color: var(--accent);">AI 数据分析</div>
+                <h2 class="h1" style="margin-top: var(--space-3);">SmartBI 智能分析平台</h2>
+                <p class="body-lg text-secondary" style="max-width: 550px; margin: var(--space-4) auto 0;">
+                    用自然语言与数据对话，告别复杂报表。问什么画什么，秒级响应。
+                </p>
+
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-4); margin-top: var(--space-6);">
+                    <div style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--bg-warm); border-radius: 12px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <span style="font-weight: 500;">自然语言查询</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--bg-warm); border-radius: 12px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                        <span style="font-weight: 500;">10+ 专业图表</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--bg-warm); border-radius: 12px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                        <span style="font-weight: 500;">智能预警推荐</span>
+                    </div>
+                </div>
+
+                <a href="/ai-bi-v3/" class="btn btn-accent btn-lg" style="margin-top: var(--space-6);">
+                    了解更多
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 6px;">
+                        <path d="M5 12h14"/>
+                        <path d="m12 5 7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== COMPARISON SECTION ==================== -->
+    <section id="comparison" class="section">
+        <div class="container">
+            <div style="text-align:center; margin-bottom:var(--space-8);">
+                <div class="eyebrow">全方位系统对比</div>
+                <h2 class="h1" style="margin-top:var(--space-3);">告别"软件孤岛"时代</h2>
+                <p class="body-lg text-secondary" style="max-width:700px; margin:var(--space-4) auto 0;">
+                    传统ERP、MES、WMS、QMS各自为政，数据割裂，采购成本高昂。<br>白垩纪AI智能体将它们融合为一个有机整体，大幅降低TCO。</p>
+            </div>
+
+            <!-- Interactive Card Carousel -->
+            <!-- High-Density Comparison Grid -->
+            <div class="comparison-grid reveal-stagger">
+                <!-- Dimension 1: 核心定位 -->
+                <div class="dimension-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="card-header">
+                        <div class="dimension-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+                        <div class="dimension-title">核心定位</div>
+                    </div>
+                    <table class="card-matrix">
+                        <tr>
+                            <td class="sys-name">ERP</td>
+                            <td class="sys-val">财务视角：侧重资源规划与经营核算，缺乏实时的工厂执行力。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">MES</td>
+                            <td class="sys-val">车间视角：监控生产执行，但往往与仓库和采购系统脱节。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">WMS</td>
+                            <td class="sys-val">静态平衡：关注库位与库存数量，不感知前道生产的动态需求。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">QMS</td>
+                            <td class="sys-val">事后记录：侧重合规文档管理，无法在生产中即时干预质量。</td>
+                        </tr>
+                        <tr class="ai-row">
+                            <td class="sys-name">AI Agent</td>
+                            <td class="sys-val">
+                                <strong>分布式编排中枢</strong>
+                                打破模块隔离，将生产、质检、物流等模块链接为统一的自适应执行引擎。
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Dimension 2: 数据时效性 -->
+                <div class="dimension-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="card-header">
+                        <div class="dimension-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                        <div class="dimension-title">数据时效性</div>
+                    </div>
+                    <table class="card-matrix">
+                        <tr>
+                            <td class="sys-name">ERP</td>
+                            <td class="sys-val warning">滞后严重：依赖人工事后补单，数据周转通常在 24 小时以上。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">MES</td>
+                            <td class="sys-val">局部实时：能看到机台状态，但无法实时同步到整厂财务看板。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">WMS</td>
+                            <td class="sys-val">批次延迟：入库确认后才更新，生产线上的在制品流动是黑盒。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">QMS</td>
+                            <td class="sys-val warning">检查滞后：实验室结果出炉时，不合格品可能已经打包发货。</td>
+                        </tr>
+                        <tr class="ai-row">
+                            <td class="sys-name">AI Agent</td>
+                            <td class="sys-val">
+                                <strong>全模态流式计算</strong>
+                                聚合语音、视觉与 IoT 传感数据，在业务发生瞬间完成“感知-识别-记录”闭环。
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Dimension 3: AI与决策支持 -->
+                <div class="dimension-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="card-header">
+                        <div class="dimension-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.967-.516"/><path d="M19.967 17.484A4 4 0 0 1 18 18"/></svg></div>
+                        <div class="dimension-title">AI 与智能决策</div>
+                    </div>
+                    <table class="card-matrix">
+                        <tr>
+                            <td class="sys-name">ERP</td>
+                            <td class="sys-val">仅提供静态历史报表，分析工作完全依赖财务人员。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">MES</td>
+                            <td class="sys-val">基于预设规则的硬逻辑，无法处理异常突变的生产环境。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">WMS</td>
+                            <td class="sys-val">简单的先进先出逻辑，无法根据库存效期自动优化拣选路径。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">QMS</td>
+                            <td class="sys-val">基础的 SPC 统计，缺乏通过环境数据进行故障预警的能力。</td>
+                        </tr>
+                        <tr class="ai-row">
+                            <td class="sys-name">AI Agent</td>
+                            <td class="sys-val">
+                                <strong>通义大模型驱动</strong>
+                                支持自然语言问答，“明早哪个班次最赶？”、“库存还能支撑几天？” AI 实时秒答。
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Dimension 4: TCO 成本与投入 -->
+                <div class="dimension-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="card-header">
+                        <div class="dimension-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg></div>
+                        <div class="dimension-title">TCO 总拥有成本</div>
+                    </div>
+                    <table class="card-matrix">
+                        <tr>
+                            <td class="sys-name">ERP</td>
+                            <td class="sys-val">实施费极高：需昂贵的顾问驻场，授权费+首年维保需数百万。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">MES</td>
+                            <td class="sys-val">定制化重：每个接口都要钱，维护多套服务器，隐形成本高。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">WMS/Q</td>
+                            <td class="sys-val">堆砌成本：独立采购多套系统，界面各异，员工培训成本翻倍。</td>
+                        </tr>
+                        <tr class="ai-row">
+                            <td class="sys-name">AI Agent</td>
+                            <td class="sys-val">
+                                <strong>降低 70% 综合投入</strong>
+                                纯 SaaS 云原生架构，零服务器维护，按需订阅，2 周上线即可见成效。
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Dimension 5: 追溯与合规 -->
+                <div class="dimension-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="card-header">
+                        <div class="dimension-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></div>
+                        <div class="dimension-title">追溯与合规性</div>
+                    </div>
+                    <table class="card-matrix">
+                        <tr>
+                            <td class="sys-name">ERP</td>
+                            <td class="sys-val">仅止步于批次流向，无法深入到细节。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">MES</td>
+                            <td class="sys-val">车间孤岛：无原材料背景，追溯链条断裂。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">WMS</td>
+                            <td class="sys-val">缺乏履历：只有库位变动，没有加工参数。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">QMS</td>
+                            <td class="sys-val">文档合规：应付检查为主，无法实现实时追溯。</td>
+                        </tr>
+                        <tr class="ai-row">
+                            <td class="sys-name">AI Agent</td>
+                            <td class="sys-val">
+                                <strong>全链路 3 秒回溯</strong>
+                                合并所有系统的数据指纹，一键生成完整报告。
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Dimension 6: 设备集成能力 -->
+                <div class="dimension-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="card-header">
+                        <div class="dimension-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg></div>
+                        <div class="dimension-title">设备集成</div>
+                    </div>
+                    <table class="card-matrix">
+                        <tr>
+                            <td class="sys-name">ERP</td>
+                            <td class="sys-val warning">集成盲点：不具备硬件通讯能力，靠键盘输入。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">MES</td>
+                            <td class="sys-val">高门槛：集成 PLC 需深度编程，周期长。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">WMS</td>
+                            <td class="sys-val">单一集成：仅支持扫码枪，难以连接立库。</td>
+                        </tr>
+                        <tr class="ai-row">
+                            <td class="sys-name">AI Agent</td>
+                            <td class="sys-val">
+                                <strong>95% 工艺设备即插即用</strong>
+                                内置 500+ 工业协议，10 分钟快速上线。
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Dimension 7: 实施与上线周期 -->
+                <div class="dimension-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="card-header">
+                        <div class="dimension-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg></div>
+                        <div class="dimension-title">上线周期</div>
+                    </div>
+                    <table class="card-matrix">
+                        <tr>
+                            <td class="sys-name">ERP</td>
+                            <td class="sys-val warning">马拉松式：需求调研漫长，通常 12 个月以上。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">MES</td>
+                            <td class="sys-val">漫长磨合：涉及大量现场定制，3-6 个月是常态。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">WMS</td>
+                            <td class="sys-val">部署重：需清理库位贴码，至少 2-3 个月。</td>
+                        </tr>
+                        <tr class="ai-row">
+                            <td class="sys-name">AI Agent</td>
+                            <td class="sys-val">
+                                <strong>敏捷交付模式</strong>
+                                标准工序模型，即开即用，只需 2-4 周。
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Dimension 8: 系统扩展性 -->
+                <div class="dimension-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="card-header">
+                        <div class="dimension-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0Z"/></svg></div>
+                        <div class="dimension-title">系统扩展性</div>
+                    </div>
+                    <table class="card-matrix">
+                        <tr>
+                            <td class="sys-name">ERP</td>
+                            <td class="sys-val">版本泥潭：升级极难，哪怕小改也需专业 IT。</td>
+                        </tr>
+                        <tr>
+                            <td class="sys-name">MES</td>
+                            <td class="sys-val">封闭架构：供应商锁定，难以第三方集成。</td>
+                        </tr>
+                        <tr class="ai-row">
+                            <td class="sys-name">AI Agent</td>
+                            <td class="sys-val">
+                                <strong>乐高式插件化架构</strong>
+                                提供低代码引擎，企业可自行快速扩展。
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Dimension 9: 用户体验 (UX) -->
+                <div class="dimension-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="card-header">
+                        <div class="dimension-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg></div>
+                        <div class="dimension-title">用户体验</div>
+                    </div>
+                    <table class="card-matrix">
+                        <tr>
+                            <td class="sys-name">传统系统</td>
+                            <td class="sys-val warning">极其复杂：菜单套菜单，学习曲线陡峭。</td>
+                        </tr>
+                        <tr class="ai-row">
+                            <td class="sys-name">AI Agent</td>
+                            <td class="sys-val">
+                                <strong>互联网级丝滑体验</strong>
+                                支持小程序/APP，会玩手机就会管工厂。
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Dimension 10: 异常预警 -->
+                <div class="dimension-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="card-header">
+                        <div class="dimension-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></div>
+                        <div class="dimension-title">异常响应</div>
+                    </div>
+                    <table class="card-matrix">
+                        <tr>
+                            <td class="sys-name">传统系统</td>
+                            <td class="sys-val">滞后处理：出事才查报表。无主动预警能力。</td>
+                        </tr>
+                        <tr class="ai-row">
+                            <td class="sys-name">AI Agent</td>
+                            <td class="sys-val">
+                                <strong>主动干预系统</strong>
+                                故障秒级推送至手机，防患于未然。
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Summary Footer -->
+            <div class="comparison-footer">
+                <div class="summary-box">
+                    <div class="summary-icon-inner" style="background:rgba(188,71,73,0.1); color:#BC4749;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                    </div>
+                    <div class="summary-content">
+                        <h4>传统系统痛点</h4>
+                        <ul>
+                            <li>系统烟囱林立，数据无法互通</li>
+                            <li>运维包袱沉重，灵活性极差</li>
+                            <li>TCO 高昂，ROI 难以量化</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="summary-box highlight">
+                    <div class="summary-icon-inner" style="background:rgba(196,92,38,0.1); color:var(--accent);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>
+                    </div>
+                    <div class="summary-content">
+                        <h4>白垩纪 AI 优势</h4>
+                        <ul>
+                            <li>数据底座统一，全链路闭环</li>
+                            <li>大模型自适应，无需复杂编程</li>
+                            <li>降本增效，2 周内即可看到成果</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== SOLUTIONS SECTION ==================== -->
+    <section id="solutions" class="section bg-warm">
+        <div class="container">
+            <div style="text-align:center; margin-bottom:var(--space-8);">
+                <div class="eyebrow">行业方案</div>
+                <h2 class="h1" style="margin-top:var(--space-3);">深耕食品加工全场景</h2>
+                <p class="body-lg text-secondary" style="max-width:600px; margin:var(--space-4) auto 0;">
+                    每个细分行业都有独特的痛点，我们提供针对性的解决方案</p>
+            </div>
+
+            <div class="grid-3 mobile-scroll reveal-stagger">
+                <div class="solution-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="solution-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#BC4749" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12.5" cy="8.5" r="2.5"/><path d="M12.5 2a6.5 6.5 0 0 0-6.22 4.6c-1.1 3.13-.78 3.9-3.18 6.08A3 3 0 0 0 5 18c4 0 8.4-1.8 11.4-4.3A6.5 6.5 0 0 0 12.5 2Z"/><path d="m18.5 6 2.19 4.5a6.48 6.48 0 0 1 .31 2 6.49 6.49 0 0 1-2.6 5.2C15.4 20.2 11 22 7 22a3 3 0 0 1-2.68-1.66L2.4 16.5"/></svg>
+                    </div>
+                    <h3 class="solution-title">肉制品加工</h3>
+                    <p class="solution-desc">从分割到腌制到包装的全流程管控，通过视觉AI与IoT传感器精确计算每一条产线的实时出成率，杜绝人工作弊。</p>
+                    <ul class="solution-list">
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 原料解冻损耗AI监控与异常预测</li>
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> IoT称重计件，实现批次级精准溯源</li>
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 生产环节损耗分析，优化分块算法</li>
+                    </ul>
+                </div>
+                <div class="solution-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="solution-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#C45C26" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/></svg></div>
+                    <h3 class="solution-title">饮料与调味品</h3>
+                    <p class="solution-desc">适配高流速连续生产线的流体管理，深度集成流量计与PLC，精准控制配方比例与CIP清洗效能。</p>
+                    <ul class="solution-list">
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 实时流量IoT集成，自动对冲生产损耗</li>
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Vision AI 监控液位与灌装完整度</li>
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 配方版本严格权限管控，防止参数误调</li>
+                    </ul>
+                </div>
+                <div class="solution-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="solution-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D4A574" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.134-7.589 5 5 0 0 0-9.186 0 4 4 0 0 0-2.134 7.588c.411.198.727.585.727 1.041V20a1 1 0 0 0 1 1Z"/><path d="M6 17h12"/></svg></div>
+                    <h3 class="solution-title">中央厨房</h3>
+                    <p class="solution-desc">解决多SKU、短保质期的极速周转挑战。从门店订单自动拆解到自动化排产，实现分钟级需求响应。</p>
+                    <ul class="solution-list">
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 每日订单大模型自动分拣与排产引擎</li>
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 播种墙与电子标签(ESL)极速拣选对接</li>
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 门店冷链配送路径动态规划与温控监控</li>
+                    </ul>
+                </div>
+                <!-- Row 2 -->
+                <div class="solution-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="solution-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4B88A2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9a4 4 0 0 0-2 7.5"/><path d="M12 3v2"/><path d="m6.6 18.4-1.4 1.4"/><path d="M20 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/><path d="M4 13H2"/><path d="M6.34 7.34 4.93 5.93"/></svg></div>
+                    <h3 class="solution-title">预制菜与冷链</h3>
+                    <p class="solution-desc">全流程冷链数字化，确保存储与加工环境恒温。自动监控食材效期，AI预测市场波动下的最优备货水位。</p>
+                    <ul class="solution-list">
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 低功耗蓝牙(BLE)传感器全厂区温控覆盖</li>
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 智能FIFO守卫，杜绝临期食材投入生产</li>
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 高度复杂的加工工序(SOP)动画指引</li>
+                    </ul>
+                </div>
+                <div class="solution-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="solution-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E09F3E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"/><path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"/><path d="m4 8 16-4"/><path d="m8.86 6.78-.45-1.81a2 2 0 0 1 1.45-2.43l1.94-.48a2 2 0 0 1 2.43 1.46l.45 1.8"/></svg></div>
+                    <h3 class="solution-title">烘焙与休闲食品</h3>
+                    <p class="solution-desc">视觉AI识别产品缺陷，实时监控烤炉温度与环境湿度。通过智能物料衡算，极大地降低手工记录差错。</p>
+                    <ul class="solution-list">
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 视觉AI自动计数与成品完整率检测</li>
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 生产环境温湿度平衡主动预警</li>
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 自动计算原料投料比例，防范配方偏离</li>
+                    </ul>
+                </div>
+                <div class="solution-card bento-item border-beam glow-cursor reveal-hidden">
+                    <div class="solution-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8338EC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+                    </div>
+                    <h3 class="solution-title">保健品与合规食品</h3>
+                    <p class="solution-desc">严格适配GMP/HACCP合规要求，实现生产全过程的可信数字签名。从称量到灌装实现强一致性数据校验。</p>
+                    <ul class="solution-list">
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 高精度称量模块直连，剔除人为干预</li>
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 电子履历(eBR)一键导出，秒应审计检查</li>
+                        <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 异常操作强制中止，保障合规生产底线</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Vision Application Scenarios -->
+    <section id="scenarios" class="section">
+        <div class="container">
+            <div style="text-align:center; margin-bottom:var(--space-8);">
+                <div class="eyebrow">AI 视觉应用场景</div>
+                <h2 class="h1" style="margin-top:var(--space-3);">从检测到安全到效率，摄像头重新定义车间管理</h2>
+                <p class="body-lg text-secondary" style="max-width:750px; margin:var(--space-4) auto 0;">
+                    智能摄像头 + AI 算法，实现 24 小时无人值守的质量检测、安全监控和产能计算
+                </p>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="scenario-tabs">
+                <button type="button" class="scenario-tab active" data-tab="quality" onclick="switchScenarioTab('quality')">质量检测</button>
+                <button type="button" class="scenario-tab" data-tab="safety" onclick="switchScenarioTab('safety')">安全监控</button>
+                <button type="button" class="scenario-tab" data-tab="efficiency" onclick="switchScenarioTab('efficiency')">效率管理</button>
+            </div>
+
+            <!-- Quality Detection Panel -->
+            <div id="panel-quality" class="scenario-panel active">
+                <div class="grid-2 mobile-scroll reveal-stagger">
+                    <!-- Card 1: Label Inspection -->
+                    <div class="scenario-card bento-item border-beam glow-cursor reveal-hidden">
+                        <div class="scenario-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+                        </div>
+                        <h4>生产线标签检验</h4>
+                        <p class="scenario-card-desc">产品从打标机出来后，摄像头检查标签是否正确打印，确保批次号、生产日期、有效期等信息准确无误。</p>
+                        <div class="scenario-card-result">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                            <span>发现标签打错批次号，立即报警并暂停产线</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Raw Material Inspection -->
+                    <div class="scenario-card bento-item border-beam glow-cursor reveal-hidden">
+                        <div class="scenario-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                        </div>
+                        <h4>原材料入库检验</h4>
+                        <p class="scenario-card-desc">原材料到货时，扫描供应商商标验证真伪，核对批次信息与采购单是否一致。</p>
+                        <div class="scenario-card-result">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                            <span>发现假冒原料或批次不符，阻止入库</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Finished Product Check -->
+                    <div class="scenario-card bento-item border-beam glow-cursor reveal-hidden">
+                        <div class="scenario-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H2v7l6.29 6.29c.94.94 2.48.94 3.42 0l3.58-3.58c.94-.94.94-2.48 0-3.42L9 5Z"/><path d="M6 9.01V9"/><path d="m15 5 6.3 6.3a2.4 2.4 0 0 1 0 3.4L17 19"/></svg>
+                        </div>
+                        <h4>成品出库复核</h4>
+                        <p class="scenario-card-desc">成品装箱前，再次确认标签信息与订单一致，核对产品规格、数量和目的地。</p>
+                        <div class="scenario-card-result">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                            <span>防止发错货给客户，减少退货率</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Inventory Assist -->
+                    <div class="scenario-card bento-item border-beam glow-cursor reveal-hidden">
+                        <div class="scenario-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8h8"/><path d="M7 12h10"/><path d="M7 16h6"/></svg>
+                        </div>
+                        <h4>仓库盘点辅助</h4>
+                        <p class="scenario-card-desc">盘点时扫描货架上的标签，自动记录批次和数量，实时同步到系统。</p>
+                        <div class="scenario-card-result">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                            <span>减少人工录入错误，盘点效率提升 80%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Safety Monitoring Panel -->
+            <div id="panel-safety" class="scenario-panel">
+                <div class="grid-2 mobile-scroll reveal-stagger">
+                    <!-- Card 1: Equipment Operation -->
+                    <div class="scenario-card bento-item border-beam glow-cursor reveal-hidden">
+                        <div class="scenario-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                        </div>
+                        <h4>设备操作区</h4>
+                        <p class="scenario-card-desc"><strong>危险行为：</strong>未按规则操作设备、单手操作危险设备<br><strong>AI检测：</strong>分析人员姿势和动作轨迹</p>
+                        <div class="scenario-card-result">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                            <span>停机检查，防止工伤事故</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: High Temperature Area -->
+                    <div class="scenario-card bento-item border-beam glow-cursor reveal-hidden">
+                        <div class="scenario-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>
+                        </div>
+                        <h4>高温区域</h4>
+                        <p class="scenario-card-desc"><strong>危险行为：</strong>长时间停留、未穿防护服进入<br><strong>AI检测：</strong>检测人员位置和穿戴情况</p>
+                        <div class="scenario-card-result">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                            <span>强制高度提醒，避免烫伤烧伤</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Warehouse Aisle -->
+                    <div class="scenario-card bento-item border-beam glow-cursor reveal-hidden">
+                        <div class="scenario-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        </div>
+                        <h4>仓库通道</h4>
+                        <p class="scenario-card-desc"><strong>危险行为：</strong>叉车区域内有行人、通道被货物阻塞<br><strong>AI检测：</strong>分析画面中的人和物体位置</p>
+                        <div class="scenario-card-result">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                            <span>广播警告 + 记录，防止碰撞事故</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Packaging Line -->
+                    <div class="scenario-card bento-item border-beam glow-cursor reveal-hidden">
+                        <div class="scenario-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" x2="12" y1="22.08" y2="12"/></svg>
+                        </div>
+                        <h4>包装线</h4>
+                        <p class="scenario-card-desc"><strong>危险行为：</strong>手伸入运转中设备、违规调整机器<br><strong>AI检测：</strong>检测手部位置和设备状态</p>
+                        <div class="scenario-card-result">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                            <span>紧急停机，保护操作人员安全</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Efficiency Management Panel -->
+            <div id="panel-efficiency" class="scenario-panel">
+                <div class="grid-2 mobile-scroll reveal-stagger">
+                    <!-- Card 1: Assembly Line -->
+                    <div class="scenario-card bento-item border-beam glow-cursor reveal-hidden">
+                        <div class="scenario-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                        <h4>流水线工位</h4>
+                        <p class="scenario-card-desc"><strong>检测内容：</strong>检测工人是否完成当前产品处理</p>
+                        <div class="scenario-card-result">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                            <span>自动记录完成数量，计算产能</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Inspection Station -->
+                    <div class="scenario-card bento-item border-beam glow-cursor reveal-hidden">
+                        <div class="scenario-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M12 4v1"/><path d="M17.66 6.344l-.828.828"/><path d="M20.005 12.004h-1"/><path d="M17.66 17.664l-.828-.828"/><path d="M12 20.01V19"/><path d="M6.34 17.664l.835-.836"/><path d="M3.995 12.004h1.01"/><path d="M6.34 6.344l.835.836"/></svg>
+                        </div>
+                        <h4>人工检验台</h4>
+                        <p class="scenario-card-desc"><strong>检测内容：</strong>检测工人是否按照规范动作作检验</p>
+                        <div class="scenario-card-result">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                            <span>确保检验流程规范，质量可控</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Carrying Work -->
+                    <div class="scenario-card bento-item border-beam glow-cursor reveal-hidden">
+                        <div class="scenario-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        </div>
+                        <h4>搬运工作</h4>
+                        <p class="scenario-card-desc"><strong>检测内容：</strong>检测搬运姿势是否正确</p>
+                        <div class="scenario-card-result">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                            <span>预防职业病，保护员工健康</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Long Work Detection -->
+                    <div class="scenario-card bento-item border-beam glow-cursor reveal-hidden">
+                        <div class="scenario-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <h4>长时间工作</h4>
+                        <p class="scenario-card-desc"><strong>检测内容：</strong>检测疲劳迹象（频繁伸腰、揉眼睛）</p>
+                        <div class="scenario-card-result">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                            <span>提醒休息，预防事故发生</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real Case Studies - Redesigned -->
+            <div class="cases-section" style="margin-top:var(--space-10);">
+                <div style="text-align:center; margin-bottom:var(--space-8);">
+                    <div class="eyebrow">真实场景</div>
+                    <h3 class="h2" style="margin-top:var(--space-2);">实际案例展示</h3>
+                    <p class="body-sm text-secondary" style="max-width:500px; margin:var(--space-2) auto 0;">
+                        看看 AI 视觉计件系统如何在真实工厂环境中运作
+                    </p>
+                </div>
+
+                <!-- Case 1: Assembly Line - Full Width Story -->
+                <div class="case-story bento-item" style="margin-bottom:var(--space-6);">
+                    <div class="case-story-header">
+                        <div class="case-number">01</div>
+                        <div class="case-meta">
+                            <span class="case-tag">流水线场景</span>
+                            <h4 class="case-title">多角色协同计件</h4>
+                            <p class="case-subtitle">从生产到质检到管理，全流程自动记录</p>
+                        </div>
+                    </div>
+                    <div class="case-flow">
+                        <div class="flow-step">
+                            <div class="step-avatar worker">张</div>
+                            <div class="step-content">
+                                <div class="step-role">生产工人 · 张三</div>
+                                <div class="step-action">将产品放到传送带上</div>
+                                <div class="step-result">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                                    AI 检测"完成"动作 → 件数 +1
+                                </div>
+                            </div>
+                            <div class="step-counter">156<span>件</span></div>
+                        </div>
+                        <div class="flow-connector"></div>
+                        <div class="flow-step">
+                            <div class="step-avatar inspector">李</div>
+                            <div class="step-content">
+                                <div class="step-role">质检员 · 李四</div>
+                                <div class="step-action">完成质检并盖章</div>
+                                <div class="step-result">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                                    AI 检测"盖章"动作 → 件数 +1
+                                </div>
+                            </div>
+                            <div class="step-counter">142<span>件</span></div>
+                        </div>
+                        <div class="flow-connector"></div>
+                        <div class="flow-step">
+                            <div class="step-avatar manager">组</div>
+                            <div class="step-content">
+                                <div class="step-role">班组长</div>
+                                <div class="step-action">实时查看看板数据</div>
+                                <div class="step-result">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                                    实时掌握产线进度
+                                </div>
+                            </div>
+                            <div class="step-counter live">实时<span>监控</span></div>
+                        </div>
+                        <div class="flow-connector"></div>
+                        <div class="flow-step">
+                            <div class="step-avatar finance">财</div>
+                            <div class="step-content">
+                                <div class="step-role">财务部门</div>
+                                <div class="step-action">月底核算工资</div>
+                                <div class="step-result">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                                    一键生成计件工资表
+                                </div>
+                            </div>
+                            <div class="step-counter auto">自动<span>结算</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="gap:var(--space-6);">
+                    <!-- Case 2: Efficiency Timeline -->
+                    <div class="case-card-v2 bento-item">
+                        <div class="case-card-header">
+                            <div class="case-number-sm">02</div>
+                            <div>
+                                <span class="case-tag-sm">效率追踪</span>
+                                <h4 class="case-title-sm">手工包装计件 · 王师傅的一天</h4>
+                            </div>
+                        </div>
+
+                        <div class="efficiency-chart">
+                            <div class="chart-bar" style="--height: 60%;" data-time="08:30" data-value="60">
+                                <div class="bar-fill warming"></div>
+                                <span class="bar-label">60</span>
+                            </div>
+                            <div class="chart-bar" style="--height: 87%;" data-time="09:00" data-value="70">
+                                <div class="bar-fill peak"></div>
+                                <span class="bar-label">70</span>
+                            </div>
+                            <div class="chart-bar" style="--height: 75%;" data-time="10:00" data-value="65">
+                                <div class="bar-fill normal"></div>
+                                <span class="bar-label">65</span>
+                            </div>
+                            <div class="chart-bar" style="--height: 62%;" data-time="11:00" data-value="58">
+                                <div class="bar-fill normal"></div>
+                                <span class="bar-label">58</span>
+                            </div>
+                            <div class="chart-bar" style="--height: 55%;" data-time="11:30" data-value="57">
+                                <div class="bar-fill fatigue"></div>
+                                <span class="bar-label">57</span>
+                            </div>
+                        </div>
+                        <div class="chart-axis">
+                            <span>08:30</span>
+                            <span>09:00</span>
+                            <span>10:00</span>
+                            <span>11:00</span>
+                            <span>11:30</span>
+                        </div>
+                        <div class="chart-legend">
+                            <span class="legend-item"><i class="dot warming"></i>热身期</span>
+                            <span class="legend-item"><i class="dot peak"></i>高效期</span>
+                            <span class="legend-item"><i class="dot fatigue"></i>疲劳期</span>
+                        </div>
+
+                        <div class="case-summary-bar">
+                            <div class="summary-stat">
+                                <span class="stat-value">220</span>
+                                <span class="stat-label">总件数</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="stat-value">55</span>
+                                <span class="stat-label">平均/时</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="stat-value">70</span>
+                                <span class="stat-label">峰值/时</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Case 3: Worker Comparison -->
+                    <div class="case-card-v2 bento-item">
+                        <div class="case-card-header">
+                            <div class="case-number-sm">03</div>
+                            <div>
+                                <span class="case-tag-sm">数据对比</span>
+                                <h4 class="case-title-sm">新老工人效率对比</h4>
+                            </div>
+                        </div>
+
+                        <div class="worker-cards">
+                            <div class="worker-card grade-a">
+                                <div class="worker-info">
+                                    <div class="worker-avatar">王</div>
+                                    <div class="worker-meta">
+                                        <span class="worker-name">老王</span>
+                                        <span class="worker-exp">5年经验</span>
+                                    </div>
+                                    <div class="worker-grade">A</div>
+                                </div>
+                                <div class="worker-stats">
+                                    <div class="stat-row">
+                                        <span class="stat-name">日均产量</span>
+                                        <div class="stat-bar-wrap">
+                                            <div class="stat-bar" style="width: 100%;"></div>
+                                        </div>
+                                        <span class="stat-num">450件</span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span class="stat-name">平均效率</span>
+                                        <div class="stat-bar-wrap">
+                                            <div class="stat-bar" style="width: 100%;"></div>
+                                        </div>
+                                        <span class="stat-num">56件/时</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="worker-card grade-b">
+                                <div class="worker-info">
+                                    <div class="worker-avatar">张</div>
+                                    <div class="worker-meta">
+                                        <span class="worker-name">张张</span>
+                                        <span class="worker-exp">1年经验</span>
+                                    </div>
+                                    <div class="worker-grade">B</div>
+                                </div>
+                                <div class="worker-stats">
+                                    <div class="stat-row">
+                                        <span class="stat-name">日均产量</span>
+                                        <div class="stat-bar-wrap">
+                                            <div class="stat-bar" style="width: 84%;"></div>
+                                        </div>
+                                        <span class="stat-num">380件</span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span class="stat-name">平均效率</span>
+                                        <div class="stat-bar-wrap">
+                                            <div class="stat-bar" style="width: 86%;"></div>
+                                        </div>
+                                        <span class="stat-num">48件/时</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="worker-card grade-c">
+                                <div class="worker-info">
+                                    <div class="worker-avatar">李</div>
+                                    <div class="worker-meta">
+                                        <span class="worker-name">小李</span>
+                                        <span class="worker-exp">1月经验</span>
+                                    </div>
+                                    <div class="worker-grade">C</div>
+                                </div>
+                                <div class="worker-stats">
+                                    <div class="stat-row">
+                                        <span class="stat-name">日均产量</span>
+                                        <div class="stat-bar-wrap">
+                                            <div class="stat-bar" style="width: 62%;"></div>
+                                        </div>
+                                        <span class="stat-num">280件</span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span class="stat-name">平均效率</span>
+                                        <div class="stat-bar-wrap">
+                                            <div class="stat-bar" style="width: 63%;"></div>
+                                        </div>
+                                        <span class="stat-num">35件/时</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="insight-box">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                            <span>AI 分析：小李的成长曲线良好，预计3个月可达到 B 级水平</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wage Calculator - Redesigned -->
+            <div class="calculator-section" style="margin-top:var(--space-10);">
+                <div style="text-align:center; margin-bottom:var(--space-6);">
+                    <div class="eyebrow">智能计件系统</div>
+                    <h3 class="h2" style="margin-top:var(--space-2);">计件工资计算器</h3>
+                    <p class="body-sm text-secondary" style="max-width:500px; margin:var(--space-2) auto 0;">
+                        输入完成件数，实时计算工资。支持基础计件和阶梯激励两种模式
+                    </p>
+                </div>
+
+                <div class="calculator-container">
+                    <!-- Left: Input & Mode Selection -->
+                    <div class="calculator-input-section">
+                        <div class="input-card bento-item border-beam">
+                            <label class="input-label">今日完成件数</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="piece-count" placeholder="0" min="0" oninput="calculateWageRealtime()">
+                                <span class="input-unit">件</span>
+                            </div>
+                        </div>
+
+                        <!-- Mode Selection Cards -->
+                        <div class="mode-cards">
+                            <div class="mode-card active" data-mode="basic" onclick="selectMode('basic')">
+                                <div class="mode-header">
+                                    <div class="mode-radio"></div>
+                                    <span class="mode-title">基础计件</span>
+                                </div>
+                                <div class="mode-rule">
+                                    <span class="rule-price">¥0.5</span>
+                                    <span class="rule-unit">/件</span>
+                                </div>
+                                <p class="mode-desc">固定单价，简单透明</p>
+                            </div>
+
+                            <div class="mode-card" data-mode="tiered" onclick="selectMode('tiered')">
+                                <div class="mode-header">
+                                    <div class="mode-radio"></div>
+                                    <span class="mode-title">阶梯激励</span>
+                                    <span class="mode-badge">推荐</span>
+                                </div>
+                                <div class="mode-tiers">
+                                    <div class="tier-item">
+                                        <span class="tier-range">≤300件</span>
+                                        <span class="tier-price">¥0.4/件</span>
+                                    </div>
+                                    <div class="tier-item">
+                                        <span class="tier-range">301-400件</span>
+                                        <span class="tier-price">¥0.5/件</span>
+                                    </div>
+                                    <div class="tier-item highlight">
+                                        <span class="tier-range">&gt;400件</span>
+                                        <span class="tier-price">¥0.6/件</span>
+                                    </div>
+                                </div>
+                                <p class="mode-desc">多劳多得，激励高效</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Result Display -->
+                    <div class="calculator-result-section">
+                        <div class="result-card bento-item">
+                            <div class="result-header">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                <span>计件工资</span>
+                            </div>
+                            <div class="result-amount" id="wage-amount">¥0.00</div>
+
+                            <div class="result-breakdown" id="wage-breakdown">
+                                <div class="breakdown-title">计算明细</div>
+                                <div class="breakdown-items" id="breakdown-items">
+                                    <div class="breakdown-placeholder">输入件数后显示计算过程</div>
+                                </div>
+                            </div>
+
+                            <div class="result-summary">
+                                <div class="summary-item">
+                                    <span class="summary-label">基本工资</span>
+                                    <span class="summary-value">¥100.00</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">计件工资</span>
+                                    <span class="summary-value" id="piece-wage">¥0.00</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">质量奖金</span>
+                                    <span class="summary-value" id="quality-bonus">¥0.00</span>
+                                </div>
+                                <div class="summary-divider"></div>
+                                <div class="summary-item total">
+                                    <span class="summary-label">预估日薪</span>
+                                    <span class="summary-value" id="total-wage">¥100.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hardware Ecosystem -->
+    <section class="section">
+        <div class="container">
+            <div style="text-align:center; margin-bottom:var(--space-8);">
+                <div class="eyebrow">硬件生态</div>
+                <h2 class="h1" style="margin-top:var(--space-3);">为什么我们能兼容 95% 的工业设备？</h2>
+                <p class="body-lg text-secondary" style="max-width:750px; margin:var(--space-4) auto 0;">
+                    告别繁琐的 PLC 编程与私有协议转换。通过 <strong>AI 自主对接技术</strong>，我们实现了工业设备的“即插即用”，让硬件数据流秒级接入 AI 决策引擎。
+                </p>
+            </div>
+
+            <div class="grid-3 mobile-scroll" style="margin-bottom:var(--space-8);">
+                <div class="feature-card bento-item border-beam glow-cursor reveal-hidden"
+                    style="background:var(--tech-surface); padding:var(--space-5);">
+                    <div class="feature-icon" style="background:rgba(196,92,38,0.1); color:var(--accent);"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></div>
+                    <h4 style="margin:var(--space-3) 0 var(--space-2); font-size:18px;">AI 协议自适应</h4>
+                    <p class="body-sm text-secondary">内置 500+ 工业协议，大模型自动识别设备报文结构，无需人工编写驱动程序，接入速度提升 10 倍。</p>
+                </div>
+                <div class="feature-card bento-item border-beam glow-cursor reveal-hidden"
+                    style="background:var(--tech-surface); padding:var(--space-5);">
+                    <div class="feature-icon" style="background:rgba(196,92,38,0.1); color:var(--accent);"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 22v-2"/><path d="m17 20.66-1-1.73"/><path d="M11 10.27 7 3.34"/><path d="m20.66 17-1.73-1"/><path d="m3.34 7 1.73 1"/><path d="M14 12h8"/><path d="M2 12h2"/><path d="m20.66 7-1.73 1"/><path d="m3.34 17 1.73-1"/><path d="m17 3.34-1 1.73"/><path d="m11 13.73-4 6.93"/></svg></div>
+                    <h4 style="margin:var(--space-3) 0 var(--space-2); font-size:18px;">毫秒级自动逻辑</h4>
+                    <p class="body-sm text-secondary">边缘计算网关(Edge)本地运行 AI 硬逻辑，在 0.1 秒内响应硬件异常，实现真正的生产物理层自动化。</p>
+                </div>
+                <div class="feature-card bento-item border-beam glow-cursor reveal-hidden"
+                    style="background:var(--tech-surface); padding:var(--space-5);">
+                    <div class="feature-icon" style="background:rgba(196,92,38,0.1); color:var(--accent);"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+                    <h4 style="margin:var(--space-3) 0 var(--space-2); font-size:18px;">零代码级联</h4>
+                    <p class="body-sm text-secondary">图形化配置界面，现场电工即可完成电子秤、扫码枪、PLC 逻辑级联，彻底摆脱对外部供应商的依赖。</p>
+                </div>
+            </div>
+
+            <div class="partners-marquee">
+                <div class="partners-track">
+                    <div class="partner-item">柯力传感 KELI</div>
+                    <div class="partner-item">耀华 YAOHUA</div>
+                    <div class="partner-item">梅特勒-托利多</div>
+                    <div class="partner-item">海康威视 HIKVISION</div>
+                    <div class="partner-item">大华 DAHUA</div>
+                    <div class="partner-item">西门子 SIEMENS</div>
+                    <div class="partner-item">三菱 MITSUBISHI</div>
+                    <div class="partner-item">斑马 ZEBRA</div>
+                    <!-- Duplicate for seamless loop -->
+                    <div class="partner-item">柯力传感 KELI</div>
+                    <div class="partner-item">耀华 YAOHUA</div>
+                    <div class="partner-item">梅特勒-托利多</div>
+                    <div class="partner-item">海康威视 HIKVISION</div>
+                    <div class="partner-item">大华 DAHUA</div>
+                    <div class="partner-item">西门子 SIEMENS</div>
+                    <div class="partner-item">三菱 MITSUBISHI</div>
+                    <div class="partner-item">斑马 ZEBRA</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PRICING SECTION - RaaS Model ==================== -->
+    <section id="pricing" class="section bg-warm">
+        <div class="container">
+            <!-- Header -->
+            <div style="text-align:center; margin-bottom:var(--space-8);">
+                <div class="eyebrow">Results as a Service</div>
+                <h2 class="h1" style="margin-top:var(--space-3);">按效果付费，风险共担</h2>
+                <p class="body-lg text-secondary" style="max-width:700px; margin:var(--space-4) auto 0;">
+                    我们不收取高昂的软件授权费。您的工厂节省多少、增收多少，我们按约定比例分成。<br>
+                    <strong style="color:var(--accent);">没有效果，不收费用。</strong>
+                </p>
+            </div>
+
+            <!-- Main RaaS Value Proposition -->
+            <div class="grid-2" style="gap:var(--space-6); margin-bottom:var(--space-8);">
+                <!-- How it works -->
+                <div class="pricing-card bento-item border-beam glow-cursor reveal-hidden" style="padding:var(--space-7);">
+                    <h3 class="h3" style="margin-bottom:var(--space-5);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                        合作模式
+                    </h3>
+
+                    <div class="raas-steps">
+                        <div class="raas-step">
+                            <div class="raas-step-number">1</div>
+                            <div class="raas-step-content">
+                                <h4 style="font-size:16px;font-weight:600;margin-bottom:4px;">免费部署上线</h4>
+                                <p class="body-sm text-secondary">我们提供全套系统部署、培训与技术支持，您无需支付任何前期费用</p>
+                            </div>
+                        </div>
+                        <div class="raas-step">
+                            <div class="raas-step-number">2</div>
+                            <div class="raas-step-content">
+                                <h4 style="font-size:16px;font-weight:600;margin-bottom:4px;">共同评估效果</h4>
+                                <p class="body-sm text-secondary">运行一段时间后，双方评估系统带来的成本节约或收益增长</p>
+                            </div>
+                        </div>
+                        <div class="raas-step">
+                            <div class="raas-step-number">3</div>
+                            <div class="raas-step-content">
+                                <h4 style="font-size:16px;font-weight:600;margin-bottom:4px;">按比例年度付费</h4>
+                                <p class="body-sm text-secondary">根据实际效果约定分成比例，按年收取费用，效果越好双方收益越大</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benefits -->
+                <div class="pricing-card featured bento-item border-beam glow-cursor reveal-hidden" style="padding:var(--space-7);">
+                    <div class="card-badge">零风险</div>
+                    <h3 class="h3" style="margin-bottom:var(--space-6);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+                        为什么选择 RaaS
+                    </h3>
+
+                    <div class="raas-benefits-grid">
+                        <div class="raas-benefit-item">
+                            <div class="raas-benefit-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2z"/><path d="M2 9v1c0 1.1.9 2 2 2h1"/><path d="M16 11h.01"/></svg>
+                            </div>
+                            <div class="raas-benefit-content">
+                                <h4>零前期投入</h4>
+                                <p>无需一次性支付数十万软件费用</p>
+                            </div>
+                        </div>
+                        <div class="raas-benefit-item">
+                            <div class="raas-benefit-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+                            </div>
+                            <div class="raas-benefit-content">
+                                <h4>风险共担</h4>
+                                <p>系统没效果，我们也没有收入</p>
+                            </div>
+                        </div>
+                        <div class="raas-benefit-item">
+                            <div class="raas-benefit-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                            </div>
+                            <div class="raas-benefit-content">
+                                <h4>利益绑定</h4>
+                                <p>我们的收益取决于您的成功</p>
+                            </div>
+                        </div>
+                        <div class="raas-benefit-item">
+                            <div class="raas-benefit-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+                            </div>
+                            <div class="raas-benefit-content">
+                                <h4>持续优化</h4>
+                                <p>我们有动力不断提升系统效果</p>
+                            </div>
+                        </div>
+                        <div class="raas-benefit-item">
+                            <div class="raas-benefit-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                            </div>
+                            <div class="raas-benefit-content">
+                                <h4>透明可量化</h4>
+                                <p>效果数据双方共同认可</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA Button -->
+            <div style="text-align:center; margin-top:var(--space-6);">
+                <button class="btn btn-accent btn-lg btn-ripple"
+                    onclick="scrollToSection('#contact')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    了解详情
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== ABOUT SECTION ==================== -->
+    <section id="about" class="section">
+        <div class="container">
+            <div class="grid-asymmetric" style="gap:var(--space-9);">
+                <div><picture>
+                        <source srcset="assets/images/webp/about_innovation_lab.webp" type="image/webp">
+                        <img src="assets/images/about_innovation_lab.png" alt="白垩纪AI创新实验室 - 研发团队工作场景"
+                            style="width:100%; border-radius:16px; box-shadow:var(--shadow-lg);" loading="lazy" width="800" height="500">
+                    </picture></div>
+                <div>
+                    <div class="eyebrow">关于白垩纪</div>
+                    <h2 class="h1" style="margin-top:var(--space-3);">用AI重新定义工厂管理</h2>
+                    <p class="body-lg text-secondary" style="margin-top:var(--space-5); line-height:1.8;">
+                        传统的ERP、MES系统诞生于互联网之前，它们被设计用来"记录"而非"思考"。</p>
+                    <p class="body-lg text-secondary" style="margin-top:var(--space-4); line-height:1.8;">
+                        在AI时代，工厂管理系统应该像一个"数字厂长"——能够实时感知生产状态，预测潜在问题，并主动给出建议。</p>
+
+                    <div class="about-stats">
+                        <div>
+                            <div class="about-stat-value">2025</div>
+                            <div class="about-stat-label">创立</div>
+                        </div>
+                        <div>
+                            <div class="about-stat-value">100%</div>
+                            <div class="about-stat-label">自主研发</div>
+                        </div>
+                        <div>
+                            <div class="about-stat-value">顶尖</div>
+                            <div class="about-stat-label">核心团队</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== CONTACT SECTION ==================== -->
+    <section id="contact" class="section bg-warm">
+        <div class="container">
+            <div class="grid-asymmetric" style="gap:var(--space-9);">
+                <div class="contact-form">
+                    <h3 class="h3" style="margin-bottom:var(--space-6);">发送消息</h3>
+                    <form onsubmit="handleSubmit(event)">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
+                            <div class="form-group">
+                                <label class="form-label">姓名 *</label>
+                                <input type="text" class="form-input" placeholder="您的姓名" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">公司名称</label>
+                                <input type="text" class="form-input" placeholder="公司/工厂名称">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">邮箱 *</label>
+                            <input type="email" class="form-input" placeholder="您的工作邮箱" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">电话</label>
+                            <input type="tel" class="form-input" placeholder="方便我们回电联系">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">咨询内容 *</label>
+                            <textarea class="form-textarea" placeholder="请描述您的需求或问题..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-accent btn-lg btn-ripple" style="width:100%;">发送消息</button>
+                    </form>
+                </div>
+
+                <div>
+                    <h3 class="h3" style="margin-bottom:var(--space-6);">联系方式</h3>
+                    <div class="contact-info-card">
+                        <div style="display:flex; gap:var(--space-4); align-items:start;">
+                            <div
+                                style="width:40px;height:40px;background:var(--accent-light);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                            </div>
+                            <div>
+                                <h4 class="h4">邮箱</h4>
+                                <p class="body-sm text-secondary">justinhanyifei@gmail.com</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="contact-info-card">
+                        <div style="display:flex; gap:var(--space-4); align-items:start;">
+                            <div
+                                style="width:40px;height:40px;background:var(--accent-light);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            </div>
+                            <div>
+                                <h4 class="h4">电话</h4>
+                                <p class="body-sm text-secondary">13331914881</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="contact-info-card">
+                        <div style="display:flex; gap:var(--space-4); align-items:start;">
+                            <div
+                                style="width:40px;height:40px;background:var(--accent-light);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+                            </div>
+                            <div>
+                                <h4 class="h4">总部地址</h4>
+                                <p class="body-sm text-secondary">上海市闵行区春申路1955号<br>春申陇盛大厦A栋518</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <div class="footer-brand">
+                        <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+                            <rect width="36" height="36" rx="8" fill="#C45C26" />
+                            <path d="M8 28V8h4v8h12V8h4v20h-4v-8H12v8H8z" fill="white" />
+                        </svg>
+                        白垩纪
+                    </div>
+                    <p class="footer-desc">新一代工厂操作系统，让每一座工厂都拥有智慧大脑。</p>
+                </div>
+                <div class="footer-col">
+                    <h4>产品</h4>
+                    <a href="#features" class="footer-link">Factory OS</a>
+                    <a href="#features" class="footer-link">Edge Gateway</a>
+                    <a href="#features" class="footer-link">Vision AI</a>
+                    <a href="#pricing" class="footer-link">定价</a>
+                    <a href="/ai-bi-v3/" class="footer-link">SmartBI 智能分析</a>
+                    <a href="/ai-scheduling-v3/" class="footer-link">AI智能调度</a>
+                    <a href="/ai-calibration-v3/" class="footer-link">AI智能定标</a>
+                    <a href="/dashboard-v3/" class="footer-link">数据驾驶舱</a>
+                </div>
+                <div class="footer-col">
+                    <h4>资源</h4>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">文档中心</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">API参考</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">客户案例</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">博客</a>
+                </div>
+                <div class="footer-col">
+                    <h4>公司</h4>
+                    <a href="#about" class="footer-link">关于我们</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">加入团队</a>
+                    <a href="#contact" class="footer-link">联系我们</a>
+                    <a href="javascript:void(0)" class="footer-link" title="即将上线">合作伙伴</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>© 2026 白垩纪AI智能体. All rights reserved.</span>
+                <span>上海 · 北京 · 深圳</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>/* All logic in js/v3-engine.js */</script>
+</body>
+
+</html>

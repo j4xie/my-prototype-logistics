@@ -33,10 +33,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { FAHomeStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
-import { dashboardAPI, DashboardOverviewData, AlertsDashboardData } from '../../../services/api/dashboardApiClient';
+import { dashboardAPI, DashboardOverviewData, AlertsDashboardData, RestaurantDashboardSummary } from '../../../services/api/dashboardApiClient';
+import { workReportingApiClient } from '../../../services/api/workReportingApiClient';
 import { aiApiClient } from '../../../services/api/aiApiClient';
 import { useHomeLayoutStore } from '../../../store/homeLayoutStore';
 import { useFactoryFeatureStore } from '../../../store/factoryFeatureStore';
+import { isRestaurant } from '../../../utils/factoryType';
 import type { HomeModule, StatCardConfig, QuickActionConfig } from '../../../types/decoration';
 import { DEFAULT_HOME_LAYOUT } from '../../../types/decoration';
 import { useShallow } from 'zustand/react/shallow';
@@ -127,6 +129,7 @@ export function FAHomeScreen() {
   const { user } = useAuthStore();
   const { isScreenEnabled } = useFactoryFeatureStore();
   const { t } = useTranslation('home');
+  const isRestaurantMode = isRestaurant(user);
 
   // 状态
   const [refreshing, setRefreshing] = useState(false);
@@ -181,6 +184,14 @@ export function FAHomeScreen() {
   // Dashboard 数据
   const [overviewData, setOverviewData] = useState<DashboardOverviewData | null>(null);
   const [alertsData, setAlertsData] = useState<AlertsDashboardData | null>(null);
+  // 餐饮模式 Dashboard 数据
+  const [restaurantSummary, setRestaurantSummary] = useState<RestaurantDashboardSummary | null>(null);
+  // 报工看板数据
+  const [workReportSummary, setWorkReportSummary] = useState<{
+    pendingApprovalCount?: number;
+    todayOutputTotal?: number;
+    todayYieldRate?: number;
+  }>({});
 
   // AI 洞察 (本地计算，简化显示)
   const [aiInsight, setAIInsight] = useState<AIInsight>({
@@ -221,14 +232,29 @@ export function FAHomeScreen() {
       setError(null);
 
       // 并行获取数据，使用 Promise.allSettled 避免单个请求失败导致整体失败
-      const [overviewResult, alertsResult] = await Promise.allSettled([
-        dashboardAPI.getDashboardOverview('today'),
-        dashboardAPI.getAlertsDashboard('week'),
-      ]);
+      // 餐饮模式使用餐饮 Dashboard API，跳过报工数据
+      const fetchPromises: Promise<any>[] = isRestaurantMode
+        ? [
+            dashboardAPI.getRestaurantDashboardSummary(),
+            dashboardAPI.getAlertsDashboard('week'),
+          ]
+        : [
+            dashboardAPI.getDashboardOverview('today'),
+            dashboardAPI.getAlertsDashboard('week'),
+            workReportingApiClient.getSummary(),
+          ];
+      const results = await Promise.allSettled(fetchPromises);
+      const overviewResult = results[0];
+      const alertsResult = results[1];
+      const workReportResult = results[2]; // undefined for restaurant
 
-      // 处理 overview 数据
+      // 处理 overview / restaurant summary 数据
       if (overviewResult.status === 'fulfilled' && overviewResult.value.success && overviewResult.value.data) {
-        setOverviewData(overviewResult.value.data);
+        if (isRestaurantMode) {
+          setRestaurantSummary(overviewResult.value.data as RestaurantDashboardSummary);
+        } else {
+          setOverviewData(overviewResult.value.data as DashboardOverviewData);
+        }
       } else if (overviewResult.status === 'rejected') {
         console.warn('Dashboard overview 加载失败:', overviewResult.reason);
       }
@@ -240,8 +266,18 @@ export function FAHomeScreen() {
         console.warn('Dashboard alerts 加载失败:', alertsResult.reason);
       }
 
+      // 处理报工看板数据 (仅工厂模式)
+      if (!isRestaurantMode && workReportResult?.status === 'fulfilled' && workReportResult.value.success && workReportResult.value.data) {
+        const d = workReportResult.value.data as Record<string, unknown>;
+        setWorkReportSummary({
+          pendingApprovalCount: Number(d.pendingApprovalCount ?? 0),
+          todayOutputTotal: Number(d.todayOutputTotal ?? 0),
+          todayYieldRate: Number(d.todayYieldRate ?? 0),
+        });
+      }
+
       // AI 洞察：使用后端真实数据 + 获取AI报告摘要
-      const resolvedOverview = overviewResult.status === 'fulfilled' ? overviewResult.value.data : null;
+      const resolvedOverview = (!isRestaurantMode && overviewResult.status === 'fulfilled') ? overviewResult.value.data : null;
       if (resolvedOverview) {
         const kpi = resolvedOverview.kpi;
         const qualityRate = kpi?.qualityPassRate ?? 98.5;
@@ -289,11 +325,13 @@ export function FAHomeScreen() {
           },
         });
       } else {
-        // overview 也失败时，显示错误
-        setError(t('error.loadFailed'));
+        // overview 也失败时，显示错误（餐饮模式下有 restaurantSummary 也算成功）
+        if (!isRestaurantMode || overviewResult.status !== 'fulfilled') {
+          setError(t('error.loadFailed'));
+        }
         setAIInsight({
-          status: 'error',
-          message: t('ai.noData'),
+          status: isRestaurantMode ? 'success' : 'error',
+          message: isRestaurantMode ? t('ai.normalProduction') : t('ai.noData'),
           metrics: { qualityRate: 0, unitCost: 0, avgCycle: 0 },
         });
       }
@@ -309,7 +347,7 @@ export function FAHomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [isRestaurantMode]);
 
   // 初始加载 - 同时加载 Dashboard 数据和布局配置
   useEffect(() => {
@@ -382,6 +420,44 @@ export function FAHomeScreen() {
       todayAlerts: 'AIAlerts',
     };
 
+    // 餐饮模式：使用餐饮 Dashboard API 数据
+    if (isRestaurantMode) {
+      return [
+        {
+          id: 'todaySales',
+          value: restaurantSummary?.todayRequisitionCount ?? '--',
+          label: t('stats.todayOrders', '今日领料'),
+          icon: 'receipt',
+          color: '#667eea',
+          onPress: () => navigation.navigate('TodayProduction'),
+        },
+        {
+          id: 'pendingApproval',
+          value: restaurantSummary?.pendingApprovalCount ?? '--',
+          label: t('stats.pendingApproval', '待审批'),
+          icon: 'clipboard-check',
+          color: (restaurantSummary?.pendingApprovalCount ?? 0) > 0 ? '#ff7043' : '#a0aec0',
+          onPress: () => {
+            const parent = navigation.getParent();
+            if (parent) {
+              parent.navigate('FAManagementTab', { screen: 'WorkReportApproval' });
+            }
+          },
+        },
+        {
+          id: 'todayAlerts',
+          value: alertsSummary?.activeAlerts ?? 0,
+          label: t('stats.todayAlerts'),
+          icon: 'alert-circle',
+          color: alertsSummary?.criticalAlerts && alertsSummary.criticalAlerts > 0 ? '#e53e3e' : '#a0aec0',
+          onPress: () => navigation.navigate('AIAlerts'),
+        },
+      ].filter(card => {
+        const screenName = statCardScreenGuard[card.id];
+        return !screenName || isScreenEnabled(screenName);
+      });
+    }
+
     return [
       {
         id: 'todayProduction',
@@ -416,6 +492,19 @@ export function FAHomeScreen() {
         icon: 'alert-circle',
         color: alertsSummary?.criticalAlerts && alertsSummary.criticalAlerts > 0 ? '#e53e3e' : '#a0aec0',
         onPress: () => navigation.navigate('AIAlerts'),
+      },
+      {
+        id: 'pendingApproval',
+        value: workReportSummary.pendingApprovalCount ?? 0,
+        label: t('stats.pendingWorkReport', '待审批报工'),
+        icon: 'clipboard-check',
+        color: (workReportSummary.pendingApprovalCount ?? 0) > 0 ? '#ff7043' : '#a0aec0',
+        onPress: () => {
+          const parent = navigation.getParent();
+          if (parent) {
+            parent.navigate('FAManagementTab', { screen: 'WorkReportApproval' });
+          }
+        },
       },
     ].filter(card => {
       const screenName = statCardScreenGuard[card.id];
@@ -470,7 +559,7 @@ export function FAHomeScreen() {
   const handleSaveLayout = useCallback(async () => {
     const factoryId = user?.factoryId;
     if (!factoryId) {
-      Alert.alert(t('error.saveFailed', '保存失败'), '无法获取工厂ID');
+      Alert.alert(t('error.saveFailed', '保存失败'), t('error.noFactoryId', '无法获取工厂ID'));
       return;
     }
 
@@ -550,7 +639,7 @@ export function FAHomeScreen() {
         <View style={styles.aiHeader}>
           <View style={styles.aiTitleRow}>
             <Icon source="robot" size={20} color="#fff" />
-            <Text style={styles.aiTitle}>{module.name || t('ai.title')}</Text>
+            <Text style={styles.aiTitle}>{t('ai.title', module.name)}</Text>
           </View>
           <View style={[
             styles.aiStatusBadge,
@@ -564,39 +653,41 @@ export function FAHomeScreen() {
 
         <Text style={styles.aiMessage}>{aiInsight.message}</Text>
 
-        {/* AI 指标 - 可从 module.config 配置 */}
-        <View style={styles.aiMetrics}>
-          {(!module.config?.metricsToShow || module.config.metricsToShow.includes('qualityRate')) && (
-            <>
+        {/* AI 指标 - 餐饮模式隐藏工厂 KPI */}
+        {!isRestaurantMode && (
+          <View style={styles.aiMetrics}>
+            {(!module.config?.metricsToShow || module.config.metricsToShow.includes('qualityRate')) && (
+              <>
+                <View style={styles.aiMetricItem}>
+                  <Text style={styles.aiMetricValue}>
+                    {aiInsight.metrics.qualityRate.toFixed(1)}%
+                  </Text>
+                  <Text style={styles.aiMetricLabel}>{t('ai.metrics.qualityRate')}</Text>
+                </View>
+                <View style={styles.aiMetricDivider} />
+              </>
+            )}
+            {(!module.config?.metricsToShow || module.config.metricsToShow.includes('unitCost')) && (
+              <>
+                <View style={styles.aiMetricItem}>
+                  <Text style={styles.aiMetricValue}>
+                    ¥{aiInsight.metrics.unitCost.toFixed(1)}
+                  </Text>
+                  <Text style={styles.aiMetricLabel}>{t('ai.metrics.unitCost')}</Text>
+                </View>
+                <View style={styles.aiMetricDivider} />
+              </>
+            )}
+            {(!module.config?.metricsToShow || module.config.metricsToShow.includes('avgCycle')) && (
               <View style={styles.aiMetricItem}>
                 <Text style={styles.aiMetricValue}>
-                  {aiInsight.metrics.qualityRate.toFixed(1)}%
+                  {aiInsight.metrics.avgCycle.toFixed(1)}h
                 </Text>
-                <Text style={styles.aiMetricLabel}>{t('ai.metrics.qualityRate')}</Text>
+                <Text style={styles.aiMetricLabel}>{t('ai.metrics.avgCycle')}</Text>
               </View>
-              <View style={styles.aiMetricDivider} />
-            </>
-          )}
-          {(!module.config?.metricsToShow || module.config.metricsToShow.includes('unitCost')) && (
-            <>
-              <View style={styles.aiMetricItem}>
-                <Text style={styles.aiMetricValue}>
-                  ¥{aiInsight.metrics.unitCost.toFixed(1)}
-                </Text>
-                <Text style={styles.aiMetricLabel}>{t('ai.metrics.unitCost')}</Text>
-              </View>
-              <View style={styles.aiMetricDivider} />
-            </>
-          )}
-          {(!module.config?.metricsToShow || module.config.metricsToShow.includes('avgCycle')) && (
-            <View style={styles.aiMetricItem}>
-              <Text style={styles.aiMetricValue}>
-                {aiInsight.metrics.avgCycle.toFixed(1)}h
-              </Text>
-              <Text style={styles.aiMetricLabel}>{t('ai.metrics.avgCycle')}</Text>
-            </View>
-          )}
-        </View>
+            )}
+          </View>
+        )}
       </TouchableOpacity>
     </ShakingCard>
   );
@@ -634,7 +725,7 @@ export function FAHomeScreen() {
 
         {/* 标题栏：编辑模式下显示添加按钮 */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{module.name || t('sections.todayOverview')}</Text>
+          <Text style={styles.sectionTitle}>{t('sections.todayOverview', module.name)}</Text>
           {isEditMode && hiddenCards.length > 0 && (
             <TouchableOpacity
               style={styles.addItemBtn}
@@ -644,7 +735,7 @@ export function FAHomeScreen() {
               }}
             >
               <Icon source="plus" size={16} color="#667eea" />
-              <Text style={styles.addItemBtnText}>添加</Text>
+              <Text style={styles.addItemBtnText}>{t('layout.add', '添加')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -702,7 +793,44 @@ export function FAHomeScreen() {
   };
 
   // 所有可用的快捷操作（用于添加弹窗）
-  const allQuickActions = [
+  const allQuickActions = (isRestaurantMode ? [
+    {
+      id: 'newPurchase',
+      icon: 'cart-arrow-down',
+      label: t('quickActions.newPurchase', '新建采购'),
+      color: '#409eff',
+      onPress: () => {
+        navigation.getParent()?.navigate('FAManagementTab', { screen: 'PurchaseOrderList' });
+      },
+    },
+    {
+      id: 'newSales',
+      icon: 'cart-arrow-up',
+      label: t('quickActions.newSales', '新建销售'),
+      color: '#67c23a',
+      onPress: () => {
+        navigation.getParent()?.navigate('FAManagementTab', { screen: 'SalesOrderList' });
+      },
+    },
+    {
+      id: 'inventory',
+      icon: 'warehouse',
+      label: t('quickActions.inventoryQuery', '库存查询'),
+      color: '#38b2ac',
+      onPress: () => {
+        navigation.getParent()?.navigate('FAManagementTab', { screen: 'FinishedGoodsList' });
+      },
+    },
+    {
+      id: 'staffManagement',
+      icon: 'account-group',
+      label: t('quickActions.staffManagement'),
+      color: '#ed8936',
+      onPress: () => {
+        navigation.getParent()?.navigate('FAManagementTab', { screen: 'EmployeeList' });
+      },
+    },
+  ] : [
     {
       id: 'newBatch',
       icon: 'plus-circle',
@@ -742,7 +870,7 @@ export function FAHomeScreen() {
     {
       id: 'inventory',
       icon: 'warehouse',
-      label: '库存查看',
+      label: t('quickActions.inventoryView', '库存查看'),
       color: '#38b2ac',
       onPress: () => {
         navigation.getParent()?.navigate('FAManagementTab', { screen: 'InventoryList' });
@@ -751,13 +879,13 @@ export function FAHomeScreen() {
     {
       id: 'qualityCheck',
       icon: 'clipboard-check',
-      label: '质检管理',
+      label: t('quickActions.qualityManagement', '质检管理'),
       color: '#e53e3e',
       onPress: () => {
         navigation.getParent()?.navigate('FAManagementTab', { screen: 'QualityCheck' });
       },
     },
-  ].filter(action => {
+  ]).filter(action => {
     const screenName = quickActionScreenGuard[action.id];
     return !screenName || isScreenEnabled(screenName);
   });
@@ -803,7 +931,7 @@ export function FAHomeScreen() {
 
         {/* 标题栏：编辑模式下显示添加按钮 */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{module.name || t('sections.quickActions')}</Text>
+          <Text style={styles.sectionTitle}>{t('sections.quickActions', module.name)}</Text>
           {isEditMode && hiddenActions.length > 0 && (
             <TouchableOpacity
               style={styles.addItemBtn}
@@ -813,7 +941,7 @@ export function FAHomeScreen() {
               }}
             >
               <Icon source="plus" size={16} color="#667eea" />
-              <Text style={styles.addItemBtnText}>添加</Text>
+              <Text style={styles.addItemBtnText}>{t('layout.add', '添加')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -920,7 +1048,7 @@ export function FAHomeScreen() {
   }
 
   // 错误状态
-  if (error && !overviewData) {
+  if (error && !overviewData && !restaurantSummary) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -928,9 +1056,9 @@ export function FAHomeScreen() {
           <Text style={[styles.loadingText, { color: '#606266', marginTop: 12 }]}>{error}</Text>
           <TouchableOpacity
             style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: '#667eea', borderRadius: 6 }}
-            onPress={() => loadData()}
+            onPress={() => loadDashboardData()}
           >
-            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>重试</Text>
+            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>{t('common.retry', '重试')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1095,7 +1223,7 @@ export function FAHomeScreen() {
           />
           <View style={styles.addModuleSheet}>
             <View style={styles.addModuleHeader}>
-              <Text style={styles.addModuleTitle}>添加统计卡片</Text>
+              <Text style={styles.addModuleTitle}>{t('layout.addStatCard', '添加统计卡片')}</Text>
               <TouchableOpacity onPress={() => {
                 setShowAddStatCardSheet(false);
                 setEditingModuleId(null);
@@ -1148,7 +1276,7 @@ export function FAHomeScreen() {
           />
           <View style={styles.addModuleSheet}>
             <View style={styles.addModuleHeader}>
-              <Text style={styles.addModuleTitle}>添加快捷操作</Text>
+              <Text style={styles.addModuleTitle}>{t('layout.addQuickAction', '添加快捷操作')}</Text>
               <TouchableOpacity onPress={() => {
                 setShowAddQuickActionSheet(false);
                 setEditingModuleId(null);

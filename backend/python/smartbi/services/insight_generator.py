@@ -35,10 +35,12 @@ class InsightGenerator:
     """AI-powered insight generation service"""
 
     # LLM call timeout configuration
+    # Reduced to 2 retries: worst chain = 60s + sleep(2) + 75s = ~139s
+    # Frontend PYTHON_LLM_TIMEOUT_MS = 200s provides 61s buffer
     LLM_TIMEOUT_BASE = 60.0       # Base timeout in seconds
     LLM_TIMEOUT_INCREMENT = 15.0  # Added per retry attempt
     LLM_TIMEOUT_MAX = 120.0       # Hard cap
-    LLM_MAX_RETRIES = 3
+    LLM_MAX_RETRIES = 2
 
     # Insight templates for rule-based fallback
     INSIGHT_TEMPLATES = {
@@ -821,10 +823,23 @@ class InsightGenerator:
         new_cols = {c: self._humanize_col(c) for c in df.columns}
         return df.rename(columns=new_cols)
 
+    @staticmethod
+    def _is_placeholder_col(name: str) -> bool:
+        """Check if a column name is an auto-generated placeholder (no business meaning)."""
+        import re as _re
+        s = str(name)
+        return bool(_re.match(
+            r'^(Column_\d+|指标\d+|数据列\d+|Unnamed|Unnamed:\s*\d+)$', s, _re.IGNORECASE
+        ))
+
     def _prepare_data_summary(self, df: pd.DataFrame) -> str:
         """Prepare enriched data summary for LLM"""
         # Humanize column names so LLM output uses friendly names
         df = self._humanize_df_columns(df)
+        # Drop auto-generated placeholder columns (指标34, Unnamed, etc.)
+        meaningful_cols = [c for c in df.columns if not self._is_placeholder_col(c)]
+        df = df[meaningful_cols]
+
         summary_parts = [
             f"- 数据行数: {len(df)}",
             f"- 数据列 ({len(df.columns)}个): {', '.join(df.columns.tolist()[:15])}"
@@ -868,6 +883,9 @@ class InsightGenerator:
         """Pre-compute financial metrics to give LLM better 'ingredients'"""
         # Humanize column names for LLM-facing output
         df = self._humanize_df_columns(df)
+        # Drop placeholder columns
+        meaningful_cols = [c for c in df.columns if not self._is_placeholder_col(c)]
+        df = df[meaningful_cols]
         parts = []
 
         # Find label column

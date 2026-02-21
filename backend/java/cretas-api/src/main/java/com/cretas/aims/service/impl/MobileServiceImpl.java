@@ -180,6 +180,8 @@ public class MobileServiceImpl implements MobileService {
                 .username(user.getUsername())
                 .factoryId(user.getFactoryId())
                 .factoryName(user.getFactory() != null ? user.getFactory().getName() : null)
+                .factoryType(user.getFactory() != null && user.getFactory().getType() != null
+                        ? user.getFactory().getType().name() : "FACTORY")
                 .role(user.getRole())
                 .permissions(parsePermissions(user.getPermissions()))
                 .token(token)
@@ -591,6 +593,12 @@ public class MobileServiceImpl implements MobileService {
             String role = user.getRoleCode() != null ? user.getRoleCode() : "viewer";
             String newToken = jwtUtil.generateToken(user.getId(), user.getFactoryId(), user.getUsername(), role);
 
+            // 获取工厂类型
+            String factoryType = "FACTORY";
+            if (user.getFactory() != null && user.getFactory().getType() != null) {
+                factoryType = user.getFactory().getType().name();
+            }
+
             return MobileDTO.LoginResponse.builder()
                     .token(newToken)
                     .refreshToken(refreshToken)
@@ -598,6 +606,7 @@ public class MobileServiceImpl implements MobileService {
                     .userId(user.getId())
                     .username(user.getUsername())
                     .factoryId(user.getFactoryId())
+                    .factoryType(factoryType)
                     .role(role)
                     .build();
         } catch (NumberFormatException e) {
@@ -817,7 +826,11 @@ public class MobileServiceImpl implements MobileService {
             Long userId = Long.parseLong(userIdStr);
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new ResourceNotFoundException("用户不存在"));
-            return userMapper.toDTO(user);
+            String factoryType = "FACTORY";
+            if (user.getFactory() != null && user.getFactory().getType() != null) {
+                factoryType = user.getFactory().getType().name();
+            }
+            return userMapper.toDTO(user, factoryType);
         } catch (NumberFormatException e) {
             throw new BusinessException("无效的用户ID格式: " + userIdStr);
         }

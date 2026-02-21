@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Alert, RefreshControl } from 'react-native';
 import { Text, Appbar, Card, Chip, ActivityIndicator, ProgressBar } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { salesApiClient, FinishedGoodsBatch } from '../../../services/api/salesApiClient';
 import { formatNumberWithCommas } from '../../../utils/formatters';
 
 export default function FinishedGoodsListScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('warehouse');
   const [batches, setBatches] = useState<FinishedGoodsBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -17,7 +19,7 @@ export default function FinishedGoodsListScreen() {
       if (res.success && res.data) {
         setBatches(res.data.content || []);
       }
-    } catch { Alert.alert('错误', '加载成品库存失败'); }
+    } catch { Alert.alert(t('common:error.loadFailed'), t('finishedGoods.loadFailed')); }
     finally { setLoading(false); setRefreshing(false); }
   };
 
@@ -26,9 +28,9 @@ export default function FinishedGoodsListScreen() {
 
   const getStockStatus = (batch: FinishedGoodsBatch) => {
     const ratio = batch.availableQuantity / batch.totalQuantity;
-    if (batch.availableQuantity <= 0) return { label: '已售罄', color: '#f56c6c' };
-    if (ratio < 0.2) return { label: '库存低', color: '#e6a23c' };
-    return { label: '充足', color: '#67c23a' };
+    if (batch.availableQuantity <= 0) return { label: t('finishedGoods.status.soldOut'), color: '#f56c6c' };
+    if (ratio < 0.2) return { label: t('finishedGoods.status.lowStock'), color: '#e6a23c' };
+    return { label: t('finishedGoods.status.sufficient'), color: '#67c23a' };
   };
 
   const renderBatch = ({ item }: { item: FinishedGoodsBatch }) => {
@@ -50,27 +52,27 @@ export default function FinishedGoodsListScreen() {
 
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>总量</Text>
+              <Text style={styles.statLabel}>{t('finishedGoods.stats.total')}</Text>
               <Text style={styles.statValue}>{item.totalQuantity} {item.unit}</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>可用</Text>
+              <Text style={styles.statLabel}>{t('finishedGoods.stats.available')}</Text>
               <Text style={[styles.statValue, { color: status.color }]}>{item.availableQuantity} {item.unit}</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>预留</Text>
+              <Text style={styles.statLabel}>{t('finishedGoods.stats.reserved')}</Text>
               <Text style={styles.statValue}>{item.reservedQuantity} {item.unit}</Text>
             </View>
           </View>
 
           <View style={styles.metaRow}>
-            <Text style={styles.metaText}>生产日期: {item.productionDate}</Text>
-            {item.expiryDate && <Text style={styles.metaText}>有效期: {item.expiryDate}</Text>}
+            <Text style={styles.metaText}>{t('finishedGoods.productionDate')}: {item.productionDate}</Text>
+            {item.expiryDate && <Text style={styles.metaText}>{t('finishedGoods.expiryDate')}: {item.expiryDate}</Text>}
           </View>
           {item.unitCost != null && (
             <View style={styles.metaRow}>
-              <Text style={styles.metaText}>单位成本: ¥{formatNumberWithCommas(item.unitCost)}</Text>
-              {item.storageLocation && <Text style={styles.metaText}>库位: {item.storageLocation}</Text>}
+              <Text style={styles.metaText}>{t('finishedGoods.unitCost')}: ¥{formatNumberWithCommas(item.unitCost)}</Text>
+              {item.storageLocation && <Text style={styles.metaText}>{t('finishedGoods.storageLocation')}: {item.storageLocation}</Text>}
             </View>
           )}
         </Card.Content>
@@ -82,7 +84,7 @@ export default function FinishedGoodsListScreen() {
     <View style={styles.container}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="成品库存" />
+        <Appbar.Content title={t('finishedGoods.title')} />
         <Appbar.Action icon="refresh" onPress={onRefresh} />
       </Appbar.Header>
 
@@ -95,7 +97,7 @@ export default function FinishedGoodsListScreen() {
           renderItem={renderBatch}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          ListEmptyComponent={<Text style={styles.empty}>暂无成品库存</Text>}
+          ListEmptyComponent={<Text style={styles.empty}>{t('finishedGoods.empty')}</Text>}
         />
       )}
     </View>

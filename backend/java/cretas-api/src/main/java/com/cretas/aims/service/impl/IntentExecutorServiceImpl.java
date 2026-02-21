@@ -317,6 +317,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                             .intentRecognized(false)
                             .status("CONVERSATION_CONTINUE")
                             .message(conversationResp.getMessage())
+                            .formattedText(conversationResp.getMessage())
                             .executedAt(LocalDateTime.now());
 
                     // 添加会话信息到元数据
@@ -437,6 +438,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                                             .intentRecognized(false)
                                             .status("NEED_CLARIFICATION")
                                             .message(ragRouteResult.getClarificationQuestion())
+                                            .formattedText(ragRouteResult.getClarificationQuestion())
                                             .executedAt(LocalDateTime.now())
                                             .metadata(Map.of(
                                                     "consultationType", "TRACEABILITY",
@@ -464,6 +466,20 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     }
                 }
 
+                // v27: 检查是否匹配 OUT_OF_DOMAIN / CONTEXT_CONTINUE — 如果是，走意图执行而非LLM对话
+                Optional<String> conversationalPhraseMatch = knowledgeBase.matchPhrase(userInput);
+                if (conversationalPhraseMatch.isPresent()) {
+                    String matchedIntent = conversationalPhraseMatch.get();
+                    if ("OUT_OF_DOMAIN".equals(matchedIntent) || "CONTEXT_CONTINUE".equals(matchedIntent)) {
+                        log.info("v27 CONVERSATIONAL 拦截为意图: input='{}' -> {}", userInput, matchedIntent);
+                        IntentExecuteRequest interceptRequest = IntentExecuteRequest.builder()
+                                .userInput(userInput)
+                                .intentCode(matchedIntent)
+                                .build();
+                        return execute(factoryId, interceptRequest, userId, userRole);
+                    }
+                }
+
                 log.info("问题类型为{}，跳过缓存直接路由到LLM: input='{}'", earlyQuestionType,
                         userInput.length() > 30 ? userInput.substring(0, 30) + "..." : userInput);
 
@@ -474,6 +490,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                         .intentRecognized(false)
                         .status("COMPLETED")
                         .message(llmResponse)
+                        .formattedText(llmResponse)
                         .executedAt(LocalDateTime.now())
                         .build();
             }
@@ -565,6 +582,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .intentCategory(matchedIntent.getIntentCategory())
                     .status("NEED_CLARIFICATION")
                     .message(clarificationMessage)
+                    .formattedText(clarificationMessage)
                     .confidence(matchResult.getConfidence())
                     .matchMethod(matchResult.getMatchMethod() != null ? matchResult.getMatchMethod().name() : null)
                     .suggestedActions(candidateActions)
@@ -591,6 +609,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .intentRecognized(false)
                     .status("COMPLETED")
                     .message(llmResponse)
+                    .formattedText(llmResponse)
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -615,10 +634,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     }
                 }
 
+                String weakSignalMsg = "我不太确定您想执行什么操作，请从以下选项中选择或更详细地描述您的需求：";
                 IntentExecuteResponse.IntentExecuteResponseBuilder builder = IntentExecuteResponse.builder()
                         .intentRecognized(false)
                         .status("NEED_CLARIFICATION")
-                        .message("我不太确定您想执行什么操作，请从以下选项中选择或更详细地描述您的需求：")
+                        .message(weakSignalMsg)
+                        .formattedText(weakSignalMsg)
                         .suggestedActions(candidateActions)
                         .executedAt(LocalDateTime.now());
 
@@ -653,6 +674,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .intentRecognized(false)
                     .status("NEED_CLARIFICATION")
                     .message(message)
+                    .formattedText(message)
                     .executedAt(LocalDateTime.now())
                     .suggestedActions(defaultSuggestions);
 
@@ -671,6 +693,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         // 2. 权限检查
         if (!aiIntentService.hasPermission(intent.getIntentCode(), userRole)) {
             log.warn("权限不足: intentCode={}, userRole={}", intent.getIntentCode(), userRole);
+            String noPermMsg = "您没有权限执行此操作。需要角色: " + intent.getRequiredRoles();
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intent.getIntentCode())
@@ -678,7 +701,8 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .intentCategory(intent.getIntentCategory())
                     .sensitivityLevel(intent.getSensitivityLevel())
                     .status("NO_PERMISSION")
-                    .message("您没有权限执行此操作。需要角色: " + intent.getRequiredRoles())
+                    .message(noPermMsg)
+                    .formattedText(noPermMsg)
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -686,6 +710,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         // 3. 审批检查
         if (intent.needsApproval() && !Boolean.TRUE.equals(request.getForceExecute())) {
             log.info("需要审批: intentCode={}", intent.getIntentCode());
+            String approvalMsg = "此操作需要审批确认。审批请求已提交，请等待管理员审批后再执行「" + intent.getIntentName() + "」操作。";
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intent.getIntentCode())
@@ -693,10 +718,10 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .intentCategory(intent.getIntentCategory())
                     .sensitivityLevel(intent.getSensitivityLevel())
                     .status("PENDING_APPROVAL")
-                    .message("此操作需要审批，已提交审批请求")
+                    .message(approvalMsg)
+                    .formattedText(approvalMsg)
                     .requiresApproval(true)
                     .approvalChainId(intent.getApprovalChainId())
-                    // TODO: 创建审批请求并返回ID
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -707,13 +732,15 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             if (!validationResult.isValid()) {
                 log.warn("Drools规则验证失败: intentCode={}, violations={}",
                         intent.getIntentCode(), validationResult.getViolations().size());
+                String validMsg = "业务规则验证未通过: " + validationResult.getViolationsSummary();
                 return IntentExecuteResponse.builder()
                         .intentRecognized(true)
                         .intentCode(intent.getIntentCode())
                         .intentName(intent.getIntentName())
                         .intentCategory(intent.getIntentCategory())
                         .status("VALIDATION_FAILED")
-                        .message("业务规则验证未通过: " + validationResult.getViolationsSummary())
+                        .message(validMsg)
+                        .formattedText(validMsg)
                         .validationViolations(validationResult.getViolations())
                         .recommendations(validationResult.getRecommendations())
                         .executedAt(LocalDateTime.now())
@@ -732,6 +759,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             if (slotFillingResponse != null) {
                 log.info("触发 Slot Filling: intentCode={}, sessionId={}",
                         intent.getIntentCode(), slotFillingResponse.getSessionId());
+                // formattedText 兜底: Slot Filling 返回通常有 message 但无 formattedText
+                if (slotFillingResponse.getFormattedText() == null
+                        && slotFillingResponse.getMessage() != null
+                        && slotFillingResponse.getMessage().length() >= 5) {
+                    slotFillingResponse.setFormattedText(slotFillingResponse.getMessage());
+                }
                 return slotFillingResponse;
             }
         }
@@ -776,6 +809,25 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             } catch (Exception e) {
                 log.debug("结果格式化失败（非致命）: {}", e.getMessage());
             }
+        }
+
+        // 6.9. formattedText 兜底: null / 通用短回复 → 用 message 替代
+        String currentFT = response.getFormattedText();
+        String msg = response.getMessage();
+        boolean ftMissing = currentFT == null;
+        boolean ftGeneric = currentFT != null && GENERIC_SHORT_REPLIES.contains(currentFT.trim());
+        boolean ftShort = currentFT != null && currentFT.length() < 15;
+        if ((ftMissing || ftGeneric || ftShort) && msg != null && msg.length() >= 20
+                && msg.length() > (currentFT != null ? currentFT.length() : 0)) {
+            response.setFormattedText(msg);
+        } else if (ftMissing && msg != null && msg.length() >= 5) {
+            response.setFormattedText(msg);
+        }
+
+        // v27: 终极兜底 — 任何状态下 formattedText 仍为 null 时，用 message 填充
+        if (response.getFormattedText() == null && response.getMessage() != null
+                && !response.getMessage().isEmpty()) {
+            response.setFormattedText(response.getMessage());
         }
 
         // 7. 处理缓存：标记缓存命中和写入新结果
@@ -830,13 +882,15 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             // 1. 权限检查
             if (tool.requiresPermission() && !tool.hasPermission(userRole)) {
                 log.warn("Tool 权限不足: tool={}, userRole={}", tool.getToolName(), userRole);
+                String permDeniedMsg = "您没有权限执行此操作: " + intent.getIntentName();
                 return IntentExecuteResponse.builder()
                         .intentRecognized(true)
                         .intentCode(intent.getIntentCode())
                         .intentName(intent.getIntentName())
                         .intentCategory(intent.getIntentCategory())
                         .status("PERMISSION_DENIED")
-                        .message("您没有权限执行此操作: " + intent.getIntentName())
+                        .message(permDeniedMsg)
+                        .formattedText(permDeniedMsg)
                         .executedAt(LocalDateTime.now())
                         .build();
             }
@@ -1487,12 +1541,61 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
      * 当 tool_name 为空或 Tool 未找到时，使用此方法
      */
     // Category 别名映射: DB中存在但无独立Handler的category → 映射到现有Handler
-    private static final Map<String, String> CATEGORY_ALIAS_MAP = Map.of(
-            "PROCESSING", "MATERIAL",    // 生产批次操作 → 物料/批次处理器
-            "PRODUCTION", "MATERIAL",    // 生产任务 → 物料/批次处理器
-            "QUERY", "DATA_OP",          // 通用查询 → 数据操作处理器
-            "FINANCE", "REPORT",         // 财务分析 → 报表处理器
-            "SMARTBI", "REPORT"          // SmartBI分析 → 报表处理器
+    /** 通用短回复集合，会被 formattedText 兜底逻辑替换 */
+    private static final java.util.Set<String> GENERIC_SHORT_REPLIES = java.util.Set.of(
+            "查询完成，暂无数据", "操作完成", "查询完成", "查询成功", "执行成功",
+            "查询完成,暂无数据", "处理完成", "请求成功"
+    );
+
+    /**
+     * 意图代码级别的 handler 覆盖映射：当 DB 中 intent_category 与实际 handler 不匹配时使用
+     */
+    private static final Map<String, String> INTENT_CODE_HANDLER_OVERRIDE = Map.ofEntries(
+            // 设备相关意图 → EQUIPMENT handler (DB中错误分到了DATA_OP/REPORT)
+            Map.entry("COLD_CHAIN_TEMPERATURE", "EQUIPMENT"),
+            Map.entry("ANALYZE_EQUIPMENT", "EQUIPMENT"),
+            Map.entry("QUERY_EQUIPMENT_STATUS_BY_NAME", "EQUIPMENT"),
+            Map.entry("EQUIPMENT_CAMERA_START", "EQUIPMENT"),
+            Map.entry("CCP_MONITOR_DATA_DETECTION", "EQUIPMENT"),
+            // HR相关意图 → HR handler (DB中错误分到了REPORT/DATA_OP)
+            Map.entry("WORKER_ARRIVAL_CONFIRM", "HR"),
+            Map.entry("ATTENDANCE_STATS_BY_DEPT", "HR"),
+            Map.entry("QUERY_ONLINE_STAFF_COUNT", "HR"),
+            Map.entry("WORKER_IN_SHOP_REALTIME_COUNT", "MATERIAL"),
+            Map.entry("HR_DELETE_EMPLOYEE", "HR"),
+            // 物料相关意图 → MATERIAL handler
+            Map.entry("INVENTORY_OUTBOUND", "MATERIAL"),
+            Map.entry("WAREHOUSE_OUTBOUND", "MATERIAL"),
+            Map.entry("MATERIAL_BATCH_DELETE", "MATERIAL"),
+            Map.entry("QUERY_ORDER_PENDING_MATERIAL_QUANTITY", "MATERIAL"),
+            Map.entry("QUERY_MATERIAL_REJECTION_REASON", "MATERIAL"),
+            Map.entry("PRODUCTION_LINE_START", "MATERIAL"),
+            // 运输相关意图 → SHIPMENT handler
+            Map.entry("QUERY_TRANSPORT_LINE", "SHIPMENT"),
+            Map.entry("SHIPMENT_DELETE", "SHIPMENT"),
+            // CRM相关意图 → CRM handler
+            Map.entry("CUSTOMER_DELETE", "CRM"),
+            Map.entry("SUPPLIER_CREATE", "CRM"),
+            Map.entry("SUPPLIER_DELETE", "CRM"),
+            // 报表相关意图 → REPORT handler (DB中错误分到了DATA_OP)
+            Map.entry("PAYMENT_STATUS_QUERY", "REPORT"),
+            Map.entry("SCHEDULING_LIST", "REPORT"),
+            // 新增：域外 + 上下文继续 → SYSTEM handler
+            Map.entry("OUT_OF_DOMAIN", "SYSTEM"),
+            Map.entry("CONTEXT_CONTINUE", "SYSTEM")
+    );
+
+    private static final Map<String, String> CATEGORY_ALIAS_MAP = Map.ofEntries(
+            Map.entry("PROCESSING", "MATERIAL"),    // 生产批次操作 → 物料/批次处理器
+            Map.entry("PRODUCTION", "MATERIAL"),    // 生产任务 → 物料/批次处理器
+            Map.entry("QUERY", "DATA_OP"),           // 通用查询 → 数据操作处理器
+            Map.entry("FINANCE", "REPORT"),          // 财务分析 → 报表处理器
+            Map.entry("SMARTBI", "REPORT"),          // SmartBI分析 → 报表处理器
+            Map.entry("SCHEDULING", "REPORT"),       // 排班 → 报表处理器
+            Map.entry("INVENTORY", "MATERIAL"),      // 库存 → 物料处理器
+            Map.entry("WAREHOUSE", "MATERIAL"),      // 仓库 → 物料处理器
+            Map.entry("TRACE", "SHIPMENT"),          // 溯源 → 发货处理器
+            Map.entry("ORDER", "CRM")               // 订单 → CRM处理器
     );
 
     private IntentExecuteResponse executeWithHandlerFallback(String factoryId,
@@ -1500,9 +1603,23 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                                                               AIIntentConfig intent,
                                                               Long userId, String userRole) {
         String category = intent.getIntentCategory();
-        IntentHandler handler = handlerMap.get(category);
+        IntentHandler handler = null;
 
-        // 尝试 category 别名映射
+        // 1. 意图代码级别的 handler 覆盖（优先级最高）
+        String overrideCategory = INTENT_CODE_HANDLER_OVERRIDE.get(intent.getIntentCode());
+        if (overrideCategory != null) {
+            handler = handlerMap.get(overrideCategory);
+            if (handler != null) {
+                log.debug("IntentCode handler override: {} → {}", intent.getIntentCode(), overrideCategory);
+            }
+        }
+
+        // 2. 按 DB 中的 category 查找
+        if (handler == null) {
+            handler = handlerMap.get(category);
+        }
+
+        // 3. 尝试 category 别名映射
         if (handler == null) {
             String aliasCategory = CATEGORY_ALIAS_MAP.get(category);
             if (aliasCategory != null) {
@@ -1515,13 +1632,15 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
         if (handler == null) {
             log.warn("未找到处理器: category={}", category);
+            String noHandlerMsg = "暂不支持此类型的意图执行: " + category;
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intent.getIntentCode())
                     .intentName(intent.getIntentName())
                     .intentCategory(category)
                     .status("FAILED")
-                    .message("暂不支持此类型的意图执行: " + category)
+                    .message(noHandlerMsg)
+                    .formattedText(noHandlerMsg)
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -2073,10 +2192,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
         if (matchResult.getTopCandidates() != null && !matchResult.getTopCandidates().isEmpty()) {
             List<IntentExecuteResponse.SuggestedAction> candidateActions = buildCandidateActions(matchResult, factoryId);
+            String asyncWeakMsg = "我不太确定您想执行什么操作，请从以下选项中选择或更详细地描述您的需求：";
             IntentExecuteResponse.IntentExecuteResponseBuilder builder = IntentExecuteResponse.builder()
                     .intentRecognized(false)
                     .status("NEED_CLARIFICATION")
-                    .message("我不太确定您想执行什么操作，请从以下选项中选择或更详细地描述您的需求：")
+                    .message(asyncWeakMsg)
+                    .formattedText(asyncWeakMsg)
                     .suggestedActions(candidateActions)
                     .executedAt(LocalDateTime.now());
 
@@ -2097,6 +2218,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 .intentRecognized(false)
                 .status("NEED_CLARIFICATION")
                 .message(message)
+                .formattedText(message)
                 .suggestedActions(defaultSuggestions)
                 .executedAt(LocalDateTime.now());
 
@@ -2140,6 +2262,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 .intentCategory(matchedIntent.getIntentCategory())
                 .status("NEED_CLARIFICATION")
                 .message(clarificationMessage)
+                .formattedText(clarificationMessage)
                 .confidence(matchResult.getConfidence())
                 .matchMethod(matchResult.getMatchMethod() != null ? matchResult.getMatchMethod().name() : null)
                 .suggestedActions(candidateActions)
@@ -2355,6 +2478,19 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             } catch (Exception e) {
                 log.debug("[显式执行] 结果格式化失败（非致命）: {}", e.getMessage());
             }
+        }
+
+        // formattedText 兜底: null / 通用短回复 → 用 message 替代
+        String explFT = response.getFormattedText();
+        String explMsg = response.getMessage();
+        boolean explFtMissing = explFT == null;
+        boolean explFtGeneric = explFT != null && GENERIC_SHORT_REPLIES.contains(explFT.trim());
+        boolean explFtShort = explFT != null && explFT.length() < 15;
+        if ((explFtMissing || explFtGeneric || explFtShort) && explMsg != null && explMsg.length() >= 20
+                && explMsg.length() > (explFT != null ? explFT.length() : 0)) {
+            response.setFormattedText(explMsg);
+        } else if (explFtMissing && explMsg != null && explMsg.length() >= 5) {
+            response.setFormattedText(explMsg);
         }
 
         return response;
@@ -3235,6 +3371,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                         .intentRecognized(false)  // 不是业务意图，是分析请求
                         .status(status)
                         .message(analysisResult.getFormattedAnalysis())
+                        .formattedText(analysisResult.getFormattedAnalysis())
                         .metadata(metadata)
                         .executedAt(LocalDateTime.now())
                         .build();
@@ -3250,6 +3387,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                         .intentRecognized(false)
                         .status("COMPLETED")
                         .message(fallbackResponse)
+                        .formattedText(fallbackResponse)
                         .executedAt(LocalDateTime.now())
                         .build();
             }
@@ -3265,6 +3403,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .intentRecognized(false)
                     .status("COMPLETED")
                     .message(fallbackResponse)
+                    .formattedText(fallbackResponse)
                     .executedAt(LocalDateTime.now())
                     .build();
         }

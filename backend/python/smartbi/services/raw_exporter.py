@@ -436,7 +436,7 @@ class RawExporter:
             try:
                 float(v.replace(",", "").replace("¥", "").replace("$", "").replace("%", ""))
                 return "number"
-            except:
+            except Exception:
                 pass
         return "text"
 

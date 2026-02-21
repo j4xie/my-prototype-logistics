@@ -84,6 +84,7 @@ public class MobileDTO {
         private String username;
         private String factoryId;
         private String factoryName;
+        private String factoryType;
         private String role;
         private List<String> permissions;
         private String token;

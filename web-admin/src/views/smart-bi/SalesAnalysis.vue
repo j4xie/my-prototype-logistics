@@ -7,7 +7,7 @@
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
-import { formatNumber, formatCount } from '@/utils/format-number';
+import { formatNumber, formatCount, formatAxisValue } from '@/utils/format-number';
 import { ElMessage } from 'element-plus';
 import {
   Refresh,
@@ -129,6 +129,8 @@ interface SalesPersonRank {
   growth: number;
 }
 const salesPersonRanking = ref<SalesPersonRank[]>([]);
+const hasRankingOrderData = computed(() => salesPersonRanking.value.some(r => r.orderCount > 0));
+const hasRankingGrowthData = computed(() => salesPersonRanking.value.some(r => r.growth !== 0));
 
 // 图表数据 (来自 API 的 ChartConfig 结构)
 interface ChartConfig {
@@ -653,9 +655,10 @@ function parseUnifiedResponse(data: Record<string, unknown>) {
 async function loadOverviewData() {
   if (!factoryId.value || !dateRange.value) return;
   try {
-    const params = {
+    const params: Record<string, string> = {
       startDate: formatDate(dateRange.value[0]),
-      endDate: formatDate(dateRange.value[1])
+      endDate: formatDate(dateRange.value[1]),
+      groupBy: dimensionType.value, // daily/weekly/monthly
     };
     const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
     if (response.success && response.data) {
@@ -882,7 +885,7 @@ function updateTrendChart() {
         type: 'value',
         name: '销售额',
         axisLabel: {
-          formatter: (value: number) => (value / 10000).toFixed(0) + '万'
+          formatter: formatAxisValue
         }
       },
       {
@@ -897,7 +900,7 @@ function updateTrendChart() {
         type: 'value',
         name: '销售额',
         axisLabel: {
-          formatter: (value: number) => (value / 10000).toFixed(0) + '万'
+          formatter: formatAxisValue
         }
       }
     ],
@@ -1357,16 +1360,17 @@ onUnmounted(() => {
                   {{ formatMoney(row.sales) }}
                 </template>
               </el-table-column>
-              <el-table-column label="订单数" prop="orderCount" width="80" align="center">
+              <el-table-column v-if="hasRankingOrderData" label="订单数" prop="orderCount" width="80" align="center">
                 <template #default="{ row }">
-                  {{ row.orderCount ?? '--' }}
+                  {{ row.orderCount > 0 ? row.orderCount : '--' }}
                 </template>
               </el-table-column>
-              <el-table-column label="增长" width="80" align="right">
+              <el-table-column v-if="hasRankingGrowthData" label="增长" width="80" align="right">
                 <template #default="{ row }">
-                  <span :class="getGrowthClass(row.growth)">
+                  <span v-if="row.growth !== 0" :class="getGrowthClass(row.growth)">
                     {{ formatPercent(row.growth) }}
                   </span>
+                  <span v-else style="color: #909399;">--</span>
                 </template>
               </el-table-column>
             </el-table>

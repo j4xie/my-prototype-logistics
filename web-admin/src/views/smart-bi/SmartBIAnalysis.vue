@@ -885,7 +885,7 @@
   </el-dialog>
 
   <!-- P5: 因果分析对话框 -->
-  <el-dialog v-model="statisticalVisible" title="因果分析" width="90%" top="3vh" @closed="disposeStatHeatmap">
+  <el-dialog v-model="statisticalVisible" title="因果分析" width="90%" top="3vh" destroy-on-close @close="disposeStatHeatmap">
     <!-- Sheet 选择器 -->
     <div v-if="!statisticalLoading && !statisticalResult" class="yoy-sheet-selector">
       <p style="margin-bottom: 12px; color: #606266;">选择要分析的报表：</p>
@@ -952,11 +952,11 @@
         <h3>集中度分析</h3>
         <div v-for="(comp, dim) in statisticalResult.comparisons" :key="dim" class="stat-comparison-card">
           <el-descriptions :title="`维度: ${dim}`" :column="3" border size="small">
-            <el-descriptions-item label="CR3 (前3集中度)">{{ (comp.cr3 * 100).toFixed(1) }}%</el-descriptions-item>
-            <el-descriptions-item label="CR5 (前5集中度)">{{ (comp.cr5 * 100).toFixed(1) }}%</el-descriptions-item>
-            <el-descriptions-item label="基尼系数">{{ comp.gini_coefficient.toFixed(3) }}</el-descriptions-item>
-            <el-descriptions-item label="帕累托数量">{{ comp.pareto_count }} / {{ comp.total_items }}</el-descriptions-item>
-            <el-descriptions-item label="帕累托比例">{{ (comp.pareto_ratio * 100).toFixed(1) }}%</el-descriptions-item>
+            <el-descriptions-item label="CR3 (前3集中度)">{{ ((comp.cr3 ?? 0) * 100).toFixed(1) }}%</el-descriptions-item>
+            <el-descriptions-item label="CR5 (前5集中度)">{{ ((comp.cr5 ?? 0) * 100).toFixed(1) }}%</el-descriptions-item>
+            <el-descriptions-item label="基尼系数">{{ (comp.gini_coefficient ?? 0).toFixed(3) }}</el-descriptions-item>
+            <el-descriptions-item label="帕累托数量">{{ comp.pareto_count ?? 0 }} / {{ comp.total_items ?? 0 }}</el-descriptions-item>
+            <el-descriptions-item label="帕累托比例">{{ ((comp.pareto_ratio ?? 0) * 100).toFixed(1) }}%</el-descriptions-item>
             <el-descriptions-item label="度量">{{ comp.measure }}</el-descriptions-item>
           </el-descriptions>
           <div class="stat-top-bottom">
@@ -1034,7 +1034,7 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount, onDeactivated, onA
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { post } from '@/api/request';
-import { getUploadTableData, getUploadHistory, enrichSheetAnalysis, getSmartKPIs, chartDrillDown, crossSheetAnalysis, yoyComparison, renameMeaninglessColumns, statisticalAnalysis, invalidateAnalysisCache, retrySheetUpload, smartRecommendChart, buildChart, checkPythonHealth, humanizeColumnName, FOOD_TEMPLATES, mapColumnsToTemplate, detectFoodIndustryLocal } from '@/api/smartbi';
+import { getUploadTableData, getUploadHistory, deduplicateUploads, enrichSheetAnalysis, getSmartKPIs, chartDrillDown, crossSheetAnalysis, yoyComparison, renameMeaninglessColumns, statisticalAnalysis, invalidateAnalysisCache, retrySheetUpload, smartRecommendChart, buildChart, checkPythonHealth, humanizeColumnName, FOOD_TEMPLATES, mapColumnsToTemplate, detectFoodIndustryLocal } from '@/api/smartbi';
 import type { FoodTemplate } from '@/api/smartbi';
 import type { UploadHistoryItem, EnrichResult, EnrichProgress, ColumnSummary, StructuredAIData, SmartKPI, DrillDownResult as DrillDownResultType, CrossSheetResult as CrossSheetResultType, FinancialMetrics, YoYResult, YoYComparisonItem, StatisticalResult, PythonHealthStatus } from '@/api/smartbi';
 import { ElMessage } from 'element-plus';
@@ -1522,9 +1522,10 @@ const hasChartData = (sheet: SheetResult): boolean => {
 const kpiCache = new Map<string, SmartKPI[]>();
 const computeSmartKPIs = (
   kpiSummary: { rowCount: number; columnCount: number; columns: ColumnSummary[] },
-  financialMetrics?: FinancialMetrics | null
+  financialMetrics?: FinancialMetrics | null,
+  uploadId?: number
 ): SmartKPI[] => {
-  const cacheKey = `${kpiSummary.rowCount}-${kpiSummary.columnCount}-${kpiSummary.columns?.length}-${financialMetrics ? 'fm' : ''}`;
+  const cacheKey = `${uploadId ?? 'x'}-${kpiSummary.rowCount}-${kpiSummary.columnCount}-${kpiSummary.columns?.length}-${financialMetrics ? 'fm' : ''}`;
   const cached = kpiCache.get(cacheKey);
   if (cached) return cached;
   const result = getSmartKPIs(kpiSummary, financialMetrics);
@@ -1535,7 +1536,7 @@ const computeSmartKPIs = (
 // 获取 Sheet 的 KPI 列表（用于模板中）
 const getSheetKPIs = (sheet: SheetResult): SmartKPI[] => {
   if (!sheet.flowResult?.kpiSummary) return [];
-  return computeSmartKPIs(sheet.flowResult.kpiSummary, sheet.flowResult?.financialMetrics);
+  return computeSmartKPIs(sheet.flowResult.kpiSummary, sheet.flowResult?.financialMetrics, sheet.uploadId);
 };
 
 // 获取高管摘要
@@ -2291,6 +2292,17 @@ const enhanceChartOption = (opts: Record<string, unknown>): void => {
     }
   }
 
+  // Auto Y-axis formatter: if no explicit (万)/(亿) in name but values are large
+  if (yAxis && chartType !== 'pie' && !yAxis.axisLabel?.formatter && stats.max >= 10000) {
+    yAxis.axisLabel = yAxis.axisLabel || {};
+    yAxis.axisLabel.formatter = (value: number) => {
+      if (value === 0) return '0';
+      if (Math.abs(value) >= 1e8) return `${(value / 1e8).toFixed(1)}亿`;
+      if (Math.abs(value) >= 1e4) return `${(value / 1e4).toFixed(0)}万`;
+      return String(value);
+    };
+  }
+
   // Scatter charts: also format xAxis if values are large
   if (xAxis && xAxis.type === 'value' && typeof xAxis.name === 'string') {
     const xMatch = xAxis.name.match(/\(([万亿])\)/);
@@ -2737,17 +2749,57 @@ const getAIAnalysis = (sheet: SheetResult): string => {
          '暂无 AI 分析';
 };
 
-// 格式化分析结果
+// 格式化分析结果 — 增强版：按句号分段 + 关键数字加粗
 const formatAnalysis = (analysis: string): string => {
-  return analysis
-    .replace(/\n/g, '<br/>')
-    .replace(/\*\*trend\*\*/gi, '📈 <strong>趋势</strong>')
-    .replace(/\*\*anomaly\*\*/gi, '⚠️ <strong>异常</strong>')
-    .replace(/\*\*recommendation\*\*/gi, '💡 <strong>建议</strong>')
-    .replace(/\*\*comparison\*\*/gi, '📊 <strong>对比</strong>')
+  return formatAIText(analysis);
+};
+
+// 将 AI 文本按中文句号分段，并对关键数字加粗显示
+const formatAIText = (text: string): string => {
+  if (!text) return '';
+
+  // Step 1: 先处理 markdown 标记
+  let formatted = text
+    .replace(/\*\*trend\*\*/gi, '<strong>趋势</strong>')
+    .replace(/\*\*anomaly\*\*/gi, '<strong>异常</strong>')
+    .replace(/\*\*recommendation\*\*/gi, '<strong>建议</strong>')
+    .replace(/\*\*comparison\*\*/gi, '<strong>对比</strong>')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/【(.*?)】/g, '<span class="highlight">【$1】</span>')
-    .replace(/(<br\/>)(\d+\.)\s/g, '$1<strong>$2</strong> ');
+    .replace(/【(.*?)】/g, '<span class="highlight">【$1】</span>');
+
+  // Step 2: 按换行符切分段落，再对每段按句号细分
+  const paragraphs = formatted.split(/\n+/);
+  const htmlParts: string[] = [];
+  for (const para of paragraphs) {
+    const trimmed = para.trim();
+    if (!trimmed) continue;
+    // 按中文句号分段（保留句号在每句末尾）
+    const sentences = trimmed.split(/(?<=。)/);
+    const validSentences = sentences.filter(s => s.trim());
+    if (validSentences.length > 1) {
+      // 多句：每句一个 <p>
+      for (const s of validSentences) {
+        const sTrimmed = s.trim();
+        if (sTrimmed) htmlParts.push(`<p>${sTrimmed}</p>`);
+      }
+    } else {
+      htmlParts.push(`<p>${trimmed}</p>`);
+    }
+  }
+
+  formatted = htmlParts.join('') || `<p>${formatted}</p>`;
+
+  // Step 3: 关键数字加粗（百分比、万元金额、普通金额）
+  formatted = formatted.replace(/(\d+\.?\d*%)/g, '<strong>$1</strong>');
+  formatted = formatted.replace(/(\d+\.?\d*万)/g, '<strong>$1</strong>');
+  formatted = formatted.replace(/(\d[\d,]*\.?\d*元)/g, '<strong>$1</strong>');
+  // 列表序号加粗
+  formatted = formatted.replace(/(<p>)(\d+\.\s)/g, '$1<strong>$2</strong>');
+
+  // Step 4: 清理空段落
+  formatted = formatted.replace(/<p>\s*<\/p>/g, '');
+
+  return formatted;
 };
 
 // 刷新分析：清除缓存后强制重新 enrichment
@@ -3637,7 +3689,7 @@ const rebuildChartsWithData = async (sheet: SheetResult, data: Record<string, un
     const columns = Object.keys(data[0] || {});
     const numericCols = columns.filter(col => {
       const vals = data.map(r => r[col]).filter(v => v != null);
-      return vals.every(v => !isNaN(Number(v)));
+      return vals.length > 0 && vals.every(v => !isNaN(Number(v)));
     });
     const categoricalCols = columns.filter(col => !numericCols.includes(col));
 
@@ -3665,7 +3717,11 @@ const rebuildChartsWithData = async (sheet: SheetResult, data: Record<string, un
     const results = await Promise.allSettled(chartPromises);
     const newCharts = results
       .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value?.success)
-      .map(r => r.value.data);
+      .map(r => ({
+        chartType: r.value.option?.series?.[0]?.type || 'bar',
+        title: r.value.option?.title?.text || '筛选分析',
+        config: r.value.option,
+      }));
 
     if (newCharts.length > 0) {
       // Update flowResult with new charts
@@ -4040,6 +4096,7 @@ const selectBatch = (index: number) => {
   enrichedSheets.value = new Set();
   enrichingSheets.value = new Set();
   enrichPhases.value = new Map();
+  kpiCache.clear();
   activeTab.value = '0';
   nextTick(() => {
     // U6: Clear loading after DOM updates with new batch data
@@ -4060,7 +4117,10 @@ const loadHistory = async () => {
     const response = await getUploadHistory();
     if (!response.success || !response.data?.length) return;
 
-    const uploads = response.data as UploadHistoryItem[];
+    // Dedup: keep only the latest upload per fileName+sheetName combo
+    const uploads = deduplicateUploads(response.data as UploadHistoryItem[])
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
     const batches: UploadBatch[] = [];
     let currentBatch: UploadHistoryItem[] = [];
     let currentFileName = '';
@@ -4562,6 +4622,10 @@ onMounted(() => {
               display: flex;
               align-items: center;
               gap: 8px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              max-width: 100%;
             }
 
             .chart-export-btn {
@@ -4709,7 +4773,11 @@ onMounted(() => {
           .analysis-content {
             line-height: 1.8;
             color: #606266;
-            white-space: pre-wrap;
+
+            :deep(p) {
+              margin: 0 0 10px;
+              &:last-child { margin-bottom: 0; }
+            }
 
             :deep(.highlight) {
               color: #409eff;
@@ -4718,6 +4786,7 @@ onMounted(() => {
 
             :deep(strong) {
               color: #303133;
+              font-weight: 600;
             }
           }
         }
@@ -5062,7 +5131,16 @@ onMounted(() => {
   .analysis-content {
     line-height: 1.8;
     color: #606266;
-    white-space: pre-wrap;
+
+    :deep(p) {
+      margin: 0 0 10px;
+      &:last-child { margin-bottom: 0; }
+    }
+
+    :deep(strong) {
+      color: #303133;
+      font-weight: 600;
+    }
   }
 }
 

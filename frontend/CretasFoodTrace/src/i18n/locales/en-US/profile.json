@@ -60,8 +60,21 @@
     "currentPassword": "Current Password",
     "newPassword": "New Password",
     "confirmPassword": "Confirm Password",
-    "submit": "Submit",
-    "passwordHint": "At least 8 characters with letters and numbers"
+    "currentPasswordPlaceholder": "Enter current password",
+    "newPasswordPlaceholder": "Enter new password",
+    "confirmPasswordPlaceholder": "Confirm new password",
+    "submit": "Confirm",
+    "submitting": "Submitting...",
+    "confirm": "OK",
+    "passwordHint": "Password must be at least 6 characters",
+    "errors": {
+      "oldPasswordRequired": "Current password is required",
+      "newPasswordRequired": "New password is required",
+      "confirmPasswordRequired": "Please confirm your password",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "changeFailed": "Failed to change password",
+      "changeFailedTitle": "Change Failed"
+    }
   },
   "notificationSettings": {
     "title": "Notification Settings",
@@ -104,7 +117,11 @@
     "title": "Feedback",
     "placeholder": "Please enter your feedback...",
     "submit": "Submit",
-    "thankYou": "Thank you for your feedback!"
+    "submitting": "Submitting...",
+    "thankYou": "Thank you for your feedback!",
+    "submitSuccess": "Feedback submitted successfully",
+    "submitFailed": "Submit failed, please try again",
+    "emptyContent": "Please enter feedback content"
   },
   "about": {
     "title": "About",
@@ -113,7 +130,11 @@
     "copyright": "Copyright",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
-    "checkUpdate": "Check for Updates"
+    "checkUpdate": "Check for Updates",
+    "productIntro": "Product Introduction",
+    "productDescription": "Cretas Food Traceability System is a comprehensive food industry traceability management platform, enabling full chain tracking from raw materials to finished products.",
+    "userAgreement": "User Agreement",
+    "latestVersion": "Already the latest version"
   },
   "logout": {
     "confirmTitle": "Logout",

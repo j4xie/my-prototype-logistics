@@ -26,7 +26,12 @@
     "hideModule": "隐藏模块",
     "showModule": "显示模块",
     "availableModules": "可添加的模块",
-    "noMoreModules": "没有更多可添加的模块"
+    "noMoreModules": "没有更多可添加的模块",
+    "restaurantInsights": "经营洞察",
+    "todayOverview": "今日概览",
+    "add": "添加",
+    "addStatCard": "添加统计卡片",
+    "addQuickAction": "添加快捷操作"
   },
   "greeting": "你好",
   "greetings": {
@@ -57,11 +62,14 @@
     "notifications": "通知",
     "todayOverview": "今日概览",
     "quickActions": "快捷操作",
-    "devTools": "🛠️ 开发者工具"
+    "devTools": "🛠️ 开发者工具",
+    "welcome": "欢迎区"
   },
   "loading": "加载中...",
   "error": {
-    "loadFailed": "数据加载失败，请下拉刷新重试"
+    "loadFailed": "数据加载失败，请下拉刷新重试",
+    "saveFailed": "保存失败",
+    "noFactoryId": "无法获取工厂ID"
   },
   "ai": {
     "title": "AI 智能洞察",
@@ -83,14 +91,23 @@
     "todayOutput": "今日产量(kg)",
     "todayBatches": "今日批次",
     "materialBatches": "原料批次",
-    "todayAlerts": "今日告警"
+    "todayAlerts": "今日告警",
+    "todayOrders": "今日订单",
+    "lowStockAlert": "食材预警",
+    "pendingApproval": "待审批",
+    "pendingWorkReport": "待审批报工"
   },
   "quickActions": {
     "createPlan": "新建计划",
     "dataReport": "数据报表",
     "staffManagement": "人员管理",
     "systemConfig": "系统配置",
-    "formilyDemo": "Formily 演示"
+    "formilyDemo": "Formily 演示",
+    "newPurchase": "新建采购",
+    "newSales": "新建销售",
+    "inventoryQuery": "库存查询",
+    "inventoryView": "库存查看",
+    "qualityManagement": "质检管理"
   },
   "modules": {
     "processing": {

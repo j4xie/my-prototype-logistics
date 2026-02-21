@@ -659,6 +659,648 @@ COMMON_TYPOS = {
 TYPO_RATE = 0.10  # 10% chance of applying a typo
 
 # ===========================================================================
+# 5b. NEW INTENT CLASSES: OUT_OF_DOMAIN + CONTEXT_CONTINUE
+# ===========================================================================
+
+# OUT_OF_DOMAIN: ~150 samples for non-business inputs (noise, greetings, off-topic)
+OUT_OF_DOMAIN_SAMPLES = [
+    # --- Pure noise / symbols ---
+    "？？？", "。。。", "666", "888", "233", "哈哈哈哈", "嗯嗯好的", "啊？",
+    "呃呃呃", "嗯", "哦", "噢", "嘿嘿", "呵呵", "嘻嘻", "hiahia",
+    "!!!!", "？！？！", "~", "...", "……", "😂", "👍",
+    "ok", "OK", "好的", "行", "知道了", "收到", "了解",
+    # --- Greetings ---
+    "你好", "您好", "Hello", "Hi", "嗨", "你好呀", "早上好",
+    "下午好", "晚上好", "老师好", "大家好", "嘿你好",
+    # --- Identity questions ---
+    "你是谁", "你叫什么", "你是什么系统", "你能干什么", "你是机器人吗",
+    "你是AI吗", "你是人工智能吗", "你有名字吗",
+    # --- Weather / off-topic ---
+    "今天天气怎么样", "明天会下雨吗", "外面热不热", "气温多少度",
+    # --- Gratitude / farewell ---
+    "谢谢", "谢谢你", "多谢", "感谢", "辛苦了", "再见", "拜拜", "下次再聊",
+    # --- Entertainment / non-business ---
+    "讲个笑话", "说个故事", "唱首歌", "帮我写一封邮件", "帮我翻译一段话",
+    "帮我写个PPT", "推荐一部电影", "今天股票怎么样", "帮我算个数学题",
+    "世界杯结果怎样", "最近有什么新闻", "帮我订个外卖", "附近有什么好吃的",
+    "帮我写一首诗", "给我讲个冷知识", "明天放假吗", "中午吃什么好",
+    # --- Random gibberish ---
+    "asdfghjkl", "qwerty", "啊啊啊啊", "哇哇哇", "嘤嘤嘤",
+    "啦啦啦", "嗷嗷嗷", "哼哼哼", "额额额",
+    # --- Confirmations without context ---
+    "对", "不是", "是的", "没有", "不要", "算了", "可以", "随便",
+    "看看再说", "先这样吧", "好吧", "无所谓", "你说呢",
+    # --- Complaints without business intent ---
+    "好烦", "累死了", "无聊", "不想干了", "烦死了", "头疼",
+    "今天好忙", "加班好累", "太难了",
+    # --- Hard negatives: similar to business but clearly off-topic ---
+    "什么是ERP", "管理学怎么学", "供应链理论是什么",
+    "什么叫精益生产", "质量管理体系有哪些", "ISO认证怎么办",
+    "帮我百度一下", "搜索一下谷歌", "打开微信", "发个朋友圈",
+    "帮我叫个车", "帮我设个闹钟", "提醒我下午开会",
+    "公司地址在哪", "电话号码多少", "wifi密码是什么",
+    "食堂几点开饭", "厕所在哪", "空调温度调一下",
+    # --- More samples to reach ~150 ---
+    "你好帮我看看", "你是AI助手吗", "你什么都能查吗",
+    "系统怎么用", "功能有哪些", "使用说明在哪",
+    "哈喽", "hey", "yo", "喂", "在吗", "人呢",
+    "刚才说什么来着", "没事了", "搞定了", "不用了",
+    "等一下", "稍等", "我想想", "让我考虑一下",
+]
+
+# CONTEXT_CONTINUE: ~120 samples for context-dependent follow-ups
+CONTEXT_CONTINUE_SAMPLES = [
+    # --- Ellipsis / same-as-before ---
+    "同上", "继续", "跟刚才一样", "还是之前那个条件",
+    "一样的，再查一遍", "重复一遍", "再来一次",
+    "跟上次一样", "按之前的来", "老样子",
+    "同样条件", "不变", "维持原来的", "还是那个",
+    # --- Follow-up questions ---
+    "那质检结果呢", "详细的呢", "换成上个月的",
+    "按部门拆分看看", "这个呢", "那个呢",
+    "那其他的呢", "还有呢", "然后呢", "接下来呢",
+    "其余的呢", "另外的呢", "反过来呢",
+    "下一个", "上一个", "第二页", "看更多",
+    # --- Refinement requests ---
+    "详细一点", "简单说一下", "具体点",
+    "能不能再详细些", "太简略了", "展开说说",
+    "总结一下", "精简一点", "核心数据就行",
+    # --- Time shift ---
+    "换成上个月的", "看本周的", "改成去年的",
+    "看昨天的", "三月份的呢", "Q1的数据",
+    "今年的呢", "对比上季度", "最近一周",
+    # --- Scope shift ---
+    "换个角度看看", "从另一个维度", "按区域看",
+    "按产品线分", "分车间看看", "各班次对比",
+    "换成饼图", "用柱状图", "导出Excel",
+    # --- Repeat / redo ---
+    "再说一遍", "没听清", "重复", "pardon",
+    "再查一次", "重新查", "刷新一下",
+    "更新数据", "同步一下", "拉取最新的",
+    # --- Context references ---
+    "就刚才那个", "前面那个", "上面提到的",
+    "之前查的那个", "上次说的", "你刚才说的",
+    "回到上一个", "返回之前的", "回退",
+    # --- Continuation ---
+    "继续说", "往下看", "后面还有吗",
+    "还有没有了", "全部显示", "展示完整的",
+    "完整版", "不要省略", "全量数据",
+    # --- Confirmation to continue ---
+    "好的继续", "对的继续查", "没错就这个",
+    "是的帮我查", "可以继续", "对对对就是这个",
+    "嗯查一下", "嗯看看", "嗯帮我弄一下",
+    # --- Additional to reach 100+ ---
+    "对，就是这个", "嗯对的", "没错",
+    "同样的条件再查一次", "跟之前那次一样查",
+    "按照上次的参数", "用同样的筛选条件",
+    "之前那个再来一遍", "上一次的结果再看看",
+    "换个维度看", "从另一个方面分析",
+]
+
+# Hard negatives for OUT_OF_DOMAIN: look like greetings but have business intent
+OUT_OF_DOMAIN_HARD_NEGATIVES = [
+    ("你好帮我查库存", "MATERIAL_BATCH_QUERY"),
+    ("你好，看一下今天产量", "REPORT_PRODUCTION"),
+    ("嗨，设备状态怎样", "EQUIPMENT_STATUS_QUERY"),
+    ("hello查一下订单", "ORDER_LIST"),
+    ("谢谢，再帮我看看质检", "QUALITY_CHECK_QUERY"),
+    ("好的，那帮我查考勤", "ATTENDANCE_TODAY"),
+    ("OK帮我打个卡", "CLOCK_IN"),
+    ("嗯帮我看一下告警", "ALERT_LIST"),
+    ("好的看一下发货情况", "SHIPMENT_QUERY"),
+    ("嗨帮我查一下供应商", "SUPPLIER_LIST"),
+    ("你好我要查生产报表", "REPORT_PRODUCTION"),
+    ("hi看一下财务数据", "REPORT_FINANCE"),
+]
+
+# Hard negatives for CONTEXT_CONTINUE: look like context but have specific intent
+CONTEXT_CONTINUE_HARD_NEGATIVES = [
+    ("继续生产这批", "PROCESSING_BATCH_RESUME"),
+    ("继续追踪这个批次", "TRACE_BATCH"),
+    ("详细的质检报告", "QUALITY_CHECK_QUERY"),
+    ("详细设备信息", "EQUIPMENT_DETAIL"),
+    ("换成自动排产", "SCHEDULING_SET_AUTO"),
+    ("更新订单状态", "ORDER_UPDATE"),
+    ("刷新设备数据", "EQUIPMENT_STATUS_QUERY"),
+    ("再查一下库存", "MATERIAL_BATCH_QUERY"),
+    ("再来一批生产任务", "PROCESSING_BATCH_CREATE"),
+    ("重新执行质检", "QUALITY_CHECK_EXECUTE"),
+]
+
+# ===========================================================================
+# 5c. PATTERN-SPECIFIC AUGMENTATION SAMPLES (~640 total)
+# Augment existing intents with dialect, rhetorical, double-negative, etc.
+# ===========================================================================
+PATTERN_AUGMENTATION = {
+    # --- AA11: Dialect expressions (方言) → existing intents ---
+    "DIALECT": [
+        ("仓库里头还有好多货伐", "MATERIAL_BATCH_QUERY"),
+        ("这批货搞得定不", "PROCESSING_BATCH_LIST"),
+        ("机器歇菜了", "EQUIPMENT_STATUS_QUERY"),
+        ("今个儿出了多少活", "REPORT_PRODUCTION"),
+        ("物料齐活了没", "MATERIAL_BATCH_QUERY"),
+        ("库存还有多少嘞", "MATERIAL_BATCH_QUERY"),
+        ("设备咋就不转了咧", "EQUIPMENT_STATUS_QUERY"),
+        ("这批货发出去了没得", "SHIPMENT_QUERY"),
+        ("打卡了么得", "ATTENDANCE_TODAY"),
+        ("质检过了没有嘛", "QUALITY_CHECK_QUERY"),
+        ("原料用完了伐", "MATERIAL_BATCH_QUERY"),
+        ("订单弄好了没咧", "ORDER_STATUS"),
+        ("今天来了多少人嘞", "ATTENDANCE_TODAY"),
+        ("产线上跑的啥子", "PROCESSING_BATCH_LIST"),
+        ("供应商那边咋说的", "SUPPLIER_EVALUATE"),
+        ("生产计划排好了没有嘛", "SCHEDULING_LIST"),
+        ("告警咋这么多嘞", "ALERT_LIST"),
+        ("采购单下了没得", "PROCUREMENT_LIST"),
+        ("成本这个月高了没有嘛", "COST_QUERY"),
+        ("考勤数据对得上不嘛", "ATTENDANCE_STATS"),
+        ("客户那边催货了没得", "ORDER_LIST"),
+        ("报表整出来了伐", "REPORT_PRODUCTION"),
+        ("排班搞定了没咧", "SCHEDULING_LIST"),
+        ("仓库温度高了没嘞", "COLD_CHAIN_TEMPERATURE"),
+        ("物料到齐了伐", "MATERIAL_BATCH_QUERY"),
+    ],
+    # --- AB3: Rhetorical questions (反问句) ---
+    "RHETORICAL": [
+        ("难道猪肉库存真的没了？", "MATERIAL_BATCH_QUERY"),
+        ("难道设备还没修好？", "EQUIPMENT_STATUS_QUERY"),
+        ("这批货难道不用质检吗", "QUALITY_CHECK_QUERY"),
+        ("还没发货难道订单都不要了", "ORDER_LIST"),
+        ("连基本的产量都不达标吗", "REPORT_PRODUCTION"),
+        ("难道没人来上班吗", "ATTENDANCE_TODAY"),
+        ("这都不查一下吗", "MATERIAL_BATCH_QUERY"),
+        ("告警都不处理的吗", "ALERT_LIST"),
+        ("难道供应商还没送货？", "SUPPLIER_EVALUATE"),
+        ("成本这么高都不管吗", "COST_QUERY"),
+        ("质检合格率这么低不查吗", "QUALITY_STATS"),
+        ("发货效率这么差吗", "SHIPMENT_STATS"),
+        ("难道不用排产了？", "SCHEDULING_LIST"),
+        ("采购单难道还没批？", "PROCUREMENT_LIST"),
+        ("设备故障率难道不高吗", "EQUIPMENT_STATS"),
+        ("库存不是应该够的吗", "MATERIAL_LOW_STOCK_ALERT"),
+        ("这台设备难道不需要保养？", "EQUIPMENT_MAINTENANCE"),
+        ("订单难道都完成了？", "ORDER_LIST"),
+        ("难道今天没有生产任务？", "PROCESSING_BATCH_LIST"),
+        ("考勤数据难道不准确吗", "ATTENDANCE_STATS"),
+        ("这批原料不是已经过期了吗", "MATERIAL_EXPIRED_QUERY"),
+        ("质检报告难道还没出？", "QUALITY_CHECK_QUERY"),
+        ("排班不是已经排好了吗", "SCHEDULING_LIST"),
+        ("客户投诉难道不处理吗", "CUSTOMER_LIST"),
+        ("财务报表难道还没做？", "REPORT_FINANCE"),
+    ],
+    # --- AB4: Double negation (双重否定) ---
+    "DOUBLE_NEGATION": [
+        ("不能不查库存", "MATERIAL_BATCH_QUERY"),
+        ("没有不需要质检的批次吧", "QUALITY_CHECK_QUERY"),
+        ("不是不能打卡，我就是忘了", "CLOCK_IN"),
+        ("这台设备不能不维护", "EQUIPMENT_MAINTENANCE"),
+        ("订单不得不处理一下", "ORDER_LIST"),
+        ("不得不看一下库存", "MATERIAL_BATCH_QUERY"),
+        ("没有不可以查的数据吧", "REPORT_DASHBOARD_OVERVIEW"),
+        ("产量不能不统计", "REPORT_PRODUCTION"),
+        ("考勤不得不查一下", "ATTENDANCE_STATS"),
+        ("设备状态不能不关注", "EQUIPMENT_STATUS_QUERY"),
+        ("告警不能不处理", "ALERT_LIST"),
+        ("不得不安排一下排班", "SCHEDULING_LIST"),
+        ("供应商评分不能不看", "SUPPLIER_EVALUATE"),
+        ("采购计划不得不调整", "PROCUREMENT_LIST"),
+        ("发货时间不能不确认", "SHIPMENT_QUERY"),
+        ("质检标准不能不遵守", "QUALITY_STATS"),
+        ("成本分析不得不做", "COST_QUERY"),
+        ("生产进度不能不跟踪", "PROCESSING_BATCH_LIST"),
+        ("库存预警不能不重视", "MATERIAL_LOW_STOCK_ALERT"),
+        ("财务数据不得不核实", "REPORT_FINANCE"),
+        ("不是不查，是太忙了，现在查库存", "MATERIAL_BATCH_QUERY"),
+        ("不能不承认设备确实有问题", "EQUIPMENT_STATUS_QUERY"),
+        ("没有不重要的质检记录", "QUALITY_CHECK_QUERY"),
+        ("不得不说今天产量不错", "REPORT_PRODUCTION"),
+        ("不能不关注这个告警", "ALERT_ACTIVE"),
+    ],
+    # --- W2: Chinese-English mixed (中英混合) ---
+    "MIXED_LANG": [
+        ("check一下inventory", "MATERIAL_BATCH_QUERY"),
+        ("帮我check库存", "MATERIAL_BATCH_QUERY"),
+        ("production status怎么样", "PRODUCTION_STATUS_QUERY"),
+        ("quality report看一下", "QUALITY_CHECK_QUERY"),
+        ("order list拉一下", "ORDER_LIST"),
+        ("equipment status查一下", "EQUIPMENT_STATUS_QUERY"),
+        ("shipment tracking", "SHIPMENT_QUERY"),
+        ("alert list有没有新的", "ALERT_LIST"),
+        ("attendance data帮我看看", "ATTENDANCE_STATS"),
+        ("schedule查一下", "SCHEDULING_LIST"),
+        ("supplier list", "SUPPLIER_LIST"),
+        ("cost analysis", "COST_QUERY"),
+        ("stock不够了", "MATERIAL_LOW_STOCK_ALERT"),
+        ("KPI dashboard", "REPORT_KPI"),
+        ("maintenance schedule", "EQUIPMENT_MAINTENANCE"),
+        ("production plan更新了没", "PROCESSING_BATCH_LIST"),
+        ("delivery status查一下", "SHIPMENT_QUERY"),
+        ("inventory report", "REPORT_INVENTORY"),
+        ("quality check做了没", "QUALITY_CHECK_EXECUTE"),
+        ("batch detail看一下", "PROCESSING_BATCH_DETAIL"),
+    ],
+    # --- Y2: Implicit intent (隐晦意图) ---
+    "IMPLICIT": [
+        ("快过期了怎么办", "MATERIAL_EXPIRING_ALERT"),
+        ("原料不够了", "MATERIAL_LOW_STOCK_ALERT"),
+        ("客户一直在催", "ORDER_LIST"),
+        ("温度好像不对", "COLD_CHAIN_TEMPERATURE"),
+        ("产量上不去", "REPORT_PRODUCTION"),
+        ("机器好像有异响", "EQUIPMENT_STATUS_QUERY"),
+        ("人手不够用", "ATTENDANCE_TODAY"),
+        ("成本控制不住", "COST_QUERY"),
+        ("合格率一直在降", "QUALITY_STATS"),
+        ("发货效率太低了", "SHIPMENT_STATS"),
+        ("库存积压严重", "MATERIAL_BATCH_QUERY"),
+        ("排产总是排不开", "SCHEDULING_LIST"),
+        ("供应商不太靠谱", "SUPPLIER_EVALUATE"),
+        ("告警太频繁了", "ALERT_LIST"),
+        ("生产跟不上订单", "PROCESSING_BATCH_LIST"),
+        ("冷库好像出问题了", "COLD_CHAIN_TEMPERATURE"),
+        ("这批货质量堪忧", "QUALITY_CHECK_QUERY"),
+        ("设备老化严重", "EQUIPMENT_MAINTENANCE"),
+        ("财务状况不太乐观", "REPORT_FINANCE"),
+        ("员工流动性太大", "ATTENDANCE_STATS"),
+        ("仓库快满了", "MATERIAL_BATCH_QUERY"),
+        ("交货时间要延迟了", "SHIPMENT_QUERY"),
+        ("采购成本涨了不少", "COST_QUERY"),
+        ("这个月盈利不理想", "REPORT_FINANCE"),
+        ("设备利用率不高", "EQUIPMENT_STATS"),
+    ],
+    # --- Z7: Range queries (范围查询) ---
+    "RANGE_QUERY": [
+        ("温度2到8度的冷库", "COLD_CHAIN_TEMPERATURE"),
+        ("库存100到500公斤之间的", "MATERIAL_BATCH_QUERY"),
+        ("合格率90%以上的产品", "QUALITY_STATS"),
+        ("日产量在500到1000之间", "REPORT_PRODUCTION"),
+        ("价格50到100元的原料", "MATERIAL_BATCH_QUERY"),
+        ("本周一到周五的考勤", "ATTENDANCE_HISTORY"),
+        ("订单金额1万到5万的", "ORDER_LIST"),
+        ("设备运行时间超过8小时", "EQUIPMENT_STATS"),
+        ("保质期还剩30天内的", "MATERIAL_EXPIRING_ALERT"),
+        ("供应商评分80分以上", "SUPPLIER_RANKING"),
+        ("产量低于目标80%的产线", "REPORT_PRODUCTION"),
+        ("成本超过预算10%的项目", "COST_QUERY"),
+        ("库存低于安全线的原料", "MATERIAL_LOW_STOCK_ALERT"),
+        ("温度超标的冷藏车", "COLD_CHAIN_TEMPERATURE"),
+        ("延迟3天以上的订单", "ORDER_LIST"),
+        ("在途超过7天的发货", "SHIPMENT_QUERY"),
+        ("频次高于3次的告警", "ALERT_LIST"),
+        ("加班超过20小时的员工", "ATTENDANCE_STATS"),
+        ("合格率低于85%的批次", "QUALITY_STATS"),
+        ("利润率在5%到10%之间", "REPORT_FINANCE"),
+        ("采购额10万以上的供应商", "SUPPLIER_LIST"),
+        ("产能利用率50%以下的设备", "EQUIPMENT_STATS"),
+        ("库龄超过90天的物料", "MATERIAL_EXPIRED_QUERY"),
+        ("发货量最大的前5个客户", "SHIPMENT_BY_CUSTOMER"),
+        ("温控范围-18到-25度", "COLD_CHAIN_TEMPERATURE"),
+    ],
+    # --- Z5: Negation redirect (否定重定向) → second clause intent ---
+    "NEGATION_REDIRECT": [
+        ("不是查库存，是查订单", "ORDER_LIST"),
+        ("我不是要打卡，我是查考勤", "ATTENDANCE_HISTORY"),
+        ("别给我看设备，我要看告警", "ALERT_LIST"),
+        ("不看生产数据，看财务的", "REPORT_FINANCE"),
+        ("不要创建，我只是想查一下", "PROCESSING_BATCH_LIST"),
+        ("我说的不是供应商，是客户", "CUSTOMER_LIST"),
+        ("不是质检，是质量统计", "QUALITY_STATS"),
+        ("我不查库存，我查批次", "PROCESSING_BATCH_LIST"),
+        ("不要报表，给我看明细", "PROCESSING_BATCH_DETAIL"),
+        ("不是今天的，查上个月的", "REPORT_PRODUCTION"),
+        ("不是设备告警，是质检问题", "QUALITY_CHECK_QUERY"),
+        ("别查库存了，看看排产", "SCHEDULING_LIST"),
+        ("不是出库，是入库记录", "MATERIAL_BATCH_QUERY"),
+        ("我不要看KPI，我要看产量", "REPORT_PRODUCTION"),
+        ("不是采购，我说的是销售", "ORDER_LIST"),
+        ("不要质检报告，给我看产量报告", "REPORT_PRODUCTION"),
+        ("不查设备了，看看考勤", "ATTENDANCE_TODAY"),
+        ("不是这个供应商，换个供应商查", "SUPPLIER_SEARCH"),
+        ("别看告警了，查一下发货", "SHIPMENT_QUERY"),
+        ("不是这批货，查另一批", "PROCESSING_BATCH_LIST"),
+        ("不是整体数据，分部门看", "ATTENDANCE_STATS_BY_DEPT"),
+        ("别看月度的，给我看周报", "REPORT_PRODUCTION"),
+        ("不要饼图，换成柱状图看", "REPORT_PRODUCTION"),
+        ("不是查客户，是查供应商", "SUPPLIER_LIST"),
+        ("不要自动排产，手动排", "SCHEDULING_SET_MANUAL"),
+        ("不是当前批次，是历史批次", "PROCESSING_BATCH_LIST"),
+        ("不看效率，看成本", "COST_QUERY"),
+        ("不是设备状态，是维保记录", "EQUIPMENT_MAINTENANCE"),
+        ("不要删除，我要修改", "ORDER_UPDATE"),
+        ("不是按日期查，按客户查", "SHIPMENT_BY_CUSTOMER"),
+    ],
+    # --- AB1: Passive voice (被动句) ---
+    "PASSIVE": [
+        ("被退回的原材料有哪些", "MATERIAL_BATCH_QUERY"),
+        ("被暂停的生产批次", "PROCESSING_BATCH_LIST"),
+        ("被客户取消的订单", "ORDER_LIST"),
+        ("被系统告警的设备", "ALERT_LIST"),
+        ("被质检判为不合格的批次", "QUALITY_CHECK_QUERY"),
+        ("被供应商延迟的采购订单", "PROCUREMENT_LIST"),
+        ("被冻结的库存", "MATERIAL_BATCH_QUERY"),
+        ("被标记为过期的原料", "MATERIAL_EXPIRED_QUERY"),
+        ("被列入黑名单的供应商", "SUPPLIER_LIST"),
+        ("被投诉的产品批次", "QUALITY_CHECK_QUERY"),
+        ("被分配到A车间的工人", "PROCESSING_BATCH_WORKERS"),
+        ("被安排加班的员工", "ATTENDANCE_STATS"),
+        ("被退货的产品", "SHIPMENT_QUERY"),
+        ("被调整过的排产计划", "SCHEDULING_LIST"),
+        ("被暂停维修的设备", "EQUIPMENT_MAINTENANCE"),
+        ("被标记为紧急的告警", "ALERT_ACTIVE"),
+        ("被审批通过的采购单", "PROCUREMENT_LIST"),
+        ("被安排了质检的批次", "QUALITY_CHECK_QUERY"),
+        ("被扣了绩效的员工", "ATTENDANCE_STATS"),
+        ("被降级的供应商", "SUPPLIER_EVALUATE"),
+        ("被预留的原材料", "MATERIAL_BATCH_RESERVE"),
+        ("被召回的产品批次", "QUALITY_CHECK_QUERY"),
+        ("被取消的发货计划", "SHIPMENT_QUERY"),
+        ("被修改过的订单", "ORDER_LIST"),
+        ("被系统自动创建的批次", "PROCESSING_BATCH_LIST"),
+        ("被预警的低库存物料", "MATERIAL_LOW_STOCK_ALERT"),
+        ("被拒收的进货", "MATERIAL_BATCH_QUERY"),
+        ("被锁定的账号", "USER_DISABLE"),
+        ("被暂停的自动排产", "SCHEDULING_SET_DISABLED"),
+        ("被标记异常的考勤记录", "ATTENDANCE_ANOMALY"),
+    ],
+    # --- AB2: Topic-comment structure (话题-述题) ---
+    "TOPIC_COMMENT": [
+        ("库存嘛，查一下", "MATERIAL_BATCH_QUERY"),
+        ("订单的话，最近有多少", "ORDER_LIST"),
+        ("质检这块，怎么样了", "QUALITY_CHECK_QUERY"),
+        ("设备那边，有没有问题", "EQUIPMENT_STATUS_QUERY"),
+        ("考勤嘛，帮我看看", "ATTENDANCE_HISTORY"),
+        ("排班的话，明天安排好了没", "SCHEDULING_LIST"),
+        ("生产那块，进度怎样了", "PROCESSING_BATCH_LIST"),
+        ("告警这边，处理得怎么样", "ALERT_LIST"),
+        ("发货嘛，催催", "SHIPMENT_QUERY"),
+        ("供应商这块，评分怎么样", "SUPPLIER_EVALUATE"),
+        ("成本方面，这个月超没超", "COST_QUERY"),
+        ("原材料嘛，够不够用", "MATERIAL_BATCH_QUERY"),
+        ("客户那边，有没有新的", "CUSTOMER_LIST"),
+        ("财务嘛，月底了看看", "REPORT_FINANCE"),
+        ("产量方面，达标了没", "REPORT_PRODUCTION"),
+        ("采购这块，有没有新单", "PROCUREMENT_LIST"),
+        ("冷链这边，温度正常吗", "COLD_CHAIN_TEMPERATURE"),
+        ("溯源嘛，查查这批货", "TRACE_BATCH"),
+        ("效率方面，提高了没", "REPORT_EFFICIENCY"),
+        ("人事那块，新招了几个", "ATTENDANCE_STATS"),
+        ("报表嘛，老板要看", "REPORT_DASHBOARD_OVERVIEW"),
+        ("维修这块，安排了没", "EQUIPMENT_MAINTENANCE"),
+        ("盘点嘛，做一下", "MATERIAL_BATCH_QUERY"),
+        ("打卡嘛，帮我签一下", "CLOCK_IN"),
+        ("质量方面，合格率怎样", "QUALITY_STATS"),
+        ("物流嘛，到哪了", "SHIPMENT_QUERY"),
+        ("排产的话，明天做什么", "SCHEDULING_LIST"),
+        ("库房这边，满不满", "MATERIAL_BATCH_QUERY"),
+        ("绩效嘛，这个月怎么算", "ATTENDANCE_STATS"),
+        ("设备保养，该做了吧", "EQUIPMENT_MAINTENANCE"),
+    ],
+    # --- AB5: Sentence-final particles (句末语气词) ---
+    "PARTICLES": [
+        ("库存查一下嘛", "MATERIAL_BATCH_QUERY"),
+        ("帮我打个卡啦", "CLOCK_IN"),
+        ("发货呗，还等什么", "SHIPMENT_CREATE"),
+        ("质检结果出来了咯", "QUALITY_CHECK_QUERY"),
+        ("生产进度嘛，看看就行", "PROCESSING_BATCH_LIST"),
+        ("告警处理掉算了", "ALERT_ACTIVE"),
+        ("查个库存呗", "MATERIAL_BATCH_QUERY"),
+        ("看看订单呗", "ORDER_LIST"),
+        ("打个卡咯", "CLOCK_IN"),
+        ("出个报表嘛", "REPORT_PRODUCTION"),
+        ("查一下设备吧", "EQUIPMENT_STATUS_QUERY"),
+        ("帮忙看看考勤啦", "ATTENDANCE_TODAY"),
+        ("排产安排下呗", "SCHEDULING_LIST"),
+        ("采购单下了呀", "PROCUREMENT_LIST"),
+        ("温度看一下嘛", "COLD_CHAIN_TEMPERATURE"),
+        ("告警帮忙处理啊", "ALERT_LIST"),
+        ("供应商评估一下嘛", "SUPPLIER_EVALUATE"),
+        ("发货赶紧安排呗", "SHIPMENT_CREATE"),
+        ("成本算一下咯", "COST_QUERY"),
+        ("质检做一下嘛", "QUALITY_CHECK_EXECUTE"),
+        ("客户联系一下呗", "CUSTOMER_LIST"),
+        ("绩效看看嘛", "ATTENDANCE_STATS"),
+        ("报表拉一下呗", "REPORT_DASHBOARD_OVERVIEW"),
+        ("批次信息查查嘛", "PROCESSING_BATCH_DETAIL"),
+        ("维修安排下呗", "EQUIPMENT_MAINTENANCE"),
+        ("签到一下嘛", "CLOCK_IN"),
+        ("产量统计下呗", "REPORT_PRODUCTION"),
+        ("财务看看啦", "REPORT_FINANCE"),
+        ("物料够不够啊", "MATERIAL_BATCH_QUERY"),
+        ("设备保养了没呀", "EQUIPMENT_MAINTENANCE"),
+    ],
+    # --- AB6: Causative constructions (使役/让字句) ---
+    "CAUSATIVE": [
+        ("让设备停下来", "EQUIPMENT_STOP"),
+        ("叫张三去打卡", "CLOCK_IN"),
+        ("让仓库备一批猪肉", "MATERIAL_BATCH_CREATE"),
+        ("叫质检员去检一下那批货", "QUALITY_CHECK_EXECUTE"),
+        ("让排班系统自动跑一下", "SCHEDULING_SET_AUTO"),
+        ("让机器先停一下", "EQUIPMENT_STOP"),
+        ("叫他们把货发了", "SHIPMENT_CREATE"),
+        ("让采购部下单", "PROCUREMENT_LIST"),
+        ("使设备恢复运行", "EQUIPMENT_START"),
+        ("令生产暂停", "PROCESSING_BATCH_PAUSE"),
+        ("让系统重新计算", "REPORT_PRODUCTION"),
+        ("叫工人去车间", "PROCESSING_WORKER_ASSIGN"),
+        ("让告警静音", "ALERT_ACTIVE"),
+        ("叫他查一下库存", "MATERIAL_BATCH_QUERY"),
+        ("让维修工去看看设备", "EQUIPMENT_MAINTENANCE"),
+        ("使产线恢复", "PROCESSING_BATCH_RESUME"),
+        ("让财务出个报表", "REPORT_FINANCE"),
+        ("叫仓管清点一下", "MATERIAL_BATCH_QUERY"),
+        ("让质检赶紧出结果", "QUALITY_CHECK_QUERY"),
+        ("叫他们准备发货", "SHIPMENT_CREATE"),
+        ("让供应商赶紧送货", "SUPPLIER_EVALUATE"),
+        ("叫人来处理告警", "ALERT_LIST"),
+        ("让系统自动排产", "SCHEDULING_SET_AUTO"),
+        ("叫他去签到", "CLOCK_IN"),
+        ("让老板看看报表", "REPORT_DASHBOARD_OVERVIEW"),
+    ],
+    # --- W1: Typos / phonetic errors (错别字) ---
+    "TYPOS": [
+        ("库纯有多少", "MATERIAL_BATCH_QUERY"),
+        ("酷存查一下", "MATERIAL_BATCH_QUERY"),
+        ("定单列表", "ORDER_LIST"),
+        ("射备状态", "EQUIPMENT_STATUS_QUERY"),
+        ("制检报告", "QUALITY_CHECK_QUERY"),
+        ("考琴数据", "ATTENDANCE_STATS"),
+        ("声产批次", "PROCESSING_BATCH_LIST"),
+        ("才购订单", "PROCUREMENT_LIST"),
+        ("同计数据", "REPORT_PRODUCTION"),
+        ("报标拉一下", "REPORT_PRODUCTION"),
+        ("签道了没", "CLOCK_IN"),
+        ("大卡打了没", "CLOCK_IN"),
+        ("发祸情况", "SHIPMENT_QUERY"),
+        ("公应商列表", "SUPPLIER_LIST"),
+        ("苍库温度", "COLD_CHAIN_TEMPERATURE"),
+        ("牌产计划", "SCHEDULING_LIST"),
+        ("包养设备", "EQUIPMENT_MAINTENANCE"),
+        ("诉源信息", "TRACE_BATCH"),
+        ("记效数据", "ATTENDANCE_STATS"),
+        ("工需流程", "PROCESSING_BATCH_DETAIL"),
+        ("版次安排", "SCHEDULING_LIST"),
+        ("判点库存", "MATERIAL_BATCH_QUERY"),
+        ("身核通过了没", "ORDER_UPDATE"),
+        ("兼控数据", "EQUIPMENT_STATUS_QUERY"),
+        ("乘本分析", "COST_QUERY"),
+    ],
+    # --- Z1: Pronoun / anaphora (代词回指) ---
+    "PRONOUN": [
+        ("上一个批次的详情", "PROCESSING_BATCH_DETAIL"),
+        ("刚才那个订单发货了吗", "ORDER_STATUS"),
+        ("再查一下那个供应商", "SUPPLIER_SEARCH"),
+        ("还是那个批次，看看质检结果", "QUALITY_CHECK_QUERY"),
+        ("同一个的出库记录呢", "MATERIAL_BATCH_QUERY"),
+        ("那批货到了没", "SHIPMENT_QUERY"),
+        ("这台设备什么型号", "EQUIPMENT_DETAIL"),
+        ("上次的报表再拉一份", "REPORT_PRODUCTION"),
+        ("那个告警处理了没", "ALERT_ACTIVE"),
+        ("之前那个客户又来了", "CUSTOMER_SEARCH"),
+        ("这个员工请假了吗", "ATTENDANCE_STATUS"),
+        ("刚才说的那个成本数据", "COST_QUERY"),
+        ("那条产线的效率", "REPORT_EFFICIENCY"),
+        ("上次检测的那批原料", "QUALITY_CHECK_QUERY"),
+        ("之前排的那个班", "SCHEDULING_LIST"),
+        ("那个采购单审批了没", "PROCUREMENT_LIST"),
+        ("这个月的财务数据", "REPORT_FINANCE"),
+        ("刚才查的那个库存", "MATERIAL_BATCH_QUERY"),
+        ("那个维修工单完成了吗", "EQUIPMENT_MAINTENANCE"),
+        ("上一次发货的记录", "SHIPMENT_QUERY"),
+        ("之前说的那个问题", "QUALITY_CHECK_QUERY"),
+        ("那位供应商的评分", "SUPPLIER_EVALUATE"),
+        ("这批原料的溯源", "TRACE_BATCH"),
+        ("昨天查的那个数据", "REPORT_DASHBOARD_OVERVIEW"),
+        ("刚才那个不合格品", "QUALITY_CRITICAL_ITEMS"),
+    ],
+    # --- Z3-Z4: Abbreviations / industry jargon (缩写/术语) ---
+    "ABBREVIATIONS": [
+        ("KPI看一下", "REPORT_KPI"),
+        ("OA审批记录", "ORDER_LIST"),
+        ("ERP里的库存数据", "MATERIAL_BATCH_QUERY"),
+        ("SOP流程查询", "FOOD_KNOWLEDGE_QUERY"),
+        ("QC报告拉一下", "QUALITY_CHECK_QUERY"),
+        ("SKU库存明细", "MATERIAL_BATCH_QUERY"),
+        ("WIP在制品数量", "PROCESSING_BATCH_LIST"),
+        ("OEE设备综合效率", "EQUIPMENT_STATS"),
+        ("BOM清单查询", "MATERIAL_BATCH_QUERY"),
+        ("MOQ是多少", "SUPPLIER_EVALUATE"),
+        ("FOB价格查询", "COST_QUERY"),
+        ("FIFO先进先出", "MATERIAL_FIFO_RECOMMEND"),
+        ("MRP物料需求计算", "MRP_CALCULATION"),
+        ("CRM客户管理", "CUSTOMER_LIST"),
+        ("IoT设备数据", "EQUIPMENT_STATUS_QUERY"),
+        ("AGV运行状态", "EQUIPMENT_STATUS_QUERY"),
+        ("PLC控制器", "EQUIPMENT_DETAIL"),
+        ("HACCP检查", "QUALITY_CHECK_QUERY"),
+        ("GMP标准", "FOOD_KNOWLEDGE_QUERY"),
+        ("SCM数据", "REPORT_DASHBOARD_OVERVIEW"),
+        ("EHS安全记录", "FOOD_KNOWLEDGE_QUERY"),
+        ("PDCA循环", "QUALITY_STATS"),
+        ("SPC控制图", "QUALITY_STATS"),
+        ("TPM设备管理", "EQUIPMENT_MAINTENANCE"),
+        ("DOE实验设计", "QUALITY_CHECK_QUERY"),
+        ("RMA退货处理", "SHIPMENT_QUERY"),
+        ("VMI供应商库存", "SUPPLIER_LIST"),
+        ("JIT准时制", "SCHEDULING_LIST"),
+        ("TQM全面质量", "QUALITY_STATS"),
+        ("AQL抽检标准", "QUALITY_CHECK_EXECUTE"),
+    ],
+    # --- AA9: Hypothetical / conditional (假设条件) ---
+    "HYPOTHETICAL": [
+        ("如果明天产量翻倍需要多少原料", "MATERIAL_BATCH_QUERY"),
+        ("万一冷库断电怎么办", "FOOD_KNOWLEDGE_QUERY"),
+        ("假如供应商延迟交货影响大吗", "SUPPLIER_EVALUATE"),
+        ("要是质检不通过这批货怎么处理", "FOOD_KNOWLEDGE_QUERY"),
+        ("如果新增一条产线需要多少人", "SCHEDULING_LIST"),
+        ("假如停电了设备怎么保护", "FOOD_KNOWLEDGE_QUERY"),
+        ("万一原料不够怎么调配", "MATERIAL_LOW_STOCK_ALERT"),
+        ("如果客户退货怎么处理", "FOOD_KNOWLEDGE_QUERY"),
+        ("要是设备故障率升高怎么办", "FOOD_KNOWLEDGE_QUERY"),
+        ("假设产能提升50%需要什么", "FOOD_KNOWLEDGE_QUERY"),
+        ("如果温度超标食品还能用吗", "FOOD_KNOWLEDGE_QUERY"),
+        ("万一原料被污染了怎么处理", "FOOD_KNOWLEDGE_QUERY"),
+        ("假如订单量翻倍能接吗", "SCHEDULING_LIST"),
+        ("如果质检标准提高影响产量吗", "FOOD_KNOWLEDGE_QUERY"),
+        ("要是仓库满了怎么办", "FOOD_KNOWLEDGE_QUERY"),
+        ("假设增加一个班次怎么排", "SCHEDULING_LIST"),
+        ("如果供应商涨价怎么应对", "FOOD_KNOWLEDGE_QUERY"),
+        ("万一系统崩溃数据丢失怎么办", "FOOD_KNOWLEDGE_QUERY"),
+        ("假如员工大量请假怎么排班", "SCHEDULING_LIST"),
+        ("如果冷链中断超过2小时", "FOOD_KNOWLEDGE_QUERY"),
+        ("要是发现食品安全问题", "FOOD_KNOWLEDGE_QUERY"),
+        ("假设原材料涨价30%", "COST_QUERY"),
+        ("如果设备突然停机", "FOOD_KNOWLEDGE_QUERY"),
+        ("万一批次混淆了怎么追溯", "FOOD_KNOWLEDGE_QUERY"),
+        ("要是审核不通过怎么改", "FOOD_KNOWLEDGE_QUERY"),
+    ],
+    # --- AB15: Comparative / superlative (比较级) ---
+    "COMPARATIVE": [
+        ("产量最高的产线", "REPORT_PRODUCTION"),
+        ("合格率最好的车间", "QUALITY_STATS"),
+        ("库存最多的原料", "MATERIAL_BATCH_QUERY"),
+        ("订单金额最大的客户", "CUSTOMER_STATS"),
+        ("最近一周产量最高的是哪天", "REPORT_PRODUCTION"),
+        ("效率最高的设备", "EQUIPMENT_STATS"),
+        ("评分最高的供应商", "SUPPLIER_RANKING"),
+        ("出勤率最低的部门", "ATTENDANCE_STATS_BY_DEPT"),
+        ("不合格率最高的产品", "QUALITY_STATS"),
+        ("发货最多的是哪个客户", "SHIPMENT_BY_CUSTOMER"),
+        ("成本最高的环节", "COST_QUERY"),
+        ("用量最大的原料", "MATERIAL_BATCH_QUERY"),
+        ("告警最多的设备", "ALERT_BY_EQUIPMENT"),
+        ("最近哪天产量最低", "REPORT_PRODUCTION"),
+        ("哪个供应商价格最低", "SUPPLIER_RANKING"),
+        ("产能利用率最高的是哪条线", "REPORT_EFFICIENCY"),
+        ("废品率最高的工序", "QUALITY_STATS"),
+        ("配送最快的物流", "SHIPMENT_STATS"),
+        ("绩效最好的员工", "ATTENDANCE_STATS"),
+        ("库龄最长的物料", "MATERIAL_EXPIRED_QUERY"),
+        ("哪个月的销售额最高", "REPORT_KPI"),
+        ("最大的客户是谁", "CUSTOMER_STATS"),
+        ("产量比上个月高了多少", "REPORT_PRODUCTION"),
+        ("今天的产量比昨天多吗", "REPORT_PRODUCTION"),
+        ("这个月比上个月好吗", "REPORT_KPI"),
+        ("哪条线的效率更高", "REPORT_EFFICIENCY"),
+        ("哪个供应商更靠谱", "SUPPLIER_EVALUATE"),
+        ("质检合格率有没有提高", "QUALITY_STATS"),
+        ("成本比预算高还是低", "COST_QUERY"),
+        ("库存周转率最高的", "REPORT_INVENTORY"),
+    ],
+    # --- AA12: Verb-noun domain collision (动名词冲突) ---
+    "VERB_NOUN_COLLISION": [
+        ("检测设备是否在线", "EQUIPMENT_STATUS_QUERY"),
+        ("生产检测报告", "QUALITY_CHECK_QUERY"),
+        ("采购部门的考勤", "ATTENDANCE_STATS_BY_DEPT"),
+        ("设备维修订单", "EQUIPMENT_MAINTENANCE"),
+        ("加工标准查询", "FOOD_KNOWLEDGE_QUERY"),
+        ("出库检验记录", "QUALITY_CHECK_QUERY"),
+        ("创建时间查询", "PROCESSING_BATCH_LIST"),
+        ("发货检验报告", "QUALITY_CHECK_QUERY"),
+        ("生产安全标准", "FOOD_KNOWLEDGE_QUERY"),
+        ("质检生产线", "EQUIPMENT_STATUS_QUERY"),
+        ("采购入库记录", "MATERIAL_BATCH_QUERY"),
+        ("订单生产进度", "PROCESSING_BATCH_LIST"),
+        ("维修采购清单", "PROCUREMENT_LIST"),
+        ("包装质检标准", "FOOD_KNOWLEDGE_QUERY"),
+        ("物流配送计划", "SHIPMENT_QUERY"),
+        ("仓储管理报表", "REPORT_INVENTORY"),
+        ("设备采购成本", "COST_QUERY"),
+        ("生产线排产", "SCHEDULING_LIST"),
+        ("质检审核流程", "QUALITY_CHECK_QUERY"),
+        ("供应商采购记录", "PROCUREMENT_LIST"),
+        ("客户订单统计", "ORDER_LIST"),
+        ("设备运行报告", "EQUIPMENT_STATS"),
+        ("人工成本统计", "COST_QUERY"),
+        ("原料入库检测", "QUALITY_CHECK_EXECUTE"),
+        ("成品出库记录", "SHIPMENT_QUERY"),
+        ("维修保养计划", "EQUIPMENT_MAINTENANCE"),
+        ("生产批次追溯", "TRACE_BATCH"),
+        ("采购审批状态", "PROCUREMENT_LIST"),
+        ("设备巡检记录", "EQUIPMENT_MAINTENANCE"),
+        ("仓库盘点记录", "MATERIAL_BATCH_QUERY"),
+    ],
+}
+
+# ===========================================================================
 # Test/placeholder intents to exclude
 # ===========================================================================
 EXCLUDE_PATTERNS = [
@@ -822,6 +1464,16 @@ def generate_training_data():
     intents = [i for i in intents if not should_exclude(i['intent_code'])]
     print(f"After filtering test/placeholder: {len(intents)} intents")
 
+    # --- Inject synthetic intents for new classes ---
+    NEW_SYNTHETIC_INTENTS = [
+        {"intent_code": "OUT_OF_DOMAIN", "intent_name": "域外无关输入", "keywords": [], "negative_keywords": []},
+        {"intent_code": "CONTEXT_CONTINUE", "intent_name": "上下文继续", "keywords": [], "negative_keywords": []},
+    ]
+    for syn_intent in NEW_SYNTHETIC_INTENTS:
+        if not any(i['intent_code'] == syn_intent['intent_code'] for i in intents):
+            intents.append(syn_intent)
+            print(f"  + Added synthetic intent: {syn_intent['intent_code']}")
+
     # Build label mapping (sorted for determinism)
     label_to_id = {}
     for i, intent in enumerate(sorted(intents, key=lambda x: x['intent_code'])):
@@ -861,6 +1513,12 @@ def generate_training_data():
     all_samples = []
     stats = {"total": 0, "per_intent": {}, "by_category": defaultdict(int)}
 
+    # --- Pre-collect pattern augmentation samples by target intent ---
+    pattern_aug_by_label = defaultdict(list)
+    for pattern_name, pairs in PATTERN_AUGMENTATION.items():
+        for text, label in pairs:
+            pattern_aug_by_label[label].append(text)
+
     for intent in intents:
         code = intent['intent_code']
         name = intent['intent_name']
@@ -868,6 +1526,38 @@ def generate_training_data():
         category = get_category_prefix(code)
 
         intent_samples = set()
+
+        # --- NEW: Handle OUT_OF_DOMAIN ---
+        if code == "OUT_OF_DOMAIN":
+            intent_samples.update(OUT_OF_DOMAIN_SAMPLES)
+            # Add hard negatives for other intents (these are NOT OUT_OF_DOMAIN)
+            # The OUT_OF_DOMAIN samples are already set above
+            count = len(intent_samples)
+            intent_samples_list = list(intent_samples)
+            for sample_text in intent_samples_list:
+                all_samples.append({"text": sample_text, "label": code})
+            # Also add hard negatives to their correct intents
+            for text, label in OUT_OF_DOMAIN_HARD_NEGATIVES:
+                all_samples.append({"text": text, "label": label})
+            stats["per_intent"][code] = count
+            stats["total"] += count
+            stats["by_category"]["OUT"] += count
+            continue
+
+        # --- NEW: Handle CONTEXT_CONTINUE ---
+        if code == "CONTEXT_CONTINUE":
+            intent_samples.update(CONTEXT_CONTINUE_SAMPLES)
+            count = len(intent_samples)
+            intent_samples_list = list(intent_samples)
+            for sample_text in intent_samples_list:
+                all_samples.append({"text": sample_text, "label": code})
+            # Also add hard negatives to their correct intents
+            for text, label in CONTEXT_CONTINUE_HARD_NEGATIVES:
+                all_samples.append({"text": text, "label": label})
+            stats["per_intent"][code] = count
+            stats["total"] += count
+            stats["by_category"]["CONTEXT"] += count
+            continue
 
         # --- A. Keyword-based augmentation ---
         for kw in keywords:
@@ -898,6 +1588,10 @@ def generate_training_data():
         if code in cross_neg_by_label:
             for neg_text in cross_neg_by_label[code][:10]:
                 intent_samples.add(neg_text)
+
+        # --- E2. Pattern augmentation samples (dialect, rhetorical, etc.) ---
+        if code in pattern_aug_by_label:
+            intent_samples.update(pattern_aug_by_label[code])
 
         # --- F. Additional synonym + template combos to reach minimum ---
         # Generate more samples if we are below minimum

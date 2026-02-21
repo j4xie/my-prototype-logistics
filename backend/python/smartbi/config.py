@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     max_self_correction_rounds: int = 3  # Max rounds for self-correction loop
     use_llm_first: bool = True  # Use LLM as default detection method instead of rules
 
+    # JWT Authentication (must match Java backend's cretas.jwt.secret)
+    jwt_secret: str = "cretas-food-traceability-system-secret-key-2025-do-not-change-in-production"
+    jwt_auth_enabled: bool = True
+
     # Service Configuration
     debug: bool = False
     port: int = 8083

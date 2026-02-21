@@ -1813,13 +1813,18 @@ public class AIIntentServiceImpl implements AIIntentService {
 
             // v16→v19: 语义路由无结果时，检查食品实体 + LLM消歧
             // 注意：使用originalInput（用户原始输入），不用processedInput（预处理后可能丢失食品词）
-            if (knowledgeBase.containsFoodEntity(originalInput)) {
+            // v30: 如果含数据查询指标词（还剩/库存/入库/出库/工人等），跳过食品兜底
+            if (knowledgeBase.containsFoodEntity(originalInput)
+                    && !knowledgeBase.containsDataQueryIndicator(originalInput)) {
                 // v19: 使用LLM消歧判断是食品知识还是工厂数据查询
                 if (disambiguationService != null && disambiguationService.isAvailable()) {
                     IntentDisambiguationService.DisambiguationResult disambResult =
                             disambiguationService.disambiguate(originalInput, "FOOD_ENTITY_FALLBACK");
-                    if (disambResult.getChoice() == IntentDisambiguationService.Choice.FACTORY_DATA) {
-                        log.info("v19 食品实体兜底消歧: input='{}' LLM判断为工厂数据({}), 跳过食品路由走LLM fallback",
+                    // v30: LLM失败时若含数据指标，视为工厂数据
+                    boolean treatAsFactoryData = disambResult.getChoice() == IntentDisambiguationService.Choice.FACTORY_DATA
+                            || (disambResult.isDefault() && knowledgeBase.containsDataQueryIndicator(originalInput));
+                    if (treatAsFactoryData) {
+                        log.info("v19/v30 食品实体兜底消歧: input='{}' 判断为工厂数据({}), 跳过食品路由走LLM fallback",
                                 originalInput, disambResult.getReason());
                         // 不路由到食品知识，继续走LLM fallback
                     } else {
@@ -1969,15 +1974,20 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
 
             // ========== v16→v19: 食品实体兜底 + LLM消歧 ==========
+            // v30: 含数据查询指标词时跳过食品兜底，让 classifier/LLM 正确路由
             try {
-                if (knowledgeBase.containsFoodEntity(userInput)) {
+                if (knowledgeBase.containsFoodEntity(userInput)
+                        && !knowledgeBase.containsDataQueryIndicator(userInput)) {
                     // v19: 使用LLM消歧
                     boolean shouldRouteToFood = true;
                     if (disambiguationService != null && disambiguationService.isAvailable()) {
                         IntentDisambiguationService.DisambiguationResult disambResult =
                                 disambiguationService.disambiguate(userInput, "FINAL_FOOD_FALLBACK");
-                        if (disambResult.getChoice() == IntentDisambiguationService.Choice.FACTORY_DATA) {
-                            log.info("v19 最终食品兜底消歧: input='{}' LLM判断为工厂数据({}), 跳过食品路由",
+                        // v30: LLM失败时若含数据指标，视为工厂数据
+                        boolean isFactoryData = disambResult.getChoice() == IntentDisambiguationService.Choice.FACTORY_DATA
+                                || (disambResult.isDefault() && knowledgeBase.containsDataQueryIndicator(userInput));
+                        if (isFactoryData) {
+                            log.info("v19/v30 最终食品兜底消歧: input='{}' 判断为工厂数据({}), 跳过食品路由",
                                     userInput, disambResult.getReason());
                             shouldRouteToFood = false;
                         }
@@ -3000,6 +3010,45 @@ public class AIIntentServiceImpl implements AIIntentService {
 
         String normalized = userInput.trim().toLowerCase();
 
+        // v27: 纯空白/纯标点检测 — 去除所有非字母/数字后为空 → OUT_OF_DOMAIN
+        String noPunct = normalized.replaceAll("[^\\p{L}\\p{N}]", "");
+        if (noPunct.isEmpty()) {
+            log.info("v27 纯标点/空白输入 → 澄清: input='{}'", userInput);
+            return buildVagueResult(userInput, "您的输入似乎不包含有效内容，请描述您想要执行的操作。\n例如：查看今天的订单、查询库存情况");
+        }
+
+        // v27: 重复单字检测 — "查查查", "啊啊啊啊" (同一字符重复3+次构成整个输入)
+        if (noPunct.length() >= 3) {
+            char firstChar = noPunct.charAt(0);
+            boolean allSame = true;
+            for (int i = 1; i < noPunct.length(); i++) {
+                if (noPunct.charAt(i) != firstChar) { allSame = false; break; }
+            }
+            if (allSame) {
+                log.info("v27 重复单字输入 → 澄清: input='{}', char='{}'", userInput, firstChar);
+                return buildVagueResult(userInput, "您输入了重复的「" + firstChar + "」，请详细描述您想要做什么。\n例如：查看今天的订单、查询库存情况");
+            }
+        }
+
+        // v27: 重复词检测 — "库存库存库存" (同一词重复3+次构成整个输入)
+        if (noPunct.length() >= 4) {
+            for (int wordLen = 1; wordLen <= noPunct.length() / 3; wordLen++) {
+                String word = noPunct.substring(0, wordLen);
+                int repeatCount = noPunct.length() / wordLen;
+                if (noPunct.length() == wordLen * repeatCount && repeatCount >= 3
+                        && noPunct.equals(word.repeat(repeatCount))) {
+                    log.info("v27 重复词输入 → 澄清: input='{}', word='{}', repeats={}", userInput, word, repeatCount);
+                    return buildVagueResult(userInput, "您输入了重复的「" + word + "」，请更详细地描述。\n例如：查看" + word + "情况、" + word + "统计报表");
+                }
+            }
+        }
+
+        // v27: 符号包裹检测 — "！！！查！！！" → 去标点后重新检查，如果<=2字符 → 太短
+        if (noPunct.length() <= 2 && normalized.length() > noPunct.length() + 2) {
+            log.info("v27 符号包裹短输入 → 澄清: input='{}', core='{}'", userInput, noPunct);
+            return buildVagueResult(userInput, "您的输入「" + noPunct + "」太简短了，请详细描述您想要做什么。\n例如：查看今天的订单、查询库存情况");
+        }
+
         // v12.3: 业务关键词白名单 - 包含这些词的输入不触发澄清
         // 即使输入很短，只要包含明确的业务意图词，就应该尝试识别
         // v12.4: 扩展业务关键词白名单 - 200测试覆盖
@@ -3110,6 +3159,20 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         return null;
+    }
+
+    /**
+     * v27: 构建模糊输入澄清结果 (复用 REJECTED matchMethod)
+     */
+    private IntentMatchResult buildVagueResult(String userInput, String clarificationMessage) {
+        return IntentMatchResult.builder()
+                .bestMatch(null)
+                .confidence(0.0)
+                .matchMethod(MatchMethod.REJECTED)
+                .requiresConfirmation(true)
+                .clarificationQuestion(clarificationMessage)
+                .userInput(userInput)
+                .build();
     }
 
     /**
@@ -4555,6 +4618,14 @@ public class AIIntentServiceImpl implements AIIntentService {
                 log.info("v17.0 LLM消歧确认工厂数据: input='{}', 保留原意图 '{}'", originalInput, matchedIntent);
                 return null;
             }
+
+            // v30: LLM 失败(403/超时等)返回默认值时，如果输入含数据查询指标词，
+            // 不信任默认的FOOD_KNOWLEDGE，保留原短语匹配结果
+            if (disambResult.isDefault() && knowledgeBase.containsDataQueryIndicator(originalInput)) {
+                log.info("v30 LLM消歧失败但含数据指标: input='{}', 保留原意图 '{}' (reason={})",
+                        originalInput, matchedIntent, disambResult.getReason());
+                return null;
+            }
         }
 
         // LLM 判断为食品知识 或 LLM 不可用 → 跳转到 FOOD_KNOWLEDGE_QUERY
@@ -5451,13 +5522,22 @@ public class AIIntentServiceImpl implements AIIntentService {
      * 根据意图代码获取意图配置
      */
     private AIIntentConfig getIntentConfigByCode(String factoryId, String intentCode) {
-        // 先查工厂特定的
-        Optional<AIIntentConfig> config = intentRepository.findByFactoryIdAndIntentCode(factoryId, intentCode);
-        if (config.isPresent()) {
-            return config.get();
+        // v27b: 避免使用 findByFactoryIdAndIntentCode 的 JPQL (:factoryId IS NULL) 语法
+        // PostgreSQL 42P18 错误会毒化整个事务，导致后续所有 DB 操作级联失败
+        try {
+            // 先用简单的 findByIntentCode 查找（不涉及 IS NULL 参数问题）
+            Optional<AIIntentConfig> config = intentRepository.findByIntentCode(intentCode);
+            if (config.isPresent()) {
+                AIIntentConfig found = config.get();
+                // 如果是工厂特定的且匹配，或者是全局的，直接返回
+                if (found.getFactoryId() == null || found.getFactoryId().equals(factoryId)) {
+                    return found;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("v27b intent config lookup failed: intentCode={}, error={}", intentCode, e.getMessage());
         }
-        // 再查全局的
-        return intentRepository.findByFactoryIdAndIntentCode(null, intentCode).orElse(null);
+        return null;
     }
 
     /**

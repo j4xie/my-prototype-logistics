@@ -375,6 +375,10 @@ export type FAManagementStackParamList = {
   TransferDetail: { transferId: string };
   ArApOverview: undefined;
   PriceList: undefined;
+  ReturnOrderList: undefined;
+  ReturnOrderDetail: { returnId: string };
+  // 报工审批
+  WorkReportApproval: undefined;
 };
 
 export type FAProfileStackParamList = {

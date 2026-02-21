@@ -180,7 +180,8 @@ export class AuthService {
         factoryName: data.factoryName,
         department: data.profile?.department,
         position: data.profile?.position,
-        permissions: data.permissions
+        permissions: data.permissions,
+        factoryType: data.factoryType
       };
 
       // 构建tokens对象 - 从data中提取token信息
@@ -218,6 +219,7 @@ export class AuthService {
           factoryUser: {
             role: backendUser.roleCode as FactoryRole,
             factoryId: backendUser.factoryId!,
+            factoryType: (backendUser.factoryType || 'FACTORY').toUpperCase(),
             department: backendUser.department as Department,
             position: backendUser.position,
             permissions: backendUser.permissions?.features ?? []
@@ -541,6 +543,7 @@ export class AuthService {
             factoryUser: {
               role: backendUser.roleCode as FactoryRole,
               factoryId: backendUser.factoryId || '',
+              factoryType: (backendUser.factoryType || 'FACTORY').toUpperCase(),
               department: backendUser.department as Department,
               position: backendUser.position,
               permissions: []

@@ -17,6 +17,13 @@ public class UserMapper {
      * Entity 转 DTO
      */
     public UserDTO toDTO(User user) {
+        return toDTO(user, null);
+    }
+
+    /**
+     * Entity 转 DTO，附带工厂类型
+     */
+    public UserDTO toDTO(User user, String factoryType) {
         if (user == null) {
             return null;
         }
@@ -52,6 +59,7 @@ public class UserMapper {
                 .workMonths(user.getWorkMonths())
                 .contractRemainingDays(user.getContractRemainingDays())
                 .isContractExpiringSoon(user.isContractExpiringSoon())
+                .factoryType(factoryType != null ? factoryType : "FACTORY")
                 .build();
     }
 

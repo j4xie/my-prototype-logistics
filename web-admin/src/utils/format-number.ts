@@ -49,6 +49,16 @@ export function formatPlainNumber(value: number | null | undefined, decimals = 1
   return decPart ? `${sign}${formatted}.${decPart}` : `${sign}${formatted}`
 }
 
+/**
+ * Format axis label value (for ECharts yAxis/xAxis).
+ * Uses 万/亿 abbreviation with 0 decimals for compactness.
+ */
+export function formatAxisValue(value: number): string {
+  if (Math.abs(value) >= 100000000) return (value / 100000000).toFixed(1) + '亿'
+  if (Math.abs(value) >= 10000) return (value / 10000).toFixed(0) + '万'
+  return String(value)
+}
+
 export function formatCount(value: number | null | undefined): string {
   if (value == null || isNaN(value)) return '--'
   if (Math.abs(value) >= 100000000) return (value / 100000000).toFixed(1) + '亿'

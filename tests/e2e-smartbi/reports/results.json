@@ -60,18 +60,231 @@
     "workers": 1,
     "webServer": null
   },
-  "suites": [],
-  "errors": [
+  "suites": [
     {
-      "message": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments.",
-      "stack": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments."
+      "title": "smartbi-audit.spec.ts",
+      "file": "smartbi-audit.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "SmartBI 全量 E2E 审计",
+          "file": "smartbi-audit.spec.ts",
+          "line": 51,
+          "column": 15,
+          "specs": [
+            {
+              "title": "Step 1: 登录系统",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "audit",
+                  "projectName": "audit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f368ccdc852bf7ed3eb-2a5e5f5dc2c7a07500cc",
+              "file": "smartbi-audit.spec.ts",
+              "line": 56,
+              "column": 7
+            },
+            {
+              "title": "Step 2: 导航到 SmartBI 分析页",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "audit",
+                  "projectName": "audit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f368ccdc852bf7ed3eb-063b032b13b62de3b776",
+              "file": "smartbi-audit.spec.ts",
+              "line": 97,
+              "column": 7
+            },
+            {
+              "title": "Step 3: 上传 Test.xlsx",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "audit",
+                  "projectName": "audit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f368ccdc852bf7ed3eb-823df72ab4b64450e6b1",
+              "file": "smartbi-audit.spec.ts",
+              "line": 118,
+              "column": 7
+            },
+            {
+              "title": "Step 4: 等待 SSE 处理完成",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "audit",
+                  "projectName": "audit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f368ccdc852bf7ed3eb-7d3413878f2bfeda3b62",
+              "file": "smartbi-audit.spec.ts",
+              "line": 165,
+              "column": 7
+            },
+            {
+              "title": "Step 5: 逐 Sheet 验证",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "audit",
+                  "projectName": "audit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f368ccdc852bf7ed3eb-197acda4b807166ce5fc",
+              "file": "smartbi-audit.spec.ts",
+              "line": 231,
+              "column": 7
+            },
+            {
+              "title": "Step 6: 窗口 resize 响应测试",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "audit",
+                  "projectName": "audit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f368ccdc852bf7ed3eb-daee642efd9f9097f04c",
+              "file": "smartbi-audit.spec.ts",
+              "line": 352,
+              "column": 7
+            },
+            {
+              "title": "Step 7: 图表下钻测试",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "audit",
+                  "projectName": "audit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f368ccdc852bf7ed3eb-998c61cf17305f1981d3",
+              "file": "smartbi-audit.spec.ts",
+              "line": 388,
+              "column": 7
+            },
+            {
+              "title": "Step 8: 跨图表过滤联动测试",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "audit",
+                  "projectName": "audit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f368ccdc852bf7ed3eb-19deeb7b89758dc3f086",
+              "file": "smartbi-audit.spec.ts",
+              "line": 487,
+              "column": 7
+            },
+            {
+              "title": "Step 9: 历史批次恢复测试",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "audit",
+                  "projectName": "audit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f368ccdc852bf7ed3eb-a01acceda83f0ef4fa26",
+              "file": "smartbi-audit.spec.ts",
+              "line": 538,
+              "column": 7
+            },
+            {
+              "title": "Step 10: 综合分析（跨表分析）",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "audit",
+                  "projectName": "audit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f368ccdc852bf7ed3eb-0b0a9d080cbde170c23d",
+              "file": "smartbi-audit.spec.ts",
+              "line": 580,
+              "column": 7
+            }
+          ]
+        }
+      ]
     }
   ],
+  "errors": [],
   "stats": {
-    "startTime": "2026-02-19T20:20:55.891Z",
-    "duration": 14.694999999999936,
+    "startTime": "2026-02-20T20:39:12.238Z",
+    "duration": 35.284000000000106,
     "expected": 0,
-    "skipped": 0,
+    "skipped": 10,
     "unexpected": 0,
     "flaky": 0
   }

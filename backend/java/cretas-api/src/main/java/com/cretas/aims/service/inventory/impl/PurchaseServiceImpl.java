@@ -18,9 +18,11 @@ import com.cretas.aims.repository.SupplierRepository;
 import com.cretas.aims.repository.inventory.PurchaseOrderItemRepository;
 import com.cretas.aims.repository.inventory.PurchaseOrderRepository;
 import com.cretas.aims.repository.inventory.PurchaseReceiveRecordRepository;
+import com.cretas.aims.event.MaterialReceivedEvent;
 import com.cretas.aims.service.inventory.PurchaseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -46,6 +48,7 @@ public class PurchaseServiceImpl implements PurchaseService {
     private final RawMaterialTypeRepository materialTypeRepository;
     private final MaterialBatchRepository materialBatchRepository;
     private final com.cretas.aims.service.finance.ArApService arApService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public PurchaseServiceImpl(PurchaseOrderRepository purchaseOrderRepository,
                                PurchaseOrderItemRepository purchaseOrderItemRepository,
@@ -53,7 +56,8 @@ public class PurchaseServiceImpl implements PurchaseService {
                                SupplierRepository supplierRepository,
                                RawMaterialTypeRepository materialTypeRepository,
                                MaterialBatchRepository materialBatchRepository,
-                               com.cretas.aims.service.finance.ArApService arApService) {
+                               com.cretas.aims.service.finance.ArApService arApService,
+                               ApplicationEventPublisher applicationEventPublisher) {
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.purchaseOrderItemRepository = purchaseOrderItemRepository;
         this.receiveRecordRepository = receiveRecordRepository;
@@ -61,6 +65,7 @@ public class PurchaseServiceImpl implements PurchaseService {
         this.materialTypeRepository = materialTypeRepository;
         this.materialBatchRepository = materialBatchRepository;
         this.arApService = arApService;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     // ==================== 采购订单 ====================
@@ -336,6 +341,19 @@ public class PurchaseServiceImpl implements PurchaseService {
                 log.warn("应付自动挂账跳过(可能已存在): {}", e.getMessage());
             } catch (Exception e) {
                 log.error("应付自动挂账失败: receiveId={}", receiveId, e);
+            }
+        }
+
+        // 发布物料收货事件 → 触发供应链联动（检查PP原料到齐状态）
+        for (PurchaseReceiveItem item : record.getItems()) {
+            try {
+                BigDecimal qty = item.getReceivedQuantity() != null ? item.getReceivedQuantity() : BigDecimal.ZERO;
+                applicationEventPublisher.publishEvent(new MaterialReceivedEvent(
+                    this, factoryId, record.getPurchaseOrderId(),
+                    item.getMaterialTypeId(), qty));
+                log.info("已发布MaterialReceivedEvent: material={}, qty={}", item.getMaterialTypeId(), qty);
+            } catch (Exception e) {
+                log.error("发布MaterialReceivedEvent失败(不影响主流程): material={}", item.getMaterialTypeId(), e);
             }
         }
 

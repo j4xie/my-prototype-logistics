@@ -27,6 +27,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
+from auth_middleware import JWTAuthMiddleware
+
 # Import settings from smartbi config
 from smartbi.config import get_settings
 
@@ -50,7 +52,8 @@ from smartbi.api import (
     analysis_cache,
     ai_proxy,
     benchmark,
-    finance_extract
+    finance_extract,
+    data_sync
 )
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
@@ -236,6 +239,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# JWT Authentication Middleware
+# Uses pure ASGI middleware (not BaseHTTPMiddleware) for reliable interception.
+# Must be added AFTER CORS so CORS headers are set on 401 responses too.
+app.add_middleware(
+    JWTAuthMiddleware,
+    jwt_secret=settings.jwt_secret,
+    enabled=settings.jwt_auth_enabled,
+)
+
 # =====================================================
 # SmartBI API Routes
 # =====================================================
@@ -255,6 +267,10 @@ app.include_router(statistical.router, prefix="/api/statistical", tags=["Statist
 app.include_router(analysis_cache.router, prefix="/api/smartbi", tags=["Analysis Cache"])
 app.include_router(benchmark.router, prefix="/api/smartbi", tags=["Industry Benchmark"])
 app.include_router(finance_extract.router, prefix="/api/finance", tags=["Finance Extract"])
+
+# Optional: Data sync endpoint (auto-adaptation for system tables)
+if hasattr(data_sync, 'router') and data_sync.router is not None:
+    app.include_router(data_sync.router, prefix="/api/smartbi", tags=["Data Sync"])
 
 # =====================================================
 # AI Proxy Routes (called by Java backend)

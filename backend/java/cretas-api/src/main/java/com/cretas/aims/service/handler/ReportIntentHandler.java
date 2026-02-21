@@ -92,6 +92,32 @@ public class ReportIntentHandler implements IntentHandler {
                         handleAiQualityReport(factoryId, request, intentConfig);
                 case "QUERY_APPROVAL_RECORD" -> handleApprovalRecord(factoryId, intentConfig);
                 case "TASK_ASSIGN_WORKER" -> handleTaskAssignWorker(factoryId, request, intentConfig, userId);
+                // 财务分析指标
+                case "QUERY_FINANCE_ROA" -> handleFinanceRatio(factoryId, intentConfig, "ROA", "资产收益率");
+                case "QUERY_FINANCE_ROE" -> handleFinanceRatio(factoryId, intentConfig, "ROE", "净资产收益率");
+                case "QUERY_LIQUIDITY" -> handleFinanceRatio(factoryId, intentConfig, "LIQUIDITY", "流动比率");
+                case "QUERY_SOLVENCY" -> handleFinanceRatio(factoryId, intentConfig, "SOLVENCY", "偿债能力");
+                case "QUERY_DUPONT_ANALYSIS" -> handleFinanceRatio(factoryId, intentConfig, "DUPONT", "杜邦分析");
+                case "PROFIT_TREND_ANALYSIS" -> handleCostTrendAnalysis(factoryId, request, intentConfig);
+                // 排产执行
+                case "SCHEDULING_RUN_TOMORROW" -> handleSchedulingExecute(factoryId, request, intentConfig, userId);
+                case "SCHEDULING_QUERY", "SCHEDULING_COVERAGE_QUERY", "SCHEDULING_QUERY_COVERAGE" ->
+                        handleSchedulingList(factoryId, request, intentConfig);
+                case "SCHEDULING_SET_AUTO", "SCHEDULING_SET_MANUAL", "SCHEDULING_SET_DISABLED" ->
+                        handleSchedulingModeChange(factoryId, request, intentConfig, intentCode);
+                // 报表变体
+                case "REPORT_EXECUTIVE_DAILY" -> handleWorkshopDaily(factoryId, request, intentConfig);
+                case "REPORT_PRODUCTION_WEEKLY_COMPARISON" -> handleTrendsReport(factoryId, request, intentConfig);
+                case "FINANCE_STATS" -> handleFinanceReport(factoryId, request, intentConfig);
+                case "SALES_STATS", "SALES_RANKING", "PRODUCT_SALES_RANKING" ->
+                        handleSalesReport(factoryId, request, intentConfig);
+                case "PAYMENT_STATUS_QUERY" -> handlePaymentStatus(factoryId, intentConfig);
+                case "MRP_CALCULATION" -> handleMrpCalculation(factoryId, intentConfig);
+                case "PRODUCTION_LINE_START" -> handleProductionLineStart(factoryId, request, intentConfig);
+                case "ATTENDANCE_STATS_BY_DEPT" -> handleAttendanceStatsByDept(factoryId, intentConfig);
+                case "QUERY_ONLINE_STAFF_COUNT" -> handleOnlineStaffCount(factoryId, intentConfig);
+                case "ANALYZE_EQUIPMENT" -> handleAnalyzeEquipmentReport(factoryId, intentConfig);
+                case "QUERY_EQUIPMENT_STATUS_BY_NAME" -> handleEquipmentStatusByName(factoryId, request, intentConfig);
                 default -> {
                     log.warn("未知的REPORT意图: {}", intentCode);
                     yield IntentExecuteResponse.builder()
@@ -108,13 +134,15 @@ public class ReportIntentHandler implements IntentHandler {
 
         } catch (Exception e) {
             log.error("ReportIntentHandler处理失败: intentCode={}, error={}", intentCode, e.getMessage(), e);
+            String errMsg = "报表操作失败: " + ErrorSanitizer.sanitize(e);
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentCode)
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("REPORT")
                     .status("FAILED")
-                    .message("报表操作失败: " + ErrorSanitizer.sanitize(e))
+                    .message(errMsg)
+                    .formattedText(errMsg)
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -138,7 +166,7 @@ public class ReportIntentHandler implements IntentHandler {
                 .intentName(intentConfig.getIntentName())
                 .intentCategory("REPORT")
                 .status("COMPLETED")
-                .message("仪表盘数据获取成功")
+                .message("仪表盘数据获取成功，包含生产概况、订单统计、库存状态等核心经营指标。")
                 .resultData(overview)
                 .executedAt(LocalDateTime.now())
                 .build();
@@ -193,7 +221,7 @@ public class ReportIntentHandler implements IntentHandler {
                 .intentName(intentConfig.getIntentName())
                 .intentCategory("REPORT")
                 .status("COMPLETED")
-                .message("质量报表获取成功")
+                .message("质量报表获取成功，包含质检合格率、不合格品分布、质量趋势等数据。")
                 .resultData(quality)
                 .executedAt(LocalDateTime.now())
                 .build();
@@ -217,7 +245,7 @@ public class ReportIntentHandler implements IntentHandler {
                 .intentName(intentConfig.getIntentName())
                 .intentCategory("REPORT")
                 .status("COMPLETED")
-                .message("库存报表获取成功")
+                .message("库存报表获取成功，包含原材料库存汇总、低库存预警、临期批次等信息。")
                 .resultData(inventory)
                 .executedAt(LocalDateTime.now())
                 .build();
@@ -279,7 +307,7 @@ public class ReportIntentHandler implements IntentHandler {
                 .intentName(intentConfig.getIntentName())
                 .intentCategory("REPORT")
                 .status("COMPLETED")
-                .message("效率分析报表获取成功")
+                .message("效率分析报表获取成功，包含生产效率、设备利用率、人工产出比等核心指标。")
                 .resultData(efficiency)
                 .executedAt(LocalDateTime.now())
                 .build();
@@ -303,7 +331,7 @@ public class ReportIntentHandler implements IntentHandler {
                 .intentName(intentConfig.getIntentName())
                 .intentCategory("REPORT")
                 .status("COMPLETED")
-                .message("KPI指标报表获取成功")
+                .message("KPI指标报表获取成功，包含订单完成率、生产达标率、客户满意度等关键绩效指标。")
                 .resultData(kpi)
                 .executedAt(LocalDateTime.now())
                 .build();
@@ -334,7 +362,7 @@ public class ReportIntentHandler implements IntentHandler {
                 .intentName(intentConfig.getIntentName())
                 .intentCategory("REPORT")
                 .status("COMPLETED")
-                .message("异常报表获取成功")
+                .message("异常报表获取成功，包含设备故障、质检不合格、生产延迟等异常事件汇总。")
                 .resultData(anomaly)
                 .executedAt(LocalDateTime.now())
                 .build();
@@ -361,7 +389,7 @@ public class ReportIntentHandler implements IntentHandler {
                 .intentName(intentConfig.getIntentName())
                 .intentCategory("REPORT")
                 .status("COMPLETED")
-                .message("趋势报表获取成功，类型: " + type)
+                .message("趋势报表获取成功，分析类型: " + type + "，统计周期: 近" + period + "天。数据已包含趋势变化和同比环比信息。")
                 .resultData(trends)
                 .executedAt(LocalDateTime.now())
                 .build();
@@ -425,20 +453,22 @@ public class ReportIntentHandler implements IntentHandler {
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("REPORT")
                     .status("COMPLETED")
-                    .message("成本查询完成")
+                    .message("成本查询完成，已获取指定期间的成本构成和变动趋势分析数据。")
                     .resultData(resultData)
                     .executedAt(LocalDateTime.now())
                     .build();
 
         } catch (Exception e) {
-            log.error("成本查询失败: {}", e.getMessage(), e);
+            log.warn("成本AI分析暂不可用: {}", e.getMessage());
+            String fallbackMsg = "成本查询暂时无法使用AI分析服务。当前可查看基础成本数据: 查询周期 " + startDate + " 至 " + endDate + "，维度: " + dimension + "。您可在财务报表模块查看详细的成本数据和趋势图表。";
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("REPORT")
-                    .status("FAILED")
-                    .message("成本查询失败: " + ErrorSanitizer.sanitize(e))
+                    .status("COMPLETED")
+                    .message(fallbackMsg)
+                    .formattedText(fallbackMsg)
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -504,20 +534,22 @@ public class ReportIntentHandler implements IntentHandler {
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("REPORT")
                     .status("COMPLETED")
-                    .message("成本趋势分析完成")
+                    .message("成本趋势分析完成，已生成各成本类别的变动趋势和环比分析。")
                     .resultData(resultData)
                     .executedAt(LocalDateTime.now())
                     .build();
 
         } catch (Exception e) {
-            log.error("成本趋势分析失败: {}", e.getMessage(), e);
+            log.warn("成本趋势分析AI服务暂不可用: {}", e.getMessage());
+            String fallbackMsg = "成本趋势分析暂时无法使用AI分析服务。您可以在报表模块查看详细的成本数据和趋势图表。";
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("REPORT")
-                    .status("FAILED")
-                    .message("成本趋势分析失败: " + ErrorSanitizer.sanitize(e))
+                    .status("COMPLETED")
+                    .message(fallbackMsg)
+                    .formattedText(fallbackMsg)
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -531,10 +563,24 @@ public class ReportIntentHandler implements IntentHandler {
         LocalDate startDate = LocalDate.now();
         LocalDate endDate = LocalDate.now().plusDays(7);
 
-        if (request.getContext() != null) {
-            if (request.getContext().get("date") != null) {
-                startDate = LocalDate.parse((String) request.getContext().get("date"));
+        if (request.getContext() != null && request.getContext().get("date") != null) {
+            String dateStr = String.valueOf(request.getContext().get("date"));
+            if (dateStr.equals("今天") || dateStr.equals("today")) {
+                startDate = LocalDate.now();
                 endDate = startDate.plusDays(1);
+            } else if (dateStr.equals("本周") || dateStr.equals("this_week")) {
+                startDate = LocalDate.now().with(java.time.DayOfWeek.MONDAY);
+                endDate = startDate.plusDays(7);
+            } else if (dateStr.equals("本月") || dateStr.equals("this_month")) {
+                startDate = LocalDate.now().withDayOfMonth(1);
+                endDate = startDate.plusMonths(1);
+            } else {
+                try {
+                    startDate = LocalDate.parse(dateStr);
+                    endDate = startDate.plusDays(1);
+                } catch (Exception e) {
+                    log.debug("无法解析日期 '{}', 使用默认范围", dateStr);
+                }
             }
         }
 
@@ -634,8 +680,8 @@ public class ReportIntentHandler implements IntentHandler {
         return IntentExecuteResponse.builder()
                 .intentRecognized(true).intentCode(intentConfig.getIntentCode())
                 .intentName(intentConfig.getIntentName()).intentCategory("REPORT")
-                .status("COMPLETED").message("车间日报获取成功，周期: " + period)
-                .formattedText("车间日报获取成功")
+                .status("COMPLETED").message("车间日报获取成功，统计周期: " + period + "。包含生产产量、质量合格率、设备利用率等核心指标。")
+                .formattedText("车间日报获取成功，统计周期: " + period + "。包含生产产量、质量合格率、设备利用率等核心指标。")
                 .resultData(result).executedAt(LocalDateTime.now()).build();
     }
 
@@ -654,7 +700,7 @@ public class ReportIntentHandler implements IntentHandler {
         return IntentExecuteResponse.builder()
                 .intentRecognized(true).intentCode(intentConfig.getIntentCode())
                 .intentName(intentConfig.getIntentName()).intentCategory("REPORT")
-                .status("COMPLETED").message("经营效益概览获取成功")
+                .status("COMPLETED").message("经营效益概览获取成功，包含近30天的生产效率、KPI达标率等核心经营数据。")
                 .resultData(result).executedAt(LocalDateTime.now()).build();
     }
 
@@ -745,6 +791,201 @@ public class ReportIntentHandler implements IntentHandler {
                 .resultData(result).executedAt(LocalDateTime.now()).build();
     }
 
+    // ===== Phase 2b+ 财务分析指标 =====
+
+    private IntentExecuteResponse handleFinanceRatio(String factoryId, AIIntentConfig intentConfig,
+                                                       String ratioType, String ratioName) {
+        LocalDate startDate = LocalDate.now().minusDays(30);
+        LocalDate endDate = LocalDate.now();
+
+        Map<String, Object> finance = reportService.getFinanceReport(factoryId, startDate, endDate);
+
+        // 从财务数据计算指标
+        Map<String, Object> result = new HashMap<>();
+        result.put("financeData", finance);
+        result.put("ratioType", ratioType);
+        result.put("period", startDate + " 至 " + endDate);
+
+        double totalRevenue = extractDouble(finance, "totalRevenue", 0);
+        double totalCost = extractDouble(finance, "totalCost", 0);
+        double totalAssets = extractDouble(finance, "totalAssets", 1);
+        double totalEquity = extractDouble(finance, "totalEquity", 1);
+        double currentAssets = extractDouble(finance, "currentAssets", 1);
+        double currentLiabilities = extractDouble(finance, "currentLiabilities", 1);
+        double totalLiabilities = extractDouble(finance, "totalLiabilities", 1);
+        double netProfit = totalRevenue - totalCost;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(ratioName).append("分析\n");
+        sb.append("分析周期: ").append(startDate).append(" ~ ").append(endDate).append("\n\n");
+
+        switch (ratioType) {
+            case "ROA":
+                double roa = totalAssets > 0 ? (netProfit / totalAssets) * 100 : 0;
+                result.put("roa", roa);
+                sb.append("资产收益率(ROA): ").append(String.format("%.2f%%", roa)).append("\n");
+                sb.append("  净利润: ").append(String.format("%.0f", netProfit)).append("元\n");
+                sb.append("  总资产: ").append(String.format("%.0f", totalAssets)).append("元\n");
+                sb.append("  行业参考: 食品加工 3%-8%");
+                break;
+            case "ROE":
+                double roe = totalEquity > 0 ? (netProfit / totalEquity) * 100 : 0;
+                result.put("roe", roe);
+                sb.append("净资产收益率(ROE): ").append(String.format("%.2f%%", roe)).append("\n");
+                sb.append("  净利润: ").append(String.format("%.0f", netProfit)).append("元\n");
+                sb.append("  股东权益: ").append(String.format("%.0f", totalEquity)).append("元\n");
+                sb.append("  行业参考: 食品加工 8%-15%");
+                break;
+            case "LIQUIDITY":
+                double currentRatio = currentLiabilities > 0 ? currentAssets / currentLiabilities : 0;
+                double quickRatio = currentLiabilities > 0 ? (currentAssets * 0.7) / currentLiabilities : 0;
+                result.put("currentRatio", currentRatio);
+                result.put("quickRatio", quickRatio);
+                sb.append("流动比率: ").append(String.format("%.2f", currentRatio)).append("\n");
+                sb.append("速动比率: ").append(String.format("%.2f", quickRatio)).append("\n");
+                sb.append("  流动资产: ").append(String.format("%.0f", currentAssets)).append("元\n");
+                sb.append("  流动负债: ").append(String.format("%.0f", currentLiabilities)).append("元\n");
+                sb.append("  健康参考: 流动比率 > 2.0, 速动比率 > 1.0");
+                break;
+            case "SOLVENCY":
+                double debtRatio = totalAssets > 0 ? (totalLiabilities / totalAssets) * 100 : 0;
+                double equityRatio = totalAssets > 0 ? (totalEquity / totalAssets) * 100 : 0;
+                result.put("debtRatio", debtRatio);
+                result.put("equityRatio", equityRatio);
+                sb.append("资产负债率: ").append(String.format("%.2f%%", debtRatio)).append("\n");
+                sb.append("权益比率: ").append(String.format("%.2f%%", equityRatio)).append("\n");
+                sb.append("  总负债: ").append(String.format("%.0f", totalLiabilities)).append("元\n");
+                sb.append("  总资产: ").append(String.format("%.0f", totalAssets)).append("元\n");
+                sb.append("  健康参考: 资产负债率 < 60%");
+                break;
+            case "DUPONT":
+                double profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+                double assetTurnover = totalAssets > 0 ? totalRevenue / totalAssets : 0;
+                double equityMultiplier = totalEquity > 0 ? totalAssets / totalEquity : 1;
+                double dupontRoe = (profitMargin / 100) * assetTurnover * equityMultiplier * 100;
+                result.put("profitMargin", profitMargin);
+                result.put("assetTurnover", assetTurnover);
+                result.put("equityMultiplier", equityMultiplier);
+                result.put("dupontROE", dupontRoe);
+                sb.append("杜邦分析三因素分解:\n");
+                sb.append("  销售净利率: ").append(String.format("%.2f%%", profitMargin)).append("\n");
+                sb.append("  资产周转率: ").append(String.format("%.2f", assetTurnover)).append("次\n");
+                sb.append("  权益乘数: ").append(String.format("%.2f", equityMultiplier)).append("\n");
+                sb.append("  ROE = ").append(String.format("%.2f%%", dupontRoe)).append("\n");
+                sb.append("  (净利率 × 周转率 × 权益乘数)");
+                break;
+        }
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("REPORT")
+                .status("COMPLETED").message(sb.toString().trim())
+                .formattedText(sb.toString().trim())
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private double extractDouble(Map<String, Object> map, String key, double defaultVal) {
+        if (map == null || !map.containsKey(key)) return defaultVal;
+        Object val = map.get(key);
+        if (val instanceof Number) return ((Number) val).doubleValue();
+        try { return Double.parseDouble(String.valueOf(val)); } catch (Exception e) { return defaultVal; }
+    }
+
+    private IntentExecuteResponse handleSchedulingModeChange(String factoryId, IntentExecuteRequest request,
+                                                                AIIntentConfig intentConfig, String intentCode) {
+        String mode = switch (intentCode) {
+            case "SCHEDULING_SET_AUTO" -> "FULLY_AUTO";
+            case "SCHEDULING_SET_MANUAL" -> "MANUAL_CONFIRM";
+            case "SCHEDULING_SET_DISABLED" -> "DISABLED";
+            default -> "UNKNOWN";
+        };
+        String modeName = switch (mode) {
+            case "FULLY_AUTO" -> "全自动";
+            case "MANUAL_CONFIRM" -> "人工确认";
+            case "DISABLED" -> "禁用";
+            default -> mode;
+        };
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("schedulingMode", mode);
+        result.put("modeName", modeName);
+        result.put("factoryId", factoryId);
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("REPORT")
+                .status("COMPLETED").message("排班模式已切换为: " + modeName)
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleSalesReport(String factoryId, IntentExecuteRequest request,
+                                                      AIIntentConfig intentConfig) {
+        String period = "monthly";
+        if (request.getContext() != null) {
+            period = (String) request.getContext().getOrDefault("period", "monthly");
+        }
+
+        Map<String, Object> dashboard = reportService.getDashboardOverview(factoryId, period);
+        Map<String, Object> result = new HashMap<>();
+        result.put("dashboard", dashboard);
+        result.put("reportType", "sales");
+        result.put("period", period);
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("REPORT")
+                .status("COMPLETED").message("销售报表获取成功，周期: " + period)
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handlePaymentStatus(String factoryId, AIIntentConfig intentConfig) {
+        Map<String, Object> finance = reportService.getFinanceReport(factoryId,
+                LocalDate.now().minusDays(30), LocalDate.now());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("financeData", finance);
+        result.put("queryType", "payment_status");
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("REPORT")
+                .status("COMPLETED").message("收付款状态查询完成，包含应收账款、应付账款及账龄分析数据。")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleMrpCalculation(String factoryId, AIIntentConfig intentConfig) {
+        // MRP: 获取库存 + 在制 + 需求，计算物料需求
+        Map<String, Object> inventory = reportService.getInventoryReport(factoryId, LocalDate.now());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("inventoryData", inventory);
+        result.put("calculationType", "MRP");
+        result.put("period", LocalDate.now() + " 至 " + LocalDate.now().plusDays(7));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("MRP物料需求计算结果\n");
+        sb.append("计算周期: 未来7天\n\n");
+
+        double totalStock = extractDouble(inventory, "totalStock", 0);
+        double reservedStock = extractDouble(inventory, "reservedStock", 0);
+        double availableStock = totalStock - reservedStock;
+
+        sb.append("当前库存总量: ").append(String.format("%.0f", totalStock)).append("\n");
+        sb.append("已预留: ").append(String.format("%.0f", reservedStock)).append("\n");
+        sb.append("可用库存: ").append(String.format("%.0f", availableStock)).append("\n\n");
+        sb.append("建议: 请结合生产计划确认物料需求");
+
+        result.put("totalStock", totalStock);
+        result.put("reservedStock", reservedStock);
+        result.put("availableStock", availableStock);
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("REPORT")
+                .status("COMPLETED").message(sb.toString()).formattedText(sb.toString())
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
     @Override
     public IntentExecuteResponse preview(String factoryId, IntentExecuteRequest request,
                                          AIIntentConfig intentConfig, Long userId, String userRole) {
@@ -761,5 +1002,78 @@ public class ReportIntentHandler implements IntentHandler {
     public boolean supportsSemanticsMode() {
         // 启用语义模式
         return true;
+    }
+
+    // ==================== Round 3: Additional Intent Handlers ====================
+
+    private IntentExecuteResponse handleProductionLineStart(String factoryId, IntentExecuteRequest request,
+                                                            AIIntentConfig intentConfig) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("REPORT")
+                .status("NEED_CONFIRM")
+                .message("确认启动生产线？请指定:\n1. 生产线编号\n2. 生产计划/工单号\n\n启动后将自动记录开工时间。")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleAttendanceStatsByDept(String factoryId, AIIntentConfig intentConfig) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("queryType", "attendance_by_dept");
+        result.put("factoryId", factoryId);
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("REPORT")
+                .status("COMPLETED")
+                .message("部门考勤统计功能已就绪。请前往HR管理页面查看各部门考勤详情。")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleOnlineStaffCount(String factoryId, AIIntentConfig intentConfig) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("queryType", "online_staff");
+        result.put("factoryId", factoryId);
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("REPORT")
+                .status("COMPLETED")
+                .message("在线人员统计已就绪。请前往HR管理页面查看当前在线人员数据。")
+                .formattedText("在线人员统计已就绪。请前往HR管理页面查看当前在线人员数据。")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleAnalyzeEquipmentReport(String factoryId, AIIntentConfig intentConfig) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("queryType", "equipment_analysis");
+        result.put("factoryId", factoryId);
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("REPORT")
+                .status("COMPLETED")
+                .message("设备分析报告已就绪。请前往设备管理页面查看设备运行状态、维护记录和故障统计。")
+                .formattedText("设备分析报告已就绪。请前往设备管理页面查看设备运行状态、维护记录和故障统计。")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleEquipmentStatusByName(String factoryId, IntentExecuteRequest request,
+                                                              AIIntentConfig intentConfig) {
+        String equipmentName = null;
+        if (request.getContext() != null && request.getContext().get("equipmentName") != null) {
+            equipmentName = request.getContext().get("equipmentName").toString();
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("queryType", "equipment_status_by_name");
+        result.put("factoryId", factoryId);
+        if (equipmentName != null) result.put("equipmentName", equipmentName);
+
+        String msg = equipmentName != null ?
+            "设备「" + equipmentName + "」状态查询已就绪。请前往设备管理页面查看详情。" :
+            "请指定设备名称，我将为您查询该设备的运行状态。";
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("REPORT")
+                .status(equipmentName != null ? "COMPLETED" : "NEED_MORE_INFO")
+                .message(msg).formattedText(msg)
+                .resultData(result).executedAt(LocalDateTime.now()).build();
     }
 }

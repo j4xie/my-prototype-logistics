@@ -29,6 +29,13 @@ public interface ProductionReportRepository extends JpaRepository<ProductionRepo
     Page<ProductionReport> findByFactoryIdAndReportTypeAndReportDateBetweenAndDeletedAtIsNull(
             String factoryId, String reportType, LocalDate startDate, LocalDate endDate, Pageable pageable);
 
+    // ==================== 按状态查询 ====================
+
+    long countByFactoryIdAndStatusAndDeletedAtIsNull(String factoryId, ProductionReport.Status status);
+
+    Page<ProductionReport> findByFactoryIdAndStatusAndDeletedAtIsNull(
+            String factoryId, ProductionReport.Status status, Pageable pageable);
+
     // ==================== SmartBI同步 ====================
 
     List<ProductionReport> findByFactoryIdAndSyncedToSmartbiFalseAndDeletedAtIsNull(String factoryId);

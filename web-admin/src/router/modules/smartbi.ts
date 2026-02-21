@@ -22,13 +22,13 @@ const smartBIRoutes: RouteRecordRaw[] = [
         path: 'finance',
         name: 'SmartBIFinance',
         component: () => import('@/views/smart-bi/FinanceAnalysis.vue'),
-        meta: { requiresAuth: true, title: '财务分析', icon: 'Money', module: 'finance' },
+        meta: { requiresAuth: true, title: '财务分析', icon: 'Money', module: 'analytics' },
       },
       {
         path: 'sales',
         name: 'SmartBISales',
         component: () => import('@/views/smart-bi/SalesAnalysis.vue'),
-        meta: { requiresAuth: true, title: '销售分析', icon: 'TrendCharts', module: 'sales' },
+        meta: { requiresAuth: true, title: '销售分析', icon: 'TrendCharts', module: 'analytics' },
       },
       {
         path: 'query',

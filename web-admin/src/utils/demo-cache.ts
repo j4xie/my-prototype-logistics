@@ -3,12 +3,32 @@
  *
  * 投资人演示场景: 首次上传 Excel 需 30-40s 解析，缓存后再次访问 < 1s 渲染
  * 缓存容量限制 5MB，采用 LRU 淘汰策略
+ *
+ * v3: 按 factoryId 隔离缓存，防止跨工厂数据泄漏
  */
 
-const CACHE_VERSION = 2; // Bump to invalidate stale caches (v2: KPI trend fix)
-const CACHE_KEY = `smartbi-demo-cache-v${CACHE_VERSION}`;
-const CACHE_INDEX_KEY = `smartbi-demo-cache-index-v${CACHE_VERSION}`;
+import { getFactoryId } from '@/api/smartbi/common';
+
+const CACHE_VERSION = 3; // v3: factory-scoped cache keys
 const MAX_CACHE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+
+/** Get factory-scoped cache key prefix */
+function getCacheKeyPrefix(): string {
+  try {
+    const fid = getFactoryId();
+    return `smartbi-demo-cache-v${CACHE_VERSION}-${fid}`;
+  } catch {
+    return `smartbi-demo-cache-v${CACHE_VERSION}-unknown`;
+  }
+}
+
+function getCacheKey(): string {
+  return getCacheKeyPrefix();
+}
+
+function getCacheIndexKey(): string {
+  return `${getCacheKeyPrefix()}-index`;
+}
 
 /** 缓存条目的元数据 */
 interface CacheEntry {
@@ -64,7 +84,7 @@ export interface DemoCacheData {
 /** 读取缓存索引 */
 function getCacheIndex(): CacheEntry[] {
   try {
-    const raw = localStorage.getItem(CACHE_INDEX_KEY);
+    const raw = localStorage.getItem(getCacheIndexKey());
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -73,7 +93,7 @@ function getCacheIndex(): CacheEntry[] {
 
 /** 保存缓存索引 */
 function saveCacheIndex(index: CacheEntry[]) {
-  localStorage.setItem(CACHE_INDEX_KEY, JSON.stringify(index));
+  localStorage.setItem(getCacheIndexKey(), JSON.stringify(index));
 }
 
 /** 计算字符串占用的字节大小 (UTF-16 估算) */
@@ -95,7 +115,7 @@ function evictUntilFits(index: CacheEntry[], requiredBytes: number): CacheEntry[
 
   while (totalSize + requiredBytes > MAX_CACHE_SIZE_BYTES && sorted.length > 0) {
     const oldest = sorted.shift()!;
-    localStorage.removeItem(`${CACHE_KEY}-${oldest.uploadId}`);
+    localStorage.removeItem(`${getCacheKey()}-${oldest.uploadId}`);
     totalSize -= oldest.sizeBytes;
   }
 
@@ -123,7 +143,7 @@ export function saveDemoCache(uploadId: number, data: DemoCacheData): boolean {
     // 移除同 uploadId 的旧缓存
     const existingIdx = index.findIndex(e => e.uploadId === uploadId);
     if (existingIdx >= 0) {
-      localStorage.removeItem(`${CACHE_KEY}-${uploadId}`);
+      localStorage.removeItem(`${getCacheKey()}-${uploadId}`);
       index.splice(existingIdx, 1);
     }
 
@@ -132,7 +152,7 @@ export function saveDemoCache(uploadId: number, data: DemoCacheData): boolean {
 
     // 写入数据
     const now = new Date().toISOString();
-    localStorage.setItem(`${CACHE_KEY}-${uploadId}`, json);
+    localStorage.setItem(`${getCacheKey()}-${uploadId}`, json);
     index.push({
       uploadId,
       fileName: data.uploadBatch.fileName,
@@ -166,7 +186,7 @@ export function loadDemoCache(): (DemoCacheData & { uploadId: number }) | null {
     );
     const latest = sorted[0];
 
-    const raw = localStorage.getItem(`${CACHE_KEY}-${latest.uploadId}`);
+    const raw = localStorage.getItem(`${getCacheKey()}-${latest.uploadId}`);
     if (!raw) {
       // 索引存在但数据丢失，清理
       const cleaned = index.filter(e => e.uploadId !== latest.uploadId);
@@ -191,9 +211,9 @@ export function loadDemoCache(): (DemoCacheData & { uploadId: number }) | null {
 export function clearDemoCache() {
   const index = getCacheIndex();
   for (const entry of index) {
-    localStorage.removeItem(`${CACHE_KEY}-${entry.uploadId}`);
+    localStorage.removeItem(`${getCacheKey()}-${entry.uploadId}`);
   }
-  localStorage.removeItem(CACHE_INDEX_KEY);
+  localStorage.removeItem(getCacheIndexKey());
 }
 
 /**
@@ -231,7 +251,7 @@ export function getDemoCacheInfo(): { fileName: string; savedAt: string; sheetCo
   );
   const latest = sorted[0];
 
-  const raw = localStorage.getItem(`${CACHE_KEY}-${latest.uploadId}`);
+  const raw = localStorage.getItem(`${getCacheKey()}-${latest.uploadId}`);
   if (!raw) return null;
 
   try {

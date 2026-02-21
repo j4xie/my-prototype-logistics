@@ -17,10 +17,18 @@ __all__ = [
     "analysis_cache", "ai_proxy", "benchmark", "finance_extract"
 ]
 
+# Optional: data_sync (requires openpyxl + sqlalchemy for cretas_db)
+try:
+    from . import data_sync
+    __all__.append("data_sync")
+except ImportError as e:
+    logger.warning(f"Data sync module not available: {e}")
+    data_sync = None
+
 # Optional: classifier module (requires torch + transformers)
 try:
     from . import classifier
     __all__.append("classifier")
-except ImportError as e:
-    logger.warning(f"Classifier module not available (missing torch/transformers): {e}")
+except (ImportError, TypeError) as e:
+    logger.warning(f"Classifier module not available: {e}")
     classifier = None

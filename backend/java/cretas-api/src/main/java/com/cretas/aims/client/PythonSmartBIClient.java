@@ -64,10 +64,18 @@ public class PythonSmartBIClient {
         this.objectMapper = objectMapper;
 
         // 为 Python SmartBI 服务创建专用的 HttpClient
+        // 添加拦截器：所有 Java→Python 内部调用自动带 X-Internal-Secret 头
         this.httpClient = baseHttpClient.newBuilder()
                 .connectTimeout(config.getConnectTimeout(), TimeUnit.MILLISECONDS)
                 .readTimeout(config.getTimeout(), TimeUnit.MILLISECONDS)
                 .writeTimeout(config.getTimeout(), TimeUnit.MILLISECONDS)
+                .addInterceptor(chain -> {
+                    Request original = chain.request();
+                    Request withAuth = original.newBuilder()
+                            .header("X-Internal-Secret", "cretas-internal-2026")
+                            .build();
+                    return chain.proceed(withAuth);
+                })
                 .build();
     }
 

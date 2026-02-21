@@ -169,6 +169,11 @@ class PurchaseApiClient {
     return apiClient.post(this.getPath(factoryId) + `/orders/${orderId}/cancel`);
   }
 
+  /** 编辑草稿采购单 */
+  async updateOrder(orderId: string, data: CreatePurchaseOrderRequest, factoryId?: string): Promise<{ success: boolean; data: PurchaseOrder }> {
+    return apiClient.put(this.getPath(factoryId) + `/orders/${orderId}`, data);
+  }
+
   /** 按状态查询采购单列表 */
   async getOrdersByStatus(status: PurchaseOrder['status'], params?: { page?: number; size?: number }, factoryId?: string): Promise<{ success: boolean; data: PageResponse<PurchaseOrder> }> {
     return apiClient.get(this.getPath(factoryId) + '/orders/by-status', { params: { status, ...params } });

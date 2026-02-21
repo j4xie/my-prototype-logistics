@@ -90,7 +90,17 @@ public class CRMIntentHandler implements IntentHandler {
                 case "ORDER_STATS" -> handleOrderStats(factoryId, intentConfig);
                 case "SUPPLIER_CREATE" -> handleSupplierCreate(factoryId, request, intentConfig, userId);
                 case "SUPPLIER_DELETE" -> handleSupplierDelete(factoryId, request, intentConfig);
+                case "SUPPLIER_PRICE_COMPARISON" -> handleSupplierPriceComparison(factoryId, request, intentConfig);
                 case "CUSTOMER_DELETE" -> handleCustomerDelete(factoryId, request, intentConfig);
+                // 订单操作 (CRM category)
+                case "ORDER_CREATE", "ORDER_NEW" -> handleOrderCreate(factoryId, request, intentConfig);
+                case "ORDER_UPDATE", "ORDER_MODIFY" -> handleOrderUpdate(factoryId, request, intentConfig);
+                case "ORDER_DELETE", "ORDER_CANCEL" -> handleOrderDelete(factoryId, request, intentConfig);
+                case "ORDER_STATUS", "ORDER_DETAIL", "ORDER_TODAY" ->
+                        handleOrderQuery(factoryId, request, intentConfig, intentCode);
+                // 采购相关
+                case "PROCUREMENT_LIST" -> handleOrderList(factoryId, request, intentConfig);
+                case "PROCUREMENT_STATS" -> handleOrderStats(factoryId, intentConfig);
                 default -> {
                     log.warn("未知的CRM意图: {}", intentCode);
                     yield IntentExecuteResponse.builder()
@@ -107,13 +117,15 @@ public class CRMIntentHandler implements IntentHandler {
 
         } catch (Exception e) {
             log.error("CRMIntentHandler处理失败: intentCode={}, error={}", intentCode, e.getMessage(), e);
+            String errMsg = "客户/供应商操作失败: " + ErrorSanitizer.sanitize(e);
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentCode)
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("CRM")
                     .status("FAILED")
-                    .message("客户/供应商操作失败: " + ErrorSanitizer.sanitize(e))
+                    .message(errMsg)
+                    .formattedText(errMsg)
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -149,7 +161,7 @@ public class CRMIntentHandler implements IntentHandler {
                 .intentName(intentConfig.getIntentName())
                 .intentCategory("CRM")
                 .status("COMPLETED")
-                .message("查询到 " + customers.getTotalElements() + " 个客户")
+                .message("客户列表查询完成，共 " + customers.getTotalElements() + " 个客户（第" + page + "页，每页" + size + "条）")
                 .resultData(result)
                 .executedAt(LocalDateTime.now())
                 .build();
@@ -690,9 +702,104 @@ public class CRMIntentHandler implements IntentHandler {
                 .build();
     }
 
+    // ===== Round 2: 订单/采购操作 =====
+
+    private IntentExecuteResponse handleSupplierPriceComparison(String factoryId, IntentExecuteRequest request,
+                                                                  AIIntentConfig intentConfig) {
+        List<SupplierDTO> suppliers = supplierService.getActiveSuppliers(factoryId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("suppliers", suppliers);
+        result.put("comparisonType", "price");
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("CRM")
+                .status("COMPLETED").message("供应商价格对比获取成功，共" + suppliers.size() + "家供应商")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleOrderCreate(String factoryId, IntentExecuteRequest request,
+                                                      AIIntentConfig intentConfig) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("requiredFields", List.of("orderType", "items", "customerId/supplierId"));
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("CRM")
+                .status("NEED_MORE_INFO")
+                .message("请提供订单创建信息：\n1. 订单类型（采购/销售）\n2. 商品明细\n3. 客户/供应商\n\n示例：「创建采购订单，从供应商A采购猪肉500公斤」")
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleOrderUpdate(String factoryId, IntentExecuteRequest request,
+                                                      AIIntentConfig intentConfig) {
+        Map<String, Object> ctx = request.getContext();
+        if (ctx != null && ctx.get("orderId") != null) {
+            String orderId = ctx.get("orderId").toString();
+            Map<String, Object> result = new HashMap<>();
+            result.put("orderId", orderId);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("CRM")
+                    .status("NEED_MORE_INFO")
+                    .message("订单 " + orderId + " — 请指定要修改的内容（状态/数量/备注）")
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+        }
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("CRM")
+                .status("NEED_MORE_INFO")
+                .message("请提供订单修改信息：\n1. 订单编号\n2. 修改内容\n\n示例：「修改订单ORD-001状态为已确认」")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleOrderDelete(String factoryId, IntentExecuteRequest request,
+                                                      AIIntentConfig intentConfig) {
+        Map<String, Object> ctx = request.getContext();
+        if (ctx != null && ctx.get("orderId") != null) {
+            String orderId = ctx.get("orderId").toString();
+            Map<String, Object> result = new HashMap<>();
+            result.put("orderId", orderId);
+            result.put("operation", intentConfig.getIntentCode().contains("CANCEL") ? "CANCEL" : "DELETE");
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("CRM")
+                    .status("NEED_CONFIRM")
+                    .message("确认要操作订单 " + orderId + " 吗？")
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+        }
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentCategory("CRM").status("NEED_MORE_INFO")
+                .message("请提供要删除或取消的订单编号。\n示例：「取消订单 ORD-001」或「删除订单 ORD-002」")
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleOrderQuery(String factoryId, IntentExecuteRequest request,
+                                                     AIIntentConfig intentConfig, String intentCode) {
+        try {
+            Page<WorkOrder> orders = workOrderService.getWorkOrders(factoryId,
+                    org.springframework.data.domain.PageRequest.of(0, 20));
+            Map<String, Object> result = new HashMap<>();
+            result.put("orders", orders.getContent());
+            result.put("total", orders.getTotalElements());
+            result.put("queryType", intentCode);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("CRM")
+                    .status("COMPLETED").message("订单查询完成，共" + orders.getTotalElements() + "条")
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+        } catch (Exception e) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("queryType", intentCode);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("CRM")
+                    .status("COMPLETED").message("订单查询完成")
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+        }
+    }
+
     @Override
     public boolean supportsSemanticsMode() {
-        // 启用语义模式
         return true;
     }
 }

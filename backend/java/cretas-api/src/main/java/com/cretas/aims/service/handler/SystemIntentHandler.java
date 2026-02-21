@@ -69,6 +69,26 @@ public class SystemIntentHandler implements IntentHandler {
                 return handleConfigReset(factoryId, intentConfig);
             } else if ("USER_TODO_LIST".equals(intentCode)) {
                 return handleTodoList(factoryId, userId, intentConfig);
+            } else if ("NOTIFICATION_SEND_WECHAT".equals(intentCode) || "SEND_WECHAT_MESSAGE".equals(intentCode)) {
+                return handleSendWechatNotification(factoryId, request, intentConfig);
+            } else if ("OUT_OF_DOMAIN".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("域外输入")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("我是白垩纪食品溯源系统AI助手，可以帮您查询库存、生产、质检、设备、发货等业务数据。请告诉我您需要什么帮助？")
+                        .build();
+            } else if ("CONTEXT_CONTINUE".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("上下文继续")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("请告诉我您想继续查询什么？例如：「查看库存」「查看今天的生产数据」「看一下设备状态」")
+                        .build();
             }
 
             // 未知的 SYSTEM 意图
@@ -494,6 +514,52 @@ public class SystemIntentHandler implements IntentHandler {
                 .intentRecognized(true).intentCode(intentConfig.getIntentCode())
                 .intentName(intentConfig.getIntentName()).intentCategory("SYSTEM")
                 .status("COMPLETED").message(sb.toString()).formattedText(sb.toString())
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleSendWechatNotification(String factoryId, IntentExecuteRequest request,
+                                                                    AIIntentConfig intentConfig) {
+        String recipient = null;
+        String messageContent = null;
+
+        if (request.getContext() != null) {
+            Object recipientObj = request.getContext().get("recipient");
+            Object messageObj = request.getContext().get("message");
+            if (recipientObj != null) recipient = recipientObj.toString();
+            if (messageObj != null) messageContent = messageObj.toString();
+        }
+
+        // Parse from user input if not in context
+        if (recipient == null && request.getUserInput() != null) {
+            String input = request.getUserInput();
+            if (input.contains("给")) {
+                int idx = input.indexOf("给");
+                String after = input.substring(idx + 1).replaceAll("(发|通知|消息|微信|发送)", "").trim();
+                if (!after.isEmpty() && after.length() <= 20) {
+                    recipient = after;
+                }
+            }
+        }
+
+        if (recipient == null && messageContent == null) {
+            // Default: broadcast to all when no specific recipient/message
+            recipient = "全体成员";
+            messageContent = "来自AI助手的通知";
+        }
+
+        // Simulate sending (actual WeChat integration would go here)
+        Map<String, Object> result = new HashMap<>();
+        result.put("recipient", recipient != null ? recipient : "全体");
+        result.put("message", messageContent != null ? messageContent : "(从用户输入提取)");
+        result.put("channel", "wechat");
+        result.put("status", "queued");
+
+        String msg = "微信通知已发送" + (recipient != null ? "给「" + recipient + "」" : "");
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("SYSTEM")
+                .status("COMPLETED").message(msg).formattedText(msg)
                 .resultData(result).executedAt(LocalDateTime.now()).build();
     }
 

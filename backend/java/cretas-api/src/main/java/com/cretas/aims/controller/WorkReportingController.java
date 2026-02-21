@@ -99,6 +99,28 @@ public class WorkReportingController {
         return ApiResponse.success(result);
     }
 
+    // ==================== 批次完成 + 待审批 ====================
+
+    @PostMapping("/batches/{batchId}/complete")
+    @Operation(summary = "手动完成批次", description = "管理员手动标记批次为完成（部分生产、物料不足等场景）")
+    public ApiResponse<String> manualCompleteBatch(
+            @PathVariable String factoryId,
+            @PathVariable Long batchId) {
+        log.info("手动完成批次: factoryId={}, batchId={}", factoryId, batchId);
+        workReportingService.manualCompleteBatch(factoryId, batchId);
+        return ApiResponse.success("批次已完成");
+    }
+
+    @GetMapping("/reports/pending")
+    @Operation(summary = "待审批报工列表")
+    public ApiResponse<Page<WorkReportResponse>> getPendingReports(
+            @PathVariable String factoryId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Page<WorkReportResponse> result = workReportingService.getPendingReports(factoryId, page, size);
+        return ApiResponse.success(result);
+    }
+
     // ==================== 签到/签退 (P0-2: DTO验证, P1-7: userId追踪) ====================
 
     @PostMapping("/checkin")

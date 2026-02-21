@@ -8,6 +8,8 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Icon } from "react-native-paper";
 import { FactoryAdminTabParamList } from "../types/navigation";
 import { useFactoryFeatureStore } from "../store/factoryFeatureStore";
+import { useAuthStore } from "../store/authStore";
+import { isRestaurant } from "../utils/factoryType";
 
 // 导入6个Stack导航器
 import FAHomeStackNavigator from "./factory-admin/FAHomeStackNavigator";
@@ -27,6 +29,8 @@ const TAB_COLORS = {
 
 export function FactoryAdminTabNavigator() {
   const { isScreenEnabled } = useFactoryFeatureStore();
+  const user = useAuthStore(state => state.user);
+  const isRestaurantMode = isRestaurant(user);
 
   return (
     <Tab.Navigator
@@ -74,8 +78,8 @@ export function FactoryAdminTabNavigator() {
       />
       )}
 
-      {/* 报表Tab */}
-      {isScreenEnabled('Reports') && (
+      {/* 报表Tab - 餐饮场景隐藏（无生产报表） */}
+      {isScreenEnabled('Reports') && !isRestaurantMode && (
       <Tab.Screen
         name="FAReportsTab"
         component={FAReportsStackNavigator}

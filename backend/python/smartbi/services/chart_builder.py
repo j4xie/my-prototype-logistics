@@ -650,11 +650,13 @@ class ChartBuilder:
         series_field: Optional[str]
     ) -> dict:
         """Build scatter chart configuration with trendline"""
-        x_col = x_field or df.select_dtypes(include=[np.number]).columns[0]
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         if not y_fields and len(numeric_cols) < 2:
             return self._empty_chart_config("散点图需要至少2个数值列")
-        y_col = y_fields[0] if y_fields else numeric_cols[1]
+        if len(numeric_cols) == 0:
+            return self._empty_chart_config("散点图需要数值列")
+        x_col = x_field or numeric_cols[0]
+        y_col = y_fields[0] if y_fields else (numeric_cols[1] if len(numeric_cols) > 1 else numeric_cols[0])
 
         all_x, all_y = [], []
         series = []
@@ -728,8 +730,11 @@ class ChartBuilder:
         y_fields: Optional[List[str]]
     ) -> dict:
         """Build waterfall chart configuration"""
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if not y_fields and len(numeric_cols) == 0:
+            return self._empty_chart_config("瀑布图需要数值列")
         x_data = df[x_field].tolist() if x_field else df.index.tolist()
-        y_col = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+        y_col = y_fields[0] if y_fields else numeric_cols[0]
         values = pd.to_numeric(df[y_col], errors='coerce').fillna(0).tolist()
 
         # Calculate waterfall data
@@ -813,15 +818,23 @@ class ChartBuilder:
         if y_fields:
             for field in y_fields:
                 if field in df.columns:
-                    max_val = float(df[field].max())
+                    col_numeric = pd.to_numeric(df[field], errors='coerce').dropna()
+                    max_val = float(col_numeric.max()) if len(col_numeric) > 0 else 1.0
+                    if not (math.isfinite(max_val) and max_val > 0):
+                        max_val = 1.0
                     indicators.append({"name": field, "max": max_val * 1.2})
-                    data_values.append(float(df[field].iloc[0]) if len(df) > 0 else 0)
+                    first_val = pd.to_numeric(df[field].iloc[0], errors='coerce') if len(df) > 0 else 0
+                    data_values.append(float(first_val) if pd.notna(first_val) else 0)
         else:
             # Use numeric columns
             for col in df.select_dtypes(include=[np.number]).columns[:6]:
-                max_val = float(df[col].max())
+                col_numeric = pd.to_numeric(df[col], errors='coerce').dropna()
+                max_val = float(col_numeric.max()) if len(col_numeric) > 0 else 1.0
+                if not (math.isfinite(max_val) and max_val > 0):
+                    max_val = 1.0
                 indicators.append({"name": col, "max": max_val * 1.2})
-                data_values.append(float(df[col].iloc[0]) if len(df) > 0 else 0)
+                first_val = pd.to_numeric(df[col].iloc[0], errors='coerce') if len(df) > 0 else 0
+                data_values.append(float(first_val) if pd.notna(first_val) else 0)
 
         return {
             "radar": {
@@ -847,12 +860,16 @@ class ChartBuilder:
         y_fields: Optional[List[str]]
     ) -> dict:
         """Build funnel chart configuration"""
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if not y_fields and len(numeric_cols) == 0:
+            return self._empty_chart_config("漏斗图需要数值列")
         name_field = x_field or df.columns[0]
-        value_field = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+        value_field = y_fields[0] if y_fields else numeric_cols[0]
 
         data = sorted([
-            {"name": str(row[name_field]), "value": float(row[value_field])}
+            {"name": str(row[name_field]), "value": float(pd.to_numeric(row[value_field], errors='coerce') or 0)}
             for _, row in df.iterrows()
+            if pd.notna(row.get(value_field))
         ], key=lambda x: x["value"], reverse=True)
 
         return {
@@ -880,8 +897,12 @@ class ChartBuilder:
         y_fields: Optional[List[str]]
     ) -> dict:
         """Build gauge chart configuration"""
-        value_field = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
-        value = float(df[value_field].iloc[0]) if len(df) > 0 else 0
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if not y_fields and len(numeric_cols) == 0:
+            return self._empty_chart_config("仪表盘需要数值列")
+        value_field = y_fields[0] if y_fields else numeric_cols[0]
+        raw_val = pd.to_numeric(df[value_field].iloc[0], errors='coerce') if len(df) > 0 else 0
+        value = float(raw_val) if pd.notna(raw_val) else 0
 
         return {
             "series": [{
@@ -907,21 +928,33 @@ class ChartBuilder:
         series_field: Optional[str]
     ) -> dict:
         """Build heatmap chart configuration"""
+        if len(df.columns) < 2:
+            return self._empty_chart_config("热力图至少需要2列")
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if not y_fields and len(numeric_cols) == 0:
+            return self._empty_chart_config("热力图需要数值列")
         x_col = x_field or df.columns[0]
-        y_col = series_field or df.columns[1]
-        value_col = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+        y_col = series_field or (df.columns[1] if len(df.columns) > 1 else df.columns[0])
+        value_col = y_fields[0] if y_fields else numeric_cols[0]
 
         x_data = df[x_col].unique().tolist()
         y_data = df[y_col].unique().tolist()
 
         data = []
         for _, row in df.iterrows():
-            x_idx = x_data.index(row[x_col])
-            y_idx = y_data.index(row[y_col])
-            data.append([x_idx, y_idx, float(row[value_col])])
+            raw_val = pd.to_numeric(row.get(value_col), errors='coerce')
+            if pd.isna(raw_val):
+                continue
+            try:
+                x_idx = x_data.index(row[x_col])
+                y_idx = y_data.index(row[y_col])
+                data.append([x_idx, y_idx, float(raw_val)])
+            except (ValueError, KeyError):
+                continue
 
-        max_val = df[value_col].max()
-        min_val = df[value_col].min()
+        numeric_series = pd.to_numeric(df[value_col], errors='coerce')
+        max_val = numeric_series.max() if not numeric_series.isna().all() else 1
+        min_val = numeric_series.min() if not numeric_series.isna().all() else 0
 
         return {
             "xAxis": {
@@ -1181,7 +1214,10 @@ class ChartBuilder:
         if not hierarchy_cols:
             hierarchy_cols = df.columns[:2].tolist()
 
-        value_field = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+        numeric_cols_sb = df.select_dtypes(include=[np.number]).columns
+        if not y_fields and len(numeric_cols_sb) == 0:
+            return self._empty_chart_config("旭日图需要数值列")
+        value_field = y_fields[0] if y_fields else numeric_cols_sb[0]
 
         # Build hierarchical data
         def build_tree(df, level_cols, value_col):
@@ -1229,16 +1265,23 @@ class ChartBuilder:
         y_fields: Optional[List[str]]
     ) -> dict:
         """Build Pareto chart (80/20 analysis)"""
+        numeric_cols_pa = df.select_dtypes(include=[np.number]).columns
+        if not y_fields and len(numeric_cols_pa) == 0:
+            return self._empty_chart_config("帕累托图需要数值列")
         x_col = x_field or df.columns[0]
-        y_col = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+        y_col = y_fields[0] if y_fields else numeric_cols_pa[0]
 
-        # Sort by value descending
-        sorted_df = df.sort_values(y_col, ascending=False)
+        # Sort by value descending; coerce to numeric first
+        df_copy = df.copy()
+        df_copy[y_col] = pd.to_numeric(df_copy[y_col], errors='coerce').fillna(0)
+        sorted_df = df_copy.sort_values(y_col, ascending=False)
         x_data = sorted_df[x_col].tolist()
         y_data = sorted_df[y_col].tolist()
 
-        # Calculate cumulative percentage
+        # Calculate cumulative percentage — guard against zero total
         total = sum(y_data)
+        if total == 0:
+            return self._empty_chart_config("帕累托图数据全为零")
         cumulative = []
         cum_sum = 0
         for val in y_data:
@@ -1296,11 +1339,14 @@ class ChartBuilder:
         target_col = y_fields[1] if y_fields and len(y_fields) > 1 else "target"
 
         x_data = df[x_col].tolist()
-        actual_data = df[actual_col].tolist() if actual_col in df.columns else [0] * len(x_data)
-        target_data = df[target_col].tolist() if target_col in df.columns else [100] * len(x_data)
+        actual_raw = pd.to_numeric(df[actual_col], errors='coerce').fillna(0).tolist() if actual_col in df.columns else [0] * len(x_data)
+        target_raw = pd.to_numeric(df[target_col], errors='coerce').fillna(0).tolist() if target_col in df.columns else [100] * len(x_data)
+        actual_data = actual_raw
+        target_data = target_raw
 
-        # Calculate max for background ranges
-        max_val = max(max(actual_data), max(target_data)) * 1.2
+        # Calculate max for background ranges — guard against empty lists
+        all_vals = [v for v in actual_data + target_data if isinstance(v, (int, float)) and not math.isnan(v)]
+        max_val = (max(all_vals) * 1.2) if all_vals else 100
 
         return {
             "xAxis": {
@@ -1470,9 +1516,12 @@ class ChartBuilder:
         series_field: Optional[str]
     ) -> dict:
         """Build nested donut chart for hierarchical comparison"""
+        numeric_cols_nd = df.select_dtypes(include=[np.number]).columns
+        if not y_fields and len(numeric_cols_nd) == 0:
+            return self._empty_chart_config("嵌套环形图需要数值列")
         inner_field = x_field or df.columns[0]
         outer_field = series_field or (df.columns[1] if len(df.columns) > 1 else inner_field)
-        value_field = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+        value_field = y_fields[0] if y_fields else numeric_cols_nd[0]
 
         # Inner ring data (aggregated by inner_field)
         inner_data = df.groupby(inner_field)[value_field].sum().reset_index()

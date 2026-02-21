@@ -5,7 +5,6 @@
 import {
   request, get, post,
   getSmartBIBasePath,
-  pythonFetch,
   type AnalysisResult,
   type ChartConfig,
   type UploadHistoryItem,
@@ -148,19 +147,9 @@ export function confirmUploadAndPersist(data: {
 
 /**
  * Get upload history list.
- * Tries Python SmartBI service first (direct DB access), falls back to Java backend.
+ * Uses factory-scoped Java endpoint to ensure data isolation between factories.
  */
 export async function getUploadHistory(params?: { status?: string }): Promise<{ success: boolean; data: UploadHistoryItem[] }> {
-  try {
-    const qs = params?.status ? `?status=${encodeURIComponent(params.status)}` : '';
-    const result = await pythonFetch(`/api/excel/uploads${qs}`) as { success: boolean; data: UploadHistoryItem[] };
-    if (result.success && Array.isArray(result.data) && result.data.length > 0) {
-      return result;
-    }
-  } catch {
-    // Python service unavailable, fall through to Java
-  }
-  // Fallback to Java backend
   try {
     return await get<UploadHistoryItem[]>(`${getSmartBIBasePath()}/uploads`, { params, _silent: true } as Record<string, unknown>);
   } catch {

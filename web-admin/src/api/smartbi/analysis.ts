@@ -497,7 +497,15 @@ export function getSmartKPIs(
   scored.sort((a, b) => b.score - a.score);
 
   const coveredNames = new Set(ratioKPIs.map(k => k.title));
-  const remaining = scored.filter(s => !coveredNames.has(s.col.name));
+  // Dedup: skip columns whose base name (without parenthetical suffixes) is already covered
+  const baseNameOf = (name: string) => name.replace(/[（(].*[)）]$/, '').trim();
+  const seenBases = new Set([...coveredNames].map(baseNameOf));
+  const remaining = scored.filter(s => {
+    const base = baseNameOf(s.col.name);
+    if (coveredNames.has(s.col.name) || seenBases.has(base)) return false;
+    seenBases.add(base);
+    return true;
+  });
 
   const slotsNeeded = 4 - ratioKPIs.length;
   const topN = remaining.slice(0, slotsNeeded);
@@ -1141,6 +1149,9 @@ function buildChartPlan(
 
 // ==================== Main Enrichment Orchestrator ====================
 
+/** In-flight enrichment deduplication: concurrent calls for the same uploadId share one promise */
+const inFlightEnrichments = new Map<number, Promise<EnrichResult>>();
+
 /**
  * Sheet data enrichment - multi-chart dashboard version
  * Orchestration: clean -> recommend + quickSummary (parallel) -> buildChartPlan -> batchBuild -> forecast -> insights
@@ -1148,6 +1159,24 @@ function buildChartPlan(
 export async function enrichSheetAnalysis(
   uploadId: number,
   forceRefresh = false,
+  onProgress?: (progress: EnrichProgress) => void
+): Promise<EnrichResult> {
+  // Deduplication: if already in-flight for this uploadId, share the promise
+  if (!forceRefresh && inFlightEnrichments.has(uploadId)) {
+    return inFlightEnrichments.get(uploadId)!;
+  }
+
+  const promise = _doEnrichSheetAnalysis(uploadId, forceRefresh, onProgress);
+  if (!forceRefresh) {
+    inFlightEnrichments.set(uploadId, promise);
+    promise.finally(() => inFlightEnrichments.delete(uploadId));
+  }
+  return promise;
+}
+
+async function _doEnrichSheetAnalysis(
+  uploadId: number,
+  forceRefresh: boolean,
   onProgress?: (progress: EnrichProgress) => void
 ): Promise<EnrichResult> {
   // Cache-first
@@ -1205,26 +1234,32 @@ export async function enrichSheetAnalysis(
 
     onProgress?.({ phase: 'data', partial: { rawData: cleanedData } });
 
-    // 5. Parallel: smart-recommend (LLM) + summary; fallback to basic recommend
+    // 5. Parallel: smart-recommend (LLM) + summary; use allSettled to prevent cascade failure
     t0 = performance.now();
-    const [smartRecRes, summaryRes] = await Promise.all([
+    const [smartRecSettled, summarySettled] = await Promise.allSettled([
       smartRecommendChart(
         { data: cleanedData.slice(0, 100), maxRecommendations: 7 },
         abortController.signal
       ).catch(() => ({ success: false } as { success: false })),
-      quickSummary(cleanedData, abortController.signal)
+      quickSummary(cleanedData, abortController.signal, uploadId)
     ]);
+    const smartRecRes = smartRecSettled.status === 'fulfilled'
+      ? smartRecSettled.value
+      : { success: false as const };
+    const summaryRes = summarySettled.status === 'fulfilled'
+      ? summarySettled.value
+      : { success: false as const, columnTypes: {} as Record<string, string>, stats: {} as Record<string, unknown> };
     let recRes: Awaited<ReturnType<typeof recommendChart>>;
     if (smartRecRes.success && 'recommendations' in smartRecRes && smartRecRes.recommendations?.length) {
-      // console.log(`[SmartRecommend] LLM returned ${smartRecRes.recommendations.length} recommendations (method=${(smartRecRes as { method?: string }).method})`);
       recRes = {
         success: true,
         recommendations: smartRecRes.recommendations,
         dataInfo: 'dataInfo' in smartRecRes ? smartRecRes.dataInfo : undefined
       };
     } else {
-      // console.log('[SmartRecommend] LLM unavailable, falling back to basic recommend');
-      recRes = await recommendChart(cleanedData, abortController.signal);
+      recRes = await recommendChart(cleanedData, abortController.signal).catch(() => ({
+        success: false as const, recommendations: [], dataInfo: undefined
+      }));
     }
     tick('recommend+summary', t0);
 

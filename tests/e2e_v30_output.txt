@@ -1,0 +1,2077 @@
+======================================================================
+Phase 1: Intent Routing Accuracy
+======================================================================
+
+--- A1: 咨询-食品安全基础 (8) ---
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 猪肉的保质期是多久
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 鸡肉冷冻保存温度是多少
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 酸奶发酵需要什么条件
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 牛肉加工有什么标准
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 冷链运输温度要求是什么
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 食品添加剂使用标准
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 防腐剂最大使用量
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 巴氏杀菌的温度和时间
+  === A1: intent=8/8, type=8/8
+
+--- A2: 咨询-食品安全/检测 (8) ---
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 大肠杆菌超标的原因和预防措施
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 沙门氏菌怎么预防
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 黄曲霉毒素是什么
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 农药残留检测方法
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 重金属超标危害
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 食品过敏原标识要求
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 亚硝酸盐中毒怎么急救
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 兽药残留限量标准
+  === A2: intent=8/8, type=8/8
+
+--- A3: 咨询-生产工艺知识 (8) ---
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 火腿肠生产工艺流程
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 豆腐生产注意事项
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 速冻食品解冻注意事项
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 肉制品加工卫生要求
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 食品保鲜技术有哪些
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 食品包装材料安全标准
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 生产牛肉有什么要注意的吗
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 牛肉怎么保鲜时间最长
+  === A3: intent=8/8, type=8/8
+
+--- AA1: 时间表达-季度半年跨期 (6) ---
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      PHRASE_MATCH 0.98 | 去年Q4的销售数据
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 今年上半年的生产汇总
+  I [QUERY   ] ORDER_FILTER                   CLASSIFIER   0.70 | 从去年12月到今年2月的订单
+  V [QUERY   ] QUALITY_STATS                  PHRASE_MATCH 0.98 | 最近90天的质检趋势
+  V [QUERY   ] REPORT_TRENDS                  CLASSIFIER   0.88 | 上个季度跟这个季度对比
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 春节前后一周的出勤情况
+  === AA1: intent=5/6, type=6/6
+
+--- AA10: 闲聊-问候离题非业务 (6) ---
+  T [UNKNOWN ] OUT_OF_DOMAIN                  PHRASE_MATCH 0.98 | 你好
+  T [UNKNOWN ] OUT_OF_DOMAIN                  PHRASE_MATCH 0.98 | 你是谁
+  T [UNKNOWN ] OUT_OF_DOMAIN                  CLASSIFIER   0.90 | 今天天气怎么样
+  T [UNKNOWN ] OUT_OF_DOMAIN                  PHRASE_MATCH 0.98 | 谢谢你
+  T [UNKNOWN ] OUT_OF_DOMAIN                  CLASSIFIER   0.93 | 讲个笑话
+  X [UNMATCHED] N/A                            ?            ? | 帮我写一封邮件
+  === AA10: intent=6/6, type=1/6
+
+--- AA11: 方言-地方化表达 (5) ---
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.71 | 仓库里头还有好多货伐
+  X [UNMATCHED] N/A                            ?            ? | 这批货搞得定不
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         CLASSIFIER   0.76 | 机器歇菜了
+  X [UNMATCHED] N/A                            ?            ? | 今个儿出了多少活
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 物料齐活了没
+  === AA11: intent=5/5, type=5/5
+
+--- AA12: 碰撞-动词同时是名词 (6) ---
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 检测设备是否在线
+  V [QUERY   ] QUALITY_CHECK_QUERY            CLASSIFIER   0.74 | 生产检测报告
+  V [QUERY   ] ATTENDANCE_STATS_BY_DEPT       CLASSIFIER   0.81 | 采购部门的考勤
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 设备维修订单
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 加工标准查询
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 出库检验记录
+  === AA12: intent=6/6, type=6/6
+
+--- AA2: 时间表达-模糊相对 (5) ---
+  T [WRITE   ] MATERIAL_BATCH_CREATE          CLASSIFIER   0.93 | 前天下午3点以后入库的
+  V [QUERY   ] REPORT_PRODUCTION              CLASSIFIER   0.94 | 国庆期间的产量
+  V [QUERY   ] EQUIPMENT_ALERT_LIST           PHRASE_MATCH 0.98 | 最近半个月设备报警几次
+  V [QUERY   ] REPORT_FINANCE                 PHRASE_MATCH 0.98 | 开年到现在的财务数据
+  V [QUERY   ] SHIPMENT_BY_DATE               PHRASE_MATCH 0.98 | 大前天的发货记录
+  === AA2: intent=5/5, type=4/5
+
+--- AA3: 角色-仓管员视角 (5) ---
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      PHRASE_MATCH 0.98 | 今天要出几单
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.86 | 哪些货要备
+  V [QUERY   ] COLD_CHAIN_TEMPERATURE         CLASSIFIER   0.93 | 冷库几号位还有空
+  X [UNMATCHED] N/A                            ?            ? | 这批货放哪个库区
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      PHRASE_MATCH 0.98 | 今天到货清单
+  === AA3: intent=5/5, type=5/5
+
+--- AA4: 角色-质检员视角 (6) ---
+  T [WRITE   ] QUALITY_CHECK_EXECUTE          CLASSIFIER   0.88 | 今天有几批要抽检
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 待检的批次列表
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 上一批的微生物检测出结果了吗
+  X [UNMATCHED] N/A                            ?            ? | 留样记录查一下
+  X [UNMATCHED] N/A                            ?            ? | 这批的理化指标
+  V [WRITE   ] QUALITY_DISPOSITION_EXECUTE    CLASSIFIER   0.87 | 不合格品处置方案
+  === AA4: intent=6/6, type=4/6
+
+--- AA5: 纠错-自我修正表达 (6) ---
+  V [QUERY   ] ORDER_LIST                     CLASSIFIER   0.93 | 不对，我要的是库存不是订单
+  V [QUERY   ] QUALITY_CHECK_QUERY            SEMANTIC     0.93 | 等等，我说错了，查质检的
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 哦不是这个，帮我查生产批次
+  T [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.93 | 搞错了，应该是出库不是入库
+  X [UNMATCHED] N/A                            ?            ? | 算了不查了，帮我打个卡吧
+  V [WRITE   ] CLOCK_IN                       CLASSIFIER   0.92 | 我刚才说反了，是签退不是签到
+  === AA5: intent=5/6, type=5/6
+
+--- AA6: 复合写入-先后并列 (6) ---
+  V [WRITE   ] PROCESSING_BATCH_CREATE        SEMANTIC     0.85 | 先创建批次然后分配工人
+  V [WRITE   ] PROCESSING_BATCH_CREATE        PHRASE_MATCH 0.98 | 入库完了直接创建生产批次
+  V [WRITE   ] SHIPMENT_CREATE                PHRASE_MATCH 0.98 | 质检通过后马上安排发货
+  X [UNMATCHED] N/A                            ?            ? | 打完卡顺便查一下今天排班
+  V [WRITE   ] ORDER_NEW                      SEMANTIC     0.85 | 创建订单并通知仓库备货
+  T [QUERY   ] EQUIPMENT_BREAKDOWN_REPORT     PHRASE_MATCH 0.98 | 停掉设备然后提交故障报告
+  === AA6: intent=5/6, type=5/6
+
+--- AA7: 噪音-纯符号表情乱码 (6) ---
+  X [UNMATCHED] N/A                            ?            ? | ？？？
+  X [UNMATCHED] N/A                            ?            ? | 。。。
+  X [UNMATCHED] N/A                            ?            ? | 666
+  X [UNMATCHED] N/A                            ?            ? | 哈哈哈哈
+  T [UNKNOWN ] OUT_OF_DOMAIN                  PHRASE_MATCH 0.98 | 嗯嗯好的
+  X [UNMATCHED] N/A                            ?            ? | 啊？
+  === AA7: intent=6/6, type=5/6
+
+--- AA8: 行业术语-供应链制造业 (6) ---
+  X [UNMATCHED] N/A                            ?            ? | MOQ是多少
+  V [QUERY   ] COST_QUERY                     CLASSIFIER   0.77 | FOB价格查询
+  V [QUERY   ] PROCESSING_BATCH_LIST          CLASSIFIER   0.90 | WIP在制品数量
+  V [QUERY   ] QUALITY_STATS                  CLASSIFIER   0.89 | 良品率多少
+  V [QUERY   ] REPORT_EFFICIENCY              PHRASE_MATCH 0.98 | OEE设备综合效率
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | BOM清单查询
+  === AA8: intent=6/6, type=6/6
+
+--- AA9: 假设条件-如果万一假如 (5) ---
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.90 | 如果明天产量翻倍需要多少原料
+  X [UNMATCHED] N/A                            ?            ? | 万一冷库断电怎么办
+  T [WRITE   ] SUPPLIER_EVALUATE              CLASSIFIER   0.83 | 假如供应商延迟交货影响大吗
+  V [WRITE   ] QUALITY_DISPOSITION_EXECUTE    SEMANTIC     0.85 | 要是质检不通过这批货怎么处理
+  V [WRITE   ] PROCESSING_BATCH_CREATE        CLASSIFIER   0.81 | 如果新增一条产线需要多少人
+  === AA9: intent=5/5, type=4/5
+
+--- AB1: 被动句-被字句构造 (6) ---
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.91 | 被退回的原材料有哪些
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 被暂停的生产批次
+  V [QUERY   ] CUSTOMER_DELETE                CLASSIFIER   0.92 | 被客户取消的订单
+  V [QUERY   ] EQUIPMENT_ALERT_LIST           PHRASE_MATCH 0.98 | 被系统告警的设备
+  V [QUERY   ] QUALITY_STATS                  PHRASE_MATCH 0.98 | 被质检判为不合格的批次
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 被供应商延迟的采购订单
+  === AB1: intent=6/6, type=6/6
+
+--- AB10: 用户管理-禁用分配角色 (6) ---
+  V [WRITE   ] USER_DISABLE                   PHRASE_MATCH 0.98 | 禁用这个用户账号
+  V [WRITE   ] USER_DISABLE                   CLASSIFIER   0.74 | 封禁这个员工的账号
+  X [UNMATCHED] N/A                            ?            ? | 给张三分配仓管员权限
+  V [WRITE   ] USER_ROLE_ASSIGN               PHRASE_MATCH 0.98 | 修改用户角色
+  V [WRITE   ] USER_CREATE                    PHRASE_MATCH 0.98 | 创建新用户账号
+  X [UNMATCHED] N/A                            ?            ? | 重置张三的密码
+  === AB10: intent=6/6, type=6/6
+
+--- AB11: 系统配置-首页布局功能开关 (6) ---
+  X [UNMATCHED] N/A                            ?            ? | 帮我生成首页布局
+  X [UNMATCHED] N/A                            ?            ? | 建议一个首页布局
+  X [UNMATCHED] N/A                            ?            ? | 更新首页模块配置
+  V [WRITE   ] FACTORY_FEATURE_TOGGLE         CLASSIFIER   0.85 | 开启某个工厂功能
+  V [WRITE   ] CONFIG_RESET                   CLASSIFIER   0.92 | 恢复默认系统配置
+  T [QUERY   ] ALERT_LIST                     SEMANTIC     0.93 | 重置告警规则配置
+  === AB11: intent=6/6, type=5/6
+
+--- AB12: 溯源-生成二维码追溯码 (5) ---
+  X [UNMATCHED] N/A                            ?            ? | 生成这批猪肉的溯源码
+  I [WRITE   ] PROCESSING_BATCH_CREATE        CLASSIFIER   0.80 | 为MB001批次生成追溯二维码
+  V [WRITE   ] TRACE_PUBLIC                   PHRASE_MATCH 0.98 | 生成公开溯源页面链接
+  X [UNMATCHED] N/A                            ?            ? | 扫描溯源码查看信息
+  X [UNMATCHED] N/A                            ?            ? | 溯源码是什么格式的
+  === AB12: intent=4/5, type=5/5
+
+--- AB13: 订单取消-取消vs删除精确区分 (6) ---
+  V [WRITE   ] ORDER_DELETE                   SEMANTIC     0.85 | 取消这笔订单
+  V [WRITE   ] ORDER_DELETE                   PHRASE_MATCH 0.98 | 撤销这个订单
+  V [WRITE   ] ORDER_DELETE                   SEMANTIC     0.85 | 这个订单不要了，取消掉
+  V [WRITE   ] ORDER_DELETE                   PHRASE_MATCH 0.98 | 永久删除订单记录
+  V [WRITE   ] ORDER_DELETE                   PHRASE_MATCH 0.98 | 订单已作废
+  V [WRITE   ] ORDER_DELETE                   CLASSIFIER   0.85 | 帮我把这几个订单全部撤掉
+  === AB13: intent=6/6, type=6/6
+
+--- AB14: 嵌入-URL电话特殊字符 (6) ---
+  X [UNMATCHED] N/A                            ?            ? | 打13800138000电话催货
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 批次#B20240115的库存
+  V [QUERY   ] ATTENDANCE_TODAY               CLASSIFIER   0.80 | @张三 帮我查一下考勤
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.84 | 库存【猪肉】【牛肉】【鸡肉】
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 发货单号：SH-2024-001的状态
+  V [QUERY   ] ORDER_STATUS                   CLASSIFIER   0.93 | 订单（备注：急单）的进度
+  === AB14: intent=6/6, type=6/6
+
+--- AB15: 比较级-比字句差值查询 (6) ---
+  V [QUERY   ] REPORT_PRODUCTION              CLASSIFIER   0.75 | 比上个月多了多少产量
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 这个月销售额比去年同期高还是低
+  V [QUERY   ] PRODUCTION_STATUS_QUERY        PHRASE_MATCH 0.98 | 哪个车间产量最高
+  X [UNMATCHED] N/A                            ?            ? | 库存比上周少了多少
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 今天出勤人数跟昨天比怎么样
+  V [QUERY   ] SUPPLIER_RANKING               PHRASE_MATCH 0.98 | A供应商比B供应商价格如何
+  === AB15: intent=6/6, type=6/6
+
+--- AB2: 话题句-话题述题结构 (6) ---
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 库存嘛，查一下
+  V [QUERY   ] ORDER_LIST                     CLASSIFIER   0.71 | 订单的话，最近有多少
+  X [UNMATCHED] N/A                            ?            ? | 质检这块，怎么样了
+  X [UNMATCHED] N/A                            ?            ? | 设备那边，有没有问题
+  V [QUERY   ] ATTENDANCE_TODAY               CLASSIFIER   0.80 | 考勤嘛，帮我看看
+  X [UNMATCHED] N/A                            ?            ? | 排班的话，明天安排好了没
+  === AB2: intent=6/6, type=6/6
+
+--- AB3: 反问句-难道反问修辞 (5) ---
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 难道猪肉库存真的没了？
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         CLASSIFIER   0.90 | 难道设备还没修好？
+  V [QUERY   ] QUALITY_CHECK_QUERY            CLASSIFIER   0.91 | 这批货难道不用质检吗
+  X [UNMATCHED] N/A                            ?            ? | 还没发货难道订单都不要了
+  X [UNMATCHED] N/A                            ?            ? | 连基本的产量都不达标吗
+  === AB3: intent=5/5, type=5/5
+
+--- AB4: 双重否定-不能不/没有不 (5) ---
+  V [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | 不能不查库存
+  V [QUERY   ] QUALITY_CHECK_QUERY            CLASSIFIER   0.93 | 没有不需要质检的批次吧
+  X [UNMATCHED] N/A                            ?            ? | 不是不能打卡，我就是忘了
+  V [QUERY   ] EQUIPMENT_MAINTENANCE          CLASSIFIER   0.95 | 这台设备不能不维护
+  T [UNKNOWN ] OUT_OF_DOMAIN                  CLASSIFIER   0.74 | 订单不得不处理一下
+  === AB4: intent=4/5, type=4/5
+
+--- AB5: 语气词-嘛啦呗咯句末 (6) ---
+  V [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | 库存查一下嘛
+  V [WRITE   ] CLOCK_IN                       PHRASE_MATCH 0.98 | 帮我打个卡啦
+  V [WRITE   ] SHIPMENT_CREATE                CLASSIFIER   0.93 | 发货呗，还等什么
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 质检结果出来了咯
+  V [QUERY   ] PRODUCTION_STATUS_QUERY        PHRASE_MATCH 0.98 | 生产进度嘛，看看就行
+  V [WRITE   ] ALERT_ACKNOWLEDGE              SEMANTIC     0.85 | 告警处理掉算了
+  === AB5: intent=6/6, type=6/6
+
+--- AB6: 使役句-让叫使令 (5) ---
+  V [WRITE   ] EQUIPMENT_STOP                 CLASSIFIER   0.93 | 让设备停下来
+  V [WRITE   ] CLOCK_IN                       PHRASE_MATCH 0.98 | 叫张三去打卡
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 让仓库备一批猪肉
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 叫质检员去检一下那批货
+  V [WRITE   ] SCHEDULING_SET_AUTO            CLASSIFIER   0.91 | 让排班系统自动跑一下
+  === AB6: intent=3/5, type=3/5
+
+--- AB7: 省略-同上一样继续 (5) ---
+  V [QUERY   ] CONTEXT_CONTINUE               PHRASE_MATCH 0.98 | 同上
+  X [UNMATCHED] N/A                            ?            ? | 一样的，再查一遍
+  V [QUERY   ] CONTEXT_CONTINUE               PHRASE_MATCH 0.98 | 跟刚才一样
+  V [QUERY   ] CONTEXT_CONTINUE               PHRASE_MATCH 0.98 | 还是之前那个条件
+  V [QUERY   ] CONTEXT_CONTINUE               PHRASE_MATCH 0.98 | 继续
+  === AB7: intent=5/5, type=5/5
+
+--- AB8: 边界-空白重复极端输入 (6) ---
+  X [UNMATCHED] N/A                            ?            ? | 查查查
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      PHRASE_MATCH 0.98 | 查
+  X [UNMATCHED] N/A                            ?            ? | 的
+  X [UNMATCHED] N/A                            ?            ? | 库存库存库存
+  X [UNMATCHED] N/A                            ?            ? | ！！！查！！！
+  X [UNMATCHED] N/A                            ?            ? |   
+  === AB8: intent=6/6, type=6/6
+
+--- AB9: 摄像头-越界入侵检测 (5) ---
+  V [WRITE   ] ISAPI_CONFIG_LINE_DETECTION    PHRASE_MATCH 0.98 | 配置越界检测
+  V [WRITE   ] ISAPI_CONFIG_LINE_DETECTION    PHRASE_MATCH 0.98 | 设置警戒线
+  V [WRITE   ] ISAPI_CONFIG_FIELD_DETECTION   PHRASE_MATCH 0.98 | 配置区域入侵检测
+  I [QUERY   ] QUALITY_CHECK_QUERY            CLASSIFIER   0.72 | 查看摄像头检测事件
+  V [WRITE   ] ISAPI_CONFIG_LINE_DETECTION    PHRASE_MATCH 0.98 | 行为检测配置
+  === AB9: intent=4/5, type=5/5
+
+--- AC1: 餐饮-菜品查询 (6) ---
+  X [UNMATCHED] N/A                            ?            ? | 今天有哪些菜品
+  X [UNMATCHED] N/A                            ?            ? | 销量最好的菜是哪几道
+  X [UNMATCHED] N/A                            ?            ? | 畅销菜品是什么
+  X [UNMATCHED] N/A                            ?            ? | 哪个菜卖不动
+  V [QUERY   ] COST_QUERY                     CLASSIFIER   0.90 | 每道菜的成本是多少
+  I [QUERY   ] COST_TREND_ANALYSIS            PHRASE_MATCH 0.98 | 做红烧肉的成本分析
+  === AC1: intent=5/6, type=6/6
+
+--- AC2: 餐饮-食材库存 (6) ---
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 食材库存还有多少
+  V [QUERY   ] MATERIAL_EXPIRING_ALERT        CLASSIFIER   0.94 | 哪些食材快过期了
+  I [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.92 | 低库存的食材有哪些
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 肉类食材还剩多少
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 需要采购什么食材
+  I [QUERY   ] COST_QUERY                     CLASSIFIER   0.81 | 食材成本最近涨了多少
+  === AC2: intent=3/6, type=5/6
+
+--- AC3: 餐饮-营业分析 (5) ---
+  X [UNMATCHED] N/A                            ?            ? | 今天营业额是多少
+  X [UNMATCHED] N/A                            ?            ? | 本周营业额趋势
+  V [QUERY   ] ORDER_TODAY                    CLASSIFIER   0.91 | 今天接了多少单
+  X [UNMATCHED] N/A                            ?            ? | 哪个时段客人最多
+  I [QUERY   ] PROFIT_TREND_ANALYSIS          PHRASE_MATCH 0.98 | 毛利率分析
+  === AC3: intent=4/5, type=5/5
+
+--- AC4: 餐饮-损耗管理 (5) ---
+  X [UNMATCHED] N/A                            ?            ? | 本周食材损耗汇总
+  I [QUERY   ] REPORT_ANOMALY                 PHRASE_MATCH 0.98 | 损耗率是多少
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 有没有异常损耗
+  X [UNMATCHED] N/A                            ?            ? | 今天浪费了多少食材
+  X [UNMATCHED] N/A                            ?            ? | 损耗最高的食材
+  === AC4: intent=4/5, type=5/5
+
+--- AD1: 摄像头-设备管理查询 (5) ---
+  V [QUERY   ] EQUIPMENT_LIST                 PHRASE_MATCH 0.98 | 摄像头列表
+  I [QUERY   ] QUERY_GENERIC_DETAIL           CLASSIFIER   0.94 | 查看1号摄像头详情
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 摄像头在线状态
+  X [UNMATCHED] N/A                            ?            ? | 摄像头的流媒体地址
+  V [QUERY   ] ALERT_LIST                     CLASSIFIER   0.90 | 查看摄像头告警事件
+  === AD1: intent=4/5, type=5/5
+
+--- AD2: 摄像头-管理操作 (6) ---
+  I [WRITE   ] EQUIPMENT_CAMERA_START         PHRASE_MATCH 0.98 | 添加一台摄像头
+  X [UNMATCHED] N/A                            ?            ? | 订阅摄像头告警推送
+  X [UNMATCHED] N/A                            ?            ? | 取消摄像头事件订阅
+  X [UNMATCHED] N/A                            ?            ? | 摄像头网络连接测试
+  X [UNMATCHED] N/A                            ?            ? | 查看摄像头连接是否正常
+  X [UNMATCHED] N/A                            ?            ? | 抓拍一张当前画面
+  === AD2: intent=5/6, type=6/6
+
+--- AE1: 秤协议-型号与协议管理 (5) ---
+  T [QUERY   ] SCALE_LIST_DEVICES             PHRASE_MATCH 0.98 | 添加一个秤型号
+  T [WRITE   ] SCALE_ADD_DEVICE_VISION        CLASSIFIER   0.72 | 自动识别秤的协议
+  I [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.82 | 查看支持的秤协议列表
+  V [QUERY   ] SCALE_DEVICE_DETAIL            CLASSIFIER   0.77 | 测试秤数据解析
+  V [WRITE   ] SCALE_ADD_DEVICE               CLASSIFIER   0.85 | 用AI生成秤配置
+  === AE1: intent=2/5, type=3/5
+
+--- AE2: 秤-故障排查与校准 (5) ---
+  I [QUERY   ] REPORT_DASHBOARD_OVERVIEW      SEMANTIC     0.93 | 电子秤数据不准帮我排查
+  X [UNMATCHED] N/A                            ?            ? | 秤需要校准
+  X [UNMATCHED] N/A                            ?            ? | 电子秤读数异常
+  T [QUERY   ] EQUIPMENT_MAINTENANCE          SEMANTIC     0.93 | 用视觉识别方式添加秤设备
+  X [UNMATCHED] N/A                            ?            ? | 秤重量显示不对
+  === AE2: intent=3/5, type=4/5
+
+--- AF1: 报工-进度与工时查询 (5) ---
+  V [QUERY   ] REPORT_PRODUCTION              CLASSIFIER   0.92 | 查看生产进度报告
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 工人工时统计
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 每日生产汇总报告
+  X [UNMATCHED] N/A                            ?            ? | 这周完成了多少工时
+  V [QUERY   ] PRODUCTION_STATUS_QUERY        PHRASE_MATCH 0.98 | A车间今日产出进度
+  === AF1: intent=5/5, type=5/5
+
+--- AG1: 质量处置-挂起隔离 (4) ---
+  X [UNMATCHED] N/A                            ?            ? | 这批货先挂起等候处理
+  V [WRITE   ] QUALITY_DISPOSITION_EXECUTE    CLASSIFIER   0.86 | 隔离不合格批次
+  X [UNMATCHED] N/A                            ?            ? | 先搁置这批问题货
+  V [WRITE   ] PROCESSING_BATCH_PAUSE         CLASSIFIER   0.89 | 批次暂停使用等质检
+  === AG1: intent=4/4, type=4/4
+
+--- AG2: 质量处置-返工报废特批 (5) ---
+  V [WRITE   ] QUALITY_DISPOSITION_EXECUTE    CLASSIFIER   0.89 | 不合格品返工处理
+  X [UNMATCHED] N/A                            ?            ? | 这批全部报废
+  X [UNMATCHED] N/A                            ?            ? | 申请特批放行
+  X [UNMATCHED] N/A                            ?            ? | 条件放行这批货
+  V [WRITE   ] QUALITY_DISPOSITION_EXECUTE    CLASSIFIER   0.87 | 这批货让步放行
+  === AG2: intent=5/5, type=5/5
+
+--- AG3: 告警-分诊诊断 (5) ---
+  I [QUERY   ] ALERT_STATS                    CLASSIFIER   0.76 | 帮我分析一下这个告警的原因
+  T [WRITE   ] ALERT_ACKNOWLEDGE              SEMANTIC     0.85 | 告警分诊处理
+  V [QUERY   ] ALERT_LIST                     SEMANTIC     0.92 | 这个告警是什么级别的
+  I [QUERY   ] ALERT_LIST                     SEMANTIC     0.92 | 为什么会出现这个告警
+  V [QUERY   ] ALERT_DIAGNOSE                 PHRASE_MATCH 0.98 | 告警智能诊断
+  === AG3: intent=2/5, type=4/5
+
+--- AG4: 考勤-打卡状态查询 (4) ---
+  V [QUERY   ] ATTENDANCE_STATUS              PHRASE_MATCH 0.98 | 我今天打卡了吗
+  V [QUERY   ] ATTENDANCE_STATUS              PHRASE_MATCH 0.98 | 查一下我的打卡状态
+  X [UNMATCHED] N/A                            ?            ? | 我现在算上班还是下班状态
+  V [QUERY   ] ATTENDANCE_STATUS              PHRASE_MATCH 0.98 | 今天我签到了吗
+  === AG4: intent=4/4, type=4/4
+
+--- AH1: 订单-今日特定/统计 (5) ---
+  V [QUERY   ] ORDER_TODAY                    PHRASE_MATCH 0.98 | 今天的订单有哪些
+  V [QUERY   ] ORDER_TODAY                    PHRASE_MATCH 0.98 | 今日下单情况
+  V [QUERY   ] ORDER_LIST                     SEMANTIC     0.93 | 今天新增了几个订单
+  V [QUERY   ] ORDER_LIST                     CLASSIFIER   0.71 | 订单数量统计
+  I [QUERY   ] ORDER_FILTER                   PHRASE_MATCH 0.98 | 本月订单总数
+  === AH1: intent=4/5, type=5/5
+
+--- AH10: 紧急-优先级标记意图 (5) ---
+  I [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | 紧急查库存告急
+  T [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 优先处理这个设备故障
+  V [QUERY   ] COLD_CHAIN_TEMPERATURE         PHRASE_MATCH 0.98 | 马上查一下冷库温度
+  X [UNMATCHED] N/A                            ?            ? | 急查这批货需要追溯
+  V [WRITE   ] PROCESSING_BATCH_PAUSE         CLASSIFIER   0.88 | 立刻停产
+  === AH10: intent=3/5, type=4/5
+
+--- AH11: 对抗-语境切换中断 (5) ---
+  I [QUERY   ] ATTENDANCE_TODAY               CLASSIFIER   0.80 | 刚才的那个忘了帮我查一下考勤
+  V [WRITE   ] CLOCK_IN                       CLASSIFIER   0.88 | 不管了帮我先打个卡
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 先不说那个库存怎么样
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 等等先不查设备帮我看看订单
+  T [QUERY   ] ALERT_ACTIVE                   CLASSIFIER   0.87 | 哦对了还有个告警没处理
+  === AH11: intent=3/5, type=4/5
+
+--- AH12: 角色-车间主管视角 (5) ---
+  V [QUERY   ] ATTENDANCE_TODAY               PHRASE_MATCH 0.98 | 我手下几个工人在干活
+  I [QUERY   ] REPORT_PRODUCTION              CLASSIFIER   0.92 | 今天的班组产量
+  X [UNMATCHED] N/A                            ?            ? | 哪道工序卡住了
+  X [UNMATCHED] N/A                            ?            ? | 让工人先去休息
+  V [QUERY   ] ATTENDANCE_TODAY               PHRASE_MATCH 0.98 | 今天谁没到岗
+  === AH12: intent=4/5, type=5/5
+
+--- AH13: 角色-调度员视角 (5) ---
+  X [UNMATCHED] N/A                            ?            ? | 明天哪些岗位还没排到人
+  X [UNMATCHED] N/A                            ?            ? | 把排班结果发给所有人
+  V [WRITE   ] SCHEDULING_SET_AUTO            CLASSIFIER   0.92 | 自动排明天的班
+  X [UNMATCHED] N/A                            ?            ? | 手动调整一下排班
+  X [UNMATCHED] N/A                            ?            ? | 排班系统暂停用
+  === AH13: intent=5/5, type=5/5
+
+--- AH14: 边界-输入含换算单位 (5) ---
+  V [WRITE   ] MATERIAL_BATCH_CREATE          CLASSIFIER   0.93 | 入库两吨猪肉
+  T [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 发货三千箱
+  T [QUERY   ] MATERIAL_BATCH_USE             CLASSIFIER   0.71 | 出库一百五十斤鸡肉
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.91 | 库存还剩大约半吨
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 采购一万块钱的猪肉
+  === AH14: intent=2/5, type=2/5
+
+--- AH15: 跨域-餐饮vs制造歧义 (5) ---
+  I [QUERY   ] REPORT_DASHBOARD_OVERVIEW      SEMANTIC     0.93 | 今天食材够用吗
+  V [QUERY   ] COST_QUERY                     CLASSIFIER   0.78 | 菜品成本太高了
+  V [QUERY   ] ORDER_TODAY                    PHRASE_MATCH 0.98 | 今日订单量和营业额
+  X [UNMATCHED] N/A                            ?            ? | 损耗太大了要查原因
+  I [QUERY   ] MRP_CALCULATION                CLASSIFIER   0.94 | 进货建议
+  === AH15: intent=3/5, type=5/5
+
+--- AH2: 发货-按日期/更新 (5) ---
+  V [QUERY   ] SHIPMENT_BY_DATE               PHRASE_MATCH 0.98 | 查2月15号的发货记录
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 上周一的发货清单
+  X [UNMATCHED] N/A                            ?            ? | 更新这条发货单信息
+  V [WRITE   ] SHIPMENT_UPDATE                PHRASE_MATCH 0.98 | 修改发货地址
+  V [QUERY   ] SHIPMENT_BY_DATE               PHRASE_MATCH 0.98 | 按日期看发货汇总
+  === AH2: intent=5/5, type=5/5
+
+--- AH3: 客户-反馈投诉 (4) ---
+  V [QUERY   ] CUSTOMER_STATS                 PHRASE_MATCH 0.98 | 客户反馈记录
+  T [QUERY   ] CUSTOMER_STATS                 PHRASE_MATCH 0.98 | 收到客户投诉了
+  X [UNMATCHED] N/A                            ?            ? | 客户对质量有什么反馈
+  V [QUERY   ] CUSTOMER_STATS                 PHRASE_MATCH 0.98 | 有没有客户投诉记录
+  === AH3: intent=4/4, type=3/4
+
+--- AH4: 产品-类型与更新 (5) ---
+  V [QUERY   ] PRODUCT_TYPE_QUERY             PHRASE_MATCH 0.98 | 查看产品类型
+  V [QUERY   ] PRODUCT_TYPE_QUERY             PHRASE_MATCH 0.98 | 产品种类列表
+  V [WRITE   ] PRODUCT_UPDATE                 PHRASE_MATCH 0.98 | 更新产品信息
+  V [WRITE   ] PRODUCT_UPDATE                 CLASSIFIER   0.89 | 修改产品的规格
+  V [QUERY   ] PRODUCT_TYPE_QUERY             PHRASE_MATCH 0.98 | 库存里有哪些产品类型
+  === AH4: intent=5/5, type=5/5
+
+--- AH5: 库存-清零操作 (4) ---
+  V [WRITE   ] INVENTORY_CLEAR                PHRASE_MATCH 0.98 | 清空库存
+  V [WRITE   ] INVENTORY_CLEAR                PHRASE_MATCH 0.98 | 库存清零
+  T [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 把库存全部出清
+  V [WRITE   ] INVENTORY_CLEAR                PHRASE_MATCH 0.98 | 这个仓位的库存归零
+  === AH5: intent=3/4, type=3/4
+
+--- AH6: 物料-直接使用操作 (5) ---
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 使用这批猪肉
+  V [WRITE   ] MATERIAL_BATCH_CONSUME         PHRASE_MATCH 0.98 | 把这批原料用掉
+  T [QUERY   ] MATERIAL_BATCH_USE             PHRASE_MATCH 0.98 | 投料
+  T [QUERY   ] MATERIAL_BATCH_USE             PHRASE_MATCH 0.98 | 领用一批原材料
+  I [WRITE   ] PROCESSING_BATCH_CREATE        SEMANTIC     0.95 | 申请使用猪肉批次MB001
+  === AH6: intent=3/5, type=2/5
+
+--- AH7: 系统-通知配置 (4) ---
+  V [WRITE   ] FACTORY_NOTIFICATION_CONFIG    PHRASE_MATCH 0.98 | 配置通知设置
+  T [QUERY   ] RULE_CONFIG                    PHRASE_MATCH 0.98 | 设置告警通知方式
+  X [UNMATCHED] N/A                            ?            ? | 开关微信消息推送
+  V [WRITE   ] FACTORY_NOTIFICATION_CONFIG    PHRASE_MATCH 0.98 | 修改工厂通知配置
+  === AH7: intent=4/4, type=3/4
+
+--- AH8: 员工-删除变体容错 (4) ---
+  V [WRITE   ] HR_DELETE_EMPLOYEE             PHRASE_MATCH 0.98 | 删除员工张三
+  V [WRITE   ] USER_DELETE                    PHRASE_MATCH 0.98 | 离职员工注销账号
+  X [UNMATCHED] N/A                            ?            ? | 把员工从系统里删掉
+  X [UNMATCHED] N/A                            ?            ? | 员工解除雇佣
+  === AH8: intent=4/4, type=4/4
+
+--- AH9: 时间-上月去年精确相对 (5) ---
+  V [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | 上个月的库存报表
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 去年同期的产量
+  V [QUERY   ] REPORT_FINANCE                 PHRASE_MATCH 0.98 | 上个季度的财务总结
+  V [QUERY   ] QUALITY_STATS                  PHRASE_MATCH 0.98 | 前年的质检合格率
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 上半年的发货量
+  === AH9: intent=5/5, type=5/5
+
+--- B1: 查询-仓库/库存 (8) ---
+  V [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | 仓库猪肉库存有多少
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 今天入库了多少鸡肉
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 牛肉批次还有多少库存
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 库房里还剩多少猪肉
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 本月入库总量是多少
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 本月猪肉入库总量
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 猪肉还有没有
+  V [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | 仓库满了吗
+  === B1: intent=6/8, type=6/8
+
+--- B2: 查询-生产 (8) ---
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 查看今天的生产批次
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 查看豆腐的生产批次
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 今天牛肉批次生产了多少
+  V [QUERY   ] PRODUCTION_STATUS_QUERY        PHRASE_MATCH 0.98 | A车间今天的产量
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 已完成的生产批次
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 上周生产了多少批次的牛肉产品
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 产量咋样
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 月度生产报表
+  === B2: intent=8/8, type=8/8
+
+--- B3: 查询-订单 (8) ---
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 查看所有订单
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 逾期未完成的订单
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 未发货的订单有哪些
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 已发货但未签收的订单
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 有没有逾期的
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 发了多少货
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 有啥新订单
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 本月采购订单总额
+  === B3: intent=8/8, type=8/8
+
+--- B4: 查询-质检 (7) ---
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 最近的质检报告
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 没有通过质检的批次
+  V [QUERY   ] QUALITY_CHECK_QUERY            SEMANTIC     0.95 | 不合格产品清单
+  V [QUERY   ] QUALITY_STATS                  PHRASE_MATCH 0.98 | 上周质检不合格批次
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 今天鸡肉批次的质检结果
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 过期未处理的质检报告
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 质检咋样了
+  === B4: intent=7/7, type=7/7
+
+--- B5: 查询-考勤/HR (8) ---
+  V [QUERY   ] ATTENDANCE_HISTORY             PHRASE_MATCH 0.98 | 查看考勤记录
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 今天出勤率多少
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 张三这个月请了几天假
+  V [QUERY   ] ATTENDANCE_HISTORY             PHRASE_MATCH 0.98 | 李四的考勤记录
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 赵六今天到岗了吗
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 昨天夜班出勤人数
+  X [UNMATCHED] N/A                            ?            ? | 查看张三的绩效
+  V [QUERY   ] ATTENDANCE_TODAY               PHRASE_MATCH 0.98 | 今儿谁没来
+  === B5: intent=7/8, type=7/8
+
+--- B6: 查询-设备 (6) ---
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 设备运行状态
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 二号产线设备运行状态
+  V [QUERY   ] COLD_CHAIN_TEMPERATURE         PHRASE_MATCH 0.98 | 三号冷库温度记录
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 本周设备报警记录
+  V [QUERY   ] EQUIPMENT_STATS                PHRASE_MATCH 0.98 | 当前在线设备数量
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 设备坏了没
+  === B6: intent=6/6, type=6/6
+
+--- B7: 查询-销售/财务/统计 (7) ---
+  V [QUERY   ] REPORT_KPI                     PHRASE_MATCH 0.98 | 销量前五的产品是哪些
+  V [QUERY   ] REPORT_KPI                     PHRASE_MATCH 0.98 | 上个月销售额是多少
+  V [QUERY   ] REPORT_KPI                     PHRASE_MATCH 0.98 | 哪个产品卖得最好
+  V [QUERY   ] REPORT_KPI                     PHRASE_MATCH 0.98 | 本季度利润统计
+  V [QUERY   ] REPORT_KPI                     PHRASE_MATCH 0.98 | 今年的退货率是多少
+  V [QUERY   ] REPORT_KPI                     CLASSIFIER   0.74 | 本月营收目标完成率
+  V [QUERY   ] CUSTOMER_STATS                 PHRASE_MATCH 0.98 | 客户满意度统计
+  === B7: intent=7/7, type=7/7
+
+--- B8: 查询-跨域复合 (6) ---
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 今天各车间产量汇总
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 本周各部门出勤情况
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 原材料进出库明细
+  V [QUERY   ] QUALITY_STATS                  PHRASE_MATCH 0.98 | 各产品线质检合格率对比
+  V [QUERY   ] CUSTOMER_STATS                 PHRASE_MATCH 0.98 | 上月各客户下单金额排名
+  V [QUERY   ] EQUIPMENT_STATS                PHRASE_MATCH 0.98 | 设备故障次数统计
+  === B8: intent=6/6, type=6/6
+
+--- C1: 写入-创建操作 (8) ---
+  V [WRITE   ] PROCESSING_BATCH_CREATE        SEMANTIC     0.85 | 创建一个新的牛肉批次
+  V [WRITE   ] MATERIAL_BATCH_CREATE          PHRASE_MATCH 0.98 | 新建一条猪肉的入库记录
+  V [WRITE   ] PROCESSING_BATCH_CREATE        PHRASE_MATCH 0.98 | 添加一个新的生产批次
+  V [WRITE   ] MATERIAL_BATCH_CREATE          PHRASE_MATCH 0.98 | 录入今天的鸡肉入库信息
+  V [WRITE   ] ORDER_NEW                      SEMANTIC     0.85 | 帮我创建一个订单
+  V [WRITE   ] MATERIAL_BATCH_CREATE          PHRASE_MATCH 0.98 | 新增一条物料入库记录
+  V [WRITE   ] MATERIAL_BATCH_CREATE          PHRASE_MATCH 0.98 | 登记一批新的原材料
+  V [WRITE   ] SHIPMENT_CREATE                PHRASE_MATCH 0.98 | 生成一个发货单
+  === C1: intent=8/8, type=8/8
+
+--- C2: 写入-状态更新/打卡 (4) ---
+  V [WRITE   ] CLOCK_IN                       PHRASE_MATCH 0.98 | 帮我打卡
+  V [WRITE   ] CLOCK_IN                       CLASSIFIER   0.92 | 我要签到
+  V [WRITE   ] CLOCK_IN                       PHRASE_MATCH 0.98 | 上班打卡
+  V [WRITE   ] CLOCK_OUT                      PHRASE_MATCH 0.98 | 下班签退
+  === C2: intent=4/4, type=4/4
+
+--- C3: 写入-更多动词模式 (6) ---
+  V [WRITE   ] PROCESSING_BATCH_CREATE        PHRASE_MATCH 0.98 | 建一个新批次
+  V [WRITE   ] MATERIAL_BATCH_CREATE          PHRASE_MATCH 0.98 | 补录一条入库记录
+  V [WRITE   ] ORDER_NEW                      PHRASE_MATCH 0.98 | 下一个采购单
+  V [WRITE   ] ORDER_UPDATE                   SEMANTIC     0.85 | 更新订单发货地址
+  V [WRITE   ] CLOCK_IN                       PHRASE_MATCH 0.98 | 签到打卡
+  V [WRITE   ] PROCESSING_BATCH_START         PHRASE_MATCH 0.98 | 开始新的生产任务
+  === C3: intent=6/6, type=6/6
+
+--- D1: 边界-咨询vs查询 (6) ---
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 猪肉检测了哪些项目
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 牛肉的冷藏温度是多少度
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 冷库里的猪肉还能放多久
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 鸡肉加工车间温度要求
+  V [QUERY   ] QUALITY_CHECK_QUERY            CLASSIFIER   0.86 | 猪肉批次的检测报告
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 牛肉的出厂检验标准
+  === D1: intent=6/6, type=6/6
+
+--- D2: 边界-查询vs写入 (8) ---
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 查看生产批次
+  V [WRITE   ] PROCESSING_BATCH_CREATE        PHRASE_MATCH 0.98 | 创建生产批次
+  V [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | 查询库存
+  V [WRITE   ] MATERIAL_BATCH_CREATE          PHRASE_MATCH 0.98 | 录入库存
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 查看订单
+  V [WRITE   ] ORDER_UPDATE                   PHRASE_MATCH 0.98 | 修改订单状态
+  V [QUERY   ] ATTENDANCE_HISTORY             PHRASE_MATCH 0.98 | 查看考勤
+  V [WRITE   ] CLOCK_IN                       PHRASE_MATCH 0.98 | 我要打卡
+  === D2: intent=8/8, type=8/8
+
+--- D3: 边界-口语化/极短输入 (8) ---
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 牛肉
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 订单
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 质检
+  V [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | 库存
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 看看订单
+  V [WRITE   ] CLOCK_IN                       PHRASE_MATCH 0.98 | 打卡
+  V [QUERY   ] EQUIPMENT_LIST                 CLASSIFIER   0.93 | 查一下设备
+  V [QUERY   ] QUALITY_CHECK_QUERY            SEMANTIC     0.92 | 最近质检怎么样
+  === D3: intent=8/8, type=8/8
+
+--- D4: 边界-咨询vs查询深层混淆 (8) ---
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 鸡肉为什么会变色
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 鸡肉入库颜色异常
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 猪肉保鲜方法有哪些
+  V [QUERY   ] COLD_CHAIN_TEMPERATURE         PHRASE_MATCH 0.98 | 猪肉冷库温度异常
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 食品安全法对添加剂的规定
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 添加剂检测结果
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 如何防止肉类变质
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 变质原材料处理记录
+  === D4: intent=8/8, type=8/8
+
+--- D5: 边界-查询vs写入深层混淆 (6) ---
+  V [WRITE   ] PROCESSING_BATCH_COMPLETE      SEMANTIC     0.85 | 批次完成了
+  V [WRITE   ] ORDER_DELETE                   SEMANTIC     0.85 | 订单取消
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 查看库存不足的原材料
+  V [WRITE   ] PROCESSING_BATCH_PAUSE         PHRASE_MATCH 0.98 | 暂停生产线
+  V [WRITE   ] PROCESSING_BATCH_RESUME        SEMANTIC     0.85 | 恢复生产
+  V [WRITE   ] SHIPMENT_CREATE                PHRASE_MATCH 0.98 | 确认发货
+  === D5: intent=6/6, type=6/6
+
+--- D6: 边界-长句/多意图 (6) ---
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 查看一下最近猪肉入库情况然后看看质检结果
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 帮我查查上周的牛肉生产数据
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 看看仓库的存货够不够这周用的
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 请问一下牛肉解冻后能保存多长时间
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 我想知道食品防腐剂对人体有什么影响
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      PHRASE_MATCH 0.98 | 跟我说说最近的销售情况和客户反馈
+  === D6: intent=5/6, type=5/6
+
+--- E1: 查询-供应商 (6) ---
+  V [QUERY   ] SUPPLIER_LIST                  PHRASE_MATCH 0.98 | 供应商列表
+  V [QUERY   ] SUPPLIER_RANKING               PHRASE_MATCH 0.98 | 查看供应商评分
+  V [QUERY   ] SUPPLIER_RANKING               PHRASE_MATCH 0.98 | 哪个供应商交货最准时
+  V [QUERY   ] SUPPLIER_RANKING               PHRASE_MATCH 0.98 | 各供应商价格对比
+  V [QUERY   ] SUPPLIER_SEARCH                CLASSIFIER   0.93 | 找一下猪肉的供应商
+  V [QUERY   ] SUPPLIER_RANKING               PHRASE_MATCH 0.98 | 供应商表现怎样
+  === E1: intent=6/6, type=6/6
+
+--- E2: 查询-发货/物流 (6) ---
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 最近的发货记录
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 今天有几单发货
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 查看物流信息
+  V [QUERY   ] SHIPMENT_STATS                 PHRASE_MATCH 0.98 | 上周发货统计
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 张三负责的发货单
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 待发货的订单
+  === E2: intent=6/6, type=6/6
+
+--- E3: 查询-报表/分析 (6) ---
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      PHRASE_MATCH 0.98 | 今日工厂总览
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 本周生产报表
+  V [QUERY   ] REPORT_QUALITY                 PHRASE_MATCH 0.98 | 质量报告
+  V [QUERY   ] REPORT_FINANCE                 PHRASE_MATCH 0.98 | 财务报表
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      PHRASE_MATCH 0.98 | 昨天的数据汇总
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      PHRASE_MATCH 0.98 | 给我看看整体经营数据
+  === E3: intent=6/6, type=6/6
+
+--- E4: 查询-告警/预警 (6) ---
+  V [QUERY   ] ALERT_LIST                     CLASSIFIER   0.92 | 当前有哪些告警
+  V [QUERY   ] ALERT_ACTIVE                   PHRASE_MATCH 0.98 | 活跃的告警
+  V [QUERY   ] ALERT_STATS                    PHRASE_MATCH 0.98 | 本月告警统计
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 库存不足的原料有哪些
+  V [QUERY   ] MATERIAL_EXPIRING_ALERT        PHRASE_MATCH 0.98 | 快过期的原材料
+  V [QUERY   ] COLD_CHAIN_TEMPERATURE         PHRASE_MATCH 0.98 | 冷库温度告警
+  === E4: intent=6/6, type=6/6
+
+--- E5: 查询-溯源/追溯 (4) ---
+  V [QUERY   ] TRACE_FULL                     PHRASE_MATCH 0.98 | 查看这个批次的溯源信息
+  T [WRITE   ] TRACE_PUBLIC                   PHRASE_MATCH 0.98 | 溯源码查询
+  V [QUERY   ] TRACE_BATCH                    PHRASE_MATCH 0.98 | 猪肉批次MB001的来源
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 这批牛肉从哪里来的
+  === E5: intent=3/4, type=2/4
+
+--- E6: 查询-排班/调度 (3) ---
+  V [QUERY   ] SCHEDULING_LIST                PHRASE_MATCH 0.98 | 明天的排班表
+  V [QUERY   ] SCHEDULING_LIST                PHRASE_MATCH 0.98 | 本周排班情况
+  V [QUERY   ] SCHEDULING_LIST                PHRASE_MATCH 0.98 | 哪条产线还没排班
+  === E6: intent=3/3, type=3/3
+
+--- E7: 查询-客户/CRM (5) ---
+  V [QUERY   ] CUSTOMER_LIST                  PHRASE_MATCH 0.98 | 客户列表
+  V [QUERY   ] CUSTOMER_PURCHASE_HISTORY      PHRASE_MATCH 0.98 | 查看张三的历史采购记录
+  V [QUERY   ] CUSTOMER_STATS                 PHRASE_MATCH 0.98 | 活跃客户有哪些
+  V [QUERY   ] CUSTOMER_SEARCH                PHRASE_MATCH 0.98 | 搜索客户王总
+  V [QUERY   ] CUSTOMER_STATS                 PHRASE_MATCH 0.98 | 本月新增客户数量
+  === E7: intent=5/5, type=5/5
+
+--- F1: 写入-状态更新 (5) ---
+  V [WRITE   ] ORDER_UPDATE                   PHRASE_MATCH 0.98 | 订单已发货
+  V [WRITE   ] PROCESSING_BATCH_COMPLETE      SEMANTIC     0.85 | 批次生产完成
+  X [UNMATCHED] N/A                            ?            ? | 标记这个批次为已检验
+  V [WRITE   ] EQUIPMENT_START                PHRASE_MATCH 0.98 | 启动A产线
+  V [WRITE   ] EQUIPMENT_STOP                 PHRASE_MATCH 0.98 | 停止B产线设备
+  === F1: intent=4/5, type=4/5
+
+--- F2: 写入-删除/取消 (3) ---
+  V [WRITE   ] ORDER_DELETE                   SEMANTIC     0.85 | 删除这个订单
+  V [WRITE   ] PROCESSING_BATCH_CANCEL        PHRASE_MATCH 0.98 | 取消这个生产批次
+  V [WRITE   ] SHIPMENT_DELETE                PHRASE_MATCH 0.98 | 删除发货单
+  === F2: intent=3/3, type=3/3
+
+--- F3: 写入-告警操作 (3) ---
+  V [WRITE   ] ALERT_ACKNOWLEDGE              SEMANTIC     0.85 | 确认告警
+  V [WRITE   ] ALERT_RESOLVE                  PHRASE_MATCH 0.98 | 解决这个告警
+  V [WRITE   ] ALERT_ACKNOWLEDGE              SEMANTIC     0.85 | 处理掉这个告警
+  === F3: intent=3/3, type=3/3
+
+--- G1: 边界-时间限定查询 (5) ---
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 上周的订单
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 去年同期产量
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 三月份的入库记录
+  V [QUERY   ] QUALITY_CHECK_QUERY            CLASSIFIER   0.83 | 过去七天的质检情况
+  V [QUERY   ] PRODUCTION_STATUS_QUERY        PHRASE_MATCH 0.98 | 今天到目前为止生产了多少
+  === G1: intent=5/5, type=5/5
+
+--- G2: 边界-否定/条件模式 (4) ---
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 除了牛肉还有什么库存
+  V [QUERY   ] QUALITY_STATS                  PHRASE_MATCH 0.98 | 不合格的批次有几个
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 没有分配的生产任务
+  V [QUERY   ] ATTENDANCE_ANOMALY             PHRASE_MATCH 0.98 | 还没打卡的人有谁
+  === G2: intent=4/4, type=4/4
+
+--- G3: 边界-方言/口语变体 (5) ---
+  V [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | 帮我瞅瞅仓库
+  V [WRITE   ] ORDER_NEW                      PHRASE_MATCH 0.98 | 弄个新订单
+  V [WRITE   ] PROCESSING_BATCH_CREATE        PHRASE_MATCH 0.98 | 给我整一个生产批次
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 看一眼设备
+  V [QUERY   ] ATTENDANCE_HISTORY             PHRASE_MATCH 0.98 | 帮我查查考勤
+  === G3: intent=5/5, type=5/5
+
+--- G4: 边界-更多极短输入 (5) ---
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 发货
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      PHRASE_MATCH 0.98 | 报表
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 告警
+  V [QUERY   ] SUPPLIER_LIST                  PHRASE_MATCH 0.98 | 供应商
+  V [QUERY   ] SCHEDULING_LIST                PHRASE_MATCH 0.98 | 排班
+  === G4: intent=5/5, type=5/5
+
+--- H1: 查询-财务成本 (6) ---
+  V [QUERY   ] COST_TREND_ANALYSIS            PHRASE_MATCH 0.98 | 本月成本分析
+  V [QUERY   ] COST_TREND_ANALYSIS            PHRASE_MATCH 0.98 | 原料成本趋势
+  V [QUERY   ] REPORT_FINANCE                 PHRASE_MATCH 0.98 | 查看财务指标
+  V [QUERY   ] REPORT_TRENDS                  PHRASE_MATCH 0.98 | 利润趋势分析
+  I [QUERY   ] PROFIT_TREND_ANALYSIS          PHRASE_MATCH 0.98 | 毛利率是多少
+  V [QUERY   ] REPORT_FINANCE                 PHRASE_MATCH 0.98 | 本季度财务概况
+  === H1: intent=5/6, type=6/6
+
+--- H2: 查询-财务深层 (6) ---
+  V [QUERY   ] QUERY_FINANCE_ROA              PHRASE_MATCH 0.98 | 资产收益率
+  V [QUERY   ] QUERY_FINANCE_ROE              PHRASE_MATCH 0.98 | 净资产回报率
+  V [QUERY   ] QUERY_LIQUIDITY                CLASSIFIER   0.87 | 流动比率查询
+  V [QUERY   ] QUERY_SOLVENCY                 CLASSIFIER   0.92 | 偿债能力分析
+  V [QUERY   ] QUERY_DUPONT_ANALYSIS          CLASSIFIER   0.94 | 杜邦分析
+  V [QUERY   ] REPORT_BENEFIT_OVERVIEW        PHRASE_MATCH 0.98 | 经营效益概览
+  === H2: intent=6/6, type=6/6
+
+--- H3: 查询-HR深层 (6) ---
+  V [QUERY   ] QUERY_ONLINE_STAFF_COUNT       PHRASE_MATCH 0.98 | 在线员工数量
+  V [QUERY   ] QUERY_EMPLOYEE_PROFILE         PHRASE_MATCH 0.98 | 查看员工资料
+  V [QUERY   ] QUERY_EMPLOYEE_PROFILE         PHRASE_MATCH 0.98 | 张三的工资是多少
+  V [QUERY   ] ATTENDANCE_STATS_BY_DEPT       PHRASE_MATCH 0.98 | 部门考勤统计
+  V [QUERY   ] ATTENDANCE_STATS               CLASSIFIER   0.94 | 月度考勤汇总
+  V [QUERY   ] ATTENDANCE_ANOMALY             PHRASE_MATCH 0.98 | 异常考勤列表
+  === H3: intent=6/6, type=6/6
+
+--- H4: 写入-HR操作 (4) ---
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 帮我请假
+  V [WRITE   ] ORDER_APPROVAL                 PHRASE_MATCH 0.98 | 批准王五的请假申请
+  V [WRITE   ] HR_DELETE_EMPLOYEE             PHRASE_MATCH 0.98 | 删除员工李四
+  V [WRITE   ] TASK_ASSIGN_WORKER             PHRASE_MATCH 0.98 | 分配任务给张三
+  === H4: intent=4/4, type=4/4
+
+--- H5: 查询-库存深层 (6) ---
+  V [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | 库存总量统计
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 原料库存摘要
+  V [QUERY   ] MATERIAL_LOW_STOCK_ALERT       PHRASE_MATCH 0.98 | 低库存预警列表
+  V [QUERY   ] MATERIAL_EXPIRING_ALERT        PHRASE_MATCH 0.98 | 即将过期的原材料
+  V [QUERY   ] MATERIAL_FIFO_RECOMMEND        PHRASE_MATCH 0.98 | 先进先出推荐
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 猪肉库存够用几天
+  === H5: intent=6/6, type=6/6
+
+--- H6: 写入-库存操作 (5) ---
+  V [WRITE   ] MATERIAL_BATCH_CONSUME         SEMANTIC     0.93 | 消耗一批猪肉原料
+  V [WRITE   ] MATERIAL_BATCH_RELEASE         PHRASE_MATCH 0.98 | 释放预留的牛肉批次
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 预留100kg鸡肉
+  T [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 调整猪肉库存数量
+  V [WRITE   ] MATERIAL_BATCH_CONSUME         PHRASE_MATCH 0.98 | 出库100kg牛肉
+  === H6: intent=4/5, type=3/5
+
+--- H7: 查询-生产详情 (6) ---
+  V [QUERY   ] PROCESSING_BATCH_TIMELINE      PHRASE_MATCH 0.98 | 批次时间线
+  V [QUERY   ] PROCESSING_BATCH_DETAIL        PHRASE_MATCH 0.98 | 这个批次谁在操作
+  V [QUERY   ] PROCESSING_BATCH_DETAIL        PHRASE_MATCH 0.98 | 当前工序是哪一步
+  V [QUERY   ] PRODUCTION_STATUS_QUERY        PHRASE_MATCH 0.98 | 生产进度查询
+  V [QUERY   ] REPORT_EFFICIENCY              PHRASE_MATCH 0.98 | 本周生产效率报告
+  V [QUERY   ] REPORT_WORKSHOP_DAILY          PHRASE_MATCH 0.98 | 车间日报
+  === H7: intent=6/6, type=6/6
+
+--- H8: 写入-生产操作 (5) ---
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 分配工人到A批次
+  V [WRITE   ] CLOCK_OUT                      PHRASE_MATCH 0.98 | 工人下线
+  V [WRITE   ] PROCESSING_BATCH_RESUME        PHRASE_MATCH 0.98 | 恢复暂停的批次
+  V [WRITE   ] PROCESSING_BATCH_COMPLETE      SEMANTIC     0.85 | 完成当前生产批次
+  V [WRITE   ] PLAN_UPDATE                    PHRASE_MATCH 0.98 | 更新生产计划
+  === H8: intent=4/5, type=4/5
+
+--- I1: 查询-设备深层 (6) ---
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 设备健康诊断
+  V [QUERY   ] EQUIPMENT_MAINTENANCE          PHRASE_MATCH 0.98 | 设备维护记录
+  I [QUERY   ] EQUIPMENT_BREAKDOWN_REPORT     PHRASE_MATCH 0.98 | 设备故障报告
+  V [QUERY   ] EQUIPMENT_STATS                PHRASE_MATCH 0.98 | 设备运行效率
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 按设备查看告警
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 按级别查看告警
+  === I1: intent=5/6, type=6/6
+
+--- I2: 查询-质量深层 (5) ---
+  V [QUERY   ] QUALITY_CHECK_QUERY            CLASSIFIER   0.78 | 质检关键项目清单
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 质量处置评估
+  V [QUERY   ] CCP_MONITOR_DATA_DETECTION     PHRASE_MATCH 0.98 | CCP监控数据
+  V [QUERY   ] REPORT_QUALITY                 PHRASE_MATCH 0.98 | 智能质量报告
+  V [QUERY   ] REPORT_ANOMALY                 PHRASE_MATCH 0.98 | 异常报告
+  === I2: intent=5/5, type=5/5
+
+--- I3: 查询-电子秤 (3) ---
+  V [QUERY   ] SCALE_LIST_DEVICES             PHRASE_MATCH 0.98 | 电子秤列表
+  V [QUERY   ] SCALE_DEVICE_DETAIL            PHRASE_MATCH 0.98 | 查看电子秤详情
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 称重设备状态
+  === I3: intent=3/3, type=3/3
+
+--- I4: 写入-设备/秤操作 (4) ---
+  V [WRITE   ] SCALE_ADD_DEVICE               SEMANTIC     0.85 | 添加一台电子秤
+  T [QUERY   ] SCALE_DEVICE_DETAIL            PHRASE_MATCH 0.98 | 删除电子秤设备
+  V [WRITE   ] SCALE_UPDATE_DEVICE            SEMANTIC     0.85 | 更新电子秤配置
+  T [QUERY   ] EQUIPMENT_MAINTENANCE          PHRASE_MATCH 0.98 | 设备维护完成
+  === I4: intent=4/4, type=2/4
+
+--- J1: 查询-对比分析 (5) ---
+  V [QUERY   ] REPORT_TRENDS                  CLASSIFIER   0.93 | 本月和上月产量对比
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 鸡肉和猪肉的库存对比
+  V [QUERY   ] REPORT_EFFICIENCY              CLASSIFIER   0.93 | A车间和B车间的效率对比
+  V [QUERY   ] REPORT_TRENDS                  PHRASE_MATCH 0.98 | 今年跟去年的销售对比
+  V [QUERY   ] COST_TREND_ANALYSIS            PHRASE_MATCH 0.98 | 各产品成本对比
+  === J1: intent=5/5, type=5/5
+
+--- J2: 查询-趋势/走势 (5) ---
+  V [QUERY   ] REPORT_TRENDS                  PHRASE_MATCH 0.98 | 库存变化趋势
+  V [QUERY   ] QUALITY_STATS                  PHRASE_MATCH 0.98 | 质检合格率走势
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 产量变化曲线
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 设备故障率趋势
+  V [QUERY   ] REPORT_TRENDS                  PHRASE_MATCH 0.98 | 订单量增长趋势
+  === J2: intent=5/5, type=5/5
+
+--- J3: 边界-复杂长句 (4) ---
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 请帮我看一下上周五从早上八点到下午三点之间A车间的牛肉批次生产情况
+  V [QUERY   ] SUPPLIER_RANKING               PHRASE_MATCH 0.98 | 我想知道本月所有供应商的猪肉交货及时率以及价格变化
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 从上个月初到现在的每日出勤率统计以及迟到早退情况
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 所有已完成但质检未通过需要返工的生产批次
+  === J3: intent=4/4, type=4/4
+
+--- J4: 边界-模糊/歧义输入 (5) ---
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      PHRASE_MATCH 0.98 | 情况怎么样
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 有什么问题吗
+  I [QUERY   ] ALERT_ACTIVE                   CLASSIFIER   0.84 | 帮我处理一下
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      PHRASE_MATCH 0.98 | 最新的情况
+  V [QUERY   ] USER_TODO_LIST                 PHRASE_MATCH 0.98 | 还有什么要做的
+  === J4: intent=4/5, type=5/5
+
+--- K1: 写入-审批/流程 (3) ---
+  T [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 审批这个采购订单
+  V [WRITE   ] ORDER_UPDATE                   SEMANTIC     0.85 | 提交审批
+  V [QUERY   ] QUERY_APPROVAL_RECORD          PHRASE_MATCH 0.98 | 查看审批记录
+  === K1: intent=3/3, type=2/3
+
+--- K2: 写入-排班调度 (3) ---
+  T [QUERY   ] SCHEDULING_LIST                PHRASE_MATCH 0.98 | 执行明天的排班
+  V [WRITE   ] SCHEDULING_SET_AUTO            PHRASE_MATCH 0.98 | 生成后天的排班计划
+  V [WRITE   ] SCHEDULING_SET_AUTO            SEMANTIC     0.85 | 设置自动排班
+  === K2: intent=3/3, type=2/3
+
+--- K3: 写入-质量操作 (3) ---
+  V [WRITE   ] QUALITY_CHECK_EXECUTE          SEMANTIC     0.85 | 执行质检
+  V [WRITE   ] QUALITY_CHECK_CREATE           PHRASE_MATCH 0.98 | 创建质检单
+  V [WRITE   ] QUALITY_DISPOSITION_EXECUTE    CLASSIFIER   0.92 | 处置不合格品
+  === K3: intent=3/3, type=3/3
+
+--- K4: 写入-供应商操作 (3) ---
+  V [WRITE   ] SUPPLIER_CREATE                SEMANTIC     0.85 | 新增一个供应商
+  V [WRITE   ] SUPPLIER_DELETE                SEMANTIC     0.85 | 删除这个供应商
+  V [QUERY   ] SUPPLIER_LIST                  PHRASE_MATCH 0.98 | 评价这个供应商
+  === K4: intent=3/3, type=3/3
+
+--- L1: 咨询-法规标准 (5) ---
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | GB 2760标准内容
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | HACCP体系要求
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | ISO 22000认证
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | SC食品生产许可证办理流程
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 食品标签标识要求
+  === L1: intent=5/5, type=5/5
+
+--- L2: 咨询-特定食品工艺 (5) ---
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 酸奶的益生菌标准
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 腌腊肉制品工艺
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 水产品冷冻保存方法
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 面包烘焙温度控制
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 罐头食品杀菌工艺
+  === L2: intent=5/5, type=5/5
+
+--- M1: 同义词-库存查询变体 (5) ---
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 还剩多少猪肉
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 猪肉存货查询
+  V [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | 盘一下库存
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 库房还有啥
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 冷库存了些什么
+  === M1: intent=3/5, type=3/5
+
+--- M2: 同义词-生产查询变体 (5) ---
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 今天做了多少
+  V [QUERY   ] PRODUCTION_STATUS_QUERY        CLASSIFIER   0.88 | 生产进展如何
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 开工了几条线
+  V [QUERY   ] PRODUCTION_STATUS_QUERY        PHRASE_MATCH 0.98 | 产出情况
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | 做完了没有
+  === M2: intent=5/5, type=5/5
+
+--- M3: 同义词-创建操作变体 (5) ---
+  V [WRITE   ] PROCESSING_BATCH_CREATE        PHRASE_MATCH 0.98 | 来一个新的牛肉批次
+  V [WRITE   ] MATERIAL_BATCH_CREATE          CLASSIFIER   0.92 | 开一个猪肉入库单
+  V [WRITE   ] PROCESSING_BATCH_CREATE        CLASSIFIER   0.93 | 做一批新的生产单
+  I [WRITE   ] SCHEDULING_SET_MANUAL          CLASSIFIER   0.73 | 安排一批新的生产
+  V [WRITE   ] PROCESSING_BATCH_CREATE        PHRASE_MATCH 0.98 | 上一个新批次
+  === M3: intent=4/5, type=5/5
+
+--- M4: 同义词-告警查询变体 (5) ---
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 哪里出了问题
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 有没有异常
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 报警记录
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 警告信息
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 什么东西出毛病了
+  === M4: intent=5/5, type=5/5
+
+--- N1: 数字嵌入-库存操作 (5) ---
+  V [WRITE   ] MATERIAL_BATCH_CREATE          CLASSIFIER   0.93 | 入库200公斤牛肉
+  V [WRITE   ] MATERIAL_BATCH_CONSUME         PHRASE_MATCH 0.98 | 出库50箱鸡肉
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 预留300kg猪肉
+  X [UNMATCHED] N/A                            ?            ? | 消耗80斤面粉
+  V [QUERY   ] MATERIAL_LOW_STOCK_ALERT       PHRASE_MATCH 0.98 | 库存少于100公斤的原料
+  === N1: intent=3/5, type=3/5
+
+--- N2: 批次号嵌入-溯源查询 (4) ---
+  V [QUERY   ] PROCESSING_BATCH_LIST          CLASSIFIER   0.90 | 查看批次B20240115
+  V [QUERY   ] PROCESSING_BATCH_DETAIL        PHRASE_MATCH 0.98 | 批次PC-2024-001的详情
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 牛肉批次RB003的检验结果
+  I [QUERY   ] TRACE_FULL                     CLASSIFIER   0.71 | 追溯MB002的原料来源
+  === N2: intent=3/4, type=4/4
+
+--- N3: 人名嵌入-HR查询 (5) ---
+  V [QUERY   ] ATTENDANCE_HISTORY             PHRASE_MATCH 0.98 | 李明的出勤记录
+  V [QUERY   ] ATTENDANCE_TODAY               PHRASE_MATCH 0.98 | 王芳今天上班了吗
+  V [QUERY   ] QUERY_EMPLOYEE_PROFILE         PHRASE_MATCH 0.98 | 赵刚的绩效评分
+  V [WRITE   ] TASK_ASSIGN_WORKER             PHRASE_MATCH 0.98 | 把任务分配给刘伟
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 陈静负责的订单
+  === N3: intent=5/5, type=5/5
+
+--- O1: 礼貌请求-查询 (5) ---
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 麻烦帮我看一下库存
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 请问现在设备运行正常吗
+  V [QUERY   ] ORDER_STATUS                   PHRASE_MATCH 0.98 | 能不能帮我查一下订单状态
+  V [QUERY   ] PRODUCTION_STATUS_QUERY        PHRASE_MATCH 0.98 | 您好，我想了解一下今天的产量
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 劳驾查一下猪肉入库情况
+  === O1: intent=5/5, type=5/5
+
+--- O2: 礼貌请求-写入 (4) ---
+  V [WRITE   ] PROCESSING_BATCH_CREATE        SEMANTIC     0.85 | 麻烦帮我创建一个批次
+  V [WRITE   ] CLOCK_IN                       CLASSIFIER   0.94 | 请帮我打一下卡
+  V [WRITE   ] MATERIAL_BATCH_CREATE          PHRASE_MATCH 0.98 | 拜托帮我录入一条入库记录
+  V [WRITE   ] ORDER_NEW                      PHRASE_MATCH 0.98 | 能帮我下一个订单吗
+  === O2: intent=4/4, type=4/4
+
+--- O3: 间接表述-需求暗示 (5) ---
+  V [QUERY   ] MATERIAL_LOW_STOCK_ALERT       PHRASE_MATCH 0.98 | 猪肉快不够了
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 设备好像有点问题
+  V [QUERY   ] ORDER_TIMEOUT_MONITOR          PHRASE_MATCH 0.98 | 订单好像超时了
+  V [QUERY   ] COLD_CHAIN_TEMPERATURE         PHRASE_MATCH 0.98 | 冷库温度好像不太对
+  V [QUERY   ] ATTENDANCE_TODAY               CLASSIFIER   0.76 | 工人今天来的不太齐
+  === O3: intent=5/5, type=5/5
+
+--- P1: 跨域-生产vs质量 (4) ---
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 这批猪肉合格吗
+  V [QUERY   ] REPORT_QUALITY                 PHRASE_MATCH 0.98 | 生产批次质量报告
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 在产批次的检验状态
+  V [QUERY   ] QUALITY_STATS                  PHRASE_MATCH 0.98 | 不良品率
+  === P1: intent=4/4, type=4/4
+
+--- P2: 跨域-设备vs告警 (4) ---
+  V [QUERY   ] ALERT_LIST                     PHRASE_MATCH 0.98 | 设备异常了
+  V [QUERY   ] EQUIPMENT_ALERT_LIST           PHRASE_MATCH 0.98 | 几号机器报警了
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 产线故障
+  V [WRITE   ] ALERT_RESOLVE                  PHRASE_MATCH 0.98 | 消除设备报警
+  === P2: intent=4/4, type=4/4
+
+--- P3: 跨域-库存vs采购 (4) ---
+  V [QUERY   ] MATERIAL_LOW_STOCK_ALERT       PHRASE_MATCH 0.98 | 原料不够了，需要采购
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 采购的猪肉到了没
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 本月采购了多少猪肉
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 供应商发货了没有
+  === P3: intent=4/4, type=4/4
+
+--- P4: 跨域-HR vs 生产 (4) ---
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 车间人手够不够
+  V [QUERY   ] ATTENDANCE_TODAY               PHRASE_MATCH 0.98 | 今天几个人在干活
+  X [UNMATCHED] N/A                            ?            ? | 夜班人员安排
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 加班申请
+  === P4: intent=3/4, type=3/4
+
+--- Q1: 统计-环比/同比 (4) ---
+  V [QUERY   ] REPORT_TRENDS                  CLASSIFIER   0.92 | 环比增长多少
+  X [UNMATCHED] N/A                            ?            ? | 同比去年怎么样
+  V [QUERY   ] REPORT_TRENDS                  PHRASE_MATCH 0.98 | 上月环比变化
+  V [QUERY   ] REPORT_TRENDS                  PHRASE_MATCH 0.98 | 与去年同期对比
+  === Q1: intent=3/4, type=3/4
+
+--- Q2: 统计-排名/Top N (5) ---
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 产量最高的车间
+  V [QUERY   ] REPORT_KPI                     PHRASE_MATCH 0.98 | 销量前三的产品
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 出勤率最低的部门
+  V [QUERY   ] EQUIPMENT_STATS                PHRASE_MATCH 0.98 | 故障最多的设备
+  V [QUERY   ] CUSTOMER_STATS                 PHRASE_MATCH 0.98 | 客户下单量排行
+  === Q2: intent=5/5, type=5/5
+
+--- Q3: 统计-汇总/合计 (5) ---
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 今天一共入库了多少
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 本月总产量
+  V [QUERY   ] EQUIPMENT_STATS                PHRASE_MATCH 0.98 | 全部在用设备数
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 累计发货量
+  V [QUERY   ] REPORT_FINANCE                 PHRASE_MATCH 0.98 | 全年营收汇总
+  === Q3: intent=5/5, type=5/5
+
+--- R1: 写入-隐式写入意图 (5) ---
+  V [WRITE   ] MATERIAL_BATCH_CREATE          CLASSIFIER   0.91 | 猪肉到货了
+  V [WRITE   ] QUALITY_BATCH_MARK_AS_INSPECTED PHRASE_MATCH 0.98 | 这批牛肉检验合格
+  V [WRITE   ] PRODUCTION_LINE_START          PHRASE_MATCH 0.98 | 生产线可以开了
+  V [WRITE   ] ALERT_RESOLVE                  PHRASE_MATCH 0.98 | 故障排除了
+  V [WRITE   ] CLOCK_OUT                      PHRASE_MATCH 0.98 | 下班了
+  === R1: intent=5/5, type=5/5
+
+--- R2: 写入-否定式写入 (4) ---
+  X [UNMATCHED] N/A                            ?            ? | 取消今天的排班
+  V [WRITE   ] ORDER_DELETE                   PHRASE_MATCH 0.98 | 不要这个订单了
+  V [WRITE   ] MATERIAL_BATCH_RELEASE         PHRASE_MATCH 0.98 | 退回这批原料
+  V [WRITE   ] ORDER_UPDATE                   PHRASE_MATCH 0.98 | 撤销刚才的操作
+  === R2: intent=3/4, type=3/4
+
+--- R3: 写入-确认/审批 (4) ---
+  V [WRITE   ] ORDER_APPROVAL                 PHRASE_MATCH 0.98 | 同意这个申请
+  V [WRITE   ] ORDER_UPDATE                   PHRASE_MATCH 0.98 | 驳回采购申请
+  V [WRITE   ] QUALITY_CHECK_EXECUTE          PHRASE_MATCH 0.98 | 通过质检
+  V [WRITE   ] SHIPMENT_STATUS_UPDATE         PHRASE_MATCH 0.98 | 签收货物
+  === R3: intent=4/4, type=4/4
+
+--- S1: 咨询-营养/健康 (4) ---
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 猪肉的蛋白质含量
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 牛肉和鸡肉哪个热量高
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 反式脂肪酸的危害
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 婴幼儿食品标准
+  === S1: intent=4/4, type=4/4
+
+--- S2: 咨询-食品安全事件 (4) ---
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 瘦肉精是什么
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 三聚氰胺事件
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 苏丹红有什么危害
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 地沟油怎么鉴别
+  === S2: intent=4/4, type=4/4
+
+--- T1: 对抗-动词override复合名词 (6) ---
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 添加剂检测结果
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           PHRASE_MATCH 0.98 | 添加剂使用标准
+  V [QUERY   ] REPORT_TRENDS                  PHRASE_MATCH 0.98 | 新增长趋势分析
+  I [QUERY   ] QUERY_EMPLOYEE_PROFILE         SEMANTIC     0.93 | 注册表信息查询
+  X [UNMATCHED] N/A                            ?            ? | 创建时间是什么时候
+  X [UNMATCHED] N/A                            ?            ? | 增加值怎么计算
+  === T1: intent=5/6, type=6/6
+
+--- T10: 对抗-食品知识vs工厂数据 (6) ---
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 猪肉怎么保存
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 猪肉库存还剩多少
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 鸡肉的营养价值
+  V [QUERY   ] PROCESSING_BATCH_TIMELINE      PHRASE_MATCH 0.98 | 鸡肉批次什么时候到期
+  V [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.80 | 牛肉的检疫标准
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 牛肉入库了多少斤
+  === T10: intent=6/6, type=6/6
+
+--- T2: 对抗-动词override正确触发 (6) ---
+  V [WRITE   ] MATERIAL_BATCH_CREATE          PHRASE_MATCH 0.98 | 新建一条鸡肉入库记录
+  T [QUERY   ] QUALITY_STATS                  PHRASE_MATCH 0.98 | 录入今天的质检数据
+  V [WRITE   ] ORDER_NEW                      SEMANTIC     0.85 | 创建一个牛肉采购订单
+  V [WRITE   ] SHIPMENT_CREATE                PHRASE_MATCH 0.98 | 帮我新增一条出库记录
+  V [WRITE   ] SUPPLIER_CREATE                SEMANTIC     0.85 | 添加一个新的供应商
+  V [WRITE   ] USER_CREATE                    PHRASE_MATCH 0.98 | 登记新员工信息
+  === T2: intent=6/6, type=5/6
+
+--- T3: 对抗-单域连词不触发bypass (5) ---
+  V [QUERY   ] REPORT_INVENTORY               CLASSIFIER   0.86 | 库存量和物料使用情况
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 出勤率和请假情况
+  V [QUERY   ] EQUIPMENT_MAINTENANCE          PHRASE_MATCH 0.98 | 设备维护和维修记录
+  V [QUERY   ] CUSTOMER_STATS                 PHRASE_MATCH 0.98 | 销售额和客户数量
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 订单发货进度
+  === T3: intent=5/5, type=5/5
+
+--- T4: 对抗-跨域连词bypass (3) ---
+  X [UNMATCHED] N/A                            ?            ? | 库存不够顺便查一下排班
+  X [UNMATCHED] N/A                            ?            ? | 设备告警另外看看考勤
+  X [UNMATCHED] N/A                            ?            ? | 查完订单再看员工绩效
+  === T4: intent=3/3, type=3/3
+
+--- T5: 对抗-更多1-2字极短输入 (6) ---
+  V [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | 库存
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 质检
+  V [QUERY   ] COST_QUERY                     PHRASE_MATCH 0.98 | 成本
+  V [WRITE   ] CLOCK_IN                       CLASSIFIER   0.92 | 签到
+  V [QUERY   ] REPORT_EFFICIENCY              PHRASE_MATCH 0.98 | 效率
+  V [QUERY   ] TRACE_BATCH                    PHRASE_MATCH 0.98 | 追溯
+  === T5: intent=6/6, type=6/6
+
+--- T6: 写入-删除取消扩展 (5) ---
+  V [WRITE   ] PROCESSING_BATCH_CANCEL        PHRASE_MATCH 0.98 | 删掉这个生产批次
+  V [WRITE   ] ORDER_DELETE                   PHRASE_MATCH 0.98 | 取消这笔采购
+  V [WRITE   ] MATERIAL_BATCH_DELETE          PHRASE_MATCH 0.98 | 移除过期原料
+  T [QUERY   ] QUALITY_CHECK_QUERY            CLASSIFIER   0.76 | 作废这张质检单
+  V [WRITE   ] HR_DELETE_EMPLOYEE             PHRASE_MATCH 0.98 | 把这个员工离职处理
+  === T6: intent=4/5, type=4/5
+
+--- T7: 写入-审批流程扩展 (5) ---
+  V [WRITE   ] ORDER_APPROVAL                 PHRASE_MATCH 0.98 | 批准这个采购申请
+  V [WRITE   ] ORDER_UPDATE                   PHRASE_MATCH 0.98 | 拒绝这个请假申请
+  V [WRITE   ] SHIPMENT_STATUS_UPDATE         PHRASE_MATCH 0.98 | 确认收到货物
+  V [WRITE   ] ALERT_RESOLVE                  PHRASE_MATCH 0.98 | 标记为已处理
+  V [WRITE   ] PROCESSING_BATCH_COMPLETE      SEMANTIC     0.85 | 完成这个生产批次
+  === T7: intent=5/5, type=5/5
+
+--- T8: 对抗-数字日期人名嵌入 (6) ---
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 3号车间今天产了多少
+  V [QUERY   ] QUALITY_STATS                  PHRASE_MATCH 0.98 | 2月份的质检合格率
+  V [QUERY   ] ATTENDANCE_STATS               PHRASE_MATCH 0.98 | 周一到周五的出勤表
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 张三负责的订单有哪些
+  I [QUERY   ] EQUIPMENT_BREAKDOWN_REPORT     PHRASE_MATCH 0.98 | 上周三的设备故障报告
+  V [QUERY   ] TRACE_BATCH                    PHRASE_MATCH 0.98 | 编号B20240315的批次在哪
+  === T8: intent=5/6, type=6/6
+
+--- T9: 对抗-疑问反问祈使混合 (6) ---
+  V [QUERY   ] EQUIPMENT_MAINTENANCE          PHRASE_MATCH 0.98 | 有没有超期未检的设备
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 怎么还没发货
+  V [QUERY   ] ATTENDANCE_STATS               SEMANTIC     0.97 | 为什么出勤率这么低
+  V [QUERY   ] ATTENDANCE_ANOMALY             PHRASE_MATCH 0.98 | 谁还没打卡
+  V [WRITE   ] SHIPMENT_CREATE                PHRASE_MATCH 0.98 | 赶紧把这批货发了
+  V [WRITE   ] EQUIPMENT_STOP                 CLASSIFIER   0.93 | 马上停掉3号设备
+  === T9: intent=6/6, type=6/6
+
+--- U1: 查询-设备分析诊断 (5) ---
+  I [QUERY   ] EQUIPMENT_STATS                CLASSIFIER   0.80 | 分析一下3号设备的运行状况
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         PHRASE_MATCH 0.98 | 设备健康诊断
+  V [QUERY   ] EQUIPMENT_BREAKDOWN_REPORT     PHRASE_MATCH 0.98 | 设备故障报告
+  V [QUERY   ] QUERY_EQUIPMENT_STATUS_BY_NAME PHRASE_MATCH 0.98 | 按名称查设备状态
+  V [QUERY   ] REPORT_WORKSHOP_DAILY          PHRASE_MATCH 0.98 | 今天车间的日报
+  === U1: intent=4/5, type=5/5
+
+--- U2: 写入-设备操作扩展 (4) ---
+  V [WRITE   ] EQUIPMENT_CAMERA_START         PHRASE_MATCH 0.98 | 启动摄像头
+  V [WRITE   ] EQUIPMENT_CAMERA_START         PHRASE_MATCH 0.98 | 打开监控
+  V [WRITE   ] EQUIPMENT_ALERT_RESOLVE        PHRASE_MATCH 0.98 | 解除设备告警
+  V [QUERY   ] CCP_MONITOR_DATA_DETECTION     PHRASE_MATCH 0.98 | CCP监控点数据检测
+  === U2: intent=4/4, type=4/4
+
+--- U3: 查询-生产过程详情 (5) ---
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 这个批次有哪些工人在做
+  V [QUERY   ] QUERY_PROCESSING_BATCH_SUPERVISOR PHRASE_MATCH 0.98 | 这个批次的负责人是谁
+  V [QUERY   ] QUERY_PROCESSING_CURRENT_STEP  PHRASE_MATCH 0.98 | 当前生产到哪一步了
+  V [QUERY   ] QUERY_PROCESSING_STEP          PHRASE_MATCH 0.98 | 查看生产工序
+  V [QUERY   ] WORKER_IN_SHOP_REALTIME_COUNT  PHRASE_MATCH 0.98 | 现在车间有多少人在
+  === U3: intent=4/5, type=4/5
+
+--- U4: 写入-工人管理操作 (4) ---
+  T [QUERY   ] WORKER_ARRIVAL_CONFIRM         PHRASE_MATCH 0.98 | 确认工人到岗
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 确认生产人员已就位
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 工人签退下线
+  X [UNMATCHED] N/A                            ?            ? | 把李四安排到包装岗位
+  === U4: intent=2/4, type=1/4
+
+--- U5: 查询-审批/待办/物料 (5) ---
+  V [QUERY   ] QUERY_APPROVAL_RECORD          PHRASE_MATCH 0.98 | 查看审批记录
+  V [QUERY   ] QUERY_ORDER_PENDING_MATERIAL_QUANTITY PHRASE_MATCH 0.98 | 订单还缺多少原料
+  V [QUERY   ] QUERY_MATERIAL_REJECTION_REASON PHRASE_MATCH 0.98 | 这批猪肉退货原因
+  V [QUERY   ] QUERY_TRANSPORT_LINE           PHRASE_MATCH 0.98 | 运输线路查询
+  V [QUERY   ] USER_TODO_LIST                 PHRASE_MATCH 0.98 | 我的待办事项
+  === U5: intent=5/5, type=5/5
+
+--- U6: 查询-AI质检报告 (4) ---
+  V [QUERY   ] REPORT_AI_QUALITY              PHRASE_MATCH 0.98 | AI质检分析报告
+  V [QUERY   ] REPORT_INTELLIGENT_QUALITY     PHRASE_MATCH 0.98 | 智能质量分析
+  V [QUERY   ] REPORT_CHECK                   PHRASE_MATCH 0.98 | 质检审核报告
+  V [QUERY   ] REPORT_TRENDS                  PHRASE_MATCH 0.98 | 利润趋势分析
+  === U6: intent=4/4, type=4/4
+
+--- V1: 写入-出库发货扩展 (4) ---
+  T [QUERY   ] INVENTORY_OUTBOUND             PHRASE_MATCH 0.98 | 出库一批猪肉
+  T [QUERY   ] WAREHOUSE_OUTBOUND             PHRASE_MATCH 0.98 | 仓库出库操作
+  V [WRITE   ] SHIPMENT_NOTIFY_WAREHOUSE_PREPARE PHRASE_MATCH 0.98 | 通知仓库备货
+  V [QUERY   ] MRP_CALCULATION                PHRASE_MATCH 0.98 | MRP物料需求计算
+  === V1: intent=4/4, type=2/4
+
+--- V2: 写入-排班计划扩展 (4) ---
+  V [WRITE   ] SCHEDULING_EXECUTE_FOR_DATE    PHRASE_MATCH 0.98 | 安排明天的排班
+  V [WRITE   ] SCHEDULING_SET_AUTO            SEMANTIC     0.85 | 执行2月25号的排班
+  T [QUERY   ] APPROVAL_CONFIG_PURCHASE_ORDER PHRASE_MATCH 0.98 | 配置采购审批流程
+  V [QUERY   ] SCHEDULING_LIST                SEMANTIC     0.85 | 查看排班覆盖情况
+  === V2: intent=4/4, type=3/4
+
+--- V3: 写入-通知消息 (4) ---
+  V [WRITE   ] NOTIFICATION_SEND_WECHAT       PHRASE_MATCH 0.98 | 发微信通知给仓库
+  V [WRITE   ] NOTIFICATION_SEND_WECHAT       PHRASE_MATCH 0.98 | 发消息给张三
+  X [UNMATCHED] N/A                            ?            ? | 通知所有人开会
+  X [UNMATCHED] N/A                            ?            ? | 给供应商发催货通知
+  === V3: intent=4/4, type=4/4
+
+--- W1: 边界-错别字容错 (5) ---
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      PHRASE_MATCH 0.98 | 查看库纯
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 质检保告
+  V [QUERY   ] EQUIPMENT_STATUS_QUERY         CLASSIFIER   0.91 | 设备运型状态
+  X [UNMATCHED] N/A                            ?            ? | 考勤已常
+  V [WRITE   ] MATERIAL_BATCH_CREATE          CLASSIFIER   0.93 | 原才入库
+  === W1: intent=5/5, type=5/5
+
+--- W2: 边界-中英文混合 (4) ---
+  V [QUERY   ] REPORT_INVENTORY               PHRASE_MATCH 0.98 | check一下inventory
+  V [QUERY   ] REPORT_PRODUCTION              CLASSIFIER   0.85 | 今天的production report
+  V [QUERY   ] QUALITY_CHECK_QUERY            CLASSIFIER   0.73 | quality check结果
+  X [UNMATCHED] N/A                            ?            ? | 帮我create一个order
+  === W2: intent=4/4, type=4/4
+
+--- W3: 边界-否定句式 (5) ---
+  V [QUERY   ] ORDER_LIST                     CLASSIFIER   0.93 | 不要查库存，我要查订单
+  I [QUERY   ] REPORT_PRODUCTION              CLASSIFIER   0.92 | 别查生产，看看设备
+  V [WRITE   ] CLOCK_IN                       CLASSIFIER   0.92 | 不需要签到，我要签退
+  V [QUERY   ] QUALITY_CHECK_QUERY            SEMANTIC     0.95 | 不合格的产品有哪些
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 没发货的订单
+  === W3: intent=4/5, type=5/5
+
+--- W4: 边界-条件时间歧义 (4) ---
+  V [WRITE   ] ORDER_NEW                      PHRASE_MATCH 0.98 | 如果库存不足就下采购单
+  V [WRITE   ] QUALITY_CHECK_EXECUTE          CLASSIFIER   0.71 | 等质检通过了再发货
+  V [WRITE   ] SHIPMENT_CREATE                PHRASE_MATCH 0.98 | 明天之前把这批货发出去
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 月底前需要采购多少猪肉
+  === W4: intent=4/4, type=4/4
+
+--- W5: 边界-超长口语噪音 (5) ---
+  V [QUERY   ] MATERIAL_BATCH_QUERY           PHRASE_MATCH 0.98 | 嗯那个就是我想问一下啊就是那个猪肉的那个库存还有多少来着
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | 老板说让我看一下上周五的生产报表有没有出来
+  V [QUERY   ] ORDER_LIST                     CLASSIFIER   0.93 | 你好我是新来的请问怎么查订单
+  V [QUERY   ] TRACE_FULL                     PHRASE_MATCH 0.98 | 不好意思打扰一下那个牛肉批次的溯源信息找到了吗
+  V [WRITE   ] ALERT_ACKNOWLEDGE              SEMANTIC     0.85 | 那个什么来着对了帮我处理一下冷库的温度告警
+  === W5: intent=5/5, type=5/5
+
+--- X1: 查询-销售深层 (5) ---
+  I [QUERY   ] ORDER_FILTER                   CLASSIFIER   0.77 | 本月销售额统计
+  V [QUERY   ] PRODUCT_SALES_RANKING          PHRASE_MATCH 0.98 | 各产品销售排名
+  V [QUERY   ] PAYMENT_STATUS_QUERY           PHRASE_MATCH 0.98 | 客户回款状态
+  X [UNMATCHED] N/A                            ?            ? | 退货率最高的产品
+  V [QUERY   ] CUSTOMER_STATS                 PHRASE_MATCH 0.98 | 本季度新增客户
+  === X1: intent=4/5, type=5/5
+
+--- X2: 查询-客户CRM扩展 (5) ---
+  V [QUERY   ] CUSTOMER_BY_TYPE               CLASSIFIER   0.90 | 客户类型分布
+  V [QUERY   ] CUSTOMER_ACTIVE                PHRASE_MATCH 0.98 | 活跃客户列表
+  V [QUERY   ] ORDER_LIST                     PHRASE_MATCH 0.98 | 客户采购历史
+  V [QUERY   ] SUPPLIER_LIST                  PHRASE_MATCH 0.98 | 按分类看供应商
+  V [QUERY   ] SUPPLIER_LIST                  PHRASE_MATCH 0.98 | 活跃供应商有哪些
+  === X2: intent=5/5, type=5/5
+
+--- X3: 查询-溯源扩展 (4) ---
+  V [QUERY   ] TRACE_FULL                     PHRASE_MATCH 0.98 | 完整溯源链条
+  T [WRITE   ] TRACE_PUBLIC                   PHRASE_MATCH 0.98 | 公开溯源码查询
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 这批猪肉的完整流转记录
+  V [QUERY   ] MATERIAL_FIFO_RECOMMEND        PHRASE_MATCH 0.98 | 查看FIFO推荐出库
+  === X3: intent=3/4, type=2/4
+
+--- X4: 查询-财务深层扩展 (5) ---
+  V [QUERY   ] QUERY_DUPONT_ANALYSIS          CLASSIFIER   0.94 | 杜邦分析
+  V [QUERY   ] QUERY_LIQUIDITY                CLASSIFIER   0.93 | 流动性分析
+  V [QUERY   ] QUERY_SOLVENCY                 CLASSIFIER   0.92 | 偿债能力
+  V [QUERY   ] QUERY_FINANCE_ROA              PHRASE_MATCH 0.98 | 资产收益率ROA
+  V [QUERY   ] QUERY_FINANCE_ROE              PHRASE_MATCH 0.98 | 净资产收益率
+  === X4: intent=5/5, type=5/5
+
+--- Y1: 对抗-同音近义混淆 (5) ---
+  V [QUERY   ] INVENTORY_OUTBOUND             PHRASE_MATCH 0.98 | 入库和出库
+  X [UNMATCHED] N/A                            ?            ? | 合格还是不合格
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 到底发没发货
+  X [UNMATCHED] N/A                            ?            ? | 采购订单和销售订单
+  V [QUERY   ] EQUIPMENT_MAINTENANCE          CLASSIFIER   0.95 | 维修还是保养
+  === Y1: intent=5/5, type=5/5
+
+--- Y2: 对抗-隐晦意图表达 (5) ---
+  V [QUERY   ] MATERIAL_EXPIRING_ALERT        CLASSIFIER   0.94 | 快过期了怎么办
+  X [UNMATCHED] N/A                            ?            ? | 仓库放不下了
+  X [UNMATCHED] N/A                            ?            ? | 这个机器不太对劲
+  V [QUERY   ] ATTENDANCE_ANOMALY             PHRASE_MATCH 0.98 | 人手不够用了
+  X [UNMATCHED] N/A                            ?            ? | 这个月亏了吗
+  === Y2: intent=5/5, type=5/5
+
+--- Y3: 对抗-连续操作意图 (4) ---
+  T [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 先质检再入库
+  V [WRITE   ] SHIPMENT_CREATE                CLASSIFIER   0.93 | 检完了直接发货
+  V [WRITE   ] PROCESSING_BATCH_PAUSE         PHRASE_MATCH 0.98 | 暂停生产去维修设备
+  X [UNMATCHED] N/A                            ?            ? | 做完这批就下班
+  === Y3: intent=4/4, type=3/4
+
+--- Y4: 对抗-极短2字写入 (6) ---
+  V [WRITE   ] MATERIAL_BATCH_CREATE          CLASSIFIER   0.93 | 入库
+  T [QUERY   ] INVENTORY_OUTBOUND             PHRASE_MATCH 0.98 | 出库
+  T [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 发货
+  V [WRITE   ] EQUIPMENT_STOP                 PHRASE_MATCH 0.98 | 停机
+  V [WRITE   ] CLOCK_IN                       PHRASE_MATCH 0.98 | 打卡
+  V [QUERY   ] SCHEDULING_LIST                PHRASE_MATCH 0.98 | 排班
+  === Y4: intent=6/6, type=4/6
+
+--- Z1: 上下文-代词回指 (5) ---
+  V [QUERY   ] PROCESSING_BATCH_DETAIL        PHRASE_MATCH 0.98 | 上一个批次的详情
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 刚才那个订单发货了吗
+  X [UNMATCHED] N/A                            ?            ? | 再查一下那个供应商
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 还是那个批次，看看质检结果
+  V [QUERY   ] SHIPMENT_QUERY                 PHRASE_MATCH 0.98 | 同一个的出库记录呢
+  === Z1: intent=5/5, type=5/5
+
+--- Z2: 上下文-后续追问 (5) ---
+  V [QUERY   ] CONTEXT_CONTINUE               CLASSIFIER   0.92 | 这个呢
+  V [QUERY   ] QUALITY_CHECK_QUERY            PHRASE_MATCH 0.98 | 那质检结果呢
+  V [QUERY   ] CONTEXT_CONTINUE               CLASSIFIER   0.92 | 换成上个月的
+  V [QUERY   ] ATTENDANCE_DEPARTMENT          CLASSIFIER   0.75 | 按部门拆分看看
+  V [QUERY   ] CONTEXT_CONTINUE               PHRASE_MATCH 0.98 | 详细的呢
+  === Z2: intent=5/5, type=5/5
+
+--- Z3: 代码混用-行业缩写 (6) ---
+  V [QUERY   ] REPORT_KPI                     PHRASE_MATCH 0.98 | KPI看一下
+  V [QUERY   ] QUERY_APPROVAL_RECORD          PHRASE_MATCH 0.98 | OA审批记录
+  V [QUERY   ] REPORT_DASHBOARD_OVERVIEW      SEMANTIC     0.93 | ERP里的库存数据
+  V [QUERY   ] PROCESSING_BATCH_LIST          PHRASE_MATCH 0.98 | SOP流程查询
+  V [QUERY   ] REPORT_QUALITY                 PHRASE_MATCH 0.98 | QC报告拉一下
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | SKU库存明细
+  === Z3: intent=6/6, type=6/6
+
+--- Z4: 代码混用-网络用语 (5) ---
+  V [QUERY   ] REPORT_PRODUCTION              PHRASE_MATCH 0.98 | rn产量咋样了
+  V [WRITE   ] SHIPMENT_CREATE                PHRASE_MATCH 0.98 | asap把这批货发了
+  V [QUERY   ] SUPPLIER_LIST                  PHRASE_MATCH 0.98 | nb的供应商有哪些
+  X [UNMATCHED] N/A                            ?            ? | 整个report给老板
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.90 | 盘它！库存盘点
+  === Z4: intent=5/5, type=5/5
+
+--- Z5: 否定重定向-纠正意图 (6) ---
+  V [QUERY   ] ORDER_LIST                     CLASSIFIER   0.93 | 不是查库存，是查订单
+  T [WRITE   ] CLOCK_IN                       SEMANTIC     0.93 | 我不是要打卡，我是查考勤
+  V [QUERY   ] EQUIPMENT_LIST                 PHRASE_MATCH 0.98 | 别给我看设备，我要看告警
+  V [QUERY   ] PRODUCTION_STATUS_QUERY        PHRASE_MATCH 0.98 | 不看生产数据，看财务的
+  V [QUERY   ] PROCESSING_BATCH_LIST          CLASSIFIER   0.90 | 不要创建，我只是想查一下
+  V [QUERY   ] CUSTOMER_LIST                  CLASSIFIER   0.85 | 我说的不是供应商，是客户
+  === Z5: intent=5/6, type=5/6
+
+--- Z6: 数量条件-比较运算 (5) ---
+  V [QUERY   ] PROCESSING_BATCH_LIST          CLASSIFIER   0.90 | 帮我查100kg以上的批次
+  X [UNMATCHED] N/A                            ?            ? | 库存低于50公斤的原料
+  V [QUERY   ] ORDER_FILTER                   PHRASE_MATCH 0.98 | 订单金额超过一万的
+  V [QUERY   ] QUALITY_STATS                  CLASSIFIER   0.91 | 合格率低于90%的产品
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.94 | 至少有500箱库存的产品
+  === Z6: intent=4/5, type=4/5
+
+--- Z7: 数量条件-区间范围 (5) ---
+  V [QUERY   ] COLD_CHAIN_TEMPERATURE         CLASSIFIER   0.93 | 温度在2到8度之间的冷库
+  V [QUERY   ] REPORT_PRODUCTION              CLASSIFIER   0.88 | 产量在100到200之间的批次
+  V [QUERY   ] MATERIAL_BATCH_QUERY           CLASSIFIER   0.92 | 价格5到10元一斤的原料
+  T [CONSULT ] FOOD_KNOWLEDGE_QUERY           SEMANTIC     0.90 | 保质期还剩1到3天的
+  X [UNMATCHED] N/A                            ?            ? | 月薪8000以上的员工
+  === Z7: intent=4/5, type=4/5
+
+======================================================================
+PHASE 1 SUMMARY: Intent Routing
+======================================================================
+Intent accuracy:  820/891 (92%)
+Type accuracy:    821/891 (92%)
+
+!!! 63 TYPE CONFUSIONS (cross-contamination) !!!
+  [AA10] "你好" expected=QUERY actual=UNKNOWN intent=OUT_OF_DOMAIN (问候)
+  [AA10] "你是谁" expected=QUERY actual=UNKNOWN intent=OUT_OF_DOMAIN (身份询问)
+  [AA10] "今天天气怎么样" expected=QUERY actual=UNKNOWN intent=OUT_OF_DOMAIN (天气-离题)
+  [AA10] "谢谢你" expected=QUERY actual=UNKNOWN intent=OUT_OF_DOMAIN (感谢)
+  [AA10] "讲个笑话" expected=QUERY actual=UNKNOWN intent=OUT_OF_DOMAIN (娱乐请求)
+  [AA2] "前天下午3点以后入库的" expected=QUERY actual=WRITE intent=MATERIAL_BATCH_CREATE (精确到小时)
+  [AA4] "今天有几批要抽检" expected=QUERY actual=WRITE intent=QUALITY_CHECK_EXECUTE (质检员-抽检)
+  [AA4] "上一批的微生物检测出结果了吗" expected=QUERY actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (质检员-微生物)
+  [AA5] "搞错了，应该是出库不是入库" expected=WRITE actual=QUERY intent=MATERIAL_BATCH_QUERY (搞错了+纠正)
+  [AA6] "停掉设备然后提交故障报告" expected=WRITE actual=QUERY intent=EQUIPMENT_BREAKDOWN_REPORT (停机+报告)
+  [AA7] "嗯嗯好的" expected=QUERY actual=UNKNOWN intent=OUT_OF_DOMAIN (确认词)
+  [AA9] "假如供应商延迟交货影响大吗" expected=QUERY actual=WRITE intent=SUPPLIER_EVALUATE (假如-延迟)
+  [AB11] "重置告警规则配置" expected=WRITE actual=QUERY intent=ALERT_LIST (重置规则)
+  [AB4] "订单不得不处理一下" expected=QUERY|WRITE actual=UNKNOWN intent=OUT_OF_DOMAIN (不得不+订单)
+  [AB6] "让仓库备一批猪肉" expected=WRITE actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (让仓库+备货)
+  [AB6] "叫质检员去检一下那批货" expected=WRITE actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (叫+质检)
+  [AC2] "肉类食材还剩多少" expected=QUERY actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (肉类食材)
+  [AE1] "添加一个秤型号" expected=WRITE actual=QUERY intent=SCALE_LIST_DEVICES (添加秤型号)
+  [AE1] "自动识别秤的协议" expected=QUERY actual=WRITE intent=SCALE_ADD_DEVICE_VISION (协议识别)
+  [AE2] "用视觉识别方式添加秤设备" expected=WRITE actual=QUERY intent=EQUIPMENT_MAINTENANCE (视觉识别添加)
+  [AG3] "告警分诊处理" expected=QUERY actual=WRITE intent=ALERT_ACKNOWLEDGE (告警分诊)
+  [AH10] "优先处理这个设备故障" expected=WRITE actual=QUERY intent=EQUIPMENT_STATUS_QUERY (优先+设备故障)
+  [AH11] "哦对了还有个告警没处理" expected=WRITE actual=QUERY intent=ALERT_ACTIVE (想起来+告警)
+  [AH14] "发货三千箱" expected=WRITE actual=QUERY intent=SHIPMENT_QUERY (三千箱数字)
+  [AH14] "出库一百五十斤鸡肉" expected=WRITE actual=QUERY intent=MATERIAL_BATCH_USE (中文数字)
+  [AH14] "采购一万块钱的猪肉" expected=WRITE actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (金额驱动采购)
+  [AH3] "收到客户投诉了" expected=WRITE actual=QUERY intent=CUSTOMER_STATS (客户投诉)
+  [AH5] "把库存全部出清" expected=WRITE actual=QUERY intent=MATERIAL_BATCH_QUERY (出清库存)
+  [AH6] "使用这批猪肉" expected=WRITE actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (使用物料)
+  [AH6] "投料" expected=WRITE actual=QUERY intent=MATERIAL_BATCH_USE (投料)
+  [AH6] "领用一批原材料" expected=WRITE actual=QUERY intent=MATERIAL_BATCH_USE (领用)
+  [AH7] "设置告警通知方式" expected=WRITE actual=QUERY intent=RULE_CONFIG (告警通知设置)
+  [B1] "库房里还剩多少猪肉" expected=QUERY actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (剩余库存)
+  [B1] "猪肉还有没有" expected=QUERY actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (口语化库存)
+  [D6] "帮我查查上周的牛肉生产数据" expected=QUERY actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (口语长句-生产)
+  [E5] "溯源码查询" expected=QUERY actual=WRITE intent=TRACE_PUBLIC (溯源码)
+  [E5] "这批牛肉从哪里来的" expected=QUERY actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (来源追溯)
+  [H6] "预留100kg鸡肉" expected=WRITE actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (预留物料)
+  [H6] "调整猪肉库存数量" expected=WRITE actual=QUERY intent=MATERIAL_BATCH_QUERY (调整库存)
+  [H8] "分配工人到A批次" expected=WRITE actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (分配工人)
+  [I4] "删除电子秤设备" expected=WRITE actual=QUERY intent=SCALE_DEVICE_DETAIL (删除秤)
+  [I4] "设备维护完成" expected=WRITE actual=QUERY intent=EQUIPMENT_MAINTENANCE (维护完成)
+  [K1] "审批这个采购订单" expected=WRITE actual=QUERY intent=ORDER_LIST (审批订单)
+  [K2] "执行明天的排班" expected=WRITE actual=QUERY intent=SCHEDULING_LIST (执行排班)
+  [M1] "还剩多少猪肉" expected=QUERY actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (剩多少=库存)
+  [M1] "猪肉存货查询" expected=QUERY actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (存货=库存)
+  [N1] "预留300kg猪肉" expected=WRITE actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (300kg-预留)
+  [T2] "录入今天的质检数据" expected=WRITE actual=QUERY intent=QUALITY_STATS (录入+质检,STATS域正确但type差)
+  [T6] "作废这张质检单" expected=WRITE actual=QUERY intent=QUALITY_CHECK_QUERY (作废-质检)
+  [U3] "这个批次有哪些工人在做" expected=QUERY actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (批次工人)
+  [U4] "确认工人到岗" expected=WRITE actual=QUERY intent=WORKER_ARRIVAL_CONFIRM (确认到岗)
+  [U4] "确认生产人员已就位" expected=WRITE actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (确认就位)
+  [U4] "工人签退下线" expected=WRITE actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (签退下线)
+  [V1] "出库一批猪肉" expected=WRITE actual=QUERY intent=INVENTORY_OUTBOUND (出库)
+  [V1] "仓库出库操作" expected=WRITE actual=QUERY intent=WAREHOUSE_OUTBOUND (仓库出库)
+  [V2] "配置采购审批流程" expected=WRITE actual=QUERY intent=APPROVAL_CONFIG_PURCHASE_ORDER (审批配置)
+  [X3] "公开溯源码查询" expected=QUERY actual=WRITE intent=TRACE_PUBLIC (公开溯源)
+  [X3] "这批猪肉的完整流转记录" expected=QUERY actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (流转记录)
+  [Y3] "先质检再入库" expected=WRITE actual=QUERY intent=QUALITY_CHECK_QUERY (先后操作,sequential)
+  [Y4] "出库" expected=WRITE actual=QUERY intent=INVENTORY_OUTBOUND (2字-出库)
+  [Y4] "发货" expected=WRITE actual=QUERY intent=SHIPMENT_QUERY (2字-发货)
+  [Z5] "我不是要打卡，我是查考勤" expected=QUERY actual=WRITE intent=CLOCK_IN (否定写入→查询)
+  [Z7] "保质期还剩1到3天的" expected=QUERY actual=CONSULT intent=FOOD_KNOWLEDGE_QUERY (效期区间)
+
+--- 71 Intent Mismatches ---
+  [AA1] [CLASSIFIER] "从去年12月到今年2月的订单" -> ORDER_FILTER, expected: ORDER_LIST|REPORT_KPI|REPORT_TRENDS|REPORT_DASHBOARD_OVERVIEW|N/A (跨年段)
+  [AA5] [CLASSIFIER] "搞错了，应该是出库不是入库" -> MATERIAL_BATCH_QUERY, expected: MATERIAL_BATCH_CONSUME|INVENTORY_OUTBOUND|WAREHOUSE_OUTBOUND|MATERIAL_BATCH_CREATE|N/A (搞错了+纠正)
+  [AA6] [PHRASE_MATCH] "停掉设备然后提交故障报告" -> EQUIPMENT_BREAKDOWN_REPORT, expected: EQUIPMENT_STOP|EQUIPMENT_STATUS_UPDATE|EQUIPMENT_EQUIPMENT_BREAKDOWN_REPORT|N/A (停机+报告)
+  [AB12] [CLASSIFIER] "为MB001批次生成追溯二维码" -> PROCESSING_BATCH_CREATE, expected: TRACE_PUBLIC|TRACE_BATCH|BATCH_AUTO_LOOKUP|N/A (指定批次+生成)
+  [AB4] [CLASSIFIER] "订单不得不处理一下" -> OUT_OF_DOMAIN, expected: ORDER_LIST|ORDER_UPDATE|ORDER_STATUS|N/A (不得不+订单)
+  [AB6] [SEMANTIC] "让仓库备一批猪肉" -> FOOD_KNOWLEDGE_QUERY, expected: SHIPMENT_NOTIFY_WAREHOUSE_PREPARE|MATERIAL_BATCH_CREATE|N/A (让仓库+备货)
+  [AB6] [SEMANTIC] "叫质检员去检一下那批货" -> FOOD_KNOWLEDGE_QUERY, expected: QUALITY_CHECK_CREATE|QUALITY_CHECK_EXECUTE|TASK_ASSIGN_WORKER|N/A (叫+质检)
+  [AB9] [CLASSIFIER] "查看摄像头检测事件" -> QUALITY_CHECK_QUERY, expected: ISAPI_QUERY_CAPABILITIES|EQUIPMENT_STATUS_QUERY|EQUIPMENT_CAMERA_START|N/A (摄像头事件)
+  [AC1] [PHRASE_MATCH] "做红烧肉的成本分析" -> COST_TREND_ANALYSIS, expected: RESTAURANT_DISH_COST_ANALYSIS|COST_QUERY|FOOD_KNOWLEDGE_QUERY|N/A (单品成本)
+  [AC2] [CLASSIFIER] "低库存的食材有哪些" -> MATERIAL_BATCH_QUERY, expected: RESTAURANT_INGREDIENT_LOW_STOCK|MATERIAL_LOW_STOCK_ALERT|REPORT_INVENTORY|N/A (食材低库存)
+  [AC2] [SEMANTIC] "肉类食材还剩多少" -> FOOD_KNOWLEDGE_QUERY, expected: RESTAURANT_INGREDIENT_STOCK|MATERIAL_BATCH_QUERY|REPORT_INVENTORY|N/A (肉类食材)
+  [AC2] [CLASSIFIER] "食材成本最近涨了多少" -> COST_QUERY, expected: RESTAURANT_INGREDIENT_COST_TREND|COST_TREND_ANALYSIS|REPORT_FINANCE|N/A (食材成本趋势)
+  [AC3] [PHRASE_MATCH] "毛利率分析" -> PROFIT_TREND_ANALYSIS, expected: RESTAURANT_MARGIN_ANALYSIS|REPORT_FINANCE|REPORT_FINANCE|REPORT_KPI|N/A (餐饮毛利率)
+  [AC4] [PHRASE_MATCH] "损耗率是多少" -> REPORT_ANOMALY, expected: RESTAURANT_WASTAGE_RATE|REPORT_KPI|REPORT_FINANCE|N/A (损耗率)
+  [AD1] [CLASSIFIER] "查看1号摄像头详情" -> QUERY_GENERIC_DETAIL, expected: CAMERA_DETAIL|CAMERA_STATUS|EQUIPMENT_DETAIL|N/A (摄像头详情)
+  [AD2] [PHRASE_MATCH] "添加一台摄像头" -> EQUIPMENT_CAMERA_START, expected: CAMERA_ADD|SCALE_ADD_DEVICE|EQUIPMENT_STATUS_UPDATE|N/A (添加摄像头)
+  [AE1] [PHRASE_MATCH] "添加一个秤型号" -> SCALE_LIST_DEVICES, expected: SCALE_ADD_MODEL|SCALE_ADD_DEVICE|EQUIPMENT_STATUS_UPDATE|N/A (添加秤型号)
+  [AE1] [CLASSIFIER] "自动识别秤的协议" -> SCALE_ADD_DEVICE_VISION, expected: SCALE_PROTOCOL_DETECT|SCALE_LIST_PROTOCOLS|SCALE_DEVICE_DETAIL|N/A (协议识别)
+  [AE1] [CLASSIFIER] "查看支持的秤协议列表" -> MATERIAL_BATCH_QUERY, expected: SCALE_LIST_PROTOCOLS|SCALE_LIST_DEVICES|EQUIPMENT_LIST|N/A (协议列表)
+  [AE2] [SEMANTIC] "电子秤数据不准帮我排查" -> REPORT_DASHBOARD_OVERVIEW, expected: SCALE_TROUBLESHOOT|SCALE_CALIBRATE|EQUIPMENT_STATUS_QUERY|N/A (秤故障排查)
+  [AE2] [SEMANTIC] "用视觉识别方式添加秤设备" -> EQUIPMENT_MAINTENANCE, expected: SCALE_ADD_DEVICE_VISION|SCALE_ADD_DEVICE|EQUIPMENT_STATUS_UPDATE|N/A (视觉识别添加)
+  [AG3] [CLASSIFIER] "帮我分析一下这个告警的原因" -> ALERT_STATS, expected: ALERT_DIAGNOSE|ANALYZE_EQUIPMENT|EQUIPMENT_HEALTH_DIAGNOSIS|ALERT_LIST|N/A (告警诊断)
+  [AG3] [SEMANTIC] "告警分诊处理" -> ALERT_ACKNOWLEDGE, expected: ALERT_TRIAGE|ALERT_DIAGNOSE|ALERT_LIST|N/A (告警分诊)
+  [AG3] [SEMANTIC] "为什么会出现这个告警" -> ALERT_LIST, expected: ALERT_DIAGNOSE|EQUIPMENT_HEALTH_DIAGNOSIS|ANALYZE_EQUIPMENT|FOOD_KNOWLEDGE_QUERY|N/A (告警原因)
+  [AH1] [PHRASE_MATCH] "本月订单总数" -> ORDER_FILTER, expected: ORDER_TODAY|ORDER_LIST|REPORT_KPI|REPORT_KPI|N/A (月订单总数)
+  [AH10] [PHRASE_MATCH] "紧急查库存告急" -> REPORT_INVENTORY, expected: MATERIAL_LOW_STOCK_ALERT|MATERIAL_BATCH_QUERY|ALERT_ACTIVE|N/A (紧急+库存)
+  [AH10] [PHRASE_MATCH] "优先处理这个设备故障" -> EQUIPMENT_STATUS_QUERY, expected: ALERT_RESOLVE|EQUIPMENT_STATUS_UPDATE|EQUIPMENT_STOP|N/A (优先+设备故障)
+  [AH11] [CLASSIFIER] "刚才的那个忘了帮我查一下考勤" -> ATTENDANCE_TODAY, expected: ATTENDANCE_HISTORY|ATTENDANCE_STATS|CONTEXT_CONTINUE|N/A (放弃上文+新意图)
+  [AH11] [CLASSIFIER] "哦对了还有个告警没处理" -> ALERT_ACTIVE, expected: ALERT_ACKNOWLEDGE|ALERT_RESOLVE|ALERT_LIST|N/A (想起来+告警)
+  [AH12] [CLASSIFIER] "今天的班组产量" -> REPORT_PRODUCTION, expected: PRODUCTION_STATUS_QUERY|PROCESSING_BATCH_LIST|PRODUCTION_DAILY_SUMMARY|N/A (主管-班组产量)
+  [AH14] [PHRASE_MATCH] "发货三千箱" -> SHIPMENT_QUERY, expected: SHIPMENT_CREATE|SHIPMENT_EXPEDITE|ORDER_UPDATE|N/A (三千箱数字)
+  [AH14] [CLASSIFIER] "出库一百五十斤鸡肉" -> MATERIAL_BATCH_USE, expected: INVENTORY_OUTBOUND|MATERIAL_BATCH_CONSUME|WAREHOUSE_OUTBOUND|N/A (中文数字)
+  [AH14] [SEMANTIC] "采购一万块钱的猪肉" -> FOOD_KNOWLEDGE_QUERY, expected: ORDER_NEW|ORDER_NEW|ORDER_LIST|N/A (金额驱动采购)
+  [AH15] [SEMANTIC] "今天食材够用吗" -> REPORT_DASHBOARD_OVERVIEW, expected: RESTAURANT_INGREDIENT_STOCK|MATERIAL_BATCH_QUERY|MATERIAL_LOW_STOCK_ALERT|N/A (食材库存歧义)
+  [AH15] [CLASSIFIER] "进货建议" -> MRP_CALCULATION, expected: RESTAURANT_PROCUREMENT_SUGGESTION|MATERIAL_LOW_STOCK_ALERT|ORDER_LIST|N/A (进货采购建议)
+  [AH5] [CLASSIFIER] "把库存全部出清" -> MATERIAL_BATCH_QUERY, expected: INVENTORY_CLEAR|INVENTORY_OUTBOUND|WAREHOUSE_OUTBOUND|N/A (出清库存)
+  [AH6] [SEMANTIC] "使用这批猪肉" -> FOOD_KNOWLEDGE_QUERY, expected: MATERIAL_BATCH_USE|MATERIAL_BATCH_CONSUME|PROCESSING_BATCH_START|N/A (使用物料)
+  [AH6] [SEMANTIC] "申请使用猪肉批次MB001" -> PROCESSING_BATCH_CREATE, expected: MATERIAL_BATCH_USE|MATERIAL_BATCH_RESERVE|MATERIAL_BATCH_CONSUME|N/A (申请使用)
+  [B1] [SEMANTIC] "库房里还剩多少猪肉" -> FOOD_KNOWLEDGE_QUERY, expected: MATERIAL_BATCH_QUERY (剩余库存)
+  [B1] [SEMANTIC] "猪肉还有没有" -> FOOD_KNOWLEDGE_QUERY, expected: MATERIAL_BATCH_QUERY|REPORT_INVENTORY (口语化库存)
+  [B5] [?] "查看张三的绩效" -> N/A, expected: REPORT_KPI|REPORT_EFFICIENCY|QUERY_EMPLOYEE_PROFILE (绩效查询)
+  [D6] [SEMANTIC] "帮我查查上周的牛肉生产数据" -> FOOD_KNOWLEDGE_QUERY, expected: PROCESSING_BATCH_LIST|PRODUCTION_STATUS_QUERY|REPORT_PRODUCTION (口语长句-生产)
+  [E5] [SEMANTIC] "这批牛肉从哪里来的" -> FOOD_KNOWLEDGE_QUERY, expected: TRACE_BATCH|MATERIAL_BATCH_QUERY|SHIPMENT_QUERY (来源追溯)
+  [F1] [?] "标记这个批次为已检验" -> N/A, expected: QUALITY_CHECK_CREATE|QUALITY_CHECK_EXECUTE|BATCH_UPDATE (标记已检)
+  [H1] [PHRASE_MATCH] "毛利率是多少" -> PROFIT_TREND_ANALYSIS, expected: REPORT_KPI|REPORT_FINANCE|REPORT_FINANCE (毛利率)
+  [H6] [SEMANTIC] "预留100kg鸡肉" -> FOOD_KNOWLEDGE_QUERY, expected: MATERIAL_BATCH_RESERVE|MATERIAL_UPDATE (预留物料)
+  [H8] [SEMANTIC] "分配工人到A批次" -> FOOD_KNOWLEDGE_QUERY, expected: PROCESSING_WORKER_ASSIGN (分配工人)
+  [I1] [PHRASE_MATCH] "设备故障报告" -> EQUIPMENT_BREAKDOWN_REPORT, expected: EQUIPMENT_STATUS_QUERY|EQUIPMENT_ALERT_LIST|EQUIPMENT_STATS|ALERT_LIST|EQUIPMENT_EQUIPMENT_BREAKDOWN_REPORT (故障报告)
+  [J4] [CLASSIFIER] "帮我处理一下" -> ALERT_ACTIVE, expected: ALERT_ACKNOWLEDGE|ALERT_RESOLVE|QUALITY_DISPOSITION_EXECUTE|TASK_PROGRESS_QUERY (模糊-处理)
+  [M1] [SEMANTIC] "还剩多少猪肉" -> FOOD_KNOWLEDGE_QUERY, expected: MATERIAL_BATCH_QUERY|REPORT_INVENTORY (剩多少=库存)
+  [M1] [SEMANTIC] "猪肉存货查询" -> FOOD_KNOWLEDGE_QUERY, expected: MATERIAL_BATCH_QUERY|REPORT_INVENTORY (存货=库存)
+  [M3] [CLASSIFIER] "安排一批新的生产" -> SCHEDULING_SET_MANUAL, expected: PROCESSING_BATCH_CREATE|PROCESSING_BATCH_START (安排=创建)
+  [N1] [SEMANTIC] "预留300kg猪肉" -> FOOD_KNOWLEDGE_QUERY, expected: MATERIAL_BATCH_RESERVE|MATERIAL_UPDATE (300kg-预留)
+  [N1] [?] "消耗80斤面粉" -> N/A, expected: MATERIAL_BATCH_CONSUME|MATERIAL_ADJUST_QUANTITY|MATERIAL_UPDATE (80斤-消耗)
+  [N2] [CLASSIFIER] "追溯MB002的原料来源" -> TRACE_FULL, expected: TRACE_BATCH|MATERIAL_BATCH_QUERY|BATCH_AUTO_LOOKUP (批次号-追溯)
+  [P4] [?] "夜班人员安排" -> N/A, expected: SCHEDULING_LIST|ATTENDANCE_TODAY|SCHEDULING_COVERAGE_QUERY (夜班-排班)
+  [Q1] [?] "同比去年怎么样" -> N/A, expected: REPORT_TRENDS|REPORT_KPI|REPORT_PRODUCTION_WEEKLY_COMPARISON (同比)
+  [R2] [?] "取消今天的排班" -> N/A, expected: SCHEDULING_SET_DISABLED|SCHEDULING_SET_MANUAL|SCHEDULING_LIST (取消排班)
+  [T1] [SEMANTIC] "注册表信息查询" -> QUERY_EMPLOYEE_PROFILE, expected: EQUIPMENT_LIST|EQUIPMENT_DETAIL|SCALE_LIST_DEVICES|N/A (注册表≠注册,可UNMATCHED)
+  [T6] [CLASSIFIER] "作废这张质检单" -> QUALITY_CHECK_QUERY, expected: QUALITY_DISPOSITION_EXECUTE|QUALITY_CHECK_CREATE|QUALITY_CHECK_EXECUTE (作废-质检)
+  [T8] [PHRASE_MATCH] "上周三的设备故障报告" -> EQUIPMENT_BREAKDOWN_REPORT, expected: EQUIPMENT_STATUS_QUERY|ALERT_LIST|EQUIPMENT_ALERT_LIST|EQUIPMENT_EQUIPMENT_BREAKDOWN_REPORT (日期+设备)
+  [U1] [CLASSIFIER] "分析一下3号设备的运行状况" -> EQUIPMENT_STATS, expected: ANALYZE_EQUIPMENT|EQUIPMENT_STATUS_QUERY|EQUIPMENT_DETAIL|EQUIPMENT_HEALTH_DIAGNOSIS (设备分析)
+  [U3] [SEMANTIC] "这个批次有哪些工人在做" -> FOOD_KNOWLEDGE_QUERY, expected: PROCESSING_BATCH_WORKERS|PROCESSING_BATCH_DETAIL|PROCESSING_WORKER_ASSIGN|PROCESSING_BATCH_LIST (批次工人)
+  [U4] [SEMANTIC] "确认生产人员已就位" -> FOOD_KNOWLEDGE_QUERY, expected: PRODUCTION_CONFIRM_WORKERS_PRESENT|WORKER_ARRIVAL_CONFIRM|PROCESSING_BATCH_START (确认就位)
+  [U4] [SEMANTIC] "工人签退下线" -> FOOD_KNOWLEDGE_QUERY, expected: PROCESSING_WORKER_CHECKOUT|CLOCK_OUT|PROCESSING_BATCH_COMPLETE (签退下线)
+  [W3] [CLASSIFIER] "别查生产，看看设备" -> REPORT_PRODUCTION, expected: EQUIPMENT_STATUS_QUERY|EQUIPMENT_LIST|PRODUCTION_STATUS_QUERY|PROCESSING_BATCH_LIST|N/A (别+转折,可UNMATCHED)
+  [X1] [CLASSIFIER] "本月销售额统计" -> ORDER_FILTER, expected: REPORT_KPI|REPORT_KPI|REPORT_FINANCE|CUSTOMER_STATS|REPORT_DASHBOARD_OVERVIEW (销售统计)
+  [X3] [SEMANTIC] "这批猪肉的完整流转记录" -> FOOD_KNOWLEDGE_QUERY, expected: TRACE_FULL|TRACE_BATCH|PROCESSING_BATCH_TIMELINE (流转记录)
+  [Z5] [SEMANTIC] "我不是要打卡，我是查考勤" -> CLOCK_IN, expected: ATTENDANCE_HISTORY|ATTENDANCE_STATS|ATTENDANCE_HISTORY|N/A (否定写入→查询)
+  [Z6] [?] "库存低于50公斤的原料" -> N/A, expected: MATERIAL_LOW_STOCK_ALERT|MATERIAL_BATCH_QUERY|REPORT_INVENTORY (<50kg)
+  [Z7] [SEMANTIC] "保质期还剩1到3天的" -> FOOD_KNOWLEDGE_QUERY, expected: MATERIAL_EXPIRING_ALERT|MATERIAL_EXPIRED_QUERY|MATERIAL_BATCH_QUERY (效期区间)
+
+======================================================================
+PHASE 2: Response Quality (00:40:15)
+======================================================================
+  ~ [CONSULT] FOOD_KNOWLEDGE_QUERY           | 保质期      | OK:status, OK:has_reply, OK:has_data, WARN:irrelevant(0/3kw)
+    reply: 查询完成 - citations: 5条 - documentCount: 5 - latencyMs: 677 - entities: 0条
+  ~ [CONSULT] FOOD_KNOWLEDGE_QUERY           | 大肠杆菌     | OK:status, OK:has_reply, OK:has_data, WARN:irrelevant(0/2kw)
+    reply: 查询完成 - citations: 5条 - documentCount: 5 - latencyMs: 467 - entities: 0条
+  ~ [CONSULT] FOOD_KNOWLEDGE_QUERY           | 添加剂标准    | OK:status, OK:has_reply, OK:has_data, WARN:irrelevant(0/2kw)
+    reply: 查询完成 - citations: 5条 - documentCount: 5 - latencyMs: 463 - entities: 1条
+  ~ [CONSULT] FOOD_KNOWLEDGE_QUERY           | 冷链温度     | OK:status, OK:has_reply, OK:has_data, WARN:irrelevant(0/2kw)
+    reply: 查询完成 - citations: 5条 - documentCount: 5 - latencyMs: 490 - entities: 0条
+  ~ [CONSULT] FOOD_KNOWLEDGE_QUERY           | 牛肉加工     | OK:status, OK:has_reply, OK:has_data, WARN:irrelevant(0/2kw)
+    reply: 查询完成 - citations: 5条 - documentCount: 5 - latencyMs: 498 - entities: 0条
+  ~ [CONSULT] FOOD_KNOWLEDGE_QUERY           | HACCP知识  | OK:status, OK:has_reply, OK:has_data, WARN:irrelevant(0/2kw)
+    reply: 查询完成 - citations: 5条 - documentCount: 5 - latencyMs: 454 - entities: 1条
+  ~ [CONSULT] FOOD_KNOWLEDGE_QUERY           | 沙门氏菌     | OK:status, OK:has_reply, OK:has_data, WARN:irrelevant(0/2kw)
+    reply: 查询完成 - citations: 5条 - documentCount: 5 - latencyMs: 488 - entities: 1条
+  ~ [CONSULT] FOOD_KNOWLEDGE_QUERY           | 具体保质期    | OK:status, OK:has_reply, OK:has_data, WARN:irrelevant(0/2kw)
+    reply: 查询完成 - citations: 5条 - documentCount: 5 - latencyMs: 479 - entities: 0条
+  ~ [CONSULT] FOOD_KNOWLEDGE_QUERY           | 标签法规     | OK:status, OK:has_reply, OK:has_data, WARN:irrelevant(0/2kw)
+    reply: 查询完成 - citations: 5条 - documentCount: 5 - latencyMs: 449 - entities: 0条
+  ~ [CONSULT] FOOD_KNOWLEDGE_QUERY           | 防腐vs保鲜   | OK:status, OK:has_reply, OK:has_data, WARN:irrelevant(0/2kw)
+    reply: 查询完成 - citations: 5条 - documentCount: 5 - latencyMs: 624 - entities: 0条
+  V [QUERY  ] REPORT_INVENTORY               | 猪肉库存     | OK:status, OK:has_reply, OK:has_data
+    reply: (encoding error, len=47)
+  V [QUERY  ] FOOD_KNOWLEDGE_QUERY           | 牛肉库存     | OK:status, OK:has_reply, OK:has_data
+    reply: 查询完成 - citations: 5条 - documentCount: 5 - latencyMs: 347 - entities: 0条
+  V [QUERY  ] REPORT_INVENTORY               | 低库存预警    | OK:status, OK:has_reply, OK:has_data
+    reply: (encoding error, len=47)
+  V [QUERY  ] MATERIAL_EXPIRING_ALERT        | 即将过期     | OK:status, OK:has_reply, OK:has_data
+    reply: 未来7天内没有即将过期的原材料批次，库存保质期状况良好。
+  V [QUERY  ] MATERIAL_BATCH_QUERY           | 今日入库     | OK:status, OK:has_reply, OK:has_data
+    reply: 查询到 8 条原料记录：  1. MB-TEST-20260102-001 | 带鱼 ?kg | AVAILABLE 2. TEST-D3-1767169505 | 带鱼 ?kg | 已过期 3. I
+  V [QUERY  ] PROCESSING_BATCH_LIST          | 今日批次     | OK:status, OK:has_reply, OK:has_data
+    reply: 查询到 145 个生产批次：  1. PB20260212002 | 香酥鱼柳 | IN_PROGRESS 2. PB20260212001 | 黄金虾排 | IN_PROGRESS 3. PB-20
+  V [QUERY  ] PROCESSING_BATCH_LIST          | 进行中批次    | OK:status, OK:has_reply, OK:has_data
+    reply: 查询到 145 个生产批次：  1. PB20260212002 | 香酥鱼柳 | IN_PROGRESS 2. PB20260212001 | 黄金虾排 | IN_PROGRESS 3. PB-20
+  V [QUERY  ] PROCESSING_BATCH_LIST          | 已完成批次    | OK:status, OK:has_reply, OK:has_data
+    reply: 查询到 145 个生产批次：  1. PB20260212002 | 香酥鱼柳 | IN_PROGRESS 2. PB20260212001 | 黄金虾排 | IN_PROGRESS 3. PB-20
+  V [QUERY  ] PRODUCTION_STATUS_QUERY        | 今日产量     | OK:status, OK:has_reply, OK:has_data
+    reply: 今日暂无生产记录。可通过「创建批次」开始新的生产任务。
+  V [QUERY  ] PRODUCTION_STATUS_QUERY        | 批次进度     | OK:status, OK:has_reply, OK:has_data
+    reply: 今日暂无生产记录。可通过「创建批次」开始新的生产任务。
+  V [QUERY  ] ORDER_LIST                     | 全部订单     | OK:status, OK:has_reply, OK:has_data
+    reply: 当前暂无订单数据。可通过「创建订单」新建销售订单。
+  V [QUERY  ] REPORT_DASHBOARD_OVERVIEW      | 今日订单     | OK:status, OK:has_reply, OK:has_data
+    reply: 仪表盘总览 生产批次: 0 | 进行中: 5 今日产量: 0 kg
+  V [QUERY  ] ORDER_FILTER                   | 月度销售     | OK:status, OK:has_reply, OK:has_data
+    reply: 查询完成 包含 2 项数据指标，可在报表模块查看详情。
+  V [QUERY  ] CUSTOMER_STATS                 | 客户统计     | OK:status, OK:has_reply, OK:has_data
+    reply: 当前暂无客户统计数据。请先在客户管理中录入客户信息。
+  V [QUERY  ] QUALITY_STATS                  | 合格率      | OK:status, OK:has_reply, OK:has_data
+    reply: 当前暂无质检统计数据。请先完成质检任务后查看统计。
+  V [QUERY  ] QUALITY_CHECK_QUERY            | 质检报告     | OK:status, OK:has_reply, OK:has_data
+    reply: 查询到 10 条质检记录，第 1 页  1. 不合格 | 等级 D | 合格率 40.0% | 01月02日 2. 待检验 | 01月08日 3. 不合格 | 等级 C | 合格率 75.0% | 0
+  V [QUERY  ] PROCESSING_BATCH_LIST          | 不合格品     | OK:status, OK:has_reply, OK:has_data
+    reply: 查询到 145 个生产批次：  1. PB20260212002 | 香酥鱼柳 | IN_PROGRESS 2. PB20260212001 | 黄金虾排 | IN_PROGRESS 3. PB-20
+  V [QUERY  ] QUALITY_CHECK_QUERY            | 质检结果     | OK:status, OK:has_reply, OK:has_data
+    reply: 查询到 10 条质检记录，第 1 页  1. 不合格 | 等级 D | 合格率 40.0% | 01月02日 2. 待检验 | 01月08日 3. 不合格 | 等级 C | 合格率 75.0% | 0
+  V [QUERY  ] ATTENDANCE_STATS               | 今日出勤     | OK:status, OK:has_reply, OK:has_data
+    reply: (encoding error, len=53)
+  V [QUERY  ] ATTENDANCE_HISTORY             | 月度出勤     | OK:status, OK:has_reply, OK:has_data
+    reply: 请接入AttendanceService获取实际考勤历史
+  V [QUERY  ] ATTENDANCE_ANOMALY             | 缺勤查询     | OK:status, OK:has_reply, OK:has_data
+    reply: 请接入AttendanceService获取实际考勤异常数据
+  V [QUERY  ] ATTENDANCE_TODAY               | 出勤人数     | OK:status, OK:has_reply, OK:has_data
+    reply: 请接入AttendanceService获取实际考勤数据  
+  V [QUERY  ] EQUIPMENT_STATUS_QUERY         | 设备状态     | OK:status, OK:has_reply, OK:has_data
+    reply: (encoding error, len=29)
+  V [QUERY  ] EQUIPMENT_ALERT_LIST           | 设备告警     | OK:status, OK:has_reply, OK:has_data
+    reply: 发现 10 条告警：  1. [WARNING] 1号车间柯力 XK3190-A12 电子秤 2. [WARNING] 冷冻机1号 3. [CRITICAL] 切片机 4. [CRITICAL] 切片
+  V [QUERY  ] EQUIPMENT_LIST                 | 故障设备     | OK:status, OK:has_reply, OK:has_data
+    reply: 查询到 15 台设备：  1. 包装车间柯力 电子秤 (SCALE-0015) [空闲] 2. 1号车间耀华 电子秤 (SCALE-0014) [空闲] 3. 2号车间耀华 电子秤 (SCALE-00
+  V [QUERY  ] ALERT_LIST                     | 告警列表     | OK:status, OK:has_reply, OK:has_data
+    reply: 发现 10 条告警：  1. [WARNING] 1号车间柯力 XK3190-A12 电子秤 2. [WARNING] 冷冻机1号 3. [CRITICAL] 切片机 4. [CRITICAL] 切片
+  V [QUERY  ] REPORT_KPI                     | KPI销售    | OK:status, OK:has_reply, OK:has_data
+    reply: KPI指标报告 生产效率: 85.0% | 质量合格率: 98.0% | 准时交付: 95.0% 设备OEE: 75.0% | 维护达标率: 90.0% 人员生产力: 88.0%
+  ~ [QUERY  ] COST_TREND_ANALYSIS            | 成本分析     | OK:status, OK:has_reply, WARN:no_data
+    reply: 成本趋势分析暂时无法使用AI分析服务。您可以在报表模块查看详细的成本数据和趋势图表。
+  V [QUERY  ] REPORT_FINANCE                 | 财务报表     | OK:status, OK:has_reply, OK:has_data
+    reply: (encoding error, len=106)
+  V [QUERY  ] SCHEDULING_LIST                | 排班计划     | OK:status, OK:has_reply, OK:has_data
+    reply: 排班计划 当前时间段暂无排班计划。可通过「安排排班」创建新的排班计划。
+  V [QUERY  ] SUPPLIER_LIST                  | 供应商      | OK:status, OK:has_reply, OK:has_data
+    reply: 供应商列表（共 3 个供应商）  1. 东海水产批发 | 联系人：陈老板 2. 南海渔业公司 | 联系人：林老板 3. 青岛海鲜集团 | 联系人：张经理 
+  V [QUERY  ] CUSTOMER_LIST                  | 客户活跃     | OK:status, OK:has_reply, OK:has_data
+    reply: 客户列表（共 6 位客户）  1. JSON导入客户2 | 联系人：赵六 | 13900139002 2. JSON导入客户1 | 联系人：王五 | 13900139001 3. 批量客户1 | 联系
+  V [WRITE  ] PROCESSING_BATCH_CREATE        | 创建批次     | OK:slot_filling, OK:has_reply, OK:has_questions
+    reply: 好的，我来帮您执行「创建生产批次」。  需要您提供以下信息： 1. 请提供产品类型ID，关联ProductType表 2. 请提供批次号，唯一标识生产批次 3. 请问计划生产数量是多少？  请直接告诉
+  V [WRITE  ] MATERIAL_BATCH_CREATE          | 新建入库     | OK:slot_filling, OK:has_reply, OK:has_questions
+    reply: 好的，我来帮您执行「原料入库」。  需要您提供以下信息： 1. 请提供原材料类型ID 2. 请提供供应商ID 3. 请输入数量，可以带单位如 100kg 4. 请提供数量单位，如：公斤、箱、袋等  请
+  V [WRITE  ] CLOCK_IN                       | 打卡签到     | OK:executed, OK:has_reply, OK:has_data
+    reply: 查询完成 - lateMinutes: 280
+  V [WRITE  ] ORDER_NEW                      | 创建订单     | OK:slot_filling, OK:has_reply, OK:has_questions
+    reply: 需要更多信息来完成此操作
+  V [WRITE  ] MATERIAL_BATCH_CREATE          | 录入入库     | OK:slot_filling, OK:has_reply, OK:has_questions
+    reply: 好的，我来帮您执行「原料入库」。  需要您提供以下信息： 1. 请提供原材料类型ID 2. 请提供供应商ID 3. 请输入数量，可以带单位如 100kg 4. 请提供数量单位，如：公斤、箱、袋等  请
+  V [WRITE  ] SCHEDULING_EXECUTE_FOR_DATE    | 安排排班     | OK:slot_filling, OK:has_reply, OK:has_questions
+    reply: 需要更多信息来完成此操作
+  V [WRITE  ] PROCESSING_BATCH_LIST          | 暂停批次     | OK:executed, OK:has_reply, OK:has_data
+    reply: 查询到 145 个生产批次：  1. PB20260212002 | 香酥鱼柳 | IN_PROGRESS 2. PB20260212001 | 黄金虾排 | IN_PROGRESS 3. PB-20
+  V [WRITE  ] EQUIPMENT_STOP                 | 停机维护     | OK:slot_filling, OK:has_reply, OK:has_questions
+    reply: 好的，我来帮您执行「停止设备」。  需要您提供以下信息： 1. 请提供设备ID 2. 请提供本次运行时长（小时）  请直接告诉我，我会帮您完成操作。
+  V [WRITE  ] ALERT_ACKNOWLEDGE              | 确认告警     | OK:slot_filling, OK:has_reply, OK:has_questions
+    reply: 好的，我来帮您执行「确认告警」。  需要您提供以下信息： 1. 请提供告警ID，要确认的告警的唯一标识  请直接告诉我，我会帮您完成操作。
+  V [WRITE  ] CLOCK_OUT                      | 签退打卡     | OK:executed, OK:has_reply, OK:has_data
+    reply: 签退成功！您今天提前259分钟下班。今日工作时长：4.7小时。
+
+--- Phase 2 Summary ---
+Total: 52 | PASS: 41 | WARN: 11 | FAIL: 0
+Pass rate: 41/52 (79%) full-pass
+Acceptable: 52/52 (100%) (pass+warn)
+
+--- Handler Quality Issues (2 handlers) ---
+  COST_TREND_ANALYSIS: 1 cases — 无结构化数据
+    - "本月成本分析" (成本分析): 无结构化数据
+  FOOD_KNOWLEDGE_QUERY: 10 cases — 回复未包含关键词: ['HACCP', '危害'], 回复未包含关键词: ['保质', '天', '温度'], 回复未包含关键词: ['大肠杆菌', '预防'], 回复未包含关键词: ['天', '冷藏'], 回复未包含关键词: ['标签', '标注'], 回复未包含关键词: ['沙门', '检测'], 回复未包含关键词: ['添加剂', 'GB'], 回复未包含关键词: ['温度', '冷链'], 回复未包含关键词: ['牛肉', '加工'], 回复未包含关键词: ['防腐', '保鲜']
+    - "猪肉的保质期是多久" (保质期): 回复未包含关键词: ['保质', '天', '温度']
+    - "大肠杆菌超标的原因和预防措施" (大肠杆菌): 回复未包含关键词: ['大肠杆菌', '预防']
+    - "食品添加剂使用标准" (添加剂标准): 回复未包含关键词: ['添加剂', 'GB']
+    - "冷链运输温度要求是什么" (冷链温度): 回复未包含关键词: ['温度', '冷链']
+    - "牛肉加工有什么标准" (牛肉加工): 回复未包含关键词: ['牛肉', '加工']
+    - "HACCP体系是什么" (HACCP知识): 回复未包含关键词: ['HACCP', '危害']
+    - "沙门氏菌的检测方法" (沙门氏菌): 回复未包含关键词: ['沙门', '检测']
+    - "猪肉4度冷藏可以保存几天" (具体保质期): 回复未包含关键词: ['天', '冷藏']
+    - "食品标签必须标注哪些信息" (标签法规): 回复未包含关键词: ['标签', '标注']
+    - "防腐剂和保鲜剂的区别" (防腐vs保鲜): 回复未包含关键词: ['防腐', '保鲜']
+
+======================================================================
+FINAL SUMMARY
+======================================================================
+Phase 1 - Intent Routing:  820/891 (92%)
+Phase 1 - Type Separation: 821/891 (92%)
+Phase 1 - Cross-contamination: 63 cases
+Phase 2 - Response Quality: 41/52 full-pass, 52/52 acceptable
+Phase 2 - Handler Issues: 2 handlers with quality problems
+
+Category Breakdown (from failures):
+  A1: 8/8 (咨询-食品安全基础)
+  A2: 8/8 (咨询-食品安全/检测)
+  A3: 8/8 (咨询-生产工艺知识)
+  AA1: 5/6 (时间表达-季度半年跨期) <<<
+  AA10: 6/6 (闲聊-问候离题非业务)
+  AA11: 5/5 (方言-地方化表达)
+  AA12: 6/6 (碰撞-动词同时是名词)
+  AA2: 5/5 (时间表达-模糊相对)
+  AA3: 5/5 (角色-仓管员视角)
+  AA4: 6/6 (角色-质检员视角)
+  AA5: 5/6 (纠错-自我修正表达) <<<
+  AA6: 5/6 (复合写入-先后并列) <<<
+  AA7: 6/6 (噪音-纯符号表情乱码)
+  AA8: 6/6 (行业术语-供应链制造业)
+  AA9: 5/5 (假设条件-如果万一假如)
+  AB1: 6/6 (被动句-被字句构造)
+  AB10: 6/6 (用户管理-禁用分配角色)
+  AB11: 6/6 (系统配置-首页布局功能开关)
+  AB12: 4/5 (溯源-生成二维码追溯码) <<<
+  AB13: 6/6 (订单取消-取消vs删除精确区分)
+  AB14: 6/6 (嵌入-URL电话特殊字符)
+  AB15: 6/6 (比较级-比字句差值查询)
+  AB2: 6/6 (话题句-话题述题结构)
+  AB3: 5/5 (反问句-难道反问修辞)
+  AB4: 4/5 (双重否定-不能不/没有不) <<<
+  AB5: 6/6 (语气词-嘛啦呗咯句末)
+  AB6: 3/5 (使役句-让叫使令) <<<
+  AB7: 5/5 (省略-同上一样继续)
+  AB8: 6/6 (边界-空白重复极端输入)
+  AB9: 4/5 (摄像头-越界入侵检测) <<<
+  AC1: 5/6 (餐饮-菜品查询) <<<
+  AC2: 3/6 (餐饮-食材库存) <<<
+  AC3: 4/5 (餐饮-营业分析) <<<
+  AC4: 4/5 (餐饮-损耗管理) <<<
+  AD1: 4/5 (摄像头-设备管理查询) <<<
+  AD2: 5/6 (摄像头-管理操作) <<<
+  AE1: 2/5 (秤协议-型号与协议管理) <<<
+  AE2: 3/5 (秤-故障排查与校准) <<<
+  AF1: 5/5 (报工-进度与工时查询)
+  AG1: 4/4 (质量处置-挂起隔离)
+  AG2: 5/5 (质量处置-返工报废特批)
+  AG3: 2/5 (告警-分诊诊断) <<<
+  AG4: 4/4 (考勤-打卡状态查询)
+  AH1: 4/5 (订单-今日特定/统计) <<<
+  AH10: 3/5 (紧急-优先级标记意图) <<<
+  AH11: 3/5 (对抗-语境切换中断) <<<
+  AH12: 4/5 (角色-车间主管视角) <<<
+  AH13: 5/5 (角色-调度员视角)
+  AH14: 2/5 (边界-输入含换算单位) <<<
+  AH15: 3/5 (跨域-餐饮vs制造歧义) <<<
+  AH2: 5/5 (发货-按日期/更新)
+  AH3: 4/4 (客户-反馈投诉)
+  AH4: 5/5 (产品-类型与更新)
+  AH5: 3/4 (库存-清零操作) <<<
+  AH6: 3/5 (物料-直接使用操作) <<<
+  AH7: 4/4 (系统-通知配置)
+  AH8: 4/4 (员工-删除变体容错)
+  AH9: 5/5 (时间-上月去年精确相对)
+  B1: 6/8 (查询-仓库/库存) <<<
+  B2: 8/8 (查询-生产)
+  B3: 8/8 (查询-订单)
+  B4: 7/7 (查询-质检)
+  B5: 7/8 (查询-考勤/HR) <<<
+  B6: 6/6 (查询-设备)
+  B7: 7/7 (查询-销售/财务/统计)
+  B8: 6/6 (查询-跨域复合)
+  C1: 8/8 (写入-创建操作)
+  C2: 4/4 (写入-状态更新/打卡)
+  C3: 6/6 (写入-更多动词模式)
+  D1: 6/6 (边界-咨询vs查询)
+  D2: 8/8 (边界-查询vs写入)
+  D3: 8/8 (边界-口语化/极短输入)
+  D4: 8/8 (边界-咨询vs查询深层混淆)
+  D5: 6/6 (边界-查询vs写入深层混淆)
+  D6: 5/6 (边界-长句/多意图) <<<
+  E1: 6/6 (查询-供应商)
+  E2: 6/6 (查询-发货/物流)
+  E3: 6/6 (查询-报表/分析)
+  E4: 6/6 (查询-告警/预警)
+  E5: 3/4 (查询-溯源/追溯) <<<
+  E6: 3/3 (查询-排班/调度)
+  E7: 5/5 (查询-客户/CRM)
+  F1: 4/5 (写入-状态更新) <<<
+  F2: 3/3 (写入-删除/取消)
+  F3: 3/3 (写入-告警操作)
+  G1: 5/5 (边界-时间限定查询)
+  G2: 4/4 (边界-否定/条件模式)
+  G3: 5/5 (边界-方言/口语变体)
+  G4: 5/5 (边界-更多极短输入)
+  H1: 5/6 (查询-财务成本) <<<
+  H2: 6/6 (查询-财务深层)
+  H3: 6/6 (查询-HR深层)
+  H4: 4/4 (写入-HR操作)
+  H5: 6/6 (查询-库存深层)
+  H6: 4/5 (写入-库存操作) <<<
+  H7: 6/6 (查询-生产详情)
+  H8: 4/5 (写入-生产操作) <<<
+  I1: 5/6 (查询-设备深层) <<<
+  I2: 5/5 (查询-质量深层)
+  I3: 3/3 (查询-电子秤)
+  I4: 4/4 (写入-设备/秤操作)
+  J1: 5/5 (查询-对比分析)
+  J2: 5/5 (查询-趋势/走势)
+  J3: 4/4 (边界-复杂长句)
+  J4: 4/5 (边界-模糊/歧义输入) <<<
+  K1: 3/3 (写入-审批/流程)
+  K2: 3/3 (写入-排班调度)
+  K3: 3/3 (写入-质量操作)
+  K4: 3/3 (写入-供应商操作)
+  L1: 5/5 (咨询-法规标准)
+  L2: 5/5 (咨询-特定食品工艺)
+  M1: 3/5 (同义词-库存查询变体) <<<
+  M2: 5/5 (同义词-生产查询变体)
+  M3: 4/5 (同义词-创建操作变体) <<<
+  M4: 5/5 (同义词-告警查询变体)
+  N1: 3/5 (数字嵌入-库存操作) <<<
+  N2: 3/4 (批次号嵌入-溯源查询) <<<
+  N3: 5/5 (人名嵌入-HR查询)
+  O1: 5/5 (礼貌请求-查询)
+  O2: 4/4 (礼貌请求-写入)
+  O3: 5/5 (间接表述-需求暗示)
+  P1: 4/4 (跨域-生产vs质量)
+  P2: 4/4 (跨域-设备vs告警)
+  P3: 4/4 (跨域-库存vs采购)
+  P4: 3/4 (跨域-HR vs 生产) <<<
+  Q1: 3/4 (统计-环比/同比) <<<
+  Q2: 5/5 (统计-排名/Top N)
+  Q3: 5/5 (统计-汇总/合计)
+  R1: 5/5 (写入-隐式写入意图)
+  R2: 3/4 (写入-否定式写入) <<<
+  R3: 4/4 (写入-确认/审批)
+  S1: 4/4 (咨询-营养/健康)
+  S2: 4/4 (咨询-食品安全事件)
+  T1: 5/6 (对抗-动词override复合名词) <<<
+  T10: 6/6 (对抗-食品知识vs工厂数据)
+  T2: 6/6 (对抗-动词override正确触发)
+  T3: 5/5 (对抗-单域连词不触发bypass)
+  T4: 3/3 (对抗-跨域连词bypass)
+  T5: 6/6 (对抗-更多1-2字极短输入)
+  T6: 4/5 (写入-删除取消扩展) <<<
+  T7: 5/5 (写入-审批流程扩展)
+  T8: 5/6 (对抗-数字日期人名嵌入) <<<
+  T9: 6/6 (对抗-疑问反问祈使混合)
+  U1: 4/5 (查询-设备分析诊断) <<<
+  U2: 4/4 (写入-设备操作扩展)
+  U3: 4/5 (查询-生产过程详情) <<<
+  U4: 2/4 (写入-工人管理操作) <<<
+  U5: 5/5 (查询-审批/待办/物料)
+  U6: 4/4 (查询-AI质检报告)
+  V1: 4/4 (写入-出库发货扩展)
+  V2: 4/4 (写入-排班计划扩展)
+  V3: 4/4 (写入-通知消息)
+  W1: 5/5 (边界-错别字容错)
+  W2: 4/4 (边界-中英文混合)
+  W3: 4/5 (边界-否定句式) <<<
+  W4: 4/4 (边界-条件时间歧义)
+  W5: 5/5 (边界-超长口语噪音)
+  X1: 4/5 (查询-销售深层) <<<
+  X2: 5/5 (查询-客户CRM扩展)
+  X3: 3/4 (查询-溯源扩展) <<<
+  X4: 5/5 (查询-财务深层扩展)
+  Y1: 5/5 (对抗-同音近义混淆)
+  Y2: 5/5 (对抗-隐晦意图表达)
+  Y3: 4/4 (对抗-连续操作意图)
+  Y4: 6/6 (对抗-极短2字写入)
+  Z1: 5/5 (上下文-代词回指)
+  Z2: 5/5 (上下文-后续追问)
+  Z3: 6/6 (代码混用-行业缩写)
+  Z4: 5/5 (代码混用-网络用语)
+  Z5: 5/6 (否定重定向-纠正意图) <<<
+  Z6: 4/5 (数量条件-比较运算) <<<
+  Z7: 4/5 (数量条件-区间范围) <<<
+
+======================================================================
+PHASE 2b: Full Response Quality Scan — ALL 891 cases
+Using 10 concurrent workers. Estimated time: ~12 min
+Started at 00:40:48
+======================================================================
+  ... 50/891 done (00:40:54)
+  ... 100/891 done (00:40:57)
+  ... 150/891 done (00:41:00)
+  ... 200/891 done (00:41:03)
+  ... 250/891 done (00:41:06)
+  ... 300/891 done (00:41:08)
+  ... 350/891 done (00:41:11)
+  ... 400/891 done (00:41:14)
+  ... 450/891 done (00:41:18)
+  ... 500/891 done (00:41:20)
+  ... 550/891 done (00:41:23)
+  ... 600/891 done (00:41:27)
+  ... 650/891 done (00:41:30)
+  ... 700/891 done (00:41:33)
+  ... 750/891 done (00:41:37)
+  ... 800/891 done (00:41:40)
+  ... 850/891 done (00:41:43)
+  Completed all 891 at 00:41:46
+
+--- Per-Category Quality ---
+  A1: 8/8 PASS, 0 WARN, 0 FAIL (100%) [咨询-食品安全基础]
+  A2: 8/8 PASS, 0 WARN, 0 FAIL (100%) [咨询-食品安全/检测]
+  A3: 8/8 PASS, 0 WARN, 0 FAIL (100%) [咨询-生产工艺知识]
+  AA1: 6/6 PASS, 0 WARN, 0 FAIL (100%) [时间表达-季度半年跨期]
+  AA10: 6/6 PASS, 0 WARN, 0 FAIL (100%) [闲聊-问候离题非业务]
+  AA11: 5/5 PASS, 0 WARN, 0 FAIL (100%) [方言-地方化表达]
+  AA12: 6/6 PASS, 0 WARN, 0 FAIL (100%) [碰撞-动词同时是名词]
+  AA2: 5/5 PASS, 0 WARN, 0 FAIL (100%) [时间表达-模糊相对]
+  AA3: 5/5 PASS, 0 WARN, 0 FAIL (100%) [角色-仓管员视角]
+  AA4: 6/6 PASS, 0 WARN, 0 FAIL (100%) [角色-质检员视角]
+  AA5: 6/6 PASS, 0 WARN, 0 FAIL (100%) [纠错-自我修正表达]
+  AA6: 6/6 PASS, 0 WARN, 0 FAIL (100%) [复合写入-先后并列]
+  AA7: 6/6 PASS, 0 WARN, 0 FAIL (100%) [噪音-纯符号表情乱码]
+  AA8: 6/6 PASS, 0 WARN, 0 FAIL (100%) [行业术语-供应链制造业]
+  AA9: 5/5 PASS, 0 WARN, 0 FAIL (100%) [假设条件-如果万一假如]
+  AB1: 6/6 PASS, 0 WARN, 0 FAIL (100%) [被动句-被字句构造]
+  AB10: 6/6 PASS, 0 WARN, 0 FAIL (100%) [用户管理-禁用分配角色]
+  AB11: 6/6 PASS, 0 WARN, 0 FAIL (100%) [系统配置-首页布局功能开关]
+  AB12: 5/5 PASS, 0 WARN, 0 FAIL (100%) [溯源-生成二维码追溯码]
+  AB13: 6/6 PASS, 0 WARN, 0 FAIL (100%) [订单取消-取消vs删除精确区分]
+  AB14: 6/6 PASS, 0 WARN, 0 FAIL (100%) [嵌入-URL电话特殊字符]
+  AB15: 6/6 PASS, 0 WARN, 0 FAIL (100%) [比较级-比字句差值查询]
+  AB2: 6/6 PASS, 0 WARN, 0 FAIL (100%) [话题句-话题述题结构]
+  AB3: 5/5 PASS, 0 WARN, 0 FAIL (100%) [反问句-难道反问修辞]
+  AB4: 5/5 PASS, 0 WARN, 0 FAIL (100%) [双重否定-不能不/没有不]
+  AB5: 6/6 PASS, 0 WARN, 0 FAIL (100%) [语气词-嘛啦呗咯句末]
+  AB6: 5/5 PASS, 0 WARN, 0 FAIL (100%) [使役句-让叫使令]
+  AB7: 5/5 PASS, 0 WARN, 0 FAIL (100%) [省略-同上一样继续]
+  AB8: 6/6 PASS, 0 WARN, 0 FAIL (100%) [边界-空白重复极端输入]
+  AB9: 5/5 PASS, 0 WARN, 0 FAIL (100%) [摄像头-越界入侵检测]
+  AC1: 6/6 PASS, 0 WARN, 0 FAIL (100%) [餐饮-菜品查询]
+  AC2: 6/6 PASS, 0 WARN, 0 FAIL (100%) [餐饮-食材库存]
+  AC3: 5/5 PASS, 0 WARN, 0 FAIL (100%) [餐饮-营业分析]
+  AC4: 5/5 PASS, 0 WARN, 0 FAIL (100%) [餐饮-损耗管理]
+  AD1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [摄像头-设备管理查询]
+  AD2: 6/6 PASS, 0 WARN, 0 FAIL (100%) [摄像头-管理操作]
+  AE1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [秤协议-型号与协议管理]
+  AE2: 5/5 PASS, 0 WARN, 0 FAIL (100%) [秤-故障排查与校准]
+  AF1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [报工-进度与工时查询]
+  AG1: 4/4 PASS, 0 WARN, 0 FAIL (100%) [质量处置-挂起隔离]
+  AG2: 5/5 PASS, 0 WARN, 0 FAIL (100%) [质量处置-返工报废特批]
+  AG3: 5/5 PASS, 0 WARN, 0 FAIL (100%) [告警-分诊诊断]
+  AG4: 4/4 PASS, 0 WARN, 0 FAIL (100%) [考勤-打卡状态查询]
+  AH1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [订单-今日特定/统计]
+  AH10: 5/5 PASS, 0 WARN, 0 FAIL (100%) [紧急-优先级标记意图]
+  AH11: 5/5 PASS, 0 WARN, 0 FAIL (100%) [对抗-语境切换中断]
+  AH12: 5/5 PASS, 0 WARN, 0 FAIL (100%) [角色-车间主管视角]
+  AH13: 5/5 PASS, 0 WARN, 0 FAIL (100%) [角色-调度员视角]
+  AH14: 5/5 PASS, 0 WARN, 0 FAIL (100%) [边界-输入含换算单位]
+  AH15: 5/5 PASS, 0 WARN, 0 FAIL (100%) [跨域-餐饮vs制造歧义]
+  AH2: 5/5 PASS, 0 WARN, 0 FAIL (100%) [发货-按日期/更新]
+  AH3: 4/4 PASS, 0 WARN, 0 FAIL (100%) [客户-反馈投诉]
+  AH4: 5/5 PASS, 0 WARN, 0 FAIL (100%) [产品-类型与更新]
+  AH5: 4/4 PASS, 0 WARN, 0 FAIL (100%) [库存-清零操作]
+  AH6: 5/5 PASS, 0 WARN, 0 FAIL (100%) [物料-直接使用操作]
+  AH7: 4/4 PASS, 0 WARN, 0 FAIL (100%) [系统-通知配置]
+  AH8: 4/4 PASS, 0 WARN, 0 FAIL (100%) [员工-删除变体容错]
+  AH9: 5/5 PASS, 0 WARN, 0 FAIL (100%) [时间-上月去年精确相对]
+  B1: 8/8 PASS, 0 WARN, 0 FAIL (100%) [查询-仓库/库存]
+  B2: 8/8 PASS, 0 WARN, 0 FAIL (100%) [查询-生产]
+  B3: 8/8 PASS, 0 WARN, 0 FAIL (100%) [查询-订单]
+  B4: 7/7 PASS, 0 WARN, 0 FAIL (100%) [查询-质检]
+  B5: 8/8 PASS, 0 WARN, 0 FAIL (100%) [查询-考勤/HR]
+  B6: 6/6 PASS, 0 WARN, 0 FAIL (100%) [查询-设备]
+  B7: 7/7 PASS, 0 WARN, 0 FAIL (100%) [查询-销售/财务/统计]
+  B8: 6/6 PASS, 0 WARN, 0 FAIL (100%) [查询-跨域复合]
+  C1: 8/8 PASS, 0 WARN, 0 FAIL (100%) [写入-创建操作]
+  C2: 4/4 PASS, 0 WARN, 0 FAIL (100%) [写入-状态更新/打卡]
+  C3: 6/6 PASS, 0 WARN, 0 FAIL (100%) [写入-更多动词模式]
+  D1: 6/6 PASS, 0 WARN, 0 FAIL (100%) [边界-咨询vs查询]
+  D2: 8/8 PASS, 0 WARN, 0 FAIL (100%) [边界-查询vs写入]
+  D3: 8/8 PASS, 0 WARN, 0 FAIL (100%) [边界-口语化/极短输入]
+  D4: 8/8 PASS, 0 WARN, 0 FAIL (100%) [边界-咨询vs查询深层混淆]
+  D5: 6/6 PASS, 0 WARN, 0 FAIL (100%) [边界-查询vs写入深层混淆]
+  D6: 6/6 PASS, 0 WARN, 0 FAIL (100%) [边界-长句/多意图]
+  E1: 6/6 PASS, 0 WARN, 0 FAIL (100%) [查询-供应商]
+  E2: 6/6 PASS, 0 WARN, 0 FAIL (100%) [查询-发货/物流]
+  E3: 6/6 PASS, 0 WARN, 0 FAIL (100%) [查询-报表/分析]
+  E4: 6/6 PASS, 0 WARN, 0 FAIL (100%) [查询-告警/预警]
+  E5: 4/4 PASS, 0 WARN, 0 FAIL (100%) [查询-溯源/追溯]
+  E6: 3/3 PASS, 0 WARN, 0 FAIL (100%) [查询-排班/调度]
+  E7: 5/5 PASS, 0 WARN, 0 FAIL (100%) [查询-客户/CRM]
+  F1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [写入-状态更新]
+  F2: 3/3 PASS, 0 WARN, 0 FAIL (100%) [写入-删除/取消]
+  F3: 3/3 PASS, 0 WARN, 0 FAIL (100%) [写入-告警操作]
+  G1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [边界-时间限定查询]
+  G2: 4/4 PASS, 0 WARN, 0 FAIL (100%) [边界-否定/条件模式]
+  G3: 5/5 PASS, 0 WARN, 0 FAIL (100%) [边界-方言/口语变体]
+  G4: 5/5 PASS, 0 WARN, 0 FAIL (100%) [边界-更多极短输入]
+  H1: 6/6 PASS, 0 WARN, 0 FAIL (100%) [查询-财务成本]
+  H2: 6/6 PASS, 0 WARN, 0 FAIL (100%) [查询-财务深层]
+  H3: 6/6 PASS, 0 WARN, 0 FAIL (100%) [查询-HR深层]
+  H4: 4/4 PASS, 0 WARN, 0 FAIL (100%) [写入-HR操作]
+  H5: 6/6 PASS, 0 WARN, 0 FAIL (100%) [查询-库存深层]
+  H6: 5/5 PASS, 0 WARN, 0 FAIL (100%) [写入-库存操作]
+  H7: 6/6 PASS, 0 WARN, 0 FAIL (100%) [查询-生产详情]
+  H8: 5/5 PASS, 0 WARN, 0 FAIL (100%) [写入-生产操作]
+  I1: 6/6 PASS, 0 WARN, 0 FAIL (100%) [查询-设备深层]
+  I2: 5/5 PASS, 0 WARN, 0 FAIL (100%) [查询-质量深层]
+  I3: 3/3 PASS, 0 WARN, 0 FAIL (100%) [查询-电子秤]
+  I4: 4/4 PASS, 0 WARN, 0 FAIL (100%) [写入-设备/秤操作]
+  J1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [查询-对比分析]
+  J2: 5/5 PASS, 0 WARN, 0 FAIL (100%) [查询-趋势/走势]
+  J3: 4/4 PASS, 0 WARN, 0 FAIL (100%) [边界-复杂长句]
+  J4: 5/5 PASS, 0 WARN, 0 FAIL (100%) [边界-模糊/歧义输入]
+  K1: 3/3 PASS, 0 WARN, 0 FAIL (100%) [写入-审批/流程]
+  K2: 3/3 PASS, 0 WARN, 0 FAIL (100%) [写入-排班调度]
+  K3: 3/3 PASS, 0 WARN, 0 FAIL (100%) [写入-质量操作]
+  K4: 3/3 PASS, 0 WARN, 0 FAIL (100%) [写入-供应商操作]
+  L1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [咨询-法规标准]
+  L2: 5/5 PASS, 0 WARN, 0 FAIL (100%) [咨询-特定食品工艺]
+  M1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [同义词-库存查询变体]
+  M2: 5/5 PASS, 0 WARN, 0 FAIL (100%) [同义词-生产查询变体]
+  M3: 5/5 PASS, 0 WARN, 0 FAIL (100%) [同义词-创建操作变体]
+  M4: 5/5 PASS, 0 WARN, 0 FAIL (100%) [同义词-告警查询变体]
+  N1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [数字嵌入-库存操作]
+  N2: 4/4 PASS, 0 WARN, 0 FAIL (100%) [批次号嵌入-溯源查询]
+  N3: 5/5 PASS, 0 WARN, 0 FAIL (100%) [人名嵌入-HR查询]
+  O1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [礼貌请求-查询]
+  O2: 4/4 PASS, 0 WARN, 0 FAIL (100%) [礼貌请求-写入]
+  O3: 5/5 PASS, 0 WARN, 0 FAIL (100%) [间接表述-需求暗示]
+  P1: 4/4 PASS, 0 WARN, 0 FAIL (100%) [跨域-生产vs质量]
+  P2: 4/4 PASS, 0 WARN, 0 FAIL (100%) [跨域-设备vs告警]
+  P3: 4/4 PASS, 0 WARN, 0 FAIL (100%) [跨域-库存vs采购]
+  P4: 4/4 PASS, 0 WARN, 0 FAIL (100%) [跨域-HR vs 生产]
+  Q1: 4/4 PASS, 0 WARN, 0 FAIL (100%) [统计-环比/同比]
+  Q2: 5/5 PASS, 0 WARN, 0 FAIL (100%) [统计-排名/Top N]
+  Q3: 5/5 PASS, 0 WARN, 0 FAIL (100%) [统计-汇总/合计]
+  R1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [写入-隐式写入意图]
+  R2: 4/4 PASS, 0 WARN, 0 FAIL (100%) [写入-否定式写入]
+  R3: 4/4 PASS, 0 WARN, 0 FAIL (100%) [写入-确认/审批]
+  S1: 4/4 PASS, 0 WARN, 0 FAIL (100%) [咨询-营养/健康]
+  S2: 4/4 PASS, 0 WARN, 0 FAIL (100%) [咨询-食品安全事件]
+  T1: 6/6 PASS, 0 WARN, 0 FAIL (100%) [对抗-动词override复合名词]
+  T10: 6/6 PASS, 0 WARN, 0 FAIL (100%) [对抗-食品知识vs工厂数据]
+  T2: 6/6 PASS, 0 WARN, 0 FAIL (100%) [对抗-动词override正确触发]
+  T3: 5/5 PASS, 0 WARN, 0 FAIL (100%) [对抗-单域连词不触发bypass]
+  T4: 3/3 PASS, 0 WARN, 0 FAIL (100%) [对抗-跨域连词bypass]
+  T5: 6/6 PASS, 0 WARN, 0 FAIL (100%) [对抗-更多1-2字极短输入]
+  T6: 5/5 PASS, 0 WARN, 0 FAIL (100%) [写入-删除取消扩展]
+  T7: 5/5 PASS, 0 WARN, 0 FAIL (100%) [写入-审批流程扩展]
+  T8: 6/6 PASS, 0 WARN, 0 FAIL (100%) [对抗-数字日期人名嵌入]
+  T9: 6/6 PASS, 0 WARN, 0 FAIL (100%) [对抗-疑问反问祈使混合]
+  U1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [查询-设备分析诊断]
+  U2: 4/4 PASS, 0 WARN, 0 FAIL (100%) [写入-设备操作扩展]
+  U3: 5/5 PASS, 0 WARN, 0 FAIL (100%) [查询-生产过程详情]
+  U4: 4/4 PASS, 0 WARN, 0 FAIL (100%) [写入-工人管理操作]
+  U5: 5/5 PASS, 0 WARN, 0 FAIL (100%) [查询-审批/待办/物料]
+  U6: 4/4 PASS, 0 WARN, 0 FAIL (100%) [查询-AI质检报告]
+  V1: 4/4 PASS, 0 WARN, 0 FAIL (100%) [写入-出库发货扩展]
+  V2: 4/4 PASS, 0 WARN, 0 FAIL (100%) [写入-排班计划扩展]
+  V3: 4/4 PASS, 0 WARN, 0 FAIL (100%) [写入-通知消息]
+  W1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [边界-错别字容错]
+  W2: 4/4 PASS, 0 WARN, 0 FAIL (100%) [边界-中英文混合]
+  W3: 5/5 PASS, 0 WARN, 0 FAIL (100%) [边界-否定句式]
+  W4: 4/4 PASS, 0 WARN, 0 FAIL (100%) [边界-条件时间歧义]
+  W5: 5/5 PASS, 0 WARN, 0 FAIL (100%) [边界-超长口语噪音]
+  X1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [查询-销售深层]
+  X2: 5/5 PASS, 0 WARN, 0 FAIL (100%) [查询-客户CRM扩展]
+  X3: 4/4 PASS, 0 WARN, 0 FAIL (100%) [查询-溯源扩展]
+  X4: 5/5 PASS, 0 WARN, 0 FAIL (100%) [查询-财务深层扩展]
+  Y1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [对抗-同音近义混淆]
+  Y2: 5/5 PASS, 0 WARN, 0 FAIL (100%) [对抗-隐晦意图表达]
+  Y3: 4/4 PASS, 0 WARN, 0 FAIL (100%) [对抗-连续操作意图]
+  Y4: 6/6 PASS, 0 WARN, 0 FAIL (100%) [对抗-极短2字写入]
+  Z1: 5/5 PASS, 0 WARN, 0 FAIL (100%) [上下文-代词回指]
+  Z2: 5/5 PASS, 0 WARN, 0 FAIL (100%) [上下文-后续追问]
+  Z3: 6/6 PASS, 0 WARN, 0 FAIL (100%) [代码混用-行业缩写]
+  Z4: 5/5 PASS, 0 WARN, 0 FAIL (100%) [代码混用-网络用语]
+  Z5: 6/6 PASS, 0 WARN, 0 FAIL (100%) [否定重定向-纠正意图]
+  Z6: 5/5 PASS, 0 WARN, 0 FAIL (100%) [数量条件-比较运算]
+  Z7: 5/5 PASS, 0 WARN, 0 FAIL (100%) [数量条件-区间范围]
+
+======================================================================
+PHASE 2b SUMMARY: Full Quality Scan
+======================================================================
+Total: 891 | PASS: 891 (100%) | WARN: 0 | FAIL: 0
+Acceptable (PASS+WARN): 891/891 (100%)
+Unique issue types: 0
+
+======================================================================
+COMBINED FINAL SUMMARY
+======================================================================
+Phase 1  — Intent Routing:      820/891 (92%)
+Phase 2  — Curated Quality:     41/52 full-pass, 52/52 acceptable
+Phase 2b — Full Quality Scan:   891/891 full-pass (100%), 891/891 acceptable (100%)

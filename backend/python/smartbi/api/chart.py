@@ -252,7 +252,7 @@ async def recommend_chart(data: List[Dict[str, Any]], fields: Optional[List[dict
             try:
                 pd.to_datetime(df[col])
                 date_cols.append(col)
-            except:
+            except Exception:
                 pass
 
         # Recommend based on data structure

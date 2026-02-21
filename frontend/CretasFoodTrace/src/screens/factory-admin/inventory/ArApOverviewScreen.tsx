@@ -8,6 +8,8 @@ import {
   RefreshControl,
   TouchableOpacity,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {
   Text,
@@ -17,6 +19,12 @@ import {
   Chip,
   Divider,
   Surface,
+  FAB,
+  Portal,
+  Modal,
+  TextInput,
+  Button,
+  SegmentedButtons,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -25,6 +33,8 @@ import {
   ArApTransaction,
   AgingData,
   CounterpartyType,
+  PaymentMethod,
+  RecordTransactionRequest,
 } from '../../../services/api/financeApiClient';
 import { formatNumberWithCommas } from '../../../utils/formatters';
 
@@ -351,6 +361,76 @@ export default function ArApOverviewScreen() {
     },
   };
 
+  // ==================== 收付款弹窗 ====================
+
+  const [paymentVisible, setPaymentVisible] = useState(false);
+  const [paymentType, setPaymentType] = useState<'ar' | 'ap'>('ar');
+  const [paymentCounterpartyId, setPaymentCounterpartyId] = useState('');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethodVal, setPaymentMethodVal] = useState<PaymentMethod>('BANK_TRANSFER');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [paymentRemark, setPaymentRemark] = useState('');
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+
+  const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
+    { value: 'CASH', label: '现金' },
+    { value: 'BANK_TRANSFER', label: '银行转账' },
+    { value: 'WECHAT', label: '微信' },
+    { value: 'ALIPAY', label: '支付宝' },
+    { value: 'CHECK', label: '支票' },
+    { value: 'POS', label: 'POS' },
+    { value: 'OTHER', label: '其他' },
+  ];
+
+  const openPaymentModal = () => {
+    setPaymentType(activeTab === 'ap' ? 'ap' : 'ar');
+    setPaymentCounterpartyId('');
+    setPaymentAmount('');
+    setPaymentMethodVal('BANK_TRANSFER');
+    setPaymentReference('');
+    setPaymentRemark('');
+    setPaymentVisible(true);
+  };
+
+  const handlePaymentSubmit = async () => {
+    if (!paymentCounterpartyId.trim()) {
+      Alert.alert('提示', '请输入交易对手ID');
+      return;
+    }
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('提示', '请输入有效金额');
+      return;
+    }
+
+    setPaymentSubmitting(true);
+    try {
+      const request: RecordTransactionRequest = {
+        counterpartyId: paymentCounterpartyId.trim(),
+        amount,
+        paymentMethod: paymentMethodVal,
+        paymentReference: paymentReference.trim() || undefined,
+        remark: paymentRemark.trim() || undefined,
+      };
+
+      const res = paymentType === 'ar'
+        ? await financeApiClient.recordArPayment(request)
+        : await financeApiClient.recordApPayment(request);
+
+      if (res.success) {
+        Alert.alert('成功', paymentType === 'ar' ? '收款记录已创建' : '付款记录已创建');
+        setPaymentVisible(false);
+        onRefresh();
+      } else {
+        Alert.alert('失败', res.message || '操作失败');
+      }
+    } catch {
+      Alert.alert('错误', '请求失败');
+    } finally {
+      setPaymentSubmitting(false);
+    }
+  };
+
   // ==================== 渲染 ====================
 
   const renderKpiSection = () => (
@@ -567,6 +647,105 @@ export default function ArApOverviewScreen() {
           {activeTab === 'aging' && renderAgingTab()}
         </>
       )}
+
+      {/* 收付款 FAB */}
+      <FAB
+        icon="plus"
+        style={styles.fab}
+        onPress={openPaymentModal}
+        label={activeTab === 'ap' ? '付款' : '收款'}
+      />
+
+      {/* 收付款弹窗 */}
+      <Portal>
+        <Modal
+          visible={paymentVisible}
+          onDismiss={() => setPaymentVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <ScrollView>
+            <Text variant="titleMedium" style={styles.modalTitle}>
+              {paymentType === 'ar' ? '记录收款' : '记录付款'}
+            </Text>
+
+            <SegmentedButtons
+              value={paymentType}
+              onValueChange={(v) => setPaymentType(v as 'ar' | 'ap')}
+              buttons={[
+                { value: 'ar', label: '收款(应收)' },
+                { value: 'ap', label: '付款(应付)' },
+              ]}
+              style={styles.modalSegmented}
+            />
+
+            <TextInput
+              label={paymentType === 'ar' ? '客户ID' : '供应商ID'}
+              value={paymentCounterpartyId}
+              onChangeText={setPaymentCounterpartyId}
+              mode="outlined"
+              style={styles.modalInput}
+            />
+
+            <TextInput
+              label="金额"
+              value={paymentAmount}
+              onChangeText={setPaymentAmount}
+              mode="outlined"
+              keyboardType="numeric"
+              style={styles.modalInput}
+            />
+
+            <Text style={styles.modalLabel}>支付方式</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.methodScroll}>
+              {PAYMENT_METHOD_OPTIONS.map(opt => (
+                <Chip
+                  key={opt.value}
+                  selected={paymentMethodVal === opt.value}
+                  onPress={() => setPaymentMethodVal(opt.value)}
+                  style={styles.methodChip}
+                >
+                  {opt.label}
+                </Chip>
+              ))}
+            </ScrollView>
+
+            <TextInput
+              label="付款凭证号（选填）"
+              value={paymentReference}
+              onChangeText={setPaymentReference}
+              mode="outlined"
+              style={styles.modalInput}
+            />
+
+            <TextInput
+              label="备注（选填）"
+              value={paymentRemark}
+              onChangeText={setPaymentRemark}
+              mode="outlined"
+              style={styles.modalInput}
+            />
+
+            <View style={styles.modalActions}>
+              <Button
+                mode="outlined"
+                onPress={() => setPaymentVisible(false)}
+                style={styles.modalBtn}
+              >
+                取消
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handlePaymentSubmit}
+                loading={paymentSubmitting}
+                disabled={paymentSubmitting}
+                style={styles.modalBtn}
+              >
+                确认
+              </Button>
+            </View>
+          </ScrollView>
+        </Modal>
+      </Portal>
     </View>
   );
 }
@@ -845,6 +1024,54 @@ const styles = StyleSheet.create({
   },
   agingDivider: {
     marginTop: 8,
+  },
+
+  // FAB
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    backgroundColor: '#667eea',
+  },
+
+  // Payment modal
+  modalContainer: {
+    backgroundColor: '#fff',
+    margin: 20,
+    borderRadius: 12,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontWeight: '700',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalSegmented: {
+    marginBottom: 12,
+  },
+  modalInput: {
+    marginBottom: 10,
+  },
+  modalLabel: {
+    fontSize: 13,
+    color: '#606266',
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  methodScroll: {
+    marginBottom: 10,
+  },
+  methodChip: {
+    marginRight: 6,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+  },
+  modalBtn: {
+    flex: 1,
   },
 
   // Empty / misc

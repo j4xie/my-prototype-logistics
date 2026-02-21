@@ -23,6 +23,9 @@ openai>=1.0.0  # For OpenAI-compatible API (DashScope)
 # Pydantic for data validation
 pydantic>=1.9.0,<2.0.0
 
+# JWT Authentication
+PyJWT>=2.6.0,<3.0.0
+
 # Utilities
 python-dateutil>=2.8.0,<3.0.0
 typing-extensions>=3.7.4

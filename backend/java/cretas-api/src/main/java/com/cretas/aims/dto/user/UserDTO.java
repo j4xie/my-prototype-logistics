@@ -120,6 +120,17 @@ public class UserDTO {
     @Schema(description = "合同是否即将到期(30天内)")
     private Boolean isContractExpiringSoon;
 
+    @Schema(description = "工厂类型: FACTORY, RESTAURANT, HEADQUARTERS, BRANCH, CENTRAL_KITCHEN")
+    private String factoryType;
+
+    /**
+     * Normalizing setter — ensures factoryType is always stored as uppercase.
+     * Lombok @Data generates a setter but explicit setters take precedence.
+     */
+    public void setFactoryType(String factoryType) {
+        this.factoryType = factoryType != null ? factoryType.toUpperCase() : "FACTORY";
+    }
+
     // ==================== 前端字段别名 ====================
 
     /**

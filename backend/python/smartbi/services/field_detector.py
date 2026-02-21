@@ -235,7 +235,7 @@ class FieldDetector:
         if numeric_sample.notna().sum() > len(sample) * 0.8:
             # Check if integer or float
             non_null = numeric_sample.dropna()
-            if (non_null == non_null.astype(int)).all():
+            if len(non_null) > 0 and (non_null == non_null.astype(int)).all():
                 return DataType.INTEGER
             return DataType.FLOAT
 
@@ -257,7 +257,7 @@ class FieldDetector:
                         if any(d.hour != 0 or d.minute != 0 for d in valid_dates):
                             return DataType.DATETIME
                         return DataType.DATE
-        except:
+        except Exception:
             pass
 
         return DataType.STRING
@@ -402,7 +402,8 @@ class FieldDetector:
 
         if data_type == DataType.STRING:
             # Check cardinality for category detection
-            unique_ratio = sample.nunique() / len(sample) if len(sample) > 0 else 0
+            sample_len = len(sample.dropna())
+            unique_ratio = sample.nunique() / sample_len if sample_len > 0 else 0
             if unique_ratio < 0.3:  # Low cardinality suggests category
                 return SemanticType.CATEGORY
             return SemanticType.NAME

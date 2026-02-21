@@ -847,5 +847,24 @@
     "paymentInfo": "Payment Information",
     "orderStatus": "Order Status",
     "totalAmount": "Total Amount"
+  },
+  "finishedGoods": {
+    "title": "Finished Goods",
+    "loadFailed": "Failed to load finished goods inventory",
+    "empty": "No finished goods in stock",
+    "status": {
+      "soldOut": "Sold Out",
+      "lowStock": "Low Stock",
+      "sufficient": "Sufficient"
+    },
+    "stats": {
+      "total": "Total",
+      "available": "Available",
+      "reserved": "Reserved"
+    },
+    "productionDate": "Production Date",
+    "expiryDate": "Expiry Date",
+    "unitCost": "Unit Cost",
+    "storageLocation": "Location"
   }
 }

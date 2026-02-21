@@ -107,11 +107,24 @@ export function abortSmartBIRequest(key: string): void {
  */
 export const PYTHON_SMARTBI_URL = import.meta.env.VITE_SMARTBI_URL || '/smartbi-api';
 const PYTHON_TIMEOUT_MS = 30000;
-export const PYTHON_LLM_TIMEOUT_MS = 90000; // LLM-heavy calls (chat, insight generation)
-export const PYTHON_HEADERS = {
+export const PYTHON_LLM_TIMEOUT_MS = 200000; // LLM-heavy calls — must exceed Python retry chain (max ~139s after reduction)
+export const PYTHON_HEADERS: Record<string, string> = {
   'Content-Type': 'application/json',
   'X-Internal-Secret': import.meta.env.VITE_PYTHON_SECRET || 'cretas-internal-2026',
-} as const;
+};
+
+/**
+ * Get auth headers for Python service calls.
+ * Reads JWT from localStorage (same token used for Java backend).
+ */
+export function getPythonAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { ...PYTHON_HEADERS };
+  const token = localStorage.getItem('cretas_access_token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 // ==================== snake_case -> camelCase transform (AUDIT-065) ====================
 
@@ -158,7 +171,7 @@ export async function pythonFetch(path: string, options: RequestInit & { timeout
       ...fetchOptions,
       signal: controller.signal,
       headers: {
-        ...PYTHON_HEADERS,
+        ...getPythonAuthHeaders(),
         ...fetchOptions.headers,
       },
     });
@@ -820,6 +833,10 @@ export function humanizeColumnName(col: string): string {
     cleaned = ydMatch[2] + (ydMatch[1] ? `(${ydMatch[1]})` : '');
   }
 
+  // Filter out auto-generated meaningless column names
+  const autoGenMatch = cleaned.match(/^(?:指标|Column|Unnamed|field|col)[\s_]?(\d+)$/i);
+  if (autoGenMatch) return ''; // Return empty to signal "skip this column"
+
   const dateMatch = cleaned.match(/^(\d{4})-(\d{2})-(\d{2})(?:_(\d+))?$/);
   if (dateMatch) {
     const month = parseInt(dateMatch[2]);
@@ -854,7 +871,11 @@ export function humanizeColumnName(col: string): string {
 export function formatLargeNumber(val: number): { displayValue: string; unit: string } {
   if (Math.abs(val) >= 1e8) return { displayValue: (val / 1e8).toFixed(1), unit: '亿' };
   if (Math.abs(val) >= 1e4) return { displayValue: (val / 1e4).toFixed(1), unit: '万' };
-  if (Number.isInteger(val)) return { displayValue: val.toLocaleString(), unit: '' };
+  if (Number.isInteger(val)) {
+    const s = String(Math.abs(val));
+    const formatted = s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return { displayValue: (val < 0 ? '-' : '') + formatted, unit: '' };
+  }
   return { displayValue: val.toFixed(2), unit: '' };
 }
 

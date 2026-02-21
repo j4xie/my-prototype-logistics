@@ -13,7 +13,9 @@ import com.cretas.aims.service.ProcessingStageRecordService;
 import com.cretas.aims.service.AIAnalysisService;
 import com.cretas.aims.service.CacheService;
 import com.cretas.aims.dto.processing.ProcessingStageRecordDTO;
+import com.cretas.aims.event.BatchCompletedEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -58,6 +60,7 @@ public class ProcessingServiceImpl implements ProcessingService {
     private final AIAnalysisService aiAnalysisService;
     private final CacheService cacheService;
     private final ProcessingStageRecordService processingStageRecordService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
      * 将字符串 batchId 安全转换为 Long。
@@ -156,7 +159,17 @@ public class ProcessingServiceImpl implements ProcessingService {
         batch.setDefectQuantity(defectQuantity);
         // 计算指标
         batch.calculateMetrics();
-        return productionBatchRepository.save(batch);
+        ProductionBatch saved = productionBatchRepository.save(batch);
+
+        // 发布批次完成事件 → 触发供应链联动（自动创建成品、更新PP、通知SO）
+        try {
+            applicationEventPublisher.publishEvent(new BatchCompletedEvent(this, saved));
+            log.info("已发布BatchCompletedEvent: batchId={}, goodQuantity={}", saved.getId(), saved.getGoodQuantity());
+        } catch (Exception e) {
+            log.error("发布BatchCompletedEvent失败(不影响主流程): batchId={}", saved.getId(), e);
+        }
+
+        return saved;
     }
     public ProductionBatch cancelProduction(String factoryId, String batchId, String reason) {
         log.info("取消生产: factoryId={}, batchId={}, reason={}", factoryId, batchId, reason);

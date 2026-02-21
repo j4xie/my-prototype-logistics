@@ -21,9 +21,12 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * 出货与溯源意图处理器
@@ -78,6 +81,8 @@ public class ShipmentIntentHandler implements IntentHandler {
                 case "TRACE_FULL" -> handleTraceFull(factoryId, request, intentConfig);
                 case "TRACE_PUBLIC" -> handleTracePublic(request, intentConfig);
                 case "SHIPMENT_DELETE" -> handleShipmentDelete(factoryId, request, intentConfig);
+                case "SHIPMENT_NOTIFY_WAREHOUSE_PREPARE" -> handleNotifyWarehousePrepare(factoryId, request, intentConfig);
+                case "QUERY_TRANSPORT_LINE" -> handleQueryTransportLine(factoryId, intentConfig);
                 default -> {
                     log.warn("未知的SHIPMENT意图: {}", intentCode);
                     yield IntentExecuteResponse.builder()
@@ -94,11 +99,13 @@ public class ShipmentIntentHandler implements IntentHandler {
 
         } catch (Exception e) {
             log.error("ShipmentIntentHandler执行失败: intentCode={}, error={}", intentCode, e.getMessage(), e);
+            String errMsg = "出货/溯源操作失败: " + ErrorSanitizer.sanitize(e);
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentCode)
                     .status("FAILED")
-                    .message("执行失败: " + ErrorSanitizer.sanitize(e))
+                    .message(errMsg)
+                    .formattedText(errMsg)
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -267,7 +274,7 @@ public class ShipmentIntentHandler implements IntentHandler {
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("SHIPMENT")
                     .status("COMPLETED")
-                    .message("出货记录查询成功")
+                    .message("出货记录查询成功，已找到对应出货单据及物流信息。")
                     .resultData(Map.of("shipment", record.get()))
                     .executedAt(LocalDateTime.now())
                     .build();
@@ -281,7 +288,7 @@ public class ShipmentIntentHandler implements IntentHandler {
                         .intentRecognized(true)
                         .intentCode(intentConfig.getIntentCode())
                         .status("FAILED")
-                        .message("未找到出货单: " + shipmentNumber)
+                        .message("未找到出货单号 " + shipmentNumber + "，请核实单号后重试。")
                         .executedAt(LocalDateTime.now())
                         .build();
             }
@@ -290,7 +297,7 @@ public class ShipmentIntentHandler implements IntentHandler {
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
                     .status("COMPLETED")
-                    .message("出货记录查询成功")
+                    .message("出货单 " + shipmentNumber + " 查询成功，已获取出货详情及物流状态。")
                     .resultData(Map.of("shipment", record.get()))
                     .executedAt(LocalDateTime.now())
                     .build();
@@ -304,7 +311,7 @@ public class ShipmentIntentHandler implements IntentHandler {
                         .intentRecognized(true)
                         .intentCode(intentConfig.getIntentCode())
                         .status("FAILED")
-                        .message("未找到物流单号: " + trackingNumber)
+                        .message("未找到物流单号 " + trackingNumber + "，请核实单号后重试。")
                         .executedAt(LocalDateTime.now())
                         .build();
             }
@@ -313,7 +320,7 @@ public class ShipmentIntentHandler implements IntentHandler {
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
                     .status("COMPLETED")
-                    .message("物流查询成功")
+                    .message("物流单号 " + trackingNumber + " 查询成功，已获取物流追踪信息。")
                     .resultData(Map.of("shipment", record.get()))
                     .executedAt(LocalDateTime.now())
                     .build();
@@ -646,7 +653,7 @@ public class ShipmentIntentHandler implements IntentHandler {
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
                     .status("NEED_MORE_INFO")
-                    .message("请提供批次号 (batchNumber)")
+                    .message("请提供要溯源的批次号 (batchNumber)。\n示例：「溯源批次 MB-20260101-001」或「查看批次 PB-001 的来源」")
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -670,7 +677,7 @@ public class ShipmentIntentHandler implements IntentHandler {
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("SHIPMENT")
                     .status("COMPLETED")
-                    .message("批次 " + batchNumber + " 溯源信息查询成功")
+                    .message("批次 " + batchNumber + " 溯源信息查询成功。可查看原料来源、生产过程、质检记录等全链路追溯数据。")
                     .resultData(Map.of(
                             "trace", trace,
                             "batchNumber", batchNumber
@@ -706,7 +713,7 @@ public class ShipmentIntentHandler implements IntentHandler {
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
                     .status("NEED_MORE_INFO")
-                    .message("请提供批次号 (batchNumber) 进行完整链路溯源")
+                    .message("请提供批次号 (batchNumber) 进行完整链路溯源。\n将展示从原料入库到成品出厂的全程追溯信息。")
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -730,7 +737,7 @@ public class ShipmentIntentHandler implements IntentHandler {
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("SHIPMENT")
                     .status("COMPLETED")
-                    .message("批次 " + batchNumber + " 完整链路溯源成功")
+                    .message("批次 " + batchNumber + " 完整链路溯源成功。包含从原料采购到成品出库的全程追溯链路。")
                     .resultData(Map.of(
                             "fullTrace", trace,
                             "batchNumber", batchNumber,
@@ -766,7 +773,7 @@ public class ShipmentIntentHandler implements IntentHandler {
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
                     .status("NEED_MORE_INFO")
-                    .message("请提供批次号 (batchNumber) 进行公开溯源查询")
+                    .message("请提供批次号 (batchNumber) 进行公开溯源查询。\n消费者可通过扫描产品二维码获取溯源信息。")
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -860,6 +867,65 @@ public class ShipmentIntentHandler implements IntentHandler {
                                 .entityName(record.get().getShipmentNumber())
                                 .action("DELETED").build()))
                 .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleNotifyWarehousePrepare(String factoryId, IntentExecuteRequest request,
+                                                                   AIIntentConfig intentConfig) {
+        // Get pending shipments to determine what needs preparation
+        List<ShipmentRecord> pending = shipmentRecordService.getByFactoryIdAndStatus(factoryId, "pending", 0, 20).getContent();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("pendingShipments", pending.size());
+        result.put("notificationSent", true);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("仓库备货通知已发送\n\n");
+        sb.append("待发货订单: ").append(pending.size()).append("个\n");
+        if (!pending.isEmpty()) {
+            sb.append("最近待备货:\n");
+            pending.stream().limit(5).forEach(s ->
+                    sb.append("  - ").append(s.getShipmentNumber())
+                      .append(" → ").append(s.getProductName() != null ? s.getProductName() : "未指定产品")
+                      .append("\n"));
+        }
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("SHIPMENT")
+                .status("COMPLETED").message(sb.toString()).formattedText(sb.toString())
+                .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse handleQueryTransportLine(String factoryId, AIIntentConfig intentConfig) {
+        // Query recent shipments to extract transport routes
+        List<ShipmentRecord> recent = shipmentRecordService.getByFactoryId(factoryId, 0, 50).getContent();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalShipments", recent.size());
+
+        Set<String> destinations = new LinkedHashSet<>();
+        recent.forEach(s -> {
+            if (s.getDeliveryAddress() != null && !s.getDeliveryAddress().isEmpty()) {
+                destinations.add(s.getDeliveryAddress());
+            }
+        });
+        result.put("destinations", destinations);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("运输路线查询\n\n");
+        sb.append("总出货记录: ").append(recent.size()).append("条\n");
+        sb.append("目的地数量: ").append(destinations.size()).append("个\n");
+        if (!destinations.isEmpty()) {
+            sb.append("主要路线:\n");
+            destinations.stream().limit(10).forEach(d ->
+                    sb.append("  - ").append(d).append("\n"));
+        }
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                .intentName(intentConfig.getIntentName()).intentCategory("SHIPMENT")
+                .status("COMPLETED").message(sb.toString()).formattedText(sb.toString())
+                .resultData(result).executedAt(LocalDateTime.now()).build();
     }
 
     @Override

@@ -10,9 +10,11 @@ import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.CustomerRepository;
 import com.cretas.aims.repository.inventory.*;
+import com.cretas.aims.event.SalesOrderConfirmedEvent;
 import com.cretas.aims.service.inventory.SalesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -37,19 +39,22 @@ public class SalesServiceImpl implements SalesService {
     private final FinishedGoodsBatchRepository finishedGoodsBatchRepository;
     private final CustomerRepository customerRepository;
     private final com.cretas.aims.service.finance.ArApService arApService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public SalesServiceImpl(SalesOrderRepository salesOrderRepository,
                             SalesOrderItemRepository salesOrderItemRepository,
                             SalesDeliveryRecordRepository deliveryRecordRepository,
                             FinishedGoodsBatchRepository finishedGoodsBatchRepository,
                             CustomerRepository customerRepository,
-                            com.cretas.aims.service.finance.ArApService arApService) {
+                            com.cretas.aims.service.finance.ArApService arApService,
+                            ApplicationEventPublisher applicationEventPublisher) {
         this.salesOrderRepository = salesOrderRepository;
         this.salesOrderItemRepository = salesOrderItemRepository;
         this.deliveryRecordRepository = deliveryRecordRepository;
         this.finishedGoodsBatchRepository = finishedGoodsBatchRepository;
         this.customerRepository = customerRepository;
         this.arApService = arApService;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     // ==================== 销售订单 ====================
@@ -138,8 +143,18 @@ public class SalesServiceImpl implements SalesService {
         }
         order.setStatus(SalesOrderStatus.CONFIRMED);
         order.setConfirmedAt(LocalDateTime.now());
-        log.info("确认销售订单: orderId={}, orderNumber={}", orderId, order.getOrderNumber());
-        return salesOrderRepository.save(order);
+        SalesOrder saved = salesOrderRepository.save(order);
+        log.info("确认销售订单: orderId={}, orderNumber={}", orderId, saved.getOrderNumber());
+
+        // 发布SO确认事件 → 触发供应链联动（库存检查+生产计划+采购建议）
+        try {
+            applicationEventPublisher.publishEvent(new SalesOrderConfirmedEvent(this, factoryId, saved.getId()));
+            log.info("已发布SalesOrderConfirmedEvent: SO={}", saved.getId());
+        } catch (Exception e) {
+            log.error("发布SalesOrderConfirmedEvent失败(不影响订单确认): SO={}", saved.getId(), e);
+        }
+
+        return saved;
     }
 
     @Override
@@ -395,7 +410,8 @@ public class SalesServiceImpl implements SalesService {
         }
 
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-            log.warn("成品库存不足: productTypeId={}, 缺少数量={}", item.getProductTypeId(), remaining);
+            throw new BusinessException(String.format("成品库存不足: 产品=%s, 缺少数量=%s",
+                item.getProductTypeId(), remaining.toPlainString()));
         }
     }
 
