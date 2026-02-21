@@ -9,6 +9,14 @@ Requirements: torch, transformers, sklearn
 GPU recommended (RTX 3060 ~5-10 min)
 """
 
+import os
+# Disable TensorFlow/JAX integrations before any transformers import
+# (prevents DLL load failures on systems where TF is installed but incompatible)
+os.environ["USE_TF"] = "0"
+os.environ["USE_JAX"] = "0"
+os.environ["TRANSFORMERS_NO_TF"] = "1"
+os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
+
 import json
 import logging
 import random
@@ -16,15 +24,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-
-# Monkey-patch for transformers 4.57+ / torch < 2.6 compatibility
-import transformers.utils.import_utils as _tiu
-_tiu.check_torch_load_is_safe = lambda: None
-import transformers.modeling_utils as _tmu
-_tmu.check_torch_load_is_safe = lambda: None
-import transformers.trainer as _tt
-if hasattr(_tt, 'check_torch_load_is_safe'):
-    _tt.check_torch_load_is_safe = lambda: None
 
 from torch.utils.data import Dataset
 from transformers import (
@@ -42,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 # Paths
 BASE_DIR = Path(__file__).parent
-DATA_PATH = BASE_DIR / "data" / "full_training_data.jsonl"
+DATA_PATH = BASE_DIR / "data" / "merged_training_data.jsonl"  # 19,690 samples (更完整)
 LABEL_MAPPING_PATH = BASE_DIR / "data" / "label_mapping.json"
 OUTPUT_DIR = BASE_DIR / "models" / "chinese-roberta-wwm-ext-classifier" / "final"
 

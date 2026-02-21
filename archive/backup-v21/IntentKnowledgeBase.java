@@ -995,7 +995,7 @@ public class IntentKnowledgeBase {
         // v11.3: 更多发货/物流短语
         phraseToIntentMapping.put("物流到哪了", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("今天出货量", "SHIPMENT_QUERY");
-        phraseToIntentMapping.put("订单发货了吗", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("订单发货了吗", "ORDER_STATUS");  // v12.2: 订单维度 → ORDER_STATUS
         phraseToIntentMapping.put("出货量", "SHIPMENT_QUERY");
         // v11.13: 基于测试失败添加更多短语
         phraseToIntentMapping.put("货寄出去了吗", "SHIPMENT_QUERY");
@@ -1009,7 +1009,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("发货趋势", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("发货数据", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("发货和销售", "SHIPMENT_QUERY");
-        phraseToIntentMapping.put("订单发货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("订单发货", "ORDER_STATUS");  // v12.2: 查询订单的发货状态 → ORDER_STATUS
         phraseToIntentMapping.put("发货单据", "SHIPMENT_QUERY");
         // v12.0: 隐晦表达的发货查询
         phraseToIntentMapping.put("客户催货", "SHIPMENT_QUERY");
@@ -1744,7 +1744,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("还有谁没来", "ATTENDANCE_ANOMALY");
         phraseToIntentMapping.put("今天谁没来", "ATTENDANCE_ANOMALY");
         phraseToIntentMapping.put("谁缺勤了", "ATTENDANCE_ANOMALY");
-        phraseToIntentMapping.put("缺勤情况", "ATTENDANCE_ANOMALY");
+        phraseToIntentMapping.put("缺勤情况", "ATTENDANCE_HISTORY"); // v12.4: 修复 - 缺勤情况=记录查询，不是异常；异常用"缺勤人员"/"谁缺勤了"
         phraseToIntentMapping.put("打卡异常", "ATTENDANCE_ANOMALY");
         // v11.13: 基于测试失败添加更多考勤短语
         phraseToIntentMapping.put("考勤有问题", "ATTENDANCE_ANOMALY");
@@ -2260,7 +2260,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("这周出货统计", "SHIPMENT_STATS");
         // === v4.2优化：出货类短语映射补充 ===
         phraseToIntentMapping.put("查一下出货", "SHIPMENT_QUERY");
-        phraseToIntentMapping.put("出货订单", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("出货订单", "SHIPMENT_QUERY");  // 保留：此处"出货"主语明确，属于发货维度
         phraseToIntentMapping.put("出货情况如何", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("录入发货单", "SHIPMENT_CREATE");
         phraseToIntentMapping.put("新增发货记录", "SHIPMENT_CREATE");
@@ -2516,7 +2516,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("规则修改", "RULE_CONFIG");
 
         // === v4.2优化：出货类补充 ===
-        phraseToIntentMapping.put("配送订单", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("配送订单", "SHIPMENT_QUERY");  // 保留：配送维度，属于物流场景
         phraseToIntentMapping.put("安排出货", "SHIPMENT_CREATE");
         phraseToIntentMapping.put("安排发货任务", "SHIPMENT_CREATE");
 
@@ -3790,8 +3790,9 @@ public class IntentKnowledgeBase {
         // 采购/订单
         phraseToIntentMapping.put("采购订单", "ORDER_LIST");
         phraseToIntentMapping.put("采购单", "ORDER_LIST");
-        phraseToIntentMapping.put("取消订单", "ORDER_DELETE");
-        phraseToIntentMapping.put("撤销订单", "ORDER_DELETE");
+        // v12.2修正: 取消订单 → ORDER_CANCEL（语义上"取消"≠"删除"），撤销订单 → ORDER_CANCEL
+        phraseToIntentMapping.put("取消订单", "ORDER_CANCEL");
+        phraseToIntentMapping.put("撤销订单", "ORDER_CANCEL");
 
         // 供应商
         phraseToIntentMapping.put("供应商查询", "SUPPLIER_QUERY");
@@ -4406,6 +4407,303 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("考勤统计", "ATTENDANCE_STATS");
         phraseToIntentMapping.put("出勤统计", "ATTENDANCE_STATS");
 
+        // ===================== v12.2: 精准度提升补丁 =====================
+        // 【A】订单查询口语化扩充（解决55%→90%准确率缺口）
+        phraseToIntentMapping.put("看一下订单", "ORDER_LIST");
+        phraseToIntentMapping.put("查一下订单", "ORDER_LIST");
+        phraseToIntentMapping.put("订单情况", "ORDER_LIST");
+        phraseToIntentMapping.put("订单怎么样", "ORDER_LIST");
+        phraseToIntentMapping.put("所有的订单", "ORDER_LIST");
+        phraseToIntentMapping.put("全部订单", "ORDER_LIST");
+        phraseToIntentMapping.put("订单记录", "ORDER_LIST");
+        phraseToIntentMapping.put("显示订单", "ORDER_LIST");
+        phraseToIntentMapping.put("订单有哪些", "ORDER_LIST");
+        phraseToIntentMapping.put("有什么订单", "ORDER_LIST");
+        phraseToIntentMapping.put("今日订单", "ORDER_TODAY");
+        phraseToIntentMapping.put("今日的订单", "ORDER_TODAY");
+        phraseToIntentMapping.put("今天下单了吗", "ORDER_TODAY");
+        phraseToIntentMapping.put("最近的订单", "ORDER_RECENT");
+        phraseToIntentMapping.put("近期订单", "ORDER_RECENT");
+        phraseToIntentMapping.put("订单进展", "ORDER_STATUS");
+        phraseToIntentMapping.put("订单进度", "ORDER_STATUS");
+        phraseToIntentMapping.put("这个订单怎么了", "ORDER_STATUS");
+        phraseToIntentMapping.put("订单查一下", "ORDER_LIST");
+        phraseToIntentMapping.put("帮查一下订单", "ORDER_LIST");
+        phraseToIntentMapping.put("查下单子", "ORDER_LIST");
+        phraseToIntentMapping.put("单子情况", "ORDER_LIST");
+        phraseToIntentMapping.put("本月订单量", "ORDER_FILTER");
+        phraseToIntentMapping.put("本周订单", "ORDER_FILTER");
+
+        // 【B】高风险 DELETE 操作精准短语（解决17%→83%问题）
+        // 原料批次删除
+        phraseToIntentMapping.put("删除材料", "MATERIAL_BATCH_DELETE");
+        phraseToIntentMapping.put("清除原料", "MATERIAL_BATCH_DELETE");
+        phraseToIntentMapping.put("移除批次", "MATERIAL_BATCH_DELETE");
+        phraseToIntentMapping.put("删除批次", "MATERIAL_BATCH_DELETE");
+        phraseToIntentMapping.put("清空原料", "MATERIAL_BATCH_DELETE");
+        // 设备删除
+        phraseToIntentMapping.put("删除机器", "EQUIPMENT_DELETE");
+        phraseToIntentMapping.put("移除机器", "EQUIPMENT_DELETE");
+        phraseToIntentMapping.put("移除设备", "EQUIPMENT_DELETE");
+        phraseToIntentMapping.put("注销设备", "EQUIPMENT_DELETE");
+        phraseToIntentMapping.put("删除产线", "EQUIPMENT_DELETE");
+        // 用户/账号删除
+        phraseToIntentMapping.put("删除这个用户", "USER_DELETE");
+        phraseToIntentMapping.put("移除这个用户", "USER_DELETE");
+        phraseToIntentMapping.put("删除该用户", "USER_DELETE");
+        phraseToIntentMapping.put("删除员工账号", "USER_DELETE");
+        phraseToIntentMapping.put("注销这个账号", "USER_DELETE");
+        phraseToIntentMapping.put("清除用户", "USER_DELETE");
+        // 客户删除
+        phraseToIntentMapping.put("删除这个客户", "CUSTOMER_DELETE");
+        phraseToIntentMapping.put("移除这个客户", "CUSTOMER_DELETE");
+        phraseToIntentMapping.put("清除客户", "CUSTOMER_DELETE");
+        // 供应商删除
+        phraseToIntentMapping.put("删除这个供应商", "SUPPLIER_DELETE");
+        phraseToIntentMapping.put("移除这家供应商", "SUPPLIER_DELETE");
+        phraseToIntentMapping.put("注销供应商", "SUPPLIER_DELETE");
+        // 生产批次取消/删除
+        phraseToIntentMapping.put("取消批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("作废批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("删除生产批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("删除这个批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("撤销批次", "PROCESSING_BATCH_CANCEL");
+
+        // 【C】冷链/温度领域补充（解决"冷链"未识别问题）
+        phraseToIntentMapping.put("冷链温度", "COLD_CHAIN_TEMPERATURE");
+        phraseToIntentMapping.put("冷链监测", "COLD_CHAIN_TEMPERATURE");
+        phraseToIntentMapping.put("冷链状态", "COLD_CHAIN_TEMPERATURE");
+        phraseToIntentMapping.put("冷链记录", "COLD_CHAIN_TEMPERATURE");
+        phraseToIntentMapping.put("冷藏温度", "COLD_CHAIN_TEMPERATURE");
+        phraseToIntentMapping.put("仓库温度", "COLD_CHAIN_TEMPERATURE");
+        phraseToIntentMapping.put("查看冷链", "COLD_CHAIN_TEMPERATURE");
+        phraseToIntentMapping.put("温控情况", "COLD_CHAIN_TEMPERATURE");
+
+        // 【D】复合查询精准化（解决67%→100%问题）
+        phraseToIntentMapping.put("各个批次的状态", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("每个批次状态", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("所有批次情况", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("当前所有告警", "ALERT_LIST");
+        phraseToIntentMapping.put("所有活跃告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("全部告警", "ALERT_LIST");
+        phraseToIntentMapping.put("库存和设备", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("生产和质量数据", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("今天的生产和质检", "REPORT_PRODUCTION");
+
+        // 【E】歧义口语化修正（解决高置信度误判）
+        // 注意：指代词短语应使用 QUERY 意图，DELETE 动作依赖 ActionType 修正层处理
+        phraseToIntentMapping.put("那个订单", "ORDER_STATUS");
+        phraseToIntentMapping.put("那个批次", "PROCESSING_BATCH_DETAIL");
+        phraseToIntentMapping.put("那个设备", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("这个订单", "ORDER_STATUS");
+        phraseToIntentMapping.put("这个批次", "PROCESSING_BATCH_DETAIL");
+        phraseToIntentMapping.put("这个设备", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("这个告警", "ALERT_DIAGNOSE");
+
+        // 【F】v12.2补丁：删除操作+指代词精确短语（优先级高于通用指代词映射）
+        phraseToIntentMapping.put("删除这个订单", "ORDER_DELETE");
+        phraseToIntentMapping.put("删除该订单", "ORDER_DELETE");
+        phraseToIntentMapping.put("取消这个订单", "ORDER_CANCEL");
+        phraseToIntentMapping.put("作废这个订单", "ORDER_DELETE");
+        phraseToIntentMapping.put("删除这个批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("取消这个批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("取消这个生产批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("删除这个生产批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("删除这个用户", "USER_DELETE");
+        phraseToIntentMapping.put("删除该用户", "USER_DELETE");
+        phraseToIntentMapping.put("删除这个客户", "CUSTOMER_DELETE");
+        phraseToIntentMapping.put("删除该客户", "CUSTOMER_DELETE");
+        phraseToIntentMapping.put("删除这个供应商", "SUPPLIER_DELETE");
+        phraseToIntentMapping.put("删除该供应商", "SUPPLIER_DELETE");
+        phraseToIntentMapping.put("删除这个设备", "EQUIPMENT_DELETE");
+        phraseToIntentMapping.put("删除该设备", "EQUIPMENT_DELETE");
+        phraseToIntentMapping.put("删除这个告警", "ALERT_RESOLVE");
+        phraseToIntentMapping.put("解决这个告警", "ALERT_RESOLVE");
+        phraseToIntentMapping.put("处理掉这个告警", "ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("确认这个告警", "ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("删除发货单", "SHIPMENT_DELETE");
+        phraseToIntentMapping.put("取消发货单", "SHIPMENT_DELETE");
+
+        // 【G】v12.2补丁：FALLBACK→短语补充（口语化/复合句）
+        phraseToIntentMapping.put("我要签到", "CLOCK_IN");
+        phraseToIntentMapping.put("我来签到", "CLOCK_IN");
+        phraseToIntentMapping.put("我要打卡", "CLOCK_IN");
+        phraseToIntentMapping.put("我要签退", "CLOCK_OUT");
+        phraseToIntentMapping.put("订单取消", "ORDER_CANCEL");
+        phraseToIntentMapping.put("取消订单操作", "ORDER_CANCEL");
+        phraseToIntentMapping.put("逾期未完成的订单", "ORDER_TIMEOUT_MONITOR");
+        phraseToIntentMapping.put("已发货但未签收的订单", "ORDER_LIST");
+        phraseToIntentMapping.put("已发货未签收", "ORDER_LIST");
+        phraseToIntentMapping.put("有没有逾期的", "ORDER_TIMEOUT_MONITOR");
+        phraseToIntentMapping.put("有啥新订单", "ORDER_LIST");
+        phraseToIntentMapping.put("有新订单吗", "ORDER_LIST");
+        phraseToIntentMapping.put("发了多少货", "SHIPMENT_STATS");
+        phraseToIntentMapping.put("发了多少", "SHIPMENT_STATS");
+        phraseToIntentMapping.put("上周的订单", "ORDER_LIST");
+        phraseToIntentMapping.put("上周订单", "ORDER_LIST");
+        phraseToIntentMapping.put("这周的订单", "ORDER_LIST");
+        phraseToIntentMapping.put("修改订单状态", "ORDER_UPDATE");
+        phraseToIntentMapping.put("更新订单状态", "ORDER_UPDATE");
+        phraseToIntentMapping.put("删除员工", "USER_DELETE");
+        phraseToIntentMapping.put("删除员工账户", "USER_DELETE");
+        phraseToIntentMapping.put("删除指定员工", "USER_DELETE");
+        phraseToIntentMapping.put("创建一个新的生产批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("新建一个生产批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("添加一个生产批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("创建生产批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("建一个新批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("新建一条猪肉的入库记录", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("录入今天的鸡肉入库信息", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("登记一批新的原材料", "MATERIAL_BATCH_CREATE");
+
+        // 【H】v12.3补丁：Round3 FALLBACK→短语补充
+        // 单字/单词输入补充
+        phraseToIntentMapping.put("订单", "ORDER_LIST");
+        phraseToIntentMapping.put("查询库存", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("供应商", "SUPPLIER_LIST");
+
+        // 含肉类名称的库存/批次查询（食品行业关键词）
+        phraseToIntentMapping.put("今天入库了多少鸡肉", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("今天鸡肉入库了多少", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("牛肉批次还有多少库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("猪肉批次库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("猪肉还有没有", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("猪肉有多少", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("鸡肉库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("牛肉库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("猪肉库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("本月入库总量", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("本月入库总量是多少", "MATERIAL_BATCH_QUERY");
+
+        // 含肉类名称的生产批次创建
+        phraseToIntentMapping.put("创建一个新的牛肉批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("新建一个牛肉批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("创建一个牛肉加工批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("创建一个猪肉批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("创建一个鸡肉批次", "PROCESSING_BATCH_CREATE");
+
+        // 含食品名的入库记录创建
+        phraseToIntentMapping.put("录入今天的牛肉入库信息", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("录入今天的猪肉入库信息", "MATERIAL_BATCH_CREATE");
+
+        // 口语化库存/仓库查询
+        phraseToIntentMapping.put("帮我瞅瞅仓库", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("瞅瞅仓库", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("帮我看看仓库", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("仓库情况", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("仓库怎么样", "REPORT_INVENTORY");
+
+        // 口语化考勤查询
+        phraseToIntentMapping.put("帮我查查考勤", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("查查考勤", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("帮我看看考勤", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("考勤咋样", "ATTENDANCE_STATS");
+
+        // 质检口语化
+        phraseToIntentMapping.put("质检咋样了", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("质检情况", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("不合格产品清单", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("不合格产品", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("不合格清单", "QUALITY_CHECK_QUERY");
+
+        // 设备口语化查询
+        phraseToIntentMapping.put("查一下设备", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("看一下设备", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("设备情况", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("设备咋样了", "EQUIPMENT_STATUS_QUERY");
+
+        // 告警列表口语化
+        phraseToIntentMapping.put("当前有哪些告警", "ALERT_LIST");
+        phraseToIntentMapping.put("有哪些告警", "ALERT_LIST");
+        phraseToIntentMapping.put("现在有什么告警", "ALERT_LIST");
+        phraseToIntentMapping.put("告警有哪些", "ALERT_LIST");
+        phraseToIntentMapping.put("有告警吗", "ALERT_LIST");
+
+        // 工厂总览/报表仪表盘
+        phraseToIntentMapping.put("今日工厂总览", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("工厂总览", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("今日总览", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("工厂今天的情况", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("今天工厂情况", "REPORT_DASHBOARD_OVERVIEW");
+
+        // 下班签退
+        phraseToIntentMapping.put("下班签退", "CLOCK_OUT");
+        phraseToIntentMapping.put("我要签退", "CLOCK_OUT");
+        phraseToIntentMapping.put("下班打卡", "CLOCK_OUT");
+        phraseToIntentMapping.put("签退", "CLOCK_OUT");
+        phraseToIntentMapping.put("打下班卡", "CLOCK_OUT");
+
+        // 创建订单口语化
+        phraseToIntentMapping.put("帮我创建一个订单", "ORDER_CREATE");
+        phraseToIntentMapping.put("帮我下个订单", "ORDER_CREATE");
+        phraseToIntentMapping.put("创建一个订单", "ORDER_CREATE");
+        phraseToIntentMapping.put("新建订单", "ORDER_CREATE");
+        phraseToIntentMapping.put("新增订单", "ORDER_CREATE");
+
+        // 【I】v12.4: 热词劫持修复 - 精确长短语覆盖极简热词
+        // 修复1: "待处理"→ALERT_LIST 劫持含"待处理"的订单查询
+        phraseToIntentMapping.put("待处理的订单", "ORDER_LIST");
+        phraseToIntentMapping.put("待处理订单", "ORDER_LIST");
+        phraseToIntentMapping.put("未处理的订单", "ORDER_LIST");
+        phraseToIntentMapping.put("有多少待处理的订单", "ORDER_LIST");
+        phraseToIntentMapping.put("待完成的订单", "ORDER_LIST");
+
+        // 修复2: "有问题吗"→ALERT_LIST 劫持品控查询
+        phraseToIntentMapping.put("品控", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("品控有问题", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("品控有问题吗", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("品控情况", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("品控怎么样", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("品控数据", "QUALITY_CHECK_QUERY");
+
+        // 修复3: 各肉类+库存 精确短语（覆盖"库存还够吗"→MATERIAL_LOW_STOCK_ALERT的泛化）
+        phraseToIntentMapping.put("鱼库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("羊肉库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("羊肉有多少", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("鱼有多少", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("鱼还够吗", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("鱼库存还够吗", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("羊肉库存还够吗", "MATERIAL_BATCH_QUERY");
+
+        // 修复4: 口语化批次创建（避免FALLBACK）
+        phraseToIntentMapping.put("帮我开个新批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("开个新批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("开个批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("开一个新批次", "PROCESSING_BATCH_CREATE");
+
+        // 修复5: "加工进度"口语（避免FALLBACK）
+        phraseToIntentMapping.put("加工进度", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("加工进度怎么样", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("在产的批次", "PROCESSING_BATCH_LIST");
+
+        // 修复6: 考勤口语（避免FALLBACK）
+        phraseToIntentMapping.put("员工打卡情况", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("打卡情况", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("今天谁迟到了", "ATTENDANCE_ANOMALY");
+        phraseToIntentMapping.put("本月缺勤情况", "ATTENDANCE_HISTORY");
+
+        // 修复7: 机器/设备口语（避免FALLBACK）
+        phraseToIntentMapping.put("机器运转", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("机器运转正常吗", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("机器运转情况", "EQUIPMENT_STATUS_QUERY");
+
+        // 修复8: 告警/故障口语（避免FALLBACK）
+        phraseToIntentMapping.put("哪里出故障了", "ALERT_LIST");
+        phraseToIntentMapping.put("哪里有故障", "ALERT_LIST");
+        phraseToIntentMapping.put("故障在哪", "ALERT_LIST");
+
+        // 修复9: 发货口语（避免FALLBACK）
+        phraseToIntentMapping.put("今天发出去多少货", "SHIPMENT_STATS");
+        phraseToIntentMapping.put("发出去多少货", "SHIPMENT_STATS");
+        phraseToIntentMapping.put("这批货发走了吗", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("货发走了吗", "SHIPMENT_QUERY");
+
+        // 修复10: 打卡变体（避免FALLBACK）
+        phraseToIntentMapping.put("我上班了", "CLOCK_IN");
+        phraseToIntentMapping.put("开始上班", "CLOCK_IN");
+        phraseToIntentMapping.put("我要下班", "CLOCK_OUT");
+        phraseToIntentMapping.put("下班了", "CLOCK_OUT");
+
         log.debug("短语映射初始化完成，共 {} 条映射", phraseToIntentMapping.size());
     }
 
@@ -4469,9 +4767,16 @@ public class IntentKnowledgeBase {
                 "inventory", "stock", "warehouse"
         )));
 
-        // 客户领域
+        // 订单领域 - v12.2新增：从CUSTOMER分离，解决"订单"→SHIPMENT误判
+        // 优先级：ORDER > CUSTOMER > SHIPMENT
+        domainKeywords.put(Domain.ORDER, new HashSet<>(Set.of(
+                "订单", "订货", "下单", "接单", "订购", "采购单", "销售单", "单子",
+                "order"
+        )));
+
+        // 客户领域 - v12.2修改：移除"订单"/"订货"，避免与ORDER域冲突
         domainKeywords.put(Domain.CUSTOMER, new HashSet<>(Set.of(
-                "客户", "顾客", "买家", "订单", "订货", "采购方",
+                "客户", "顾客", "买家", "采购方", "甲方",
                 "customer", "client", "buyer"
         )));
 
@@ -4736,6 +5041,8 @@ public class IntentKnowledgeBase {
         PAGE_DESIGN("页面设计", "PAGE"),
         /** 财务/成本领域 */
         FINANCE("财务", "COST"),
+        /** 订单领域 - v12.2新增，从CUSTOMER分离 */
+        ORDER("订单", "ORDER"),
         /** 通用/未分类 */
         GENERAL("通用", "REPORT_DASHBOARD_OVERVIEW");
 

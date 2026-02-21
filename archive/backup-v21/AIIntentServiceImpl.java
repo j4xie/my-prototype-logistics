@@ -2904,8 +2904,40 @@ public class AIIntentServiceImpl implements AIIntentService {
         // 用户管理族
         intentFamilies.put("USER", Map.of(
                 ActionType.CREATE, "USER_CREATE",
-                ActionType.QUERY, "USER_QUERY"
+                ActionType.QUERY, "USER_QUERY",
+                ActionType.DELETE, "USER_DELETE"
         ));
+
+        // v12.2: 订单族（从CUSTOMER域分离）
+        intentFamilies.put("ORDER", Map.of(
+                ActionType.QUERY, "ORDER_LIST",
+                ActionType.DELETE, "ORDER_DELETE"
+        ));
+
+        // v12.2: 客户族（删除操作支持）
+        intentFamilies.put("CUSTOMER", Map.of(
+                ActionType.QUERY, "CUSTOMER_LIST",
+                ActionType.DELETE, "CUSTOMER_DELETE"
+        ));
+
+        // v12.2: 供应商族（删除操作支持）
+        intentFamilies.put("SUPPLIER", Map.of(
+                ActionType.QUERY, "SUPPLIER_QUERY",
+                ActionType.DELETE, "SUPPLIER_DELETE"
+        ));
+
+        // v12.2: 设备族（删除操作支持）
+        Map<ActionType, String> equipmentFamily = new HashMap<>();
+        equipmentFamily.put(ActionType.QUERY, "EQUIPMENT_STATUS_QUERY");
+        equipmentFamily.put(ActionType.DELETE, "EQUIPMENT_DELETE");
+        intentFamilies.put("EQUIPMENT", equipmentFamily);
+
+        // v12.2: 原料批次族（删除操作支持）
+        Map<ActionType, String> materialBatchFamily = new HashMap<>();
+        materialBatchFamily.put(ActionType.CREATE, "MATERIAL_BATCH_CREATE");
+        materialBatchFamily.put(ActionType.QUERY, "MATERIAL_BATCH_QUERY");
+        materialBatchFamily.put(ActionType.DELETE, "MATERIAL_BATCH_DELETE");
+        intentFamilies.put("MATERIAL_BATCH", materialBatchFamily);
 
         // 从匹配的意图中提取意图族
         String intentFamily = extractIntentFamily(matchedIntent);

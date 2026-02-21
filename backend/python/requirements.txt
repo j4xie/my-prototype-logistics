@@ -35,3 +35,15 @@ asyncpg>=0.27.0,<1.0.0
 
 # Pydantic settings (for environment variable loading)
 pydantic-settings>=2.0.0 ; python_version >= "3.9"
+
+# -------------------------------------------------------
+# Intent Classifier (BERT-based, chinese-roberta-wwm-ext)
+# -------------------------------------------------------
+# CPU-only install (use line below on server without GPU):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# GPU install (CUDA 12.1, recommended for training):
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+torch>=2.0.0
+transformers>=4.30.0
+scikit-learn>=1.1.0
+accelerate>=0.20.0
