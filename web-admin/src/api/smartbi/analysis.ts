@@ -1324,6 +1324,48 @@ async function _doEnrichSheetAnalysis(
         }
       }
     }
+
+    // 7.1 Auto-retry empty charts with alternative types
+    const isSeriesEmpty = (config: Record<string, unknown>): boolean => {
+      if (!config || Object.keys(config).length === 0) return true;
+      const series = config.series as unknown[] | undefined;
+      if (!series) return true;
+      const arr = Array.isArray(series) ? series : [series];
+      return arr.every((s: any) => !s.data || s.data.length === 0);
+    };
+    const emptyIndices = charts
+      .map((c, i) => isSeriesEmpty(c.config) ? i : -1)
+      .filter(i => i >= 0);
+    if (emptyIndices.length > 0) {
+      const existingTypes = charts.map(c => c.chartType).filter(Boolean) as string[];
+      try {
+        const retryRec = await smartRecommendChart(
+          { data: cleanedData.slice(0, 100), excludeTypes: existingTypes, maxRecommendations: emptyIndices.length },
+          abortController.signal
+        ).catch(() => ({ success: false } as { success: false }));
+        if (retryRec.success && 'recommendations' in retryRec && retryRec.recommendations?.length) {
+          for (let ri = 0; ri < Math.min(emptyIndices.length, retryRec.recommendations.length); ri++) {
+            const rec = retryRec.recommendations[ri];
+            const idx = emptyIndices[ri];
+            const res = await buildChart({
+              chartType: rec.chartType,
+              data: cleanedData.slice(0, 200),
+              xField: rec.xField,
+              yFields: rec.yFields,
+              title: rec.title || charts[idx].title
+            });
+            if (res.success && res.option && !isSeriesEmpty(res.option)) {
+              charts[idx] = {
+                chartType: rec.chartType,
+                title: rec.title || charts[idx].title,
+                config: res.option,
+                xField: rec.xField
+              };
+            }
+          }
+        }
+      } catch { /* non-critical: keep original empty charts */ }
+    }
     tick('batchBuildCharts', t0);
 
     // Notify charts ready

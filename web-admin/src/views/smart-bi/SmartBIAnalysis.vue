@@ -465,7 +465,7 @@
                       <el-icon><Document /></el-icon>
                       导出 PDF
                     </el-button>
-                    <span class="chart-count-hint">{{ getSheetCharts(sheet).length }} 个图表</span>
+                    <span class="chart-count-hint">{{ getSheetCharts(sheet).filter(c => !isChartDataEmpty(c.config)).length }} 个图表</span>
                   </div>
                   <!-- Cross-chart filter bar -->
                   <div v-if="activeFilter" class="chart-filter-bar">
@@ -473,12 +473,29 @@
                     <span>过滤: {{ activeFilter.dimension }} = <strong>{{ activeFilter.value }}</strong></span>
                     <el-button type="primary" link size="small" @click="clearChartFilter">清除过滤</el-button>
                   </div>
-                  <div v-for="(chart, idx) in getSheetCharts(sheet)" :key="idx" class="chart-grid-item">
+                  <div v-for="(chart, idx) in getSheetCharts(sheet)" :key="idx" class="chart-grid-item"
+                       :class="{ 'chart-empty': isChartDataEmpty(chart.config) }">
+                    <!-- Empty chart: show "暂无数据" placeholder instead of blank container -->
+                    <template v-if="isChartDataEmpty(chart.config)">
+                      <div class="chart-title-row">
+                        <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
+                        <div class="chart-controls">
+                          <el-button size="small" @click="handleRefreshChart(sheet, idx)">
+                            <el-icon><Refresh /></el-icon> 重新生成
+                          </el-button>
+                        </div>
+                      </div>
+                      <div class="chart-no-data">
+                        <el-empty description="暂无数据" :image-size="60" />
+                      </div>
+                    </template>
+                    <!-- Normal chart with data -->
+                    <template v-else>
                     <div class="chart-title-row">
-                      <div class="chart-title" style="margin-bottom:0">{{ chart.title || '数据分析' }}</div>
+                      <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
                       <div class="chart-controls">
                         <ChartTypeSelector
-                          :current-type="chart.chartType"
+                          :current-type="chart.chartType || 'bar'"
                           :numeric-columns="getSheetColumns(sheet).filter(c => c.type === 'numeric').map(c => c.name)"
                           :categorical-columns="getSheetColumns(sheet).filter(c => c.type === 'categorical').map(c => c.name)"
                           :date-columns="getSheetColumns(sheet).filter(c => c.type === 'date').map(c => c.name)"
@@ -489,7 +506,7 @@
                         />
                         <ChartConfigPanel
                           :columns="getSheetColumns(sheet)"
-                          :current-config="{ chartType: chart.chartType, xField: chart.xField, yFields: [] }"
+                          :current-config="{ chartType: chart.chartType || 'bar', xField: chart.xField, yFields: extractYFieldsFromConfig(chart.config) }"
                           :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === idx"
                           @apply="(config: { xField: string; yFields: string[]; seriesField?: string; aggregation?: string }) => handleApplyChartConfig(sheet, idx, config)"
                         />
@@ -511,6 +528,7 @@
                         查看更多 (共 {{ chart.totalItems }} 项，当前显示 {{ getDisplayedCount(chart) }} 项)
                       </el-button>
                     </div>
+                    </template>
                   </div>
                 </div>
               </div>
@@ -827,7 +845,7 @@
         <h3>综合可视化</h3>
         <div class="cross-chart-grid">
           <div v-for="(chart, idx) in crossSheetResult.charts" :key="idx" class="cross-chart-item">
-            <div class="chart-title">{{ chart.title || '分析图表' }}</div>
+            <div class="chart-title">{{ cleanDisplayLabel(chart.title || '分析图表') }}</div>
             <div :id="`cross-chart-${idx}`" class="cross-chart-container"></div>
           </div>
         </div>
@@ -861,8 +879,8 @@
 
     <div v-else-if="yoyResult && yoyResult.success && yoyResult.comparison.length > 0">
       <div style="margin-bottom: 16px; color: #909399; font-size: 13px;">
-        <span v-if="yoyResult.current_period">当期: {{ yoyResult.current_period }}</span>
-        <span v-if="yoyResult.compare_period"> vs 对比期: {{ yoyResult.compare_period }}</span>
+        <span v-if="yoyResult.currentPeriod">当期: {{ yoyResult.currentPeriod }}</span>
+        <span v-if="yoyResult.comparePeriod"> vs 对比期: {{ yoyResult.comparePeriod }}</span>
       </div>
       <YoYMoMComparisonChart
         :title="yoySheetName"
@@ -913,13 +931,13 @@
         <div id="stat-heatmap-chart" class="stat-chart-container" style="height: 450px;"></div>
 
         <!-- 强相关 pairs -->
-        <div v-if="statisticalResult.correlations.strong_positive.length || statisticalResult.correlations.strong_negative.length" class="stat-pairs">
+        <div v-if="statisticalResult.correlations.strongPositive?.length || statisticalResult.correlations.strongNegative?.length" class="stat-pairs">
           <h4>关键相关性发现</h4>
           <div class="stat-pair-list">
-            <el-tag v-for="(pair, i) in statisticalResult.correlations.strong_positive" :key="'pos-'+i" type="success" effect="light" size="default" style="margin: 4px;">
+            <el-tag v-for="(pair, i) in statisticalResult.correlations.strongPositive" :key="'pos-'+i" type="success" effect="light" size="default" style="margin: 4px;">
               {{ pair.var1 }} &harr; {{ pair.var2 }} (r={{ pair.correlation.toFixed(2) }}, 强正相关)
             </el-tag>
-            <el-tag v-for="(pair, i) in statisticalResult.correlations.strong_negative" :key="'neg-'+i" type="danger" effect="light" size="default" style="margin: 4px;">
+            <el-tag v-for="(pair, i) in statisticalResult.correlations.strongNegative" :key="'neg-'+i" type="danger" effect="light" size="default" style="margin: 4px;">
               {{ pair.var1 }} &harr; {{ pair.var2 }} (r={{ pair.correlation.toFixed(2) }}, 强负相关)
             </el-tag>
           </div>
@@ -927,7 +945,7 @@
       </div>
 
       <!-- 分布分析 -->
-      <div v-if="Object.keys(statisticalResult.distributions).length" class="stat-section">
+      <div v-if="Object.keys(statisticalResult.distributions || {}).length" class="stat-section">
         <h3>分布分析</h3>
         <el-table :data="distributionTableData" border stripe size="small" max-height="350">
           <el-table-column prop="column" label="指标" min-width="150" fixed />
@@ -936,10 +954,10 @@
           <el-table-column prop="std" label="标准差" min-width="100" />
           <el-table-column prop="min" label="最小值" min-width="100" />
           <el-table-column prop="max" label="最大值" min-width="100" />
-          <el-table-column prop="distribution_type" label="分布类型" min-width="120">
+          <el-table-column prop="distributionType" label="分布类型" min-width="120">
             <template #default="{ row }">
-              <el-tag :type="row.is_normal ? 'success' : 'warning'" size="small">
-                {{ distributionTypeLabel(row.distribution_type) }}
+              <el-tag :type="row.isNormal ? 'success' : 'warning'" size="small">
+                {{ distributionTypeLabel(row.distributionType) }}
               </el-tag>
             </template>
           </el-table-column>
@@ -948,27 +966,27 @@
       </div>
 
       <!-- 对比分析 (Pareto, 集中度) -->
-      <div v-if="Object.keys(statisticalResult.comparisons).length" class="stat-section">
+      <div v-if="Object.keys(statisticalResult.comparisons || {}).length" class="stat-section">
         <h3>集中度分析</h3>
         <div v-for="(comp, dim) in statisticalResult.comparisons" :key="dim" class="stat-comparison-card">
           <el-descriptions :title="`维度: ${dim}`" :column="3" border size="small">
-            <el-descriptions-item label="CR3 (前3集中度)">{{ ((comp.cr3 ?? 0) * 100).toFixed(1) }}%</el-descriptions-item>
-            <el-descriptions-item label="CR5 (前5集中度)">{{ ((comp.cr5 ?? 0) * 100).toFixed(1) }}%</el-descriptions-item>
-            <el-descriptions-item label="基尼系数">{{ (comp.gini_coefficient ?? 0).toFixed(3) }}</el-descriptions-item>
-            <el-descriptions-item label="帕累托数量">{{ comp.pareto_count ?? 0 }} / {{ comp.total_items ?? 0 }}</el-descriptions-item>
-            <el-descriptions-item label="帕累托比例">{{ ((comp.pareto_ratio ?? 0) * 100).toFixed(1) }}%</el-descriptions-item>
+            <el-descriptions-item label="CR3 (前3集中度)">{{ (comp.cr3 ?? 0).toFixed(1) }}%</el-descriptions-item>
+            <el-descriptions-item label="CR5 (前5集中度)">{{ (comp.cr5 ?? 0).toFixed(1) }}%</el-descriptions-item>
+            <el-descriptions-item label="基尼系数">{{ (comp.giniCoefficient ?? 0).toFixed(3) }}</el-descriptions-item>
+            <el-descriptions-item label="帕累托数量">{{ comp.paretoCount ?? 0 }} / {{ comp.totalItems ?? 0 }}</el-descriptions-item>
+            <el-descriptions-item label="帕累托比例">{{ (comp.paretoRatio ?? 0).toFixed(1) }}%</el-descriptions-item>
             <el-descriptions-item label="度量">{{ comp.measure }}</el-descriptions-item>
           </el-descriptions>
           <div class="stat-top-bottom">
             <div>
               <h5>Top 3</h5>
-              <el-tag v-for="(val, key) in comp.top_3" :key="'top-'+key" type="success" effect="plain" style="margin: 2px;">
+              <el-tag v-for="(val, key) in comp.top3" :key="'top-'+key" type="success" effect="plain" style="margin: 2px;">
                 {{ key }}: {{ Number(val).toLocaleString() }}
               </el-tag>
             </div>
             <div>
               <h5>Bottom 3</h5>
-              <el-tag v-for="(val, key) in comp.bottom_3" :key="'bot-'+key" type="info" effect="plain" style="margin: 2px;">
+              <el-tag v-for="(val, key) in comp.bottom3" :key="'bot-'+key" type="info" effect="plain" style="margin: 2px;">
                 {{ key }}: {{ Number(val).toLocaleString() }}
               </el-tag>
             </div>
@@ -977,17 +995,17 @@
       </div>
 
       <!-- 异常值 -->
-      <div v-if="Object.keys(statisticalResult.outlier_summary).length" class="stat-section">
+      <div v-if="Object.keys(statisticalResult.outlierSummary || {}).length" class="stat-section">
         <h3>异常值检测</h3>
         <div class="stat-outlier-list">
-          <el-tag v-for="(info, col) in statisticalResult.outlier_summary" :key="col" type="warning" effect="light" style="margin: 4px;">
+          <el-tag v-for="(info, col) in statisticalResult.outlierSummary" :key="col" type="warning" effect="light" style="margin: 4px;">
             {{ col }}: {{ info.count }} 个异常值
           </el-tag>
         </div>
       </div>
 
       <div style="margin-top: 12px; color: #909399; font-size: 12px;">
-        分析耗时: {{ statisticalResult.processing_time_ms }}ms
+        分析耗时: {{ statisticalResult.processingTimeMs }}ms
       </div>
     </div>
 
@@ -2040,7 +2058,60 @@ const applyAnomalyOverlay = (opts: Record<string, unknown>, anomalies: Record<st
 };
 
 // 综合图表增强：DataZoom + 标签自适应 + 近零值 + 零值标签隐藏 + 图例人性化 + 离群值 + 万/亿格式化
+/**
+ * Clean meaningless auto-generated suffixes from display labels.
+ * Converts "实际收入_2" → "实际收入②", "入库_3" → "入库③" etc.
+ * Keeps labels distinguishable while making them human-readable.
+ */
+const cleanDisplayLabel = (label: string): string => {
+  const circled = ['', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫'];
+  // Match patterns: "xxx_2", "xxx(2)" — at end of string or before a space/punctuation
+  return label
+    .replace(/_(\d{1,2})(?=$|\s)/g, (_m, n) => {
+      const idx = parseInt(n);
+      return idx < circled.length ? circled[idx] : `·${n}`;
+    })
+    .replace(/\((\d{1,2})\)(?=$|\s)/g, (_m, n) => {
+      const idx = parseInt(n);
+      return idx < circled.length ? circled[idx] : `·${n}`;
+    });
+};
+
 const enhanceChartOption = (opts: Record<string, unknown>): void => {
+  // === Clean meaningless suffixes in title, series names, legend, radar indicators ===
+  {
+    const _title = (opts as any).title;
+    if (_title && typeof _title.text === 'string') _title.text = cleanDisplayLabel(_title.text);
+  }
+  {
+    const _series = (opts as any).series;
+    if (Array.isArray(_series)) {
+      for (const s of _series) {
+        if (typeof s.name === 'string') s.name = cleanDisplayLabel(s.name);
+      }
+    }
+    const _legend = (opts as any).legend;
+    if (_legend && Array.isArray(_legend.data)) {
+      _legend.data = _legend.data.map((d: unknown) =>
+        typeof d === 'string' ? cleanDisplayLabel(d) : d
+      );
+    }
+  }
+  // Clean radar indicator names (before radar max rounding)
+  {
+    const _radar = (opts as any).radar;
+    if (_radar) {
+      const radarItems = Array.isArray(_radar) ? _radar : [_radar];
+      for (const r of radarItems) {
+        if (Array.isArray(r.indicator)) {
+          for (const ind of r.indicator) {
+            if (typeof ind.name === 'string') ind.name = cleanDisplayLabel(ind.name);
+          }
+        }
+      }
+    }
+  }
+
   // Helper: extract all numeric values from series data
   const getSeriesStats = (o: Record<string, unknown>): { max: number; min: number; count: number; nonZeroMin: number; zeroCount: number; median: number } => {
     const series = (o as any).series;
@@ -2144,25 +2215,64 @@ const enhanceChartOption = (opts: Record<string, unknown>): void => {
   // === X轴标签自适应 — interval + rotate + formatter截断 ===
   if (xAxis && xAxis.type === 'category' && Array.isArray(xAxis.data)) {
     const dataLen = xAxis.data.length;
+    const maxLabelLen = Math.max(...xAxis.data.map((d: unknown) => String(d).length));
     xAxis.axisLabel = xAxis.axisLabel || {};
-    if (dataLen > 15 && !xAxis.axisLabel.rotate) {
-      xAxis.axisLabel.rotate = dataLen > 50 ? 60 : (dataLen > 30 ? 50 : 45);
+    // Calculate optimal rotation (always override — Python's 30° is often not enough)
+    let optimalRotate = 0;
+    if (dataLen > 50) optimalRotate = 60;
+    else if (dataLen > 30) optimalRotate = 50;
+    else if (dataLen > 15) optimalRotate = 45;
+    else if (maxLabelLen > 4 && dataLen > 4) optimalRotate = 40;
+    else if (maxLabelLen > 6 && dataLen > 2) optimalRotate = 35;
+    // Apply: always use the MORE aggressive rotation
+    if (optimalRotate > (xAxis.axisLabel.rotate || 0)) {
+      xAxis.axisLabel.rotate = optimalRotate;
     }
     if (dataLen > 20 && xAxis.axisLabel.interval === undefined) {
       xAxis.axisLabel.interval = Math.max(0, Math.ceil(dataLen / 8) - 1);
     }
-    // D5: 标签截断 — 瀑布图/横向图用18字符，其他用10字符
+    // Adjust grid bottom when labels are rotated to prevent clipping
+    const curRotate = xAxis.axisLabel.rotate || 0;
+    if (curRotate >= 30) {
+      const grid = (opts as any).grid || {};
+      const curBottom = typeof grid.bottom === 'number' ? grid.bottom :
+                        (typeof grid.bottom === 'string' && grid.bottom.endsWith('%') ? parseInt(grid.bottom) : 50);
+      const neededBottom = curRotate >= 45 ? 85 : 70;
+      if (curBottom < neededBottom) {
+        grid.bottom = neededBottom;
+        (opts as any).grid = grid;
+      }
+    }
+    // D5: 标签截断 — rotated labels can be shorter since they have more vertical space
     if (!xAxis.axisLabel.formatter) {
       const isWaterfall = Array.isArray(series) && series.some((s: any) => s.type === 'bar' && s.stack);
-      const maxLen = isWaterfall ? 18 : 10;
+      const maxLen = isWaterfall ? 18 : (curRotate >= 35 ? 7 : 10);
       xAxis.axisLabel.formatter = (val: string) => {
         const str = String(val);
         if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(5, 10);
         if (/^\d{4}-\d{2}$/.test(str)) return str.slice(5) + '月';
-        return str.length > maxLen ? str.slice(0, maxLen) + '…' : str;
+        return str.length > maxLen ? str.slice(0, maxLen - 1) + '…' : str;
       };
     }
     xAxis.axisLabel.hideOverlap = true;
+    xAxis.axisLabel.fontSize = xAxis.axisLabel.fontSize || (dataLen > 10 ? 10 : 11);
+  }
+
+  // === Y轴 category 标签（横向柱状图如排行）截断 ===
+  if (yAxis && yAxis.type === 'category' && Array.isArray(yAxis.data)) {
+    yAxis.axisLabel = yAxis.axisLabel || {};
+    if (!yAxis.axisLabel.formatter) {
+      yAxis.axisLabel.formatter = (val: string) => {
+        const str = String(val);
+        return str.length > 10 ? str.slice(0, 9) + '…' : str;
+      };
+    }
+    // Ensure enough left margin for horizontal bar labels
+    const grid = (opts as any).grid || {};
+    if (!grid.left || (typeof grid.left === 'number' && grid.left < 100)) {
+      grid.left = '18%';
+      (opts as any).grid = grid;
+    }
   }
 
   // === D1+D7: 零值标签隐藏 + 标签防重叠 ===
@@ -2202,6 +2312,30 @@ const enhanceChartOption = (opts: Record<string, unknown>): void => {
       for (const s of series) {
         if ((s.type === 'line' || s.type === 'bar') && !s.sampling) {
           s.sampling = 'lttb';
+        }
+      }
+    }
+  }
+
+  // === Radar indicator max rounding — fix "ticks may be not readable" warnings ===
+  const radar = (opts as any).radar;
+  if (radar) {
+    const radarItems = Array.isArray(radar) ? radar : [radar];
+    for (const r of radarItems) {
+      // Set explicit splitNumber so tick calculation is deterministic
+      if (!r.splitNumber) r.splitNumber = 5;
+      // Round indicator max values to "nice" numbers divisible by splitNumber
+      const sn = r.splitNumber;
+      for (const ind of (r.indicator || [])) {
+        if (typeof ind.max === 'number' && ind.max > 0) {
+          const magnitude = Math.pow(10, Math.floor(Math.log10(ind.max)));
+          const normalized = ind.max / magnitude;
+          const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+          let rounded = nice * magnitude;
+          // Ensure max is divisible by splitNumber for clean tick intervals
+          const remainder = rounded % sn;
+          if (remainder !== 0) rounded = rounded + (sn - remainder);
+          ind.max = rounded;
         }
       }
     }
@@ -2368,20 +2502,7 @@ const renderActiveCharts = () => {
     const config = chart.config;
     if (!config || isChartDataEmpty(config)) return;
 
-    // T5.2: First chart (hero) renders immediately, rest observe for viewport entry
-    if (idx === 0) {
-      renderSingleChart(dom, chart, idx, activeSheet);
-    } else {
-      // Check if already in viewport (scrolled into view)
-      const rect = dom.getBoundingClientRect();
-      const inViewport = rect.top < window.innerHeight + 200 && rect.bottom > -200;
-      if (inViewport) {
-        renderSingleChart(dom, chart, idx, activeSheet);
-      } else {
-        pendingChartConfigs.set(chartId, { chart, idx, sheet: activeSheet });
-        observer.observe(dom);
-      }
-    }
+    renderSingleChart(dom, chart, idx, activeSheet);
   });
 };
 
@@ -2454,7 +2575,22 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
       if (!instance) {
         instance = echarts.init(dom, 'cretas');
       }
-      instance.setOption(echartsOptions, { notMerge: true });
+      // Suppress ECharts false-positive "alignTicks" warning on radar indicator axes
+      // (radar internal axes set alignTicks:true by default; our nice-rounded max values ARE readable)
+      const chartType = (echartsOptions as any).series?.[0]?.type
+        ?? (Array.isArray((echartsOptions as any).series) ? (echartsOptions as any).series[0]?.type : undefined);
+      if (chartType === 'radar') {
+        const _origWarn = console.warn;
+        // eslint-disable-next-line no-console
+        console.warn = (...args: unknown[]) => {
+          if (typeof args[0] === 'string' && args[0].includes('alignTicks')) return;
+          _origWarn.apply(console, args);
+        };
+        instance.setOption(echartsOptions, { notMerge: true });
+        console.warn = _origWarn;
+      } else {
+        instance.setOption(echartsOptions, { notMerge: true });
+      }
 
       // R-14: Apply visual emphasis if a cross-chart filter is active
       if (activeFilter.value) {
@@ -3005,6 +3141,32 @@ const enrichSheet = async (sheet: SheetResult, forceRefresh = false) => {
         } else if (result.chartConfig) {
           currentSheet.flowResult.chartConfig = result.chartConfig;
         }
+        // Auto-retry empty charts (works for both cached and fresh results)
+        if (currentSheet.flowResult.charts?.length) {
+          const emptyIdx = currentSheet.flowResult.charts
+            .map((c: any, i: number) => {
+              if (!c.config || Object.keys(c.config).length === 0) return i;
+              const series = c.config.series;
+              if (!series) return i;
+              const arr = Array.isArray(series) ? series : [series];
+              return arr.every((s: any) => !s.data || s.data.length === 0) ? i : -1;
+            })
+            .filter((i: number) => i >= 0);
+          if (emptyIdx.length > 0) {
+            // Fire-and-forget: auto-retry empty charts in background
+            (async () => {
+              try {
+                for (const idx of emptyIdx) {
+                  await handleRefreshChart(currentSheet, idx);
+                }
+                if (parseInt(activeTab.value) === sheetIndex) {
+                  await nextTick();
+                  renderActiveCharts();
+                }
+              } catch { /* non-critical */ }
+            })();
+          }
+        }
         if (result.kpiSummary) currentSheet.flowResult.kpiSummary = result.kpiSummary;
         if (result.aiAnalysis) currentSheet.flowResult.aiAnalysis = result.aiAnalysis;
         if (result.structuredAI) currentSheet.flowResult.structuredAI = result.structuredAI;
@@ -3162,6 +3324,15 @@ const applyTemplate = async (template: FoodTemplate) => {
 /** Track which chart is currently being switched/refreshed */
 const switchingChart = ref<{ sheetIndex: number; chartIndex: number } | null>(null);
 
+/** Extract yFields from an ECharts config object by reading series names */
+const extractYFieldsFromConfig = (config: Record<string, unknown>): string[] => {
+  const series = config?.series as Array<{ name?: string }> | undefined;
+  if (Array.isArray(series)) {
+    return series.map(s => s.name).filter(Boolean) as string[];
+  }
+  return [];
+};
+
 /** Switch a single chart's type */
 const handleSwitchChartType = async (sheet: SheetResult, chartIndex: number, newType: string) => {
   const charts = getSheetCharts(sheet);
@@ -3179,11 +3350,14 @@ const handleSwitchChartType = async (sheet: SheetResult, chartIndex: number, new
       sheetRawDataCache.set(sheet.uploadId, rawData);
     }
 
+    // Extract yFields from current chart config series names
+    const yFields = extractYFieldsFromConfig(chart.config);
+
     const result = await buildChart({
       chartType: newType,
       data: rawData.slice(0, 200),
       xField: chart.xField,
-      yFields: undefined,
+      yFields: yFields.length > 0 ? yFields : undefined,
       title: chart.title
     });
 
@@ -3225,8 +3399,8 @@ const handleRefreshChart = async (sheet: SheetResult, chartIndex: number) => {
       sheetRawDataCache.set(sheet.uploadId, rawData);
     }
 
-    // Get current chart types to exclude
-    const currentTypes = charts.map(c => c.chartType);
+    // Get current chart types to exclude (filter nulls to avoid 422)
+    const currentTypes = charts.map(c => c.chartType).filter(Boolean) as string[];
 
     const recRes = await smartRecommendChart({
       data: rawData.slice(0, 100),
@@ -3235,27 +3409,48 @@ const handleRefreshChart = async (sheet: SheetResult, chartIndex: number) => {
     });
 
     if (recRes.success && recRes.recommendations?.length) {
-      const rec = recRes.recommendations[0];
-      const buildRes = await buildChart({
-        chartType: rec.chartType,
-        data: rawData.slice(0, 200),
-        xField: rec.xField,
-        yFields: rec.yFields,
-        title: rec.title || chart.title
-      });
+      // Auto-fill yFields from numeric columns if LLM returned empty
+      const inferYFields = (rec: typeof recRes.recommendations[0]) => {
+        if (rec.yFields && rec.yFields.length > 0) return rec.yFields;
+        // Infer from data: pick numeric columns excluding xField
+        const sample = rawData[0] as Record<string, unknown> | undefined;
+        if (!sample) return [];
+        return Object.entries(sample)
+          .filter(([k, v]) => typeof v === 'number' && k !== rec.xField)
+          .slice(0, 5)
+          .map(([k]) => k);
+      };
+      // Try each recommendation until one produces non-empty series
+      let replaced = false;
+      for (const rec of recRes.recommendations) {
+        const yFields = inferYFields(rec);
+        if (yFields.length === 0) continue;
+        const buildRes = await buildChart({
+          chartType: rec.chartType,
+          data: rawData.slice(0, 200),
+          xField: rec.xField,
+          yFields,
+          title: rec.title || chart.title
+        });
 
-      if (buildRes.success && buildRes.option) {
-        const currentSheet = uploadedSheets.value.find(s => s.sheetIndex === sheet.sheetIndex);
-        if (currentSheet?.flowResult?.charts?.[chartIndex]) {
-          currentSheet.flowResult.charts[chartIndex] = {
-            chartType: rec.chartType,
-            title: rec.title || chart.title,
-            config: buildRes.option,
-            xField: rec.xField
-          };
-          await nextTick();
-          renderActiveCharts();
+        if (buildRes.success && buildRes.option && !isChartDataEmpty(buildRes.option)) {
+          const currentSheet = uploadedSheets.value.find(s => s.sheetIndex === sheet.sheetIndex);
+          if (currentSheet?.flowResult?.charts?.[chartIndex]) {
+            currentSheet.flowResult.charts[chartIndex] = {
+              chartType: rec.chartType,
+              title: rec.title || chart.title,
+              config: buildRes.option,
+              xField: rec.xField
+            };
+            await nextTick();
+            renderActiveCharts();
+            replaced = true;
+            break;
+          }
         }
+      }
+      if (!replaced) {
+        ElMessage.info('暂无更多推荐图表类型');
       }
     } else {
       ElMessage.info('暂无更多推荐图表类型');
@@ -3898,7 +4093,7 @@ const runYoYForSheet = async (sheet: SheetResult) => {
     console.error('YoY comparison failed:', error);
     yoyResult.value = {
       success: false,
-      current_upload_id: sheet.uploadId,
+      currentUploadId: sheet.uploadId,
       comparison: [],
       error: '同比分析失败'
     };
@@ -3911,9 +4106,9 @@ const runYoYForSheet = async (sheet: SheetResult) => {
 const transformYoYData = (comparison: YoYComparisonItem[]): ComparisonData[] => {
   return comparison.map(item => ({
     period: item.label,
-    current: item.current_value,
-    lastYearSame: item.previous_value,
-    yoyGrowth: item.yoy_growth ?? 0
+    current: item.currentValue,
+    lastYearSame: item.previousValue,
+    yoyGrowth: item.yoyGrowth ?? 0
   }));
 };
 
@@ -4721,6 +4916,18 @@ onMounted(() => {
           width: 100%;
           height: 500px;
           border-radius: 8px;
+        }
+
+        .chart-empty {
+          .chart-no-data {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            border: 1px dashed #dcdfe6;
+            border-radius: 8px;
+            background: #fafafa;
+          }
         }
 
         .chart-loading {
