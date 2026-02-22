@@ -2165,6 +2165,17 @@ const enhanceChartOption = (opts: Record<string, unknown>): void => {
     });
   }
 
+  // === 轴名称人性化 ===
+  const yAxes = Array.isArray(yAxis) ? yAxis : (yAxis ? [yAxis] : []);
+  for (const ax of yAxes) {
+    if (ax && typeof ax.name === 'string') {
+      ax.name = humanizeColumnName(ax.name);
+    }
+  }
+  if (xAxis && typeof xAxis.name === 'string') {
+    xAxis.name = humanizeColumnName(xAxis.name);
+  }
+
   // === P1.1: 食品行业语义配色 ===
   if (Array.isArray(series) && chartType !== 'pie') {
     const semanticColorMap: Array<{ pattern: RegExp; colors: string[] }> = [
@@ -2251,6 +2262,14 @@ const enhanceChartOption = (opts: Record<string, unknown>): void => {
         const str = String(val);
         if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(5, 10);
         if (/^\d{4}-\d{2}$/.test(str)) return str.slice(5) + '月';
+        // Subtable prefix: abbreviate "净利-管理费用" → "净·管理费用"
+        const dashIdx = str.indexOf('-');
+        if (dashIdx > 0 && dashIdx <= 4 && str.length > maxLen) {
+          const prefix = str.slice(0, 1);
+          const suffix = str.slice(dashIdx + 1);
+          const abbrev = prefix + '·' + suffix;
+          return abbrev.length > maxLen ? abbrev.slice(0, maxLen - 1) + '…' : abbrev;
+        }
         return str.length > maxLen ? str.slice(0, maxLen - 1) + '…' : str;
       };
     }

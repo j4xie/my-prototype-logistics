@@ -96,6 +96,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onLogin, onRegister }) => {
         {/* 底部按钮 */}
         <View style={styles.landingButtons}>
           <TouchableOpacity
+            testID="landing-login-btn"
             style={styles.landingPrimaryButton}
             onPress={onLogin}
             activeOpacity={0.8}
@@ -217,6 +218,7 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
               style={styles.inputIcon}
             />
             <TextInput
+              testID="login-username-input"
               style={styles.input}
               placeholder={t('login.usernamePlaceholder')}
               placeholderTextColor={theme.colors.onSurfaceVariant}
@@ -239,6 +241,7 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
               style={styles.inputIcon}
             />
             <TextInput
+              testID="login-password-input"
               style={styles.input}
               placeholder={t('login.passwordPlaceholder')}
               placeholderTextColor={theme.colors.onSurfaceVariant}
@@ -279,6 +282,7 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
 
           {/* 登录按钮 */}
           <TouchableOpacity
+            testID="login-submit-btn"
             style={[
               styles.loginButton,
               isLoading && styles.loginButtonDisabled,

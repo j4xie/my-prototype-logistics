@@ -1,0 +1,47 @@
+{
+  "buildFiles": [
+    "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/CMakeLists.txt",
+    "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/src/main/cpp/reanimated/CMakeLists.txt",
+    "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/src/main/cpp/worklets/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/jietaoxie/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-reanimated/RelWithDebInfo/6i4pk2v1/x86_64",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/jietaoxie/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-reanimated/RelWithDebInfo/6i4pk2v1/x86_64",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "worklets::@a0394df2d94e5212d8bd": {
+      "artifactName": "worklets",
+      "abi": "x86_64",
+      "output": "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/build/intermediates/cxx/RelWithDebInfo/6i4pk2v1/obj/x86_64/libworklets.so",
+      "runtimeFiles": [
+        "/Users/jietaoxie/.gradle/caches/8.13/transforms/27d85515d0b23c60ca3de769f81a1be3/transformed/react-android-0.79.6-release/prefab/modules/jsi/libs/android.x86_64/libjsi.so",
+        "/Users/jietaoxie/.gradle/caches/8.13/transforms/acdad09e14c6903331ae031071f348bb/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.x86_64/libfbjni.so",
+        "/Users/jietaoxie/.gradle/caches/8.13/transforms/27d85515d0b23c60ca3de769f81a1be3/transformed/react-android-0.79.6-release/prefab/modules/reactnative/libs/android.x86_64/libreactnative.so",
+        "/Users/jietaoxie/.gradle/caches/8.13/transforms/4c74be79a136179d2c0cdf77ec3a7dd0/transformed/hermes-android-0.79.6-release/prefab/modules/libhermes/libs/android.x86_64/libhermes.so"
+      ]
+    },
+    "reanimated::@89a6a9b85fb42923616c": {
+      "artifactName": "reanimated",
+      "abi": "x86_64",
+      "output": "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/build/intermediates/cxx/RelWithDebInfo/6i4pk2v1/obj/x86_64/libreanimated.so",
+      "runtimeFiles": [
+        "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/build/intermediates/cxx/RelWithDebInfo/6i4pk2v1/obj/x86_64/libworklets.so",
+        "/Users/jietaoxie/.gradle/caches/8.13/transforms/27d85515d0b23c60ca3de769f81a1be3/transformed/react-android-0.79.6-release/prefab/modules/reactnative/libs/android.x86_64/libreactnative.so",
+        "/Users/jietaoxie/.gradle/caches/8.13/transforms/27d85515d0b23c60ca3de769f81a1be3/transformed/react-android-0.79.6-release/prefab/modules/jsi/libs/android.x86_64/libjsi.so",
+        "/Users/jietaoxie/.gradle/caches/8.13/transforms/acdad09e14c6903331ae031071f348bb/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.x86_64/libfbjni.so",
+        "/Users/jietaoxie/.gradle/caches/8.13/transforms/27d85515d0b23c60ca3de769f81a1be3/transformed/react-android-0.79.6-release/prefab/modules/reactnative/libs/android.x86_64/libreactnative.so",
+        "/Users/jietaoxie/.gradle/caches/8.13/transforms/4c74be79a136179d2c0cdf77ec3a7dd0/transformed/hermes-android-0.79.6-release/prefab/modules/libhermes/libs/android.x86_64/libhermes.so"
+      ]
+    }
+  }
+}

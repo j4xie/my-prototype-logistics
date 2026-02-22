@@ -35,6 +35,7 @@ import { useTranslation } from 'react-i18next';
 import { smartBIApiClient } from '../../services/api/smartbi';
 import { useAuthStore } from '../../store/authStore';
 import { SmartBIStackParamList } from '../../types/smartbi';
+import { formatNumberWithCommas } from '../../utils/formatters';
 
 // Type for MaterialCommunityIcons names
 type MaterialCommunityIconName = keyof typeof MaterialCommunityIcons.glyphMap;
@@ -182,7 +183,7 @@ const CostBreakdownItemComponent: React.FC<CostItemProps> = ({ item }) => {
     if (value >= 10000) {
       return `${(value / 10000).toFixed(1)}万`;
     }
-    return value.toLocaleString();
+    return formatNumberWithCommas(value);
   };
 
   return (
@@ -410,7 +411,7 @@ export function FinanceAnalysisScreen() {
     if (value >= 10000) {
       return `${(value / 10000).toFixed(1)}万`;
     }
-    return value.toLocaleString();
+    return formatNumberWithCommas(value);
   };
 
   const handleAlertPress = (alert: FinanceAlert) => {

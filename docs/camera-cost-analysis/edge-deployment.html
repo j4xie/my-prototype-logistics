@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>边缘部署方案 | 摄像头 AI 费用分析</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-brand">
+        <span class="logo-icon">C</span>
+        <span>摄像头 AI 费用分析</span>
+      </a>
+      <button class="nav-mobile-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle menu">&#9776;</button>
+      <ul class="nav-links">
+        <li><a href="index.html">总览</a></li>
+        <li><a href="cloud-deployment.html">集中部署</a></li>
+        <li><a href="edge-deployment.html" class="active">边缘部署</a></li>
+        <li><a href="hybrid-deployment.html">混合部署</a></li>
+        <li><button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">&#9790;</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <section class="page-header">
+    <h1>&#128421; 边缘部署方案</h1>
+    <p class="subtitle">每个工厂部署一台边缘 GPU 设备，本地处理所有摄像头数据</p>
+  </section>
+
+  <div class="container">
+
+    <!-- Architecture Diagram -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128736;</span>
+        架构概览
+      </h2>
+      <p class="section-desc">摄像头数据在工厂内部完成处理，仅上报分析结果</p>
+
+      <div class="card">
+        <div class="arch-diagram">
+          <div class="arch-box">
+            <div class="arch-icon">&#128247;</div>
+            <div class="arch-label">工厂摄像头</div>
+            <div class="arch-detail">20 台 / 工厂</div>
+          </div>
+          <div class="arch-arrow">&rarr;</div>
+          <div class="arch-box accent">
+            <div class="arch-icon">&#128421;</div>
+            <div class="arch-label">本地边缘设备</div>
+            <div class="arch-detail">vLLM / Ollama</div>
+          </div>
+          <div class="arch-arrow">&rarr;</div>
+          <div class="arch-box">
+            <div class="arch-icon">&#128202;</div>
+            <div class="arch-label">结果上报</div>
+            <div class="arch-detail">仅 JSON 数据</div>
+          </div>
+          <div class="arch-arrow">&rarr;</div>
+          <div class="arch-box">
+            <div class="arch-icon">&#9729;&#65039;</div>
+            <div class="arch-label">中心管理平台</div>
+            <div class="arch-detail">数据汇总</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Device Selection -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128268;</span>
+        设备选型对比
+      </h2>
+      <p class="section-desc">四种边缘 GPU 设备方案的全面对比</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>方案</th>
+              <th>设备</th>
+              <th>内存/显存</th>
+              <th>算力</th>
+              <th>功耗</th>
+              <th>价格</th>
+              <th>可跑模型</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-green">推荐 A</span></td>
+              <td>Jetson Orin Nano Super</td>
+              <td>8GB</td>
+              <td>67 TOPS</td>
+              <td>7-25W</td>
+              <td class="cell-green">~&yen;1,800</td>
+              <td>Qwen2.5-VL-3B (量化)</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-blue">推荐 B</span></td>
+              <td>Jetson AGX Orin 64GB</td>
+              <td>64GB</td>
+              <td>275 TOPS</td>
+              <td>15-60W</td>
+              <td>&yen;14,400</td>
+              <td>Qwen2.5-VL-7B 甚至 20B</td>
+            </tr>
+            <tr>
+              <td>C</td>
+              <td>Mini PC + RTX 4060</td>
+              <td>8GB VRAM</td>
+              <td>20.3 TFLOPS</td>
+              <td>115W+</td>
+              <td>&yen;7,200-10,800</td>
+              <td>Qwen2.5-VL-3B (VRAM 瓶颈)</td>
+            </tr>
+            <tr>
+              <td>D</td>
+              <td>工控机 + RTX 4090</td>
+              <td>24GB VRAM</td>
+              <td>82.6 TFLOPS</td>
+              <td>450W+</td>
+              <td>&yen;20,000-25,000</td>
+              <td>Qwen2.5-VL-7B-32B</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Detailed Comparison -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128200;</span>
+        关键维度对比
+      </h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>维度</th>
+              <th>Jetson Orin Nano</th>
+              <th>Jetson AGX Orin 64GB</th>
+              <th>RTX 4060 Mini PC</th>
+              <th>RTX 4090 工控机</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>可跑最大 VL 模型</strong></td>
+              <td>3B (量化)</td>
+              <td class="cell-green">7B-20B</td>
+              <td>3B (8GB限制)</td>
+              <td class="cell-green">7B-32B</td>
+            </tr>
+            <tr>
+              <td><strong>推理速度 (3B)</strong></td>
+              <td>~10 tok/s</td>
+              <td>~30 tok/s</td>
+              <td>~25 tok/s</td>
+              <td>~80 tok/s</td>
+            </tr>
+            <tr>
+              <td><strong>推理速度 (7B)</strong></td>
+              <td class="cell-red">不够</td>
+              <td>~10-15 tok/s</td>
+              <td class="cell-red">VRAM不够</td>
+              <td>~40 tok/s</td>
+            </tr>
+            <tr>
+              <td><strong>功耗</strong></td>
+              <td class="cell-green">7-25W</td>
+              <td class="cell-green">15-60W</td>
+              <td>115W+</td>
+              <td class="cell-red">450W+</td>
+            </tr>
+            <tr>
+              <td><strong>体积</strong></td>
+              <td class="cell-green">名片大小</td>
+              <td>小盒子</td>
+              <td>小主机</td>
+              <td>大机箱</td>
+            </tr>
+            <tr>
+              <td><strong>每工厂月电费</strong></td>
+              <td class="cell-green">~&yen;5</td>
+              <td class="cell-green">~&yen;15</td>
+              <td>~&yen;40</td>
+              <td class="cell-red">~&yen;120</td>
+            </tr>
+            <tr>
+              <td><strong>工业适配性</strong></td>
+              <td class="cell-green">极佳</td>
+              <td class="cell-green">极佳</td>
+              <td>一般</td>
+              <td>较差</td>
+            </tr>
+            <tr>
+              <td><strong>散热/噪音</strong></td>
+              <td class="cell-green">无风扇可</td>
+              <td class="cell-green">低噪音</td>
+              <td>有风扇</td>
+              <td class="cell-red">大噪音</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Recommended Devices Detail -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#127942;</span>
+        推荐方案详解
+      </h2>
+
+      <div class="card-grid card-grid-2 gap-24">
+        <div class="card card-green">
+          <div class="flex items-center gap-8 mb-16">
+            <span class="badge badge-green">性价比冠军</span>
+          </div>
+          <div class="card-title" style="font-size:18px">方案 A: Jetson Orin Nano Super</div>
+          <div class="card-value mt-8">&yen;1,800 / 台</div>
+          <div class="card-desc mt-16">
+            <ul style="list-style:none;padding:0">
+              <li style="padding:4px 0">&#8226; 运行 Qwen2.5-VL-3B INT4 量化版，显存占用 ~3-4GB</li>
+              <li style="padding:4px 0">&#8226; 处理 20 台摄像头 (ABE 优化后 1.4 req/s): 勉强够用 (~2-3 req/s 吞吐)</li>
+              <li style="padding:4px 0">&#8226; 超低功耗 (7-25W)，无风扇设计</li>
+              <li style="padding:4px 0">&#8226; 可直接安装在生产车间</li>
+            </ul>
+          </div>
+          <div class="callout callout-success mt-16">
+            <span class="callout-icon">&#10003;</span>
+            <div>50 个工厂一次性投入: <strong>&yen;90,000</strong>，之后每月电费仅 <strong>&yen;250</strong></div>
+          </div>
+        </div>
+
+        <div class="card card-blue">
+          <div class="flex items-center gap-8 mb-16">
+            <span class="badge badge-blue">性能均衡</span>
+          </div>
+          <div class="card-title" style="font-size:18px">方案 B: Jetson AGX Orin 64GB</div>
+          <div class="card-value mt-8">&yen;14,400 / 台</div>
+          <div class="card-desc mt-16">
+            <ul style="list-style:none;padding:0">
+              <li style="padding:4px 0">&#8226; 运行 Qwen2.5-VL-7B，64GB 统一内存无显存瓶颈</li>
+              <li style="padding:4px 0">&#8226; 可同时运行多个模型（手势 + OCR + 告警）</li>
+              <li style="padding:4px 0">&#8226; 处理 20 台摄像头 (B+E 场景 3.8 req/s): 基本够用</li>
+              <li style="padding:4px 0">&#8226; vLLM 支持在 Jetson 上运行，TensorRT 可进一步加速</li>
+            </ul>
+          </div>
+          <div class="callout callout-info mt-16">
+            <span class="callout-icon">&#128161;</span>
+            <div>50 个工厂一次性投入: <strong>&yen;720,000</strong>，之后每月电费仅 <strong>&yen;750</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-24">
+        <div class="flex items-center gap-8 mb-16">
+          <span class="badge badge-purple">性能最强</span>
+        </div>
+        <div class="card-title">方案 D: RTX 4090 工控机 (&yen;20,000-25,000/台)</div>
+        <div class="card-desc mt-8">
+          跑 7B 模型吞吐最高 (~40 tok/s)，场景 2 (3.8 req/s) 完全没有压力。但体积大、功耗高、噪音大，不太适合车间环境。<strong>适合放在工厂机房</strong>，通过网络连接摄像头。
+        </div>
+      </div>
+    </section>
+
+    <!-- Multi-Factory Scaling -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#127981;</span>
+        多工厂规模化费用
+      </h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>工厂数</th>
+              <th>Orin Nano<br><small>(一次性 + 月运营)</small></th>
+              <th>AGX Orin 64GB<br><small>(一次性 + 月运营)</small></th>
+              <th>云GPU租用<br><small>(月费)</small></th>
+              <th>API 最便宜<br><small>(月费)</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>&yen;1,800 + &yen;5/月</td>
+              <td>&yen;14,400 + &yen;15/月</td>
+              <td>&yen;176/月</td>
+              <td>&yen;1,542/月</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>&yen;9,000 + &yen;25/月</td>
+              <td>&yen;72,000 + &yen;75/月</td>
+              <td>&yen;1,056/月</td>
+              <td>&yen;7,710/月</td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td class="cell-green">&yen;18,000 + &yen;50/月</td>
+              <td>&yen;144,000 + &yen;150/月</td>
+              <td>&yen;2,112/月</td>
+              <td>&yen;15,420/月</td>
+            </tr>
+            <tr>
+              <td>20</td>
+              <td class="cell-green">&yen;36,000 + &yen;100/月</td>
+              <td>&yen;288,000 + &yen;300/月</td>
+              <td>&yen;4,224/月</td>
+              <td>&yen;30,840/月</td>
+            </tr>
+            <tr>
+              <td>50</td>
+              <td class="cell-green">&yen;90,000 + &yen;250/月</td>
+              <td>&yen;720,000 + &yen;750/月</td>
+              <td>&yen;10,560/月</td>
+              <td>&yen;77,100/月</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ROI Payback Analysis -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128176;</span>
+        回本周期分析
+      </h2>
+      <p class="section-desc">边缘设备的一次性投入与持续费用对比</p>
+
+      <div class="card-grid card-grid-2 gap-24">
+        <div class="card">
+          <div class="card-title">vs 云 GPU 租用 (50 工厂)</div>
+          <div class="card-desc mt-8">对比集中部署云 GPU 月费 &yen;10,560</div>
+
+          <div class="payback-visual">
+            <div class="payback-months">~9</div>
+            <div class="payback-info">
+              <div class="payback-label">月回本</div>
+              <div class="payback-desc">Orin Nano: 投入 &yen;90,000，月节省 &yen;10,310</div>
+            </div>
+          </div>
+
+          <div class="payback-visual">
+            <div class="payback-months" style="color:var(--orange)">~74</div>
+            <div class="payback-info">
+              <div class="payback-label">月回本</div>
+              <div class="payback-desc">AGX Orin: 投入 &yen;720,000，月节省 &yen;9,810 (过长)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">vs API 方案 (50 工厂)</div>
+          <div class="card-desc mt-8">对比最便宜 API 月费 &yen;77,100</div>
+
+          <div class="payback-visual">
+            <div class="payback-months" style="color:var(--green)">~1.2</div>
+            <div class="payback-info">
+              <div class="payback-label">月回本</div>
+              <div class="payback-desc">Orin Nano: 投入 &yen;90,000，月节省 &yen;76,850</div>
+            </div>
+          </div>
+
+          <div class="payback-visual">
+            <div class="payback-months">~9.4</div>
+            <div class="payback-info">
+              <div class="payback-label">月回本</div>
+              <div class="payback-desc">AGX Orin: 投入 &yen;720,000，月节省 &yen;76,350</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-success mt-24">
+        <span class="callout-icon">&#10003;</span>
+        <div>
+          <strong>结论</strong>:
+          vs API &mdash; 边缘设备几乎立即回本 (~1.2 个月);
+          vs 云 GPU &mdash; Orin Nano 约 9 个月回本，AGX Orin 回本周期过长;
+          <strong>方案 A (Orin Nano + 3B) 是多工厂大规模部署的性价比冠军</strong>。
+        </div>
+      </div>
+    </section>
+
+    <!-- Pros & Cons -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#9878;</span>
+        优劣势分析
+      </h2>
+
+      <div class="card">
+        <div class="pros-cons">
+          <div>
+            <h3 style="color:var(--green);font-size:15px;margin-bottom:12px">&#10003; 优势</h3>
+            <ul class="pros-list">
+              <li><strong>零网络依赖</strong> - 断网照样跑</li>
+              <li><strong>数据不出厂</strong> - 安全合规，适合食品工厂审计要求</li>
+              <li><strong>零延迟</strong> - 本地处理最快</li>
+              <li><strong>长期最省</strong> - 一次性投入后只付电费</li>
+              <li>适合食品工厂的安全审计要求</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color:var(--red);font-size:15px;margin-bottom:12px">&#10007; 劣势</h3>
+            <ul class="cons-list">
+              <li>前期硬件投入</li>
+              <li>每个工厂需要基本的设备运维</li>
+              <li>模型更新需要逐厂推送</li>
+              <li>设备故障需要现场处理或备件</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Technical Feasibility -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128295;</span>
+        技术可行性
+      </h2>
+      <p class="section-desc">Jetson + Qwen2.5-VL 的组合已被社区验证</p>
+
+      <div class="card">
+        <div class="card-title mb-16">已验证的部署教程与资源</div>
+        <ul class="source-list">
+          <li><a href="https://zhuanlan.zhihu.com/p/1898815390710211208" target="_blank">Jetson AGX Orin 部署 Qwen2.5-VL 3B/7B 教程</a></li>
+          <li><a href="https://blog.csdn.net/qq_37397652/article/details/147249278" target="_blank">Jetson 上使用 vLLM 部署 Qwen2.5</a></li>
+          <li><a href="https://developer.nvidia.com/blog/getting-started-with-edge-ai-on-nvidia-jetson-llms-vlms-and-foundation-models-for-robotics/" target="_blank">NVIDIA 官方 Jetson AI Lab: VLM 教程</a></li>
+        </ul>
+        <div class="card-desc mt-16">
+          支持 TensorRT / vLLM / Ollama / llama.cpp 多种推理框架。INT4/INT8 量化可将 7B 模型压缩到 4-5GB 内存。
+        </div>
+      </div>
+
+      <div class="card mt-24">
+        <div class="card-title">推理框架选择</div>
+        <div class="table-wrapper mt-16" style="border:none;box-shadow:none;">
+          <table>
+            <thead>
+              <tr><th>框架</th><th>适用</th><th>特点</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>vLLM</strong></td>
+                <td>生产高并发</td>
+                <td>PagedAttention，吞吐高 3x，推荐</td>
+              </tr>
+              <tr>
+                <td><strong>Ollama</strong></td>
+                <td>快速验证</td>
+                <td>一行命令启动，零门槛</td>
+              </tr>
+              <tr>
+                <td>Nano-vLLM</td>
+                <td>轻量替代</td>
+                <td>~1200 行代码，小模型性能优</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Self-Purchase Option -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128187;</span>
+        自购服务器方案 (长期最省)
+      </h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>配置</th>
+              <th>一次性成本</th>
+              <th>月运营 (电费+网络)</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1&times; 4090 + CPU/RAM/SSD</td>
+              <td>&yen;20,000-35,000</td>
+              <td>&yen;150-300</td>
+              <td>放在工厂机房</td>
+            </tr>
+            <tr>
+              <td>2&times; 4090 + CPU/RAM/SSD</td>
+              <td>&yen;40,000-55,000</td>
+              <td>&yen;200-400</td>
+              <td>高可用冗余</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="payback-visual mt-24">
+        <div class="payback-months" style="color:var(--green)">~2</div>
+        <div class="payback-info">
+          <div class="payback-label">月回本 (vs API)</div>
+          <div class="payback-desc">自购 1&times;4090 服务器: 投入 &yen;25,000，月费 &yen;200 vs API &yen;1,542</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Summary Comparison -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#127775;</span>
+        边缘部署方案总结
+      </h2>
+
+      <div class="card" style="padding:28px">
+        <div class="card-title mb-24">月费对比 (50 工厂)</div>
+        <div class="comparison-bar">
+          <div class="bar-label"><span class="bar-name">API 方案 (最便宜)</span><span class="bar-value">&yen;77,100/月</span></div>
+          <div class="bar-track"><div class="bar-fill red" style="width:100%"></div></div>
+        </div>
+        <div class="comparison-bar">
+          <div class="bar-label"><span class="bar-name">云 GPU 租用 (仅工时)</span><span class="bar-value">&yen;10,560/月</span></div>
+          <div class="bar-track"><div class="bar-fill orange" style="width:13.7%"></div></div>
+        </div>
+        <div class="comparison-bar">
+          <div class="bar-label"><span class="bar-name">AGX Orin 64GB (运营费)</span><span class="bar-value">&yen;750/月</span></div>
+          <div class="bar-track"><div class="bar-fill blue" style="width:1%"></div></div>
+        </div>
+        <div class="comparison-bar">
+          <div class="bar-label"><span class="bar-name">Orin Nano Super (运营费)</span><span class="bar-value">&yen;250/月</span></div>
+          <div class="bar-track"><div class="bar-fill green" style="width:0.3%;min-width:4px"></div></div>
+        </div>
+      </div>
+
+      <div class="callout callout-tip mt-24">
+        <span class="callout-icon">&#128161;</span>
+        <div>
+          <strong>核心结论</strong>: 规模越大，边缘部署 vs API 的优势越明显。<strong>Orin Nano + 3B 量化</strong>是多工厂大规模部署的性价比冠军 &mdash; 50 工厂一次性投入 &yen;90,000，月运营仅 &yen;250。vs API 仅 1.2 个月回本。
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>白垩纪食品溯源系统 - 摄像头 AI 费用分析报告</p>
+    <p class="mt-8"><a href="cloud-deployment.html">&larr; 集中部署</a> &middot; <a href="hybrid-deployment.html">混合部署 &rarr;</a></p>
+  </footer>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      document.querySelector('.theme-toggle').textContent = next === 'dark' ? '\u2600' : '\u263E';
+    }
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved) {
+        document.documentElement.setAttribute('data-theme', saved);
+      } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+      const theme = document.documentElement.getAttribute('data-theme');
+      const btn = document.querySelector('.theme-toggle');
+      if (btn) btn.textContent = theme === 'dark' ? '\u2600' : '\u263E';
+    })();
+  </script>
+</body>
+</html>

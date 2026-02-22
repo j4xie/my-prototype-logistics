@@ -134,7 +134,6 @@ mkdir -p "$UPLOAD_STATUS_DIR"
 
 cleanup() {
     rm -rf "$UPLOAD_STATUS_DIR"
-    rm -f "/tmp/${JAR_NAME}.gz" 2>/dev/null
     jobs -p | xargs -r kill 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -160,7 +159,7 @@ deploy_jar() {
     local VERSION="${1:-v$(date +%Y%m%d_%H%M%S)}"
 
     # 统计可用方式
-    local METHODS=("SCP" "SCP+gzip")
+    local METHODS=("rsync" "rsync+compress")
     [ "$HAS_GH" = "true" ] && METHODS+=("GitHub+镜像" "GitHub直连")
     [ "$HAS_OSS" = "true" ] && METHODS+=("OSS加速")
     [ "$HAS_R2" = "true" ] && METHODS+=("R2")
@@ -191,12 +190,6 @@ deploy_jar() {
     # 计算本地 MD5 checksum
     LOCAL_MD5=$(md5sum "$JAR_PATH" | cut -d' ' -f1)
     echo "   ✓ MD5: $LOCAL_MD5"
-
-    # 预先创建 gzip 压缩版本
-    echo "   压缩中..."
-    gzip -c "$JAR_PATH" > "/tmp/${JAR_NAME}.gz"
-    GZ_SIZE=$(du -h "/tmp/${JAR_NAME}.gz" | cut -f1)
-    echo "   ✓ 压缩完成: ${JAR_NAME}.gz ($GZ_SIZE)"
 
     # ----- 2. 并行上传 -----
     echo ""
@@ -232,37 +225,31 @@ deploy_jar() {
         fi
     }
 
-    # === Fallback 方法1: SCP 直接上传 ===
-    upload_scp() {
+    # === Fallback 方法1: rsync 增量传输 ===
+    upload_rsync() {
         check_winner && return 0
-        local TMP_FILE="${JAR_NAME}.scp"
-        echo "   [SCP] 开始上传..."
-        if scp -o ConnectTimeout=10 -o ServerAliveInterval=10 "$JAR_PATH" "$SERVER:$REMOTE_TMP/$TMP_FILE" 2>/dev/null; then
+        local TMP_FILE="${JAR_NAME}.rsync"
+        echo "   [rsync] 开始上传..."
+        if rsync -az --timeout=60 "$JAR_PATH" "$SERVER:$REMOTE_TMP/$TMP_FILE" 2>/dev/null; then
             if ! check_winner; then
-                verify_and_claim "$TMP_FILE" "SCP"
+                verify_and_claim "$TMP_FILE" "rsync"
             fi
         else
-            check_winner || echo "   [SCP] ✗ 失败"
+            check_winner || echo "   [rsync] ✗ 失败"
         fi
     }
 
-    # === Fallback 方法2: SCP + gzip 压缩传输 ===
-    upload_scp_gzip() {
+    # === Fallback 方法2: rsync 高压缩传输 ===
+    upload_rsync_compress() {
         check_winner && return 0
-        local TMP_FILE="${JAR_NAME}.scp_gzip"
-        local TMP_GZ="${JAR_NAME}.scp_gzip.gz"
-        echo "   [SCP+gzip] 开始压缩上传..."
-        if scp -o ConnectTimeout=10 -o ServerAliveInterval=10 "/tmp/${JAR_NAME}.gz" "$SERVER:$REMOTE_TMP/$TMP_GZ" 2>/dev/null; then
-            check_winner && return 0
-            if ssh $SERVER "cd $REMOTE_TMP && gunzip -c $TMP_GZ > $TMP_FILE && rm -f $TMP_GZ" 2>/dev/null; then
-                if ! check_winner; then
-                    verify_and_claim "$TMP_FILE" "SCP+gzip"
-                fi
-            else
-                check_winner || echo "   [SCP+gzip] ✗ 解压失败"
+        local TMP_FILE="${JAR_NAME}.rsync_z"
+        echo "   [rsync+compress] 开始压缩上传..."
+        if rsync -az --compress-level=9 --timeout=60 "$JAR_PATH" "$SERVER:$REMOTE_TMP/$TMP_FILE" 2>/dev/null; then
+            if ! check_winner; then
+                verify_and_claim "$TMP_FILE" "rsync+compress"
             fi
         else
-            check_winner || echo "   [SCP+gzip] ✗ 上传失败"
+            check_winner || echo "   [rsync+compress] ✗ 失败"
         fi
     }
 
@@ -428,10 +415,10 @@ deploy_jar() {
         ssh -o ConnectTimeout=5 $SERVER "pkill -f 'curl.*$JAR_NAME' 2>/dev/null; true" 2>/dev/null || true
 
         # 启动 Fallback 方式
-        upload_scp &
+        upload_rsync &
         UPLOAD_PIDS+=($!)
 
-        upload_scp_gzip &
+        upload_rsync_compress &
         UPLOAD_PIDS+=($!)
 
         [ "$HAS_OSS" = "true" ] && { upload_oss_accelerate & UPLOAD_PIDS+=($!); }
@@ -487,7 +474,7 @@ deploy_jar() {
     wait 2>/dev/null || true
 
     # 清理服务器上的临时文件 (保留 winner 的 $JAR_NAME)
-    ssh -o ConnectTimeout=5 $SERVER "rm -f $REMOTE_TMP/${JAR_NAME}.scp $REMOTE_TMP/${JAR_NAME}.scp_gzip $REMOTE_TMP/${JAR_NAME}.scp_gzip.gz $REMOTE_TMP/${JAR_NAME}.oss $REMOTE_TMP/${JAR_NAME}.r2 $REMOTE_TMP/${JAR_NAME}.github_direct $REMOTE_TMP/${JAR_NAME}.gh_* 2>/dev/null; true" 2>/dev/null || true
+    ssh -o ConnectTimeout=5 $SERVER "rm -f $REMOTE_TMP/${JAR_NAME}.rsync $REMOTE_TMP/${JAR_NAME}.rsync_z $REMOTE_TMP/${JAR_NAME}.oss $REMOTE_TMP/${JAR_NAME}.r2 $REMOTE_TMP/${JAR_NAME}.github_direct $REMOTE_TMP/${JAR_NAME}.gh_* 2>/dev/null; true" 2>/dev/null || true
 
     if [ -z "$WINNER" ]; then
         echo ""

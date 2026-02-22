@@ -1,0 +1,479 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - img "Logo" [ref=e6]
+      - generic [ref=e7]: 白垩纪管理系统
+    - menubar [ref=e11]:
+      - menuitem "首页" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - text: 首页
+      - menuitem "生产管理" [ref=e16]:
+        - generic [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - generic [ref=e21]: 生产管理
+          - img [ref=e23]
+      - menuitem "仓储管理" [ref=e25]:
+        - generic [ref=e26] [cursor=pointer]:
+          - img [ref=e28]
+          - generic [ref=e32]: 仓储管理
+          - img [ref=e34]
+      - menuitem "质量管理" [ref=e36]:
+        - generic [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e41]: 质量管理
+          - img [ref=e43]
+      - menuitem "采购管理" [ref=e45]:
+        - generic [ref=e46] [cursor=pointer]:
+          - img [ref=e48]
+          - generic [ref=e50]: 采购管理
+          - img [ref=e52]
+      - menuitem "销售管理" [ref=e54]:
+        - generic [ref=e55] [cursor=pointer]:
+          - img [ref=e57]
+          - generic [ref=e59]: 销售管理
+          - img [ref=e61]
+      - menuitem "人事管理" [ref=e63]:
+        - generic [ref=e64] [cursor=pointer]:
+          - img [ref=e66]
+          - generic [ref=e68]: 人事管理
+          - img [ref=e70]
+      - menuitem "调拨管理" [ref=e72]:
+        - generic [ref=e73] [cursor=pointer]:
+          - img [ref=e75]
+          - generic [ref=e77]: 调拨管理
+          - img [ref=e79]
+      - menuitem "设备管理" [ref=e81]:
+        - generic [ref=e82] [cursor=pointer]:
+          - img [ref=e84]
+          - generic [ref=e86]: 设备管理
+          - img [ref=e88]
+      - menuitem "财务管理" [ref=e90]:
+        - generic [ref=e91] [cursor=pointer]:
+          - img [ref=e93]
+          - generic [ref=e97]: 财务管理
+          - img [ref=e99]
+      - menuitem "系统管理" [ref=e101]:
+        - generic [ref=e102] [cursor=pointer]:
+          - img [ref=e104]
+          - generic [ref=e106]: 系统管理
+          - img [ref=e108]
+      - menuitem "数据分析" [ref=e110]:
+        - generic [ref=e111] [cursor=pointer]:
+          - img [ref=e113]
+          - generic [ref=e115]: 数据分析
+          - img [ref=e117]
+      - menuitem "智能调度" [ref=e119]:
+        - generic [ref=e120] [cursor=pointer]:
+          - img [ref=e122]
+          - generic [ref=e124]: 智能调度
+          - img [ref=e126]
+      - menuitem "行为校准" [ref=e128]:
+        - generic [ref=e129] [cursor=pointer]:
+          - img [ref=e131]
+          - generic [ref=e134]: 行为校准
+          - img [ref=e136]
+      - menuitem "生产分析" [ref=e138]:
+        - generic [ref=e139] [cursor=pointer]:
+          - img [ref=e141]
+          - generic [ref=e143]: 生产分析
+          - img [ref=e145]
+      - menuitem "智能BI" [expanded] [ref=e147]:
+        - generic [ref=e148] [cursor=pointer]:
+          - img [ref=e150]
+          - generic [ref=e152]: 智能BI
+          - img [ref=e154]
+        - menu [ref=e156]:
+          - generic [ref=e157]: 分析入口
+          - menuitem "经营驾驶舱" [ref=e158] [cursor=pointer]
+          - menuitem "智能数据分析" [ref=e159] [cursor=pointer]
+          - menuitem "AI问答" [ref=e160] [cursor=pointer]
+          - generic [ref=e161]: 预定义报表
+          - menuitem "销售数据分析" [ref=e162] [cursor=pointer]
+          - menuitem "财务数据分析" [ref=e163] [cursor=pointer]
+          - generic [ref=e164]: 数据管理
+          - menuitem "Excel上传" [ref=e165] [cursor=pointer]
+          - menuitem "查询模板" [ref=e166] [cursor=pointer]
+          - menuitem "数据完整度" [ref=e167] [cursor=pointer]
+          - generic [ref=e168]: 质量管理
+          - menuitem "知识库反馈" [ref=e169] [cursor=pointer]
+  - generic [ref=e170]:
+    - banner [ref=e171]:
+      - generic [ref=e172]:
+        - img [ref=e174] [cursor=pointer]
+        - navigation "面包屑" [ref=e176]:
+          - generic [ref=e177]:
+            - link "智能BI" [ref=e178]
+            - text: /
+          - link "智能数据分析" [ref=e180]
+      - generic [ref=e181]:
+        - img [ref=e183] [cursor=pointer]
+        - button "factory_admin1 工厂总监" [ref=e186] [cursor=pointer]:
+          - img [ref=e189]
+          - generic [ref=e191]:
+            - generic [ref=e192]: factory_admin1
+            - generic [ref=e193]: 工厂总监
+    - main [ref=e194]:
+      - generic [ref=e196]:
+        - generic [ref=e198]:
+          - generic [ref=e199]: 智能数据分析
+          - generic [ref=e201]:
+            - generic [ref=e203] [cursor=pointer]:
+              - generic:
+                - combobox [ref=e205]
+                - generic [ref=e206]: Test-mock-mfg-sparse-s42.xlsx (24 表)
+              - img [ref=e209]
+            - button "综合分析" [ref=e211] [cursor=pointer]:
+              - generic [ref=e212]:
+                - img [ref=e214]
+                - text: 综合分析
+            - button "同比分析" [ref=e216] [cursor=pointer]:
+              - generic [ref=e217]:
+                - img [ref=e219]
+                - text: 同比分析
+            - button "因果分析" [ref=e221] [cursor=pointer]:
+              - generic [ref=e222]:
+                - img [ref=e224]
+                - text: 因果分析
+            - button "分享" [ref=e226] [cursor=pointer]:
+              - generic [ref=e227]:
+                - img [ref=e229]
+                - text: 分享
+            - button "上传新文件" [ref=e231] [cursor=pointer]:
+              - generic [ref=e232]:
+                - img [ref=e234]
+                - text: 上传新文件
+            - button "功能引导" [ref=e236] [cursor=pointer]:
+              - img [ref=e239]
+        - generic [ref=e242]:
+          - alert [ref=e243]:
+            - img [ref=e245]
+            - generic [ref=e248]: 成功处理 24 个 Sheet，共 2625 行数据
+          - generic [ref=e249]:
+            - generic [ref=e250]: "食品行业模板:"
+            - generic [ref=e252] [cursor=pointer]: 原料成本月度趋势
+            - generic [ref=e254] [cursor=pointer]: 批次质量合格率
+            - generic [ref=e256] [cursor=pointer]: 库存周转分析
+            - generic [ref=e258] [cursor=pointer]: 销售区域对比
+            - generic [ref=e260] [cursor=pointer]: 费用结构分析
+          - generic [ref=e261]:
+            - generic [ref=e263]:
+              - img [ref=e266] [cursor=pointer]
+              - img [ref=e270] [cursor=pointer]
+              - tablist [ref=e273]:
+                - tab "收入及净利简表 17行" [selected] [ref=e275]:
+                  - generic [ref=e276]:
+                    - img [ref=e278]
+                    - generic [ref=e280]: 收入及净利简表
+                    - generic [ref=e282]: 17行
+                - tab "索引" [ref=e283]:
+                  - generic [ref=e284]:
+                    - img [ref=e286]
+                    - generic [ref=e288]: 索引
+                - tab "2025年江苏区域利润表 260行" [ref=e289] [cursor=pointer]:
+                  - generic [ref=e290]:
+                    - img [ref=e292]
+                    - generic [ref=e294]: 2025年江苏区域利润表
+                    - generic [ref=e296]: 260行
+                - tab "2025年中心利润表 260行" [ref=e297]:
+                  - generic [ref=e298]:
+                    - img [ref=e300]
+                    - generic [ref=e302]: 2025年中心利润表
+                    - generic [ref=e304]: 260行
+                - tab "2025年华东事业部利润表 260行" [ref=e305]:
+                  - generic [ref=e306]:
+                    - img [ref=e308]
+                    - generic [ref=e310]: 2025年华东事业部利润表
+                    - generic [ref=e312]: 260行
+                - tab "2025年华中区域利润表 260行" [ref=e313]:
+                  - generic [ref=e314]:
+                    - img [ref=e316]
+                    - generic [ref=e318]: 2025年华中区域利润表
+                    - generic [ref=e320]: 260行
+                - tab "2025年湖北省区利润表 260行" [ref=e321]:
+                  - generic [ref=e322]:
+                    - img [ref=e324]
+                    - generic [ref=e326]: 2025年湖北省区利润表
+                    - generic [ref=e328]: 260行
+                - tab "2025年广东区域利润表 260行" [ref=e329]:
+                  - generic [ref=e330]:
+                    - img [ref=e332]
+                    - generic [ref=e334]: 2025年广东区域利润表
+                    - generic [ref=e336]: 260行
+                - tab "2025年浙江区域利润表 260行" [ref=e337]:
+                  - generic [ref=e338]:
+                    - img [ref=e340]
+                    - generic [ref=e342]: 2025年浙江区域利润表
+                    - generic [ref=e344]: 260行
+                - tab "2025年湖南省区利润表 260行" [ref=e345]:
+                  - generic [ref=e346]:
+                    - img [ref=e348]
+                    - generic [ref=e350]: 2025年湖南省区利润表
+                    - generic [ref=e352]: 260行
+                - tab "销售明细 178行" [ref=e353]:
+                  - generic [ref=e354]:
+                    - img [ref=e356]
+                    - generic [ref=e358]: 销售明细
+                    - generic [ref=e360]: 178行
+                - tab "24年返利明细 51行" [ref=e361]:
+                  - generic [ref=e362]:
+                    - img [ref=e364]
+                    - generic [ref=e366]: 24年返利明细
+                    - generic [ref=e368]: 51行
+                - tab "资产负债表 26行" [ref=e369]:
+                  - generic [ref=e370]:
+                    - img [ref=e372]
+                    - generic [ref=e374]: 资产负债表
+                    - generic [ref=e376]: 26行
+                - tab "库存台账 7行" [ref=e377]:
+                  - generic [ref=e378]:
+                    - img [ref=e380]
+                    - generic [ref=e382]: 库存台账
+                    - generic [ref=e384]: 7行
+                - tab "应收账款账龄 27行" [ref=e385]:
+                  - generic [ref=e386]:
+                    - img [ref=e388]
+                    - generic [ref=e390]: 应收账款账龄
+                    - generic [ref=e392]: 27行
+                - tab "混合类型测试 30行" [ref=e393]:
+                  - generic [ref=e394]:
+                    - img [ref=e396]
+                    - generic [ref=e398]: 混合类型测试
+                    - generic [ref=e400]: 30行
+                - tab "超宽数据表 50行" [ref=e401]:
+                  - generic [ref=e402]:
+                    - img [ref=e404]
+                    - generic [ref=e406]: 超宽数据表
+                    - generic [ref=e408]: 50行
+                - tab "费用预算执行 48行" [ref=e409]:
+                  - generic [ref=e410]:
+                    - img [ref=e412]
+                    - generic [ref=e414]: 费用预算执行
+                    - generic [ref=e416]: 48行
+                - tab "现金流量表 32行" [ref=e417]:
+                  - generic [ref=e418]:
+                    - img [ref=e420]
+                    - generic [ref=e422]: 现金流量表
+                    - generic [ref=e424]: 32行
+                - tab "月度经营分析 13行" [ref=e425]:
+                  - generic [ref=e426]:
+                    - img [ref=e428]
+                    - generic [ref=e430]: 月度经营分析
+                    - generic [ref=e432]: 13行
+                - tab "纯数字列名 12行" [ref=e433]:
+                  - generic [ref=e434]:
+                    - img [ref=e436]
+                    - generic [ref=e438]: 纯数字列名
+                    - generic [ref=e440]: 12行
+                - tab "公式测试 10行" [ref=e441]:
+                  - generic [ref=e442]:
+                    - img [ref=e444]
+                    - generic [ref=e446]: 公式测试
+                    - generic [ref=e448]: 10行
+                - tab "空值区域测试 12行" [ref=e449]:
+                  - generic [ref=e450]:
+                    - img [ref=e452]
+                    - generic [ref=e454]: 空值区域测试
+                    - generic [ref=e456]: 12行
+                - tab "跨年对比(2024-2025) 9行" [ref=e457]:
+                  - generic [ref=e458]:
+                    - img [ref=e460]
+                    - generic [ref=e462]: 跨年对比(2024-2025)
+                    - generic [ref=e464]: 9行
+            - tabpanel "收入及净利简表 17行" [ref=e466]:
+              - table [ref=e470]:
+                - rowgroup [ref=e471]:
+                  - row "数据类型 general 推荐图表 自动推荐 保存行数 17" [ref=e472]:
+                    - cell "数据类型" [ref=e473]
+                    - cell "general" [ref=e474]:
+                      - generic [ref=e476]: general
+                    - cell "推荐图表" [ref=e477]
+                    - cell "自动推荐" [ref=e478]:
+                      - generic [ref=e480]: 自动推荐
+                    - cell "保存行数" [ref=e481]
+                    - cell "17" [ref=e482]
+              - generic [ref=e484]:
+                - generic [ref=e485]:
+                  - generic [ref=e488]: 实际收入②
+                  - generic [ref=e491]: 585 万
+                - generic [ref=e492]:
+                  - generic [ref=e495]: 实际收入③
+                  - generic [ref=e498]: 829 万
+                - generic [ref=e499]:
+                  - generic [ref=e502]: 实际收入④
+                  - generic [ref=e505]: 909 万
+                - generic [ref=e506]:
+                  - generic [ref=e509]: 实际收入⑤
+                  - generic [ref=e512]: 1,092 万
+              - generic [ref=e513]:
+                - generic [ref=e514]:
+                  - heading "数据可视化" [level=3] [ref=e515]
+                  - generic [ref=e516]:
+                    - generic [ref=e517]: 点击图表数据点可下钻分析
+                    - button "刷新分析" [ref=e518] [cursor=pointer]:
+                      - img [ref=e520]
+                      - generic [ref=e522]: 刷新分析
+                    - button "自动" [ref=e524] [cursor=pointer]:
+                      - generic [ref=e525]:
+                        - img [ref=e527]
+                        - text: 自动
+                    - generic [ref=e531]:
+                      - switch
+                      - generic [ref=e533] [cursor=pointer]: 标准
+                      - generic [ref=e537] [cursor=pointer]: 编排
+                - generic [ref=e538]:
+                  - img [ref=e540]
+                  - generic [ref=e543]:
+                    - generic [ref=e544]:
+                      - combobox [ref=e546]
+                      - generic [ref=e547]: 维度筛选
+                    - img [ref=e550] [cursor=pointer]
+                - generic [ref=e552]:
+                  - generic [ref=e553]:
+                    - button "换一批图表" [ref=e554] [cursor=pointer]:
+                      - generic [ref=e555]:
+                        - img [ref=e557]
+                        - text: 换一批图表
+                    - button "导出 Excel" [ref=e559] [cursor=pointer]:
+                      - generic [ref=e560]:
+                        - img [ref=e562]
+                        - text: 导出 Excel
+                    - button "导出 PDF" [ref=e564] [cursor=pointer]:
+                      - generic [ref=e565]:
+                        - img [ref=e567]
+                        - text: 导出 PDF
+                    - generic [ref=e569]: 3 个图表
+                  - generic [ref=e571]:
+                    - generic [ref=e572]: 各区域3项指标对比
+                    - generic [ref=e573]:
+                      - generic [ref=e574]:
+                        - button [ref=e576] [cursor=pointer]:
+                          - img [ref=e579]
+                        - button [ref=e581] [cursor=pointer]:
+                          - img [ref=e583]
+                      - button [ref=e585] [cursor=pointer]:
+                        - img [ref=e587]
+                      - button [ref=e590] [cursor=pointer]:
+                        - img [ref=e592]
+                  - generic [ref=e598]:
+                    - generic [ref=e599]: 实际金额 构成占比
+                    - generic [ref=e600]:
+                      - generic [ref=e601]:
+                        - button [ref=e603] [cursor=pointer]:
+                          - img [ref=e606]
+                        - button [ref=e608] [cursor=pointer]:
+                          - img [ref=e610]
+                      - button [ref=e612] [cursor=pointer]:
+                        - img [ref=e614]
+                      - button [ref=e617] [cursor=pointer]:
+                        - img [ref=e619]
+                  - generic [ref=e624]:
+                    - generic [ref=e625]:
+                      - generic [ref=e626]: 多维度对比分析
+                      - button "重新生成" [ref=e628] [cursor=pointer]:
+                        - generic [ref=e629]:
+                          - img [ref=e631]
+                          - text: 重新生成
+                    - generic [ref=e634]:
+                      - img [ref=e636]
+                      - paragraph [ref=e653]: 暂无数据
+                  - generic [ref=e654]:
+                    - generic [ref=e655]:
+                      - generic [ref=e656]: 实际收入⑥ 分析
+                      - button "重新生成" [ref=e658] [cursor=pointer]:
+                        - generic [ref=e659]:
+                          - img [ref=e661]
+                          - text: 重新生成
+                    - generic [ref=e664]:
+                      - img [ref=e666]
+                      - paragraph [ref=e683]: 暂无数据
+                  - generic [ref=e684]:
+                    - generic [ref=e685]:
+                      - generic [ref=e686]: 11项指标 分析
+                      - button "重新生成" [ref=e688] [cursor=pointer]:
+                        - generic [ref=e689]:
+                          - img [ref=e691]
+                          - text: 重新生成
+                    - generic [ref=e694]:
+                      - img [ref=e696]
+                      - paragraph [ref=e713]: 暂无数据
+                  - generic [ref=e714]:
+                    - generic [ref=e715]:
+                      - generic [ref=e716]: 实际收入⑥ 帕累托分析
+                      - button "重新生成" [ref=e718] [cursor=pointer]:
+                        - generic [ref=e719]:
+                          - img [ref=e721]
+                          - text: 重新生成
+                    - generic [ref=e724]:
+                      - img [ref=e726]
+                      - paragraph [ref=e743]: 暂无数据
+                  - generic [ref=e745]:
+                    - generic [ref=e746]: 实际金额 排行
+                    - generic [ref=e747]:
+                      - generic [ref=e748]:
+                        - button [ref=e750] [cursor=pointer]:
+                          - img [ref=e753]
+                        - button [ref=e755] [cursor=pointer]:
+                          - img [ref=e757]
+                      - button [ref=e759] [cursor=pointer]:
+                        - img [ref=e761]
+                      - button [ref=e764] [cursor=pointer]:
+                        - img [ref=e766]
+              - generic [ref=e771]:
+                - img [ref=e773]
+                - generic [ref=e775]:
+                  - generic [ref=e776]: 24年同期实际收入（列名'24年同期实际'）在第6行出现异常值-35242.1元，系系统录入错误或负向冲销，需立即核查并修正。
+                  - generic [ref=e777]:
+                    - generic [ref=e778]:
+                      - generic [ref=e779]: 实际收入②
+                      - generic [ref=e780]: 585.1万
+                    - generic [ref=e781]:
+                      - generic [ref=e782]: 实际收入③
+                      - generic [ref=e783]: 829.4万
+                    - generic [ref=e784]:
+                      - generic [ref=e785]: 实际收入④
+                      - generic [ref=e786]: 909.4万
+              - button "食品行业 食品行业标准参考 置信度 100%" [ref=e789] [cursor=pointer]:
+                - generic [ref=e791]:
+                  - generic [ref=e793]: 食品行业
+                  - generic [ref=e794]: 食品行业标准参考
+                  - generic [ref=e796]: 置信度 100%
+                - img [ref=e798]
+              - generic [ref=e800]:
+                - generic [ref=e801]:
+                  - generic [ref=e802] [cursor=pointer]:
+                    - generic [ref=e803]:
+                      - img [ref=e805]
+                      - generic [ref=e807]: AI 分析结论
+                    - generic [ref=e808]:
+                      - generic [ref=e809]:
+                        - img [ref=e811]
+                        - text: 02/21 15:36
+                      - img [ref=e817]
+                  - generic [ref=e819]:
+                    - generic [ref=e820]:
+                      - generic [ref=e821]:
+                        - img [ref=e823]
+                        - generic [ref=e825]: 风险关注
+                        - generic [ref=e826]: "4"
+                      - list [ref=e827]:
+                        - listitem [ref=e828]:
+                          - generic [ref=e830]: "异常检测: 第6行'24年同期实际'为-35242.1元，属严重数据异常；食品加工行业无合理业务场景支撑负收入，对比其余同期值（如46983.7至118798.4元）偏离达175%以上，显著偏离行业常规波动区间（±5%）。 建议: 72小时内完成该字段全量校验与修复，确保Q2经营分析基线准确，避免误导产能与销售策略决策。"
+                        - listitem [ref=e831]:
+                          - generic [ref=e833]: "causal_analysis: 结合区域列缺失及金额绝对值（35242.1）接近实际收入_2（738294.6）的4.8%，判断为某区域大客户退货未走应收冲销而误计入'24年同期实际'；禽类加工子行业退货率均值为3.2%，该偏差超阈值，暴露业财对账机制失效。 建议: 6月30日前上线退货-收入双向勾稽校验模块，杜绝同类错误，预计降低财务重述风险90%。"
+                        - listitem [ref=e834]:
+                          - generic [ref=e836]: "趋势分析: 剔除异常值后，24年同期实际收入均值为92,412元（n=11），较预算收入_2至_12均值（约126,500元）低27%，但同比23年同期（假设隐含于列名逻辑）呈恢复性增长；预制菜子行业24年Q1平均同比+18.3%，本司当前增速符合赛道特征。 建议: 7月15日前输出分区域、分产品线的24年H2收入滚动预测，误差率控制在±3%以内。"
+                        - listitem [ref=e837]:
+                          - generic [ref=e839]: "关键指标: 建议将'24年同期实际'字段异常率（当前1/12=8.3%）纳入财务BP考核，目标Q3压降至0%；参照调味品行业数据治理标准（异常率<0.5%），倒逼系统自动校验规则升级，当前人工复核漏检率达100%。 建议: Q3末将'24年同期实际'字段异常率从8.3%降至≤0.5%，对应财务报告时效提升2天，支持CEO周会决策响应速度。"
+                    - generic [ref=e840]:
+                      - generic [ref=e841]:
+                        - img [ref=e843]
+                        - generic [ref=e845]: 改进建议
+                        - generic [ref=e846]: "1"
+                      - list [ref=e847]:
+                        - listitem [ref=e848]:
+                          - generic [ref=e850]: "同期数据治理驱动业财融合: 以本次异常为切口，重构‘实际vs同期’数据链路，打通MES生产工单与SAP收入确认时点。"
+                - generic [ref=e851]: 分析结果来自缓存（2026-02-21 05:39），点击"刷新分析"获取最新结果
+              - generic [ref=e852]:
+                - heading "数据预览" [level=3] [ref=e853]: 数据预览
+                - button "查看原始数据" [ref=e855] [cursor=pointer]:
+                  - generic [ref=e856]: 查看原始数据

@@ -1,0 +1,3 @@
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/CMakeLists.txt
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/src/main/cpp/reanimated/CMakeLists.txt
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/src/main/cpp/worklets/CMakeLists.txt

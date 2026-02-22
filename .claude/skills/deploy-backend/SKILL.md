@@ -61,7 +61,7 @@ allowed-tools:
 ./deploy-backend.sh
 ```
 
-脚本自动完成：Maven 打包 → 并行上传 (GitHub 6路竞争 / SCP / OSS / R2) → 服务器备份 → 部署 → 重启 → 健康检查 (30次重试)
+脚本自动完成：Maven 打包 → 并行上传 (GitHub 6路竞争 / rsync / OSS / R2) → 服务器备份 → 部署 → 重启 → 健康检查 (30次重试)
 
 可选参数：
 ```bash
@@ -78,7 +78,7 @@ JAVA_HOME="C:/Program Files/Java/jdk-17" ./mvnw.cmd clean package -Dmaven.test.s
 cd ../../..
 
 # 2. 上传 JAR
-scp backend/java/cretas-api/target/cretas-backend-system-1.0.0.jar root@47.100.235.168:/www/wwwroot/cretas/aims-0.0.1-SNAPSHOT.jar.new
+rsync -az --progress backend/java/cretas-api/target/cretas-backend-system-1.0.0.jar root@47.100.235.168:/www/wwwroot/cretas/aims-0.0.1-SNAPSHOT.jar.new
 
 # 3. 服务器部署 (备份+替换+重启)
 ssh root@47.100.235.168 << 'EOF'
@@ -112,19 +112,15 @@ done
 # 方式 A: 使用脚本
 ./deploy-smartbi-python.sh
 
-# 方式 B: 手动同步
-cd backend/python
-tar --exclude='__pycache__' --exclude='*.pyc' --exclude='.env' \
+# 方式 B: 手动同步 (rsync 增量传输)
+rsync -az --timeout=120 \
+    --exclude='__pycache__' --exclude='*.pyc' --exclude='.env' \
     --exclude='smartbi.log' --exclude='*.xlsx' --exclude='*.png' \
-    -czf /tmp/python-services.tar.gz .
-scp /tmp/python-services.tar.gz root@47.100.235.168:/www/wwwroot/cretas/code/backend/python/
-ssh root@47.100.235.168 << 'EOF'
-cd /www/wwwroot/cretas/code/backend/python
-tar -xzf python-services.tar.gz && rm python-services.tar.gz
+    --exclude='venv*' --exclude='python-services.log' \
+    backend/python/ root@47.100.235.168:/www/wwwroot/cretas/code/backend/python/
+
 # restart.sh 会同时重启 Python
-cd /www/wwwroot/cretas && bash restart.sh
-EOF
-rm /tmp/python-services.tar.gz
+ssh root@47.100.235.168 "cd /www/wwwroot/cretas && bash restart.sh"
 ```
 
 ### Python 部署验证
@@ -151,7 +147,7 @@ cd web-admin
 npm run build
 
 # 2. 上传到服务器
-scp -r dist/* root@47.100.235.168:/www/wwwroot/web-admin/
+rsync -az --delete dist/ root@47.100.235.168:/www/wwwroot/web-admin/
 
 # 3. 验证
 curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:8088/
@@ -244,7 +240,7 @@ EOF
 
 | 方式 | 速度 | 依赖 |
 |------|------|------|
-| SCP 直传 | ~2-5 MB/s | SSH |
-| SCP+gzip | ~3-8 MB/s | SSH |
+| rsync 增量传输 | ~2-5 MB/s | rsync + SSH |
+| rsync+compress | ~3-8 MB/s | rsync + SSH |
 | OSS 全球加速 | ~10 MB/s | ossutil |
 | Cloudflare R2 | ~5-10 MB/s | aws CLI + R2 环境变量 |

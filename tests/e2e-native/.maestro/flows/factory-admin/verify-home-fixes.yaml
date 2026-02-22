@@ -1,0 +1,73 @@
+# flows/factory-admin/verify-home-fixes.yaml
+# 验证工厂模式首页：确认 AI 指标正常显示（与餐饮模式形成对比）
+appId: com.cretas.foodtrace
+env:
+  USERNAME: factory_admin1
+  PASSWORD: "123456"
+  HOME_ROOT_ID: fa-home-root
+---
+- launchApp:
+    clearState: true
+
+# 处理可能的 ANR 弹窗
+- runFlow:
+    when:
+      visible: "Wait"
+    file: ../common/_dismiss_anr.yaml
+
+- runFlow: ../common/_wait_for_app.yaml
+
+- runFlow:
+    file: ../common/_login.yaml
+    env:
+      USERNAME: ${USERNAME}
+      PASSWORD: ${PASSWORD}
+      HOME_ROOT_ID: ${HOME_ROOT_ID}
+
+# ========================================
+# 处理数据加载失败 - 重试
+# ========================================
+
+# 如果看到重试按钮，点击重试
+- runFlow:
+    when:
+      visible: "重试"
+    file: ../common/_retry_load.yaml
+
+# 等待数据加载完成（AI 卡片出现表示成功）
+- extendedWaitUntil:
+    visible:
+      id: "fa-home-ai-card"
+    timeout: 30000
+
+# ========================================
+# 工厂模式：AI 指标应正常显示
+# ========================================
+
+# 验证 AI 指标区域可见（工厂模式应显示）
+- extendedWaitUntil:
+    visible:
+      id: "fa-home-ai-metrics"
+    timeout: 10000
+
+# 截图记录工厂模式 AI 指标
+- takeScreenshot: factory-ai-metrics-visible
+
+# ========================================
+# 工厂模式：统计标题走 i18n
+# ========================================
+
+- assertVisible:
+    id: "fa-home-stats-title"
+
+# 向下滚动到快速操作区域
+- scrollUntilVisible:
+    element:
+      id: "fa-home-quick-actions-title"
+    direction: DOWN
+    timeout: 10000
+
+- assertVisible:
+    id: "fa-home-quick-actions-title"
+
+- takeScreenshot: factory-section-titles

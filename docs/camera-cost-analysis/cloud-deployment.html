@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>集中部署方案 | 摄像头 AI 费用分析</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-brand">
+        <span class="logo-icon">C</span>
+        <span>摄像头 AI 费用分析</span>
+      </a>
+      <button class="nav-mobile-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle menu">&#9776;</button>
+      <ul class="nav-links">
+        <li><a href="index.html">总览</a></li>
+        <li><a href="cloud-deployment.html" class="active">集中部署</a></li>
+        <li><a href="edge-deployment.html">边缘部署</a></li>
+        <li><a href="hybrid-deployment.html">混合部署</a></li>
+        <li><button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">&#9790;</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <section class="page-header">
+    <h1>&#9729;&#65039; 集中部署方案</h1>
+    <p class="subtitle">所有工厂的摄像头数据通过网络发送到集中 GPU 服务器处理</p>
+  </section>
+
+  <div class="container">
+
+    <!-- Architecture Diagram -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128736;</span>
+        架构概览
+      </h2>
+      <p class="section-desc">工厂摄像头 &rarr; 网络传输 &rarr; 集中 GPU 服务器 (vLLM) &rarr; 结果返回工厂</p>
+
+      <div class="card">
+        <div class="arch-diagram">
+          <div class="arch-box">
+            <div class="arch-icon">&#128247;</div>
+            <div class="arch-label">工厂摄像头</div>
+            <div class="arch-detail">20 台 / 工厂</div>
+          </div>
+          <div class="arch-arrow">&rarr;</div>
+          <div class="arch-box">
+            <div class="arch-icon">&#127760;</div>
+            <div class="arch-label">网络传输</div>
+            <div class="arch-detail">JPEG 100-500KB/帧</div>
+          </div>
+          <div class="arch-arrow">&rarr;</div>
+          <div class="arch-box accent">
+            <div class="arch-icon">&#128187;</div>
+            <div class="arch-label">GPU 服务器</div>
+            <div class="arch-detail">vLLM + Qwen VL</div>
+          </div>
+          <div class="arch-arrow">&rarr;</div>
+          <div class="arch-box">
+            <div class="arch-icon">&#128202;</div>
+            <div class="arch-label">分析结果</div>
+            <div class="arch-detail">JSON 返回</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Two Sub-options -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128268;</span>
+        两种集中方案
+      </h2>
+      <p class="section-desc">自部署 GPU + 开源模型 (零 Token 费) vs 第三方 API (按量付费)</p>
+
+      <div class="card-grid card-grid-2 gap-24">
+        <div class="card card-accent">
+          <div class="flex items-center gap-8 mb-8">
+            <span class="badge badge-purple">推荐</span>
+            <div class="card-title">方案一: 自部署 GPU</div>
+          </div>
+          <div class="card-desc">
+            租用云 GPU 服务器，部署 vLLM + 开源 Qwen2.5-VL 模型。零 Token 费用，仅付 GPU 租金。当前使用的 <code>qwen2.5-vl-3b-instruct</code> 本身就是开源模型。
+          </div>
+          <div class="mt-16">
+            <div class="card-value">&yen;176/月起</div>
+            <div class="card-label">潞晨云 4090 仅工作时间</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title mb-8">方案二: 第三方 API</div>
+          <div class="card-desc">
+            使用 SiliconFlow、阿里云百炼等平台的 VL API，按 Token 量付费。零运维，适合初期验证。
+          </div>
+          <div class="mt-16">
+            <div class="card-value">&yen;620/月起</div>
+            <div class="card-label">SiliconFlow GLM-4.1V (ABE优化)</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GPU Cloud Server Comparison -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128187;</span>
+        GPU 云服务器选型
+      </h2>
+      <p class="section-desc">主流 GPU 云平台按小时计费对比</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>GPU</th>
+              <th>显存</th>
+              <th>潞晨云 (&yen;/时)</th>
+              <th>AutoDL (&yen;/时)</th>
+              <th>智星云 (&yen;/时)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>RTX 3090</td>
+              <td>24GB</td>
+              <td>&yen;0.82</td>
+              <td>~&yen;1.50</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td><strong>RTX 4090</strong></td>
+              <td>24GB</td>
+              <td class="cell-green">&yen;1.00</td>
+              <td>~&yen;2.08</td>
+              <td>&yen;1.32</td>
+            </tr>
+            <tr>
+              <td>RTX 4090D</td>
+              <td>24GB</td>
+              <td>&yen;1.04</td>
+              <td>~&yen;2.08</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>L20</td>
+              <td>48GB</td>
+              <td>&yen;2.08</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>L40S</td>
+              <td>48GB</td>
+              <td>&yen;3.17</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>A100 40GB</td>
+              <td>40GB</td>
+              <td>&yen;3.53</td>
+              <td>~&yen;3.50</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>A100 80GB</td>
+              <td>80GB</td>
+              <td>&yen;4.35</td>
+              <td>~&yen;5.00</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>H20</td>
+              <td>96GB</td>
+              <td>&yen;4.16</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>H100-SXM</td>
+              <td>80GB</td>
+              <td>&yen;8.61</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-tip mt-24">
+        <span class="callout-icon">&#128161;</span>
+        <div>
+          <strong>省钱技巧</strong>:
+          <a href="https://cloud.luchentech.com" target="_blank">潞晨云</a> 4090 最便宜 (&yen;1.00/时)；
+          <a href="https://www.autodl.com" target="_blank">AutoDL</a> 注册送 1 个月三级会员享 6.5 折，学生认证可持续享折扣；
+          <a href="https://gpu.ai-galaxy.cn" target="_blank">智星云</a> 中间选项。
+        </div>
+      </div>
+    </section>
+
+    <!-- Monthly Cost Estimates -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128181;</span>
+        月费估算
+      </h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>GPU</th>
+              <th>按时计费</th>
+              <th>仅工作时间 (8h&times;22天)</th>
+              <th>包月 (24h&times;30天)</th>
+              <th>包月优惠估算</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>RTX 4090 (潞晨云)</td>
+              <td>&yen;1.00/时</td>
+              <td class="cell-green">&yen;176</td>
+              <td>&yen;720</td>
+              <td>~&yen;650</td>
+            </tr>
+            <tr>
+              <td>RTX 4090 (AutoDL)</td>
+              <td>&yen;2.08/时</td>
+              <td>&yen;366</td>
+              <td>&yen;1,498</td>
+              <td>~&yen;1,300-1,400</td>
+            </tr>
+            <tr>
+              <td>RTX 4090 (智星云)</td>
+              <td>&yen;1.32/时</td>
+              <td>&yen;232</td>
+              <td>&yen;950</td>
+              <td>~&yen;850</td>
+            </tr>
+            <tr>
+              <td>A100 40GB (潞晨云)</td>
+              <td>&yen;3.53/时</td>
+              <td>&yen;621</td>
+              <td>&yen;2,542</td>
+              <td>~&yen;2,200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Throughput & GPU Requirements -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#9889;</span>
+        吞吐量与 GPU 需求
+      </h2>
+
+      <div class="card-grid card-grid-2 gap-24">
+        <div class="card">
+          <div class="card-title">vLLM + Qwen2.5-VL 吞吐量</div>
+          <div class="table-wrapper mt-16" style="border:none;box-shadow:none;">
+            <table>
+              <thead>
+                <tr><th>指标</th><th>值</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>单卡生成速度</td><td>~20 tokens/sec</td></tr>
+                <tr><td>平均输出长度</td><td>~200 tokens</td></tr>
+                <tr><td>单请求耗时</td><td>~2-4 秒</td></tr>
+                <tr><td>vLLM 批处理吞吐</td><td>~2-4 req/sec (单卡)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">场景 GPU 需求</div>
+          <div class="table-wrapper mt-16" style="border:none;box-shadow:none;">
+            <table>
+              <thead>
+                <tr><th>场景</th><th>req/s</th><th>GPU 需求</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>场景 3 (ABE)</td><td>1.4</td><td class="cell-green">1&times; 4090</td></tr>
+                <tr><td>场景 2 (B+E)</td><td>3.8</td><td>1&times; 4090 (勉强)</td></tr>
+                <tr><td>场景 2 (高可用)</td><td>3.8</td><td>2&times; 4090</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Self-Deploy Models -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#129302;</span>
+        开源模型自部署
+      </h2>
+      <p class="section-desc">当前使用的模型本身就是开源的，自部署可实现零 Token 费用</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>模型</th>
+              <th>参数量</th>
+              <th>最低显存</th>
+              <th>推荐 GPU</th>
+              <th>场景 3 (1.4 req/s)</th>
+              <th>场景 2 (3.8 req/s)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Qwen2.5-VL-3B</strong></td>
+              <td>3B</td>
+              <td>~8GB</td>
+              <td>1&times; 4090</td>
+              <td><span class="badge badge-green">充裕</span></td>
+              <td><span class="badge badge-green">可以</span></td>
+            </tr>
+            <tr>
+              <td><strong>Qwen2.5-VL-7B</strong></td>
+              <td>7B</td>
+              <td>~15-26GB</td>
+              <td>1&times; 4090</td>
+              <td><span class="badge badge-green">充裕</span></td>
+              <td><span class="badge badge-orange">勉强</span></td>
+            </tr>
+            <tr>
+              <td>Qwen3-VL-8B</td>
+              <td>8B</td>
+              <td>~20GB</td>
+              <td>1&times; 4090</td>
+              <td><span class="badge badge-green">充裕</span></td>
+              <td><span class="badge badge-orange">需 2 卡</span></td>
+            </tr>
+            <tr>
+              <td>MiniCPM-V 2.6</td>
+              <td>8B</td>
+              <td>~12GB</td>
+              <td>1&times; 4090</td>
+              <td><span class="badge badge-green">充裕</span></td>
+              <td><span class="badge badge-green">可以</span></td>
+            </tr>
+            <tr>
+              <td>InternVL2.5-4B</td>
+              <td>4B</td>
+              <td>~10GB</td>
+              <td>1&times; 4090</td>
+              <td><span class="badge badge-green">充裕</span></td>
+              <td><span class="badge badge-green">可以</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card mt-24">
+        <div class="card-title">代码改动: 仅需修改一个配置</div>
+        <div class="code-block mt-16">
+<span class="comment">// DashScopeConfig.java 当前配置</span>
+<span class="keyword">private</span> String baseUrl = <span class="string">"https://dashscope.aliyuncs.com/compatible-mode/v1"</span>;
+<span class="keyword">private</span> String visionModel = <span class="string">"qwen2.5-vl-3b-instruct"</span>;
+
+<span class="comment">// 改为本地 vLLM 地址</span>
+<span class="keyword">private</span> String baseUrl = <span class="string">"http://gpu-server:8000/v1"</span>;  <span class="comment">// vLLM OpenAI 兼容接口</span>
+<span class="keyword">private</span> String visionModel = <span class="string">"Qwen/Qwen2.5-VL-7B-Instruct"</span>;  <span class="comment">// 或保持 3B</span>
+        </div>
+        <div class="callout callout-success mt-16">
+          <span class="callout-icon">&#10003;</span>
+          <div>vLLM 提供 OpenAI 兼容 API，现有 <code>DashScopeVisionClient.java</code> 中的请求格式<strong>无需任何修改</strong>。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Multi-Factory Scaling -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#127981;</span>
+        多工厂扩展费用
+      </h2>
+      <p class="section-desc">自部署 GPU vs API 的规模化费用对比（场景 2: B+E 优化, 不改架构）</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>工厂数</th>
+              <th>总摄像头</th>
+              <th>总 req/s</th>
+              <th>GPU 需求</th>
+              <th>自部署月费 (仅工时)</th>
+              <th>SiliconFlow API</th>
+              <th>阿里云 API (5折)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>20</td>
+              <td>3.8</td>
+              <td>1&times; 4090</td>
+              <td class="cell-green">&yen;176</td>
+              <td>&yen;1,542</td>
+              <td>&yen;1,962</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>100</td>
+              <td>18.8</td>
+              <td>5-6&times; 4090</td>
+              <td class="cell-green">&yen;1,056</td>
+              <td>&yen;7,710</td>
+              <td>&yen;9,810</td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td>200</td>
+              <td>37.7</td>
+              <td>10-12&times; 4090</td>
+              <td class="cell-green">&yen;2,112</td>
+              <td>&yen;15,420</td>
+              <td>&yen;19,620</td>
+            </tr>
+            <tr>
+              <td>20</td>
+              <td>400</td>
+              <td>75.3</td>
+              <td>20-24&times; 4090</td>
+              <td class="cell-green">&yen;4,224</td>
+              <td>&yen;30,840</td>
+              <td>&yen;39,240</td>
+            </tr>
+            <tr>
+              <td>50</td>
+              <td>1,000</td>
+              <td>188.4</td>
+              <td>48-60&times; 4090</td>
+              <td class="cell-green">&yen;10,560</td>
+              <td>&yen;77,100</td>
+              <td>&yen;98,100</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="savings-highlight mt-24">
+        <div class="savings-value">86%</div>
+        <div class="savings-desc">自部署 vs 最便宜 API 的稳定节省比例，在所有规模下保持一致</div>
+      </div>
+
+      <!-- Cost comparison bars -->
+      <div class="card mt-24" style="padding:28px">
+        <div class="card-title mb-24">10 工厂月费对比</div>
+        <div class="comparison-bar">
+          <div class="bar-label"><span class="bar-name">阿里云 API (5折)</span><span class="bar-value">&yen;19,620/月</span></div>
+          <div class="bar-track"><div class="bar-fill red" style="width:100%"></div></div>
+        </div>
+        <div class="comparison-bar">
+          <div class="bar-label"><span class="bar-name">SiliconFlow API</span><span class="bar-value">&yen;15,420/月</span></div>
+          <div class="bar-track"><div class="bar-fill orange" style="width:78.6%"></div></div>
+        </div>
+        <div class="comparison-bar">
+          <div class="bar-label"><span class="bar-name">自部署 GPU (仅工时)</span><span class="bar-value">&yen;2,112/月</span></div>
+          <div class="bar-track"><div class="bar-fill green" style="width:10.8%"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- API as Backup -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128279;</span>
+        API 方案 (备选 / 过渡)
+      </h2>
+      <p class="section-desc">零运维，按量付费，适合初期验证或作为自部署的降级方案</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>模型 (平台)</th>
+              <th>场景 2 月费</th>
+              <th>场景 3 月费</th>
+              <th>优势</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>当前系统 (无优化)</td>
+              <td class="cell-red">&yen;6,467</td>
+              <td>-</td>
+              <td>无需改动</td>
+            </tr>
+            <tr>
+              <td>阿里云 vl-plus (5折)</td>
+              <td>&yen;1,962</td>
+              <td>&yen;803</td>
+              <td>阿里生态</td>
+            </tr>
+            <tr>
+              <td><strong>SiliconFlow GLM-4.1V</strong></td>
+              <td class="cell-green">&yen;1,542</td>
+              <td class="cell-green">&yen;620</td>
+              <td>最便宜 API</td>
+            </tr>
+            <tr>
+              <td>SiliconFlow Qwen3-VL-8B</td>
+              <td>&yen;3,082</td>
+              <td>&yen;1,241</td>
+              <td>新一代模型</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-warning mt-24">
+        <span class="callout-icon">&#9888;&#65039;</span>
+        <div><strong>注意</strong>: GLM-4.1V-9B 是智谱的模型，需要验证在手势识别/标签 OCR 等任务上的效果是否达标。</div>
+      </div>
+    </section>
+
+    <!-- Pros & Cons -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#9878;</span>
+        优劣势分析
+      </h2>
+
+      <div class="card">
+        <div class="pros-cons">
+          <div>
+            <h3 style="color:var(--green);font-size:15px;margin-bottom:12px">&#10003; 优势</h3>
+            <ul class="pros-list">
+              <li>统一运维，全部基础设施由我们控制</li>
+              <li>弹性扩容，新增工厂无需硬件部署</li>
+              <li>模型升级/切换集中操作，一次更新全部生效</li>
+              <li>GPU 利用率高 - 多工厂共享 GPU，错峰使用</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color:var(--red);font-size:15px;margin-bottom:12px">&#10007; 劣势</h3>
+            <ul class="cons-list">
+              <li>依赖网络，工厂断网则无法分析</li>
+              <li>图片传输量大 (~20-96 GB/天/工厂)</li>
+              <li>有延迟（网络传输 + 排队处理）</li>
+              <li>数据安全顾虑 - 图片离厂</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Self-Deploy vs All Methods -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128200;</span>
+        全方案费用终极对比
+      </h2>
+      <p class="section-desc">场景 2 (B+E, 不改架构, 108,500 帧/天)</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>方案</th>
+              <th>月费 (&yen;)</th>
+              <th>Token 费</th>
+              <th>备注</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>当前系统直跑 API (阿里云 3b)</td>
+              <td class="cell-red">6,467</td>
+              <td>按量</td>
+              <td>5 折后</td>
+            </tr>
+            <tr>
+              <td>阿里云 vl-plus + 5折</td>
+              <td>1,962</td>
+              <td>按量</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>SiliconFlow GLM-4.1V API</td>
+              <td>1,542</td>
+              <td>按量</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><strong>自部署 Qwen2.5-VL-3B (租 4090)</strong></td>
+              <td class="cell-green">176-317</td>
+              <td class="cell-green">&yen;0</td>
+              <td>当前模型直接迁移</td>
+            </tr>
+            <tr>
+              <td><strong>自部署 Qwen2.5-VL-7B (租 4090)</strong></td>
+              <td class="cell-green">176-317</td>
+              <td class="cell-green">&yen;0</td>
+              <td>升级版，效果更好</td>
+            </tr>
+            <tr>
+              <td><strong>自购 1&times;4090 服务器</strong></td>
+              <td class="cell-green">~150-300</td>
+              <td class="cell-green">&yen;0</td>
+              <td>约 2 个月回本</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-success mt-24">
+        <span class="callout-icon">&#10003;</span>
+        <div><strong>结论: 自部署是碾压级优势</strong>，因为我们当前使用的模型本身就是开源的。月费从 &yen;6,467 降至 &yen;176，降幅高达 97%。</div>
+      </div>
+    </section>
+
+    <!-- Scaling Architecture -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128736;</span>
+        规模化架构考虑
+      </h2>
+
+      <div class="card-grid card-grid-3 gap-24">
+        <div class="card card-green">
+          <div class="card-title">5 工厂以下</div>
+          <div class="card-desc mt-8">
+            单台多 GPU 服务器即可 (8 卡机型)。使用 vLLM + 负载均衡，运维简单。
+          </div>
+          <div class="mt-16"><span class="badge badge-green">&#x2264; 6 GPU</span></div>
+        </div>
+        <div class="card card-orange">
+          <div class="card-title">10-20 工厂</div>
+          <div class="card-desc mt-8">
+            2-3 台多卡服务器。建议使用 K8s + vLLM 集群管理，可按地域分布部署。考虑混合方案。
+          </div>
+          <div class="mt-16"><span class="badge badge-orange">12-24 GPU</span></div>
+        </div>
+        <div class="card card-red">
+          <div class="card-title">50+ 工厂</div>
+          <div class="card-desc mt-8">
+            需要完整 GPU 集群管理，建议与云平台签企业级合约。或转向边缘部署方案。
+          </div>
+          <div class="mt-16"><span class="badge badge-red">60+ GPU</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Our Recommended -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#127775;</span>
+        最优方案选择
+      </h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>方案</th>
+              <th>GPU</th>
+              <th>平台</th>
+              <th>月费</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>最省 (ABE 优化)</strong></td>
+              <td>1&times; 4090</td>
+              <td>潞晨云 (仅工时)</td>
+              <td class="cell-green">&yen;176</td>
+              <td>1.4 req/s，1 卡够用</td>
+            </tr>
+            <tr>
+              <td>稳妥 (B+E)</td>
+              <td>1&times; 4090</td>
+              <td>潞晨云 (仅工时)</td>
+              <td>&yen;176</td>
+              <td>3.8 req/s，1 卡勉强</td>
+            </tr>
+            <tr>
+              <td>稳妥 (B+E, 高可用)</td>
+              <td>2&times; 4090</td>
+              <td>潞晨云 (仅工时)</td>
+              <td>&yen;352</td>
+              <td>冗余处理</td>
+            </tr>
+            <tr>
+              <td>24h 在线</td>
+              <td>1&times; 4090</td>
+              <td>潞晨云 (包月)</td>
+              <td>&yen;650</td>
+              <td>非工作时间也可用</td>
+            </tr>
+            <tr>
+              <td>稳定优先</td>
+              <td>1&times; 4090</td>
+              <td>AutoDL (仅工时)</td>
+              <td>&yen;366</td>
+              <td>服务质量好</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>白垩纪食品溯源系统 - 摄像头 AI 费用分析报告</p>
+    <p class="mt-8"><a href="index.html">&larr; 返回总览</a> &middot; <a href="edge-deployment.html">边缘部署 &rarr;</a></p>
+  </footer>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      document.querySelector('.theme-toggle').textContent = next === 'dark' ? '\u2600' : '\u263E';
+    }
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved) {
+        document.documentElement.setAttribute('data-theme', saved);
+      } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+      const theme = document.documentElement.getAttribute('data-theme');
+      const btn = document.querySelector('.theme-toggle');
+      if (btn) btn.textContent = theme === 'dark' ? '\u2600' : '\u263E';
+    })();
+  </script>
+</body>
+</html>

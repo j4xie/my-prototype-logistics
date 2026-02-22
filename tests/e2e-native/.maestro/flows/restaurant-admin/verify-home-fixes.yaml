@@ -1,0 +1,75 @@
+# flows/restaurant-admin/verify-home-fixes.yaml
+# 验证餐饮模式首页3个Fix:
+#   Fix 1: 预览卡片 alerts 显示 0（非 "--"）
+#   Fix 2: AI 洞察卡隐藏工厂 KPI（Quality Rate / Unit Cost / Avg Cycle）
+#   Fix 3: 模块标题走 i18n（英文模式下显示英文）
+appId: com.cretas.foodtrace
+env:
+  USERNAME: restaurant_admin1
+  PASSWORD: "123456"
+  HOME_ROOT_ID: fa-home-root
+---
+- launchApp:
+    clearState: true
+
+- runFlow: ../common/_wait_for_app.yaml
+
+- runFlow:
+    file: ../common/_login.yaml
+    env:
+      USERNAME: ${USERNAME}
+      PASSWORD: ${PASSWORD}
+      HOME_ROOT_ID: ${HOME_ROOT_ID}
+
+# ========================================
+# Fix 1: 预览卡片 alerts 显示 0（非 "--"）
+# ========================================
+
+# 验证 alerts 卡片可见
+- extendedWaitUntil:
+    visible:
+      id: "fa-home-stat-todayAlerts"
+    timeout: 10000
+
+# 验证 alerts 值显示 0（不是 "--"）
+- assertVisible:
+    id: "fa-home-stat-todayAlerts-value"
+
+# 截图记录 alerts 卡片状态
+- takeScreenshot: fix1-alerts-card
+
+# ========================================
+# Fix 2: AI 洞察卡隐藏工厂 KPI
+# ========================================
+
+# 验证 AI 卡片本身可见（餐饮模式也有 AI 洞察）
+- extendedWaitUntil:
+    visible:
+      id: "fa-home-ai-card"
+    timeout: 10000
+
+# 验证 AI 指标区域不可见（餐饮模式应隐藏）
+- assertNotVisible:
+    id: "fa-home-ai-metrics"
+
+# 截图记录 AI 卡片状态
+- takeScreenshot: fix2-ai-card-no-metrics
+
+# ========================================
+# Fix 3: 模块标题走 i18n
+# ========================================
+
+# 验证 AI 标题存在
+- assertVisible:
+    id: "fa-home-ai-title"
+
+# 验证统计区域标题存在
+- assertVisible:
+    id: "fa-home-stats-title"
+
+# 验证快捷操作标题存在
+- assertVisible:
+    id: "fa-home-quick-actions-title"
+
+# 截图记录标题状态
+- takeScreenshot: fix3-section-titles

@@ -31,6 +31,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { formatNumberWithCommas } from '../../utils/formatters';
 
 import {
   MobileGaugeChart,
@@ -256,7 +257,7 @@ export function InventoryDashboardScreen() {
     if (value >= 10000) {
       return `${(value / 10000).toFixed(1)}万`;
     }
-    return value.toLocaleString();
+    return formatNumberWithCommas(value);
   };
 
   // Get critical and warning items count

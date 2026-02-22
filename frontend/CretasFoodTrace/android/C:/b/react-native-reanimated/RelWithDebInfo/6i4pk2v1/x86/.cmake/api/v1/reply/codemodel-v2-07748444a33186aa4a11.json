@@ -1,0 +1,101 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2
+					],
+					"jsonFile" : "directory-.-RelWithDebInfo-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "src/main/cpp/worklets",
+					"jsonFile" : "directory-src.main.cpp.worklets-RelWithDebInfo-ece67eb1fd05b0a42e53.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/main/cpp/worklets",
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"build" : "src/main/cpp/reanimated",
+					"jsonFile" : "directory-src.main.cpp.reanimated-RelWithDebInfo-02a55322cec7fc692a79.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/main/cpp/reanimated",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"name" : "RelWithDebInfo",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2
+					],
+					"name" : "Reanimated",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 2,
+					"id" : "reanimated::@89a6a9b85fb42923616c",
+					"jsonFile" : "target-reanimated-RelWithDebInfo-ff2f9cdea525c4217de9.json",
+					"name" : "reanimated",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "worklets::@a0394df2d94e5212d8bd",
+					"jsonFile" : "target-worklets-RelWithDebInfo-b7b319245eea16db8a25.json",
+					"name" : "worklets",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-reanimated/RelWithDebInfo/6i4pk2v1/x86",
+		"source" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

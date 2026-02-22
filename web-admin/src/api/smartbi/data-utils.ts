@@ -492,13 +492,18 @@ export function detectAndPrefixSubTables(
   const pairMap: Record<string, string> = {
     '净利': '收入', '利润': '收入', '收入': '净利',
     '成本': '收入', '费用': '收入', '毛利': '收入',
-    '销售': '销售费用', '管理': '管理费用', '研发': '研发费用', '财务': '财务费用'
+    '销售': '销售费用', '管理': '管理费用', '研发': '研发费用', '财务': '财务费用',
+    '支出': '收入', '资产': '负债', '负债': '资产',
+    '应收': '应付', '应付': '应收',
+    '期初': '期末', '期末': '期初',
+    '本期': '上期', '上期': '本期',
+    '预算': '实际', '实际': '预算',
   };
   const distinctSections = [...new Set(sectionForIdx.filter(s => s !== ''))];
 
   if (distinctSections.length > 0) {
     const firstNamed = distinctSections[0];
-    const inferredFirst = pairMap[firstNamed] || '第1组';
+    const inferredFirst = pairMap[firstNamed] || '前期';
     for (let ri = 0; ri < rawData.length; ri++) {
       if (sectionForIdx[ri] === '') sectionForIdx[ri] = inferredFirst;
       else break;
@@ -532,7 +537,11 @@ export function detectAndPrefixSubTables(
       const newRow = { ...row };
       const originalLabel = String(row[labelField] ?? '').trim();
       if (SUBTOTAL_SUMMARY_PATTERN.test(originalLabel)) return newRow;
-      newRow[labelField] = `第${groupForCleanedIdx[i] + 1}组-${originalLabel}`;
+      const groupLabels = ['表A', '表B', '表C', '表D', '表E'];
+      const groupName = groupLabels[groupForCleanedIdx[i]] || `表${groupForCleanedIdx[i] + 1}`;
+      if (groupName !== originalLabel) {
+        newRow[labelField] = `${groupName}-${originalLabel}`;
+      }
       return newRow;
     });
   }
@@ -544,7 +553,7 @@ export function detectAndPrefixSubTables(
     if (SUBTOTAL_SUMMARY_PATTERN.test(originalLabel)) return newRow;
     const ri = rawIdxMap[i];
     const section = (ri != null && sectionForIdx[ri]) ? sectionForIdx[ri] : '';
-    if (section) {
+    if (section && section !== originalLabel) {
       newRow[labelField] = `${section}-${originalLabel}`;
     }
     return newRow;

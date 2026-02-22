@@ -35,18 +35,12 @@ log "INFO" "[2/5] 创建远程目录..."
 ssh $SERVER "mkdir -p $REMOTE_DIR"
 
 # 3. 同步文件到服务器
-log "INFO" "[3/5] 同步文件到服务器..."
-# 打包本地文件 (排除不需要的文件)
-cd $LOCAL_DIR
-tar --exclude='__pycache__' --exclude='*.pyc' --exclude='.env' \
+log "INFO" "[3/5] 同步文件到服务器 (rsync 增量传输)..."
+rsync -az --timeout=120 \
+    --exclude='__pycache__' --exclude='*.pyc' --exclude='.env' \
     --exclude='smartbi.log' --exclude='*.xlsx' --exclude='*.png' \
-    -czf ../smartbi-python.tar.gz .
-cd ..
-
-# 上传并解压
-scp smartbi-python.tar.gz $SERVER:$REMOTE_DIR/
-ssh $SERVER "cd $REMOTE_DIR && tar -xzf smartbi-python.tar.gz && rm smartbi-python.tar.gz"
-rm -f smartbi-python.tar.gz
+    --exclude='venv*' --exclude='python-services.log' \
+    $LOCAL_DIR/ $SERVER:$REMOTE_DIR/
 
 # 4. 在服务器上安装依赖和启动服务
 log "INFO" "[4/5] 安装依赖并启动服务..."

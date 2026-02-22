@@ -1,0 +1,8 @@
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-reanimated/RelWithDebInfo/6i4pk2v1/x86_64/CMakeFiles/edit_cache.dir
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-reanimated/RelWithDebInfo/6i4pk2v1/x86_64/CMakeFiles/rebuild_cache.dir
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-reanimated/RelWithDebInfo/6i4pk2v1/x86_64/src/main/cpp/worklets/CMakeFiles/worklets.dir
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-reanimated/RelWithDebInfo/6i4pk2v1/x86_64/src/main/cpp/worklets/CMakeFiles/edit_cache.dir
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-reanimated/RelWithDebInfo/6i4pk2v1/x86_64/src/main/cpp/worklets/CMakeFiles/rebuild_cache.dir
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-reanimated/RelWithDebInfo/6i4pk2v1/x86_64/src/main/cpp/reanimated/CMakeFiles/reanimated.dir
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-reanimated/RelWithDebInfo/6i4pk2v1/x86_64/src/main/cpp/reanimated/CMakeFiles/edit_cache.dir
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-reanimated/RelWithDebInfo/6i4pk2v1/x86_64/src/main/cpp/reanimated/CMakeFiles/rebuild_cache.dir

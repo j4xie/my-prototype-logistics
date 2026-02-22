@@ -1,0 +1,4 @@
+# ninja log v5
+0	4808	1771158524257216583	CMakeFiles/rnscreens.dir/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o	a8e19a0437d498fd
+1	5377	1771158524822371702	CMakeFiles/rnscreens.dir/src/main/cpp/jni-adapter.cpp.o	c34d63db03fbcacb
+5378	6058	1771158525395848226	/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-screens/android/build/intermediates/cxx/RelWithDebInfo/0n6462pb/obj/arm64-v8a/librnscreens.so	788918fda2d8d725

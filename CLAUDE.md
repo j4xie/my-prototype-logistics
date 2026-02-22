@@ -8,7 +8,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 | 组件 | 技术栈 |
 |------|--------|
-| **后端** | Java 11 + Spring Boot 2.7.15 + MySQL + JPA |
+| **后端** | Java 11 + Spring Boot 2.7.15 + PostgreSQL + JPA |
 | **前端** | Expo 53+ + TypeScript + React Navigation 7+ |
 | **AI服务** | Python + LLM API |
 
@@ -23,7 +23,7 @@ This file provides guidance to Claude Code when working with this repository.
 | Service | Port | URL |
 |---------|------|-----|
 | React Native | 3010 | `http://localhost:3010` |
-| Cretas 后端 (Java) | 10010 | `http://139.196.165.140:10010` |
+| Cretas 后端 (Java) | 10010 | `http://47.100.235.168:10010` |
 | Python 服务 | 8083 | `http://localhost:8083` |
 | Embedding 服务 | 9090 | gRPC |
 | Mall 后端 | 8080 | `http://139.196.165.140:8080` |
