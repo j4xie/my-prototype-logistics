@@ -7,10 +7,11 @@ Extracts factoryId and injects it into request.state for downstream endpoints.
 Whitelist paths (no auth required):
 - /health, /docs, /redoc, /openapi.json, / (root)
 - /api/public/* (public endpoints)
+- /api/chart/*, /api/smartbi/chart/* (stateless data processing)
 
 Protected paths:
-- /api/smartbi/*, /api/excel/*, /api/chart/*, /api/insight/*,
-  /api/forecast/*, /api/statistical/*, /api/chat/*, /api/analysis/*,
+- /api/smartbi/excel/*, /api/insight/*, /api/forecast/*,
+  /api/statistical/*, /api/chat/*, /api/analysis/*,
   /api/ml/*, /api/linucb/*, /api/finance/*, /api/food-kb/*
 """
 from __future__ import annotations
@@ -41,6 +42,8 @@ PUBLIC_PREFIXES = (
     "/api/ai/",          # AI proxy — called by Java backend internally
     "/api/classifier/",  # Classifier — called by Java backend internally
     "/api/client-requirement/",  # Client requirement wizard (public)
+    "/api/chart/",       # Chart building — stateless data processing, no user context needed
+    "/api/smartbi/chart/",  # SmartBI chart endpoints (same reason)
 )
 
 

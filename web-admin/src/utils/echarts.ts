@@ -21,6 +21,11 @@ import {
   MapChart,
   CustomChart,
   BoxplotChart,
+  SunburstChart,
+  FunnelChart,
+  TreemapChart,
+  SankeyChart,
+  TreeChart,
 } from 'echarts/charts'
 
 // ---- Components ----
@@ -38,6 +43,7 @@ import {
   GraphicComponent,
   DatasetComponent,
   TransformComponent,
+  ParallelComponent,
 } from 'echarts/components'
 
 // ---- Renderer ----
@@ -47,11 +53,12 @@ echarts.use([
   // charts
   BarChart, LineChart, PieChart, ScatterChart, RadarChart,
   GaugeChart, HeatmapChart, MapChart, CustomChart, BoxplotChart,
+  SunburstChart, FunnelChart, TreemapChart, SankeyChart, TreeChart,
   // components
   GridComponent, TooltipComponent, LegendComponent, TitleComponent,
   DataZoomComponent, ToolboxComponent, MarkLineComponent, MarkPointComponent,
   VisualMapComponent, GeoComponent, GraphicComponent, DatasetComponent,
-  TransformComponent,
+  TransformComponent, ParallelComponent,
   // renderer
   CanvasRenderer,
 ])

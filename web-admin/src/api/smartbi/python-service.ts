@@ -120,7 +120,7 @@ export async function smartRecommendChart(params: {
       error: result.message as string | undefined
     };
   } catch (error) {
-    console.error('smartRecommendChart 失败:', error);
+    console.warn('smartRecommendChart 失败 (将回退到基础推荐):', error instanceof Error ? error.message : error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'LLM 图表推荐请求失败'

@@ -129,7 +129,7 @@ export function getPythonAuthHeaders(): Record<string, string> {
 // ==================== snake_case -> camelCase transform (AUDIT-065) ====================
 
 function snakeToCamel(str: string): string {
-  return str.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+  return str.replace(/_([a-z0-9])/g, (_, char: string) => char.toUpperCase());
 }
 
 export function transformKeys(obj: unknown): unknown {
@@ -805,14 +805,14 @@ const COLUMN_NAME_MAP: Record<string, string> = {
  */
 export function humanizeColumnName(col: string): string {
   // Fix 6: Strip technical dedup suffixes like _2, _3 first
+  const circled = ['', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫'];
   let cleaned = col.replace(/_(\d+)$/, (match, num) => {
     // Keep _2 etc for dates like 2025-01-01_2, handled below
     if (/^\d{4}-\d{2}-\d{2}_\d+$/.test(col)) return match;
-    // For regular names, convert _2 → (2) etc, or just strip
+    // Convert _2 → ② (circled number) for better readability
     const n = parseInt(num);
-    if (n >= 2 && n <= 15) {
-      return `(${n})`;
-    }
+    if (n >= 1 && n < circled.length) return circled[n];
+    if (n >= 2 && n <= 20) return `·${n}`;
     return '';
   });
 

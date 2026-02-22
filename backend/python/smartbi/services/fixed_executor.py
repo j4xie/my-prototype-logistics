@@ -661,8 +661,8 @@ class FixedExecutor:
 
             # 生成最终列名
             if parts:
-                # 如果最后一部分已经包含前面部分的信息，只用最后一部分
-                final_name = "_".join(parts) if len(parts) <= 2 else parts[-1]
+                # 合并所有层级，保留完整语义 (e.g., "2024年_上半年_收入")
+                final_name = "_".join(parts)
             else:
                 final_name = f"Column_{col_idx + 1}"
 

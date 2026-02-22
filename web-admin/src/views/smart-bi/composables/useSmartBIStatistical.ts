@@ -24,14 +24,14 @@ export function useSmartBIStatistical(deps: {
     if (!statisticalResult.value?.distributions) return [];
     return Object.entries(statisticalResult.value.distributions).map(([col, d]) => ({
       column: col,
-      mean: d.mean.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-      median: d.median.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-      std: d.std.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-      min: d.min.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-      max: d.max.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-      distribution_type: d.distribution_type,
-      is_normal: d.is_normal,
-      cv: (d.coefficient_of_variation * 100).toFixed(1) + '%',
+      mean: (d.mean ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 }),
+      median: (d.median ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 }),
+      std: (d.std ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 }),
+      min: (d.min ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 }),
+      max: (d.max ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 }),
+      distributionType: d.distributionType ?? 'unknown',
+      isNormal: d.isNormal ?? false,
+      cv: (d.coefficientOfVariation ?? 0).toFixed(1) + '%',
     }));
   });
 
@@ -83,10 +83,10 @@ export function useSmartBIStatistical(deps: {
       statisticalResult.value = {
         success: false,
         distributions: {},
-        correlations: { matrix: {}, strong_positive: [], strong_negative: [] },
+        correlations: { matrix: {}, strongPositive: [], strongNegative: [] },
         comparisons: {},
-        outlier_summary: {},
-        processing_time_ms: 0,
+        outlierSummary: {},
+        processingTimeMs: 0,
         error: '统计分析失败'
       };
     } finally {
@@ -129,6 +129,9 @@ export function useSmartBIStatistical(deps: {
   };
 
   const disposeStatHeatmap = () => {
+    // Reset state to prevent stale data from crashing the template on next open
+    statisticalLoading.value = false;
+    statisticalResult.value = null;
     const dom = document.getElementById('stat-heatmap-chart');
     if (dom) {
       const instance = echarts.getInstanceByDom(dom);
