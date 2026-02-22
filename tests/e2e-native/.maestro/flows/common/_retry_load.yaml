@@ -1,0 +1,11 @@
+# flows/common/_retry_load.yaml
+# 数据加载失败时点击重试按钮
+appId: com.cretas.foodtrace
+---
+- tapOn:
+    text: "重试"
+
+- extendedWaitUntil:
+    notVisible:
+      text: "重试"
+    timeout: 30000

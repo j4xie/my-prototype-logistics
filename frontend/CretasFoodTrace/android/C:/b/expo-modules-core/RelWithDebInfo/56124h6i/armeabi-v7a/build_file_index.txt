@@ -1,0 +1,1 @@
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/expo-modules-core/android/CMakeLists.txt

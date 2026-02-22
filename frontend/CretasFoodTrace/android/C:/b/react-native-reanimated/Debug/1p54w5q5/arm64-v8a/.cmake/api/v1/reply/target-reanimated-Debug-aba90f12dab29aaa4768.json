@@ -1,0 +1,405 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/build/intermediates/cxx/Debug/1p54w5q5/obj/arm64-v8a/libreanimated.so"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries",
+			"add_compile_options",
+			"target_include_directories"
+		],
+		"files" : 
+		[
+			"src/main/cpp/reanimated/CMakeLists.txt",
+			"CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 32,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 35,
+				"parent" : 0
+			},
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 12,
+				"parent" : 4
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 13,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D__BIONIC_NO_PAGE_SIZE_MACRO -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -DREACT_NATIVE_MINOR_VERSION=79   -DREANIMATED_VERSION=3.17.5    -DHERMES_ENABLE_DEBUGGER=1 -fexceptions -fno-omit-frame-pointer -frtti -fstack-protector-all   -std=c++20 -Wall -Werror -DJS_RUNTIME_HERMES=1 -fno-limit-debug-info  -fPIC"
+				},
+				{
+					"backtrace" : 5,
+					"fragment" : "-DFOLLY_NO_CONFIG=1"
+				},
+				{
+					"backtrace" : 5,
+					"fragment" : "-DFOLLY_HAVE_CLOCK_GETTIME=1"
+				},
+				{
+					"backtrace" : 5,
+					"fragment" : "-DFOLLY_USE_LIBCPP=1"
+				},
+				{
+					"backtrace" : 5,
+					"fragment" : "-DFOLLY_CFG_NO_COROUTINES=1"
+				},
+				{
+					"backtrace" : 5,
+					"fragment" : "-DFOLLY_MOBILE=1"
+				},
+				{
+					"backtrace" : 5,
+					"fragment" : "-DFOLLY_HAVE_RECVMMSG=1"
+				},
+				{
+					"backtrace" : 5,
+					"fragment" : "-DFOLLY_HAVE_PTHREAD=1"
+				},
+				{
+					"backtrace" : 5,
+					"fragment" : "-DFOLLY_HAVE_XSI_STRERROR_R=1"
+				},
+				{
+					"fragment" : "-std=gnu++20"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"define" : "reanimated_EXPORTS"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 6,
+					"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/../Common/cpp"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/src/main/cpp"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native/ReactCommon"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native/ReactAndroid/src/main/jni/react/turbomodule"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native/ReactCommon/callinvoker"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native/ReactCommon/runtimeexecutor"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/Users/jietaoxie/.gradle/caches/8.13/transforms/8a81cfdbebe01053cfb05885f1d466e9/transformed/react-android-0.79.6-debug/prefab/modules/jsi/include"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/Users/jietaoxie/.gradle/caches/8.13/transforms/acdad09e14c6903331ae031071f348bb/transformed/fbjni-0.7.0/prefab/modules/fbjni/include"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/Users/jietaoxie/.gradle/caches/8.13/transforms/8a81cfdbebe01053cfb05885f1d466e9/transformed/react-android-0.79.6-debug/prefab/modules/reactnative/include"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/Users/jietaoxie/.gradle/caches/8.13/transforms/6fb658ce51339aaaeea6f62b0e107225/transformed/hermes-android-0.79.6-debug/prefab/modules/libhermes/include"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/Users/jietaoxie/.gradle/caches/8.13/transforms/8a81cfdbebe01053cfb05885f1d466e9/transformed/react-android-0.79.6-debug/prefab/modules/hermestooling/include"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					1
+				],
+				"standard" : "20"
+			},
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16
+			],
+			"sysroot" : 
+			{
+				"path" : "/Users/jietaoxie/Library/Android/sdk/ndk/27.1.12297006/toolchains/llvm/prebuilt/darwin-x86_64/sysroot"
+			}
+		}
+	],
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "worklets::@a0394df2d94e5212d8bd"
+		}
+	],
+	"id" : "reanimated::@89a6a9b85fb42923616c",
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "-Wl,-z,max-page-size=16384 -Wl,--build-id=sha1 -Wl,--no-rosegment -Wl,--no-undefined-version -Wl,--fatal-warnings -Wl,--no-undefined -Qunused-arguments",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/build/intermediates/cxx/Debug/1p54w5q5/obj/arm64-v8a/libworklets.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-landroid",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 3,
+				"fragment" : "/Users/jietaoxie/.gradle/caches/8.13/transforms/8a81cfdbebe01053cfb05885f1d466e9/transformed/react-android-0.79.6-debug/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-llog",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/Users/jietaoxie/.gradle/caches/8.13/transforms/8a81cfdbebe01053cfb05885f1d466e9/transformed/react-android-0.79.6-debug/prefab/modules/jsi/libs/android.arm64-v8a/libjsi.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/Users/jietaoxie/.gradle/caches/8.13/transforms/acdad09e14c6903331ae031071f348bb/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.arm64-v8a/libfbjni.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/Users/jietaoxie/.gradle/caches/8.13/transforms/8a81cfdbebe01053cfb05885f1d466e9/transformed/react-android-0.79.6-debug/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/Users/jietaoxie/.gradle/caches/8.13/transforms/6fb658ce51339aaaeea6f62b0e107225/transformed/hermes-android-0.79.6-debug/prefab/modules/libhermes/libs/android.arm64-v8a/libhermes.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/Users/jietaoxie/.gradle/caches/8.13/transforms/8a81cfdbebe01053cfb05885f1d466e9/transformed/react-android-0.79.6-debug/prefab/modules/hermestooling/libs/android.arm64-v8a/libhermestooling.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-latomic -lm",
+				"role" : "libraries"
+			}
+		],
+		"language" : "CXX",
+		"sysroot" : 
+		{
+			"path" : "/Users/jietaoxie/Library/Android/sdk/ndk/27.1.12297006/toolchains/llvm/prebuilt/darwin-x86_64/sysroot"
+		}
+	},
+	"name" : "reanimated",
+	"nameOnDisk" : "libreanimated.so",
+	"paths" : 
+	{
+		"build" : "src/main/cpp/reanimated",
+		"source" : "src/main/cpp/reanimated"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/AnimatedSensor/AnimatedSensorModule.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/PropsRegistry.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedCommitHook.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ShadowTreeCloner.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsManager.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsProxy.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsUtils.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/ReanimatedModuleProxy.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/ReanimatedModuleProxySpec.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/RuntimeDecorators/RNRuntimeDecorator.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/RuntimeDecorators/UIRuntimeDecorator.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/Common/cpp/reanimated/Tools/FeaturesConfig.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/main/cpp/reanimated/android/JNIHelper.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/main/cpp/reanimated/android/LayoutAnimations.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/main/cpp/reanimated/android/NativeProxy.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/main/cpp/reanimated/android/OnLoad.cpp",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "SHARED_LIBRARY"
+}

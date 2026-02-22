@@ -1,0 +1,51 @@
+# flows/factory-admin/verify-restaurant-hides-kpi.yaml
+# 验证餐饮模式首页：AI KPI 指标应隐藏（Fix 2 的另一半验证）
+appId: com.cretas.foodtrace
+env:
+  USERNAME: restaurant_admin1
+  PASSWORD: "123456"
+  HOME_ROOT_ID: fa-home-root
+---
+- launchApp:
+    clearState: true
+
+# 处理可能的 ANR 弹窗
+- runFlow:
+    when:
+      visible: "Wait"
+    file: ../common/_dismiss_anr.yaml
+
+- runFlow: ../common/_wait_for_app.yaml
+
+# ========================================
+# 使用共享登录流程
+# ========================================
+- runFlow:
+    file: ../common/_login.yaml
+    env:
+      USERNAME: ${USERNAME}
+      PASSWORD: ${PASSWORD}
+      HOME_ROOT_ID: ${HOME_ROOT_ID}
+
+# ========================================
+# 等待数据加载完成
+# ========================================
+- runFlow:
+    when:
+      visible: "重试"
+    file: ../common/_retry_load.yaml
+
+- extendedWaitUntil:
+    notVisible:
+      text: "Loading..."
+    timeout: 60000
+
+# ========================================
+# 餐饮模式：AI KPI 指标应 **不可见**
+# ========================================
+- takeScreenshot: restaurant-home-overview
+
+- assertNotVisible:
+    id: "fa-home-ai-metrics"
+
+- takeScreenshot: restaurant-ai-metrics-hidden

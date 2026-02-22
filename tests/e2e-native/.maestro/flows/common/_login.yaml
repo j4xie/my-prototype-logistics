@@ -1,0 +1,56 @@
+# flows/common/_login.yaml
+# 登录子流：Landing 视图 → LoginForm 视图 → 提交
+# 注意：登录是同一组件内的状态切换，不是页面导航
+appId: com.cretas.foodtrace
+---
+# Step 1: 等待 Landing 视图加载
+- extendedWaitUntil:
+    visible:
+      id: "landing-login-btn"
+    timeout: 10000
+
+# Step 2: 点击进入登录表单（同组件内切换视图）
+- tapOn:
+    id: "landing-login-btn"
+
+# Step 3: 等待 LoginForm 视图出现
+- extendedWaitUntil:
+    visible:
+      id: "login-username-input"
+    timeout: 5000
+
+# Step 4: 填写用户名
+- tapOn:
+    id: "login-username-input"
+- eraseText: 50
+- inputText: ${USERNAME}
+
+# Step 5: 填写密码（等待 UI 稳定后点击）
+- extendedWaitUntil:
+    visible:
+      id: "login-password-input"
+    timeout: 5000
+- tapOn:
+    id: "login-password-input"
+- eraseText: 50
+- inputText: ${PASSWORD}
+
+# Step 6: 关闭键盘并提交登录
+- pressKey: back
+- tapOn:
+    id: "login-submit-btn"
+
+# Step 7: 等待登录成功弹窗并关闭
+- extendedWaitUntil:
+    visible:
+      text: "登录成功"
+    timeout: 60000
+
+- tapOn:
+    text: "OK"
+
+# Step 8: 等待首页加载（餐饮模式可能需要更久）
+- extendedWaitUntil:
+    visible:
+      id: ${HOME_ROOT_ID}
+    timeout: 90000

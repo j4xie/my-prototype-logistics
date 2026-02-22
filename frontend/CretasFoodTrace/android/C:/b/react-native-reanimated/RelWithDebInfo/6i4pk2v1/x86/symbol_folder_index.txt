@@ -1,0 +1,1 @@
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-reanimated/android/build/intermediates/cxx/RelWithDebInfo/6i4pk2v1/obj/x86

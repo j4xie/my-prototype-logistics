@@ -30,6 +30,7 @@ import type { RouteProp } from '@react-navigation/native';
 
 import { smartBIApi } from '../../services/api/smartbi';
 import { useAuthStore } from '../../store/authStore';
+import { formatNumberWithCommas } from '../../utils/formatters';
 
 import type {
   SmartBIStackParamList,
@@ -298,7 +299,7 @@ export default function EfficiencyDashboardScreen(): React.ReactElement {
               />
               <SummaryKPI
                 title="总产量"
-                value={summary.totalOutput.toLocaleString()}
+                value={formatNumberWithCommas(summary.totalOutput)}
                 unit="件"
                 icon="package-variant"
                 color={THEME.warning}

@@ -30,6 +30,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { formatNumberWithCommas } from '../../utils/formatters';
 
 import {
   MobileGaugeChart,
@@ -144,7 +145,7 @@ const ProductionLineItem: React.FC<ProductionLineItemProps> = ({ item, onPress }
       </View>
       <View style={styles.rankInfo}>
         <Text style={styles.rankName}>{item.name}</Text>
-        <Text style={styles.rankSubtext}>{item.output.toLocaleString()} 件</Text>
+        <Text style={styles.rankSubtext}>{formatNumberWithCommas(item.output)} 件</Text>
       </View>
       <View style={styles.rankOEE}>
         <Text style={styles.rankOEEValue}>{item.oee.toFixed(1)}%</Text>
@@ -226,7 +227,7 @@ export function ProductionDashboardScreen() {
       id: line.id,
       label: line.name,
       value: line.oee,
-      subtitle: `产量: ${line.output.toLocaleString()}件`,
+      subtitle: `产量: ${formatNumberWithCommas(line.output)}件`,
     }));
   }, [productionLines]);
 

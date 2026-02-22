@@ -1,0 +1,5 @@
+# flows/common/_dismiss_anr.yaml
+# 关闭 ANR (App Not Responding) 弹窗
+appId: com.cretas.foodtrace
+---
+- tapOn: "Wait"

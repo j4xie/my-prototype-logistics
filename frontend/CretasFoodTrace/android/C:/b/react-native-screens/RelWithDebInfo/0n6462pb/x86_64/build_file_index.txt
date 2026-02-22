@@ -1,0 +1,1 @@
+/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-screens/android/CMakeLists.txt

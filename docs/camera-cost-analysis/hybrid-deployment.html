@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>混合部署方案 | 摄像头 AI 费用分析</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-brand">
+        <span class="logo-icon">C</span>
+        <span>摄像头 AI 费用分析</span>
+      </a>
+      <button class="nav-mobile-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle menu">&#9776;</button>
+      <ul class="nav-links">
+        <li><a href="index.html">总览</a></li>
+        <li><a href="cloud-deployment.html">集中部署</a></li>
+        <li><a href="edge-deployment.html">边缘部署</a></li>
+        <li><a href="hybrid-deployment.html" class="active">混合部署</a></li>
+        <li><button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">&#9790;</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <section class="page-header">
+    <h1>&#128260; 混合部署方案</h1>
+    <p class="subtitle">结合集中与边缘部署的优势，分阶段渐进式扩展</p>
+  </section>
+
+  <div class="container">
+
+    <!-- Overview -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#127919;</span>
+        核心策略
+      </h2>
+      <p class="section-desc">根据业务发展阶段，灵活选择最合适的部署方式</p>
+
+      <div class="card card-accent">
+        <div class="arch-diagram">
+          <div class="arch-box">
+            <div class="arch-icon">&#128247;</div>
+            <div class="arch-label">核心工厂</div>
+            <div class="arch-detail">近网络 / 需高精度</div>
+          </div>
+          <div class="arch-arrow">&rarr;</div>
+          <div class="arch-box accent">
+            <div class="arch-icon">&#9729;&#65039;</div>
+            <div class="arch-label">集中 GPU 处理</div>
+            <div class="arch-detail">高性能模型</div>
+          </div>
+          <div class="arch-arrow" style="margin:0 32px;opacity:0.3">|</div>
+          <div class="arch-box">
+            <div class="arch-icon">&#128247;</div>
+            <div class="arch-label">远程工厂</div>
+            <div class="arch-detail">网络差 / 需离线</div>
+          </div>
+          <div class="arch-arrow">&rarr;</div>
+          <div class="arch-box accent">
+            <div class="arch-icon">&#128421;</div>
+            <div class="arch-label">边缘设备处理</div>
+            <div class="arch-detail">本地推理</div>
+          </div>
+        </div>
+        <div class="text-center mt-16" style="font-size:14px;color:var(--text-secondary)">
+          &#8595; 所有结果汇聚到中心管理平台 &#8595;
+        </div>
+      </div>
+    </section>
+
+    <!-- Three Phase Timeline -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128197;</span>
+        三阶段实施路线
+      </h2>
+
+      <div class="timeline">
+        <!-- Phase 1 -->
+        <div class="timeline-item active">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="flex items-center gap-8 mb-8">
+              <div class="timeline-title">Phase 1: 快速启动</div>
+              <span class="badge badge-purple">1-5 工厂</span>
+            </div>
+            <div class="timeline-meta">策略: 集中部署 (租云 GPU)</div>
+            <div class="timeline-desc">
+              <p><strong>目标</strong>: 快速验证模型效果，最小化前期投入</p>
+
+              <div class="card-grid card-grid-3 mt-16 gap-16" style="margin-bottom:0">
+                <div class="card metric-card" style="padding:16px">
+                  <div class="card-value" style="font-size:22px">1-2</div>
+                  <div class="card-label">张 RTX 4090</div>
+                </div>
+                <div class="card metric-card" style="padding:16px">
+                  <div class="card-value" style="font-size:22px;color:var(--green)">&yen;176-352</div>
+                  <div class="card-label">月费</div>
+                </div>
+                <div class="card metric-card" style="padding:16px">
+                  <div class="card-value" style="font-size:22px">1 行</div>
+                  <div class="card-label">代码改动</div>
+                </div>
+              </div>
+
+              <div class="callout callout-tip mt-16">
+                <span class="callout-icon">&#128161;</span>
+                <div>
+                  <strong>代码改动</strong>: 仅修改 <code>DashScopeConfig.java</code> 的 <code>baseUrl</code>，将 DashScope API 地址替换为本地 vLLM 地址。vLLM 提供 OpenAI 兼容 API，现有请求格式无需任何修改。
+                </div>
+              </div>
+
+              <div class="code-block mt-16">
+<span class="comment">// DashScopeConfig.java - 唯一需要修改的配置</span>
+<span class="keyword">private</span> String baseUrl = <span class="string">"http://gpu-server:8000/v1"</span>;
+<span class="keyword">private</span> String visionModel = <span class="string">"Qwen/Qwen2.5-VL-7B-Instruct"</span>;
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="flex items-center gap-8 mb-8">
+              <div class="timeline-title">Phase 2: 混合扩展</div>
+              <span class="badge badge-blue">5-20 工厂</span>
+            </div>
+            <div class="timeline-meta">策略: 云 GPU + 边缘设备</div>
+            <div class="timeline-desc">
+              <p><strong>目标</strong>: 平衡成本与可靠性，逐步引入边缘部署</p>
+
+              <div class="card-grid card-grid-2 mt-16 gap-16">
+                <div class="card" style="padding:16px">
+                  <div class="card-title" style="font-size:14px">核心工厂 (已有)</div>
+                  <div class="card-desc mt-8">继续使用集中 GPU 处理，享受高性能模型 (7B+)</div>
+                  <div class="mt-8"><span class="badge badge-purple">集中部署</span></div>
+                </div>
+                <div class="card" style="padding:16px">
+                  <div class="card-title" style="font-size:14px">新增工厂</div>
+                  <div class="card-desc mt-8">采购 Jetson Orin Nano Super，边缘设备本地处理</div>
+                  <div class="mt-8"><span class="badge badge-green">&yen;1,800/台</span></div>
+                </div>
+              </div>
+
+              <div class="mt-16" style="font-size:13.5px;color:var(--text-secondary)">
+                <strong>同步实施优化</strong>:
+                <ul style="margin-top:8px;padding-left:20px">
+                  <li>B 优化: 工位计数摄像头降至 480p</li>
+                  <li>E 优化: 标签识别/安全监控保持 720p</li>
+                  <li>A 优化 (可选): 工位计数改为 VMD 事件驱动</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="flex items-center gap-8 mb-8">
+              <div class="timeline-title">Phase 3: 边缘为主</div>
+              <span class="badge badge-green">20+ 工厂</span>
+            </div>
+            <div class="timeline-meta">策略: 以边缘设备为主，少量集中处理</div>
+            <div class="timeline-desc">
+              <p><strong>目标</strong>: 最低长期运营成本，数据本地化</p>
+
+              <div class="card-grid card-grid-3 mt-16 gap-16" style="margin-bottom:0">
+                <div class="card metric-card" style="padding:16px">
+                  <div class="card-value" style="font-size:22px;color:var(--green)">&yen;1,800</div>
+                  <div class="card-label">每工厂一次性</div>
+                </div>
+                <div class="card metric-card" style="padding:16px">
+                  <div class="card-value" style="font-size:22px;color:var(--green)">&yen;5</div>
+                  <div class="card-label">每工厂月电费</div>
+                </div>
+                <div class="card metric-card" style="padding:16px">
+                  <div class="card-value" style="font-size:22px">OTA</div>
+                  <div class="card-label">统一推送模型更新</div>
+                </div>
+              </div>
+
+              <div class="mt-16" style="font-size:13.5px;color:var(--text-secondary)">
+                <strong>架构</strong>:
+                <ul style="margin-top:8px;padding-left:20px">
+                  <li>大部分工厂: Orin Nano Super 边缘处理</li>
+                  <li>少数复杂场景: 集中 GPU 处理 (高精度分析)</li>
+                  <li>所有结果: 汇聚到中心管理平台</li>
+                  <li>模型更新: 通过 OTA 统一推送到所有边缘设备</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Phase Cost Breakdown -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128181;</span>
+        各阶段费用详估
+      </h2>
+
+      <div class="card-grid card-grid-3 gap-24">
+        <div class="card card-accent">
+          <div class="card-title">Phase 1</div>
+          <div class="card-label mt-8">1-5 工厂</div>
+          <div class="divider" style="margin:16px 0"></div>
+          <div class="table-wrapper" style="border:none;box-shadow:none;">
+            <table style="font-size:13px">
+              <tbody>
+                <tr><td>GPU 租用</td><td class="text-right cell-highlight">&yen;176-352/月</td></tr>
+                <tr><td>硬件投入</td><td class="text-right">&yen;0</td></tr>
+                <tr><td>代码改动</td><td class="text-right">改 1 个配置</td></tr>
+                <tr><td>运维成本</td><td class="text-right">极低</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-16" style="font-size:13px;text-align:center">
+            <strong>月总成本: &yen;176-352</strong>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Phase 2</div>
+          <div class="card-label mt-8">5-20 工厂</div>
+          <div class="divider" style="margin:16px 0"></div>
+          <div class="table-wrapper" style="border:none;box-shadow:none;">
+            <table style="font-size:13px">
+              <tbody>
+                <tr><td>云 GPU (核心厂)</td><td class="text-right">&yen;176-352/月</td></tr>
+                <tr><td>新增边缘设备</td><td class="text-right">&yen;1,800/台</td></tr>
+                <tr><td>边缘运营</td><td class="text-right">&yen;5/厂/月</td></tr>
+                <tr><td>B+E 优化</td><td class="text-right">降本 70%</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-16" style="font-size:13px;text-align:center">
+            <strong>10 厂总: ~&yen;220/月 + 设备</strong>
+          </div>
+        </div>
+
+        <div class="card card-green">
+          <div class="card-title">Phase 3</div>
+          <div class="card-label mt-8">20-50 工厂</div>
+          <div class="divider" style="margin:16px 0"></div>
+          <div class="table-wrapper" style="border:none;box-shadow:none;">
+            <table style="font-size:13px">
+              <tbody>
+                <tr><td>边缘设备投入</td><td class="text-right">&yen;1,800/工厂</td></tr>
+                <tr><td>月运营 (电费)</td><td class="text-right cell-green">&yen;5/工厂</td></tr>
+                <tr><td>集中 GPU (少量)</td><td class="text-right">&yen;176/月</td></tr>
+                <tr><td>Token 费用</td><td class="text-right cell-green">&yen;0</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-16" style="font-size:13px;text-align:center">
+            <strong>50 厂: &yen;426/月 + &yen;90K 设备</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detailed Cost Trajectory -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128200;</span>
+        成本轨迹对比
+      </h2>
+      <p class="section-desc">混合部署 vs 纯集中 vs 纯 API 的累计费用</p>
+
+      <div class="card" style="padding:28px">
+        <div class="card-title mb-24">12 个月累计费用 (10 工厂, 场景 2)</div>
+
+        <div class="comparison-bar">
+          <div class="bar-label">
+            <span class="bar-name">纯 API (阿里云 5折)</span>
+            <span class="bar-value">&yen;235,440</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill red" style="width:100%"></div></div>
+        </div>
+
+        <div class="comparison-bar">
+          <div class="bar-label">
+            <span class="bar-name">纯 API (SiliconFlow)</span>
+            <span class="bar-value">&yen;185,040</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill orange" style="width:78.6%"></div></div>
+        </div>
+
+        <div class="comparison-bar">
+          <div class="bar-label">
+            <span class="bar-name">纯集中部署 (云 GPU)</span>
+            <span class="bar-value">&yen;25,344</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill blue" style="width:10.8%"></div></div>
+        </div>
+
+        <div class="comparison-bar">
+          <div class="bar-label">
+            <span class="bar-name">混合部署 (推荐)</span>
+            <span class="bar-value">&yen;20,720</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill green" style="width:8.8%"></div></div>
+        </div>
+
+        <div class="callout callout-info mt-24" style="font-size:12.5px">
+          <span class="callout-icon">&#128270;</span>
+          <div>
+            混合部署计算: Phase 1 (3个月云GPU &yen;528) + Phase 2 (9个月: 云GPU &yen;1,584 + 边缘设备 &yen;12,600 + 运营 &yen;315) + 优化节省。
+            边缘设备一次性投入在首年计入，后续年份成本大幅下降。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Optimization Summary in Hybrid Context -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#9889;</span>
+        优化方案实施时机
+      </h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>优化方案</th>
+              <th>实施阶段</th>
+              <th>节省效果</th>
+              <th>改动难度</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>E: 模型切换</strong></td>
+              <td><span class="badge badge-purple">Phase 1</span></td>
+              <td class="cell-green">~38%</td>
+              <td>极低 (改配置)</td>
+              <td>vLLM 自部署即实现，或切换 API 模型</td>
+            </tr>
+            <tr>
+              <td><strong>B: 降分辨率</strong></td>
+              <td><span class="badge badge-blue">Phase 2</span></td>
+              <td class="cell-green">50-70%</td>
+              <td>低 (后端预处理)</td>
+              <td>在 DashScopeVisionClient 增加图片缩放</td>
+            </tr>
+            <tr>
+              <td><strong>D: 降帧率</strong></td>
+              <td><span class="badge badge-purple">Phase 1</span></td>
+              <td>按比例</td>
+              <td>极低 (改常量)</td>
+              <td>修改 DEFAULT_FRAME_INTERVAL 即可</td>
+            </tr>
+            <tr>
+              <td><strong>A: VMD 事件驱动</strong></td>
+              <td><span class="badge badge-blue">Phase 2</span></td>
+              <td class="cell-green">50-80%</td>
+              <td>中 (改架构)</td>
+              <td>复用标签识别的 ISAPI 事件模式</td>
+            </tr>
+            <tr>
+              <td><strong>C: 帧差异检测</strong></td>
+              <td><span class="badge badge-green">Phase 3</span></td>
+              <td class="cell-green">70-90%</td>
+              <td>中 (新增 Python 模块)</td>
+              <td>OpenCV 帧对比，边缘设备本地执行</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Camera Distribution -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128247;</span>
+        摄像头用途分布
+      </h2>
+      <p class="section-desc">基于现有系统的 20 台摄像头混合用途</p>
+
+      <div class="card-grid card-grid-3 gap-24">
+        <div class="card metric-card">
+          <div class="metric-icon purple">&#128075;</div>
+          <div class="card-value">10 台</div>
+          <div class="card-label">工位计数</div>
+          <div class="card-desc mt-8" style="text-align:center">连续 3 秒轮询<br><code>useWorkstationCounting.ts</code></div>
+        </div>
+        <div class="card metric-card">
+          <div class="metric-icon green">&#127991;&#65039;</div>
+          <div class="card-value">5 台</div>
+          <div class="card-label">标签识别</div>
+          <div class="card-desc mt-8" style="text-align:center">VMD 事件触发 + 3s cooldown<br><code>IsapiEventSubscriptionService</code></div>
+        </div>
+        <div class="card metric-card">
+          <div class="metric-icon orange">&#128680;</div>
+          <div class="card-value">5 台</div>
+          <div class="card-label">安全监控</div>
+          <div class="card-desc mt-8" style="text-align:center">告警事件触发<br><code>IsapiAlertAnalysisService</code></div>
+        </div>
+      </div>
+
+      <div class="card mt-24">
+        <div class="card-title">各用途每日帧数估算</div>
+        <div class="table-wrapper mt-16" style="border:none;box-shadow:none;">
+          <table>
+            <thead>
+              <tr>
+                <th>用途</th>
+                <th>触发模式</th>
+                <th>帧数/天</th>
+                <th>优化后 (ABE)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>工位计数 (10台)</td>
+                <td>3秒轮询</td>
+                <td>96,000</td>
+                <td class="cell-green">28,800 (VMD 30%)</td>
+              </tr>
+              <tr>
+                <td>标签识别 (5台)</td>
+                <td>VMD 触发</td>
+                <td>~12,000</td>
+                <td>12,000 (已是VMD)</td>
+              </tr>
+              <tr>
+                <td>安全监控 (5台)</td>
+                <td>告警触发</td>
+                <td>~500</td>
+                <td>500 (已是事件)</td>
+              </tr>
+              <tr>
+                <td><strong>合计</strong></td>
+                <td></td>
+                <td><strong>108,500</strong></td>
+                <td class="cell-green"><strong>41,300</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final Recommendation -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#127775;</span>
+        最终推荐总结
+      </h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>场景</th>
+              <th>推荐方案</th>
+              <th>费用</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>立即启动 (1-5 厂)</strong></td>
+              <td>集中部署: 租 1-2&times;4090 云 GPU</td>
+              <td class="cell-highlight">&yen;176-352/月</td>
+              <td>零硬件投入，快速验证</td>
+            </tr>
+            <tr>
+              <td><strong>中期扩展 (5-20 厂)</strong></td>
+              <td>混合: 云 GPU + 边缘 Orin Nano</td>
+              <td class="cell-highlight">&yen;176 + &yen;1,800/新厂</td>
+              <td>新增工厂用边缘，核心厂用集中</td>
+            </tr>
+            <tr>
+              <td><strong>大规模 (20-50 厂)</strong></td>
+              <td>边缘为主: 每厂 Orin Nano</td>
+              <td class="cell-green">一次性 &yen;1,800/厂<br>+ &yen;5/月电费</td>
+              <td>一次性投入后运营费极低</td>
+            </tr>
+            <tr>
+              <td><strong>极致性价比 (API 过渡)</strong></td>
+              <td>SiliconFlow API + B 优化</td>
+              <td>&yen;62-154/厂/月</td>
+              <td>零运维，适合初期验证</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="savings-highlight mt-32">
+        <div class="savings-value">&yen;6,467 &rarr; &yen;176</div>
+        <div class="savings-desc">从无优化 API 方案到自部署 GPU，月费降低 <strong>97%</strong></div>
+      </div>
+
+      <div class="card-grid card-grid-3 mt-32 gap-24">
+        <div class="card card-green" style="text-align:center">
+          <div style="font-size:32px;margin-bottom:8px">&#128640;</div>
+          <div class="card-title">Phase 1 启动成本</div>
+          <div class="card-value mt-8">&yen;176/月</div>
+          <div class="card-desc mt-8">仅改 1 个配置文件</div>
+        </div>
+        <div class="card card-blue" style="text-align:center">
+          <div style="font-size:32px;margin-bottom:8px">&#128260;</div>
+          <div class="card-title">Phase 2 每新增工厂</div>
+          <div class="card-value mt-8">&yen;1,800</div>
+          <div class="card-desc mt-8">一次性 + &yen;5/月电费</div>
+        </div>
+        <div class="card card-accent" style="text-align:center">
+          <div style="font-size:32px;margin-bottom:8px">&#127942;</div>
+          <div class="card-title">50 工厂总运营</div>
+          <div class="card-value mt-8">&yen;426/月</div>
+          <div class="card-desc mt-8">设备投入 &yen;90K (1.2月回本 vs API)</div>
+        </div>
+      </div>
+
+      <div class="callout callout-success mt-32">
+        <span class="callout-icon">&#10003;</span>
+        <div>
+          <strong>关键洞察</strong>: 我们当前通过 API 调用的 <code>qwen2.5-vl-3b-instruct</code> 是完全开源的模型，可以直接自部署到 GPU 云服务器或边缘设备上。vLLM 提供 OpenAI 兼容接口，现有代码<strong>仅需修改一个配置</strong>即可完成迁移。这是从 API 到自部署的无痛切换路径。
+        </div>
+      </div>
+    </section>
+
+    <!-- Notes -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128221;</span>
+        注意事项
+      </h2>
+
+      <div class="card">
+        <ul style="list-style:none;padding:0">
+          <li style="padding:10px 0;border-bottom:1px solid var(--border-light);font-size:13.5px;color:var(--text-secondary)">
+            <strong>1.</strong> 以上费用为理论最大值（每 3 秒必出帧），实际会因网络延迟、处理队列等原因略低
+          </li>
+          <li style="padding:10px 0;border-bottom:1px solid var(--border-light);font-size:13.5px;color:var(--text-secondary)">
+            <strong>2.</strong> 图片 Token 基于像素计算，JPEG 压缩不影响 Token 数
+          </li>
+          <li style="padding:10px 0;border-bottom:1px solid var(--border-light);font-size:13.5px;color:var(--text-secondary)">
+            <strong>3.</strong> 阿里 5 折优惠是否能与 Batch API 50% 叠加需确认
+          </li>
+          <li style="padding:10px 0;border-bottom:1px solid var(--border-light);font-size:13.5px;color:var(--text-secondary)">
+            <strong>4.</strong> 并发处理 20 台摄像头需要考虑 API 的 QPS 限制 (DashScope 默认并发限制)
+          </li>
+          <li style="padding:10px 0;border-bottom:1px solid var(--border-light);font-size:13.5px;color:var(--text-secondary)">
+            <strong>5.</strong> SiliconFlow GLM-4.1V-9B 需要验证在手势识别/标签 OCR 等任务上的效果
+          </li>
+          <li style="padding:10px 0;font-size:13.5px;color:var(--text-secondary)">
+            <strong>6.</strong> 大华摄像头仅支持发现，不支持 ISAPI 事件订阅，VMD 方案仅适用于海康摄像头
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Sources -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128218;</span>
+        参考来源
+      </h2>
+
+      <div class="card">
+        <ul class="source-list">
+          <li><a href="https://www.alibabacloud.com/help/en/model-studio/billing-for-model-studio" target="_blank">阿里云百炼模型定价</a></li>
+          <li><a href="https://help.aliyun.com/zh/model-studio/models" target="_blank">阿里云模型列表</a></li>
+          <li><a href="https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct" target="_blank">Qwen2.5-VL HuggingFace</a></li>
+          <li><a href="https://siliconflow.cn/pricing" target="_blank">硅基流动 SiliconFlow 定价</a></li>
+          <li><a href="https://www.autodl.com" target="_blank">AutoDL 算力云</a></li>
+          <li><a href="https://cloud.luchentech.com" target="_blank">潞晨云 GPU 租用</a></li>
+          <li><a href="https://qwen.readthedocs.io/zh-cn/latest/deployment/vllm.html" target="_blank">vLLM 部署 Qwen 文档</a></li>
+          <li><a href="https://pricepertoken.com/" target="_blank">pricepertoken.com 价格对比</a></li>
+          <li><a href="https://zhuanlan.zhihu.com/p/1898815390710211208" target="_blank">Jetson AGX Orin 部署 Qwen2.5-VL</a></li>
+          <li><a href="https://developer.nvidia.com/blog/getting-started-with-edge-ai-on-nvidia-jetson-llms-vlms-and-foundation-models-for-robotics/" target="_blank">NVIDIA Jetson AI Lab</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>白垩纪食品溯源系统 - 摄像头 AI 费用分析报告</p>
+    <p class="mt-8"><a href="edge-deployment.html">&larr; 边缘部署</a> &middot; <a href="index.html">返回总览 &rarr;</a></p>
+  </footer>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      document.querySelector('.theme-toggle').textContent = next === 'dark' ? '\u2600' : '\u263E';
+    }
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved) {
+        document.documentElement.setAttribute('data-theme', saved);
+      } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+      const theme = document.documentElement.getAttribute('data-theme');
+      const btn = document.querySelector('.theme-toggle');
+      if (btn) btn.textContent = theme === 'dark' ? '\u2600' : '\u263E';
+    })();
+  </script>
+</body>
+</html>

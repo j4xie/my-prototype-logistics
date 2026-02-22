@@ -36,6 +36,7 @@ import { useTranslation } from 'react-i18next';
 import { smartBIApiClient } from '../../services/api/smartbi';
 import { useAuthStore } from '../../store/authStore';
 import { SmartBIStackParamList } from '../../types/smartbi';
+import { formatNumberWithCommas } from '../../utils/formatters';
 
 // Type for MaterialCommunityIcons names
 type MaterialCommunityIconName = keyof typeof MaterialCommunityIcons.glyphMap;
@@ -115,7 +116,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onSuggestionPres
                 ]}
               />
             </View>
-            <Text style={styles.chartValue}>{item.value.toLocaleString()}</Text>
+            <Text style={styles.chartValue}>{formatNumberWithCommas(item.value)}</Text>
           </View>
         ))}
       </View>

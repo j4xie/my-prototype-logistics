@@ -35,6 +35,7 @@ import { useTranslation } from 'react-i18next';
 
 import { smartBIApiClient } from '../../services/api/smartbi';
 import { useAuthStore } from '../../store/authStore';
+import { formatNumberWithCommas, formatCompactNumber } from '../../utils/formatters';
 
 // Type for MaterialCommunityIcons names
 type MaterialCommunityIconName = keyof typeof MaterialCommunityIcons.glyphMap;
@@ -374,13 +375,7 @@ export default function ExecutiveDashboardScreen() {
   }, [loadData]);
 
   const formatCurrency = (value: number): string => {
-    if (value >= 100000000) {
-      return `${(value / 100000000).toFixed(2)}亿`;
-    }
-    if (value >= 10000) {
-      return `${(value / 10000).toFixed(1)}万`;
-    }
-    return value.toLocaleString();
+    return formatCompactNumber(value);
   };
 
   const handleQuickQuestion = (question: QuickQuestion) => {
@@ -488,7 +483,7 @@ export default function ExecutiveDashboardScreen() {
             />
             <KPICard
               title={t('kpi.orders', { defaultValue: '订单数' })}
-              value={(dashboardData.kpi.orders ?? 0).toLocaleString()}
+              value={formatNumberWithCommas(dashboardData.kpi.orders ?? 0)}
               change={dashboardData.kpi.ordersChange ?? 0}
               icon="shopping"
               color={SMARTBI_THEME.info}

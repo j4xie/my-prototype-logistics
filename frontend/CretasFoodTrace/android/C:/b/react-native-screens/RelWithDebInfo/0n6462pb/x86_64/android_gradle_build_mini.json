@@ -1,0 +1,29 @@
+{
+  "buildFiles": [
+    "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-screens/android/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/jietaoxie/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-screens/RelWithDebInfo/0n6462pb/x86_64",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/jietaoxie/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/android/C:/b/react-native-screens/RelWithDebInfo/0n6462pb/x86_64",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "rnscreens::@6890427a1f51a3e7e1df": {
+      "artifactName": "rnscreens",
+      "abi": "x86_64",
+      "output": "/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace/node_modules/react-native-screens/android/build/intermediates/cxx/RelWithDebInfo/0n6462pb/obj/x86_64/librnscreens.so",
+      "runtimeFiles": [
+        "/Users/jietaoxie/.gradle/caches/8.13/transforms/27d85515d0b23c60ca3de769f81a1be3/transformed/react-android-0.79.6-release/prefab/modules/jsi/libs/android.x86_64/libjsi.so"
+      ]
+    }
+  }
+}

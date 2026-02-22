@@ -623,6 +623,7 @@ export function FAHomeScreen() {
   const renderAIInsightModule = (module: HomeModule, index: number) => (
     <ShakingCard key={module.id} isShaking={isEditMode} delay={index * 50} style={{ margin: 16 }}>
       <TouchableOpacity
+        testID="fa-home-ai-card"
         style={styles.aiCard}
         onLongPress={handleLongPressEdit}
         delayLongPress={500}
@@ -639,7 +640,7 @@ export function FAHomeScreen() {
         <View style={styles.aiHeader}>
           <View style={styles.aiTitleRow}>
             <Icon source="robot" size={20} color="#fff" />
-            <Text style={styles.aiTitle}>{t('ai.title', module.name)}</Text>
+            <Text testID="fa-home-ai-title" style={styles.aiTitle}>{t('ai.title', module.name)}</Text>
           </View>
           <View style={[
             styles.aiStatusBadge,
@@ -655,7 +656,7 @@ export function FAHomeScreen() {
 
         {/* AI 指标 - 餐饮模式隐藏工厂 KPI */}
         {!isRestaurantMode && (
-          <View style={styles.aiMetrics}>
+          <View testID="fa-home-ai-metrics" style={styles.aiMetrics}>
             {(!module.config?.metricsToShow || module.config.metricsToShow.includes('qualityRate')) && (
               <>
                 <View style={styles.aiMetricItem}>
@@ -725,7 +726,7 @@ export function FAHomeScreen() {
 
         {/* 标题栏：编辑模式下显示添加按钮 */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t('sections.todayOverview', module.name)}</Text>
+          <Text testID="fa-home-stats-title" style={styles.sectionTitle}>{t('sections.todayOverview', module.name)}</Text>
           {isEditMode && hiddenCards.length > 0 && (
             <TouchableOpacity
               style={styles.addItemBtn}
@@ -751,6 +752,7 @@ export function FAHomeScreen() {
   // 渲染带编辑功能的统计卡片
   const renderStatCardWithEdit = (card: StatCardData, moduleId: string) => (
     <TouchableOpacity
+      testID={`fa-home-stat-${card.id}`}
       key={card.id}
       style={styles.statCard}
       onPress={isEditMode ? undefined : card.onPress}
@@ -770,7 +772,7 @@ export function FAHomeScreen() {
       <View style={[styles.statIconWrapper, { backgroundColor: `${card.color}15` }]}>
         <Icon source={card.icon} size={24} color={card.color} />
       </View>
-      <Text style={[styles.statValue, { color: card.color }]}>
+      <Text testID={`fa-home-stat-${card.id}-value`} style={[styles.statValue, { color: card.color }]}>
         {card.value}
       </Text>
       <Text style={styles.statLabel}>{card.label}</Text>
@@ -931,7 +933,7 @@ export function FAHomeScreen() {
 
         {/* 标题栏：编辑模式下显示添加按钮 */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t('sections.quickActions', module.name)}</Text>
+          <Text testID="fa-home-quick-actions-title" style={styles.sectionTitle}>{t('sections.quickActions', module.name)}</Text>
           {isEditMode && hiddenActions.length > 0 && (
             <TouchableOpacity
               style={styles.addItemBtn}
@@ -1038,7 +1040,7 @@ export function FAHomeScreen() {
   // 加载状态
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView testID="fa-home-root" style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
           <Text style={styles.loadingText}>{t('loading')}</Text>
@@ -1050,7 +1052,7 @@ export function FAHomeScreen() {
   // 错误状态
   if (error && !overviewData && !restaurantSummary) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView testID="fa-home-root" style={styles.container}>
         <View style={styles.loadingContainer}>
           <MaterialCommunityIcons name="cloud-off-outline" size={48} color="#C0C4CC" />
           <Text style={[styles.loadingText, { color: '#606266', marginTop: 12 }]}>{error}</Text>
@@ -1066,7 +1068,7 @@ export function FAHomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView testID="fa-home-root" style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}

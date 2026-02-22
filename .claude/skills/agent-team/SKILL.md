@@ -1,6 +1,6 @@
 ---
 name: agent-team
-description: 编排多角色 Agent Team 深度研究工作流（研究员×2-3并行 → 分析师 → 批评者 → 整合者）。适用于技术调研、方案对比、竞品分析等需要多角度深度研究的任务。使用 /agent-team <研究主题> 触发。
+description: 编排多角色 Agent Team 深度研究工作流（研究员×2-3并行 + 浏览器探索 → 分析师 → 批评者 → 整合者 → 自愈验证）。融合 Playwright Test Agents 的 Planner/Healer 模式。适用于技术调研、方案对比、竞品分析、UI/UX 评估等任务。使用 /agent-team <研究主题> 触发。
 allowed-tools:
   - Bash
   - Read
@@ -9,6 +9,7 @@ allowed-tools:
   - WebSearch
   - WebFetch
   - Write
+  - Task
 ---
 
 # Agent Team — Deep Research Workflow
@@ -45,14 +46,26 @@ When triggered, execute the following phases in order. The argument after `/agen
    - 市场分析: `市场份额`、`market share`、`competitive landscape`
 
    Default: `COMPETITOR_MODE=false`
-6. **Detect fact-check need**: Set `FACT_CHECK=true` when ANY of these conditions hold:
+6. **Detect browser research need**: Set `BROWSER_RESEARCH=true` if topic matches ANY:
+   - 页面/UI 关键词: `页面`、`UI`、`UX`、`界面`、`布局`、`样式`、`responsive`、`design`、`layout`
+   - 实时浏览词: `看看网站`、`打开`、`访问`、`browse`、`explore site`、`check the site`、`看一下页面`
+   - 竞品 UI 对比: `竞品页面`、`competitor UI`、`competitor site`、`看看他们的`、`对方的网站`
+   - 包含 URL: `http://`、`https://`、`localhost`
+   - 项目 Web UI: `web-admin`、`管理后台页面`、`前端页面`
+   - 显式请求: `screenshot`、`截图`、`浏览器`、`browser`
+
+   Default: `BROWSER_RESEARCH=false`
+
+   Pass to ALL agent prompts. When `BROWSER_RESEARCH=true`, add to the announce block:
+   > Browser: ENABLED — browser-explorer agent will interact with live pages
+7. **Detect fact-check need**: Set `FACT_CHECK=true` when ANY of these conditions hold:
    - Topic involves technical specifications, benchmarks, or version numbers
    - Topic involves statistics, dates, or quantitative claims
    - User explicitly requests verification
    - `CODEBASE_GROUNDING=false` (external claims are more likely to be outdated)
 
    Default: `FACT_CHECK=true` in Full mode, `false` in Quick mode.
-7. **Assess complexity** to select mode using these heuristics:
+8. **Assess complexity** to select mode using these heuristics:
    - **Quick mode** (2 agents) — select when ALL of these are true:
      - Topic is a single factual question or explanation ("what is X", "explain Y", "how does Z work")
      - No comparison keywords: `vs`、`对比`、`比较`、`A还是B`、`哪个更好`、`优缺点`、`选择`
@@ -67,20 +80,21 @@ When triggered, execute the following phases in order. The argument after `/agen
      - `CODEBASE_GROUNDING=true`
      → Full 4-phase pipeline as below
    - **When in doubt, choose Full mode** — it's better to over-research than under-research
-8. Break the topic into 2-3 **independent research angles** suitable for parallel investigation
-9. Announce the plan to the user:
+9. Break the topic into 2-3 **independent research angles** suitable for parallel investigation
+10. Announce the plan to the user:
    ```
    ## Agent Team: [topic]
 
    Mode: [Quick/Full] | Language: [Chinese/English]
-   Enhancements: [Competitor profiles: ON/OFF] | [Fact-check: ON/OFF]
+   Enhancements: [Competitor profiles: ON/OFF] | [Fact-check: ON/OFF] | [Browser research: ON/OFF]
 
    Research angles:
    1. [Angle A] — official docs & technical specs
    2. [Angle B] — community experience & real-world usage
    3. [Angle C] — alternatives & competitive landscape  (Full mode only)
+   4. [Angle D] — live browser exploration  (only when BROWSER_RESEARCH=true)
 
-   Phases: Research (parallel) → Analysis → Critique → Integration [→ Fact-Check]
+   Phases: Research (parallel) [+ Browser] → Analysis → Critique → Integration [→ Fact-Check] [→ Heal]
    ```
 
 ---
@@ -136,10 +150,60 @@ MANDATORY additional steps:
 CRITICAL: Your FINAL message must be your complete structured output (starting with "## Researcher Output"). Do NOT end with a question or status update. The LAST thing you write must be the full formatted report.
 ```
 
-**After Phase 1, output progress to the user:**
-> Research complete — N researchers collected M findings from X sources.
+#### Phase 1B: Browser Explorer (parallel with researchers) — when BROWSER_RESEARCH=true
 
-**Output validation**: If any researcher's Task result does NOT contain "## Researcher Output", resume that agent once with feedback: "Your output is missing the required '## Researcher Output' header. Please output your complete structured report now." If the second attempt also lacks the marker, extract any partial findings from the response, prefix with `[PARTIAL — incomplete output]`, and pass downstream. Do NOT discard partial data silently.
+Launch an **additional** Task call **in parallel** with the researchers, using `subagent_type: "general-purpose"` and `model: "sonnet"`:
+
+**Prompt template:**
+```
+You are acting as a Browser Explorer agent. Read .claude/agents/browser-explorer.md for your full role definition and output format.
+
+Research topic: [TOPIC]
+Output language: [OUTPUT_LANGUAGE] — write your ENTIRE output in this language.
+
+Target URLs to explore:
+[LIST URLs FROM TOPIC — e.g., competitor URLs, project URLs like http://47.100.235.168:8088, or localhost URLs]
+
+Instructions:
+1. Navigate to each target URL
+2. Use browser_snapshot to understand page structure (prefer over screenshots)
+3. Interact with key UI elements (click, navigate, fill forms if needed)
+4. Take screenshots ONLY for key visual evidence
+5. Extract any structured data (pricing, feature tables, etc.)
+6. Output in the exact format specified in browser-explorer.md
+
+[ONLY include when exploring our own project]
+Project exploration mode: ENABLED.
+Login credentials (if needed): username=[from CLAUDE.md test accounts], password=[from CLAUDE.md]
+After login, systematically explore the main navigation sections.
+Cross-reference what you see with local source files using Read/Grep.
+[End conditional block]
+
+CRITICAL: Your FINAL message must be your complete structured output (starting with "## Browser Explorer Output"). Do NOT end with a question. Always call browser_close when done.
+```
+
+Set `max_turns: 10` (browser interaction needs more turns).
+
+**Browser findings integration**: Compress browser explorer output and include it alongside researcher outputs when passing to the Analyst:
+```
+=== BROWSER EXPLORER (condensed) ===
+1. [🖼️] Finding summary — URL: ...
+2. [📝] Finding summary — URL: ...
+...
+```
+
+**After Phase 1, output progress to the user:**
+> Research complete — N researchers collected M findings from X sources. [+ Browser explorer visited N pages.] (if BROWSER_RESEARCH)
+
+**Output validation** (Healer-inspired — applies to ALL agents in Phase 1):
+For each agent (researchers + browser explorer), apply this validation loop:
+1. Check if output contains the expected format marker (`## Researcher Output` or `## Browser Explorer Output`)
+2. If missing: resume that agent once with specific feedback about what's missing
+3. If second attempt also fails: extract any partial findings, prefix with `[PARTIAL — incomplete output]`
+4. **Content validation** (new — inspired by Playwright Healer): beyond header check, verify:
+   - Key Findings table has at least 2 rows (not just headers)
+   - Source URLs or file paths are present (not placeholder text)
+   - If both checks fail after resume, mark as `[EMPTY — no usable data]` and note the gap for the Analyst
 
 ---
 
@@ -384,7 +448,7 @@ Set `max_turns: 8` (needs multiple WebSearch rounds).
 
 ### Phase 5: Present Results (You — the Manager)
 
-After all agents complete:
+After all agents complete, **first run Phase 5.5 (Self-Healing Validation)** below, then:
 
 1. Present the **Executive Summary** to the user first
 2. Then the full integrated report (from Integrator in Full mode, or your own synthesis in Quick mode)
@@ -394,10 +458,12 @@ After all agents complete:
    ### Process Note
    - Mode: Quick/Full
    - Researchers deployed: N
+   - Browser explorer: ON/OFF [N pages visited] (if applicable)
    - Total sources found: N
    - Key disagreements: N resolved, N unresolved
-   - Phases completed: Research → Analysis → Critique → Integration [→ Fact-Check]
+   - Phases completed: Research [+ Browser] → Analysis → Critique → Integration [→ Fact-Check] [→ Heal]
    - Fact-check: N claims verified, M issues found (if applicable, or "disabled" for Quick mode)
+   - Healer: N checks passed, M auto-fixed (or "all passed ✅")
    - Competitor profiles: N competitors analyzed (if applicable, or "N/A")
    ```
 4. **Save the full report** using the Write tool to:
@@ -406,6 +472,45 @@ After all agents complete:
    This allows the user to review results later across sessions.
 5. Inform the user: "Report saved to `.claude/agent-team-outputs/[filename]`"
 6. Ask: "Would you like me to dive deeper into any section, or run additional research on specific points?"
+
+---
+
+### Phase 5.5: Self-Healing Validation (Healer pattern) — All modes
+
+**Design inspiration**: Playwright Test Agents' Healer — run → detect failure → diagnose → fix → re-run → repeat until success.
+
+After all phases complete but BEFORE presenting results, the Manager performs a self-healing validation pass on the assembled report:
+
+**Validation checklist:**
+
+| Check | What to Verify | Auto-Heal Action |
+|-------|---------------|-----------------|
+| Structural completeness | All expected sections present (Executive Summary, Comparison Matrix, Recommendations, etc.) | If missing, synthesize from available data |
+| Cross-reference integrity | Analyst cites Researcher finding numbers that actually exist | Remove dangling references, note corrections |
+| Confidence consistency | Integrator's confidence doesn't contradict Critic's revised confidence without explanation | Add reconciliation note if mismatch detected |
+| Actionable recommendations | Each recommendation has a concrete next step (not vague platitudes) | Flag vague items with `[需具体化]` |
+| Browser evidence integration | If BROWSER_RESEARCH=true, browser findings appear in the analysis (not silently dropped) | Insert browser evidence into relevant sections |
+
+**Healing loop** (max 1 iteration to avoid runaway):
+
+1. Run all checks above against the assembled report
+2. If any check fails:
+   - Log which checks failed
+   - Apply auto-heal actions inline
+   - Add a `### Healer Notes` section at the bottom documenting what was fixed:
+     ```markdown
+     ### Healer Notes
+     - [Fixed] Missing comparison matrix — synthesized from Researcher findings
+     - [Fixed] Recommendation #3 was vague — added specific file paths
+     - [Passed] All other checks OK
+     ```
+3. If all checks pass: add `### Healer Notes: All checks passed ✅` and proceed to present
+
+**When NOT to heal** (important guardrails):
+- Do NOT change agent conclusions or confidence levels — only fix structural/formatting issues
+- Do NOT add new research findings — only reference what agents actually provided
+- Do NOT re-run agent phases — the healer works on the assembled output only
+- If the report is fundamentally incomplete (e.g., all agents returned `[EMPTY]`), skip healing and present what's available with a clear disclaimer
 
 ---
 
@@ -422,5 +527,19 @@ After all agents complete:
 - For technical comparison topics, angles could be: (A) official docs, (B) benchmarks/performance, (C) developer experience/community
 - For strategic decisions, angles could be: (A) technical feasibility, (B) cost/effort analysis, (C) market trends/competition
 - For debugging/investigation, angles could be: (A) error patterns, (B) similar issues in community, (C) code analysis
+- For UI/UX research with browser: (A) our current UI (browser exploration), (B) competitor UI patterns (browser + web search), (C) best practices (web search)
 - Quick mode is ideal for: "what is MCP", "explain WebSockets", "how does X work"
 - Full mode is ideal for: "React Native vs Flutter", "compare database options", "should we migrate to X"
+- Browser mode is ideal for: "看看竞品的页面", "检查我们的 web-admin UI", "compare UI of X vs Y sites"
+
+## Design Philosophy
+
+This skill incorporates patterns from **Playwright Test Agents** (v1.56+):
+
+| Playwright Pattern | Agent-Team Adaptation | Benefit |
+|-------------------|----------------------|---------|
+| **Planner** — explore app, generate spec | Phase 0 Planning + Phase 1B Browser Explorer | Structured discovery from live sources |
+| **Generator** — spec → executable test | Phase 2-4 pipeline (findings → analysis → report) | Systematic transformation of raw data to insights |
+| **Healer** — run → diagnose → fix → retry | Phase 5.5 Self-Healing Validation | Auto-fix structural issues, ensure report quality |
+
+The Healer pattern is the most impactful addition: instead of just checking for format markers and giving up, the system now performs content validation and auto-repairs structural issues before presenting to the user.

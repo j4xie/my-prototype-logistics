@@ -1,0 +1,7 @@
+appId: com.cretas.foodtrace
+---
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "landing-login-btn"
+    timeout: 120000

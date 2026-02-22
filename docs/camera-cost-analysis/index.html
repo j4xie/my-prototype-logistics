@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>摄像头 AI 处理 - 费用分析总览 | 白垩纪食品溯源</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-brand">
+        <span class="logo-icon">C</span>
+        <span>摄像头 AI 费用分析</span>
+      </a>
+      <button class="nav-mobile-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle menu">&#9776;</button>
+      <ul class="nav-links">
+        <li><a href="index.html" class="active">总览</a></li>
+        <li><a href="cloud-deployment.html">集中部署</a></li>
+        <li><a href="edge-deployment.html">边缘部署</a></li>
+        <li><a href="hybrid-deployment.html">混合部署</a></li>
+        <li><button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">&#9790;</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>摄像头实时 AI 处理<br>Token 消耗与费用分析</h1>
+    <p class="subtitle">20 台摄像头 / 8 小时工作日 / 3 秒帧间隔 - 完整成本评估与优化方案</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="value">192,000</span>
+        <span class="label">每日总帧数</span>
+      </div>
+      <div class="hero-stat">
+        <span class="value">~399M</span>
+        <span class="label">每日 Token (720p)</span>
+      </div>
+      <div class="hero-stat">
+        <span class="value">86%</span>
+        <span class="label">最大可节省</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+
+    <!-- Key Parameters -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#9881;</span>
+        系统参数概要
+      </h2>
+      <p class="section-desc">基于当前白垩纪食品溯源系统的摄像头 AI 分析架构</p>
+
+      <div class="card-grid card-grid-4">
+        <div class="card metric-card animate-in">
+          <div class="metric-icon purple">&#128247;</div>
+          <div class="card-value">20</div>
+          <div class="card-label">摄像头数量</div>
+        </div>
+        <div class="card metric-card animate-in">
+          <div class="metric-icon green">&#9201;</div>
+          <div class="card-value">3s</div>
+          <div class="card-label">帧捕获间隔</div>
+        </div>
+        <div class="card metric-card animate-in">
+          <div class="metric-icon orange">&#128338;</div>
+          <div class="card-value">8h</div>
+          <div class="card-label">每日工作时长</div>
+        </div>
+        <div class="card metric-card animate-in">
+          <div class="metric-icon blue">&#129302;</div>
+          <div class="card-value">3B</div>
+          <div class="card-label">当前模型参数</div>
+        </div>
+      </div>
+
+      <div class="mt-24">
+        <div class="card">
+          <div class="card-title">当前模型配置</div>
+          <div class="table-wrapper mt-16" style="border:none;box-shadow:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>分析类型</th>
+                  <th>最大输出 Token</th>
+                  <th>Temperature</th>
+                  <th>用途</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>手势/完工识别</td><td>800</td><td>0.2</td><td>判断工人是否完成产品处理</td></tr>
+                <tr><td>摄像头告警分析</td><td>1,500</td><td>0.3</td><td>安全/卫生威胁评估</td></tr>
+                <tr><td>标签识别</td><td>1,000</td><td>0.2</td><td>批次号/条码 OCR</td></tr>
+                <tr><td>电子秤识别</td><td>1,000</td><td>0.3</td><td>设备信息提取</td></tr>
+                <tr><td>通用图像分析</td><td>2,000</td><td>0.3</td><td>其他</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Daily Frame Calculation -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128200;</span>
+        每日帧数与 Token 计算
+      </h2>
+
+      <div class="formula">
+        每台摄像头每天帧数 = 8h &times; 3,600s/h &divide; 3s/帧 = <span class="result">9,600 帧</span><br>
+        20 台摄像头总帧数 = 20 &times; 9,600 = <span class="result">192,000 帧/天</span>
+      </div>
+
+      <div class="card-grid card-grid-2 mt-24">
+        <div class="card">
+          <div class="card-title">图片 Token 计算规则 (Qwen VL)</div>
+          <div class="card-desc mt-8">Qwen VL 系列: 每 28&times;28 像素 = 1 个 Token。JPEG 压缩不影响像素数，只影响文件大小。</div>
+          <div class="table-wrapper mt-16" style="border:none;box-shadow:none;">
+            <table>
+              <thead>
+                <tr><th>分辨率</th><th>总像素</th><th>图片 Token</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>720p (1280&times;720)</td><td>921,600</td><td class="cell-highlight">1,176</td></tr>
+                <tr><td>1080p (1920&times;1080)</td><td>2,073,600</td><td class="cell-highlight">2,645</td></tr>
+                <tr><td>480p (640&times;480)</td><td>307,200</td><td class="cell-highlight">392</td></tr>
+                <tr><td>ROI 裁剪 (640&times;640)</td><td>409,600</td><td class="cell-highlight">523</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">每次请求 Token 消耗</div>
+          <div class="card-desc mt-8">包含图片输入 + 文本 Prompt + 模型输出</div>
+          <div class="table-wrapper mt-16" style="border:none;box-shadow:none;">
+            <table>
+              <thead>
+                <tr><th>组成部分</th><th>720p</th><th>1080p</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>图片输入 Token</td><td>1,176</td><td>2,645</td></tr>
+                <tr><td>文本 Prompt Token</td><td>~500</td><td>~500</td></tr>
+                <tr><td><strong>总输入 Token</strong></td><td class="cell-highlight">~1,676</td><td class="cell-highlight">~3,145</td></tr>
+                <tr><td>输出 Token (平均)</td><td>~400</td><td>~400</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cost Overview -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128176;</span>
+        费用概览
+      </h2>
+      <p class="section-desc">不同模型与分辨率下的每日/每月费用对比</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>场景</th>
+              <th>模型</th>
+              <th>分辨率</th>
+              <th>每日 Token</th>
+              <th>每日原价 (&yen;)</th>
+              <th>5折/天 (&yen;)</th>
+              <th>5折/月 (&yen;)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>基础方案</td>
+              <td>qwen2.5-vl-3b</td>
+              <td>720p</td>
+              <td>~399M</td>
+              <td>~688</td>
+              <td class="cell-orange">~344</td>
+              <td class="cell-red">~7,568</td>
+            </tr>
+            <tr>
+              <td>基础方案</td>
+              <td>qwen2.5-vl-3b</td>
+              <td>1080p</td>
+              <td>~681M</td>
+              <td>~1,038</td>
+              <td class="cell-red">~519</td>
+              <td class="cell-red">~11,418</td>
+            </tr>
+            <tr>
+              <td>经济方案</td>
+              <td>qwen-vl-plus</td>
+              <td>720p</td>
+              <td>~399M</td>
+              <td>~426</td>
+              <td class="cell-orange">~213</td>
+              <td class="cell-orange">~4,686</td>
+            </tr>
+            <tr>
+              <td>高端方案</td>
+              <td>qwen-vl-max</td>
+              <td>720p</td>
+              <td>~399M</td>
+              <td>~974</td>
+              <td class="cell-red">~487</td>
+              <td class="cell-red">~10,714</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-warning mt-24">
+        <span class="callout-icon">&#9888;&#65039;</span>
+        <div>以上为理论最大值（每 3 秒必出帧），实际会因网络延迟、处理队列等原因略低。当前系统为按需触发模式，切换为持续实时流会是架构上的重大变更。</div>
+      </div>
+    </section>
+
+    <!-- Optimization Strategies -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#9889;</span>
+        五大优化方案
+      </h2>
+      <p class="section-desc">从架构改造到简单配置调整，多种手段降低 AI 处理成本</p>
+
+      <div class="card-grid card-grid-2 gap-24">
+        <div class="card card-green animate-in">
+          <div class="flex items-center gap-8 mb-8">
+            <span class="badge badge-green">推荐</span>
+            <div class="card-title">方案 A: 事件驱动架构</div>
+          </div>
+          <div class="card-desc">将 3 秒定时轮询切换为 VMD 事件驱动，仅在画面有运动时分析。已有 ISAPI 事件订阅基础设施。</div>
+          <div class="mt-16" style="font-size:13px">
+            <strong style="color:var(--green)">节省 50-80%</strong> - 有效帧占比 20-40%
+          </div>
+        </div>
+
+        <div class="card card-blue animate-in">
+          <div class="card-title mb-8">方案 B: 降低分辨率 + ROI 裁剪</div>
+          <div class="card-desc">不需要全画面分析，只裁剪关注区域。从 1080p 降至 480p 可节省 85% 图片 Token。</div>
+          <div class="mt-16" style="font-size:13px">
+            <strong style="color:var(--blue)">节省 50-70%</strong> - 仅影响图片 Token
+          </div>
+        </div>
+
+        <div class="card card-orange animate-in">
+          <div class="card-title mb-8">方案 C: 帧差异检测 (Python)</div>
+          <div class="card-desc">在 Python 服务端做 OpenCV 帧对比 (~1ms/帧)，仅画面变化显著时调用 VL。空闲时段帧数趋近于 0。</div>
+          <div class="mt-16" style="font-size:13px">
+            <strong style="color:var(--orange)">节省 70-90%</strong> - 无额外 Token 费用
+          </div>
+        </div>
+
+        <div class="card animate-in">
+          <div class="card-title mb-8">方案 D: 降低帧率</div>
+          <div class="card-desc">最简单的优化 - 将帧间隔从 3 秒调整为 10 秒或 30 秒。30 秒间隔下 5 折费用仅 &yen;17/天。</div>
+          <div class="mt-16" style="font-size:13px">
+            <strong>按比例节省</strong> - 3s &rarr; 10s 节省 70%
+          </div>
+        </div>
+
+        <div class="card animate-in" style="grid-column: span 2;">
+          <div class="card-title mb-8">方案 E: 模型降级 + Batch API</div>
+          <div class="card-desc">切换至 qwen-vl-plus（比 3b 便宜 ~38%）或使用第三方平台（SiliconFlow GLM-4.1V-9B 仅 &yen;0.25/M 输入 Token）。非实时场景可使用 Batch API 获得额外 50% 折扣。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Combined Optimization Results -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#127942;</span>
+        组合优化效果
+      </h2>
+      <p class="section-desc">基于现有摄像头分布（10 台工位计数 + 5 台标签识别 + 5 台安全监控）的三种场景</p>
+
+      <div class="savings-highlight mb-32">
+        <div class="savings-value">&yen;36.5/天</div>
+        <div class="savings-desc">全部优化 (A+B+E) 后，5 折日费用仅需 &yen;36.5，月费 &yen;803 &mdash; 比无优化方案降低 <strong>88%</strong></div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>场景</th>
+              <th>每日帧数</th>
+              <th>每日 Token</th>
+              <th>每日原价 (&yen;)</th>
+              <th>5折/天 (&yen;)</th>
+              <th>5折/月 (&yen;)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1. 现有系统直跑 (3b, 1080p)</td>
+              <td>108,500</td>
+              <td>384.6M</td>
+              <td>&yen;587.9</td>
+              <td class="cell-red">&yen;294.0</td>
+              <td class="cell-red">&yen;6,467</td>
+            </tr>
+            <tr>
+              <td>2. 降分辨率+换模型 (B+E)</td>
+              <td>108,500</td>
+              <td>150.0M</td>
+              <td>&yen;178.3</td>
+              <td class="cell-orange">&yen;89.2</td>
+              <td class="cell-orange">&yen;1,962</td>
+            </tr>
+            <tr>
+              <td><strong>3. 全部优化 (A+B+E)</strong></td>
+              <td>41,300</td>
+              <td>63.2M</td>
+              <td>&yen;73.0</td>
+              <td class="cell-green">&yen;36.5</td>
+              <td class="cell-green">&yen;803</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-info mt-24">
+        <span class="callout-icon">&#128161;</span>
+        <div>场景 2 不需要改架构（改动最小），仅需降低分辨率和切换模型。场景 3 需要将工位计数从轮询改为 VMD 事件驱动，但已有标签识别的成熟实现可复制。</div>
+      </div>
+
+      <!-- Comparison bars -->
+      <div class="card mt-24" style="padding: 28px">
+        <div class="card-title mb-24">月费对比（5 折）</div>
+        <div class="comparison-bar">
+          <div class="bar-label"><span class="bar-name">场景 1: 无优化</span><span class="bar-value">&yen;6,467/月</span></div>
+          <div class="bar-track"><div class="bar-fill red" style="width:100%"></div></div>
+        </div>
+        <div class="comparison-bar">
+          <div class="bar-label"><span class="bar-name">场景 2: B+E 优化</span><span class="bar-value">&yen;1,962/月</span></div>
+          <div class="bar-track"><div class="bar-fill orange" style="width:30.3%"></div></div>
+        </div>
+        <div class="comparison-bar">
+          <div class="bar-label"><span class="bar-name">场景 3: A+B+E 全优化</span><span class="bar-value">&yen;803/月</span></div>
+          <div class="bar-track"><div class="bar-fill green" style="width:12.4%"></div></div>
+        </div>
+        <div class="comparison-bar">
+          <div class="bar-label"><span class="bar-name">自部署 GPU (仅工时)</span><span class="bar-value">&yen;176/月</span></div>
+          <div class="bar-track"><div class="bar-fill purple" style="width:2.7%"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Three Deployment Modes -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128640;</span>
+        三种部署模式
+      </h2>
+      <p class="section-desc">集中部署、边缘部署、混合部署 - 不同阶段的最优选择</p>
+
+      <div class="card-grid card-grid-3 gap-24">
+        <a href="cloud-deployment.html" class="card link-card animate-in" style="flex-direction:column;text-align:center;padding:32px 24px">
+          <div class="link-icon purple" style="margin:0 auto 16px;width:56px;height:56px;font-size:26px">&#9729;&#65039;</div>
+          <div class="link-text" style="text-align:center">
+            <h3>集中部署</h3>
+            <p class="mt-8" style="font-size:13px;color:var(--text-secondary)">所有工厂数据发送至中心 GPU 服务器处理</p>
+            <p class="mt-8"><span class="badge badge-purple">&yen;176/月起</span></p>
+          </div>
+        </a>
+
+        <a href="edge-deployment.html" class="card link-card animate-in" style="flex-direction:column;text-align:center;padding:32px 24px">
+          <div class="link-icon green" style="margin:0 auto 16px;width:56px;height:56px;font-size:26px">&#128421;</div>
+          <div class="link-text" style="text-align:center">
+            <h3>边缘部署</h3>
+            <p class="mt-8" style="font-size:13px;color:var(--text-secondary)">每个工厂部署边缘 GPU 设备本地处理</p>
+            <p class="mt-8"><span class="badge badge-green">&yen;1,800 一次性</span></p>
+          </div>
+        </a>
+
+        <a href="hybrid-deployment.html" class="card link-card animate-in" style="flex-direction:column;text-align:center;padding:32px 24px;border-color:var(--accent)">
+          <div class="link-icon blue" style="margin:0 auto 16px;width:56px;height:56px;font-size:26px">&#128260;</div>
+          <div class="link-text" style="text-align:center">
+            <h3>混合部署 <span class="badge badge-blue" style="font-size:10px">推荐</span></h3>
+            <p class="mt-8" style="font-size:13px;color:var(--text-secondary)">结合两种模式优势，分阶段渐进式部署</p>
+            <p class="mt-8"><span class="badge badge-blue">灵活扩展</span></p>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Implementation Roadmap -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128197;</span>
+        实施路线图
+      </h2>
+      <p class="section-desc">从快速启动到大规模部署的三阶段演进</p>
+
+      <div class="timeline">
+        <div class="timeline-item active">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-title">Phase 1: 快速启动</div>
+            <div class="timeline-meta">1-5 个工厂</div>
+            <div class="timeline-desc">
+              <strong>集中部署</strong>: 租用 1-2 张 4090 云 GPU (潞晨云)。代码改动仅需修改 <code>DashScopeConfig.java</code> 的 <code>baseUrl</code>，vLLM 提供 OpenAI 兼容 API，现有请求格式无需任何修改。
+              <div class="mt-8"><span class="badge badge-purple">&yen;176-352/月</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-title">Phase 2: 混合扩展</div>
+            <div class="timeline-meta">5-20 个工厂</div>
+            <div class="timeline-desc">
+              核心工厂继续使用集中 GPU 处理，新增工厂采购 Jetson Orin Nano Super 边缘设备。同时实施 B+E 优化（降分辨率 + 换模型）。
+              <div class="mt-8"><span class="badge badge-green">&yen;1,800/新工厂 (一次性)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-title">Phase 3: 边缘为主</div>
+            <div class="timeline-meta">20+ 个工厂</div>
+            <div class="timeline-desc">
+              大部分工厂使用边缘设备本地处理，少量复杂场景集中处理。通过 OTA 统一推送模型更新。50 个工厂一次性投入仅 &yen;90,000，月电费 &yen;250。
+              <div class="mt-8"><span class="badge badge-green">一次性 &yen;1,800/厂 + &yen;5/月电费</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final Recommendation -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#127775;</span>
+        最终推荐总结
+      </h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>场景</th>
+              <th>推荐方案</th>
+              <th>费用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>立即启动 (1-5 厂)</strong></td>
+              <td>集中部署: 租 1-2&times;4090 云 GPU</td>
+              <td class="cell-highlight">&yen;176-352/月</td>
+            </tr>
+            <tr>
+              <td><strong>中期扩展 (5-20 厂)</strong></td>
+              <td>混合: 云 GPU + 边缘 Orin Nano</td>
+              <td class="cell-highlight">&yen;176 + &yen;1,800/新厂</td>
+            </tr>
+            <tr>
+              <td><strong>大规模 (20-50 厂)</strong></td>
+              <td>边缘为主: 每厂 Orin Nano</td>
+              <td class="cell-green">一次性 &yen;1,800/厂 + &yen;5/月电费</td>
+            </tr>
+            <tr>
+              <td><strong>极致性价比 (API 过渡)</strong></td>
+              <td>SiliconFlow API + B 优化</td>
+              <td class="cell-highlight">&yen;62-154/厂/月</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-success mt-24">
+        <span class="callout-icon">&#10003;</span>
+        <div><strong>关键发现</strong>: 当前通过 API 调用的 <code>qwen2.5-vl-3b-instruct</code> 是开源模型，可以直接自部署。仅需 ~8GB 显存，单张 RTX 4090 (24GB) 绰绰有余。自部署是碾压级优势，约 2 个月即可回本。</div>
+      </div>
+    </section>
+
+    <!-- Third-Party Models -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128178;</span>
+        第三方模型定价对比
+      </h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>模型</th>
+              <th>平台</th>
+              <th>输入 (&yen;/M tokens)</th>
+              <th>输出 (&yen;/M tokens)</th>
+              <th>备注</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>qwen2.5-vl-3b-instruct</td>
+              <td>阿里云百炼</td>
+              <td>&yen;1.25</td>
+              <td>&yen;3.72</td>
+              <td>当前使用</td>
+            </tr>
+            <tr>
+              <td>qwen-vl-plus</td>
+              <td>阿里云百炼</td>
+              <td>&yen;0.83</td>
+              <td>&yen;2.07</td>
+              <td>经济选择</td>
+            </tr>
+            <tr>
+              <td>qwen-vl-max</td>
+              <td>阿里云百炼</td>
+              <td>&yen;1.66</td>
+              <td>&yen;4.13</td>
+              <td>高端选择</td>
+            </tr>
+            <tr>
+              <td><strong>GLM-4.1V-9B (Free)</strong></td>
+              <td>SiliconFlow</td>
+              <td class="cell-green">免费</td>
+              <td class="cell-green">免费</td>
+              <td>有速率限制</td>
+            </tr>
+            <tr>
+              <td><strong>GLM-4.1V-9B (Pro)</strong></td>
+              <td>SiliconFlow</td>
+              <td class="cell-green">&yen;0.25</td>
+              <td class="cell-green">&yen;1.00</td>
+              <td>极致性价比</td>
+            </tr>
+            <tr>
+              <td>Qwen3-VL-8B</td>
+              <td>SiliconFlow</td>
+              <td>&yen;0.50</td>
+              <td>&yen;2.00</td>
+              <td>新一代 Qwen VL</td>
+            </tr>
+            <tr>
+              <td>DeepSeek-VL2</td>
+              <td>SiliconFlow</td>
+              <td>&yen;0.99</td>
+              <td>&yen;0.99</td>
+              <td>输出便宜</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Sources -->
+    <section class="section">
+      <h2 class="section-title">
+        <span class="icon">&#128218;</span>
+        参考来源
+      </h2>
+
+      <div class="card">
+        <ul class="source-list">
+          <li><a href="https://www.alibabacloud.com/help/en/model-studio/billing-for-model-studio" target="_blank">阿里云百炼模型定价</a></li>
+          <li><a href="https://help.aliyun.com/zh/model-studio/models" target="_blank">阿里云模型列表</a></li>
+          <li><a href="https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct" target="_blank">Qwen2.5-VL HuggingFace</a></li>
+          <li><a href="https://siliconflow.cn/pricing" target="_blank">硅基流动 SiliconFlow 定价</a></li>
+          <li><a href="https://www.autodl.com" target="_blank">AutoDL 算力云</a></li>
+          <li><a href="https://cloud.luchentech.com" target="_blank">潞晨云 GPU 租用</a></li>
+          <li><a href="https://qwen.readthedocs.io/zh-cn/latest/deployment/vllm.html" target="_blank">vLLM 部署 Qwen 文档</a></li>
+          <li><a href="https://pricepertoken.com/" target="_blank">pricepertoken.com 价格对比</a></li>
+          <li><a href="https://zhuanlan.zhihu.com/p/1898815390710211208" target="_blank">Jetson AGX Orin 部署 Qwen2.5-VL</a></li>
+          <li><a href="https://developer.nvidia.com/blog/getting-started-with-edge-ai-on-nvidia-jetson-llms-vlms-and-foundation-models-for-robotics/" target="_blank">NVIDIA Jetson AI Lab</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>白垩纪食品溯源系统 - 摄像头 AI 费用分析报告</p>
+    <p class="mt-8">Generated 2026-02</p>
+  </footer>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      document.querySelector('.theme-toggle').textContent = next === 'dark' ? '\u2600' : '\u263E';
+    }
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved) {
+        document.documentElement.setAttribute('data-theme', saved);
+      } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+      const theme = document.documentElement.getAttribute('data-theme');
+      const btn = document.querySelector('.theme-toggle');
+      if (btn) btn.textContent = theme === 'dark' ? '\u2600' : '\u263E';
+    })();
+  </script>
+</body>
+</html>

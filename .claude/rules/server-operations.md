@@ -61,6 +61,20 @@ ssh root@47.100.235.168 "tail -100 /www/wwwroot/cretas/code/backend/python/pytho
 
 ---
 
+## 部署规范
+
+**部署必须使用项目内的部署脚本，禁止手动 rsync/ssh 拼命令：**
+
+| 部署目标 | 脚本 | 说明 |
+|----------|------|------|
+| Java 后端 | `./deploy-backend.sh` | Maven 打包 → 并行上传 → 备份 → 部署 → 健康检查 |
+| Python 服务 | `./deploy-smartbi-python.sh` | rsync 增量同步 → 安装依赖 → 重启 → 健康检查 |
+| 全栈部署 | 使用 `/deploy-backend` skill | 根据指令自动选择部署范围 |
+
+详见 `.claude/skills/deploy-backend/SKILL.md`。
+
+---
+
 ## 注意事项
 
 1. **不要直接删除** `/www/wwwroot` 下的目录，先确认内容
@@ -68,3 +82,4 @@ ssh root@47.100.235.168 "tail -100 /www/wwwroot/cretas/code/backend/python/pytho
 3. **日志文件**在 `logs/` 目录，会持续增长，需定期清理
 4. **数据库**: 已迁移到 PostgreSQL，不再使用 MySQL
 5. **旧服务器**: 后端已停用，仅保留 Nginx 反代到新服务器
+6. **文件传输使用 `rsync`，不用 `scp`** — rsync 支持增量传输、断点续传，效率更高
