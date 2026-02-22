@@ -79,7 +79,7 @@ export function useSmartBICrossSheet(deps: {
         const config = chart.config;
         if (!config) continue;
 
-        const options = deps.resolveEChartsOptions(config);
+        const options = deps.resolveEChartsOptions(JSON.parse(JSON.stringify(config)));
         if (options) {
           let instance = echarts.getInstanceByDom(dom);
           if (!instance) instance = echarts.init(dom, 'cretas');

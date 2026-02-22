@@ -2514,7 +2514,10 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
     // Get all charts for cross-chart hover interactions
     const charts = getSheetCharts(activeSheet);
 
-    let echartsOptions = resolveEChartsOptions(config);
+    // Deep-copy config before resolving so enhanceChartOption does NOT mutate
+    // the original chart.config (whose series names must stay as raw column names
+    // for extractYFieldsFromConfig → buildChart round-trips).
+    let echartsOptions = resolveEChartsOptions(JSON.parse(JSON.stringify(config)));
     if (!echartsOptions) return;
 
     // Process __ANIM__/__FMT__ named references from Python
