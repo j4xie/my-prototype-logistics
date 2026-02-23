@@ -86,6 +86,10 @@ _archived/
 # APK 文件（太大，使用 Git LFS 或单独管理）
 *.apk
 
+# Android CMake 构建缓存（buildStagingDirectory 产物）
+frontend/CretasFoodTrace/android/C:/
+frontend/CretasFoodTrace/android/.cxx/
+
 # 截图和PNG文件
 *.png
 screenshots/
