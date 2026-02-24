@@ -4869,6 +4869,46 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("销售额统计", "SALES_STATS");
         phraseToIntentMapping.put("销售统计", "SALES_STATS");
 
+        // v30d: 操作型短语 — 防止 FOOD_KNOWLEDGE_QUERY 截获包含食品词的操作查询
+        // 工序/进度/人员查询
+        phraseToIntentMapping.put("加工进度", "QUERY_PROCESSING_STEP");
+        phraseToIntentMapping.put("工序的操作员", "PROCESSING_BATCH_WORKERS");
+        phraseToIntentMapping.put("批次主管", "QUERY_PROCESSING_BATCH_SUPERVISOR");
+        phraseToIntentMapping.put("运输走哪条线", "QUERY_TRANSPORT_LINE");
+        phraseToIntentMapping.put("控制点数据", "CCP_MONITOR_DATA_DETECTION");
+        phraseToIntentMapping.put("质检通过", "QUALITY_BATCH_MARK_AS_INSPECTED");
+        // 催发/加急发货
+        phraseToIntentMapping.put("客户催货", "SHIPMENT_EXPEDITE");
+        phraseToIntentMapping.put("加急发货", "SHIPMENT_EXPEDITE");
+        phraseToIntentMapping.put("优先发货", "SHIPMENT_EXPEDITE");
+        phraseToIntentMapping.put("赶紧发货", "SHIPMENT_EXPEDITE");
+        // 任务分配
+        phraseToIntentMapping.put("负责今天", "TASK_ASSIGN_BY_NAME");
+        // 通知推送
+        phraseToIntentMapping.put("推送告警", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("微信通知", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("通知供应商", "NOTIFICATION_SEND_WECHAT");
+        // MRP 物料需求
+        phraseToIntentMapping.put("原材料用量", "MRP_CALCULATION");
+        phraseToIntentMapping.put("计算原材料", "MRP_CALCULATION");
+        phraseToIntentMapping.put("物料需求", "MRP_CALCULATION");
+        // CCP 关键控制点
+        phraseToIntentMapping.put("CCP检测", "CCP_MONITOR_DATA_DETECTION");
+        phraseToIntentMapping.put("关键控制点", "CCP_MONITOR_DATA_DETECTION");
+        // 排班执行
+        phraseToIntentMapping.put("执行明天", "SCHEDULING_EXECUTE_FOR_DATE");
+        // 审批流程
+        phraseToIntentMapping.put("审批流程", "QUERY_APPROVAL_RECORD");
+        phraseToIntentMapping.put("审批进度", "QUERY_APPROVAL_RECORD");
+        phraseToIntentMapping.put("审批走到", "QUERY_APPROVAL_RECORD");
+        // 质检标记
+        phraseToIntentMapping.put("质检合格", "QUALITY_BATCH_MARK_AS_INSPECTED");
+        phraseToIntentMapping.put("标记合格", "QUALITY_BATCH_MARK_AS_INSPECTED");
+        // 出库/入库
+        phraseToIntentMapping.put("出库流水", "INVENTORY_OUTBOUND");
+        phraseToIntentMapping.put("出库记录", "INVENTORY_OUTBOUND");
+        phraseToIntentMapping.put("入库单号", "MATERIAL_BATCH_QUERY");
+
         // OUT_OF_DOMAIN: 噪音/闲聊/非业务 — 确保短输入绕过澄清检测
         phraseToIntentMapping.put("你好", "OUT_OF_DOMAIN");
         phraseToIntentMapping.put("谢谢", "OUT_OF_DOMAIN");
@@ -6354,7 +6394,10 @@ public class IntentKnowledgeBase {
             // v28: 餐饮食材操作（区分食品知识vs食材管理）
             "食材", "菜品", "营业额", "损耗", "采购什么",
             // v28: 数量/单位 (中文数字+单位 → 操作，非知识)
-            "公斤", "千克", "斤", "吨", "箱"
+            "公斤", "千克", "斤", "吨", "箱",
+            // v30d: 操作上下文信号 — 防止 FOOD_KNOWLEDGE 截获含食品词的操作查询
+            "进度", "操作员", "主管", "走哪条线", "控制点",
+            "需要多少", "质检通过", "标记", "催货", "推送", "调拨", "指派"
     );
 
     /**
