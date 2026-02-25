@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.annotation.RequirePermission;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import java.util.Map;
@@ -24,6 +26,7 @@ import java.util.Map;
 @RequestMapping("/api/mobile/{factoryId}/return-orders")
 @RequiredArgsConstructor
 @Tag(name = "退货管理", description = "采购退货与销售退货管理")
+@RequirePermission({"sales:read_write", "procurement:read_write"})
 public class ReturnOrderController {
 
     private final ReturnOrderService returnOrderService;
@@ -43,6 +46,7 @@ public class ReturnOrderController {
 
     @GetMapping
     @Operation(summary = "退货单列表")
+    @RequirePermission({"sales:read_write", "sales:read", "procurement:read_write", "procurement:read"})
     public ApiResponse<PageResponse<ReturnOrder>> listReturnOrders(
             @PathVariable @NotBlank String factoryId,
             @RequestParam(required = false) ReturnType returnType,
@@ -55,6 +59,7 @@ public class ReturnOrderController {
 
     @GetMapping("/{returnOrderId}")
     @Operation(summary = "退货单详情")
+    @RequirePermission({"sales:read_write", "sales:read", "procurement:read_write", "procurement:read"})
     public ApiResponse<ReturnOrder> getReturnOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String returnOrderId) {
@@ -102,6 +107,7 @@ public class ReturnOrderController {
 
     @GetMapping("/statistics")
     @Operation(summary = "退货统计数据")
+    @RequirePermission({"sales:read_write", "sales:read", "procurement:read_write", "procurement:read", "report:read"})
     public ApiResponse<Map<String, Object>> getStatistics(
             @PathVariable @NotBlank String factoryId) {
         Map<String, Object> stats = returnOrderService.getReturnOrderStatistics(factoryId);

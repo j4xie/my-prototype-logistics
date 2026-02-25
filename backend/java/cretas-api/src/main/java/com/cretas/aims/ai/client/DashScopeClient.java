@@ -16,7 +16,10 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -114,8 +117,11 @@ public class DashScopeClient {
         }
     }
 
+    private static final ChatCompletionRequest.ExtraBody THINKING_OFF =
+            ChatCompletionRequest.ExtraBody.builder().enableThinking(false).build();
+
     /**
-     * 简单对话调用
+     * 简单对话调用（默认关闭 thinking 模式）
      *
      * @param systemPrompt 系统提示词
      * @param userInput    用户输入
@@ -129,6 +135,9 @@ public class DashScopeClient {
         );
         request.setMaxTokens(config.getMaxTokens());
         request.setTemperature(config.getTemperature());
+        if (request.getExtraBody() == null) {
+            request.setExtraBody(THINKING_OFF);
+        }
 
         ChatCompletionResponse response = chatCompletion(request);
         if (response.hasError()) {
@@ -138,7 +147,7 @@ public class DashScopeClient {
     }
 
     /**
-     * 低温度对话 (用于需要精确输出的场景)
+     * 低温度对话 (用于需要精确输出的场景，默认关闭 thinking)
      */
     public String chatLowTemp(String systemPrompt, String userInput) {
         ChatCompletionRequest request = ChatCompletionRequest.simple(
@@ -148,6 +157,9 @@ public class DashScopeClient {
         );
         request.setMaxTokens(config.getMaxTokens());
         request.setTemperature(config.getLowTemperature());
+        if (request.getExtraBody() == null) {
+            request.setExtraBody(THINKING_OFF);
+        }
 
         ChatCompletionResponse response = chatCompletion(request);
         if (response.hasError()) {
@@ -280,6 +292,62 @@ public class DashScopeClient {
         return chatLowTemp(systemPrompt, userInput);
     }
 
+    // ── Thinking 模式自动检测 ──
+
+    private static final Set<String> SIMPLE_INDICATORS = new HashSet<>(Arrays.asList(
+            "你好", "您好", "谢谢", "再见", "是什么", "几号", "多少",
+            "帮我", "查一下", "告诉我", "在哪", "怎么样", "好的"
+    ));
+
+    private static final Set<String> COMPLEX_KEYWORDS = new HashSet<>(Arrays.asList(
+            "分析", "对比", "为什么", "建议", "优化", "预测", "评估",
+            "趋势", "原因", "策略", "规划", "诊断", "改进", "深入"
+    ));
+
+    /**
+     * 根据用户输入自动判断是否需要启用 thinking 模式。
+     * 纯关键词匹配，无 LLM 调用。
+     *
+     * @param userInput 用户原始输入
+     * @return true = 需要 thinking (复杂分析), false = 不需要 (简单查询)
+     */
+    public static boolean shouldEnableThinking(String userInput) {
+        if (userInput == null || userInput.isBlank()) {
+            return false;
+        }
+        String text = userInput.trim();
+
+        // 短查询 → 不需要
+        if (text.length() < 15) {
+            return false;
+        }
+
+        // 包含简单寒暄指标 → 不需要
+        for (String indicator : SIMPLE_INDICATORS) {
+            if (text.contains(indicator)) {
+                return false;
+            }
+        }
+
+        // 长查询 → 需要
+        if (text.length() > 60) {
+            return true;
+        }
+
+        // 统计复杂关键词命中数，>=2 个 → 需要
+        int complexCount = 0;
+        for (String keyword : COMPLEX_KEYWORDS) {
+            if (text.contains(keyword)) {
+                complexCount++;
+                if (complexCount >= 2) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     /**
      * 创建错误响应
      */
@@ -317,14 +385,15 @@ public class DashScopeClient {
             return createErrorResponse("DashScope API 未配置");
         }
 
-        // 构建请求
+        // 构建请求（Function Calling 不需要 thinking）
         ChatCompletionRequest request = ChatCompletionRequest.builder()
                 .model(config.getModel())
                 .messages(messages)
                 .maxTokens(config.getMaxTokens())
-                .temperature(config.getLowTemperature())  // Function Calling 通常使用低温度
+                .temperature(config.getLowTemperature())
                 .tools(tools)
                 .toolChoice(toolChoice)
+                .extraBody(THINKING_OFF)
                 .build();
 
         return chatCompletion(request);

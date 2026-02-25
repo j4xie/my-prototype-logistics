@@ -760,7 +760,7 @@ export const useHomeLayoutStore = create<HomeLayoutState>()(
       },
     }),
     {
-      name: 'home-layout-storage-v7', // v7: 黑名单逻辑修复
+      name: 'home-layout-storage-v8', // v8: config-driven 快捷操作显示 + action ID 修正
       storage: createJSONStorage(() => AsyncStorage),
       // 只持久化布局配置，不持久化编辑状态
       partialize: (state) => ({

@@ -2,6 +2,7 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.ai.client.DashScopeClient;
 import com.cretas.aims.ai.dto.ChatCompletionRequest;
+import com.cretas.aims.ai.dto.ChatCompletionRequest.ExtraBody;
 import com.cretas.aims.ai.dto.ChatCompletionResponse;
 import com.cretas.aims.ai.dto.ChatMessage;
 import com.cretas.aims.dto.ai.GenericChatRequest;
@@ -41,7 +42,7 @@ public class GenericAIChatController {
     @Autowired
     private DashScopeClient dashScopeClient;
 
-    @Value("${ai.chat.default-model:qwen-plus}")
+    @Value("${ai.chat.default-model:qwen3.5-plus}")
     private String defaultModel;
 
     /**
@@ -67,11 +68,25 @@ public class GenericAIChatController {
             // 构建 ChatCompletionRequest
             String model = request.getModel() != null ? request.getModel() : defaultModel;
 
+            // 自动检测是否需要 thinking 模式
+            String lastUserMsg = "";
+            if (request.getMessages() != null) {
+                for (int i = request.getMessages().size() - 1; i >= 0; i--) {
+                    if ("user".equalsIgnoreCase(request.getMessages().get(i).getRole())) {
+                        lastUserMsg = request.getMessages().get(i).getContent();
+                        break;
+                    }
+                }
+            }
+            boolean enableThinking = DashScopeClient.shouldEnableThinking(lastUserMsg);
+            log.debug("Thinking 模式自动检测: input='{}', enabled={}", lastUserMsg.length() > 50 ? lastUserMsg.substring(0, 50) + "..." : lastUserMsg, enableThinking);
+
             ChatCompletionRequest aiRequest = ChatCompletionRequest.builder()
                     .model(model)
                     .messages(chatMessages)
                     .temperature(request.getTemperature() != null ? request.getTemperature() : 0.7)
                     .maxTokens(request.getMaxTokens() != null ? request.getMaxTokens() : 2000)
+                    .extraBody(ExtraBody.builder().enableThinking(enableThinking).build())
                     .build();
 
             // 调用 DashScope API

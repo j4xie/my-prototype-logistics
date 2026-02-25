@@ -1,5 +1,6 @@
 package com.cretas.aims.service;
 
+import com.cretas.aims.dto.batch.TeamBatchReportRequest;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.entity.MaterialBatch;
@@ -50,6 +51,17 @@ public interface ProcessingService {
      * 获取批次列表
       */
     PageResponse<ProductionBatch> getBatches(String factoryId, String status, PageRequest pageRequest);
+
+    /**
+     * 获取批次列表（带主管过滤）
+     */
+    PageResponse<ProductionBatch> getBatches(String factoryId, String status, Long supervisorId, PageRequest pageRequest);
+
+    /**
+     * 班组批量报工
+     */
+    Map<String, Object> submitTeamBatchReport(String factoryId, TeamBatchReportRequest request);
+
      /**
      * 获取批次时间线
       */

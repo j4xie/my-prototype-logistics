@@ -69,10 +69,15 @@ class WorkReportingApiClient {
   async approveReport(
     reportId: number,
     approved: boolean,
+    rejectionReason?: string,
     factoryId?: string
   ): Promise<ApiResponse<WorkReportResponse>> {
+    const params = new URLSearchParams({ approved: String(approved) });
+    if (!approved && rejectionReason) {
+      params.append('rejectionReason', rejectionReason);
+    }
     return await apiClient.post(
-      `${this.getPath(factoryId)}/reports/${reportId}/approve?approved=${approved}`
+      `${this.getPath(factoryId)}/reports/${reportId}/approve?${params.toString()}`
     );
   }
 

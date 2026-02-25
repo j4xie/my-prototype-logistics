@@ -62,6 +62,7 @@ export interface WorkReportResponse {
   customFields?: Record<string, unknown>;
   photos?: string[];
   status: ReportStatus;
+  rejectionReason?: string;
   syncedToSmartbi: boolean;
   createdAt: string;
   updatedAt: string;

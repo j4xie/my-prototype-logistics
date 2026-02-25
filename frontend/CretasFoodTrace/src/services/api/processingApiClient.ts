@@ -160,7 +160,7 @@ class ProcessingApiClient {
   // ===== 批次管理 (8个API) =====
 
   // 1. 获取批次列表
-  async getBatches(params?: { factoryId?: string; status?: string; page?: number; size?: number }): Promise<ApiResponse<PagedResponse<ProcessingBatch>>> {
+  async getBatches(params?: { factoryId?: string; status?: string; supervisorId?: number; page?: number; size?: number }): Promise<ApiResponse<PagedResponse<ProcessingBatch>>> {
     const { factoryId, ...query } = params || {};
     return await apiClient.get(`${this.getPath(factoryId)}/batches`, { params: query });
   }
@@ -437,9 +437,11 @@ class ProcessingApiClient {
     members: Array<{
       userId: number;
       outputQuantity: number;
+      goodQuantity?: number;
+      defectQuantity?: number;
       notes?: string;
     }>;
-  }, factoryId?: string): Promise<ApiResponse<{ recordedMembers: number; totalOutput: number; batchId: number }>> {
+  }, factoryId?: string): Promise<ApiResponse<{ recordedMembers: number; totalOutput: number; totalGood: number; totalDefect: number; batchId: number }>> {
     return await apiClient.post(`${this.getPath(factoryId)}/work-sessions/batch-report`, data);
   }
 

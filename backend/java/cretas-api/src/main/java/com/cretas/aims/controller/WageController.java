@@ -26,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.annotation.RequirePermission;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.math.BigDecimal;
@@ -48,6 +49,7 @@ import java.util.Map;
 @RequestMapping("/api/mobile/{factoryId}/wage")
 @RequiredArgsConstructor
 @Tag(name = "工资计算与人效管理", description = "计件规则配置、工人效率记录、工资单生成和审批、人力成本分析")
+@RequirePermission({"hr:read_write", "hr:read", "finance:read"})
 public class WageController {
 
     private final WageCalculationService wageCalculationService;
@@ -104,6 +106,7 @@ public class WageController {
      */
     @PostMapping("/piece-rate-rules")
     @Operation(summary = "创建计件规则", description = "创建新的计件规则，支持阶梯计件定价")
+    @RequirePermission("hr:read_write")
     public ApiResponse<PieceRateRule> createPieceRateRule(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "计件规则信息") PieceRateRule rule) {
@@ -125,6 +128,7 @@ public class WageController {
      */
     @PutMapping("/piece-rate-rules/{ruleId}")
     @Operation(summary = "更新计件规则", description = "更新现有计件规则的配置")
+    @RequirePermission("hr:read_write")
     public ApiResponse<PieceRateRule> updatePieceRateRule(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "规则ID", example = "1") Long ruleId,
@@ -165,6 +169,7 @@ public class WageController {
      */
     @DeleteMapping("/piece-rate-rules/{ruleId}")
     @Operation(summary = "删除计件规则", description = "删除指定的计件规则")
+    @RequirePermission("hr:read_write")
     public ApiResponse<Void> deletePieceRateRule(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "规则ID", example = "1") Long ruleId) {
@@ -190,6 +195,7 @@ public class WageController {
      */
     @PostMapping("/efficiency/record")
     @Operation(summary = "记录工人计件数据", description = "记录工人的计件数据，通常由AI检测系统调用")
+    @RequirePermission("hr:read_write")
     public ApiResponse<WorkerDailyEfficiency> recordEfficiency(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "效率记录请求") EfficiencyRecordRequest request) {
@@ -349,6 +355,7 @@ public class WageController {
      */
     @PostMapping("/payroll/generate")
     @Operation(summary = "生成工资单", description = "为单个工人生成指定周期的工资单")
+    @RequirePermission("hr:read_write")
     public ApiResponse<PayrollRecord> generatePayroll(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "工资单生成请求") PayrollGenerateRequest request) {
@@ -369,6 +376,7 @@ public class WageController {
      */
     @PostMapping("/payroll/generate-batch")
     @Operation(summary = "批量生成工资单", description = "为工厂所有有效率记录的工人批量生成工资单")
+    @RequirePermission("hr:read_write")
     public ApiResponse<List<PayrollRecord>> generateBatchPayroll(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "批量生成请求") PayrollPeriodRequest request) {
@@ -454,6 +462,7 @@ public class WageController {
      */
     @PutMapping("/payroll/{payrollId}/approve")
     @Operation(summary = "审批工资单", description = "审批通过待审核的工资单")
+    @RequirePermission("hr:approve")
     public ApiResponse<PayrollRecord> approvePayroll(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "工资单ID", example = "1") Long payrollId,
@@ -495,6 +504,7 @@ public class WageController {
      */
     @PutMapping("/payroll/batch-approve")
     @Operation(summary = "批量审批工资单", description = "批量审批多个待审核的工资单")
+    @RequirePermission("hr:approve")
     public ApiResponse<Map<String, Object>> batchApprovePayroll(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Parameter(description = "工资单ID列表") List<Long> payrollIds,
@@ -534,6 +544,7 @@ public class WageController {
      */
     @PutMapping("/payroll/{payrollId}/paid")
     @Operation(summary = "标记工资单已发放", description = "将已审核的工资单标记为已发放状态")
+    @RequirePermission("hr:read_write")
     public ApiResponse<PayrollRecord> markAsPaid(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "工资单ID", example = "1") Long payrollId) {

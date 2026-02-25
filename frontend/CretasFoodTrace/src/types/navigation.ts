@@ -431,13 +431,12 @@ export type WSHomeStackParamList = {
   TaskGuideStep2: { batchId: string; batchNumber: string };
   TaskGuideStep3: { batchId: string; batchNumber: string };
   // 快捷操作入口
-  ScanReport: undefined;
   TeamBatchReport: undefined;
-  LabelScan: { workstationId: string; batchNumber?: string };
   DraftReports: undefined;
   // 生产报工
   DynamicReport: { reportType: 'PROGRESS' | 'HOURS' };
   NfcCheckin: undefined;
+  MyWorkReports: undefined;
 };
 
 export type WSBatchesStackParamList = {

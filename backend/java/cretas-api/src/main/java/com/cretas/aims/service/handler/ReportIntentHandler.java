@@ -91,7 +91,7 @@ public class ReportIntentHandler implements IntentHandler {
                 case "REPORT_AI_QUALITY", "REPORT_INTELLIGENT_QUALITY", "REPORT_CHECK" ->
                         handleAiQualityReport(factoryId, request, intentConfig);
                 case "QUERY_APPROVAL_RECORD" -> handleApprovalRecord(factoryId, intentConfig);
-                case "TASK_ASSIGN_WORKER" -> handleTaskAssignWorker(factoryId, request, intentConfig, userId);
+                case "TASK_ASSIGN_WORKER", "TASK_ASSIGN_BY_NAME" -> handleTaskAssignWorker(factoryId, request, intentConfig, userId);
                 // 财务分析指标
                 case "QUERY_FINANCE_ROA" -> handleFinanceRatio(factoryId, intentConfig, "ROA", "资产收益率");
                 case "QUERY_FINANCE_ROE" -> handleFinanceRatio(factoryId, intentConfig, "ROE", "净资产收益率");

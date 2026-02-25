@@ -26,14 +26,13 @@ import NotificationsScreen from "../../screens/workshop-supervisor/home/Notifica
 import WorkerDetailScreen from "../../screens/workshop-supervisor/workers/WorkerDetailScreen";
 
 // 快捷操作入口页面
-import ScanReportScreen from "../../screens/processing/ScanReportScreen";
 import TeamBatchReportScreen from "../../screens/processing/TeamBatchReportScreen";
-import LabelScanScreen from "../../screens/shared/LabelScanScreen";
 import DraftReportsScreen from "../../screens/processing/DraftReportsScreen";
 
 // 生产报工
 import DynamicReportScreen from "../../screens/processing/DynamicReportScreen";
 import NfcCheckinScreen from "../../screens/processing/NfcCheckinScreen";
+import MyWorkReportsScreen from "../../screens/processing/MyWorkReportsScreen";
 
 const Stack = createNativeStackNavigator<WSHomeStackParamList>();
 
@@ -97,14 +96,13 @@ export function WSHomeStackNavigator() {
       />
 
       {/* 快捷操作入口 */}
-      <Stack.Screen name="ScanReport" component={ScanReportScreen} options={{ title: "扫码报工" }} />
       <Stack.Screen name="TeamBatchReport" component={TeamBatchReportScreen} options={{ title: "班组报工" }} />
-      <Stack.Screen name="LabelScan" component={LabelScanScreen} options={{ title: "标签扫描" }} />
       <Stack.Screen name="DraftReports" component={DraftReportsScreen} options={{ title: "草稿管理" }} />
 
       {/* 生产报工 */}
       <Stack.Screen name="DynamicReport" component={DynamicReportScreen} options={{ title: "生产报工" }} />
       <Stack.Screen name="NfcCheckin" component={NfcCheckinScreen} options={{ title: "扫码签到" }} />
+      <Stack.Screen name="MyWorkReports" component={MyWorkReportsScreen} options={{ title: "我的报工" }} />
     </Stack.Navigator>
   );
 }

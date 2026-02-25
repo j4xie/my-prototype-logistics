@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>报工模块测试跟踪器</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232733;
+    --border: #2e3345;
+    --text: #e4e7f1;
+    --text2: #8b90a5;
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --orange: #f97316;
+    --blue: #3b82f6;
+    --pink: #ec4899;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg); color: var(--text);
+    line-height: 1.6; padding: 0;
+  }
+
+  /* Top Bar */
+  .top-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,17,23,0.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+  }
+  .top-bar h1 { font-size: 18px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+  .top-bar h1 span { font-size: 12px; color: var(--text2); font-weight: 400; }
+
+  /* Progress */
+  .progress-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .progress-bar-wrap { flex: 1; min-width: 200px; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; background: linear-gradient(90deg, var(--accent), var(--green)); }
+  .progress-stats { display: flex; gap: 12px; font-size: 13px; }
+  .stat { display: flex; align-items: center; gap: 4px; }
+  .stat .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-pass { background: var(--green); }
+  .dot-fail { background: var(--red); }
+  .dot-skip { background: var(--yellow); }
+  .dot-bug { background: var(--pink); }
+  .dot-pending { background: var(--text2); }
+
+  /* Controls */
+  .controls { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--text2); font-size: 12px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .export-btn {
+    margin-left: auto; padding: 4px 14px; border-radius: 6px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-size: 12px; cursor: pointer;
+  }
+  .export-btn:hover { background: var(--accent); color: #fff; }
+
+  /* Alerts */
+  .alert-section { padding: 12px 24px; }
+  .alert-card {
+    background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 10px; padding: 14px 18px; margin-bottom: 8px;
+  }
+  .alert-card.warn { background: rgba(234,179,8,0.08); border-color: rgba(234,179,8,0.25); }
+  .alert-card h3 { font-size: 13px; font-weight: 600; color: var(--red); margin-bottom: 4px; }
+  .alert-card.warn h3 { color: var(--yellow); }
+  .alert-card p { font-size: 12px; color: var(--text2); }
+  .alert-card code { background: var(--surface2); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+
+  /* Content */
+  .content { padding: 0 24px 80px; }
+
+  /* Category */
+  .category { margin-top: 20px; }
+  .category-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; cursor: pointer; user-select: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .category-header:hover { opacity: 0.85; }
+  .cat-arrow { font-size: 12px; color: var(--text2); transition: transform 0.2s; width: 16px; text-align: center; }
+  .cat-arrow.open { transform: rotate(90deg); }
+  .cat-title { font-size: 15px; font-weight: 600; }
+  .cat-badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    background: var(--surface2); color: var(--text2);
+  }
+  .cat-progress { margin-left: auto; font-size: 12px; color: var(--text2); }
+  .category-body { overflow: hidden; }
+  .category-body.collapsed { display: none; }
+
+  /* Test Case Card */
+  .tc {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px; margin-top: 8px;
+    transition: border-color 0.2s;
+  }
+  .tc:hover { border-color: var(--accent); }
+  .tc.status-pass { border-left: 3px solid var(--green); }
+  .tc.status-fail { border-left: 3px solid var(--red); }
+  .tc.status-skip { border-left: 3px solid var(--yellow); }
+  .tc.status-bug { border-left: 3px solid var(--pink); }
+  .tc-head { display: flex; align-items: flex-start; gap: 10px; }
+  .tc-id { font-size: 12px; font-weight: 700; color: var(--accent2); min-width: 42px; padding-top: 2px; }
+  .tc-main { flex: 1; }
+  .tc-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tc-title { font-size: 14px; font-weight: 600; }
+  .badge {
+    font-size: 10px; padding: 1px 7px; border-radius: 8px; font-weight: 600;
+  }
+  .badge-p0 { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge-p1 { background: rgba(249,115,22,0.15); color: var(--orange); }
+  .badge-p2 { background: rgba(59,130,246,0.12); color: var(--blue); }
+  .badge-new { background: rgba(34,197,94,0.12); color: var(--green); }
+  .badge-covered { background: var(--surface2); color: var(--text2); }
+  .tc-steps { font-size: 12px; color: var(--text2); margin-top: 6px; white-space: pre-line; }
+  .tc-expect { font-size: 12px; color: var(--text); margin-top: 4px; padding: 6px 10px; background: var(--surface2); border-radius: 6px; }
+  .tc-expect strong { color: var(--accent2); font-weight: 600; }
+
+  /* Status Buttons */
+  .tc-actions { display: flex; gap: 4px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+  .status-btn {
+    padding: 3px 10px; border-radius: 5px; border: 1px solid var(--border);
+    background: transparent; font-size: 11px; cursor: pointer; color: var(--text2);
+    transition: all 0.15s;
+  }
+  .status-btn:hover { opacity: 0.8; }
+  .status-btn.sel-pass { background: var(--green); color: #fff; border-color: var(--green); }
+  .status-btn.sel-fail { background: var(--red); color: #fff; border-color: var(--red); }
+  .status-btn.sel-skip { background: var(--yellow); color: #000; border-color: var(--yellow); }
+  .status-btn.sel-bug { background: var(--pink); color: #fff; border-color: var(--pink); }
+
+  /* Notes */
+  .tc-notes {
+    width: 100%; margin-top: 8px; padding: 6px 10px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 12px; resize: vertical; min-height: 28px;
+    font-family: inherit;
+  }
+  .tc-notes:focus { border-color: var(--accent); outline: none; }
+  .tc-notes::placeholder { color: var(--text2); }
+
+  /* Hidden */
+  .hidden { display: none !important; }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .top-bar { padding: 12px 14px; }
+    .content { padding: 0 14px 60px; }
+    .progress-row { flex-direction: column; gap: 8px; }
+  }
+
+  /* Print */
+  @media print {
+    body { background: #fff; color: #000; }
+    .top-bar { position: static; background: #fff; border-bottom: 2px solid #000; }
+    .controls, .status-btn, .export-btn { display: none; }
+    .tc { border: 1px solid #ccc; page-break-inside: avoid; }
+    .tc-notes { border: 1px solid #ccc; background: #f9f9f9; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1>
+    报工模块测试跟踪器
+    <span>Work Reporting Test Tracker &middot; 68 用例 (更新: 2026-02-25)</span>
+  </h1>
+  <div class="progress-row">
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+    <div class="progress-stats" id="statsDisplay">
+      <span class="stat"><span class="dot dot-pass"></span> 通过 <b id="cntPass">0</b></span>
+      <span class="stat"><span class="dot dot-fail"></span> 失败 <b id="cntFail">0</b></span>
+      <span class="stat"><span class="dot dot-bug"></span> Bug <b id="cntBug">0</b></span>
+      <span class="stat"><span class="dot dot-skip"></span> 跳过 <b id="cntSkip">0</b></span>
+      <span class="stat"><span class="dot dot-pending"></span> 待测 <b id="cntPending">68</b></span>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="filter-btn active" data-filter="all">全部</button>
+    <button class="filter-btn" data-filter="pending">待测</button>
+    <button class="filter-btn" data-filter="pass">通过</button>
+    <button class="filter-btn" data-filter="fail">失败</button>
+    <button class="filter-btn" data-filter="bug">Bug</button>
+    <button class="filter-btn" data-filter="skip">跳过</button>
+    <button class="filter-btn" data-filter="p0">仅 P0</button>
+    <button class="filter-btn" data-filter="new">仅新增</button>
+    <button class="export-btn" onclick="exportResults()">导出结果</button>
+    <button class="export-btn" onclick="resetAll()">重置</button>
+  </div>
+</div>
+
+<div class="alert-section">
+  <div class="alert-card">
+    <h3>Bug #1: 工时报工无法审批 (P0)</h3>
+    <p>WorkReportApprovalScreen 第 42 行 <code>type: 'PROGRESS'</code> 写死，HOURS 类型报工永远不出现在审批列表。整条 HOURS 报工审批链路断裂。</p>
+  </div>
+  <div class="alert-card warn">
+    <h3>缺口 #2: 车间主管无「我的报工历史」入口 (P0)</h3>
+    <p>workshop_sup1 提交报工后，无法查看自己已提交记录的状态，也看不到被拒绝的原因。业务闭环不完整。</p>
+  </div>
+  <div class="alert-card warn">
+    <h3>已修复 #3: 首页按钮精简为5个 (2026-02-24)</h3>
+    <p>删除扫码报工/标签扫描/进度上报，保留: 班组报工、草稿管理、扫码签到、工时上报、我的报工。良品/不良品字段已合并到班组报工。</p>
+  </div>
+</div>
+
+<div class="content" id="testContent"></div>
+
+<script>
+const TEST_DATA = [
+  // ===== 正向流程 =====
+  {
+    category: "正向流程 (Happy Path)",
+    cases: [
+      { id:"H-01", title:"班组报工 — 选批次+填成员产量提交(含良品/不良品)", p:"P0", isNew:false,
+        steps:"1. 首页点「班组报工」\n2. 只显示分配给当前主管的批次(supervisorId过滤)\n3. 选择一个 IN_PROGRESS 批次(单批次自动选中)\n4. 展开工人卡片填良品/不良品(默认折叠)\n5. 为至少 1 名工人填写产出\n6. 点「一键提交」",
+        expect:"Alert 显示「N人的报工已提交」，含 totalGood/totalDefect 汇总" },
+      { id:"H-02", title:"班组报工 — 手动添加成员", p:"P1", isNew:true,
+        steps:"选择批次后点「+ 添加成员」，填写新成员产出",
+        expect:"成员列表新增一行，计入提交人数" },
+      { id:"H-03", title:"班组报工 — 更换批次", p:"P1", isNew:true,
+        steps:"已选批次后点击「更换」",
+        expect:"返回批次列表，成员列表清空" },
+      { id:"H-04", title:"工时报工 (HOURS) — 填工时明细提交", p:"P0", isNew:true,
+        steps:"进入 DynamicReport (HOURS 类型)\n填写商品名称「香酥鱼柳」\n正式工 5 人 8h、小时工 2 人 4h\n提交",
+        expect:"Alert「报工提交成功」，记录 7 人工时" },
+      { id:"H-05", title:"签到 — QR 扫码签到(含supervisorId过滤+单批次自动选中)", p:"P0", isNew:false,
+        steps:"1. 进入签到页，只显示当前主管的批次(supervisorId过滤)\n2. 单批次自动选中\n3. 切换到「QR 扫码」Tab\n4. 点击「扫码签到」，扫描/输入员工 ID",
+        expect:"Alert「签到成功」，签到列表新增一行" },
+      { id:"H-06", title:"签退 — 对已签到员工签退", p:"P0", isNew:false,
+        steps:"在签到页找到「工作中」的员工，点「签退」",
+        expect:"Alert「签退成功」，状态变为「已签退」" },
+      { id:"H-07", title:"审批 — 管理员批准一条报工", p:"P0", isNew:false,
+        steps:"1. factory_admin1 登录\n2. 管理 Tab → 报工审批\n3. 待审批列表中点「批准」\n4. 确认弹框点「批准」",
+        expect:"Alert「已批准」，记录从待审批列表消失" },
+      { id:"H-08", title:"审批 — 管理员拒绝并填原因", p:"P0", isNew:false,
+        steps:"点「拒绝」→ Modal 填原因「产量数据与实际不符」→ 确认拒绝",
+        expect:"Alert「已拒绝」，Modal 关闭" },
+      { id:"H-09", title:"草稿管理 — 有草稿时查看", p:"P1", isNew:false,
+        steps:"首页点「草稿管理」（此前有离线保存的草稿）",
+        expect:"显示草稿列表，有批次号、产出、时间信息" },
+      { id:"H-10", title:"草稿管理 — 重新提交草稿", p:"P1", isNew:false,
+        steps:"网络恢复后在草稿列表点「重新提交」",
+        expect:"Alert「已同步」，草稿从列表移除" },
+      { id:"H-11", title:"审批列表 — 切换到已批准 Tab", p:"P1", isNew:false,
+        steps:"报工审批页点「已批准」Tab",
+        expect:"只显示 APPROVED 状态记录，无批准/拒绝按钮" },
+      { id:"H-12", title:"审批列表 — 切换到全部 Tab", p:"P1", isNew:false,
+        steps:"报工审批页点「全部」Tab",
+        expect:"显示所有状态 (SUBMITTED + APPROVED + REJECTED)" },
+    ]
+  },
+  // ===== 边界值测试 =====
+  {
+    category: "边界值测试",
+    cases: [
+      { id:"B-01", title:"班组报工 — 良品数量 > 产出数量", p:"P1", isNew:true,
+        steps:"班组报工展开成员卡片，产出 100，良品 150，提交",
+        expect:"确认是否有前端校验拦截" },
+      { id:"B-02", title:"工时报工 — 工时全留空提交", p:"P1", isNew:true,
+        steps:"HOURS 类型，商品名称填好，工时明细三行全空",
+        expect:"totalWorkers=0，提交成功，不崩溃" },
+      { id:"B-03", title:"工时报工 — 工人数填小数", p:"P2", isNew:true,
+        steps:"正式工人数填「3.7」",
+        expect:"parseInt 截断为 3" },
+      { id:"B-04", title:"拒绝原因仅含空格", p:"P0", isNew:true,
+        steps:"拒绝 Modal 输入若干空格，点确认",
+        expect:"按钮保持 disabled（trim() 为空）" },
+      { id:"B-05", title:"拒绝原因达到 500 字符", p:"P2", isNew:true,
+        steps:"输入恰好 500 字符",
+        expect:"字符计数 500/500，超出被截断" },
+      { id:"B-06", title:"班组报工 — 所有成员产出均为空", p:"P0", isNew:true,
+        steps:"选批次后，所有成员产出不填，点提交",
+        expect:"Alert「请至少填写一人的产出数据」" },
+      { id:"B-07", title:"班组报工 — 部分成员填写", p:"P1", isNew:true,
+        steps:"5 名成员中 3 人填产出，2 人留空",
+        expect:"Alert「3人的报工已提交」" },
+    ]
+  },
+  // ===== 异常流程 =====
+  {
+    category: "异常流程",
+    cases: [
+      { id:"A-01", title:"HOURS 商品名称为空提交", p:"P0", isNew:true,
+        steps:"工时报工，商品名称留空直接提交",
+        expect:"Alert「请填写商品名称」" },
+      { id:"A-02", title:"重新提交草稿时网络仍断", p:"P1", isNew:true,
+        steps:"草稿列表点「重新提交」但网络仍断",
+        expect:"Alert「提交失败，请检查网络」，草稿保留" },
+      { id:"A-03", title:"删除单条草稿", p:"P1", isNew:false,
+        steps:"点草稿的「删除」→ 确认删除",
+        expect:"草稿从列表移除" },
+      { id:"A-04", title:"取消删除草稿", p:"P2", isNew:true,
+        steps:"点「删除」→ 弹框中点「取消」",
+        expect:"草稿保留" },
+      { id:"A-05", title:"清空所有草稿", p:"P1", isNew:false,
+        steps:"多条草稿时点右上角「清空」→ 确认",
+        expect:"列表变空状态" },
+      { id:"A-06", title:"批准操作取消确认", p:"P1", isNew:true,
+        steps:"点「批准」→ 弹框中点「取消」",
+        expect:"弹框关闭，状态不变" },
+      { id:"A-07", title:"关闭拒绝 Modal（点 X）", p:"P2", isNew:true,
+        steps:"拒绝 Modal 打开时点右上角关闭",
+        expect:"Modal 关闭，rejectReason 清空" },
+      { id:"A-08", title:"审批并发操作", p:"P2", isNew:true,
+        steps:"快速连续点两条记录的「批准」",
+        expect:"确认是否有 submitting 防并发" },
+      { id:"A-09", title:"重复签到同一员工", p:"P1", isNew:true,
+        steps:"对已签到(工作中)的员工再次签到",
+        expect:"Alert「员工已签到」（后端返回错误）" },
+      { id:"A-10", title:"QR 扫到非数字内容", p:"P1", isNew:true,
+        steps:"QR 扫码内容为「EMP-ABC」",
+        expect:"Alert「无法识别员工编号」" },
+      { id:"A-11", title:"未选批次时尝试签到", p:"P2", isNew:true,
+        steps:"NfcCheckinScreen 未选批次时尝试操作",
+        expect:"签到按钮应禁用或静默返回" },
+    ]
+  },
+  // ===== 数据联动 =====
+  {
+    category: "数据联动验证",
+    cases: [
+      { id:"D-01", title:"班组报工后批次 actualQuantity 增加", p:"P0", isNew:true,
+        steps:"1. 先在「批次」Tab 查看 #1879 当前 actualQuantity\n2. 班组报工提交产出 100 (含良品/不良品)\n3. 回到「批次」Tab 进入 #1879 详情",
+        expect:"actualQuantity 增加了 100，goodQuantity/defectQuantity 同步更新" },
+      { id:"D-02", title:"产量达标 → 批次自动完成", p:"P1", isNew:true,
+        steps:"对 #1879 (计划450) 报工至 actualQuantity >= 450\n然后在批次列表切换到 COMPLETED 筛选",
+        expect:"该批次状态变 COMPLETED，出现在已完成列表（慎测：会真改数据）" },
+      { id:"D-03", title:"审批后列表自动刷新", p:"P1", isNew:false,
+        steps:"在待审批 Tab 批准一条记录",
+        expect:"loadReports() 触发，该记录从列表消失" },
+      { id:"D-04", title:"审批列表下拉刷新", p:"P1", isNew:true,
+        steps:"在审批列表向下拉动",
+        expect:"刷新圈显示，数据重新加载" },
+      { id:"D-05", title:"对已超产批次再报工", p:"P2", isNew:true,
+        steps:"对 #1878 (黄金虾排 640/600 已超产) 再报 50",
+        expect:"前端无拦截，actualQuantity 变 690" },
+      { id:"D-06", title:"签到时长计算", p:"P2", isNew:true,
+        steps:"签到后等 1 分钟签退，查看签到列表",
+        expect:"workMinutes 约为 1" },
+    ]
+  },
+  // ===== 多角色交叉 =====
+  {
+    category: "多角色交叉测试",
+    cases: [
+      { id:"X-01", title:"主管提交 → 管理员批准 → 主管查看状态", p:"P0", isNew:true,
+        steps:"1. workshop_sup1 班组报工提交\n2. factory_admin1 在审批页批准\n3. 切回 workshop_sup1 进入「我的报工」查看状态",
+        expect:"确认 WS 角色是否有「我的报工」历史入口（预期：当前无此入口，为缺口）" },
+      { id:"X-02", title:"管理员拒绝 → 主管看到原因", p:"P0", isNew:true,
+        steps:"1. factory_admin1 拒绝报工并填原因\n2. 切回 workshop_sup1 查看",
+        expect:"确认主管是否能看到被拒原因（预期：当前无入口）" },
+      { id:"X-03", title:"HOURS 报工提交后管理员能否审批", p:"P0", isNew:true,
+        steps:"1. WS 以 HOURS 类型提交报工\n2. factory_admin1 进入审批页",
+        expect:"已知 Bug: type='PROGRESS' 写死，HOURS 报工不出现在审批列表" },
+      { id:"X-04", title:"两个管理员同时审批同一条", p:"P2", isNew:true,
+        steps:"两个浏览器窗口同时打开审批页\nA 批准某条后 B 也尝试批准",
+        expect:"B 点击后收到后端错误（状态已变更），需手动刷新" },
+    ]
+  },
+  // ===== UI/UX 验证 =====
+  {
+    category: "UI/UX 验证",
+    cases: [
+      { id:"U-01", title:"审批列表初始加载", p:"P1", isNew:true,
+        steps:"进入报工审批页面",
+        expect:"显示大号 ActivityIndicator" },
+      { id:"U-02", title:"草稿列表空状态", p:"P1", isNew:true,
+        steps:"无草稿时进入草稿管理",
+        expect:"显示绿色勾选图标 +「暂无草稿」" },
+      { id:"U-03", title:"审批列表空状态", p:"P1", isNew:true,
+        steps:"切换到某 Tab 且无数据",
+        expect:"显示「暂无报工记录」" },
+      { id:"U-04", title:"班组报工无进行中批次", p:"P1", isNew:true,
+        steps:"进入班组报工（假设无 IN_PROGRESS 批次）",
+        expect:"显示「暂无进行中的批次」" },
+      { id:"U-05", title:"签到页无进行中批次", p:"P1", isNew:true,
+        steps:"进入签到页（假设无 IN_PROGRESS 批次）",
+        expect:"显示剪贴板图标 +「暂无进行中的批次」" },
+      { id:"U-06", title:"审批列表下拉刷新", p:"P1", isNew:false,
+        steps:"在审批列表向下拉",
+        expect:"RefreshControl 触发，数据重新加载" },
+      { id:"U-07", title:"首页下拉刷新", p:"P1", isNew:true,
+        steps:"车间主管首页向下拉",
+        expect:"所有数据重新加载" },
+      { id:"U-08", title:"工时报工填写中途按返回", p:"P2", isNew:true,
+        steps:"DynamicReport 填写部分内容后按返回",
+        expect:"直接返回，数据丢失（确认是否应有保护弹框）" },
+      { id:"U-09", title:"提交按钮 loading 状态", p:"P1", isNew:true,
+        steps:"点击提交后在响应到来前观察按钮",
+        expect:"按钮显示 loading，disabled=true" },
+      { id:"U-10", title:"班组报工按钮显示人数", p:"P2", isNew:true,
+        steps:"填写 3 人数据，观察提交按钮文字",
+        expect:"按钮文字显示「一键提交 (3人)」" },
+      { id:"U-11", title:"NFC 不可用提示", p:"P1", isNew:true,
+        steps:"在不支持 NFC 的设备进入签到页",
+        expect:"NFC Tab 显示「不可用」，默认切到 QR Tab" },
+      { id:"U-12", title:"拒绝 Modal 字符计数", p:"P2", isNew:true,
+        steps:"在拒绝 Modal 逐字输入",
+        expect:"右下角实时显示「N/500」" },
+      { id:"U-13", title:"断网时离线横幅", p:"P1", isNew:true,
+        steps:"断开网络，观察报工页顶部",
+        expect:"OfflineIndicator 组件显示离线提示" },
+      { id:"U-14", title:"审批页刷新按钮", p:"P2", isNew:true,
+        steps:"点击 Appbar 右上角刷新图标",
+        expect:"等同下拉刷新，列表重新加载" },
+    ]
+  },
+  // ===== 工时报工专项 =====
+  {
+    category: "工时报工 (HOURS) 专项",
+    cases: [
+      { id:"W-01", title:"确认工时报工入口存在", p:"P0", isNew:true,
+        steps:"以 workshop_sup1 登录，浏览首页快捷操作",
+        expect:"应有「工时上报」按钮。若无则为 P0 缺口。" },
+      { id:"W-02", title:"页面标题显示「生产工时上报」", p:"P1", isNew:true,
+        steps:"以 HOURS 类型进入 DynamicReportScreen",
+        expect:"标题为「生产工时上报」(不是「实时生产进度上报」)" },
+      { id:"W-03", title:"HOURS 类型显示正确字段", p:"P0", isNew:true,
+        steps:"HOURS 类型进入页面，查看表单字段",
+        expect:"显示: 商品名称*、工时明细(正式/小时/日结工)、开始/结束时间。不显示: 工序、良品/不良品" },
+      { id:"W-04", title:"PROGRESS 类型字段隔离", p:"P0", isNew:true,
+        steps:"PROGRESS 类型进入页面，查看表单字段",
+        expect:"显示: 工序*、产品数量、良品、不良品。不显示: 商品名称、工时明细" },
+      { id:"W-05", title:"HOURS 报工在审批列表不可见 (已知 Bug)", p:"P0", isNew:true,
+        steps:"1. HOURS 提交报工 2. factory_admin1 查看审批列表",
+        expect:"Bug 验证: HOURS 报工不出现（type 写死为 PROGRESS）" },
+      { id:"W-06", title:"工时浮点数输入", p:"P1", isNew:true,
+        steps:"工时字段填「7.5」(小时)",
+        expect:"parseFloat 正常解析，提交 7.5" },
+      { id:"W-07", title:"时间格式验证", p:"P2", isNew:true,
+        steps:"开始时间「09:00」、结束时间「17:30」",
+        expect:"纯文本输入无格式校验，直接提交" },
+      { id:"W-08", title:"时间顺序验证（结束 < 开始）", p:"P2", isNew:true,
+        steps:"开始「17:00」、结束「09:00」",
+        expect:"无校验直接提交（潜在业务逻辑问题）" },
+    ]
+  }
+];
+
+// ===== State =====
+const STORAGE_KEY = 'work-report-test-v2';
+let state = {};
+
+function loadState() {
+  try { state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { state = {}; }
+}
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+function getTC(id) {
+  return state[id] || { status: 'pending', notes: '' };
+}
+function setTC(id, key, val) {
+  if (!state[id]) state[id] = { status: 'pending', notes: '' };
+  state[id][key] = val;
+  saveState();
+  render();
+}
+
+// ===== Filter =====
+let currentFilter = 'all';
+
+// ===== Render =====
+function render() {
+  const container = document.getElementById('testContent');
+  let html = '';
+  let total = 0, pass = 0, fail = 0, skip = 0, bug = 0, pending = 0;
+
+  for (const cat of TEST_DATA) {
+    let catPass = 0, catTotal = 0;
+    let casesHtml = '';
+    let anyVisible = false;
+
+    for (const tc of cat.cases) {
+      const s = getTC(tc.id);
+      total++;
+      if (s.status === 'pass') { pass++; catPass++; }
+      else if (s.status === 'fail') fail++;
+      else if (s.status === 'skip') skip++;
+      else if (s.status === 'bug') bug++;
+      else pending++;
+      catTotal++;
+
+      // Filter logic
+      let visible = true;
+      if (currentFilter === 'pending' && s.status !== 'pending') visible = false;
+      if (currentFilter === 'pass' && s.status !== 'pass') visible = false;
+      if (currentFilter === 'fail' && s.status !== 'fail') visible = false;
+      if (currentFilter === 'bug' && s.status !== 'bug') visible = false;
+      if (currentFilter === 'skip' && s.status !== 'skip') visible = false;
+      if (currentFilter === 'p0' && tc.p !== 'P0') visible = false;
+      if (currentFilter === 'new' && !tc.isNew) visible = false;
+
+      if (visible) anyVisible = true;
+
+      const pClass = tc.p === 'P0' ? 'badge-p0' : tc.p === 'P1' ? 'badge-p1' : 'badge-p2';
+      const newBadge = tc.isNew ? '<span class="badge badge-new">新增</span>' : '<span class="badge badge-covered">已有</span>';
+
+      casesHtml += `
+        <div class="tc status-${s.status} ${visible ? '' : 'hidden'}" id="tc-${tc.id}">
+          <div class="tc-head">
+            <div class="tc-id">${tc.id}</div>
+            <div class="tc-main">
+              <div class="tc-title-row">
+                <span class="tc-title">${tc.title}</span>
+                <span class="badge ${pClass}">${tc.p}</span>
+                ${newBadge}
+              </div>
+              <div class="tc-steps">${tc.steps}</div>
+              <div class="tc-expect"><strong>预期:</strong> ${tc.expect}</div>
+              <div class="tc-actions">
+                <button class="status-btn ${s.status==='pass'?'sel-pass':''}" onclick="setTC('${tc.id}','status','pass')">通过</button>
+                <button class="status-btn ${s.status==='fail'?'sel-fail':''}" onclick="setTC('${tc.id}','status','fail')">失败</button>
+                <button class="status-btn ${s.status==='bug'?'sel-bug':''}" onclick="setTC('${tc.id}','status','bug')">Bug</button>
+                <button class="status-btn ${s.status==='skip'?'sel-skip':''}" onclick="setTC('${tc.id}','status','skip')">跳过</button>
+                <button class="status-btn" onclick="setTC('${tc.id}','status','pending')">重置</button>
+              </div>
+              <textarea class="tc-notes" placeholder="添加备注..." rows="1"
+                oninput="setTC('${tc.id}','notes',this.value)">${s.notes || ''}</textarea>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    html += `
+      <div class="category ${anyVisible ? '' : 'hidden'}">
+        <div class="category-header" onclick="toggleCat(this)">
+          <span class="cat-arrow open">&#9654;</span>
+          <span class="cat-title">${cat.category}</span>
+          <span class="cat-badge">${catTotal} 条</span>
+          <span class="cat-progress">${catPass}/${catTotal} 通过</span>
+        </div>
+        <div class="category-body">${casesHtml}</div>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+
+  // Stats
+  document.getElementById('cntPass').textContent = pass;
+  document.getElementById('cntFail').textContent = fail;
+  document.getElementById('cntBug').textContent = bug;
+  document.getElementById('cntSkip').textContent = skip;
+  document.getElementById('cntPending').textContent = pending;
+  const pct = total > 0 ? Math.round((pass + fail + bug + skip) / total * 100) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+}
+
+function toggleCat(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('.cat-arrow');
+  body.classList.toggle('collapsed');
+  arrow.classList.toggle('open');
+}
+
+// Filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+});
+
+function exportResults() {
+  let lines = ['ID\t状态\t优先级\t标题\t备注'];
+  for (const cat of TEST_DATA) {
+    for (const tc of cat.cases) {
+      const s = getTC(tc.id);
+      lines.push(`${tc.id}\t${s.status}\t${tc.p}\t${tc.title}\t${(s.notes||'').replace(/\n/g,' ')}`);
+    }
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `work-report-test-${new Date().toISOString().slice(0,10)}.tsv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function resetAll() {
+  if (confirm('确定重置所有测试状态？此操作不可撤销。')) {
+    state = {};
+    saveState();
+    render();
+  }
+}
+
+// Init
+loadState();
+render();
+</script>
+</body>
+</html>

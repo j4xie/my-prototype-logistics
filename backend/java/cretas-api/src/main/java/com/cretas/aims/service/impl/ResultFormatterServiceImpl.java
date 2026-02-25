@@ -52,6 +52,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
                 case "CRM" -> formatCRMResult(intentCode, resultData);
                 case "ALERT" -> formatAlertResult(intentCode, resultData);
                 case "EQUIPMENT" -> formatEquipmentResult(intentCode, resultData);
+                case "FOOD_KNOWLEDGE" -> formatFoodKnowledgeResult(resultData, response.getMessage());
                 default -> formatGenericResult(resultData);
             };
 
@@ -77,6 +78,25 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
             log.warn("格式化结果失败: intentCode={}, error={}", intentCode, e.getMessage());
             return response.getMessage();
         }
+    }
+
+    // ==================== 食品知识库 格式化 ====================
+
+    private String formatFoodKnowledgeResult(Object resultData, String handlerMessage) {
+        // 食品知识库回复: resultData 含 answer/citations，message 含完整答案
+        // 直接使用 message (handler 已构建好格式化答案)，避免 generic formatter 只输出元数据
+        if (handlerMessage != null && handlerMessage.length() >= 20) {
+            return handlerMessage;
+        }
+        // fallback: 从 resultData.answer 提取
+        Map<String, Object> data = asMap(resultData);
+        if (data != null) {
+            String answer = getString(data, "answer");
+            if (answer != null && answer.length() >= 20) {
+                return answer;
+            }
+        }
+        return handlerMessage;
     }
 
     // ==================== 出货/发货 格式化 ====================

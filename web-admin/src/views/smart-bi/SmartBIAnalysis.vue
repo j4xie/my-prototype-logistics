@@ -716,7 +716,7 @@
       <div v-if="drillDownResult.available_dimensions?.length" class="drill-dimensions">
         <span class="drill-dim-label">可继续下钻:</span>
         <el-button v-for="dim in drillDownResult.available_dimensions" :key="dim" size="small" @click="drillByDimension(dim)">
-          {{ dim }}
+          {{ getColumnLabel(dim) }}
         </el-button>
       </div>
 
@@ -733,7 +733,7 @@
           <el-descriptions-item label="维度">{{ drillDownResult.result.dimension }}</el-descriptions-item>
           <el-descriptions-item label="筛选值">{{ drillDownResult.result.filterValue }}</el-descriptions-item>
           <template v-for="(val, key) in drillDownResult.result.summary" :key="key">
-            <el-descriptions-item v-if="key !== 'dimension'" :label="String(key)">
+            <el-descriptions-item v-if="key !== 'dimension'" :label="getColumnLabel(String(key))">
               {{ typeof val === 'number' ? val.toLocaleString() : val }}
             </el-descriptions-item>
           </template>
@@ -753,7 +753,7 @@
         <h4>详细数据 ({{ drillDownResult.result.data.length }} 条)</h4>
         <el-table :data="drillDownResult.result.data.slice(0, 20)" border stripe size="small" max-height="300">
           <el-table-column v-for="col in Object.keys(drillDownResult.result.data[0] || {})" :key="col"
-            :prop="col" :label="col" min-width="100" show-overflow-tooltip />
+            :prop="col" :label="getColumnLabel(col)" min-width="100" show-overflow-tooltip />
         </el-table>
       </div>
 
@@ -831,7 +831,7 @@
         <el-table :data="crossSheetResult.kpiComparison" border stripe size="small">
           <el-table-column prop="sheetName" label="报表" min-width="180" fixed />
           <template v-for="kpiKey in crossSheetKpiKeys" :key="kpiKey">
-            <el-table-column :label="kpiKey" min-width="120">
+            <el-table-column :label="getColumnLabel(kpiKey)" min-width="120">
               <template #default="{ row }">
                 {{ row.kpis?.[kpiKey] != null ? Number(row.kpis[kpiKey]).toLocaleString() : '-' }}
               </template>
@@ -1026,7 +1026,7 @@
     <div v-loading="previewLoading">
       <el-table v-if="previewData?.data" :data="previewData.data" border stripe max-height="500" size="small">
         <el-table-column v-for="header in previewData.headers" :key="header"
-          :prop="header" :label="header" min-width="120" show-overflow-tooltip />
+          :prop="header" :label="getColumnLabel(header)" min-width="120" show-overflow-tooltip />
       </el-table>
       <div v-if="previewData?.total" style="margin-top: 12px; display: flex; justify-content: center;">
         <el-pagination layout="prev, pager, next, total"
@@ -1177,6 +1177,7 @@ interface SheetResult {
     charts?: Array<{ chartType: string; title: string; config: Record<string, unknown>; totalItems?: number }>;
     kpiSummary?: { rowCount: number; columnCount: number; columns: ColumnSummary[] };
     structuredAI?: StructuredAIData;
+    displayNameMap?: Record<string, string>;
   };
 }
 
@@ -1541,12 +1542,13 @@ const kpiCache = new Map<string, SmartKPI[]>();
 const computeSmartKPIs = (
   kpiSummary: { rowCount: number; columnCount: number; columns: ColumnSummary[] },
   financialMetrics?: FinancialMetrics | null,
-  uploadId?: number
+  uploadId?: number,
+  displayNameMap?: Record<string, string>
 ): SmartKPI[] => {
-  const cacheKey = `${uploadId ?? 'x'}-${kpiSummary.rowCount}-${kpiSummary.columnCount}-${kpiSummary.columns?.length}-${financialMetrics ? 'fm' : ''}`;
+  const cacheKey = `${uploadId ?? 'x'}-${kpiSummary.rowCount}-${kpiSummary.columnCount}-${kpiSummary.columns?.length}-${financialMetrics ? 'fm' : ''}-${displayNameMap ? 'dnm' : ''}`;
   const cached = kpiCache.get(cacheKey);
   if (cached) return cached;
-  const result = getSmartKPIs(kpiSummary, financialMetrics);
+  const result = getSmartKPIs(kpiSummary, financialMetrics, displayNameMap);
   kpiCache.set(cacheKey, result);
   return result;
 };
@@ -1554,7 +1556,7 @@ const computeSmartKPIs = (
 // 获取 Sheet 的 KPI 列表（用于模板中）
 const getSheetKPIs = (sheet: SheetResult): SmartKPI[] => {
   if (!sheet.flowResult?.kpiSummary) return [];
-  return computeSmartKPIs(sheet.flowResult.kpiSummary, sheet.flowResult?.financialMetrics, sheet.uploadId);
+  return computeSmartKPIs(sheet.flowResult.kpiSummary, sheet.flowResult?.financialMetrics, sheet.uploadId, sheet.flowResult?.displayNameMap);
 };
 
 // 获取高管摘要
@@ -2060,24 +2062,24 @@ const applyAnomalyOverlay = (opts: Record<string, unknown>, anomalies: Record<st
 // 综合图表增强：DataZoom + 标签自适应 + 近零值 + 零值标签隐藏 + 图例人性化 + 离群值 + 万/亿格式化
 /**
  * Clean meaningless auto-generated suffixes from display labels.
- * Converts "实际收入_2" → "实际收入②", "入库_3" → "入库③" etc.
+ * Converts "实际收入_2" → "实际收入(2)", "入库_3" → "入库(3)" etc.
  * Keeps labels distinguishable while making them human-readable.
  */
 const cleanDisplayLabel = (label: string): string => {
-  const circled = ['', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫'];
-  // Match patterns: "xxx_2", "xxx(2)" — at end of string or before a space/punctuation
-  return label
-    .replace(/_(\d{1,2})(?=$|\s)/g, (_m, n) => {
-      const idx = parseInt(n);
-      return idx < circled.length ? circled[idx] : `·${n}`;
-    })
-    .replace(/\((\d{1,2})\)(?=$|\s)/g, (_m, n) => {
-      const idx = parseInt(n);
-      return idx < circled.length ? circled[idx] : `·${n}`;
-    });
+  // Convert _N suffixes to (N) format for readability; leave (N) as-is
+  return label.replace(/_(\d{1,2})(?=$|\s|、)/g, (_m, n) => `(${n})`);
 };
 
-const enhanceChartOption = (opts: Record<string, unknown>): void => {
+/** Template helper: resolve a raw column name to its best display label */
+const getColumnLabel = (col: string): string => {
+  const idx = parseInt(activeTab.value);
+  const sheet = uploadedSheets.value.find(s => s.sheetIndex === idx);
+  const map = sheet?.flowResult?.displayNameMap;
+  return map?.[col] || humanizeColumnName(col);
+};
+
+const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Record<string, string>): void => {
+  const nameOf = (col: string) => displayNameMap?.[col] || humanizeColumnName(col);
   // === Clean meaningless suffixes in title, series names, legend, radar indicators ===
   {
     const _title = (opts as any).title;
@@ -2144,11 +2146,11 @@ const enhanceChartOption = (opts: Record<string, unknown>): void => {
   const series = (opts as any).series;
   const chartType = Array.isArray(series) ? series[0]?.type : '';
 
-  // === D2: 图例名称人性化 ===
+  // === D2: 图例名称人性化 (uses displayNameMap when available) ===
   if (Array.isArray(series)) {
     for (const s of series) {
       if (s.name && typeof s.name === 'string') {
-        s.name = humanizeColumnName(s.name);
+        s.name = nameOf(s.name);
       }
     }
   }
@@ -2156,9 +2158,9 @@ const enhanceChartOption = (opts: Record<string, unknown>): void => {
   const legend = (opts as any).legend;
   if (legend && Array.isArray(legend.data)) {
     legend.data = legend.data.map((item: any) => {
-      if (typeof item === 'string') return humanizeColumnName(item);
+      if (typeof item === 'string') return nameOf(item);
       if (item && typeof item.name === 'string') {
-        item.name = humanizeColumnName(item.name);
+        item.name = nameOf(item.name);
         return item;
       }
       return item;
@@ -2169,11 +2171,11 @@ const enhanceChartOption = (opts: Record<string, unknown>): void => {
   const yAxes = Array.isArray(yAxis) ? yAxis : (yAxis ? [yAxis] : []);
   for (const ax of yAxes) {
     if (ax && typeof ax.name === 'string') {
-      ax.name = humanizeColumnName(ax.name);
+      ax.name = nameOf(ax.name);
     }
   }
   if (xAxis && typeof xAxis.name === 'string') {
-    xAxis.name = humanizeColumnName(xAxis.name);
+    xAxis.name = nameOf(xAxis.name);
   }
 
   // === P1.1: 食品行业语义配色 ===
@@ -2541,7 +2543,7 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
 
     // Process __ANIM__/__FMT__ named references from Python
     echartsOptions = processEChartsOptions(echartsOptions);
-    enhanceChartOption(echartsOptions);
+    enhanceChartOption(echartsOptions, activeSheet?.flowResult?.displayNameMap);
 
     // D4: 全零图表检测 — 当95%+数据为零时添加提示水印
     const eSeries = (echartsOptions as any).series;
@@ -3072,6 +3074,10 @@ const idleEnrichNext = (currentSheetIndex: number) => {
             if (result.structuredAI) {
               sheet.flowResult.structuredAI = result.structuredAI;
             }
+            // 更新 displayNameMap
+            if (result.displayNameMap) {
+              sheet.flowResult.displayNameMap = result.displayNameMap;
+            }
             // 缓存原始数据
             if (result.rawData?.length && nextSheet.uploadId) {
               sheetRawDataCache.set(nextSheet.uploadId, result.rawData);
@@ -3192,6 +3198,7 @@ const enrichSheet = async (sheet: SheetResult, forceRefresh = false) => {
         if (result.kpiSummary) currentSheet.flowResult.kpiSummary = result.kpiSummary;
         if (result.aiAnalysis) currentSheet.flowResult.aiAnalysis = result.aiAnalysis;
         if (result.structuredAI) currentSheet.flowResult.structuredAI = result.structuredAI;
+        if (result.displayNameMap) currentSheet.flowResult.displayNameMap = result.displayNameMap;
         // Persist rawData for cross-filtering & Excel export
         if (result.rawData?.length && uploadId) {
           sheetRawDataCache.set(uploadId, result.rawData);
@@ -4220,6 +4227,7 @@ const handleRetrySheet = async (sheet: SheetResult) => {
                 charts: enrichResult.charts,
                 kpiSummary: enrichResult.kpiSummary,
                 structuredAI: enrichResult.structuredAI,
+                displayNameMap: enrichResult.displayNameMap,
               };
               enrichedSheets.value.add(sheet.uploadId!);
             }

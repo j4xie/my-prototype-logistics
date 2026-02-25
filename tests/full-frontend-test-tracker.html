@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cretas 前端全模块测试跟踪器</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232733;
+    --border: #2e3345;
+    --text: #e4e7f1;
+    --text2: #8b90a5;
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --orange: #f97316;
+    --blue: #3b82f6;
+    --pink: #ec4899;
+    --purple: #a855f7;
+    --teal: #14b8a6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg); color: var(--text);
+    line-height: 1.6; padding: 0;
+  }
+  .top-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,17,23,0.95); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+  }
+  .top-bar h1 { font-size: 18px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .top-bar h1 span { font-size: 12px; color: var(--text2); font-weight: 400; }
+  .progress-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .progress-bar-wrap { flex: 1; min-width: 200px; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; background: linear-gradient(90deg, var(--accent), var(--green)); }
+  .progress-stats { display: flex; gap: 12px; font-size: 13px; flex-wrap: wrap; }
+  .stat { display: flex; align-items: center; gap: 4px; }
+  .stat .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-pass { background: var(--green); }
+  .dot-fail { background: var(--red); }
+  .dot-skip { background: var(--yellow); }
+  .dot-bug { background: var(--pink); }
+  .dot-pending { background: var(--text2); }
+  .controls { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--text2); font-size: 11px; cursor: pointer; transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .module-btn {
+    padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--text2); font-size: 11px; cursor: pointer; transition: all 0.2s;
+  }
+  .module-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .module-btn.active { background: var(--teal); color: #fff; border-color: var(--teal); }
+  .export-btn {
+    padding: 3px 12px; border-radius: 6px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-size: 11px; cursor: pointer;
+  }
+  .export-btn:hover { background: var(--accent); color: #fff; }
+  .controls-row2 { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .controls-row2 .label { font-size: 11px; color: var(--text2); margin-right: 4px; }
+  .content { padding: 0 24px 80px; }
+  .category { margin-top: 16px; }
+  .category-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0; cursor: pointer; user-select: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .category-header:hover { opacity: 0.85; }
+  .cat-arrow { font-size: 12px; color: var(--text2); transition: transform 0.2s; width: 16px; text-align: center; }
+  .cat-arrow.open { transform: rotate(90deg); }
+  .cat-title { font-size: 14px; font-weight: 600; }
+  .cat-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: var(--surface2); color: var(--text2); }
+  .cat-module-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .cat-progress { margin-left: auto; font-size: 12px; color: var(--text2); }
+  .category-body { overflow: hidden; }
+  .category-body.collapsed { display: none; }
+  .tc {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px; margin-top: 6px; transition: border-color 0.2s;
+  }
+  .tc:hover { border-color: var(--accent); }
+  .tc.status-pass { border-left: 3px solid var(--green); }
+  .tc.status-fail { border-left: 3px solid var(--red); }
+  .tc.status-skip { border-left: 3px solid var(--yellow); }
+  .tc.status-bug { border-left: 3px solid var(--pink); }
+  .tc-head { display: flex; align-items: flex-start; gap: 8px; }
+  .tc-id { font-size: 11px; font-weight: 700; color: var(--accent2); min-width: 42px; padding-top: 2px; }
+  .tc-main { flex: 1; }
+  .tc-title-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .tc-title { font-size: 13px; font-weight: 600; }
+  .badge { font-size: 9px; padding: 1px 6px; border-radius: 8px; font-weight: 600; }
+  .badge-p0 { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge-p1 { background: rgba(249,115,22,0.15); color: var(--orange); }
+  .badge-p2 { background: rgba(59,130,246,0.12); color: var(--blue); }
+  .badge-role { background: rgba(168,85,247,0.12); color: var(--purple); }
+  .tc-steps { font-size: 11px; color: var(--text2); margin-top: 4px; white-space: pre-line; }
+  .tc-expect { font-size: 11px; color: var(--text); margin-top: 3px; padding: 5px 8px; background: var(--surface2); border-radius: 5px; }
+  .tc-expect strong { color: var(--accent2); font-weight: 600; }
+  .tc-actions { display: flex; gap: 4px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+  .status-btn {
+    padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border);
+    background: transparent; font-size: 10px; cursor: pointer; color: var(--text2); transition: all 0.15s;
+  }
+  .status-btn:hover { opacity: 0.8; }
+  .status-btn.sel-pass { background: var(--green); color: #fff; border-color: var(--green); }
+  .status-btn.sel-fail { background: var(--red); color: #fff; border-color: var(--red); }
+  .status-btn.sel-skip { background: var(--yellow); color: #000; border-color: var(--yellow); }
+  .status-btn.sel-bug { background: var(--pink); color: #fff; border-color: var(--pink); }
+  .tc-notes {
+    width: 100%; margin-top: 6px; padding: 5px 8px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+    color: var(--text); font-size: 11px; resize: vertical; min-height: 24px; font-family: inherit;
+  }
+  .tc-notes:focus { border-color: var(--accent); outline: none; }
+  .tc-notes::placeholder { color: var(--text2); }
+  .hidden { display: none !important; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; padding: 12px 24px; }
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+  .summary-card h4 { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .summary-card .num { font-size: 22px; font-weight: 700; }
+  .summary-card .detail { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  @media (max-width: 640px) {
+    .top-bar { padding: 10px 12px; }
+    .content { padding: 0 12px 60px; }
+    .summary-grid { padding: 8px 12px; grid-template-columns: repeat(2, 1fr); }
+  }
+  @media print {
+    body { background: #fff; color: #000; }
+    .top-bar { position: static; background: #fff; }
+    .controls, .controls-row2, .status-btn, .export-btn { display: none; }
+    .tc { border: 1px solid #ccc; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1>
+    Cretas 前端全模块测试跟踪器
+    <span>v3.0 · <span id="totalCount">0</span> 用例 · 11 模块</span>
+  </h1>
+  <div class="progress-row">
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+    <div class="progress-stats" id="statsDisplay">
+      <span class="stat"><span class="dot dot-pass"></span> 通过 <b id="cntPass">0</b></span>
+      <span class="stat"><span class="dot dot-fail"></span> 失败 <b id="cntFail">0</b></span>
+      <span class="stat"><span class="dot dot-bug"></span> Bug <b id="cntBug">0</b></span>
+      <span class="stat"><span class="dot dot-skip"></span> 跳过 <b id="cntSkip">0</b></span>
+      <span class="stat"><span class="dot dot-pending"></span> 待测 <b id="cntPending">0</b></span>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="filter-btn active" data-filter="all">全部</button>
+    <button class="filter-btn" data-filter="pending">待测</button>
+    <button class="filter-btn" data-filter="pass">通过</button>
+    <button class="filter-btn" data-filter="fail">失败</button>
+    <button class="filter-btn" data-filter="bug">Bug</button>
+    <button class="filter-btn" data-filter="p0">仅P0</button>
+    <button class="export-btn" onclick="exportResults()">导出TSV</button>
+    <button class="export-btn" onclick="resetAll()">重置</button>
+  </div>
+  <div class="controls-row2">
+    <span class="label">模块筛选:</span>
+    <button class="module-btn active" data-module="all">全部</button>
+    <button class="module-btn" data-module="WR">报工</button>
+    <button class="module-btn" data-module="PO">采购</button>
+    <button class="module-btn" data-module="SO">销售</button>
+    <button class="module-btn" data-module="TR">调拨</button>
+    <button class="module-btn" data-module="RO">退货</button>
+    <button class="module-btn" data-module="FIN">财务</button>
+    <button class="module-btn" data-module="WAG">工资</button>
+    <button class="module-btn" data-module="HOM">首页</button>
+    <button class="module-btn" data-module="SET">设置</button>
+    <button class="module-btn" data-module="AI">AI</button>
+  </div>
+</div>
+
+<div class="summary-grid" id="summaryGrid"></div>
+<div class="content" id="testContent"></div>
+
+<script>
+const MODULE_COLORS = {
+  WR: '#6366f1', PO: '#f97316', SO: '#22c55e', TR: '#3b82f6',
+  RO: '#ec4899', FIN: '#eab308', WAG: '#a855f7', HOM: '#14b8a6',
+  SET: '#8b90a5', AI: '#06b6d4', USR: '#f43f5e'
+};
+
+const TEST_DATA = [
+  // ==================== 报工模块 (WR) ====================
+  {
+    category: "报工 — 正向流程",
+    module: "WR",
+    cases: [
+      { id:"WR-01", title:"班组报工 — 选批次+填成员产量(含良品/不良品)", p:"P0", role:"workshop_sup1",
+        steps:"1. 首页点「班组报工」\n2. 只显示分配给当前主管的批次\n3. 选 IN_PROGRESS 批次\n4. 展开工人卡片填良品/不良品(默认折叠)\n5. 为至少1名工人填产出\n6. 点「一键提交」",
+        expect:"Alert「N人的报工已提交」" },
+      { id:"WR-02", title:"班组报工 — 手动添加成员", p:"P1", role:"workshop_sup1",
+        steps:"选择批次后点「+ 添加成员」，填写新成员产出",
+        expect:"成员列表新增一行，计入提交人数" },
+      { id:"WR-03", title:"班组报工 — 更换批次", p:"P1", role:"workshop_sup1",
+        steps:"已选批次后点击「更换」",
+        expect:"返回批次列表，成员列表清空" },
+      { id:"WR-04", title:"工时报工 (HOURS) — 填工时明细提交", p:"P0", role:"workshop_sup1",
+        steps:"1. 首页点「工时上报」\n2. 商品名称「香酥鱼柳」\n3. 正式工5人8h、小时工2人4h\n4. 提交",
+        expect:"Alert「报工提交成功」，记录7人工时" },
+      { id:"WR-05", title:"工时上报入口存在", p:"P0", role:"workshop_sup1",
+        steps:"登录 → 浏览首页快捷操作区",
+        expect:"存在「工时上报」按钮（clock-outline 图标，红色背景），点击导航到 DynamicReport(HOURS)" },
+      { id:"WR-06", title:"我的报工入口存在", p:"P0", role:"workshop_sup1",
+        steps:"登录 → 浏览首页快捷操作区",
+        expect:"存在「我的报工」按钮（clipboard-text-clock-outline，绿色背景），点击导航到 MyWorkReports" },
+      { id:"WR-07", title:"签到 — QR扫码签到(含supervisorId过滤+单批次自动选中)", p:"P0", role:"workshop_sup1",
+        steps:"1. 进入签到页，只显示分配给当前主管的批次\n2. 若仅1个批次则自动选中跳过选择\n3. QR扫码Tab → 扫码签到",
+        expect:"Alert「签到成功」，签到列表新增一行" },
+      { id:"WR-13", title:"签退 — 对已签到员工签退", p:"P0", role:"workshop_sup1",
+        steps:"签到页找到「工作中」员工 → 点「签退」",
+        expect:"Alert「签退成功」，状态变「已签退」" },
+      { id:"WR-14", title:"草稿管理 — 有草稿时查看", p:"P1", role:"workshop_sup1",
+        steps:"首页点「草稿管理」（此前有离线草稿）",
+        expect:"显示草稿列表，有批次号、产出、时间" },
+      { id:"WR-15", title:"草稿管理 — 重新提交草稿", p:"P1", role:"workshop_sup1",
+        steps:"网络恢复后在草稿列表点「重新提交」",
+        expect:"Alert「已同步」，草稿从列表移除" },
+    ]
+  },
+  {
+    category: "报工 — 我的报工历史",
+    module: "WR",
+    cases: [
+      { id:"WR-20", title:"初始加载显示全部记录", p:"P0", role:"workshop_sup1",
+        steps:"导航到「我的报工」→ 等待加载",
+        expect:"FlatList 渲染报工卡片，每条显示日期/类型Chip/状态Chip" },
+      { id:"WR-21", title:"状态过滤「待审批」", p:"P1", role:"workshop_sup1",
+        steps:"点击「待审批」Tab",
+        expect:"仅显示 SUBMITTED 记录" },
+      { id:"WR-22", title:"状态过滤「已批准」", p:"P1", role:"workshop_sup1",
+        steps:"点击「已批准」Tab",
+        expect:"仅显示 APPROVED 记录" },
+      { id:"WR-23", title:"状态过滤「已拒绝」", p:"P1", role:"workshop_sup1",
+        steps:"点击「已拒绝」Tab",
+        expect:"仅显示 REJECTED 记录" },
+      { id:"WR-24", title:"已拒绝记录显示拒绝原因", p:"P0", role:"workshop_sup1",
+        steps:"点击「已拒绝」Tab → 查看被拒记录",
+        expect:"卡片底部红色背景「拒绝原因」区块，内含拒绝文字" },
+      { id:"WR-25", title:"HOURS 类型记录展示工时/人数", p:"P1", role:"workshop_sup1",
+        steps:"在列表中找到 HOURS 类型记录",
+        expect:"显示「总工时 X 小时」和「工人数 X 人」，不显示产量/良品" },
+      { id:"WR-26", title:"PROGRESS 类型记录展示产量", p:"P1", role:"workshop_sup1",
+        steps:"在列表中找到 PROGRESS 类型记录",
+        expect:"显示产量/良品，若缺陷>0则红色显示，不显示工时" },
+      { id:"WR-27", title:"空列表状态", p:"P1", role:"workshop_sup1",
+        steps:"切到某状态Tab且无数据",
+        expect:"显示「暂无报工记录」" },
+      { id:"WR-28", title:"下拉刷新", p:"P2", role:"workshop_sup1",
+        steps:"列表页下拉",
+        expect:"RefreshControl 出现，数据重新加载" },
+    ]
+  },
+  {
+    category: "报工 — 审批 (factory_admin)",
+    module: "WR",
+    cases: [
+      { id:"WR-30", title:"审批页加载所有类型报工", p:"P0", role:"factory_admin1",
+        steps:"管理Tab → 报工审批 → 等待加载",
+        expect:"待审批列表包含 PROGRESS 和 HOURS 两种类型报工（无 type 写死）" },
+      { id:"WR-31", title:"状态筛选 — 仅待审批", p:"P1", role:"factory_admin1",
+        steps:"点状态筛选「待审批」",
+        expect:"仅显示 SUBMITTED 记录" },
+      { id:"WR-32", title:"状态筛选 — 已批准Tab", p:"P1", role:"factory_admin1",
+        steps:"点「已批准」Tab",
+        expect:"显示 APPROVED 记录，无批准/拒绝按钮" },
+      { id:"WR-33", title:"状态筛选 — 全部", p:"P1", role:"factory_admin1",
+        steps:"点「全部」Tab",
+        expect:"显示所有状态 (SUBMITTED + APPROVED + REJECTED)" },
+      { id:"WR-34", title:"类型筛选 — 仅工时", p:"P1", role:"factory_admin1",
+        steps:"点击类型筛选行「工时」",
+        expect:"列表仅显示 reportType=HOURS 的记录" },
+      { id:"WR-35", title:"类型筛选 — 仅进度", p:"P1", role:"factory_admin1",
+        steps:"点击类型筛选行「进度」",
+        expect:"列表仅显示 reportType=PROGRESS 的记录" },
+      { id:"WR-36", title:"类型 Chip 标识", p:"P1", role:"factory_admin1",
+        steps:"查看任意报工卡片",
+        expect:"卡片显示蓝色「进度」或紫色「工时」类型 Chip" },
+      { id:"WR-37", title:"批准 HOURS 类型报工", p:"P0", role:"factory_admin1",
+        steps:"找到 HOURS 记录 → 点「批准」→ 确认",
+        expect:"Alert「已批准」，记录从待审批消失" },
+      { id:"WR-38", title:"批准 PROGRESS 类型报工", p:"P0", role:"factory_admin1",
+        steps:"找到 PROGRESS 记录 → 点「批准」→ 确认",
+        expect:"Alert「已批准」，记录从待审批消失" },
+      { id:"WR-39", title:"拒绝报工并填原因", p:"P0", role:"factory_admin1",
+        steps:"点「拒绝」→ Modal 填「产量数据有误」→ 确认拒绝",
+        expect:"Alert「已拒绝」，Modal 关闭" },
+      { id:"WR-3A", title:"拒绝原因仅空格时按钮 disabled", p:"P0", role:"factory_admin1",
+        steps:"Modal 输入若干空格",
+        expect:"确认按钮保持 disabled（trim()为空）" },
+      { id:"WR-3B", title:"拒绝原因达500字符", p:"P2", role:"factory_admin1",
+        steps:"输入恰好500字符",
+        expect:"字符计数 500/500，超出被截断" },
+      { id:"WR-3C", title:"批准操作取消确认", p:"P1", role:"factory_admin1",
+        steps:"点「批准」→ 弹框中点「取消」",
+        expect:"弹框关闭，状态不变" },
+      { id:"WR-3D", title:"关闭拒绝 Modal（点X）", p:"P2", role:"factory_admin1",
+        steps:"拒绝 Modal 打开时点右上角关闭",
+        expect:"Modal 关闭，rejectReason 清空" },
+      { id:"WR-3E", title:"HOURS 卡片显示工时字段", p:"P1", role:"factory_admin1",
+        steps:"在列表中查看 HOURS 类型卡片",
+        expect:"显示「总工时」和「工人数」，不显示产量/良品/不良品" },
+      { id:"WR-3F", title:"审批列表初始加载 loading", p:"P1", role:"factory_admin1",
+        steps:"进入报工审批页面",
+        expect:"显示 ActivityIndicator" },
+      { id:"WR-3G", title:"审批列表空状态", p:"P1", role:"factory_admin1",
+        steps:"切换到某Tab且无数据",
+        expect:"显示「暂无报工记录」" },
+      { id:"WR-3H", title:"审批列表下拉刷新", p:"P1", role:"factory_admin1",
+        steps:"在审批列表向下拉",
+        expect:"RefreshControl 触发，数据重新加载" },
+      { id:"WR-3I", title:"审批页刷新按钮", p:"P2", role:"factory_admin1",
+        steps:"点击 Appbar 右上角刷新图标",
+        expect:"等同下拉刷新，列表重新加载" },
+    ]
+  },
+  {
+    category: "报工 — 多角色交叉",
+    module: "WR",
+    cases: [
+      { id:"WR-40", title:"主管提交 → 管理员批准 → 主管看状态", p:"P0", role:"multi",
+        steps:"1. workshop_sup1 扫码报工提交\n2. factory_admin1 审批页批准\n3. workshop_sup1 → 我的报工 → 已批准Tab",
+        expect:"该报工出现在已批准列表中" },
+      { id:"WR-41", title:"管理员拒绝 → 主管看到原因", p:"P0", role:"multi",
+        steps:"1. factory_admin1 拒绝并填原因\n2. workshop_sup1 → 我的报工 → 已拒绝Tab",
+        expect:"看到拒绝原因红色文字" },
+      { id:"WR-42", title:"HOURS 完整闭环: 提交→审批→查看", p:"P0", role:"multi",
+        steps:"1. WS 工时上报提交\n2. FA 审批页看到 HOURS 报工并批准\n3. WS 我的报工确认已批准",
+        expect:"HOURS 报工全链路可见，不受 type 写死影响" },
+      { id:"WR-43", title:"两个管理员同时审批同一条", p:"P2", role:"multi",
+        steps:"两个窗口同时打开审批页\nA 批准某条后 B 也尝试批准",
+        expect:"B 收到后端错误（状态已变更）" },
+    ]
+  },
+  {
+    category: "报工 — 边界值",
+    module: "WR",
+    cases: [
+      { id:"WR-50", title:"班组报工 — 良品数量 > 产出数量", p:"P1", role:"workshop_sup1",
+        steps:"班组报工展开成员卡片，产出 100，良品 150，提交",
+        expect:"确认是否有前端校验拦截" },
+      { id:"WR-51", title:"HOURS 商品名称为空提交", p:"P0", role:"workshop_sup1",
+        steps:"工时报工，商品名称留空提交",
+        expect:"Alert「请填写商品名称」" },
+      { id:"WR-52", title:"HOURS 工时全留空提交", p:"P1", role:"workshop_sup1",
+        steps:"HOURS 类型，商品名称填好，工时明细三行全空",
+        expect:"totalWorkers=0，提交成功，不崩溃" },
+      { id:"WR-53", title:"HOURS 工人数填小数", p:"P2", role:"workshop_sup1",
+        steps:"正式工人数填「3.7」",
+        expect:"parseInt 截断为3" },
+      { id:"WR-54", title:"班组报工所有成员产出为空", p:"P0", role:"workshop_sup1",
+        steps:"选批次后所有成员不填产出，提交",
+        expect:"Alert「请至少填写一人的产出数据」" },
+      { id:"WR-55", title:"班组报工部分成员填写", p:"P1", role:"workshop_sup1",
+        steps:"5名成员中3人填产出，2人留空",
+        expect:"Alert「3人的报工已提交」" },
+    ]
+  },
+  {
+    category: "报工 — 异常流程",
+    module: "WR",
+    cases: [
+      { id:"WR-60", title:"重新提交草稿时网络仍断", p:"P1", role:"workshop_sup1",
+        steps:"草稿列表点「重新提交」但网络仍断",
+        expect:"Alert「提交失败，请检查网络」，草稿保留" },
+      { id:"WR-61", title:"删除单条草稿", p:"P1", role:"workshop_sup1",
+        steps:"点草稿的「删除」→ 确认删除",
+        expect:"草稿从列表移除" },
+      { id:"WR-62", title:"取消删除草稿", p:"P2", role:"workshop_sup1",
+        steps:"点「删除」→ 弹框中点「取消」",
+        expect:"草稿保留" },
+      { id:"WR-63", title:"清空所有草稿", p:"P1", role:"workshop_sup1",
+        steps:"多条草稿时点右上角「清空」→ 确认",
+        expect:"列表变空状态" },
+      { id:"WR-64", title:"重复签到同一员工", p:"P1", role:"workshop_sup1",
+        steps:"对已签到(工作中)的员工再次签到",
+        expect:"Alert「员工已签到」（后端返回错误）" },
+      { id:"WR-65", title:"QR 扫到非数字内容", p:"P1", role:"workshop_sup1",
+        steps:"QR 扫码内容为「EMP-ABC」",
+        expect:"Alert「无法识别员工编号」" },
+      { id:"WR-66", title:"未选批次时尝试签到", p:"P2", role:"workshop_sup1",
+        steps:"NfcCheckinScreen 未选批次时尝试操作",
+        expect:"签到按钮应禁用或静默返回" },
+      { id:"WR-67", title:"审批并发操作", p:"P2", role:"factory_admin1",
+        steps:"快速连续点两条记录的「批准」",
+        expect:"确认是否有 submitting 防并发" },
+    ]
+  },
+  {
+    category: "报工 — 数据联动",
+    module: "WR",
+    cases: [
+      { id:"WR-70", title:"班组报工后批次 actualQuantity 增加", p:"P0", role:"workshop_sup1",
+        steps:"1. 先在「批次」Tab 查看某批次当前 actualQuantity\n2. 通过班组报工提交产出 100 (含良品/不良品)\n3. 回到批次详情",
+        expect:"actualQuantity 增加了100，goodQuantity/defectQuantity 同步更新" },
+      { id:"WR-71", title:"产量达标 → 批次自动完成", p:"P1", role:"workshop_sup1",
+        steps:"报工至 actualQuantity >= 计划量\n在批次列表切换到 COMPLETED 筛选",
+        expect:"该批次状态变 COMPLETED（慎测：会真改数据）" },
+      { id:"WR-72", title:"审批后列表自动刷新", p:"P1", role:"factory_admin1",
+        steps:"在待审批Tab批准一条记录",
+        expect:"loadReports() 触发，该记录从列表消失" },
+      { id:"WR-73", title:"对已超产批次再报工", p:"P2", role:"workshop_sup1",
+        steps:"对已超产批次(actual > planned)再报50",
+        expect:"前端无拦截，actualQuantity继续增加" },
+      { id:"WR-74", title:"签到时长计算", p:"P2", role:"workshop_sup1",
+        steps:"签到后等1分钟签退，查看签到列表",
+        expect:"workMinutes 约为1" },
+    ]
+  },
+  {
+    category: "报工 — UI/UX",
+    module: "WR",
+    cases: [
+      { id:"WR-80", title:"草稿列表空状态", p:"P1", role:"workshop_sup1",
+        steps:"无草稿时进入草稿管理",
+        expect:"显示绿色勾选图标 +「暂无草稿」" },
+      { id:"WR-81", title:"班组报工无进行中批次", p:"P1", role:"workshop_sup1",
+        steps:"进入班组报工（假设无 IN_PROGRESS 批次）",
+        expect:"显示「暂无进行中的批次」" },
+      { id:"WR-82", title:"签到页无进行中批次", p:"P1", role:"workshop_sup1",
+        steps:"进入签到页（假设无 IN_PROGRESS 批次）",
+        expect:"显示剪贴板图标 +「暂无进行中的批次」" },
+      { id:"WR-83", title:"首页下拉刷新", p:"P1", role:"workshop_sup1",
+        steps:"车间主管首页向下拉",
+        expect:"所有数据重新加载" },
+      { id:"WR-84", title:"工时报工填写中途按返回", p:"P2", role:"workshop_sup1",
+        steps:"DynamicReport 填写部分内容后按返回",
+        expect:"直接返回，数据丢失（确认是否应有保护弹框）" },
+      { id:"WR-85", title:"提交按钮 loading 状态", p:"P1", role:"workshop_sup1",
+        steps:"点击提交后在响应到来前观察按钮",
+        expect:"按钮显示 loading，disabled=true" },
+      { id:"WR-86", title:"班组报工按钮显示人数", p:"P2", role:"workshop_sup1",
+        steps:"填写3人数据，观察提交按钮文字",
+        expect:"按钮文字显示「一键提交 (3人)」" },
+      { id:"WR-87", title:"NFC 不可用提示", p:"P1", role:"workshop_sup1",
+        steps:"在不支持NFC的设备进入签到页",
+        expect:"NFC Tab 显示「不可用」，默认切到 QR Tab" },
+      { id:"WR-88", title:"断网时离线横幅", p:"P1", role:"workshop_sup1",
+        steps:"断开网络，观察报工页顶部",
+        expect:"OfflineIndicator 组件显示离线提示" },
+    ]
+  },
+  {
+    category: "报工 — 工时专项 (HOURS)",
+    module: "WR",
+    cases: [
+      { id:"WR-90", title:"HOURS 页面标题「生产工时上报」", p:"P1", role:"workshop_sup1",
+        steps:"以 HOURS 类型进入 DynamicReportScreen",
+        expect:"标题为「生产工时上报」(不是「实时生产进度上报」)" },
+      { id:"WR-91", title:"HOURS 类型显示正确字段", p:"P0", role:"workshop_sup1",
+        steps:"HOURS 类型进入页面，查看表单字段",
+        expect:"显示: 商品名称*、工时明细(正式/小时/日结工)、开始/结束时间。不显示: 工序、良品/不良品" },
+      { id:"WR-92", title:"PROGRESS 类型字段隔离", p:"P0", role:"workshop_sup1",
+        steps:"PROGRESS 类型进入页面，查看表单字段",
+        expect:"显示: 工序*、产品数量、良品、不良品。不显示: 商品名称、工时明细" },
+      { id:"WR-93", title:"工时浮点数输入", p:"P1", role:"workshop_sup1",
+        steps:"工时字段填「7.5」(小时)",
+        expect:"parseFloat 正常解析，提交7.5" },
+      { id:"WR-94", title:"时间格式验证", p:"P2", role:"workshop_sup1",
+        steps:"开始时间「09:00」、结束时间「17:30」",
+        expect:"纯文本输入无格式校验，直接提交" },
+      { id:"WR-95", title:"时间顺序验证（结束 < 开始）", p:"P2", role:"workshop_sup1",
+        steps:"开始「17:00」、结束「09:00」",
+        expect:"无校验直接提交（潜在业务逻辑问题）" },
+    ]
+  },
+
+  // ==================== 采购模块 (PO) ====================
+  {
+    category: "采购 — 订单列表",
+    module: "PO",
+    cases: [
+      { id:"PO-01", title:"初始加载全部采购单", p:"P0", role:"factory_admin1",
+        steps:"进入管理 → 采购订单",
+        expect:"列表显示 orderNumber/供应商/金额(¥千分位)/日期/状态Chip" },
+      { id:"PO-02", title:"状态过滤「草稿」", p:"P1", role:"factory_admin1",
+        steps:"点「草稿」SegmentedButton",
+        expect:"仅显示 DRAFT 订单，卡片有「提交」「取消」按钮" },
+      { id:"PO-03", title:"状态过滤「已审批」", p:"P1", role:"factory_admin1",
+        steps:"点「已审批」Tab",
+        expect:"仅显示 APPROVED 订单，无操作按钮" },
+      { id:"PO-04", title:"状态过滤「已完成」", p:"P1", role:"factory_admin1",
+        steps:"点「已完成」Tab",
+        expect:"仅显示 COMPLETED 订单，无操作按钮" },
+      { id:"PO-05", title:"DRAFT 卡片点「提交」", p:"P0", role:"factory_admin1",
+        steps:"草稿卡片点「提交」",
+        expect:"Alert「操作成功」，状态变 SUBMITTED" },
+      { id:"PO-06", title:"DRAFT 卡片点「取消」", p:"P0", role:"factory_admin1",
+        steps:"草稿卡片点「取消」",
+        expect:"Alert「操作成功」，状态变 CANCELLED" },
+      { id:"PO-07", title:"SUBMITTED 卡片点「审批」", p:"P0", role:"factory_admin1",
+        steps:"已提交卡片点「审批」",
+        expect:"Alert「操作成功」，状态变 APPROVED" },
+      { id:"PO-08", title:"SUBMITTED 卡片点「驳回」", p:"P0", role:"factory_admin1",
+        steps:"已提交卡片点「驳回」",
+        expect:"Alert「操作成功」，状态变 REJECTED" },
+      { id:"PO-09", title:"列表页操作无二次确认弹框", p:"P1", role:"factory_admin1",
+        steps:"列表页点任意操作按钮",
+        expect:"直接执行（列表页无 Alert.alert 确认，详情页才有）" },
+      { id:"PO-0A", title:"非 DRAFT/SUBMITTED 无操作按钮", p:"P1", role:"factory_admin1",
+        steps:"查看 APPROVED/COMPLETED/CANCELLED 状态卡片",
+        expect:"卡片底部无按钮区域" },
+      { id:"PO-0B", title:"空列表状态", p:"P1", role:"factory_admin1",
+        steps:"筛选到某状态无数据",
+        expect:"显示「暂无采购单」" },
+      { id:"PO-0C", title:"下拉刷新", p:"P2", role:"factory_admin1",
+        steps:"列表页下拉",
+        expect:"RefreshControl 出现，数据重新加载" },
+      { id:"PO-0D", title:"接口报错处理", p:"P1", role:"factory_admin1",
+        steps:"模拟接口失败",
+        expect:"Alert「加载采购单失败」" },
+    ]
+  },
+  {
+    category: "采购 — 订单详情",
+    module: "PO",
+    cases: [
+      { id:"PO-10", title:"详情页基本信息完整", p:"P1", role:"factory_admin1",
+        steps:"点击采购单进入详情",
+        expect:"显示 orderNumber/状态Chip/供应商/总金额/下单日期/预计到货/审批人/备注" },
+      { id:"PO-11", title:"订单明细 DataTable", p:"P1", role:"factory_admin1",
+        steps:"查看订单明细区域",
+        expect:"表头「原料/数量/已收/单价」，数据准确" },
+      { id:"PO-12", title:"DRAFT 详情三个按钮", p:"P0", role:"factory_admin1",
+        steps:"进入 DRAFT 详情",
+        expect:"底部显示「提交审批」「编辑」「取消」三个按钮" },
+      { id:"PO-13", title:"DRAFT「提交审批」+ 二次确认", p:"P0", role:"factory_admin1",
+        steps:"DRAFT详情 → 「提交审批」→ 确认",
+        expect:"Alert「操作成功」，Chip 变「已提交」" },
+      { id:"PO-14", title:"DRAFT「编辑」修改备注", p:"P1", role:"factory_admin1",
+        steps:"DRAFT详情 → 「编辑」→ 输入新备注 → 保存",
+        expect:"Alert.prompt 弹出，保存后备注更新" },
+      { id:"PO-15", title:"DRAFT「取消」+ 二次确认", p:"P0", role:"factory_admin1",
+        steps:"DRAFT详情 → 「取消」→ 确认",
+        expect:"Alert「操作成功」，状态变 CANCELLED" },
+      { id:"PO-16", title:"SUBMITTED 详情「审批通过」+ 二次确认", p:"P0", role:"factory_admin1",
+        steps:"SUBMITTED详情 → 「审批通过」→ 确认",
+        expect:"Alert「操作成功」，Chip 变「已审批」" },
+      { id:"PO-17", title:"SUBMITTED 详情「驳回」+ 二次确认", p:"P0", role:"factory_admin1",
+        steps:"SUBMITTED详情 → 「驳回」→ 确认",
+        expect:"Alert「操作成功」，Chip 变「已驳回」" },
+      { id:"PO-18", title:"弹框点「取消」不执行操作", p:"P1", role:"factory_admin1",
+        steps:"详情页点任意操作 → 弹框点「取消」",
+        expect:"弹框关闭，状态不变" },
+      { id:"PO-19", title:"收货记录区块显示", p:"P1", role:"factory_admin1",
+        steps:"进入有收货记录的采购单",
+        expect:"「收货记录」Card 出现，显示 receiveNumber/日期/明细" },
+      { id:"PO-1A", title:"无收货记录不渲染 Card", p:"P1", role:"factory_admin1",
+        steps:"进入无收货记录的采购单",
+        expect:"第三个 Card（收货记录）不出现" },
+      { id:"PO-1B", title:"无备注不渲染备注行", p:"P2", role:"factory_admin1",
+        steps:"进入 remark 为空的采购单详情",
+        expect:"备注行不出现" },
+      { id:"PO-1C", title:"预计到货为空显示-", p:"P2", role:"factory_admin1",
+        steps:"进入 expectedDeliveryDate 为空的详情",
+        expect:"预计到货显示「-」" },
+      { id:"PO-1D", title:"订单不存在", p:"P1", role:"factory_admin1",
+        steps:"直接导航到不存在的 orderId",
+        expect:"显示「订单不存在」文字" },
+    ]
+  },
+
+  // ==================== 销售模块 (SO) ====================
+  {
+    category: "销售 — 订单列表",
+    module: "SO",
+    cases: [
+      { id:"SO-01", title:"初始加载全部销售单", p:"P0", role:"factory_admin1",
+        steps:"进入管理 → 销售订单",
+        expect:"卡片列表渲染 orderNumber/客户/金额(¥千分位)/日期/状态Chip" },
+      { id:"SO-02", title:"状态过滤「草稿」", p:"P1", role:"factory_admin1",
+        steps:"点「草稿」Tab",
+        expect:"仅显示 DRAFT 订单，卡片有「确认」「取消」按钮" },
+      { id:"SO-03", title:"状态过滤「已确认」", p:"P1", role:"factory_admin1",
+        steps:"点「已确认」Tab",
+        expect:"仅显示 CONFIRMED 订单，无操作按钮" },
+      { id:"SO-04", title:"状态过滤「已完成」", p:"P1", role:"factory_admin1",
+        steps:"点「已完成」Tab",
+        expect:"仅显示 COMPLETED 订单" },
+      { id:"SO-05", title:"DRAFT 卡片「确认」(无二次确认)", p:"P0", role:"factory_admin1",
+        steps:"DRAFT 卡片点「确认」",
+        expect:"直接执行 Alert「操作成功」，状态变 CONFIRMED（列表页无弹框确认）" },
+      { id:"SO-06", title:"DRAFT 卡片「取消」(无二次确认)", p:"P0", role:"factory_admin1",
+        steps:"DRAFT 卡片点「取消」",
+        expect:"直接执行 Alert「操作成功」，状态变 CANCELLED" },
+      { id:"SO-07", title:"非 DRAFT 卡片无操作按钮", p:"P1", role:"factory_admin1",
+        steps:"查看 CONFIRMED/COMPLETED/CANCELLED 卡片",
+        expect:"卡片底部无按钮" },
+      { id:"SO-08", title:"空列表状态", p:"P1", role:"factory_admin1",
+        steps:"筛选到某状态无数据",
+        expect:"显示「暂无销售单」" },
+      { id:"SO-09", title:"下拉刷新", p:"P2", role:"factory_admin1",
+        steps:"列表页下拉",
+        expect:"刷新动画出现，数据重新加载" },
+    ]
+  },
+  {
+    category: "销售 — 订单详情",
+    module: "SO",
+    cases: [
+      { id:"SO-10", title:"详情基本信息完整", p:"P1", role:"factory_admin1",
+        steps:"点击销售单进入详情",
+        expect:"显示 orderNumber/状态Chip/客户/总金额(¥千分位)/下单日期/预计交付/备注" },
+      { id:"SO-11", title:"订单明细 DataTable", p:"P1", role:"factory_admin1",
+        steps:"查看订单明细",
+        expect:"表头「产品/数量/已发/单价」，数据准确" },
+      { id:"SO-12", title:"DRAFT 详情「确认订单」+ 二次确认", p:"P0", role:"factory_admin1",
+        steps:"DRAFT详情 → 「确认订单」→ 弹框确认",
+        expect:"Alert「操作成功」，Chip 变「已确认」" },
+      { id:"SO-13", title:"DRAFT 详情「取消」+ 二次确认", p:"P0", role:"factory_admin1",
+        steps:"DRAFT详情 → 「取消」→ 弹框确认",
+        expect:"Alert「操作成功」，状态变 CANCELLED" },
+      { id:"SO-14", title:"弹框点「取消」不执行", p:"P1", role:"factory_admin1",
+        steps:"详情页操作弹框点「取消」",
+        expect:"弹框关闭，状态不变" },
+      { id:"SO-15", title:"发货记录区块显示", p:"P1", role:"factory_admin1",
+        steps:"进入有发货记录的订单",
+        expect:"「发货记录」Card 显示 deliveryNumber/日期/产品明细" },
+      { id:"SO-16", title:"无发货记录不渲染 Card", p:"P1", role:"factory_admin1",
+        steps:"进入无发货记录的订单",
+        expect:"发货记录 Card 不出现" },
+      { id:"SO-17", title:"非DRAFT状态无操作按钮", p:"P2", role:"factory_admin1",
+        steps:"进入 CONFIRMED/COMPLETED 订单详情",
+        expect:"底部操作栏为空" },
+      { id:"SO-18", title:"无备注不渲染备注行", p:"P2", role:"factory_admin1",
+        steps:"进入 remark 为空的销售单详情",
+        expect:"备注行不出现" },
+      { id:"SO-19", title:"订单不存在", p:"P1", role:"factory_admin1",
+        steps:"直接导航到不存在的 orderId",
+        expect:"显示「订单不存在」文字" },
+    ]
+  },
+
+  // ==================== 调拨模块 (TR) ====================
+  {
+    category: "调拨 — 列表与方向",
+    module: "TR",
+    cases: [
+      { id:"TR-01", title:"初始加载，调出/调入Chip 正确", p:"P0", role:"factory_admin1",
+        steps:"进入管理 → 调拨管理",
+        expect:"sourceFactory=当前工厂显示橙色「调出」Chip，targetFactory=当前显示蓝色「调入」" },
+      { id:"TR-02", title:"状态过滤「申请中」", p:"P1", role:"factory_admin1",
+        steps:"点「申请中」Tab",
+        expect:"仅显示 REQUESTED 状态" },
+      { id:"TR-03", title:"状态过滤「运输中」", p:"P1", role:"factory_admin1",
+        steps:"点「运输中」Tab",
+        expect:"仅显示 SHIPPED 状态" },
+      { id:"TR-04", title:"状态过滤「已完成」", p:"P1", role:"factory_admin1",
+        steps:"点「已完成」Tab",
+        expect:"仅显示 CONFIRMED 状态" },
+      { id:"TR-05", title:"列表页无内联操作按钮", p:"P1", role:"factory_admin1",
+        steps:"查看任意调拨单卡片",
+        expect:"卡片无操作按钮（所有操作在详情页）" },
+      { id:"TR-06", title:"调拨类型显示正确", p:"P1", role:"factory_admin1",
+        steps:"查看卡片类型字段",
+        expect:"HQ_TO_BRANCH→「总部→分部」，BRANCH_TO_BRANCH→「分部→分部」" },
+      { id:"TR-07", title:"空列表状态", p:"P1", role:"factory_admin1",
+        steps:"筛选到某状态无数据",
+        expect:"显示「暂无调拨单」" },
+      { id:"TR-08", title:"下拉刷新", p:"P2", role:"factory_admin1",
+        steps:"列表页下拉",
+        expect:"RefreshControl 出现，数据重新加载" },
+    ]
+  },
+  {
+    category: "调拨 — 6步骤状态流转",
+    module: "TR",
+    cases: [
+      { id:"TR-10", title:"6步骤进度条渲染", p:"P1", role:"factory_admin1",
+        steps:"点击调拨单进入详情",
+        expect:"进度条显示6个节点(草稿→已申请→已批准→已发运→已签收→已确认)，当前节点点亮" },
+      { id:"TR-11", title:"DRAFT → 提交申请 + 二次确认", p:"P0", role:"factory_admin1",
+        steps:"DRAFT详情 → 「提交申请」→ 确认",
+        expect:"Alert「操作成功」，状态变 REQUESTED" },
+      { id:"TR-12", title:"DRAFT → 取消", p:"P0", role:"factory_admin1",
+        steps:"DRAFT详情 → 「取消」→ 确认",
+        expect:"Alert「操作成功」，状态变 CANCELLED" },
+      { id:"TR-13", title:"REQUESTED → 审批通过", p:"P0", role:"factory_admin1",
+        steps:"REQUESTED详情 → 「审批通过」→ 确认",
+        expect:"Alert「操作成功」，状态变 APPROVED" },
+      { id:"TR-14", title:"REQUESTED → 驳回", p:"P0", role:"factory_admin1",
+        steps:"REQUESTED详情 → 「驳回」→ 确认",
+        expect:"Alert「操作成功」，状态变 REJECTED" },
+      { id:"TR-15", title:"APPROVED → 确认发运（仅调出方可见）", p:"P0", role:"factory_admin1",
+        steps:"以调出方(sourceFactory=当前)进入 APPROVED 详情 → 「确认发运」",
+        expect:"Alert「操作成功」，状态变 SHIPPED" },
+      { id:"TR-16", title:"APPROVED → 调入方看不到发运按钮", p:"P0", role:"factory_admin1",
+        steps:"以调入方(targetFactory=当前)进入 APPROVED 详情",
+        expect:"底部无按钮（只有调出方能发运）" },
+      { id:"TR-17", title:"SHIPPED → 确认签收（仅调入方可见）", p:"P0", role:"factory_admin1",
+        steps:"以调入方进入 SHIPPED 详情 → 「确认签收」",
+        expect:"Alert「操作成功」，状态变 RECEIVED" },
+      { id:"TR-18", title:"SHIPPED → 调出方看不到签收按钮", p:"P0", role:"factory_admin1",
+        steps:"以调出方进入 SHIPPED 详情",
+        expect:"底部无按钮（只有调入方能签收）" },
+      { id:"TR-19", title:"RECEIVED → 确认入库（仅调入方）", p:"P0", role:"factory_admin1",
+        steps:"以调入方进入 RECEIVED 详情 → 「确认入库」",
+        expect:"Alert「操作成功」，状态变 CONFIRMED，进度条全部点亮" },
+      { id:"TR-1A", title:"REJECTED 状态进度条全灰", p:"P1", role:"factory_admin1",
+        steps:"进入 REJECTED 调拨单详情",
+        expect:"进度条所有节点灰色，无操作按钮" },
+      { id:"TR-1B", title:"CANCELLED 状态进度条全灰", p:"P1", role:"factory_admin1",
+        steps:"进入 CANCELLED 调拨单详情",
+        expect:"进度条所有节点灰色，无操作按钮" },
+      { id:"TR-1C", title:"弹框点「取消」不执行", p:"P1", role:"factory_admin1",
+        steps:"详情页操作弹框点「取消」",
+        expect:"弹框关闭，状态不变" },
+      { id:"TR-1D", title:"调拨明细 DataTable", p:"P1", role:"factory_admin1",
+        steps:"查看调拨详情明细区域",
+        expect:"表头「类型/品名/数量/已收量」，RAW_MATERIAL→原料，其他→成品" },
+      { id:"TR-1E", title:"无备注不渲染备注行", p:"P2", role:"factory_admin1",
+        steps:"进入 remark 为空的调拨单详情",
+        expect:"备注行不出现" },
+      { id:"TR-1F", title:"调拨单不存在", p:"P1", role:"factory_admin1",
+        steps:"直接导航到不存在的 transferId",
+        expect:"显示「调拨单不存在」文字" },
+    ]
+  },
+
+  // ==================== 退货模块 (RO) ====================
+  {
+    category: "退货 — 列表与类型切换",
+    module: "RO",
+    cases: [
+      { id:"RO-01", title:"默认显示「采购退货」", p:"P0", role:"factory_admin1",
+        steps:"进入管理 → 退货管理",
+        expect:"SegmentedButtons 默认「采购退货」，列表加载 PURCHASE_RETURN" },
+      { id:"RO-02", title:"切换到「销售退货」", p:"P0", role:"factory_admin1",
+        steps:"点「销售退货」Tab",
+        expect:"列表切换为 SALES_RETURN 记录，先显示loading再渲染" },
+      { id:"RO-03", title:"卡片字段完整", p:"P1", role:"factory_admin1",
+        steps:"查看任意退货单卡片",
+        expect:"显示 returnNumber/counterpartyId/金额(¥千分位)/日期/原因(截断1行)/状态Chip" },
+      { id:"RO-04", title:"无状态过滤器（仅类型切换）", p:"P1", role:"factory_admin1",
+        steps:"查看退货列表顶部过滤区",
+        expect:"只有「采购退货/销售退货」切换，无状态过滤Tab（与其他模块不同）" },
+      { id:"RO-05", title:"DRAFT 卡片仅「提交」按钮", p:"P0", role:"factory_admin1",
+        steps:"查看 DRAFT 退货单卡片",
+        expect:"卡片只有「提交」按钮（无「取消」「编辑」）" },
+      { id:"RO-06", title:"SUBMITTED 卡片「审批」「驳回」按钮", p:"P0", role:"factory_admin1",
+        steps:"查看 SUBMITTED 退货单卡片",
+        expect:"卡片有「审批」(contained) + 「驳回」(outlined红色) 按钮" },
+      { id:"RO-07", title:"APPROVED 卡片仅「完成」按钮", p:"P0", role:"factory_admin1",
+        steps:"查看 APPROVED 退货单卡片",
+        expect:"卡片只有「完成」按钮" },
+      { id:"RO-08", title:"REJECTED/COMPLETED 无操作按钮", p:"P1", role:"factory_admin1",
+        steps:"查看 REJECTED 或 COMPLETED 卡片",
+        expect:"卡片底部无按钮" },
+      { id:"RO-09", title:"列表操作无二次确认弹框", p:"P1", role:"factory_admin1",
+        steps:"列表页点任意操作按钮",
+        expect:"直接执行（列表页无 Alert.alert 确认，详情页才有）" },
+      { id:"RO-0A", title:"原因为空时不显示原因行", p:"P2", role:"factory_admin1",
+        steps:"查看 reason 为空的退货单卡片",
+        expect:"原因行不渲染（条件渲染 reason 有值才显示）" },
+      { id:"RO-0B", title:"空列表状态", p:"P1", role:"factory_admin1",
+        steps:"某类型无数据",
+        expect:"显示「暂无退货单」" },
+      { id:"RO-0C", title:"下拉刷新", p:"P2", role:"factory_admin1",
+        steps:"列表页下拉",
+        expect:"RefreshControl 出现，数据重新加载" },
+    ]
+  },
+  {
+    category: "退货 — 详情与状态流转",
+    module: "RO",
+    cases: [
+      { id:"RO-10", title:"详情页基本信息完整", p:"P1", role:"factory_admin1",
+        steps:"点击退货单进入详情",
+        expect:"显示退货类型(采购退货/销售退货)/交易对手/金额/日期" },
+      { id:"RO-11", title:"原始订单ID有值显示", p:"P1", role:"factory_admin1",
+        steps:"进入有 sourceOrderId 的退货单",
+        expect:"显示「原始订单」行" },
+      { id:"RO-12", title:"原因/备注有值显示", p:"P1", role:"factory_admin1",
+        steps:"进入有 reason 和 remark 的退货单",
+        expect:"原因和备注行均渲染" },
+      { id:"RO-13", title:"原始订单/原因/备注为空不渲染", p:"P2", role:"factory_admin1",
+        steps:"进入三个字段均为空的详情",
+        expect:"对应行不出现" },
+      { id:"RO-14", title:"退货明细 DataTable", p:"P1", role:"factory_admin1",
+        steps:"查看退货明细区域",
+        expect:"表头「品名/数量/单价/金额」，金额¥千分位" },
+      { id:"RO-15", title:"明细单价/金额为空显示-", p:"P2", role:"factory_admin1",
+        steps:"查看 unitPrice 或 lineAmount 为空的明细行",
+        expect:"对应列显示「-」" },
+      { id:"RO-16", title:"DRAFT 详情「提交审批」+ 二次确认", p:"P0", role:"factory_admin1",
+        steps:"DRAFT详情 → 「提交审批」→ 确认",
+        expect:"Alert「操作成功」，状态变 SUBMITTED" },
+      { id:"RO-17", title:"SUBMITTED 详情「审批通过」+ 二次确认", p:"P0", role:"factory_admin1",
+        steps:"SUBMITTED详情 → 「审批通过」→ 确认",
+        expect:"Alert「操作成功」，状态变 APPROVED" },
+      { id:"RO-18", title:"SUBMITTED 详情「驳回」+ 二次确认", p:"P0", role:"factory_admin1",
+        steps:"SUBMITTED详情 → 「驳回」→ 确认",
+        expect:"Alert「操作成功」，状态变 REJECTED" },
+      { id:"RO-19", title:"APPROVED 详情「完成退货」+ 二次确认", p:"P0", role:"factory_admin1",
+        steps:"APPROVED详情 → 「完成退货」→ 确认",
+        expect:"Alert「操作成功」，状态变 COMPLETED" },
+      { id:"RO-1A", title:"弹框点「取消」不执行", p:"P1", role:"factory_admin1",
+        steps:"详情页操作弹框点「取消」",
+        expect:"弹框关闭，状态不变" },
+      { id:"RO-1B", title:"REJECTED/PROCESSING/COMPLETED 详情无按钮", p:"P1", role:"factory_admin1",
+        steps:"进入 REJECTED 或 COMPLETED 退货单详情",
+        expect:"底部操作栏为空" },
+      { id:"RO-1C", title:"退货单不存在", p:"P1", role:"factory_admin1",
+        steps:"直接导航到不存在的 returnId",
+        expect:"显示「退货单不存在」文字" },
+    ]
+  },
+
+  // ==================== 财务模块 (FIN) ====================
+  {
+    category: "财务 — 应收应付",
+    module: "FIN",
+    cases: [
+      { id:"FIN-01", title:"概览 KPI 卡片加载", p:"P0", role:"factory_admin1",
+        steps:"管理 → 应收应付 → 概览Tab",
+        expect:"4个KPI卡片(应收/应付/净额/逾期)均有数值" },
+      { id:"FIN-02", title:"应收列表分页加载", p:"P1", role:"factory_admin1",
+        steps:"应收Tab → 滑到底部",
+        expect:"触发加载更多，列表条数增加" },
+      { id:"FIN-03", title:"记录收款(应收付款)", p:"P0", role:"factory_admin1",
+        steps:"点FAB → 收款 → 填客户ID+金额100+银行转账 → 确认",
+        expect:"弹窗关闭，列表刷新" },
+      { id:"FIN-04", title:"记录付款(应付付款)", p:"P0", role:"factory_admin1",
+        steps:"点FAB → 付款 → 填供应商ID+金额 → 确认",
+        expect:"成功提示" },
+      { id:"FIN-05", title:"账龄分析切换", p:"P1", role:"factory_admin1",
+        steps:"账龄Tab → 点「应付账龄」",
+        expect:"数据按供应商列出，6个时段分桶显示" },
+      { id:"FIN-06", title:"表单校验 — 空交易对手", p:"P1", role:"factory_admin1",
+        steps:"FAB → 不填客户ID → 确认",
+        expect:"弹出「请输入交易对手ID」" },
+      { id:"FIN-07", title:"表单校验 — 无效金额", p:"P1", role:"factory_admin1",
+        steps:"FAB → 金额输入 abc → 确认",
+        expect:"弹出「请输入有效金额」" },
+      { id:"FIN-08", title:"下拉刷新", p:"P2", role:"factory_admin1",
+        steps:"应收Tab下拉",
+        expect:"loading出现，数据重新加载" },
+    ]
+  },
+
+  // ========== 工资模块 (WAG) ==========
+  {
+    category: "工资管理",
+    module: "WAG",
+    cases: [
+      { id:"WAG-01", title:"计件规则列表加载", p:"P0", role:"factory_admin1",
+        steps:"进入工资管理 → 查看规则列表",
+        expect:"规则列表加载，显示规则名称/费率" },
+      { id:"WAG-02", title:"批量生成工资单", p:"P0", role:"factory_admin1",
+        steps:"选择本月期间 → 批量生成",
+        expect:"返回工资单列表，status=PENDING" },
+      { id:"WAG-03", title:"审批工资单", p:"P0", role:"factory_admin1",
+        steps:"PENDING 工资单 → 审批",
+        expect:"status 变 APPROVED" },
+      { id:"WAG-04", title:"标记已发放", p:"P1", role:"factory_admin1",
+        steps:"APPROVED 工资单 → 标记发放",
+        expect:"status 变 PAID" },
+      { id:"WAG-05", title:"工资排行榜", p:"P2", role:"factory_admin1",
+        steps:"查询本月 top 10",
+        expect:"列表按 totalWage 降序" },
+    ]
+  },
+
+  // ========== 首页 Dashboard (HOM) ==========
+  {
+    category: "首页 Dashboard",
+    module: "HOM",
+    cases: [
+      { id:"HOM-01", title:"Dashboard 数据加载", p:"P0", role:"factory_admin1",
+        steps:"登录 → 首页Tab",
+        expect:"统计卡片均有数值（非'--'），AI洞察卡片状态正常" },
+      { id:"HOM-02", title:"AI 洞察卡片3个指标", p:"P0", role:"factory_admin1",
+        steps:"查看 AI 洞察区域",
+        expect:"质检合格率/单位成本/平均周期 3个指标有值" },
+      { id:"HOM-03", title:"统计卡片点击跳转", p:"P1", role:"factory_admin1",
+        steps:"点「今日产量」卡片",
+        expect:"跳转 TodayProduction 页面" },
+      { id:"HOM-04", title:"待审批报工卡片跳转", p:"P1", role:"factory_admin1",
+        steps:"点「待审批报工」卡片",
+        expect:"跳转 WorkReportApproval" },
+      { id:"HOM-05", title:"长按进入编辑模式", p:"P1", role:"factory_admin1",
+        steps:"长按任一卡片 500ms",
+        expect:"震动反馈，模块开始抖动，底部工具栏出现" },
+      { id:"HOM-06", title:"编辑模式删除模块", p:"P1", role:"factory_admin1",
+        steps:"编辑模式 → 点减号删除模块",
+        expect:"模块从视图消失" },
+      { id:"HOM-07", title:"保存布局", p:"P1", role:"factory_admin1",
+        steps:"编辑修改后 → 点「完成」",
+        expect:"Alert「保存成功」，重进页面布局保持" },
+      { id:"HOM-08", title:"下拉刷新", p:"P1", role:"factory_admin1",
+        steps:"首页下拉",
+        expect:"所有数据重新加载" },
+      { id:"HOM-09", title:"通知铃铛红点", p:"P1", role:"factory_admin1",
+        steps:"有活跃告警时查看铃铛",
+        expect:"铃铛右上角红色数字角标" },
+      { id:"HOM-10", title:"WS 首页快捷操作5个按钮", p:"P0", role:"workshop_sup1",
+        steps:"workshop_sup1 登录 → 首页快捷操作区",
+        expect:"5个按钮: 班组报工/草稿管理/扫码签到/工时上报/我的报工 (扫码报工/标签扫描/进度上报 已删除)" },
+    ]
+  },
+
+  // ========== 设置模块 (SET) ==========
+  {
+    category: "工厂设置 & 系统设置",
+    module: "SET",
+    cases: [
+      { id:"SET-01", title:"工厂设置加载", p:"P0", role:"factory_admin1",
+        steps:"管理 → 工厂设置",
+        expect:"表单预填充（工厂名称非空）" },
+      { id:"SET-02", title:"修改工厂名称并保存", p:"P0", role:"factory_admin1",
+        steps:"改名为「测试工厂」→ 保存",
+        expect:"Alert「保存成功」，重新加载后名称更新" },
+      { id:"SET-03", title:"必填字段校验", p:"P1", role:"factory_admin1",
+        steps:"清空工厂名称 → 保存",
+        expect:"Alert「请填写工厂名称和地址」" },
+      { id:"SET-04", title:"电话格式校验", p:"P1", role:"factory_admin1",
+        steps:"电话输入「12345」→ 保存",
+        expect:"Alert「请输入有效的电话号码」" },
+      { id:"SET-05", title:"工作日切换", p:"P1", role:"factory_admin1",
+        steps:"点「周六」Chip 使其选中",
+        expect:"已选天数+1，重置按钮出现" },
+      { id:"SET-06", title:"重置功能", p:"P2", role:"factory_admin1",
+        steps:"修改字段 → 点重置 → 确认",
+        expect:"字段还原为服务器值" },
+      { id:"SET-10", title:"系统设置页面加载", p:"P0", role:"factory_admin1",
+        steps:"Profile → 系统设置",
+        expect:"显示3个Section(数据同步/存储/高级)" },
+      { id:"SET-11", title:"清除缓存", p:"P1", role:"factory_admin1",
+        steps:"点「清除缓存」→ 确认",
+        expect:"Alert「缓存已清除」，显示「0 MB」" },
+    ]
+  },
+
+  // ========== AI 功能 (AI) ==========
+  {
+    category: "AI 分析",
+    module: "AI",
+    cases: [
+      { id:"AI-01", title:"AI 分析中心加载", p:"P0", role:"factory_admin1",
+        steps:"进入 AI Tab",
+        expect:"配额卡片显示 remainingQuota/weeklyQuota，状态颜色正确" },
+      { id:"AI-02", title:"AI 对话发送消息", p:"P0", role:"factory_admin1",
+        steps:"进入 AI 聊天 → 输入「今日产量如何」→ 发送",
+        expect:"模拟流式逐字显示响应，sessionId 建立" },
+      { id:"AI-03", title:"AI 对话快捷问题", p:"P1", role:"factory_admin1",
+        steps:"点击快捷问题按钮",
+        expect:"自动填入输入框并可发送" },
+      { id:"AI-04", title:"AI 成本分析 — 流式模式", p:"P0", role:"factory_admin1",
+        steps:"成本分析 → 选「最近7天」→ 分析",
+        expect:"依次显示进度→思考→答案" },
+      { id:"AI-05", title:"AI 成本分析 — 维度切换", p:"P1", role:"factory_admin1",
+        steps:"切换维度到「每日」→ 分析",
+        expect:"结果包含按日细分数据" },
+      { id:"AI-06", title:"AI 报告列表过滤", p:"P1", role:"factory_admin1",
+        steps:"AI 报告 → 点「周报」Tab",
+        expect:"列表仅显示 type=weekly 的报告" },
+    ]
+  },
+];
+
+// ===== State =====
+const STORAGE_KEY = 'cretas-full-test-v3';
+let state = {};
+let currentFilter = 'all';
+let currentModule = 'all';
+
+function loadState() {
+  try { state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { state = {}; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function getTC(id) { return state[id] || { status: 'pending', notes: '' }; }
+function setTC(id, key, val) {
+  if (!state[id]) state[id] = { status: 'pending', notes: '' };
+  state[id][key] = val;
+  saveState();
+  render();
+}
+
+// ===== Render =====
+function render() {
+  const container = document.getElementById('testContent');
+  let html = '';
+  let total = 0, pass = 0, fail = 0, skip = 0, bug = 0, pending = 0;
+  const moduleStats = {};
+
+  for (const cat of TEST_DATA) {
+    if (!moduleStats[cat.module]) moduleStats[cat.module] = { total: 0, pass: 0, fail: 0, bug: 0 };
+    let catPass = 0, catTotal = 0, casesHtml = '', anyVisible = false;
+
+    for (const tc of cat.cases) {
+      const s = getTC(tc.id);
+      total++; catTotal++;
+      moduleStats[cat.module].total++;
+      if (s.status === 'pass') { pass++; catPass++; moduleStats[cat.module].pass++; }
+      else if (s.status === 'fail') { fail++; moduleStats[cat.module].fail++; }
+      else if (s.status === 'skip') skip++;
+      else if (s.status === 'bug') { bug++; moduleStats[cat.module].bug++; }
+      else pending++;
+
+      let visible = true;
+      if (currentFilter === 'pending' && s.status !== 'pending') visible = false;
+      if (currentFilter === 'pass' && s.status !== 'pass') visible = false;
+      if (currentFilter === 'fail' && s.status !== 'fail') visible = false;
+      if (currentFilter === 'bug' && s.status !== 'bug') visible = false;
+      if (currentFilter === 'skip' && s.status !== 'skip') visible = false;
+      if (currentFilter === 'p0' && tc.p !== 'P0') visible = false;
+      if (currentModule !== 'all' && cat.module !== currentModule) visible = false;
+      if (visible) anyVisible = true;
+
+      const pClass = tc.p === 'P0' ? 'badge-p0' : tc.p === 'P1' ? 'badge-p1' : 'badge-p2';
+      const roleBadge = tc.role ? `<span class="badge badge-role">${tc.role}</span>` : '';
+
+      casesHtml += `
+        <div class="tc status-${s.status} ${visible ? '' : 'hidden'}" id="tc-${tc.id}">
+          <div class="tc-head">
+            <div class="tc-id">${tc.id}</div>
+            <div class="tc-main">
+              <div class="tc-title-row">
+                <span class="tc-title">${tc.title}</span>
+                <span class="badge ${pClass}">${tc.p}</span>
+                ${roleBadge}
+              </div>
+              <div class="tc-steps">${tc.steps}</div>
+              <div class="tc-expect"><strong>预期:</strong> ${tc.expect}</div>
+              <div class="tc-actions">
+                <button class="status-btn ${s.status==='pass'?'sel-pass':''}" onclick="setTC('${tc.id}','status','pass')">通过</button>
+                <button class="status-btn ${s.status==='fail'?'sel-fail':''}" onclick="setTC('${tc.id}','status','fail')">失败</button>
+                <button class="status-btn ${s.status==='bug'?'sel-bug':''}" onclick="setTC('${tc.id}','status','bug')">Bug</button>
+                <button class="status-btn ${s.status==='skip'?'sel-skip':''}" onclick="setTC('${tc.id}','status','skip')">跳过</button>
+                <button class="status-btn" onclick="setTC('${tc.id}','status','pending')">重置</button>
+              </div>
+              <textarea class="tc-notes" placeholder="备注..." rows="1"
+                oninput="setTC('${tc.id}','notes',this.value)">${s.notes || ''}</textarea>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    const moduleColor = MODULE_COLORS[cat.module] || '#8b90a5';
+    const catVisible = currentModule === 'all' || cat.module === currentModule;
+
+    html += `
+      <div class="category ${(anyVisible && catVisible) ? '' : 'hidden'}">
+        <div class="category-header" onclick="toggleCat(this)">
+          <span class="cat-arrow open">&#9654;</span>
+          <span class="cat-title">${cat.category}</span>
+          <span class="cat-module-badge" style="background:${moduleColor}20;color:${moduleColor}">${cat.module}</span>
+          <span class="cat-badge">${catTotal}条</span>
+          <span class="cat-progress">${catPass}/${catTotal}</span>
+        </div>
+        <div class="category-body">${casesHtml}</div>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+
+  // Stats
+  document.getElementById('cntPass').textContent = pass;
+  document.getElementById('cntFail').textContent = fail;
+  document.getElementById('cntBug').textContent = bug;
+  document.getElementById('cntSkip').textContent = skip;
+  document.getElementById('cntPending').textContent = pending;
+  document.getElementById('totalCount').textContent = total;
+  const pct = total > 0 ? Math.round((pass + fail + bug + skip) / total * 100) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  // Module summary cards
+  const grid = document.getElementById('summaryGrid');
+  const moduleNames = { WR:'报工', PO:'采购', SO:'销售', TR:'调拨', RO:'退货', FIN:'财务', WAG:'工资', HOM:'首页', SET:'设置', AI:'AI' };
+  let summaryHtml = '';
+  for (const [mod, stats] of Object.entries(moduleStats)) {
+    const color = MODULE_COLORS[mod] || '#8b90a5';
+    const pctM = stats.total > 0 ? Math.round(stats.pass / stats.total * 100) : 0;
+    summaryHtml += `
+      <div class="summary-card" style="border-left:3px solid ${color}">
+        <h4>${moduleNames[mod] || mod}</h4>
+        <div class="num" style="color:${color}">${stats.pass}/${stats.total}</div>
+        <div class="detail">${pctM}% 通过${stats.fail > 0 ? ' · '+stats.fail+'失败' : ''}${stats.bug > 0 ? ' · '+stats.bug+'bug' : ''}</div>
+      </div>`;
+  }
+  grid.innerHTML = summaryHtml;
+}
+
+function toggleCat(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('.cat-arrow');
+  body.classList.toggle('collapsed');
+  arrow.classList.toggle('open');
+}
+
+// Filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+});
+
+// Module buttons
+document.querySelectorAll('.module-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.module-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentModule = btn.dataset.module;
+    render();
+  });
+});
+
+function exportResults() {
+  let lines = ['ID\t模块\t状态\t优先级\t角色\t标题\t备注'];
+  for (const cat of TEST_DATA) {
+    for (const tc of cat.cases) {
+      const s = getTC(tc.id);
+      lines.push(`${tc.id}\t${cat.module}\t${s.status}\t${tc.p}\t${tc.role||''}\t${tc.title}\t${(s.notes||'').replace(/\n/g,' ')}`);
+    }
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `cretas-test-${new Date().toISOString().slice(0,10)}.tsv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function resetAll() {
+  if (confirm('确定重置所有测试状态？此操作不可撤销。')) {
+    state = {};
+    saveState();
+    render();
+  }
+}
+
+// Init
+loadState();
+render();
+</script>
+</body>
+</html>

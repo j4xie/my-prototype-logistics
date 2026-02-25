@@ -221,9 +221,9 @@ export const DEFAULT_HOME_LAYOUT: HomeModule[] = [
       maxItems: 4,
       actions: [
         { id: 'newBatch', visible: true, label: '新建批次', route: 'CreateBatch' },
-        { id: 'qualityCheck', visible: true, label: '质检', route: 'QualityInspection' },
-        { id: 'reports', visible: true, label: '报表', route: 'Reports' },
-        { id: 'settings', visible: true, label: '设置', route: 'Settings' },
+        { id: 'dataReport', visible: true, label: '数据报表', route: 'AIReport' },
+        { id: 'staffManagement', visible: true, label: '员工管理', route: 'EmployeeList' },
+        { id: 'systemConfig', visible: true, label: '系统设置', route: 'SystemSettings' },
       ],
     },
   },

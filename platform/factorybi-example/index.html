@@ -704,6 +704,332 @@ body {
   50% { transform: translateY(-12px); }
 }
 
+/* ===== CLOSED-LOOP SECTIONS ===== */
+.loop-section {
+  padding: 100px 0 80px;
+  position: relative;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.loop-section .section-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, 2rem);
+}
+.loop-header {
+  text-align: center;
+  margin-bottom: 64px;
+}
+
+/* Timeline */
+.timeline {
+  position: relative;
+  max-width: 880px;
+  margin: 0 auto;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 28px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--accent), var(--accent2), var(--accent3));
+  opacity: 0.3;
+}
+.timeline-step {
+  position: relative;
+  padding-left: 72px;
+  padding-bottom: 48px;
+}
+.timeline-step:last-child { padding-bottom: 0; }
+.timeline-number {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Azeret Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  z-index: 2;
+}
+.timeline-step:hover .timeline-number {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+}
+.timeline-content {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px 28px;
+  transition: all 0.3s var(--ease-out-expo);
+}
+.timeline-step:hover .timeline-content {
+  border-color: var(--border-hover);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+.timeline-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+.timeline-role.supervisor {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: var(--accent);
+}
+.timeline-role.admin {
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  color: var(--accent3);
+}
+.timeline-role.warehouse {
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  color: var(--accent2);
+}
+.timeline-role.sales {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+.timeline-role.system {
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  color: #34d399;
+}
+.timeline-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+.timeline-desc {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+.timeline-desc:last-child { margin-bottom: 0; }
+
+/* Credential card */
+.credential-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: rgba(59, 130, 246, 0.04);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+  margin-top: 8px;
+}
+.credential-label {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.credential-value {
+  font-family: 'Azeret Mono', monospace;
+  font-size: 13px;
+  color: var(--accent2);
+  font-weight: 500;
+}
+
+/* Data preview box */
+.data-preview {
+  margin-top: 14px;
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  font-family: 'Azeret Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  overflow-x: auto;
+}
+.data-preview .key { color: var(--accent2); }
+.data-preview .val { color: var(--accent3); }
+.data-preview .comment { color: var(--muted); font-style: italic; }
+
+/* ===== TIMELINE VISUAL LAYOUT (text + phone screenshot) ===== */
+.timeline-visual-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-top: 14px;
+}
+.timeline-visual-text {
+  flex: 1;
+  min-width: 0;
+}
+.timeline-visual-text .info-box {
+  margin-top: 0;
+}
+.timeline-phone {
+  flex-shrink: 0;
+  width: 140px;
+  padding: 6px;
+  background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
+  border-radius: 20px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 8px 24px rgba(0,0,0,0.25);
+  cursor: pointer;
+  transition: transform 0.4s var(--ease-out-expo);
+}
+.timeline-phone:hover { transform: translateY(-4px); }
+.timeline-phone::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 12px;
+  background: #0f0f1e;
+  border-radius: 0 0 8px 8px;
+  z-index: 10;
+}
+.timeline-phone {
+  position: relative;
+}
+.timeline-phone-screen {
+  width: 100%;
+  aspect-ratio: 9/19;
+  border-radius: 15px;
+  overflow: hidden;
+  background: #1a1a2e;
+}
+.timeline-phone-screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+/* KPI mini grid (replaces JSON data blocks) */
+.loop-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+.loop-kpi-item {
+  padding: 14px 16px;
+  background: rgba(59, 130, 246, 0.04);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+  text-align: center;
+}
+.loop-kpi-value {
+  font-family: 'Azeret Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent2);
+  line-height: 1.2;
+}
+.loop-kpi-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-weight: 500;
+}
+.loop-kpi-item:nth-child(2) .loop-kpi-value { color: var(--accent3); }
+.loop-kpi-item:nth-child(3) .loop-kpi-value { color: #34d399; }
+.loop-kpi-item:nth-child(4) .loop-kpi-value { color: #fbbf24; }
+
+@media (max-width: 900px) {
+  .timeline-visual-layout { flex-direction: column; }
+  .timeline-phone { width: 120px; align-self: center; }
+}
+@media (max-width: 480px) {
+  .timeline-phone { width: 110px; padding: 5px; border-radius: 16px; }
+  .timeline-phone-screen { border-radius: 12px; }
+  .timeline-phone::before { width: 32px; height: 10px; }
+  .loop-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .loop-kpi-value { font-size: 16px; }
+}
+
+/* Status flow inline */
+.status-flow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.status-badge.draft { background: rgba(100, 116, 139, 0.15); color: #94a3b8; }
+.status-badge.pending { background: rgba(251, 191, 36, 0.12); color: #fbbf24; }
+.status-badge.approved { background: rgba(52, 211, 153, 0.12); color: #34d399; }
+.status-badge.rejected { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+.status-badge.completed { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+.status-arrow {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Loop summary cards */
+.loop-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 48px;
+}
+.loop-summary-card {
+  padding: 24px 20px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  text-align: center;
+  transition: all 0.3s;
+}
+.loop-summary-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-4px);
+}
+.loop-summary-icon {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
+.loop-summary-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.loop-summary-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
   .step-grid {
@@ -716,6 +1042,11 @@ body {
   .stats-inner { grid-template-columns: repeat(2, 1fr); }
   .flow-chart { gap: 4px; }
   .flow-icon { width: 44px; height: 44px; font-size: 18px; }
+  .timeline-step { padding-left: 60px; }
+  .timeline::before { left: 20px; }
+  .timeline-number { left: 0; width: 40px; height: 40px; }
+  .credential-card { flex-direction: column; gap: 8px; align-items: flex-start; }
+  .loop-summary { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 768px) {
@@ -738,6 +1069,15 @@ body {
   .dual-phones .phone-frame { width: 140px; }
   .stats-inner { grid-template-columns: repeat(2, 1fr); }
   .stat-card { padding: 24px 16px; }
+  .timeline-step { padding-left: 48px; padding-bottom: 32px; }
+  .timeline::before { left: 14px; }
+  .timeline-number { left: -4px; width: 36px; height: 36px; font-size: 12px; }
+  .timeline-content { padding: 18px 16px; }
+  .credential-card { padding: 10px 14px; }
+  .data-preview { padding: 12px 14px; font-size: 11px; }
+  .status-flow { gap: 4px; }
+  .status-badge { padding: 3px 8px; font-size: 10px; }
+  .loop-summary { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -760,6 +1100,8 @@ body {
     <a href="#smartbi" class="nav-link">SmartBI</a>
     <a href="#management" class="nav-link">管理</a>
     <a href="#purchase" class="nav-link">进销存</a>
+    <a href="#work-report-loop" class="nav-link">报工闭环</a>
+    <a href="#psi-loop" class="nav-link">进销存闭环</a>
     <a href="#employees" class="nav-link">员工</a>
     <a href="#profile" class="nav-link">个人</a>
     <a href="#login" class="nav-link">登录</a>
@@ -1099,6 +1441,679 @@ body {
         </div>
       </div>
     </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============== TEST ACCOUNTS REFERENCE ============== -->
+<section class="loop-section" id="test-accounts" style="padding: 60px 0 30px;">
+  <div class="section-inner">
+    <div class="loop-header reveal">
+      <div class="section-label" style="justify-content: center;">System Test Accounts</div>
+      <h3 class="section-title">系统<span style="color: var(--accent);">测试账号</span>一览</h3>
+      <p class="section-desc" style="margin: 0 auto;">
+        系统支持 7 种角色，每个角色拥有独立的权限和功能入口。所有账号密码均为 <code style="color:var(--accent2);">123456</code>。
+      </p>
+    </div>
+    <div class="reveal reveal-d1" style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;margin:24px 0;font-size:0.95rem;">
+        <thead>
+          <tr style="border-bottom:2px solid rgba(255,255,255,0.15);">
+            <th style="text-align:left;padding:12px 16px;color:var(--accent);font-weight:600;">角色</th>
+            <th style="text-align:left;padding:12px 16px;color:var(--accent);font-weight:600;">用户名</th>
+            <th style="text-align:left;padding:12px 16px;color:var(--accent);font-weight:600;">密码</th>
+            <th style="text-align:left;padding:12px 16px;color:var(--accent);font-weight:600;">功能范围</th>
+          </tr>
+        </thead>
+        <tbody style="color:rgba(255,255,255,0.85);">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+            <td style="padding:10px 16px;">&#x1F451; 工厂超级管理员</td>
+            <td style="padding:10px 16px;"><code style="color:var(--accent2);">factory_admin1</code></td>
+            <td style="padding:10px 16px;"><code>123456</code></td>
+            <td style="padding:10px 16px;">全部模块 — 管理中心、报表、审批、系统设置</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+            <td style="padding:10px 16px;">&#x1F310; 平台管理员</td>
+            <td style="padding:10px 16px;"><code style="color:var(--accent2);">platform_admin</code></td>
+            <td style="padding:10px 16px;"><code>123456</code></td>
+            <td style="padding:10px 16px;">多工厂管理、系统配置、权限分配</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+            <td style="padding:10px 16px;">&#x1F527; 车间主管</td>
+            <td style="padding:10px 16px;"><code style="color:var(--accent2);">workshop_sup1</code></td>
+            <td style="padding:10px 16px;"><code>123456</code></td>
+            <td style="padding:10px 16px;">生产报工、批次管理、工单操作</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+            <td style="padding:10px 16px;">&#x1F4E6; 仓储主管</td>
+            <td style="padding:10px 16px;"><code style="color:var(--accent2);">warehouse_mgr1</code></td>
+            <td style="padding:10px 16px;"><code>123456</code></td>
+            <td style="padding:10px 16px;">入库/出库、库存盘点、调拨、温控管理</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+            <td style="padding:10px 16px;">&#x1F465; HR 管理员</td>
+            <td style="padding:10px 16px;"><code style="color:var(--accent2);">hr_admin1</code></td>
+            <td style="padding:10px 16px;"><code>123456</code></td>
+            <td style="padding:10px 16px;">员工管理、考勤、排班、部门设置</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+            <td style="padding:10px 16px;">&#x1F69A; 调度员</td>
+            <td style="padding:10px 16px;"><code style="color:var(--accent2);">dispatcher1</code></td>
+            <td style="padding:10px 16px;"><code>123456</code></td>
+            <td style="padding:10px 16px;">生产调度、物流排程、任务分配</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 16px;">&#x1F50D; 质检员</td>
+            <td style="padding:10px 16px;"><code style="color:var(--accent2);">quality_insp1</code></td>
+            <td style="padding:10px 16px;"><code>123456</code></td>
+            <td style="padding:10px 16px;">质检扫码、拍照记录、检验报告、趋势分析</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============== LOOP 1: WORK REPORTING CLOSED LOOP ============== -->
+<section class="loop-section" id="work-report-loop">
+  <div class="section-inner">
+    <div class="loop-header reveal">
+      <div class="section-label" style="justify-content: center;">Work Reporting Closed Loop</div>
+      <h3 class="section-title"><span style="color: var(--accent);">报工</span>闭环 — 从扫码到数据汇总</h3>
+      <p class="section-desc" style="margin: 0 auto;">
+        车间主管扫码报工 → 填写产量数据 → 管理员审批 → 产量自动汇总到仪表盘。
+        支持个人报工、班组批量报工和离线草稿，确保车间数据零丢失。
+      </p>
+    </div>
+
+    <!-- Overview flow -->
+    <div class="flow-chart reveal reveal-d1">
+      <div class="flow-node">
+        <div class="flow-icon">&#x1F511;</div>
+        <div class="flow-label">登录</div>
+      </div>
+      <div class="flow-arrow">&#x2192;</div>
+      <div class="flow-node">
+        <div class="flow-icon">&#x1F4F7;</div>
+        <div class="flow-label">扫码</div>
+      </div>
+      <div class="flow-arrow">&#x2192;</div>
+      <div class="flow-node">
+        <div class="flow-icon">&#x1F4DD;</div>
+        <div class="flow-label">填报</div>
+      </div>
+      <div class="flow-arrow">&#x2192;</div>
+      <div class="flow-node">
+        <div class="flow-icon">&#x2705;</div>
+        <div class="flow-label">审批</div>
+      </div>
+      <div class="flow-arrow">&#x2192;</div>
+      <div class="flow-node">
+        <div class="flow-icon">&#x1F4CA;</div>
+        <div class="flow-label">汇总</div>
+      </div>
+    </div>
+
+    <!-- Timeline steps -->
+    <div class="timeline reveal reveal-d2">
+
+      <!-- Step 1: Login -->
+      <div class="timeline-step">
+        <div class="timeline-number">1</div>
+        <div class="timeline-content">
+          <div class="timeline-role supervisor">&#x1F464; 车间主管</div>
+          <div class="timeline-title">登录系统 — 车间主管账号</div>
+          <div class="timeline-visual-layout">
+            <div class="timeline-visual-text">
+              <div class="timeline-desc">
+                车间主管打开 App，使用专属账号登录。系统自动识别角色权限，跳转到「生产管理」首页，
+                显示今日批次概况、快捷操作入口和待处理任务。
+              </div>
+              <div class="credential-card">
+                <div>
+                  <div class="credential-label">账号</div>
+                  <div class="credential-value">workshop_sup1</div>
+                </div>
+                <div>
+                  <div class="credential-label">密码</div>
+                  <div class="credential-value">123456</div>
+                </div>
+                <div>
+                  <div class="credential-label">角色</div>
+                  <div class="credential-value">车间主管</div>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-phone" onclick="openLightbox(this)" data-caption="登录页面 — 车间主管账号">
+              <div class="timeline-phone-screen">
+                <img src="./screenshots/ss-login.png" alt="登录页面" loading="lazy">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Scan -->
+      <div class="timeline-step">
+        <div class="timeline-number">2</div>
+        <div class="timeline-content">
+          <div class="timeline-role supervisor">&#x1F4F7; 扫码报工</div>
+          <div class="timeline-title">扫描批次条码 — 自动匹配生产任务</div>
+          <div class="timeline-visual-layout">
+            <div class="timeline-visual-text">
+              <div class="timeline-desc">
+                点击首页「扫码报工」按钮，摄像头扫描批次二维码/条形码。
+                系统自动识别批次 <code style="color:var(--accent2);">PB-2026-0221-001</code>，
+                匹配产品「有机全麦面包」，显示目标产量 500 件、当前已完成 320 件（进度 64%），
+                可直接进入填报。
+              </div>
+              <div class="info-box" style="margin-top: 10px;">
+                <strong>自动识别：</strong>
+                批次号 → 产品名称 → 目标产量 → 当前进度 → 一键进入填报
+              </div>
+            </div>
+            <div class="timeline-phone" onclick="openLightbox(this)" data-caption="扫码报工 — 扫描批次条码">
+              <div class="timeline-phone-screen">
+                <img src="./screenshots/ss-loop-scan.png" alt="扫码报工" loading="lazy">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Fill form -->
+      <div class="timeline-step">
+        <div class="timeline-number">3</div>
+        <div class="timeline-content">
+          <div class="timeline-role supervisor">&#x1F4DD; 填写报工数据</div>
+          <div class="timeline-title">录入产量 — 个人报工或班组批量报工</div>
+          <div class="timeline-visual-layout">
+            <div class="timeline-visual-text">
+              <div class="timeline-desc">
+                <strong>个人报工：</strong>填写本次产出 80 件、合格 76 件、缺陷 4 件，备注「面团发酵时间延长10分钟」，一键提交。<br>
+                <strong>班组报工：</strong>选择在产批次（如「香酥鱼柳」PB20260212002）→ 勾选班组成员 → 逐个录入每人产量 → 批量提交。
+                无网络时自动保存为离线草稿，恢复网络后可一键重新提交。
+              </div>
+            </div>
+            <div class="timeline-phone" onclick="openLightbox(this)" data-caption="班组报工 — 选择批次并填写数据">
+              <div class="timeline-phone-screen">
+                <img src="./screenshots/ss-loop-report-form.png" alt="报工填报" loading="lazy">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Approval -->
+      <div class="timeline-step">
+        <div class="timeline-number">4</div>
+        <div class="timeline-content">
+          <div class="timeline-role admin">&#x1F464; 工厂管理员</div>
+          <div class="timeline-title">审批报工 — 管理员逐条审核</div>
+          <div class="timeline-visual-layout">
+            <div class="timeline-visual-text">
+              <div class="timeline-desc">
+                工厂管理员 (<code style="color:var(--accent2);">factory_admin1</code>)
+                在「管理中心 → 报工审批」页面查看待审批报工，可按状态筛选（待审批 / 已批准 / 已拒绝）。
+                点击「批准」或「拒绝」即可完成审核，拒绝时需填写原因，审批结果实时同步给报工人。
+              </div>
+              <div class="status-flow">
+                <div class="status-badge pending">待审批 SUBMITTED</div>
+                <div class="status-arrow">&#x2192;</div>
+                <div class="status-badge approved">已批准 APPROVED</div>
+                <div class="status-arrow"> / </div>
+                <div class="status-badge rejected">已拒绝 REJECTED</div>
+              </div>
+              <div class="credential-card" style="margin-top: 14px;">
+                <div>
+                  <div class="credential-label">审批账号</div>
+                  <div class="credential-value">factory_admin1</div>
+                </div>
+                <div>
+                  <div class="credential-label">密码</div>
+                  <div class="credential-value">123456</div>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-phone" onclick="openLightbox(this)" data-caption="报工审批 — 筛选与审核">
+              <div class="timeline-phone-screen">
+                <img src="./screenshots/ss-loop-approval.png" alt="报工审批" loading="lazy">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Data output -->
+      <div class="timeline-step">
+        <div class="timeline-number">5</div>
+        <div class="timeline-content">
+          <div class="timeline-role system">&#x1F4CA; 数据汇总</div>
+          <div class="timeline-title">产量仪表盘 — 实时数据汇总</div>
+          <div class="timeline-visual-layout">
+            <div class="timeline-visual-text">
+              <div class="timeline-desc">
+                审批通过后，数据自动汇入首页仪表盘和数据报表模块。管理员可查看：
+                今日产量、累计完成率、合格率趋势、各批次进度对比等。
+                还可同步至 SmartBI 进行深度 AI 分析与预测。
+              </div>
+              <div class="loop-kpi-grid">
+                <div class="loop-kpi-item">
+                  <div class="loop-kpi-value">24</div>
+                  <div class="loop-kpi-label">今日报工数</div>
+                </div>
+                <div class="loop-kpi-item">
+                  <div class="loop-kpi-value">1,860</div>
+                  <div class="loop-kpi-label">今日总产量</div>
+                </div>
+                <div class="loop-kpi-item">
+                  <div class="loop-kpi-value">96.2%</div>
+                  <div class="loop-kpi-label">合格率</div>
+                </div>
+                <div class="loop-kpi-item">
+                  <div class="loop-kpi-value">74.4%</div>
+                  <div class="loop-kpi-label">目标完成率</div>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-phone" onclick="openLightbox(this)" data-caption="工厂管理员首页 — AI洞察与产量汇总">
+              <div class="timeline-phone-screen">
+                <img src="./screenshots/ss-loop-fa-home.png" alt="管理员首页" loading="lazy">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Summary cards -->
+    <div class="loop-summary reveal reveal-d3">
+      <div class="loop-summary-card">
+        <div class="loop-summary-icon">&#x1F4F1;</div>
+        <div class="loop-summary-title">移动端报工</div>
+        <div class="loop-summary-desc">现场扫码即报，无需手工填表</div>
+      </div>
+      <div class="loop-summary-card">
+        <div class="loop-summary-icon">&#x1F465;</div>
+        <div class="loop-summary-title">班组批量报工</div>
+        <div class="loop-summary-desc">一次录入整个班组产量数据</div>
+      </div>
+      <div class="loop-summary-card">
+        <div class="loop-summary-icon">&#x1F4E1;</div>
+        <div class="loop-summary-title">离线草稿</div>
+        <div class="loop-summary-desc">网络中断自动保存，恢复后重传</div>
+      </div>
+      <div class="loop-summary-card">
+        <div class="loop-summary-icon">&#x1F50D;</div>
+        <div class="loop-summary-title">审批追溯</div>
+        <div class="loop-summary-desc">每条报工记录可追溯审批人与时间</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============== LOOP 2: PSI (采购-销售-库存) CLOSED LOOP ============== -->
+<section class="loop-section" id="psi-loop" style="background: var(--bg);">
+  <div class="section-inner">
+    <div class="loop-header reveal">
+      <div class="section-label" style="justify-content: center;">Purchase · Sales · Inventory</div>
+      <h3 class="section-title"><span style="color: var(--accent2);">进销存</span>闭环 — 采购到出货全链路</h3>
+      <p class="section-desc" style="margin: 0 auto;">
+        从供应商采购下单 → 仓库入库验收 → 库存实时跟踪 → 生产消耗 → 销售出货 → 物流追踪，
+        全流程数据自动流转、账实一致、可追溯。
+      </p>
+    </div>
+
+    <!-- Overview flow (circular) -->
+    <div class="flow-chart reveal reveal-d1">
+      <div class="flow-node">
+        <div class="flow-icon">&#x1F4E6;</div>
+        <div class="flow-label">采购</div>
+      </div>
+      <div class="flow-arrow">&#x2192;</div>
+      <div class="flow-node">
+        <div class="flow-icon">&#x1F3ED;</div>
+        <div class="flow-label">入库</div>
+      </div>
+      <div class="flow-arrow">&#x2192;</div>
+      <div class="flow-node">
+        <div class="flow-icon">&#x1F4CB;</div>
+        <div class="flow-label">库存</div>
+      </div>
+      <div class="flow-arrow">&#x2192;</div>
+      <div class="flow-node">
+        <div class="flow-icon">&#x2699;</div>
+        <div class="flow-label">生产</div>
+      </div>
+      <div class="flow-arrow">&#x2192;</div>
+      <div class="flow-node">
+        <div class="flow-icon">&#x1F4B0;</div>
+        <div class="flow-label">销售</div>
+      </div>
+      <div class="flow-arrow">&#x2192;</div>
+      <div class="flow-node">
+        <div class="flow-icon">&#x1F69A;</div>
+        <div class="flow-label">发货</div>
+      </div>
+    </div>
+
+    <!-- Timeline steps -->
+    <div class="timeline reveal reveal-d2">
+
+      <!-- Step 1: Purchase Order -->
+      <div class="timeline-step">
+        <div class="timeline-number">1</div>
+        <div class="timeline-content">
+          <div class="timeline-role admin">&#x1F4E6; 采购下单</div>
+          <div class="timeline-title">创建采购订单 — 选供应商、填物料、提交审批</div>
+          <div class="timeline-desc">
+            工厂管理员在「进销存 → 采购订单」创建新采购单：选择供应商 → 添加物料明细（种类、数量、单价）→
+            保存草稿或直接提交审批。支持无单采购（紧急备货）。
+          </div>
+          <div class="status-flow">
+            <div class="status-badge draft">草稿 DRAFT</div>
+            <div class="status-arrow">&#x2192;</div>
+            <div class="status-badge pending">待审批 SUBMITTED</div>
+            <div class="status-arrow">&#x2192;</div>
+            <div class="status-badge approved">已批准 APPROVED</div>
+          </div>
+          <div class="timeline-visual-layout">
+            <div class="timeline-visual-text">
+              <div class="credential-card" style="margin-top: 0;">
+                <div>
+                  <div class="credential-label">操作账号</div>
+                  <div class="credential-value">factory_admin1</div>
+                </div>
+                <div>
+                  <div class="credential-label">路径</div>
+                  <div class="credential-value">管理 → 采购订单</div>
+                </div>
+              </div>
+              <div class="info-box" style="margin-top: 12px;">
+                <strong>示例：</strong>采购单 PO-202501-001，供应商 SUP-F001-001，
+                高筋面粉 200kg &#215; &#165;5.8 + 酵母粉 50kg &#215; &#165;28.0 = 合计 &#165;2,560
+              </div>
+            </div>
+            <div class="timeline-phone" onclick="openLightbox(this)" data-caption="采购订单 — 订单列表与状态">
+              <div class="timeline-phone-screen">
+                <img src="./screenshots/ss-loop-purchase.png" alt="采购订单" loading="lazy">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Inbound -->
+      <div class="timeline-step">
+        <div class="timeline-number">2</div>
+        <div class="timeline-content">
+          <div class="timeline-role warehouse">&#x1F3ED; 入库验收</div>
+          <div class="timeline-title">仓库收货 — 质检 → 上架 → 确认入库</div>
+          <div class="timeline-desc">
+            仓库主管 (<code style="color:var(--accent2);">warehouse_mgr1</code>) 在「仓库管理 → 入库」模块操作：<br>
+            <strong>收货登记：</strong>关联采购订单或无单入库，录入实际到货数量。<br>
+            <strong>质检：</strong>检验物料质量，标记合格/不合格/有条件接收。<br>
+            <strong>上架：</strong>分配存储位置（如「冷库-A区-货架3」）。<br>
+            <strong>确认入库：</strong>确认后系统自动创建物料批次，库存实时增加。
+          </div>
+          <div class="status-flow">
+            <div class="status-badge pending">待验收 PENDING</div>
+            <div class="status-arrow">&#x2192;</div>
+            <div class="status-badge" style="background:rgba(251,191,36,0.12);color:#fbbf24;">质检中</div>
+            <div class="status-arrow">&#x2192;</div>
+            <div class="status-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6;">上架中</div>
+            <div class="status-arrow">&#x2192;</div>
+            <div class="status-badge completed">已入库</div>
+          </div>
+          <div class="timeline-visual-layout">
+            <div class="timeline-visual-text">
+              <div class="credential-card" style="margin-top: 0;">
+                <div>
+                  <div class="credential-label">操作账号</div>
+                  <div class="credential-value">warehouse_mgr1</div>
+                </div>
+                <div>
+                  <div class="credential-label">密码</div>
+                  <div class="credential-value">123456</div>
+                </div>
+                <div>
+                  <div class="credential-label">角色</div>
+                  <div class="credential-value">仓储主管</div>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-phone" onclick="openLightbox(this)" data-caption="仓储管理 — 原材料批次入库">
+              <div class="timeline-phone-screen">
+                <img src="./screenshots/ss-loop-inbound.png?v=2" alt="入库管理" loading="lazy">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Inventory tracking -->
+      <div class="timeline-step">
+        <div class="timeline-number">3</div>
+        <div class="timeline-content">
+          <div class="timeline-role warehouse">&#x1F4CB; 库存管理</div>
+          <div class="timeline-title">实时库存跟踪 — 批次追溯、预警、调拨</div>
+          <div class="timeline-visual-layout">
+            <div class="timeline-visual-text">
+              <div class="timeline-desc">
+                每个物料批次独立追踪：入库数量、已使用量、已预留量、剩余可用量。
+                系统自动预警：<strong>低库存预警</strong>（剩余 &le; 30%）、<strong>临期预警</strong>（&le; 7 天到期）。
+                支持跨仓库/跨工厂调拨，状态全程可追踪。
+              </div>
+              <div class="info-box" style="margin-top: 10px;">
+                <strong>示例：</strong>高筋面粉 MB-2026-0221-001，入库 200kg，已用 45kg，预留 30kg，
+                可用库存 125kg，存放于常温库-B区-货架1，有效期至 2026-05-21
+              </div>
+            </div>
+            <div class="timeline-phone" onclick="openLightbox(this)" data-caption="成品库存 — 批次追踪与预警">
+              <div class="timeline-phone-screen">
+                <img src="./screenshots/ss-loop-inventory.png" alt="库存管理" loading="lazy">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Production consumption -->
+      <div class="timeline-step">
+        <div class="timeline-number">4</div>
+        <div class="timeline-content">
+          <div class="timeline-role supervisor">&#x2699; 生产消耗</div>
+          <div class="timeline-title">物料领用 — 生产批次自动关联原料消耗</div>
+          <div class="timeline-visual-layout">
+            <div class="timeline-visual-text">
+              <div class="timeline-desc">
+                车间开始生产时，根据 BOM（物料清单）自动关联所需原料批次。
+                领用后库存自动扣减，生产完成后成品自动入库到「成品库存」，生成新的成品批次。
+                关联报工数据，形成「原料 → 生产 → 成品」完整追溯链。
+              </div>
+              <div class="info-box" style="margin-top: 10px;">
+                <strong>追溯链路：</strong>
+                原料批次 MB-001 → 生产批次 PB-2026-0221-001 → 成品批次 FG-001 → 报工记录 WR-001
+              </div>
+            </div>
+            <div class="timeline-phone" onclick="openLightbox(this)" data-caption="生产管理 — 批次与物料消耗">
+              <div class="timeline-phone-screen">
+                <img src="./screenshots/ss-loop-production.png?v=2" alt="生产消耗" loading="lazy">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Sales Order -->
+      <div class="timeline-step">
+        <div class="timeline-number">5</div>
+        <div class="timeline-content">
+          <div class="timeline-role sales">&#x1F4B0; 销售订单</div>
+          <div class="timeline-title">创建销售单 — 客户下单到确认发货</div>
+          <div class="timeline-desc">
+            工厂管理员在「进销存 → 销售订单」模块创建销售单：
+            选择客户 → 添加产品明细（从成品库存中选择）→ 确认订单。
+            系统自动检查/预留成品库存，确保不会超卖。
+          </div>
+          <div class="status-flow">
+            <div class="status-badge draft">草稿 DRAFT</div>
+            <div class="status-arrow">&#x2192;</div>
+            <div class="status-badge approved">已确认 CONFIRMED</div>
+            <div class="status-arrow">&#x2192;</div>
+            <div class="status-badge" style="background:rgba(251,191,36,0.12);color:#fbbf24;">处理中 PROCESSING</div>
+            <div class="status-arrow">&#x2192;</div>
+            <div class="status-badge completed">已完成 COMPLETED</div>
+          </div>
+          <div class="timeline-visual-layout">
+            <div class="timeline-visual-text">
+              <div class="info-box" style="margin-top: 0;">
+                <strong>示例：</strong>销售单 SO-2026-0221-002，客户「城市连锁超市A」，
+                有机全麦面包 200件 &#215; &#165;12.5 + 法式牛角包 150件 &#215; &#165;8.0 = 合计 &#165;3,700
+              </div>
+              <div class="credential-card" style="margin-top: 10px;">
+                <div>
+                  <div class="credential-label">操作账号</div>
+                  <div class="credential-value">factory_admin1</div>
+                </div>
+                <div>
+                  <div class="credential-label">路径</div>
+                  <div class="credential-value">管理 → 销售订单</div>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-phone" onclick="openLightbox(this)" data-caption="销售订单 — 订单列表与状态流转">
+              <div class="timeline-phone-screen">
+                <img src="./screenshots/ss-loop-sales.png" alt="销售订单" loading="lazy">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 6: Outbound & Shipping -->
+      <div class="timeline-step">
+        <div class="timeline-number">6</div>
+        <div class="timeline-content">
+          <div class="timeline-role warehouse">&#x1F69A; 出库发货</div>
+          <div class="timeline-title">拣选 → 打包 → 装车 → 发货 → 物流追踪</div>
+          <div class="timeline-desc">
+            仓库主管在「仓库 → 出库」模块完成全流程：<br>
+            <strong>拣选：</strong>按发货单扫码拣货，核对数量。<br>
+            <strong>打包装车：</strong>确认包装完整，生成发货单。<br>
+            <strong>发货确认：</strong>录入物流公司与运单号，系统自动扣减成品库存。<br>
+            <strong>送达确认：</strong>客户或配送员确认收货，订单完结。
+          </div>
+          <div class="status-flow">
+            <div class="status-badge pending">待发货</div>
+            <div class="status-arrow">&#x2192;</div>
+            <div class="status-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6;">已发货 SHIPPED</div>
+            <div class="status-arrow">&#x2192;</div>
+            <div class="status-badge completed">已完成 COMPLETED</div>
+          </div>
+          <div class="timeline-visual-layout">
+            <div class="timeline-visual-text">
+              <div class="info-box" style="margin-top: 0;">
+                <strong>示例：</strong>发货单 SH-2026-0221-001，物流「顺丰速运」，
+                运单号 SF1234567890，状态从「已发货 SHIPPED」到「已完成 COMPLETED」
+              </div>
+              <div class="credential-card" style="margin-top: 10px;">
+                <div>
+                  <div class="credential-label">操作账号</div>
+                  <div class="credential-value">warehouse_mgr1</div>
+                </div>
+                <div>
+                  <div class="credential-label">路径</div>
+                  <div class="credential-value">仓库 → 出库发货</div>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-phone" onclick="openLightbox(this)" data-caption="出库发货 — 物流追踪与状态">
+              <div class="timeline-phone-screen">
+                <img src="./screenshots/ss-loop-shipping.png?v=2" alt="出库发货" loading="lazy">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 7: Data Closed Loop -->
+      <div class="timeline-step">
+        <div class="timeline-number">7</div>
+        <div class="timeline-content">
+          <div class="timeline-role system">&#x1F504; 数据闭环</div>
+          <div class="timeline-title">全链路数据汇总 — 财务对账与 BI 分析</div>
+          <div class="timeline-desc">
+            所有交易数据自动汇总：采购应付账款、销售应收账款、库存成本、毛利计算。
+            数据可同步至 SmartBI 进行 AI 驱动的深度分析：
+            成本趋势、利润率变化、库存周转率、供应商评分等。
+          </div>
+          <div class="timeline-visual-layout">
+            <div class="timeline-visual-text">
+              <div class="loop-kpi-grid">
+                <div class="loop-kpi-item">
+                  <div class="loop-kpi-value">&#165;156,800</div>
+                  <div class="loop-kpi-label">采购总额</div>
+                </div>
+                <div class="loop-kpi-item">
+                  <div class="loop-kpi-value">&#165;287,500</div>
+                  <div class="loop-kpi-label">销售总额</div>
+                </div>
+                <div class="loop-kpi-item">
+                  <div class="loop-kpi-value">45.5%</div>
+                  <div class="loop-kpi-label">毛利率</div>
+                </div>
+                <div class="loop-kpi-item">
+                  <div class="loop-kpi-value">3.7次/月</div>
+                  <div class="loop-kpi-label">库存周转率</div>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-phone" onclick="openLightbox(this)" data-caption="BI 数据驾驶舱 — 财务汇总分析">
+              <div class="timeline-phone-screen">
+                <img src="./screenshots/ss-loop-bi.png?v=2" alt="BI分析" loading="lazy">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Summary cards -->
+    <div class="loop-summary reveal reveal-d3">
+      <div class="loop-summary-card">
+        <div class="loop-summary-icon">&#x1F517;</div>
+        <div class="loop-summary-title">全链路追溯</div>
+        <div class="loop-summary-desc">从原料供应商到终端客户，每一步可追溯</div>
+      </div>
+      <div class="loop-summary-card">
+        <div class="loop-summary-icon">&#x26A0;</div>
+        <div class="loop-summary-title">智能预警</div>
+        <div class="loop-summary-desc">低库存、临期、超卖自动预警提醒</div>
+      </div>
+      <div class="loop-summary-card">
+        <div class="loop-summary-icon">&#x1F4B1;</div>
+        <div class="loop-summary-title">财务自动对账</div>
+        <div class="loop-summary-desc">应收应付自动计算，账龄分析清晰</div>
+      </div>
+      <div class="loop-summary-card">
+        <div class="loop-summary-icon">&#x1F310;</div>
+        <div class="loop-summary-title">多工厂调拨</div>
+        <div class="loop-summary-desc">跨仓库/跨工厂物料调配，状态全程追踪</div>
+      </div>
+      <div class="loop-summary-card">
+        <div class="loop-summary-icon">&#x1F4CA;</div>
+        <div class="loop-summary-title">BI 深度分析</div>
+        <div class="loop-summary-desc">数据同步 SmartBI，AI 生成经营洞察</div>
+      </div>
+    </div>
+
   </div>
 </section>
 

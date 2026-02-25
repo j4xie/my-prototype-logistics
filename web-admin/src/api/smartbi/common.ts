@@ -542,6 +542,7 @@ export interface EnrichResult {
   chartConfig?: Record<string, unknown>;
   timings?: Record<string, number>;
   rawData?: Record<string, unknown>[];
+  displayNameMap?: Record<string, string>;
 }
 
 /**
@@ -743,6 +744,89 @@ export interface CorrelationResult {
 }
 
 /**
+ * Python SemanticMapper standardName → 中文显示名
+ * Maps the standard field names persisted in smart_bi_pg_field_definitions
+ * to human-readable Chinese labels for chart titles, KPI cards, and axis labels.
+ */
+const STANDARD_FIELD_LABELS: Record<string, string> = {
+  // Amount fields
+  budget_amount: '预算金额',
+  actual_amount: '实际金额',
+  variance: '预实差异',
+  last_year_actual: '去年同期',
+  ytd_actual: '累计实际',
+  ytd_budget: '累计预算',
+  // Rate fields
+  achievement_rate: '达成率',
+  yoy_rate: '同比增长',
+  mom_rate: '环比增长',
+  gross_margin_rate: '毛利率',
+  net_margin_rate: '净利率',
+  // Category fields
+  category: '项目',
+  department: '部门',
+  product: '产品',
+  region: '区域',
+  // Financial
+  revenue: '营业收入',
+  cost: '营业成本',
+  gross_profit: '毛利',
+  expense: '费用',
+  net_profit: '净利润',
+  // Other
+  period: '期间',
+  budget: '预算',
+  actual: '实际',
+  yoy_prior: '同期数',
+  item: '项目',
+  salesperson: '销售员',
+  quantity: '数量',
+  amount: '金额',
+  growth_rate: '增长率',
+  margin: '毛利率',
+};
+
+/**
+ * Build a displayNameMap from persisted field definitions.
+ * Strategy:
+ * - If a standardName label is UNIQUE (only one column maps to it), use it.
+ * - If multiple columns map to the same label (collision), skip them —
+ *   downstream code falls back to humanizeColumnName(orig) which preserves
+ *   the original distinguishing suffixes like (2), (3).
+ */
+export function buildDisplayNameMap(
+  fields: FieldDefinition[]
+): Record<string, string> {
+  // First pass: compute candidate labels and count collisions
+  const candidates: Array<{ orig: string; label: string }> = [];
+  const labelCount: Record<string, number> = {};
+
+  for (const f of fields) {
+    const orig = f.originalName;
+    if (!orig) continue;
+    let label: string;
+    if (f.standardName && STANDARD_FIELD_LABELS[f.standardName]) {
+      label = STANDARD_FIELD_LABELS[f.standardName];
+    } else {
+      label = humanizeColumnName(orig);
+    }
+    candidates.push({ orig, label });
+    labelCount[label] = (labelCount[label] || 0) + 1;
+  }
+
+  // Second pass: only use labels that are unique (no collision)
+  const map: Record<string, string> = {};
+  for (const { orig, label } of candidates) {
+    if (labelCount[label] === 1) {
+      map[orig] = label;
+    }
+    // Collisions: skip — downstream humanizeColumnName(orig) preserves suffixes
+  }
+
+  return map;
+}
+
+/**
  * Column name humanization map and helper
  */
 const COLUMN_NAME_MAP: Record<string, string> = {
@@ -798,21 +882,63 @@ const COLUMN_NAME_MAP: Record<string, string> = {
   'budget': '预算',
   'target': '目标',
   'plan': '计划',
+  'product': '产品',
+  'customer': '客户',
+  'supplier': '供应商',
+  'salesperson': '销售员',
+  'employee': '员工',
+  'weight': '重量',
+  'volume': '体积',
+  'area': '面积',
+  'achievement_rate': '达成率',
+  'yoy_rate': '同比增长',
+  'mom_rate': '环比增长',
+  'gross_margin_rate': '毛利率',
+  'net_margin_rate': '净利率',
+  'last_year_actual': '去年同期',
+  'ytd_actual': '累计实际',
+  'ytd_budget': '累计预算',
 };
+
+/** Replace circled number characters ②③④⑤... with (2)(3)(4)(5)... */
+export function sanitizeCircledNumbers(text: string): string {
+  return text.replace(/[②③④⑤⑥⑦⑧⑨⑩]/g, m => {
+    const map: Record<string, string> = {
+      '②': '(2)', '③': '(3)', '④': '(4)', '⑤': '(5)',
+      '⑥': '(6)', '⑦': '(7)', '⑧': '(8)', '⑨': '(9)', '⑩': '(10)',
+    };
+    return map[m] || m;
+  });
+}
 
 /**
  * Convert raw column names to human-friendly display names
  */
 export function humanizeColumnName(col: string): string {
-  // Fix 6: Strip technical dedup suffixes like _2, _3 first
-  const circled = ['', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫'];
-  let cleaned = col.replace(/_(\d+)$/, (match, num) => {
+  // Convert circled number dedup suffixes ②③④⑤ to readable (2)(3) etc.
+  const _circledToNum: Record<string, string> = {
+    '②': '(2)', '③': '(3)', '④': '(4)', '⑤': '(5)',
+    '⑥': '(6)', '⑦': '(7)', '⑧': '(8)', '⑨': '(9)', '⑩': '(10)',
+  };
+  let cleaned = col.replace(/[②③④⑤⑥⑦⑧⑨⑩]$/,
+    m => _circledToNum[m] || '');
+
+  // Date prefix extraction: "2025-01-01 本月实际" → "1月 本月实际"
+  // Also handles "2025-01-01_预算数" (underscore) and "2025-01-01预算数" (no space)
+  const datePrefix = cleaned.match(/^(\d{4})-(\d{2})-\d{2}[\s_]*(.+)$/);
+  if (datePrefix && datePrefix[3]) {
+    const month = parseInt(datePrefix[2]);
+    const rest = datePrefix[3].replace(/^[\s_]+/, '').trim();
+    // Skip pure-digit suffixes like "2025-01-01_2" (dedup marker, not a label)
+    if (rest && !/^\d+$/.test(rest)) return `${month}月 ${rest}`;
+  }
+
+  // Fix 6: Convert technical dedup suffixes like _2, _3 to readable (2), (3)
+  cleaned = cleaned.replace(/_(\d+)$/, (match, num) => {
     // Keep _2 etc for dates like 2025-01-01_2, handled below
     if (/^\d{4}-\d{2}-\d{2}_\d+$/.test(col)) return match;
-    // Convert _2 → ② (circled number) for better readability
     const n = parseInt(num);
-    if (n >= 1 && n < circled.length) return circled[n];
-    if (n >= 2 && n <= 20) return `·${n}`;
+    if (n >= 1 && n <= 20) return `(${n})`;
     return '';
   });
 

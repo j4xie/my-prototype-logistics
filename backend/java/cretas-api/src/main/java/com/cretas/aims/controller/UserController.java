@@ -19,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.utils.SecurityUtils;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
@@ -53,6 +54,7 @@ public class UserController {
      */
     @PostMapping
     @Operation(summary = "创建用户")
+    @RequirePermission("hr:read_write")
     public ApiResponse<UserDTO> createUser(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -67,6 +69,7 @@ public class UserController {
      */
     @PutMapping("/{userId}")
     @Operation(summary = "更新用户信息")
+    @RequirePermission("hr:read_write")
     public ApiResponse<UserDTO> updateUser(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -83,6 +86,7 @@ public class UserController {
      */
     @DeleteMapping("/{userId}")
     @Operation(summary = "删除用户")
+    @RequirePermission("hr:read_write")
     public ApiResponse<Void> deleteUser(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -114,6 +118,7 @@ public class UserController {
      */
     @GetMapping("/{userId}")
     @Operation(summary = "获取用户详情")
+    @RequirePermission({"hr:read_write", "hr:read"})
     public ApiResponse<UserDTO> getUserById(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -128,6 +133,7 @@ public class UserController {
      */
     @GetMapping
     @Operation(summary = "获取用户列表（分页）")
+    @RequirePermission({"hr:read_write", "hr:read"})
     public ApiResponse<PageResponse<UserDTO>> getUserList(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -141,6 +147,7 @@ public class UserController {
      */
     @GetMapping("/role/{roleCode}")
     @Operation(summary = "按角色获取用户列表")
+    @RequirePermission({"hr:read_write", "hr:read"})
     public ApiResponse<List<UserDTO>> getUsersByRole(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -155,6 +162,7 @@ public class UserController {
      */
     @PostMapping("/{userId}/activate")
     @Operation(summary = "激活用户")
+    @RequirePermission("hr:read_write")
     public ApiResponse<Void> activateUser(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -170,6 +178,7 @@ public class UserController {
      */
     @PostMapping("/{userId}/deactivate")
     @Operation(summary = "停用用户")
+    @RequirePermission("hr:read_write")
     public ApiResponse<Void> deactivateUser(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -185,6 +194,7 @@ public class UserController {
      */
     @PutMapping("/{userId}/role")
     @Operation(summary = "更新用户角色")
+    @RequirePermission("hr:read_write")
     public ApiResponse<Void> updateUserRole(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -230,6 +240,7 @@ public class UserController {
      */
     @GetMapping("/search")
     @Operation(summary = "搜索用户")
+    @RequirePermission({"hr:read_write", "hr:read"})
     public ApiResponse<PageResponse<UserDTO>> searchUsers(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -246,6 +257,7 @@ public class UserController {
      */
     @GetMapping("/export")
     @Operation(summary = "导出用户列表")
+    @RequirePermission("hr:read_write")
     public ResponseEntity<byte[]> exportUsers(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
@@ -272,6 +284,7 @@ public class UserController {
      */
     @PostMapping("/import")
     @Operation(summary = "从Excel文件批量导入用户")
+    @RequirePermission("hr:read_write")
     public ApiResponse<com.cretas.aims.dto.common.ImportResult<UserDTO>> importUsersFromExcel(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -343,6 +356,7 @@ public class UserController {
      */
     @GetMapping("/join-date-range")
     @Operation(summary = "根据入职日期范围获取用户列表")
+    @RequirePermission({"hr:read_write", "hr:read"})
     public ApiResponse<PageResponse<UserDTO>> getUsersByJoinDateRange(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -385,6 +399,7 @@ public class UserController {
      */
     @PutMapping("/{userId}/employee-code")
     @Operation(summary = "绑定或更新用户工号")
+    @RequirePermission("hr:read_write")
     public ApiResponse<Void> updateEmployeeCode(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -416,6 +431,7 @@ public class UserController {
      */
     @PutMapping("/{userId}/skills")
     @Operation(summary = "更新用户技能等级")
+    @RequirePermission("hr:read_write")
     public ApiResponse<Void> updateUserSkills(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -432,6 +448,7 @@ public class UserController {
      */
     @GetMapping("/expiring-contracts")
     @Operation(summary = "获取合同即将到期的员工列表")
+    @RequirePermission({"hr:read_write", "hr:read"})
     public ApiResponse<List<UserDTO>> getExpiringContracts(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -447,6 +464,7 @@ public class UserController {
      */
     @GetMapping("/hire-type/{hireType}")
     @Operation(summary = "按雇用类型获取用户列表")
+    @RequirePermission({"hr:read_write", "hr:read"})
     public ApiResponse<List<UserDTO>> getUsersByHireType(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -461,6 +479,7 @@ public class UserController {
      */
     @GetMapping("/temporary-workers")
     @Operation(summary = "获取所有临时性质员工")
+    @RequirePermission({"hr:read_write", "hr:read"})
     public ApiResponse<List<UserDTO>> getTemporaryWorkers(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {

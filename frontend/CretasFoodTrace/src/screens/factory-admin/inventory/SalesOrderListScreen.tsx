@@ -12,8 +12,9 @@ type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   DRAFT: { label: '草稿', color: '#909399' },
   CONFIRMED: { label: '已确认', color: '#409eff' },
-  DELIVERING: { label: '发货中', color: '#e6a23c' },
-  DELIVERED: { label: '已交付', color: '#67c23a' },
+  PROCESSING: { label: '处理中', color: '#e6a23c' },
+  PARTIAL_DELIVERED: { label: '部分发货', color: '#f56c6c' },
+  COMPLETED: { label: '已完成', color: '#67c23a' },
   CANCELLED: { label: '已取消', color: '#909399' },
 };
 
@@ -96,7 +97,7 @@ export default function SalesOrderListScreen() {
             { value: 'all', label: '全部' },
             { value: 'DRAFT', label: '草稿' },
             { value: 'CONFIRMED', label: '已确认' },
-            { value: 'DELIVERED', label: '已交付' },
+            { value: 'COMPLETED', label: '已完成' },
           ]}
         />
       </View>

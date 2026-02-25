@@ -112,6 +112,9 @@ public class ProductionReport {
     @Builder.Default
     private Status status = Status.SUBMITTED;
 
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
     @Column(name = "synced_to_smartbi")
     @Builder.Default
     private Boolean syncedToSmartbi = false;

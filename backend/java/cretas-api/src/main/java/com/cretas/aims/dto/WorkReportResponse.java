@@ -48,6 +48,7 @@ public class WorkReportResponse {
     private List<String> photos;
 
     private ProductionReport.Status status;
+    private String rejectionReason;
     private Boolean syncedToSmartbi;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

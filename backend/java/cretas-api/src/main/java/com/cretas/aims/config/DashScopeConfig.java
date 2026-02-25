@@ -46,7 +46,7 @@ public class DashScopeConfig {
      * 默认文本模型
      * 可选: qwen-turbo (快速), qwen-plus (平衡), qwen-max (最强)
      */
-    private String model = "qwen-plus";
+    private String model = "qwen3.5-plus";
 
     /**
      * 纠错 Agent 模型 (CRITIC-style correction)

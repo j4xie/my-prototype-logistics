@@ -80,21 +80,29 @@ export default function NfcCheckinScreen() {
   const loadBatches = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await processingApiClient.getBatches({ status: 'IN_PROGRESS' });
+      const response = await processingApiClient.getBatches({
+        status: 'IN_PROGRESS',
+        supervisorId: user?.id,
+      });
       if (response.success && response.data?.content) {
-        setBatches(response.data.content.map((b: Record<string, unknown>) => ({
+        const batchList = response.data.content.map((b: Record<string, unknown>) => ({
           id: b.id as number,
           batchNumber: b.batchNumber as string,
           productName: b.productName as string | undefined,
           status: b.status as string | undefined,
-        })));
+        }));
+        setBatches(batchList);
+        // Auto-select if only one batch
+        if (batchList.length === 1) {
+          selectBatch(batchList[0]);
+        }
       }
     } catch (error) {
       console.warn('Failed to load batches:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
   const loadCheckins = useCallback(async (batchId: number) => {
     try {

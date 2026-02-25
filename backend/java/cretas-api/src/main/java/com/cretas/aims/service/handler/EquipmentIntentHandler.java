@@ -75,7 +75,7 @@ public class EquipmentIntentHandler implements IntentHandler {
                 case "EQUIPMENT_BREAKDOWN_REPORT" -> handleBreakdownReport(factoryId, intentConfig);
                 case "QUERY_EQUIPMENT_STATUS_BY_NAME" -> handleQueryByName(factoryId, request, intentConfig);
                 case "ANALYZE_EQUIPMENT" -> handleAnalyzeEquipment(factoryId, request, intentConfig);
-                case "EQUIPMENT_CAMERA_START" -> handleCameraStart(factoryId, intentConfig);
+                case "EQUIPMENT_CAMERA_START", "OPEN_CAMERA" -> handleCameraStart(factoryId, intentConfig);
                 case "CCP_MONITOR_DATA_DETECTION" -> handleCcpMonitor(factoryId, intentConfig);
                 case "COLD_CHAIN_TEMPERATURE" -> handleColdChainTemperature(factoryId, intentConfig);
                 case "EQUIPMENT_MAINTENANCE" -> handleEquipmentMaintenance(factoryId, request, intentConfig);

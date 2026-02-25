@@ -23,7 +23,8 @@ public class PermissionServiceImpl implements PermissionService {
      */
     private static final List<String> ALL_MODULES = Arrays.asList(
             "dashboard", "production", "warehouse", "quality",
-            "procurement", "sales", "hr", "equipment", "finance", "system", "analytics"
+            "procurement", "sales", "hr", "equipment", "finance", "system", "analytics",
+            "scheduling", "work_report", "inventory", "report"
     );
 
     /**
@@ -56,6 +57,10 @@ public class PermissionServiceImpl implements PermissionService {
         dispatcherPerms.put("finance", "read");     // 新增: 可查看财务分析
         dispatcherPerms.put("system", "read");
         dispatcherPerms.put("analytics", "read_write"); // 新增: 数据分析中心
+        dispatcherPerms.put("scheduling", "read_write");
+        dispatcherPerms.put("work_report", "read_write");
+        dispatcherPerms.put("inventory", "read");
+        dispatcherPerms.put("report", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.dispatcher, dispatcherPerms);
         PERMISSION_MATRIX.put(FactoryUserRole.production_manager, dispatcherPerms); // 向后兼容
 
@@ -74,6 +79,9 @@ public class PermissionServiceImpl implements PermissionService {
         workshopPerms.put("quality", "write");
         workshopPerms.put("hr", "read");
         workshopPerms.put("equipment", "read");
+        workshopPerms.put("scheduling", "read");
+        workshopPerms.put("work_report", "read_write");
+        workshopPerms.put("report", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.workshop_supervisor, workshopPerms);
 
         // quality_inspector
@@ -81,12 +89,14 @@ public class PermissionServiceImpl implements PermissionService {
         inspectorPerms.put("dashboard", "read");
         inspectorPerms.put("production", "read");
         inspectorPerms.put("quality", "write");
+        inspectorPerms.put("work_report", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.quality_inspector, inspectorPerms);
 
         // operator
         Map<String, String> operatorPerms = new HashMap<>();
         operatorPerms.put("dashboard", "read");
         operatorPerms.put("production", "write");
+        operatorPerms.put("work_report", "write");
         PERMISSION_MATRIX.put(FactoryUserRole.operator, operatorPerms);
 
         // warehouse_manager
@@ -94,12 +104,16 @@ public class PermissionServiceImpl implements PermissionService {
         warehouseManagerPerms.put("dashboard", "read_write");
         warehouseManagerPerms.put("warehouse", "read_write");
         warehouseManagerPerms.put("production", "read");
+        warehouseManagerPerms.put("scheduling", "read");
+        warehouseManagerPerms.put("inventory", "read_write");
+        warehouseManagerPerms.put("report", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.warehouse_manager, warehouseManagerPerms);
 
         // warehouse_worker
         Map<String, String> warehouseWorkerPerms = new HashMap<>();
         warehouseWorkerPerms.put("dashboard", "read");
         warehouseWorkerPerms.put("warehouse", "write");
+        warehouseWorkerPerms.put("inventory", "write");
         PERMISSION_MATRIX.put(FactoryUserRole.warehouse_worker, warehouseWorkerPerms);
 
         // hr_admin
@@ -119,6 +133,10 @@ public class PermissionServiceImpl implements PermissionService {
         procurementPerms.put("dashboard", "read");
         procurementPerms.put("procurement", "read_write");
         procurementPerms.put("warehouse", "read");
+        procurementPerms.put("production", "read");
+        procurementPerms.put("finance", "read");
+        procurementPerms.put("inventory", "read");
+        procurementPerms.put("report", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.procurement_manager, procurementPerms);
 
         // sales_manager
@@ -126,6 +144,10 @@ public class PermissionServiceImpl implements PermissionService {
         salesPerms.put("dashboard", "read");
         salesPerms.put("sales", "read_write");
         salesPerms.put("warehouse", "read");
+        salesPerms.put("production", "read");
+        salesPerms.put("finance", "read");
+        salesPerms.put("analytics", "read");
+        salesPerms.put("report", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.sales_manager, salesPerms);
 
         // finance_manager: 财务主管 - SmartBI完整权限（含上传Excel）
@@ -136,6 +158,7 @@ public class PermissionServiceImpl implements PermissionService {
         financePerms.put("procurement", "read");
         financePerms.put("sales", "read");
         financePerms.put("analytics", "read_write");  // SmartBI 完整权限
+        financePerms.put("report", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.finance_manager, financePerms);
 
         // viewer: 所有模块只读
@@ -194,6 +217,15 @@ public class PermissionServiceImpl implements PermissionService {
                 return permType.contains("read");
             case "write":
                 return permType.contains("write");
+            case "create":
+                // 创建/提交：需要写权限（write 或 read_write）
+                return permType.contains("write");
+            case "approve":
+                // 审批：需要完整读写权限（仅 read_write）
+                return permType.equals("read_write");
+            case "read_write":
+                // 明确要求完整读写权限
+                return permType.equals("read_write");
             case "*":
                 return true;
             default:

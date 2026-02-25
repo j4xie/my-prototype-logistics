@@ -3,1943 +3,1631 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>生产报工操作指南 - 白垩纪食品溯源系统</title>
+<title>白垩纪食品溯源系统 — 企业级智能管理平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ===== RESET & VARIABLES ===== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --primary: #1a5276;
-  --primary-light: #2980b9;
-  --primary-bg: #eaf2f8;
-  --success: #27ae60;
-  --success-bg: #e8f8f0;
-  --danger: #e74c3c;
-  --warning: #f39c12;
-  --warning-bg: #fef9e7;
-  --gray: #95a5a6;
-  --light: #f8f9fa;
-  --border: #e0e0e0;
-  --text: #333;
-  --text-secondary: #666;
-  --radius: 8px;
-  --app-indigo: #4F46E5;
-  --app-indigo-light: #EEF2FF;
+  /* Factory — deep midnight + electric blue-cyan */
+  --f-bg: #050810;
+  --f-surface: #0b1120;
+  --f-surface-alt: #111a2e;
+  --f-border: rgba(59, 130, 246, 0.08);
+  --f-border-hover: rgba(59, 130, 246, 0.25);
+  --f-accent: #3b82f6;
+  --f-accent2: #22d3ee;
+  --f-text: #e8edf5;
+  --f-text-secondary: #94a3b8;
+  --f-muted: #64748b;
+
+  /* Restaurant — warm cream + amber-terracotta */
+  --r-bg: #faf6f0;
+  --r-surface: #ffffff;
+  --r-border: rgba(180, 83, 9, 0.08);
+  --r-border-hover: rgba(217, 119, 6, 0.3);
+  --r-accent: #d97706;
+  --r-accent2: #ef4444;
+  --r-text: #1c1917;
+  --r-text-secondary: #78716c;
+  --r-muted: #a8a29e;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+html { scroll-behavior: smooth; }
 
 body {
-  font-family: "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif;
-  background: #f0f2f5;
-  color: var(--text);
-  line-height: 1.7;
-  min-height: 100vh;
+  font-family: 'Outfit', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow-x: hidden;
+  background: var(--f-bg);
+  color: var(--f-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ===== Hero ===== */
-.hero {
-  background: linear-gradient(135deg, #1a5276 0%, #2c3e50 50%, #1a5276 100%);
+::selection {
+  background: rgba(59, 130, 246, 0.3);
   color: #fff;
-  padding: 60px 20px 50px;
-  text-align: center;
+}
+
+/* ===== NOISE TEXTURE OVERLAY ===== */
+.noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* ===== NAVIGATION ===== */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 0 clamp(1rem, 4vw, 3rem);
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  background: rgba(5, 8, 16, 0.7);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: all 0.6s var(--ease-out-expo);
+}
+.nav.scrolled {
+  background: rgba(5, 8, 16, 0.9);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04);
+}
+.nav.light {
+  background: rgba(250, 246, 240, 0.85);
+  border-bottom-color: rgba(180, 83, 9, 0.06);
+}
+.nav.light.scrolled {
+  background: rgba(250, 246, 240, 0.95);
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.02em;
+  color: var(--f-text);
+  text-decoration: none;
+  transition: color 0.5s;
+}
+.nav.light .nav-logo { color: var(--r-text); }
+.nav-logo-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--f-accent), var(--f-accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: white;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+}
+.nav-links {
+  display: flex;
+  gap: 1px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  padding: 3px;
+}
+.nav.light .nav-links { background: rgba(0,0,0,0.03); }
+.nav-link {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--f-muted);
+  text-decoration: none;
+  transition: all 0.25s;
+  letter-spacing: 0.01em;
+}
+.nav-link:hover, .nav-link.active {
+  color: var(--f-text);
+  background: rgba(255,255,255,0.06);
+}
+.nav.light .nav-link { color: var(--r-text-secondary); }
+.nav.light .nav-link:hover, .nav.light .nav-link.active {
+  color: var(--r-text);
+  background: rgba(0,0,0,0.04);
+}
+
+/* ===== HERO ===== */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px clamp(1rem, 4vw, 2rem) 80px;
   position: relative;
   overflow: hidden;
+  text-align: center;
 }
-.hero::before {
+
+/* Animated gradient mesh */
+.hero-mesh {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.hero-mesh .orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  will-change: transform;
+}
+.hero-mesh .orb-1 {
+  width: 600px;
+  height: 500px;
+  background: rgba(59, 130, 246, 0.12);
+  top: -10%;
+  left: 20%;
+  animation: orbFloat1 25s ease-in-out infinite;
+}
+.hero-mesh .orb-2 {
+  width: 500px;
+  height: 500px;
+  background: rgba(34, 211, 238, 0.08);
+  top: 40%;
+  right: 10%;
+  animation: orbFloat2 30s ease-in-out infinite;
+}
+.hero-mesh .orb-3 {
+  width: 400px;
+  height: 350px;
+  background: rgba(139, 92, 246, 0.06);
+  bottom: 10%;
+  left: 10%;
+  animation: orbFloat3 20s ease-in-out infinite;
+}
+
+/* Dot grid */
+.hero-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(59, 130, 246, 0.12) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 45%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 45%, black 20%, transparent 70%);
+}
+
+/* Edge glow lines */
+.hero-line {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.15), transparent);
+  height: 1px;
+  width: 80%;
+  left: 10%;
+}
+.hero-line-top { top: 30%; }
+.hero-line-bot { bottom: 25%; }
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px 5px 7px;
+  border-radius: 100px;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.12);
+  font-family: 'Azeret Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--f-accent);
+  margin-bottom: 36px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  animation: fadeInUp 0.8s var(--ease-out-expo) both;
+}
+.hero-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--f-accent);
+  box-shadow: 0 0 8px var(--f-accent);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+.hero h1 {
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  margin-bottom: 24px;
+  animation: fadeInUp 0.8s var(--ease-out-expo) 0.1s both;
+}
+.hero h1 .gradient-text {
+  background: linear-gradient(135deg, #3b82f6 0%, #22d3ee 50%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  color: var(--f-text-secondary);
+  max-width: 520px;
+  line-height: 1.75;
+  font-weight: 400;
+  margin-bottom: 44px;
+  animation: fadeInUp 0.8s var(--ease-out-expo) 0.2s both;
+}
+
+.hero-ctas {
+  display: flex;
+  gap: 10px;
+  animation: fadeInUp 0.8s var(--ease-out-expo) 0.3s both;
+}
+.hero-cta {
+  position: relative;
+  padding: 13px 28px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s var(--ease-out-expo);
+  letter-spacing: 0.01em;
+  overflow: hidden;
+}
+.hero-cta.primary {
+  background: linear-gradient(135deg, var(--f-accent), #2563eb);
+  color: white;
+  box-shadow: 0 2px 20px rgba(59, 130, 246, 0.25), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+.hero-cta.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+/* Shimmer effect */
+.hero-cta.primary::after {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.05) 0%, transparent 60%);
-}
-.hero h1 {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  position: relative;
-}
-.hero .subtitle {
-  font-size: 15px;
-  opacity: 0.85;
-  margin-bottom: 36px;
-  position: relative;
-}
-.hero-features {
-  display: flex;
-  justify-content: center;
-  gap: 32px;
-  flex-wrap: wrap;
-  position: relative;
-}
-.hero-feat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.hero-feat .icon-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  border: 1px solid rgba(255,255,255,0.2);
-  transition: transform 0.2s;
-}
-.hero-feat:hover .icon-circle { transform: scale(1.1); }
-.hero-feat span {
-  font-size: 13px;
-  opacity: 0.9;
-}
-
-/* ===== Sticky Nav ===== */
-.sticky-nav {
-  position: sticky;
   top: 0;
-  z-index: 100;
-  background: #fff;
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  transition: left 0.5s;
 }
-.sticky-nav ul {
-  list-style: none;
-  display: flex;
-  max-width: 960px;
-  margin: 0 auto;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+.hero-cta.primary:hover::after { left: 120%; }
+.hero-cta.secondary {
+  background: rgba(255,255,255,0.04);
+  color: var(--f-text-secondary);
+  border: 1px solid rgba(255,255,255,0.08);
 }
-.sticky-nav li a {
+.hero-cta.secondary:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--f-text);
+  border-color: rgba(255,255,255,0.12);
+}
+
+/* Hero screenshot */
+.hero-screenshot {
+  margin-top: 72px;
+  position: relative;
+  animation: fadeInUp 1s var(--ease-out-expo) 0.5s both;
+  perspective: 1200px;
+}
+.hero-screenshot-inner {
+  position: relative;
+  transform: rotateX(4deg) rotateY(0deg);
+  transition: transform 0.6s var(--ease-out-expo);
+}
+.hero-screenshot-inner:hover {
+  transform: rotateX(1deg) rotateY(0deg);
+}
+.hero-screenshot img {
+  width: min(90vw, 820px);
+  border-radius: 16px;
   display: block;
-  padding: 14px 20px;
-  font-size: 14px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  white-space: nowrap;
-  border-bottom: 3px solid transparent;
-  transition: all 0.2s;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 4px 16px rgba(0,0,0,0.2),
+    0 24px 80px rgba(0,0,0,0.5);
 }
-.sticky-nav li a:hover,
-.sticky-nav li a.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
+.hero-screenshot-glow {
+  position: absolute;
+  inset: -60px;
+  background: radial-gradient(ellipse 60% 40% at 50% 30%, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+  z-index: -1;
+  pointer-events: none;
 }
-
-/* ===== Container ===== */
-.container {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-/* ===== Section ===== */
-.section {
-  padding: 48px 0;
-}
-.section:nth-child(even) {
-  background: #fff;
-}
-.section-header {
-  text-align: center;
-  margin-bottom: 40px;
-}
-.section-header h2 {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--primary);
-  margin-bottom: 8px;
-}
-.section-header .badge {
-  display: inline-block;
-  padding: 4px 14px;
-  background: var(--primary-bg);
-  color: var(--primary);
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 12px;
-}
-.section-header p {
-  color: var(--text-secondary);
-  font-size: 15px;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-/* ===== Flow Chart ===== */
-.flow-chart {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  flex-wrap: wrap;
-  padding: 24px 0;
-}
-.flow-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 12px;
-  position: relative;
-}
-.flow-step .flow-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  font-weight: 600;
-  color: #fff;
-  position: relative;
-  z-index: 1;
-}
-.flow-step .flow-label {
-  font-size: 13px;
-  font-weight: 500;
-  text-align: center;
-  max-width: 80px;
-}
-.flow-arrow {
-  font-size: 20px;
-  color: var(--gray);
-  flex-shrink: 0;
-  margin: 0 4px;
-}
-
-.flow-step:nth-child(1) .flow-icon  { background: #8e44ad; }
-.flow-step:nth-child(3) .flow-icon  { background: var(--primary); }
-.flow-step:nth-child(5) .flow-icon  { background: var(--primary-light); }
-.flow-step:nth-child(7) .flow-icon  { background: #16a085; }
-.flow-step:nth-child(9) .flow-icon  { background: var(--success); }
-.flow-step:nth-child(11) .flow-icon { background: #e67e22; }
-.flow-step:nth-child(13) .flow-icon { background: #c0392b; }
-
-/* ===== Step Cards ===== */
-.steps-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  margin-top: 24px;
-}
-.step-card {
-  background: #fff;
-  border-radius: 12px;
+/* Reflection */
+.hero-screenshot-reflect {
+  position: absolute;
+  bottom: -40%;
+  left: 0;
+  right: 0;
+  height: 40%;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  border: 1px solid var(--border);
-  transition: box-shadow 0.2s;
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.12), transparent 60%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.12), transparent 60%);
 }
-.step-card:hover {
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+.hero-screenshot-reflect img {
+  width: 100%;
+  border-radius: 16px;
+  transform: scaleY(-1);
+  filter: blur(2px);
 }
-.step-card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  background: var(--light);
-  border-bottom: 1px solid var(--border);
+
+/* ===== STATS ===== */
+.stats {
+  position: relative;
+  padding: 80px clamp(1rem, 4vw, 2rem);
+  background: var(--f-surface);
+  border-top: 1px solid var(--f-border);
+  border-bottom: 1px solid var(--f-border);
 }
-.step-num {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: #fff;
+.stats-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--f-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.stat-card {
+  background: var(--f-surface);
+  padding: 36px 24px;
+  text-align: center;
+  position: relative;
+  transition: background 0.3s;
+}
+.stat-card:hover {
+  background: var(--f-surface-alt);
+}
+.stat-icon {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 16px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
-  font-weight: 700;
-  flex-shrink: 0;
+  font-size: 16px;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.08);
 }
-.step-card-header h3 {
-  font-size: 15px;
-  font-weight: 600;
+.stat-number {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, var(--f-accent), var(--f-accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
 }
-.step-card-body {
-  padding: 16px 20px;
+.stat-label {
+  font-size: 13px;
+  color: var(--f-muted);
+  margin-top: 6px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }
-.step-card-body p {
-  font-size: 14px;
-  color: var(--text-secondary);
+
+/* ===== SECTION SHARED ===== */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Azeret Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   margin-bottom: 16px;
 }
-
-/* ===== Phone Mockup ===== */
-.phone-frame {
-  width: 260px;
-  margin: 0 auto;
-  background: #1a1a1a;
-  border-radius: 32px;
-  padding: 12px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2), inset 0 0 2px rgba(255,255,255,0.1);
-  position: relative;
-  cursor: pointer;
+.section-label::before {
+  content: '';
+  width: 28px;
+  height: 1px;
 }
-.phone-frame::before {
+.section-title {
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin-bottom: 18px;
+}
+.section-desc {
+  font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+  line-height: 1.75;
+  font-weight: 400;
+  max-width: 580px;
+}
+
+/* ===== FACTORY ===== */
+.factory {
+  background: var(--f-bg);
+  padding: 120px 0 100px;
+  position: relative;
+}
+.factory .section-label { color: var(--f-accent); }
+.factory .section-label::before { background: var(--f-accent); }
+.factory .section-desc { color: var(--f-text-secondary); }
+.factory-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, 2rem);
+}
+.factory-header { margin-bottom: 64px; }
+
+/* ===== BENTO GRID ===== */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto auto;
+  gap: 10px;
+  margin-bottom: 96px;
+}
+.bento-card {
+  background: var(--f-surface);
+  border: 1px solid var(--f-border);
+  border-radius: 14px;
+  padding: 32px 28px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s var(--ease-out-expo);
+  cursor: default;
+}
+.bento-card::before {
   content: '';
   position: absolute;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 22px;
-  background: #1a1a1a;
-  border-radius: 0 0 14px 14px;
-  z-index: 2;
+  inset: 0;
+  border-radius: 14px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(34, 211, 238, 0.1), transparent 50%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
 }
-.phone-screen {
-  width: 100%;
-  aspect-ratio: 9/19;
-  border-radius: 22px;
-  overflow: hidden;
-  background: #f5f5f5;
+.bento-card:hover::before { opacity: 1; }
+.bento-card:hover {
+  background: var(--f-surface-alt);
+  border-color: var(--f-border-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2), 0 0 48px rgba(59, 130, 246, 0.04);
+}
+
+/* Featured card spans 2 columns */
+.bento-card.featured {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.bento-card.featured .bento-text { padding-top: 4px; }
+
+.bento-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 18px;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.08);
+  flex-shrink: 0;
+}
+.bento-card.featured .bento-icon {
+  width: 52px;
+  height: 52px;
+  font-size: 24px;
+  margin-bottom: 0;
+}
+.bento-card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+  color: var(--f-text);
+}
+.bento-card.featured h3 { font-size: 18px; }
+.bento-card p {
+  font-size: 13px;
+  color: var(--f-text-secondary);
+  line-height: 1.65;
+  font-weight: 400;
+}
+.bento-card.featured p { font-size: 14px; }
+
+/* ===== GALLERY ===== */
+.gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.gallery-header h3 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.gallery-tabs {
+  display: flex;
+  gap: 0;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  padding: 3px;
+  border: 1px solid var(--f-border);
+}
+.gallery-tab {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--f-muted);
+  cursor: pointer;
+  transition: all 0.25s;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+.gallery-tab.active {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--f-accent);
+}
+.gallery-tab:hover:not(.active) {
+  color: var(--f-text-secondary);
+}
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.gallery-item {
   position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--f-border);
+  cursor: pointer;
+  aspect-ratio: 16/10;
+  transition: all 0.5s var(--ease-out-expo);
 }
-.phone-screen img {
+.gallery-item:hover {
+  border-color: var(--f-border-hover);
+  transform: translateY(-4px) scale(1.005);
+  box-shadow:
+    0 16px 48px rgba(0,0,0,0.25),
+    0 0 32px rgba(59, 130, 246, 0.06);
+}
+.gallery-item.featured {
+  grid-column: span 2;
+  aspect-ratio: 16/8.5;
+}
+.gallery-item img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top;
+  object-position: top left;
+  transition: transform 0.7s var(--ease-out-expo);
+}
+.gallery-item:hover img { transform: scale(1.04); }
+.gallery-item-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 28px 24px 20px;
+  background: linear-gradient(transparent, rgba(5, 8, 16, 0.85));
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.4s var(--ease-out-expo);
+}
+.gallery-item:hover .gallery-item-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+.gallery-item-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+.gallery-item-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  margin-top: 4px;
+  font-weight: 400;
+}
+/* Filter animation */
+.gallery-item.hiding {
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
 }
 
-/* CSS Mockup Screens */
-.mock-screen {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  font-size: 11px;
-  color: #1a1a1a;
-  background: #f5f5f5;
-}
-.mock-statusbar {
-  height: 28px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  font-size: 10px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-.mock-navbar {
-  height: 44px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
-  position: relative;
-}
-.mock-navbar .back-arrow {
-  position: absolute;
-  left: 12px;
-  font-size: 18px;
-  color: var(--app-indigo);
-}
-.mock-body {
-  flex: 1;
-  overflow: hidden;
-  padding: 12px;
-}
-.mock-card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-}
-.mock-card-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 6px;
-}
-.mock-field-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 3px 0;
-  font-size: 10px;
-}
-.mock-field-row .label { color: #888; }
-.mock-field-row .value { color: #333; font-weight: 500; }
-.mock-input {
-  width: 100%;
-  height: 28px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 0 8px;
-  font-size: 10px;
-  margin-bottom: 6px;
-  background: #fafafa;
-}
-.mock-input.filled { background: #fff; border-color: var(--app-indigo); }
-.mock-label {
-  font-size: 10px;
-  font-weight: 500;
-  color: #555;
-  margin-bottom: 3px;
-}
-.mock-btn {
-  width: 100%;
-  height: 34px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: #fff;
-  margin-top: 8px;
-}
-.mock-btn.primary { background: var(--app-indigo); }
-.mock-btn.success { background: var(--success); }
-.mock-btn.outline {
-  background: transparent;
-  border: 1.5px solid var(--app-indigo);
-  color: var(--app-indigo);
-}
-.mock-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 9px;
-  font-weight: 600;
-}
-.mock-badge.blue { background: #dbeafe; color: #2563eb; }
-.mock-badge.green { background: #d1fae5; color: #059669; }
-.mock-badge.orange { background: #fed7aa; color: #c2410c; }
-.mock-scan-area {
-  width: 100%;
-  aspect-ratio: 1;
-  background: #000;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ===== TRANSITION ===== */
+.transition-zone {
+  height: 180px;
   position: relative;
   overflow: hidden;
-  margin-bottom: 8px;
+  background: var(--f-bg);
 }
-.mock-scan-area::before {
+.transition-zone::after {
   content: '';
-  width: 60%;
-  height: 60%;
-  border: 2px solid rgba(79,70,229,0.8);
-  border-radius: 8px;
   position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--f-bg) 0%, var(--r-bg) 100%);
 }
-.mock-scan-area::after {
-  content: '';
-  width: 58%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--app-indigo), transparent);
+.transition-accent {
   position: absolute;
-  top: 45%;
-  animation: scanLine 2s ease-in-out infinite;
-}
-@keyframes scanLine {
-  0%, 100% { top: 30%; }
-  50% { top: 60%; }
-}
-.mock-scan-text {
-  color: rgba(255,255,255,0.7);
-  font-size: 10px;
-  position: absolute;
-  bottom: 12px;
-}
-.mock-photo-grid {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.mock-photo-thumb {
-  width: 48px;
-  height: 48px;
-  border-radius: 6px;
-  background: #e0e0e0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  color: #999;
-  position: relative;
-}
-.mock-photo-thumb.has-photo {
-  background: linear-gradient(135deg, #a3d9a5, #7ec8a0);
-}
-.mock-photo-thumb .check {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 14px;
-  height: 14px;
-  background: #10b981;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 8px;
-  color: #fff;
-}
-.mock-photo-add {
-  border: 1.5px dashed #ccc;
-  background: transparent;
-  color: #bbb;
-  font-size: 20px;
-}
-.mock-tab-bar {
-  height: 50px;
-  background: #fff;
-  display: flex;
-  border-top: 1px solid #f0f0f0;
-  flex-shrink: 0;
-}
-.mock-tab {
-  flex: 1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
-  font-size: 8px;
-  color: #999;
-}
-.mock-tab.active { color: var(--app-indigo); }
-.mock-tab .tab-icon { font-size: 16px; }
-.mock-success-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: #d1fae5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-  margin: 20px auto 12px;
-}
-.mock-team-member {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid #f5f5f5;
-}
-.mock-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--app-indigo-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  color: var(--app-indigo);
-  font-weight: 600;
-  flex-shrink: 0;
-}
-.mock-team-member .name {
-  flex: 1;
-  font-size: 10px;
-  font-weight: 500;
-}
-.mock-team-member .mini-input {
-  width: 52px;
-  height: 24px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  text-align: center;
-  font-size: 10px;
-  background: #fafafa;
-}
-.mock-team-member .mini-input.filled {
-  background: #fff;
-  border-color: var(--app-indigo);
-  color: var(--app-indigo);
-  font-weight: 600;
-}
-.mock-offline-banner {
-  background: #fef3cd;
-  color: #856404;
-  padding: 4px 10px;
-  text-align: center;
-  font-size: 9px;
-  font-weight: 500;
-  flex-shrink: 0;
-}
-.mock-draft-item {
-  background: #fff;
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin-bottom: 6px;
-  border-left: 3px solid var(--warning);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-}
-.mock-draft-title {
-  font-size: 10px;
-  font-weight: 600;
-  margin-bottom: 3px;
-}
-.mock-draft-meta {
-  font-size: 9px;
-  color: #888;
-}
-.mock-progress {
-  width: 100%;
-  height: 4px;
-  background: #e0e0e0;
-  border-radius: 2px;
-  margin: 6px 0;
-  overflow: hidden;
-}
-.mock-progress .fill {
-  height: 100%;
-  background: var(--app-indigo);
-  border-radius: 2px;
-  transition: width 0.3s;
-}
-.mock-stage-tags {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-.mock-stage-tag {
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 9px;
-  font-weight: 500;
-  background: #f0f0f0;
-  color: #666;
-}
-.mock-stage-tag.active {
-  background: var(--app-indigo);
-  color: #fff;
-}
-
-/* ===== Field Table ===== */
-.field-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 16px 0;
-  font-size: 14px;
-}
-.field-table th {
-  background: var(--primary);
-  color: #fff;
-  padding: 10px 14px;
-  text-align: left;
-  font-weight: 500;
-}
-.field-table td {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-}
-.field-table tr:nth-child(even) td {
-  background: var(--light);
-}
-.field-table code {
-  background: #f0f0f0;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 12px;
-  font-family: 'Consolas', monospace;
-  color: #c0392b;
-}
-
-/* ===== Info Box ===== */
-.info-box {
-  padding: 16px 20px;
-  border-radius: var(--radius);
-  margin: 16px 0;
-  font-size: 14px;
-}
-.info-box.tip {
-  background: var(--primary-bg);
-  border-left: 4px solid var(--primary);
-}
-.info-box.success {
-  background: var(--success-bg);
-  border-left: 4px solid var(--success);
-}
-.info-box.warning {
-  background: var(--warning-bg);
-  border-left: 4px solid var(--warning);
-}
-.info-box strong {
-  display: block;
-  margin-bottom: 4px;
-}
-
-/* ===== Stage Tags (Section 4) ===== */
-.stage-list {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin: 24px 0;
-}
-.stage-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: #fff;
-  border-radius: 24px;
-  border: 1px solid var(--border);
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-  transition: all 0.2s;
-}
-.stage-chip:hover {
-  border-color: var(--primary);
-  box-shadow: 0 2px 12px rgba(26,82,118,0.12);
-}
-.stage-chip .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-/* ===== Offline Flow ===== */
-.offline-flow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   gap: 0;
-  flex-wrap: wrap;
-  padding: 20px 0;
 }
-.offline-box {
-  background: #fff;
-  border-radius: 10px;
-  padding: 16px 20px;
-  text-align: center;
-  min-width: 140px;
-  border: 1px solid var(--border);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+.transition-line {
+  width: 1px;
+  height: 60px;
+  background: linear-gradient(180deg, var(--f-accent), var(--r-accent));
+  position: relative;
 }
-.offline-box .of-icon {
-  font-size: 28px;
-  margin-bottom: 6px;
+.transition-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
 }
-.offline-box h4 {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 4px;
+.transition-dot.top {
+  background: var(--f-accent);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
 }
-.offline-box p {
-  font-size: 12px;
-  color: var(--text-secondary);
+.transition-dot.bot {
+  background: var(--r-accent);
+  box-shadow: 0 0 12px rgba(217, 119, 6, 0.5);
 }
 
-/* ===== FAQ ===== */
-.faq-item {
-  background: #fff;
-  border-radius: var(--radius);
-  margin-bottom: 8px;
-  border: 1px solid var(--border);
+/* ===== RESTAURANT ===== */
+.restaurant {
+  background: var(--r-bg);
+  color: var(--r-text);
+  padding: 120px 0 100px;
+  position: relative;
   overflow: hidden;
 }
-.faq-question {
-  padding: 16px 20px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
+.restaurant-pattern {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(217, 119, 6, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 85% 75%, rgba(239, 68, 68, 0.03) 0%, transparent 40%);
+  pointer-events: none;
+}
+/* Dot pattern for restaurant (warm) */
+.restaurant-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(217, 119, 6, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 50% 40% at 80% 30%, black 10%, transparent 60%);
+  -webkit-mask-image: radial-gradient(ellipse 50% 40% at 80% 30%, black 10%, transparent 60%);
+  pointer-events: none;
+}
+.restaurant-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, 2rem);
+  position: relative;
+}
+.restaurant .section-label { color: var(--r-accent); }
+.restaurant .section-label::before { background: var(--r-accent); }
+.restaurant .section-desc { color: var(--r-text-secondary); }
+.restaurant .section-title { color: var(--r-text); }
+
+/* Restaurant features */
+.r-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 60px 0 96px;
+}
+.r-feature {
+  background: var(--r-surface);
+  border-radius: 14px;
+  padding: 30px 26px;
+  border: 1px solid var(--r-border);
+  transition: all 0.4s var(--ease-out-expo);
+  position: relative;
+  overflow: hidden;
+}
+.r-feature::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 24%;
+  right: 24%;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(90deg, var(--r-accent), var(--r-accent2));
+  opacity: 0;
+  transition: all 0.4s var(--ease-out-expo);
+}
+.r-feature:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(217, 119, 6, 0.06);
+  border-color: var(--r-border-hover);
+}
+.r-feature:hover::after { opacity: 1; left: 0; right: 0; }
+.r-feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  user-select: none;
-  transition: background 0.2s;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 18px;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.07), rgba(239, 68, 68, 0.03));
+  border: 1px solid rgba(217, 119, 6, 0.06);
 }
-.faq-question:hover {
-  background: var(--light);
+.r-feature h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--r-text);
+  letter-spacing: -0.01em;
 }
-.faq-question .arrow {
-  font-size: 12px;
-  color: var(--gray);
-  transition: transform 0.3s;
+.r-feature p {
+  font-size: 13px;
+  color: var(--r-text-secondary);
+  line-height: 1.65;
 }
-.faq-item.open .faq-question .arrow {
-  transform: rotate(180deg);
+
+/* ===== PHONE SHOWCASE ===== */
+.phone-showcase {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 72px;
+  align-items: center;
 }
-.faq-answer {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
+.phone-info h3 {
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  margin-bottom: 20px;
+  color: var(--r-text);
 }
-.faq-answer-inner {
-  padding: 0 20px 16px;
+.phone-info h3 .accent { color: var(--r-accent); }
+.phone-info > p {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--r-text-secondary);
+  margin-bottom: 32px;
+}
+.phone-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.phone-highlight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   font-size: 14px;
-  color: var(--text-secondary);
+  font-weight: 500;
+  color: var(--r-text);
+}
+.phone-highlight-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--r-accent);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(217, 119, 6, 0.3);
+}
+.phone-mockups {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+.phone-frame {
+  width: 260px;
+  padding: 10px;
+  background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
+  border-radius: 32px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 20px 60px rgba(0,0,0,0.2),
+    0 4px 16px rgba(0,0,0,0.15);
+  position: relative;
+  transition: transform 0.5s var(--ease-out-expo);
+}
+.phone-frame:hover { transform: translateY(-4px); }
+.phone-frame::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 72px;
+  height: 22px;
+  background: #0f0f1e;
+  border-radius: 0 0 14px 14px;
+  z-index: 10;
+}
+.phone-frame img {
+  width: 100%;
+  border-radius: 22px;
+  display: block;
+}
+.phone-frame:nth-child(2) {
+  margin-top: 48px;
+}
+
+/* ===== FOOTER ===== */
+.footer {
+  padding: 64px clamp(1rem, 4vw, 2rem) 48px;
+  background: #030508;
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,0.03);
+}
+.footer-inner {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.footer-logo {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--f-text);
+  margin-bottom: 10px;
+  letter-spacing: -0.02em;
+}
+.footer p {
+  font-size: 13px;
+  color: var(--f-muted);
   line-height: 1.8;
 }
+.footer-divider {
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--f-muted), transparent);
+  margin: 20px auto;
+}
 
-/* ===== Lightbox ===== */
+/* ===== LIGHTBOX ===== */
 .lightbox {
-  display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.85);
-  z-index: 1000;
+  z-index: 2000;
+  background: rgba(3, 5, 8, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s;
+  cursor: zoom-out;
+}
+.lightbox.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.lightbox img {
+  max-width: 92vw;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+  transform: scale(0.92);
+  transition: transform 0.4s var(--ease-out-expo);
+}
+.lightbox.active img { transform: scale(1); }
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.6);
+  font-size: 16px;
   cursor: pointer;
-}
-.lightbox.show { display: flex; }
-.lightbox-content {
-  max-width: 380px;
-  max-height: 90vh;
-  border-radius: 32px;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-}
-.lightbox-content img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* ===== Footer ===== */
-.footer {
-  text-align: center;
-  padding: 32px 20px;
-  color: var(--gray);
-  font-size: 13px;
-  background: #fff;
-  border-top: 1px solid var(--border);
-}
-.footer a {
-  color: var(--primary);
-  text-decoration: none;
-}
-
-/* ===== App Preview Strip ===== */
-.app-preview {
-  background: linear-gradient(180deg, #1a2332 0%, #2c3e50 100%);
-  padding: 40px 20px;
-  overflow: hidden;
-}
-.app-preview .section-header h2 {
-  color: #fff;
-}
-.app-preview .section-header p {
-  color: rgba(255,255,255,0.7);
-}
-.preview-scroll {
   display: flex;
-  gap: 32px;
-  overflow-x: auto;
-  padding: 20px 0 24px;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s;
+  font-family: inherit;
 }
-.preview-scroll::-webkit-scrollbar { display: none; }
-.preview-item {
-  flex-shrink: 0;
-  scroll-snap-align: center;
-  text-align: center;
+.lightbox-close:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
 }
-.preview-item .phone-frame {
-  width: 240px;
-  cursor: default;
-}
-.preview-item .caption {
-  color: rgba(255,255,255,0.85);
+.lightbox-caption {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 13px;
-  font-weight: 500;
-  margin-top: 12px;
-}
-.preview-item .caption-sub {
   color: rgba(255,255,255,0.5);
-  font-size: 11px;
-  margin-top: 2px;
-}
-.preview-hint {
+  font-weight: 400;
   text-align: center;
-  color: rgba(255,255,255,0.4);
-  font-size: 12px;
-  margin-top: 8px;
+  white-space: nowrap;
 }
 
-/* ===== Responsive ===== */
-@media (max-width: 768px) {
-  .hero { padding: 40px 16px 36px; }
-  .hero h1 { font-size: 22px; }
-  .hero-features { gap: 20px; }
-  .steps-grid { grid-template-columns: 1fr; gap: 20px; }
-  .phone-frame { width: 220px; }
-  .section { padding: 32px 0; }
-  .section-header h2 { font-size: 20px; }
-  .flow-chart { gap: 0; }
-  .flow-step { padding: 10px 6px; }
-  .flow-step .flow-label { font-size: 11px; max-width: 60px; }
-  .flow-arrow { font-size: 16px; }
-  .offline-flow { flex-direction: column; }
-  .stage-list { gap: 8px; }
-  .stage-chip { padding: 8px 14px; font-size: 13px; }
+/* ===== SCROLL REVEAL ===== */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s var(--ease-out-expo), transform 0.7s var(--ease-out-expo);
 }
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-d1 { transition-delay: 0.06s; }
+.reveal-d2 { transition-delay: 0.12s; }
+.reveal-d3 { transition-delay: 0.18s; }
+.reveal-d4 { transition-delay: 0.24s; }
+.reveal-d5 { transition-delay: 0.30s; }
+
+/* ===== KEYFRAMES ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(80px, 40px) scale(1.05); }
+  50% { transform: translate(-30px, 80px) scale(0.95); }
+  75% { transform: translate(50px, -20px) scale(1.02); }
+}
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(-60px, -50px) scale(1.08); }
+  50% { transform: translate(40px, -30px) scale(0.92); }
+  75% { transform: translate(-40px, 40px) scale(1.05); }
+}
+@keyframes orbFloat3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(50px, -40px) scale(1.1); }
+  66% { transform: translate(-30px, 30px) scale(0.95); }
+}
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .bento-card.featured {
+    grid-column: span 2;
+  }
+  .r-features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stats-inner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+  .bento-card.featured {
+    grid-column: span 1;
+    grid-template-columns: 1fr;
+  }
+  .bento-card.featured .bento-icon {
+    margin-bottom: 16px;
+  }
+  .r-features {
+    grid-template-columns: 1fr;
+  }
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+  .gallery-item.featured {
+    grid-column: span 1;
+  }
+  .phone-showcase {
+    grid-template-columns: 1fr;
+    gap: 48px;
+    text-align: center;
+  }
+  .phone-highlights { align-items: center; }
+  .phone-mockups {
+    flex-direction: row;
+    justify-content: center;
+  }
+  .phone-frame { width: 180px; }
+  .phone-frame:nth-child(2) { margin-top: 32px; }
+  .stats-inner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .nav-links { display: none; }
+  .gallery-header {
+    flex-direction: column;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .hero h1 { font-size: 2.4rem; }
+  .hero-sub { font-size: 0.95rem; }
+  .hero-ctas { flex-direction: column; width: 100%; max-width: 280px; }
+  .hero-cta { text-align: center; }
+}
+
 @media (max-width: 480px) {
-  .hero-features { gap: 16px; }
-  .hero-feat .icon-circle { width: 44px; height: 44px; font-size: 20px; }
-  .hero-feat span { font-size: 11px; }
-  .sticky-nav li a { padding: 12px 14px; font-size: 13px; }
-  .phone-frame { width: 200px; }
-  .container { padding: 0 12px; }
-  .preview-item .phone-frame { width: 200px; }
-  .preview-scroll { gap: 20px; }
+  .phone-mockups { gap: 12px; }
+  .phone-frame { width: 150px; padding: 8px; border-radius: 24px; }
+  .phone-frame::before { width: 56px; height: 18px; border-radius: 0 0 10px 10px; }
+  .phone-frame img { border-radius: 18px; }
+  .stats-inner { grid-template-columns: repeat(2, 1fr); }
+  .stat-card { padding: 24px 16px; }
+  .hero-screenshot img { border-radius: 12px; }
 }
 </style>
 </head>
 <body>
 
-<!-- ===== Hero Banner ===== -->
-<header class="hero">
-  <h1>白垩纪食品溯源系统</h1>
-  <p class="subtitle">生产报工操作指南 — 移动端 App</p>
-  <div class="hero-features">
-    <div class="hero-feat">
-      <div class="icon-circle" style="font-size:20px;font-weight:700;font-family:monospace;">&#x2395;</div>
-      <span>扫码报工</span>
-    </div>
-    <div class="hero-feat">
-      <div class="icon-circle" style="font-size:18px;font-weight:700;">&#x2687;</div>
-      <span>班组报工</span>
-    </div>
-    <div class="hero-feat">
-      <div class="icon-circle"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="11" r="3"/><path d="M5 21l3-4h8l3 4"/></svg></div>
-      <span>拍照存证</span>
-    </div>
-    <div class="hero-feat">
-      <div class="icon-circle"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4c0 2-2 3-4 5-2-2-4-3-4-5a4 4 0 014-4z"/><path d="M4 14h4l2 6h4l2-6h4"/></svg></div>
-      <span>AI视觉分析</span>
-    </div>
-    <div class="hero-feat">
-      <div class="icon-circle"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-      <span>工时管理</span>
-    </div>
-    <div class="hero-feat">
-      <div class="icon-circle"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2z"/><path d="M9 9h6v6H9z"/></svg></div>
-      <span>离线暂存</span>
-    </div>
-  </div>
-</header>
+<!-- Noise texture overlay -->
+<div class="noise" aria-hidden="true"></div>
 
-<!-- ===== App Preview ===== -->
-<section class="app-preview">
-  <div class="section-header">
-    <h2>系统实景预览</h2>
-    <p>以下为App真实运行截图，展示生产管理核心界面</p>
+<!-- Navigation -->
+<nav class="nav" id="nav">
+  <a href="#hero" class="nav-logo">
+    <div class="nav-logo-icon">C</div>
+    <span>白垩纪食品溯源</span>
+  </a>
+  <div class="nav-links">
+    <a href="#hero" class="nav-link active">首页</a>
+    <a href="#factory" class="nav-link">工厂管理</a>
+    <a href="#restaurant" class="nav-link">餐饮管理</a>
+    <a href="#stats" class="nav-link">数据概览</a>
   </div>
-  <div class="preview-scroll">
-    <div class="preview-item">
-      <div class="phone-frame">
-        <div class="phone-screen">
-          <img src="./screenshots/ss-landing.png" alt="App启动页" loading="lazy">
-        </div>
-      </div>
-      <div class="caption">App启动页</div>
-      <div class="caption-sub">品牌标识 · 登录入口 · 注册入口</div>
-    </div>
-    <div class="preview-item">
-      <div class="phone-frame">
-        <div class="phone-screen">
-          <img src="./screenshots/ss-login-form.png" alt="登录表单" loading="lazy">
-        </div>
-      </div>
-      <div class="caption">登录认证</div>
-      <div class="caption-sub">用户名 · 密码 · 生物识别</div>
-    </div>
-    <div class="preview-item">
-      <div class="phone-frame">
-        <div class="phone-screen">
-          <img src="./screenshots/ss-home.png" alt="工厂管理员首页" loading="lazy">
-        </div>
-      </div>
-      <div class="caption">管理员首页</div>
-      <div class="caption-sub">AI洞察 · KPI统计 · 快捷操作</div>
-    </div>
-    <div class="preview-item">
-      <div class="phone-frame">
-        <div class="phone-screen">
-          <img src="./screenshots/ss-ws-home.png" alt="车间主管首页" loading="lazy">
-        </div>
-      </div>
-      <div class="caption">车间主管首页</div>
-      <div class="caption-sub">今日任务 · 人员状态 · 设备监控</div>
-    </div>
-    <div class="preview-item">
-      <div class="phone-frame">
-        <div class="phone-screen">
-          <img src="./screenshots/ss-ws-batchlist.png" alt="批次管理" loading="lazy">
-        </div>
-      </div>
-      <div class="caption">批次管理</div>
-      <div class="caption-sub">状态筛选 · 进度跟踪 · 实时产量</div>
-    </div>
-    <div class="preview-item">
-      <div class="phone-frame">
-        <div class="phone-screen">
-          <img src="./screenshots/ss-ws-batchdetail.png" alt="批次详情" loading="lazy">
-        </div>
-      </div>
-      <div class="caption">批次详情</div>
-      <div class="caption-sub">产量数据 · 质检记录 · 成本分析</div>
-    </div>
-    <div class="preview-item">
-      <div class="phone-frame">
-        <div class="phone-screen">
-          <img src="./screenshots/ss-ws-profile.png" alt="个人设置" loading="lazy">
-        </div>
-      </div>
-      <div class="caption">个人设置</div>
-      <div class="caption-sub">账号管理 · 系统设置 · 多语言</div>
-    </div>
-    <div class="preview-item">
-      <div class="phone-frame">
-        <div class="phone-screen">
-          <img src="./screenshots/ss-reports.png" alt="数据分析中心" loading="lazy">
-        </div>
-      </div>
-      <div class="caption">数据分析中心</div>
-      <div class="caption-sub">生产 · 质量 · 效率 · 成本</div>
-    </div>
-    <div class="preview-item">
-      <div class="phone-frame">
-        <div class="phone-screen">
-          <img src="./screenshots/ss-ai-analysis.png" alt="AI智能分析" loading="lazy">
-        </div>
-      </div>
-      <div class="caption">AI智能分析</div>
-      <div class="caption-sub">意图识别 · 数据查询 · 自然语言</div>
-    </div>
-    <div class="preview-item">
-      <div class="phone-frame">
-        <div class="phone-screen">
-          <img src="./screenshots/ss-alerts.png" alt="设备告警" loading="lazy">
-        </div>
-      </div>
-      <div class="caption">设备告警监控</div>
-      <div class="caption-sub">实时预警 · 异常处置 · 维保追踪</div>
-    </div>
-    <div class="preview-item">
-      <div class="phone-frame">
-        <div class="phone-screen">
-          <img src="./screenshots/ss-smartbi.png" alt="SmartBI数据分析" loading="lazy">
-        </div>
-      </div>
-      <div class="caption">SmartBI数据分析</div>
-      <div class="caption-sub">Excel上传 · 多图表 · AI洞察</div>
-    </div>
-  </div>
-  <div class="preview-hint">← 左右滑动查看更多 →</div>
-</section>
-
-<!-- ===== Sticky Nav ===== -->
-<nav class="sticky-nav">
-  <ul>
-    <li><a href="#overview" class="active">流程总览</a></li>
-    <li><a href="#scan">扫码报工</a></li>
-    <li><a href="#team">班组报工</a></li>
-    <li><a href="#photo">拍照存证</a></li>
-    <li><a href="#ai-vision">AI视觉分析</a></li>
-    <li><a href="#offline">离线暂存</a></li>
-    <li><a href="#faq">常见问题</a></li>
-  </ul>
 </nav>
 
-<!-- ===== Section 1: 流程总览 ===== -->
-<section class="section" id="overview">
-  <div class="container">
-    <div class="section-header">
-      <div class="badge">工人视角 · 主管视角</div>
-      <h2>生产报工流程总览</h2>
-      <p>从生产开始到工时结算，完整的报工流程覆盖8个关键环节，包含AI视觉智能分析</p>
-    </div>
-    <div class="flow-chart">
-      <div class="flow-step">
-        <div class="flow-icon">1</div>
-        <div class="flow-label">生产开始</div>
-      </div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-step">
-        <div class="flow-icon">2</div>
-        <div class="flow-label">开始工时</div>
-      </div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-step">
-        <div class="flow-icon">3</div>
-        <div class="flow-label">扫码/选批</div>
-      </div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-step">
-        <div class="flow-icon">4</div>
-        <div class="flow-label">填写产量</div>
-      </div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-step">
-        <div class="flow-icon">5</div>
-        <div class="flow-label">拍照存证</div>
-      </div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-step">
-        <div class="flow-icon" style="background:#9333ea;">6</div>
-        <div class="flow-label">AI视觉分析</div>
-      </div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-step">
-        <div class="flow-icon">7</div>
-        <div class="flow-label">提交报工</div>
-      </div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-step">
-        <div class="flow-icon">8</div>
-        <div class="flow-label">工时结算</div>
-      </div>
-    </div>
-    <div class="info-box tip">
-      <strong>提示</strong>
-      工人使用「扫码报工」逐笔提交；车间主管使用「班组报工」为整组人员批量提交。两种方式的数据均实时同步至后台管理系统。
-    </div>
+<!-- ============== HERO ============== -->
+<section class="hero" id="hero">
+  <!-- Animated gradient mesh -->
+  <div class="hero-mesh" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
   </div>
-</section>
+  <!-- Dot grid -->
+  <div class="hero-dots" aria-hidden="true"></div>
+  <!-- Horizontal accent lines -->
+  <div class="hero-line hero-line-top" aria-hidden="true"></div>
+  <div class="hero-line hero-line-bot" aria-hidden="true"></div>
 
-<!-- ===== Section 2: 扫码报工 ===== -->
-<section class="section" id="scan" style="background:#fff;">
-  <div class="container">
-    <div class="section-header">
-      <div class="badge">工人视角</div>
-      <h2>扫码报工</h2>
-      <p>工人使用手机摄像头扫描批次条码，快速填写产量数据并提交</p>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Enterprise-Grade Platform
     </div>
-
-    <div class="steps-grid">
-      <!-- Step 1 -->
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num">1</div>
-          <h3>进入扫码报工页面</h3>
-        </div>
-        <div class="step-card-body">
-          <p>在首页点击「批次」导航栏进入批次管理，选择目标批次进行报工。</p>
-          <div class="phone-frame" onclick="showLightbox(this)">
-            <div class="phone-screen">
-              <img src="./screenshots/ss-ws-home.png" alt="车间主管首页 - 报工入口">
-            </div>
-          </div>
-          <div class="info-box tip" style="margin-top:8px;font-size:12px;">
-            <strong>实景截图</strong> 车间主管登录后的首页，一目了然查看今日任务、在产批次、人员和设备状态。
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 2 -->
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num">2</div>
-          <h3>扫描批次条码</h3>
-        </div>
-        <div class="step-card-body">
-          <p>摄像头自动识别条码，蓝色扫描线提示对准区域。支持Code128、QR码等格式。</p>
-          <div class="phone-frame" onclick="showLightbox(this)">
-            <div class="phone-screen">
-              <img src="./screenshots/01-scan-report.png" alt="扫码报工 - 扫描条码">
-            </div>
-          </div>
-          <div class="info-box tip" style="margin-top:8px;font-size:12px;">
-            <strong>实景截图</strong> 扫码报工页面，点击「开始扫码」调用摄像头自动识别批次条码。
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 3 -->
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num">3</div>
-          <h3>填写报工数据</h3>
-        </div>
-        <div class="step-card-body">
-          <p>扫码成功后，系统自动加载批次信息，显示产品类型、目标产量和实际产量。可通过快捷操作进行质检和成本分析。</p>
-          <div class="phone-frame" onclick="showLightbox(this)">
-            <div class="phone-screen">
-              <img src="./screenshots/ss-ws-batchdetail.png" alt="批次详情 - 填写报工数据">
-            </div>
-          </div>
-          <div class="info-box tip" style="margin-top:8px;font-size:12px;">
-            <strong>实景截图</strong> 批次详情页，清晰展示产品信息、计划产量与实际产量对比，并提供质检和成本分析快捷入口。
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 4 -->
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num">4</div>
-          <h3>提交成功</h3>
-        </div>
-        <div class="step-card-body">
-          <p>提交后显示成功提示，可继续扫描下一批次或返回首页查看汇总数据。</p>
-          <div class="phone-frame" onclick="showLightbox(this)">
-            <div class="phone-screen">
-              <div class="mock-screen">
-                <div class="mock-statusbar"><span>9:43</span><span>98%</span></div>
-                <div class="mock-navbar">
-                  <span class="back-arrow">←</span>
-                  扫码报工
-                </div>
-                <div class="mock-body" style="display:flex;flex-direction:column;align-items:center;padding-top:30px;">
-                  <div class="mock-success-icon">✓</div>
-                  <div style="font-size:14px;font-weight:700;margin-bottom:4px;">报工提交成功</div>
-                  <div style="font-size:10px;color:#888;margin-bottom:20px;">数据已同步至管理后台</div>
-                  <div class="mock-card" style="width:100%;">
-                    <div class="mock-field-row"><span class="label">批次号</span><span class="value" style="color:var(--app-indigo);">PB-F001-0130-001</span></div>
-                    <div class="mock-field-row"><span class="label">产出数量</span><span class="value">480 件</span></div>
-                    <div class="mock-field-row"><span class="label">合格率</span><span class="value" style="color:var(--success);">96.9%</span></div>
-                  </div>
-                  <div class="mock-btn primary" style="width:100%;">继续扫码</div>
-                  <div class="mock-btn outline" style="width:100%;">返回首页</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <h1>
+      <span class="gradient-text">白垩纪</span>食品溯源系统
+    </h1>
+    <p class="hero-sub">
+      覆盖工厂生产、餐饮门店全场景的智能管理解决方案。<br>
+      AI 驱动的数据分析，让每一个经营决策都有据可依。
+    </p>
+    <div class="hero-ctas">
+      <a href="#factory" class="hero-cta primary">工厂管理平台 →</a>
+      <a href="#restaurant" class="hero-cta secondary">餐饮门店方案</a>
     </div>
-
-    <div class="info-box success">
-      <strong>智能关联</strong>
-      扫码后系统自动关联批次号、产品名称、设备信息，工人只需填写产出数量和合格数量即可提交，大幅减少手动输入。
-    </div>
-  </div>
-</section>
-
-<!-- ===== Section 3: 班组报工 ===== -->
-<section class="section" id="team">
-  <div class="container">
-    <div class="section-header">
-      <div class="badge">主管视角</div>
-      <h2>班组批量报工</h2>
-      <p>车间主管一次性为多个班组成员提交报工数据，系统自动创建工时记录并计算人工成本</p>
-    </div>
-
-    <div class="steps-grid">
-      <!-- Step 1 -->
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num">1</div>
-          <h3>选择生产批次</h3>
-        </div>
-        <div class="step-card-body">
-          <p>系统展示当前所有批次及状态 (进行中、待开始、已完成)，主管选择要报工的目标批次。</p>
-          <div class="phone-frame" onclick="showLightbox(this)">
-            <div class="phone-screen">
-              <img src="./screenshots/ss-ws-batchlist.png" alt="批次管理列表 - 选择批次">
-            </div>
-          </div>
-          <div class="info-box tip" style="margin-top:8px;font-size:12px;">
-            <strong>实景截图</strong> 批次管理列表，可按状态快速筛选，每个批次显示产品、产量、进度和预计完成时间。
-          </div>
-        </div>
+    <div class="hero-screenshot">
+      <div class="hero-screenshot-glow" aria-hidden="true"></div>
+      <div class="hero-screenshot-inner">
+        <img src="./screenshots/login-page.png" alt="系统登录界面" loading="eager">
       </div>
-
-      <!-- Step 2 -->
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num">2</div>
-          <h3>查看班组成员</h3>
-        </div>
-        <div class="step-card-body">
-          <p>系统自动加载该批次关联的工人列表，主管可以添加或移除成员。</p>
-          <div class="phone-frame" onclick="showLightbox(this)">
-            <div class="phone-screen">
-              <img src="./screenshots/03-team-report.png" alt="班组批量报工 - 选择批次">
-            </div>
-          </div>
-          <div class="info-box tip" style="margin-top:8px;font-size:12px;">
-            <strong>实景截图</strong> 班组批量报工页面，选择进行中的批次后为班组成员批量填写产量数据。
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 3 -->
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num">3</div>
-          <h3>填写各成员产量</h3>
-        </div>
-        <div class="step-card-body">
-          <p>在每位成员右侧输入产出数量。留空的成员不会被提交（按钮显示实际提交人数）。</p>
-          <div class="info-box tip" style="margin:12px 0;">
-            <strong>填写规则</strong>
-            仅填写了产量的成员会被提交。提交按钮会实时显示「一键提交 (N人)」，方便主管确认。每位成员还可以填写单独的备注。
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 4 -->
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num">4</div>
-          <h3>一键批量提交</h3>
-        </div>
-        <div class="step-card-body">
-          <p>点击「一键提交」后，系统为每位成员创建独立的报工记录和工时记录，并自动计算人工成本。</p>
-          <div class="info-box success" style="margin:12px 0;">
-            <strong>自动创建的关联数据</strong>
-            ① 每位成员的生产报工记录<br>
-            ② 对应的工时记录 (EmployeeWorkSession)<br>
-            ③ 人工成本核算 (工时 × 工资标准)
-          </div>
-        </div>
+      <div class="hero-screenshot-reflect" aria-hidden="true">
+        <img src="./screenshots/login-page.png" alt="" loading="lazy">
       </div>
     </div>
   </div>
 </section>
 
-<!-- ===== Section 4: 拍照存证 ===== -->
-<section class="section" id="photo" style="background:#fff;">
-  <div class="container">
-    <div class="section-header">
-      <div class="badge">质量追溯</div>
-      <h2>拍照存证</h2>
-      <p>在生产的每个关键阶段拍照记录，照片自动压缩上传并关联到批次，形成完整的质量追溯链</p>
+<!-- ============== STATS ============== -->
+<section class="stats" id="stats">
+  <div class="stats-inner">
+    <div class="stat-card reveal">
+      <div class="stat-icon">&#9641;</div>
+      <div class="stat-number" data-target="26" data-suffix="">0</div>
+      <div class="stat-label">管理模块</div>
     </div>
-
-    <h3 style="text-align:center;font-size:16px;margin-bottom:8px;">5个生产阶段</h3>
-    <div class="stage-list">
-      <div class="stage-chip"><div class="dot" style="background:#e67e22;"></div> 原料检验</div>
-      <div class="stage-chip"><div class="dot" style="background:var(--primary-light);"></div> 生产过程</div>
-      <div class="stage-chip"><div class="dot" style="background:var(--success);"></div> 成品检查</div>
-      <div class="stage-chip"><div class="dot" style="background:#8e44ad;"></div> 包装环节</div>
-      <div class="stage-chip"><div class="dot" style="background:var(--danger);"></div> 质检验收</div>
+    <div class="stat-card reveal reveal-d1">
+      <div class="stat-icon">&#8644;</div>
+      <div class="stat-number" data-target="1400" data-suffix="+">0</div>
+      <div class="stat-label">API 端点</div>
     </div>
-
-    <div class="steps-grid" style="margin-top:32px;">
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num">1</div>
-          <h3>选择阶段并拍照</h3>
-        </div>
-        <div class="step-card-body">
-          <p>在报工页面下方选择当前阶段，点击「+」按钮调用摄像头拍照。</p>
-          <div class="phone-frame" onclick="showLightbox(this)">
-            <div class="phone-screen">
-              <div class="mock-screen">
-                <div class="mock-statusbar"><span>9:44</span><span>97%</span></div>
-                <div class="mock-navbar">
-                  <span class="back-arrow">←</span>
-                  拍照记录
-                </div>
-                <div class="mock-body">
-                  <div class="mock-card">
-                    <div class="mock-card-title">照片记录 - 生产过程</div>
-                    <div class="mock-stage-tags">
-                      <div class="mock-stage-tag">原料</div>
-                      <div class="mock-stage-tag active">生产中</div>
-                      <div class="mock-stage-tag">成品</div>
-                      <div class="mock-stage-tag">包装</div>
-                      <div class="mock-stage-tag">质检</div>
-                    </div>
-                    <div class="mock-photo-grid">
-                      <div class="mock-photo-thumb has-photo"><span class="check">✓</span><span style="font-size:18px;color:#555;">A</span></div>
-                      <div class="mock-photo-thumb has-photo"><span class="check">✓</span><span style="font-size:18px;color:#555;">B</span></div>
-                      <div class="mock-photo-thumb" style="background:#e8e8e8;position:relative;">
-                        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
-                          <div style="width:20px;height:20px;border:2px solid var(--app-indigo);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>
-                        </div>
-                      </div>
-                      <div class="mock-photo-thumb mock-photo-add">+</div>
-                    </div>
-                    <div class="mock-progress"><div class="fill" style="width:66%;"></div></div>
-                    <div style="font-size:9px;color:#888;text-align:right;">2/3 已上传</div>
-                  </div>
-                  <div class="info-box tip" style="font-size:9px;padding:8px 10px;margin:8px 0;">
-                    <strong style="font-size:10px;">自动优化</strong>
-                    照片自动压缩至 1024px 宽度、70% JPEG 质量，节省流量和存储空间。
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num">2</div>
-          <h3>自动压缩上传</h3>
-        </div>
-        <div class="step-card-body">
-          <p>拍照后系统自动压缩图片并上传，照片自动关联对应批次和生产阶段。支持原料检验、生产过程、成品检查、包装环节、质检验收5个阶段标记。</p>
-          <div class="info-box success" style="margin-top:12px;">
-            <strong>智能压缩</strong>
-            照片自动压缩优化，节省流量和存储空间。网络异常时照片暂存本地，恢复网络后自动重新上传，不会丢失数据。
-          </div>
-        </div>
-      </div>
+    <div class="stat-card reveal reveal-d2">
+      <div class="stat-icon">&#9672;</div>
+      <div class="stat-number" data-target="140" data-suffix="+">0</div>
+      <div class="stat-label">AI 意图组</div>
+    </div>
+    <div class="stat-card reveal reveal-d3">
+      <div class="stat-icon">&#9670;</div>
+      <div class="stat-number" data-target="10" data-suffix="+">0</div>
+      <div class="stat-label">角色权限</div>
     </div>
   </div>
 </section>
 
-<!-- ===== Section 5: AI视觉分析 ===== -->
-<section class="section" id="ai-vision">
-  <div class="container">
-    <div class="section-header">
-      <div class="badge">AI赋能</div>
-      <h2>AI视觉分析</h2>
-      <p>上传生产现场照片，AI自动识别人员效率、标签OCR和产品计数，辅助管理决策</p>
+<!-- ============== FACTORY ============== -->
+<section class="factory" id="factory">
+  <div class="factory-inner">
+    <div class="factory-header reveal">
+      <div class="section-label">Factory Management</div>
+      <h2 class="section-title">工厂管理平台</h2>
+      <p class="section-desc">
+        从生产计划到成品出库，从原料采购到财务分析——全链路数字化管理，
+        配合 AI 智能洞察，让工厂运营效率提升一个量级。
+      </p>
     </div>
 
-    <div class="steps-grid">
-      <!-- AI Step 1: Efficiency Analysis -->
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num" style="background:#9333ea;">1</div>
-          <h3>人员效率分析</h3>
-        </div>
-        <div class="step-card-body">
-          <p>AI识别工位上的工人数量、活跃状态、工序阶段和安全防护情况，自动生成效率评分。</p>
-          <div class="phone-frame" onclick="showLightbox(this)">
-            <div class="phone-screen">
-              <img src="./screenshots/05-ai-analysis.png" alt="AI成本分析 - 效率分析页面">
-            </div>
-          </div>
-          <div class="info-box tip" style="margin-top:8px;font-size:12px;">
-            <strong>实景截图</strong> AI分析页面，通过批次详情「AI效率分析」入口进入，自动调用后端AI服务分析生产效率数据。
-          </div>
+    <!-- Bento Feature Grid -->
+    <div class="bento-grid">
+      <div class="bento-card featured reveal">
+        <div class="bento-icon">&#x1F4CA;</div>
+        <div class="bento-text">
+          <h3>智能 BI 驾驶舱</h3>
+          <p>经营数据一站式洞察，KPI 卡片、趋势图表、区域排行，AI 自动生成分析结论与预警建议。上传 Excel 即可自动解析，支持多维度数据钻取与跨 Sheet 分析。</p>
         </div>
       </div>
+      <div class="bento-card reveal reveal-d1">
+        <div class="bento-icon">&#x1F3ED;</div>
+        <h3>生产管理</h3>
+        <p>批次追踪、计划排程、BOM 成本管理、转换率配置，车间报工自动触发成品入库。</p>
+      </div>
+      <div class="bento-card reveal reveal-d2">
+        <div class="bento-icon">&#x1F4E6;</div>
+        <h3>仓储管理</h3>
+        <p>原料入库、成品出库、库存预警、批次溯源，支持调拨管理与盘点作业。</p>
+      </div>
+      <div class="bento-card reveal reveal-d3">
+        <div class="bento-icon">&#x1F4B0;</div>
+        <h3>财务分析</h3>
+        <p>利润分析、成本分析、应收应付、预算对比，多维度财务报表自动生成。</p>
+      </div>
+      <div class="bento-card reveal reveal-d4">
+        <div class="bento-icon">&#x1F4C8;</div>
+        <h3>销售分析</h3>
+        <p>销售排行、客单价分析、目标完成率追踪、产品类别占比，按日/周/月多维统计。</p>
+      </div>
+      <div class="bento-card reveal reveal-d5">
+        <div class="bento-icon">&#x1F916;</div>
+        <h3>AI 智能问答</h3>
+        <p>自然语言提问、多图表可视化、钻取分析与预测，支持 140+ 意图识别。</p>
+      </div>
+    </div>
 
-      <!-- AI Step 2: OCR + Counting -->
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num" style="background:#9333ea;">2</div>
-          <h3>标签OCR与计数</h3>
-        </div>
-        <div class="step-card-body">
-          <p>AI识别产品标签上的批次号、产品名称、生产日期等信息，同时自动计数成品数量。</p>
-          <div class="phone-frame" onclick="showLightbox(this)">
-            <div class="phone-screen">
-              <img src="./screenshots/06-label-scan.png" alt="标签扫描 - 相机权限请求">
-            </div>
-          </div>
-          <div class="info-box tip" style="margin-top:8px;font-size:12px;">
-            <strong>实景截图</strong> 标签扫描页面，首次使用需授权相机权限，授权后即可通过摄像头自动识别产品标签信息。
-          </div>
+    <!-- Screenshot Gallery -->
+    <div class="gallery-header reveal">
+      <h3>系统界面预览</h3>
+      <div class="gallery-tabs">
+        <button class="gallery-tab active" data-filter="all">全部</button>
+        <button class="gallery-tab" data-filter="dashboard">驾驶舱</button>
+        <button class="gallery-tab" data-filter="analysis">数据分析</button>
+        <button class="gallery-tab" data-filter="operation">运营管理</button>
+      </div>
+    </div>
+    <div class="gallery-grid reveal">
+      <div class="gallery-item featured" data-category="dashboard" onclick="openLightbox(this)">
+        <img src="./screenshots/factory-smartbi-dashboard.png" alt="经营驾驶舱" loading="lazy">
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-label">经营驾驶舱</div>
+          <div class="gallery-item-sub">KPI 指标 · 区域排行 · 趋势图表 · AI 洞察</div>
         </div>
       </div>
-
-      <!-- AI Step 3: Unified Analysis -->
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num" style="background:#9333ea;">3</div>
-          <h3>一键综合分析</h3>
-        </div>
-        <div class="step-card-body">
-          <p>一次拍照同时执行效率、OCR和计数三项分析，结果统一展示。后台自动记录分析数据。</p>
-          <div class="info-box tip" style="margin:12px 0;">
-            <strong>一键三合一分析</strong>
-            拍照后系统自动上传至AI视觉引擎，同时返回：<br>
-            ① 人员效率评分 — 识别工人数量和活跃状态<br>
-            ② 标签OCR识别 — 读取批次号、产品名、日期等信息<br>
-            ③ 成品自动计数 — 识别画面中的产品数量
-          </div>
-          <div class="info-box success" style="margin:12px 0;">
-            <strong>智能验证</strong>
-            OCR识别的批次号与当前报工批次自动比对，不匹配时弹出警告。AI计数结果可作为产出数量的交叉验证参考。
-          </div>
+      <div class="gallery-item" data-category="analysis" onclick="openLightbox(this)">
+        <img src="./screenshots/factory-sales-analysis.png" alt="销售数据分析" loading="lazy">
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-label">销售数据分析</div>
+          <div class="gallery-item-sub">销售排行 · 趋势分析 · 产品占比</div>
         </div>
       </div>
-
-      <!-- AI Step 4: Auto-submit -->
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num" style="background:#9333ea;">4</div>
-          <h3>数据自动提交</h3>
+      <div class="gallery-item" data-category="analysis" onclick="openLightbox(this)">
+        <img src="./screenshots/factory-finance-analysis.png" alt="财务数据分析" loading="lazy">
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-label">财务数据分析</div>
+          <div class="gallery-item-sub">利润分析 · 成本分析 · 预警提醒</div>
         </div>
-        <div class="step-card-body">
-          <p>分析结果自动关联到批次的效率记录，生成工人日效率评分和每小时产出等指标。</p>
-          <div class="phone-frame" onclick="showLightbox(this)">
-            <div class="phone-screen">
-              <div class="mock-screen">
-                <div class="mock-statusbar"><span>10:17</span><span>90%</span></div>
-                <div class="mock-navbar">
-                  <span class="back-arrow">←</span>
-                  分析完成
-                </div>
-                <div class="mock-body" style="display:flex;flex-direction:column;align-items:center;padding-top:20px;">
-                  <div class="mock-success-icon" style="background:#f3e8ff;font-size:20px;color:#9333ea;font-weight:700;">AI</div>
-                  <div style="font-size:14px;font-weight:700;margin-bottom:4px;">AI分析完成</div>
-                  <div style="font-size:10px;color:#888;margin-bottom:16px;">3项分析全部成功</div>
-                  <div class="mock-card" style="width:100%;">
-                    <div class="mock-field-row"><span class="label">效率评分</span><span class="value" style="color:#9333ea;font-weight:600;">83/100</span></div>
-                    <div class="mock-field-row"><span class="label">OCR验证</span><span class="mock-badge green">批次号匹配</span></div>
-                    <div class="mock-field-row"><span class="label">自动计数</span><span class="value">48件 (与填报一致)</span></div>
-                    <div class="mock-field-row"><span class="label">安全合规</span><span class="mock-badge green">达标</span></div>
-                  </div>
-                  <div class="mock-card" style="width:100%;background:#f0fdf4;border:1px solid #bbf7d0;">
-                    <div style="font-size:10px;font-weight:600;color:#059669;margin-bottom:4px;">已自动记录</div>
-                    <div style="font-size:9px;color:#555;line-height:1.6;">
-                      效率数据 → worker_daily_efficiency<br>
-                      照片 → batch_evidence_photos<br>
-                      批次产量已累加更新
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      </div>
+      <div class="gallery-item featured" data-category="analysis" onclick="openLightbox(this)">
+        <img src="./screenshots/factory-smartbi-analysis.png" alt="智能数据分析" loading="lazy">
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-label">智能数据分析</div>
+          <div class="gallery-item-sub">Excel 上传 · 自动图表 · AI 分析结论 · KPI 摘要</div>
+        </div>
+      </div>
+      <div class="gallery-item" data-category="dashboard" onclick="openLightbox(this)">
+        <img src="./screenshots/factory-dashboard.png" alt="工厂首页" loading="lazy">
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-label">工厂管理首页</div>
+          <div class="gallery-item-sub">今日产量 · 快捷操作 · 生产概览 · 质量统计</div>
+        </div>
+      </div>
+      <div class="gallery-item" data-category="operation" onclick="openLightbox(this)">
+        <img src="./screenshots/factory-production.png" alt="生产批次管理" loading="lazy">
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-label">生产批次管理</div>
+          <div class="gallery-item-sub">批次追踪 · 状态管理 · 产量监控</div>
         </div>
       </div>
     </div>
 
-    <div class="info-box success" style="margin-top:24px;">
-      <strong>AI分析能力</strong>
-      系统AI可自动识别：工人数量与活跃状态、效率评分 (0-100)、当前工序阶段、安全防护合规情况、产品标签OCR读取、成品数量计数。分析结果自动关联到对应批次，无需手动录入。
+    <!-- Business Closed Loops -->
+    <div style="margin-top: 80px; padding-top: 60px; border-top: 1px solid rgba(59,130,246,0.08);">
+      <div class="reveal" style="text-align: center; margin-bottom: 48px;">
+        <div class="section-label" style="justify-content: center;">Business Closed Loops</div>
+        <h3 style="font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 14px;">
+          业务<span style="color: var(--f-accent);">闭环</span>流程
+        </h3>
+        <p style="font-size: 14px; color: var(--f-text-secondary); max-width: 540px; margin: 0 auto; line-height: 1.75;">
+          从车间扫码报工到管理员审批汇总，从采购下单到销售出货——每个环节数据自动流转、全程可追溯。
+        </p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto;" class="reveal reveal-d1">
+
+        <!-- Loop 1: 报工闭环 -->
+        <div style="background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.1); border-radius: 16px; padding: 28px 24px; transition: all 0.3s;" onmouseover="this.style.borderColor='rgba(59,130,246,0.25)';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='rgba(59,130,246,0.1)';this.style.transform='none'">
+          <div style="font-size: 28px; margin-bottom: 16px;">&#x1F4DD;</div>
+          <h4 style="font-size: 17px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.01em;">报工闭环</h4>
+          <p style="font-size: 13px; color: var(--f-text-secondary); line-height: 1.75; margin-bottom: 16px;">
+            车间主管 <code style="background: rgba(59,130,246,0.1); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: var(--f-accent2);">workshop_sup1</code>
+            扫码报工 → 填写产量 → 管理员审批 → 数据自动汇入仪表盘。支持班组批量报工与离线草稿。
+          </p>
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
+            <span style="padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: rgba(59,130,246,0.1); color: #3b82f6;">扫码</span>
+            <span style="color: var(--f-muted); font-size: 12px;">&#x2192;</span>
+            <span style="padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: rgba(34,211,238,0.1); color: #22d3ee;">填报</span>
+            <span style="color: var(--f-muted); font-size: 12px;">&#x2192;</span>
+            <span style="padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: rgba(167,139,250,0.1); color: #a78bfa;">审批</span>
+            <span style="color: var(--f-muted); font-size: 12px;">&#x2192;</span>
+            <span style="padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: rgba(52,211,153,0.1); color: #34d399;">汇总</span>
+          </div>
+          <a href="../factorybi-example/index.html#work-report-loop" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--f-accent); text-decoration: none; transition: gap 0.2s;" onmouseover="this.style.gap='10px'" onmouseout="this.style.gap='6px'">
+            查看完整流程 &#x2192;
+          </a>
+        </div>
+
+        <!-- Loop 2: 进销存闭环 -->
+        <div style="background: rgba(34,211,238,0.04); border: 1px solid rgba(34,211,238,0.1); border-radius: 16px; padding: 28px 24px; transition: all 0.3s;" onmouseover="this.style.borderColor='rgba(34,211,238,0.25)';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='rgba(34,211,238,0.1)';this.style.transform='none'">
+          <div style="font-size: 28px; margin-bottom: 16px;">&#x1F504;</div>
+          <h4 style="font-size: 17px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.01em;">进销存闭环</h4>
+          <p style="font-size: 13px; color: var(--f-text-secondary); line-height: 1.75; margin-bottom: 16px;">
+            管理员 <code style="background: rgba(34,211,238,0.1); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: var(--f-accent2);">factory_admin1</code>
+            创建采购 → 仓库主管入库验收 → 库存实时追踪 → 生产消耗 → 销售出货 → 物流追踪，全链路闭环。
+          </p>
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
+            <span style="padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: rgba(59,130,246,0.1); color: #3b82f6;">采购</span>
+            <span style="color: var(--f-muted); font-size: 12px;">&#x2192;</span>
+            <span style="padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: rgba(34,211,238,0.1); color: #22d3ee;">入库</span>
+            <span style="color: var(--f-muted); font-size: 12px;">&#x2192;</span>
+            <span style="padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: rgba(167,139,250,0.1); color: #a78bfa;">库存</span>
+            <span style="color: var(--f-muted); font-size: 12px;">&#x2192;</span>
+            <span style="padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: rgba(251,191,36,0.1); color: #fbbf24;">销售</span>
+            <span style="color: var(--f-muted); font-size: 12px;">&#x2192;</span>
+            <span style="padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: rgba(52,211,153,0.1); color: #34d399;">发货</span>
+          </div>
+          <a href="../factorybi-example/index.html#psi-loop" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--f-accent2); text-decoration: none; transition: gap 0.2s;" onmouseover="this.style.gap='10px'" onmouseout="this.style.gap='6px'">
+            查看完整流程 &#x2192;
+          </a>
+        </div>
+
+      </div>
+
+      <!-- Test Accounts Summary -->
+      <div class="reveal reveal-d2" style="margin-top: 40px; background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.08); border-radius: 16px; padding: 24px 28px; max-width: 900px; margin-left: auto; margin-right: auto;">
+        <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 14px; letter-spacing: -0.01em;">&#x1F511; 系统测试账号（密码均为 <code style="color:var(--f-accent2);">123456</code>）</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
+          <div style="font-size: 13px; color: var(--f-text-secondary);"><code style="color:var(--f-accent2);">factory_admin1</code> — 工厂超级管理员</div>
+          <div style="font-size: 13px; color: var(--f-text-secondary);"><code style="color:var(--f-accent2);">platform_admin</code> — 平台管理员</div>
+          <div style="font-size: 13px; color: var(--f-text-secondary);"><code style="color:var(--f-accent2);">workshop_sup1</code> — 车间主管</div>
+          <div style="font-size: 13px; color: var(--f-text-secondary);"><code style="color:var(--f-accent2);">warehouse_mgr1</code> — 仓储主管</div>
+          <div style="font-size: 13px; color: var(--f-text-secondary);"><code style="color:var(--f-accent2);">hr_admin1</code> — HR 管理员</div>
+          <div style="font-size: 13px; color: var(--f-text-secondary);"><code style="color:var(--f-accent2);">dispatcher1</code> — 调度员</div>
+          <div style="font-size: 13px; color: var(--f-text-secondary);"><code style="color:var(--f-accent2);">quality_insp1</code> — 质检员</div>
+        </div>
+        <div style="margin-top: 12px;">
+          <a href="../factorybi-example/index.html#test-accounts" style="font-size: 12px; font-weight: 600; color: var(--f-accent); text-decoration: none;">查看完整账号说明 &#x2192;</a>
+        </div>
+      </div>
     </div>
+
   </div>
 </section>
 
-<!-- ===== Section 6: 离线暂存 ===== -->
-<section class="section" id="offline">
-  <div class="container">
-    <div class="section-header">
-      <div class="badge">断网保障</div>
-      <h2>离线暂存</h2>
-      <p>车间环境网络不稳定时，报工数据自动存为草稿，网络恢复后同步至服务器</p>
-    </div>
-
-    <div class="offline-flow">
-      <div class="offline-box">
-        <div class="of-icon" style="font-size:20px;color:var(--app-indigo);">1</div>
-        <h4>提交报工</h4>
-        <p>正常填写并点击提交</p>
-      </div>
-      <div class="flow-arrow">→</div>
-      <div class="offline-box" style="border-color:var(--danger);">
-        <div class="of-icon" style="font-size:20px;color:var(--danger);">&#x2717;</div>
-        <h4>网络异常</h4>
-        <p>提交失败，弹出提示</p>
-      </div>
-      <div class="flow-arrow">→</div>
-      <div class="offline-box" style="border-color:var(--warning);">
-        <div class="of-icon" style="font-size:20px;color:var(--warning);">&#9776;</div>
-        <h4>存为草稿</h4>
-        <p>数据存入本地存储</p>
-      </div>
-      <div class="flow-arrow">→</div>
-      <div class="offline-box" style="border-color:var(--success);">
-        <div class="of-icon" style="font-size:20px;color:var(--success);">&#8635;</div>
-        <h4>网络恢复</h4>
-        <p>自动检测并同步</p>
-      </div>
-      <div class="flow-arrow">→</div>
-      <div class="offline-box" style="border-color:var(--success);">
-        <div class="of-icon" style="font-size:20px;color:var(--success);">&#10003;</div>
-        <h4>同步成功</h4>
-        <p>草稿自动清除</p>
-      </div>
-    </div>
-
-    <div class="steps-grid" style="margin-top:32px;">
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num" style="background:var(--warning);">!</div>
-          <h3>离线状态指示</h3>
-        </div>
-        <div class="step-card-body">
-          <p>当检测到网络断开时，App顶部会显示红色离线横幅，提示用户当前处于离线模式。</p>
-          <div class="phone-frame" onclick="showLightbox(this)">
-            <div class="phone-screen">
-              <img src="./screenshots/08-offline-indicator.png" alt="离线状态指示 - 当前离线横幅">
-            </div>
-          </div>
-          <div class="info-box tip" style="margin-top:8px;font-size:12px;">
-            <strong>实景截图</strong> 开启飞行模式后，App顶部显示「当前离线」红色横幅，所有操作自动切换为离线模式。
-          </div>
-        </div>
-      </div>
-
-      <div class="step-card">
-        <div class="step-card-header">
-          <div class="step-num" style="background:var(--success);">✓</div>
-          <h3>草稿管理</h3>
-        </div>
-        <div class="step-card-body">
-          <p>所有草稿按时间排列，网络恢复后可手动或自动同步。每条草稿包含完整的报工数据。</p>
-          <div class="phone-frame" onclick="showLightbox(this)">
-            <div class="phone-screen">
-              <img src="./screenshots/09-draft-reports.png" alt="草稿管理 - 待同步草稿列表">
-            </div>
-          </div>
-          <div class="info-box tip" style="margin-top:8px;font-size:12px;">
-            <strong>实景截图</strong> 草稿管理页面，显示「暂无草稿 - 所有报工数据已同步」状态，表示所有数据均已成功上传。
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="info-box tip" style="margin-top:24px;">
-      <strong>数据安全</strong>
-      草稿安全保存在手机本地，即使App关闭或手机重启，数据也不会丢失。每条草稿包含批次号、产品名称、产量数据和时间等完整信息。
-    </div>
+<!-- ============== TRANSITION ============== -->
+<div class="transition-zone" aria-hidden="true">
+  <div class="transition-accent">
+    <div class="transition-dot top"></div>
+    <div class="transition-line"></div>
+    <div class="transition-dot bot"></div>
   </div>
-</section>
+</div>
 
-<!-- ===== Data Completeness Dashboard (dynamic, only shown with ?factoryId=) ===== -->
-<section class="section" id="completeness" style="display:none;">
-  <div class="container">
-    <div class="section-header">
-      <div class="badge">数据质量</div>
-      <h2>数据完整度看板</h2>
-      <p id="completeness-subtitle">基于工厂实际录入数据的完整度分析</p>
+<!-- ============== RESTAURANT ============== -->
+<section class="restaurant" id="restaurant">
+  <div class="restaurant-pattern" aria-hidden="true"></div>
+  <div class="restaurant-dots" aria-hidden="true"></div>
+  <div class="restaurant-inner">
+    <div class="reveal">
+      <div class="section-label">Restaurant Solution</div>
+      <h2 class="section-title">餐饮门店管理</h2>
+      <p class="section-desc">
+        专为餐饮场景设计的轻量化管理方案。移除工厂生产模块，
+        聚焦菜品管理、食材采购、门店进销存——让餐饮经营化繁为简。
+      </p>
     </div>
 
-    <div style="max-width:600px;margin:0 auto 24px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-        <span style="font-size:14px;font-weight:600;">总体完整度</span>
-        <span id="comp-overall-pct" style="font-size:20px;font-weight:700;color:var(--primary);">--%</span>
+    <!-- Restaurant Features -->
+    <div class="r-features">
+      <div class="r-feature reveal">
+        <div class="r-feature-icon">&#x1F35C;</div>
+        <h3>菜品管理</h3>
+        <p>菜品分类、定价管理、保质期追踪，支持热菜/凉菜/主食/汤类/甜品等分类体系。</p>
       </div>
-      <div style="height:12px;background:#e8e8e8;border-radius:6px;overflow:hidden;">
-        <div id="comp-overall-bar" style="height:100%;border-radius:6px;background:var(--success);width:0%;transition:width 0.6s;"></div>
+      <div class="r-feature reveal reveal-d1">
+        <div class="r-feature-icon">&#x1F96C;</div>
+        <h3>食材采购</h3>
+        <p>食材类型管理、供应商对接、采购订单全流程，冷冻/生鲜/干货分类存储管理。</p>
+      </div>
+      <div class="r-feature reveal reveal-d2">
+        <div class="r-feature-icon">&#x1F4CB;</div>
+        <h3>门店进销存</h3>
+        <p>采购订单、销售订单、半成品库存、调拨管理、应收应付、价格表——一站式进销存闭环。</p>
+      </div>
+      <div class="r-feature reveal reveal-d3">
+        <div class="r-feature-icon">&#x1F4CA;</div>
+        <h3>AI 数据分析</h3>
+        <p>共享工厂级 SmartBI 分析能力，上传 Excel 自动生成图表、AI 洞察与经营建议。</p>
+      </div>
+      <div class="r-feature reveal reveal-d4">
+        <div class="r-feature-icon">&#x1F69B;</div>
+        <h3>供应商管理</h3>
+        <p>供应商档案、联系信息、供货记录追踪，食材配送中心与蔬菜批发双渠道管理。</p>
+      </div>
+      <div class="r-feature reveal reveal-d5">
+        <div class="r-feature-icon">&#x21A9;&#xFE0F;</div>
+        <h3>退货管理</h3>
+        <p>退货订单全流程管理，支持采购退货与销售退货，自动关联原订单并更新库存。</p>
       </div>
     </div>
 
-    <div id="comp-sections" style="display:grid;gap:12px;"></div>
-
-    <div id="comp-gaps" style="margin-top:24px;display:none;">
-      <h3 style="font-size:17px;font-weight:600;margin-bottom:12px;">差距字段</h3>
-      <div id="comp-gap-list"></div>
-    </div>
-
-    <div style="text-align:center;margin-top:24px;">
-      <a id="comp-survey-link" href="#" style="display:inline-block;padding:10px 24px;background:var(--primary);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">返回调研问卷</a>
-    </div>
-  </div>
-</section>
-
-<!-- ===== Section 6: FAQ ===== -->
-<section class="section" id="faq" style="background:#fff;">
-  <div class="container">
-    <div class="section-header">
-      <h2>常见问题</h2>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question" onclick="toggleFaq(this)">
-        扫码失败怎么办？
-        <span class="arrow">▼</span>
-      </div>
-      <div class="faq-answer">
-        <div class="faq-answer-inner">
-          如果摄像头无法识别条码，可能的原因包括：条码破损、光线不足、镜头脏污。您可以尝试：<br>
-          ① 点击闪光灯图标开启补光<br>
-          ② 清洁手机镜头<br>
-          ③ 使用「手动输入批次号」功能直接输入
+    <!-- Phone Showcase -->
+    <div class="phone-showcase">
+      <div class="phone-info reveal">
+        <h3>移动端<span class="accent">优先</span>的<br>餐饮管理体验</h3>
+        <p>
+          餐饮场景下，系统自动隐藏生产制造、设备管理等工业模块，
+          将产品类型重命名为"菜品管理"，原材料改为"食材类型"，
+          打造贴合餐饮行业的操作界面。
+        </p>
+        <div class="phone-highlights">
+          <div class="phone-highlight">
+            <div class="phone-highlight-dot"></div>
+            按 FactoryType 自动切换界面布局
+          </div>
+          <div class="phone-highlight">
+            <div class="phone-highlight-dot"></div>
+            隐藏设备分析、SOP配置、质检项管理
+          </div>
+          <div class="phone-highlight">
+            <div class="phone-highlight-dot"></div>
+            成品库存 → 半成品库存，进销存 → 门店进销存
+          </div>
+          <div class="phone-highlight">
+            <div class="phone-highlight-dot"></div>
+            首页卡片：今日订单、食材库存预警
+          </div>
         </div>
       </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question" onclick="toggleFaq(this)">
-        产出数量填错了可以修改吗？
-        <span class="arrow">▼</span>
-      </div>
-      <div class="faq-answer">
-        <div class="faq-answer-inner">
-          报工提交后，工人端无法直接修改。请联系车间主管通过后台管理系统修正数据。建议提交前仔细核对产出数量和合格数量。
+      <div class="phone-mockups reveal reveal-d2">
+        <div class="phone-frame" style="animation: floatSlow 7s ease-in-out infinite;">
+          <img src="./screenshots/restaurant-dashboard-web.png" alt="餐饮管理首页" loading="lazy">
         </div>
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question" onclick="toggleFaq(this)">
-        班组报工中，成员列表为空怎么办？
-        <span class="arrow">▼</span>
-      </div>
-      <div class="faq-answer">
-        <div class="faq-answer-inner">
-          成员列表根据该批次关联的工人角色 (WORKER) 自动加载。如果列表为空，可能是该批次尚未分配工人。主管可以点击「+ 添加成员」手动添加班组人员（系统会使用默认名称"工人1"、"工人2"等）。
-        </div>
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question" onclick="toggleFaq(this)">
-        拍照上传的图片质量如何？
-        <span class="arrow">▼</span>
-      </div>
-      <div class="faq-answer">
-        <div class="faq-answer-inner">
-          系统会自动将照片压缩至 1024px 宽度、70% JPEG 质量。这在保证清晰度的同时大幅减少了文件大小（通常从 3-5MB 压缩到 200-400KB），有效节省移动数据流量。上传后的照片与批次ID和生产阶段绑定，可通过追溯系统随时查看。
-        </div>
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question" onclick="toggleFaq(this)">
-        AI视觉分析的准确度如何？
-        <span class="arrow">▼</span>
-      </div>
-      <div class="faq-answer">
-        <div class="faq-answer-inner">
-          AI视觉分析在食品加工场景下表现良好：<br>
-          ① 人员检测准确率高，能准确区分活跃/空闲状态<br>
-          ② 标签识别准确率 > 95%，模糊或破损标签会提示"不可读"<br>
-          ③ 产品计数在规整排列场景下准确，散乱堆叠场景可能有偏差<br>
-          ④ 分析结果仅作为辅助参考，最终数据以人工确认为准
-        </div>
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question" onclick="toggleFaq(this)">
-        离线暂存的草稿最多能存多少条？
-        <span class="arrow">▼</span>
-      </div>
-      <div class="faq-answer">
-        <div class="faq-answer-inner">
-          草稿存储在手机本地，没有数量限制。建议在网络恢复后尽快同步，避免数据积压。每个工厂的草稿独立管理，互不影响。
+        <div class="phone-frame" style="animation: floatSlow 7s ease-in-out 2s infinite;">
+          <img src="./screenshots/restaurant-ai-query.png" alt="AI 智能问答" loading="lazy">
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ===== Footer ===== -->
+<!-- ============== FOOTER ============== -->
 <footer class="footer">
-  <p>白垩纪食品溯源系统 · 生产报工操作指南</p>
-  <p style="margin-top:4px;">© 2026 白垩纪未来科技 · 技术支持请联系系统管理员</p>
+  <div class="footer-inner">
+    <div class="footer-logo">白垩纪食品科技</div>
+    <div class="footer-divider"></div>
+    <p>
+      企业级食品溯源与智能管理平台<br>
+      &copy; 2026 Cretaceous Future Food Technology. All rights reserved.
+    </p>
+  </div>
 </footer>
 
-<!-- ===== Lightbox ===== -->
+<!-- ============== LIGHTBOX ============== -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <div class="lightbox-content" id="lightbox-content"></div>
+  <button class="lightbox-close" onclick="closeLightbox()" aria-label="关闭">&#x2715;</button>
+  <img id="lightbox-img" src="" alt="">
+  <div class="lightbox-caption" id="lightbox-caption"></div>
 </div>
 
 <script>
-// ===== Sticky Nav Active State (IntersectionObserver) =====
-(function() {
-  const sections = document.querySelectorAll('.section[id]');
-  const navLinks = document.querySelectorAll('.sticky-nav a');
-
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        navLinks.forEach(link => link.classList.remove('active'));
-        const target = document.querySelector('.sticky-nav a[href="#' + entry.target.id + '"]');
-        if (target) target.classList.add('active');
-      }
-    });
-  }, { rootMargin: '-30% 0px -60% 0px' });
-
-  sections.forEach(s => observer.observe(s));
-
-  // Smooth scroll
-  navLinks.forEach(link => {
-    link.addEventListener('click', e => {
-      e.preventDefault();
-      const id = link.getAttribute('href').slice(1);
-      const el = document.getElementById(id);
-      if (el) {
-        const navH = document.querySelector('.sticky-nav').offsetHeight;
-        const top = el.getBoundingClientRect().top + window.scrollY - navH - 8;
-        window.scrollTo({ top, behavior: 'smooth' });
-      }
-    });
+/* ===== SCROLL REVEAL ===== */
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
   });
-})();
+}, { threshold: 0.08, rootMargin: '0px 0px -32px 0px' });
 
-// ===== FAQ Accordion =====
-function toggleFaq(el) {
-  const item = el.parentElement;
-  const answer = item.querySelector('.faq-answer');
-  const isOpen = item.classList.contains('open');
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 
-  // Close all
-  document.querySelectorAll('.faq-item').forEach(fi => {
-    fi.classList.remove('open');
-    fi.querySelector('.faq-answer').style.maxHeight = '0';
+/* ===== ANIMATED COUNTERS ===== */
+let countersAnimated = false;
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && !countersAnimated) {
+      countersAnimated = true;
+      document.querySelectorAll('.stat-number[data-target]').forEach(el => {
+        animateCounter(el);
+      });
+    }
   });
+}, { threshold: 0.3 });
 
-  if (!isOpen) {
-    item.classList.add('open');
-    answer.style.maxHeight = answer.scrollHeight + 'px';
+document.querySelectorAll('.stats').forEach(el => counterObserver.observe(el));
+
+function animateCounter(element) {
+  const target = parseInt(element.dataset.target);
+  const suffix = element.dataset.suffix || '';
+  const duration = target > 100 ? 2200 : 1600;
+  const startTime = performance.now();
+
+  function update(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // easeOutExpo
+    const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+    const current = Math.round(target * eased);
+    element.textContent = current.toLocaleString('en-US') + suffix;
+    if (progress < 1) requestAnimationFrame(update);
   }
+
+  requestAnimationFrame(update);
 }
 
-// ===== Lightbox =====
-function showLightbox(phoneFrame) {
-  const lb = document.getElementById('lightbox');
-  const lbContent = document.getElementById('lightbox-content');
-  lbContent.innerHTML = phoneFrame.querySelector('.phone-screen').innerHTML;
-  lb.classList.add('show');
+/* ===== NAV STATE ===== */
+const nav = document.getElementById('nav');
+const restaurantSection = document.getElementById('restaurant');
+
+// Scrolled state
+let lastScrollY = 0;
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+  lastScrollY = window.scrollY;
+}, { passive: true });
+
+// Light/dark theme based on restaurant section visibility
+const navThemeObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    nav.classList.toggle('light', entry.isIntersecting);
+  });
+}, { threshold: 0.25 });
+navThemeObserver.observe(restaurantSection);
+
+// Active nav link
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-link');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(section => {
+    const top = section.offsetTop - 120;
+    if (window.scrollY >= top) current = section.getAttribute('id');
+  });
+  navLinks.forEach(link => {
+    link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+  });
+}, { passive: true });
+
+/* ===== GALLERY FILTER ===== */
+const galleryTabs = document.querySelectorAll('.gallery-tab');
+const galleryItems = document.querySelectorAll('.gallery-item');
+
+galleryTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    galleryTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const filter = tab.dataset.filter;
+
+    galleryItems.forEach(item => {
+      const match = filter === 'all' || item.dataset.category === filter;
+      if (!match) {
+        item.classList.add('hiding');
+        setTimeout(() => { item.style.display = 'none'; }, 300);
+      } else {
+        item.style.display = '';
+        // Force reflow before removing class
+        item.offsetHeight;
+        item.classList.remove('hiding');
+      }
+    });
+  });
+});
+
+/* ===== LIGHTBOX ===== */
+function openLightbox(el) {
+  const img = el.querySelector('img');
+  const label = el.querySelector('.gallery-item-label');
+  const lightbox = document.getElementById('lightbox');
+  document.getElementById('lightbox-img').src = img.src;
+  document.getElementById('lightbox-caption').textContent = label ? label.textContent : '';
+  lightbox.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
 
 function closeLightbox() {
-  document.getElementById('lightbox').classList.remove('show');
+  document.getElementById('lightbox').classList.remove('active');
   document.body.style.overflow = '';
 }
 
-// ESC to close
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeLightbox();
 });
 
-// ===== Spinner animation =====
-const style = document.createElement('style');
-style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-document.head.appendChild(style);
-
-// ===== Dynamic Guide (Phase 5) =====
-(function() {
-  const params = new URLSearchParams(window.location.search);
-  const factoryId = params.get('factoryId');
-  if (!factoryId) return; // No factoryId → keep static page
-
-  const API_BASE = window.location.origin;
-
-  async function loadGuideConfig() {
-    try {
-      const res = await fetch(API_BASE + '/api/public/client-requirement/guide-config/' + factoryId);
-      const json = await res.json();
-      if (!json.success || !json.data) return;
-
-      const config = json.data;
-
-      // Update title with factory name
-      const heroTitle = document.querySelector('.hero h1');
-      if (heroTitle && config.factoryName) {
-        heroTitle.textContent = config.factoryName + ' - 生产报工操作指南';
-      }
-
-      // Build field visibility lookup: apiField → {visible, completeness}
-      const fieldMap = {};
-      (config.sections || []).forEach(s => {
-        (s.fields || []).forEach(f => {
-          fieldMap[f.apiField] = { visible: f.visible, completeness: f.completeness, name: f.name, required: f.required };
-        });
-      });
-
-      // Hide/badge data-field elements
-      document.querySelectorAll('[data-field]').forEach(el => {
-        const field = el.getAttribute('data-field');
-        const info = fieldMap[field];
-        if (!info) return;
-
-        if (!info.visible) {
-          el.style.display = 'none';
-          return;
-        }
-
-        // Add completeness badge
-        const badge = document.createElement('span');
-        badge.style.cssText = 'display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-left:8px;';
-        if (info.completeness >= 80) {
-          badge.style.background = '#d1fae5'; badge.style.color = '#059669';
-        } else if (info.completeness >= 50) {
-          badge.style.background = '#fef3c7'; badge.style.color = '#d97706';
-        } else {
-          badge.style.background = '#fee2e2'; badge.style.color = '#dc2626';
-        }
-        badge.textContent = info.completeness + '%';
-        const firstTd = el.querySelector('td') || el;
-        firstTd.appendChild(badge);
-      });
-
-      // Show completeness dashboard
-      const compSection = document.getElementById('completeness');
-      if (compSection) {
-        compSection.style.display = '';
-
-        // Overall bar
-        const overall = config.overallCompleteness || 0;
-        document.getElementById('comp-overall-pct').textContent = overall + '%';
-        const bar = document.getElementById('comp-overall-bar');
-        bar.style.width = overall + '%';
-        if (overall >= 80) bar.style.background = '#27ae60';
-        else if (overall >= 50) bar.style.background = '#f39c12';
-        else bar.style.background = '#e74c3c';
-
-        document.getElementById('completeness-subtitle').textContent =
-          config.factoryName + ' 的数据完整度分析';
-
-        // Section cards
-        const sectionsEl = document.getElementById('comp-sections');
-        const ENTITY_LABELS = {
-          'PROCESSING_BATCH': '生产批次', 'WORK_SESSION': '工时记录',
-          'MATERIAL_BATCH': '物料批次', 'QUALITY_INSPECTION': '质检记录', 'EQUIPMENT': '设备'
-        };
-
-        (config.sections || []).forEach(s => {
-          const label = ENTITY_LABELS[s.id] || s.id;
-          const visibleFields = (s.fields || []).filter(f => f.visible);
-          const avgComp = visibleFields.length > 0
-            ? Math.round(visibleFields.reduce((sum, f) => sum + f.completeness, 0) / visibleFields.length)
-            : 0;
-
-          let gapHtml = '';
-          visibleFields.filter(f => f.completeness < 50).forEach(f => {
-            gapHtml += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid #f5f5f5;">' +
-              '<span style="color:#666;">' + f.name + '</span>' +
-              '<span style="color:#e74c3c;font-weight:600;">' + f.completeness + '%</span></div>';
-          });
-
-          sectionsEl.innerHTML += '<div style="background:#fff;border-radius:10px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06);">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-              '<span style="font-size:15px;font-weight:600;">' + label + '</span>' +
-              '<span style="font-size:14px;font-weight:700;color:' + (avgComp >= 80 ? '#27ae60' : avgComp >= 50 ? '#f39c12' : '#e74c3c') + ';">' + avgComp + '%</span>' +
-            '</div>' +
-            '<div style="height:6px;background:#e8e8e8;border-radius:3px;overflow:hidden;margin-bottom:8px;">' +
-              '<div style="height:100%;width:' + avgComp + '%;background:' + (avgComp >= 80 ? '#27ae60' : avgComp >= 50 ? '#f39c12' : '#e74c3c') + ';border-radius:3px;transition:width 0.4s;"></div>' +
-            '</div>' +
-            '<div style="font-size:12px;color:#888;">' + visibleFields.length + ' 可见字段' +
-              (s.fields.length > visibleFields.length ? '，' + (s.fields.length - visibleFields.length) + ' 已隐藏' : '') +
-            '</div>' +
-            (gapHtml ? '<div style="margin-top:8px;border-top:1px solid #eee;padding-top:8px;">' +
-              '<div style="font-size:12px;color:#e74c3c;font-weight:500;margin-bottom:4px;">待改善字段：</div>' + gapHtml + '</div>' : '') +
-          '</div>';
-        });
-
-        // Survey link
-        document.getElementById('comp-survey-link').href =
-          '/api/public/client-request/survey?factoryId=' + factoryId;
-      }
-
-      // Add nav link for completeness
-      const navUl = document.querySelector('.sticky-nav ul');
-      if (navUl) {
-        const li = document.createElement('li');
-        li.innerHTML = '<a href="#completeness">数据完整度</a>';
-        const faqLink = navUl.querySelector('a[href="#faq"]');
-        if (faqLink) navUl.insertBefore(li, faqLink.parentElement);
-        else navUl.appendChild(li);
-      }
-
-    } catch (e) {
-      console.warn('Guide config load failed:', e);
-    }
-  }
-
-  loadGuideConfig();
-})();
+// Prevent propagation from close button
+document.querySelector('.lightbox-close').addEventListener('click', e => {
+  e.stopPropagation();
+  closeLightbox();
+});
 </script>
+
 </body>
 </html>

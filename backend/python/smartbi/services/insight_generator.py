@@ -56,9 +56,15 @@ class InsightGenerator:
         "forecast_decline": "根据趋势预测，未来{period}期的{metric}预计将下降{rate:.1f}%。"
     }
 
-    def __init__(self):
+    def __init__(self, model_override: Optional[str] = None):
         self.settings = get_settings()
+        self.model_override = model_override
         self.client = httpx.AsyncClient(timeout=60.0)
+
+    @property
+    def _active_model(self) -> str:
+        """Return model_override if set, otherwise default llm_model."""
+        return self.model_override or self.settings.llm_model
 
     async def generate_insights(
         self,
@@ -685,7 +691,7 @@ class InsightGenerator:
 9. **敏感性分析**: 识别2-3个关键驱动因素，输出sensitivity_analysis数组。每项含factor/current_value/impact_description。例：原料成本每上升5%，净利率预计下降约1.2个百分点。"""
 
             system_role = self._get_scenario_system_role(scenario)
-            response = await self._call_llm(prompt, system_role)
+            response = await self._call_llm(prompt, system_role, enable_thinking=True)
             return self._parse_llm_insights(response, stat_insights)
 
         except Exception as e:
@@ -1050,7 +1056,7 @@ class InsightGenerator:
             "Content-Type": "application/json"
         }
         payload = {
-            "model": self.settings.llm_model,
+            "model": self._active_model,
             "messages": [
                 {
                     "role": "system",
@@ -1064,7 +1070,8 @@ class InsightGenerator:
                 {"role": "user", "content": text}
             ],
             "temperature": 0.4,
-            "max_tokens": 2000
+            "max_tokens": 2000,
+            "extra_body": {"enable_thinking": False}
         }
         try:
             response = await self.client.post(
@@ -1088,7 +1095,7 @@ class InsightGenerator:
         if not system_role:
             system_role = self._get_scenario_system_role('general')
         payload = {
-            "model": self.settings.llm_model,
+            "model": self._active_model,
             "messages": [
                 {
                     "role": "system",
@@ -1098,7 +1105,8 @@ class InsightGenerator:
             ],
             "temperature": 0.4,
             "max_tokens": 2500,
-            "stream": True
+            "stream": True,
+            "extra_body": {"enable_thinking": False}
         }
         try:
             async with self.client.stream(
@@ -1125,6 +1133,72 @@ class InsightGenerator:
                         continue
         except Exception as e:
             logger.error(f"LLM streaming call failed: {e}")
+
+    async def _call_llm_stream_text(
+        self, prompt: str, system_role: Optional[str] = None,
+        max_tokens: int = 3000, temperature: float = 0.4
+    ):
+        """Call LLM API with SSE streaming for plain-text (markdown) output — no JSON constraint.
+        Yields text chunks as they arrive.
+        Args:
+            max_tokens: Lower = faster generation (1500 recommended for chat).
+            temperature: Lower = more deterministic, slightly faster (0.2 for chat).
+        """
+        headers = {
+            "Authorization": f"Bearer {self.settings.llm_api_key}",
+            "Content-Type": "application/json"
+        }
+        if not system_role:
+            system_role = "你是一位服务于食品加工企业的资深数据分析师。请用中文回复，使用Markdown格式。"
+        payload = {
+            "model": self._active_model,
+            "messages": [
+                {"role": "system", "content": system_role},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": True,
+            "extra_body": {"enable_thinking": False}
+        }
+        try:
+            async with self.client.stream(
+                "POST",
+                f"{self.settings.llm_base_url}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=httpx.Timeout(self.LLM_TIMEOUT_MAX)
+            ) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if not line.startswith("data: "):
+                        continue
+                    data_str = line[6:]
+                    if data_str.strip() == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data_str)
+                        delta = chunk.get("choices", [{}])[0].get("delta", {})
+                        content = delta.get("content", "")
+                        if content:
+                            yield content
+                    except (json.JSONDecodeError, IndexError, KeyError):
+                        continue
+        except Exception as e:
+            logger.error(f"LLM text streaming call failed: {e}")
+
+    async def _get_food_kb_context_with_timeout(self, df: pd.DataFrame, timeout_secs: float = 3.0) -> str:
+        """Query food KB with a timeout — returns empty string on timeout or error."""
+        try:
+            return await asyncio.wait_for(
+                self._get_food_kb_context(df), timeout=timeout_secs
+            )
+        except asyncio.TimeoutError:
+            logger.info(f"Food KB context timed out after {timeout_secs}s, skipping")
+            return ""
+        except Exception as e:
+            logger.debug(f"Food KB context error: {e}")
+            return ""
 
     async def generate_insights_stream(
         self,
@@ -1231,8 +1305,12 @@ class InsightGenerator:
             logger.error(f"Streaming insight generation failed: {e}", exc_info=True)
             yield {"event": "done", "data": json.dumps({"success": False, "error": str(e)})}
 
-    async def _call_llm(self, prompt: str, system_role: Optional[str] = None) -> str:
-        """Call LLM API with timeout and retry"""
+    async def _call_llm(self, prompt: str, system_role: Optional[str] = None,
+                        enable_thinking: bool = False) -> str:
+        """Call LLM API with timeout and retry.
+        Args:
+            enable_thinking: Whether to enable thinking mode (default False for speed).
+        """
         headers = {
             "Authorization": f"Bearer {self.settings.llm_api_key}",
             "Content-Type": "application/json"
@@ -1242,7 +1320,7 @@ class InsightGenerator:
             system_role = self._get_scenario_system_role('general')
 
         payload = {
-            "model": self.settings.llm_model,
+            "model": self._active_model,
             "messages": [
                 {
                     "role": "system",
@@ -1254,7 +1332,8 @@ class InsightGenerator:
                 }
             ],
             "temperature": 0.4,
-            "max_tokens": 2500
+            "max_tokens": 2500,
+            "extra_body": {"enable_thinking": enable_thinking}
         }
 
         for attempt in range(self.LLM_MAX_RETRIES):

@@ -1,5 +1,6 @@
 package com.cretas.aims.service.impl;
 
+import com.cretas.aims.dto.batch.TeamBatchReportRequest;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.entity.*;
@@ -209,6 +210,89 @@ public class ProcessingServiceImpl implements ProcessingService {
                 page.getTotalElements()
         );
     }
+
+    @Override
+    public PageResponse<ProductionBatch> getBatches(String factoryId, String status, Long supervisorId, PageRequest pageRequest) {
+        if (supervisorId == null) {
+            return getBatches(factoryId, status, pageRequest);
+        }
+        org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(
+                pageRequest.getPage() - 1,
+                pageRequest.getSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        Page<ProductionBatch> page;
+        if (status != null && !status.isEmpty()) {
+            ProductionBatchStatus statusEnum = ProductionBatchStatus.valueOf(status.toUpperCase());
+            page = productionBatchRepository.findByFactoryIdAndSupervisorIdAndStatus(factoryId, supervisorId, statusEnum, pageable);
+        } else {
+            page = productionBatchRepository.findByFactoryIdAndSupervisorId(factoryId, supervisorId, pageable);
+        }
+        return PageResponse.of(
+                page.getContent(),
+                pageRequest.getPage(),
+                pageRequest.getSize(),
+                page.getTotalElements()
+        );
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Map<String, Object> submitTeamBatchReport(String factoryId, TeamBatchReportRequest request) {
+        // 验证批次存在且属于该工厂
+        ProductionBatch batch = productionBatchRepository.findByIdAndFactoryId(request.getBatchId(), factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("批次不存在或不属于该工厂"));
+
+        int recordedMembers = 0;
+        int totalOutput = 0;
+        int totalGood = 0;
+        int totalDefect = 0;
+
+        for (TeamBatchReportRequest.MemberReport member : request.getMembers()) {
+            if (member.getOutputQuantity() == null || member.getOutputQuantity() <= 0) {
+                continue;
+            }
+
+            int output = member.getOutputQuantity();
+            int good = member.getGoodQuantity() != null ? member.getGoodQuantity() : output;
+            int defect = member.getDefectQuantity() != null ? member.getDefectQuantity() : 0;
+
+            // 创建 BatchWorkSession 记录
+            BatchWorkSession session = new BatchWorkSession();
+            session.setBatchId(request.getBatchId());
+            session.setEmployeeId(member.getUserId());
+            session.setCheckInTime(LocalDateTime.now());
+            session.setCheckOutTime(LocalDateTime.now());
+            session.setStatus("completed");
+            session.setNotes(member.getNotes() != null ? member.getNotes()
+                    : String.format("班组报工: 产出%d, 良品%d, 不良品%d", output, good, defect));
+            batchWorkSessionRepository.save(session);
+
+            recordedMembers++;
+            totalOutput += output;
+            totalGood += good;
+            totalDefect += defect;
+        }
+
+        // 累加到批次的 actualQuantity/goodQuantity/defectQuantity
+        BigDecimal currentActual = batch.getActualQuantity() != null ? batch.getActualQuantity() : BigDecimal.ZERO;
+        BigDecimal currentGood = batch.getGoodQuantity() != null ? batch.getGoodQuantity() : BigDecimal.ZERO;
+        BigDecimal currentDefect = batch.getDefectQuantity() != null ? batch.getDefectQuantity() : BigDecimal.ZERO;
+
+        batch.setActualQuantity(currentActual.add(BigDecimal.valueOf(totalOutput)));
+        batch.setGoodQuantity(currentGood.add(BigDecimal.valueOf(totalGood)));
+        batch.setDefectQuantity(currentDefect.add(BigDecimal.valueOf(totalDefect)));
+        productionBatchRepository.save(batch);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("recordedMembers", recordedMembers);
+        result.put("totalOutput", totalOutput);
+        result.put("totalGood", totalGood);
+        result.put("totalDefect", totalDefect);
+        result.put("batchId", request.getBatchId());
+        return result;
+    }
+
     public List<Map<String, Object>> getBatchTimeline(String factoryId, String batchId) {
         ProductionBatch batch = getBatchById(factoryId, batchId);
         List<Map<String, Object>> timeline = new ArrayList<>();

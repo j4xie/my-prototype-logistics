@@ -70,7 +70,7 @@ public class ShipmentIntentHandler implements IntentHandler {
 
         try {
             return switch (intentCode) {
-                case "SHIPMENT_CREATE" -> handleShipmentCreate(factoryId, request, intentConfig, userId);
+                case "SHIPMENT_CREATE", "SHIPMENT_EXPEDITE" -> handleShipmentCreate(factoryId, request, intentConfig, userId);
                 case "SHIPMENT_QUERY" -> handleShipmentQuery(factoryId, request, intentConfig);
                 case "SHIPMENT_UPDATE" -> handleShipmentUpdate(factoryId, request, intentConfig, userId);
                 case "SHIPMENT_STATUS_UPDATE" -> handleStatusUpdate(factoryId, request, intentConfig, userId);
