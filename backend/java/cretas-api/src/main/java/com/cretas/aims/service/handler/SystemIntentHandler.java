@@ -69,7 +69,8 @@ public class SystemIntentHandler implements IntentHandler {
                 return handleConfigReset(factoryId, intentConfig);
             } else if ("USER_TODO_LIST".equals(intentCode)) {
                 return handleTodoList(factoryId, userId, intentConfig);
-            } else if ("NOTIFICATION_SEND_WECHAT".equals(intentCode) || "SEND_WECHAT_MESSAGE".equals(intentCode)) {
+            } else if ("NOTIFICATION_SEND_WECHAT".equals(intentCode) || "SEND_WECHAT_MESSAGE".equals(intentCode)
+                    || "NOTIFICATION_WECHAT_SEND".equals(intentCode)) {
                 return handleSendWechatNotification(factoryId, request, intentConfig);
             } else if ("OUT_OF_DOMAIN".equals(intentCode)) {
                 return IntentExecuteResponse.builder()
@@ -80,7 +81,8 @@ public class SystemIntentHandler implements IntentHandler {
                         .status("COMPLETED")
                         .message("我是白垩纪食品溯源系统AI助手，可以帮您查询库存、生产、质检、设备、发货等业务数据。请告诉我您需要什么帮助？")
                         .build();
-            } else if ("CONTEXT_CONTINUE".equals(intentCode)) {
+            } else if ("CONTEXT_CONTINUE".equals(intentCode) || "CONTINUE_LAST_OPERATION".equals(intentCode)
+                    || "SYSTEM_RESUME_LAST_ACTION".equals(intentCode)) {
                 return IntentExecuteResponse.builder()
                         .intentRecognized(true)
                         .intentCode(intentCode)
@@ -88,6 +90,45 @@ public class SystemIntentHandler implements IntentHandler {
                         .intentCategory("SYSTEM")
                         .status("COMPLETED")
                         .message("请告诉我您想继续查询什么？例如：「查看库存」「查看今天的生产数据」「看一下设备状态」")
+                        .build();
+            } else if ("PAGINATION_NEXT".equals(intentCode) || "NAVIGATION_NEXT_PAGE".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("翻页")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("请告诉我您想查看哪类数据的下一页？例如：「下一页库存」「下一页订单」")
+                        .build();
+            } else if ("SYSTEM_GO_BACK".equals(intentCode) || "OPERATION_UNDO_OR_RECALL".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("返回/撤销")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("已收到您的返回请求。请告诉我您接下来想查询什么？")
+                        .build();
+            } else if ("NAVIGATE_TO_CITY".equals(intentCode) || "NAVIGATE_TO_LOCATION".equals(intentCode)
+                    || "SHOPPING_CART_CLEAR".equals(intentCode) || "MEDIA_PLAY".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("域外操作")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("抱歉，该功能不在系统服务范围内。我是白垩纪食品溯源AI助手，可以帮您查询库存、生产、质检、设备、发货等业务数据。")
+                        .build();
+            } else if ("EXECUTE_SWITCH".equals(intentCode) || "CONDITION_SWITCH".equals(intentCode)
+                    || "EXCLUDE_SELECTED".equals(intentCode) || "FILTER_EXCLUDE_SELECTED".equals(intentCode)
+                    || "SYSTEM_FILTER_EXCLUDE_SELECTED".equals(intentCode) || "UI_EXCLUDE_SELECTED".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("筛选/切换")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("请告诉我您想切换或筛选什么条件？例如：「只看进行中的批次」「排除已完成的订单」")
                         .build();
             }
 

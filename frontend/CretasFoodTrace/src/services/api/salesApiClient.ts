@@ -14,7 +14,7 @@ export interface SalesOrder {
   orderNumber: string;
   customerId: string;
   customerName?: string;
-  status: 'DRAFT' | 'CONFIRMED' | 'DELIVERING' | 'DELIVERED' | 'CANCELLED';
+  status: 'DRAFT' | 'CONFIRMED' | 'PROCESSING' | 'PARTIAL_DELIVERED' | 'COMPLETED' | 'CANCELLED';
   totalAmount: number;
   orderDate: string;
   expectedDeliveryDate?: string;

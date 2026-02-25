@@ -45,11 +45,20 @@ allowed-tools:
 | **SSH** | `root@47.100.235.168` |
 | **旧服务器** | `139.196.165.140` — 仅 Nginx 反代 + 静态文件 |
 
-| 服务 | 端口 | 服务器 | 路径 |
-|------|------|--------|------|
-| Java 后端 | 10010 | 47.100.235.168 | `/www/wwwroot/cretas/` |
-| Python 服务 | 8083 | 47.100.235.168 | `/www/wwwroot/cretas/code/backend/python/` |
-| Web 前端 | 8088 | 47.100.235.168 | `/www/wwwroot/web-admin/` |
+### 双环境 (生产 + 测试)
+
+| 服务 | 生产端口 | 测试端口 | 路径 |
+|------|----------|----------|------|
+| Java 后端 | 10010 | 10011 | `/www/wwwroot/cretas/` |
+| Python 服务 | 8083 | 8084 | `/www/wwwroot/cretas/code/backend/python/` |
+| Web 前端 | 8088 | - | `/www/wwwroot/web-admin/` |
+
+| 环境 | 主库 | SmartBI 库 |
+|------|------|-----------|
+| 生产 | `cretas_prod_db` | `smartbi_prod_db` |
+| 测试 | `cretas_db` | `smartbi_db` |
+
+两套环境共享同一份 JAR 和 Python 代码，通过环境变量区分数据库。
 
 ---
 
@@ -58,15 +67,18 @@ allowed-tools:
 ### 方式 A: 一键脚本 (推荐)
 
 ```bash
-./deploy-backend.sh
+./deploy-backend.sh                  # 部署到生产 (默认)
+./deploy-backend.sh --env test       # 部署到测试
+./deploy-backend.sh --env all        # 部署后重启两套
 ```
 
 脚本自动完成：Maven 打包 → 并行上传 (GitHub 6路竞争 / rsync / OSS / R2) → 服务器备份 → 部署 → 重启 → 健康检查 (30次重试)
 
 可选参数：
 ```bash
-./deploy-backend.sh --jar v1.2     # 指定版本号
-./deploy-backend.sh --git          # Git 部署模式 (服务器端编译)
+./deploy-backend.sh --jar v1.2             # 指定版本号
+./deploy-backend.sh --git                  # Git 部署模式 (服务器端编译)
+./deploy-backend.sh --env test --jar v1.2  # 组合使用
 ```
 
 ### 方式 B: 手动步骤 (脚本失败时使用)
@@ -110,31 +122,23 @@ done
 
 ```bash
 # 方式 A: 使用脚本
-./deploy-smartbi-python.sh
-
-# 方式 B: 手动同步 (rsync 增量传输)
-rsync -az --timeout=120 \
-    --exclude='__pycache__' --exclude='*.pyc' --exclude='.env' \
-    --exclude='smartbi.log' --exclude='*.xlsx' --exclude='*.png' \
-    --exclude='venv*' --exclude='python-services.log' \
-    backend/python/ root@47.100.235.168:/www/wwwroot/cretas/code/backend/python/
-
-# restart.sh 会同时重启 Python
-ssh root@47.100.235.168 "cd /www/wwwroot/cretas && bash restart.sh"
+./deploy-smartbi-python.sh                # 部署到生产 (默认)
+./deploy-smartbi-python.sh --env test     # 部署到测试
+./deploy-smartbi-python.sh --env all      # 部署后重启两套
 ```
 
 ### Python 部署验证
 
 ```bash
-curl -s http://47.100.235.168:8083/health
-curl -s http://47.100.235.168:8083/docs   # FastAPI 自动文档
+curl -s http://47.100.235.168:8083/health    # 生产
+curl -s http://47.100.235.168:8084/health    # 测试
 ```
 
 ### Python 注意事项
 
-- **restart.sh 同时管理 Java + Python**: 不需要单独重启 Python
+- **两套 Python 共享代码目录**: rsync 一次，通过环境变量区分数据库
 - **虚拟环境**: 服务器使用 `/www/wwwroot/cretas/code/backend/python/venv38/`
-- **依赖更新**: 如果改了 `requirements.txt`，需 SSH 进去手动 `pip install -r requirements.txt`
+- **依赖更新**: 脚本自动 `pip install -r requirements.txt`
 - **.env 不要覆盖**: 服务器有自己的 `.env` (含 LLM API Key)
 
 ---
@@ -164,8 +168,14 @@ curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:8088/
 ## Phase 4: 仅重启 (不构建)
 
 ```bash
-# 重启全部 (Java + Python)
-ssh root@47.100.235.168 "cd /www/wwwroot/cretas && bash restart.sh"
+# 重启全部 (生产+测试, Java+Python)
+ssh root@47.100.235.168 "cd /www/wwwroot/cretas && bash restart.sh all"
+
+# 仅重启生产
+ssh root@47.100.235.168 "cd /www/wwwroot/cretas && bash restart.sh prod"
+
+# 仅重启测试
+ssh root@47.100.235.168 "cd /www/wwwroot/cretas && bash restart.sh test"
 
 # 仅检查状态
 ssh root@47.100.235.168 "ps aux | grep -E 'java|uvicorn' | grep -v grep"
@@ -178,20 +188,24 @@ ssh root@47.100.235.168 "ps aux | grep -E 'java|uvicorn' | grep -v grep"
 **每次部署后必须执行的健康检查：**
 
 ```bash
-# Java 后端
-curl -s http://47.100.235.168:10010/api/mobile/health
+# 生产环境
+curl -s http://47.100.235.168:10010/api/mobile/health   # Java 生产
+curl -s http://47.100.235.168:8083/health                # Python 生产
 
-# Python 服务
-curl -s http://47.100.235.168:8083/health
+# 测试环境
+curl -s http://47.100.235.168:10011/api/mobile/health   # Java 测试
+curl -s http://47.100.235.168:8084/health                # Python 测试
 
 # Web 前端
 curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:8088/
 
 # 全部一起检查
 echo "=== Health Check ===" && \
-echo -n "Java:   " && curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:10010/api/mobile/health && \
-echo -n "Python: " && curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:8083/health && \
-echo -n "Web:    " && curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:8088/
+echo -n "Java Prod:   " && curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:10010/api/mobile/health && echo "" && \
+echo -n "Java Test:   " && curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:10011/api/mobile/health && echo "" && \
+echo -n "Python Prod: " && curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:8083/health && echo "" && \
+echo -n "Python Test: " && curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:8084/health && echo "" && \
+echo -n "Web:         " && curl -s -o /dev/null -w "%{http_code}" http://47.100.235.168:8088/
 ```
 
 向用户报告部署结果，包括：

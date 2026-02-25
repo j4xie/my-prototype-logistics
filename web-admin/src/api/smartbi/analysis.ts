@@ -13,15 +13,20 @@ import {
   enrichmentLimiter,
   activeControllers,
   humanizeColumnName,
+  sanitizeCircledNumbers,
+  buildDisplayNameMap,
   formatLargeNumber,
   compressMonthRange,
   SUBTOTAL_SUMMARY_PATTERN,
   KPI_KEYWORD_WEIGHTS,
+  PYTHON_SMARTBI_URL,
+  getPythonAuthHeaders,
   type AnalysisResult,
   type DrillDownResult,
   type CrossSheetResult,
   type YoYResult,
   type ChartPlanItem,
+  type ChartConfig,
   type ColumnSummary,
   type FinancialMetrics,
   type StructuredAIData,
@@ -32,7 +37,7 @@ import {
   PYTHON_LLM_TIMEOUT_MS,
 } from './common';
 
-import { getUploadTableData } from './upload';
+import { getUploadTableData, getUploadFields } from './upload';
 import {
   buildChart,
   recommendChart,
@@ -111,6 +116,133 @@ export async function chatAnalysis(params: {
       success: false,
       error: error instanceof Error ? error.message : 'Chat 分析请求失败'
     };
+  }
+}
+
+/**
+ * SSE streaming version of chatAnalysis.
+ * Returns immediately; calls callbacks as SSE events arrive.
+ * Returns an AbortController so the caller can cancel.
+ */
+export interface ChatStreamCallbacks {
+  onStatus?: (status: string) => void;
+  onChunk?: (text: string) => void;
+  onCharts?: (charts: ChartConfig[]) => void;
+  onDone?: (result: AnalysisResult) => void;
+  onError?: (error: string) => void;
+}
+
+export function chatAnalysisStream(
+  params: {
+    query: string;
+    data?: unknown[];
+    fields?: Array<{ original: string; standard: string }>;
+    table_type?: string;
+    uploadId?: string;
+  },
+  callbacks: ChatStreamCallbacks,
+): AbortController {
+  const controller = new AbortController();
+
+  const url = `${PYTHON_SMARTBI_URL}/api/chat/general-analysis-stream`;
+  const body = JSON.stringify({
+    query: params.query,
+    data: params.data,
+    fields: params.fields,
+    table_type: params.table_type,
+    sheet_id: params.uploadId || undefined,
+  });
+
+  (async () => {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: getPythonAuthHeaders(),
+        body,
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        callbacks.onError?.(`服务请求失败: ${response.status}`);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        callbacks.onError?.('浏览器不支持流式响应');
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let currentEvent = '';
+      let currentData = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE events from buffer
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            currentData = line.slice(6);
+          } else if (line.trim() === '' && currentEvent && currentData) {
+            // End of event — dispatch
+            _dispatchSSEEvent(currentEvent, currentData, callbacks);
+            currentEvent = '';
+            currentData = '';
+          }
+        }
+      }
+
+      // Dispatch any remaining event
+      if (currentEvent && currentData) {
+        _dispatchSSEEvent(currentEvent, currentData, callbacks);
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return; // User cancelled
+      }
+      console.error('chatAnalysisStream error:', error);
+      callbacks.onError?.(error instanceof Error ? error.message : '流式请求失败');
+    }
+  })();
+
+  return controller;
+}
+
+function _dispatchSSEEvent(event: string, data: string, callbacks: ChatStreamCallbacks) {
+  try {
+    switch (event) {
+      case 'status':
+        callbacks.onStatus?.(JSON.parse(data));
+        break;
+      case 'chunk':
+        callbacks.onChunk?.(JSON.parse(data));
+        break;
+      case 'charts': {
+        const charts = JSON.parse(data) as ChartConfig[];
+        callbacks.onCharts?.(charts);
+        break;
+      }
+      case 'done': {
+        const result = JSON.parse(data) as AnalysisResult;
+        callbacks.onDone?.(result);
+        break;
+      }
+      case 'error':
+        callbacks.onError?.(JSON.parse(data));
+        break;
+    }
+  } catch (e) {
+    console.warn('Failed to parse SSE event:', event, data, e);
   }
 }
 
@@ -279,8 +411,9 @@ export async function yoyComparison(params: {
 /**
  * Generate semantic chart title based on chart type and field names
  */
-export function generateChartTitle(chartType: string, xField: string, yFields: string[]): string {
-  const xLabel = humanizeColumnName(xField);
+export function generateChartTitle(chartType: string, xField: string, yFields: string[], displayNameMap?: Record<string, string>): string {
+  const nameOf = (field: string) => displayNameMap?.[field] || humanizeColumnName(field);
+  const xLabel = nameOf(xField);
 
   const isDateY = yFields.length > 0 && yFields.every(f => /^\d{4}-\d{2}/.test(f) || /^\d{1,2}月$/.test(f));
 
@@ -289,9 +422,9 @@ export function generateChartTitle(chartType: string, xField: string, yFields: s
   if (isDateY) {
     yLabel = compressMonthRange(yFields);
   } else if (yFields.length === 1) {
-    yLabel = humanizeColumnName(yFields[0]);
+    yLabel = nameOf(yFields[0]);
   } else if (yFields.length <= 2) {
-    yLabel = yFields.map(humanizeColumnName).join('\u3001');
+    yLabel = yFields.map(nameOf).join('\u3001');
   } else {
     yLabel = `${yFields.length}项指标`;
   }
@@ -324,7 +457,7 @@ export function generateChartTitle(chartType: string, xField: string, yFields: s
       break;
     case 'scatter':
       title = yFields.length >= 1 && xField
-        ? `${xLabel} vs ${humanizeColumnName(yFields[0])} 相关性`
+        ? `${xLabel} vs ${nameOf(yFields[0])} 相关性`
         : '散点分布';
       break;
     case 'area':
@@ -352,6 +485,9 @@ export function generateChartTitle(chartType: string, xField: string, yFields: s
       title = `${yLabel} ${verb}`;
   }
 
+  // Sanitize: convert any remaining circled numbers ②③... → (2)(3)...
+  title = sanitizeCircledNumbers(title);
+
   // Fix 5: Hard limit 30 characters
   if (title.length > 30) {
     title = title.slice(0, 27) + '...';
@@ -364,7 +500,8 @@ export function generateChartTitle(chartType: string, xField: string, yFields: s
  */
 export function getSmartKPIs(
   kpiSummary: { rowCount: number; columnCount: number; columns: ColumnSummary[] },
-  financialMetrics?: FinancialMetrics | null
+  financialMetrics?: FinancialMetrics | null,
+  displayNameMap?: Record<string, string>
 ): SmartKPI[] {
   const numericTypes = ['int64', 'float64', 'numeric', 'number', 'int32', 'float32'];
   const numericCols = (kpiSummary.columns || []).filter(
@@ -562,7 +699,7 @@ export function getSmartKPIs(
     }
 
     return {
-      title: humanizeColumnName(col.name),
+      title: displayNameMap?.[col.name] || humanizeColumnName(col.name),
       value: displayValue,
       unit,
       trend,
@@ -820,10 +957,14 @@ function buildChartPlan(
   dataInfo: { numericColumns: string[]; categoricalColumns: string[]; dateColumns: string[] },
   monthlyColumns: string[],
   labelField: string,
-  sheetIndex?: number
+  sheetIndex?: number,
+  displayNameMap?: Record<string, string>
 ): ChartPlanItem[] {
   const plans: ChartPlanItem[] = [];
   const usedTypes = new Set<string>();
+
+  // Local helper: pass displayNameMap to all chart title generation
+  const titleOf = (type: string, x: string, y: string[]) => generateChartTitle(type, x, y, displayNameMap);
 
   const cleanLabel = (label: string): string => {
     const gm = label.match(/^(第\d+组)-.+$/);
@@ -846,7 +987,7 @@ function buildChartPlan(
           data: tsData,
           xField: '月份',
           yFields: seriesKeys.slice(0, 5),
-          title: generateChartTitle('line', '月份', seriesKeys.slice(0, 5))
+          title: titleOf('line', '月份', seriesKeys.slice(0, 5))
         });
         usedTypes.add('line');
       }
@@ -880,8 +1021,8 @@ function buildChartPlan(
       });
       if (chartData.length > 0) {
         const barTitle = filteredData.length > 20
-          ? generateChartTitle('bar', labelField, yFields) + ' (前20项)'
-          : generateChartTitle('bar', labelField, yFields);
+          ? titleOf('bar', labelField, yFields) + ' (前20项)'
+          : titleOf('bar', labelField, yFields);
         plans.push({
           chartType: 'bar', data: chartData, xField: labelField,
           yFields, title: barTitle
@@ -910,7 +1051,7 @@ function buildChartPlan(
         plans.push({
           chartType: 'pie', data: pieData, xField: labelField,
           yFields: [valueField],
-          title: generateChartTitle('pie', labelField, [valueField]) + (pieData.length < cleanedData.filter(r => r[labelField] != null && r[valueField!] != null).filter(r => Number(r[valueField!]) > 0).length ? ` (前${pieData.length}项)` : '')
+          title: titleOf('pie', labelField, [valueField]) + (pieData.length < cleanedData.filter(r => r[labelField] != null && r[valueField!] != null).filter(r => Number(r[valueField!]) > 0).length ? ` (前${pieData.length}项)` : '')
         });
         usedTypes.add('pie');
       }
@@ -941,7 +1082,7 @@ function buildChartPlan(
 
     plans.push({
       chartType: rec.chartType, data: chartData, xField: rec.xField,
-      yFields: rec.yFields, title: generateChartTitle(rec.chartType, rec.xField!, rec.yFields!)
+      yFields: rec.yFields, title: titleOf(rec.chartType, rec.xField!, rec.yFields!)
     });
     usedTypes.add(rec.chartType);
   }
@@ -955,7 +1096,7 @@ function buildChartPlan(
         const sorted = [...tsData].sort((a, b) => Number(b[firstSeries] || 0) - Number(a[firstSeries] || 0));
         plans.push({
           chartType: 'bar_horizontal', data: sorted, xField: '月份',
-          yFields: [firstSeries], title: generateChartTitle('bar_horizontal', '月份', [firstSeries])
+          yFields: [firstSeries], title: titleOf('bar_horizontal', '月份', [firstSeries])
         });
         usedTypes.add('bar_horizontal');
       }
@@ -988,7 +1129,7 @@ function buildChartPlan(
       wfData = wfData.map(row => ({ ...row, [labelField]: cleanLabel(String(row[labelField] || '')) }));
       plans.push({
         chartType: 'waterfall', data: wfData, xField: labelField,
-        yFields: [yField], title: generateChartTitle('waterfall', labelField, [yField])
+        yFields: [yField], title: titleOf('waterfall', labelField, [yField])
       });
       usedTypes.add('waterfall');
     }},
@@ -1000,7 +1141,7 @@ function buildChartPlan(
       if (seriesKeys.length === 0) return;
       plans.push({
         chartType: 'area', data: tsData, xField: '月份',
-        yFields: seriesKeys.slice(0, 3), title: generateChartTitle('area', '月份', seriesKeys.slice(0, 3))
+        yFields: seriesKeys.slice(0, 3), title: titleOf('area', '月份', seriesKeys.slice(0, 3))
       });
       usedTypes.add('area');
     }},
@@ -1013,7 +1154,7 @@ function buildChartPlan(
       if (chartData.length < 2) return;
       plans.push({
         chartType: 'combination', data: chartData, xField: labelField,
-        yFields, title: generateChartTitle('combination', labelField, yFields)
+        yFields, title: titleOf('combination', labelField, yFields)
       });
       usedTypes.add('combination');
     }},
@@ -1038,7 +1179,7 @@ function buildChartPlan(
       }));
       plans.push({
         chartType: 'pareto', data: chartData, xField: labelField,
-        yFields: [yField], title: generateChartTitle('pareto', labelField, [yField])
+        yFields: [yField], title: titleOf('pareto', labelField, [yField])
       });
       usedTypes.add('pareto');
     }},
@@ -1059,7 +1200,7 @@ function buildChartPlan(
       if (chartData.length < 2) return;
       plans.push({
         chartType: 'dual_axis', data: chartData, xField: labelField,
-        yFields, title: generateChartTitle('dual_axis', labelField, yFields)
+        yFields, title: titleOf('dual_axis', labelField, yFields)
       });
       usedTypes.add('dual_axis');
     }},
@@ -1077,7 +1218,7 @@ function buildChartPlan(
       if (sorted.length < 3) return;
       plans.push({
         chartType: 'bar_horizontal', data: sorted, xField: labelField,
-        yFields: [yField], title: generateChartTitle('bar_horizontal', labelField, [yField])
+        yFields: [yField], title: titleOf('bar_horizontal', labelField, [yField])
       });
       usedTypes.add('bar_horizontal');
     }},
@@ -1097,7 +1238,7 @@ function buildChartPlan(
       plans.push({
         chartType: 'sunburst', data: chartData, xField: catCols[0],
         yFields: [yField], seriesField: catCols[1],
-        title: generateChartTitle('sunburst', catCols[0], [yField])
+        title: titleOf('sunburst', catCols[0], [yField])
       });
       usedTypes.add('sunburst');
     }},
@@ -1119,14 +1260,14 @@ function buildChartPlan(
     const yFields = numCols.slice(0, 3);
     plans.push({
       chartType: 'bar', data: indexedData, xField: '__rowIndex',
-      yFields, title: generateChartTitle('bar', '#行号', yFields)
+      yFields, title: titleOf('bar', '#行号', yFields)
     });
     usedTypes.add('bar');
 
     if (numCols.length >= 2) {
       plans.push({
         chartType: 'scatter', data: cleanedData.slice(0, 50), xField: numCols[0],
-        yFields: [numCols[1]], title: generateChartTitle('scatter', numCols[0], [numCols[1]])
+        yFields: [numCols[1]], title: titleOf('scatter', numCols[0], [numCols[1]])
       });
       usedTypes.add('scatter');
     }
@@ -1138,7 +1279,7 @@ function buildChartPlan(
       }));
       plans.push({
         chartType: 'radar', data: radarData, xField: '__rowIndex',
-        yFields: numCols.slice(0, 6), title: generateChartTitle('radar', '__rowIndex', numCols.slice(0, 6))
+        yFields: numCols.slice(0, 6), title: titleOf('radar', '__rowIndex', numCols.slice(0, 6))
       });
       usedTypes.add('radar');
     }
@@ -1200,14 +1341,22 @@ async function _doEnrichSheetAnalysis(
   if (prevController) prevController.abort();
   activeControllers.set(`enrich-${uploadId}`, abortController);
   try {
-    // 1. Get persisted table data
+    // 1. Get persisted table data + field definitions (parallel)
     let t0 = performance.now();
-    const tableRes = await getUploadTableData(uploadId, 0, 2000);
+    const [tableRes, fieldsRes] = await Promise.all([
+      getUploadTableData(uploadId, 0, 2000),
+      getUploadFields(uploadId).catch(() => ({ success: false, data: [] as any })),
+    ]);
     if (!tableRes.success || !tableRes.data?.data?.length) {
       return { success: false, error: '无法获取上传数据' };
     }
     const rawData = tableRes.data.data as Record<string, unknown>[];
-    tick('getUploadTableData', t0);
+    // Build displayNameMap from persisted field definitions
+    const fieldDefs = Array.isArray(fieldsRes?.data) ? fieldsRes.data : [];
+    const displayNameMap: Record<string, string> = fieldDefs.length > 0
+      ? buildDisplayNameMap(fieldDefs)
+      : {};
+    tick('getUploadTableData+fields', t0);
 
     // 2. Clean column names
     t0 = performance.now();
@@ -1283,7 +1432,7 @@ async function _doEnrichSheetAnalysis(
         return !SUBTOTAL_SUMMARY_PATTERN.test(label);
       });
     }
-    const plans = buildChartPlan(cleanedData, recommendations, enhancedDataInfo, monthlyColumns, labelField, uploadId);
+    const plans = buildChartPlan(cleanedData, recommendations, enhancedDataInfo, monthlyColumns, labelField, uploadId, displayNameMap);
     tick('detect+buildPlan', t0);
 
     // Notify KPI ready — user sees KPI cards within ~2-3s
@@ -1446,8 +1595,19 @@ async function _doEnrichSheetAnalysis(
     t0 = performance.now();
     let aiAnalysis = '';
     let structuredAI: StructuredAIData | undefined;
-    const insightData = cleanedData.slice(0, 100);
-    const columnNames = allKeys.map(humanizeColumnName).join(', ');
+    // Humanize column keys in data sent to LLM so AI text uses display names
+    const keyMap: Record<string, string> = {};
+    for (const k of allKeys) {
+      keyMap[k] = displayNameMap[k] || humanizeColumnName(k);
+    }
+    const insightData = cleanedData.slice(0, 100).map(row => {
+      const mapped: Record<string, unknown> = {};
+      for (const k of allKeys) {
+        mapped[keyMap[k]] = row[k];
+      }
+      return mapped;
+    });
+    const columnNames = Object.values(keyMap).join(', ');
     const contextParts = [`数据列: ${columnNames}`];
     if (textContext) {
       contextParts.push(textContext);
@@ -1531,6 +1691,7 @@ async function _doEnrichSheetAnalysis(
       error: hasContent ? undefined : '未能生成图表或 AI 洞察',
       timings,
       rawData: cleanedData,
+      displayNameMap: Object.keys(displayNameMap).length > 0 ? displayNameMap : undefined,
     };
 
     // Notify complete

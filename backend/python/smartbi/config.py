@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # LLM Configuration - Text Models
     llm_api_key: str = ""
     llm_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    llm_model: str = "qwen-plus"  # Default text model
+    llm_model: str = "qwen3.5-plus"  # Default text model
 
     # LLM Configuration - Vision Model (for structure detection)
     llm_vl_model: str = "qwen-vl-max"  # Vision-Language model for Excel structure analysis

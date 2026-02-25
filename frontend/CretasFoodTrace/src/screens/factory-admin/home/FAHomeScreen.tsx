@@ -789,9 +789,11 @@ export function FAHomeScreen() {
   const quickActionScreenGuard: Record<string, string> = {
     dataReport: 'AIReport',
     staffManagement: 'EmployeeList',
-    inventory: 'InventoryList',
-    qualityCheck: 'QualityCheck',
+    inventory: 'FinishedGoodsList',
+    qualityCheck: 'QualityCheckItemConfig',
     systemConfig: 'SystemSettings',
+    newPurchase: 'PurchaseOrderList',
+    newSales: 'SalesOrderList',
   };
 
   // 所有可用的快捷操作（用于添加弹窗）
@@ -875,7 +877,7 @@ export function FAHomeScreen() {
       label: t('quickActions.inventoryView', '库存查看'),
       color: '#38b2ac',
       onPress: () => {
-        navigation.getParent()?.navigate('FAManagementTab', { screen: 'InventoryList' });
+        navigation.getParent()?.navigate('FAManagementTab', { screen: 'FinishedGoodsList' });
       },
     },
     {
@@ -884,7 +886,25 @@ export function FAHomeScreen() {
       label: t('quickActions.qualityManagement', '质检管理'),
       color: '#e53e3e',
       onPress: () => {
-        navigation.getParent()?.navigate('FAManagementTab', { screen: 'QualityCheck' });
+        navigation.getParent()?.navigate('FAManagementTab', { screen: 'QualityCheckItemConfig' });
+      },
+    },
+    {
+      id: 'newPurchase',
+      icon: 'cart-arrow-down',
+      label: t('quickActions.newPurchase', '新建采购'),
+      color: '#409eff',
+      onPress: () => {
+        navigation.getParent()?.navigate('FAManagementTab', { screen: 'PurchaseOrderList' });
+      },
+    },
+    {
+      id: 'newSales',
+      icon: 'cart-arrow-up',
+      label: t('quickActions.newSales', '新建销售'),
+      color: '#67c23a',
+      onPress: () => {
+        navigation.getParent()?.navigate('FAManagementTab', { screen: 'SalesOrderList' });
       },
     },
   ]).filter(action => {
@@ -892,31 +912,32 @@ export function FAHomeScreen() {
     return !screenName || isScreenEnabled(screenName);
   });
 
-  // 渲染快捷操作模块 - 从 config.actions 读取操作配置
+  // 渲染快捷操作模块 - config-driven 显示逻辑
   const renderQuickActionsModule = (module: HomeModule, index: number) => {
-    // 从配置中获取操作可见性设置
     const actionsConfig = module.config?.actions || [];
+    const maxItems = module.config?.maxItems || 4;
 
-    // 黑名单逻辑：显示所有操作，除了明确标记为 visible: false 的
-    const hiddenActionIds = actionsConfig
-      .filter((a: QuickActionConfig) => a.visible === false)
+    // Config-driven: 从 config 获取可见 action ID 列表
+    const visibleConfigIds = actionsConfig
+      .filter((a: QuickActionConfig) => a.visible !== false)
       .map((a: QuickActionConfig) => a.id);
 
-    // 显示的操作 = 默认前4个操作 - 隐藏的操作
-    const defaultActions = allQuickActions.slice(0, 4);
-    const displayActions = defaultActions.filter((action) => !hiddenActionIds.includes(action.id));
+    // 按 config 顺序匹配 allQuickActions（包含 icon/color/onPress）
+    // 如果 config 无有效项则回退到默认前4个
+    let displayActions;
+    if (visibleConfigIds.length > 0) {
+      displayActions = visibleConfigIds
+        .map(id => allQuickActions.find(a => a.id === id))
+        .filter(Boolean) as typeof allQuickActions;
+    } else {
+      displayActions = allQuickActions.slice(0, maxItems);
+    }
 
-    // 隐藏的操作（用于添加弹窗）= 被隐藏的默认操作 + 额外的可添加操作
-    const hiddenActions = allQuickActions.filter((action) => {
-      // 被明确隐藏的
-      if (hiddenActionIds.includes(action.id)) return true;
-      // 不在默认4个中的额外操作（可以添加）
-      if (!defaultActions.some(da => da.id === action.id)) return true;
-      return false;
-    });
+    // 隐藏的操作 = allQuickActions 中不在 displayActions 里的
+    const hiddenActions = allQuickActions.filter(
+      action => !displayActions.some(da => da.id === action.id)
+    );
 
-    // 限制最大显示数量
-    const maxItems = module.config?.maxItems || 4;
     const finalActions = displayActions.slice(0, maxItems);
 
     return (
@@ -1290,16 +1311,14 @@ export function FAHomeScreen() {
               {(() => {
                 const module = draftModules.find(m => m.id === editingModuleId);
                 const actionsConfig = module?.config?.actions || [];
-                const visibleActionIds = actionsConfig
+                const visibleConfigIds = actionsConfig
                   .filter((a: QuickActionConfig) => a.visible !== false)
                   .map((a: QuickActionConfig) => a.id);
 
-                // 找出所有可添加的操作
-                const addableActions = allQuickActions.filter((action) => {
-                  const config = actionsConfig.find((a: QuickActionConfig) => a.id === action.id);
-                  return (config && config.visible === false) ||
-                         (visibleActionIds.length > 0 && !visibleActionIds.includes(action.id));
-                });
+                // 可添加的操作 = allQuickActions 中不在当前可见列表里的
+                const addableActions = allQuickActions.filter(
+                  action => !visibleConfigIds.includes(action.id)
+                );
 
                 return addableActions.map((action) => (
                   <TouchableOpacity

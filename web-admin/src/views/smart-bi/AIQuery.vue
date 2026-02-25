@@ -4,10 +4,10 @@
  * 支持自然语言查询、快捷问题、对话历史和图表展示
  * 连接 Python SmartBI 服务获取真实分析结果
  */
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
-import { chatAnalysis, getUploadHistory, deduplicateUploads, type AnalysisResult, type AIInsightData, type ChartConfig, type UploadHistoryItem } from '@/api/smartbi';
+import { chatAnalysis, chatAnalysisStream, getUploadHistory, deduplicateUploads, type AnalysisResult, type AIInsightData, type ChartConfig, type UploadHistoryItem } from '@/api/smartbi';
 import { ElMessage } from 'element-plus';
 import {
   ChatDotRound,
@@ -30,9 +30,21 @@ import {
   DataAnalysis,
   Flag
 } from '@element-plus/icons-vue';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import echarts from '@/utils/echarts';
 import { AIInsightPanel } from '@/components/smartbi';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
+
+// Render markdown content safely
+function renderMarkdown(text: string): string {
+  if (!text) return '';
+  try {
+    return DOMPurify.sanitize(marked(text) as string);
+  } catch {
+    return text;
+  }
+}
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -190,15 +202,36 @@ onMounted(async () => {
   }
 });
 
-// 监听窗口大小变化，调整图表大小
-window.addEventListener('resize', () => {
-  chartInstances.forEach(chart => chart.resize());
+// Cleanup on unmount
+onUnmounted(() => {
+  if (activeStreamController) {
+    activeStreamController.abort();
+    activeStreamController = null;
+  }
+  chartInstances.forEach(chart => chart.dispose());
+  chartInstances.clear();
+  window.removeEventListener('resize', handleResize);
 });
+
+// 监听窗口大小变化，调整图表大小
+function handleResize() {
+  chartInstances.forEach(chart => chart.resize());
+}
+window.addEventListener('resize', handleResize);
+
+// Active stream controller (to cancel on new message or cleanup)
+let activeStreamController: AbortController | null = null;
 
 // 发送消息
 async function handleSendMessage() {
   const query = inputQuery.value.trim();
   if (!query) return;
+
+  // Cancel any in-flight stream
+  if (activeStreamController) {
+    activeStreamController.abort();
+    activeStreamController = null;
+  }
 
   // 添加用户消息
   const userMessage: ChatMessage = {
@@ -228,106 +261,171 @@ async function handleSendMessage() {
 
   isTyping.value = true;
 
-  try {
-    // 调用真实 Python SmartBI API
-    const response = await chatAnalysis({
-      query,
-      data: currentData.value.length > 0 ? currentData.value : undefined,
-      fields: currentFields.value.length > 0 ? currentFields.value : undefined,
-      table_type: currentTableType.value || undefined,
-      uploadId: selectedUploadId.value ? String(selectedUploadId.value) : undefined,
-    });
+  const requestParams = {
+    query,
+    data: currentData.value.length > 0 ? currentData.value : undefined,
+    fields: currentFields.value.length > 0 ? currentFields.value : undefined,
+    table_type: currentTableType.value || undefined,
+    uploadId: selectedUploadId.value ? String(selectedUploadId.value) : undefined,
+  };
 
-    // 更新助手消息
-    const messageIndex = chatHistory.value.findIndex(m => m.id === assistantId);
-    if (messageIndex !== -1) {
-      if (response.success) {
-        // 构建图表数据 (兼容旧格式)
+  // Helper to find the assistant message
+  const getMessageIndex = () => chatHistory.value.findIndex(m => m.id === assistantId);
+
+  // Try streaming first, fall back to non-streaming
+  activeStreamController = chatAnalysisStream(requestParams, {
+    onStatus(status: string) {
+      const idx = getMessageIndex();
+      if (idx !== -1) {
+        chatHistory.value[idx] = {
+          ...chatHistory.value[idx],
+          content: status,
+          loading: true,
+        };
+      }
+      scrollToBottom();
+    },
+
+    onChunk(text: string) {
+      const idx = getMessageIndex();
+      if (idx !== -1) {
+        const msg = chatHistory.value[idx];
+        // First chunk: switch from loading to streaming text
+        chatHistory.value[idx] = {
+          ...msg,
+          content: (msg.loading ? '' : msg.content) + text,
+          loading: false,
+        };
+      }
+      scrollToBottom();
+    },
+
+    async onCharts(charts: ChartConfig[]) {
+      const idx = getMessageIndex();
+      if (idx !== -1 && charts.length > 0) {
+        chatHistory.value[idx] = {
+          ...chatHistory.value[idx],
+          chartConfig: charts[0],
+        };
+        await nextTick();
+        renderChartFromConfig(assistantId, charts[0]);
+      }
+    },
+
+    async onDone(result: AnalysisResult) {
+      const idx = getMessageIndex();
+      if (idx !== -1) {
+        const msg = chatHistory.value[idx];
+        const finalContent = msg.content || result.answer || '分析完成';
+
+        // Build chart data for compat
         let chartData: ChatMessage['chart'] | undefined;
-        if (response.charts && response.charts.length > 0) {
-          const firstChart = response.charts[0];
+        if (result.charts && result.charts.length > 0) {
+          const firstChart = result.charts[0];
           chartData = {
             type: firstChart.type as 'line' | 'bar' | 'pie',
             data: firstChart.option as Record<string, unknown>
           };
         }
 
-        chatHistory.value[messageIndex] = {
+        chatHistory.value[idx] = {
           id: assistantId,
           role: 'assistant',
-          content: response.answer || '分析完成',
+          content: finalContent,
           timestamp: new Date(),
           chart: chartData,
-          chartConfig: response.charts?.[0],
-          insights: response.insights,
-          table: response.table as ChatMessage['table'],
+          chartConfig: msg.chartConfig || result.charts?.[0],
+          insights: result.insights,
+          table: result.table as ChatMessage['table'],
           loading: false
         };
-      } else {
-        // Convert raw API errors to user-friendly messages
-        let errorMsg = '分析请求失败，请稍后重试';
-        const rawError = response.error || '';
-        if (rawError.includes('422') || rawError.includes('Unprocessable') || rawError.includes('sheet_id') || rawError.includes('Field required')) {
-          errorMsg = '请先选择一个数据源（上传 Excel 或选择已有数据），再进行 AI 问答';
-        } else if (rawError.includes('500') || rawError.includes('Internal Server')) {
-          errorMsg = '分析服务暂时不可用，请稍后重试';
-        } else if (rawError.includes('503') || rawError.includes('504') || rawError.includes('timeout')) {
-          errorMsg = 'AI 分析服务暂时不可用，请稍后重试。';
-        } else if (rawError.includes('network') || rawError.includes('fetch') || rawError.includes('Failed to fetch') || rawError.includes('ERR_CONNECTION')) {
-          errorMsg = '请求失败，请检查网络连接';
-        } else if (rawError) {
-          errorMsg = rawError.length > 100 ? '分析请求失败，请稍后重试' : rawError;
+
+        // Render chart if not already rendered via onCharts
+        if (!msg.chartConfig && result.charts && result.charts.length > 0) {
+          await nextTick();
+          renderChartFromConfig(assistantId, result.charts[0]);
         }
-        chatHistory.value[messageIndex] = {
-          id: assistantId,
-          role: 'assistant',
-          content: errorMsg,
-          timestamp: new Date(),
-          loading: false
-        };
       }
-    }
 
-    // 渲染图表
-    await nextTick();
-    if (response.charts && response.charts.length > 0) {
-      renderChartFromConfig(assistantId, response.charts[0]);
-    }
-  } catch (error) {
-    console.error('AI 查询失败:', error);
+      isTyping.value = false;
+      activeStreamController = null;
+      await scrollToBottom();
+    },
 
-    // Convert technical errors to user-friendly Chinese messages
-    let friendlyMessage = '抱歉，查询过程中发生错误，请稍后重试。';
-    const errStr = (error instanceof Error ? error.message : String(error)) || '';
-    if (error && typeof error === 'object') {
-      const errObj = error as Record<string, unknown>;
-      const status = errObj.status || errObj.statusCode;
-      if (status === 422 || errStr.includes('422') || errStr.includes('Unprocessable')) {
+    async onError(error: string) {
+      console.error('AI 流式查询失败:', error);
+
+      // Convert to user-friendly message
+      let friendlyMessage = '抱歉，查询过程中发生错误，请稍后重试。';
+      if (error.includes('422') || error.includes('Unprocessable')) {
         friendlyMessage = '请先选择一个数据源（上传 Excel 或选择已有数据），再进行 AI 问答';
-      } else if (status === 500 || errStr.includes('500') || errStr.includes('Internal Server')) {
+      } else if (error.includes('500') || error.includes('Internal Server')) {
         friendlyMessage = '分析服务暂时不可用，请稍后重试';
-      } else if (status === 503 || status === 504 || errStr.includes('503') || errStr.includes('504') || errStr.includes('timeout')) {
+      } else if (error.includes('timeout') || error.includes('503') || error.includes('504')) {
         friendlyMessage = 'AI 分析服务暂时不可用，请稍后重试。';
-      } else if (errStr.includes('fetch') || errStr.includes('network') || errStr.includes('Failed to fetch') || errStr.includes('ERR_CONNECTION')) {
+      } else if (error.includes('fetch') || error.includes('network') || error.includes('ERR_CONNECTION')) {
         friendlyMessage = '请求失败，请检查网络连接';
+      } else if (error && error.length < 100) {
+        friendlyMessage = error;
       }
-    }
 
-    // 更新为错误消息
-    const messageIndex = chatHistory.value.findIndex(m => m.id === assistantId);
-    if (messageIndex !== -1) {
-      chatHistory.value[messageIndex] = {
-        id: assistantId,
-        role: 'assistant',
-        content: friendlyMessage,
-        timestamp: new Date(),
-        loading: false
-      };
-    }
-  } finally {
-    isTyping.value = false;
-    await scrollToBottom();
-  }
+      // Fall back to non-streaming
+      try {
+        const response = await chatAnalysis(requestParams);
+        const idx = getMessageIndex();
+        if (idx !== -1) {
+          if (response.success) {
+            let chartData: ChatMessage['chart'] | undefined;
+            if (response.charts && response.charts.length > 0) {
+              const firstChart = response.charts[0];
+              chartData = {
+                type: firstChart.type as 'line' | 'bar' | 'pie',
+                data: firstChart.option as Record<string, unknown>
+              };
+            }
+            chatHistory.value[idx] = {
+              id: assistantId,
+              role: 'assistant',
+              content: response.answer || '分析完成',
+              timestamp: new Date(),
+              chart: chartData,
+              chartConfig: response.charts?.[0],
+              insights: response.insights,
+              table: response.table as ChatMessage['table'],
+              loading: false
+            };
+            await nextTick();
+            if (response.charts && response.charts.length > 0) {
+              renderChartFromConfig(assistantId, response.charts[0]);
+            }
+          } else {
+            chatHistory.value[idx] = {
+              id: assistantId,
+              role: 'assistant',
+              content: friendlyMessage,
+              timestamp: new Date(),
+              loading: false
+            };
+          }
+        }
+      } catch {
+        const idx = getMessageIndex();
+        if (idx !== -1) {
+          chatHistory.value[idx] = {
+            id: assistantId,
+            role: 'assistant',
+            content: friendlyMessage,
+            timestamp: new Date(),
+            loading: false
+          };
+        }
+      }
+
+      isTyping.value = false;
+      activeStreamController = null;
+      await scrollToBottom();
+    },
+  });
 }
 
 /**
@@ -563,10 +661,11 @@ function handleKeydown(event: KeyboardEvent) {
             <div class="message-body">
               <div v-if="message.loading" class="loading-indicator">
                 <el-icon class="is-loading"><Loading /></el-icon>
-                <span>正在思考...</span>
+                <span>{{ message.content || '正在思考...' }}</span>
               </div>
               <template v-else>
-                <div class="message-text">{{ message.content }}</div>
+                <div v-if="message.role === 'assistant'" class="message-text markdown-body" v-html="renderMarkdown(message.content)"></div>
+                <div v-else class="message-text">{{ message.content }}</div>
 
                 <!-- AI 洞察面板 (only show if insights has actual content) -->
                 <div v-if="message.insights && ((message.insights.positive?.items?.length ?? 0) > 0 || (message.insights.negative?.items?.length ?? 0) > 0 || (message.insights.suggestions?.items?.length ?? 0) > 0)" class="message-insights">
@@ -824,6 +923,24 @@ function handleKeydown(event: KeyboardEvent) {
     line-height: 1.8;
     color: #303133;
     white-space: pre-wrap;
+
+    // Markdown body styles for assistant messages
+    &.markdown-body {
+      white-space: normal;
+
+      :deep(p) { margin: 0.4em 0; }
+      :deep(h1), :deep(h2), :deep(h3) { margin: 0.6em 0 0.3em; font-weight: 600; }
+      :deep(h3) { font-size: 15px; }
+      :deep(ul), :deep(ol) { padding-left: 1.5em; margin: 0.3em 0; }
+      :deep(li) { margin: 0.15em 0; }
+      :deep(strong) { font-weight: 600; }
+      :deep(code) { background: rgba(0,0,0,0.06); padding: 2px 4px; border-radius: 3px; font-size: 13px; }
+      :deep(pre) { background: rgba(0,0,0,0.04); padding: 8px 12px; border-radius: 6px; overflow-x: auto; }
+      :deep(blockquote) { border-left: 3px solid #409EFF; padding-left: 12px; margin: 0.4em 0; color: #606266; }
+      :deep(table) { border-collapse: collapse; margin: 0.5em 0; }
+      :deep(th), :deep(td) { border: 1px solid #dcdfe6; padding: 4px 8px; font-size: 13px; }
+      :deep(th) { background: #f5f7fa; }
+    }
   }
 
   .loading-indicator {

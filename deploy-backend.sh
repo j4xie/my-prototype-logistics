@@ -54,55 +54,80 @@ R2_PUBLIC_URL="${R2_PUBLIC_URL:-https://pub-70da4e6da1f3446d9e055f2793d05837.r2.
 # ==================== 参数解析 ====================
 MODE="jar"
 ARG=""
+DEPLOY_ENV="prod"  # prod | test | all
 
-case "$1" in
-    --git)
-        MODE="git"
-        ARG="${2:-steven}"
-        ;;
-    --jar)
-        MODE="jar"
-        ARG="$2"
-        ;;
-    --dry-run)
-        MODE="dry-run"
-        ;;
-    --rollback)
-        MODE="rollback"
-        ;;
-    -h|--help)
-        echo "用法: ./deploy-backend.sh [选项] [参数]"
-        echo ""
-        echo "选项:"
-        echo "  --jar [version]   JAR 部署模式 (默认)"
-        echo "  --git [branch]    Git 部署模式"
-        echo "  --dry-run         仅构建和验证，不上传/部署"
-        echo "  --rollback        回滚到上一个备份版本"
-        echo "  -h, --help        显示帮助"
-        echo ""
-        echo "上传策略:"
-        echo "  [阶段1] GitHub 并行 (直连 + 5镜像同时竞争)"
-        echo "          超时: 60秒"
-        echo "  [阶段2] Fallback (GitHub 失败时启用)"
-        echo "          - SCP 直接上传"
-        echo "          - SCP + gzip 压缩传输"
-        echo "          - OSS 全球加速 + 内网下载"
-        echo "          - Cloudflare R2 中转"
-        echo ""
-        echo "示例:"
-        echo "  ./deploy-backend.sh              # JAR 部署"
-        echo "  ./deploy-backend.sh --jar v1.2   # 指定版本"
-        echo "  ./deploy-backend.sh --git        # Git 部署"
-        echo "  ./deploy-backend.sh --dry-run    # 仅构建验证"
-        echo "  ./deploy-backend.sh --rollback   # 回滚上一版本"
-        exit 0
-        ;;
-    *)
-        if [ -n "$1" ]; then
-            ARG="$1"
-        fi
-        ;;
-esac
+# Parse all arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --git)
+            MODE="git"
+            ARG="${2:-steven}"
+            shift 2
+            ;;
+        --jar)
+            MODE="jar"
+            ARG="$2"
+            shift 2
+            ;;
+        --dry-run)
+            MODE="dry-run"
+            shift
+            ;;
+        --rollback)
+            MODE="rollback"
+            shift
+            ;;
+        --env)
+            DEPLOY_ENV="$2"
+            if [[ ! "$DEPLOY_ENV" =~ ^(prod|test|all)$ ]]; then
+                echo "错误: --env 参数必须是 prod, test, 或 all"
+                exit 1
+            fi
+            shift 2
+            ;;
+        -h|--help)
+            echo "用法: ./deploy-backend.sh [选项] [参数]"
+            echo ""
+            echo "选项:"
+            echo "  --jar [version]   JAR 部署模式 (默认)"
+            echo "  --git [branch]    Git 部署模式"
+            echo "  --env ENV         部署环境: prod (默认), test, all"
+            echo "  --dry-run         仅构建和验证，不上传/部署"
+            echo "  --rollback        回滚到上一个备份版本"
+            echo "  -h, --help        显示帮助"
+            echo ""
+            echo "环境说明:"
+            echo "  prod   生产环境 (端口 10010+8083, 数据库 cretas_prod_db)"
+            echo "  test   测试环境 (端口 10011+8084, 数据库 cretas_db)"
+            echo "  all    部署后重启两套环境"
+            echo ""
+            echo "上传策略:"
+            echo "  [阶段1] GitHub 并行 (直连 + 5镜像同时竞争)"
+            echo "          超时: 60秒"
+            echo "  [阶段2] Fallback (GitHub 失败时启用)"
+            echo "          - SCP 直接上传"
+            echo "          - SCP + gzip 压缩传输"
+            echo "          - OSS 全球加速 + 内网下载"
+            echo "          - Cloudflare R2 中转"
+            echo ""
+            echo "示例:"
+            echo "  ./deploy-backend.sh              # JAR 部署到生产"
+            echo "  ./deploy-backend.sh --env test   # JAR 部署到测试"
+            echo "  ./deploy-backend.sh --env all    # JAR 部署后重启两套"
+            echo "  ./deploy-backend.sh --jar v1.2   # 指定版本"
+            echo "  ./deploy-backend.sh --git        # Git 部署"
+            echo "  ./deploy-backend.sh --dry-run    # 仅构建验证"
+            echo "  ./deploy-backend.sh --rollback   # 回滚上一版本"
+            exit 0
+            ;;
+        *)
+            if [ -n "$1" ]; then
+                ARG="$1"
+            fi
+            shift
+            ;;
+    esac
+done
 
 # ==================== 环境准备 ====================
 # Windows 环境设置 PATH
@@ -165,17 +190,22 @@ deploy_jar() {
     [ "$HAS_R2" = "true" ] && METHODS+=("R2")
 
     echo "=========================================="
-    echo "  JAR 部署 v4.0 - 版本: $VERSION"
+    echo "  JAR 部署 v4.1 - 版本: $VERSION"
+    echo "  部署环境: $DEPLOY_ENV"
     echo "  可用方式: ${METHODS[*]}"
     echo "=========================================="
 
     # ----- 1. 本地 Maven 打包 -----
     echo ""
-    echo "📦 [1/4] 本地 Maven 打包..."
-    export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
-    cd backend/java/cretas-api
-    ./mvnw.cmd clean package -Dmaven.test.skip=true -q
-    cd ../../..
+    if [ -n "$SKIP_BUILD" ] && [ -f "backend/java/cretas-api/target/$JAR_NAME" ]; then
+        echo "📦 [1/4] 跳过 Maven 打包 (SKIP_BUILD=1, 使用已有 JAR)"
+    else
+        echo "📦 [1/4] 本地 Maven 打包..."
+        export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
+        cd backend/java/cretas-api
+        ./mvnw.cmd package -Dmaven.test.skip=true -q
+        cd ../../..
+    fi
 
     JAR_PATH="backend/java/cretas-api/target/$JAR_NAME"
     if [ ! -f "$JAR_PATH" ]; then
@@ -545,9 +575,9 @@ deploy_jar() {
     # 清理 .jar.new (防止 restart.sh 的 auto-swap 覆盖刚部署的 JAR)
     ssh -o ConnectTimeout=5 $SERVER "rm -f $REMOTE_JAR_DIR/aims-0.0.1-SNAPSHOT.jar.new 2>/dev/null" 2>/dev/null || true
 
-    # 重启服务 (单独 SSH，restart.sh 的 nohup 不会被 SSH 断开影响)
-    echo "   重启服务..."
-    ssh $SERVER "cd $REMOTE_JAR_DIR && bash restart.sh" || true
+    # 重启服务 (根据 --env 参数选择环境)
+    echo "   重启服务 (环境: $DEPLOY_ENV)..."
+    ssh $SERVER "cd $REMOTE_JAR_DIR && bash restart.sh $DEPLOY_ENV" || true
 
     # 清理残留临时文件
     ssh -o ConnectTimeout=5 $SERVER "rm -f $REMOTE_TMP/${JAR_NAME}.* $REMOTE_TMP/aims-new.jar $REMOTE_TMP/deploy.jar.gz 2>/dev/null" 2>/dev/null || true
@@ -556,15 +586,26 @@ deploy_jar() {
     echo ""
     echo "🔍 [4/4] 验证部署..."
     SERVER_IP="${SERVER#*@}"
-    HEALTH_URL="http://${SERVER_IP}:10010/api/mobile/health"
-    if ! wait_for_health "$HEALTH_URL" 30 2; then
-        echo "   请手动检查: ssh $SERVER 'tail -50 $REMOTE_JAR_DIR/cretas-backend.log'"
+
+    if [[ "$DEPLOY_ENV" == "prod" || "$DEPLOY_ENV" == "all" ]]; then
+        echo "   [生产] 检查 10010..."
+        if ! wait_for_health "http://${SERVER_IP}:10010/api/mobile/health" 30 2; then
+            echo "   请手动检查: ssh $SERVER 'tail -50 $REMOTE_JAR_DIR/cretas-prod.log'"
+        fi
+    fi
+
+    if [[ "$DEPLOY_ENV" == "test" || "$DEPLOY_ENV" == "all" ]]; then
+        echo "   [测试] 检查 10011..."
+        if ! wait_for_health "http://${SERVER_IP}:10011/api/mobile/health" 30 2; then
+            echo "   请手动检查: ssh $SERVER 'tail -50 $REMOTE_JAR_DIR/cretas-test.log'"
+        fi
     fi
 
     echo ""
     echo "=========================================="
     echo "  ✅ 部署完成!"
     echo "  版本: $VERSION"
+    echo "  环境: $DEPLOY_ENV"
     echo "  方式: $WINNER"
     echo "  MD5: $LOCAL_MD5"
     echo "  上传耗时: ${UPLOAD_DURATION}s (${SPEED_MBPS} MB/s)"
@@ -617,15 +658,23 @@ deploy_rollback() {
     ssh $SERVER "
         cd $REMOTE_JAR_DIR
         cp '$LATEST_BAK' aims-0.0.1-SNAPSHOT.jar
-        bash restart.sh
+        bash restart.sh $DEPLOY_ENV
     "
 
     SERVER_IP="${SERVER#*@}"
-    HEALTH_URL="http://${SERVER_IP}:10010/api/mobile/health"
-    if wait_for_health "$HEALTH_URL" 30 2; then
-        log "INFO" "回滚完成，服务正常"
-    else
-        log "WARN" "回滚完成但健康检查超时，请手动检查"
+    if [[ "$DEPLOY_ENV" == "prod" || "$DEPLOY_ENV" == "all" ]]; then
+        if wait_for_health "http://${SERVER_IP}:10010/api/mobile/health" 30 2; then
+            log "INFO" "回滚完成，生产服务正常"
+        else
+            log "WARN" "回滚完成但生产健康检查超时，请手动检查"
+        fi
+    fi
+    if [[ "$DEPLOY_ENV" == "test" || "$DEPLOY_ENV" == "all" ]]; then
+        if wait_for_health "http://${SERVER_IP}:10011/api/mobile/health" 30 2; then
+            log "INFO" "回滚完成，测试服务正常"
+        else
+            log "WARN" "回滚完成但测试健康检查超时，请手动检查"
+        fi
     fi
 }
 

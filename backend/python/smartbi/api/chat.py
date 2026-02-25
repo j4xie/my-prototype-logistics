@@ -12,11 +12,14 @@ These endpoints are called by the Java backend's SmartBIIntentService.
 
 Part of SmartBI Phase 6: AI Chat Deep Integration.
 """
+import asyncio
+import json as _json
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 # Services
@@ -880,6 +883,338 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
             error="AI对话处理失败，请稍后重试",
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
+
+
+@router.post("/general-analysis-stream")
+async def general_analysis_stream(request: GeneralAnalysisRequest, http_request: Request):
+    """
+    SSE streaming version of general_analysis.
+
+    Sends events:
+      - {"event": "status", "data": "..."} — progress updates
+      - {"event": "chunk", "data": "..."} — LLM text chunks (stream as generated)
+      - {"event": "charts", "data": [...]} — chart configs (when ready)
+      - {"event": "done", "data": {...}} — final summary with full answer
+      - {"event": "error", "data": "..."} — on failure
+    """
+
+    def _sse_event(event: str, data) -> str:
+        """Format a single SSE event. Always JSON-encodes data for consistent frontend parsing."""
+        payload = _json.dumps(data, ensure_ascii=False, default=str)
+        return f"event: {event}\ndata: {payload}\n\n"
+
+    async def event_stream() -> AsyncGenerator[str, None]:
+        start_time = time.time()
+        try:
+            yield _sse_event("status", "正在加载数据...")
+
+            # ── Data loading (same as general_analysis) ──
+            data = request.data
+            if not data and request.sheet_id:
+                data = get_sheet_data(request.sheet_id)
+
+            if not data:
+                try:
+                    from smartbi.config import get_settings as _get_settings
+                    import asyncpg
+                    pg_url = _get_settings().postgres_url
+                    if pg_url:
+                        conn = await asyncpg.connect(pg_url)
+                        try:
+                            upload_id = None
+                            if request.sheet_id:
+                                try:
+                                    upload_id = int(request.sheet_id)
+                                except (ValueError, TypeError):
+                                    pass
+                            if not upload_id:
+                                row = await conn.fetchrow(
+                                    "SELECT id FROM smart_bi_pg_excel_uploads ORDER BY created_at DESC LIMIT 1"
+                                )
+                                if row:
+                                    upload_id = row['id']
+                            if upload_id:
+                                rows = await conn.fetch(
+                                    "SELECT row_data FROM smart_bi_dynamic_data WHERE upload_id = $1 LIMIT 200",
+                                    upload_id
+                                )
+                                if rows:
+                                    data = [_json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in rows]
+                                    logger.info(f"[stream] Loaded {len(data)} rows from upload {upload_id}")
+                        finally:
+                            await conn.close()
+                except Exception as e:
+                    logger.warning(f"[stream] Failed to load upload data: {e}")
+
+            if not data:
+                # No data — try direct LLM text analysis
+                query = request.effective_query
+                if query and len(query) > 20:
+                    try:
+                        insight_gen = InsightGenerator()
+                        yield _sse_event("status", "正在分析...")
+                        full_text = ""
+                        async for chunk in insight_gen._call_llm_stream_text(
+                            query, max_tokens=1500, temperature=0.2
+                        ):
+                            full_text += chunk
+                            yield _sse_event("chunk", chunk)
+                        yield _sse_event("done", {
+                            "success": True,
+                            "answer": full_text,
+                            "charts": [],
+                            "processingTimeMs": int((time.time() - start_time) * 1000)
+                        })
+                        return
+                    except Exception as e:
+                        logger.warning(f"[stream] Direct LLM failed: {e}")
+
+                yield _sse_event("done", {
+                    "success": True,
+                    "answer": "暂无可分析的数据。请先上传 Excel 文件或在「智能数据分析」页面选择数据源后，再使用 AI 问答功能。",
+                    "charts": [],
+                    "processingTimeMs": int((time.time() - start_time) * 1000)
+                })
+                return
+
+            import pandas as pd
+            df = pd.DataFrame(data)
+
+            # ── Filter index columns ──
+            _idx_patterns = {'行次', '序号', '编号', '行号', '项目编号', 'index', 'no', 'no.', 'id', 'row_num', 'row_number', 'sn'}
+            cols_to_drop = []
+            for col in df.columns:
+                lower = col.lower().strip()
+                if lower in _idx_patterns:
+                    cols_to_drop.append(col)
+                else:
+                    try:
+                        vals = pd.to_numeric(df[col].dropna().head(20), errors='coerce').dropna()
+                        if len(vals) >= 3:
+                            diffs = vals.diff().dropna()
+                            if len(diffs) > 0 and all(d == 1 for d in diffs):
+                                cols_to_drop.append(col)
+                    except Exception:
+                        pass
+            if cols_to_drop:
+                df = df.drop(columns=cols_to_drop, errors='ignore')
+                data = [{k: v for k, v in row.items() if k not in cols_to_drop} for row in data]
+
+            yield _sse_event("status", "正在分析...")
+
+            # ── Use default qwen-plus but with optimized params ──
+            insight_gen = InsightGenerator()
+
+            # ── Build LEAN prompt: only data_summary + financial (skip KB, production, stat_digest) ──
+            data_summary = insight_gen._prepare_data_summary(df)
+            financial_metrics = insight_gen._compute_financial_context(df)
+
+            query = request.effective_query
+            analysis_ctx = query
+            if request.context:
+                analysis_ctx = f"{query}\n补充信息: {request.context}"
+
+            prompt = f"""用户问题：{analysis_ctx}
+
+## 数据概览
+{data_summary}
+
+{financial_metrics}
+
+基于以上数据回答用户问题。引用具体数字，给出业务建议。中文Markdown，300字以内。"""
+
+            system_role = "你是食品企业的数据分析师。精炼回答，引用数字，给可执行建议。Markdown格式。"
+
+            # ── Stream LLM response (lower max_tokens + temperature for speed) ──
+            full_text = ""
+            async for chunk in insight_gen._call_llm_stream_text(
+                prompt, system_role, max_tokens=1500, temperature=0.2
+            ):
+                if await http_request.is_disconnected():
+                    logger.info("[stream] Client disconnected, stopping")
+                    return
+                full_text += chunk
+                yield _sse_event("chunk", chunk)
+
+            # ── Build charts in parallel (non-blocking) ──
+            charts = []
+            try:
+                charts = _build_charts_for_query(query, df, data)
+            except Exception as chart_err:
+                logger.warning(f"[stream] Chart generation failed: {chart_err}")
+
+            if charts:
+                yield _sse_event("charts", charts)
+
+            yield _sse_event("done", {
+                "success": True,
+                "answer": full_text,
+                "charts": charts,
+                "processingTimeMs": int((time.time() - start_time) * 1000)
+            })
+
+        except Exception as e:
+            logger.error(f"[stream] General analysis stream failed: {e}", exc_info=True)
+            yield _sse_event("error", "AI对话处理失败，请稍后重试")
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+            "Content-Encoding": "identity",  # Bypass GZip middleware buffering
+        }
+    )
+
+
+def _build_charts_for_query(query: str, df, data: list) -> List[Dict[str, Any]]:
+    """Build charts based on the query keywords — extracted to share between stream and non-stream endpoints."""
+    import re as _re
+    from services.chart_builder import ChartBuilder
+    builder = ChartBuilder()
+
+    _COLUMN_NAME_MAP = {
+        'actual_amount': '实际金额', 'budget_amount': '预算金额',
+        'total_amount': '总金额', 'net_profit': '净利润',
+        'gross_profit': '毛利润', 'revenue': '营收',
+        'cost': '成本', 'expense': '费用', 'sales': '销售额',
+        'quantity': '数量', 'price': '单价', 'margin': '利润率',
+        'growth_rate': '增长率', 'total': '合计',
+    }
+
+    def _humanize_col(name: str) -> str:
+        if not name:
+            return name
+        if _re.match(r'^[Cc]olumn[_\s]?\d+$', name):
+            idx = name.split('_')[-1] if '_' in name else name[-1]
+            return f"数据列{idx}"
+        m = _re.match(r'^(\d{4})-(\d{1,2})-\d{1,2}$', name)
+        if m:
+            return f"{int(m.group(2))}月"
+        m = _re.match(r'^(\d{4})-(\d{1,2})-\d{1,2}[_\s](.+)$', name)
+        if m:
+            return f"{int(m.group(2))}月{m.group(3)}"
+        lower = name.lower().replace(' ', '_')
+        if lower in _COLUMN_NAME_MAP:
+            return _COLUMN_NAME_MAP[lower]
+        if '_' in name and all(c.isascii() for c in name):
+            return name.replace('_', ' ').title()
+        return name
+
+    _INDEX_COL_PATTERNS = {'行次', '序号', '编号', '行号', '项目编号', 'index', 'no', 'no.', 'id', 'row_num', 'row_number', 'sn'}
+
+    def _is_index_column(col_name: str, series) -> bool:
+        import pandas as pd
+        lower = col_name.lower().strip()
+        if lower in _INDEX_COL_PATTERNS:
+            return True
+        try:
+            vals = pd.to_numeric(series.dropna().head(20), errors='coerce').dropna()
+            if len(vals) >= 3:
+                diffs = vals.diff().dropna()
+                if len(diffs) > 0 and all(d == 1 for d in diffs):
+                    return True
+        except Exception:
+            pass
+        return False
+
+    def _humanize_echart_option(echart_option: dict) -> dict:
+        if not echart_option:
+            return echart_option
+        opt = dict(echart_option)
+        if 'legend' in opt and isinstance(opt['legend'], dict):
+            leg_data = opt['legend'].get('data', [])
+            if isinstance(leg_data, list):
+                opt['legend'] = {**opt['legend'], 'data': [_humanize_col(str(d)) for d in leg_data]}
+        if 'series' in opt and isinstance(opt['series'], list):
+            new_series = []
+            for s in opt['series']:
+                if isinstance(s, dict) and 'name' in s:
+                    new_series.append({**s, 'name': _humanize_col(str(s['name']))})
+                else:
+                    new_series.append(s)
+            opt['series'] = new_series
+        if 'title' in opt and isinstance(opt['title'], dict):
+            t = opt['title'].get('text', '')
+            if t:
+                for raw_col in list(df.columns):
+                    h = _humanize_col(raw_col)
+                    if h != raw_col and raw_col in t:
+                        t = t.replace(raw_col, h)
+                opt['title'] = {**opt['title'], 'text': t}
+        return opt
+
+    def _extract_echart_option(chart_result: dict, chart_type: str, title: str):
+        if not chart_result or not chart_result.get("success"):
+            return None
+        echart_option = chart_result.get("config", {})
+        if not echart_option:
+            return None
+        echart_option = _humanize_echart_option(echart_option)
+        return {
+            "type": chart_type,
+            "title": title,
+            "option": _sanitize_for_json(echart_option)
+        }
+
+    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+    non_numeric_cols = [c for c in df.columns if c not in numeric_cols]
+
+    numeric_cols = [c for c in numeric_cols if not _is_index_column(c, df[c])]
+    non_numeric_cols = [c for c in non_numeric_cols if not _is_index_column(c, df[c])]
+
+    _column_xx_pat = _re.compile(r'^[Cc]olumn[_\s]?\d+$')
+    named_numeric = [c for c in numeric_cols if not _column_xx_pat.match(c)]
+    unnamed_numeric = [c for c in numeric_cols if _column_xx_pat.match(c)]
+    numeric_cols = named_numeric + unnamed_numeric[:2] if named_numeric else unnamed_numeric[:5]
+
+    label_field = None
+    for col in non_numeric_cols:
+        sample = df[col].dropna().head(10).astype(str)
+        has_text = any(len(v) > 1 and not v.replace('.','').replace('-','').isdigit() for v in sample)
+        if has_text:
+            label_field = col
+            break
+    if not label_field and non_numeric_cols:
+        label_field = non_numeric_cols[0]
+
+    chart_data = data[:50] if len(data) > 50 else data
+    charts: List[Dict[str, Any]] = []
+
+    if "趋势" in query or "变化" in query:
+        if numeric_cols:
+            y_cols = numeric_cols[:3]
+            h_names = '、'.join(_humanize_col(c) for c in y_cols[:2])
+            chart_result = builder.build("line", chart_data, x_field=label_field, y_fields=y_cols, title=f"{h_names}趋势分析")
+            chart_entry = _extract_echart_option(chart_result, "line", f"{h_names}趋势")
+            if chart_entry:
+                charts.append(chart_entry)
+    elif "对比" in query or "比较" in query or "排名" in query:
+        if numeric_cols and label_field:
+            y_cols = numeric_cols[:2]
+            h_names = '、'.join(_humanize_col(c) for c in y_cols[:2])
+            chart_result = builder.build("bar", chart_data, x_field=label_field, y_fields=y_cols, title=f"{h_names}对比分析")
+            chart_entry = _extract_echart_option(chart_result, "bar", f"{h_names}对比")
+            if chart_entry:
+                charts.append(chart_entry)
+    elif "占比" in query or "构成" in query or "分布" in query:
+        if numeric_cols and label_field:
+            h_name = _humanize_col(numeric_cols[0])
+            chart_result = builder.build("pie", chart_data, x_field=label_field, y_fields=[numeric_cols[0]], title=f"{h_name}占比分析")
+            chart_entry = _extract_echart_option(chart_result, "pie", f"{h_name}占比")
+            if chart_entry:
+                charts.append(chart_entry)
+
+    if not charts and numeric_cols and label_field:
+        y_cols = numeric_cols[:3]
+        chart_result = builder.build("bar", chart_data, x_field=label_field, y_fields=y_cols, title="数据概览")
+        chart_entry = _extract_echart_option(chart_result, "bar", "数据概览")
+        if chart_entry:
+            charts.append(chart_entry)
+
+    return charts
 
 
 @router.post("/multi-dimension", response_model=MultiDimensionResponse)

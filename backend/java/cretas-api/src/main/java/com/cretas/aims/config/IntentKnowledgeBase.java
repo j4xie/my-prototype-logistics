@@ -4908,6 +4908,46 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("出库流水", "INVENTORY_OUTBOUND");
         phraseToIntentMapping.put("出库记录", "INVENTORY_OUTBOUND");
         phraseToIntentMapping.put("入库单号", "MATERIAL_BATCH_QUERY");
+        // v30e: CLASSIFIER 覆盖修复 — 3 个一致性失败用例
+        phraseToIntentMapping.put("物流配送路线", "QUERY_TRANSPORT_LINE");
+        phraseToIntentMapping.put("配送路线", "QUERY_TRANSPORT_LINE");
+        phraseToIntentMapping.put("自动触发告警", "RULE_CONFIG");
+        phraseToIntentMapping.put("触发告警打开", "RULE_CONFIG");
+        phraseToIntentMapping.put("有没有做过质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("做过质检", "QUALITY_CHECK_QUERY");
+
+        // v30f: Phase 2 回复质量 — 9 个 N/A 修复 + 3 个路由修正
+        // 溯源相关
+        phraseToIntentMapping.put("追溯来源", "TRACE_FULL");
+        phraseToIntentMapping.put("猪肉来源", "TRACE_FULL");
+        phraseToIntentMapping.put("猪肉的来源", "TRACE_FULL");
+        phraseToIntentMapping.put("追溯这批", "TRACE_FULL");
+        phraseToIntentMapping.put("生产链路", "TRACE_FULL");
+        phraseToIntentMapping.put("货的流向", "TRACE_FULL");
+        phraseToIntentMapping.put("货物流向", "TRACE_FULL");
+        // 客户/审批
+        phraseToIntentMapping.put("高价值客户", "CUSTOMER_ACTIVE");
+        phraseToIntentMapping.put("待审批的单据", "USER_TODO_LIST");
+        phraseToIntentMapping.put("待审批", "USER_TODO_LIST");
+        // 设备告警历史
+        phraseToIntentMapping.put("告警历史", "ALERT_BY_EQUIPMENT");
+        phraseToIntentMapping.put("设备A01", "ALERT_BY_EQUIPMENT");
+        // 报工
+        phraseToIntentMapping.put("报工情况", "REPORT_WORKSHOP_DAILY");
+        phraseToIntentMapping.put("报工查询", "REPORT_WORKSHOP_DAILY");
+        // 员工管理
+        phraseToIntentMapping.put("新建员工", "USER_CREATE");
+        phraseToIntentMapping.put("员工账号", "USER_CREATE");
+        phraseToIntentMapping.put("分配角色", "USER_ROLE_ASSIGN");
+        phraseToIntentMapping.put("质检员角色", "USER_ROLE_ASSIGN");
+        // 路由修正
+        phraseToIntentMapping.put("催一下发货", "SHIPMENT_EXPEDITE");
+        phraseToIntentMapping.put("催发货", "SHIPMENT_EXPEDITE");
+        phraseToIntentMapping.put("订单的发货", "SHIPMENT_EXPEDITE");
+        phraseToIntentMapping.put("已经发货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("发货了", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("供货质量评估", "SUPPLIER_EVALUATE");
+        phraseToIntentMapping.put("供货质量", "SUPPLIER_EVALUATE");
 
         // OUT_OF_DOMAIN: 噪音/闲聊/非业务 — 确保短输入绕过澄清检测
         phraseToIntentMapping.put("你好", "OUT_OF_DOMAIN");

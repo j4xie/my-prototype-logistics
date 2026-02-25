@@ -53,13 +53,16 @@ public class ShipmentController {
                 shipments = shipmentRecordService.getByFactoryId(factoryId, page, size);
             }
 
+            Map<String, Object> pageData = new HashMap<>();
+            pageData.put("content", shipments.getContent());
+            pageData.put("totalElements", shipments.getTotalElements());
+            pageData.put("totalPages", shipments.getTotalPages());
+            pageData.put("page", page);
+            pageData.put("size", size);
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("data", shipments.getContent());
-            response.put("page", page);
-            response.put("size", size);
-            response.put("totalElements", shipments.getTotalElements());
-            response.put("totalPages", shipments.getTotalPages());
+            response.put("data", pageData);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("获取出货记录失败", e);

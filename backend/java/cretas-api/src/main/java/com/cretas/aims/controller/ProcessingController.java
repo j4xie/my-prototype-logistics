@@ -2,6 +2,7 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.MobileDTO;
 import com.cretas.aims.dto.batch.AssignWorkersDTO;
+import com.cretas.aims.dto.batch.TeamBatchReportRequest;
 import com.cretas.aims.dto.batch.WorkerCheckoutDTO;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
@@ -165,13 +166,14 @@ public class ProcessingController {
     public ApiResponse<PageResponse<ProductionBatch>> getBatches(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam(required = false) @Parameter(description = "状态", example = "PROCESSING") String status,
+            @RequestParam(required = false) @Parameter(description = "主管ID(车间主管过滤)") Long supervisorId,
             @RequestParam(defaultValue = "1") @Parameter(description = "页码", example = "1") Integer page,
             @RequestParam(defaultValue = "20") @Parameter(description = "每页大小", example = "20") Integer size) {
-        log.info("获取批次列表: factoryId={}, status={}", factoryId, status);
+        log.info("获取批次列表: factoryId={}, status={}, supervisorId={}", factoryId, status, supervisorId);
         PageRequest pageRequest = new PageRequest();
         pageRequest.setPage(page);
         pageRequest.setSize(size);
-        PageResponse<ProductionBatch> result = processingService.getBatches(factoryId, status, pageRequest);
+        PageResponse<ProductionBatch> result = processingService.getBatches(factoryId, status, supervisorId, pageRequest);
         return ApiResponse.success(result);
     }
 
@@ -248,6 +250,23 @@ public class ProcessingController {
             @PathVariable @Parameter(description = "员工ID", example = "1") Long workerId) {
         log.info("取消员工分配: factoryId={}, batchId={}, workerId={}", factoryId, batchId, workerId);
         Map<String, Object> result = processingService.cancelWorkerAssignment(factoryId, batchId, workerId);
+        return ApiResponse.success(result);
+    }
+
+    // ========== 班组批量报工接口 ==========
+
+    /**
+     * 班组批量报工
+     * 车间主管为班组成员批量提交产出报工
+     */
+    @PostMapping("/work-sessions/batch-report")
+    @Operation(summary = "班组批量报工", description = "车间主管为班组成员批量提交产出")
+    public ApiResponse<Map<String, Object>> submitTeamBatchReport(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestBody @Valid @Parameter(description = "班组报工请求") TeamBatchReportRequest request) {
+        log.info("班组批量报工: factoryId={}, batchId={}, memberCount={}",
+                factoryId, request.getBatchId(), request.getMembers().size());
+        Map<String, Object> result = processingService.submitTeamBatchReport(factoryId, request);
         return ApiResponse.success(result);
     }
 

@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.annotation.RequirePermission;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -96,6 +97,7 @@ public class SystemConfigController {
 
     @PostMapping("/enums")
     @Operation(summary = "创建枚举值", description = "创建工厂级枚举覆盖配置")
+    @RequirePermission("system:read_write")
     public ResponseEntity<ApiResponse<SystemEnum>> createEnum(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @RequestBody SystemEnum systemEnum) {
@@ -109,6 +111,7 @@ public class SystemConfigController {
 
     @PutMapping("/enums/{enumGroup}/{enumCode}")
     @Operation(summary = "更新枚举值", description = "更新枚举配置")
+    @RequirePermission("system:read_write")
     public ResponseEntity<ApiResponse<SystemEnum>> updateEnum(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "枚举组") @PathVariable String enumGroup,
@@ -125,6 +128,7 @@ public class SystemConfigController {
 
     @DeleteMapping("/enums/{enumGroup}/{enumCode}")
     @Operation(summary = "删除枚举值", description = "删除工厂级枚举覆盖（系统内置不可删除）")
+    @RequirePermission("system:read_write")
     public ResponseEntity<ApiResponse<Void>> deleteEnum(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "枚举组") @PathVariable String enumGroup,
@@ -187,6 +191,7 @@ public class SystemConfigController {
 
     @PostMapping("/units/convert")
     @Operation(summary = "单位换算", description = "将数值从一个单位换算为另一个单位")
+    @RequirePermission("system:read_write")
     public ResponseEntity<ApiResponse<UnitConversionResult>> convertUnit(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @RequestBody UnitConversionRequest request) {
@@ -207,6 +212,7 @@ public class SystemConfigController {
 
     @PostMapping("/units")
     @Operation(summary = "创建计量单位", description = "创建工厂级计量单位配置")
+    @RequirePermission("system:read_write")
     public ResponseEntity<ApiResponse<UnitOfMeasurement>> createUnit(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @RequestBody UnitOfMeasurement unit) {
@@ -219,6 +225,7 @@ public class SystemConfigController {
 
     @PutMapping("/units/{unitCode}")
     @Operation(summary = "更新计量单位", description = "更新计量单位配置")
+    @RequirePermission("system:read_write")
     public ResponseEntity<ApiResponse<UnitOfMeasurement>> updateUnit(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "单位代码") @PathVariable String unitCode,
@@ -233,6 +240,7 @@ public class SystemConfigController {
 
     @DeleteMapping("/units/{unitCode}")
     @Operation(summary = "删除计量单位", description = "删除工厂级计量单位配置（系统内置不可删除）")
+    @RequirePermission("system:read_write")
     public ResponseEntity<ApiResponse<Void>> deleteUnit(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "单位代码") @PathVariable String unitCode) {
@@ -246,6 +254,7 @@ public class SystemConfigController {
 
     @PostMapping("/cache/clear")
     @Operation(summary = "清除缓存", description = "清除工厂的枚举和单位缓存")
+    @RequirePermission("system:read_write")
     public ResponseEntity<ApiResponse<Void>> clearCache(
             @Parameter(description = "工厂ID") @PathVariable String factoryId) {
 

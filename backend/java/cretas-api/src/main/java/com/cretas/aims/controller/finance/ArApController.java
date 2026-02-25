@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.annotation.RequirePermission;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ import java.util.Map;
 @RequestMapping("/api/mobile/{factoryId}/finance")
 @RequiredArgsConstructor
 @Tag(name = "应收应付管理", description = "AR/AP 交易记录、对账单、账龄分析")
+@RequirePermission("finance:read_write")
 public class ArApController {
 
     private final ArApService arApService;
@@ -114,6 +116,7 @@ public class ArApController {
 
     @GetMapping("/transactions")
     @Operation(summary = "交易记录列表")
+    @RequirePermission({"finance:read_write", "finance:read"})
     public ApiResponse<PageResponse<ArApTransaction>> listTransactions(
             @PathVariable @NotBlank String factoryId,
             @RequestParam(required = false) CounterpartyType counterpartyType,
@@ -127,6 +130,7 @@ public class ArApController {
 
     @GetMapping("/statement")
     @Operation(summary = "对账单（指定期间的交易明细+期初期末余额）")
+    @RequirePermission({"finance:read_write", "finance:read"})
     public ApiResponse<Map<String, Object>> getStatement(
             @PathVariable @NotBlank String factoryId,
             @RequestParam CounterpartyType counterpartyType,
@@ -140,6 +144,7 @@ public class ArApController {
 
     @GetMapping("/aging")
     @Operation(summary = "账龄分析（6桶）")
+    @RequirePermission({"finance:read_write", "finance:read"})
     public ApiResponse<List<Map<String, Object>>> getAgingAnalysis(
             @PathVariable @NotBlank String factoryId,
             @RequestParam CounterpartyType counterpartyType) {
@@ -149,6 +154,7 @@ public class ArApController {
 
     @GetMapping("/overview")
     @Operation(summary = "财务概览（应收应付汇总）")
+    @RequirePermission({"finance:read_write", "finance:read"})
     public ApiResponse<Map<String, Object>> getFinanceOverview(
             @PathVariable @NotBlank String factoryId) {
         Map<String, Object> overview = arApService.getFinanceOverview(factoryId);
@@ -157,6 +163,7 @@ public class ArApController {
 
     @GetMapping("/credit-check")
     @Operation(summary = "信用额度检查")
+    @RequirePermission({"finance:read_write", "finance:read", "sales:read"})
     public ApiResponse<Map<String, Object>> checkCreditLimit(
             @PathVariable @NotBlank String factoryId,
             @RequestParam @NotBlank String customerId,

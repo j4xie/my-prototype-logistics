@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.annotation.RequirePermission;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
@@ -35,6 +37,7 @@ public class PurchaseController {
 
     @PostMapping("/orders")
     @Operation(summary = "创建采购订单")
+    @RequirePermission("procurement:read_write")
     public ApiResponse<PurchaseOrder> createOrder(
             @PathVariable @NotBlank String factoryId,
             @RequestHeader("Authorization") String authorization,
@@ -47,6 +50,7 @@ public class PurchaseController {
 
     @GetMapping("/orders")
     @Operation(summary = "采购订单列表")
+    @RequirePermission({"procurement:read_write", "procurement:read"})
     public ApiResponse<PageResponse<PurchaseOrder>> listOrders(
             @PathVariable @NotBlank String factoryId,
             @RequestParam(defaultValue = "1") int page,
@@ -57,6 +61,7 @@ public class PurchaseController {
 
     @GetMapping("/orders/by-status")
     @Operation(summary = "按状态查询采购订单")
+    @RequirePermission({"procurement:read_write", "procurement:read"})
     public ApiResponse<PageResponse<PurchaseOrder>> listOrdersByStatus(
             @PathVariable @NotBlank String factoryId,
             @RequestParam PurchaseOrderStatus status,
@@ -68,6 +73,7 @@ public class PurchaseController {
 
     @GetMapping("/orders/{orderId}")
     @Operation(summary = "采购订单详情")
+    @RequirePermission({"procurement:read_write", "procurement:read"})
     public ApiResponse<PurchaseOrder> getOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId) {
@@ -77,6 +83,7 @@ public class PurchaseController {
 
     @PutMapping("/orders/{orderId}")
     @Operation(summary = "编辑草稿采购订单")
+    @RequirePermission("procurement:read_write")
     public ApiResponse<PurchaseOrder> updateDraftOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId,
@@ -88,6 +95,7 @@ public class PurchaseController {
 
     @PostMapping("/orders/{orderId}/submit")
     @Operation(summary = "提交采购订单")
+    @RequirePermission("procurement:read_write")
     public ApiResponse<PurchaseOrder> submitOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId) {
@@ -97,6 +105,7 @@ public class PurchaseController {
 
     @PostMapping("/orders/{orderId}/approve")
     @Operation(summary = "审批采购订单")
+    @RequirePermission("procurement:read_write")
     public ApiResponse<PurchaseOrder> approveOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId,
@@ -108,6 +117,7 @@ public class PurchaseController {
 
     @PostMapping("/orders/{orderId}/cancel")
     @Operation(summary = "取消采购订单")
+    @RequirePermission("procurement:read_write")
     public ApiResponse<PurchaseOrder> cancelOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId) {
@@ -119,6 +129,7 @@ public class PurchaseController {
 
     @PostMapping("/receives")
     @Operation(summary = "创建入库单")
+    @RequirePermission({"procurement:read_write", "inventory:write"})
     public ApiResponse<PurchaseReceiveRecord> createReceive(
             @PathVariable @NotBlank String factoryId,
             @RequestHeader("Authorization") String authorization,
@@ -131,6 +142,7 @@ public class PurchaseController {
 
     @GetMapping("/receives")
     @Operation(summary = "入库单列表")
+    @RequirePermission({"procurement:read_write", "procurement:read"})
     public ApiResponse<PageResponse<PurchaseReceiveRecord>> listReceives(
             @PathVariable @NotBlank String factoryId,
             @RequestParam(defaultValue = "1") int page,
@@ -141,6 +153,7 @@ public class PurchaseController {
 
     @GetMapping("/receives/{receiveId}")
     @Operation(summary = "入库单详情")
+    @RequirePermission({"procurement:read_write", "procurement:read"})
     public ApiResponse<PurchaseReceiveRecord> getReceive(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String receiveId) {
@@ -150,6 +163,7 @@ public class PurchaseController {
 
     @PostMapping("/receives/{receiveId}/confirm")
     @Operation(summary = "确认入库（生成物料批次）")
+    @RequirePermission({"procurement:read_write", "inventory:write"})
     public ApiResponse<PurchaseReceiveRecord> confirmReceive(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String receiveId,
@@ -161,6 +175,7 @@ public class PurchaseController {
 
     @GetMapping("/receives/by-order/{orderId}")
     @Operation(summary = "按采购订单查询入库记录")
+    @RequirePermission({"procurement:read_write", "procurement:read"})
     public ApiResponse<List<PurchaseReceiveRecord>> getReceivesByOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId) {
@@ -172,6 +187,7 @@ public class PurchaseController {
 
     @GetMapping("/statistics")
     @Operation(summary = "采购统计数据")
+    @RequirePermission({"procurement:read_write", "procurement:read", "report:read"})
     public ApiResponse<Map<String, Object>> getStatistics(
             @PathVariable @NotBlank String factoryId) {
         Map<String, Object> stats = purchaseService.getPurchaseStatistics(factoryId);

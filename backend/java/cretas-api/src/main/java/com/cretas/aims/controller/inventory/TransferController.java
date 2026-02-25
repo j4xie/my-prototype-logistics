@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.annotation.RequirePermission;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import java.util.Map;
@@ -29,6 +31,7 @@ public class TransferController {
 
     @PostMapping
     @Operation(summary = "创建调拨单")
+    @RequirePermission("inventory:write")
     public ApiResponse<InternalTransfer> createTransfer(
             @PathVariable @NotBlank String factoryId,
             @RequestHeader("Authorization") String authorization,
@@ -41,6 +44,7 @@ public class TransferController {
 
     @GetMapping
     @Operation(summary = "调拨单列表（双向视角）")
+    @RequirePermission({"inventory:write", "inventory:read"})
     public ApiResponse<PageResponse<InternalTransfer>> listTransfers(
             @PathVariable @NotBlank String factoryId,
             @RequestParam(defaultValue = "1") int page,
@@ -51,6 +55,7 @@ public class TransferController {
 
     @GetMapping("/{transferId}")
     @Operation(summary = "调拨单详情")
+    @RequirePermission({"inventory:write", "inventory:read"})
     public ApiResponse<InternalTransfer> getTransfer(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String transferId) {
@@ -60,6 +65,7 @@ public class TransferController {
 
     @PostMapping("/{transferId}/request")
     @Operation(summary = "提交调拨申请")
+    @RequirePermission("inventory:write")
     public ApiResponse<InternalTransfer> requestTransfer(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String transferId,
@@ -71,6 +77,7 @@ public class TransferController {
 
     @PostMapping("/{transferId}/approve")
     @Operation(summary = "审批通过")
+    @RequirePermission("inventory:write")
     public ApiResponse<InternalTransfer> approveTransfer(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String transferId,
@@ -82,6 +89,7 @@ public class TransferController {
 
     @PostMapping("/{transferId}/reject")
     @Operation(summary = "驳回调拨")
+    @RequirePermission("inventory:write")
     public ApiResponse<InternalTransfer> rejectTransfer(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String transferId,
@@ -94,6 +102,7 @@ public class TransferController {
 
     @PostMapping("/{transferId}/ship")
     @Operation(summary = "调拨发货（扣减调出方库存）")
+    @RequirePermission("inventory:write")
     public ApiResponse<InternalTransfer> shipTransfer(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String transferId,
@@ -105,6 +114,7 @@ public class TransferController {
 
     @PostMapping("/{transferId}/receive")
     @Operation(summary = "调拨签收")
+    @RequirePermission("inventory:write")
     public ApiResponse<InternalTransfer> receiveTransfer(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String transferId,
@@ -116,6 +126,7 @@ public class TransferController {
 
     @PostMapping("/{transferId}/confirm")
     @Operation(summary = "确认调拨（调入方入库）")
+    @RequirePermission("inventory:write")
     public ApiResponse<InternalTransfer> confirmTransfer(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String transferId,
@@ -127,6 +138,7 @@ public class TransferController {
 
     @PostMapping("/{transferId}/cancel")
     @Operation(summary = "取消调拨")
+    @RequirePermission("inventory:write")
     public ApiResponse<InternalTransfer> cancelTransfer(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String transferId,
@@ -139,6 +151,7 @@ public class TransferController {
 
     @GetMapping("/statistics")
     @Operation(summary = "调拨统计")
+    @RequirePermission({"inventory:write", "inventory:read", "report:read"})
     public ApiResponse<Map<String, Object>> getStatistics(
             @PathVariable @NotBlank String factoryId) {
         Map<String, Object> stats = transferService.getTransferStatistics(factoryId);

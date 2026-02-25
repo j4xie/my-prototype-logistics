@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.annotation.RequirePermission;
 import javax.validation.Valid;
 import java.util.Map;
 
@@ -89,6 +90,7 @@ public class FactorySettingsController {
 
     @PutMapping
     @Operation(summary = "更新工厂设置", description = "更新工厂的完整配置设置，支持批量更新所有设置项")
+    @RequirePermission("system:read_write")
     public ApiResponse<FactorySettingsDTO> saveSettings(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "工厂设置信息") FactorySettingsDTO dto) {
@@ -101,6 +103,7 @@ public class FactorySettingsController {
 
     @PutMapping("/basic")
     @Operation(summary = "更新基础设置", description = "更新工厂的基础设置，包括工厂名称、时区、语言、日期格式和工作时间")
+    @RequirePermission("system:read_write")
     public ApiResponse<FactorySettingsDTO.BasicSettings> updateBasicSettings(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "基础设置信息") FactorySettingsDTO.BasicSettings basicSettings) {
@@ -127,6 +130,7 @@ public class FactorySettingsController {
 
     @PutMapping("/notification")
     @Operation(summary = "更新通知设置（前端格式）", description = "更新工厂的通知设置，使用前端友好的格式，包括邮件通知、短信通知、告警通知和维护提醒开关")
+    @RequirePermission("system:read_write")
     public ApiResponse<FactorySettingsDTO.WebNotificationSettings> updateWebNotificationSettings(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "前端通知设置") FactorySettingsDTO.WebNotificationSettings notifSettings) {
@@ -145,6 +149,7 @@ public class FactorySettingsController {
 
     @PutMapping("/security")
     @Operation(summary = "更新安全设置", description = "更新工厂的安全设置，包括密码复杂度要求、会话超时时间和最大登录尝试次数")
+    @RequirePermission("system:read_write")
     public ApiResponse<FactorySettingsDTO.SecuritySettings> updateSecuritySettings(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "安全设置信息") FactorySettingsDTO.SecuritySettings securitySettings) {
@@ -167,6 +172,7 @@ public class FactorySettingsController {
 
     @PutMapping("/ai")
     @Operation(summary = "更新AI设置", description = "更新工厂的AI功能配置，包括AI功能开关、模型选择、调用配额等设置项")
+    @RequirePermission("system:read_write")
     public ApiResponse<FactorySettingsDTO.AISettings> updateAiSettings(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "AI设置信息") FactorySettingsDTO.AISettings settings) {
@@ -197,6 +203,7 @@ public class FactorySettingsController {
 
     @PutMapping("/notifications")
     @Operation(summary = "更新通知设置", description = "更新工厂的通知配置，包括邮件通知、短信通知、APP推送等渠道设置")
+    @RequirePermission("system:read_write")
     public ApiResponse<FactorySettingsDTO.NotificationSettings> updateNotificationSettings(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "通知设置信息") FactorySettingsDTO.NotificationSettings settings) {
@@ -218,6 +225,7 @@ public class FactorySettingsController {
 
     @PutMapping("/work-time")
     @Operation(summary = "更新工作时间设置", description = "更新工厂的工作时间配置，包括工作日设置、班次时间、休息时间等")
+    @RequirePermission("system:read_write")
     public ApiResponse<FactorySettingsDTO.WorkTimeSettings> updateWorkTimeSettings(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "工作时间设置信息") FactorySettingsDTO.WorkTimeSettings settings) {
@@ -239,6 +247,7 @@ public class FactorySettingsController {
 
     @PutMapping("/production")
     @Operation(summary = "更新生产设置", description = "更新工厂的生产配置，包括默认产能、生产线配置、质检规则等")
+    @RequirePermission("system:read_write")
     public ApiResponse<FactorySettingsDTO.ProductionSettings> updateProductionSettings(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "生产设置信息") FactorySettingsDTO.ProductionSettings settings) {
@@ -260,6 +269,7 @@ public class FactorySettingsController {
 
     @PutMapping("/inventory")
     @Operation(summary = "更新库存设置", description = "更新工厂的库存配置，包括安全库存阈值、预警规则、库位管理设置等")
+    @RequirePermission("system:read_write")
     public ApiResponse<FactorySettingsDTO.InventorySettings> updateInventorySettings(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "库存设置信息") FactorySettingsDTO.InventorySettings settings) {
@@ -281,6 +291,7 @@ public class FactorySettingsController {
 
     @PutMapping("/data-retention")
     @Operation(summary = "更新数据保留设置", description = "更新工厂的数据保留策略配置，包括日志保留天数、历史数据归档规则、过期数据清理策略等")
+    @RequirePermission("system:read_write")
     public ApiResponse<FactorySettingsDTO.DataRetentionSettings> updateDataRetentionSettings(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "数据保留设置信息") FactorySettingsDTO.DataRetentionSettings settings) {
@@ -302,6 +313,7 @@ public class FactorySettingsController {
 
     @PutMapping("/features/{feature}")
     @Operation(summary = "更新功能开关", description = "更新指定功能模块的开关状态，可用于启用或禁用特定功能如AI分析、质量预警、自动调度等")
+    @RequirePermission("system:read_write")
     public ApiResponse<Void> updateFeatureToggle(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "功能名称", example = "aiAnalysis") String feature,
@@ -324,6 +336,7 @@ public class FactorySettingsController {
 
     @PutMapping("/display")
     @Operation(summary = "更新显示设置", description = "更新工厂的界面显示配置，可单独或批量更新语言偏好、时区设置、日期格式、货币格式等")
+    @RequirePermission("system:read_write")
     public ApiResponse<Void> updateDisplaySettings(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam(required = false) @Parameter(description = "语言", example = "zh-CN") String language,
@@ -339,6 +352,7 @@ public class FactorySettingsController {
 
     @PostMapping("/reset")
     @Operation(summary = "重置为默认设置", description = "将工厂所有设置重置为系统默认值，此操作不可逆，请谨慎使用。重置后将返回新的默认设置配置")
+    @RequirePermission("system:read_write")
     public ApiResponse<FactorySettingsDTO> resetToDefaults(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
         log.warn("重置工厂设置为默认值: factoryId={}", factoryId);
@@ -357,6 +371,7 @@ public class FactorySettingsController {
 
     @PostMapping("/import")
     @Operation(summary = "导入设置", description = "从JSON格式字符串导入工厂设置，将覆盖当前所有设置配置。导入前请确保JSON格式正确")
+    @RequirePermission("system:read_write")
     public ApiResponse<FactorySettingsDTO> importSettings(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Parameter(description = "设置JSON字符串，包含完整的工厂设置配置") String settingsJson) {

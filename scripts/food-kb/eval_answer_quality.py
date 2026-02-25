@@ -27,7 +27,7 @@ logger = logging.getLogger("eval_answer_quality")
 # ---------------------------------------------------------------------------
 LLM_API_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 LLM_MODEL = "qwen-max"
-FALLBACK_API_KEY = "sk-e02592efaa6246d2b113a0ef8edaca4a"
+FALLBACK_API_KEY = "sk-da3b827e6a00404a8bc869296f8690bc"
 
 DIMENSION_WEIGHTS = {
     "accuracy": 0.40, "hallucination": 0.20, "completeness": 0.20,

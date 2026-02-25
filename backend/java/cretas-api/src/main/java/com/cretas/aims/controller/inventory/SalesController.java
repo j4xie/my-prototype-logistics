@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.annotation.RequirePermission;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
@@ -36,6 +38,7 @@ public class SalesController {
 
     @PostMapping("/orders")
     @Operation(summary = "创建销售订单")
+    @RequirePermission("sales:read_write")
     public ApiResponse<SalesOrder> createOrder(
             @PathVariable @NotBlank String factoryId,
             @RequestHeader("Authorization") String authorization,
@@ -48,6 +51,7 @@ public class SalesController {
 
     @GetMapping("/orders")
     @Operation(summary = "销售订单列表")
+    @RequirePermission({"sales:read_write", "sales:read"})
     public ApiResponse<PageResponse<SalesOrder>> listOrders(
             @PathVariable @NotBlank String factoryId,
             @RequestParam(defaultValue = "1") int page,
@@ -58,6 +62,7 @@ public class SalesController {
 
     @GetMapping("/orders/by-status")
     @Operation(summary = "按状态查询销售订单")
+    @RequirePermission({"sales:read_write", "sales:read"})
     public ApiResponse<PageResponse<SalesOrder>> listOrdersByStatus(
             @PathVariable @NotBlank String factoryId,
             @RequestParam SalesOrderStatus status,
@@ -69,6 +74,7 @@ public class SalesController {
 
     @GetMapping("/orders/{orderId}")
     @Operation(summary = "销售订单详情")
+    @RequirePermission({"sales:read_write", "sales:read"})
     public ApiResponse<SalesOrder> getOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId) {
@@ -78,6 +84,7 @@ public class SalesController {
 
     @PostMapping("/orders/{orderId}/confirm")
     @Operation(summary = "确认销售订单")
+    @RequirePermission("sales:read_write")
     public ApiResponse<SalesOrder> confirmOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId) {
@@ -87,6 +94,7 @@ public class SalesController {
 
     @PostMapping("/orders/{orderId}/cancel")
     @Operation(summary = "取消销售订单")
+    @RequirePermission("sales:read_write")
     public ApiResponse<SalesOrder> cancelOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId) {
@@ -98,6 +106,7 @@ public class SalesController {
 
     @PostMapping("/deliveries")
     @Operation(summary = "创建发货单")
+    @RequirePermission("sales:read_write")
     public ApiResponse<SalesDeliveryRecord> createDelivery(
             @PathVariable @NotBlank String factoryId,
             @RequestHeader("Authorization") String authorization,
@@ -110,6 +119,7 @@ public class SalesController {
 
     @GetMapping("/deliveries")
     @Operation(summary = "发货单列表")
+    @RequirePermission({"sales:read_write", "sales:read"})
     public ApiResponse<PageResponse<SalesDeliveryRecord>> listDeliveries(
             @PathVariable @NotBlank String factoryId,
             @RequestParam(defaultValue = "1") int page,
@@ -120,6 +130,7 @@ public class SalesController {
 
     @GetMapping("/deliveries/{deliveryId}")
     @Operation(summary = "发货单详情")
+    @RequirePermission({"sales:read_write", "sales:read"})
     public ApiResponse<SalesDeliveryRecord> getDelivery(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String deliveryId) {
@@ -129,6 +140,7 @@ public class SalesController {
 
     @PostMapping("/deliveries/{deliveryId}/ship")
     @Operation(summary = "发货确认（扣减成品库存）")
+    @RequirePermission("sales:read_write")
     public ApiResponse<SalesDeliveryRecord> shipDelivery(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String deliveryId,
@@ -140,6 +152,7 @@ public class SalesController {
 
     @PostMapping("/deliveries/{deliveryId}/delivered")
     @Operation(summary = "签收确认")
+    @RequirePermission("sales:read_write")
     public ApiResponse<SalesDeliveryRecord> confirmDelivered(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String deliveryId) {
@@ -149,6 +162,7 @@ public class SalesController {
 
     @GetMapping("/deliveries/by-order/{orderId}")
     @Operation(summary = "按销售订单查询发货记录")
+    @RequirePermission({"sales:read_write", "sales:read"})
     public ApiResponse<List<SalesDeliveryRecord>> getDeliveriesByOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId) {
@@ -160,6 +174,7 @@ public class SalesController {
 
     @GetMapping("/finished-goods")
     @Operation(summary = "成品库存列表")
+    @RequirePermission({"sales:read_write", "sales:read", "inventory:read"})
     public ApiResponse<PageResponse<FinishedGoodsBatch>> listFinishedGoods(
             @PathVariable @NotBlank String factoryId,
             @RequestParam(defaultValue = "1") int page,
@@ -170,6 +185,7 @@ public class SalesController {
 
     @GetMapping("/finished-goods/available")
     @Operation(summary = "查询可用成品批次（按产品）")
+    @RequirePermission({"sales:read_write", "sales:read", "inventory:read"})
     public ApiResponse<List<FinishedGoodsBatch>> getAvailableBatches(
             @PathVariable @NotBlank String factoryId,
             @RequestParam @NotBlank String productTypeId) {
@@ -181,6 +197,7 @@ public class SalesController {
 
     @GetMapping("/statistics")
     @Operation(summary = "销售统计数据")
+    @RequirePermission({"sales:read_write", "sales:read", "report:read"})
     public ApiResponse<Map<String, Object>> getStatistics(
             @PathVariable @NotBlank String factoryId) {
         Map<String, Object> stats = salesService.getSalesStatistics(factoryId);

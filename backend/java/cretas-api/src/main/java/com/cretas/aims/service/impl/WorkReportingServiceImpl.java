@@ -161,7 +161,7 @@ public class WorkReportingServiceImpl {
      * 审批报工 (P0-3: 仅SUBMITTED状态可审批)
      */
     @Transactional
-    public WorkReportResponse approveReport(String factoryId, Long reportId, boolean approved) {
+    public WorkReportResponse approveReport(String factoryId, Long reportId, boolean approved, String rejectionReason) {
         ProductionReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new RuntimeException("报工记录不存在: " + reportId));
         if (!report.getFactoryId().equals(factoryId)) {
@@ -172,6 +172,9 @@ public class WorkReportingServiceImpl {
         }
 
         report.setStatus(approved ? ProductionReport.Status.APPROVED : ProductionReport.Status.REJECTED);
+        if (!approved && rejectionReason != null) {
+            report.setRejectionReason(rejectionReason);
+        }
         report = reportRepository.save(report);
         return toResponse(report);
     }
@@ -380,6 +383,7 @@ public class WorkReportingServiceImpl {
                 .customFields(r.getCustomFields())
                 .photos(r.getPhotos())
                 .status(r.getStatus())
+                .rejectionReason(r.getRejectionReason())
                 .syncedToSmartbi(r.getSyncedToSmartbi())
                 .createdAt(r.getCreatedAt())
                 .updatedAt(r.getUpdatedAt())

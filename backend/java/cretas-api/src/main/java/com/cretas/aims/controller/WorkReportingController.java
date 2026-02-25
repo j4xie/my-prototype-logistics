@@ -21,6 +21,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.annotation.RequirePermission;
+
 import javax.validation.Valid;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -48,6 +50,7 @@ public class WorkReportingController {
 
     @PostMapping("/reports")
     @Operation(summary = "提交报工", description = "提交生产进度或工时报工")
+    @RequirePermission({"work_report:create", "production:write"})
     public ApiResponse<WorkReportResponse> submitReport(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @RequestAttribute("userId") @Parameter(hidden = true) Long workerId,
@@ -59,6 +62,7 @@ public class WorkReportingController {
 
     @GetMapping("/reports")
     @Operation(summary = "查询报工列表")
+    @RequirePermission("work_report:read")
     public ApiResponse<Page<WorkReportResponse>> getReports(
             @PathVariable String factoryId,
             @RequestParam(required = false) String type,
@@ -72,6 +76,7 @@ public class WorkReportingController {
 
     @GetMapping("/reports/{id}")
     @Operation(summary = "报工详情")
+    @RequirePermission("work_report:read")
     public ApiResponse<WorkReportResponse> getReport(
             @PathVariable String factoryId,
             @PathVariable Long id) {
@@ -81,6 +86,7 @@ public class WorkReportingController {
 
     @PutMapping("/reports/{id}")
     @Operation(summary = "修改报工草稿")
+    @RequirePermission("work_report:create")
     public ApiResponse<WorkReportResponse> updateReport(
             @PathVariable String factoryId,
             @PathVariable Long id,
@@ -91,11 +97,13 @@ public class WorkReportingController {
 
     @PostMapping("/reports/{id}/approve")
     @Operation(summary = "审批报工")
+    @RequirePermission("work_report:approve")
     public ApiResponse<WorkReportResponse> approveReport(
             @PathVariable String factoryId,
             @PathVariable Long id,
-            @RequestParam(defaultValue = "true") boolean approved) {
-        WorkReportResponse result = workReportingService.approveReport(factoryId, id, approved);
+            @RequestParam(defaultValue = "true") boolean approved,
+            @RequestParam(required = false) @Parameter(description = "拒绝原因") String rejectionReason) {
+        WorkReportResponse result = workReportingService.approveReport(factoryId, id, approved, rejectionReason);
         return ApiResponse.success(result);
     }
 
@@ -103,6 +111,7 @@ public class WorkReportingController {
 
     @PostMapping("/batches/{batchId}/complete")
     @Operation(summary = "手动完成批次", description = "管理员手动标记批次为完成（部分生产、物料不足等场景）")
+    @RequirePermission("production:write")
     public ApiResponse<String> manualCompleteBatch(
             @PathVariable String factoryId,
             @PathVariable Long batchId) {
@@ -113,6 +122,7 @@ public class WorkReportingController {
 
     @GetMapping("/reports/pending")
     @Operation(summary = "待审批报工列表")
+    @RequirePermission("work_report:approve")
     public ApiResponse<Page<WorkReportResponse>> getPendingReports(
             @PathVariable String factoryId,
             @RequestParam(defaultValue = "1") int page,
@@ -125,6 +135,7 @@ public class WorkReportingController {
 
     @PostMapping("/checkin")
     @Operation(summary = "扫码签到", description = "NFC/QR签到到批次。普通员工只能为自己签到，管理角色可为他人签到。")
+    @RequirePermission({"work_report:create", "production:write"})
     public ApiResponse<BatchWorkSession> checkin(
             @PathVariable String factoryId,
             @RequestAttribute("userId") Long callerId,
@@ -145,6 +156,7 @@ public class WorkReportingController {
 
     @PostMapping("/checkout")
     @Operation(summary = "签退")
+    @RequirePermission({"work_report:create", "production:write"})
     public ApiResponse<BatchWorkSession> checkout(
             @PathVariable String factoryId,
             @RequestAttribute("userId") Long callerId,
@@ -159,6 +171,7 @@ public class WorkReportingController {
 
     @GetMapping("/checkin/batch/{batchId}")
     @Operation(summary = "批次签到列表")
+    @RequirePermission("work_report:read")
     public ApiResponse<List<BatchWorkSession>> getCheckinList(
             @PathVariable String factoryId,
             @PathVariable Long batchId) {
@@ -168,6 +181,7 @@ public class WorkReportingController {
 
     @GetMapping("/checkin/today")
     @Operation(summary = "今日签到记录", description = "查询指定员工今日签到。不传employeeId则默认查自己。")
+    @RequirePermission("work_report:read")
     public ApiResponse<List<BatchWorkSession>> getTodayCheckins(
             @PathVariable String factoryId,
             @RequestAttribute("userId") Long callerId,
@@ -203,6 +217,7 @@ public class WorkReportingController {
 
     @GetMapping("/summary")
     @Operation(summary = "报工汇总统计")
+    @RequirePermission("work_report:read")
     public ApiResponse<Map<String, Object>> getSummary(
             @PathVariable String factoryId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -213,6 +228,7 @@ public class WorkReportingController {
 
     @PostMapping("/sync-smartbi")
     @Operation(summary = "同步到SmartBI", description = "将生产报工数据同步到SmartBI三表系统，支持手动触发")
+    @RequirePermission("production:write")
     public ApiResponse<Map<String, Object>> syncToSmartBI(@PathVariable String factoryId) {
         log.info("触发SmartBI同步: factoryId={}", factoryId);
 

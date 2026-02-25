@@ -313,32 +313,12 @@ export function WSHomeScreen() {
           <View style={styles.quickActionsGrid}>
             <TouchableOpacity
               style={styles.quickActionBtn}
-              onPress={() => navigation.navigate('ScanReport')}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#EEF2FF' }]}>
-                <MaterialCommunityIcons name="barcode-scan" size={22} color="#4F46E5" />
-              </View>
-              <Text style={styles.quickActionLabel}>扫码报工</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickActionBtn}
               onPress={() => navigation.navigate('TeamBatchReport')}
             >
               <View style={[styles.quickActionIcon, { backgroundColor: '#F0FDF4' }]}>
                 <MaterialCommunityIcons name="account-group" size={22} color="#16A34A" />
               </View>
               <Text style={styles.quickActionLabel}>班组报工</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickActionBtn}
-              onPress={() => navigation.navigate('LabelScan', { workstationId: 'WS-001' })}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#FFF7ED' }]}>
-                <MaterialCommunityIcons name="label-variant-outline" size={22} color="#EA580C" />
-              </View>
-              <Text style={styles.quickActionLabel}>标签扫描</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -358,22 +338,32 @@ export function WSHomeScreen() {
 
             <TouchableOpacity
               style={styles.quickActionBtn}
-              onPress={() => navigation.navigate('DynamicReport', { reportType: 'PROGRESS' })}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#EFF6FF' }]}>
-                <MaterialCommunityIcons name="clipboard-check-outline" size={22} color="#2563EB" />
-              </View>
-              <Text style={styles.quickActionLabel}>进度上报</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickActionBtn}
               onPress={() => navigation.navigate('NfcCheckin')}
             >
               <View style={[styles.quickActionIcon, { backgroundColor: '#F5F3FF' }]}>
                 <MaterialCommunityIcons name="nfc-variant" size={22} color="#7C3AED" />
               </View>
               <Text style={styles.quickActionLabel}>扫码签到</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() => navigation.navigate('DynamicReport', { reportType: 'HOURS' })}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#FEF2F2' }]}>
+                <MaterialCommunityIcons name="clock-outline" size={22} color="#DC2626" />
+              </View>
+              <Text style={styles.quickActionLabel}>工时上报</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() => navigation.navigate('MyWorkReports')}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#ECFDF5' }]}>
+                <MaterialCommunityIcons name="clipboard-text-clock-outline" size={22} color="#059669" />
+              </View>
+              <Text style={styles.quickActionLabel}>我的报工</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -687,11 +677,12 @@ const styles = StyleSheet.create({
   },
   quickActionsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
     marginTop: 12,
   },
   quickActionBtn: {
-    flex: 1,
+    width: '21%',
     alignItems: 'center',
   },
   quickActionIcon: {
