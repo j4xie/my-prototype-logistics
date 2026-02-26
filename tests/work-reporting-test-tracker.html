@@ -177,7 +177,7 @@
 <div class="top-bar">
   <h1>
     报工模块测试跟踪器
-    <span>Work Reporting Test Tracker &middot; 68 用例 (更新: 2026-02-25)</span>
+    <span>Work Reporting Test Tracker &middot; 72 用例 (更新: 2026-02-26)</span>
   </h1>
   <div class="progress-row">
     <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
@@ -204,15 +204,15 @@
 </div>
 
 <div class="alert-section">
-  <div class="alert-card">
-    <h3>Bug #1: 工时报工无法审批 (P0)</h3>
-    <p>WorkReportApprovalScreen 第 42 行 <code>type: 'PROGRESS'</code> 写死，HOURS 类型报工永远不出现在审批列表。整条 HOURS 报工审批链路断裂。</p>
+  <div class="alert-card" style="border-left-color:#67c23a">
+    <h3>已修复 #1: 工时报工无法审批 (2026-02-26)</h3>
+    <p>WorkReportApprovalScreen 已移除 <code>type: 'PROGRESS'</code> 硬编码，getReports 不再过滤类型。新增类型筛选 tab（全部/进度/工时），HOURS 报工可正常审批。</p>
   </div>
-  <div class="alert-card warn">
-    <h3>缺口 #2: 车间主管无「我的报工历史」入口 (P0)</h3>
-    <p>workshop_sup1 提交报工后，无法查看自己已提交记录的状态，也看不到被拒绝的原因。业务闭环不完整。</p>
+  <div class="alert-card" style="border-left-color:#67c23a">
+    <h3>已修复 #2: 车间主管「我的报工历史」入口 (2026-02-26)</h3>
+    <p>WSHomeScreen 已添加「我的报工」快捷按钮，导航到 MyWorkReportsScreen。支持状态筛选（全部/待审批/已批准/已拒绝），车间主管可查看提交记录和拒绝原因。</p>
   </div>
-  <div class="alert-card warn">
+  <div class="alert-card" style="border-left-color:#67c23a">
     <h3>已修复 #3: 首页按钮精简为5个 (2026-02-24)</h3>
     <p>删除扫码报工/标签扫描/进度上报，保留: 班组报工、草稿管理、扫码签到、工时上报、我的报工。良品/不良品字段已合并到班组报工。</p>
   </div>
@@ -226,40 +226,61 @@ const TEST_DATA = [
   {
     category: "正向流程 (Happy Path)",
     cases: [
-      { id:"H-01", title:"班组报工 — 选批次+填成员产量提交(含良品/不良品)", p:"P0", isNew:false,
-        steps:"1. 首页点「班组报工」\n2. 只显示分配给当前主管的批次(supervisorId过滤)\n3. 选择一个 IN_PROGRESS 批次(单批次自动选中)\n4. 展开工人卡片填良品/不良品(默认折叠)\n5. 为至少 1 名工人填写产出\n6. 点「一键提交」",
-        expect:"Alert 显示「N人的报工已提交」，含 totalGood/totalDefect 汇总" },
-      { id:"H-02", title:"班组报工 — 手动添加成员", p:"P1", isNew:true,
+      { id:"H-01", title:"班组报工 — 3级批次加载+选批次+提交", p:"P0", isNew:false,
+        steps:"1. 首页点「班组报工」\n2. 优先加载我的 IN_PROGRESS+PLANNED 批次(supervisorId过滤)\n3. 批次卡片显示状态标签(蓝色「进行中」/橙色「待开始」)\n4. 选一个 IN_PROGRESS 批次(单批次自动选中)\n5. 展开工人卡片填良品/不良品\n6. 点「一键提交」",
+        expect:"Alert「N人的报工已提交」，含 totalGood/totalDefect 汇总" },
+      { id:"H-02", title:"班组报工 — PLANNED批次确认开始生产", p:"P0", isNew:true,
+        steps:"1. 批次列表选橙色「待开始」(PLANNED)批次\n2. 弹出确认框「该批次尚未开始，是否启动生产？」\n3. 点「确认开始」",
+        expect:"调用 startProduction()，批次变 IN_PROGRESS，进入报工填写" },
+      { id:"H-03", title:"班组报工 — fallback全工厂批次", p:"P1", isNew:true,
+        steps:"当我的 IN_PROGRESS+PLANNED 均为空，自动 fallback 全工厂 IN_PROGRESS",
+        expect:"列表顶部黄色提示「当前显示全工厂批次」，可正常选择报工" },
+      { id:"H-04", title:"班组报工 — 保存草稿", p:"P1", isNew:true,
+        steps:"选批次+部分填写成员产出后点「保存草稿」",
+        expect:"Alert 提示已保存，草稿管理出现该草稿(类型标签「班组报工」)" },
+      { id:"H-05", title:"班组报工 — 手动添加成员", p:"P1", isNew:false,
         steps:"选择批次后点「+ 添加成员」，填写新成员产出",
         expect:"成员列表新增一行，计入提交人数" },
-      { id:"H-03", title:"班组报工 — 更换批次", p:"P1", isNew:true,
+      { id:"H-06", title:"班组报工 — 更换批次", p:"P1", isNew:false,
         steps:"已选批次后点击「更换」",
         expect:"返回批次列表，成员列表清空" },
-      { id:"H-04", title:"工时报工 (HOURS) — 填工时明细提交", p:"P0", isNew:true,
-        steps:"进入 DynamicReport (HOURS 类型)\n填写商品名称「香酥鱼柳」\n正式工 5 人 8h、小时工 2 人 4h\n提交",
-        expect:"Alert「报工提交成功」，记录 7 人工时" },
-      { id:"H-05", title:"签到 — QR 扫码签到(含supervisorId过滤+单批次自动选中)", p:"P0", isNew:false,
-        steps:"1. 进入签到页，只显示当前主管的批次(supervisorId过滤)\n2. 单批次自动选中\n3. 切换到「QR 扫码」Tab\n4. 点击「扫码签到」，扫描/输入员工 ID",
+      { id:"H-07", title:"工时报工 — 批次自动填充+填工时+提交", p:"P0", isNew:false,
+        steps:"1. 首页点「工时上报」\n2. 顶部加载 IN_PROGRESS 批次横向滚动条\n3. 选批次 → 自动填充: 商品名←产品, 工人数←签到人数, 开始←最早签到, 结束←当前\n4. 正式工5人8h、小时工2人4h\n5. 提交",
+        expect:"Alert「报工提交成功」，记录7人工时" },
+      { id:"H-08", title:"工时上报 — 无活跃批次手动模式", p:"P1", isNew:true,
+        steps:"无 IN_PROGRESS 批次时进入工时上报",
+        expect:"顶部黄色提示「无进行中批次，使用手动模式」，所有字段可手动填写" },
+      { id:"H-09", title:"工时上报 — 保存草稿", p:"P1", isNew:true,
+        steps:"部分填写工时后点「保存草稿」",
+        expect:"Alert 提示已保存，草稿管理出现(类型标签「工时上报」)" },
+      { id:"H-10", title:"签到 — 3级批次加载+QR签到", p:"P0", isNew:false,
+        steps:"1. 进入签到页\n2. 优先我的 IN_PROGRESS+PLANNED → 无则 fallback 全工厂\n3. 批次卡片显示状态标签\n4. 选 IN_PROGRESS 批次(单批次自动选中)\n5. QR扫码签到",
         expect:"Alert「签到成功」，签到列表新增一行" },
-      { id:"H-06", title:"签退 — 对已签到员工签退", p:"P0", isNew:false,
+      { id:"H-11", title:"签到 — PLANNED批次需先开始生产", p:"P0", isNew:true,
+        steps:"签到页选「待开始」PLANNED 批次",
+        expect:"提示「需先开始生产才能签到」+「开始生产」按钮 → startProduction() → 转 IN_PROGRESS" },
+      { id:"H-12", title:"签退 — 对已签到员工签退", p:"P0", isNew:false,
         steps:"在签到页找到「工作中」的员工，点「签退」",
         expect:"Alert「签退成功」，状态变为「已签退」" },
-      { id:"H-07", title:"审批 — 管理员批准一条报工", p:"P0", isNew:false,
-        steps:"1. factory_admin1 登录\n2. 管理 Tab → 报工审批\n3. 待审批列表中点「批准」\n4. 确认弹框点「批准」",
+      { id:"H-13", title:"审批 — 管理员批准一条报工", p:"P0", isNew:false,
+        steps:"1. factory_admin1 登录\n2. 管理Tab → 报工审批\n3. 待审批列表点「批准」\n4. 确认",
         expect:"Alert「已批准」，记录从待审批列表消失" },
-      { id:"H-08", title:"审批 — 管理员拒绝并填原因", p:"P0", isNew:false,
-        steps:"点「拒绝」→ Modal 填原因「产量数据与实际不符」→ 确认拒绝",
+      { id:"H-14", title:"审批 — 管理员拒绝并填原因", p:"P0", isNew:false,
+        steps:"点「拒绝」→ Modal 填原因「产量数据与实际不符」→ 确认",
         expect:"Alert「已拒绝」，Modal 关闭" },
-      { id:"H-09", title:"草稿管理 — 有草稿时查看", p:"P1", isNew:false,
-        steps:"首页点「草稿管理」（此前有离线保存的草稿）",
-        expect:"显示草稿列表，有批次号、产出、时间信息" },
-      { id:"H-10", title:"草稿管理 — 重新提交草稿", p:"P1", isNew:false,
-        steps:"网络恢复后在草稿列表点「重新提交」",
-        expect:"Alert「已同步」，草稿从列表移除" },
-      { id:"H-11", title:"审批列表 — 切换到已批准 Tab", p:"P1", isNew:false,
+      { id:"H-15", title:"草稿管理 — 类型标签+查看", p:"P1", isNew:false,
+        steps:"首页点「草稿管理」（有多种类型草稿）",
+        expect:"草稿列表每条有类型标签(进度上报/工时上报/班组报工)，含批次号、产出、时间" },
+      { id:"H-16", title:"草稿管理 — 恢复编辑导航", p:"P1", isNew:true,
+        steps:"草稿列表点「恢复编辑」",
+        expect:"按 draftType 导航到对应表单(班组/工时/进度)，预填草稿数据" },
+      { id:"H-17", title:"草稿管理 — 直接提交(需batchId)", p:"P1", isNew:true,
+        steps:"1. 有 batchId 草稿: 查看操作区\n2. 无 batchId 草稿: 查看操作区",
+        expect:"有 batchId → 显示「直接提交」; 无 batchId → 仅「恢复编辑」" },
+      { id:"H-18", title:"审批列表 — 切换到已批准 Tab", p:"P1", isNew:false,
         steps:"报工审批页点「已批准」Tab",
         expect:"只显示 APPROVED 状态记录，无批准/拒绝按钮" },
-      { id:"H-12", title:"审批列表 — 切换到全部 Tab", p:"P1", isNew:false,
+      { id:"H-19", title:"审批列表 — 切换到全部 Tab", p:"P1", isNew:false,
         steps:"报工审批页点「全部」Tab",
         expect:"显示所有状态 (SUBMITTED + APPROVED + REJECTED)" },
     ]
@@ -286,9 +307,15 @@ const TEST_DATA = [
       { id:"B-06", title:"班组报工 — 所有成员产出均为空", p:"P0", isNew:true,
         steps:"选批次后，所有成员产出不填，点提交",
         expect:"Alert「请至少填写一人的产出数据」" },
-      { id:"B-07", title:"班组报工 — 部分成员填写", p:"P1", isNew:true,
+      { id:"B-07", title:"班组报工 — 部分成员填写", p:"P1", isNew:false,
         steps:"5 名成员中 3 人填产出，2 人留空",
         expect:"Alert「3人的报工已提交」" },
+      { id:"B-08", title:"工时上报 — 批次自动填充后手动修改", p:"P1", isNew:true,
+        steps:"选批次自动填充后，手动修改商品名称和工人数",
+        expect:"手动修改值优先，提交使用修改后的值" },
+      { id:"B-09", title:"草稿 — 无batchId草稿无直接提交按钮", p:"P1", isNew:true,
+        steps:"查看 batchId 为空的草稿卡片操作区",
+        expect:"只有「恢复编辑」，无「直接提交」" },
     ]
   },
   // ===== 异常流程 =====
@@ -360,13 +387,13 @@ const TEST_DATA = [
     cases: [
       { id:"X-01", title:"主管提交 → 管理员批准 → 主管查看状态", p:"P0", isNew:true,
         steps:"1. workshop_sup1 班组报工提交\n2. factory_admin1 在审批页批准\n3. 切回 workshop_sup1 进入「我的报工」查看状态",
-        expect:"确认 WS 角色是否有「我的报工」历史入口（预期：当前无此入口，为缺口）" },
+        expect:"该报工出现在「我的报工」→「已批准」列表中" },
       { id:"X-02", title:"管理员拒绝 → 主管看到原因", p:"P0", isNew:true,
         steps:"1. factory_admin1 拒绝报工并填原因\n2. 切回 workshop_sup1 查看",
-        expect:"确认主管是否能看到被拒原因（预期：当前无入口）" },
+        expect:"「我的报工」→「已拒绝」Tab 看到拒绝原因红色文字" },
       { id:"X-03", title:"HOURS 报工提交后管理员能否审批", p:"P0", isNew:true,
         steps:"1. WS 以 HOURS 类型提交报工\n2. factory_admin1 进入审批页",
-        expect:"已知 Bug: type='PROGRESS' 写死，HOURS 报工不出现在审批列表" },
+        expect:"HOURS 报工正常出现在审批列表（已修复），管理员可批准" },
       { id:"X-04", title:"两个管理员同时审批同一条", p:"P2", isNew:true,
         steps:"两个浏览器窗口同时打开审批页\nA 批准某条后 B 也尝试批准",
         expect:"B 点击后收到后端错误（状态已变更），需手动刷新" },
@@ -379,18 +406,18 @@ const TEST_DATA = [
       { id:"U-01", title:"审批列表初始加载", p:"P1", isNew:true,
         steps:"进入报工审批页面",
         expect:"显示大号 ActivityIndicator" },
-      { id:"U-02", title:"草稿列表空状态", p:"P1", isNew:true,
+      { id:"U-02", title:"草稿列表空状态", p:"P1", isNew:false,
         steps:"无草稿时进入草稿管理",
-        expect:"显示绿色勾选图标 +「暂无草稿」" },
+        expect:"显示「暂无保存的草稿。在报工页面可点击「保存草稿」暂存未完成的报工。」" },
       { id:"U-03", title:"审批列表空状态", p:"P1", isNew:true,
         steps:"切换到某 Tab 且无数据",
         expect:"显示「暂无报工记录」" },
-      { id:"U-04", title:"班组报工无进行中批次", p:"P1", isNew:true,
-        steps:"进入班组报工（假设无 IN_PROGRESS 批次）",
-        expect:"显示「暂无进行中的批次」" },
-      { id:"U-05", title:"签到页无进行中批次", p:"P1", isNew:true,
-        steps:"进入签到页（假设无 IN_PROGRESS 批次）",
-        expect:"显示剪贴板图标 +「暂无进行中的批次」" },
+      { id:"U-04", title:"班组报工无可用批次", p:"P1", isNew:false,
+        steps:"进入班组报工（3级加载均无批次）",
+        expect:"显示图标 +「暂无可用批次」+「请联系调度员分配」" },
+      { id:"U-05", title:"签到页无可用批次", p:"P1", isNew:false,
+        steps:"进入签到页（3级加载均无批次）",
+        expect:"显示图标 +「暂无可用批次」+「请联系调度员分配」" },
       { id:"U-06", title:"审批列表下拉刷新", p:"P1", isNew:false,
         steps:"在审批列表向下拉",
         expect:"RefreshControl 触发，数据重新加载" },
@@ -436,9 +463,9 @@ const TEST_DATA = [
       { id:"W-04", title:"PROGRESS 类型字段隔离", p:"P0", isNew:true,
         steps:"PROGRESS 类型进入页面，查看表单字段",
         expect:"显示: 工序*、产品数量、良品、不良品。不显示: 商品名称、工时明细" },
-      { id:"W-05", title:"HOURS 报工在审批列表不可见 (已知 Bug)", p:"P0", isNew:true,
+      { id:"W-05", title:"HOURS 报工在审批列表可见 (已修复)", p:"P0", isNew:false,
         steps:"1. HOURS 提交报工 2. factory_admin1 查看审批列表",
-        expect:"Bug 验证: HOURS 报工不出现（type 写死为 PROGRESS）" },
+        expect:"HOURS 报工正常出现在审批列表（已修复）" },
       { id:"W-06", title:"工时浮点数输入", p:"P1", isNew:true,
         steps:"工时字段填「7.5」(小时)",
         expect:"parseFloat 正常解析，提交 7.5" },
@@ -453,7 +480,7 @@ const TEST_DATA = [
 ];
 
 // ===== State =====
-const STORAGE_KEY = 'work-report-test-v2';
+const STORAGE_KEY = 'work-report-test-v3';
 let state = {};
 
 function loadState() {
