@@ -243,53 +243,65 @@ public class ProcessingServiceImpl implements ProcessingService {
         ProductionBatch batch = productionBatchRepository.findByIdAndFactoryId(request.getBatchId(), factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("批次不存在或不属于该工厂"));
 
-        int recordedMembers = 0;
-        int totalOutput = 0;
-        int totalGood = 0;
-        int totalDefect = 0;
+        // 团队总产出作为主数据源
+        int teamOutput = request.getTotalOutput();
+        int teamGood = request.getTotalGoodQuantity() != null ? request.getTotalGoodQuantity() : teamOutput;
+        int teamDefect = request.getTotalDefectQuantity() != null ? request.getTotalDefectQuantity() : 0;
 
-        for (TeamBatchReportRequest.MemberReport member : request.getMembers()) {
-            if (member.getOutputQuantity() == null || member.getOutputQuantity() <= 0) {
-                continue;
+        // 解析报工时间
+        LocalDateTime reportTime = LocalDateTime.now();
+        if (request.getReportTime() != null && !request.getReportTime().isEmpty()) {
+            try {
+                reportTime = LocalDateTime.parse(request.getReportTime().replace("Z", ""));
+            } catch (Exception e) {
+                log.warn("无法解析reportTime: {}, 使用当前时间", request.getReportTime());
             }
-
-            int output = member.getOutputQuantity();
-            int good = member.getGoodQuantity() != null ? member.getGoodQuantity() : output;
-            int defect = member.getDefectQuantity() != null ? member.getDefectQuantity() : 0;
-
-            // 创建 BatchWorkSession 记录
-            BatchWorkSession session = new BatchWorkSession();
-            session.setBatchId(request.getBatchId());
-            session.setEmployeeId(member.getUserId());
-            session.setCheckInTime(LocalDateTime.now());
-            session.setCheckOutTime(LocalDateTime.now());
-            session.setStatus("completed");
-            session.setNotes(member.getNotes() != null ? member.getNotes()
-                    : String.format("班组报工: 产出%d, 良品%d, 不良品%d", output, good, defect));
-            batchWorkSessionRepository.save(session);
-
-            recordedMembers++;
-            totalOutput += output;
-            totalGood += good;
-            totalDefect += defect;
         }
 
-        // 累加到批次的 actualQuantity/goodQuantity/defectQuantity
+        // 处理可选的个人明细
+        int recordedMembers = 0;
+        if (request.getMembers() != null && !request.getMembers().isEmpty()) {
+            for (TeamBatchReportRequest.MemberReport member : request.getMembers()) {
+                if (member.getUserId() == null || member.getUserId() <= 0) {
+                    continue;
+                }
+                int output = member.getOutputQuantity() != null ? member.getOutputQuantity() : 0;
+                int good = member.getGoodQuantity() != null ? member.getGoodQuantity() : output;
+                int defect = member.getDefectQuantity() != null ? member.getDefectQuantity() : 0;
+
+                BatchWorkSession session = new BatchWorkSession();
+                session.setBatchId(request.getBatchId());
+                session.setEmployeeId(member.getUserId());
+                session.setCheckInTime(reportTime);
+                session.setCheckOutTime(reportTime);
+                session.setStatus("completed");
+                session.setNotes(member.getNotes() != null ? member.getNotes()
+                        : String.format("班组报工: 产出%d, 良品%d, 不良品%d", output, good, defect));
+                batchWorkSessionRepository.save(session);
+                recordedMembers++;
+            }
+        }
+
+        // 累加团队总产出到批次（不再用 sum(个人)）
         BigDecimal currentActual = batch.getActualQuantity() != null ? batch.getActualQuantity() : BigDecimal.ZERO;
         BigDecimal currentGood = batch.getGoodQuantity() != null ? batch.getGoodQuantity() : BigDecimal.ZERO;
         BigDecimal currentDefect = batch.getDefectQuantity() != null ? batch.getDefectQuantity() : BigDecimal.ZERO;
 
-        batch.setActualQuantity(currentActual.add(BigDecimal.valueOf(totalOutput)));
-        batch.setGoodQuantity(currentGood.add(BigDecimal.valueOf(totalGood)));
-        batch.setDefectQuantity(currentDefect.add(BigDecimal.valueOf(totalDefect)));
+        batch.setActualQuantity(currentActual.add(BigDecimal.valueOf(teamOutput)));
+        batch.setGoodQuantity(currentGood.add(BigDecimal.valueOf(teamGood)));
+        batch.setDefectQuantity(currentDefect.add(BigDecimal.valueOf(teamDefect)));
         productionBatchRepository.save(batch);
 
         Map<String, Object> result = new HashMap<>();
         result.put("recordedMembers", recordedMembers);
-        result.put("totalOutput", totalOutput);
-        result.put("totalGood", totalGood);
-        result.put("totalDefect", totalDefect);
+        result.put("totalOutput", teamOutput);
+        result.put("totalGood", teamGood);
+        result.put("totalDefect", teamDefect);
         result.put("batchId", request.getBatchId());
+        result.put("reportTime", reportTime.toString());
+        if (request.getNotes() != null) {
+            result.put("notes", request.getNotes());
+        }
         return result;
     }
 
@@ -450,7 +462,7 @@ public class ProcessingServiceImpl implements ProcessingService {
             consumptionRecord.setBatchId(materialBatchId);  // 设置原料批次ID
             // 设置生产计划ID (从生产批次获取，如果没有则保持null，避免FK约束违反)
             if (productionBatch.getProductionPlanId() != null) {
-                consumptionRecord.setProductionPlanId(productionBatch.getProductionPlanId().toString());
+                consumptionRecord.setProductionPlanId(productionBatch.getProductionPlanId());
             }
             // 如果productionPlanId为null，则不设置 (字段允许null)
             consumptionRecord.setProductionBatchId(parseBatchId(productionBatchId));
@@ -751,7 +763,7 @@ public class ProcessingServiceImpl implements ProcessingService {
 
         // ========== 2. 生产计划对比 ==========
         if (batch.getProductionPlanId() != null) {
-            productionPlanRepository.findById(batch.getProductionPlanId().toString()).ifPresent(plan -> {
+            productionPlanRepository.findById(batch.getProductionPlanId()).ifPresent(plan -> {
                 Map<String, Object> planComparison = new HashMap<>();
                 planComparison.put("planId", plan.getId());
                 planComparison.put("planNumber", plan.getPlanNumber());

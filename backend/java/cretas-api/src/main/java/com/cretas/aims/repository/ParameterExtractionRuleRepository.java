@@ -108,18 +108,19 @@ public interface ParameterExtractionRuleRepository extends JpaRepository<Paramet
      * @param extractionPattern 提取模式
      * @return 是否存在
      */
-    @Query("SELECT COUNT(r) > 0 FROM ParameterExtractionRule r WHERE " +
-           "(r.factoryId = :factoryId OR (r.factoryId IS NULL AND :factoryId IS NULL)) " +
-           "AND r.intentCode = :intentCode " +
-           "AND r.paramName = :paramName " +
-           "AND r.patternType = :patternType " +
-           "AND r.extractionPattern = :extractionPattern " +
-           "AND r.deletedAt IS NULL")
+    @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END FROM ai_parameter_extraction_rules r WHERE " +
+           "((CAST(:factoryId AS varchar) IS NULL AND r.factory_id IS NULL) OR r.factory_id = :factoryId) " +
+           "AND r.intent_code = :intentCode " +
+           "AND r.param_name = :paramName " +
+           "AND r.pattern_type = :patternType " +
+           "AND r.extraction_pattern = :extractionPattern " +
+           "AND r.deleted_at IS NULL",
+           nativeQuery = true)
     boolean existsSimilarRule(
             @Param("factoryId") String factoryId,
             @Param("intentCode") String intentCode,
             @Param("paramName") String paramName,
-            @Param("patternType") PatternType patternType,
+            @Param("patternType") String patternType,
             @Param("extractionPattern") String extractionPattern);
 
     /**
@@ -132,18 +133,19 @@ public interface ParameterExtractionRuleRepository extends JpaRepository<Paramet
      * @param extractionPattern 提取模式
      * @return 规则（如果存在）
      */
-    @Query("SELECT r FROM ParameterExtractionRule r WHERE " +
-           "(r.factoryId = :factoryId OR (r.factoryId IS NULL AND :factoryId IS NULL)) " +
-           "AND r.intentCode = :intentCode " +
-           "AND r.paramName = :paramName " +
-           "AND r.patternType = :patternType " +
-           "AND r.extractionPattern = :extractionPattern " +
-           "AND r.deletedAt IS NULL")
+    @Query(value = "SELECT r.* FROM ai_parameter_extraction_rules r WHERE " +
+           "((CAST(:factoryId AS varchar) IS NULL AND r.factory_id IS NULL) OR r.factory_id = :factoryId) " +
+           "AND r.intent_code = :intentCode " +
+           "AND r.param_name = :paramName " +
+           "AND r.pattern_type = :patternType " +
+           "AND r.extraction_pattern = :extractionPattern " +
+           "AND r.deleted_at IS NULL",
+           nativeQuery = true)
     Optional<ParameterExtractionRule> findSimilarRule(
             @Param("factoryId") String factoryId,
             @Param("intentCode") String intentCode,
             @Param("paramName") String paramName,
-            @Param("patternType") PatternType patternType,
+            @Param("patternType") String patternType,
             @Param("extractionPattern") String extractionPattern);
 
     /**

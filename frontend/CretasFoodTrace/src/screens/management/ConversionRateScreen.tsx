@@ -11,6 +11,7 @@ import {
   Chip,
   IconButton,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
@@ -264,7 +265,7 @@ export default function ConversionRateScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -336,7 +337,7 @@ export default function ConversionRateScreen() {
           ListFooterComponent={<View style={styles.bottomPadding} />}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

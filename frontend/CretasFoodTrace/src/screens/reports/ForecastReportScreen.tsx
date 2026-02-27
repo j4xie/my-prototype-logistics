@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Appbar, Surface, Icon, Card } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
@@ -9,7 +10,7 @@ export default function ForecastReportScreen() {
   const { t } = useTranslation('reports');
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('forecast.title')} />
@@ -34,7 +35,7 @@ export default function ForecastReportScreen() {
           </Card.Content>
         </Card>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

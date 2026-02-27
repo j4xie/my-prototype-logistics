@@ -58,6 +58,7 @@ public class InsertSlot extends BaseEntity {
      * 影响等级: none/low/medium/high
      */
     @Column(name = "impact_level", length = 20)
+    @Builder.Default
     private String impactLevel = "none";
 
     /**
@@ -83,12 +84,14 @@ public class InsertSlot extends BaseEntity {
      * 换型成本 (分钟)
      */
     @Column(name = "switch_cost_minutes")
+    @Builder.Default
     private Integer switchCostMinutes = 0;
 
     /**
      * AI推荐分数 (0-100)
      */
     @Column(name = "recommend_score")
+    @Builder.Default
     private Integer recommendScore = 0;
 
     /**
@@ -101,6 +104,7 @@ public class InsertSlot extends BaseEntity {
      * 状态: available/selected/expired
      */
     @Column(name = "status", length = 20)
+    @Builder.Default
     private String status = "available";
 
     // ==================== 辅助方法 ====================

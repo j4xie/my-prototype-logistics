@@ -77,7 +77,10 @@ export type ProcessingStackParamList = {
   // DataExport: { reportType: 'batch' | 'cost' | 'quality' | 'equipment' };
 
   // 生产计划管理
-  ProductionPlanManagement: undefined;
+  ProductionPlanManagement: {
+    mode?: 'create';
+    initialValues?: Record<string, any>;
+  } | undefined;
 
   // 原材料管理
   MaterialReceipt: undefined;
@@ -290,7 +293,10 @@ export type FAAIStackParamList = {
   AIAnalysisCenter: undefined;
   AICostAnalysis: undefined;
   AIReport: undefined;
-  AIChat: undefined;  // 不再需要 sessionId 参数，新屏幕会自动创建会话
+  AIChat: {
+    entityType?: string;
+    initialMessage?: string;
+  } | undefined;  // 支持从其他页面传入上下文
   QualityAnalysis: undefined;
   CreatePlan: undefined;
   // 详情页

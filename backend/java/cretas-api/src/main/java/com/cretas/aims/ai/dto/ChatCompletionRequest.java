@@ -65,7 +65,14 @@ public class ChatCompletionRequest {
     private List<String> stop;
 
     /**
-     * 扩展参数 (DashScope 思考模式)
+     * DashScope 思考模式开关 (顶级参数)
+     * 必须在顶级发送，DashScope 忽略 extra_body 内的 enable_thinking
+     */
+    @JsonProperty("enable_thinking")
+    private Boolean enableThinking;
+
+    /**
+     * 扩展参数 (DashScope 思考模式 — 仅 thinking_budget 仍需通过 extra_body)
      */
     @JsonProperty("extra_body")
     private ExtraBody extraBody;
@@ -135,6 +142,7 @@ public class ChatCompletionRequest {
                         ChatMessage.user(userInput)
                 ))
                 .stream(true)  // 思考模式需要流式
+                .enableThinking(true)  // 顶级参数 — DashScope 实际使用这个
                 .extraBody(ExtraBody.builder()
                         .enableThinking(true)
                         .thinkingBudget(thinkingBudget)

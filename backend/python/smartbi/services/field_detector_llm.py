@@ -256,9 +256,8 @@ class LLMFieldDetector:
 
     @property
     def client(self):
-        if self._client is None:
-            self._client = httpx.AsyncClient(timeout=60.0)
-        return self._client
+        from common.llm_client import get_llm_http_client
+        return get_llm_http_client()
 
     async def detect_fields(
         self,
@@ -478,7 +477,8 @@ class LLMFieldDetector:
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.3,
-            "max_tokens": 2000
+            "max_tokens": 2000,
+            "enable_thinking": False
         }
 
         response = await self.client.post(
@@ -633,10 +633,8 @@ class LLMFieldDetector:
         self._cache.clear()
 
     async def close(self):
-        """Close HTTP client."""
-        if self._client:
-            await self._client.aclose()
-            self._client = None
+        """No-op: shared client lifecycle managed by main.py lifespan"""
+        pass
 
 
 # Global instance

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Appbar, Surface, SegmentedButtons, Icon } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
@@ -10,7 +11,7 @@ export default function TrendReportScreen() {
   const [timeRange, setTimeRange] = useState('month');
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('trend.title')} />
@@ -39,7 +40,7 @@ export default function TrendReportScreen() {
           </View>
         </Surface>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -27,6 +27,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
@@ -105,6 +106,7 @@ interface ResourceAlert {
 
 export default function ResourceOverviewScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation('dispatcher');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -496,7 +498,7 @@ export default function ResourceOverviewScreen() {
         colors={[DISPATCHER_THEME.gradientStart, DISPATCHER_THEME.gradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.header}
+        style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
         <View style={styles.headerContent}>
           <TouchableOpacity

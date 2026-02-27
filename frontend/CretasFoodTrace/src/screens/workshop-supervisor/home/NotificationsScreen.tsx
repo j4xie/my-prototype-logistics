@@ -6,12 +6,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   FlatList,
   RefreshControl,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, ActivityIndicator } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -62,6 +62,7 @@ function formatRelativeTime(dateStr: string): string {
 export function NotificationsScreen() {
   const navigation = useNavigation();
   const { t } = useTranslation('workshop');
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -159,8 +160,8 @@ export function NotificationsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Icon source="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
@@ -170,14 +171,14 @@ export function NotificationsScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* 头部 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
@@ -202,7 +203,7 @@ export function NotificationsScreen() {
           </View>
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

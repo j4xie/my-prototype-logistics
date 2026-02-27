@@ -66,7 +66,7 @@ public interface AlertThresholdService {
      * @param warningValue  新的警告阈值
      * @param criticalValue 新的严重阈值
      */
-    void updateThreshold(Long id, BigDecimal warningValue, BigDecimal criticalValue);
+    void updateThreshold(String id, BigDecimal warningValue, BigDecimal criticalValue);
 
     /**
      * 创建或更新阈值配置
@@ -117,5 +117,5 @@ public interface AlertThresholdService {
      *
      * @param id 阈值配置ID
      */
-    void deleteThreshold(Long id);
+    void deleteThreshold(String id);
 }

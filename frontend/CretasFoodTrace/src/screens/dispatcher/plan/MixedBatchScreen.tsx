@@ -26,6 +26,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { MixedBatchGroup, MixedBatchOrder, MixedBatchType } from '../../../types/dispatcher';
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 import { isAxiosError } from 'axios';
@@ -43,6 +44,7 @@ const DISPATCHER_THEME = {
 
 export default function MixedBatchScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [groups, setGroups] = useState<MixedBatchGroup[]>([]);
@@ -501,7 +503,7 @@ export default function MixedBatchScreen() {
         colors={[DISPATCHER_THEME.gradientStart, DISPATCHER_THEME.gradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.header}
+        style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
         <View style={styles.headerContent}>
           <TouchableOpacity

@@ -15,6 +15,7 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Text,
   Card,
@@ -477,7 +478,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -802,7 +803,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
           </ScrollView>
         </Modal>
       </Portal>
-    </View>
+    </SafeAreaView>
   );
 };
 

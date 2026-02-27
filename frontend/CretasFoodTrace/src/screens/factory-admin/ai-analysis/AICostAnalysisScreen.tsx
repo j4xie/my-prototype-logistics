@@ -16,6 +16,7 @@ import {
   Alert,
   Switch,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
@@ -227,7 +228,7 @@ export function AICostAnalysisScreen() {
   }, [dateRange, dimension, useStreaming, t]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
@@ -443,7 +444,7 @@ export function AICostAnalysisScreen() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

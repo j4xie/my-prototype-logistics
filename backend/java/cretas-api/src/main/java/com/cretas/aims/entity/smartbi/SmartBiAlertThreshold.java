@@ -6,6 +6,7 @@ import lombok.experimental.SuperBuilder;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 /**
  * SmartBI 告警阈值配置实体
@@ -49,8 +50,8 @@ import java.math.BigDecimal;
 public class SmartBiAlertThreshold extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
     /**
      * 阈值类型：SALES, FINANCE, DEPARTMENT, PRODUCTION, QUALITY 等
@@ -109,6 +110,15 @@ public class SmartBiAlertThreshold extends BaseEntity {
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    @Override
+    @PrePersist
+    protected void onCreate() {
+        super.onCreate();
+        if (id == null) {
+            id = UUID.randomUUID().toString();
+        }
+    }
 
     /**
      * 检查值是否触发警告阈值

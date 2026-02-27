@@ -15,6 +15,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon, Chip, Button, Dialog, Portal, Provider } from 'react-native-paper';
@@ -189,12 +190,12 @@ export function IntentSuggestionDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
           <Text style={styles.loadingText}>{t('intentSuggestions.loading')}</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -206,7 +207,7 @@ export function IntentSuggestionDetailScreen() {
 
   return (
     <Provider>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -435,7 +436,7 @@ export function IntentSuggestionDetailScreen() {
             </Dialog>
           </Portal>
         </KeyboardAvoidingView>
-      </View>
+      </SafeAreaView>
     </Provider>
   );
 }

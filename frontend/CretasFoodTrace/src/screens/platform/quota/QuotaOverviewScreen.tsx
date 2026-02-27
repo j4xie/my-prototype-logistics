@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   quotaCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 20,
   },

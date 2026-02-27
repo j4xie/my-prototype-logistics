@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Text, Divider, Chip } from 'react-native-paper';
 import { pushNotificationService } from '../../services/pushNotificationService';
 import { deviceAPI } from '../../services/api/deviceApiClient';
@@ -136,7 +137,8 @@ export default function PushNotificationTestScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <ScrollView style={{ flex: 1 }}>
       <Card style={styles.card}>
         <Card.Title title="推送通知测试" />
         <Card.Content>
@@ -262,6 +264,7 @@ export default function PushNotificationTestScreen() {
 
       <View style={styles.footer} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

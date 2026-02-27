@@ -133,6 +133,14 @@ public class IntentMatchResult {
      */
     private MultiIntentResult.ExecutionStrategy executionStrategy;
 
+    // ==================== 性能计时 ====================
+
+    /**
+     * 各阶段耗时 (毫秒)
+     * 键: preprocessMs, matchMs, totalMs
+     */
+    private Map<String, Long> timingMs;
+
     // ==================== 查询预处理结果 (模块B) ====================
 
     /**

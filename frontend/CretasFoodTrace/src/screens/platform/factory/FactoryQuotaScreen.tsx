@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   headerCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 20,
   },

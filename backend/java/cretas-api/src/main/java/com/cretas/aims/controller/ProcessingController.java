@@ -264,8 +264,9 @@ public class ProcessingController {
     public ApiResponse<Map<String, Object>> submitTeamBatchReport(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Valid @Parameter(description = "班组报工请求") TeamBatchReportRequest request) {
-        log.info("班组批量报工: factoryId={}, batchId={}, memberCount={}",
-                factoryId, request.getBatchId(), request.getMembers().size());
+        log.info("班组批量报工: factoryId={}, batchId={}, totalOutput={}, memberCount={}",
+                factoryId, request.getBatchId(), request.getTotalOutput(),
+                request.getMembers() != null ? request.getMembers().size() : 0);
         Map<String, Object> result = processingService.submitTeamBatchReport(factoryId, request);
         return ApiResponse.success(result);
     }

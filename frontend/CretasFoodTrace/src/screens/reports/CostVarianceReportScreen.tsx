@@ -11,6 +11,7 @@ import {
   SegmentedButtons,
   ProgressBar,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Svg, { Rect, Line, Text as SvgText, G, Circle, Path } from 'react-native-svg';
 import { useAuthStore } from '../../store/authStore';
@@ -316,7 +317,7 @@ export default function CostVarianceReportScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="成本差异分析" />
@@ -589,7 +590,7 @@ export default function CostVarianceReportScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

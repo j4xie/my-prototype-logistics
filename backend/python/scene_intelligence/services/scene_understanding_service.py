@@ -132,7 +132,8 @@ class SceneUnderstandingService:
                         }
                     ],
                     "max_tokens": max_tokens,
-                    "temperature": 0.3
+                    "temperature": 0.3,
+                    "enable_thinking": False
                 }
             )
 

@@ -23,26 +23,18 @@ import java.util.concurrent.TimeUnit;
 public class CacheService {
     private static final Logger log = LoggerFactory.getLogger(CacheService.class);
 
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final Map<String, Object> memoryCache;
-    private final boolean useMemoryCache;
+    @Autowired(required = false)
+    private RedisTemplate<String, Object> redisTemplate;
 
-    // Default constructor for memory-only cache
-    public CacheService() {
-        this.redisTemplate = null;
-        this.memoryCache = new ConcurrentHashMap<>();
-        this.useMemoryCache = true;
-        log.warn("使用内存临时缓存服务 (Redis不可用)");
+    private final Map<String, Object> memoryCache = new ConcurrentHashMap<>();
+
+    public boolean isUsingMemoryCache() {
+        return redisTemplate == null;
     }
 
-    // Constructor with optional RedisTemplate
-    @Autowired(required = false)
-    public CacheService(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
-        this.memoryCache = new ConcurrentHashMap<>();
-        this.useMemoryCache = (redisTemplate == null);
-
-        if (useMemoryCache) {
+    @javax.annotation.PostConstruct
+    public void init() {
+        if (redisTemplate == null) {
             log.warn("使用内存临时缓存服务 (Redis不可用)");
         } else {
             log.info("使用Redis缓存服务");
@@ -81,7 +73,7 @@ public class CacheService {
         try {
             String key = buildAIAnalysisKey(factoryId, batchId);
 
-            if (useMemoryCache) {
+            if (isUsingMemoryCache()) {
                 Object cached = memoryCache.get(key);
                 if (cached != null && cached instanceof Map) {
                     log.info("命中内存缓存: factoryId={}, batchId={}", factoryId, batchId);
@@ -114,7 +106,7 @@ public class CacheService {
         try {
             String key = buildAIAnalysisKey(factoryId, batchId);
 
-            if (useMemoryCache) {
+            if (isUsingMemoryCache()) {
                 memoryCache.put(key, result);
                 log.info("保存内存缓存: factoryId={}, batchId={}", factoryId, batchId);
             } else {
@@ -137,7 +129,7 @@ public class CacheService {
         try {
             String key = buildSessionKey(sessionId);
 
-            if (useMemoryCache) {
+            if (isUsingMemoryCache()) {
                 Object history = memoryCache.get(key);
                 if (history != null) {
                     log.info("获取会话历史(内存): sessionId={}", sessionId);
@@ -168,7 +160,7 @@ public class CacheService {
         try {
             String key = buildSessionKey(sessionId);
 
-            if (useMemoryCache) {
+            if (isUsingMemoryCache()) {
                 memoryCache.put(key, history);
                 log.info("保存会话历史(内存): sessionId={}", sessionId);
             } else {
@@ -190,7 +182,7 @@ public class CacheService {
         try {
             String key = buildAIAnalysisKey(factoryId, batchId);
 
-            if (useMemoryCache) {
+            if (isUsingMemoryCache()) {
                 memoryCache.remove(key);
                 log.info("清除AI分析缓存(内存): factoryId={}, batchId={}", factoryId, batchId);
             } else {
@@ -211,7 +203,7 @@ public class CacheService {
         try {
             String key = buildSessionKey(sessionId);
 
-            if (useMemoryCache) {
+            if (isUsingMemoryCache()) {
                 memoryCache.remove(key);
                 log.info("清除会话历史(内存): sessionId={}", sessionId);
             } else {
@@ -243,7 +235,7 @@ public class CacheService {
      * @return true表示连接正常
      */
     public boolean isRedisAvailable() {
-        if (useMemoryCache) {
+        if (isUsingMemoryCache()) {
             return false;
         }
         try {

@@ -3,26 +3,51 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDraftReportStore, DraftReport } from '../../store/draftReportStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
 import { handleError } from '../../utils/errorHandler';
+import type { WSHomeStackParamList } from '../../types/navigation';
+
+type NavProp = NativeStackNavigationProp<WSHomeStackParamList>;
 
 const DraftReportsScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavProp>();
+  const insets = useSafeAreaInsets();
   const { drafts, removeDraft, clearDrafts } = useDraftReportStore();
   const [submittingId, setSubmittingId] = useState<string | null>(null);
 
+  const handleRestore = (draft: DraftReport) => {
+    const draftType = draft.draftType || 'PROGRESS';
+    if (draftType === 'TEAM_BATCH') {
+      // Navigate to team batch report — data will need to be re-entered
+      // since TeamBatchReport doesn't accept params
+      Alert.alert(
+        '恢复草稿',
+        '将打开班组报工页面，部分数据需手动填写',
+        [
+          { text: '取消', style: 'cancel' },
+          { text: '前往', onPress: () => navigation.navigate('TeamBatchReport') },
+        ],
+      );
+    } else {
+      // Navigate to DynamicReport with the appropriate type
+      const reportType = draftType === 'HOURS' ? 'HOURS' : 'PROGRESS';
+      navigation.navigate('DynamicReport', { reportType });
+    }
+  };
+
   const handleResubmit = async (draft: DraftReport) => {
     if (!draft.batchId) {
-      Alert.alert('无法提交', '缺少批次信息');
+      Alert.alert('无法直接提交', '缺少批次信息，请点击"恢复编辑"手动补充');
       return;
     }
 
@@ -76,6 +101,14 @@ const DraftReportsScreen: React.FC = () => {
     return `${month}-${day} ${hour}:${min}`;
   };
 
+  const getDraftTypeLabel = (type?: string) => {
+    switch (type) {
+      case 'HOURS': return '工时上报';
+      case 'TEAM_BATCH': return '班组报工';
+      default: return '进度上报';
+    }
+  };
+
   const renderItem = ({ item }: { item: DraftReport }) => {
     const isSubmitting = submittingId === item.id;
     return (
@@ -83,7 +116,10 @@ const DraftReportsScreen: React.FC = () => {
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
             <MaterialCommunityIcons name="file-clock-outline" size={20} color="#F59E0B" />
-            <Text style={styles.batchNumber}>{item.batchNumber || `ID:${item.batchId}`}</Text>
+            <Text style={styles.batchNumber}>{item.batchNumber || item.productName || '未关联批次'}</Text>
+            <View style={styles.draftTypeBadge}>
+              <Text style={styles.draftTypeText}>{getDraftTypeLabel(item.draftType)}</Text>
+            </View>
           </View>
           <Text style={styles.timestamp}>{formatTime(item.createdAt)}</Text>
         </View>
@@ -92,22 +128,24 @@ const DraftReportsScreen: React.FC = () => {
           <Text style={styles.productName}>{item.productName}</Text>
         )}
 
-        <View style={styles.dataRow}>
-          <View style={styles.dataItem}>
-            <Text style={styles.dataLabel}>产出</Text>
-            <Text style={styles.dataValue}>{item.outputQuantity} kg</Text>
+        {item.outputQuantity > 0 && (
+          <View style={styles.dataRow}>
+            <View style={styles.dataItem}>
+              <Text style={styles.dataLabel}>产出</Text>
+              <Text style={styles.dataValue}>{item.outputQuantity}</Text>
+            </View>
+            <View style={styles.dataItem}>
+              <Text style={styles.dataLabel}>合格</Text>
+              <Text style={[styles.dataValue, { color: '#10B981' }]}>{item.goodQuantity}</Text>
+            </View>
+            <View style={styles.dataItem}>
+              <Text style={styles.dataLabel}>缺陷</Text>
+              <Text style={[styles.dataValue, item.defectQuantity > 0 ? { color: '#EF4444' } : {}]}>
+                {item.defectQuantity}
+              </Text>
+            </View>
           </View>
-          <View style={styles.dataItem}>
-            <Text style={styles.dataLabel}>合格</Text>
-            <Text style={[styles.dataValue, { color: '#10B981' }]}>{item.goodQuantity} kg</Text>
-          </View>
-          <View style={styles.dataItem}>
-            <Text style={styles.dataLabel}>缺陷</Text>
-            <Text style={[styles.dataValue, item.defectQuantity > 0 ? { color: '#EF4444' } : {}]}>
-              {item.defectQuantity} kg
-            </Text>
-          </View>
-        </View>
+        )}
 
         {item.notes ? (
           <Text style={styles.notes} numberOfLines={2}>{item.notes}</Text>
@@ -115,19 +153,29 @@ const DraftReportsScreen: React.FC = () => {
 
         <View style={styles.cardActions}>
           <TouchableOpacity
-            style={styles.resubmitButton}
-            onPress={() => handleResubmit(item)}
-            disabled={isSubmitting}
+            style={styles.restoreButton}
+            onPress={() => handleRestore(item)}
           >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <MaterialCommunityIcons name="cloud-upload-outline" size={16} color="#fff" />
-                <Text style={styles.resubmitText}>重新提交</Text>
-              </>
-            )}
+            <MaterialCommunityIcons name="pencil-outline" size={16} color="#4F46E5" />
+            <Text style={styles.restoreText}>恢复编辑</Text>
           </TouchableOpacity>
+
+          {item.batchId && (
+            <TouchableOpacity
+              style={styles.resubmitButton}
+              onPress={() => handleResubmit(item)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="cloud-upload-outline" size={16} color="#fff" />
+                  <Text style={styles.resubmitText}>直接提交</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.deleteButton}
@@ -135,7 +183,6 @@ const DraftReportsScreen: React.FC = () => {
             disabled={isSubmitting}
           >
             <MaterialCommunityIcons name="delete-outline" size={16} color="#EF4444" />
-            <Text style={styles.deleteText}>删除</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -143,9 +190,9 @@ const DraftReportsScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1a1a1a" />
         </TouchableOpacity>
@@ -166,9 +213,9 @@ const DraftReportsScreen: React.FC = () => {
 
       {drafts.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <MaterialCommunityIcons name="checkbox-marked-circle-outline" size={64} color="#D1D5DB" />
-          <Text style={styles.emptyTitle}>暂无草稿</Text>
-          <Text style={styles.emptySubtitle}>所有报工数据已同步</Text>
+          <MaterialCommunityIcons name="file-edit-outline" size={64} color="#D1D5DB" />
+          <Text style={styles.emptyTitle}>暂无保存的草稿</Text>
+          <Text style={styles.emptySubtitle}>在报工页面可点击「保存草稿」暂存未完成的报工</Text>
         </View>
       ) : (
         <FlatList
@@ -179,7 +226,7 @@ const DraftReportsScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -301,6 +348,34 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 4,
   },
+  draftTypeBadge: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  draftTypeText: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  restoreButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    backgroundColor: '#EEF2FF',
+    gap: 6,
+  },
+  restoreText: {
+    color: '#4F46E5',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   resubmitButton: {
     flex: 1,
     flexDirection: 'row',
@@ -321,17 +396,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#FEE2E2',
     backgroundColor: '#FEF2F2',
-    gap: 4,
-  },
-  deleteText: {
-    color: '#EF4444',
-    fontSize: 14,
-    fontWeight: '500',
   },
   emptyContainer: {
     flex: 1,

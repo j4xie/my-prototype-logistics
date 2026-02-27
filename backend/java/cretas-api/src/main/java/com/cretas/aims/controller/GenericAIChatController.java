@@ -5,18 +5,24 @@ import com.cretas.aims.ai.dto.ChatCompletionRequest;
 import com.cretas.aims.ai.dto.ChatCompletionRequest.ExtraBody;
 import com.cretas.aims.ai.dto.ChatCompletionResponse;
 import com.cretas.aims.ai.dto.ChatMessage;
+import com.cretas.aims.config.DashScopeConfig;
 import com.cretas.aims.dto.ai.GenericChatRequest;
 import com.cretas.aims.dto.ai.GenericChatResponse;
 import com.cretas.aims.dto.common.ApiResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
@@ -42,8 +48,13 @@ public class GenericAIChatController {
     @Autowired
     private DashScopeClient dashScopeClient;
 
-    @Value("${ai.chat.default-model:qwen3.5-plus}")
-    private String defaultModel;
+    @Autowired
+    private DashScopeConfig dashScopeConfig;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
 
     /**
      * 通用 AI Chat 接口
@@ -65,9 +76,6 @@ public class GenericAIChatController {
             // 转换消息格式
             List<ChatMessage> chatMessages = convertMessages(request.getMessages());
 
-            // 构建 ChatCompletionRequest
-            String model = request.getModel() != null ? request.getModel() : defaultModel;
-
             // 自动检测是否需要 thinking 模式
             String lastUserMsg = "";
             if (request.getMessages() != null) {
@@ -79,26 +87,50 @@ public class GenericAIChatController {
                 }
             }
             boolean enableThinking = DashScopeClient.shouldEnableThinking(lastUserMsg);
-            log.debug("Thinking 模式自动检测: input='{}', enabled={}", lastUserMsg.length() > 50 ? lastUserMsg.substring(0, 50) + "..." : lastUserMsg, enableThinking);
+
+            // P1: 智能模型路由 — 简单查询用快速模型，复杂查询用默认模型
+            String model;
+            if (request.getModel() != null) {
+                model = request.getModel();  // 客户端指定优先
+            } else if (enableThinking) {
+                model = dashScopeConfig.getModel();      // 复杂 → qwen3.5-plus
+            } else {
+                model = dashScopeConfig.getFastModel();   // 简单 → qwen3.5-flash
+            }
+
+            // P2: 简单查询降低 maxTokens（减少生成时间）
+            // 注意: GenericChatRequest 的 @Builder.Default maxTokens=2000，所以 getMaxTokens() 永远非 null
+            int maxTokens;
+            if (enableThinking) {
+                maxTokens = 2000;   // 复杂查询需要详细输出
+            } else {
+                maxTokens = 500;    // 简单查询不需要长篇大论
+            }
+
+            log.info("AI Chat 路由: input='{}', thinking={}, model={}, maxTokens={}",
+                    lastUserMsg.length() > 50 ? lastUserMsg.substring(0, 50) + "..." : lastUserMsg,
+                    enableThinking, model, maxTokens);
 
             ChatCompletionRequest aiRequest = ChatCompletionRequest.builder()
                     .model(model)
                     .messages(chatMessages)
                     .temperature(request.getTemperature() != null ? request.getTemperature() : 0.7)
-                    .maxTokens(request.getMaxTokens() != null ? request.getMaxTokens() : 2000)
+                    .maxTokens(maxTokens)
                     .extraBody(ExtraBody.builder().enableThinking(enableThinking).build())
                     .build();
 
-            // 调用 DashScope API
+            // R4: 调用 DashScope API + 计时
+            long t0 = System.currentTimeMillis();
             ChatCompletionResponse aiResponse = dashScopeClient.chatCompletion(aiRequest);
+            long elapsed = System.currentTimeMillis() - t0;
 
             // 提取响应内容
             String content = extractContent(aiResponse);
             Integer tokensUsed = extractTokensUsed(aiResponse);
             String finishReason = extractFinishReason(aiResponse);
 
-            log.info("AI Chat 响应成功: model={}, tokensUsed={}, finishReason={}",
-                    model, tokensUsed, finishReason);
+            log.info("AI Chat 响应: model={}, thinking={}, tokensUsed={}, elapsed={}ms, finishReason={}",
+                    model, enableThinking, tokensUsed, elapsed, finishReason);
 
             GenericChatResponse response = GenericChatResponse.builder()
                     .content(content)
@@ -113,6 +145,114 @@ public class GenericAIChatController {
             log.error("AI Chat 失败: {}", e.getMessage(), e);
             return ApiResponse.error("AI 服务暂时不可用: " + e.getMessage());
         }
+    }
+
+    /**
+     * SSE 流式 AI Chat
+     *
+     * 逐 token 推送，TTFT ~0.5s
+     * 事件类型: meta / token / done / error
+     */
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "流式 AI Chat (SSE)",
+               description = "SSE 流式输出，逐 token 推送。事件: meta, token, done, error")
+    public SseEmitter chatStream(@RequestBody GenericChatRequest request) {
+        SseEmitter emitter = new SseEmitter(120_000L);
+
+        emitter.onCompletion(() -> log.debug("Chat stream completed"));
+        emitter.onTimeout(() -> log.warn("Chat stream timeout"));
+        emitter.onError(e -> log.error("Chat stream error: {}", e.getMessage()));
+
+        sseExecutor.execute(() -> {
+            try {
+                List<ChatMessage> chatMessages = convertMessages(request.getMessages());
+
+                // Same P1+P2 logic as sync endpoint
+                String lastUserMsg = "";
+                if (request.getMessages() != null) {
+                    for (int i = request.getMessages().size() - 1; i >= 0; i--) {
+                        if ("user".equalsIgnoreCase(request.getMessages().get(i).getRole())) {
+                            lastUserMsg = request.getMessages().get(i).getContent();
+                            break;
+                        }
+                    }
+                }
+                boolean enableThinking = DashScopeClient.shouldEnableThinking(lastUserMsg);
+
+                String model;
+                if (request.getModel() != null) {
+                    model = request.getModel();
+                } else if (enableThinking) {
+                    model = dashScopeConfig.getModel();
+                } else {
+                    model = dashScopeConfig.getFastModel();
+                }
+
+                int maxTokens;
+                if (enableThinking) {
+                    maxTokens = 2000;
+                } else {
+                    maxTokens = 500;
+                }
+
+                log.info("Chat stream: model={}, thinking={}, maxTokens={}", model, enableThinking, maxTokens);
+
+                ChatCompletionRequest aiRequest = ChatCompletionRequest.builder()
+                        .model(model)
+                        .messages(chatMessages)
+                        .temperature(request.getTemperature() != null ? request.getTemperature() : 0.7)
+                        .maxTokens(maxTokens)
+                        .extraBody(ExtraBody.builder().enableThinking(enableThinking).build())
+                        .build();
+
+                // Send metadata event
+                emitter.send(SseEmitter.event().name("meta")
+                        .data("{\"model\":\"" + model + "\",\"thinking\":" + enableThinking + "}"));
+
+                // R4: Stream tokens with timing
+                long streamT0 = System.currentTimeMillis();
+                dashScopeClient.chatCompletionStream(aiRequest,
+                    token -> {
+                        try {
+                            emitter.send(SseEmitter.event().name("token").data(token));
+                        } catch (Exception e) {
+                            log.debug("Client disconnected during token send");
+                        }
+                    },
+                    response -> {
+                        try {
+                            long streamElapsed = System.currentTimeMillis() - streamT0;
+                            Integer tokensUsed = extractTokensUsed(response);
+                            String finishReason = extractFinishReason(response);
+                            String fullContent = extractContent(response);
+                            log.info("Chat stream done: model={}, thinking={}, tokensUsed={}, elapsed={}ms",
+                                    model, enableThinking, tokensUsed, streamElapsed);
+                            Map<String, Object> doneData = new java.util.LinkedHashMap<>();
+                            doneData.put("fullContent", fullContent);
+                            doneData.put("tokensUsed", tokensUsed != null ? tokensUsed : 0);
+                            doneData.put("finishReason", finishReason != null ? finishReason : "stop");
+                            doneData.put("model", model);
+                            emitter.send(SseEmitter.event().name("done")
+                                    .data(objectMapper.writeValueAsString(doneData)));
+                            emitter.complete();
+                        } catch (Exception e) {
+                            log.debug("Error sending done event: {}", e.getMessage());
+                        }
+                    });
+
+            } catch (Exception e) {
+                log.error("Chat stream failed: {}", e.getMessage(), e);
+                try {
+                    emitter.send(SseEmitter.event().name("error")
+                            .data("{\"message\":\"" + e.getMessage().replace("\"", "'") + "\"}"));
+                    emitter.complete();
+                } catch (Exception sendErr) {
+                    emitter.completeWithError(e);
+                }
+            }
+        });
+
+        return emitter;
     }
 
     /**

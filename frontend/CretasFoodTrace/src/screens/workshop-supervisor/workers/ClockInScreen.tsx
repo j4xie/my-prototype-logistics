@@ -6,12 +6,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   Alert,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, ActivityIndicator } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -65,6 +65,7 @@ function transformClockRecord(record: ClockRecord, index: number): AttendanceRec
 export function ClockInScreen() {
   const navigation = useNavigation();
   const { t } = useTranslation('workshop');
+  const insets = useSafeAreaInsets();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -148,8 +149,8 @@ export function ClockInScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Icon source="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
@@ -159,14 +160,14 @@ export function ClockInScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* 头部 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
@@ -258,7 +259,7 @@ export function ClockInScreen() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

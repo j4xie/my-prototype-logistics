@@ -12,6 +12,7 @@ import {
   Chip,
   HelperText,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { factoryApiClient } from '../../services/api/factoryApiClient';
@@ -224,7 +225,7 @@ export default function FactorySettingsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="工厂设置" />
@@ -232,12 +233,12 @@ export default function FactorySettingsScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="工厂设置" />
@@ -497,7 +498,7 @@ export default function FactorySettingsScreen() {
           }}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

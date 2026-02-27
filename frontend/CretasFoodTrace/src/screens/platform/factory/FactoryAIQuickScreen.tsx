@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
 
   // AI 介绍卡片
   aiIntroCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 20,
   },

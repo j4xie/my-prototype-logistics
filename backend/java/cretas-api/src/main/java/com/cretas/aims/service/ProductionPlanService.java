@@ -1,10 +1,13 @@
 package com.cretas.aims.service;
 
+import com.cretas.aims.dto.common.ImportResult;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.production.CreateProductionPlanRequest;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
+import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -101,4 +104,18 @@ public interface ProductionPlanService {
      * 导出生产计划
       */
     byte[] exportProductionPlans(String factoryId, LocalDate startDate, LocalDate endDate);
+     /**
+     * Excel批量导入生产计划
+      */
+    ImportResult<ProductionPlanDTO> importProductionPlansFromExcel(String factoryId, InputStream inputStream, Long userId);
+     /**
+     * 生成生产计划导入模板
+      */
+    byte[] generateImportTemplate();
+
+    /**
+     * 从生产计划创建生产批次（计划→执行转换）
+     * 映射：suggestedProductionLineId→equipmentId, estimatedWorkers→workerCount, assignedSupervisorId→supervisorId
+     */
+    ProductionBatch createBatchFromPlan(String factoryId, String planId);
 }

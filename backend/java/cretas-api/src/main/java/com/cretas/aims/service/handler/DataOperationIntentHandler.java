@@ -6,17 +6,25 @@ import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.dto.intent.DataOperationFact;
 import com.cretas.aims.dto.intent.ValidationResult;
+import com.cretas.aims.dto.production.CreateProductionPlanRequest;
+import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.ProductionBatch;
+import com.cretas.aims.entity.ProductionLine;
 import com.cretas.aims.entity.ProductType;
 import com.cretas.aims.entity.ProductionPlan;
+import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.config.AIIntentConfig;
+import com.cretas.aims.entity.enums.PlanSourceType;
 import com.cretas.aims.entity.intent.IntentPreviewToken;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.ProductionBatchRepository;
+import com.cretas.aims.repository.ProductionLineRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
 import com.cretas.aims.repository.ProductionPlanRepository;
+import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.PreviewTokenService;
+import com.cretas.aims.service.ProductionPlanService;
 import com.cretas.aims.service.RuleEngineService;
 import com.cretas.aims.service.inventory.TransferService;
 import com.cretas.aims.entity.inventory.InternalTransfer;
@@ -58,6 +66,9 @@ public class DataOperationIntentHandler implements IntentHandler {
     private final ProductionPlanRepository productionPlanRepository;
     private final ProductionBatchRepository productionBatchRepository;
     private final MaterialBatchRepository materialBatchRepository;
+    private final ProductionLineRepository productionLineRepository;
+    private final UserRepository userRepository;
+    private final ProductionPlanService productionPlanService;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final DashScopeClient dashScopeClient;
@@ -76,6 +87,9 @@ public class DataOperationIntentHandler implements IntentHandler {
                                        ProductionPlanRepository productionPlanRepository,
                                        ProductionBatchRepository productionBatchRepository,
                                        MaterialBatchRepository materialBatchRepository,
+                                       ProductionLineRepository productionLineRepository,
+                                       UserRepository userRepository,
+                                       @Autowired(required = false) ProductionPlanService productionPlanService,
                                        RestTemplate restTemplate,
                                        ObjectMapper objectMapper,
                                        RuleEngineService ruleEngineService,
@@ -86,6 +100,9 @@ public class DataOperationIntentHandler implements IntentHandler {
         this.productionPlanRepository = productionPlanRepository;
         this.productionBatchRepository = productionBatchRepository;
         this.materialBatchRepository = materialBatchRepository;
+        this.productionLineRepository = productionLineRepository;
+        this.userRepository = userRepository;
+        this.productionPlanService = productionPlanService;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.ruleEngineService = ruleEngineService;
@@ -170,6 +187,11 @@ public class DataOperationIntentHandler implements IntentHandler {
                 "ORDER_TODAY".equals(intentCode) || "ORDER_LIST".equals(intentCode) ||
                 "ORDER_FILTER".equals(intentCode) || "ORDER_TIMEOUT_MONITOR".equals(intentCode)) {
                 return handleOrderQuery(factoryId, request, intentConfig, intentCode);
+            }
+
+            // PRODUCTION_PLAN_CREATE_FULL / PRODUCTION_PLAN_CREATE: AI对话创建生产计划
+            if ("PRODUCTION_PLAN_CREATE_FULL".equals(intentCode) || "PRODUCTION_PLAN_CREATE".equals(intentCode)) {
+                return handleFullPlanCreate(factoryId, request, intentConfig, userId);
             }
 
             // PROCESSING_BATCH_CREATE: 创建生产批次
@@ -1458,6 +1480,311 @@ public class DataOperationIntentHandler implements IntentHandler {
                 .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
                 .status("COMPLETED").message(message)
                 .resultData(result).executedAt(LocalDateTime.now()).build();
+    }
+
+    /**
+     * AI对话创建完整生产计划（含产线、工人、主管）
+     *
+     * 通过 slot filling 收集参数后，调用 ProductionPlanService 创建计划。
+     * 支持按名称/编号模糊匹配产品、产线和主管。
+     */
+    private IntentExecuteResponse handleFullPlanCreate(String factoryId, IntentExecuteRequest request,
+                                                       AIIntentConfig intentConfig, Long userId) {
+        Map<String, Object> ctx = request.getContext();
+        Map<String, Object> slots = null;
+        if (ctx != null) {
+            Object slotsObj = ctx.get("slots");
+            if (slotsObj instanceof Map) {
+                slots = (Map<String, Object>) slotsObj;
+            }
+        }
+        // Also check top-level context fields if slots map is empty
+        if ((slots == null || slots.isEmpty()) && ctx != null) {
+            slots = ctx;
+        }
+
+        if (slots == null || slots.isEmpty() || slots.get("productId") == null) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("requiredFields", List.of("productId", "quantity", "expectedDate",
+                    "productionLineId", "estimatedWorkers", "supervisorId"));
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("NEED_MORE_INFO")
+                    .message("好的，我来帮您创建生产计划。\n\n请依次提供以下信息：\n" +
+                             "1. 产品（名称或ID）\n" +
+                             "2. 计划产量（如500kg）\n" +
+                             "3. 预计完成日期\n" +
+                             "4. 生产线（名称或编号）\n" +
+                             "5. 需要工人数\n" +
+                             "6. 负责主管（用户名或姓名）\n\n" +
+                             "示例：「创建豆腐生产计划，500公斤，明天完成，A线，8人，张主管」")
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+        }
+
+        if (productionPlanService == null) {
+            return buildFailedResponse(intentConfig, "生产计划服务不可用，请稍后重试");
+        }
+
+        try {
+            CreateProductionPlanRequest planRequest = new CreateProductionPlanRequest();
+
+            // 1. Resolve product name/ID to productTypeId
+            String productInput = getStringValue(slots, "productId");
+            if (productInput != null) {
+                Optional<ProductType> productType = productTypeRepository.findByFactoryIdAndName(factoryId, productInput);
+                if (productType.isPresent()) {
+                    planRequest.setProductTypeId(productType.get().getId());
+                } else {
+                    // Try as direct ID
+                    Optional<ProductType> byId = productTypeRepository.findByIdAndFactoryId(productInput, factoryId);
+                    if (byId.isPresent()) {
+                        planRequest.setProductTypeId(byId.get().getId());
+                    } else {
+                        // Fuzzy search fallback
+                        Page<ProductType> searchResult = productTypeRepository.searchProductTypes(
+                                factoryId, productInput, org.springframework.data.domain.PageRequest.of(0, 1));
+                        if (searchResult.hasContent()) {
+                            planRequest.setProductTypeId(searchResult.getContent().get(0).getId());
+                        } else {
+                            return buildFailedResponse(intentConfig, "未找到产品「" + productInput + "」，请确认产品名称或ID");
+                        }
+                    }
+                }
+            }
+
+            // 2. Quantity
+            BigDecimal quantity = getBigDecimalFromSlot(slots, "quantity");
+            if (quantity != null) {
+                planRequest.setPlannedQuantity(quantity);
+            } else {
+                return buildFailedResponse(intentConfig, "请提供有效的计划产量");
+            }
+
+            // 3. Expected date
+            String dateStr = getStringValue(slots, "expectedDate");
+            if (dateStr != null) {
+                try {
+                    LocalDate date = parseFlexibleDate(dateStr);
+                    planRequest.setPlannedDate(date);
+                    planRequest.setExpectedCompletionDate(date);
+                } catch (Exception e) {
+                    log.warn("AI创建计划: 日期解析失败: {}", dateStr);
+                    return buildFailedResponse(intentConfig, "日期格式无法识别「" + dateStr + "」，请使用YYYY-MM-DD格式");
+                }
+            }
+
+            // 4. Production line
+            String lineInput = getStringValue(slots, "productionLineId");
+            if (lineInput != null) {
+                // Try by lineCode first
+                Optional<ProductionLine> line = productionLineRepository
+                        .findByFactoryIdAndLineCodeAndDeletedAtIsNull(factoryId, lineInput);
+                if (line.isPresent()) {
+                    planRequest.setSuggestedProductionLineId(line.get().getId());
+                } else {
+                    // Try by direct ID
+                    Optional<ProductionLine> byId = productionLineRepository
+                            .findByIdAndFactoryIdAndDeletedAtIsNull(lineInput, factoryId);
+                    if (byId.isPresent()) {
+                        planRequest.setSuggestedProductionLineId(byId.get().getId());
+                    } else {
+                        // Search all lines and match by name
+                        List<ProductionLine> allLines = productionLineRepository
+                                .findByFactoryIdAndDeletedAtIsNull(factoryId);
+                        Optional<ProductionLine> matched = allLines.stream()
+                                .filter(l -> l.getName() != null && l.getName().contains(lineInput))
+                                .findFirst();
+                        if (matched.isPresent()) {
+                            planRequest.setSuggestedProductionLineId(matched.get().getId());
+                        } else {
+                            log.warn("AI创建计划: 未找到产线 {}", lineInput);
+                            // Non-blocking: proceed without production line
+                        }
+                    }
+                }
+            }
+
+            // 5. Estimated workers
+            Integer workers = getIntegerFromSlot(slots, "estimatedWorkers");
+            if (workers != null) {
+                planRequest.setEstimatedWorkers(workers);
+            }
+
+            // 6. Supervisor
+            String supervisorInput = getStringValue(slots, "supervisorId");
+            if (supervisorInput != null) {
+                // Try by username first
+                Optional<User> supervisor = userRepository.findByFactoryIdAndUsername(factoryId, supervisorInput);
+                if (supervisor.isPresent()) {
+                    planRequest.setAssignedSupervisorId(supervisor.get().getId());
+                } else {
+                    // Try by employeeCode
+                    Optional<User> byCode = userRepository.findByFactoryIdAndEmployeeCode(factoryId, supervisorInput);
+                    if (byCode.isPresent()) {
+                        planRequest.setAssignedSupervisorId(byCode.get().getId());
+                    } else {
+                        // Fuzzy search by fullName/username
+                        Page<User> searchResult = userRepository.searchUsers(
+                                factoryId, supervisorInput, org.springframework.data.domain.PageRequest.of(0, 1));
+                        if (searchResult.hasContent()) {
+                            planRequest.setAssignedSupervisorId(searchResult.getContent().get(0).getId());
+                        } else {
+                            log.warn("AI创建计划: 未找到主管 {}", supervisorInput);
+                            // Non-blocking: proceed without supervisor
+                        }
+                    }
+                }
+            }
+
+            // 7. Priority (optional, default 5)
+            Integer priority = getIntegerFromSlot(slots, "priority");
+            planRequest.setPriority(priority != null ? priority : 5);
+
+            // 8. Notes (optional)
+            String notes = getStringValue(slots, "notes");
+            if (notes != null) {
+                planRequest.setNotes(notes);
+            }
+
+            // Set source type to AI_CHAT
+            planRequest.setSourceType(PlanSourceType.AI_CHAT);
+
+            // Create the plan via service
+            ProductionPlanDTO created = productionPlanService.createProductionPlan(factoryId, planRequest, userId);
+
+            // Build success response
+            Map<String, Object> resultData = new HashMap<>();
+            resultData.put("planNumber", created.getPlanNumber());
+            resultData.put("planId", created.getId());
+            resultData.put("productName", created.getProductName());
+            resultData.put("plannedQuantity", created.getPlannedQuantity());
+            resultData.put("expectedCompletionDate", created.getExpectedCompletionDate());
+            resultData.put("status", created.getStatus());
+            if (created.getSuggestedProductionLineName() != null) {
+                resultData.put("productionLine", created.getSuggestedProductionLineName());
+            }
+            if (created.getEstimatedWorkers() != null) {
+                resultData.put("estimatedWorkers", created.getEstimatedWorkers());
+            }
+            if (created.getAssignedSupervisorName() != null) {
+                resultData.put("supervisor", created.getAssignedSupervisorName());
+            }
+
+            String successMsg = String.format("生产计划创建成功！\n计划编号: %s\n产品: %s\n数量: %s",
+                    created.getPlanNumber(),
+                    created.getProductName() != null ? created.getProductName() : planRequest.getProductTypeId(),
+                    created.getPlannedQuantity());
+
+            IntentExecuteResponse.AffectedEntity affected = IntentExecuteResponse.AffectedEntity.builder()
+                    .entityType("PRODUCTION_PLAN")
+                    .entityId(created.getId())
+                    .entityName("生产计划 " + created.getPlanNumber())
+                    .action("CREATE")
+                    .build();
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName())
+                    .intentCategory("DATA_OP")
+                    .status("COMPLETED")
+                    .message(successMsg)
+                    .formattedText(successMsg)
+                    .resultData(resultData)
+                    .affectedEntities(List.of(affected))
+                    .executedAt(LocalDateTime.now())
+                    .suggestedActions(List.of(
+                            IntentExecuteResponse.SuggestedAction.builder()
+                                    .actionCode("VIEW_PLAN")
+                                    .actionName("查看计划详情")
+                                    .description("查看新创建的生产计划")
+                                    .endpoint("/api/mobile/" + factoryId + "/production-plans/" + created.getId())
+                                    .build()
+                    ))
+                    .build();
+
+        } catch (Exception e) {
+            log.error("AI创建生产计划失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
+            return buildFailedResponse(intentConfig, "创建失败: " + ErrorSanitizer.sanitize(e));
+        }
+    }
+
+    /**
+     * Parse numeric value from slot, handling string with units like "500kg"
+     */
+    private BigDecimal getBigDecimalFromSlot(Map<String, Object> slots, String key) {
+        Object value = slots.get(key);
+        if (value == null) return null;
+        if (value instanceof Number) {
+            return new BigDecimal(value.toString());
+        }
+        String str = value.toString().trim();
+        // Strip common Chinese/English units
+        str = str.replaceAll("[kgKG公斤千克吨件箱个]+$", "").trim();
+        try {
+            return new BigDecimal(str);
+        } catch (NumberFormatException e) {
+            log.warn("无法解析数量值: {}", value);
+            return null;
+        }
+    }
+
+    /**
+     * Parse integer value from slot
+     */
+    private Integer getIntegerFromSlot(Map<String, Object> slots, String key) {
+        Object value = slots.get(key);
+        if (value == null) return null;
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        String str = value.toString().trim().replaceAll("[人个]+$", "").trim();
+        try {
+            return Integer.parseInt(str);
+        } catch (NumberFormatException e) {
+            log.warn("无法解析整数值: {}", value);
+            return null;
+        }
+    }
+
+    /**
+     * Parse flexible date strings including Chinese relative dates
+     */
+    private LocalDate parseFlexibleDate(String dateStr) {
+        if (dateStr == null) return null;
+        dateStr = dateStr.trim();
+
+        // Relative dates
+        if ("今天".equals(dateStr) || "today".equalsIgnoreCase(dateStr)) {
+            return LocalDate.now();
+        }
+        if ("明天".equals(dateStr) || "tomorrow".equalsIgnoreCase(dateStr)) {
+            return LocalDate.now().plusDays(1);
+        }
+        if ("后天".equals(dateStr)) {
+            return LocalDate.now().plusDays(2);
+        }
+        if ("下周".equals(dateStr) || "next week".equalsIgnoreCase(dateStr)) {
+            return LocalDate.now().plusWeeks(1);
+        }
+
+        // Try standard ISO format
+        try {
+            return LocalDate.parse(dateStr);
+        } catch (Exception ignored) {}
+
+        // Try yyyy/MM/dd
+        try {
+            return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        } catch (Exception ignored) {}
+
+        // Try Chinese format yyyy年MM月dd日
+        try {
+            return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy年M月d日"));
+        } catch (Exception ignored) {}
+
+        throw new IllegalArgumentException("无法解析日期: " + dateStr);
     }
 
     private IntentExecuteResponse handleBatchCreate(String factoryId, IntentExecuteRequest request,

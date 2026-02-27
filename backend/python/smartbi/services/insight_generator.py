@@ -16,6 +16,7 @@ import pandas as pd
 
 from config import get_settings
 from common.utils.json_parser import robust_json_parse
+from common.utils.llm_limiter import llm_rate_limit, get_semaphore
 from services.context_extractor import ContextInfo
 
 logger = logging.getLogger(__name__)
@@ -59,12 +60,16 @@ class InsightGenerator:
     def __init__(self, model_override: Optional[str] = None):
         self.settings = get_settings()
         self.model_override = model_override
-        self.client = httpx.AsyncClient(timeout=60.0)
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        from common.llm_client import get_llm_http_client
+        return get_llm_http_client()
 
     @property
     def _active_model(self) -> str:
-        """Return model_override if set, otherwise default llm_model."""
-        return self.model_override or self.settings.llm_model
+        """Return model_override if set, otherwise dedicated insight model."""
+        return self.model_override or self.settings.llm_insight_model
 
     async def generate_insights(
         self,
@@ -73,7 +78,9 @@ class InsightGenerator:
         analysis_context: Optional[str] = None,
         insight_types: Optional[List[str]] = None,
         max_insights: int = 5,
-        context_info: Optional[ContextInfo] = None
+        context_info: Optional[ContextInfo] = None,
+        upload_id: Optional[Any] = None,
+        sheet_index: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Generate business insights from data
@@ -85,6 +92,8 @@ class InsightGenerator:
             insight_types: Types of insights to generate
             max_insights: Maximum number of insights to return
             context_info: Extracted context from Excel (notes, explanations, definitions)
+            upload_id: Upload identifier for result caching
+            sheet_index: Sheet index for result caching
 
         Returns:
             Generated insights
@@ -98,6 +107,26 @@ class InsightGenerator:
                     "insights": [],
                     "message": "No data available for analysis"
                 }
+
+            # Check insight result cache
+            cache_key = None
+            if upload_id is not None:
+                from common.insight_cache import get_insight_cache
+                cache = get_insight_cache()
+                cache_key = cache.make_key(upload_id, sheet_index or 0, data)
+                entry = cache.get(cache_key)
+                if entry is not None:
+                    logger.info(f"[InsightCache] HIT key={cache_key[:12]}...")
+                    cached_result = entry.insights
+                    if isinstance(cached_result, dict):
+                        cached_result["cached"] = True
+                        return cached_result
+                    return {
+                        "success": True,
+                        "insights": cached_result if isinstance(cached_result, list) else [],
+                        "method": "cached",
+                        "cached": True,
+                    }
 
             # Generate statistical insights first
             stat_insights = self._generate_statistical_insights(df, metrics)
@@ -118,12 +147,20 @@ class InsightGenerator:
             # Limit results
             insights = insights[:max_insights]
 
-            return {
+            result = {
                 "success": True,
                 "insights": insights,
                 "totalGenerated": len(insights),
                 "method": "llm" if self.settings.llm_api_key else "statistical"
             }
+
+            # Store in cache
+            if cache_key is not None:
+                from common.insight_cache import get_insight_cache
+                get_insight_cache().set(cache_key, result)
+                logger.info(f"[InsightCache] SET key={cache_key[:12]}...")
+
+            return result
 
         except Exception as e:
             logger.error(f"Insight generation failed: {e}", exc_info=True)
@@ -569,77 +606,84 @@ class InsightGenerator:
 
         return "\n".join(parts)
 
-    async def _generate_llm_insights(
-        self,
-        df: pd.DataFrame,
-        metrics: Optional[List[dict]],
-        stat_insights: List[dict],
-        context: Optional[str],
-        context_info: Optional[ContextInfo] = None
-    ) -> List[dict]:
-        """Generate AI-powered insights using LLM"""
-        try:
-            # Prepare enriched data summary for LLM
-            data_summary = self._prepare_data_summary(df)
-            financial_metrics = self._compute_financial_context(df)
-            production_metrics = self._compute_production_context(df)
-            metrics_summary = self._prepare_metrics_summary(metrics) if metrics else ""
+    # ---------------------------------------------------------------------------
+    # Cacheable system prompt (for DashScope context caching, must be > 1024 tokens)
+    # ---------------------------------------------------------------------------
 
-            # Detect analysis scenario for adaptive prompting
-            scenario = self._detect_analysis_scenario(df)
-            logger.info(f"Detected analysis scenario: {scenario}")
+    def _build_cacheable_system_prompt(self, tier: str, scenario: str) -> str:
+        """Build a system prompt that includes static parts (role + schema + rules).
 
-            # 新增：预计算关键统计摘要，减少 LLM 自行推算的不确定性
-            stat_digest = self._compute_statistical_digest(df)
+        DashScope explicit caching requires > 1024 tokens in the cached content.
+        By putting the output format schema and writing rules in the system message,
+        we ensure the system prompt exceeds 1024 tokens and gets cached across requests.
+        This dramatically reduces TTFT from ~15-20s to ~0.4s on cache hits.
+        """
+        role = self._get_scenario_system_role(scenario)
+        benchmarks = self._get_scenario_benchmarks(scenario)
 
-            # KB integration: detect food industry and inject domain knowledge
-            kb_context = await self._get_food_kb_context(df)
-
-            # Prepare context from extracted Excel notes/explanations
-            excel_context = ""
-            if context_info and context_info.has_content():
-                excel_context = f"""
-## 报表上下文信息（来自原始Excel）
-{context_info.to_prompt_text()}
-"""
-
-            # Get scenario-specific benchmark text
-            benchmark_text = self._get_scenario_benchmarks(scenario)
-
-            # Build query-focus block at the top if user asked a question
-            query_block = ""
-            if context:
-                query_block = f"""
-## 核心任务（最高优先级）
-用户提出了具体问题：「{context}」
-你的所有分析必须围绕这个问题展开。executive_summary 必须直接回答这个问题，insights 的每一条都必须与用户问题主题相关。
-禁止忽略用户问题而给出泛泛的财务综述。
-"""
-
-            prompt = f"""你是一位为食品加工企业管理层撰写经营分析报告的资深分析师。
-分析场景：{scenario}
-{benchmark_text}
-你的角色是管理层的智囊——用数据说话，给出CEO能直接采纳的建议。
-{query_block}
-## 数据概览
-{data_summary}
-
-{financial_metrics}
-
-{production_metrics}
-
-{stat_digest}
-
-{f'## 已计算指标{chr(10)}{metrics_summary}' if metrics_summary else ''}
-{excel_context}
-{kb_context}
-
-## 输出格式（严格JSON）
-
-{{
+        if tier == "small":
+            output_schema = """{
+    "executive_summary": "一句话核心结论（不超过50字，包含关键数字）",
+    "insights": [
+        {
+            "dimension": "what_happened|recommendation",
+            "type": "trend|anomaly|comparison|kpi|recommendation",
+            "title": "洞察标题（不超过15字）",
+            "text": "简洁描述（40-80字，含具体数字）",
+            "metric": "相关指标名称",
+            "sentiment": "positive|negative|neutral",
+            "importance": 1-10,
+            "confidence": 0.5-1.0,
+            "action_items": ["建议1"],
+            "recommendation": "改进建议"
+        }
+    ],
+    "risk_alerts": [{"title": "风险", "description": "描述", "severity": "high|medium|low", "mitigation": "措施"}],
+    "opportunities": [{"title": "机会", "description": "描述", "potential_impact": "收益", "action_required": "步骤"}]
+}"""
+            rules = (
+                "## 写作要求\n"
+                "1. 数字驱动：每条insight含1个具体数字\n"
+                "2. insights 2-3条，覆盖 what_happened 和 recommendation\n"
+                "3. risk_alerts 和 opportunities 各1条\n"
+                "4. 使用中文，列名翻译为中文\n"
+                "5. 严格JSON输出，不要附加Markdown或解释文字"
+            )
+        elif tier == "medium":
+            output_schema = """{
+    "executive_summary": "一句话管理摘要（不超过60字，包含核心数字）",
+    "insights": [
+        {
+            "dimension": "what_happened|why_happened|recommendation",
+            "type": "trend|anomaly|comparison|kpi|recommendation",
+            "title": "洞察标题（不超过15字）",
+            "text": "详细分析（60-120字，含具体数字和归因）",
+            "metric": "相关指标名称",
+            "sentiment": "positive|negative|neutral",
+            "importance": 1-10,
+            "confidence": 0.5-1.0,
+            "action_items": ["可执行建议1", "可执行建议2"],
+            "recommendation": "改进建议（含预期效果）"
+        }
+    ],
+    "risk_alerts": [{"title": "风险名称", "description": "风险描述", "severity": "high|medium|low", "mitigation": "缓解措施"}],
+    "opportunities": [{"title": "机会名称", "description": "机会描述", "potential_impact": "预期收益", "action_required": "落地步骤"}]
+}"""
+            rules = (
+                "## 写作铁律\n"
+                "1. 数字驱动：每条insight至少1个具体数字\n"
+                "2. 对比基准：有环比/同比/行业基准参照\n"
+                "3. 因果归因：分析变化原因\n"
+                "4. insights 3-4条，覆盖 what_happened / why_happened / recommendation\n"
+                "5. risk_alerts 和 opportunities 各至少1条\n"
+                "6. 列名翻译为中文\n"
+                "7. 严格JSON输出，不要附加Markdown或解释文字"
+            )
+        else:
+            output_schema = """{
     "executive_summary": "直接回答用户问题的一句话摘要（不超过80字），必须包含具体数字",
     "insights": [
-        {{
+        {
             "dimension": "what_happened|why_happened|forecast|recommendation",
             "type": "trend|anomaly|comparison|kpi|recommendation",
             "title": "洞察标题（不超过15字）",
@@ -650,48 +694,341 @@ class InsightGenerator:
             "confidence": 0.5-1.0,
             "action_items": ["可执行建议1（含预期效果）", "可执行建议2"],
             "recommendation": "最优先的改进建议（含量化目标和时间框架）"
-        }}
+        }
     ],
     "risk_alerts": [
-        {{
+        {
             "title": "风险名称",
             "description": "风险描述（含影响金额或百分比）",
             "severity": "high|medium|low",
             "mitigation": "缓解措施（含预期效果）"
-        }}
+        }
     ],
     "opportunities": [
-        {{
+        {
             "title": "机会名称",
             "description": "机会描述",
             "potential_impact": "量化预期收益",
             "action_required": "落地步骤"
-        }}
+        }
     ],
     "sensitivity_analysis": [
-        {{
+        {
             "factor": "关键驱动因素名称",
             "current_value": "当前值（含单位）",
             "impact_description": "若该因素变动±10%，对整体的影响描述（含量化估算）"
-        }}
+        }
     ]
-}}
+}"""
+            rules = (
+                "## 写作铁律（违反任何一条即为不合格）\n\n"
+                '1. **数字驱动**: 每条 insight 至少引用 1 个来自上方数据的具体数字。禁止「较高」「较低」「有所增长」等模糊表述。\n'
+                '   - 反面：「毛利率较高」 / 正面：「毛利率32.5%，高于行业均值28%达4.5个百分点」\n'
+                "2. **对比基准**: 每条分析必须有参照系 — 环比（上月/上期）、同比（去年同期）、行业基准、或目标值。\n"
+                '3. **因果归因**: 不仅描述「是什么」，更要分析「为什么」。例：净利下降 → 因原料采购成本上涨 + 产能利用率不足。\n'
+                "4. **建议落地**: 每条 recommendation 需含：做什么 + 预期效果 + 时间节点。\n"
+                "5. **覆盖完整**: insights 至少4条，分别覆盖 what_happened / why_happened / forecast / recommendation。\n"
+                "6. **risk_alerts** 至少1条，**opportunities** 至少1条。\n"
+                '7. **列名翻译**: 将「2025-01-01」解读为「1月」，英文字段名翻译为中文。\n'
+                "8. **精炼**: 每条 insight 的 text 控制在 80-150 字，executive_summary 不超过 80 字。\n"
+                "9. **敏感性分析**: 识别2-3个关键驱动因素，输出sensitivity_analysis数组。\n"
+                "10. 严格以JSON格式输出，不要附加任何Markdown标记或解释文字。"
+            )
 
-## 写作铁律（违反任何一条即为不合格）
+        # Build a comprehensive analysis methodology section to ensure
+        # the system prompt exceeds 1024 DashScope tokens (required for explicit caching).
+        methodology = (
+            "## 分析方法论\n\n"
+            "### 第一步：数据概览\n"
+            "- 确认数据的时间跨度、样本量、关键指标列\n"
+            "- 识别数据中的缺失值、异常值和极端值\n"
+            "- 判断数据的季节性特征和周期性规律\n\n"
+            "### 第二步：指标拆解\n"
+            "- 使用杜邦分析法拆解利润率（利润率 = 净利/收入 = (收入-成本-费用)/收入）\n"
+            "- 关键比率计算：毛利率、净利率、费用率、成本率、人效比\n"
+            "- 环比分析：本期 vs 上期，计算绝对变化和相对变化率\n"
+            "- 同比分析：本期 vs 去年同期，排除季节性干扰\n"
+            "- 结构分析：各项占总额的百分比，识别结构性变化\n\n"
+            "### 第三步：异常检测\n"
+            "- 波动超过均值±2个标准差的指标视为异常\n"
+            "- 连续3期单向变动（持续上升或下降）视为趋势信号\n"
+            "- 占比突变超过5个百分点视为结构性变化\n"
+            "- 负利润、负增长、成本倒挂等情况必须作为风险预警\n\n"
+            "### 第四步：归因与建议\n"
+            "- 每个发现必须有可能的原因分析（至少1个归因假设）\n"
+            "- 建议按优先级排序：P0（立即执行）、P1（本月内）、P2（本季度内）\n"
+            "- 建议须可量化：预期改善幅度、目标值、时间节点\n\n"
+            "### 行业对标参考表\n"
+            "| 行业 | 毛利率 | 净利率 | 费用率 | 库存周转(天) |\n"
+            "|------|--------|--------|--------|-------------|\n"
+            "| 食品加工(综合) | 15-35% | 3-8% | 15-25% | 30-90 |\n"
+            "| 禽类加工 | 6-10% | 1-3% | 8-12% | 15-30 |\n"
+            "| 乳制品 | 10-15% | 3-6% | 12-18% | 20-45 |\n"
+            "| 预制菜 | 15-25% | 5-10% | 15-22% | 30-60 |\n"
+            "| 调味品 | 35-43% | 10-18% | 18-28% | 60-120 |\n"
+            "| 餐饮 | 55-65% | 8-15% | 35-50% | 7-15 |\n"
+            "| 零售 | 20-30% | 2-5% | 18-25% | 30-60 |\n\n"
+            "### 常见分析陷阱（必须避免）\n"
+            "- 幸存者偏差：只看盈利月份忽略亏损月份，导致高估整体利润率\n"
+            "- 基数效应：低基数月份同比增长率虚高（如去年1月收入5万，今年10万，同比+100%但绝对值仍低）\n"
+            "- 指标孤立解读：毛利率提升但销量下降，可能是砍掉低毛利产品而非真正改善\n"
+            "- 忽略季节性：食品行业Q1（春节）和Q4（年终备货）天然高于Q2/Q3，不可简单环比\n"
+            "- 费用率计算口径不一：管理费用率和销售费用率分母是收入还是成本需保持一致\n"
+        )
 
-1. **数字驱动**: 每条 insight 至少引用 1 个来自上方数据的具体数字。禁止"较高""较低""有所增长"等模糊表述。
-   - 反面："毛利率较高" / 正面："毛利率32.5%，高于行业均值28%达4.5个百分点"
-2. **对比基准**: 每条分析必须有参照系 — 环比（上月/上期）、同比（去年同期）、行业基准、或目标值。
-3. **因果归因**: 不仅描述"是什么"，更要分析"为什么"。例：净利下降 → 因原料采购成本上涨 + 产能利用率不足。
-4. **建议落地**: 每条 recommendation 需含：做什么 + 预期效果 + 时间节点。例："Q3前将散装原料集采比例从40%提升至60%，预计降本120万/年"。
-5. **覆盖完整**: insights 至少4条，分别覆盖 what_happened / why_happened / forecast / recommendation。
-6. **risk_alerts** 至少1条（severity=high/medium/low），**opportunities** 至少1条。
-7. **列名翻译**: 将 "2025-01-01" 解读为 "1月"，英文字段名翻译为中文。
-8. **精炼**: 每条 insight 的 text 控制在 80-150 字，executive_summary 不超过 80 字。
-9. **敏感性分析**: 识别2-3个关键驱动因素，输出sensitivity_analysis数组。每项含factor/current_value/impact_description。例：原料成本每上升5%，净利率预计下降约1.2个百分点。"""
+        return (
+            f"{role}\n\n"
+            f"分析场景：{scenario}\n"
+            f"{benchmarks}\n\n"
+            f"你的角色是管理层的智囊——用数据说话，给出CEO能直接采纳的建议。\n\n"
+            f"{methodology}\n\n"
+            f"## 输出格式（严格JSON）\n\n"
+            f"{output_schema}\n\n"
+            f"{rules}"
+        )
 
-            system_role = self._get_scenario_system_role(scenario)
-            response = await self._call_llm(prompt, system_role, enable_thinking=True)
+    # ---------------------------------------------------------------------------
+    # Data-size tiering helpers
+    # ---------------------------------------------------------------------------
+
+    @staticmethod
+    def _get_tiered_config(row_count: int) -> dict:
+        """Return max_tokens and tier label based on row count.
+
+        Tiers:
+          small  (row_count < 50)  : max_tokens=1500, 2-dimension prompt
+          medium (50 <= rc < 200)  : max_tokens=2500, 3-dimension prompt
+          large  (row_count >= 200): max_tokens=4000, full 4-dimension prompt
+        """
+        if row_count < 50:
+            return {"max_tokens": 1500, "tier": "small"}
+        elif row_count < 200:
+            return {"max_tokens": 2500, "tier": "medium"}
+        else:
+            return {"max_tokens": 4000, "tier": "large"}
+
+    def _build_tiered_prompt(
+        self,
+        tier: str,
+        scenario: str,
+        benchmark_text: str,
+        query_block: str,
+        data_summary: str,
+        financial_metrics: str,
+        production_metrics: str,
+        stat_digest: str,
+        metrics_summary: str,
+        excel_context: str,
+        kb_context: str,
+    ) -> str:
+        """Build an LLM prompt whose complexity scales with the data tier.
+
+        small  → 2 dimensions (what_happened, recommendation)
+        medium → 3 dimensions (what_happened, why_happened, recommendation)
+        large  → full 4 dimensions + sensitivity_analysis
+
+        NOTE: Static parts (output schema + rules) are now in the SYSTEM message
+        via _build_cacheable_system_prompt() for DashScope context caching.
+        This method only returns the DATA portion as user prompt.
+        """
+        data_block = (
+            f"## 数据概览\n{data_summary}\n\n"
+            f"{financial_metrics}\n\n"
+            f"{production_metrics}\n\n"
+            f"{stat_digest}\n\n"
+            f"{f'## 已计算指标{chr(10)}{metrics_summary}' if metrics_summary else ''}\n"
+            f"{excel_context}\n"
+            f"{kb_context}\n"
+            f"{query_block}"
+        )
+
+        if tier == "small":
+            # 2 dimensions: what_happened + recommendation only
+            output_schema = """{
+    "executive_summary": "一句话核心结论（不超过50字，包含关键数字）",
+    "insights": [
+        {
+            "dimension": "what_happened|recommendation",
+            "type": "trend|anomaly|comparison|kpi|recommendation",
+            "title": "洞察标题（不超过15字）",
+            "text": "简洁描述（40-80字，含具体数字）",
+            "metric": "相关指标名称",
+            "sentiment": "positive|negative|neutral",
+            "importance": 1-10,
+            "confidence": 0.5-1.0,
+            "action_items": ["建议1"],
+            "recommendation": "改进建议"
+        }
+    ],
+    "risk_alerts": [{"title": "风险", "description": "描述", "severity": "high|medium|low", "mitigation": "措施"}],
+    "opportunities": [{"title": "机会", "description": "描述", "potential_impact": "收益", "action_required": "步骤"}]
+}"""
+            rules = (
+                "## 写作要求\n"
+                "1. 数字驱动：每条insight含1个具体数字\n"
+                "2. insights 2-3条，覆盖 what_happened 和 recommendation\n"
+                "3. risk_alerts 和 opportunities 各1条\n"
+                "4. 使用中文，列名翻译"
+            )
+        elif tier == "medium":
+            # 3 dimensions: what_happened, why_happened, recommendation
+            output_schema = """{
+    "executive_summary": "一句话管理摘要（不超过60字，包含核心数字）",
+    "insights": [
+        {
+            "dimension": "what_happened|why_happened|recommendation",
+            "type": "trend|anomaly|comparison|kpi|recommendation",
+            "title": "洞察标题（不超过15字）",
+            "text": "详细分析（60-120字，含具体数字和归因）",
+            "metric": "相关指标名称",
+            "sentiment": "positive|negative|neutral",
+            "importance": 1-10,
+            "confidence": 0.5-1.0,
+            "action_items": ["可执行建议1", "可执行建议2"],
+            "recommendation": "改进建议（含预期效果）"
+        }
+    ],
+    "risk_alerts": [{"title": "风险名称", "description": "风险描述", "severity": "high|medium|low", "mitigation": "缓解措施"}],
+    "opportunities": [{"title": "机会名称", "description": "机会描述", "potential_impact": "预期收益", "action_required": "落地步骤"}]
+}"""
+            rules = (
+                "## 写作铁律\n"
+                "1. 数字驱动：每条insight至少1个具体数字\n"
+                "2. 对比基准：有环比/同比/行业基准参照\n"
+                "3. 因果归因：分析变化原因\n"
+                "4. insights 3-4条，覆盖 what_happened / why_happened / recommendation\n"
+                "5. risk_alerts 和 opportunities 各至少1条\n"
+                "6. 列名翻译，使用中文"
+            )
+        else:
+            # large: full 4 dimensions + sensitivity_analysis
+            output_schema = """{
+    "executive_summary": "直接回答用户问题的一句话摘要（不超过80字），必须包含具体数字",
+    "insights": [
+        {
+            "dimension": "what_happened|why_happened|forecast|recommendation",
+            "type": "trend|anomaly|comparison|kpi|recommendation",
+            "title": "洞察标题（不超过15字）",
+            "text": "详细分析（80-150字，必须包含：1个以上具体数字 + 业务归因 + 行业对标或环比变化）",
+            "metric": "相关指标名称",
+            "sentiment": "positive|negative|neutral",
+            "importance": 1-10,
+            "confidence": 0.5-1.0,
+            "action_items": ["可执行建议1（含预期效果）", "可执行建议2"],
+            "recommendation": "最优先的改进建议（含量化目标和时间框架）"
+        }
+    ],
+    "risk_alerts": [
+        {
+            "title": "风险名称",
+            "description": "风险描述（含影响金额或百分比）",
+            "severity": "high|medium|low",
+            "mitigation": "缓解措施（含预期效果）"
+        }
+    ],
+    "opportunities": [
+        {
+            "title": "机会名称",
+            "description": "机会描述",
+            "potential_impact": "量化预期收益",
+            "action_required": "落地步骤"
+        }
+    ],
+    "sensitivity_analysis": [
+        {
+            "factor": "关键驱动因素名称",
+            "current_value": "当前值（含单位）",
+            "impact_description": "若该因素变动±10%，对整体的影响描述（含量化估算）"
+        }
+    ]
+}"""
+            rules = (
+                "## 写作铁律（违反任何一条即为不合格）\n\n"
+                '1. **数字驱动**: 每条 insight 至少引用 1 个来自上方数据的具体数字。禁止「较高」「较低」「有所增长」等模糊表述。\n'
+                '   - 反面：「毛利率较高」 / 正面：「毛利率32.5%，高于行业均值28%达4.5个百分点」\n'
+                "2. **对比基准**: 每条分析必须有参照系 — 环比（上月/上期）、同比（去年同期）、行业基准、或目标值。\n"
+                '3. **因果归因**: 不仅描述「是什么」，更要分析「为什么」。例：净利下降 → 因原料采购成本上涨 + 产能利用率不足。\n'
+                "4. **建议落地**: 每条 recommendation 需含：做什么 + 预期效果 + 时间节点。\n"
+                "5. **覆盖完整**: insights 至少4条，分别覆盖 what_happened / why_happened / forecast / recommendation。\n"
+                "6. **risk_alerts** 至少1条，**opportunities** 至少1条。\n"
+                '7. **列名翻译**: 将「2025-01-01」解读为「1月」，英文字段名翻译为中文。\n'
+                "8. **精炼**: 每条 insight 的 text 控制在 80-150 字，executive_summary 不超过 80 字。\n"
+                "9. **敏感性分析**: 识别2-3个关键驱动因素，输出sensitivity_analysis数组。"
+            )
+
+        return f"请分析以下数据并输出JSON：\n\n{data_block}"
+
+    async def _generate_llm_insights(
+        self,
+        df: pd.DataFrame,
+        metrics: Optional[List[dict]],
+        stat_insights: List[dict],
+        context: Optional[str],
+        context_info: Optional[ContextInfo] = None
+    ) -> List[dict]:
+        """Generate AI-powered insights using LLM, with tier-scaled prompt and token limits."""
+        try:
+            # Determine tier from row count before building prompt
+            row_count = len(df)
+            tier_cfg = self._get_tiered_config(row_count)
+            tier = tier_cfg["tier"]
+            max_tokens = tier_cfg["max_tokens"]
+            logger.info(f"Insight generation tier: {tier} (rows={row_count}, max_tokens={max_tokens})")
+
+            # Prepare enriched data summary for LLM
+            data_summary = self._prepare_data_summary(df)
+            financial_metrics = self._compute_financial_context(df)
+            production_metrics = self._compute_production_context(df)
+            metrics_summary = self._prepare_metrics_summary(metrics) if metrics else ""
+
+            # Detect analysis scenario for adaptive prompting
+            scenario = self._detect_analysis_scenario(df)
+            logger.info(f"Detected analysis scenario: {scenario}")
+
+            # 预计算关键统计摘要，减少 LLM 自行推算的不确定性
+            stat_digest = self._compute_statistical_digest(df)
+
+            # KB integration: detect food industry and inject domain knowledge
+            kb_context = await self._get_food_kb_context(df)
+
+            # Prepare context from extracted Excel notes/explanations
+            excel_context = ""
+            if context_info and context_info.has_content():
+                excel_context = f"\n## 报表上下文信息（来自原始Excel）\n{context_info.to_prompt_text()}\n"
+
+            # Get scenario-specific benchmark text
+            benchmark_text = self._get_scenario_benchmarks(scenario)
+
+            # Build query-focus block at the top if user asked a question
+            query_block = ""
+            if context:
+                query_block = (
+                    f"\n## 核心任务（最高优先级）\n"
+                    f"用户提出了具体问题：「{context}」\n"
+                    f"你的所有分析必须围绕这个问题展开。executive_summary 必须直接回答这个问题，"
+                    f"insights 的每一条都必须与用户问题主题相关。\n"
+                    f"禁止忽略用户问题而给出泛泛的财务综述。\n"
+                )
+
+            prompt = self._build_tiered_prompt(
+                tier=tier,
+                scenario=scenario,
+                benchmark_text=benchmark_text,
+                query_block=query_block,
+                data_summary=data_summary,
+                financial_metrics=financial_metrics,
+                production_metrics=production_metrics,
+                stat_digest=stat_digest,
+                metrics_summary=metrics_summary,
+                excel_context=excel_context,
+                kb_context=kb_context,
+            )
+
+            # Use cacheable system prompt (role + schema + rules > 1024 tokens)
+            # for DashScope explicit caching — reduces TTFT from ~15s to ~0.4s
+            system_role = self._build_cacheable_system_prompt(tier, scenario)
+            response = await self._call_llm(prompt, system_role, enable_thinking=False,
+                                            max_tokens=max_tokens)
             return self._parse_llm_insights(response, stat_insights)
 
         except Exception as e:
@@ -1071,43 +1408,57 @@ class InsightGenerator:
             ],
             "temperature": 0.4,
             "max_tokens": 2000,
-            "extra_body": {"enable_thinking": False}
+            "enable_thinking": False
         }
         try:
-            response = await self.client.post(
-                f"{self.settings.llm_base_url}/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=httpx.Timeout(self.LLM_TIMEOUT_BASE)
-            )
+            async with llm_rate_limit():
+                response = await self.client.post(
+                    f"{self.settings.llm_base_url}/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=httpx.Timeout(self.LLM_TIMEOUT_BASE)
+                )
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
         except Exception as e:
             logger.error(f"Text analysis LLM call failed: {e}")
             return ""
 
-    async def _call_llm_stream(self, prompt: str, system_role: Optional[str] = None):
-        """Call LLM API with SSE streaming — yields text chunks as they arrive"""
+    async def _call_llm_stream(self, prompt: str, system_role: Optional[str] = None,
+                               max_tokens: int = 2500):
+        """Call LLM API with SSE streaming — yields text chunks as they arrive.
+        Args:
+            max_tokens: Maximum tokens for the response (scaled by data size tier).
+        """
         headers = {
             "Authorization": f"Bearer {self.settings.llm_api_key}",
             "Content-Type": "application/json"
         }
         if not system_role:
             system_role = self._get_scenario_system_role('general')
+        system_content = system_role + " 严格以JSON格式回复，不要附加任何Markdown标记或解释文字。"
         payload = {
             "model": self._active_model,
             "messages": [
                 {
                     "role": "system",
-                    "content": system_role + " 严格以JSON格式回复，不要附加任何Markdown标记或解释文字。"
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": system_content,
+                            "cache_control": {"type": "ephemeral"}
+                        }
+                    ]
                 },
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.4,
-            "max_tokens": 2500,
+            "max_tokens": max_tokens,
             "stream": True,
-            "extra_body": {"enable_thinking": False}
+            "enable_thinking": False
         }
+        sem = get_semaphore()
+        await sem.acquire()
         try:
             async with self.client.stream(
                 "POST",
@@ -1133,6 +1484,8 @@ class InsightGenerator:
                         continue
         except Exception as e:
             logger.error(f"LLM streaming call failed: {e}")
+        finally:
+            sem.release()
 
     async def _call_llm_stream_text(
         self, prompt: str, system_role: Optional[str] = None,
@@ -1159,8 +1512,10 @@ class InsightGenerator:
             "temperature": temperature,
             "max_tokens": max_tokens,
             "stream": True,
-            "extra_body": {"enable_thinking": False}
+            "enable_thinking": False
         }
+        sem = get_semaphore()
+        await sem.acquire()
         try:
             async with self.client.stream(
                 "POST",
@@ -1186,6 +1541,8 @@ class InsightGenerator:
                         continue
         except Exception as e:
             logger.error(f"LLM text streaming call failed: {e}")
+        finally:
+            sem.release()
 
     async def _get_food_kb_context_with_timeout(self, df: pd.DataFrame, timeout_secs: float = 3.0) -> str:
         """Query food KB with a timeout — returns empty string on timeout or error."""
@@ -1206,7 +1563,9 @@ class InsightGenerator:
         metrics: Optional[List[dict]] = None,
         analysis_context: Optional[str] = None,
         max_insights: int = 5,
-        context_info: Optional[ContextInfo] = None
+        context_info: Optional[ContextInfo] = None,
+        upload_id: Optional[Any] = None,
+        sheet_index: Optional[int] = None,
     ):
         """
         Stream AI insights as SSE events.
@@ -1238,78 +1597,76 @@ class InsightGenerator:
             if context_info and context_info.has_content():
                 excel_context = f"\n## 报表上下文信息（来自原始Excel）\n{context_info.to_prompt_text()}"
 
-            prompt = f"""你是一位为食品加工企业管理层撰写经营分析报告的资深分析师。
-分析场景：{scenario}
-{benchmark_text}
-你的角色是管理层的智囊——用数据说话，给出CEO能直接采纳的建议。
+            # Determine tier from row count — scale tokens and prompt complexity
+            row_count = len(df)
+            tier_cfg = self._get_tiered_config(row_count)
+            tier = tier_cfg["tier"]
+            max_tokens = tier_cfg["max_tokens"]
+            logger.info(f"Streaming insight tier: {tier} (rows={row_count}, max_tokens={max_tokens})")
 
-## 数据概览
-{data_summary}
-
-{financial_metrics}
-
-{production_metrics}
-
-{stat_digest}
-
-{f'## 已计算指标{chr(10)}{metrics_summary}' if metrics_summary else ''}
-
-{f'## 业务背景{chr(10)}{json.dumps(analysis_context, ensure_ascii=False)}' if analysis_context else ''}
-{excel_context}
-{kb_context}
-
-## 输出格式（严格JSON）
-
-{{
-    "executive_summary": "一句话管理摘要",
-    "insights": [
-        {{
-            "dimension": "what_happened|why_happened|forecast|recommendation",
-            "type": "trend|anomaly|comparison|kpi|recommendation",
-            "title": "洞察标题（不超过15字）",
-            "text": "详细分析（80-150字）",
-            "metric": "相关指标名称",
-            "sentiment": "positive|negative|neutral",
-            "importance": 1-10,
-            "confidence": 0.5-1.0,
-            "action_items": ["建议1", "建议2"],
-            "recommendation": "最优先的改进建议"
-        }}
-    ],
-    "risk_alerts": [{{ "title": "风险", "description": "描述", "severity": "high|medium|low", "mitigation": "措施" }}],
-    "opportunities": [{{ "title": "机会", "description": "描述", "potential_impact": "收益", "action_required": "步骤" }}],
-    "sensitivity_analysis": [{{ "factor": "驱动因素", "current_value": "当前值", "impact_description": "变动影响" }}]
-}}
-
-## 写作铁律
-1. 数字驱动 2. 对比基准 3. 因果归因 4. 建议落地 5. 覆盖完整(4+条) 6. risk_alerts+opportunities各至少1条 7. 列名翻译 8. 精炼(80-150字) 9. 敏感性分析(2-3个关键驱动因素)"""
+            # Build data-only user prompt (static parts are in cacheable system prompt)
+            query_block = ""
+            if analysis_context:
+                query_block = (
+                    f"\n## 核心任务（最高优先级）\n"
+                    f"用户提出了具体问题：「{analysis_context}」\n"
+                    f"你的所有分析必须围绕这个问题展开。\n"
+                )
+            prompt = self._build_tiered_prompt(
+                tier=tier,
+                scenario=scenario,
+                benchmark_text=self._get_scenario_benchmarks(scenario),
+                query_block=query_block,
+                data_summary=data_summary,
+                financial_metrics=financial_metrics,
+                production_metrics=production_metrics,
+                stat_digest=stat_digest,
+                metrics_summary=metrics_summary,
+                excel_context=excel_context,
+                kb_context=kb_context,
+            )
 
             # Stream LLM response chunk by chunk
-            system_role = self._get_scenario_system_role(scenario)
+            # Use cacheable system prompt (> 1024 tokens) for DashScope context caching
+            system_role = self._build_cacheable_system_prompt(tier, scenario)
             full_response = ""
-            async for chunk in self._call_llm_stream(prompt, system_role):
+            async for chunk in self._call_llm_stream(prompt, system_role, max_tokens=max_tokens):
                 full_response += chunk
                 yield {"event": "chunk", "data": chunk}
 
             # Parse the complete response
             stat_insights = self._generate_statistical_insights(df, metrics)
             parsed = self._parse_llm_insights(full_response, stat_insights)
-            yield {"event": "done", "data": json.dumps({
+            done_result = {
                 "success": True,
                 "insights": parsed,
                 "totalGenerated": len(parsed),
                 "method": "llm"
-            }, ensure_ascii=False, default=str)}
+            }
+
+            # Cache the streaming result for future non-streaming lookups
+            if upload_id is not None:
+                try:
+                    from common.insight_cache import get_insight_cache
+                    cache = get_insight_cache()
+                    ck = cache.make_key(upload_id, sheet_index or 0, data)
+                    cache.set(ck, done_result)
+                    logger.info(f"[InsightCache] SET (stream) key={ck[:12]}...")
+                except Exception as cache_err:
+                    logger.debug(f"[InsightCache] stream cache store failed: {cache_err}")
+
+            yield {"event": "done", "data": json.dumps(done_result, ensure_ascii=False, default=str)}
 
         except Exception as e:
             logger.error(f"Streaming insight generation failed: {e}", exc_info=True)
             yield {"event": "done", "data": json.dumps({"success": False, "error": str(e)})}
 
     async def _call_llm(self, prompt: str, system_role: Optional[str] = None,
-                        enable_thinking: bool = False) -> str:
+                        enable_thinking: bool = False, max_tokens: int = 2500) -> str:
         """Call LLM API with timeout and retry.
         Args:
             enable_thinking: Whether to enable thinking mode (default False for speed).
+            max_tokens: Maximum tokens for the response (scaled by data size tier).
         """
         headers = {
             "Authorization": f"Bearer {self.settings.llm_api_key}",
@@ -1319,12 +1676,21 @@ class InsightGenerator:
         if not system_role:
             system_role = self._get_scenario_system_role('general')
 
+        # Use content array format with cache_control for DashScope explicit caching.
+        # The system prompt is stable across requests → caching reduces TTFT significantly.
+        system_content = system_role + " 严格以JSON格式回复，不要附加任何Markdown标记或解释文字。"
         payload = {
             "model": self._active_model,
             "messages": [
                 {
                     "role": "system",
-                    "content": system_role + " 严格以JSON格式回复，不要附加任何Markdown标记或解释文字。"
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": system_content,
+                            "cache_control": {"type": "ephemeral"}
+                        }
+                    ]
                 },
                 {
                     "role": "user",
@@ -1332,8 +1698,8 @@ class InsightGenerator:
                 }
             ],
             "temperature": 0.4,
-            "max_tokens": 2500,
-            "extra_body": {"enable_thinking": enable_thinking}
+            "max_tokens": max_tokens,
+            "enable_thinking": enable_thinking
         }
 
         for attempt in range(self.LLM_MAX_RETRIES):
@@ -1342,15 +1708,23 @@ class InsightGenerator:
                     self.LLM_TIMEOUT_BASE + attempt * self.LLM_TIMEOUT_INCREMENT,
                     self.LLM_TIMEOUT_MAX
                 )
-                response = await self.client.post(
-                    f"{self.settings.llm_base_url}/chat/completions",
-                    headers=headers,
-                    json=payload,
-                    timeout=httpx.Timeout(timeout_secs)
-                )
+                async with llm_rate_limit():
+                    response = await self.client.post(
+                        f"{self.settings.llm_base_url}/chat/completions",
+                        headers=headers,
+                        json=payload,
+                        timeout=httpx.Timeout(timeout_secs)
+                    )
                 response.raise_for_status()
 
                 result = response.json()
+                # Log cache hit stats for monitoring
+                usage = result.get("usage", {})
+                prompt_details = usage.get("prompt_tokens_details", {})
+                cached = prompt_details.get("cached_tokens", 0)
+                total_prompt = usage.get("prompt_tokens", 0)
+                if cached > 0:
+                    logger.info(f"[ContextCache] HIT cached={cached}/{total_prompt} tokens ({cached*100//max(total_prompt,1)}%)")
                 return result["choices"][0]["message"]["content"]
             except httpx.TimeoutException:
                 logger.warning(f"LLM call timeout (attempt {attempt + 1}/{self.LLM_MAX_RETRIES}, timeout={timeout_secs}s)")
@@ -1463,5 +1837,5 @@ class InsightGenerator:
             return ""
 
     async def close(self):
-        """Close HTTP client"""
-        await self.client.aclose()
+        """No-op: shared client lifecycle managed by main.py lifespan"""
+        pass

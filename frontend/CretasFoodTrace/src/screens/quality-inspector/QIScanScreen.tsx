@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CameraView, Camera, useCameraPermissions } from 'expo-camera';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +26,7 @@ type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 
 export default function QIScanScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -116,7 +118,7 @@ export default function QIScanScreen() {
 
   if (!permission) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color={QI_COLORS.primary} />
       </View>
     );
@@ -124,7 +126,7 @@ export default function QIScanScreen() {
 
   if (!permission.granted) {
     return (
-      <View style={styles.permissionContainer}>
+      <View style={[styles.permissionContainer, { paddingTop: insets.top }]}>
         <Ionicons name="camera-outline" size={64} color={QI_COLORS.disabled} />
         <Text style={styles.permissionTitle}>{t('scan.cameraPermission')}</Text>
         <Text style={styles.permissionText}>
@@ -179,7 +181,7 @@ export default function QIScanScreen() {
         </View>
 
         {/* 控制按钮 */}
-        <View style={styles.controls}>
+        <View style={[styles.controls, { bottom: Math.max(insets.bottom, 16) + 80 }]}>
           <TouchableOpacity style={styles.controlBtn} onPress={toggleFlash}>
             <Ionicons
               name={flashOn ? 'flash' : 'flash-outline'}

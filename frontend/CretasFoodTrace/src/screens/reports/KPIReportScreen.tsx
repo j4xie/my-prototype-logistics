@@ -21,6 +21,7 @@ import {
   Icon,
   Card,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ReportStackParamList } from '../../types/navigation';
@@ -548,7 +549,7 @@ export default function KPIReportScreen() {
   // Render loading state
   if (loading && !kpiData && activeTab === 'kpi') {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="数据洞察" />
@@ -558,14 +559,14 @@ export default function KPIReportScreen() {
           <ActivityIndicator size="large" />
           <Text style={styles.loadingText}>加载KPI数据...</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   // Render empty state for KPI tab
   if (!kpiData && activeTab === 'kpi') {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="数据洞察" />
@@ -578,12 +579,12 @@ export default function KPIReportScreen() {
             重新加载
           </Button>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="数据洞察" />
@@ -633,7 +634,7 @@ export default function KPIReportScreen() {
       ) : (
         renderInsightTabContent()
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -865,7 +866,7 @@ const styles = StyleSheet.create({
   },
   insightCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 24,
   },
   insightHeader: {

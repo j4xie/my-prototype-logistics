@@ -3,9 +3,9 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -28,7 +28,7 @@ const ScanReportSuccessScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.content}>
         {/* Success icon */}
         <View style={styles.iconContainer}>
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   summaryCard: {
     width: '100%',
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 32,
     shadowColor: '#000',

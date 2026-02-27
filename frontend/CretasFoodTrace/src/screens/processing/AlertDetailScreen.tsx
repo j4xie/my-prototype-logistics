@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput,
-  ActivityIndicator, SafeAreaView, Alert,
+  ActivityIndicator, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { apiClient } from '../../services/api/apiClient';
@@ -102,7 +103,7 @@ const AlertDetailScreen: React.FC = () => {
   ];
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={[styles.headerBanner, { backgroundColor: getLevelColor(alertData.level) }]}>

@@ -10,6 +10,7 @@ import com.cretas.aims.ai.tool.ToolExecutor;
 import com.cretas.aims.ai.tool.ToolRegistry;
 import com.cretas.aims.config.ArenaRLConfig;
 import com.cretas.aims.config.DashScopeConfig;
+import com.cretas.aims.config.IntentKnowledgeBase;
 import com.cretas.aims.config.IntentMatchingConfig;
 import com.cretas.aims.dto.arena.TournamentResult;
 import com.cretas.aims.service.arena.ArenaRLTournamentService;
@@ -72,6 +73,14 @@ import com.cretas.aims.service.ConfidenceCalibrationService;
 @Service
 public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
 
+    /**
+     * D8v2: ThreadLocal 存储原始用户输入，用于 Tool Calling 领域检测。
+     * 预处理器可能大幅简化输入（如"帮我查一下本月各产线的良品率对比"→"查产线"），
+     * 导致领域关键词丢失。此 ThreadLocal 在 classifyIntent(originalInput) 重载中设置，
+     * 在 getFilteredToolsForQuery() 中读取。
+     */
+    private static final ThreadLocal<String> originalInputHolder = new ThreadLocal<>();
+
     @Value("${cretas.ai.service.url:http://localhost:8083}")
     private String aiServiceUrl;
 
@@ -125,6 +134,9 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
     // v11.4 RAG: RAG 检索服务，用于动态 Few-Shot 示例
     private final RAGRetrievalService ragRetrievalService;
 
+    // D8v2: 意图知识库，用于领域检测 → 工具过滤
+    private final IntentKnowledgeBase intentKnowledgeBase;
+
     private static final MediaType JSON_MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8");
 
     // ==================== Category 定义（两阶段分类用） ====================
@@ -177,6 +189,36 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             Map.entry("EQUIPMENT", List.of("设备状态查询", "设备告警处理", "安排设备维护"))
     );
 
+    // ==================== D8v2: Domain → Tool 前缀映射（工具过滤用） ====================
+
+    /**
+     * 每个 Domain 对应的工具名称前缀。
+     * 工具命名规则: {domain}_{action}，如 material_batch_query, equipment_list
+     */
+    private static final Map<IntentKnowledgeBase.Domain, Set<String>> DOMAIN_TOOL_PREFIXES;
+    static {
+        Map<IntentKnowledgeBase.Domain, Set<String>> m = new EnumMap<>(IntentKnowledgeBase.Domain.class);
+        m.put(IntentKnowledgeBase.Domain.EQUIPMENT, Set.of("equipment_", "dahua_", "isapi_"));
+        m.put(IntentKnowledgeBase.Domain.SCALE, Set.of("scale_"));
+        m.put(IntentKnowledgeBase.Domain.PROCESSING, Set.of("processing_", "production_"));
+        m.put(IntentKnowledgeBase.Domain.MATERIAL, Set.of("material_"));
+        m.put(IntentKnowledgeBase.Domain.ALERT, Set.of("alert_"));
+        m.put(IntentKnowledgeBase.Domain.QUALITY, Set.of("quality_"));
+        m.put(IntentKnowledgeBase.Domain.SHIPMENT, Set.of("shipment_", "trace_"));
+        m.put(IntentKnowledgeBase.Domain.REPORT, Set.of("report_"));
+        m.put(IntentKnowledgeBase.Domain.INVENTORY, Set.of("material_"));  // 库存复用 material tools
+        m.put(IntentKnowledgeBase.Domain.CUSTOMER, Set.of("customer_", "supplier_"));
+        m.put(IntentKnowledgeBase.Domain.USER, Set.of("user_"));
+        m.put(IntentKnowledgeBase.Domain.SYSTEM, Set.of("scheduling_", "factory_"));
+        m.put(IntentKnowledgeBase.Domain.FINANCE, Set.of("report_finance", "report_cost", "report_bom", "conversion_"));
+        DOMAIN_TOOL_PREFIXES = Collections.unmodifiableMap(m);
+    }
+
+    /** 元工具前缀：始终包含（仅意图创建和系统查询工具，保持精简） */
+    private static final Set<String> META_TOOL_PREFIXES = Set.of(
+            "create_new_intent", "generate_handler", "query_entity"
+    );
+
     @Value("${cretas.ai.conversation.threshold:0.3}")
     private double conversationThreshold;
 
@@ -192,7 +234,8 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             @Autowired(required = false) IntentMatchingConfig intentMatchingConfig,
             @Autowired(required = false) ArenaRLTournamentService arenaRLTournamentService,
             @Autowired(required = false) ArenaRLConfig arenaRLConfig,
-            @Autowired(required = false) RAGRetrievalService ragRetrievalService) {
+            @Autowired(required = false) RAGRetrievalService ragRetrievalService,
+            @Autowired(required = false) IntentKnowledgeBase intentKnowledgeBase) {
         // OkHttp 客户端
         if (aiServiceHttpClient != null) {
             this.httpClient = aiServiceHttpClient;
@@ -267,6 +310,9 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             log.info("RAG Few-Shot enhancement ENABLED for LLM fallback");
         }
 
+        // D8v2: 意图知识库（用于领域检测 → 工具过滤）
+        this.intentKnowledgeBase = intentKnowledgeBase;
+
         if (arenaRLConfig != null && arenaRLConfig.isIntentDisambiguationEnabled()) {
             log.info("ArenaRL intent disambiguation ENABLED (ambiguity threshold={})",
                     arenaRLConfig.getIntentDisambiguation().getAmbiguityThreshold());
@@ -285,6 +331,19 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             return classifyIntentDirect(userInput, availableIntents, factoryId, userId, userRole);
         } else {
             return classifyIntentViaPython(userInput, availableIntents, factoryId, userId, userRole);
+        }
+    }
+
+    @Override
+    public IntentMatchResult classifyIntent(String userInput, String originalInput,
+                                             List<AIIntentConfig> availableIntents,
+                                             String factoryId, Long userId, String userRole) {
+        // D8v2: 存储原始输入用于 Tool Calling 领域检测
+        originalInputHolder.set(originalInput);
+        try {
+            return classifyIntent(userInput, availableIntents, factoryId, userId, userRole);
+        } finally {
+            originalInputHolder.remove();
         }
     }
 
@@ -2003,6 +2062,42 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         // Step 3: 处理 data 包装（兼容两种格式）
         LlmIntentClassifyResponse data = response.getActualData();
 
+        // Step 3b: 处理 Python ai_proxy 的 classification 字段
+        // Python 返回 {"data": {"classification": "{\"intent\":\"X\",\"confidence\":0.85,...}"}}
+        // classification 是 LLM 原始输出的 JSON 字符串，需要解析并提取字段
+        if (data.getClassification() != null && !data.getClassification().trim().isEmpty()
+                && "UNKNOWN".equals(data.getSafeIntentCode())) {
+            try {
+                String classificationStr = data.getClassification().trim();
+                // 去除可能的 markdown 代码块包装
+                if (classificationStr.startsWith("```")) {
+                    classificationStr = classificationStr.replaceAll("^```(?:json)?\\s*", "")
+                            .replaceAll("\\s*```$", "");
+                }
+                JsonNode classNode = objectMapper.readTree(classificationStr);
+                if (classNode.has("intent")) {
+                    data.setMatchedIntentCode(classNode.get("intent").asText("UNKNOWN"));
+                }
+                if (classNode.has("confidence")) {
+                    data.setConfidence(classNode.get("confidence").asDouble(0.5));
+                }
+                if (classNode.has("reasoning")) {
+                    data.setReasoning(classNode.get("reasoning").asText());
+                }
+                // 提取候选意图（如果有）
+                if (classNode.has("other_candidates") && classNode.get("other_candidates").isArray()) {
+                    List<LlmIntentClassifyResponse.CandidateResponse> candidates = objectMapper.convertValue(
+                            classNode.get("other_candidates"),
+                            new TypeReference<List<LlmIntentClassifyResponse.CandidateResponse>>() {});
+                    data.setOtherCandidates(candidates);
+                }
+                log.info("[Python classify] Parsed classification string: intent={}, confidence={}",
+                        data.getSafeIntentCode(), data.getSafeConfidence());
+            } catch (Exception e) {
+                log.warn("[Python classify] Failed to parse classification string: {}", e.getMessage());
+            }
+        }
+
         // Step 4: 使用安全 getter 提取字段（自动 clamp/default）
         String matchedIntentCode = data.getSafeIntentCode();
         Double confidence = data.getSafeConfidence();
@@ -2726,8 +2821,8 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
                     reasoning
             );
 
-            // 2. 获取可用工具列表
-            List<Tool> tools = toolRegistry.getAllToolDefinitions();
+            // 2. 获取可用工具列表（D8v2: 领域过滤，136→20~30 工具）
+            List<Tool> tools = getFilteredToolsForQuery(userInput, suggestedIntentCode, reasoning, userRole);
             log.debug("[Tool Calling] Available tools: {}",
                     tools.stream().map(t -> t.getFunction().getName()).collect(Collectors.toList()));
 
@@ -2745,7 +2840,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
                     .build();
 
             // 4. 调用 LLM
-            log.info("[Tool Calling] Calling DashScope with {} tools", tools.size());
+            log.info("[Tool Calling] Calling DashScope with {} tools (role: {})", tools.size(), userRole);
             ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
 
             if (response.hasError()) {
@@ -2802,6 +2897,121 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             // 降级：返回空结果，不阻断主流程
             return IntentMatchResult.empty(userInput);
         }
+    }
+
+    /**
+     * D8v2: 根据用户查询的领域过滤工具列表。
+     *
+     * <p>策略：
+     * 1. 从 suggestedIntentCode 推断主领域
+     * 2. 从 userInput 关键词推断领域 + 次要领域
+     * 3. 展开关联领域（如 QUALITY → REPORT + PROCESSING）
+     * 4. 收集匹配领域的工具前缀 + 始终包含的元工具
+     * 5. 如果过滤结果太少（<5），回退到角色过滤</p>
+     *
+     * @return 过滤后的工具列表（通常 15~30 个）
+     */
+    private List<Tool> getFilteredToolsForQuery(String userInput, String suggestedIntentCode, String reasoning, String userRole) {
+        if (intentKnowledgeBase == null || toolRegistry == null) {
+            return userRole != null
+                    ? toolRegistry.getToolDefinitionsForRole(userRole)
+                    : toolRegistry.getAllToolDefinitions();
+        }
+
+        // 1. 收集所有匹配的领域（不仅仅是得分最高的那个）
+        Set<IntentKnowledgeBase.Domain> domains = new HashSet<>();
+
+        // 从 suggestedIntentCode 推断
+        if (suggestedIntentCode != null && !suggestedIntentCode.isEmpty()) {
+            IntentKnowledgeBase.Domain d = intentKnowledgeBase.getDomainFromIntentCode(suggestedIntentCode);
+            if (d != IntentKnowledgeBase.Domain.GENERAL) {
+                domains.add(d);
+            }
+        }
+
+        // 从 userInput 关键词推断（多领域匹配）
+        domains.addAll(detectAllDomains(userInput));
+
+        // D8v2 fix: 预处理器可能去掉原始关键词（如"帮我查一下本月各产线的良品率对比"→"查产线"），
+        // 用 originalInput（通过 ThreadLocal 传入）和 reasoning 补充领域检测
+        String origInput = originalInputHolder.get();
+        if (origInput != null && !origInput.equals(userInput)) {
+            Set<IntentKnowledgeBase.Domain> origDomains = detectAllDomains(origInput);
+            if (!origDomains.isEmpty()) {
+                log.info("[Tool Calling] D8v2 originalInput='{}' detected additional domains: {}", truncate(origInput, 50), origDomains);
+                domains.addAll(origDomains);
+            }
+        }
+        if (reasoning != null && !reasoning.isEmpty()) {
+            domains.addAll(detectAllDomains(reasoning));
+        }
+
+        // 如果没匹配到任何领域，回退
+        if (domains.isEmpty()) {
+            log.info("[Tool Calling] No domain detected, falling back to role-based filtering (role: {})", userRole);
+            return userRole != null
+                    ? toolRegistry.getToolDefinitionsForRole(userRole)
+                    : toolRegistry.getAllToolDefinitions();
+        }
+
+        // 2. 收集工具前缀（直接使用检测到的领域，不做关联扩展以保持工具集精简）
+        Set<String> toolPrefixes = new HashSet<>();
+        for (IntentKnowledgeBase.Domain d : domains) {
+            Set<String> prefixes = DOMAIN_TOOL_PREFIXES.get(d);
+            if (prefixes != null) {
+                toolPrefixes.addAll(prefixes);
+            }
+        }
+
+        // 3. 按前缀过滤
+        List<Tool> filtered = toolRegistry.getToolDefinitionsForDomains(toolPrefixes, META_TOOL_PREFIXES, userRole);
+
+        log.info("[Tool Calling] Domains={}, filtered {} tools (from {}), prefixes={}",
+                domains, filtered.size(), toolRegistry.getToolCount(), toolPrefixes);
+
+        // 5. 安全检查
+        if (filtered.size() < 5) {
+            log.warn("[Tool Calling] Too few tools after domain filter ({}), falling back to role-based", filtered.size());
+            return userRole != null
+                    ? toolRegistry.getToolDefinitionsForRole(userRole)
+                    : toolRegistry.getAllToolDefinitions();
+        }
+
+        return filtered;
+    }
+
+    /**
+     * 检测用户输入中所有匹配的领域（而非仅得分最高的那个）。
+     * 例如 "帮我查各产线的良品率" 同时匹配 PROCESSING（生产）和 QUALITY（良品率）。
+     */
+    private Set<IntentKnowledgeBase.Domain> detectAllDomains(String userInput) {
+        if (userInput == null || userInput.trim().isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        String normalized = userInput.trim().toLowerCase();
+        Set<IntentKnowledgeBase.Domain> matched = new HashSet<>();
+
+        for (IntentKnowledgeBase.Domain domain : IntentKnowledgeBase.Domain.values()) {
+            if (domain == IntentKnowledgeBase.Domain.GENERAL) continue;
+
+            Set<String> keywords = intentKnowledgeBase.getDomainKeywords(domain);
+            for (String keyword : keywords) {
+                if (normalized.contains(keyword.toLowerCase())) {
+                    matched.add(domain);
+                    log.debug("[Tool Calling] Domain {} matched by keyword '{}' in '{}'",
+                            domain, keyword, normalized.length() > 30 ? normalized.substring(0, 30) + "..." : normalized);
+                    break;
+                }
+            }
+        }
+
+        log.info("[Tool Calling] detectAllDomains: input='{}', matched={}, QUALITY keywords={}",
+                normalized.length() > 40 ? normalized.substring(0, 40) + "..." : normalized,
+                matched,
+                intentKnowledgeBase.getDomainKeywords(IntentKnowledgeBase.Domain.QUALITY).size());
+
+        return matched;
     }
 
     /**

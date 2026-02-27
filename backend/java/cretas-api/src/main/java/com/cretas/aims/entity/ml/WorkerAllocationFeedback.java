@@ -157,6 +157,7 @@ public class WorkerAllocationFeedback extends BaseEntity {
      * 是否已用于模型更新
      */
     @Column(name = "is_processed")
+    @Builder.Default
     private Boolean isProcessed = false;
 
     /**

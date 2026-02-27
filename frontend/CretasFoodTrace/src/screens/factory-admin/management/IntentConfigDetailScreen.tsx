@@ -22,6 +22,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Text,
   Card,
@@ -1110,7 +1111,7 @@ export function IntentConfigDetailScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Tab 选择器 */}
       <SegmentedButtons
         value={activeTab}
@@ -1135,7 +1136,7 @@ export function IntentConfigDetailScreen() {
       {/* 模态框 */}
       {renderParameterModal()}
       {renderRuleModal()}
-    </View>
+    </SafeAreaView>
   );
 }
 

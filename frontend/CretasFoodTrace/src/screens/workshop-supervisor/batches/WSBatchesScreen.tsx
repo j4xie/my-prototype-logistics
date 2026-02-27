@@ -8,11 +8,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
@@ -47,6 +47,7 @@ const FILTER_TABS = [
 export function WSBatchesScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation('workshop');
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
@@ -150,9 +151,9 @@ export function WSBatchesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* 头部 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Text style={styles.headerTitle}>{t('batches.title')}</Text>
         <TouchableOpacity
           style={styles.addBtn}
@@ -276,7 +277,7 @@ export function WSBatchesScreen() {
       >
         <Icon source="plus" size={28} color="#fff" />
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 

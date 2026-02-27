@@ -945,7 +945,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   heroCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 16,
   },
@@ -1212,7 +1212,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: '#fff',
     margin: 20,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
   },
   modalTitle: {
@@ -1232,7 +1232,7 @@ const styles = StyleSheet.create({
   dryRunModalContainer: {
     backgroundColor: '#fff',
     margin: 20,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     maxHeight: '70%',
   },

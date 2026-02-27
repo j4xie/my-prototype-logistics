@@ -7,12 +7,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   FlatList,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +36,7 @@ export function MaterialConsumptionScreen() {
   const { t } = useTranslation('workshop');
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
+  const insets = useSafeAreaInsets();
   const batchId = route.params?.batchId || 'PB-001';
 
   // 模拟批次信息
@@ -169,9 +170,9 @@ export function MaterialConsumptionScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* 头部 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
@@ -229,13 +230,13 @@ export function MaterialConsumptionScreen() {
       </View>
 
       {/* 底部按钮 */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <TouchableOpacity style={styles.addBtn} onPress={handleAddConsumption}>
           <Icon source="plus-circle" size={20} color="#fff" />
           <Text style={styles.addBtnText}>{t('materialConsumption.actions.add')}</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

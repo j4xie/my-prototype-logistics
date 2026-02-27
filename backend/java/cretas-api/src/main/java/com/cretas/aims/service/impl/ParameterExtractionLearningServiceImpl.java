@@ -158,7 +158,7 @@ public class ParameterExtractionLearningServiceImpl implements ParameterExtracti
             if (rule != null) {
                 // 检查是否已存在相同规则
                 Optional<ParameterExtractionRule> existingRule = ruleRepository.findSimilarRule(
-                        factoryId, intentCode, paramName, rule.getPatternType(), rule.getExtractionPattern());
+                        factoryId, intentCode, paramName, rule.getPatternType().name(), rule.getExtractionPattern());
 
                 if (existingRule.isPresent()) {
                     // 更新现有规则的命中统计
@@ -228,7 +228,7 @@ public class ParameterExtractionLearningServiceImpl implements ParameterExtracti
 
                 // 检查是否已存在相同规则
                 Optional<ParameterExtractionRule> existingRule = ruleRepository.findSimilarRule(
-                        factoryId, intentCode, paramName, rule.getPatternType(), rule.getExtractionPattern());
+                        factoryId, intentCode, paramName, rule.getPatternType().name(), rule.getExtractionPattern());
 
                 if (existingRule.isPresent()) {
                     ParameterExtractionRule existing = existingRule.get();

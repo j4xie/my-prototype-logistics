@@ -668,7 +668,7 @@ const styles = StyleSheet.create({
   stepCircle: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: '#f5f5f5',
     borderWidth: 2,
     borderColor: '#d9d9d9',

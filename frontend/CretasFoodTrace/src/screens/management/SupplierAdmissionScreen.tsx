@@ -18,6 +18,7 @@ import {
   TextInput,
   ProgressBar,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import {
   supplierAdmissionApiClient,
@@ -727,7 +728,7 @@ export default function SupplierAdmissionScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -977,7 +978,7 @@ export default function SupplierAdmissionScreen() {
           </View>
         </Modal>
       </Portal>
-    </View>
+    </SafeAreaView>
   );
 }
 

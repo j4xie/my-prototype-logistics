@@ -14,7 +14,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   Alert,
   ActivityIndicator,
@@ -24,6 +23,7 @@ import {
   Platform,
   TextInput,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuthStore } from '../../store/authStore';
@@ -58,6 +58,7 @@ interface EmployeeOption {
 
 export default function NfcTagManagementScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const getFactoryId = useAuthStore((s) => s.getFactoryId);
   const factoryId = getFactoryId() || 'F001';
@@ -281,9 +282,9 @@ export default function NfcTagManagementScreen() {
   // --- Main render ---
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
         </TouchableOpacity>
@@ -464,7 +465,7 @@ export default function NfcTagManagementScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

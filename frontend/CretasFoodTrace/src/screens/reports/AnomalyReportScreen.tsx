@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import { Text, Appbar, Card, Chip, DataTable, ActivityIndicator } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
@@ -85,7 +86,7 @@ export default function AnomalyReportScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('anomaly.title')} />
@@ -125,7 +126,7 @@ export default function AnomalyReportScreen() {
           </DataTable>
         </Card>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

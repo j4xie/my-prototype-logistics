@@ -259,7 +259,7 @@ public class SupplyChainOrchestrator {
         fg.setStatus("AVAILABLE");
         fg.setUnit(batch.getUnit() != null ? batch.getUnit() : "kg");
         if (batch.getProductionPlanId() != null) {
-            fg.setProductionPlanId(batch.getProductionPlanId().toString());
+            fg.setProductionPlanId(batch.getProductionPlanId());
         }
         return finishedGoodsBatchRepository.save(fg);
     }
@@ -271,7 +271,7 @@ public class SupplyChainOrchestrator {
      * @param batch 已完成的生产批次
      */
     private void updateProductionPlanProgress(ProductionBatch batch) {
-        String planId = batch.getProductionPlanId().toString();
+        String planId = batch.getProductionPlanId();
         ProductionPlan plan = productionPlanRepository.findById(planId).orElse(null);
         if (plan == null) {
             log.warn("批次关联的PP不存在: planId={}, batchId={}", planId, batch.getId());

@@ -21,7 +21,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { IconButton } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +32,9 @@ import type { AnalysisMode } from '../../../services/ai/types';
 import { AIModeIndicator } from '../../../components/ai/AIModeIndicator';
 import { FeedbackWidget, FoodKBQueryMetadata } from '../../../components/ai/FeedbackWidget';
 import { useAuthStore } from '../../../store/authStore';
+import { aiApiClient } from '../../../services/api/aiApiClient';
+import type { IntentSSECallbacks } from '../../../services/api/aiApiClient';
+import type { FAAIStackParamList } from '../../../types/navigation';
 
 // 建议操作类型
 interface SuggestedAction {
@@ -64,8 +68,11 @@ interface Message {
   foodKbMetadata?: FoodKBQueryMetadata;
 }
 
+type AIChatRouteProp = RouteProp<FAAIStackParamList, 'AIChat'>;
+
 export default function AIChatScreen() {
   const navigation = useNavigation();
+  const route = useRoute<AIChatRouteProp>();
   const { user } = useAuthStore();
   const { t, i18n } = useTranslation('home');
   const scrollViewRef = useRef<ScrollView>(null);
@@ -110,46 +117,34 @@ export default function AIChatScreen() {
     };
   }, []);
 
-  // 模拟流式显示效果（快速获取响应后逐字显示）
-  const simulateStreaming = useCallback(
-    (fullText: string, messageId: string, onComplete: () => void) => {
-      let currentIndex = 0;
-      const charsPerTick = 3; // 每次显示3个字符，速度更快
-      const tickInterval = 20; // 20ms 间隔
+  // 从其他页面跳转过来时自动发送初始消息
+  const initialMessageSentRef = useRef(false);
+  useEffect(() => {
+    const params = route.params;
+    if (params?.initialMessage && !initialMessageSentRef.current) {
+      initialMessageSentRef.current = true;
+      // 延迟发送，等待组件完全挂载
+      setTimeout(() => {
+        handleSend(params.initialMessage);
+      }, 500);
+    }
+  }, [route.params]);
 
-      const tick = () => {
-        if (currentIndex < fullText.length) {
-          currentIndex = Math.min(currentIndex + charsPerTick, fullText.length);
-          const displayText = fullText.substring(0, currentIndex);
-
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === messageId
-                ? { ...msg, content: displayText, isLoading: currentIndex < fullText.length }
-                : msg
-            )
-          );
-          scrollToBottom();
-
-          setTimeout(tick, tickInterval);
-        } else {
-          // 完成显示
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === messageId ? { ...msg, isLoading: false } : msg
-            )
-          );
-          onComplete();
-        }
-      };
-
-      tick();
-    },
-    [scrollToBottom]
-  );
+  // 流式状态文本（显示处理进度）
+  const [streamStatus, setStreamStatus] = useState<string | null>(null);
 
   // 处理建议选项点击
   const handleSuggestedActionClick = async (action: SuggestedAction, messageId: string) => {
+    // 处理跳转到生产计划创建表单的特殊action
+    if (action.value === 'REDIRECT_TO_PLAN_FORM') {
+      const extractedParams = (action as any).params || (action as any).data || {};
+      navigation.navigate('ProductionPlanManagement' as any, {
+        mode: 'create',
+        initialValues: extractedParams,
+      });
+      return;
+    }
+
     // 清除该消息的建议选项（已选择）
     setMessages((prev) =>
       prev.map((msg) =>
@@ -160,13 +155,19 @@ export default function AIChatScreen() {
     await handleSend(action.label);
   };
 
-  // 发送消息 - 快速API + 模拟流式显示
+  // 发送消息 — 使用真正的 SSE 流式传输
   const handleSend = async (text?: string) => {
     const messageText = text || inputText.trim();
     if (!messageText || isLoading) return;
 
     setInputText('');
     setIsLoading(true);
+    setStreamStatus(null);
+
+    const startTime = Date.now();
+
+    // 检测分析模式
+    const modeResult = detectAnalysisMode(messageText);
 
     // 添加用户消息
     const userMessage: Message = {
@@ -188,189 +189,253 @@ export default function AIChatScreen() {
         content: '',
         timestamp: new Date(),
         isLoading: true,
+        userQuestion: messageText,
       },
     ]);
     scrollToBottom();
 
+    // 累积的流式文本
+    let streamedContent = '';
+    // 收集到的结果数据
+    let resultData: Record<string, unknown> | null = null;
+
     try {
-      // 使用多轮对话 API 进行意图识别（比规则匹配更准确）
-      // aiService.chatWithConversation 使用 LLM 进行意图识别:
-      // - 准确率更高（95%+ vs 规则匹配的 60%）
-      // - 支持多轮对话澄清
-      // - 自动处理模糊输入
-      const result = await aiService.chatWithConversation(messageText, {
-        sessionId: sessionId ?? undefined,
-      });
+      const factoryId = user?.factoryId || 'F001';
 
-      console.log('[AI Chat] aiService 响应:', result);
-      console.log('[AI Chat] 分析模式:', result.mode, result.modeReason);
+      const callbacks: IntentSSECallbacks = {
+        onStart: (message) => {
+          setStreamStatus(message);
+          console.log('[AI Stream] Start:', message);
+        },
 
-      // 提取回复消息
-      let replyMessage = '';
-      let suggestedActions: SuggestedAction[] = [];
-      let sessionIdForReply: string | undefined;
+        onCacheHit: (data) => {
+          setStreamStatus('命中缓存，快速响应...');
+          console.log('[AI Stream] Cache hit:', data.cacheType, data.latencyMs + 'ms');
+        },
 
-      if (result.success && result.data) {
-        // result.data 是 IntentExecuteResponse 类型
-        // 响应结构: { code, message: '操作成功', data: { message: '真正的回复', ... }, success }
-        const responseData = result.data as unknown as Record<string, unknown>;
-        const innerData = responseData.data as Record<string, unknown> | undefined;
+        onCacheMiss: (latencyMs) => {
+          console.log('[AI Stream] Cache miss:', latencyMs + 'ms');
+        },
 
-        // 优先从 innerData 中提取消息
-        const innerMetadata = innerData?.metadata as { conversationMessage?: string; sessionId?: string } | undefined;
+        onProgress: (data) => {
+          setStreamStatus(data.message || data.stage);
+          console.log('[AI Stream] Progress:', data.stage, data.message);
+        },
 
-        if (innerMetadata?.conversationMessage) {
-          // 优先使用 metadata.conversationMessage
-          replyMessage = innerMetadata.conversationMessage;
-        } else if (typeof innerData?.message === 'string' && innerData.message) {
-          // 使用 innerData.message (真正的 AI 回复)
-          replyMessage = innerData.message;
-        } else if (typeof responseData.message === 'string' && responseData.message !== '操作成功') {
-          // 兜底：使用外层 message (但排除 '操作成功')
-          replyMessage = responseData.message;
-        } else {
-          replyMessage = t('aiChat.defaultReply');
-        }
+        onIntentRecognized: (data) => {
+          setStreamStatus(`识别到: ${data.intentName}`);
+          console.log('[AI Stream] Intent:', data.intentCode, data.confidence);
+          // 更新消息的意图信息
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId
+                ? { ...msg, intentCode: data.intentCode }
+                : msg
+            )
+          );
+        },
 
-        // 更新 sessionId (可能在 innerData 或 innerMetadata 中)
-        const newSessionId = (innerMetadata?.sessionId || innerData?.sessionId || responseData.sessionId) as string | undefined;
-        if (newSessionId) {
-          setSessionId(newSessionId);
-          sessionIdForReply = newSessionId;
-        }
+        onExecuting: (intentName) => {
+          setStreamStatus(`正在执行: ${intentName}...`);
+          console.log('[AI Stream] Executing:', intentName);
+        },
 
-        // 提取状态、意图代码和意图类别
-        const status = innerData?.status as string | undefined;
-        const intentCode = innerData?.intentCode as string | undefined;
-        const intentCategory = innerData?.intentCategory as string | undefined;
-        console.log('[AI Chat] 响应状态:', status, '意图:', intentCode, '类别:', intentCategory);
+        onMeta: (data) => {
+          console.log('[AI Stream] Meta:', data.model, data.questionType);
+          // 更新分析模式
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId
+                ? {
+                    ...msg,
+                    mode: data.questionType === 'GENERAL_QUESTION' ? 'deep' as AnalysisMode : 'quick' as AnalysisMode,
+                  }
+                : msg
+            )
+          );
+        },
 
-        // 当对话完成且有意图代码时，自动执行意图获取实际数据
-        if (status === 'COMPLETED' && intentCode) {
-          console.log('[AI Chat] 对话完成，自动执行意图:', intentCode);
-          try {
-            // 执行意图获取实际数据
-            const executeResult = await aiService.executeIntent(messageText, {
-              intentCode,
-              forceExecute: true,
-            });
-            console.log('[AI Chat] 意图执行结果:', executeResult);
+        onToken: (token) => {
+          // 逐 token 实时显示 — 这是真正的流式！
+          streamedContent += token;
+          setStreamStatus(null); // 收到内容后隐藏状态文本
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId
+                ? { ...msg, content: streamedContent, isLoading: true }
+                : msg
+            )
+          );
+          scrollToBottom();
+        },
 
-            if (executeResult.success && executeResult.data) {
-              const execData = executeResult.data as unknown as Record<string, unknown>;
-              const execInnerData = execData.data as Record<string, unknown> | undefined;
+        onResult: (result) => {
+          resultData = result;
+          console.log('[AI Stream] Result status:', result.status);
 
-              // 优先使用后端生成的自然语言摘要 formattedText
-              if (execInnerData?.formattedText && typeof execInnerData.formattedText === 'string') {
-                replyMessage = execInnerData.formattedText;
-              } else if (execInnerData?.message && typeof execInnerData.message === 'string') {
-                // 备用: 使用执行结果的消息
-                replyMessage = execInnerData.message;
-              } else if (execData.message && typeof execData.message === 'string' && execData.message !== '操作成功') {
-                replyMessage = execData.message;
-              }
+          // 从结果中提取回复文本
+          let replyMessage = '';
+          const formattedText = result.formattedText as string | undefined;
+          const message = result.message as string | undefined;
+          const resultInner = result.resultData as Record<string, unknown> | undefined;
 
-              // 如果没有 formattedText，尝试从结构化数据中提取摘要
-              if (!execInnerData?.formattedText && execInnerData?.resultData) {
-                const resultData = execInnerData.resultData as Record<string, unknown>;
-                // 优先使用 analysis 字段 (成本分析等)，备用 summary 字段
-                const analysisContent = resultData.analysis || resultData.summary;
-                if (analysisContent && typeof analysisContent === 'string') {
-                  replyMessage = `${replyMessage}\n\n${analysisContent}`;
-                }
-              }
-            }
-          } catch (execError) {
-            console.warn('[AI Chat] 意图执行失败:', execError);
-            // 执行失败时保留原消息
+          if (formattedText) {
+            replyMessage = formattedText;
+          } else if (message && message !== '操作成功') {
+            replyMessage = message;
           }
-        }
 
-        // 当需要用户进一步澄清或选择时显示建议操作
-        // ACTIVE: 后端 ConversationService 返回的进行中状态
-        if ((status === 'NEED_CLARIFICATION' || status === 'CONVERSATION_CONTINUE' || status === 'ACTIVE') && Array.isArray(innerData?.suggestedActions)) {
-          suggestedActions = (innerData.suggestedActions as Array<Record<string, unknown>>).map((action) => ({
-            // 后端字段: actionName, actionCode, description
-            label: (action.actionName || action.label || action.name || action.description) as string,
-            value: (action.actionCode || action.value || action.code || action.actionName) as string,
-            description: action.description as string | undefined,
-          })).filter((action) => action.label && action.value); // 过滤掉没有 label 或 value 的选项
-          console.log('[AI Chat] 需要澄清，选项:', suggestedActions);
-        }
+          // 追加分析摘要
+          if (resultInner) {
+            const analysis = (resultInner.analysis || resultInner.summary) as string | undefined;
+            if (analysis) {
+              replyMessage = replyMessage ? `${replyMessage}\n\n${analysis}` : analysis;
+            }
+          }
 
-        // 如果有候选意图列表，也可以作为建议操作
-        if (suggestedActions.length === 0 && Array.isArray(innerData?.candidates) && (innerData.candidates as unknown[]).length > 0) {
-          suggestedActions = (innerData.candidates as Array<Record<string, unknown>>).map((candidate) => ({
-            label: (candidate.intentName || candidate.intentCode) as string,
-            value: candidate.intentCode as string,
-            description: candidate.matchReason as string | undefined,
-          })).filter((action) => action.label && action.value);
-          console.log('[AI Chat] 从候选意图提取选项:', suggestedActions);
-        }
-      } else {
-        // 失败情况
-        const responseData = result.data as unknown as Record<string, unknown> | undefined;
-        const innerData = responseData?.data as Record<string, unknown> | undefined;
-        replyMessage = result.errorMessage || (innerData?.message as string) || (responseData?.message as string) || t('aiChat.networkError');
-      }
+          // 如果有结果文本且没有流式内容，显示结果
+          if (replyMessage && !streamedContent) {
+            streamedContent = replyMessage;
+          }
 
-      // 提取食品知识库元数据（用于反馈组件）
-      let extractedIntentCode: string | undefined;
-      let extractedFoodKbMetadata: FoodKBQueryMetadata | undefined;
-      if (result.data && typeof result.data === 'object') {
-        const rd = result.data as unknown as Record<string, unknown>;
-        const id = rd.data as Record<string, unknown> | undefined;
-        extractedIntentCode = id?.intentCode as string | undefined;
-        const resultData = id?.resultData as Record<string, unknown> | undefined;
-        if (resultData?.citations && Array.isArray(resultData.citations)) {
-          extractedFoodKbMetadata = {
-            responseTimeMs: (resultData.latencyMs as number) || result.responseTimeMs,
-            documentCount: resultData.documentCount as number,
-            citations: (resultData.citations as Array<Record<string, unknown>>).map(c => ({
-              index: (c.index as number) || 0,
-              title: (c.title as string) || '',
-              source: (c.source as string) || '',
-              category: (c.category as string) || '',
-              similarity: (c.similarity as number) || 0,
-            })),
-          };
-        }
-      }
+          // 提取建议操作
+          let suggestedActions: SuggestedAction[] = [];
+          const status = result.status as string | undefined;
 
-      // 更新消息，添加模式、响应时间、建议操作和意图类别
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantMessageId
-            ? {
-                ...msg,
-                mode: result.mode,
-                responseTimeMs: result.responseTimeMs,
-                suggestedActions: suggestedActions.length > 0 ? suggestedActions : undefined,
-                sessionIdForReply,
-                intentCategory: result.data && typeof result.data === 'object'
-                  ? ((result.data as Record<string, unknown>).data as Record<string, unknown> | undefined)?.intentCategory as string | undefined
-                  : undefined,
-                intentCode: extractedIntentCode,
-                userQuestion: messageText,
-                foodKbMetadata: extractedFoodKbMetadata,
-              }
-            : msg
-        )
-      );
+          // 重定向到表单
+          if (result.actionCode === 'REDIRECT_TO_PLAN_FORM' || result.redirectAction === 'REDIRECT_TO_PLAN_FORM') {
+            const params = (result.collectedParams || result.params || {}) as Record<string, unknown>;
+            suggestedActions = [{
+              label: '前往创建生产计划',
+              value: 'REDIRECT_TO_PLAN_FORM',
+              description: '使用AI收集的参数预填表单',
+              ...({ params } as any),
+            }];
+          }
 
-      // 使用模拟流式效果显示回复
-      simulateStreaming(replyMessage, assistantMessageId, () => {
-        setIsLoading(false);
-      });
+          // 澄清建议
+          if ((status === 'NEED_CLARIFICATION' || status === 'CONVERSATION_CONTINUE' || status === 'ACTIVE')
+              && Array.isArray(result.suggestedActions)) {
+            suggestedActions = (result.suggestedActions as Array<Record<string, unknown>>).map((action) => ({
+              label: (action.actionName || action.label || action.name || action.description) as string,
+              value: (action.actionCode || action.value || action.code || action.actionName) as string,
+              description: action.description as string | undefined,
+            })).filter((a) => a.label && a.value);
+          }
+
+          // 候选意图
+          if (suggestedActions.length === 0 && Array.isArray(result.candidates) && (result.candidates as unknown[]).length > 0) {
+            suggestedActions = (result.candidates as Array<Record<string, unknown>>).map((c) => ({
+              label: (c.intentName || c.intentCode) as string,
+              value: c.intentCode as string,
+              description: c.matchReason as string | undefined,
+            })).filter((a) => a.label && a.value);
+          }
+
+          // 提取食品知识库元数据
+          let foodKbMeta: FoodKBQueryMetadata | undefined;
+          if (resultInner?.citations && Array.isArray(resultInner.citations)) {
+            foodKbMeta = {
+              responseTimeMs: (resultInner.latencyMs as number) || (Date.now() - startTime),
+              documentCount: resultInner.documentCount as number,
+              citations: (resultInner.citations as Array<Record<string, unknown>>).map(c => ({
+                index: (c.index as number) || 0,
+                title: (c.title as string) || '',
+                source: (c.source as string) || '',
+                category: (c.category as string) || '',
+                similarity: (c.similarity as number) || 0,
+              })),
+            };
+          }
+
+          // 更新消息
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId
+                ? {
+                    ...msg,
+                    content: streamedContent || replyMessage || t('aiChat.defaultReply'),
+                    intentCode: (result.intentCode as string) || msg.intentCode,
+                    intentCategory: result.intentCategory as string | undefined,
+                    suggestedActions: suggestedActions.length > 0 ? suggestedActions : undefined,
+                    foodKbMetadata: foodKbMeta,
+                  }
+                : msg
+            )
+          );
+        },
+
+        onComplete: (data) => {
+          console.log('[AI Stream] Complete:', data.status, data.totalLatencyMs + 'ms');
+
+          // 如果 complete 带有 fullContent 且流式没收到内容，用 fullContent
+          if (data.fullContent && !streamedContent) {
+            streamedContent = data.fullContent;
+          }
+
+          // 最终更新消息状态
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId
+                ? {
+                    ...msg,
+                    content: streamedContent || msg.content || t('aiChat.defaultReply'),
+                    isLoading: false,
+                    mode: msg.mode || modeResult.mode,
+                    responseTimeMs: data.totalLatencyMs || (Date.now() - startTime),
+                  }
+                : msg
+            )
+          );
+          setStreamStatus(null);
+          setIsLoading(false);
+          scrollToBottom();
+        },
+
+        onError: (message) => {
+          console.error('[AI Stream] Error:', message);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId
+                ? {
+                    ...msg,
+                    content: message || t('aiChat.networkError'),
+                    isLoading: false,
+                  }
+                : msg
+            )
+          );
+          setStreamStatus(null);
+          setIsLoading(false);
+        },
+      };
+
+      await aiApiClient.executeIntentStream(messageText, callbacks, factoryId);
 
     } catch (error) {
       console.error('AI 对话失败:', error);
 
-      // 移除空消息
-      setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId));
-
-      const errorMessage = error instanceof Error ? error.message : t('aiChat.networkError');
-      Alert.alert(t('aiChat.sendFailed'), errorMessage, [{ text: i18next.t('common:confirm') }]);
+      // 如果流式已经有内容，保留已有内容
+      if (streamedContent) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId
+              ? { ...msg, isLoading: false, responseTimeMs: Date.now() - startTime }
+              : msg
+          )
+        );
+      } else {
+        // 无内容时显示错误
+        const errorMessage = error instanceof Error ? error.message : t('aiChat.networkError');
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId
+              ? { ...msg, content: errorMessage, isLoading: false }
+              : msg
+          )
+        );
+      }
+      setStreamStatus(null);
       setIsLoading(false);
     }
   };
@@ -379,7 +444,7 @@ export default function AIChatScreen() {
   const renderMessage = (message: Message) => {
     const isUser = message.role === 'user';
 
-    // 流式加载状态：无内容时显示思考动画，有内容时显示内容+光标
+    // 流式加载状态：无内容时显示思考动画+进度状态，有内容时显示内容+光标
     if (message.isLoading && !message.content) {
       return (
         <View key={message.id} style={styles.messageRow}>
@@ -393,7 +458,9 @@ export default function AIChatScreen() {
           </View>
           <View style={styles.aiMessageBubble}>
             <ActivityIndicator size="small" color="#667eea" />
-            <Text style={styles.loadingText}>{t('aiChat.thinking')}</Text>
+            <Text style={styles.loadingText}>
+              {streamStatus || t('aiChat.thinking')}
+            </Text>
           </View>
         </View>
       );
@@ -543,7 +610,7 @@ export default function AIChatScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* 配额提示 */}
       {quotaRemaining !== null && (
         <View style={styles.quotaBanner}>
@@ -615,7 +682,7 @@ export default function AIChatScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }
 

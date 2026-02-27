@@ -65,6 +65,11 @@ public class ClassifierIntentMatcher {
         @JsonProperty("top_confidence")
         private double topConfidence;
         private String error;
+        // v35.0: OOD 检测指标
+        private Double entropy;
+        private Double margin;
+        @JsonProperty("max_logit")
+        private Double maxLogit;
     }
 
     @Data
@@ -234,6 +239,10 @@ public class ClassifierIntentMatcher {
                     result.setConfidence(body.getTopConfidence());
                     result.setSource("CLASSIFIER");
                     result.setLatencyMs(elapsed);
+                    // v35.0: OOD 指标透传
+                    result.setEntropy(body.getEntropy());
+                    result.setMargin(body.getMargin());
+                    result.setMaxLogit(body.getMaxLogit());
 
                     // 转换预测列表
                     List<ClassifierResult.PredictionEntry> predictions = new ArrayList<>();

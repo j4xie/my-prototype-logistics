@@ -88,4 +88,10 @@ public interface ProductTypeRepository extends JpaRepository<ProductType, String
      * @return 产品类型列表
      */
     List<ProductType> findByIdIn(java.util.Collection<String> ids);
+
+    /**
+     * 根据工厂ID和产品名称查找
+     * 用于Excel导入时按名称解析产品类型
+     */
+    Optional<ProductType> findByFactoryIdAndName(String factoryId, String name);
 }

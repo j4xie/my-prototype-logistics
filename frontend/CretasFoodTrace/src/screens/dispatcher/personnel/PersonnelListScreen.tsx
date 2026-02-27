@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
   contractAlertIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: '#f57c00',
     alignItems: 'center',
     justifyContent: 'center',

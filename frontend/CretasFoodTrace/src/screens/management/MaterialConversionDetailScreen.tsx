@@ -16,6 +16,7 @@ import {
   IconButton,
   Divider,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { conversionApiClient, SuggestedConversion } from '../../services/api/conversionApiClient';
 import { productTypeApiClient } from '../../services/api/productTypeApiClient';
@@ -430,7 +431,7 @@ export default function MaterialConversionDetailScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -717,7 +718,7 @@ export default function MaterialConversionDetailScreen() {
           </ScrollView>
         </Modal>
       </Portal>
-    </View>
+    </SafeAreaView>
   );
 }
 

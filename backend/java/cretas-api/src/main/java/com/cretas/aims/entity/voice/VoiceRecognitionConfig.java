@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import lombok.Builder;
 
 import javax.persistence.*;
 
@@ -42,78 +43,91 @@ public class VoiceRecognitionConfig extends BaseEntity {
      * 是否启用语音识别
      */
     @Column(name = "enabled")
+    @Builder.Default
     private Boolean enabled = true;
 
     /**
      * 默认语言: zh_cn, en_us
      */
     @Column(name = "default_language", length = 10)
+    @Builder.Default
     private String defaultLanguage = "zh_cn";
 
     /**
      * 默认采样率: 8000, 16000
      */
     @Column(name = "default_sample_rate")
+    @Builder.Default
     private Integer defaultSampleRate = 16000;
 
     /**
      * 默认音频格式: raw, mp3, speex, speex-wb
      */
     @Column(name = "default_format", length = 20)
+    @Builder.Default
     private String defaultFormat = "raw";
 
     /**
      * 默认音频编码: raw, lame, speex, speex-wb
      */
     @Column(name = "default_encoding", length = 20)
+    @Builder.Default
     private String defaultEncoding = "raw";
 
     /**
      * 最大音频时长(秒)
      */
     @Column(name = "max_audio_duration")
+    @Builder.Default
     private Integer maxAudioDuration = 60;
 
     /**
      * 是否保存音频到OSS
      */
     @Column(name = "save_audio_to_oss")
+    @Builder.Default
     private Boolean saveAudioToOss = false;
 
     /**
      * 是否保存识别历史
      */
     @Column(name = "save_history")
+    @Builder.Default
     private Boolean saveHistory = true;
 
     /**
      * 历史记录保留天数
      */
     @Column(name = "history_retention_days")
+    @Builder.Default
     private Integer historyRetentionDays = 90;
 
     /**
      * 每日识别次数限制 (0=不限制)
      */
     @Column(name = "daily_limit")
+    @Builder.Default
     private Integer dailyLimit = 0;
 
     /**
      * 每用户每日识别次数限制 (0=不限制)
      */
     @Column(name = "user_daily_limit")
+    @Builder.Default
     private Integer userDailyLimit = 0;
 
     /**
      * 批量识别任务最大并发数
      */
     @Column(name = "batch_max_concurrent")
+    @Builder.Default
     private Integer batchMaxConcurrent = 5;
 
     /**
      * 批量识别单次最大文件数
      */
     @Column(name = "batch_max_files")
+    @Builder.Default
     private Integer batchMaxFiles = 50;
 
     /**

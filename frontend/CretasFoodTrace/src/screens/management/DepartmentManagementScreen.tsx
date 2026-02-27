@@ -17,6 +17,7 @@ import {
   Switch,
   Menu,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { departmentApiClient, DepartmentDTO, ApiResponse, PagedResponse } from '../../services/api/departmentApiClient';
@@ -300,7 +301,7 @@ export default function DepartmentManagementScreen() {
 
   if (!canManage) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title={t('departmentManagement.title')} />
@@ -310,12 +311,12 @@ export default function DepartmentManagementScreen() {
           <Text style={styles.noPermissionText}>{t('common.noPermission')}</Text>
           <Text style={styles.noPermissionHint}>{t('common.permissionHint')}</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -590,7 +591,7 @@ export default function DepartmentManagementScreen() {
           label={t('departmentManagement.add')}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

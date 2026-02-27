@@ -6,12 +6,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   FlatList,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +34,7 @@ export function EquipmentMaintenanceScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
   const { t } = useTranslation('workshop');
+  const insets = useSafeAreaInsets();
 
   // 设备信息
   const equipment = {
@@ -173,9 +174,9 @@ export function EquipmentMaintenanceScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* 头部 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
@@ -235,13 +236,13 @@ export function EquipmentMaintenanceScreen() {
       </ScrollView>
 
       {/* 底部按钮 */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <TouchableOpacity style={styles.requestBtn} onPress={handleRequestMaintenance}>
           <Icon source="plus-circle" size={20} color="#fff" />
           <Text style={styles.requestBtnText}>{t('equipment.maintenance.requestMaintenance')}</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

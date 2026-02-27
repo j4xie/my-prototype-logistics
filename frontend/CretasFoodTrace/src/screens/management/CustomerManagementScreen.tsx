@@ -16,6 +16,7 @@ import {
   SegmentedButtons,
   Menu,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { customerApiClient, Customer, CreateCustomerRequest } from '../../services/api/customerApiClient';
@@ -320,7 +321,7 @@ export default function CustomerManagementScreen() {
 
   if (!canManage) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title={t('customerManagement.title')} />
@@ -330,12 +331,12 @@ export default function CustomerManagementScreen() {
           <Text style={styles.noPermissionText}>{t('common.noPermission')}</Text>
           <Text style={styles.noPermissionHint}>{t('common.adminOnly')}</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -693,7 +694,7 @@ export default function CustomerManagementScreen() {
           label={t('customerManagement.createCustomer')}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

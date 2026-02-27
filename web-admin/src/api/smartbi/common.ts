@@ -76,7 +76,7 @@ export class ConcurrencyLimiter {
     if (next) next();
   }
 }
-export const enrichmentLimiter = new ConcurrencyLimiter(3);
+export const enrichmentLimiter = new ConcurrencyLimiter(2);
 
 // ========== AbortController Registry (Phase audit) ==========
 export const activeControllers = new Map<string, AbortController>();

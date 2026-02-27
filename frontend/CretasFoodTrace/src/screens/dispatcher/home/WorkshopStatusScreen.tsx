@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
   workerAvatar: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -812,7 +812,7 @@ const styles = StyleSheet.create({
   emptySlotAvatar: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: '#f0f0f0',
     alignItems: 'center',
     justifyContent: 'center',

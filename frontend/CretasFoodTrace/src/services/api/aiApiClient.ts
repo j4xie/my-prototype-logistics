@@ -119,14 +119,20 @@ export interface IntentSSECallbacks {
   onCacheHit?: (data: { latencyMs: number; cacheType: 'EXACT' | 'SEMANTIC' }) => void;
   /** 缓存未命中 */
   onCacheMiss?: (latencyMs: number) => void;
+  /** 流式进度（阶段信息） */
+  onProgress?: (data: { stage: string; message: string }) => void;
   /** 意图识别完成 */
   onIntentRecognized?: (data: { intentCode: string; intentName: string; confidence: number }) => void;
   /** 开始执行意图 */
   onExecuting?: (intentName: string) => void;
+  /** 流式文本 token（D3 对话/咨询直接流式输出） */
+  onToken?: (token: string) => void;
+  /** 模型元数据（D3 流式模式信息） */
+  onMeta?: (data: { model: string; thinking: boolean; questionType: string }) => void;
   /** 执行结果 */
   onResult?: (result: Record<string, unknown>) => void;
   /** 完成 */
-  onComplete?: (data: { status: string; cacheHit: boolean }) => void;
+  onComplete?: (data: { status: string; cacheHit: boolean; fullContent?: string; totalLatencyMs?: number }) => void;
   /** 错误 */
   onError?: (message: string) => void;
 }
@@ -1002,8 +1008,14 @@ class AIApiClient {
     console.log('URL:', fullUrl);
     console.log('UserInput:', userInput);
 
+    // 后端使用 SseEmitter.event().name(eventName).data(json)
+    // 对应 SSE 协议: event: eventName\ndata: json\n\n
+    // react-native-sse 根据 event 名称分发到对应的 addEventListener
+    type SSEEventNames = 'start' | 'meta' | 'token' | 'cache_hit' | 'cache_miss'
+      | 'progress' | 'intent_recognized' | 'executing' | 'result' | 'complete' | 'error';
+
     return new Promise<void>((resolve, reject) => {
-      const es = new EventSource<'message' | 'error'>(fullUrl, {
+      const es = new EventSource<SSEEventNames>(fullUrl, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream',
@@ -1011,76 +1023,121 @@ class AIApiClient {
         },
         method: 'POST',
         body: JSON.stringify({ userInput }),
-        pollingInterval: 0, // 禁用轮询，使用真正的SSE
+        pollingInterval: 0,
       });
 
-      es.addEventListener('message', (event) => {
-        if (!event.data) return;
+      const safeParseJSON = (data: string | null | undefined): Record<string, unknown> | null => {
+        if (!data) return null;
+        try { return JSON.parse(data); } catch { return null; }
+      };
 
-        try {
-          const eventData: IntentSSEEventData = JSON.parse(event.data);
-          console.log('Intent SSE Event:', eventData.type, eventData.message || eventData.intentCode);
+      // 1. start — 开始处理
+      es.addEventListener('start', (event) => {
+        const d = safeParseJSON(event.data);
+        callbacks.onStart?.(d?.message as string || '开始处理...');
+      });
 
-          switch (eventData.type) {
-            case 'start':
-              callbacks.onStart?.(eventData.message || '开始处理...');
-              break;
-
-            case 'cache_hit':
-              callbacks.onCacheHit?.({
-                latencyMs: eventData.latencyMs || 0,
-                cacheType: eventData.cacheType || 'EXACT',
-              });
-              break;
-
-            case 'cache_miss':
-              callbacks.onCacheMiss?.(eventData.latencyMs || 0);
-              break;
-
-            case 'intent_recognized':
-              callbacks.onIntentRecognized?.({
-                intentCode: eventData.intentCode || '',
-                intentName: eventData.intentName || '',
-                confidence: eventData.confidence || 0,
-              });
-              break;
-
-            case 'executing':
-              callbacks.onExecuting?.(eventData.intentName || '');
-              break;
-
-            case 'result':
-              if (eventData.result) {
-                callbacks.onResult?.(eventData.result);
-              }
-              break;
-
-            case 'complete':
-              callbacks.onComplete?.({
-                status: eventData.status || 'SUCCESS',
-                cacheHit: eventData.cacheHit || false,
-              });
-              es.close();
-              resolve();
-              break;
-
-            case 'error':
-              callbacks.onError?.(eventData.message || '执行失败');
-              es.close();
-              reject(new Error(eventData.message || '执行失败'));
-              break;
-          }
-        } catch (parseError) {
-          console.warn('Intent SSE 事件解析失败:', event.data, parseError);
+      // 2. cache_hit — 缓存命中
+      es.addEventListener('cache_hit', (event) => {
+        const d = safeParseJSON(event.data);
+        if (d) {
+          callbacks.onCacheHit?.({
+            latencyMs: (d.latencyMs as number) || 0,
+            cacheType: (d.hitType as 'EXACT' | 'SEMANTIC') || 'EXACT',
+          });
         }
       });
 
+      // 3. cache_miss — 缓存未命中
+      es.addEventListener('cache_miss', (event) => {
+        const d = safeParseJSON(event.data);
+        callbacks.onCacheMiss?.((d?.latencyMs as number) || 0);
+      });
+
+      // 4. progress — 处理进度（阶段信息）
+      es.addEventListener('progress', (event) => {
+        const d = safeParseJSON(event.data);
+        if (d) {
+          callbacks.onProgress?.({
+            stage: (d.stage as string) || '',
+            message: (d.message as string) || '',
+          });
+        }
+      });
+
+      // 5. intent_recognized — 意图识别完成
+      es.addEventListener('intent_recognized', (event) => {
+        const d = safeParseJSON(event.data);
+        if (d) {
+          callbacks.onIntentRecognized?.({
+            intentCode: (d.intentCode as string) || '',
+            intentName: (d.intentName as string) || '',
+            confidence: (d.confidence as number) || 0,
+          });
+        }
+      });
+
+      // 6. executing — 开始执行
+      es.addEventListener('executing', (event) => {
+        const d = safeParseJSON(event.data);
+        callbacks.onExecuting?.((d?.intentName as string) || '');
+      });
+
+      // 7. meta — D3 流式模式元数据
+      es.addEventListener('meta', (event) => {
+        const d = safeParseJSON(event.data);
+        if (d) {
+          callbacks.onMeta?.({
+            model: (d.model as string) || '',
+            thinking: (d.thinking as boolean) || false,
+            questionType: (d.questionType as string) || '',
+          });
+        }
+      });
+
+      // 8. token — D3 流式文本 token（逐 token 推送）
+      es.addEventListener('token', (event) => {
+        // token 事件的 data 是 JSON 编码的字符串（带引号），需要解析
+        if (event.data) {
+          try {
+            const tokenText = JSON.parse(event.data);
+            if (typeof tokenText === 'string') {
+              callbacks.onToken?.(tokenText);
+            }
+          } catch {
+            // 如果不是 JSON，直接作为文本使用
+            callbacks.onToken?.(event.data);
+          }
+        }
+      });
+
+      // 9. result — 执行结果
+      es.addEventListener('result', (event) => {
+        const d = safeParseJSON(event.data);
+        if (d) {
+          callbacks.onResult?.(d);
+        }
+      });
+
+      // 10. complete — 处理完成
+      es.addEventListener('complete', (event) => {
+        const d = safeParseJSON(event.data);
+        callbacks.onComplete?.({
+          status: (d?.status as string) || 'SUCCESS',
+          cacheHit: (d?.cacheHit as boolean) || false,
+          fullContent: d?.fullContent as string | undefined,
+          totalLatencyMs: d?.totalLatencyMs as number | undefined,
+        });
+        es.close();
+        resolve();
+      });
+
+      // 11. error — 错误
       es.addEventListener('error', (event) => {
-        console.error('Intent SSE 流式请求失败:', event);
-        // Type guard for event.message since error event types vary
-        const errorMessage = ('message' in event && typeof event.message === 'string')
-          ? event.message
-          : '流式请求失败';
+        // SSE error 事件可能是连接错误（无 data），也可能是后端发送的 error 事件（有 data）
+        const d = safeParseJSON((event as any).data);
+        const errorMessage = d?.message as string
+          || ('message' in event && typeof event.message === 'string' ? event.message : '流式请求失败');
         callbacks.onError?.(errorMessage);
         es.close();
         reject(new Error(errorMessage));

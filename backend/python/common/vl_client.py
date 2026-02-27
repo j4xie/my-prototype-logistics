@@ -67,7 +67,7 @@ class ModelConfig:
     DEEP_REASONING = os.getenv("VL_MODEL_DEEP_REASONING", "qwen-vl-max")
 
     # 文本生成（报告、摘要）
-    TEXT_GENERATION = os.getenv("TEXT_MODEL", "qwen3.5-plus")
+    TEXT_GENERATION = os.getenv("TEXT_MODEL", "qwen3.5-plus-2026-02-15")
 
     @classmethod
     def get_model_for_task(cls, task_type: str) -> str:
@@ -172,7 +172,8 @@ class QwenVLClient:
                         }
                     ],
                     "max_tokens": max_tokens,
-                    "temperature": temperature
+                    "temperature": temperature,
+                    "enable_thinking": False
                 }
             )
 
@@ -272,7 +273,8 @@ class QwenVLClient:
                         }
                     ],
                     "max_tokens": 3000,
-                    "temperature": 0.3
+                    "temperature": 0.3,
+                    "enable_thinking": False
                 }
             )
 

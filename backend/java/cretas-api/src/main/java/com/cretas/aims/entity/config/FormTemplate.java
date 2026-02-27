@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import lombok.Builder;
 
 import javax.persistence.*;
 
@@ -89,6 +90,7 @@ public class FormTemplate extends BaseEntity {
      * 每次更新递增，用于前端缓存失效判断
      */
     @Column(name = "version", nullable = false)
+    @Builder.Default
     private Integer version = 1;
 
     /**
@@ -96,6 +98,7 @@ public class FormTemplate extends BaseEntity {
      * false 时前端不加载此模板
      */
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
 
     /**
@@ -112,6 +115,7 @@ public class FormTemplate extends BaseEntity {
      * IMPORT - 批量导入
      */
     @Column(name = "source", length = 20)
+    @Builder.Default
     private String source = "MANUAL";
 
     /**

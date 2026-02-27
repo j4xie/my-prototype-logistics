@@ -11,6 +11,7 @@ import {
   ProgressBar,
   Chip,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
@@ -259,7 +260,7 @@ export default function ReportDashboardScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="数据分析中心" />
@@ -620,7 +621,7 @@ export default function ReportDashboardScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

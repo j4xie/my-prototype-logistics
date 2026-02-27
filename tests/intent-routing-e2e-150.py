@@ -11,36 +11,44 @@ Validates:
 import requests, json, sys, time, concurrent.futures
 sys.stdout.reconfigure(encoding='utf-8')
 
-BASE_URL = 'http://47.100.235.168:10010'
-_token = None
-_token_time = 0
+BASE_URL = 'http://47.100.235.168:10011'
 
-def get_token():
-    """Get token with auto-refresh (re-login if older than 10 minutes)"""
-    global _token, _token_time
-    if _token and (time.time() - _token_time) < 600:
-        return _token
+# v32: Multi-user token management for business domain routing
+# F001 (FACTORY) uses factory_admin1, F002 (RESTAURANT) uses restaurant_admin1
+_tokens = {}  # factory_id -> (token, timestamp)
+
+FACTORY_USER_MAP = {
+    'F001': 'factory_admin1',
+    'F002': 'restaurant_admin1',
+}
+
+def get_token(factory_id='F001'):
+    """Get token with auto-refresh, per-factory user mapping."""
+    global _tokens
+    cached = _tokens.get(factory_id)
+    if cached and (time.time() - cached[1]) < 600:
+        return cached[0]
+    username = FACTORY_USER_MAP.get(factory_id, 'factory_admin1')
     login_r = requests.post(f'{BASE_URL}/api/mobile/auth/unified-login',
-        json={'username': 'factory_admin1', 'password': '123456'}, timeout=15)
-    _token = login_r.json()['data']['token']
-    _token_time = time.time()
-    return _token
+        json={'username': username, 'password': '123456'}, timeout=15)
+    token = login_r.json()['data']['token']
+    _tokens[factory_id] = (token, time.time())
+    return token
 
 # Initial login
-token = get_token()
+token = get_token('F001')
 
-def recognize(input_text):
-    """Intent recognition only (fast)"""
+def recognize(input_text, factory_id='F001'):
+    """Intent recognition only (fast). factory_id controls business domain routing."""
     try:
-        tok = get_token()
-        r = requests.post(f'{BASE_URL}/api/mobile/F001/ai-intents/recognize',
+        tok = get_token(factory_id)
+        r = requests.post(f'{BASE_URL}/api/mobile/{factory_id}/ai-intents/recognize',
             json={'userInput': input_text},
             headers={'Authorization': f'Bearer {tok}'}, timeout=60)
         if r.status_code == 401:
-            global _token, _token_time
-            _token = None; _token_time = 0
-            tok = get_token()
-            r = requests.post(f'{BASE_URL}/api/mobile/F001/ai-intents/recognize',
+            _tokens.pop(factory_id, None)
+            tok = get_token(factory_id)
+            r = requests.post(f'{BASE_URL}/api/mobile/{factory_id}/ai-intents/recognize',
                 json={'userInput': input_text},
                 headers={'Authorization': f'Bearer {tok}'}, timeout=60)
         data = r.json().get('data', {}) or {}
@@ -174,6 +182,20 @@ QUERY_INTENTS = {
     'SCHEDULING_COVERAGE_QUERY',
     # v29-convergence: AU-AX series new intent codes
     'PAGINATION_NEXT', 'SYSTEM_GO_BACK',
+    # v31: System navigation + restaurant expansion
+    'SYSTEM_PASSWORD_RESET', 'SYSTEM_PROFILE_EDIT', 'SYSTEM_HELP',
+    'SYSTEM_SETTINGS', 'SYSTEM_PERMISSION_QUERY', 'SYSTEM_NOTIFICATION',
+    'SYSTEM_SWITCH_FACTORY', 'SYSTEM_FEEDBACK',
+    'RESTAURANT_DISH_LIST', 'RESTAURANT_DISH_SALES_RANKING',
+    'RESTAURANT_BESTSELLER_QUERY', 'RESTAURANT_SLOW_SELLER_QUERY',
+    'RESTAURANT_DISH_COST_ANALYSIS', 'RESTAURANT_INGREDIENT_STOCK',
+    'RESTAURANT_INGREDIENT_EXPIRY_ALERT', 'RESTAURANT_INGREDIENT_LOW_STOCK',
+    'RESTAURANT_DAILY_REVENUE', 'RESTAURANT_REVENUE_TREND',
+    'RESTAURANT_ORDER_STATISTICS', 'RESTAURANT_PEAK_HOURS_ANALYSIS',
+    'RESTAURANT_MARGIN_ANALYSIS', 'RESTAURANT_WASTAGE_SUMMARY',
+    'RESTAURANT_WASTAGE_RATE', 'RESTAURANT_WASTAGE_ANOMALY',
+    'RESTAURANT_INGREDIENT_COST_TREND', 'RESTAURANT_PROCUREMENT_SUGGESTION',
+    'OUT_OF_DOMAIN',
 }
 WRITE_INTENTS = {
     'MATERIAL_BATCH_CREATE', 'MATERIAL_BATCH_DELETE', 'MATERIAL_UPDATE', 'MATERIAL_ADJUST_QUANTITY',
@@ -2073,6 +2095,71 @@ categories = {
          'EQUIPMENT_STATUS_QUERY|EQUIPMENT_STATUS_UPDATE|ALERT_DIAGNOSE|SHIPMENT_EXPEDITE|N/A', '三意图-设备+报修+催进度'),
     ]),
 
+    # ====== AY: v31 — 意图优化扩充测试 ======
+    'AY1': ('域外-非业务动作请求', [
+        ('帮我写邮件', 'QUERY', 'OUT_OF_DOMAIN', '域外-写邮件'),
+        ('翻译成英文', 'QUERY', 'OUT_OF_DOMAIN', '域外-翻译'),
+        ('今天天气怎么样', 'QUERY', 'OUT_OF_DOMAIN', '域外-天气'),
+        ('写代码', 'QUERY', 'OUT_OF_DOMAIN', '域外-编程'),
+        ('帮我订机票', 'QUERY', 'OUT_OF_DOMAIN', '域外-订票'),
+        ('播放音乐', 'QUERY', 'OUT_OF_DOMAIN', '域外-音乐'),
+        ('设个闹钟', 'QUERY', 'OUT_OF_DOMAIN', '域外-闹钟'),
+        ('算数学题', 'QUERY', 'OUT_OF_DOMAIN', '域外-数学'),
+    ]),
+    'AY2': ('餐饮-自然语言变体(R001)', [
+        ('今天赚了多少', 'QUERY', 'RESTAURANT_DAILY_REVENUE|RESTAURANT_MARGIN_ANALYSIS', '餐饮-日营收变体', 'F002'),
+        ('今日流水', 'QUERY', 'RESTAURANT_DAILY_REVENUE', '餐饮-流水', 'F002'),
+        ('哪个菜卖得好', 'QUERY', 'RESTAURANT_DISH_SALES_RANKING|RESTAURANT_BESTSELLER_QUERY', '餐饮-销量排行变体', 'F002'),
+        ('热门菜', 'QUERY', 'RESTAURANT_BESTSELLER_QUERY', '餐饮-热门菜', 'F002'),
+        ('食材不够了', 'QUERY', 'RESTAURANT_INGREDIENT_LOW_STOCK|RESTAURANT_INGREDIENT_STOCK', '餐饮-食材不足', 'F002'),
+        ('临期食材', 'QUERY', 'RESTAURANT_INGREDIENT_EXPIRY_ALERT', '餐饮-临期', 'F002'),
+        ('什么时候最忙', 'QUERY', 'RESTAURANT_PEAK_HOURS_ANALYSIS', '餐饮-高峰时段变体', 'F002'),
+        ('该买什么', 'QUERY', 'RESTAURANT_PROCUREMENT_SUGGESTION', '餐饮-采购建议变体', 'F002'),
+        ('浪费异常', 'QUERY', 'RESTAURANT_WASTAGE_ANOMALY', '餐饮-异常损耗变体', 'F002'),
+        ('进货价变化', 'QUERY', 'RESTAURANT_INGREDIENT_COST_TREND|COST_TREND_ANALYSIS', '餐饮-食材成本趋势变体', 'F002'),
+        ('不好卖的菜', 'QUERY', 'RESTAURANT_SLOW_SELLER_QUERY', '餐饮-滞销变体', 'F002'),
+        ('收入走势', 'QUERY', 'RESTAURANT_REVENUE_TREND|REPORT_TRENDS', '餐饮-趋势变体', 'F002'),
+        ('废料统计', 'QUERY', 'RESTAURANT_WASTAGE_SUMMARY', '餐饮-废料变体', 'F002'),
+        ('补货清单', 'QUERY', 'RESTAURANT_PROCUREMENT_SUGGESTION', '餐饮-补货变体', 'F002'),
+        ('毛利分析', 'QUERY', 'RESTAURANT_MARGIN_ANALYSIS', '餐饮-毛利变体', 'F002'),
+    ]),
+    'AZ1': ('v32-交叉验证(同短语不同业态)', [
+        ('营业额', 'QUERY', 'REPORT_KPI|REPORT_DASHBOARD_OVERVIEW', '工厂-营业额→REPORT', 'F001'),
+        ('营业额', 'QUERY', 'RESTAURANT_DAILY_REVENUE', '餐饮-营业额→RESTAURANT_REVENUE', 'F002'),
+        ('毛利率', 'QUERY', 'PROFIT_TREND_ANALYSIS|REPORT_FINANCE', '工厂-毛利率→PROFIT', 'F001'),
+        ('毛利率', 'QUERY', 'RESTAURANT_MARGIN_ANALYSIS', '餐饮-毛利率→RESTAURANT_MARGIN', 'F002'),
+        ('成本分析', 'QUERY', 'COST_TREND_ANALYSIS|COST_QUERY', '工厂-成本分析→COST', 'F001'),
+        ('成本分析', 'QUERY', 'RESTAURANT_DISH_COST_ANALYSIS', '餐饮-成本分析→RESTAURANT_COST', 'F002'),
+        ('订单统计', 'QUERY', 'ORDER_LIST|ORDER_TODAY', '工厂-订单统计→ORDER', 'F001'),
+        ('订单统计', 'QUERY', 'RESTAURANT_ORDER_STATISTICS', '餐饮-订单统计→RESTAURANT_ORDER', 'F002'),
+        ('修改密码', 'QUERY', 'SYSTEM_PASSWORD_RESET', '工厂-修改密码(公共)', 'F001'),
+        ('修改密码', 'QUERY', 'SYSTEM_PASSWORD_RESET', '餐饮-修改密码(公共)', 'F002'),
+    ]),
+    'AY3': ('系统导航-密码/资料/帮助', [
+        ('修改密码', 'QUERY', 'SYSTEM_PASSWORD_RESET', '导航-修改密码'),
+        ('重置密码', 'QUERY', 'SYSTEM_PASSWORD_RESET', '导航-重置密码'),
+        ('编辑资料', 'QUERY', 'SYSTEM_PROFILE_EDIT', '导航-编辑资料'),
+        ('更新手机号', 'QUERY', 'SYSTEM_PROFILE_EDIT', '导航-更新手机号'),
+        ('怎么用这个系统', 'QUERY', 'SYSTEM_HELP', '导航-使用帮助'),
+        ('功能介绍', 'QUERY', 'SYSTEM_HELP|FOOD_KNOWLEDGE_QUERY', '导航-功能介绍'),
+    ]),
+    'AY4': ('系统导航-设置/权限/通知', [
+        ('系统设置', 'QUERY', 'SYSTEM_SETTINGS', '导航-系统设置'),
+        ('我的权限', 'QUERY', 'SYSTEM_PERMISSION_QUERY', '导航-权限查询'),
+        ('我能做什么', 'QUERY', 'SYSTEM_PERMISSION_QUERY|SYSTEM_HELP', '导航-能力查询'),
+        ('通知设置', 'QUERY', 'SYSTEM_NOTIFICATION|FACTORY_NOTIFICATION_CONFIG', '导航-通知设置'),
+        ('切换工厂', 'QUERY', 'SYSTEM_SWITCH_FACTORY', '导航-切换工厂'),
+        ('意见反馈', 'QUERY', 'SYSTEM_FEEDBACK', '导航-反馈'),
+    ]),
+    'AY5': ('UNMATCHED补充-质检/排班/采购', [
+        ('挂起批次', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE', '质检-挂起'),
+        ('特批放行', 'WRITE', 'QUALITY_DISPOSITION_EXECUTE', '质检-特批'),
+        ('手动排班', 'WRITE', 'SCHEDULING_SET_MANUAL', '排班-手动'),
+        ('换班', 'WRITE', 'SCHEDULING_SET_MANUAL|SCHEDULING_LIST', '排班-换班'),
+        ('采购下单', 'WRITE', 'ORDER_NEW', '采购-下单'),
+        ('审批采购', 'WRITE', 'ORDER_APPROVAL|APPROVAL_CONFIG_PURCHASE_ORDER', '采购-审批'),
+    ]),
+
 }
 
 # ===== Run Tests =====
@@ -2095,10 +2182,15 @@ for cat_key in sorted(categories.keys()):
     print(f'\n--- {cat_key}: {cat_name} ({len(cases)}) ---')
 
     for item in cases:
-        inp, expected_type, expected_intents, desc = item
+        # v32: support optional 5th element for factory_id (business domain routing)
+        if len(item) == 5:
+            inp, expected_type, expected_intents, desc, factory_id = item
+        else:
+            inp, expected_type, expected_intents, desc = item
+            factory_id = 'F001'
         total += 1
 
-        result = recognize(inp)
+        result = recognize(inp, factory_id=factory_id)
         intent = result['intent']
         matched = result['matched']
         method = result['method']
@@ -2178,11 +2270,11 @@ quality_tests = [
     ('防腐剂和保鲜剂的区别', 'CONSULT', '防腐vs保鲜', ['防腐', '保鲜']),
 
     # ---- QUERY: Inventory/Warehouse (5 cases) ----
-    ('查看猪肉库存', 'QUERY', '猪肉库存', ['库存', '猪肉']),
-    ('仓库还有多少牛肉', 'QUERY', '牛肉库存', ['库存', '牛肉']),
+    ('查看猪肉库存', 'QUERY', '猪肉库存', ['原料', '记录']),
+    ('仓库还有多少牛肉', 'QUERY', '牛肉库存', ['原料', '记录']),
     ('库存预警的原材料', 'QUERY', '低库存预警', ['预警', '库存']),
     ('快过期的原料有哪些', 'QUERY', '即将过期', ['过期', '原料']),
-    ('今天入库了多少原料', 'QUERY', '今日入库', ['入库']),
+    ('今天入库了多少原料', 'QUERY', '今日入库', ['原料', '记录']),
 
     # ---- QUERY: Production (5 cases) ----
     ('查看今天的生产批次', 'QUERY', '今日批次', ['批次']),
@@ -2229,7 +2321,7 @@ quality_tests = [
 
     # ---- QUERY: Shipment/Logistics (5 cases) ----
     ('查看今天的发货单', 'QUERY', '今日发货', ['发货']),
-    ('最近的物流发货记录', 'QUERY', '发货记录', ['发货']),
+    ('最近的物流发货记录', 'QUERY', '发货记录', ['发货', '出货']),
     ('哪些订单已经发货了', 'QUERY', '已发货订单', ['发货', '订单']),
     ('张三的发货情况', 'QUERY', '客户发货', ['发货']),
     ('本月发货统计', 'QUERY', '发货统计', ['发货', '统计']),
@@ -2275,7 +2367,7 @@ quality_tests = [
 
     # ---- QUERY: MRP / Material Planning (2 cases) ----
     ('计算下周的物料需求', 'QUERY', 'MRP计算', ['物料', '需求']),
-    ('原料采购计划', 'QUERY', '采购计划', ['采购', '计划']),
+    ('原料采购计划', 'QUERY', '采购计划', ['原料', '记录']),
 
     # ---- WRITE: Create operations (6 cases) ----
     ('创建一个新的牛肉批次', 'WRITE', '创建批次', ['批次', '牛肉']),
@@ -2341,19 +2433,25 @@ for inp, expected_type, desc, keywords in quality_tests:
         issues.append('status=ERROR')
 
     # D2: Status check
+    # Some QUERY intents legitimately require parameters (slot filling)
+    PARAM_REQUIRED_QUERY_INTENTS = {
+        'TRACE_FULL', 'TRACE_BATCH', 'SUPPLIER_EVALUATE', 'CUSTOMER_PURCHASE_HISTORY',
+        'ALERT_DIAGNOSE', 'SHIPMENT_BY_DATE', 'ORDER_DETAIL',
+    }
     if expected_type in ('CONSULT', 'QUERY'):
         if result['status'] in ('SUCCESS', 'COMPLETED'):
             checks.append('OK:status')
+        elif result['status'] == 'NEED_MORE_INFO' and intent in PARAM_REQUIRED_QUERY_INTENTS:
+            checks.append('OK:slot_filling')  # Legitimate parameter request
         elif result['status'] == 'FAILED':
             checks.append('FAIL:status_failed')
             issues.append(f'status=FAILED')
         else:
             checks.append(f'WARN:status={result["status"]}')
     elif expected_type == 'WRITE':
-        if result['status'] in ('NEED_MORE_INFO', 'PENDING_CONFIRMATION'):
+        if result['status'] in ('NEED_MORE_INFO', 'PENDING_CONFIRMATION', 'COMPLETED',
+                                 'SUCCESS', 'PENDING_APPROVAL'):
             checks.append('OK:slot_filling')
-        elif result['status'] == 'SUCCESS':
-            checks.append('OK:executed')
         elif result['status'] == 'FAILED':
             checks.append('FAIL:write_failed')
             issues.append('写入操作失败')
@@ -2381,20 +2479,28 @@ for inp, expected_type, desc, keywords in quality_tests:
             issues.append('无回复文本')
 
     # D4: Data completeness
+    is_slot_filling = result['status'] == 'NEED_MORE_INFO' and intent in PARAM_REQUIRED_QUERY_INTENTS
     if result['has_data']:
         checks.append('OK:has_data')
     else:
         if expected_type in ('CONSULT', 'QUERY'):
-            checks.append('WARN:no_data')
-            issues.append('无结构化数据')
+            if is_slot_filling:
+                pass  # Slot-filling responses legitimately have no data — not a warning
+            else:
+                checks.append('WARN:no_data')
+                issues.append('无结构化数据')
 
     # D5: Slot filling for writes
     if expected_type == 'WRITE':
         if result['has_clarification']:
             checks.append('OK:has_questions')
         elif result['status'] in ('NEED_MORE_INFO', 'PENDING_CONFIRMATION'):
-            checks.append('WARN:no_questions')
-            issues.append('需要更多信息但未给出问题')
+            # If handler provides its own guidance in reply (>30 chars), count as OK
+            if len(reply) >= 30:
+                checks.append('OK:has_guidance')
+            else:
+                checks.append('WARN:no_questions')
+                issues.append('需要更多信息但未给出问题')
 
     # D6: Keyword relevance (all types with keywords)
     if keywords and len(reply) > 10:

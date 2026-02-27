@@ -43,10 +43,16 @@ public class DashScopeConfig {
     private String baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 
     /**
-     * 默认文本模型
+     * 默认文本模型 (用于复杂查询)
      * 可选: qwen-turbo (快速), qwen-plus (平衡), qwen-max (最强)
      */
     private String model = "qwen3.5-plus";
+
+    /**
+     * 快速模型 (用于简单查询，如问候、简单问答)
+     * 比默认模型更快，TTFT 更低
+     */
+    private String fastModel = "qwen3.5-flash";
 
     /**
      * 纠错 Agent 模型 (CRITIC-style correction)
@@ -138,6 +144,7 @@ public class DashScopeConfig {
         log.info("  - enabled: {}", enabled);
         log.info("  - baseUrl: {}", baseUrl);
         log.info("  - model: {}", model);
+        log.info("  - fastModel: {}", fastModel);
         log.info("  - correctionModel: {}", correctionModel);
         log.info("  - visionModel: {}", visionModel);
         log.info("  - apiKey configured: {}", apiKey != null && !apiKey.isEmpty());

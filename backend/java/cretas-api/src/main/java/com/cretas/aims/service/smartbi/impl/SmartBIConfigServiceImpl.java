@@ -246,7 +246,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
 
     @Override
     @Transactional
-    public ConfigOperationResult updateThreshold(Long id, SmartBiAlertThreshold threshold) {
+    public ConfigOperationResult updateThreshold(String id, SmartBiAlertThreshold threshold) {
         try {
             Optional<SmartBiAlertThreshold> existingOpt = alertThresholdRepository.findById(id);
             if (existingOpt.isEmpty()) {
@@ -277,7 +277,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
 
     @Override
     @Transactional
-    public ConfigOperationResult deleteThreshold(Long id) {
+    public ConfigOperationResult deleteThreshold(String id) {
         try {
             Optional<SmartBiAlertThreshold> existingOpt = alertThresholdRepository.findById(id);
             if (existingOpt.isEmpty()) {

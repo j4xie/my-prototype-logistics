@@ -345,8 +345,10 @@ class UnifiedAnalyzer:
         self.forecast_service = ForecastService()
         self.context_extractor = ContextExtractor()
 
-        # HTTP client for LLM calls
-        self.client = httpx.AsyncClient(timeout=60.0)
+    @property
+    def client(self) -> httpx.AsyncClient:
+        from common.llm_client import get_llm_http_client
+        return get_llm_http_client()
 
     async def analyze(
         self,
@@ -1585,7 +1587,8 @@ class UnifiedAnalyzer:
                 }
             ],
             "temperature": 0.5,
-            "max_tokens": 4500  # 增加到4500以支持完整的中文洞察JSON
+            "max_tokens": 4500,  # 增加到4500以支持完整的中文洞察JSON
+            "enable_thinking": False
         }
 
         response = await self.client.post(
@@ -1824,9 +1827,80 @@ class UnifiedAnalyzer:
             ]
         )
 
+    async def analyze_all_sheets_stream(
+        self,
+        file_bytes: bytes,
+        question: Optional[str] = None,
+        options: Optional[AnalysisOptions] = None,
+        max_parallel: int = 5
+    ):
+        """
+        Analyze all sheets, yielding SSE events as each sheet completes.
+
+        Yields dicts with:
+          {"event": "sheet", "data": {sheet_index, sheet_name, result}}
+          {"event": "done",  "data": {total, success, errors, time_ms}}
+        """
+        import time
+        start_time = time.time()
+        options = options or AnalysisOptions()
+
+        sheet_names = self.get_sheet_names(file_bytes)
+        total_sheets = len(sheet_names)
+
+        yield {
+            "event": "start",
+            "data": {"total_sheets": total_sheets, "sheet_names": sheet_names}
+        }
+
+        semaphore = asyncio.Semaphore(max_parallel)
+        success_count = 0
+        error_count = 0
+
+        async def analyze_one(idx: int):
+            async with semaphore:
+                return idx, await self.analyze(
+                    file_bytes, sheet_index=idx, question=question, options=options
+                )
+
+        tasks = [asyncio.ensure_future(analyze_one(i)) for i in range(total_sheets)]
+
+        for coro in asyncio.as_completed(tasks):
+            try:
+                idx, result = await coro
+                if result.success:
+                    success_count += 1
+                if result.error:
+                    error_count += 1
+                yield {
+                    "event": "sheet",
+                    "data": {
+                        "sheet_index": idx,
+                        "sheet_name": sheet_names[idx],
+                        "result": result,
+                        "progress": f"{success_count + error_count}/{total_sheets}"
+                    }
+                }
+            except Exception as e:
+                error_count += 1
+                yield {
+                    "event": "sheet_error",
+                    "data": {"error": str(e)}
+                }
+
+        processing_time_ms = int((time.time() - start_time) * 1000)
+        yield {
+            "event": "done",
+            "data": {
+                "total_sheets": total_sheets,
+                "success_count": success_count,
+                "error_count": error_count,
+                "processing_time_ms": processing_time_ms
+            }
+        }
+
     async def close(self):
-        """Close HTTP client and services."""
-        await self.client.aclose()
+        """Close sub-services (shared HTTP client lifecycle managed by main.py)."""
         await self.field_detector.close()
         await self.scenario_detector.close()
         await self.chart_recommender.close()

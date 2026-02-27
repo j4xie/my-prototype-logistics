@@ -1932,14 +1932,20 @@ const handleSSEEvent = (event: any) => {
         }, 100); // 额外延迟确保 DOM 完全渲染
       });
 
-      // R-16: 只 enrich 当前 active tab + 下一个 sheet，避免并发雪崩
+      // P5: Enrich all sheets progressively — limiter(2) controls concurrency
+      // Only 1 starts immediately; rest stagger at 3s intervals to avoid DashScope QPS saturation
       const dataSheets = uploadedSheets.value.filter(s => !isIndexSheet(s) && s.uploadId);
-      const sheetsToEnrich = dataSheets.slice(0, 2); // active + next
-      for (const sheet of sheetsToEnrich) {
+      for (let i = 0; i < dataSheets.length; i++) {
+        const sheet = dataSheets[i];
         const sheetHasCharts = hasChartData(sheet);
         const hasAI = !!sheet.flowResult?.aiAnalysis;
         if ((!sheetHasCharts || !hasAI) && sheet.uploadId) {
-          enrichSheet(sheet);
+          if (i === 0) {
+            enrichSheet(sheet);
+          } else {
+            // Stagger at 3s intervals; enrichmentLimiter(2) provides backpressure
+            setTimeout(() => enrichSheet(sheet), i * 3000);
+          }
         }
       }
     }

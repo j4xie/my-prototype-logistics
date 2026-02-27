@@ -130,6 +130,79 @@ public class SystemIntentHandler implements IntentHandler {
                         .status("COMPLETED")
                         .message("请告诉我您想切换或筛选什么条件？例如：「只看进行中的批次」「排除已完成的订单」")
                         .build();
+            } else if ("SYSTEM_PASSWORD_RESET".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("密码修改")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("请前往【我的】→【账户安全】→【修改密码】进行密码修改。如忘记密码，请联系管理员重置。")
+                        .build();
+            } else if ("SYSTEM_PROFILE_EDIT".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("编辑个人信息")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("请前往【我的】→【个人资料】进行修改，可编辑头像、手机号、邮箱等信息。")
+                        .build();
+            } else if ("SYSTEM_HELP".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("使用帮助")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("您可以问我关于库存、生产、质检、设备、发货、考勤等业务问题。例如：\n• 「查看今天的库存」\n• 「生产批次进度」\n• 「设备运行状态」\n• 「今天的发货情况」")
+                        .build();
+            } else if ("SYSTEM_SETTINGS".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("系统设置")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("请前往【我的】→【设置】，可调整语言、主题、数据刷新频率等偏好设置。")
+                        .build();
+            } else if ("SYSTEM_PERMISSION_QUERY".equals(intentCode)) {
+                String roleDesc = userRole != null ? userRole : "未知";
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("权限查询")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("您当前角色为【" + roleDesc + "】。如需调整权限，请联系工厂管理员。您可以前往【我的】→【权限说明】查看当前角色可访问的功能模块。")
+                        .build();
+            } else if ("SYSTEM_NOTIFICATION".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("通知设置")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("请前往【我的】→【消息通知】→【通知设置】，可开关各类通知提醒（告警、审批、生产、库存等）。")
+                        .build();
+            } else if ("SYSTEM_SWITCH_FACTORY".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("切换工厂")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("请前往【我的】→【工厂切换】选择目标工厂。切换后数据将自动刷新为对应工厂的数据。")
+                        .build();
+            } else if ("SYSTEM_FEEDBACK".equals(intentCode)) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentCode)
+                        .intentName("意见反馈")
+                        .intentCategory("SYSTEM")
+                        .status("COMPLETED")
+                        .message("请前往【我的】→【意见反馈】提交您的建议或问题，我们会尽快处理。也可以直接告诉我您遇到的问题。")
+                        .build();
             }
 
             // 未知的 SYSTEM 意图

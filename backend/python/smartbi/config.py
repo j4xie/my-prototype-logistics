@@ -16,20 +16,29 @@ except ImportError:
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
 
-    # LLM Configuration - Text Models
+    # LLM Configuration - Text Models (all using free-quota qwen3.5 models)
     llm_api_key: str = ""
     llm_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    llm_model: str = "qwen3.5-plus"  # Default text model
+    llm_model: str = "qwen3.5-plus-2026-02-15"  # Main text model (cross-sheet, ai-proxy, excel)
 
     # LLM Configuration - Vision Model (for structure detection)
     llm_vl_model: str = "qwen-vl-max"  # Vision-Language model for Excel structure analysis
     llm_vl_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
-    # LLM Configuration - Fast Model (for quick operations)
-    llm_fast_model: str = "qwen-turbo"  # Faster, cheaper model for simple tasks
+    # LLM Configuration - Fast Model (field detection, scenario detection)
+    llm_fast_model: str = "qwen3.5-flash"  # Fast, lightweight for simple classification
 
     # LLM Configuration - Reasoning Model (for complex decisions)
-    llm_reasoning_model: str = "qwq-32b"  # Deep reasoning model for Layer 4
+    llm_reasoning_model: str = "qwen3.5-397b-a17b"  # Heaviest MoE for Layer 4 deep reasoning
+
+    # LLM Configuration - Insight Model (insight generation, heaviest single consumer)
+    llm_insight_model: str = "qwen3.5-flash"  # Base model supports explicit context caching
+
+    # LLM Configuration - Chart Model (chart recommendation)
+    llm_chart_model: str = "qwen3.5-27b"  # Medium model for chart type recommendation
+
+    # LLM Configuration - Mapper Model (field mapping, data cleaning, structure analysis)
+    llm_mapper_model: str = "qwen3.5-122b-a10b"  # Balanced MoE for mapping tasks
 
     # Zero-Code Configuration
     structure_detection_confidence_threshold: float = 0.7  # Minimum confidence for structure detection

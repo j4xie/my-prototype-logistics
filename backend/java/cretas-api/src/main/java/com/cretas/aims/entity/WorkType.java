@@ -51,20 +51,27 @@ public class WorkType extends BaseEntity {
     @Builder.Default
     private BigDecimal overtimeRateMultiplier = new BigDecimal("1.5");
     @Column(name = "holiday_rate_multiplier", precision = 4, scale = 2)
+    @Builder.Default
     private BigDecimal holidayRateMultiplier = new BigDecimal("2.0");
     @Column(name = "night_shift_rate_multiplier", precision = 4, scale = 2)
+    @Builder.Default
     private BigDecimal nightShiftRateMultiplier = new BigDecimal("1.3");
     @Column(name = "hazard_level", nullable = false)
+    @Builder.Default
     private Integer hazardLevel = 0; // 0-5 危险等级
     @Column(name = "certification_required")
+    @Builder.Default
     private Boolean certificationRequired = false;
     @Column(name = "required_skills", columnDefinition = "TEXT")
     private String requiredSkills; // JSON array of required skills
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
     @Column(name = "is_default", nullable = false)
+    @Builder.Default
     private Boolean isDefault = false;
     @Column(name = "display_order", nullable = false)
+    @Builder.Default
     private Integer displayOrder = 0;
     @Column(name = "color", length = 20)
     private String color;

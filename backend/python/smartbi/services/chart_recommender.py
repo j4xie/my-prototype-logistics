@@ -425,8 +425,12 @@ class ChartRecommender:
 
     def __init__(self):
         self.settings = get_settings()
-        self.client = httpx.AsyncClient(timeout=60.0)
         self._cache = ChartRecommendationCache(ttl_seconds=3600, max_entries=500)
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        from common.llm_client import get_llm_http_client
+        return get_llm_http_client()
 
     async def recommend(
         self,
@@ -724,7 +728,7 @@ class ChartRecommender:
         }
 
         payload = {
-            "model": self.settings.llm_model,
+            "model": self.settings.llm_chart_model,
             "messages": [
                 {
                     "role": "system",
@@ -740,7 +744,8 @@ class ChartRecommender:
                 }
             ],
             "temperature": 0.5,
-            "max_tokens": 3500
+            "max_tokens": 3500,
+            "enable_thinking": False
         }
 
         response = await self.client.post(
@@ -1168,8 +1173,8 @@ class ChartRecommender:
         ]
 
     async def close(self):
-        """Close HTTP client"""
-        await self.client.aclose()
+        """No-op: shared client lifecycle managed by main.py lifespan"""
+        pass
 
 
 # Singleton instance

@@ -78,43 +78,84 @@ public class DashScopeClient {
             request.setTemperature(config.getTemperature());
         }
 
+        // DashScope 要求 enable_thinking 在顶级参数，忽略 extra_body 内的
+        if (request.getEnableThinking() == null && request.getExtraBody() != null
+                && request.getExtraBody().getEnableThinking() != null) {
+            request.setEnableThinking(request.getExtraBody().getEnableThinking());
+        }
+
+        String jsonBody;
         try {
-            String jsonBody = objectMapper.writeValueAsString(request);
+            jsonBody = objectMapper.writeValueAsString(request);
             log.debug("DashScope request: {}", jsonBody);
+        } catch (JsonProcessingException e) {
+            log.error("JSON 序列化失败", e);
+            return createErrorResponse("请求序列化失败: " + e.getMessage());
+        }
 
-            Request httpRequest = new Request.Builder()
-                    .url(config.getChatCompletionsUrl())
-                    .addHeader("Authorization", "Bearer " + config.getApiKey())
-                    .addHeader("Content-Type", "application/json")
-                    .post(RequestBody.create(jsonBody, JSON))
+        Request httpRequest = new Request.Builder()
+                .url(config.getChatCompletionsUrl())
+                .addHeader("Authorization", "Bearer " + config.getApiKey())
+                .addHeader("Content-Type", "application/json")
+                .post(RequestBody.create(jsonBody, JSON))
+                .build();
+
+        // 根据是否思考模式调整超时
+        OkHttpClient client = httpClient;
+        if (Boolean.TRUE.equals(request.getEnableThinking())) {
+            client = httpClient.newBuilder()
+                    .readTimeout(config.getThinkingTimeout(), TimeUnit.SECONDS)
                     .build();
+        }
 
-            // 根据是否思考模式调整超时
-            OkHttpClient client = httpClient;
-            if (request.getExtraBody() != null && Boolean.TRUE.equals(request.getExtraBody().getEnableThinking())) {
-                client = httpClient.newBuilder()
-                        .readTimeout(config.getThinkingTimeout(), TimeUnit.SECONDS)
-                        .build();
-            }
+        int maxRetries = 3;
+        long[] backoffMs = {1000, 2000, 4000};
 
+        for (int attempt = 0; attempt < maxRetries; attempt++) {
             try (Response response = client.newCall(httpRequest).execute()) {
                 String responseBody = response.body() != null ? response.body().string() : "";
                 log.debug("DashScope response: {}", responseBody);
 
-                if (!response.isSuccessful()) {
-                    log.error("DashScope API error: {} - {}", response.code(), responseBody);
+                if (response.isSuccessful()) {
+                    return objectMapper.readValue(responseBody, ChatCompletionResponse.class);
+                }
+
+                // 4xx: 客户端错误，不重试
+                if (response.code() >= 400 && response.code() < 500) {
+                    log.error("DashScope API client error (no retry): {} - {}", response.code(), responseBody);
                     return createErrorResponse("API 调用失败: " + response.code());
                 }
 
-                return objectMapper.readValue(responseBody, ChatCompletionResponse.class);
+                // 5xx: 服务端错误，重试
+                if (attempt < maxRetries - 1) {
+                    log.warn("DashScope API 5xx error, retrying ({}/{}): {} - {}",
+                            attempt + 1, maxRetries, response.code(), responseBody);
+                    Thread.sleep(backoffMs[attempt]);
+                } else {
+                    log.error("DashScope API error after {} retries: {} - {}", maxRetries, response.code(), responseBody);
+                    return createErrorResponse("API 调用失败: " + response.code());
+                }
+            } catch (IOException e) {
+                if (attempt < maxRetries - 1) {
+                    log.warn("DashScope API IOException, retrying ({}/{}): {}",
+                            attempt + 1, maxRetries, e.getMessage());
+                    try {
+                        Thread.sleep(backoffMs[attempt]);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return createErrorResponse("重试被中断");
+                    }
+                } else {
+                    log.error("DashScope API 调用失败 (重试{}次后)", maxRetries, e);
+                    return createErrorResponse("网络请求失败: " + e.getMessage());
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return createErrorResponse("重试被中断");
             }
-        } catch (JsonProcessingException e) {
-            log.error("JSON 序列化失败", e);
-            return createErrorResponse("请求序列化失败: " + e.getMessage());
-        } catch (IOException e) {
-            log.error("DashScope API 调用失败", e);
-            return createErrorResponse("网络请求失败: " + e.getMessage());
         }
+
+        return createErrorResponse("重试耗尽");
     }
 
     private static final ChatCompletionRequest.ExtraBody THINKING_OFF =
@@ -138,6 +179,27 @@ public class DashScopeClient {
         if (request.getExtraBody() == null) {
             request.setExtraBody(THINKING_OFF);
         }
+
+        ChatCompletionResponse response = chatCompletion(request);
+        if (response.hasError()) {
+            throw new RuntimeException("DashScope API 错误: " + response.getErrorMessage());
+        }
+        return response.getContent();
+    }
+
+    /**
+     * 快速模型对话调用（使用 fastModel，关闭 thinking）
+     * 适用于延迟敏感但精度要求较低的场景（如多轮对话意图澄清）
+     */
+    public String chatFast(String systemPrompt, String userInput) {
+        ChatCompletionRequest request = ChatCompletionRequest.simple(
+                config.getFastModel(),
+                systemPrompt,
+                userInput
+        );
+        request.setMaxTokens(500);
+        request.setTemperature(config.getTemperature());
+        request.setExtraBody(THINKING_OFF);
 
         ChatCompletionResponse response = chatCompletion(request);
         if (response.hasError()) {
@@ -281,6 +343,119 @@ public class DashScopeClient {
     }
 
     /**
+     * 流式调用 — 通过回调逐 token 推送
+     *
+     * @param request    请求体 (会强制设 stream=true)
+     * @param onToken    每个 content delta 的回调
+     * @param onComplete 流结束时回调（携带 usage 信息）
+     */
+    public void chatCompletionStream(ChatCompletionRequest request,
+                                     Consumer<String> onToken,
+                                     Consumer<ChatCompletionResponse> onComplete) {
+        if (!config.isAvailable()) {
+            throw new RuntimeException("DashScope API 未配置");
+        }
+
+        request.setStream(true);
+
+        // 填充默认值
+        if (request.getModel() == null) {
+            request.setModel(config.getModel());
+        }
+        if (request.getMaxTokens() == null) {
+            request.setMaxTokens(config.getMaxTokens());
+        }
+        if (request.getTemperature() == null) {
+            request.setTemperature(config.getTemperature());
+        }
+
+        // DashScope 要求 enable_thinking 在顶级参数
+        if (request.getEnableThinking() == null && request.getExtraBody() != null
+                && request.getExtraBody().getEnableThinking() != null) {
+            request.setEnableThinking(request.getExtraBody().getEnableThinking());
+        }
+
+        try {
+            String jsonBody = objectMapper.writeValueAsString(request);
+
+            Request httpRequest = new Request.Builder()
+                    .url(config.getChatCompletionsUrl())
+                    .addHeader("Authorization", "Bearer " + config.getApiKey())
+                    .addHeader("Content-Type", "application/json")
+                    .post(RequestBody.create(jsonBody, JSON))
+                    .build();
+
+            OkHttpClient client = httpClient.newBuilder()
+                    .readTimeout(120, TimeUnit.SECONDS)
+                    .build();
+
+            try (Response response = client.newCall(httpRequest).execute()) {
+                if (!response.isSuccessful()) {
+                    String errorBody = response.body() != null ? response.body().string() : "";
+                    log.error("DashScope stream error: {} - {}", response.code(), errorBody);
+                    throw new RuntimeException("API 调用失败: " + response.code());
+                }
+
+                ChatCompletionResponse.Usage lastUsage = null;
+                String finishReason = null;
+                StringBuilder fullContent = new StringBuilder();
+
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(response.body().byteStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (!line.startsWith("data: ")) {
+                            continue;
+                        }
+                        String data = line.substring(6);
+                        if ("[DONE]".equals(data)) {
+                            break;
+                        }
+                        try {
+                            ChatCompletionResponse chunk = objectMapper.readValue(data, ChatCompletionResponse.class);
+                            if (chunk.getUsage() != null) {
+                                lastUsage = chunk.getUsage();
+                            }
+                            if (chunk.getChoices() != null && !chunk.getChoices().isEmpty()) {
+                                ChatCompletionResponse.Choice c = chunk.getChoices().get(0);
+                                if (c.getFinishReason() != null) {
+                                    finishReason = c.getFinishReason();
+                                }
+                                ChatCompletionResponse.Message delta = c.getDelta();
+                                if (delta != null && delta.getContent() != null) {
+                                    fullContent.append(delta.getContent());
+                                    onToken.accept(delta.getContent());
+                                }
+                            }
+                        } catch (JsonProcessingException e) {
+                            log.trace("Skip non-JSON line: {}", data);
+                        }
+                    }
+                }
+
+                // Build final response with full accumulated content
+                ChatCompletionResponse result = new ChatCompletionResponse();
+                result.setUsage(lastUsage);
+                ChatCompletionResponse.Message msg = new ChatCompletionResponse.Message();
+                msg.setRole("assistant");
+                msg.setContent(fullContent.toString());
+                ChatCompletionResponse.Choice choice = new ChatCompletionResponse.Choice();
+                choice.setIndex(0);
+                choice.setMessage(msg);
+                choice.setFinishReason(finishReason != null ? finishReason : "stop");
+                result.setChoices(List.of(choice));
+
+                onComplete.accept(result);
+            }
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("DashScope stream 调用失败", e);
+            throw new RuntimeException("流式请求失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * 意图分类专用方法
      *
      * @param systemPrompt 分类提示词
@@ -301,7 +476,9 @@ public class DashScopeClient {
 
     private static final Set<String> COMPLEX_KEYWORDS = new HashSet<>(Arrays.asList(
             "分析", "对比", "为什么", "建议", "优化", "预测", "评估",
-            "趋势", "原因", "策略", "规划", "诊断", "改进", "深入"
+            "趋势", "原因", "策略", "规划", "诊断", "改进", "深入",
+            "analyze", "compare", "optimiz", "diagnos", "evaluat", "predict",
+            "strateg", "tradeoff", "trade-off", "suggest", "recommend", "why "
     ));
 
     /**
@@ -316,33 +493,34 @@ public class DashScopeClient {
             return false;
         }
         String text = userInput.trim();
+        String lower = text.toLowerCase();
 
-        // 短查询 → 不需要
-        if (text.length() < 15) {
+        // 1. 先统计复杂关键词命中数 — 优先级最高，不受长度限制
+        int complexCount = 0;
+        for (String keyword : COMPLEX_KEYWORDS) {
+            if (lower.contains(keyword)) {
+                complexCount++;
+                if (complexCount >= 3) {
+                    return true;
+                }
+            }
+        }
+
+        // 2. 极短查询且无复杂关键词 → 不需要
+        if (text.length() < 6) {
             return false;
         }
 
-        // 包含简单寒暄指标 → 不需要
+        // 3. 包含简单寒暄指标 → 不需要
         for (String indicator : SIMPLE_INDICATORS) {
             if (text.contains(indicator)) {
                 return false;
             }
         }
 
-        // 长查询 → 需要
-        if (text.length() > 60) {
+        // 4. 长查询 → 需要
+        if (text.length() > 80) {
             return true;
-        }
-
-        // 统计复杂关键词命中数，>=2 个 → 需要
-        int complexCount = 0;
-        for (String keyword : COMPLEX_KEYWORDS) {
-            if (text.contains(keyword)) {
-                complexCount++;
-                if (complexCount >= 2) {
-                    return true;
-                }
-            }
         }
 
         return false;

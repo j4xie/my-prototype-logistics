@@ -15,6 +15,7 @@ import {
   SegmentedButtons,
   Menu,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { disposalRecordApiClient, DisposalRecord, CreateDisposalRequest } from '../../services/api/disposalRecordApiClient';
 import { useAuthStore } from '../../store/authStore';
@@ -237,7 +238,7 @@ export default function DisposalRecordManagementScreen() {
 
   if (!canManage) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="报废记录管理" />
@@ -246,12 +247,12 @@ export default function DisposalRecordManagementScreen() {
           <List.Icon icon="lock" color="#999" />
           <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="报废记录管理" />
@@ -550,7 +551,7 @@ export default function DisposalRecordManagementScreen() {
           label="创建报废记录"
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

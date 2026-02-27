@@ -16,6 +16,7 @@ import {
   SegmentedButtons,
   Menu,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { shipmentApiClient, ShipmentRecord, CreateShipmentRequest, ShipmentStats } from '../../services/api/shipmentApiClient';
 import { customerApiClient, Customer } from '../../services/api/customerApiClient';
@@ -262,7 +263,7 @@ export default function ShipmentManagementScreen() {
 
   if (!canManage) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="出货管理" />
@@ -271,12 +272,12 @@ export default function ShipmentManagementScreen() {
           <List.Icon icon="lock" color="#999" />
           <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="出货管理" />
@@ -609,7 +610,7 @@ export default function ShipmentManagementScreen() {
           label="创建出货单"
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

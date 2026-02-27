@@ -66,10 +66,11 @@ public interface AIIntentDomainDefaultRepository extends JpaRepository<AIIntentD
     /**
      * 检查域默认配置是否已存在
      */
-    @Query("SELECT CASE WHEN COUNT(d) > 0 THEN true ELSE false END FROM AIIntentDomainDefault d " +
-           "WHERE d.domainName = :domainName " +
-           "AND d.deletedAt IS NULL " +
-           "AND ((:factoryId IS NULL AND d.factoryId IS NULL) OR d.factoryId = :factoryId)")
+    @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END FROM ai_domain_default_intents d " +
+           "WHERE d.domain_name = :domainName " +
+           "AND d.deleted_at IS NULL " +
+           "AND ((CAST(:factoryId AS varchar) IS NULL AND d.factory_id IS NULL) OR d.factory_id = :factoryId)",
+           nativeQuery = true)
     boolean existsByFactoryIdAndDomainName(
             @Param("factoryId") String factoryId,
             @Param("domainName") String domainName);

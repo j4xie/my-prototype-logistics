@@ -144,7 +144,7 @@ public class AlertThresholdServiceImpl implements AlertThresholdService {
 
     @Override
     @Transactional
-    public void updateThreshold(Long id, BigDecimal warningValue, BigDecimal criticalValue) {
+    public void updateThreshold(String id, BigDecimal warningValue, BigDecimal criticalValue) {
         SmartBiAlertThreshold threshold = thresholdRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("阈值配置不存在: id=" + id));
 
@@ -189,7 +189,7 @@ public class AlertThresholdServiceImpl implements AlertThresholdService {
 
     @Override
     @Transactional
-    public void deleteThreshold(Long id) {
+    public void deleteThreshold(String id) {
         SmartBiAlertThreshold threshold = thresholdRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("阈值配置不存在: id=" + id));
 

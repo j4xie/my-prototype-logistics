@@ -27,6 +27,7 @@ import {
   Surface,
   Banner,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { logger } from '../../utils/logger';
@@ -262,7 +263,7 @@ export default function RuleConfigurationScreen() {
   // 权限不足时显示
   if (!canManage) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="规则配置" />
@@ -272,12 +273,12 @@ export default function RuleConfigurationScreen() {
           <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
           <Text style={styles.noPermissionHint}>仅限工厂超管和部门管理员</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -780,7 +781,7 @@ export default function RuleConfigurationScreen() {
         onPress={() => openAIDialog(activeTab === 'rules' ? 'rule' : 'stateMachine')}
         label={activeTab === 'rules' ? '新建规则' : '新建状态机'}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

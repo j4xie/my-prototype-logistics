@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import {
   Text,
   Appbar,
@@ -16,10 +16,11 @@ import {
   List,
   SegmentedButtons,
 } from 'react-native-paper';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Picker } from '@react-native-picker/picker';
 import { useTranslation } from 'react-i18next';
+import * as DocumentPicker from 'expo-document-picker';
 import { productionPlanApiClient, ProductionPlan as ApiProductionPlan, StockWithConversion } from '../../services/api/productionPlanApiClient';
 import { productTypeApiClient } from '../../services/api/productTypeApiClient';
 import { customerApiClient } from '../../services/api/customerApiClient';
@@ -55,6 +56,7 @@ interface ExtendedProductionPlan extends ApiProductionPlan {
 
 type ProductionPlan = ExtendedProductionPlan;
 type NavigationProp = NativeStackNavigationProp<ProcessingStackParamList>;
+type ProductionPlanManagementRouteProp = RouteProp<ProcessingStackParamList, 'ProductionPlanManagement'>;
 
 /**
  * 生产计划管理页面
@@ -62,6 +64,7 @@ type NavigationProp = NativeStackNavigationProp<ProcessingStackParamList>;
 export default function ProductionPlanManagementScreen() {
   const { t } = useTranslation('processing');
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<ProductionPlanManagementRouteProp>();
   const { user } = useAuthStore();
   const [plans, setPlans] = useState<ProductionPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,7 +114,14 @@ export default function ProductionPlanManagementScreen() {
     plannedDate: new Date().toISOString().split('T')[0], // 今天
     expectedCompletionDate: getDefaultCompletionDate(),   // 明天 (默认+1天)
     notes: '',
+    // AI建议的新字段
+    suggestedProductionLineId: '',
+    estimatedWorkers: '',
+    assignedSupervisorId: '',
   });
+
+  // 导入loading状态
+  const [importLoading, setImportLoading] = useState(false);
 
   // 批次选择相关状态
   const [materialTypeId, setMaterialTypeId] = useState('');
@@ -164,6 +174,30 @@ export default function ProductionPlanManagementScreen() {
       setEstimatedUsage(null);
     }
   }, [formData.productTypeId, formData.plannedQuantity]);
+
+  // 处理从AI对话或其他页面传入的初始值
+  useEffect(() => {
+    const params = route.params;
+    if (params?.mode === 'create' && params?.initialValues) {
+      const iv = params.initialValues;
+      setFormData(prev => ({
+        ...prev,
+        productTypeId: iv.productTypeId || prev.productTypeId,
+        productTypeName: iv.productTypeName || prev.productTypeName,
+        customerId: iv.customerId || prev.customerId,
+        customerName: iv.customerName || prev.customerName,
+        plannedQuantity: iv.plannedQuantity ? String(iv.plannedQuantity) : prev.plannedQuantity,
+        plannedDate: iv.plannedDate || prev.plannedDate,
+        expectedCompletionDate: iv.expectedCompletionDate || prev.expectedCompletionDate,
+        notes: iv.notes || prev.notes,
+        suggestedProductionLineId: iv.suggestedProductionLineId || prev.suggestedProductionLineId,
+        estimatedWorkers: iv.estimatedWorkers ? String(iv.estimatedWorkers) : prev.estimatedWorkers,
+        assignedSupervisorId: iv.assignedSupervisorId ? String(iv.assignedSupervisorId) : prev.assignedSupervisorId,
+      }));
+      setModalVisible(true);
+      productionPlanLogger.info('从外部页面预填创建表单', { initialValues: iv });
+    }
+  }, [route.params]);
 
   const loadPlans = async () => {
     try {
@@ -346,6 +380,9 @@ export default function ProductionPlanManagementScreen() {
       plannedDate: new Date().toISOString().split('T')[0],
       expectedCompletionDate: getDefaultCompletionDate(),
       notes: '',
+      suggestedProductionLineId: '',
+      estimatedWorkers: '',
+      assignedSupervisorId: '',
     });
     // 清空批次选择相关数据
     setMaterialTypeId('');
@@ -356,6 +393,54 @@ export default function ProductionPlanManagementScreen() {
     setConversionRate(null);
     setWastageRate(null);
     setModalVisible(true);
+  };
+
+  // Excel导入处理
+  const handleImportExcel = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+      const file = result.assets[0];
+      if (!file) return;
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', {
+        uri: file.uri,
+        type: file.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        name: file.name || 'import.xlsx',
+      } as any);
+
+      setImportLoading(true);
+      const factoryId = user?.factoryUser?.factoryId || user?.factoryId || '';
+      const response = await productionPlanApiClient.importFromExcel(factoryId, formDataUpload);
+
+      if ((response as any).success) {
+        const importResult = (response as any).data;
+        Alert.alert(
+          '导入完成',
+          `总计: ${importResult.totalCount} 条\n成功: ${importResult.successCount} 条\n失败: ${importResult.failureCount} 条`,
+          [{ text: '确定', onPress: () => loadPlans() }]
+        );
+      } else {
+        Alert.alert('导入失败', (response as any).message || '请检查文件格式');
+      }
+    } catch (error) {
+      productionPlanLogger.error('Excel导入失败', error);
+      Alert.alert('导入失败', getErrorMsg(error) || '请检查文件格式');
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  // AI对话创建生产计划
+  const handleAIChatCreate = () => {
+    navigation.navigate('AIChat' as any, {
+      entityType: 'PRODUCTION_PLAN',
+      initialMessage: '我要创建生产计划',
+    });
   };
 
   const handleSave = async () => {
@@ -393,6 +478,9 @@ export default function ProductionPlanManagementScreen() {
         plannedDate: formData.plannedDate,
         expectedCompletionDate: formData.expectedCompletionDate,
         notes: formData.notes || undefined,
+        suggestedProductionLineId: formData.suggestedProductionLineId || undefined,
+        estimatedWorkers: formData.estimatedWorkers ? parseInt(formData.estimatedWorkers, 10) : undefined,
+        assignedSupervisorId: formData.assignedSupervisorId ? parseInt(formData.assignedSupervisorId, 10) : undefined,
       } as any);
 
       if ((response as any).success) {
@@ -527,8 +615,29 @@ export default function ProductionPlanManagementScreen() {
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('productionPlan.title')} />
+        {canCreatePlan && (
+          <Appbar.Action
+            icon="file-upload-outline"
+            onPress={handleImportExcel}
+            disabled={importLoading}
+          />
+        )}
+        {canCreatePlan && (
+          <Appbar.Action
+            icon="robot-outline"
+            onPress={handleAIChatCreate}
+          />
+        )}
         <Appbar.Action icon="refresh" onPress={loadPlans} />
       </Appbar.Header>
+
+      {/* 导入进度提示 */}
+      {importLoading && (
+        <View style={styles.importBanner}>
+          <ActivityIndicator size="small" color="#1976D2" />
+          <Text style={styles.importBannerText}>正在导入Excel文件...</Text>
+        </View>
+      )}
 
       <ScrollView style={styles.content}>
         {/* Filter */}
@@ -951,6 +1060,42 @@ export default function ProductionPlanManagementScreen() {
               label="目标商家(客户)"
               placeholder="选择客户"
             />
+
+            {/* AI建议字段: 生产线 / 预估工人数 / 主管 */}
+            <Card style={styles.aiSuggestionCard}>
+              <Card.Content>
+                <Text style={styles.aiSuggestionTitle}>生产安排 (可选)</Text>
+
+                <TextInput
+                  label="建议生产线ID"
+                  value={formData.suggestedProductionLineId}
+                  onChangeText={(text) => setFormData({ ...formData, suggestedProductionLineId: text })}
+                  mode="outlined"
+                  style={styles.input}
+                  placeholder="例如: LINE-01"
+                />
+
+                <TextInput
+                  label="预估所需工人数"
+                  value={formData.estimatedWorkers}
+                  onChangeText={(text) => setFormData({ ...formData, estimatedWorkers: text })}
+                  mode="outlined"
+                  style={styles.input}
+                  keyboardType="number-pad"
+                  placeholder="例如: 8"
+                />
+
+                <TextInput
+                  label="指定主管ID"
+                  value={formData.assignedSupervisorId}
+                  onChangeText={(text) => setFormData({ ...formData, assignedSupervisorId: text })}
+                  mode="outlined"
+                  style={styles.input}
+                  keyboardType="number-pad"
+                  placeholder="例如: 15"
+                />
+              </Card.Content>
+            </Card>
 
             {/* 原材料批次区域 - 仅基于库存类型显示 */}
             {formData.planType === 'FROM_INVENTORY' ? (
@@ -1675,6 +1820,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#9C27B0',
     lineHeight: 18,
+  },
+  // 导入进度提示条
+  importBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  importBannerText: {
+    fontSize: 14,
+    color: '#1976D2',
+  },
+  // AI建议字段卡片
+  aiSuggestionCard: {
+    marginVertical: 12,
+    backgroundColor: '#F3E5F5',
+    borderWidth: 1,
+    borderColor: '#CE93D8',
+  },
+  aiSuggestionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#7B1FA2',
+    marginBottom: 12,
   },
   // 匹配进度卡片样式
   matchingProgressCard: {

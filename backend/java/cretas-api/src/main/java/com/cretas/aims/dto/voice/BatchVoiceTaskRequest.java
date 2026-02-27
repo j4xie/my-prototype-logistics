@@ -30,15 +30,19 @@ public class BatchVoiceTaskRequest {
     private List<String> audioDataList;
 
     @Schema(description = "音频格式: raw, mp3, speex, speex-wb")
+    @Builder.Default
     private String format = "raw";
 
     @Schema(description = "音频编码: raw, lame, speex, speex-wb")
+    @Builder.Default
     private String encoding = "raw";
 
     @Schema(description = "采样率: 8000, 16000")
+    @Builder.Default
     private Integer sampleRate = 16000;
 
     @Schema(description = "语言: zh_cn, en_us")
+    @Builder.Default
     private String language = "zh_cn";
 
     @Schema(description = "任务备注")

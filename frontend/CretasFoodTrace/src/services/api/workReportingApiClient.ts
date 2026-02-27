@@ -6,6 +6,7 @@ import type {
   CheckinRequest,
   CheckoutRequest,
   BatchWorkSessionResponse,
+  CheckinWorkerDTO,
   FormTemplateResponse,
 } from '../../types/workReporting';
 
@@ -98,7 +99,7 @@ class WorkReportingApiClient {
   async getCheckinList(
     batchId: number,
     factoryId?: string
-  ): Promise<ApiResponse<BatchWorkSessionResponse[]>> {
+  ): Promise<ApiResponse<CheckinWorkerDTO[]>> {
     return await apiClient.get(`${this.getPath(factoryId)}/checkin/batch/${batchId}`);
   }
 

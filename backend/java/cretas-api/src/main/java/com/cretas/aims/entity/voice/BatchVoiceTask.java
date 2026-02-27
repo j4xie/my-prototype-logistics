@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import lombok.Builder;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -63,66 +64,77 @@ public class BatchVoiceTask extends BaseEntity {
      * 任务状态: PENDING-待处理, PROCESSING-处理中, COMPLETED-已完成, FAILED-失败, CANCELLED-已取消
      */
     @Column(name = "status", length = 20)
+    @Builder.Default
     private String status = "PENDING";
 
     /**
      * 总文件数
      */
     @Column(name = "total_files")
+    @Builder.Default
     private Integer totalFiles = 0;
 
     /**
      * 已处理文件数
      */
     @Column(name = "processed_files")
+    @Builder.Default
     private Integer processedFiles = 0;
 
     /**
      * 成功识别数
      */
     @Column(name = "success_count")
+    @Builder.Default
     private Integer successCount = 0;
 
     /**
      * 失败数
      */
     @Column(name = "failure_count")
+    @Builder.Default
     private Integer failureCount = 0;
 
     /**
      * 进度百分比 (0-100)
      */
     @Column(name = "progress")
+    @Builder.Default
     private Integer progress = 0;
 
     /**
      * 音频格式
      */
     @Column(name = "audio_format", length = 20)
+    @Builder.Default
     private String audioFormat = "raw";
 
     /**
      * 音频编码
      */
     @Column(name = "audio_encoding", length = 20)
+    @Builder.Default
     private String audioEncoding = "raw";
 
     /**
      * 采样率
      */
     @Column(name = "sample_rate")
+    @Builder.Default
     private Integer sampleRate = 16000;
 
     /**
      * 语言
      */
     @Column(name = "language", length = 10)
+    @Builder.Default
     private String language = "zh_cn";
 
     /**
      * 业务场景
      */
     @Column(name = "business_scene", length = 50)
+    @Builder.Default
     private String businessScene = "BATCH_PROCESS";
 
     /**

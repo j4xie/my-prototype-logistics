@@ -3,7 +3,8 @@
  * 包含: 用户信息、账户设置、帮助与支持、关于
  */
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Icon } from "react-native-paper";
@@ -41,6 +42,7 @@ export function WSProfileScreen() {
   const { user, logout } = useAuthStore();
   const { t } = useTranslation('workshop');
   const { language, setLanguage } = useLanguageStore();
+  const insets = useSafeAreaInsets();
 
   const toggleLanguage = () => {
     const newLang: SupportedLanguage = language === 'zh-CN' ? 'en-US' : 'zh-CN';
@@ -52,10 +54,10 @@ export function WSProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <Text style={styles.title}>{t('profile.title')}</Text>
         </View>
 
@@ -162,7 +164,7 @@ export function WSProfileScreen() {
         {/* 底部间距 */}
         <View style={{ height: 32 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

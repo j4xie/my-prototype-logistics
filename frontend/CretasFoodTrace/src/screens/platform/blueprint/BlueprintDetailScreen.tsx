@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   heroCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 20,
   },
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 16,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },

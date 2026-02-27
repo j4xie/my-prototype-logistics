@@ -61,6 +61,7 @@ export default function AIScheduleScreen() {
   const [loading, setLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [showLoadingModal, setShowLoadingModal] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
 
   // 模式切换状态 (Step 1)
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>('batch');
@@ -96,6 +97,26 @@ export default function AIScheduleScreen() {
   const [improvedProbability, setImprovedProbability] = useState(0);
 
   // 加载紧急阈值配置
+  // 排产加载步骤轮播
+  const LOADING_STEPS = [
+    '分析批次需求...',
+    '匹配可用产线...',
+    '优化人员分配...',
+    'Monte Carlo 模拟中...',
+    '生成排产方案...',
+  ];
+
+  useEffect(() => {
+    if (!showLoadingModal) {
+      setLoadingStep(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setLoadingStep((prev) => (prev + 1) % LOADING_STEPS.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [showLoadingModal]);
+
   const loadUrgentThreshold = useCallback(async () => {
     try {
       const response = await schedulingApiClient.getUrgentThresholdConfig();
@@ -846,8 +867,10 @@ export default function AIScheduleScreen() {
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingContent}>
             <ActivityIndicator size="large" color={DISPATCHER_THEME.primary} />
-            <Text style={styles.loadingText}>AI 正在分析...</Text>
-            <Text style={styles.loadingSubtext}>Monte Carlo 模拟中 (10,000次)</Text>
+            <Text style={styles.loadingText}>{LOADING_STEPS[loadingStep]}</Text>
+            <Text style={styles.loadingSubtext}>
+              {`步骤 ${loadingStep + 1}/${LOADING_STEPS.length}`}
+            </Text>
           </View>
         </View>
       </Modal>
@@ -1232,7 +1255,7 @@ const styles = StyleSheet.create({
   },
   loadingContent: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 32,
     alignItems: 'center',
     maxWidth: 280,

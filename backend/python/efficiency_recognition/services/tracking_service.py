@@ -230,7 +230,8 @@ class WorkerTrackingService:
                         }
                     ],
                     "max_tokens": 2000,
-                    "temperature": 0.2
+                    "temperature": 0.2,
+                    "enable_thinking": False
                 }
             )
 

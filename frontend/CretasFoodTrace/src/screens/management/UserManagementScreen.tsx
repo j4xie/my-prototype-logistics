@@ -17,6 +17,7 @@ import {
   Menu,
   IconButton,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { userApiClient, UserDTO, CreateUserRequest } from '../../services/api/userApiClient';
@@ -345,7 +346,7 @@ export default function UserManagementScreen() {
 
   if (!canManageUsers) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title={t('userManagement.title')} />
@@ -355,12 +356,12 @@ export default function UserManagementScreen() {
           <Text style={styles.noPermissionText}>{t('userManagement.noPermission.title')}</Text>
           <Text style={styles.noPermissionHint}>{t('userManagement.noPermission.hint')}</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -700,7 +701,7 @@ export default function UserManagementScreen() {
           label={t('userManagement.createUser')}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

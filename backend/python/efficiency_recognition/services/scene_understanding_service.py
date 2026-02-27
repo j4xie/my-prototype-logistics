@@ -286,7 +286,8 @@ class SceneUnderstandingService:
                         }
                     ],
                     "max_tokens": 3000,
-                    "temperature": 0.2
+                    "temperature": 0.2,
+                    "enable_thinking": False
                 }
             )
 
@@ -526,7 +527,8 @@ class SceneUnderstandingService:
                     "model": model,
                     "messages": messages,
                     "max_tokens": 3000,
-                    "temperature": 0.2
+                    "temperature": 0.2,
+                    "enable_thinking": False
                 }
             )
 

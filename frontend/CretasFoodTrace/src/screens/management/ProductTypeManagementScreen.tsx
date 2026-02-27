@@ -17,6 +17,7 @@ import {
   Divider,
   SegmentedButtons,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { productTypeApiClient, ProcessingStep, SkillRequirement, ProcessingStageOption, CustomSchemaOverrides } from '../../services/api/productTypeApiClient';
 import { ProductTypeSchemaConfigModal } from '../../components/schema';
@@ -487,7 +488,7 @@ export default function ProductTypeManagementScreen() {
   // 无权限界面
   if (!canManage) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="产品类型管理" />
@@ -497,12 +498,12 @@ export default function ProductTypeManagementScreen() {
           <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
           <Text style={styles.noPermissionHint}>仅限工厂超管、权限管理员和部门管理员</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -1017,7 +1018,7 @@ export default function ProductTypeManagementScreen() {
         }}
         onSave={handleSaveSchemaConfig}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

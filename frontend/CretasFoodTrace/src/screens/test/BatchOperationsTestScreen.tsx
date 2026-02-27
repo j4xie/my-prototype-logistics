@@ -6,6 +6,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, Card, Button } from 'react-native-paper';
 import { isAxiosError } from 'axios';
 import { materialTypeApiClient } from '../../services/api/materialTypeApiClient';
@@ -365,7 +366,8 @@ export const BatchOperationsTestScreen = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <ScrollView style={{ flex: 1 }}>
       <Card>
         <Card.Title title="批次操作接口测试" />
         <Card.Content>
@@ -477,6 +479,7 @@ export const BatchOperationsTestScreen = () => {
         </Card.Content>
       </Card>
     </ScrollView>
+    </SafeAreaView>
   );
 };
 

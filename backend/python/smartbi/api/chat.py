@@ -13,6 +13,7 @@ These endpoints are called by the Java backend's SmartBIIntentService.
 Part of SmartBI Phase 6: AI Chat Deep Integration.
 """
 import asyncio
+import hashlib
 import json as _json
 import logging
 import time
@@ -36,8 +37,49 @@ from services.insight_dimensions import (
 )
 from services.insight_generator import InsightGenerator
 
+# Cache
+from common.insight_cache import get_insight_cache
+
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Chat"])
+
+
+# ============================================================================
+# Chat Cache Helpers
+# ============================================================================
+
+def _make_chat_cache_key(query_type: str, **kwargs) -> str:
+    """
+    Build a cache key for chat endpoints.
+
+    Combines query_type with arbitrary keyword arguments into a stable
+    SHA-256 hash (24-char hex). Data lists are fingerprinted using the
+    first 5 rows to keep hashing fast.
+    """
+    parts: Dict[str, Any] = {"t": query_type}
+    for k, v in sorted(kwargs.items()):
+        if k == "data" and isinstance(v, list):
+            # Fingerprint: first 5 rows only
+            parts[k] = v[:5]
+        else:
+            parts[k] = v
+    raw = _json.dumps(parts, sort_keys=True, ensure_ascii=False, default=str)
+    return hashlib.sha256(raw.encode()).hexdigest()[:24]
+
+
+def _chat_cache_get(key: str) -> Optional[Any]:
+    """Look up a chat result in InsightCache. Returns payload or None."""
+    entry = get_insight_cache().get(key)
+    if entry is not None:
+        logger.info(f"[ChatCache] HIT key={key[:12]}...")
+        return entry.insights  # stored payload
+    return None
+
+
+def _chat_cache_set(key: str, payload: Any) -> None:
+    """Store a chat result in InsightCache."""
+    get_insight_cache().set(key, payload)
+    logger.info(f"[ChatCache] SET key={key[:12]}...")
 
 
 # ============================================================================
@@ -201,6 +243,23 @@ async def drill_down(request: DrillDownRequest) -> DrillDownResponse:
     """
     start_time = time.time()
 
+    # Cache lookup
+    cache_key = _make_chat_cache_key(
+        "drill_down",
+        sheet_id=request.sheet_id,
+        dimension=request.dimension,
+        filter_value=request.filter_value,
+        measures=request.measures,
+        aggregation=request.aggregation,
+        hierarchy_type=request.hierarchy_type,
+        current_level=request.current_level,
+        data=request.data,
+    )
+    cached = _chat_cache_get(cache_key)
+    if cached is not None:
+        cached["processing_time_ms"] = 0
+        return DrillDownResponse(**cached)
+
     try:
         # Get data from request or cache
         data = request.data
@@ -339,7 +398,7 @@ async def drill_down(request: DrillDownRequest) -> DrillDownResponse:
         # P4: Detect available dimensions for further drill-down
         available_dims = _find_available_dimensions(df, request.dimension, valid_measures)
 
-        return DrillDownResponse(
+        response = DrillDownResponse(
             success=result.success,
             error=result.error,
             result=result.to_dict() if result.success else None,
@@ -351,6 +410,12 @@ async def drill_down(request: DrillDownRequest) -> DrillDownResponse:
             current_level=hierarchy_info["current_level"] if hierarchy_info else None,
             max_level=hierarchy_info["max_level"] if hierarchy_info else None
         )
+
+        # Cache successful result
+        if response.success:
+            _chat_cache_set(cache_key, response.dict())
+
+        return response
 
     except Exception as e:
         logger.error(f"Drill-down failed: {e}", exc_info=True)
@@ -379,6 +444,19 @@ async def benchmark(request: BenchmarkRequest) -> BenchmarkResponse:
     """
     start_time = time.time()
 
+    # Cache lookup
+    cache_key = _make_chat_cache_key(
+        "benchmark",
+        sheet_id=request.sheet_id,
+        industry=request.industry,
+        metrics=request.metrics,
+        metric_mapping=request.metric_mapping,
+    )
+    cached = _chat_cache_get(cache_key)
+    if cached is not None:
+        cached["processing_time_ms"] = 0
+        return BenchmarkResponse(**cached)
+
     try:
         # Map industry string to enum
         industry_map = {
@@ -405,13 +483,19 @@ async def benchmark(request: BenchmarkRequest) -> BenchmarkResponse:
             metric_mapping=request.metric_mapping
         )
 
-        return BenchmarkResponse(
+        response = BenchmarkResponse(
             success=result.success,
             error=result.error,
             result=result.to_dict() if result.success else None,
             sources=result.data_sources,
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
+
+        # Cache successful result
+        if response.success:
+            _chat_cache_set(cache_key, response.dict())
+
+        return response
 
     except Exception as e:
         logger.error(f"Benchmark failed: {e}", exc_info=True)
@@ -439,6 +523,19 @@ async def root_cause(request: RootCauseRequest) -> RootCauseResponse:
         RootCauseResponse with identified causes and recommendations
     """
     start_time = time.time()
+
+    # Cache lookup
+    cache_key = _make_chat_cache_key(
+        "root_cause",
+        sheet_id=request.sheet_id,
+        kpi=request.kpi,
+        threshold=request.threshold,
+        data=request.data,
+    )
+    cached = _chat_cache_get(cache_key)
+    if cached is not None:
+        cached["processing_time_ms"] = 0
+        return RootCauseResponse(**cached)
 
     try:
         # Get data
@@ -516,7 +613,7 @@ async def root_cause(request: RootCauseRequest) -> RootCauseResponse:
         if not recommendations:
             recommendations.append(f"建议进一步收集数据分析{request.kpi}变化原因")
 
-        return RootCauseResponse(
+        response = RootCauseResponse(
             success=True,
             kpi=request.kpi,
             root_causes=root_causes,
@@ -524,6 +621,11 @@ async def root_cause(request: RootCauseRequest) -> RootCauseResponse:
             recommendations=recommendations,
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
+
+        # Cache successful result
+        _chat_cache_set(cache_key, response.dict())
+
+        return response
 
     except Exception as e:
         logger.error(f"Root cause analysis failed: {e}", exc_info=True)
@@ -549,6 +651,19 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
         GeneralAnalysisResponse with analysis results
     """
     start_time = time.time()
+
+    # Cache lookup (include query text in key for general-analysis)
+    cache_key = _make_chat_cache_key(
+        "general_analysis",
+        sheet_id=request.sheet_id,
+        query=request.effective_query,
+        data=request.data,
+        table_type=request.table_type,
+    )
+    cached = _chat_cache_get(cache_key)
+    if cached is not None:
+        cached["processing_time_ms"] = 0
+        return GeneralAnalysisResponse(**cached)
 
     try:
         # Get data from request, cache, or latest upload
@@ -604,7 +719,7 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
                     insight_gen = InsightGenerator()
                     llm_result = await insight_gen.generate_text_analysis(query)
                     answer = llm_result if llm_result else "分析完成，暂无更多见解。"
-                    return GeneralAnalysisResponse(
+                    response = GeneralAnalysisResponse(
                         success=True,
                         answer=answer,
                         aiAnalysis=answer,
@@ -614,6 +729,8 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
                         charts=[],
                         processing_time_ms=int((time.time() - start_time) * 1000)
                     )
+                    _chat_cache_set(cache_key, response.dict())
+                    return response
                 except Exception as e:
                     logger.warning(f"Direct LLM analysis failed: {e}")
                     # Fall through to no-data response
@@ -865,7 +982,7 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
         # Sanitize insights to remove NaN/Infinity before JSON serialization
         insights = _sanitize_for_json(insights)
 
-        return GeneralAnalysisResponse(
+        response = GeneralAnalysisResponse(
             success=True,
             answer=answer,
             aiAnalysis=answer,
@@ -875,6 +992,11 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
             charts=charts,
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
+
+        # Cache successful result
+        _chat_cache_set(cache_key, response.dict())
+
+        return response
 
     except Exception as e:
         logger.error(f"General analysis failed: {e}", exc_info=True)
@@ -1069,6 +1191,428 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
     )
 
 
+def _sse_event(event: str, data) -> str:
+    """Format a single SSE event. JSON-encodes data for consistent frontend parsing."""
+    payload = _json.dumps(data, ensure_ascii=False, default=str)
+    return f"event: {event}\ndata: {payload}\n\n"
+
+
+async def _stream_llm_response(
+    system_prompt: str,
+    user_prompt: str,
+    max_tokens: int = 1500,
+    temperature: float = 0.2,
+) -> AsyncGenerator[str, None]:
+    """
+    Shared helper: calls InsightGenerator._call_llm_stream_text and yields SSE-formatted strings.
+
+    Yields:
+        SSE chunk events as text chunks arrive from the LLM.
+        Caller is responsible for sending the final "done" and "error" events.
+    """
+    insight_gen = InsightGenerator()
+    async for chunk in insight_gen._call_llm_stream_text(
+        user_prompt, system_prompt, max_tokens=max_tokens, temperature=temperature
+    ):
+        yield chunk
+
+
+@router.post("/drill-down-stream")
+async def drill_down_stream(request: DrillDownRequest, http_request: Request):
+    """
+    SSE streaming version of drill_down.
+
+    Sends events:
+      - {"event": "status", "data": "..."} — progress updates
+      - {"event": "chunk", "data": "..."} — LLM text chunks
+      - {"event": "done", "data": {...}} — final result summary
+      - {"event": "error", "data": "..."} — on failure
+
+    Skips InsightCache (streaming responses are not cached).
+    """
+
+    async def event_stream() -> AsyncGenerator[str, None]:
+        start_time = time.time()
+        try:
+            yield _sse_event("status", "正在加载数据...")
+
+            data = request.data
+            if not data:
+                data = get_sheet_data(request.sheet_id)
+
+            if not data:
+                yield _sse_event("done", {
+                    "success": False,
+                    "error": f"No data found for sheet {request.sheet_id}",
+                    "processingTimeMs": int((time.time() - start_time) * 1000)
+                })
+                return
+
+            import pandas as pd
+            df = pd.DataFrame(data)
+
+            if request.dimension not in df.columns:
+                available = df.columns.tolist()
+                yield _sse_event("done", {
+                    "success": False,
+                    "error": f"Dimension '{request.dimension}' not found. Available: {available}",
+                    "processingTimeMs": int((time.time() - start_time) * 1000)
+                })
+                return
+
+            valid_measures = [m for m in request.measures if m in df.columns]
+            if not valid_measures:
+                valid_measures = df.select_dtypes(include=['number']).columns.tolist()
+
+            if not valid_measures:
+                yield _sse_event("done", {
+                    "success": False,
+                    "error": "No numeric measures found for analysis",
+                    "processingTimeMs": int((time.time() - start_time) * 1000)
+                })
+                return
+
+            # Build a concise data summary for LLM streaming
+            filter_desc = f"筛选条件: {request.dimension}={request.filter_value}" if request.filter_value else f"维度: {request.dimension}"
+            measures_desc = "、".join(valid_measures[:3])
+            sample_rows = data[:10]
+            data_preview = _json.dumps(sample_rows, ensure_ascii=False, default=str)[:800]
+
+            system_prompt = "你是食品企业的数据分析师。请用中文Markdown回答，300字以内，引用具体数字，给出可执行建议。"
+            user_prompt = f"""请对以下维度拆分数据进行分析：
+{filter_desc}
+指标: {measures_desc}
+数据样本（前10行）:
+{data_preview}
+
+请总结各维度的表现，找出异常点，并给出业务建议。"""
+
+            yield _sse_event("status", "正在分析...")
+
+            full_text = ""
+            async for chunk in _stream_llm_response(system_prompt, user_prompt, max_tokens=1200, temperature=0.2):
+                if await http_request.is_disconnected():
+                    logger.info("[drill-down-stream] Client disconnected, stopping")
+                    return
+                full_text += chunk
+                yield _sse_event("chunk", chunk)
+
+            yield _sse_event("done", {
+                "success": True,
+                "answer": full_text,
+                "dimension": request.dimension,
+                "filter_value": request.filter_value,
+                "processingTimeMs": int((time.time() - start_time) * 1000)
+            })
+
+        except Exception as e:
+            logger.error(f"[drill-down-stream] Failed: {e}", exc_info=True)
+            yield _sse_event("error", "AI对话处理失败，请稍后重试")
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+            "Content-Encoding": "identity",
+        }
+    )
+
+
+@router.post("/root-cause-stream")
+async def root_cause_stream(request: RootCauseRequest, http_request: Request):
+    """
+    SSE streaming version of root_cause.
+
+    Sends events:
+      - {"event": "status", "data": "..."} — progress updates
+      - {"event": "chunk", "data": "..."} — LLM text chunks
+      - {"event": "done", "data": {...}} — final result summary
+      - {"event": "error", "data": "..."} — on failure
+
+    Skips InsightCache (streaming responses are not cached).
+    """
+
+    async def event_stream() -> AsyncGenerator[str, None]:
+        start_time = time.time()
+        try:
+            yield _sse_event("status", "正在加载数据...")
+
+            data = request.data
+            if not data:
+                data = get_sheet_data(request.sheet_id)
+
+            if not data:
+                yield _sse_event("done", {
+                    "success": False,
+                    "error": f"No data found for sheet {request.sheet_id}",
+                    "kpi": request.kpi,
+                    "processingTimeMs": int((time.time() - start_time) * 1000)
+                })
+                return
+
+            import pandas as pd
+            df = pd.DataFrame(data)
+
+            if request.kpi not in df.columns:
+                yield _sse_event("done", {
+                    "success": False,
+                    "error": f"KPI '{request.kpi}' not found in data",
+                    "kpi": request.kpi,
+                    "processingTimeMs": int((time.time() - start_time) * 1000)
+                })
+                return
+
+            # Compute basic correlations to enrich the LLM prompt
+            numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+            other_cols = [c for c in numeric_cols if c != request.kpi]
+            corr_summary_lines = []
+            kpi_values = df[request.kpi]
+            for col in other_cols[:6]:
+                try:
+                    corr = kpi_values.corr(df[col])
+                    if abs(corr) > request.threshold:
+                        direction = "正相关" if corr > 0 else "负相关"
+                        corr_summary_lines.append(f"- {col}: 相关系数 {corr:.3f}（{direction}）")
+                except Exception:
+                    continue
+            corr_text = "\n".join(corr_summary_lines) if corr_summary_lines else "未发现显著相关因素"
+
+            kpi_stats = df[request.kpi].describe()
+            stats_text = (
+                f"均值={kpi_stats.get('mean', 0):.2f}, "
+                f"最大={kpi_stats.get('max', 0):.2f}, "
+                f"最小={kpi_stats.get('min', 0):.2f}, "
+                f"标准差={kpi_stats.get('std', 0):.2f}"
+            )
+
+            system_prompt = "你是食品企业的数据分析师。请用中文Markdown分析KPI变动的根本原因，300字以内，给出可执行建议。"
+            user_prompt = f"""请分析 KPI「{request.kpi}」变动的根本原因：
+
+KPI统计: {stats_text}
+
+与{request.kpi}的相关因素:
+{corr_text}
+
+请结合以上数据，给出根因分析和改进建议。"""
+
+            yield _sse_event("status", "正在分析根本原因...")
+
+            full_text = ""
+            async for chunk in _stream_llm_response(system_prompt, user_prompt, max_tokens=1200, temperature=0.2):
+                if await http_request.is_disconnected():
+                    logger.info("[root-cause-stream] Client disconnected, stopping")
+                    return
+                full_text += chunk
+                yield _sse_event("chunk", chunk)
+
+            yield _sse_event("done", {
+                "success": True,
+                "kpi": request.kpi,
+                "answer": full_text,
+                "processingTimeMs": int((time.time() - start_time) * 1000)
+            })
+
+        except Exception as e:
+            logger.error(f"[root-cause-stream] Failed: {e}", exc_info=True)
+            yield _sse_event("error", "AI对话处理失败，请稍后重试")
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+            "Content-Encoding": "identity",
+        }
+    )
+
+
+@router.post("/benchmark-stream")
+async def benchmark_stream(request: BenchmarkRequest, http_request: Request):
+    """
+    SSE streaming version of benchmark.
+
+    Sends events:
+      - {"event": "status", "data": "..."} — progress updates
+      - {"event": "chunk", "data": "..."} — LLM text chunks
+      - {"event": "done", "data": {...}} — final result summary
+      - {"event": "error", "data": "..."} — on failure
+
+    Skips InsightCache (streaming responses are not cached).
+    """
+
+    async def event_stream() -> AsyncGenerator[str, None]:
+        start_time = time.time()
+        try:
+            yield _sse_event("status", "正在加载行业基准数据...")
+
+            # Resolve industry name for display
+            industry_display_map = {
+                "food_processing": "食品加工",
+                "food": "食品加工",
+                "食品加工": "食品加工",
+                "食品": "食品加工",
+                "retail": "零售",
+                "零售": "零售",
+                "manufacturing": "制造",
+                "制造": "制造",
+            }
+            industry_label = industry_display_map.get(request.industry.lower(), request.industry)
+
+            # Apply optional metric mapping for display
+            metrics_display = {}
+            for k, v in request.metrics.items():
+                display_key = (request.metric_mapping or {}).get(k, k)
+                metrics_display[display_key] = v
+
+            metrics_text = "\n".join(f"- {k}: {v}" for k, v in metrics_display.items())
+
+            system_prompt = "你是食品企业的数据分析师。请用中文Markdown对比企业指标与行业基准，300字以内，指出差距并给出改进建议。"
+            user_prompt = f"""请分析企业指标与{industry_label}行业基准的差距：
+
+企业当前指标:
+{metrics_text}
+
+请根据行业通行标准，评估各指标所处水平（优秀/良好/一般/偏低），并给出针对性的改进建议。"""
+
+            yield _sse_event("status", "正在对标分析...")
+
+            full_text = ""
+            async for chunk in _stream_llm_response(system_prompt, user_prompt, max_tokens=1200, temperature=0.2):
+                if await http_request.is_disconnected():
+                    logger.info("[benchmark-stream] Client disconnected, stopping")
+                    return
+                full_text += chunk
+                yield _sse_event("chunk", chunk)
+
+            yield _sse_event("done", {
+                "success": True,
+                "industry": request.industry,
+                "answer": full_text,
+                "processingTimeMs": int((time.time() - start_time) * 1000)
+            })
+
+        except Exception as e:
+            logger.error(f"[benchmark-stream] Failed: {e}", exc_info=True)
+            yield _sse_event("error", "AI对话处理失败，请稍后重试")
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+            "Content-Encoding": "identity",
+        }
+    )
+
+
+@router.post("/multi-dimension-stream")
+async def multi_dimension_analysis_stream(request: MultiDimensionRequest, http_request: Request):
+    """
+    SSE streaming version of multi_dimension_analysis.
+
+    Sends events:
+      - {"event": "status", "data": "..."} — progress updates
+      - {"event": "chunk", "data": "..."} — LLM text chunks
+      - {"event": "done", "data": {...}} — final result summary
+      - {"event": "error", "data": "..."} — on failure
+
+    Skips InsightCache (streaming responses are not cached).
+    """
+
+    async def event_stream() -> AsyncGenerator[str, None]:
+        start_time = time.time()
+        try:
+            yield _sse_event("status", "正在分析多维度数据...")
+
+            import pandas as pd
+            df = pd.DataFrame(request.data)
+
+            # Summarise data for the LLM prompt
+            numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+            non_numeric_cols = [c for c in df.columns if c not in numeric_cols]
+
+            stats_lines = []
+            for col in numeric_cols[:5]:
+                try:
+                    s = df[col].describe()
+                    stats_lines.append(
+                        f"- {col}: 均值={s.get('mean', 0):.2f}, 最大={s.get('max', 0):.2f}, 最小={s.get('min', 0):.2f}"
+                    )
+                except Exception:
+                    continue
+            stats_text = "\n".join(stats_lines) if stats_lines else "（无数值列统计）"
+
+            sample_rows = request.data[:8]
+            data_preview = _json.dumps(sample_rows, ensure_ascii=False, default=str)[:600]
+
+            # Focus dimensions hint
+            dims_hint = ""
+            if request.dimensions:
+                dim_label_map = {
+                    "what_happened": "发生了什么（描述性）",
+                    "why_happened": "为什么发生（诊断性）",
+                    "forecast": "预测走势",
+                    "recommendation": "建议行动",
+                    "anomaly": "异常检测",
+                }
+                dim_labels = [dim_label_map.get(d, d) for d in request.dimensions]
+                dims_hint = f"\n请重点分析以下维度: {', '.join(dim_labels)}"
+
+            context_hint = ""
+            if request.context:
+                context_hint = f"\n背景信息: {_json.dumps(request.context, ensure_ascii=False, default=str)}"
+
+            system_prompt = "你是食品企业的数据分析师。请用中文Markdown进行多维度分析，400字以内，结构清晰，引用数字，给出可执行建议。"
+            user_prompt = f"""请对以下数据进行多维度分析：{dims_hint}{context_hint}
+
+数值列统计:
+{stats_text}
+
+数据样本（前8行）:
+{data_preview}
+
+请按照「发生了什么 → 为什么 → 预测 → 建议」结构输出分析。"""
+
+            yield _sse_event("status", "正在生成多维度洞察...")
+
+            full_text = ""
+            async for chunk in _stream_llm_response(system_prompt, user_prompt, max_tokens=1500, temperature=0.2):
+                if await http_request.is_disconnected():
+                    logger.info("[multi-dimension-stream] Client disconnected, stopping")
+                    return
+                full_text += chunk
+                yield _sse_event("chunk", chunk)
+
+            yield _sse_event("done", {
+                "success": True,
+                "answer": full_text,
+                "dimensions": request.dimensions,
+                "processingTimeMs": int((time.time() - start_time) * 1000)
+            })
+
+        except Exception as e:
+            logger.error(f"[multi-dimension-stream] Failed: {e}", exc_info=True)
+            yield _sse_event("error", "AI对话处理失败，请稍后重试")
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+            "Content-Encoding": "identity",
+        }
+    )
+
+
 def _build_charts_for_query(query: str, df, data: list) -> List[Dict[str, Any]]:
     """Build charts based on the query keywords — extracted to share between stream and non-stream endpoints."""
     import re as _re
@@ -1238,6 +1782,18 @@ async def multi_dimension_analysis(
     """
     start_time = time.time()
 
+    # Cache lookup
+    cache_key = _make_chat_cache_key(
+        "multi_dimension",
+        sheet_id=request.sheet_id,
+        dimensions=request.dimensions,
+        data=request.data,
+    )
+    cached = _chat_cache_get(cache_key)
+    if cached is not None:
+        cached["processing_time_ms"] = 0
+        return MultiDimensionResponse(**cached)
+
     try:
         import pandas as pd
         df = pd.DataFrame(request.data)
@@ -1265,7 +1821,7 @@ async def multi_dimension_analysis(
             focus_dimensions=focus_dims
         )
 
-        return MultiDimensionResponse(
+        response = MultiDimensionResponse(
             success=True,
             executive_summary=report.executive_summary,
             insights=[i.to_dict() for i in report.insights],
@@ -1273,6 +1829,11 @@ async def multi_dimension_analysis(
             opportunities=[i.to_dict() for i in report.opportunities],
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
+
+        # Cache successful result
+        _chat_cache_set(cache_key, response.dict())
+
+        return response
 
     except Exception as e:
         logger.error(f"Multi-dimension analysis failed: {e}", exc_info=True)

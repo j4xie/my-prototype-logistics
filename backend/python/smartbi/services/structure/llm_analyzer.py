@@ -14,8 +14,10 @@ LLM Structure Analyzer - 使用LLM分析Excel结构
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -28,6 +30,165 @@ from ..excel.raw_exporter import RawExporter, RawSheetData
 from .table_classifier import TableClassifier, ClassificationResult as TableClassificationResult
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# Structure Analysis Cache
+# ============================================================
+
+@dataclass
+class StructureCacheEntry:
+    """Cache entry for structure analysis results"""
+    cache_key: str
+    result: Dict[str, Any]  # Serialized FullAnalysisResult
+    created_at: float
+    accessed_at: float
+    access_count: int = 1
+
+
+class StructureAnalysisCache:
+    """
+    Cache for structure analysis results.
+
+    Uses column structure signature for cache keys,
+    allowing same-structure files to reuse LLM analysis results.
+    """
+
+    def __init__(self, ttl_seconds: int = 3600, max_entries: int = 500):
+        self._cache: Dict[str, StructureCacheEntry] = {}
+        self._ttl_seconds = ttl_seconds
+        self._max_entries = max_entries
+        self._hits = 0
+        self._misses = 0
+
+    def _generate_structure_key(self, raw_data: RawSheetData) -> str:
+        """
+        Generate a cache key based on column structure.
+
+        Key = MD5(sorted column names + column count + sample data types)[:16]
+        """
+        # Extract column names from the first non-empty row (likely header)
+        col_names = []
+        col_types = []
+
+        if raw_data.rows:
+            # Use first row as header source
+            header_row = raw_data.rows[0]
+            for cell in header_row.cells:
+                name = str(cell.value).lower().strip() if cell.value else ""
+                col_names.append(name)
+
+            # Sample data types from first data rows (rows 1-5)
+            for row in raw_data.rows[1:6]:
+                for cell in row.cells:
+                    col_types.append(cell.value_type)
+
+        # Build signature: sorted column names + count + sample types
+        sorted_cols = sorted(col_names[:30])
+        signature_parts = [
+            "|".join(sorted_cols),
+            str(len(col_names)),
+            "|".join(col_types[:60])
+        ]
+        full_signature = "||".join(signature_parts)
+
+        return hashlib.md5(full_signature.encode()).hexdigest()[:16]
+
+    def get(self, raw_data: RawSheetData) -> Optional[Dict[str, Any]]:
+        """
+        Get cached analysis result if available.
+
+        Returns None if not found or expired.
+        """
+        cache_key = self._generate_structure_key(raw_data)
+        entry = self._cache.get(cache_key)
+
+        if entry is None:
+            self._misses += 1
+            return None
+
+        # Check TTL
+        if time.time() - entry.created_at > self._ttl_seconds:
+            del self._cache[cache_key]
+            self._misses += 1
+            return None
+
+        # Update access stats
+        entry.accessed_at = time.time()
+        entry.access_count += 1
+        self._hits += 1
+
+        logger.info(
+            f"Structure cache HIT: key={cache_key}, "
+            f"hits/misses={self._hits}/{self._misses}"
+        )
+        return entry.result
+
+    def set(self, raw_data: RawSheetData, result: Dict[str, Any]) -> str:
+        """
+        Cache a structure analysis result.
+
+        Returns the cache key.
+        """
+        cache_key = self._generate_structure_key(raw_data)
+
+        entry = StructureCacheEntry(
+            cache_key=cache_key,
+            result=result,
+            created_at=time.time(),
+            accessed_at=time.time()
+        )
+
+        self._cache[cache_key] = entry
+
+        # Evict old entries if needed
+        if len(self._cache) > self._max_entries:
+            self._evict_old_entries()
+
+        logger.debug(f"Structure analysis cached: {cache_key}")
+        return cache_key
+
+    def _evict_old_entries(self):
+        """Remove oldest entries when cache is full."""
+        if len(self._cache) <= self._max_entries:
+            return
+
+        sorted_keys = sorted(
+            self._cache.keys(),
+            key=lambda k: self._cache[k].accessed_at
+        )
+
+        # Remove oldest 10%
+        to_remove = max(1, len(sorted_keys) // 10)
+        for key in sorted_keys[:to_remove]:
+            del self._cache[key]
+
+        logger.debug(f"Evicted {to_remove} old structure cache entries")
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get cache statistics."""
+        now = time.time()
+        active = [e for e in self._cache.values()
+                  if now - e.created_at < self._ttl_seconds]
+
+        return {
+            "total_entries": len(self._cache),
+            "active_entries": len(active),
+            "total_hits": self._hits,
+            "total_misses": self._misses,
+            "hit_rate": self._hits / max(self._hits + self._misses, 1)
+        }
+
+    def clear(self):
+        """Clear all cache entries."""
+        self._cache.clear()
+        self._hits = 0
+        self._misses = 0
+        logger.info("Structure analysis cache cleared")
+
+
+# Module-level cache instance (shared across all LLMStructureAnalyzer instances)
+_structure_cache = StructureAnalysisCache()
 
 
 @dataclass
@@ -95,6 +256,110 @@ class FullAnalysisResult:
     insights: List[str]       # 初步洞察
     warnings: List[str]       # 数据质量警告
 
+    def to_cache_dict(self) -> Dict[str, Any]:
+        """Serialize to dict for caching."""
+        return {
+            "structure": {
+                "success": self.structure.success,
+                "sheet_name": self.structure.sheet_name,
+                "total_rows": self.structure.total_rows,
+                "total_cols": self.structure.total_cols,
+                "title_rows": self.structure.title_rows,
+                "header_rows": self.structure.header_rows,
+                "data_start_row": self.structure.data_start_row,
+                "data_end_row": self.structure.data_end_row,
+                "columns": [
+                    {
+                        "col_letter": c.col_letter,
+                        "col_index": c.col_index,
+                        "name": c.name,
+                        "data_type": c.data_type,
+                        "meaning": c.meaning,
+                        "role": c.role,
+                        "is_key": c.is_key,
+                        "sample_values": c.sample_values,
+                    }
+                    for c in self.structure.columns
+                ],
+                "table_type": self.structure.table_type,
+                "table_type_confidence": self.structure.table_type_confidence,
+                "merged_cells_meaning": self.structure.merged_cells_meaning,
+                "notes": self.structure.notes,
+                "error": self.structure.error,
+                "method": self.structure.method,
+                "transpose": self.structure.transpose,
+                "is_wide_table": self.structure.is_wide_table,
+            },
+            "recommendations": [
+                {
+                    "analysis_type": r.analysis_type,
+                    "description": r.description,
+                    "priority": r.priority,
+                    "chart_types": r.chart_types,
+                    "required_columns": r.required_columns,
+                }
+                for r in self.recommendations
+            ],
+            "insights": self.insights,
+            "warnings": self.warnings,
+        }
+
+    @classmethod
+    def from_cache_dict(cls, data: Dict[str, Any]) -> "FullAnalysisResult":
+        """Deserialize from cached dict."""
+        s = data["structure"]
+        columns = [
+            ColumnInfo(
+                col_letter=c["col_letter"],
+                col_index=c["col_index"],
+                name=c["name"],
+                data_type=c["data_type"],
+                meaning=c["meaning"],
+                role=c["role"],
+                is_key=c.get("is_key", False),
+                sample_values=c.get("sample_values", []),
+            )
+            for c in s.get("columns", [])
+        ]
+
+        structure = StructureAnalysis(
+            success=s["success"],
+            sheet_name=s["sheet_name"],
+            total_rows=s["total_rows"],
+            total_cols=s["total_cols"],
+            title_rows=s.get("title_rows", []),
+            header_rows=s.get("header_rows", [0]),
+            data_start_row=s.get("data_start_row", 1),
+            data_end_row=s.get("data_end_row"),
+            columns=columns,
+            table_type=s.get("table_type", "general_table"),
+            table_type_confidence=s.get("table_type_confidence", 0.5),
+            merged_cells_meaning=s.get("merged_cells_meaning", {}),
+            notes=s.get("notes", []),
+            error=s.get("error"),
+            method="cache",
+            transpose=s.get("transpose", False),
+            is_wide_table=s.get("is_wide_table", False),
+        )
+
+        recommendations = [
+            AnalysisRecommendation(
+                analysis_type=r["analysis_type"],
+                description=r["description"],
+                priority=r.get("priority", 5),
+                chart_types=r.get("chart_types", []),
+                required_columns=r.get("required_columns", []),
+            )
+            for r in data.get("recommendations", [])
+        ]
+
+        return cls(
+            structure=structure,
+            recommendations=recommendations,
+            insights=data.get("insights", []),
+            warnings=data.get("warnings", []),
+        )
+
 
 class LLMStructureAnalyzer:
     """
@@ -112,9 +377,12 @@ class LLMStructureAnalyzer:
 
     def __init__(self):
         self.settings = get_settings()
-        # 使用较长的默认超时，实际调用时会动态计算
-        self.client = httpx.AsyncClient(timeout=self.MAX_TIMEOUT)
         self.raw_exporter = RawExporter()
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        from common.llm_client import get_llm_http_client
+        return get_llm_http_client()
 
     def _calculate_timeout(self, row_count: int, col_count: int) -> float:
         """
@@ -161,6 +429,20 @@ class LLMStructureAnalyzer:
         Returns:
             FullAnalysisResult
         """
+        # 0. 检查结构缓存
+        cached_dict = _structure_cache.get(raw_data)
+        if cached_dict is not None:
+            try:
+                result = FullAnalysisResult.from_cache_dict(cached_dict)
+                logger.info(
+                    f"Structure analysis from cache: "
+                    f"type={result.structure.table_type}, "
+                    f"cols={result.structure.total_cols}"
+                )
+                return result
+            except Exception as e:
+                logger.warning(f"Failed to restore from cache, re-analyzing: {e}")
+
         # 1. 将数据转为Markdown（LLM友好格式）
         md_content = self.raw_exporter.to_markdown(
             raw_data,
@@ -175,7 +457,9 @@ class LLMStructureAnalyzer:
         try:
             if not self.settings.llm_api_key:
                 logger.info("LLM API key not configured, using rule-based analysis")
-                return self._rule_based_analysis(raw_data, include_recommendations)
+                result = self._rule_based_analysis(raw_data, include_recommendations)
+                _structure_cache.set(raw_data, result.to_cache_dict())
+                return result
 
             response = await self._call_llm(
                 prompt,
@@ -183,11 +467,16 @@ class LLMStructureAnalyzer:
                 col_count=raw_data.total_cols
             )
             result = self._parse_response(response, raw_data, include_recommendations)
+
+            # 缓存分析结果
+            _structure_cache.set(raw_data, result.to_cache_dict())
             return result
 
         except Exception as e:
             logger.error(f"LLM analysis failed: {e}")
-            return self._rule_based_analysis(raw_data, include_recommendations)
+            result = self._rule_based_analysis(raw_data, include_recommendations)
+            _structure_cache.set(raw_data, result.to_cache_dict())
+            return result
 
     async def analyze_from_bytes(
         self,
@@ -313,7 +602,7 @@ class LLMStructureAnalyzer:
         logger.info(f"LLM call: {row_count}x{col_count} -> timeout={timeout:.1f}s, max_tokens={max_tokens}")
 
         payload = {
-            "model": self.settings.llm_model,
+            "model": self.settings.llm_mapper_model,
             "messages": [
                 {
                     "role": "system",
@@ -325,7 +614,8 @@ class LLMStructureAnalyzer:
                 }
             ],
             "temperature": 0.2,
-            "max_tokens": max_tokens
+            "max_tokens": max_tokens,
+            "enable_thinking": False
         }
 
         response = await self.client.post(
@@ -695,9 +985,17 @@ class LLMStructureAnalyzer:
         # 默认：宽表通常需要转置以便分析
         return is_wide_table, is_wide_table
 
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """Get structure analysis cache statistics."""
+        return _structure_cache.get_stats()
+
+    def clear_cache(self):
+        """Clear the structure analysis cache."""
+        _structure_cache.clear()
+
     async def close(self):
-        """关闭HTTP客户端"""
-        await self.client.aclose()
+        """No-op: shared client lifecycle managed by main.py lifespan"""
+        pass
 
 
 # ============================================================

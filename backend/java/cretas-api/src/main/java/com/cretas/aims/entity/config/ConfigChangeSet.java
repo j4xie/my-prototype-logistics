@@ -2,6 +2,7 @@ package com.cretas.aims.entity.config;
 
 import com.cretas.aims.entity.BaseEntity;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -179,6 +180,7 @@ public class ConfigChangeSet extends BaseEntity {
      * 部分变更可能因为后续变更而无法回滚
      */
     @Column(name = "is_rollbackable")
+    @Builder.Default
     private Boolean isRollbackable = true;
 
     // ========== 枚举类型 ==========

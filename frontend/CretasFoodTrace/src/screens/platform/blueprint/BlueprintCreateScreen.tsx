@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   modeCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 20,
   },

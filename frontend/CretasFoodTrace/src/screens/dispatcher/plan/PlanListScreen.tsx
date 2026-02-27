@@ -978,7 +978,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#e0e0e0',
@@ -1329,7 +1329,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#e0e0e0',

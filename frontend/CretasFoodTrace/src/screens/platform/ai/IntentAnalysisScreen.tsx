@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   accuracyCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 16,
   },
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
   intentRank: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 12,
     backgroundColor: '#667eea',
     alignItems: 'center',
     justifyContent: 'center',

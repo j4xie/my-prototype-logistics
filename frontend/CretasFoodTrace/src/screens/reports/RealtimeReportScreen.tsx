@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import { Text, Appbar, Surface, Divider, ActivityIndicator, Card } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
@@ -89,7 +90,7 @@ export default function RealtimeReportScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('realtime.title')} />
@@ -142,7 +143,7 @@ export default function RealtimeReportScreen() {
           )}
         </Surface>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

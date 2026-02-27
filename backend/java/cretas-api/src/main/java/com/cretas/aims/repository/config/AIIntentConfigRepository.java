@@ -218,10 +218,10 @@ public interface AIIntentConfigRepository extends JpaRepository<AIIntentConfig, 
      * 根据工厂ID和启用状态查询
      * 注意：支持 factoryId 为 null 的情况（平台级意图）
      */
-    @Query("SELECT c FROM AIIntentConfig c " +
-           "WHERE ((:factoryId IS NULL AND c.factoryId IS NULL) OR c.factoryId = :factoryId) " +
-           "AND c.isActive = :enabled " +
-           "AND c.deletedAt IS NULL")
+    @Query(value = "SELECT c.* FROM ai_intent_configs c " +
+           "WHERE ((CAST(:factoryId AS varchar) IS NULL AND c.factory_id IS NULL) OR c.factory_id = :factoryId) " +
+           "AND c.is_active = :enabled " +
+           "AND c.deleted_at IS NULL", nativeQuery = true)
     List<AIIntentConfig> findByFactoryIdAndEnabled(
             @Param("factoryId") String factoryId,
             @Param("enabled") boolean enabled);
@@ -230,10 +230,10 @@ public interface AIIntentConfigRepository extends JpaRepository<AIIntentConfig, 
      * 根据工厂ID和意图代码查询
      * 注意：支持 factoryId 为 null 的情况（平台级意图）
      */
-    @Query("SELECT c FROM AIIntentConfig c " +
-           "WHERE ((:factoryId IS NULL AND c.factoryId IS NULL) OR c.factoryId = :factoryId) " +
-           "AND c.intentCode = :intentCode " +
-           "AND c.deletedAt IS NULL")
+    @Query(value = "SELECT c.* FROM ai_intent_configs c " +
+           "WHERE ((CAST(:factoryId AS varchar) IS NULL AND c.factory_id IS NULL) OR c.factory_id = :factoryId) " +
+           "AND c.intent_code = :intentCode " +
+           "AND c.deleted_at IS NULL", nativeQuery = true)
     Optional<AIIntentConfig> findByFactoryIdAndIntentCode(
             @Param("factoryId") String factoryId,
             @Param("intentCode") String intentCode);
@@ -243,10 +243,10 @@ public interface AIIntentConfigRepository extends JpaRepository<AIIntentConfig, 
      * 用于自动创建意图时防止重复
      * 注意：支持 factoryId 为 null 的情况（平台级意图）
      */
-    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM AIIntentConfig c " +
-           "WHERE ((:factoryId IS NULL AND c.factoryId IS NULL) OR c.factoryId = :factoryId) " +
-           "AND c.intentCode = :intentCode " +
-           "AND c.deletedAt IS NULL")
+    @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END FROM ai_intent_configs c " +
+           "WHERE ((CAST(:factoryId AS varchar) IS NULL AND c.factory_id IS NULL) OR c.factory_id = :factoryId) " +
+           "AND c.intent_code = :intentCode " +
+           "AND c.deleted_at IS NULL", nativeQuery = true)
     boolean existsByFactoryIdAndIntentCode(
             @Param("factoryId") String factoryId,
             @Param("intentCode") String intentCode);

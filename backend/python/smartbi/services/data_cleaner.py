@@ -18,10 +18,12 @@
 """
 from __future__ import annotations
 
+import hashlib
 import re
 import json
 import logging
 import os
+import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from datetime import datetime
@@ -33,6 +35,96 @@ from config import get_settings
 from services.raw_exporter import RawExporter, RawSheetData
 
 logger = logging.getLogger(__name__)
+
+
+class CleaningIssueCache:
+    """
+    Cache for LLM issue detection results.
+
+    Uses column structure + data types + row count bucket as cache key,
+    allowing files with the same structure to reuse detected issues.
+    """
+
+    def __init__(self, ttl_seconds: int = 3600, max_entries: int = 300):
+        self._cache: Dict[str, dict] = {}
+        self._ttl_seconds = ttl_seconds
+        self._max_entries = max_entries
+
+    @staticmethod
+    def _row_count_bucket(n: int) -> str:
+        if n < 50:
+            return "<50"
+        elif n < 200:
+            return "50-200"
+        elif n < 1000:
+            return "200-1000"
+        return "1000+"
+
+    def _generate_key(
+        self,
+        columns: List[str],
+        sample_types: List[str],
+        row_count: int,
+    ) -> str:
+        """Generate cache key from column names, sample data types, and row count bucket."""
+        sig = (
+            "|".join(sorted(c.lower().strip() for c in columns if c))
+            + "||" + "|".join(sample_types)
+            + "||" + self._row_count_bucket(row_count)
+        )
+        return hashlib.md5(sig.encode()).hexdigest()[:16]
+
+    def get(
+        self,
+        columns: List[str],
+        sample_types: List[str],
+        row_count: int,
+    ) -> Optional[List[dict]]:
+        """Return cached issues list or None."""
+        key = self._generate_key(columns, sample_types, row_count)
+        entry = self._cache.get(key)
+        if entry is None:
+            return None
+        if time.time() - entry["created_at"] > self._ttl_seconds:
+            del self._cache[key]
+            return None
+        entry["accessed_at"] = time.time()
+        entry["access_count"] += 1
+        logger.debug("CleaningIssueCache hit: %s", key)
+        return entry["issues"]
+
+    def set(
+        self,
+        columns: List[str],
+        sample_types: List[str],
+        row_count: int,
+        issues: List[dict],
+    ) -> None:
+        """Store issues in cache."""
+        key = self._generate_key(columns, sample_types, row_count)
+        self._cache[key] = {
+            "issues": issues,
+            "created_at": time.time(),
+            "accessed_at": time.time(),
+            "access_count": 1,
+        }
+        if len(self._cache) > self._max_entries:
+            self._evict()
+        logger.debug("CleaningIssueCache set: %s", key)
+
+    def _evict(self) -> None:
+        """LRU eviction — remove oldest 10 %."""
+        if len(self._cache) <= self._max_entries:
+            return
+        sorted_keys = sorted(
+            self._cache, key=lambda k: self._cache[k]["accessed_at"]
+        )
+        for k in sorted_keys[: max(1, len(sorted_keys) // 10)]:
+            del self._cache[k]
+
+
+# Module-level singleton so it survives across requests
+_issue_cache = CleaningIssueCache()
 
 
 @dataclass
@@ -67,8 +159,12 @@ class DataCleaner:
 
     def __init__(self):
         self.settings = get_settings()
-        self.client = httpx.AsyncClient(timeout=60.0)
         self.raw_exporter = RawExporter()
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        from common.llm_client import get_llm_http_client
+        return get_llm_http_client()
 
         # 注册清洗规则
         self.rules: Dict[str, Callable] = {
@@ -225,12 +321,60 @@ class DataCleaner:
                 error=str(e)
             )
 
+    @staticmethod
+    def _extract_cache_params(
+        raw_data: RawSheetData,
+        structure: Dict[str, Any],
+    ) -> Tuple[List[str], List[str], int]:
+        """Extract (column_names, sample_types, row_count) for cache keying."""
+        columns = [
+            c.get("name") or c.get("merged_name") or ""
+            for c in structure.get("columns", [])
+        ]
+        data_start = structure.get("data_start_row", 0)
+        row_count = max(0, len(raw_data.rows) - data_start)
+
+        # Derive data types from first data row
+        sample_types: List[str] = []
+        if data_start < len(raw_data.rows):
+            first_row = raw_data.rows[data_start]
+            for cell in first_row.cells[: len(columns)]:
+                v = cell.value
+                if v is None:
+                    sample_types.append("null")
+                elif isinstance(v, (int, float)):
+                    sample_types.append("num")
+                elif isinstance(v, str):
+                    sample_types.append("str")
+                else:
+                    sample_types.append("other")
+
+        return columns, sample_types, row_count
+
     async def _llm_identify_issues(
         self,
         raw_data: RawSheetData,
         structure: Dict[str, Any]
     ) -> List[CleaningIssue]:
         """LLM识别数据质量问题"""
+
+        # --- cache lookup ---
+        col_names, sample_types, row_count = self._extract_cache_params(raw_data, structure)
+        cached = _issue_cache.get(col_names, sample_types, row_count)
+        if cached is not None:
+            logger.info("Issue detection cache hit (%d issues)", len(cached))
+            return [
+                CleaningIssue(
+                    issue_type=it.get("issue_type", ""),
+                    description=it.get("description", ""),
+                    affected_columns=it.get("affected_columns", []),
+                    affected_rows=it.get("affected_rows", []),
+                    suggested_rule=it.get("suggested_rule", ""),
+                    examples=it.get("examples", []),
+                    priority=it.get("priority", 2),
+                )
+                for it in cached
+            ]
 
         # 生成Markdown格式的数据预览
         md_content = self.raw_exporter.to_markdown(raw_data, max_rows=15, truncate=False)
@@ -243,7 +387,25 @@ class DataCleaner:
                 return self._rule_based_detection(raw_data, structure)
 
             response = await self._call_llm(prompt)
-            return self._parse_issue_response(response)
+            issues = self._parse_issue_response(response)
+
+            # --- cache store ---
+            _issue_cache.set(
+                col_names, sample_types, row_count,
+                [
+                    {
+                        "issue_type": i.issue_type,
+                        "description": i.description,
+                        "affected_columns": i.affected_columns,
+                        "affected_rows": i.affected_rows,
+                        "suggested_rule": i.suggested_rule,
+                        "examples": i.examples,
+                        "priority": i.priority,
+                    }
+                    for i in issues
+                ],
+            )
+            return issues
 
         except Exception as e:
             logger.error(f"LLM issue detection failed: {e}")
@@ -354,7 +516,7 @@ class DataCleaner:
         }
 
         payload = {
-            "model": self.settings.llm_model,
+            "model": self.settings.llm_mapper_model,
             "messages": [
                 {
                     "role": "system",
@@ -366,7 +528,8 @@ class DataCleaner:
                 }
             ],
             "temperature": 0.2,
-            "max_tokens": 2000
+            "max_tokens": 2000,
+            "enable_thinking": False
         }
 
         response = await self.client.post(
@@ -522,7 +685,7 @@ def rule_function(data: List[Dict], columns: List[str]) -> int:
         }
 
         payload = {
-            "model": self.settings.llm_model,
+            "model": self.settings.llm_mapper_model,
             "messages": [
                 {
                     "role": "system",
@@ -534,7 +697,8 @@ def rule_function(data: List[Dict], columns: List[str]) -> int:
                 }
             ],
             "temperature": 0.1,
-            "max_tokens": 1500
+            "max_tokens": 1500,
+            "enable_thinking": False
         }
 
         response = await self.client.post(
@@ -1081,8 +1245,8 @@ def rule_function(data: List[Dict], columns: List[str]) -> int:
         }
 
     async def close(self):
-        """关闭HTTP客户端"""
-        await self.client.aclose()
+        """No-op: shared client lifecycle managed by main.py lifespan"""
+        pass
 
 
 # 便捷函数
