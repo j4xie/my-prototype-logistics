@@ -45,6 +45,7 @@ import {
   batchBuildCharts,
   quickSummary,
   generateInsights,
+  generateInsightsStream,
   getForecast,
   getCachedAnalysis,
   saveAnalysisToCache,
@@ -1591,7 +1592,7 @@ async function _doEnrichSheetAnalysis(
     const financialMetrics = computeFinancialMetrics(cleanedData, monthlyColumns, labelField);
     tick('computeFinancialMetrics', t0);
 
-    // 8. Generate AI insights
+    // 8. Generate AI insights (SSE streaming — user sees text appear progressively)
     t0 = performance.now();
     let aiAnalysis = '';
     let structuredAI: StructuredAIData | undefined;
@@ -1615,10 +1616,15 @@ async function _doEnrichSheetAnalysis(
     if (financialMetrics) {
       contextParts.push(formatFinancialContext(financialMetrics));
     }
-    const insightRes = await generateInsights({
+    const insightRes = await generateInsightsStream({
       data: insightData,
       analysisContext: contextParts.join('\n'),
-      maxInsights: 5
+      maxInsights: 5,
+      signal: abortController.signal,
+      onChunk: (chunk: string) => {
+        // Emit each SSE text chunk so the UI can render progressively (typewriter effect)
+        onProgress?.({ phase: 'ai-streaming', partial: { aiStreamChunk: chunk } });
+      }
     });
     if (insightRes.success && insightRes.insights?.length) {
       const metaInsight = insightRes.insights.find(i => i.type === '_meta');
@@ -1652,7 +1658,7 @@ async function _doEnrichSheetAnalysis(
         })
         .join('\n\n');
     }
-    tick('generateInsights', t0);
+    tick('generateInsights(stream)', t0);
 
     // Notify AI analysis ready
     onProgress?.({ phase: 'ai', partial: { aiAnalysis: aiAnalysis || undefined, structuredAI } });

@@ -37,6 +37,26 @@ public interface LlmIntentFallbackClient {
     IntentMatchResult classifyIntent(String userInput, List<AIIntentConfig> availableIntents, String factoryId, Long userId, String userRole);
 
     /**
+     * 调用 LLM 进行意图分类（带原始输入用于领域检测）
+     *
+     * D8v2: 预处理器可能大幅简化 userInput（如"帮我查一下本月各产线的良品率对比"→"查产线"），
+     * 导致 Tool Calling 的领域过滤丢失关键词。传入 originalInput 用于领域检测。
+     *
+     * @param userInput 预处理后的用户输入（用于 LLM 分类）
+     * @param originalInput 原始用户输入（用于 Tool Calling 领域检测）
+     * @param availableIntents 可用的意图配置列表
+     * @param factoryId 工厂ID
+     * @param userId 用户ID
+     * @param userRole 用户角色
+     * @return 意图匹配结果
+     */
+    default IntentMatchResult classifyIntent(String userInput, String originalInput,
+                                              List<AIIntentConfig> availableIntents,
+                                              String factoryId, Long userId, String userRole) {
+        return classifyIntent(userInput, availableIntents, factoryId, userId, userRole);
+    }
+
+    /**
      * 调用 LLM 进行意图分类 (带多轮对话支持)
      *
      * 当置信度 < 30% 时，可能返回需要进入多轮对话模式的结果。

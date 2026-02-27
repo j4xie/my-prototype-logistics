@@ -80,6 +80,19 @@ public class CreateProductionPlanRequest {
     @Schema(description = "是否使用自动计算转换率")
     private Boolean autoCalculateConversionRate = false;
 
+    // ======= 工厂管理员扩展字段 =======
+
+    @Schema(description = "建议产线ID")
+    private String suggestedProductionLineId;
+
+    @Schema(description = "预计工人数")
+    @Min(value = 1, message = "预计工人数最小为1")
+    @Max(value = 500, message = "预计工人数最大为500")
+    private Integer estimatedWorkers;
+
+    @Schema(description = "指派车间主管ID")
+    private Long assignedSupervisorId;
+
     // ======= 调度员模块扩展字段 =======
 
     @Schema(description = "计划来源类型: CUSTOMER_ORDER/AI_FORECAST/SAFETY_STOCK/MANUAL/URGENT_INSERT")

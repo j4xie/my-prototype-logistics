@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.dto.common.ImportResult;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.production.CreateProductionPlanRequest;
@@ -9,6 +10,7 @@ import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.ProductionPlanService;
 import com.cretas.aims.utils.TokenUtils;
+import com.cretas.aims.entity.ProductionBatch;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,10 +18,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -370,19 +375,76 @@ public class ProductionPlanController {
     }
 
     /**
+     * 从生产计划创建生产批次（计划→执行转换）
+     */
+    @PostMapping("/{planId}/create-batch")
+    @Operation(summary = "从计划创建批次")
+    public ApiResponse<ProductionBatch> createBatchFromPlan(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotNull String planId) {
+
+        log.info("从计划创建批次: factoryId={}, planId={}", factoryId, planId);
+        ProductionBatch batch = productionPlanService.createBatchFromPlan(factoryId, planId);
+        return ApiResponse.success("批次创建成功", batch);
+    }
+
+    /**
      * 导出生产计划
      */
     @GetMapping("/export")
     @Operation(summary = "导出生产计划")
-    public byte[] exportProductionPlans(
+    public void exportProductionPlans(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "开始日期", required = true, example = "2025-01-01")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "结束日期", required = true, example = "2025-01-31")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            HttpServletResponse response) throws IOException {
 
         log.info("导出生产计划: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
-        return productionPlanService.exportProductionPlans(factoryId, startDate, endDate);
+        byte[] data = productionPlanService.exportProductionPlans(factoryId, startDate, endDate);
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=production-plans.xlsx");
+        response.getOutputStream().write(data);
+        response.getOutputStream().flush();
+    }
+
+    /**
+     * 下载生产计划导入模板
+     */
+    @GetMapping("/import-template")
+    @Operation(summary = "下载生产计划导入模板")
+    public void downloadImportTemplate(HttpServletResponse response) throws IOException {
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=production-plan-template.xlsx");
+        byte[] template = productionPlanService.generateImportTemplate();
+        response.getOutputStream().write(template);
+        response.getOutputStream().flush();
+    }
+
+    /**
+     * Excel批量导入生产计划
+     */
+    @PostMapping("/import")
+    @Operation(summary = "Excel批量导入生产计划")
+    public ApiResponse<ImportResult<ProductionPlanDTO>> importProductionPlans(
+            @Parameter(description = "工厂ID", required = true, example = "F001")
+            @PathVariable @NotBlank String factoryId,
+            @Parameter(description = "访问令牌", required = true)
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam("file") MultipartFile file) throws IOException {
+
+        if (file.isEmpty()) {
+            return ApiResponse.error("请选择要导入的文件");
+        }
+
+        String token = TokenUtils.extractToken(authorization);
+        Long userId = mobileService.getUserFromToken(token).getId();
+
+        log.info("Excel导入生产计划: factoryId={}, fileName={}", factoryId, file.getOriginalFilename());
+        ImportResult<ProductionPlanDTO> result = productionPlanService.importProductionPlansFromExcel(
+                factoryId, file.getInputStream(), userId);
+        return ApiResponse.success("导入完成", result);
     }
 }

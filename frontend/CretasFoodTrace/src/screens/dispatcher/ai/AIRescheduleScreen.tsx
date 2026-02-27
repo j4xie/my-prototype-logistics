@@ -933,7 +933,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 28,
     backgroundColor: '#d9d9d9',
-    borderRadius: 14,
+    borderRadius: 12,
     padding: 2,
   },
   switchTrackActive: {
@@ -1135,7 +1135,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 'auto',
     marginBottom: 'auto',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 24,
   },
   resultHeader: {

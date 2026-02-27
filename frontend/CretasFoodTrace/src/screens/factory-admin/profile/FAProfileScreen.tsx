@@ -3,7 +3,8 @@
  * 包含: 用户信息、账户设置、帮助与支持、关于
  */
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Icon } from "react-native-paper";
@@ -66,7 +67,7 @@ export function FAProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>

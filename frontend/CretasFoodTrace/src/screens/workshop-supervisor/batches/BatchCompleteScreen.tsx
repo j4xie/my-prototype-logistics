@@ -6,11 +6,11 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +22,7 @@ export function BatchCompleteScreen() {
   const { t } = useTranslation('workshop');
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
+  const insets = useSafeAreaInsets();
 
   const [confirmChecks, setConfirmChecks] = useState({
     qualityCheck: false,
@@ -66,9 +67,9 @@ export function BatchCompleteScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* 头部 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
@@ -172,7 +173,7 @@ export function BatchCompleteScreen() {
       </ScrollView>
 
       {/* 底部按钮 */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <TouchableOpacity
           style={[styles.completeBtn, !allChecked && styles.completeBtnDisabled]}
           onPress={handleComplete}
@@ -182,7 +183,7 @@ export function BatchCompleteScreen() {
           <Text style={styles.completeBtnText}>{t('batchComplete.actions.confirm')}</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

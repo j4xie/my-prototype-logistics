@@ -99,6 +99,17 @@ public class ProductionPlan extends BaseEntity {
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
 
+    // ==================== 工厂管理员扩展字段 ====================
+
+    @Column(name = "suggested_production_line_id", length = 36)
+    private String suggestedProductionLineId;
+
+    @Column(name = "estimated_workers")
+    private Integer estimatedWorkers;
+
+    @Column(name = "assigned_supervisor_id")
+    private Long assignedSupervisorId;
+
     // ==================== 调度员模块扩展字段 ====================
 
     /**

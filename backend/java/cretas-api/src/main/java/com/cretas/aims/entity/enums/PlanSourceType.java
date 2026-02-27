@@ -37,7 +37,19 @@ public enum PlanSourceType {
      * 紧急插单
      * 优先级: 9-10
      */
-    URGENT_INSERT("紧急插单", 9, 10);
+    URGENT_INSERT("紧急插单", 9, 10),
+
+    /**
+     * Excel批量导入
+     * 优先级: 5-8
+     */
+    EXCEL_IMPORT("Excel导入", 5, 8),
+
+    /**
+     * AI对话创建
+     * 优先级: 5-8
+     */
+    AI_CHAT("AI对话创建", 5, 8);
 
     private final String displayName;
     private final int minPriority;

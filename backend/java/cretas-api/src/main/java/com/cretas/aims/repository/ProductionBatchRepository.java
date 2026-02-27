@@ -248,7 +248,7 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
      * @param status 排除的状态（通常为 COMPLETED）
      * @return 未处于指定状态的批次数量
      */
-    long countByProductionPlanIdAndStatusNot(Integer productionPlanId, ProductionBatchStatus status);
+    long countByProductionPlanIdAndStatusNot(String productionPlanId, ProductionBatchStatus status);
 
     /**
      * 按产品类型统计生产数量

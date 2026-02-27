@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     memberBadge: {
         width: 32,
         height: 32,
-        borderRadius: 16,
+        borderRadius: 12,
         borderWidth: 1.5,
         borderColor: 'rgba(255,255,255,0.8)',
         justifyContent: 'center',
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     benefitsCard: {
-        borderRadius: 16,
+        borderRadius: 12,
         backgroundColor: '#FFFFFF',
     },
     benefitsGrid: {
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
         padding: 16,
         height: 120,
         justifyContent: 'space-between',
-        borderRadius: 16,
+        borderRadius: 12,
         backgroundColor: '#FFFFFF',
     },
     serviceIconBox: {

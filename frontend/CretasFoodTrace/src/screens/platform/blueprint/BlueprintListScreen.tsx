@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   filterModal: {
     backgroundColor: '#fff',
     margin: 20,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
   },
   filterTitle: {

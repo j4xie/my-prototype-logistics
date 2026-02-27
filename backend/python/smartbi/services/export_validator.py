@@ -479,24 +479,25 @@ class SimpleLLMClient:
         if not self.api_key:
             raise ValueError("API key not configured")
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.base_url}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": self.model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.1
-                },
-                timeout=60.0
-            )
+        from common.llm_client import get_llm_http_client
+        client = get_llm_http_client()
+        response = await client.post(
+            f"{self.base_url}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1
+            },
+            timeout=httpx.Timeout(60.0),
+        )
 
-            response.raise_for_status()
-            data = response.json()
-            return data["choices"][0]["message"]["content"]
+        response.raise_for_status()
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
 
 
 # ============================================================

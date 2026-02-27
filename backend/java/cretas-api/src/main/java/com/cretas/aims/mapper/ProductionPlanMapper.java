@@ -76,6 +76,11 @@ public class ProductionPlanMapper {
         // 计算总成本
         dto.setTotalCost(calculateTotalCost(plan));
 
+        // 设置工厂管理员扩展字段
+        dto.setSuggestedProductionLineId(plan.getSuggestedProductionLineId());
+        dto.setEstimatedWorkers(plan.getEstimatedWorkers());
+        dto.setAssignedSupervisorId(plan.getAssignedSupervisorId());
+
         // 设置未来计划匹配相关字段
         dto.setAllocatedQuantity(plan.getAllocatedQuantity());
         dto.setIsFullyMatched(plan.getIsFullyMatched());
@@ -158,6 +163,11 @@ public class ProductionPlanMapper {
             plan.setExpectedCompletionDate(request.getPlannedDate().plusDays(1));
         }
 
+        // 设置工厂管理员扩展字段
+        plan.setSuggestedProductionLineId(request.getSuggestedProductionLineId());
+        plan.setEstimatedWorkers(request.getEstimatedWorkers());
+        plan.setAssignedSupervisorId(request.getAssignedSupervisorId());
+
         // 设置调度员模块扩展字段
         plan.setSourceType(request.getSourceType() != null ? request.getSourceType() : PlanSourceType.MANUAL);
         plan.setSourceOrderId(request.getSourceOrderId());
@@ -227,6 +237,16 @@ public class ProductionPlanMapper {
         }
         if (request.getExpectedCompletionDate() != null) {
             plan.setExpectedCompletionDate(request.getExpectedCompletionDate());
+        }
+        // 更新工厂管理员扩展字段
+        if (request.getSuggestedProductionLineId() != null) {
+            plan.setSuggestedProductionLineId(request.getSuggestedProductionLineId());
+        }
+        if (request.getEstimatedWorkers() != null) {
+            plan.setEstimatedWorkers(request.getEstimatedWorkers());
+        }
+        if (request.getAssignedSupervisorId() != null) {
+            plan.setAssignedSupervisorId(request.getAssignedSupervisorId());
         }
         // 更新调度员模块扩展字段
         if (request.getSourceType() != null) {

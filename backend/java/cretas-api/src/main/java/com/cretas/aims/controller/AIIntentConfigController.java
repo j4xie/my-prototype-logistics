@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -176,6 +177,7 @@ public class AIIntentConfigController {
             result.setMatchMethod(matchResult.getMatchMethod() != null ?
                     matchResult.getMatchMethod().name() : null);
         }
+        result.setTimingMs(matchResult.getTimingMs());
 
         return ResponseEntity.ok(ApiResponse.success(result));
     }
@@ -613,6 +615,7 @@ public class AIIntentConfigController {
         private Boolean requiresApproval;
         private Double confidence;      // 匹配置信度 (BUG-001/002 修复新增)
         private String matchMethod;     // 匹配方法 (REGEX/KEYWORD/SEMANTIC/LLM)
+        private Map<String, Long> timingMs;  // 各阶段耗时
     }
 
     /**

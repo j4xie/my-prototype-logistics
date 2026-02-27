@@ -88,9 +88,9 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
     finance: 'rw', system: '-', analytics: 'r', scheduling: '-'
   },
 
-  // Level 20 - 车间管理
+  // Level 20 - 车间管理 (只看计划，执行在批次/报工模块)
   workshop_supervisor: {
-    dashboard: 'r', production: 'rw', warehouse: 'r', quality: 'w',
+    dashboard: 'r', production: 'r', warehouse: 'r', quality: 'w',
     procurement: '-', sales: '-', hr: 'r', equipment: 'r',
     finance: '-', system: '-', analytics: '-', scheduling: 'r'
   },

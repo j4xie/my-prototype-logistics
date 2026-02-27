@@ -12,6 +12,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon, Chip, Badge } from 'react-native-paper';
@@ -283,7 +284,7 @@ export function IntentSuggestionsListScreen() {
   }, [loading, filter, t]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* 统计卡片 */}
       {stats && (
         <View style={styles.statsCard}>
@@ -348,7 +349,7 @@ export function IntentSuggestionsListScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

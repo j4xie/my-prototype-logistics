@@ -7,10 +7,10 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   FlatList,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,7 @@ interface AttendanceRecord {
 export function AttendanceHistoryScreen() {
   const navigation = useNavigation();
   const { t } = useTranslation('workshop');
+  const insets = useSafeAreaInsets();
 
   // 当前月份
   const [currentMonth, setCurrentMonth] = useState('2025年12月');
@@ -104,9 +105,9 @@ export function AttendanceHistoryScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* 头部 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
@@ -166,7 +167,7 @@ export function AttendanceHistoryScreen() {
           contentContainerStyle={styles.listContent}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

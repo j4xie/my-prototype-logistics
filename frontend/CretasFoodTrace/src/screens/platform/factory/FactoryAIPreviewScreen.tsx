@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   successBanner: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 20,
   },

@@ -14,6 +14,7 @@ import {
   Portal,
   Dialog,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import * as DocumentPicker from 'expo-document-picker';
@@ -407,7 +408,7 @@ export default function EntityDataExportScreen() {
   const currentOperation = operationModes.find(m => m.value === operationMode);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('entityDataExport.title')} />
@@ -572,7 +573,7 @@ export default function EntityDataExportScreen() {
           <Text style={styles.loadingText}>{t('common.processingPleaseWait')}</Text>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

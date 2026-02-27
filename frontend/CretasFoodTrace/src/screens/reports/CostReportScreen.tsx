@@ -11,6 +11,7 @@ import {
   SegmentedButtons,
   Icon,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NavigationProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -247,7 +248,7 @@ export default function CostReportScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('cost.analysisTitle', '成本分析')} />
@@ -545,7 +546,7 @@ export default function CostReportScreen() {
           </>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

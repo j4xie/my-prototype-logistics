@@ -28,6 +28,8 @@ class InsightRequest(BaseModel):
     analysisContext: Optional[str] = None
     insightTypes: Optional[List[str]] = None
     maxInsights: int = 5
+    upload_id: Optional[str] = None
+    sheet_index: Optional[int] = None
 
 
 class Insight(BaseModel):
@@ -86,7 +88,9 @@ async def generate_insights(request: InsightRequest):
             metrics=request.metrics,
             analysis_context=request.analysisContext,
             insight_types=request.insightTypes,
-            max_insights=request.maxInsights
+            max_insights=request.maxInsights,
+            upload_id=request.upload_id,
+            sheet_index=request.sheet_index
         )
 
         # Convert insights to Pydantic models
@@ -340,7 +344,9 @@ async def generate_insights_stream(request: InsightRequest):
             data=request.data,
             metrics=request.metrics,
             analysis_context=request.analysisContext,
-            max_insights=request.maxInsights
+            max_insights=request.maxInsights,
+            upload_id=request.upload_id,
+            sheet_index=request.sheet_index
         ):
             evt_type = event.get("event", "chunk")
             evt_data = event.get("data", "")

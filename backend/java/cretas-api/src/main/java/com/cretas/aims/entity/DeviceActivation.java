@@ -128,18 +128,21 @@ public class DeviceActivation extends BaseEntity {
      * 最大设备数限制
      */
     @Column(name = "max_devices")
+    @Builder.Default
     private Integer maxDevices = 1;
 
     /**
      * 已使用设备数
      */
     @Column(name = "used_devices")
+    @Builder.Default
     private Integer usedDevices = 0;
 
     /**
      * 是否允许多设备
      */
     @Column(name = "allow_multiple_devices")
+    @Builder.Default
     private Boolean allowMultipleDevices = false;
 
     /**

@@ -8,9 +8,10 @@ Whitelist paths (no auth required):
 - /health, /docs, /redoc, /openapi.json, / (root)
 - /api/public/* (public endpoints)
 - /api/chart/*, /api/smartbi/chart/* (stateless data processing)
+- /api/insight/* (stateless LLM analysis)
 
 Protected paths:
-- /api/smartbi/excel/*, /api/insight/*, /api/forecast/*,
+- /api/smartbi/excel/*, /api/forecast/*,
   /api/statistical/*, /api/chat/*, /api/analysis/*,
   /api/ml/*, /api/linucb/*, /api/finance/*, /api/food-kb/*
 """
@@ -44,6 +45,7 @@ PUBLIC_PREFIXES = (
     "/api/client-requirement/",  # Client requirement wizard (public)
     "/api/chart/",       # Chart building — stateless data processing, no user context needed
     "/api/smartbi/chart/",  # SmartBI chart endpoints (same reason)
+    "/api/insight/",     # Insight endpoints — stateless LLM analysis, no user context needed
 )
 
 

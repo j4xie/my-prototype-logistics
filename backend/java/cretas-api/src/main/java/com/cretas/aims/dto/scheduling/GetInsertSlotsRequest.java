@@ -39,6 +39,7 @@ public class GetInsertSlotsRequest {
     private LocalDateTime deadline;
 
     @Schema(description = "紧急程度: normal/urgent/critical")
+    @Builder.Default
     private String urgencyLevel = "normal";
 
     @Schema(description = "客户订单号")
@@ -51,10 +52,12 @@ public class GetInsertSlotsRequest {
     private String preferredProductionLineId;
 
     @Schema(description = "是否只返回无影响的时段")
+    @Builder.Default
     private Boolean noImpactOnly = false;
 
     @Schema(description = "最低推荐分数筛选 (0-100)")
     @Min(value = 0, message = "最低推荐分数不能小于0")
     @Max(value = 100, message = "最低推荐分数不能大于100")
+    @Builder.Default
     private Integer minRecommendScore = 0;
 }

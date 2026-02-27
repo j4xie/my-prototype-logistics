@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
         width: '47%',
         aspectRatio: 1,
         backgroundColor: 'white',
-        borderRadius: 16,
+        borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
         elevation: 2,

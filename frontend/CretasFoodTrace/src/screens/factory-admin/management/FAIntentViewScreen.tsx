@@ -8,11 +8,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, Chip, List, Divider, Icon, Surface } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';

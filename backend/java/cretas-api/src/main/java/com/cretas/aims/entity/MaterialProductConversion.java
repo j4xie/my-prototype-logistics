@@ -90,6 +90,7 @@ public class MaterialProductConversion extends BaseEntity {
      * 是否启用
      */
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
 
     /**

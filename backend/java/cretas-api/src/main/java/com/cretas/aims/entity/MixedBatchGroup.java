@@ -135,6 +135,7 @@ public class MixedBatchGroup extends BaseEntity {
      * 状态: pending(待确认) / confirmed(已确认) / rejected(已拒绝) / expired(已过期)
      */
     @Column(name = "status", length = 20)
+    @Builder.Default
     private String status = "pending";
 
     /**

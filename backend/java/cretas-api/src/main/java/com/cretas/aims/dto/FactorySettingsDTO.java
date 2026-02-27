@@ -117,7 +117,9 @@ public class FactorySettingsDTO {
 
     private List<Boolean> workingDays;
 
+    @Builder.Default
     private int lateThresholdMinutes = 10;
+    @Builder.Default
     private int earlyLeaveThresholdMinutes = 10;
 
     /**

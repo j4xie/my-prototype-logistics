@@ -14,8 +14,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -26,6 +28,8 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * AI表单助手控制器
@@ -58,6 +62,8 @@ public class FormAssistantController {
 
     @Autowired
     private AIQuotaUsageRepository quotaUsageRepository;
+
+    private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
 
     // 每次Schema生成消耗的配额
     private static final int SCHEMA_GENERATE_QUOTA_COST = 1;
@@ -351,6 +357,86 @@ public class FormAssistantController {
             fallback.setFieldValues(new HashMap<>());
             return ApiResponse.success(fallback);
         }
+    }
+
+    /**
+     * SSE 流式 — AI表单解析
+     *
+     * 立即建立 SSE 连接，完成后一次性返回完整结果
+     * 事件: processing → result → done
+     */
+    @PostMapping(value = "/parse/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "流式 AI 表单解析 (SSE)",
+               description = "SSE 流式输出。事件: processing, result, done, error")
+    public SseEmitter parseFormInputStream(
+            @PathVariable String factoryId,
+            @Valid @RequestBody FormParseRequest request,
+            HttpServletRequest httpRequest) {
+
+        String token = TokenUtils.extractToken(httpRequest.getHeader("Authorization"));
+        Object user = mobileService.getUserFromToken(token);
+
+        SseEmitter emitter = new SseEmitter(60_000L);
+        emitter.onTimeout(() -> log.warn("Form parse stream timeout"));
+
+        sseExecutor.execute(() -> {
+            try {
+                emitter.send(SseEmitter.event().name("processing")
+                        .data("{\"message\":\"AI正在解析表单...\"}"));
+
+                if (!formAssistantService.isAvailable()) {
+                    FormParseResponse fallback = new FormParseResponse();
+                    fallback.setSuccess(false);
+                    fallback.setMessage("AI服务未配置，请手动填写表单");
+                    fallback.setConfidence(0.0);
+                    fallback.setFieldValues(new HashMap<>());
+                    emitter.send(SseEmitter.event().name("result").data(fallback));
+                    emitter.send(SseEmitter.event().name("done")
+                            .data("{\"fullContent\":\"AI服务未配置\"}"));
+                    emitter.complete();
+                    return;
+                }
+
+                List<Map<String, Object>> formFieldMaps = null;
+                if (request.getFormFields() != null && !request.getFormFields().isEmpty()) {
+                    formFieldMaps = convertFormFields(request.getFormFields());
+                }
+
+                boolean enableThinking = Boolean.TRUE.equals(request.getEnableThinking());
+                int thinkingBudget = request.getThinkingBudget() != null ? request.getThinkingBudget() : 20;
+
+                FormAssistantService.FormParseResult parseResult = formAssistantService.parseFormInput(
+                        request.getUserInput(), request.getEntityType(), formFieldMaps,
+                        factoryId, enableThinking, thinkingBudget);
+
+                FormParseResponse result = new FormParseResponse();
+                result.setSuccess(parseResult.isSuccess());
+                result.setFieldValues(parseResult.getFieldValues());
+                result.setConfidence(parseResult.getConfidence());
+                result.setUnparsedText(parseResult.getUnparsedText());
+                result.setMessage(parseResult.getMessage());
+                result.setMissingRequiredFields(parseResult.getMissingRequiredFields());
+                result.setFollowUpQuestion(parseResult.getFollowUpQuestion());
+
+                emitter.send(SseEmitter.event().name("result").data(result));
+                emitter.send(SseEmitter.event().name("done")
+                        .data("{\"fullContent\":\"" +
+                                (result.getMessage() != null ? result.getMessage().replace("\"", "'") : "") +
+                                "\"}"));
+                emitter.complete();
+
+            } catch (Exception e) {
+                log.error("Form parse stream failed: {}", e.getMessage(), e);
+                try {
+                    emitter.send(SseEmitter.event().name("error")
+                            .data("{\"message\":\"" + ErrorSanitizer.sanitize(e).replace("\"", "'") + "\"}"));
+                    emitter.complete();
+                } catch (Exception ex) {
+                    emitter.completeWithError(e);
+                }
+            }
+        });
+        return emitter;
     }
 
     /**

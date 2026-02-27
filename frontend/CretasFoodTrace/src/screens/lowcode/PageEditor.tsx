@@ -10,7 +10,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   Dimensions,
   ScrollView,
@@ -19,6 +18,7 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from 'react-native-paper';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {

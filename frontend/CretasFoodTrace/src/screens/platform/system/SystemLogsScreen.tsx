@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   statsCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 16,
   },

@@ -51,6 +51,7 @@ public class LinUCBModel extends BaseEntity {
      * 特征维度
      */
     @Column(name = "feature_dim")
+    @Builder.Default
     private Integer featureDim = 12;
 
     /**
@@ -77,6 +78,7 @@ public class LinUCBModel extends BaseEntity {
      * 模型更新次数
      */
     @Column(name = "update_count")
+    @Builder.Default
     private Integer updateCount = 0;
 
     /**
@@ -95,6 +97,7 @@ public class LinUCBModel extends BaseEntity {
      * 累计奖励总和
      */
     @Column(name = "total_reward", precision = 10, scale = 4)
+    @Builder.Default
     private BigDecimal totalReward = BigDecimal.ZERO;
 
     /**

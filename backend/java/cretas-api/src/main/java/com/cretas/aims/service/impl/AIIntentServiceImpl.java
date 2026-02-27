@@ -47,6 +47,9 @@ import com.cretas.aims.dto.ai.PreprocessedQuery;
 import com.cretas.aims.dto.clarification.ClarificationDecision;
 import com.cretas.aims.dto.clarification.ReferenceResult;
 import com.cretas.aims.dto.conversation.ConversationContext;
+import com.cretas.aims.entity.Factory;
+import com.cretas.aims.entity.enums.FactoryType;
+import com.cretas.aims.repository.FactoryRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +64,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -117,6 +121,21 @@ public class AIIntentServiceImpl implements AIIntentService {
         log.info("[SemanticMatcher] SemanticIntentMatcher 注入: {}",
                 semanticIntentMatcher != null ? "成功" : "未配置");
     }
+
+    /**
+     * v32: 工厂仓库（用于解析业态类型）
+     */
+    private FactoryRepository factoryRepository;
+
+    @Autowired
+    public void setFactoryRepository(FactoryRepository factoryRepository) {
+        this.factoryRepository = factoryRepository;
+    }
+
+    /**
+     * v32: factoryId → businessDomain 缓存（factory type 极少变更）
+     */
+    private final ConcurrentHashMap<String, String> factoryDomainCache = new ConcurrentHashMap<>();
 
     /**
      * 意图匹配统一配置
@@ -264,6 +283,23 @@ public class AIIntentServiceImpl implements AIIntentService {
      */
     @Value("${python-classifier.high-confidence-threshold:0.85}")
     private double classifierHighConfidenceThreshold;
+
+    // v35.0: OOD 检测阈值
+    @Value("${python-classifier.ood.entropy-threshold:2.0}")
+    private double oodEntropyThreshold;
+
+    @Value("${python-classifier.ood.margin-threshold:0.15}")
+    private double oodMarginThreshold;
+
+    @Value("${python-classifier.ood.max-logit-threshold:3.0}")
+    private double oodMaxLogitThreshold;
+
+    /**
+     * D5: Thread-local storage for the ONNX classifier result when it falls back to LLM.
+     * Set when ONNX confidence is below threshold; cleared after tryLlmFallback logs it.
+     * Used to emit structured training-data logs for future ONNX model expansion.
+     */
+    private static final ThreadLocal<ClassifierResult> onnxFallbackResultHolder = new ThreadLocal<>();
 
     // ==================== 意图识别 ====================
 
@@ -416,6 +452,13 @@ public class AIIntentServiceImpl implements AIIntentService {
             return IntentMatchResult.empty(userInput);
         }
 
+        // ========== v32: 业态隔离 ==========
+        String businessDomain = resolveBusinessDomain(factoryId);
+
+        // ========== 计时器 ==========
+        long startTimeMs = System.currentTimeMillis();
+        long preprocessEndMs = startTimeMs; // 默认值，预处理未启用时等于 start
+
         // ========== v11.12: 移除写操作前置拦截 ==========
         // 写操作（删除、修改、添加等）应通过 requiredRoles 权限机制控制，而非在意图识别阶段拦截
         // 这允许系统正确识别 PROCESSING_BATCH_CREATE, SHIPMENT_CREATE 等写操作意图
@@ -480,6 +523,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                 log.warn("Query preprocessing failed, using original input", e);
             }
         }
+        preprocessEndMs = System.currentTimeMillis();
 
         // ========== v11.0: 长文本处理 ==========
         // 对超长输入进行摘要，避免 LLM 调用超时
@@ -525,7 +569,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         // 在任何匹配之前检测极度模糊的输入，直接触发澄清
         IntentMatchResult vagueInputResult = checkAndHandleVagueInput(userInput, factoryId, userId, sessionId);
         if (vagueInputResult != null) {
-            return vagueInputResult;
+            return attachTiming(vagueInputResult, startTimeMs, preprocessEndMs);
         }
 
         // ========== v11.7: 多意图和不完整输入前置检测 ==========
@@ -564,7 +608,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                         userInput, clarificationDecision, null, clarificationContext);
                 clarificationResult.setMatchMethod(MatchMethod.REJECTED);
 
-                return clarificationResult;
+                return attachTiming(clarificationResult, startTimeMs, preprocessEndMs);
             } else if (clarificationDecision.isCanProceedWithInference()
                     && clarificationDecision.hasInferredDefaults()) {
                 // 可以使用推断值继续执行，记录推断信息
@@ -622,7 +666,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                         writeResult.setPreprocessedQuery(preprocessedQuery);
                     }
                     saveIntentMatchRecord(writeResult, factoryId, userId, sessionId, false);
-                    return writeResult;
+                    return attachTiming(writeResult, startTimeMs, preprocessEndMs);
                 }
             }
         }
@@ -630,7 +674,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         // ========== v11.5: 短语匹配优先短路 + 实体-意图冲突检测 ==========
         // 只有明确的单意图输入才走短语短路
         if (!skipPhraseShortcut) {
-            Optional<String> earlyPhraseMatch = knowledgeBase.matchPhrase(userInput);
+            Optional<String> earlyPhraseMatch = knowledgeBase.matchPhrase(userInput, businessDomain);
             if (earlyPhraseMatch.isPresent()) {
                 String matchedIntentCode = earlyPhraseMatch.get();
 
@@ -672,13 +716,13 @@ public class AIIntentServiceImpl implements AIIntentService {
                                     phraseResult.setPreprocessedQuery(preprocessedQuery);
                                 }
                                 saveIntentMatchRecord(phraseResult, factoryId, userId, sessionId, false);
-                                return applyNegationConversion(phraseResult, enhancedResult, factoryId);
+                                return attachTiming(applyNegationConversion(phraseResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
                             }
                         } else {
                             // LLM判断为食品知识→返回食品知识结果
                             log.info("v19 短语冲突消歧: input='{}' LLM判断为食品知识", userInput);
                             saveIntentMatchRecord(disambigResult, factoryId, userId, sessionId, false);
-                            return disambigResult;
+                            return attachTiming(disambigResult, startTimeMs, preprocessEndMs);
                         }
                     }
                     log.info("v11.5 跳过短语短路: input='{}' 存在实体-意图冲突，将走语义路由", userInput);
@@ -724,7 +768,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                         }
 
                         saveIntentMatchRecord(phraseResult, factoryId, userId, sessionId, false);
-                        return applyNegationConversion(phraseResult, enhancedResult, factoryId);
+                        return attachTiming(applyNegationConversion(phraseResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
                     } else {
                         // v21.0: 短语匹配到的意图代码在DB中不存在，记录警告以便排查
                         log.warn("v21.0 短语匹配意图不在DB中: input='{}', phrase_intent='{}', 将继续走分类器", userInput, matchedIntentCode);
@@ -743,17 +787,36 @@ public class AIIntentServiceImpl implements AIIntentService {
 
                 if (classifierResult.isPresent()) {
                     ClassifierResult result = classifierResult.get();
-                    log.info("v16.0 Classifier: intent={}, confidence={}, latency={}ms",
-                            result.getIntentCode(), String.format("%.4f", result.getConfidence()), result.getLatencyMs());
+                    log.info("v16.0 Classifier: intent={}, confidence={}, latency={}ms, entropy={}, margin={}, maxLogit={}",
+                            result.getIntentCode(), String.format("%.4f", result.getConfidence()), result.getLatencyMs(),
+                            result.getEntropy() != null ? String.format("%.3f", result.getEntropy()) : "null",
+                            result.getMargin() != null ? String.format("%.4f", result.getMargin()) : "null",
+                            result.getMaxLogit() != null ? String.format("%.2f", result.getMaxLogit()) : "null");
 
-                    // 高置信度直接返回
-                    if (result.getConfidence() >= classifierHighConfidenceThreshold) {
+                    // v35.0: OOD 检测 — 拦截超出训练分布的输入
+                    if (isLikelyOOD(result, userInput)) {
+                        log.info("[v35.0-OOD] 检测到 OOD 输入, entropy={}, margin={}, maxLogit={}, intent={}, input='{}'",
+                                result.getEntropy(), result.getMargin(), result.getMaxLogit(),
+                                result.getIntentCode(), userInput);
+                        // OOD 结果不存入 onnxFallbackResultHolder，避免污染训练数据
+                        // 不返回分类结果，继续进入下一层 (SEMANTIC_ROUTER / LLM_FALLBACK)
+                    } else if (result.getConfidence() >= classifierHighConfidenceThreshold) {
+                        // 高置信度直接返回
                         List<AIIntentConfig> allIntents = getAllIntents(factoryId);
                         Optional<AIIntentConfig> intentOpt = allIntents.stream()
                                 .filter(i -> i.getIntentCode().equals(result.getIntentCode()))
                                 .findFirst();
 
                         if (intentOpt.isPresent()) {
+                            // v32: 业态过滤 — 餐饮用户不应该命中工厂专属意图
+                            AIIntentConfig classifiedIntent = intentOpt.get();
+                            String intentBizType = classifiedIntent.getBusinessType();
+                            if (intentBizType != null && !"COMMON".equals(intentBizType)
+                                    && !intentBizType.equals(businessDomain)) {
+                                log.info("v32 Classifier业态不匹配: input='{}', intent={}, intentBiz={}, userBiz={}, 跳过分类器",
+                                        userInput, result.getIntentCode(), intentBizType, businessDomain);
+                                // 不 return，继续走语义路由器/LLM
+                            } else {
                             // v17.0: 食品实体冲突检测 — 防止"生产牛肉"等被分类器误路由到工厂意图
                             if (knowledgeBase.hasEntityIntentConflict(userInput, result.getIntentCode())) {
                                 log.info("v17.0 Classifier食品冲突: input='{}' 分类到 '{}' 但包含食品实体，启动LLM消歧",
@@ -762,7 +825,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                                         userInput, result.getIntentCode(), factoryId, preprocessedQuery);
                                 if (disambiguated != null) {
                                     saveIntentMatchRecord(disambiguated, factoryId, userId, sessionId, false);
-                                    return disambiguated;
+                                    return attachTiming(disambiguated, startTimeMs, preprocessEndMs);
                                 }
                                 // LLM 确认是工厂数据，继续正常流程
                             }
@@ -794,12 +857,16 @@ public class AIIntentServiceImpl implements AIIntentService {
                             log.info("v16.0 CLASSIFIER_DIRECT: intent={}, confidence={}, saved LLM call",
                                     result.getIntentCode(), String.format("%.4f", result.getConfidence()));
 
-                            return applyNegationConversion(classifierMatchResult, enhancedResult, factoryId);
+                            return attachTiming(applyNegationConversion(classifierMatchResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
                         }
+                    } // end v32 else (business type matched)
+                    } else {
+                        // 低置信度记录日志，继续走语义路由器
+                        // D5: 保存 ONNX 结果，供 tryLlmFallback 生成训练数据日志
+                        log.debug("v16.0 Classifier confidence too low ({} < {}), proceeding to semantic router",
+                                String.format("%.4f", result.getConfidence()), classifierHighConfidenceThreshold);
+                        onnxFallbackResultHolder.set(result);
                     }
-                    // 低置信度记录日志，继续走语义路由器
-                    log.debug("v16.0 Classifier confidence too low ({} < {}), proceeding to semantic router",
-                            String.format("%.4f", result.getConfidence()), classifierHighConfidenceThreshold);
                 }
             } catch (Exception e) {
                 log.warn("v16.0 Classifier failed, falling back to semantic router: {}", e.getMessage());
@@ -835,7 +902,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                                     userInput, routedIntent, factoryId, preprocessedQuery);
                             if (disambiguated != null) {
                                 saveIntentMatchRecord(disambiguated, factoryId, userId, sessionId, false);
-                                return disambiguated;
+                                return attachTiming(disambiguated, startTimeMs, preprocessEndMs);
                             }
                             // LLM 确认是工厂数据，继续正常流程
                         }
@@ -864,7 +931,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                                     routeDecision.getTopScore(),
                                     estimateLLMSavings());
 
-                            return applyNegationConversion(directResult, enhancedResult, factoryId);
+                            return attachTiming(applyNegationConversion(directResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
                         }
                     }
 
@@ -884,7 +951,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                                     rerankingResult.getBestMatch().getIntentCode(),
                                     rerankingResult.getConfidence());
 
-                            return applyNegationConversion(rerankingResult, enhancedResult, factoryId);
+                            return attachTiming(applyNegationConversion(rerankingResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
                         }
                         // Reranking 失败，继续走完整流程
                         log.debug("v11.0 NEED_RERANKING failed, falling through to full LLM");
@@ -903,7 +970,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         // v12.1: 传递 skipPhraseShortcut 标志，确保多意图检测能执行
         IntentMatchResult result = doRecognizeIntentWithConfidence(
                 processedInput, userInput, factoryId, topN, userId, userRole,
-                enhancedResult, verbNounResult, skipPhraseShortcut);
+                enhancedResult, verbNounResult, skipPhraseShortcut, businessDomain);
 
         // 附加预处理结果到匹配结果（如果有）
         if (preprocessedQuery != null && result != null) {
@@ -937,6 +1004,20 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
+        return attachTiming(result, startTimeMs, preprocessEndMs);
+    }
+
+    /**
+     * 为意图匹配结果附加各阶段耗时信息
+     */
+    private IntentMatchResult attachTiming(IntentMatchResult result, long startTimeMs, long preprocessEndMs) {
+        if (result == null) return null;
+        long now = System.currentTimeMillis();
+        Map<String, Long> timing = new LinkedHashMap<>();
+        timing.put("preprocessMs", preprocessEndMs - startTimeMs);
+        timing.put("matchMs", now - preprocessEndMs);
+        timing.put("totalMs", now - startTimeMs);
+        result.setTimingMs(timing);
         return result;
     }
 
@@ -958,7 +1039,8 @@ public class AIIntentServiceImpl implements AIIntentService {
                                                               Long userId, String userRole,
                                                               QueryPreprocessorService.EnhancedPreprocessResult enhancedResult,
                                                               IntentKnowledgeBase.VerbNounDisambiguationResult verbNounResult,
-                                                              boolean skipPhraseShortcut) {
+                                                              boolean skipPhraseShortcut,
+                                                              String businessDomain) {
         String userInput = processedInput; // 使用处理后的输入进行匹配
 
         // ========== v11.2修复: Layer 0 - 短语匹配优先短路 ==========
@@ -966,7 +1048,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         // v11.2修复：短语匹配成功即短路，确保高质量短语映射优先生效
         // 这修复了 "销售排名"、"质检结果" 等精确短语被语义匹配覆盖的问题
         // v12.1修复: 当检测到多意图触发词时，跳过短语短路，确保多意图检测能执行
-        Optional<String> originalPhraseMatch = knowledgeBase.matchPhrase(originalInput);
+        Optional<String> originalPhraseMatch = knowledgeBase.matchPhrase(originalInput, businessDomain);
         if (originalPhraseMatch.isPresent() && !skipPhraseShortcut) {
             // 短语匹配成功，直接使用短语映射结果
             String matchedIntent = originalPhraseMatch.get();
@@ -1014,7 +1096,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         // 拼写纠正后的输入可能匹配到短语，如 "考亲记录" -> "考勤记录" -> ATTENDANCE_HISTORY
         // v12.1修复: 当检测到多意图触发词时，跳过短语短路，确保多意图检测能执行
         if (!processedInput.equals(originalInput) && !skipPhraseShortcut) {
-            Optional<String> processedPhraseMatch = knowledgeBase.matchPhrase(processedInput);
+            Optional<String> processedPhraseMatch = knowledgeBase.matchPhrase(processedInput, businessDomain);
             if (processedPhraseMatch.isPresent()) {
                 String matchedIntent = processedPhraseMatch.get();
                 // v18.0: 反向冲突检测 — 处理后短语命中FOOD_KNOWLEDGE但原始输入含数据查询指标
@@ -1422,7 +1504,7 @@ public class AIIntentServiceImpl implements AIIntentService {
             if (!routingResult.isEmpty()) {
                 // Step 2: 精确验证 - 短语/关键词/粒度/域 调整分数
                 List<SemanticCandidate> verifiedCandidates =
-                        preciseVerification(userInput, factoryId, routingResult, opType);
+                        preciseVerification(userInput, factoryId, routingResult, opType, businessDomain);
 
                 if (!verifiedCandidates.isEmpty()) {
                     SemanticCandidate bestCandidate = verifiedCandidates.get(0);
@@ -1807,7 +1889,7 @@ public class AIIntentServiceImpl implements AIIntentService {
 
                     // 低置信度走 LLM Fallback
                     log.info("语义优先低置信度 ({:.3f})，触发 LLM Fallback", confidence);
-                    return tryLlmFallback(userInput, factoryId, allIntents, semanticResult, opType, userId, userRole);
+                    return tryLlmFallback(userInput, originalInput, factoryId, allIntents, semanticResult, opType, userId, userRole);
                 }
             }
 
@@ -1879,7 +1961,7 @@ public class AIIntentServiceImpl implements AIIntentService {
 
             // 语义路由无结果，降级到 LLM Fallback
             log.debug("语义路由无结果，降级到 LLM Fallback");
-            return tryLlmFallback(userInput, factoryId, allIntents, null, opType, userId, userRole);
+            return tryLlmFallback(userInput, originalInput, factoryId, allIntents, null, opType, userId, userRole);
         }
 
         // ========== v4.0 并行多层评分架构 (向后兼容) ==========
@@ -1888,7 +1970,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         log.debug("使用v4.0并行评分架构");
 
         // 调用并行评分方法
-        IntentMatchResult parallelResult = parallelScoreMatch(userInput, factoryId, allIntents, opType);
+        IntentMatchResult parallelResult = parallelScoreMatch(userInput, factoryId, allIntents, opType, businessDomain);
 
         if (parallelResult != null && parallelResult.hasMatch()) {
             double confidence = parallelResult.getConfidence();
@@ -2066,7 +2148,7 @@ public class AIIntentServiceImpl implements AIIntentService {
 
             // Layer 5 (编辑距离匹配) 已移除，直接进入 LLM Fallback
             // 理由: 语义匹配 (Layer 4) 已合并意图配置+学习表达，编辑距离效果有限
-            return tryLlmFallback(userInput, factoryId, allIntents, null, opType, userId, userRole);
+            return tryLlmFallback(userInput, originalInput, factoryId, allIntents, null, opType, userId, userRole);
         }
 
         // 按分数排序
@@ -2225,7 +2307,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         if (bestConfidence < rerankingLowerBound) {
             log.debug("Low confidence ({:.2f} < {:.2f}) for intent {}, trying LLM fallback",
                     bestConfidence, rerankingLowerBound, bestEntry.config.getIntentCode());
-            return tryLlmFallback(userInput, factoryId, allIntents, result, opType, userId, userRole);
+            return tryLlmFallback(userInput, originalInput, factoryId, allIntents, result, opType, userId, userRole);
         }
 
         log.debug("Intent recognized: {} with confidence {} for input: {}",
@@ -2240,7 +2322,8 @@ public class AIIntentServiceImpl implements AIIntentService {
     /**
      * 尝试使用 LLM Fallback 进行意图识别
      *
-     * @param userInput 用户输入
+     * @param userInput 预处理后的用户输入
+     * @param originalInput 原始用户输入（D8v2: 用于 Tool Calling 领域检测）
      * @param factoryId 工厂ID（用于 LLM 上下文）
      * @param allIntents 所有可用意图
      * @param ruleResult 规则匹配结果（可能为 null）
@@ -2249,7 +2332,8 @@ public class AIIntentServiceImpl implements AIIntentService {
      * @param userRole 用户角色（用于Tool Calling）
      * @return LLM 匹配结果，或原始规则结果
      */
-    private IntentMatchResult tryLlmFallback(String userInput, String factoryId,
+    private IntentMatchResult tryLlmFallback(String userInput, String originalInput,
+                                              String factoryId,
                                               List<AIIntentConfig> allIntents,
                                               IntentMatchResult ruleResult,
                                               ActionType actionType,
@@ -2257,6 +2341,20 @@ public class AIIntentServiceImpl implements AIIntentService {
                                               String userRole) {
         log.info(">>> Entering tryLlmFallback: userInput='{}', llmFallbackEnabled={}",
                 userInput, matchingConfig.isLlmFallbackEnabled());
+
+        // v32: 业态隔离 — 过滤掉不属于当前业态的意图
+        String biz = resolveBusinessDomain(factoryId);
+        if (!"FACTORY".equals(biz)) {
+            List<AIIntentConfig> filtered = allIntents.stream()
+                    .filter(i -> {
+                        String bt = i.getBusinessType();
+                        return bt == null || "COMMON".equals(bt) || bt.equals(biz);
+                    })
+                    .collect(Collectors.toList());
+            log.info("v32 LLM fallback 业态过滤: {} → {} intents (biz={})",
+                    allIntents.size(), filtered.size(), biz);
+            allIntents = filtered;
+        }
 
         // 检查是否启用 LLM Fallback
         if (!matchingConfig.isLlmFallbackEnabled()) {
@@ -2314,13 +2412,40 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
 
             // 调用 LLM 进行意图分类（传递userId和userRole用于Tool Calling）
+            // D8v2: 传入 originalInput 用于 Tool Calling 领域检测（预处理器可能去掉关键词）
             IntentMatchResult llmResult = llmFallbackClient.classifyIntent(
-                    userInput, intentsForLlm, factoryId, userId, userRole);
+                    userInput, originalInput, intentsForLlm, factoryId, userId, userRole);
 
             // 如果 LLM 成功匹配，使用 LLM 结果
             if (llmResult.hasMatch()) {
                 log.info("LLM fallback succeeded: intent={} confidence={}",
                         llmResult.getBestMatch().getIntentCode(), llmResult.getConfidence());
+
+                // D5: Emit structured training data for ONNX expansion
+                try {
+                    ClassifierResult onnxResult = onnxFallbackResultHolder.get();
+                    if (onnxResult != null) {
+                        String onnxIntent = onnxResult.getIntentCode();
+                        double onnxConf = onnxResult.getConfidence();
+                        String llmIntent = llmResult.getBestMatch().getIntentCode();
+                        double llmConf = llmResult.getConfidence();
+
+                        log.info("[ONNX-TrainingData] query=\"{}\" llmIntent=\"{}\" llmConfidence={} onnxIntent=\"{}\" onnxConfidence={} match={}",
+                                userInput, llmIntent, String.format("%.4f", llmConf),
+                                onnxIntent, String.format("%.4f", onnxConf),
+                                llmIntent.equals(onnxIntent) ? "AGREE" : "DISAGREE");
+
+                        // ONNX was correct but rejected due to low confidence
+                        if (llmIntent.equals(onnxIntent)) {
+                            log.warn("[ONNX-Threshold] ONNX was correct but rejected: query=\"{}\" intent=\"{}\" onnxConf={} threshold={}",
+                                    userInput, llmIntent, String.format("%.4f", onnxConf), classifierHighConfidenceThreshold);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("D5 training data log failed: {}", e.getMessage());
+                } finally {
+                    onnxFallbackResultHolder.remove();
+                }
 
                 double confidence = llmResult.getConfidence();
                 String intentCode = llmResult.getBestMatch().getIntentCode();
@@ -4602,6 +4727,41 @@ public class AIIntentServiceImpl implements AIIntentService {
         return null;
     }
 
+    /**
+     * v35.0: OOD (Out-of-Distribution) 检测
+     *
+     * Softmax 概率总和恒为 1.0，任何输入都会被高置信度分配到某个意图。
+     * 此方法通过 3 个指标 + 关键词交叉验证判断输入是否超出分类器训练分布。
+     * 判定规则: 4 项中 ≥2 项触发 → OOD → 降级到 LLM 层。
+     */
+    private boolean isLikelyOOD(ClassifierResult result, String userInput) {
+        int oodVotes = 0;
+
+        // 1. Entropy 高 → 概率分散在多个类上 → 模型不确定
+        if (result.getEntropy() != null && result.getEntropy() > oodEntropyThreshold) {
+            oodVotes++;
+        }
+        // 2. Margin 低 → top1 vs top2 差距小 → 模型犹豫
+        if (result.getMargin() != null && result.getMargin() < oodMarginThreshold) {
+            oodVotes++;
+        }
+        // 3. Max logit 低 → 无强神经元激活 → 输入不匹配任何训练模式
+        if (result.getMaxLogit() != null && result.getMaxLogit() < oodMaxLogitThreshold) {
+            oodVotes++;
+        }
+        // 4. 关键词交叉验证: 分类结果所属领域的关键词必须在输入中至少出现 1 个
+        IntentKnowledgeBase.Domain domain = knowledgeBase.getDomainFromIntentCode(result.getIntentCode());
+        if (domain != null && domain != IntentKnowledgeBase.Domain.GENERAL) {
+            Set<String> keywords = knowledgeBase.getDomainKeywords(domain);
+            boolean hasKeyword = keywords.stream().anyMatch(kw -> userInput.contains(kw));
+            if (!hasKeyword) {
+                oodVotes++;
+            }
+        }
+
+        return oodVotes >= 2;
+    }
+
     private IntentMatchResult tryDisambiguateConflict(String originalInput, String matchedIntent,
                                                        String factoryId, PreprocessedQuery preprocessedQuery) {
         // 如果消歧服务可用，调用 LLM 判断
@@ -4886,11 +5046,12 @@ public class AIIntentServiceImpl implements AIIntentService {
      * @return 意图匹配结果
      */
     private IntentMatchResult parallelScoreMatch(String userInput, String factoryId,
-                                                  List<AIIntentConfig> allIntents, ActionType opType) {
+                                                  List<AIIntentConfig> allIntents, ActionType opType,
+                                                  String businessDomain) {
         String normalizedInput = userInput.toLowerCase().trim();
 
         // ========== Layer 1: 并行执行短语匹配 ==========
-        Optional<String> phraseMatchedIntent = knowledgeBase.matchPhrase(userInput);
+        Optional<String> phraseMatchedIntent = knowledgeBase.matchPhrase(userInput, businessDomain);
 
         // ========== Layer 2: 并行执行语义匹配 ==========
         List<UnifiedSemanticMatch> semanticResults = Collections.emptyList();
@@ -5184,14 +5345,15 @@ public class AIIntentServiceImpl implements AIIntentService {
             String userInput,
             String factoryId,
             SemanticRoutingResult routingResult,
-            ActionType opType) {
+            ActionType opType,
+            String businessDomain) {
 
         if (routingResult.isEmpty()) {
             return Collections.emptyList();
         }
 
         String normalizedInput = userInput.toLowerCase().trim();
-        Optional<String> phraseMatch = knowledgeBase.matchPhrase(userInput);
+        Optional<String> phraseMatch = knowledgeBase.matchPhrase(userInput, businessDomain);
         IntentKnowledgeBase.Granularity inputGranularity = routingResult.getInputGranularity();
         IntentKnowledgeBase.Domain inputDomain = routingResult.getInputDomain();
 
@@ -5691,5 +5853,28 @@ public class AIIntentServiceImpl implements AIIntentService {
         log.debug("Delegating processIntentFeedback(factoryId={}, userId={}, matchedIntent={}) to intentFeedbackService",
                 factoryId, userId, request.getMatchedIntentCode());
         intentFeedbackService.processIntentFeedback(factoryId, userId, request);
+    }
+
+    // ==================== v32: 业态隔离 ====================
+
+    /**
+     * v32: 根据 factoryId 解析业态类型
+     * @return "FACTORY" 或 "RESTAURANT"
+     */
+    private String resolveBusinessDomain(String factoryId) {
+        if (factoryId == null || factoryId.isBlank()) return "FACTORY";
+        return factoryDomainCache.computeIfAbsent(factoryId, fid -> {
+            try {
+                return factoryRepository.findById(fid)
+                        .map(f -> {
+                            if (f.getType() == null) return "FACTORY";
+                            return f.getType() == FactoryType.RESTAURANT ? "RESTAURANT" : "FACTORY";
+                        })
+                        .orElse("FACTORY");
+            } catch (Exception e) {
+                log.warn("v32 resolveBusinessDomain failed for factoryId={}: {}", fid, e.getMessage());
+                return "FACTORY";
+            }
+        });
     }
 }

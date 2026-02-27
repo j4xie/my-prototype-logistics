@@ -1,7 +1,9 @@
 package com.cretas.aims.service.impl;
 
 import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.dto.ChatCompletionRequest;
 import com.cretas.aims.ai.dto.ChatCompletionResponse;
+import com.cretas.aims.ai.dto.ChatMessage;
 import com.cretas.aims.config.DashScopeConfig;
 import com.cretas.aims.config.IntentKnowledgeBase;
 import com.cretas.aims.config.IntentKnowledgeBase.QuestionType;
@@ -784,12 +786,18 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
             }
         }
-        // 4b. 动态工具选择（模块D）- 无绑定工具时尝试动态选择
+        // 4b. Handler 优先检查 — 如果 category 有对应 Handler，直接执行，跳过动态工具选择
+        else if (handlerMap.containsKey(intent.getIntentCategory())
+                || INTENT_CODE_HANDLER_OVERRIDE.containsKey(intent.getIntentCode())) {
+            log.info("使用 Handler 执行 (category={}): intentCode={}", intent.getIntentCategory(), intent.getIntentCode());
+            response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+        }
+        // 4c. 动态工具选择（模块D）- 无绑定工具且无 Handler 时尝试动态选择
         else if (toolRouterService.requiresDynamicSelection(matchResult)) {
             log.info("触发动态工具选择: intentCode={}", intent.getIntentCode());
             response = executeWithDynamicToolSelection(factoryId, request, intent, matchResult, userId, userRole);
         }
-        // 4c. Handler 架构回退（旧架构）
+        // 4d. Handler 架构回退（旧架构）
         else {
             response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
         }
@@ -1073,9 +1081,17 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                         log.warn("记录工具调用失败: {}", recordEx.getMessage());
                     }
 
-                    // === 扩展触发条件：结果验证 ===
+                    // === D7: 快速规则验证 — 跳过 LLM 验证当结果明显有效 ===
                     // 即使工具执行成功，也检查结果是否符合用户意图
                     if (resultJson != null && attempt < MAX_RETRIES) {
+                        // D7 fast path: skip LLM validation if result is clearly valid
+                        if (isResultClearlyValid(resultJson)) {
+                            log.info("[D7-FastValidation] Result clearly valid ({}B), skipping LLM validation for tool={}",
+                                    resultJson.length(), tool.getToolName());
+                            // Skip validation + correction, go directly to formatting
+                            break;
+                        }
+
                         try {
                             ToolResultValidatorService.ValidationResult validationResult =
                                     toolResultValidatorService.validate(
@@ -1898,6 +1914,28 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             ));
 
             String userInput = request.getUserInput();
+
+            // 1.5. 早期问题类型检测 — 通用咨询/闲聊直接流式 LLM 回复
+            if (userInput != null && !userInput.isEmpty()) {
+                QuestionType earlyQuestionType = knowledgeBase.detectQuestionType(userInput);
+                if (earlyQuestionType == QuestionType.GENERAL_QUESTION ||
+                    earlyQuestionType == QuestionType.CONVERSATIONAL) {
+
+                    // 分析请求走正常执行流程
+                    boolean isAnalysis = earlyQuestionType == QuestionType.GENERAL_QUESTION
+                            && analysisRouterService.isAnalysisRequest(userInput, earlyQuestionType);
+                    // 食品知识查询走正常执行流程
+                    Optional<String> foodPhrase = knowledgeBase.matchPhrase(userInput);
+                    boolean isFood = foodPhrase.isPresent() && "FOOD_KNOWLEDGE_QUERY".equals(foodPhrase.get());
+
+                    if (!isAnalysis && !isFood) {
+                        log.info("Stream: 早期检测到{}，使用流式 LLM 回复", earlyQuestionType);
+                        streamConversationalResponse(emitter, factoryId, userInput, earlyQuestionType,
+                                request.getEnableThinking(), request.getThinkingBudget(), startTime);
+                        return;
+                    }
+                }
+            }
 
             // 2. 查询语义缓存
             SemanticCacheHit cacheHit = semanticCacheService.queryCache(factoryId, userInput);
@@ -3288,6 +3326,149 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     }
 
     /**
+     * 流式生成对话回复 — 通过 SSE 逐 token 推送，结束时一次性给出完整内容
+     */
+    private void streamConversationalResponse(SseEmitter emitter, String factoryId,
+                                               String userInput, QuestionType questionType,
+                                               Boolean enableThinking, Integer thinkingBudget,
+                                               long startTime) throws IOException {
+        // Build system prompt (same logic as generateConversationalResponse)
+        String systemPrompt;
+        if (questionType == QuestionType.GENERAL_QUESTION) {
+            String factoryAnalysisContext = getPrecomputedAnalysisContext(factoryId);
+            if (factoryAnalysisContext != null && !factoryAnalysisContext.isEmpty()) {
+                systemPrompt = """
+                    你是白垩纪食品溯源系统的智能助手。用户正在询问一个关于生产管理、质量控制或成本优化的咨询问题。
+
+                    **重要**: 下面是该工厂的最新运营分析报告，请基于此数据提供针对性建议：
+
+                    ---
+                    %s
+                    ---
+
+                    请根据以下原则回答：
+                    1. **数据驱动**: 结合上述分析报告中的具体数据和问题点给出建议
+                    2. **针对性强**: 基于报告中发现的问题提供具体改进措施
+                    3. **可操作**: 建议应该是具体可执行的，带有明确的行动步骤
+                    4. **量化目标**: 如果可能，给出预期的改进效果
+                    5. 回答使用中文，不超过500字
+
+                    注意：你正在为这家具体工厂提供咨询建议，而非通用建议。
+                    """.formatted(factoryAnalysisContext);
+            } else {
+                systemPrompt = """
+                    你是白垩纪食品溯源系统的智能助手。用户正在询问一个关于生产管理、质量控制或食品安全的通用咨询问题。
+
+                    请根据以下原则回答：
+                    1. 提供专业、实用的建议
+                    2. 结合食品加工行业的最佳实践
+                    3. 如果问题涉及具体数据查询，建议用户使用系统的具体功能
+                    4. 回答简洁明了，不超过300字
+                    5. 使用中文回答
+
+                    注意：这不是一个具体的系统操作指令，而是通用知识咨询。
+                    """;
+            }
+        } else {
+            systemPrompt = """
+                你是白垩纪食品溯源系统的智能助手。用户发起了一个日常对话。
+
+                请根据以下原则回答：
+                1. 友好、亲切地回应
+                2. 如果用户打招呼，简单回应并询问是否需要帮助
+                3. 适时引导用户使用系统功能
+                4. 回答简洁，不超过100字
+                5. 使用中文回答
+                """;
+        }
+
+        // Determine model + maxTokens (same P1/P2 logic as GenericAIChatController)
+        boolean useThinking = Boolean.TRUE.equals(enableThinking)
+                && questionType == QuestionType.GENERAL_QUESTION
+                && dashScopeConfig.isThinkingEnabled();
+
+        String model = useThinking ? dashScopeConfig.getModel() : dashScopeConfig.getFastModel();
+        int maxTokens = useThinking ? 2000 : 500;
+
+        ChatCompletionRequest aiRequest = ChatCompletionRequest.builder()
+                .model(model)
+                .messages(List.of(ChatMessage.system(systemPrompt), ChatMessage.user(userInput)))
+                .temperature(0.7)
+                .maxTokens(maxTokens)
+                .extraBody(ChatCompletionRequest.ExtraBody.builder()
+                        .enableThinking(useThinking).build())
+                .build();
+
+        // Send metadata
+        sendSseEvent(emitter, "meta", Map.of(
+                "model", model,
+                "thinking", useThinking,
+                "questionType", questionType.name()));
+
+        try {
+            dashScopeClient.chatCompletionStream(aiRequest,
+                token -> {
+                    try {
+                        emitter.send(SseEmitter.event().name("token").data(token));
+                    } catch (Exception e) {
+                        log.debug("Client disconnected during stream token");
+                    }
+                },
+                response -> {
+                    try {
+                        String fullContent = response.getContent() != null ? response.getContent() : "";
+                        Integer tokensUsed = response.getUsage() != null
+                                ? response.getUsage().getTotalTokens() : null;
+                        String finishReason = response.getChoices() != null && !response.getChoices().isEmpty()
+                                ? response.getChoices().get(0).getFinishReason() : "stop";
+
+                        // Send full result at once
+                        IntentExecuteResponse fullResult = IntentExecuteResponse.builder()
+                                .intentRecognized(false)
+                                .status("COMPLETED")
+                                .message(fullContent)
+                                .formattedText(fullContent)
+                                .executedAt(LocalDateTime.now())
+                                .build();
+                        sendSseEvent(emitter, "result", fullResult);
+
+                        sendSseEvent(emitter, "complete", Map.of(
+                                "status", "SUCCESS",
+                                "fullContent", fullContent,
+                                "tokensUsed", tokensUsed != null ? tokensUsed : 0,
+                                "finishReason", finishReason,
+                                "model", model,
+                                "totalLatencyMs", System.currentTimeMillis() - startTime
+                        ));
+                        emitter.complete();
+                    } catch (Exception e) {
+                        log.debug("Error sending stream complete: {}", e.getMessage());
+                    }
+                });
+        } catch (Exception e) {
+            log.error("Stream conversational response failed: {}", e.getMessage());
+            String fallback = questionType == QuestionType.GENERAL_QUESTION
+                    ? "抱歉，我暂时无法回答您的问题。您可以尝试询问具体的系统操作。"
+                    : "您好！有什么可以帮您的吗？";
+
+            IntentExecuteResponse fallbackResult = IntentExecuteResponse.builder()
+                    .intentRecognized(false)
+                    .status("COMPLETED")
+                    .message(fallback)
+                    .formattedText(fallback)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+            sendSseEvent(emitter, "result", fallbackResult);
+            sendSseEvent(emitter, "complete", Map.of(
+                    "status", "LLM_ERROR",
+                    "fullContent", fallback,
+                    "totalLatencyMs", System.currentTimeMillis() - startTime
+            ));
+            emitter.complete();
+        }
+    }
+
+    /**
      * 执行分析流程 (v7.0新增 - 集成 Agentic RAG)
      *
      * 当检测到用户输入是分析请求时（如"产品状态怎么样"），
@@ -4281,6 +4462,56 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
      * @param errorCategory 错误分类
      * @return 是否适合重试
      */
+    /**
+     * D7: Quick rule-based check — skip LLM validation when result is clearly valid.
+     * Checks: non-null, non-empty, contains data fields, valid JSON structure.
+     * Returns true if result is obviously valid, false if LLM validation needed.
+     */
+    private boolean isResultClearlyValid(String resultJson) {
+        if (resultJson == null || resultJson.isBlank()) {
+            return false;
+        }
+        // Must be reasonable size (not just "{}" or error stub)
+        if (resultJson.length() < 10) {
+            return false;
+        }
+        try {
+            Object parsed = objectMapper.readValue(resultJson, Object.class);
+            if (parsed instanceof Map) {
+                Map<?, ?> map = (Map<?, ?>) parsed;
+                // Has "data" key with non-null content → clearly valid
+                if (map.containsKey("data") && map.get("data") != null) {
+                    Object data = map.get("data");
+                    if (data instanceof List && !((List<?>) data).isEmpty()) {
+                        return true;
+                    }
+                    if (data instanceof Map && !((Map<?, ?>) data).isEmpty()) {
+                        return true;
+                    }
+                }
+                // Has "content" or "result" key → valid
+                if (map.containsKey("content") && map.get("content") != null) {
+                    return true;
+                }
+                if (map.containsKey("result") && map.get("result") != null) {
+                    return true;
+                }
+                // Has "success": true → valid
+                if (Boolean.TRUE.equals(map.get("success"))) {
+                    return true;
+                }
+            }
+            // Non-empty list result
+            if (parsed instanceof List && !((List<?>) parsed).isEmpty()) {
+                return true;
+            }
+        } catch (Exception e) {
+            // Not valid JSON or parse error — needs LLM validation
+            return false;
+        }
+        return false;
+    }
+
     private boolean isRetryableError(CorrectionRecord.ErrorCategory errorCategory) {
         if (errorCategory == null) {
             return false;

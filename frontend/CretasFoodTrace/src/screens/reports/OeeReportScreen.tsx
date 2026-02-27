@@ -19,6 +19,7 @@ import {
   SegmentedButtons,
   ProgressBar,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { LineChart } from 'react-native-chart-kit';
@@ -185,7 +186,7 @@ export default function OeeReportScreen() {
     color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`,
     labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
     style: {
-      borderRadius: 16,
+      borderRadius: 12,
     },
     propsForDots: {
       r: '4',
@@ -208,7 +209,7 @@ export default function OeeReportScreen() {
     : null;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="OEE 设备效率报表" />
@@ -496,7 +497,7 @@ export default function OeeReportScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -643,7 +644,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   chart: {
-    borderRadius: 16,
+    borderRadius: 12,
     marginVertical: 8,
   },
   trendLegend: {

@@ -196,7 +196,22 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"Food Knowledge Base initialization failed: {e}")
 
+    # Initialize shared LLM HTTP client (connection pool for all LLM calls)
+    try:
+        from common.llm_client import init_llm_client
+        settings = get_settings()
+        await init_llm_client(settings.llm_base_url, settings.llm_api_key)
+    except Exception as e:
+        logger.warning(f"Shared LLM client initialization failed: {e}")
+
     yield
+
+    # Shutdown: close shared LLM HTTP client
+    try:
+        from common.llm_client import close_llm_client
+        await close_llm_client()
+    except Exception as e:
+        logger.warning(f"Shared LLM client shutdown error: {e}")
 
     # Shutdown: close food_kb connections
     if _food_kb_available:

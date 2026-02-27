@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,26 +8,45 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useReportWorkflow } from '../../hooks/useReportWorkflow';
+import { processingApiClient, type ProcessingBatch } from '../../services/api/processingApiClient';
+import { workReportingApiClient } from '../../services/api/workReportingApiClient';
+import { useAuthStore } from '../../store/authStore';
+import { useDraftReportStore } from '../../store/draftReportStore';
 import type { WSHomeStackParamList } from '../../types/navigation';
 import type { WorkReportSubmitRequest, HourEntry } from '../../types/workReporting';
 import { formatDate } from '../../utils/formatters';
 
 type DynamicReportRoute = RouteProp<WSHomeStackParamList, 'DynamicReport'>;
 
+interface ActiveBatch {
+  id: number;
+  batchNumber: string;
+  productName: string;
+  status: string;
+}
+
 export default function DynamicReportScreen() {
   const navigation = useNavigation();
   const route = useRoute<DynamicReportRoute>();
+  const insets = useSafeAreaInsets();
   const { reportType } = route.params;
+  const { user } = useAuthStore();
+  const factoryId = user?.factoryId || user?.factoryUser?.factoryId;
 
   const { schema, loading, submitting, submitReport, isFieldVisible } = useReportWorkflow(reportType);
+
+  // Batch context state
+  const [activeBatches, setActiveBatches] = useState<ActiveBatch[]>([]);
+  const [selectedBatch, setSelectedBatch] = useState<ActiveBatch | null>(null);
+  const [batchLoading, setBatchLoading] = useState(false);
 
   // Form state
   const [processCategory, setProcessCategory] = useState('');
@@ -43,7 +62,87 @@ export default function DynamicReportScreen() {
 
   const isProgress = reportType === 'PROGRESS';
   const title = isProgress ? '实时生产进度上报' : '生产工时上报';
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0] ?? '';
+
+  // Load active batches on mount
+  useEffect(() => {
+    loadActiveBatches();
+  }, []);
+
+  const loadActiveBatches = async () => {
+    setBatchLoading(true);
+    try {
+      const res = await processingApiClient.getBatches({
+        factoryId: factoryId ?? undefined,
+        status: 'IN_PROGRESS',
+        page: 1, size: 50,
+      });
+      if (res?.success) {
+        const content: ProcessingBatch[] = res.data?.content || [];
+        const batchList: ActiveBatch[] = content.map((b) => ({
+          id: b.id,
+          batchNumber: b.batchNumber,
+          productName: b.productType || '',
+          status: b.status,
+        }));
+        setActiveBatches(batchList);
+        // Auto-select if only one batch
+        const first = batchList[0];
+        if (batchList.length === 1 && first) {
+          handleSelectBatch(first);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load batches for context:', error);
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
+  const handleSelectBatch = async (batch: ActiveBatch) => {
+    setSelectedBatch(batch);
+    // Auto-fill product name
+    if (batch.productName) {
+      setProductName(batch.productName);
+      setProcessCategory(batch.productName);
+    }
+    // Auto-fill worker count from checkin list
+    try {
+      const checkinRes = await workReportingApiClient.getCheckinList(batch.id);
+      if (checkinRes?.success && Array.isArray(checkinRes.data)) {
+        const workingCount = checkinRes.data.filter(
+          (c: { status?: string }) => c.status === 'working'
+        ).length;
+        if (workingCount > 0) {
+          setHourEntry(prev => ({ ...prev, fullTimeWorkers: workingCount }));
+        }
+        // Auto-set start time from earliest checkin
+        const checkinTimes = checkinRes.data
+          .map((c: { checkInTime?: string }) => c.checkInTime)
+          .filter(Boolean)
+          .sort();
+        if (checkinTimes.length > 0) {
+          const earliest = checkinTimes[0]!;
+          const timeStr = earliest.includes('T') ? earliest.split('T')[1]?.substring(0, 5) : earliest.substring(11, 16);
+          if (timeStr) setStartTime(timeStr);
+        }
+        // Default end time to current time
+        const now = new Date();
+        setEndTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+      }
+    } catch {
+      // Checkin data is optional, don't block the flow
+    }
+  };
+
+  const clearBatchSelection = () => {
+    setSelectedBatch(null);
+    setProductName('');
+    setProcessCategory('');
+    setStartTime('');
+    setEndTime('');
+    setHourEntry({});
+  };
 
   const handleSubmit = useCallback(async () => {
     if (isProgress && !processCategory) {
@@ -81,18 +180,42 @@ export default function DynamicReportScreen() {
   }, [reportType, processCategory, productName, outputQuantity, goodQuantity,
       defectQuantity, operationVolume, startTime, endTime, hourEntry, notes, submitReport, navigation]);
 
+  const handleSaveDraft = useCallback(() => {
+    const { addDraft } = useDraftReportStore.getState();
+    addDraft({
+      batchId: selectedBatch?.id,
+      batchNumber: selectedBatch?.batchNumber || '',
+      productName: productName || processCategory || '',
+      outputQuantity: outputQuantity ? parseFloat(outputQuantity) : 0,
+      goodQuantity: goodQuantity ? parseFloat(goodQuantity) : 0,
+      defectQuantity: defectQuantity ? parseFloat(defectQuantity) : 0,
+      notes: notes || '',
+      factoryId: factoryId || '',
+      draftType: isProgress ? 'PROGRESS' : 'HOURS',
+      processCategory: processCategory || undefined,
+      startTime: startTime || undefined,
+      endTime: endTime || undefined,
+      hourEntries: !isProgress ? (hourEntry as Record<string, unknown>) : undefined,
+      operationVolume: operationVolume ? parseFloat(operationVolume) : undefined,
+    });
+    Alert.alert('已保存', '草稿已保存，可在草稿管理中查看', [
+      { text: '确定', onPress: () => navigation.goBack() },
+    ]);
+  }, [selectedBatch, productName, processCategory, outputQuantity, goodQuantity,
+      defectQuantity, notes, factoryId, isProgress, startTime, endTime, hourEntry, operationVolume, navigation]);
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <ActivityIndicator size="large" color="#4F46E5" style={{ marginTop: 100 }} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
         </TouchableOpacity>
@@ -105,6 +228,42 @@ export default function DynamicReportScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView style={styles.form} contentContainerStyle={styles.formContent}>
+          {/* Batch selector */}
+          {activeBatches.length > 0 ? (
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>关联批次</Text>
+              {selectedBatch ? (
+                <View style={styles.selectedBatchChip}>
+                  <MaterialCommunityIcons name="package-variant" size={16} color="#4F46E5" />
+                  <Text style={styles.selectedBatchText}>
+                    {selectedBatch.batchNumber} - {selectedBatch.productName || '未知产品'}
+                  </Text>
+                  <TouchableOpacity onPress={clearBatchSelection} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <MaterialCommunityIcons name="close-circle" size={18} color="#9CA3AF" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.batchChipScroll}>
+                  {activeBatches.map(batch => (
+                    <TouchableOpacity
+                      key={batch.id}
+                      style={styles.batchChip}
+                      onPress={() => handleSelectBatch(batch)}
+                    >
+                      <Text style={styles.batchChipText}>{batch.batchNumber}</Text>
+                      <Text style={styles.batchChipSub}>{batch.productName || '—'}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          ) : !batchLoading ? (
+            <View style={styles.noBatchBanner}>
+              <MaterialCommunityIcons name="information-outline" size={16} color="#92400E" />
+              <Text style={styles.noBatchText}>无进行中批次，使用手动模式</Text>
+            </View>
+          ) : null}
+
           {/* Date */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>报工日期</Text>
@@ -302,9 +461,18 @@ export default function DynamicReportScreen() {
               <Text style={styles.submitBtnText}>提交报工</Text>
             )}
           </TouchableOpacity>
+
+          {/* Save Draft */}
+          <TouchableOpacity
+            style={styles.saveDraftBtn}
+            onPress={handleSaveDraft}
+          >
+            <MaterialCommunityIcons name="content-save-outline" size={18} color="#4F46E5" />
+            <Text style={styles.saveDraftBtnText}>保存草稿</Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -351,4 +519,29 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.6 },
   submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveDraftBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    borderRadius: 12, paddingVertical: 12, marginTop: 10,
+    borderWidth: 1, borderColor: '#C7D2FE', backgroundColor: '#EEF2FF', gap: 6,
+  },
+  saveDraftBtnText: { color: '#4F46E5', fontSize: 15, fontWeight: '500' },
+  // Batch selector
+  batchChipScroll: { flexDirection: 'row' },
+  batchChip: {
+    backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
+    marginRight: 8, borderWidth: 1, borderColor: '#E5E7EB', minWidth: 100,
+  },
+  batchChipText: { fontSize: 14, fontWeight: '600', color: '#4F46E5' },
+  batchChipSub: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  selectedBatchChip: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#EEF2FF',
+    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
+    borderWidth: 1, borderColor: '#C7D2FE', gap: 8,
+  },
+  selectedBatchText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#4F46E5' },
+  noBatchBanner: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7',
+    borderRadius: 8, padding: 10, marginBottom: 16, gap: 6,
+  },
+  noBatchText: { fontSize: 13, color: '#92400E', flex: 1 },
 });

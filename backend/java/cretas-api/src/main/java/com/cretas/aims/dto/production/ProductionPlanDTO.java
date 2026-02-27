@@ -148,6 +148,23 @@ public class ProductionPlanDTO {
     @Schema(description = "剩余需求量")
     private BigDecimal remainingQuantity;
 
+    // ======= 工厂管理员扩展字段 =======
+
+    @Schema(description = "建议产线ID")
+    private String suggestedProductionLineId;
+
+    @Schema(description = "建议产线名称")
+    private String suggestedProductionLineName;
+
+    @Schema(description = "预计工人数")
+    private Integer estimatedWorkers;
+
+    @Schema(description = "指派车间主管ID")
+    private Long assignedSupervisorId;
+
+    @Schema(description = "指派车间主管名称")
+    private String assignedSupervisorName;
+
     // ======= 调度员模块扩展字段 =======
 
     @Schema(description = "计划来源类型: CUSTOMER_ORDER/AI_FORECAST/SAFETY_STOCK/MANUAL/URGENT_INSERT")

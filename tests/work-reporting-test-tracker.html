@@ -177,7 +177,7 @@
 <div class="top-bar">
   <h1>
     报工模块测试跟踪器
-    <span>Work Reporting Test Tracker &middot; 72 用例 (更新: 2026-02-26)</span>
+    <span>Work Reporting Test Tracker &middot; 75 用例 (更新: 2026-02-26)</span>
   </h1>
   <div class="progress-row">
     <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
@@ -216,6 +216,10 @@
     <h3>已修复 #3: 首页按钮精简为5个 (2026-02-24)</h3>
     <p>删除扫码报工/标签扫描/进度上报，保留: 班组报工、草稿管理、扫码签到、工时上报、我的报工。良品/不良品字段已合并到班组报工。</p>
   </div>
+  <div class="alert-card" style="border-left-color:#67c23a">
+    <h3>已修复 #4: 班组报工 400 错误根因修复 (2026-02-26)</h3>
+    <p>旧代码调用不存在的 <code>/employees?role=WORKER</code> → fallback 创建 userId:0 假工人 → FK 约束失败。新版改用 <code>getCheckinList(batchId)</code> 获取真实签到工人，团队总产出为主字段(必填)，个人明细为可选。工人卡片显示岗位标签+用工类型(正式工/临时工/派遣工等)。</p>
+  </div>
 </div>
 
 <div class="content" id="testContent"></div>
@@ -226,9 +230,9 @@ const TEST_DATA = [
   {
     category: "正向流程 (Happy Path)",
     cases: [
-      { id:"H-01", title:"班组报工 — 3级批次加载+选批次+提交", p:"P0", isNew:false,
-        steps:"1. 首页点「班组报工」\n2. 优先加载我的 IN_PROGRESS+PLANNED 批次(supervisorId过滤)\n3. 批次卡片显示状态标签(蓝色「进行中」/橙色「待开始」)\n4. 选一个 IN_PROGRESS 批次(单批次自动选中)\n5. 展开工人卡片填良品/不良品\n6. 点「一键提交」",
-        expect:"Alert「N人的报工已提交」，含 totalGood/totalDefect 汇总" },
+      { id:"H-01", title:"班组报工 — 团队总产出+真实签到工人", p:"P0", isNew:false,
+        steps:"1. 首页点「班组报工」\n2. 3级批次加载(我的IN_PROGRESS+PLANNED → fallback全工厂)\n3. 选批次 → getCheckinList() 加载真实签到工人\n4. 工人卡片显示岗位标签+用工类型(蓝「正式工」/橙「临时工」/紫「派遣工」等)\n5. 填写「团队总产出」(必填主字段)\n6. 可选展开「个人产量明细」填个人产出\n7. 点「提交报工」",
+        expect:"提交成功，batch.actualQuantity += 团队总产出" },
       { id:"H-02", title:"班组报工 — PLANNED批次确认开始生产", p:"P0", isNew:true,
         steps:"1. 批次列表选橙色「待开始」(PLANNED)批次\n2. 弹出确认框「该批次尚未开始，是否启动生产？」\n3. 点「确认开始」",
         expect:"调用 startProduction()，批次变 IN_PROGRESS，进入报工填写" },
@@ -238,12 +242,12 @@ const TEST_DATA = [
       { id:"H-04", title:"班组报工 — 保存草稿", p:"P1", isNew:true,
         steps:"选批次+部分填写成员产出后点「保存草稿」",
         expect:"Alert 提示已保存，草稿管理出现该草稿(类型标签「班组报工」)" },
-      { id:"H-05", title:"班组报工 — 手动添加成员", p:"P1", isNew:false,
-        steps:"选择批次后点「+ 添加成员」，填写新成员产出",
-        expect:"成员列表新增一行，计入提交人数" },
+      { id:"H-05", title:"班组报工 — 无签到工人仅提交团队总量", p:"P1", isNew:true,
+        steps:"选批次后 getCheckinList 返回空(无人签到)",
+        expect:"黄色横幅「暂无签到工人」，仍可填团队总产出并提交(members为空)" },
       { id:"H-06", title:"班组报工 — 更换批次", p:"P1", isNew:false,
         steps:"已选批次后点击「更换」",
-        expect:"返回批次列表，成员列表清空" },
+        expect:"返回批次列表，重新加载新批次的签到工人" },
       { id:"H-07", title:"工时报工 — 批次自动填充+填工时+提交", p:"P0", isNew:false,
         steps:"1. 首页点「工时上报」\n2. 顶部加载 IN_PROGRESS 批次横向滚动条\n3. 选批次 → 自动填充: 商品名←产品, 工人数←签到人数, 开始←最早签到, 结束←当前\n4. 正式工5人8h、小时工2人4h\n5. 提交",
         expect:"Alert「报工提交成功」，记录7人工时" },
@@ -270,10 +274,10 @@ const TEST_DATA = [
         expect:"Alert「已拒绝」，Modal 关闭" },
       { id:"H-15", title:"草稿管理 — 类型标签+查看", p:"P1", isNew:false,
         steps:"首页点「草稿管理」（有多种类型草稿）",
-        expect:"草稿列表每条有类型标签(进度上报/工时上报/班组报工)，含批次号、产出、时间" },
+        expect:"草稿列表每条有类型标签(工时上报/班组报工)，含批次号、产出、时间" },
       { id:"H-16", title:"草稿管理 — 恢复编辑导航", p:"P1", isNew:true,
         steps:"草稿列表点「恢复编辑」",
-        expect:"按 draftType 导航到对应表单(班组/工时/进度)，预填草稿数据" },
+        expect:"按 draftType 导航到对应表单(班组报工/工时上报)，预填草稿数据" },
       { id:"H-17", title:"草稿管理 — 直接提交(需batchId)", p:"P1", isNew:true,
         steps:"1. 有 batchId 草稿: 查看操作区\n2. 无 batchId 草稿: 查看操作区",
         expect:"有 batchId → 显示「直接提交」; 无 batchId → 仅「恢复编辑」" },
@@ -289,9 +293,9 @@ const TEST_DATA = [
   {
     category: "边界值测试",
     cases: [
-      { id:"B-01", title:"班组报工 — 良品数量 > 产出数量", p:"P1", isNew:true,
-        steps:"班组报工展开成员卡片，产出 100，良品 150，提交",
-        expect:"确认是否有前端校验拦截" },
+      { id:"B-01", title:"班组报工 — 团队良品 > 团队总产出", p:"P1", isNew:false,
+        steps:"团队总产出填100，团队良品填150，提交",
+        expect:"确认是否有前端校验拦截(良品不应超过总产出)" },
       { id:"B-02", title:"工时报工 — 工时全留空提交", p:"P1", isNew:true,
         steps:"HOURS 类型，商品名称填好，工时明细三行全空",
         expect:"totalWorkers=0，提交成功，不崩溃" },
@@ -304,12 +308,12 @@ const TEST_DATA = [
       { id:"B-05", title:"拒绝原因达到 500 字符", p:"P2", isNew:true,
         steps:"输入恰好 500 字符",
         expect:"字符计数 500/500，超出被截断" },
-      { id:"B-06", title:"班组报工 — 所有成员产出均为空", p:"P0", isNew:true,
-        steps:"选批次后，所有成员产出不填，点提交",
-        expect:"Alert「请至少填写一人的产出数据」" },
-      { id:"B-07", title:"班组报工 — 部分成员填写", p:"P1", isNew:false,
-        steps:"5 名成员中 3 人填产出，2 人留空",
-        expect:"Alert「3人的报工已提交」" },
+      { id:"B-06", title:"班组报工 — 团队总产出为0提交", p:"P0", isNew:false,
+        steps:"选批次后团队总产出留空或填0，点提交",
+        expect:"校验拦截：团队总产出必须 > 0" },
+      { id:"B-07", title:"班组报工 — 仅团队总产出不填个人明细", p:"P1", isNew:true,
+        steps:"填团队总产出100，不展开个人明细，直接提交",
+        expect:"提交成功，members为空，batch.actualQuantity += 100" },
       { id:"B-08", title:"工时上报 — 批次自动填充后手动修改", p:"P1", isNew:true,
         steps:"选批次自动填充后，手动修改商品名称和工人数",
         expect:"手动修改值优先，提交使用修改后的值" },
@@ -361,9 +365,9 @@ const TEST_DATA = [
   {
     category: "数据联动验证",
     cases: [
-      { id:"D-01", title:"班组报工后批次 actualQuantity 增加", p:"P0", isNew:true,
-        steps:"1. 先在「批次」Tab 查看 #1879 当前 actualQuantity\n2. 班组报工提交产出 100 (含良品/不良品)\n3. 回到「批次」Tab 进入 #1879 详情",
-        expect:"actualQuantity 增加了 100，goodQuantity/defectQuantity 同步更新" },
+      { id:"D-01", title:"班组报工后批次 actualQuantity 增加", p:"P0", isNew:false,
+        steps:"1. 先在「批次」Tab 查看 #1879 当前 actualQuantity\n2. 班组报工填团队总产出100\n3. 回到「批次」Tab 进入 #1879 详情",
+        expect:"actualQuantity += 团队总产出(100)，使用 request.getTotalOutput() 而非个人累加" },
       { id:"D-02", title:"产量达标 → 批次自动完成", p:"P1", isNew:true,
         steps:"对 #1879 (计划450) 报工至 actualQuantity >= 450\n然后在批次列表切换到 COMPLETED 筛选",
         expect:"该批次状态变 COMPLETED，出现在已完成列表（慎测：会真改数据）" },
@@ -430,9 +434,9 @@ const TEST_DATA = [
       { id:"U-09", title:"提交按钮 loading 状态", p:"P1", isNew:true,
         steps:"点击提交后在响应到来前观察按钮",
         expect:"按钮显示 loading，disabled=true" },
-      { id:"U-10", title:"班组报工按钮显示人数", p:"P2", isNew:true,
-        steps:"填写 3 人数据，观察提交按钮文字",
-        expect:"按钮文字显示「一键提交 (3人)」" },
+      { id:"U-10", title:"工人岗位+用工类型标签", p:"P1", isNew:true,
+        steps:"选批次后查看签到工人卡片",
+        expect:"每个工人显示岗位标签(如「包装工」)和用工类型(蓝「正式工」/橙「临时工」/紫「派遣工」/绿「实习生」/灰「兼职工」)" },
       { id:"U-11", title:"NFC 不可用提示", p:"P1", isNew:true,
         steps:"在不支持 NFC 的设备进入签到页",
         expect:"NFC Tab 显示「不可用」，默认切到 QR Tab" },
@@ -445,6 +449,15 @@ const TEST_DATA = [
       { id:"U-14", title:"审批页刷新按钮", p:"P2", isNew:true,
         steps:"点击 Appbar 右上角刷新图标",
         expect:"等同下拉刷新，列表重新加载" },
+      { id:"U-15", title:"个人产量明细折叠/展开", p:"P1", isNew:true,
+        steps:"选批次后查看「个人产量明细」区域",
+        expect:"默认折叠，点击可展开显示签到工人列表，每人可填个人产出" },
+      { id:"U-16", title:"报工时间自动填充", p:"P2", isNew:true,
+        steps:"选批次后查看报工时间字段",
+        expect:"reportTime 自动填充为当前时间" },
+      { id:"U-17", title:"团队总产出为主字段布局", p:"P0", isNew:true,
+        steps:"选批次后查看表单布局",
+        expect:"「团队总产出」在最上方显著位置(必填)，「个人产量明细」在下方(可选折叠)" },
     ]
   },
   // ===== 工时报工专项 =====
@@ -480,7 +493,7 @@ const TEST_DATA = [
 ];
 
 // ===== State =====
-const STORAGE_KEY = 'work-report-test-v3';
+const STORAGE_KEY = 'work-report-test-v4';
 let state = {};
 
 function loadState() {

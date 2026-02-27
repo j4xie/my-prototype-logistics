@@ -49,7 +49,11 @@ class InsightGenerator:
 
     def __init__(self):
         self.settings = get_settings()
-        self.client = httpx.AsyncClient(timeout=60.0)
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        from common.llm_client import get_llm_http_client
+        return get_llm_http_client()
 
     async def generate_insights(
         self,
@@ -484,7 +488,7 @@ class InsightGenerator:
         }
 
         payload = {
-            "model": self.settings.llm_model,
+            "model": self.settings.llm_insight_model,
             "messages": [
                 {
                     "role": "system",
@@ -496,7 +500,8 @@ class InsightGenerator:
                 }
             ],
             "temperature": 0.5,
-            "max_tokens": 4500  # 增加到4500以支持完整的中文洞察JSON
+            "max_tokens": 4500,  # 增加到4500以支持完整的中文洞察JSON
+            "enable_thinking": False
         }
 
         response = await self.client.post(
@@ -643,5 +648,5 @@ class InsightGenerator:
         return json_str  # Return original attempt
 
     async def close(self):
-        """Close HTTP client"""
-        await self.client.aclose()
+        """No-op: shared client lifecycle managed by main.py lifespan"""
+        pass

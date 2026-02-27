@@ -709,7 +709,7 @@ const styles = StyleSheet.create({
   filterChip: {
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#e0e0e0',

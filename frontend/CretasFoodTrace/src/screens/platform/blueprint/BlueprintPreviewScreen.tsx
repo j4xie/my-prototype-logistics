@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerGradient: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     margin: 16,
     marginBottom: 0,

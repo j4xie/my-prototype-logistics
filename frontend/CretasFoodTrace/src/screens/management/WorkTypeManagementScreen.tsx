@@ -17,6 +17,7 @@ import {
   SegmentedButtons,
   Switch,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { workTypeApiClient, WorkType, CreateWorkTypeRequest } from '../../services/api/workTypeApiClient';
 import { useAuthStore } from '../../store/authStore';
@@ -286,7 +287,7 @@ export default function WorkTypeManagementScreen() {
 
   if (!canManage) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="工种管理" />
@@ -296,12 +297,12 @@ export default function WorkTypeManagementScreen() {
           <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
           <Text style={styles.noPermissionHint}>仅限工厂超管</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -573,7 +574,7 @@ export default function WorkTypeManagementScreen() {
           label="添加工种"
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

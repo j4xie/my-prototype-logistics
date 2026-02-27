@@ -122,6 +122,12 @@ class IntentClassifierService:
             # Softmax 转换为概率
             probs = torch.softmax(logits, dim=-1)
 
+            # v35.0: OOD 指标计算
+            entropy = -torch.sum(probs[0] * torch.log(probs[0] + 1e-10)).item()
+            sorted_probs = torch.sort(probs[0], descending=True).values
+            margin = (sorted_probs[0] - sorted_probs[1]).item()
+            max_logit = logits.max().item()
+
             # 获取 top-k 结果
             top_k = min(top_k, probs.shape[-1])
             top_probs, top_indices = torch.topk(probs[0], k=top_k)
@@ -140,7 +146,10 @@ class IntentClassifierService:
                 "text": text,
                 "intents": intents,
                 "top_intent": intents[0] if intents else None,
-                "device": str(self.device)
+                "device": str(self.device),
+                "entropy": entropy,
+                "margin": margin,
+                "max_logit": max_logit
             }
 
         except Exception as e:

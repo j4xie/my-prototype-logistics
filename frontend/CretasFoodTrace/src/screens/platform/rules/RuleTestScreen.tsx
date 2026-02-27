@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   ruleCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 20,
   },

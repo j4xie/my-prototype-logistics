@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, Alert, StyleSheet,
-  ActivityIndicator, Platform, SafeAreaView,
+  ActivityIndicator, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { WSBatchesStackParamList } from '../../types/navigation';
@@ -126,7 +127,7 @@ const ScanReportScreen: React.FC = () => {
   }, [batchInfo, form, factoryId, navigation, addDraft]);
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <OfflineIndicator />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.title}>扫码报工</Text>

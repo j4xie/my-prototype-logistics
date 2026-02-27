@@ -991,7 +991,7 @@ const styles = StyleSheet.create({
   },
   loadingContent: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 24,
     width: 280,
     alignItems: 'center',

@@ -8,11 +8,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
@@ -83,6 +83,7 @@ export function WSHomeScreen() {
   const { user } = useAuthStore();
   const { isScreenEnabled, getBenchmarks } = useFactoryFeatureStore();
   const { t } = useTranslation('workshop');
+  const insets = useSafeAreaInsets();
   const draftCount = useDraftReportStore(s => s.drafts.length);
 
   // 状态
@@ -244,19 +245,21 @@ export function WSHomeScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
           <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // 错误状态
   if (error && taskStats.assigned === 0 && taskStats.completed === 0 && inProgressBatches.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]} />
         <View style={styles.loadingContainer}>
           <MaterialCommunityIcons name="cloud-off-outline" size={48} color="#C0C4CC" />
           <Text style={[styles.loadingText, { color: '#606266', marginTop: 12 }]}>加载失败，请检查网络</Text>
@@ -267,12 +270,12 @@ export function WSHomeScreen() {
             <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>重试</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -289,7 +292,7 @@ export function WSHomeScreen() {
         <OfflineIndicator />
 
         {/* 头部欢迎区 */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <View style={styles.headerLeft}>
             <Text style={styles.greeting}>
               {getGreeting()}，{user?.username ?? t('profile.role')}
@@ -598,7 +601,7 @@ export function WSHomeScreen() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -721,7 +724,7 @@ const styles = StyleSheet.create({
   nextTaskCard: {
     margin: 16,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: '#667eea',
   },
   urgentCard: {

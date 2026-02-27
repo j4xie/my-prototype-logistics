@@ -66,8 +66,10 @@ public class ConfirmUrgentInsertRequest {
     @Schema(description = "优先级 (1-10)")
     @Min(value = 1, message = "优先级最小为1")
     @Max(value = 10, message = "优先级最大为10")
+    @Builder.Default
     private Integer priority = 9;
 
     @Schema(description = "是否强制插入（跳过影响检查）")
+    @Builder.Default
     private Boolean forceInsert = false;
 }

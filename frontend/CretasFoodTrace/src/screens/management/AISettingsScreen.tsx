@@ -13,6 +13,7 @@ import {
   List,
   ProgressBar,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { factorySettingsApiClient } from '../../services/api/factorySettingsApiClient';
@@ -177,7 +178,7 @@ export default function AISettingsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title={t('aiSettings.title')} />
@@ -186,12 +187,12 @@ export default function AISettingsScreen() {
           <ActivityIndicator size="large" />
           <Text style={styles.loadingText}>{t('aiSettings.loading')}</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('aiSettings.title')} />
@@ -494,7 +495,7 @@ export default function AISettingsScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -60,8 +60,8 @@ public class ProductionBatch extends BaseEntity {
      /**
       * 生产计划ID
       */
-    @Column(name = "production_plan_id")
-    private Integer productionPlanId;
+    @Column(name = "production_plan_id", length = 191)
+    private String productionPlanId;
      /**
       * 产品类型ID (关联 ProductType.id，类型为 String)
       */

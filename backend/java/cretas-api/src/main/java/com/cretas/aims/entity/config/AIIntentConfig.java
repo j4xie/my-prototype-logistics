@@ -49,6 +49,16 @@ public class AIIntentConfig extends BaseEntity {
     private String factoryId;
 
     /**
+     * 业态类型
+     * COMMON - 通用意图（所有业态共享）
+     * FACTORY - 工厂专属意图
+     * RESTAURANT - 餐饮专属意图
+     */
+    @Column(name = "business_type", length = 30)
+    @Builder.Default
+    private String businessType = "COMMON";
+
+    /**
      * 意图代码 (唯一标识)
      * 如: COST_ANALYSIS, BATCH_UPDATE, FORM_GENERATION, SCHEDULE_OPTIMIZATION
      */
@@ -182,6 +192,7 @@ public class AIIntentConfig extends BaseEntity {
      * 如: CostAnalysisHandler, FormGenerationHandler
      * @deprecated 推荐使用 toolName 字段替代
      */
+    @Deprecated
     @Column(name = "handler_class", length = 200)
     private String handlerClass;
 

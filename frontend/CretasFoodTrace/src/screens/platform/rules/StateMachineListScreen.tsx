@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   infoCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 20,
   },

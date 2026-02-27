@@ -128,6 +128,7 @@ async def _call_llm(
         "messages": messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
+        "enable_thinking": False,
     }
 
     async with httpx.AsyncClient(timeout=60.0) as client:

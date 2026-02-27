@@ -43,7 +43,12 @@ public interface ProductionPlanRepository extends JpaRepository<ProductionPlan, 
     Optional<ProductionPlan> findByIdAndFactoryId(String id, String factoryId);
 
     /**
-     * 查找工厂的生产计划
+     * 查找工厂的所有生产计划
+     */
+    List<ProductionPlan> findByFactoryId(String factoryId);
+
+    /**
+     * 查找工厂的生产计划（分页）
      */
     Page<ProductionPlan> findByFactoryId(String factoryId, Pageable pageable);
 

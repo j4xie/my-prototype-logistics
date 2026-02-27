@@ -61,10 +61,9 @@ public class ToolEmbedding {
 
     /**
      * 工具描述的向量嵌入 (序列化的 float[])
-     * 使用 MEDIUMBLOB 存储，最大 16MB
+     * PostgreSQL: BYTEA 类型直接存储字节数组
      */
-    @Column(name = "embedding_vector", columnDefinition = "MEDIUMBLOB")
-    @Lob
+    @Column(name = "embedding_vector", columnDefinition = "BYTEA")
     private byte[] embeddingVector;
 
     /**

@@ -14,6 +14,7 @@ import {
   IconButton,
   ProgressBar,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
@@ -710,7 +711,7 @@ export default function ProductionReportScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="生产监控" />
@@ -740,7 +741,7 @@ export default function ProductionReportScreen() {
         {renderTabContent()}
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -840,7 +841,7 @@ const styles = StyleSheet.create({
   // 快速访问卡片样式
   quickAccessCard: {
     backgroundColor: '#FFF',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     margin: 16,
   },

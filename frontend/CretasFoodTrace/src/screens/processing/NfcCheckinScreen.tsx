@@ -7,13 +7,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   FlatList,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { workReportingApiClient } from '../../services/api/workReportingApiClient';
-import { processingApiClient } from '../../services/api/processingApiClient';
+import { processingApiClient, type ProcessingBatch } from '../../services/api/processingApiClient';
 import BarcodeScannerModal from '../../components/processing/BarcodeScannerModal';
 import NfcCheckinModal from '../../components/processing/NfcCheckinModal';
 import { useAuthStore } from '../../store/authStore';
@@ -31,18 +31,19 @@ interface BatchItem {
 
 export default function NfcCheckinScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const getFactoryId = useAuthStore((s) => s.getFactoryId);
   const factoryId = getFactoryId();
 
   if (!factoryId) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.emptyState}>
           <MaterialCommunityIcons name="alert-circle-outline" size={48} color="#999" />
           <Text style={styles.emptyText}>请使用工厂账户登录后使用签到功能</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -53,6 +54,8 @@ export default function NfcCheckinScreen() {
   const [nfcModalVisible, setNfcModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checkinLoading, setCheckinLoading] = useState(false);
+  const [startingBatch, setStartingBatch] = useState(false);
+  const [isFallback, setIsFallback] = useState(false);
 
   // NFC availability
   const [nfcSupported, setNfcSupported] = useState(false);
@@ -77,24 +80,47 @@ export default function NfcCheckinScreen() {
     loadBatches();
   }, []);
 
+  const parseBatchList = (res: { success?: boolean; data?: { content?: ProcessingBatch[] } }): BatchItem[] => {
+    if (!res?.success) return [];
+    const content = res.data?.content || [];
+    return content.map((b) => ({
+      id: b.id,
+      batchNumber: b.batchNumber,
+      productName: b.productType || undefined,
+      status: b.status || undefined,
+    }));
+  };
+
   const loadBatches = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await processingApiClient.getBatches({
-        status: 'IN_PROGRESS',
-        supervisorId: user?.id,
-      });
-      if (response.success && response.data?.content) {
-        const batchList = response.data.content.map((b: Record<string, unknown>) => ({
-          id: b.id as number,
-          batchNumber: b.batchNumber as string,
-          productName: b.productName as string | undefined,
-          status: b.status as string | undefined,
-        }));
-        setBatches(batchList);
-        // Auto-select if only one batch
-        if (batchList.length === 1) {
-          selectBatch(batchList[0]);
+      // 1. 查询分配给我的 IN_PROGRESS + PLANNED 批次
+      const [inProgressRes, plannedRes] = await Promise.all([
+        processingApiClient.getBatches({ status: 'IN_PROGRESS', supervisorId: user?.id }),
+        processingApiClient.getBatches({ status: 'PLANNED', supervisorId: user?.id }),
+      ]);
+
+      const myBatches = [
+        ...parseBatchList(inProgressRes),
+        ...parseBatchList(plannedRes),
+      ];
+
+      if (myBatches.length > 0) {
+        setBatches(myBatches);
+        setIsFallback(false);
+        const first = myBatches[0];
+        if (myBatches.length === 1 && first && first.status === 'IN_PROGRESS') {
+          selectBatch(first);
+        }
+      } else {
+        // 2. Fallback: 查全工厂 IN_PROGRESS 批次
+        const fallbackRes = await processingApiClient.getBatches({ status: 'IN_PROGRESS' });
+        const fallbackBatches = parseBatchList(fallbackRes);
+        setBatches(fallbackBatches);
+        setIsFallback(fallbackBatches.length > 0);
+        const firstFallback = fallbackBatches[0];
+        if (fallbackBatches.length === 1 && firstFallback) {
+          selectBatch(firstFallback);
         }
       }
     } catch (error) {
@@ -119,6 +145,41 @@ export default function NfcCheckinScreen() {
     setSelectedBatch(batch);
     loadCheckins(batch.id);
   }, [loadCheckins]);
+
+  const handleBatchPress = useCallback((batch: BatchItem) => {
+    if (batch.status === 'PLANNED') {
+      Alert.alert(
+        '开始生产',
+        `批次 ${batch.batchNumber} 尚未开始，需先开始生产才能签到。是否立即开始？`,
+        [
+          { text: '取消', style: 'cancel' },
+          { text: '开始生产', onPress: () => startAndSelectBatch(batch) },
+        ],
+      );
+    } else {
+      selectBatch(batch);
+    }
+  }, [selectBatch]);
+
+  const startAndSelectBatch = useCallback(async (batch: BatchItem) => {
+    if (!user?.id) return;
+    setStartingBatch(true);
+    try {
+      const res = await processingApiClient.startProduction(batch.id.toString(), user.id);
+      if (res?.success) {
+        const updated = { ...batch, status: 'IN_PROGRESS' };
+        setBatches(prev => prev.map(b => b.id === batch.id ? updated : b));
+        selectBatch(updated);
+      } else {
+        Alert.alert('开始失败', res?.message || '无法开始生产');
+      }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : '开始生产失败';
+      Alert.alert('开始失败', msg);
+    } finally {
+      setStartingBatch(false);
+    }
+  }, [user?.id, selectBatch]);
 
   // --- Checkin handlers ---
 
@@ -201,8 +262,8 @@ export default function NfcCheckinScreen() {
 
   if (!selectedBatch) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
           </TouchableOpacity>
@@ -210,22 +271,35 @@ export default function NfcCheckinScreen() {
           <View style={{ width: 40 }} />
         </View>
 
+        {startingBatch && (
+          <View style={styles.startingOverlay}>
+            <ActivityIndicator size="large" color="#4F46E5" />
+            <Text style={{ marginTop: 8, color: '#4F46E5' }}>正在开始生产...</Text>
+          </View>
+        )}
         {loading ? (
           <ActivityIndicator size="large" color="#4F46E5" style={{ marginTop: 100 }} />
         ) : batches.length === 0 ? (
           <View style={styles.emptyState}>
             <MaterialCommunityIcons name="clipboard-off-outline" size={48} color="#9CA3AF" />
-            <Text style={styles.emptyText}>暂无进行中的批次</Text>
+            <Text style={styles.emptyText}>暂无可用批次</Text>
+            <Text style={styles.emptySubtext}>请联系调度员分配生产批次</Text>
           </View>
         ) : (
           <FlatList
             data={batches}
             keyExtractor={(item) => item.id.toString()}
             contentContainerStyle={{ padding: 16 }}
+            ListHeaderComponent={isFallback ? (
+              <View style={styles.fallbackBanner}>
+                <MaterialCommunityIcons name="information-outline" size={16} color="#92400E" />
+                <Text style={styles.fallbackText}>当前显示全工厂批次（无分配给您的批次）</Text>
+              </View>
+            ) : null}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.batchCard}
-                onPress={() => selectBatch(item)}
+                onPress={() => handleBatchPress(item)}
               >
                 <View style={styles.batchInfo}>
                   <Text style={styles.batchNumber}>{item.batchNumber}</Text>
@@ -233,20 +307,30 @@ export default function NfcCheckinScreen() {
                     <Text style={styles.batchProduct}>{item.productName}</Text>
                   )}
                 </View>
-                <MaterialCommunityIcons name="chevron-right" size={20} color="#9CA3AF" />
+                <View style={[
+                  styles.batchStatusBadge,
+                  item.status === 'IN_PROGRESS' ? styles.batchStatusActive : styles.batchStatusPlanned,
+                ]}>
+                  <Text style={[
+                    styles.batchStatusText,
+                    item.status === 'IN_PROGRESS' ? styles.batchStatusActiveText : styles.batchStatusPlannedText,
+                  ]}>
+                    {item.status === 'IN_PROGRESS' ? '进行中' : '待开始'}
+                  </Text>
+                </View>
               </TouchableOpacity>
             )}
           />
         )}
-      </SafeAreaView>
+      </View>
     );
   }
 
   // --- Render: Checkin management (Phase 2) ---
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => setSelectedBatch(null)} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
         </TouchableOpacity>
@@ -412,7 +496,7 @@ export default function NfcCheckinScreen() {
         onClose={() => setScannerVisible(false)}
         onScan={handleQrScan}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -426,7 +510,17 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyText: { marginTop: 12, fontSize: 15, color: '#9CA3AF' },
+  emptyText: { marginTop: 12, fontSize: 16, fontWeight: '600', color: '#9CA3AF' },
+  emptySubtext: { marginTop: 4, fontSize: 14, color: '#D1D5DB' },
+  fallbackBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', borderRadius: 8, padding: 10, marginBottom: 12, gap: 6 },
+  fallbackText: { fontSize: 13, color: '#92400E', flex: 1 },
+  startingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.8)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
+  batchStatusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginLeft: 8 },
+  batchStatusText: { fontSize: 12, fontWeight: '600' },
+  batchStatusActive: { backgroundColor: '#DBEAFE' },
+  batchStatusActiveText: { color: '#1D4ED8' },
+  batchStatusPlanned: { backgroundColor: '#FEF3C7' },
+  batchStatusPlannedText: { color: '#92400E' },
   batchCard: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 10,

@@ -83,6 +83,13 @@ public class LlmIntentClassifyResponse {
     private LlmIntentClassifyResponse data;
 
     /**
+     * Python ai_proxy 返回的原始 LLM 分类结果（JSON 字符串）
+     * 格式: {"intent": "INTENT_CODE", "confidence": 0.85, "reasoning": "..."}
+     * 当 Python 端返回 {"data": {"classification": "..."}} 时填充此字段
+     */
+    private String classification;
+
+    /**
      * 安全获取置信度（自动 clamp 到 [0.0, 1.0]）
      */
     public Double getSafeConfidence() {

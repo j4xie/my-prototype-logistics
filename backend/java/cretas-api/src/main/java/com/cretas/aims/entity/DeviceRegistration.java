@@ -102,6 +102,7 @@ public class DeviceRegistration extends BaseEntity {
      * 是否启用推送
      */
     @Column(name = "is_enabled", nullable = false)
+    @Builder.Default
     private Boolean isEnabled = true;
 
     /**

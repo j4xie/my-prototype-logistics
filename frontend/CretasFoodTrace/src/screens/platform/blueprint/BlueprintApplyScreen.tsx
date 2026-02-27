@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerGradient: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     margin: 16,
     marginBottom: 0,
@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: '#f5f5f5',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: 'transparent',
   },
@@ -907,7 +907,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: '#fff',
     margin: 20,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     alignItems: 'center',
   },

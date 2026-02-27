@@ -99,6 +99,9 @@ async def classify_intent(request: ClassifyRequest):
         "predictions": predictions,
         "top_intent": top_intent.get("intent_code") if top_intent else None,
         "top_confidence": top_intent.get("confidence", 0.0) if top_intent else 0.0,
+        "entropy": result.get("entropy"),
+        "margin": result.get("margin"),
+        "max_logit": result.get("max_logit"),
         "error": None
     }
 

@@ -61,21 +61,25 @@ public class BlueprintApplicationResult {
     /**
      * 创建的表单模板数量
      */
+    @Builder.Default
     private Integer formTemplatesCreated = 0;
 
     /**
      * 创建的规则配置数量
      */
+    @Builder.Default
     private Integer rulesCreated = 0;
 
     /**
      * 创建的产品类型数量
      */
+    @Builder.Default
     private Integer productTypesCreated = 0;
 
     /**
      * 创建的部门数量
      */
+    @Builder.Default
     private Integer departmentsCreated = 0;
 
     /**

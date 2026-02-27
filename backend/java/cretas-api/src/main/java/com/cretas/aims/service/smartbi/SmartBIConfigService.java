@@ -93,7 +93,7 @@ public interface SmartBIConfigService {
      * @param threshold 阈值配置
      * @return 更新结果
      */
-    ConfigOperationResult updateThreshold(Long id, SmartBiAlertThreshold threshold);
+    ConfigOperationResult updateThreshold(String id, SmartBiAlertThreshold threshold);
 
     /**
      * 删除告警阈值（软删除）
@@ -101,7 +101,7 @@ public interface SmartBIConfigService {
      * @param id 配置ID
      * @return 删除结果
      */
-    ConfigOperationResult deleteThreshold(Long id);
+    ConfigOperationResult deleteThreshold(String id);
 
     /**
      * 重载告警阈值缓存

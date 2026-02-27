@@ -15,6 +15,7 @@ import {
   SegmentedButtons,
   Menu,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { workSessionApiClient, WorkSession, StartSessionRequest } from '../../services/api/workSessionApiClient';
 import { useAuthStore } from '../../store/authStore';
@@ -215,7 +216,7 @@ export default function WorkSessionManagementScreen() {
 
   if (!canManage) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="工作会话管理" />
@@ -224,12 +225,12 @@ export default function WorkSessionManagementScreen() {
           <List.Icon icon="lock" color="#999" />
           <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="工作会话管理" />
@@ -498,7 +499,7 @@ export default function WorkSessionManagementScreen() {
           label="开始会话"
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

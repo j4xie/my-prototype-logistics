@@ -1,18 +1,25 @@
 package com.cretas.aims.service.impl;
 
+import com.cretas.aims.dto.common.ImportResult;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.production.CreateProductionPlanRequest;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
+import com.cretas.aims.dto.production.ProductionPlanImportDTO;
 import com.cretas.aims.entity.*;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
+import com.cretas.aims.entity.enums.PlanSourceType;
+import com.cretas.aims.entity.enums.ProductionBatchStatus;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.mapper.ProductionPlanMapper;
+import com.cretas.aims.entity.ProductionLine;
+import com.cretas.aims.entity.User;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.service.ProductionPlanService;
 import com.cretas.aims.service.SchedulingService;
+import com.cretas.aims.utils.ExcelUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,6 +48,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     private static final Logger log = LoggerFactory.getLogger(ProductionPlanServiceImpl.class);
 
     private final ProductionPlanRepository productionPlanRepository;
+    private final ProductionBatchRepository productionBatchRepository;
     private final MaterialBatchRepository materialBatchRepository;
     private final MaterialConsumptionRepository materialConsumptionRepository;
     private final ProductionPlanBatchUsageRepository planBatchUsageRepository;
@@ -47,18 +56,26 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     private final ProductionPlanMapper productionPlanMapper;
     private final ConversionRepository conversionRepository;
     private final SchedulingService schedulingService;
+    private final ProductionLineRepository productionLineRepository;
+    private final UserRepository userRepository;
+    private final ExcelUtil excelUtil;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public ProductionPlanServiceImpl(
             ProductionPlanRepository productionPlanRepository,
+            ProductionBatchRepository productionBatchRepository,
             MaterialBatchRepository materialBatchRepository,
             MaterialConsumptionRepository materialConsumptionRepository,
             ProductionPlanBatchUsageRepository planBatchUsageRepository,
             ProductTypeRepository productTypeRepository,
             ProductionPlanMapper productionPlanMapper,
             ConversionRepository conversionRepository,
-            SchedulingService schedulingService) {
+            SchedulingService schedulingService,
+            ProductionLineRepository productionLineRepository,
+            UserRepository userRepository,
+            ExcelUtil excelUtil) {
         this.productionPlanRepository = productionPlanRepository;
+        this.productionBatchRepository = productionBatchRepository;
         this.materialBatchRepository = materialBatchRepository;
         this.materialConsumptionRepository = materialConsumptionRepository;
         this.planBatchUsageRepository = planBatchUsageRepository;
@@ -66,6 +83,9 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         this.productionPlanMapper = productionPlanMapper;
         this.conversionRepository = conversionRepository;
         this.schedulingService = schedulingService;
+        this.productionLineRepository = productionLineRepository;
+        this.userRepository = userRepository;
+        this.excelUtil = excelUtil;
     }
 
     @Override
@@ -512,8 +532,104 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
     @Override
     public byte[] exportProductionPlans(String factoryId, LocalDate startDate, LocalDate endDate) {
-        // TODO: 实现导出功能
-        throw new UnsupportedOperationException("导出功能暂未实现");
+        List<ProductionPlan> plans = productionPlanRepository.findByFactoryId(factoryId);
+        // Filter by date range using expectedCompletionDate
+        List<ProductionPlanImportDTO> exportData = plans.stream()
+                .filter(p -> {
+                    if (startDate == null || endDate == null) return true;
+                    LocalDate date = p.getExpectedCompletionDate();
+                    return date != null && !date.isBefore(startDate) && !date.isAfter(endDate);
+                })
+                .map(this::toImportDTO)
+                .collect(Collectors.toList());
+        return excelUtil.exportToExcel(exportData, ProductionPlanImportDTO.class, "生产计划");
+    }
+
+    @Override
+    public byte[] generateImportTemplate() {
+        return excelUtil.generateTemplate(ProductionPlanImportDTO.class, "生产计划导入模板");
+    }
+
+    @Override
+    @Transactional
+    public ImportResult<ProductionPlanDTO> importProductionPlansFromExcel(String factoryId, InputStream inputStream, Long userId) {
+        List<ProductionPlanImportDTO> excelData;
+        try {
+            excelData = excelUtil.importFromExcel(inputStream, ProductionPlanImportDTO.class);
+        } catch (Exception e) {
+            throw new BusinessException("Excel文件解析失败: " + e.getMessage());
+        }
+
+        ImportResult<ProductionPlanDTO> result = ImportResult.create(excelData.size());
+
+        for (int i = 0; i < excelData.size(); i++) {
+            int rowNumber = i + 2; // Excel row (header is row 1)
+            ProductionPlanImportDTO row = excelData.get(i);
+            try {
+                // Validate required fields
+                if (row.getProductName() == null || row.getProductName().trim().isEmpty()) {
+                    result.addFailure(rowNumber, "产品名称不能为空", toJson(row));
+                    continue;
+                }
+                if (row.getPlannedQuantity() == null) {
+                    result.addFailure(rowNumber, "计划数量不能为空", toJson(row));
+                    continue;
+                }
+                if (row.getExpectedCompletionDate() == null) {
+                    result.addFailure(rowNumber, "预计完成日期不能为空", toJson(row));
+                    continue;
+                }
+
+                // Resolve product name to ID
+                Optional<ProductType> productType = productTypeRepository
+                        .findByFactoryIdAndName(factoryId, row.getProductName().trim());
+                if (!productType.isPresent()) {
+                    result.addFailure(rowNumber, "产品 \"" + row.getProductName() + "\" 不存在", toJson(row));
+                    continue;
+                }
+
+                // Build CreateProductionPlanRequest
+                CreateProductionPlanRequest request = new CreateProductionPlanRequest();
+                request.setProductTypeId(productType.get().getId());
+                request.setPlannedQuantity(row.getPlannedQuantity());
+                request.setPlannedDate(row.getExpectedCompletionDate());
+                request.setExpectedCompletionDate(row.getExpectedCompletionDate());
+                request.setPriority(row.getPriority() != null ? row.getPriority() : 5);
+                request.setCustomerOrderNumber(row.getCustomerOrderNumber());
+                request.setNotes(row.getNotes());
+                request.setEstimatedWorkers(row.getEstimatedWorkers());
+                request.setSourceType(PlanSourceType.EXCEL_IMPORT);
+
+                // Resolve optional production line
+                if (row.getProductionLineCode() != null && !row.getProductionLineCode().trim().isEmpty()) {
+                    Optional<ProductionLine> line = productionLineRepository
+                            .findByFactoryIdAndLineCodeAndDeletedAtIsNull(factoryId, row.getProductionLineCode().trim());
+                    if (line.isPresent()) {
+                        request.setSuggestedProductionLineId(line.get().getId());
+                    } else {
+                        log.warn("第{}行: 产线编号 \"{}\" 未找到，已忽略", rowNumber, row.getProductionLineCode());
+                    }
+                }
+
+                // Resolve optional supervisor username
+                if (row.getSupervisorUsername() != null && !row.getSupervisorUsername().trim().isEmpty()) {
+                    Optional<User> supervisor = userRepository.findByUsername(row.getSupervisorUsername().trim());
+                    if (supervisor.isPresent()) {
+                        request.setAssignedSupervisorId(supervisor.get().getId());
+                    } else {
+                        log.warn("第{}行: 主管用户名 \"{}\" 未找到，已忽略", rowNumber, row.getSupervisorUsername());
+                    }
+                }
+
+                ProductionPlanDTO created = createProductionPlan(factoryId, request, userId);
+                result.addSuccess(created);
+            } catch (Exception e) {
+                result.addFailure(rowNumber, "保存失败: " + e.getMessage(), toJson(row));
+            }
+        }
+
+        log.info("Excel导入完成: 总计={}, 成功={}, 失败={}", result.getTotalCount(), result.getSuccessCount(), result.getFailureCount());
+        return result;
     }
 
     /**
@@ -544,7 +660,19 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     private ProductionPlanDTO toDTOWithConversionInfo(ProductionPlan plan) {
         ProductionPlanDTO dto = productionPlanMapper.toDTO(plan);
         enrichWithConversionRateInfo(dto, plan.getFactoryId(), plan.getProductTypeId());
+        enrichWithAssignmentNames(dto, plan);
         return dto;
+    }
+
+    private void enrichWithAssignmentNames(ProductionPlanDTO dto, ProductionPlan plan) {
+        if (plan.getSuggestedProductionLineId() != null) {
+            productionLineRepository.findById(plan.getSuggestedProductionLineId())
+                .ifPresent(line -> dto.setSuggestedProductionLineName(line.getName()));
+        }
+        if (plan.getAssignedSupervisorId() != null) {
+            userRepository.findById(plan.getAssignedSupervisorId())
+                .ifPresent(user -> dto.setAssignedSupervisorName(user.getFullName()));
+        }
     }
 
     /**
@@ -580,5 +708,116 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
             log.debug("产品类型 {} 未配置转换率", productTypeId);
         }
+    }
+
+    /**
+     * 将对象转为JSON字符串（用于导入失败记录）
+     */
+    private String toJson(Object obj) {
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper()
+                    .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+                    .writeValueAsString(obj);
+        } catch (Exception e) {
+            return obj.toString();
+        }
+    }
+
+    /**
+     * 将生产计划实体转为导入/导出DTO
+     */
+    @Override
+    @Transactional
+    public ProductionBatch createBatchFromPlan(String factoryId, String planId) {
+        ProductionPlan plan = productionPlanRepository.findById(planId)
+                .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", planId));
+
+        if (!plan.getFactoryId().equals(factoryId)) {
+            throw new BusinessException("无权操作该生产计划");
+        }
+        if (plan.getStatus() != ProductionPlanStatus.PENDING) {
+            throw new BusinessException("只有待处理的计划可以转为批次");
+        }
+
+        // 查产品名称
+        String productName = "未知产品";
+        Optional<ProductType> ptOpt = productTypeRepository.findById(plan.getProductTypeId());
+        if (ptOpt.isPresent()) {
+            productName = ptOpt.get().getName();
+        }
+
+        // 生成批次号
+        String batchNumber = "PB-" + plan.getPlanNumber() + "-" + System.currentTimeMillis() % 100000;
+        if (productionBatchRepository.existsByFactoryIdAndBatchNumber(factoryId, batchNumber)) {
+            batchNumber = batchNumber + "-" + (int)(Math.random() * 1000);
+        }
+
+        ProductionBatch batch = ProductionBatch.builder()
+                .factoryId(factoryId)
+                .batchNumber(batchNumber)
+                .productionPlanId(plan.getId())
+                .productTypeId(plan.getProductTypeId())
+                .productName(productName)
+                .plannedQuantity(plan.getPlannedQuantity())
+                .quantity(plan.getPlannedQuantity())
+                .unit("kg")
+                .status(ProductionBatchStatus.PLANNED)
+                .workerCount(plan.getEstimatedWorkers())
+                .notes("从计划 " + plan.getPlanNumber() + " 创建")
+                .createdBy(plan.getCreatedBy())
+                .build();
+
+        // 映射产线建议
+        if (plan.getSuggestedProductionLineId() != null) {
+            productionLineRepository.findById(plan.getSuggestedProductionLineId()).ifPresent(line -> {
+                batch.setEquipmentName(line.getName());
+            });
+        }
+
+        // 映射指派主管
+        if (plan.getAssignedSupervisorId() != null) {
+            batch.setSupervisorId(plan.getAssignedSupervisorId());
+            userRepository.findById(plan.getAssignedSupervisorId()).ifPresent(user -> {
+                batch.setSupervisorName(user.getFullName());
+            });
+        }
+
+        ProductionBatch saved = productionBatchRepository.save(batch);
+
+        // 更新计划状态为 IN_PROGRESS
+        plan.setStatus(ProductionPlanStatus.IN_PROGRESS);
+        plan.setStartTime(LocalDateTime.now());
+        productionPlanRepository.save(plan);
+
+        log.info("从计划创建批次: planId={}, batchId={}, batchNumber={}", planId, saved.getId(), saved.getBatchNumber());
+        return saved;
+    }
+
+    private ProductionPlanImportDTO toImportDTO(ProductionPlan plan) {
+        ProductionPlanImportDTO dto = new ProductionPlanImportDTO();
+        // Resolve product name
+        if (plan.getProductType() != null) {
+            dto.setProductName(plan.getProductType().getName());
+        } else {
+            productTypeRepository.findById(plan.getProductTypeId())
+                    .ifPresent(pt -> dto.setProductName(pt.getName()));
+        }
+        dto.setPlannedQuantity(plan.getPlannedQuantity());
+        dto.setExpectedCompletionDate(plan.getExpectedCompletionDate());
+        dto.setPriority(plan.getPriority());
+        dto.setEstimatedWorkers(plan.getEstimatedWorkers());
+        dto.setCustomerOrderNumber(plan.getCustomerOrderNumber());
+        dto.setNotes(plan.getNotes());
+        // Resolve production line code
+        if (plan.getSuggestedProductionLineId() != null) {
+            productionLineRepository.findById(plan.getSuggestedProductionLineId())
+                    .ifPresent(line -> dto.setProductionLineCode(line.getLineCode()));
+        }
+        // Resolve supervisor username
+        if (plan.getAssignedSupervisorId() != null) {
+            userRepository.findById(plan.getAssignedSupervisorId())
+                    .ifPresent(user -> dto.setSupervisorUsername(user.getUsername()));
+        }
+        return dto;
     }
 }

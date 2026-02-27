@@ -24,6 +24,7 @@ import {
   Divider,
   SegmentedButtons,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import {
   sopConfigApiClient,
@@ -356,7 +357,7 @@ export default function SopConfigScreen() {
   // 无权限界面
   if (!canManage) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="SOP 配置管理" />
@@ -368,12 +369,12 @@ export default function SopConfigScreen() {
             仅限工厂超管、权限管理员和部门管理员
           </Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -810,7 +811,7 @@ export default function SopConfigScreen() {
         onPress={handleAdd}
         label="添加SOP配置"
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

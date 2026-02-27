@@ -10,6 +10,7 @@ import time
 from typing import Optional, List, Dict, Any
 
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from services.excel_parser import ExcelParser
@@ -229,6 +230,14 @@ async def list_sheets_detailed(file: UploadFile = File(...)):
                 )
 
             sheets.append(sheet_info)
+
+        # D6: Trigger background precomputation (fire-and-forget)
+        # Primes StructureAnalysisCache so "Analyze" is instant
+        try:
+            from smartbi.services.precompute import trigger_precompute
+            asyncio.create_task(trigger_precompute(content, filename))
+        except Exception:
+            pass  # Never block the response
 
         return ListSheetsResponse(
             success=True,
@@ -2955,6 +2964,75 @@ async def analyze_workbook(
             error="Excel处理失败，请检查文件格式后重试",
             processingTimeMs=int((time.time() - start_time) * 1000)
         )
+
+
+@router.post("/analyze-workbook-stream")
+async def analyze_workbook_stream(
+    file: UploadFile = File(...),
+    question: Optional[str] = Form(None),
+    max_parallel: int = Form(3)
+):
+    """
+    Analyze all sheets in an Excel workbook via SSE stream.
+
+    Yields SSE events as each sheet analysis completes, enabling
+    progressive rendering on the frontend instead of waiting for all sheets.
+
+    SSE events:
+    - event: start   — {total_sheets, sheet_names}
+    - event: sheet   — {sheet_index, sheet_name, result, progress}
+    - event: sheet_error — {error}
+    - event: done    — {total_sheets, success_count, error_count, processing_time_ms}
+    """
+    import json
+
+    filename = file.filename or ""
+    ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
+    if ext not in [".xlsx", ".xls"]:
+        raise HTTPException(status_code=400, detail="Supported file types: .xlsx, .xls")
+
+    content = await file.read()
+    logger.info(f"Analyze workbook stream: {filename}, size={len(content)}")
+
+    from services.unified_analyzer import UnifiedAnalyzer, AnalysisOptions
+
+    async def event_generator():
+        analyzer = UnifiedAnalyzer()
+        try:
+            options = AnalysisOptions()
+            async for event in analyzer.analyze_all_sheets_stream(
+                file_bytes=content,
+                question=question,
+                options=options,
+                max_parallel=max_parallel
+            ):
+                evt_type = event.get("event", "info")
+                evt_data = event.get("data", {})
+
+                # Convert dataclass results to dicts for JSON serialization
+                if evt_type == "sheet" and "result" in evt_data:
+                    result_obj = evt_data["result"]
+                    if hasattr(result_obj, "to_dict"):
+                        evt_data = {**evt_data, "result": result_obj.to_dict()}
+
+                safe_data = json.dumps(evt_data, ensure_ascii=False, default=str)
+                yield f"event: {evt_type}\ndata: {safe_data}\n\n"
+        except Exception as e:
+            logger.error(f"Workbook stream error: {e}", exc_info=True)
+            err_data = json.dumps({"error": str(e)}, ensure_ascii=False)
+            yield f"event: error\ndata: {err_data}\n\n"
+        finally:
+            await analyzer.close()
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
 
 
 # ==================== Upload History ====================

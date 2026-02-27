@@ -48,9 +48,11 @@ public class Department extends BaseEntity {
     private Integer parentDepartmentId;
 
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
 
     @Column(name = "display_order", nullable = false)
+    @Builder.Default
     private Integer displayOrder = 0;
 
     @Column(name = "color", length = 20)

@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   statusCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 20,
   },

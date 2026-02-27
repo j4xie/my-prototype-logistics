@@ -49,6 +49,7 @@ public class MixedBatchRule extends BaseEntity {
      * 是否启用
      */
     @Column(name = "is_enabled")
+    @Builder.Default
     private Boolean isEnabled = true;
 
     /**
@@ -56,6 +57,7 @@ public class MixedBatchRule extends BaseEntity {
      * 只有交期间隔在此范围内的订单才会被考虑合并
      */
     @Column(name = "max_deadline_gap_hours")
+    @Builder.Default
     private Integer maxDeadlineGapHours = 24;
 
     /**
@@ -63,6 +65,7 @@ public class MixedBatchRule extends BaseEntity {
      * 只有节省时间超过此阈值才推荐合并
      */
     @Column(name = "min_switch_saving_minutes")
+    @Builder.Default
     private Integer minSwitchSavingMinutes = 10;
 
     /**
@@ -70,6 +73,7 @@ public class MixedBatchRule extends BaseEntity {
      * SAME_PROCESS 类型使用，相似度超过此值才可合并
      */
     @Column(name = "process_similarity_threshold", precision = 3, scale = 2)
+    @Builder.Default
     private BigDecimal processSimilarityThreshold = new BigDecimal("0.80");
 
     /**
@@ -77,6 +81,7 @@ public class MixedBatchRule extends BaseEntity {
      * 单个混批组最多合并的订单数量
      */
     @Column(name = "max_orders_per_group")
+    @Builder.Default
     private Integer maxOrdersPerGroup = 10;
 
     /**
@@ -91,6 +96,7 @@ public class MixedBatchRule extends BaseEntity {
      * 开启后满足条件的订单会自动创建混批组
      */
     @Column(name = "auto_merge")
+    @Builder.Default
     private Boolean autoMerge = false;
 
     /**
@@ -98,6 +104,7 @@ public class MixedBatchRule extends BaseEntity {
      * 开启后确认混批需要审批流程
      */
     @Column(name = "require_approval")
+    @Builder.Default
     private Boolean requireApproval = false;
 
     /**

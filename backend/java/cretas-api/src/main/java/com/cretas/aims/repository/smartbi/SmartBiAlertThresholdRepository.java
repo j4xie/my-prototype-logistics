@@ -22,7 +22,7 @@ import java.util.Optional;
  * @since 2026-01-21
  */
 @Repository
-public interface SmartBiAlertThresholdRepository extends JpaRepository<SmartBiAlertThreshold, Long> {
+public interface SmartBiAlertThresholdRepository extends JpaRepository<SmartBiAlertThreshold, String> {
 
     /**
      * 按阈值类型查找所有启用的阈值配置

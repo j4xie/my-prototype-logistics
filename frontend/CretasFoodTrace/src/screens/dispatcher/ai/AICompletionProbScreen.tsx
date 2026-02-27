@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
   gaugeCard: {
     backgroundColor: '#fff',
     margin: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 30,
     alignItems: 'center',
     shadowColor: DISPATCHER_THEME.primary,
@@ -887,7 +887,7 @@ const styles = StyleSheet.create({
   insightIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },

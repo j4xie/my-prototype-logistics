@@ -90,6 +90,13 @@ export interface ProductionPlan {
   actualEquipmentCost?: number;   // 实际设备成本
   estimatedOtherCost?: number;    // 预估其他成本
   actualOtherCost?: number;       // 实际其他成本
+
+  // AI建议字段 (Phase 4 import + AI)
+  suggestedProductionLineId?: string;   // 建议生产线ID
+  suggestedProductionLineName?: string;  // 建议生产线名称
+  estimatedWorkers?: number;             // 预估所需工人数
+  assignedSupervisorId?: number;         // 指定主管ID
+  assignedSupervisorName?: string;       // 指定主管姓名
 }
 
 /**
@@ -174,6 +181,38 @@ export interface StockSummary {
   }>;
 }
 
+/**
+ * Excel导入结果
+ */
+export interface ImportResult<T = any> {
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  successData: T[];
+  failureDetails: Array<{
+    rowNumber: number;
+    reason: string;
+    rawData: string;
+  }>;
+  isFullSuccess: boolean;
+}
+
+/**
+ * 创建生产计划请求 (含AI建议字段)
+ */
+export interface CreateProductionPlanRequest {
+  planType?: 'FUTURE' | 'FROM_INVENTORY';
+  productTypeId: string;
+  customerId: string;
+  plannedQuantity: number;
+  plannedDate?: string;
+  expectedCompletionDate?: string;
+  notes?: string;
+  suggestedProductionLineId?: string;
+  estimatedWorkers?: number;
+  assignedSupervisorId?: number;
+}
+
 class ProductionPlanApiClient {
   private getPath(factoryId?: string) {
     const currentFactoryId = getCurrentFactoryId(factoryId);
@@ -247,6 +286,39 @@ class ProductionPlanApiClient {
   // 11. 获取待执行的计划
   async getPendingExecutionPlans(factoryId?: string): Promise<ApiResponse<ProductionPlan[]>> {
     return await apiClient.get(`${this.getPath(factoryId)}/pending-execution`);
+  }
+
+  // ===== Excel导入导出 (3个API) =====
+
+  // 12. 下载导入模板
+  async downloadImportTemplate(factoryId?: string): Promise<Blob> {
+    const response = await apiClient.get<any>(
+      `${this.getPath(factoryId)}/import-template`,
+      { responseType: 'blob' }
+    );
+    return response.data;
+  }
+
+  // 13. 从Excel导入
+  async importFromExcel(factoryId: string, formData: FormData): Promise<ApiResponse<ImportResult<ProductionPlan>>> {
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return await apiClient.post(
+      `/api/mobile/${currentFactoryId}/production-plans/import`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+  }
+
+  // 14. 导出生产计划
+  async exportProductionPlans(factoryId?: string): Promise<Blob> {
+    const response = await apiClient.get<any>(
+      `${this.getPath(factoryId)}/export`,
+      { responseType: 'blob' }
+    );
+    return response.data;
   }
 
   // ===== 库存辅助 (1个方法) =====

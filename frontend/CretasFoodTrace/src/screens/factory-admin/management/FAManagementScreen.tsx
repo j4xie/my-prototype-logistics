@@ -3,7 +3,8 @@
  * 包含: 员工管理、设备管理等9宫格入口
  */
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
@@ -39,7 +40,7 @@ export function FAManagementScreen() {
   const isRestaurantMode = isRestaurant(user);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>

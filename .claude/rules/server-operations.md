@@ -1,6 +1,6 @@
 # 服务器运维规范
 
-**最后更新**: 2026-02-24
+**最后更新**: 2026-02-28
 
 ## 服务器架构
 
@@ -73,11 +73,17 @@ bash restart.sh test      # 仅测试
 /www/wwwroot/
 ├── cretas/                          # Cretas 食品溯源 (主项目)
 │   ├── aims-0.0.1-SNAPSHOT.jar      # Java 后端 JAR (两套共享)
+│   ├── .env.prod                    # 生产环境变量 (DB密码/JWT/LLM Key)
 │   ├── restart.sh                   # 入口: 调用 prod + test
-│   ├── restart-prod.sh              # 生产环境启动 (10010+8083)
+│   ├── restart-prod.sh              # 生产环境启动 (systemd 版)
 │   ├── restart-test.sh              # 测试环境启动 (10011+8084)
 │   ├── cretas-prod.log              # 生产 Java 日志
 │   ├── cretas-test.log              # 测试 Java 日志
+│   ├── embedding-service/           # gRPC 向量嵌入服务
+│   │   ├── embedding-service-1.0.0.jar
+│   │   └── embedding-service.log
+│   ├── models/                      # ONNX 模型文件
+│   │   └── gte-base-zh-finetuned-onnx-fixed/
 │   └── code/backend/python/         # Python 服务代码 (两套共享)
 ├── web-admin/                       # Web 前端 (Vue dist)
 └── python-services/                 # Python 独立服务 (food_kb)
@@ -85,15 +91,62 @@ bash restart.sh test      # 仅测试
 
 ---
 
-## 服务管理
+## 服务管理 (systemd)
 
-| 服务 | 端口 | 管理方式 | 命令 |
-|------|------|----------|------|
-| Java+Python 生产 | 10010+8083 | 脚本 | `bash /www/wwwroot/cretas/restart.sh prod` |
-| Java+Python 测试 | 10011+8084 | 脚本 | `bash /www/wwwroot/cretas/restart.sh test` |
-| PostgreSQL | 5432 | systemd | `systemctl restart postgresql` |
-| Redis | 6379 | systemd | `systemctl restart redis` |
-| Nginx | 8088 | systemd | `systemctl restart nginx` |
+**生产环境所有服务均由 systemd 管理，开机自启 + 崩溃自动重启。**
+
+| 服务 | 端口 | systemd 服务名 | 状态 |
+|------|------|---------------|------|
+| gRPC Embedding | 9090 | `cretas-embedding` | enabled |
+| Java 后端 | 10010 | `cretas-backend` | enabled |
+| Python 服务 | 8083 | `cretas-python` | enabled |
+| Redis | 6379 | `redis` | enabled |
+| PostgreSQL | 5432 | `postgresql` | enabled |
+
+### 启动依赖链
+
+```
+redis(6379) ─┐
+postgresql ──┤
+              ├─ cretas-embedding(9090) ─→ cretas-backend(10010)
+              └─ cretas-python(8083)
+```
+
+Java 后端依赖 Embedding 服务 (`After=cretas-embedding.service`)。
+
+### systemd 配置文件
+
+| 文件 | 位置 |
+|------|------|
+| `cretas-embedding.service` | `/etc/systemd/system/` |
+| `cretas-backend.service` | `/etc/systemd/system/` — 使用 `EnvironmentFile=/www/wwwroot/cretas/.env.prod` |
+| `cretas-python.service` | `/etc/systemd/system/` — 环境变量内联 |
+
+### 常用管理命令
+
+```bash
+# 查看状态
+systemctl status cretas-backend cretas-python cretas-embedding
+
+# 重启单个服务
+systemctl restart cretas-backend
+
+# 重启全部生产服务 (按依赖顺序)
+bash /www/wwwroot/cretas/restart.sh prod
+
+# 实时日志
+journalctl -u cretas-backend -f
+
+# 测试环境 (仍使用脚本管理)
+bash /www/wwwroot/cretas/restart.sh test
+```
+
+### 环境变量管理
+
+- 生产环境变量集中在 `/www/wwwroot/cretas/.env.prod` (权限 600)
+- Java 服务通过 `EnvironmentFile` 引用
+- Python 服务通过 `Environment=` 内联（含 LLM 模型分配）
+- **修改模型配置后**需同时更新 systemd service 文件和 `.env.prod`，然后 `systemctl daemon-reload`
 
 ---
 
@@ -106,18 +159,18 @@ curl -s http://47.100.235.168:10011/api/mobile/health   # 测试 Java
 curl -s http://47.100.235.168:8083/health                # 生产 Python
 curl -s http://47.100.235.168:8084/health                # 测试 Python
 
-# 查看进程
-ssh root@47.100.235.168 "ps aux | grep -E 'java|uvicorn' | grep -v grep"
+# systemd 状态
+ssh root@47.100.235.168 "systemctl status cretas-backend cretas-python cretas-embedding --no-pager"
 
-# 端口监听
-ssh root@47.100.235.168 "ss -tlnp | grep -E '10010|10011|8083|8084'"
+# 端口监听 (含 9090 Embedding)
+ssh root@47.100.235.168 "ss -tlnp | grep -E '10010|10011|8083|8084|9090|6379'"
 
 # 磁盘和内存
 ssh root@47.100.235.168 "df -h && echo '---' && free -h"
 
 # 查看日志
 ssh root@47.100.235.168 "tail -100 /www/wwwroot/cretas/cretas-prod.log"
-ssh root@47.100.235.168 "tail -100 /www/wwwroot/cretas/cretas-test.log"
+ssh root@47.100.235.168 "journalctl -u cretas-backend --since '5 min ago' --no-pager"
 ```
 
 ---
@@ -148,3 +201,5 @@ ssh root@47.100.235.168 "tail -100 /www/wwwroot/cretas/cretas-test.log"
 6. **Showcase 只部署到 139**: 不要向 47 传 showcase 文件，47 是纯后端服务器
 7. **文件传输使用 `rsync`，不用 `scp`** — rsync 支持增量传输、断点续传，效率更高
 8. **两套环境共享 JAR + Python 代码**: 部署一次代码后按需重启对应环境
+9. **修改 systemd 服务文件后**: 必须 `systemctl daemon-reload` 再 `systemctl restart <service>`
+10. **生产环境变量**: 集中在 `.env.prod`，修改后需重启对应服务才生效

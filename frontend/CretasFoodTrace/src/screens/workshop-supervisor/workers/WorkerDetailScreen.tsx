@@ -6,10 +6,10 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +21,7 @@ export function WorkerDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
   const { t } = useTranslation('workshop');
+  const insets = useSafeAreaInsets();
 
   // 模拟员工数据
   const worker = {
@@ -57,9 +58,9 @@ export function WorkerDetailScreen() {
   const overallGrade = getEfficiencyGrade(worker.efficiency.overall);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* 头部 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
@@ -221,7 +222,7 @@ export function WorkerDetailScreen() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

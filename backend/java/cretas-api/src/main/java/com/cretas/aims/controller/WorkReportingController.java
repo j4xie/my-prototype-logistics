@@ -4,8 +4,10 @@ import com.cretas.aims.dto.CheckinRequest;
 import com.cretas.aims.dto.CheckoutRequest;
 import com.cretas.aims.dto.WorkReportSubmitRequest;
 import com.cretas.aims.dto.WorkReportResponse;
+import com.cretas.aims.dto.batch.CheckinWorkerDTO;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.BatchWorkSession;
+import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.config.FormTemplate;
 import com.cretas.aims.repository.BatchWorkSessionRepository;
 import com.cretas.aims.repository.FormTemplateRepository;
@@ -26,8 +28,10 @@ import com.cretas.aims.annotation.RequirePermission;
 import javax.validation.Valid;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -170,13 +174,30 @@ public class WorkReportingController {
     }
 
     @GetMapping("/checkin/batch/{batchId}")
-    @Operation(summary = "批次签到列表")
+    @Operation(summary = "批次签到列表", description = "返回已签到工人详情（姓名、岗位、工种）")
     @RequirePermission("work_report:read")
-    public ApiResponse<List<BatchWorkSession>> getCheckinList(
+    public ApiResponse<List<CheckinWorkerDTO>> getCheckinList(
             @PathVariable String factoryId,
             @PathVariable Long batchId) {
-        List<BatchWorkSession> sessions = batchWorkSessionRepository.findByBatchId(batchId);
-        return ApiResponse.success(sessions);
+        List<BatchWorkSession> sessions = batchWorkSessionRepository.findByBatchIdWithEmployees(batchId);
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        List<CheckinWorkerDTO> dtos = sessions.stream().map(s -> {
+            User emp = s.getEmployee();
+            return CheckinWorkerDTO.builder()
+                    .sessionId(s.getId())
+                    .batchId(s.getBatchId())
+                    .employeeId(s.getEmployeeId())
+                    .fullName(emp != null ? emp.getFullName() : null)
+                    .position(emp != null ? emp.getPosition() : null)
+                    .hireType(emp != null && emp.getHireType() != null ? emp.getHireType().name() : null)
+                    .hireTypeLabel(emp != null && emp.getHireType() != null ? emp.getHireType().getDisplayName() : null)
+                    .checkinMethod(s.getCheckinMethod())
+                    .checkInTime(s.getCheckInTime() != null ? s.getCheckInTime().format(fmt) : null)
+                    .checkOutTime(s.getCheckOutTime() != null ? s.getCheckOutTime().format(fmt) : null)
+                    .status(s.getStatus())
+                    .build();
+        }).collect(Collectors.toList());
+        return ApiResponse.success(dtos);
     }
 
     @GetMapping("/checkin/today")

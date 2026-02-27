@@ -17,6 +17,7 @@ import {
   Menu,
   Divider,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { materialTypeApiClient, MaterialType, CreateMaterialTypeRequest } from '../../services/api/materialTypeApiClient';
 import { materialSpecApiClient, DEFAULT_SPEC_CONFIG, SpecConfig } from '../../services/api/materialSpecApiClient';
@@ -283,7 +284,7 @@ export default function MaterialTypeManagementScreen() {
 
   if (!canManage) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="原材料类型管理" />
@@ -293,12 +294,12 @@ export default function MaterialTypeManagementScreen() {
           <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
           <Text style={styles.noPermissionHint}>仅限工厂超管、权限管理员和部门管理员</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -621,7 +622,7 @@ export default function MaterialTypeManagementScreen() {
           label="添加原材料类型"
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

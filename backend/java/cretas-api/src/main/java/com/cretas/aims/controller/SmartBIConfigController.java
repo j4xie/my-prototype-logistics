@@ -176,7 +176,7 @@ public class SmartBIConfigController {
     @PutMapping("/thresholds/{id}")
     @Operation(summary = "更新告警阈值", description = "更新指定的告警阈值配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> updateThreshold(
-            @Parameter(description = "配置ID") @PathVariable Long id,
+            @Parameter(description = "配置ID") @PathVariable String id,
             @RequestBody @Valid SmartBiAlertThreshold threshold) {
 
         log.info("更新告警阈值: id={}", id);
@@ -196,7 +196,7 @@ public class SmartBIConfigController {
     @DeleteMapping("/thresholds/{id}")
     @Operation(summary = "删除告警阈值", description = "删除指定的告警阈值配置（软删除）")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> deleteThreshold(
-            @Parameter(description = "配置ID") @PathVariable Long id) {
+            @Parameter(description = "配置ID") @PathVariable String id) {
 
         log.info("删除告警阈值: id={}", id);
         try {

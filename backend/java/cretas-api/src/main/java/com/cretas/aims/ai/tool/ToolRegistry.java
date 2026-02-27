@@ -147,6 +147,60 @@ public class ToolRegistry {
     }
 
     /**
+     * 按工具名称前缀过滤，获取指定领域的工具定义
+     *
+     * <p>用于 Tool Calling 场景下的领域过滤：只发送与用户查询相关的工具给 LLM，
+     * 而不是全部 136 个工具。可将 LLM 处理时间从 ~10s 降低到 ~3s。</p>
+     *
+     * @param toolPrefixes 工具名称前缀集合（如 "material_", "report_"）
+     * @param alwaysIncludePrefixes 始终包含的前缀（如元工具 "create_new_"）
+     * @param userRole 用户角色（用于权限过滤）
+     * @return 过滤后的工具列表
+     */
+    public List<Tool> getToolDefinitionsForDomains(
+            Set<String> toolPrefixes,
+            Set<String> alwaysIncludePrefixes,
+            String userRole) {
+        List<Tool> tools = new ArrayList<>();
+        for (ToolExecutor executor : toolMap.values()) {
+            // 权限检查
+            if (executor.requiresPermission() && !executor.hasPermission(userRole)) {
+                continue;
+            }
+
+            String toolName = executor.getToolName();
+            boolean matched = false;
+
+            // 检查是否匹配领域前缀
+            for (String prefix : toolPrefixes) {
+                if (toolName.startsWith(prefix)) {
+                    matched = true;
+                    break;
+                }
+            }
+
+            // 检查是否是始终包含的工具
+            if (!matched && alwaysIncludePrefixes != null) {
+                for (String prefix : alwaysIncludePrefixes) {
+                    if (toolName.startsWith(prefix)) {
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+
+            if (matched) {
+                tools.add(Tool.of(
+                        executor.getToolName(),
+                        executor.getDescription(),
+                        executor.getParametersSchema()
+                ));
+            }
+        }
+        return tools;
+    }
+
+    /**
      * 获取工具数量统计
      *
      * @return 工具数量

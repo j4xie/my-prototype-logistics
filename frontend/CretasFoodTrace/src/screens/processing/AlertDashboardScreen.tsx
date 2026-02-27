@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl,
-  ActivityIndicator, SafeAreaView, Alert,
+  ActivityIndicator, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { apiClient } from '../../services/api/apiClient';
@@ -150,7 +151,7 @@ const AlertDashboardScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <FlatList
         data={alerts}
         keyExtractor={item => item.id.toString()}

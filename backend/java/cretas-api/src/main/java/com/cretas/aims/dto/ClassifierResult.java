@@ -38,6 +38,21 @@ public class ClassifierResult {
     private long latencyMs;
 
     /**
+     * v35.0: Shannon entropy — 高值表示概率分散，模型不确定
+     */
+    private Double entropy;
+
+    /**
+     * v35.0: Top1 - Top2 概率差 — 低值表示前两个候选差距小
+     */
+    private Double margin;
+
+    /**
+     * v35.0: Softmax 前最大原始 logit — 低值表示无强神经元激活
+     */
+    private Double maxLogit;
+
+    /**
      * Top-K 预测列表
      */
     private List<PredictionEntry> predictions = new ArrayList<>();

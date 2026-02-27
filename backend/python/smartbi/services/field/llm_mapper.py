@@ -13,8 +13,11 @@ For field-to-field mapping, use:
 This service focuses on higher-level decisions about WHICH sheets to analyze
 and WHAT charts to recommend, rather than individual field mapping.
 """
+import hashlib
 import logging
 import json
+import time
+from dataclasses import dataclass, field
 from typing import Any, Optional, List, Dict
 
 import httpx
@@ -22,6 +25,104 @@ import httpx
 from config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class FieldMappingCacheEntry:
+    """Cache entry for field mapping / sheet analysis / chart recommendation results"""
+    cache_key: str
+    results: Any
+    created_at: float
+    accessed_at: float
+    access_count: int = 1
+
+
+class FieldMappingCache:
+    """
+    Cache for LLM mapper results (sheet analysis, field mapping, chart recommendation).
+
+    Uses MD5 of sorted column names + data types as cache key,
+    with TTL expiry and LRU eviction.
+    """
+
+    def __init__(self, ttl_seconds: int = 3600, max_entries: int = 500):
+        self._cache: Dict[str, FieldMappingCacheEntry] = {}
+        self._ttl_seconds = ttl_seconds
+        self._max_entries = max_entries
+
+    def _generate_key(self, parts: List[str]) -> str:
+        """Generate cache key from sorted parts via MD5."""
+        normalized = sorted(p.lower().strip() for p in parts if p)
+        signature = "|".join(normalized)
+        return hashlib.md5(signature.encode()).hexdigest()[:16]
+
+    def get(self, parts: List[str]) -> Optional[Any]:
+        """Get cached result if available and not expired."""
+        cache_key = self._generate_key(parts)
+        entry = self._cache.get(cache_key)
+
+        if entry is None:
+            return None
+
+        if time.time() - entry.created_at > self._ttl_seconds:
+            del self._cache[cache_key]
+            return None
+
+        entry.accessed_at = time.time()
+        entry.access_count += 1
+
+        logger.debug(f"FieldMappingCache hit: {cache_key}")
+        return entry.results
+
+    def set(self, parts: List[str], results: Any) -> str:
+        """Cache a result. Returns the cache key."""
+        cache_key = self._generate_key(parts)
+
+        entry = FieldMappingCacheEntry(
+            cache_key=cache_key,
+            results=results,
+            created_at=time.time(),
+            accessed_at=time.time(),
+        )
+
+        self._cache[cache_key] = entry
+
+        if len(self._cache) > self._max_entries:
+            self._evict_old_entries()
+
+        logger.debug(f"FieldMappingCache stored: {cache_key}")
+        return cache_key
+
+    def _evict_old_entries(self):
+        """Remove least-recently-accessed entries when cache is full."""
+        if len(self._cache) <= self._max_entries:
+            return
+
+        sorted_keys = sorted(
+            self._cache.keys(),
+            key=lambda k: self._cache[k].accessed_at,
+        )
+
+        to_remove = max(1, len(sorted_keys) // 10)
+        for key in sorted_keys[:to_remove]:
+            del self._cache[key]
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get cache statistics."""
+        now = time.time()
+        active = [
+            e for e in self._cache.values()
+            if now - e.created_at < self._ttl_seconds
+        ]
+        return {
+            "total_entries": len(self._cache),
+            "active_entries": len(active),
+            "total_hits": sum(e.access_count - 1 for e in self._cache.values()),
+        }
+
+    def clear(self):
+        """Clear all cache entries."""
+        self._cache.clear()
 
 
 class LLMMapper:
@@ -70,7 +171,12 @@ class LLMMapper:
 
     def __init__(self):
         self.settings = get_settings()
-        self.client = httpx.AsyncClient(timeout=60.0)
+        self._cache = FieldMappingCache()
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        from common.llm_client import get_llm_http_client
+        return get_llm_http_client()
 
     async def analyze_sheets(
         self,
@@ -85,17 +191,32 @@ class LLMMapper:
         Returns:
             Analysis results with recommended sheets and data types
         """
+        # Build cache key from sheet names + column counts
+        cache_parts = [
+            f"{s.get('name', '')}:{s.get('columnCount', 0)}"
+            for s in sheets_info
+        ]
+        cached = self._cache.get(cache_parts)
+        if cached is not None:
+            logger.info(f"analyze_sheets cache hit ({len(sheets_info)} sheets)")
+            return cached
+
         if not self.settings.llm_api_key:
-            return self._rule_based_sheet_analysis(sheets_info)
+            result = self._rule_based_sheet_analysis(sheets_info)
+            self._cache.set(cache_parts, result)
+            return result
 
         prompt = self._build_sheet_analysis_prompt(sheets_info)
 
         try:
             response = await self._call_llm(prompt)
-            return self._parse_sheet_analysis_response(response, sheets_info)
+            result = self._parse_sheet_analysis_response(response, sheets_info)
         except Exception as e:
             logger.error(f"LLM sheet analysis failed, using rule-based: {e}")
-            return self._rule_based_sheet_analysis(sheets_info)
+            result = self._rule_based_sheet_analysis(sheets_info)
+
+        self._cache.set(cache_parts, result)
+        return result
 
     def _build_sheet_analysis_prompt(self, sheets_info: List[dict]) -> str:
         """Build prompt for sheet analysis"""
@@ -267,18 +388,35 @@ class LLMMapper:
         Returns:
             Field mapping results
         """
+        # Build cache key from field names + data types
+        cache_parts = [
+            f"{f['fieldName']}:{f.get('dataType', '')}"
+            for f in detected_fields
+        ]
+        if context:
+            cache_parts.append(f"ctx:{context}")
+        cached = self._cache.get(cache_parts)
+        if cached is not None:
+            logger.info(f"map_fields cache hit ({len(detected_fields)} fields)")
+            return cached
+
         if not self.settings.llm_api_key:
             # Fallback to rule-based mapping
-            return self._rule_based_mapping(detected_fields)
+            result = self._rule_based_mapping(detected_fields)
+            self._cache.set(cache_parts, result)
+            return result
 
         prompt = self._build_mapping_prompt(detected_fields, context)
 
         try:
             response = await self._call_llm(prompt)
-            return self._parse_mapping_response(response, detected_fields)
+            result = self._parse_mapping_response(response, detected_fields)
         except Exception as e:
             logger.error(f"LLM mapping failed, using rule-based: {e}")
-            return self._rule_based_mapping(detected_fields)
+            result = self._rule_based_mapping(detected_fields)
+
+        self._cache.set(cache_parts, result)
+        return result
 
     async def recommend_chart_config(
         self,
@@ -295,17 +433,34 @@ class LLMMapper:
         Returns:
             Chart configuration recommendation
         """
+        # Build cache key from field names + chart roles
+        cache_parts = [
+            f"{f['fieldName']}:{f.get('chartRole', '')}"
+            for f in detected_fields
+        ]
+        if analysis_goal:
+            cache_parts.append(f"goal:{analysis_goal}")
+        cached = self._cache.get(cache_parts)
+        if cached is not None:
+            logger.info(f"recommend_chart_config cache hit ({len(detected_fields)} fields)")
+            return cached
+
         if not self.settings.llm_api_key:
-            return self._rule_based_chart_recommendation(detected_fields)
+            result = self._rule_based_chart_recommendation(detected_fields)
+            self._cache.set(cache_parts, result)
+            return result
 
         prompt = self._build_chart_prompt(detected_fields, analysis_goal)
 
         try:
             response = await self._call_llm(prompt)
-            return self._parse_chart_response(response, detected_fields)
+            result = self._parse_chart_response(response, detected_fields)
         except Exception as e:
             logger.error(f"LLM chart recommendation failed: {e}")
-            return self._rule_based_chart_recommendation(detected_fields)
+            result = self._rule_based_chart_recommendation(detected_fields)
+
+        self._cache.set(cache_parts, result)
+        return result
 
     async def _call_llm(self, prompt: str) -> str:
         """Call LLM API"""
@@ -315,7 +470,7 @@ class LLMMapper:
         }
 
         payload = {
-            "model": self.settings.llm_model,
+            "model": self.settings.llm_mapper_model,
             "messages": [
                 {
                     "role": "system",
@@ -327,13 +482,15 @@ class LLMMapper:
                 }
             ],
             "temperature": 0.3,
-            "max_tokens": 2000
+            "max_tokens": 2000,
+            "enable_thinking": False
         }
 
         response = await self.client.post(
             f"{self.settings.llm_base_url}/chat/completions",
             headers=headers,
-            json=payload
+            json=payload,
+            timeout=httpx.Timeout(30.0),
         )
         response.raise_for_status()
 
@@ -632,6 +789,14 @@ class LLMMapper:
             "method": "rule_based"
         }
 
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """Get cache statistics."""
+        return self._cache.get_stats()
+
+    def clear_cache(self):
+        """Clear the mapping cache."""
+        self._cache.clear()
+
     async def close(self):
-        """Close HTTP client"""
-        await self.client.aclose()
+        """No-op: shared client lifecycle managed by main.py lifespan"""
+        pass

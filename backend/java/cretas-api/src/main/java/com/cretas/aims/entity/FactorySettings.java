@@ -71,18 +71,21 @@ public class FactorySettings extends BaseEntity {
      * 是否允许自注册
      */
     @Column(name = "allow_self_registration")
+    @Builder.Default
     private Boolean allowSelfRegistration = false;
 
     /**
      * 是否需要管理员审批
      */
     @Column(name = "require_admin_approval")
+    @Builder.Default
     private Boolean requireAdminApproval = true;
 
     /**
      * 默认用户角色
      */
     @Column(name = "default_user_role", length = 50)
+    @Builder.Default
     private String defaultUserRole = "viewer";
 
     // ==================== 通知设置 ====================
@@ -127,24 +130,28 @@ public class FactorySettings extends BaseEntity {
      * 语言设置
      */
     @Column(name = "language", length = 10)
+    @Builder.Default
     private String language = "zh-CN";
 
     /**
      * 时区设置
      */
     @Column(name = "timezone", length = 50)
+    @Builder.Default
     private String timezone = "Asia/Shanghai";
 
     /**
      * 日期格式
      */
     @Column(name = "date_format", length = 20)
+    @Builder.Default
     private String dateFormat = "yyyy-MM-dd";
 
     /**
      * 货币符号
      */
     @Column(name = "currency", length = 10)
+    @Builder.Default
     private String currency = "CNY";
 
     // ==================== 功能开关 ====================
@@ -152,36 +159,42 @@ public class FactorySettings extends BaseEntity {
      * 是否启用QR码功能
      */
     @Column(name = "enable_qr_code")
+    @Builder.Default
     private Boolean enableQrCode = true;
 
     /**
      * 是否启用批次管理
      */
     @Column(name = "enable_batch_management")
+    @Builder.Default
     private Boolean enableBatchManagement = true;
 
     /**
      * 是否启用质量检测
      */
     @Column(name = "enable_quality_check")
+    @Builder.Default
     private Boolean enableQualityCheck = true;
 
     /**
      * 是否启用成本核算
      */
     @Column(name = "enable_cost_calculation")
+    @Builder.Default
     private Boolean enableCostCalculation = true;
 
     /**
      * 是否启用设备管理
      */
     @Column(name = "enable_equipment_management")
+    @Builder.Default
     private Boolean enableEquipmentManagement = true;
 
     /**
      * 是否启用考勤管理
      */
     @Column(name = "enable_attendance")
+    @Builder.Default
     private Boolean enableAttendance = true;
 
     // ==================== 审计字段 ====================

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Banner,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { materialSpecApiClient, DEFAULT_SPEC_CONFIG, SpecConfig } from '../../services/api/materialSpecApiClient';
@@ -69,7 +70,7 @@ export default function MaterialSpecManagementScreen() {
 
   if (!canManage) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title={t('materialSpecManagement.title')} />
@@ -79,12 +80,12 @@ export default function MaterialSpecManagementScreen() {
           <Text style={styles.noPermissionText}>{t('common.noPermission')}</Text>
           <Text style={styles.noPermissionHint}>{t('common.adminOnly')}</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -176,7 +177,7 @@ export default function MaterialSpecManagementScreen() {
           </>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

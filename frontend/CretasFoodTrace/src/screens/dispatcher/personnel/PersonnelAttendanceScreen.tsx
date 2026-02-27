@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
   statIconSmall: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: '#f5f5f5',
     alignItems: 'center',
     justifyContent: 'center',
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: `${DISPATCHER_THEME.primary}10`,
-    borderRadius: 16,
+    borderRadius: 12,
   },
   filterText: {
     fontSize: 13,
@@ -1057,7 +1057,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '100%',
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
   },
   modalTitle: {

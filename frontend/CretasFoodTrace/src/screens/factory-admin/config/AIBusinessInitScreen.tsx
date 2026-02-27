@@ -9,12 +9,12 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TextInput,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon, Chip, Card, Button, Divider, Portal, Modal } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';

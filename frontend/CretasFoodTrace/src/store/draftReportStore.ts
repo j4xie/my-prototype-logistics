@@ -13,6 +13,23 @@ export interface DraftReport {
   notes: string;
   createdAt: string;
   factoryId: string;
+  // Extended fields for different draft types
+  draftType?: 'PROGRESS' | 'HOURS' | 'TEAM_BATCH';
+  processCategory?: string;
+  startTime?: string;
+  endTime?: string;
+  hourEntries?: Record<string, unknown>;
+  operationVolume?: number;
+  teamMembers?: Array<{
+    userId: number;
+    userName: string;
+    output: string;
+    goodQty: string;
+    defectQty: string;
+    notes: string;
+    position?: string;
+    hireTypeLabel?: string;
+  }>;
 }
 
 interface DraftReportState {

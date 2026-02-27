@@ -241,7 +241,8 @@ class VideoEfficiencyAnalyzer:
                         }
                     ],
                     "max_tokens": 2000,
-                    "temperature": 0.3
+                    "temperature": 0.3,
+                    "enable_thinking": False
                 }
             )
 
@@ -433,7 +434,8 @@ class VideoEfficiencyAnalyzer:
                         }
                     ],
                     "max_tokens": 1500,
-                    "temperature": 0.2
+                    "temperature": 0.2,
+                    "enable_thinking": False
                 }
             )
 
@@ -541,7 +543,8 @@ class VideoEfficiencyAnalyzer:
                         }
                     ],
                     "max_tokens": 1000,
-                    "temperature": 0.2
+                    "temperature": 0.2,
+                    "enable_thinking": False
                 }
             )
 

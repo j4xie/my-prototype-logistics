@@ -953,7 +953,7 @@ const styles = StyleSheet.create({
   modal: {
     backgroundColor: '#fff',
     margin: 20,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     maxHeight: '80%',
   },
@@ -1017,7 +1017,7 @@ const styles = StyleSheet.create({
   previewModal: {
     backgroundColor: '#fff',
     margin: 20,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     maxHeight: '85%',
   },

@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 12,
     gap: 6,
   },
   riskText: {
@@ -993,7 +993,7 @@ const styles = StyleSheet.create({
   llmIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

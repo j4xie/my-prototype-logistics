@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
   weekNavBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',

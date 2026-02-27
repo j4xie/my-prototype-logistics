@@ -6,10 +6,10 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
@@ -23,6 +23,7 @@ export function BatchDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const { t } = useTranslation('workshop');
+  const insets = useSafeAreaInsets();
 
   // 模拟批次详情
   const batch = {
@@ -62,9 +63,9 @@ export function BatchDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* 头部 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
@@ -195,7 +196,7 @@ export function BatchDetailScreen() {
       </ScrollView>
 
       {/* 底部操作栏 */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => navigation.navigate('BatchStage', { batchId: batch.id, stageType: batch.currentStage, stageName: batch.currentStage })}
@@ -211,7 +212,7 @@ export function BatchDetailScreen() {
           <Text style={styles.actionBtnText}>{t('batchDetail.actions.completeBatch')}</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

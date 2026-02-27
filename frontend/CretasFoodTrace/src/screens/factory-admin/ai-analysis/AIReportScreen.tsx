@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   FlatList,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
@@ -174,17 +175,17 @@ export function AIReportScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
           <Text style={styles.loadingText}>{t('loading')}</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Filter Tabs */}
       {renderFilterTabs()}
 
@@ -212,7 +213,7 @@ export function AIReportScreen() {
           </View>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

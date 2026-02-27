@@ -16,6 +16,7 @@ import {
   SegmentedButtons,
   Menu,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { whitelistApiClient, WhitelistDTO, CreateWhitelistRequest } from '../../services/api/whitelistApiClient';
 import { useAuthStore } from '../../store/authStore';
@@ -258,7 +259,7 @@ export default function WhitelistManagementScreen() {
 
   if (!canManage) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="白名单管理" />
@@ -268,12 +269,12 @@ export default function WhitelistManagementScreen() {
           <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
           <Text style={styles.noPermissionHint}>仅限工厂超管和平台管理员</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -546,7 +547,7 @@ export default function WhitelistManagementScreen() {
           label="批量添加"
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

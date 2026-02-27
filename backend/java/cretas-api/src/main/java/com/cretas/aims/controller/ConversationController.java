@@ -13,13 +13,17 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 多轮对话控制器
@@ -44,6 +48,7 @@ import java.util.Map;
 public class ConversationController {
 
     private final ConversationService conversationService;
+    private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
 
     /**
      * 开始多轮对话
@@ -95,6 +100,100 @@ public class ConversationController {
         result.put("data", response);
 
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * SSE 流式 — 开始多轮对话
+     */
+    @PostMapping(value = "/start/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "流式开始多轮对话 (SSE)")
+    public SseEmitter startConversationStream(
+            @PathVariable String factoryId,
+            @RequestBody @Valid StartConversationRequest request,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+
+        SseEmitter emitter = new SseEmitter(60_000L);
+        emitter.onTimeout(() -> log.warn("Conversation stream timeout"));
+
+        Long effectiveUserId = userId != null ? userId : request.getUserId();
+        if (effectiveUserId == null) effectiveUserId = 0L;
+
+        Long finalUserId = effectiveUserId;
+        sseExecutor.execute(() -> {
+            try {
+                emitter.send(SseEmitter.event().name("processing")
+                        .data("{\"message\":\"正在处理...\"}"));
+
+                ConversationResponse response = conversationService.startConversation(
+                        factoryId, finalUserId, request.getUserInput());
+
+                Map<String, Object> result = new HashMap<>();
+                result.put("success", true);
+                result.put("data", response);
+                emitter.send(SseEmitter.event().name("result")
+                        .data(result));
+
+                emitter.send(SseEmitter.event().name("done")
+                        .data("{\"fullContent\":\"" +
+                                (response.getMessage() != null ? response.getMessage().replace("\"", "'") : "") +
+                                "\"}"));
+                emitter.complete();
+            } catch (Exception e) {
+                try {
+                    emitter.send(SseEmitter.event().name("error")
+                            .data("{\"message\":\"" + e.getMessage().replace("\"", "'") + "\"}"));
+                    emitter.complete();
+                } catch (Exception ex) {
+                    emitter.completeWithError(e);
+                }
+            }
+        });
+        return emitter;
+    }
+
+    /**
+     * SSE 流式 — 继续多轮对话
+     */
+    @PostMapping(value = "/{sessionId}/reply/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "流式继续多轮对话 (SSE)")
+    public SseEmitter continueConversationStream(
+            @PathVariable String factoryId,
+            @PathVariable String sessionId,
+            @RequestBody @Valid ReplyRequest request) {
+
+        SseEmitter emitter = new SseEmitter(60_000L);
+        emitter.onTimeout(() -> log.warn("Conversation reply stream timeout"));
+
+        sseExecutor.execute(() -> {
+            try {
+                emitter.send(SseEmitter.event().name("processing")
+                        .data("{\"message\":\"正在处理...\"}"));
+
+                ConversationResponse response = conversationService.continueConversation(
+                        sessionId, request.getUserReply());
+
+                Map<String, Object> result = new HashMap<>();
+                result.put("success", true);
+                result.put("data", response);
+                emitter.send(SseEmitter.event().name("result")
+                        .data(result));
+
+                emitter.send(SseEmitter.event().name("done")
+                        .data("{\"fullContent\":\"" +
+                                (response.getMessage() != null ? response.getMessage().replace("\"", "'") : "") +
+                                "\"}"));
+                emitter.complete();
+            } catch (Exception e) {
+                try {
+                    emitter.send(SseEmitter.event().name("error")
+                            .data("{\"message\":\"" + e.getMessage().replace("\"", "'") + "\"}"));
+                    emitter.complete();
+                } catch (Exception ex) {
+                    emitter.completeWithError(e);
+                }
+            }
+        });
+        return emitter;
     }
 
     /**

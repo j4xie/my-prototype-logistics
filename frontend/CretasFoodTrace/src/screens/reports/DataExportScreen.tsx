@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   SegmentedButtons,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system';
@@ -258,7 +259,7 @@ export default function DataExportScreen() {
   const currentFormat = exportFormats.find(f => f.value === exportFormat);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('export.title')} />
@@ -493,7 +494,7 @@ export default function DataExportScreen() {
           <Text style={styles.loadingText}>{t('export.exporting')}</Text>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

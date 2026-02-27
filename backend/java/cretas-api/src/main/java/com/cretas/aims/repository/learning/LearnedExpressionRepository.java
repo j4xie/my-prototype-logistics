@@ -39,9 +39,10 @@ public interface LearnedExpressionRepository extends JpaRepository<LearnedExpres
     /**
      * 检查是否存在相同表达
      */
-    @Query("SELECT COUNT(e) > 0 FROM LearnedExpression e " +
-           "WHERE e.expressionHash = :hash " +
-           "AND (e.factoryId = :factoryId OR (e.factoryId IS NULL AND :factoryId IS NULL))")
+    @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END FROM ai_learned_expressions e " +
+           "WHERE e.expression_hash = :hash " +
+           "AND ((CAST(:factoryId AS varchar) IS NULL AND e.factory_id IS NULL) OR e.factory_id = :factoryId)",
+           nativeQuery = true)
     boolean existsByHashAndFactory(
         @Param("hash") String expressionHash,
         @Param("factoryId") String factoryId
@@ -72,10 +73,11 @@ public interface LearnedExpressionRepository extends JpaRepository<LearnedExpres
     /**
      * 统计意图的表达数量
      */
-    @Query("SELECT COUNT(e) FROM LearnedExpression e " +
-           "WHERE e.intentCode = :intentCode " +
-           "AND (e.factoryId = :factoryId OR (e.factoryId IS NULL AND :factoryId IS NULL)) " +
-           "AND e.isActive = true")
+    @Query(value = "SELECT COUNT(*) FROM ai_learned_expressions e " +
+           "WHERE e.intent_code = :intentCode " +
+           "AND ((CAST(:factoryId AS varchar) IS NULL AND e.factory_id IS NULL) OR e.factory_id = :factoryId) " +
+           "AND e.is_active = true",
+           nativeQuery = true)
     int countByIntentCode(
         @Param("intentCode") String intentCode,
         @Param("factoryId") String factoryId
@@ -125,12 +127,13 @@ public interface LearnedExpressionRepository extends JpaRepository<LearnedExpres
      * 清理低效表达 (命中次数少 + 创建时间早)
      */
     @Modifying
-    @Query("UPDATE LearnedExpression e SET e.isActive = false, e.updatedAt = :now " +
-           "WHERE e.hitCount < :minHits " +
-           "AND e.createdAt < :beforeDate " +
-           "AND e.isVerified = false " +
-           "AND e.isActive = true " +
-           "AND (e.factoryId = :factoryId OR (e.factoryId IS NULL AND :factoryId IS NULL))")
+    @Query(value = "UPDATE ai_learned_expressions SET is_active = false, updated_at = :now " +
+           "WHERE hit_count < :minHits " +
+           "AND created_at < :beforeDate " +
+           "AND is_verified = false " +
+           "AND is_active = true " +
+           "AND ((CAST(:factoryId AS varchar) IS NULL AND factory_id IS NULL) OR factory_id = :factoryId)",
+           nativeQuery = true)
     int deactivateIneffective(
         @Param("factoryId") String factoryId,
         @Param("minHits") int minHits,
@@ -143,10 +146,11 @@ public interface LearnedExpressionRepository extends JpaRepository<LearnedExpres
     /**
      * 统计各来源类型的表达数量
      */
-    @Query("SELECT e.sourceType, COUNT(e) FROM LearnedExpression e " +
-           "WHERE (e.factoryId = :factoryId OR (e.factoryId IS NULL AND :factoryId IS NULL)) " +
-           "AND e.isActive = true " +
-           "GROUP BY e.sourceType")
+    @Query(value = "SELECT e.source_type, COUNT(*) FROM ai_learned_expressions e " +
+           "WHERE ((CAST(:factoryId AS varchar) IS NULL AND e.factory_id IS NULL) OR e.factory_id = :factoryId) " +
+           "AND e.is_active = true " +
+           "GROUP BY e.source_type",
+           nativeQuery = true)
     List<Object[]> countBySourceType(@Param("factoryId") String factoryId);
 
     // ========== Embedding 缓存相关 ==========

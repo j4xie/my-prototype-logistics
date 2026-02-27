@@ -99,8 +99,12 @@ class LLMStructureAnalyzer:
 
     def __init__(self):
         self.settings = get_settings()
-        self.client = httpx.AsyncClient(timeout=60.0)
         self.raw_exporter = RawExporter()
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        from common.llm_client import get_llm_http_client
+        return get_llm_http_client()
 
     async def analyze(
         self,
@@ -252,7 +256,7 @@ class LLMStructureAnalyzer:
         }
 
         payload = {
-            "model": self.settings.llm_model,
+            "model": self.settings.llm_mapper_model,
             "messages": [
                 {
                     "role": "system",
@@ -264,7 +268,8 @@ class LLMStructureAnalyzer:
                 }
             ],
             "temperature": 0.2,
-            "max_tokens": 4000
+            "max_tokens": 4000,
+            "enable_thinking": False
         }
 
         response = await self.client.post(
@@ -569,8 +574,8 @@ class LLMStructureAnalyzer:
         return recommendations
 
     async def close(self):
-        """关闭HTTP客户端"""
-        await self.client.aclose()
+        """No-op: shared client lifecycle managed by main.py lifespan"""
+        pass
 
 
 # ============================================================

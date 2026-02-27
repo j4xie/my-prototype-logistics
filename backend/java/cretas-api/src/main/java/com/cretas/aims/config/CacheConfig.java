@@ -1,7 +1,6 @@
 package com.cretas.aims.config;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.concurrent.ConcurrentMapCache;
@@ -12,8 +11,10 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,22 +38,39 @@ public class CacheConfig {
 
     private static final Logger log = LoggerFactory.getLogger(CacheConfig.class);
 
+    @Autowired(required = false)
+    private RedisConnectionFactory redisConnectionFactory;
+
     /**
-     * Redis 缓存管理器 - 当 Redis 可用时使用
-     *
-     * 缓存名称及其过期时间:
-     * - aiAnalysisResults: AI分析结果缓存，7天过期
-     * - aiIntents: AI意图缓存，1小时过期
-     * - aiQuota: AI配额缓存，1小时过期
-     * - dashboardStats: 仪表盘统计缓存，5分钟过期
-     *
-     * @param connectionFactory Redis连接工厂
-     * @return 缓存管理器
+     * RedisTemplate<String, Object> — CacheService 需要此类型
+     */
+    @Bean
+    public RedisTemplate<String, Object> redisObjectTemplate() {
+        if (redisConnectionFactory == null) {
+            return null;
+        }
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        return template;
+    }
+
+    /**
+     * 缓存管理器 — Redis 可用时用 Redis，否则内存降级
      */
     @Bean
     @Primary
-    @ConditionalOnBean(RedisConnectionFactory.class)
-    public CacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
+    public CacheManager cacheManager() {
+        if (redisConnectionFactory != null) {
+            return buildRedisCacheManager(redisConnectionFactory);
+        }
+        return buildSimpleCacheManager();
+    }
+
+    private CacheManager buildRedisCacheManager(RedisConnectionFactory connectionFactory) {
         log.info("使用 Redis 缓存管理器");
 
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
@@ -111,14 +129,7 @@ public class CacheConfig {
                 .build();
     }
 
-    /**
-     * 内存缓存管理器 - 当 Redis 不可用时作为降级方案
-     *
-     * @return 简单内存缓存管理器
-     */
-    @Bean
-    @ConditionalOnMissingBean(RedisConnectionFactory.class)
-    public CacheManager simpleCacheManager() {
+    private CacheManager buildSimpleCacheManager() {
         log.warn("Redis 不可用，使用内存缓存作为降级方案");
 
         SimpleCacheManager cacheManager = new SimpleCacheManager();

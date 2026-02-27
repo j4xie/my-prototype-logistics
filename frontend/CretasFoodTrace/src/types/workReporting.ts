@@ -92,6 +92,20 @@ export interface BatchWorkSessionResponse {
   notes?: string;
 }
 
+export interface CheckinWorkerDTO {
+  sessionId: number;
+  batchId: number;
+  employeeId: number;
+  fullName: string | null;
+  position: string | null;
+  hireType: string | null;
+  hireTypeLabel: string | null;
+  checkinMethod: string | null;
+  checkInTime: string | null;
+  checkOutTime: string | null;
+  status: string;
+}
+
 export interface FormSchemaField {
   key: string;
   label: string;

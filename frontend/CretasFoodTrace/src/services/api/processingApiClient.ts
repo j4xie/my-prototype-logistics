@@ -431,17 +431,22 @@ class ProcessingApiClient {
     return await apiClient.post(`${this.getPath(factoryId)}/batches/${batchId}/report`, data);
   }
 
-  // 23. 班组批量报工
+  // 23. 班组批量报工（团队总产出 + 可选个人明细）
   async submitTeamBatchReport(data: {
     batchId: number;
-    members: Array<{
+    totalOutput: number;
+    totalGoodQuantity?: number;
+    totalDefectQuantity?: number;
+    reportTime?: string;
+    notes?: string;
+    members?: Array<{
       userId: number;
-      outputQuantity: number;
+      outputQuantity?: number;
       goodQuantity?: number;
       defectQuantity?: number;
       notes?: string;
     }>;
-  }, factoryId?: string): Promise<ApiResponse<{ recordedMembers: number; totalOutput: number; totalGood: number; totalDefect: number; batchId: number }>> {
+  }, factoryId?: string): Promise<ApiResponse<{ recordedMembers: number; totalOutput: number; totalGood: number; totalDefect: number; batchId: number; reportTime: string }>> {
     return await apiClient.post(`${this.getPath(factoryId)}/work-sessions/batch-report`, data);
   }
 

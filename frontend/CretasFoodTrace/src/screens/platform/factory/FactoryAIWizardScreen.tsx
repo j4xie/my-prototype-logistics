@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
   stepDot: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 12,
     backgroundColor: '#e0e0e0',
     alignItems: 'center',
     justifyContent: 'center',

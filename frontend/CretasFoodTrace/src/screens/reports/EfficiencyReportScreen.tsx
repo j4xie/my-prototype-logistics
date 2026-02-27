@@ -10,6 +10,7 @@ import {
   ProgressBar,
   Icon,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
@@ -403,7 +404,7 @@ export default function EfficiencyReportScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="效率分析" />
@@ -438,7 +439,7 @@ export default function EfficiencyReportScreen() {
         {activeTab === 'overview' ? renderOverviewContent() : renderOeeContent()}
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

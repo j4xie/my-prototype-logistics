@@ -465,8 +465,11 @@ public class ConversationServiceImpl implements ConversationService {
         }
 
         try {
+            // R2: 按用户输入相关性过滤意图，减少 prompt 大小
+            List<AIIntentConfig> relevantIntents = filterRelevantIntents(availableIntents, userInput, 25);
+
             // 构建系统提示词
-            String systemPrompt = buildConversationSystemPrompt(availableIntents, session);
+            String systemPrompt = buildConversationSystemPrompt(relevantIntents, session);
 
             // 构建对话历史
             String conversationHistory = session.buildConversationHistory();
@@ -474,8 +477,13 @@ public class ConversationServiceImpl implements ConversationService {
                     ? userInput
                     : conversationHistory + "用户: " + userInput;
 
-            // 调用 DashScope
-            String response = dashScopeClient.chat(systemPrompt, userMessage);
+            // R2+R4: 使用 fastModel (flash) 并记录耗时
+            long t0 = System.currentTimeMillis();
+            String response = dashScopeClient.chatFast(systemPrompt, userMessage);
+            long elapsed = System.currentTimeMillis() - t0;
+            log.info("Conv LLM 调用: model=flash, intents={}/{}, promptLen={}, elapsed={}ms",
+                    relevantIntents.size(), availableIntents.size(),
+                    systemPrompt.length(), elapsed);
 
             // 解析响应
             return parseLlmResponse(response, availableIntents);
@@ -484,6 +492,59 @@ public class ConversationServiceImpl implements ConversationService {
             log.error("LLM 对话调用失败: {}", e.getMessage(), e);
             return generateDefaultResponse(availableIntents);
         }
+    }
+
+    /**
+     * R2: 按关键词相关性过滤意图，减少 prompt token 数
+     * 从全量意图中筛选与用户输入最相关的 top-N 个
+     */
+    private List<AIIntentConfig> filterRelevantIntents(List<AIIntentConfig> allIntents,
+                                                        String userInput, int topN) {
+        if (allIntents.size() <= topN) {
+            return allIntents;
+        }
+
+        String inputLower = userInput.toLowerCase();
+
+        // 按关键词命中数排序
+        List<Map.Entry<AIIntentConfig, Integer>> scored = new ArrayList<>();
+        for (AIIntentConfig intent : allIntents) {
+            int score = 0;
+            String code = intent.getIntentCode() != null ? intent.getIntentCode().toLowerCase() : "";
+            String name = intent.getIntentName() != null ? intent.getIntentName() : "";
+            String desc = intent.getDescription() != null ? intent.getDescription() : "";
+            String keywords = intent.getKeywords() != null ? intent.getKeywords() : "";
+            String combined = name + " " + desc + " " + keywords;
+
+            // 意图名称中的每个字在用户输入中出现 → +2
+            for (char c : name.toCharArray()) {
+                if (c != ' ' && inputLower.indexOf(c) >= 0) {
+                    score += 2;
+                }
+            }
+            // 关键词匹配 → +3
+            if (!keywords.isEmpty()) {
+                for (String kw : keywords.split("[,，;；\\s]+")) {
+                    if (!kw.isEmpty() && inputLower.contains(kw.toLowerCase())) {
+                        score += 3;
+                    }
+                }
+            }
+            // 描述中的关键字匹配 → +1
+            for (String word : inputLower.split("\\s+")) {
+                if (word.length() >= 2 && combined.toLowerCase().contains(word)) {
+                    score++;
+                }
+            }
+            scored.add(new AbstractMap.SimpleEntry<>(intent, score));
+        }
+
+        // 按分数降序，取 top-N
+        scored.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+        return scored.stream()
+                .limit(topN)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
     }
 
     /**

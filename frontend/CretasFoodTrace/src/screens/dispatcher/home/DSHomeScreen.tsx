@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
 
   // AI Center Card
   aiCenterCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     margin: 16,
     position: 'relative',
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     backgroundColor: '#fa8c16',
-    borderRadius: 16,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   },
   aiRiskAction: {
     backgroundColor: '#fa8c16',
-    borderRadius: 16,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
   // Pending Tasks
   pendingTasksCard: {
     backgroundColor: 'white',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 16,
@@ -823,7 +823,7 @@ const styles = StyleSheet.create({
   // Quick Personnel
   quickPersonnel: {
     backgroundColor: 'white',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 16,
