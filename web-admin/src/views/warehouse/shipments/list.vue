@@ -5,6 +5,8 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, Ship, Check, Close } from '@element-plus/icons-vue';
+import { formatDateTime } from '@/utils/dateFormat';
+import { emptyCell } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -151,7 +153,7 @@ async function submitShipment() {
 
 async function handleShip(row: any) {
   try {
-    await ElMessageBox.confirm('确定发货?', '提示', { type: 'warning' });
+    await ElMessageBox.confirm('确定发货?', '操作确认', { type: 'warning' });
     const response = await put(`/${factoryId.value}/shipments/${row.id}/status`, {
       status: 'SHIPPED'
     });
@@ -170,7 +172,7 @@ async function handleShip(row: any) {
 
 async function handleDelivered(row: any) {
   try {
-    await ElMessageBox.confirm('确认已送达?', '提示', { type: 'warning' });
+    await ElMessageBox.confirm('确认已送达?', '操作确认', { type: 'warning' });
     const response = await put(`/${factoryId.value}/shipments/${row.id}/status`, {
       status: 'DELIVERED'
     });
@@ -210,6 +212,15 @@ async function handleCancel(row: any) {
   }
 }
 
+// 详情抽屉
+const detailVisible = ref(false);
+const detailRow = ref<any>(null);
+
+function showDetail(row: any) {
+  detailRow.value = row;
+  detailVisible.value = true;
+}
+
 function getStatusType(status: string) {
   const map: Record<string, string> = {
     PENDING: 'info',
@@ -217,7 +228,7 @@ function getStatusType(status: string) {
     DELIVERED: 'success',
     CANCELLED: 'danger'
   };
-  return map[status] || 'info';
+  return map[status?.toUpperCase()] || 'info';
 }
 
 function getStatusText(status: string) {
@@ -227,7 +238,7 @@ function getStatusText(status: string) {
     DELIVERED: '已送达',
     CANCELLED: '已取消'
   };
-  return map[status] || status;
+  return map[status?.toUpperCase()] || status || '-';
 }
 </script>
 
@@ -268,12 +279,12 @@ function getStatusText(status: string) {
       </div>
 
       <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
-        <el-table-column prop="shipmentNumber" label="出货单号" width="160" />
-        <el-table-column prop="customerName" label="客户名称" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="productBatchNumber" label="产品批次" width="160" />
-        <el-table-column prop="quantity" label="数量" width="100" align="right" />
-        <el-table-column prop="vehicleNumber" label="车牌号" width="120" />
-        <el-table-column prop="driverName" label="司机" width="100" />
+        <el-table-column prop="shipmentNumber" label="出货单号" width="160" :formatter="emptyCell" />
+        <el-table-column prop="customerName" label="客户名称" min-width="150" show-overflow-tooltip :formatter="emptyCell" />
+        <el-table-column prop="productBatchNumber" label="产品批次" width="160" :formatter="emptyCell" />
+        <el-table-column prop="quantity" label="数量" width="100" align="right" :formatter="emptyCell" />
+        <el-table-column prop="vehicleNumber" label="车牌号" width="120" :formatter="emptyCell" />
+        <el-table-column prop="driverName" label="司机" width="100" :formatter="emptyCell" />
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)" size="small">
@@ -281,12 +292,14 @@ function getStatusText(status: string) {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="180" />
+        <el-table-column prop="createdAt" label="创建时间" width="180">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="220" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link size="small">查看</el-button>
+            <el-button type="primary" link size="small" @click="showDetail(row)">查看</el-button>
             <el-button
-              v-if="canWrite && row.status === 'PENDING'"
+              v-if="canWrite && row.status?.toUpperCase() === 'PENDING'"
               type="success"
               link
               size="small"
@@ -294,7 +307,7 @@ function getStatusText(status: string) {
               @click="handleShip(row)"
             >发货</el-button>
             <el-button
-              v-if="canWrite && row.status === 'SHIPPED'"
+              v-if="canWrite && row.status?.toUpperCase() === 'SHIPPED'"
               type="primary"
               link
               size="small"
@@ -302,7 +315,7 @@ function getStatusText(status: string) {
               @click="handleDelivered(row)"
             >送达</el-button>
             <el-button
-              v-if="canWrite && (row.status === 'PENDING' || row.status === 'SHIPPED')"
+              v-if="canWrite && (row.status?.toUpperCase() === 'PENDING' || row.status?.toUpperCase() === 'SHIPPED')"
               type="danger"
               link
               size="small"
@@ -325,6 +338,28 @@ function getStatusText(status: string) {
         />
       </div>
     </el-card>
+
+    <!-- 出货详情抽屉 -->
+    <el-drawer v-model="detailVisible" title="出货详情" size="420px">
+      <template v-if="detailRow">
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="出货单号">{{ detailRow.shipmentNumber || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="客户名称">{{ detailRow.customerName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="产品批次">{{ detailRow.productBatchNumber || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="数量">{{ detailRow.quantity ?? '-' }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="getStatusType(detailRow.status)" size="small">
+              {{ getStatusText(detailRow.status) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="车牌号">{{ detailRow.vehicleNumber || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="司机">{{ detailRow.driverName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="司机电话">{{ detailRow.driverPhone || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ formatDateTime(detailRow.createdAt) }}</el-descriptions-item>
+          <el-descriptions-item label="备注">{{ detailRow.notes || '-' }}</el-descriptions-item>
+        </el-descriptions>
+      </template>
+    </el-drawer>
 
     <!-- 新建出货对话框 -->
     <el-dialog v-model="dialogVisible" title="新建出货" width="550px">
