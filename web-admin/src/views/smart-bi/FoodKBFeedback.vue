@@ -71,7 +71,7 @@
         </el-table-column>
         <el-table-column label="反馈类型" width="100">
           <template #default="{ row }">
-            <el-tag size="small">{{ row.feedback_type }}</el-tag>
+            <el-tag size="small">{{ feedbackTypeLabels[row.feedback_type] || row.feedback_type }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="反馈详情" min-width="200">
@@ -127,7 +127,11 @@
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column prop="query" label="查询" min-width="180" show-overflow-tooltip />
         <el-table-column prop="rating" label="评分" width="70" align="center" />
-        <el-table-column prop="feedback_type" label="类型" width="90" />
+        <el-table-column label="类型" width="90">
+          <template #default="{ row }">
+            {{ feedbackTypeLabels[row.feedback_type] || row.feedback_type }}
+          </template>
+        </el-table-column>
         <el-table-column prop="response_time_ms" label="响应(ms)" width="90" align="center" />
         <el-table-column prop="created_at" label="时间" width="160">
           <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
@@ -141,8 +145,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { Refresh, Download } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-
-const PYTHON_BASE = import.meta.env.VITE_SMARTBI_URL || '/smartbi-api'
+import { getPythonAuthHeaders, PYTHON_SMARTBI_URL } from '@/api/smartbi/common'
 
 interface FeedbackStats {
   success: boolean
@@ -189,6 +192,12 @@ const categoryLabels: Record<string, string> = {
   helpful: '有帮助',
 }
 
+const feedbackTypeLabels: Record<string, string> = {
+  explicit: '用户评价',
+  implicit: '自动检测',
+  expert: '专家审核',
+}
+
 const avgRatingClass = computed(() => {
   if (!stats.value) return ''
   const r = stats.value.avg_rating
@@ -221,7 +230,10 @@ function formatTime(iso: string): string {
 async function loadData() {
   loading.value = true
   try {
-    const resp = await fetch(`${PYTHON_BASE}/api/food-kb/feedback/stats`)
+    const resp = await fetch(`${PYTHON_SMARTBI_URL}/api/food-kb/feedback/stats`, {
+      headers: getPythonAuthHeaders(),
+    })
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
     const data = await resp.json()
     if (data.success) {
       stats.value = data
@@ -268,13 +280,8 @@ function renderCharts() {
     if (typeChart) typeChart.dispose()
     typeChart = echarts.init(typeChartRef.value)
     const types = stats.value.by_type || {}
-    const typeLabels: Record<string, string> = {
-      explicit: '用户评价',
-      implicit: '自动检测',
-      expert: '专家审核',
-    }
     const pieData = Object.entries(types).map(([k, v]) => ({
-      name: typeLabels[k] || k,
+      name: feedbackTypeLabels[k] || k,
       value: v,
     }))
     typeChart.setOption({
@@ -299,7 +306,10 @@ async function exportData() {
     params.set('min_rating', String(exportRatingRange.value[0]))
     params.set('max_rating', String(exportRatingRange.value[1]))
 
-    const resp = await fetch(`${PYTHON_BASE}/api/food-kb/feedback/export?${params}`)
+    const resp = await fetch(`${PYTHON_SMARTBI_URL}/api/food-kb/feedback/export?${params}`, {
+      headers: getPythonAuthHeaders(),
+    })
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
     exportResults.value = await resp.json()
   } catch (e) {
     console.error('Failed to export feedback:', e)
