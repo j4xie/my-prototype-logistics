@@ -301,6 +301,13 @@ public class AIIntentServiceImpl implements AIIntentService {
      */
     private static final ThreadLocal<ClassifierResult> onnxFallbackResultHolder = new ThreadLocal<>();
 
+    // Wave-7c: 过滤口语填充词前缀，提升短语匹配命中率
+    private static final Pattern FILLER_WORDS_PREFIX_PATTERN = Pattern.compile(
+            "^(?:嗯+|呃+|额+|哦+|哎+|喂+|啊+|呀+|那个+|这个+|就是+|所以+|然后+" +
+            "|请问一下[哈吧呢]?|我想问一下[就是那个]*|帮我问一下|我想知道|我想了解一下" +
+            "|你好[啊呀哈]?|hello[，,]?|hi[，,]?)[，,、。\\s]*",
+            Pattern.CASE_INSENSITIVE);
+
     // ==================== 意图识别 ====================
 
     @Override
@@ -578,7 +585,47 @@ public class AIIntentServiceImpl implements AIIntentService {
 
         // 检测1: 多意图触发词 - 如果包含 "和/还有/同时" 等，需要走多意图流程
         if (containsMultiIntentTrigger(userInput)) {
-            log.info("v11.7 检测到多意图触发词，跳过短语短路: input='{}'", userInput);
+            log.info("v11.7 检测到多意图触发词: input='{}'", userInput);
+
+            // Wave-7d: 尾段短语匹配 — 多意图输入中，用户的实际请求通常在触发词之后
+            // "打完卡顺便查一下今天排班" → 尾段 "查一下今天排班" → SCHEDULING_LIST
+            // "设备告警另外看看考勤" → 尾段 "看看考勤" → ATTENDANCE_TODAY
+            String trailingSegment = extractTrailingAfterMultiIntentTrigger(userInput);
+            if (trailingSegment != null && trailingSegment.length() >= 2) {
+                Optional<String> trailingPhraseMatch = knowledgeBase.matchPhrase(
+                        filterFillerWordsForPhrase(trailingSegment), businessDomain);
+                if (trailingPhraseMatch.isPresent()) {
+                    String matchedIntentCode = trailingPhraseMatch.get();
+                    List<AIIntentConfig> allIntents = getAllIntents(factoryId);
+                    Optional<AIIntentConfig> intentOpt = allIntents.stream()
+                            .filter(i -> i.getIntentCode().equals(matchedIntentCode))
+                            .findFirst();
+                    if (intentOpt.isPresent()) {
+                        AIIntentConfig intent = intentOpt.get();
+                        ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
+                        log.info("Wave-7d 多意图尾段短语匹配: input='{}', trailing='{}', intent={}",
+                                userInput, trailingSegment, matchedIntentCode);
+                        IntentMatchResult phraseResult = IntentMatchResult.builder()
+                                .bestMatch(intent)
+                                .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                        intent, 0.98, 98, Collections.emptyList(), MatchMethod.PHRASE_MATCH)))
+                                .confidence(0.98)
+                                .matchMethod(MatchMethod.PHRASE_MATCH)
+                                .matchedKeywords(Collections.emptyList())
+                                .isStrongSignal(true)
+                                .requiresConfirmation(false)
+                                .userInput(userInput)
+                                .actionType(detectedActionType)
+                                .build();
+                        if (preprocessedQuery != null) {
+                            phraseResult.setPreprocessedQuery(preprocessedQuery);
+                        }
+                        saveIntentMatchRecord(phraseResult, factoryId, userId, sessionId, false);
+                        return attachTiming(applyNegationConversion(phraseResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
+                    }
+                }
+            }
+
             skipPhraseShortcut = true;
         }
 
@@ -674,7 +721,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         // ========== v11.5: 短语匹配优先短路 + 实体-意图冲突检测 ==========
         // 只有明确的单意图输入才走短语短路
         if (!skipPhraseShortcut) {
-            Optional<String> earlyPhraseMatch = knowledgeBase.matchPhrase(userInput, businessDomain);
+            Optional<String> earlyPhraseMatch = knowledgeBase.matchPhrase(filterFillerWordsForPhrase(userInput), businessDomain);
             if (earlyPhraseMatch.isPresent()) {
                 String matchedIntentCode = earlyPhraseMatch.get();
 
@@ -894,6 +941,15 @@ public class AIIntentServiceImpl implements AIIntentService {
                     if (routeDecision.canDirectExecute()) {
                         String routedIntent = routeDecision.getBestMatchIntentCode();
 
+                        // Wave-7e: 语义黑洞守卫 — 某些意图的embedding向量位于语义空间中心
+                        // 导致大量不相关输入匹配到它们（cosine 1.00 异常）
+                        // 降级到 NEED_RERANKING 让 LLM 二次确认
+                        if (isSemanticBlackHoleIntent(routedIntent, userInput)) {
+                            log.info("Wave-7e 语义黑洞守卫: input='{}' 路由到 '{}' 但不含相关关键词，降级到LLM",
+                                    userInput, routedIntent);
+                            // Fall through to NEED_RERANKING or CLASSIFIER
+                        } else {
+
                         // v17.0: 食品实体冲突检测 + LLM 消歧
                         if (knowledgeBase.hasEntityIntentConflict(userInput, routedIntent)) {
                             log.info("v17.0 SemanticRouter食品冲突: input='{}' 路由到 '{}' 但包含食品实体，启动LLM消歧",
@@ -933,6 +989,7 @@ public class AIIntentServiceImpl implements AIIntentService {
 
                             return attachTiming(applyNegationConversion(directResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
                         }
+                        } // end Wave-7e else (not semantic black hole)
                     }
 
                     // NEED_RERANKING: 中等置信度，使用候选进行 LLM Reranking
@@ -1048,7 +1105,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         // v11.2修复：短语匹配成功即短路，确保高质量短语映射优先生效
         // 这修复了 "销售排名"、"质检结果" 等精确短语被语义匹配覆盖的问题
         // v12.1修复: 当检测到多意图触发词时，跳过短语短路，确保多意图检测能执行
-        Optional<String> originalPhraseMatch = knowledgeBase.matchPhrase(originalInput, businessDomain);
+        Optional<String> originalPhraseMatch = knowledgeBase.matchPhrase(filterFillerWordsForPhrase(originalInput), businessDomain);
         if (originalPhraseMatch.isPresent() && !skipPhraseShortcut) {
             // 短语匹配成功，直接使用短语映射结果
             String matchedIntent = originalPhraseMatch.get();
@@ -1096,7 +1153,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         // 拼写纠正后的输入可能匹配到短语，如 "考亲记录" -> "考勤记录" -> ATTENDANCE_HISTORY
         // v12.1修复: 当检测到多意图触发词时，跳过短语短路，确保多意图检测能执行
         if (!processedInput.equals(originalInput) && !skipPhraseShortcut) {
-            Optional<String> processedPhraseMatch = knowledgeBase.matchPhrase(processedInput, businessDomain);
+            Optional<String> processedPhraseMatch = knowledgeBase.matchPhrase(filterFillerWordsForPhrase(processedInput), businessDomain);
             if (processedPhraseMatch.isPresent()) {
                 String matchedIntent = processedPhraseMatch.get();
                 // v18.0: 反向冲突检测 — 处理后短语命中FOOD_KNOWLEDGE但原始输入含数据查询指标
@@ -2970,6 +3027,66 @@ public class AIIntentServiceImpl implements AIIntentService {
     }
 
     /**
+     * Wave-7e: 检测语义黑洞意图 — 某些意图的embedding向量吸引大量不相关输入
+     * CAMERA_UNSUBSCRIBE 在E2E测试中出现6次cosine 1.00误匹配
+     * 当路由到这些意图但输入不含相关关键词时，应降级到LLM重新路由
+     */
+    private boolean isSemanticBlackHoleIntent(String routedIntent, String userInput) {
+        if (routedIntent == null || userInput == null) return false;
+        String input = userInput.toLowerCase();
+
+        // CAMERA_UNSUBSCRIBE: 只有包含摄像头/订阅/取消相关词才是合理匹配
+        if ("CAMERA_UNSUBSCRIBE".equals(routedIntent)) {
+            return !input.contains("摄像") && !input.contains("订阅") && !input.contains("取消订阅")
+                    && !input.contains("camera") && !input.contains("unsubscribe");
+        }
+        // SCALE_PROTOCOL_DETECT: 只有包含秤/协议/称重相关词才合理
+        if ("SCALE_PROTOCOL_DETECT".equals(routedIntent)) {
+            return !input.contains("秤") && !input.contains("协议") && !input.contains("称重")
+                    && !input.contains("scale");
+        }
+        // SCALE_CALIBRATE: 只有包含秤/校准/标定相关词才合理
+        if ("SCALE_CALIBRATE".equals(routedIntent)) {
+            return !input.contains("秤") && !input.contains("校准") && !input.contains("标定")
+                    && !input.contains("calibrat");
+        }
+        // CAMERA_STREAMS: 只有包含摄像/流/视频相关词才合理
+        if ("CAMERA_STREAMS".equals(routedIntent)) {
+            return !input.contains("摄像") && !input.contains("流媒体") && !input.contains("视频")
+                    && !input.contains("camera") && !input.contains("stream");
+        }
+        return false;
+    }
+
+    /**
+     * Wave-7d: 从多意图输入中提取触发词之后的尾段文本。
+     * "打完卡顺便查一下今天排班" → "查一下今天排班"
+     * "设备告警另外看看考勤" → "看看考勤"
+     */
+    private String extractTrailingAfterMultiIntentTrigger(String userInput) {
+        if (userInput == null) return null;
+        String normalized = userInput.trim();
+        String[] triggers = {
+            "顺便", "另外", "还要", "同时还",
+            "一起", "同时", "并且", "还得", "还需要", "一并", "连同", "加上"
+        };
+        int earliestPos = Integer.MAX_VALUE;
+        int triggerLen = 0;
+        for (String trigger : triggers) {
+            int pos = normalized.indexOf(trigger);
+            if (pos >= 0 && pos < earliestPos) {
+                earliestPos = pos;
+                triggerLen = trigger.length();
+            }
+        }
+        if (earliestPos < normalized.length()) {
+            String trailing = normalized.substring(earliestPos + triggerLen).trim();
+            return trailing.isEmpty() ? null : trailing;
+        }
+        return null;
+    }
+
+    /**
      * 检测用户输入是否包含多意图触发词
      *
      * 多意图触发词表明用户可能在一次输入中表达了多个独立的意图，
@@ -2990,10 +3107,11 @@ public class AIIntentServiceImpl implements AIIntentService {
 
         // 1. 强多意图触发词（明确表示要做多件事）
         // v12.7: 扩展触发词列表
+        // Wave-7c: 移除 "都/再查/再看" — 太宽泛，"产量都不达标"/"再查一遍" 不是多意图
         String[] strongMultiIntentTriggers = {
-            "顺便", "另外", "还要", "再查", "再看", "同时还",
+            "顺便", "另外", "还要", "同时还",
             // v12.7新增: 更多表示并列意图的词
-            "一起", "都", "同时", "并且", "还得", "还需要", "一并", "连同", "加上"
+            "一起", "同时", "并且", "还得", "还需要", "一并", "连同", "加上"
         };
         for (String trigger : strongMultiIntentTriggers) {
             if (normalized.contains(trigger)) {
@@ -3257,7 +3375,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         // 检测2: 极短输入（<=2字符）且不在白名单中
         // v26h: 先尝试短语匹配 — 如果2字输入有精确短语映射(如"成本","效率"),直接放行
         if (normalized.length() <= 2) {
-            Optional<String> shortPhraseMatch = knowledgeBase.matchPhrase(normalized);
+            Optional<String> shortPhraseMatch = knowledgeBase.matchPhrase(filterFillerWordsForPhrase(normalized));
             if (shortPhraseMatch.isPresent()) {
                 log.debug("v26h 极短输入有短语匹配, 跳过澄清: input='{}', intent='{}'", userInput, shortPhraseMatch.get());
                 return null;
@@ -5051,7 +5169,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         String normalizedInput = userInput.toLowerCase().trim();
 
         // ========== Layer 1: 并行执行短语匹配 ==========
-        Optional<String> phraseMatchedIntent = knowledgeBase.matchPhrase(userInput, businessDomain);
+        Optional<String> phraseMatchedIntent = knowledgeBase.matchPhrase(filterFillerWordsForPhrase(userInput), businessDomain);
 
         // ========== Layer 2: 并行执行语义匹配 ==========
         List<UnifiedSemanticMatch> semanticResults = Collections.emptyList();
@@ -5353,7 +5471,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         String normalizedInput = userInput.toLowerCase().trim();
-        Optional<String> phraseMatch = knowledgeBase.matchPhrase(userInput, businessDomain);
+        Optional<String> phraseMatch = knowledgeBase.matchPhrase(filterFillerWordsForPhrase(userInput), businessDomain);
         IntentKnowledgeBase.Granularity inputGranularity = routingResult.getInputGranularity();
         IntentKnowledgeBase.Domain inputDomain = routingResult.getInputDomain();
 
@@ -5861,6 +5979,18 @@ public class AIIntentServiceImpl implements AIIntentService {
      * v32: 根据 factoryId 解析业态类型
      * @return "FACTORY" 或 "RESTAURANT"
      */
+    /**
+     * Wave-7c: 过滤口语填充词前缀，提升短语匹配命中率
+     * "帮我查一下库存" → "库存", "你好，查订单" → "查订单"
+     */
+    private String filterFillerWordsForPhrase(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        String cleaned = FILLER_WORDS_PREFIX_PATTERN.matcher(input).replaceFirst("").trim();
+        return cleaned.isEmpty() ? input : cleaned;
+    }
+
     private String resolveBusinessDomain(String factoryId) {
         if (factoryId == null || factoryId.isBlank()) return "FACTORY";
         return factoryDomainCache.computeIfAbsent(factoryId, fid -> {

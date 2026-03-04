@@ -49,4 +49,18 @@ public interface SystemLogRepository extends JpaRepository<SystemLog, Long> {
     @Query("DELETE FROM SystemLog s WHERE s.factoryId = :factoryId AND s.createdAt < :beforeDate")
     int deleteFactoryLogsBeforeDate(@Param("factoryId") String factoryId,
                                     @Param("beforeDate") LocalDateTime beforeDate);
+
+    @Query("SELECT s FROM SystemLog s WHERE s.factoryId = :factoryId " +
+           "AND (:logType IS NULL OR s.logType = :logType) " +
+           "AND (:logLevel IS NULL OR s.logLevel = :logLevel) " +
+           "AND (:keyword IS NULL OR s.message LIKE CONCAT('%', :keyword, '%')) " +
+           "AND (:start IS NULL OR s.createdAt >= :start) " +
+           "AND (:end IS NULL OR s.createdAt <= :end)")
+    Page<SystemLog> searchLogs(@Param("factoryId") String factoryId,
+                               @Param("logType") String logType,
+                               @Param("logLevel") String logLevel,
+                               @Param("keyword") String keyword,
+                               @Param("start") LocalDateTime start,
+                               @Param("end") LocalDateTime end,
+                               Pageable pageable);
 }

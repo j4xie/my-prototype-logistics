@@ -80,6 +80,16 @@ public class IntentMatchingConfig {
      */
     private SemanticFirstConfig semanticFirst = new SemanticFirstConfig();
 
+    /**
+     * 影子模式配置
+     */
+    private ShadowModeConfig shadowMode = new ShadowModeConfig();
+
+    /**
+     * BERT 优先意图配置
+     */
+    private BertPrimaryConfig bertPrimary = new BertPrimaryConfig();
+
     // ==================== 内部配置类 ====================
 
     /**
@@ -472,6 +482,27 @@ public class IntentMatchingConfig {
         private double keywordTailWeight = 0.05;
     }
 
+    /**
+     * 影子模式配置
+     * 控制 BERT shadow classification 的采样率和开关
+     */
+    @Data
+    public static class ShadowModeConfig {
+        private boolean enabled = true;
+        private double sampleRate = 1.0;
+    }
+
+    /**
+     * BERT 优先意图配置
+     * 指定哪些意图在 BERT 高置信度时直接采纳，跳过语义路由
+     */
+    @Data
+    public static class BertPrimaryConfig {
+        private boolean enabled = false;
+        private String intentCodes;
+        private double confidenceThreshold = 0.40;
+    }
+
     // ==================== 便捷方法 ====================
 
     /**
@@ -682,5 +713,33 @@ public class IntentMatchingConfig {
      */
     public SemanticFirstConfig getSemanticFirstConfig() {
         return semanticFirst;
+    }
+
+    // ==================== Shadow Mode 便捷方法 ====================
+
+    public boolean isShadowModeEnabled() {
+        return this.shadowMode.isEnabled();
+    }
+
+    public double getShadowModeSampleRate() {
+        return this.shadowMode.getSampleRate();
+    }
+
+    // ==================== BERT Primary 便捷方法 ====================
+
+    public boolean isBertPrimaryEnabled() {
+        return this.bertPrimary.isEnabled();
+    }
+
+    public boolean isBertPrimaryIntent(String intentCode) {
+        if (!bertPrimary.isEnabled() || bertPrimary.getIntentCodes() == null || bertPrimary.getIntentCodes().isEmpty()) {
+            return false;
+        }
+        for (String code : bertPrimary.getIntentCodes().split(",")) {
+            if (code.trim().equals(intentCode)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

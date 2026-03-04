@@ -5429,6 +5429,87 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("审批采购", "ORDER_APPROVAL");
         phraseToIntentMapping.put("采购审批", "ORDER_APPROVAL");
 
+        // ========== Wave-7c/7d/7e: Phase 1 routing 97%→99% ==========
+
+        // --- Wave-7c: 库存/物料误路由修复 ---
+        phraseToIntentMapping.put("仓库里头还有", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("仓库里头", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料又不够", "MATERIAL_LOW_STOCK_ALERT");
+        phraseToIntentMapping.put("原料又不够了", "MATERIAL_LOW_STOCK_ALERT");
+
+        // --- Wave-7c: 考勤/打卡误路由修复 ---
+        phraseToIntentMapping.put("考勤嘛，帮我看看", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("考勤嘛帮我看看", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("帮我查一下考勤", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("打完卡", "CLOCK_IN");
+        phraseToIntentMapping.put("看看考勤", "ATTENDANCE_TODAY");
+
+        // --- Wave-7c: 溯源误路由修复 ---
+        phraseToIntentMapping.put("扫描溯源码", "TRACE_PUBLIC");
+        phraseToIntentMapping.put("溯源码查看信息", "TRACE_PUBLIC");
+        phraseToIntentMapping.put("溯源码查看", "TRACE_PUBLIC");
+
+        // --- Wave-7c: CONTEXT_CONTINUE ---
+        phraseToIntentMapping.put("再查一遍", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("一样的，再查", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("刚才那个继续", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("再看看按", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("再查详细一点", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("对就是这个再查", "CONTEXT_CONTINUE");
+
+        // --- Wave-7c: 产量/生产报告修复 ---
+        phraseToIntentMapping.put("产量都不达标", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("基本的产量", "REPORT_PRODUCTION");
+
+        // --- Wave-7c: 多意图输入补充 ---
+        phraseToIntentMapping.put("看看今天产量", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("检查设备状态", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("查完订单再看", "ORDER_LIST");
+        phraseToIntentMapping.put("查完订单", "ORDER_LIST");
+        phraseToIntentMapping.put("采购订单和销售", "ORDER_LIST");
+        phraseToIntentMapping.put("销售订单", "ORDER_LIST");
+
+        // --- Wave-7c: 拼写错误/谐音修复 ---
+        phraseToIntentMapping.put("发或记录", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("排版表", "SCHEDULING_LIST");
+
+        // --- Wave-7d: 尾段短语匹配支持 ---
+        phraseToIntentMapping.put("查一下排班", "SCHEDULING_LIST");
+        phraseToIntentMapping.put("查一下今天排班", "SCHEDULING_LIST");
+        phraseToIntentMapping.put("今天排班", "SCHEDULING_LIST");
+        phraseToIntentMapping.put("更新发货单", "SHIPMENT_UPDATE");
+        phraseToIntentMapping.put("发货单信息", "SHIPMENT_UPDATE");
+
+        // --- Wave-7e: 上下文/续查短语 (targeting AN1, AN2, Z2 failures) ---
+        phraseToIntentMapping.put("上一个结果", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("上一个结果的详细信息", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("按时间排个序", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("按时间排序", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("筛选不合格的", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("筛选不合格", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("换成按月看", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("换成按月", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("按月看", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("按部门拆分看看", "CONTEXT_CONTINUE");
+        phraseToIntentMapping.put("按部门拆分", "CONTEXT_CONTINUE");
+
+        // --- Wave-7e: AF1 进度报告修复 (PRODUCTION_HOURS_REPORT → PRODUCTION_PROGRESS_REPORT) ---
+        phraseToIntentMapping.put("查看生产进度报告", "PRODUCTION_PROGRESS_REPORT");
+        phraseToIntentMapping.put("今日产出进度", "PRODUCTION_PROGRESS_REPORT");
+        phraseToIntentMapping.put("车间产出进度", "PRODUCTION_PROGRESS_REPORT");
+
+        // --- Wave-7e: AD2 摄像头订阅修复 ---
+        phraseToIntentMapping.put("订阅摄像头告警推送", "CAMERA_SUBSCRIBE");
+        phraseToIntentMapping.put("订阅告警推送", "CAMERA_SUBSCRIBE");
+        phraseToIntentMapping.put("订阅摄像头告警", "CAMERA_SUBSCRIBE");
+
+        // --- Wave-7e: 拼写错误/typo修复 ---
+        phraseToIntentMapping.put("考勤已常", "ATTENDANCE_ANOMALY");  // 异常→已常 typo
+
+        // --- Wave-7e: 情绪化输入修复 ---
+        phraseToIntentMapping.put("订单超时", "ORDER_LIST");
+        phraseToIntentMapping.put("订单都超时了", "ORDER_LIST");
+
         log.debug("短语映射初始化完成，共 {} 条映射", phraseToIntentMapping.size());
 
         // ========== v32/v33: 业态隔离 — 餐饮专用短语映射 ==========

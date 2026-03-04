@@ -336,6 +336,33 @@ public interface IntentMatchRecordRepository extends JpaRepository<IntentMatchRe
             @Param("attribution") ErrorAttribution attribution,
             @Param("details") String details);
 
+    // ==================== 影子分类操作 ====================
+
+    /**
+     * 更新影子分类结果（PHRASE_MATCH vs BERT 对比）
+     */
+    @Modifying
+    @Query(value = "UPDATE intent_match_records SET shadow_intent_code = :shadowIntent, " +
+           "shadow_confidence = :shadowConf, shadow_agreed = :agreed, " +
+           "classifier_entropy = :entropy, classifier_margin = :margin, " +
+           "classifier_max_logit = :maxLogit WHERE id = :recordId",
+           nativeQuery = true)
+    int updateShadowResult(@Param("recordId") String recordId,
+                           @Param("shadowIntent") String shadowIntent,
+                           @Param("shadowConf") java.math.BigDecimal shadowConf,
+                           @Param("agreed") boolean agreed,
+                           @Param("entropy") java.math.BigDecimal entropy,
+                           @Param("margin") java.math.BigDecimal margin,
+                           @Param("maxLogit") java.math.BigDecimal maxLogit);
+
+    /**
+     * 标记 ZPD 边界（影子分类不一致时）
+     */
+    @Modifying
+    @Query(value = "UPDATE intent_match_records SET zpd_boundary = true WHERE id = :recordId",
+           nativeQuery = true)
+    int markZpdBoundary(@Param("recordId") String recordId);
+
     // ==================== 清理操作 ====================
 
     /**
