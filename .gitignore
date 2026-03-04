@@ -128,7 +128,7 @@ web-admin-dist.tar.gz
 .backup-v21/
 
 # 临时分析和调试文件
-*.xml
+# *.xml — removed: was blocking pom.xml from git, breaking server-side builds
 configs.json
 redundancy_analysis.txt
 rag_test_results.py
