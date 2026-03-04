@@ -78,6 +78,12 @@ public class SemanticRouterServiceImpl implements SemanticRouterService {
 
     // ==================== 统计计数器 ====================
 
+    // Wave-7c: 语义黑洞意图守卫 — 这些意图向量位于语义空间中心，易吸引不相关输入
+    // 匹配到这些意图时强制降级为 NEED_RERANKING (走LLM二次确认)
+    private static final Set<String> SEMANTIC_GUARD_INTENTS = Set.of(
+            "QUALITY_CHECK_CREATE", "SYSTEM_HELP", "MATERIAL_BATCH_RELEASE"
+    );
+
     private final AtomicLong totalRoutes = new AtomicLong(0);
     private final AtomicLong directExecuteCount = new AtomicLong(0);
     private final AtomicLong needRerankingCount = new AtomicLong(0);
@@ -159,11 +165,19 @@ public class SemanticRouterServiceImpl implements SemanticRouterService {
             // 7. 三级路由决策
             RouteDecision decision;
             if (topScore >= directExecuteThreshold && bestIntent != null) {
-                // 高置信度: 直接执行
-                directExecuteCount.incrementAndGet();
-                decision = RouteDecision.directExecute(bestIntent, topScore, candidates, userInput, latencyMs);
-                log.info("SemanticRouter: DIRECT_EXECUTE for '{}' -> {} (score={}, latency={}ms)",
-                        truncate(userInput, 50), bestIntent.getIntentCode(), topScore, latencyMs);
+                if (SEMANTIC_GUARD_INTENTS.contains(bestIntent.getIntentCode())) {
+                    // 黑洞意图降级: 强制走 RERANKING (LLM二次确认)
+                    needRerankingCount.incrementAndGet();
+                    decision = RouteDecision.needReranking(bestIntent, topScore, candidates, userInput, latencyMs);
+                    log.info("SemanticRouter: GUARD_DOWNGRADE for '{}' -> {} (score={}, latency={}ms) — 黑洞意图降级为RERANKING",
+                            truncate(userInput, 50), bestIntent.getIntentCode(), topScore, latencyMs);
+                } else {
+                    // 高置信度: 直接执行
+                    directExecuteCount.incrementAndGet();
+                    decision = RouteDecision.directExecute(bestIntent, topScore, candidates, userInput, latencyMs);
+                    log.info("SemanticRouter: DIRECT_EXECUTE for '{}' -> {} (score={}, latency={}ms)",
+                            truncate(userInput, 50), bestIntent.getIntentCode(), topScore, latencyMs);
+                }
 
             } else if (topScore >= rerankingThreshold) {
                 // 中等置信度: 需要 Reranking
