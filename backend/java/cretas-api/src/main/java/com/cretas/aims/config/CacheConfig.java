@@ -1,5 +1,8 @@
 package com.cretas.aims.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -42,6 +45,18 @@ public class CacheConfig {
     private RedisConnectionFactory redisConnectionFactory;
 
     /**
+     * 创建支持 Java 8 时间类型的 Redis JSON 序列化器
+     */
+    private GenericJackson2JsonRedisSerializer createRedisSerializer() {
+        ObjectMapper om = new ObjectMapper();
+        om.registerModule(new JavaTimeModule());
+        om.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        om.activateDefaultTyping(om.getPolymorphicTypeValidator(),
+                ObjectMapper.DefaultTyping.NON_FINAL);
+        return new GenericJackson2JsonRedisSerializer(om);
+    }
+
+    /**
      * RedisTemplate<String, Object> — CacheService 需要此类型
      */
     @Bean
@@ -49,12 +64,13 @@ public class CacheConfig {
         if (redisConnectionFactory == null) {
             return null;
         }
+        GenericJackson2JsonRedisSerializer serializer = createRedisSerializer();
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setValueSerializer(serializer);
         template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setHashValueSerializer(serializer);
         return template;
     }
 
@@ -76,7 +92,7 @@ public class CacheConfig {
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(1))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(new GenericJackson2JsonRedisSerializer()));
+                        .fromSerializer(createRedisSerializer()));
 
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
         cacheConfigurations.put("aiAnalysisResults", defaultConfig.entryTtl(Duration.ofDays(7)));
