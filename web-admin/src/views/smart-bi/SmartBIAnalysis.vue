@@ -1,9 +1,9 @@
 <template>
-  <div class="smart-bi-analysis">
+  <div ref="rootRef" class="smart-bi-analysis">
     <el-card class="upload-card">
       <template #header>
         <div class="card-header">
-          <span class="title"><span class="section-badge section-badge--chart"></span> 智能数据分析</span>
+          <span class="title"><span class="section-badge section-badge--chart" aria-hidden="true"></span> 智能数据分析</span>
           <div class="header-actions">
             <el-select
               v-if="uploadBatches.length > 1"
@@ -121,7 +121,7 @@
         <!-- 详细进度面板 -->
         <div v-if="sheetProgressList.length > 0" class="sheet-progress-panel">
           <div class="progress-header">
-            <span><span class="section-badge section-badge--chart"></span> Sheet 处理进度 ({{ completedSheetCount }}/{{ totalSheetCount }})</span>
+            <span><span class="section-badge section-badge--chart" aria-hidden="true"></span> Sheet 处理进度 ({{ completedSheetCount }}/{{ totalSheetCount }})</span>
             <el-tag v-if="dictionaryHits > 0" type="success" size="small">
               字典命中: {{ dictionaryHits }}
             </el-tag>
@@ -473,7 +473,7 @@
                     <span>过滤: {{ activeFilter.dimension }} = <strong>{{ activeFilter.value }}</strong></span>
                     <el-button type="primary" link size="small" @click="clearChartFilter">清除过滤</el-button>
                   </div>
-                  <div v-for="(chart, idx) in getSheetCharts(sheet)" :key="idx" class="chart-grid-item"
+                  <div v-for="(chart, idx) in getSheetCharts(sheet)" :key="`chart-${sheet.sheetIndex}-${chart.title || idx}`" class="chart-grid-item"
                        :class="{ 'chart-empty': isChartDataEmpty(chart.config) }">
                     <!-- Empty chart: show "暂无数据" placeholder instead of blank container -->
                     <template v-if="isChartDataEmpty(chart.config)">
@@ -622,7 +622,7 @@
 
                 <!-- 回退：纯文本展示 -->
                 <template v-else>
-                  <h3><span class="section-badge section-badge--ai"></span> AI 智能分析</h3>
+                  <h3><span class="section-badge section-badge--ai" aria-hidden="true"></span> AI 智能分析</h3>
                   <div v-if="enrichingSheets.has(sheet.sheetIndex) && !sheet.flowResult?.aiAnalysis">
                     <ChartSkeleton type="ai" />
                   </div>
@@ -649,9 +649,15 @@
                   :border="false"
                   style="width: 100%;"
                 >
-                  <el-table-column prop="factor" label="驱动因素" min-width="120" />
-                  <el-table-column prop="current_value" label="当前值" min-width="100" />
-                  <el-table-column prop="impact_description" label="变动影响" min-width="240" />
+                  <el-table-column prop="factor" label="驱动因素" min-width="120">
+                    <template #default="{ row }">{{ row.factor || '-' }}</template>
+                  </el-table-column>
+                  <el-table-column prop="current_value" label="当前值" min-width="100">
+                    <template #default="{ row }">{{ row.current_value || '-' }}</template>
+                  </el-table-column>
+                  <el-table-column prop="impact_description" label="变动影响" min-width="240">
+                    <template #default="{ row }">{{ row.impact_description || '-' }}</template>
+                  </el-table-column>
                 </el-table>
               </div>
 
@@ -666,7 +672,7 @@
 
               <!-- 数据预览 -->
               <div v-else class="data-preview-section">
-                <h3><span class="section-badge section-badge--data"></span> 数据预览</h3>
+                <h3><span class="section-badge section-badge--data" aria-hidden="true"></span> 数据预览</h3>
                 <el-button @click="loadSheetData(sheet)" type="primary" size="small">
                   查看原始数据
                 </el-button>
@@ -1059,6 +1065,8 @@ import { ElMessage } from 'element-plus';
 import { UploadFilled, Upload, Refresh, CircleCheckFilled, CircleCloseFilled, Loading, List, Document, Tickets, InfoFilled, ArrowRight, Pointer, DataAnalysis, TrendCharts, Download, Filter, Warning, WarningFilled, QuestionFilled, Share, CopyDocument, Link, Timer } from '@element-plus/icons-vue';
 import type { UploadFile, UploadUserFile, UploadInstance } from 'element-plus';
 import echarts from '@/utils/echarts';
+import type { SmartBIChartOption, SmartBIChartItem } from '@/types/echarts';
+import DOMPurify from 'dompurify';
 import { defineAsyncComponent } from 'vue';
 import KPICard from '@/components/smartbi/KPICard.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
@@ -1097,6 +1105,7 @@ interface UploadBatch {
   uploadId?: number;
   id?: number;
 }
+const rootRef = ref<HTMLDivElement>();
 const uploadBatches = ref<UploadBatch[]>([]);
 const selectedBatchIndex = ref<number>(0);
 const historyLoading = ref(false);
@@ -1304,7 +1313,7 @@ const createShareLink = async () => {
   }
   shareCreating.value = true;
   try {
-    const fId = factoryId.value || 'F001';
+    const fId = factoryId.value;
     const uploadId = batch.uploadId || batch.id;
     const resp = await post(`/${fId}/smart-bi/share`, {
       uploadId,
@@ -1415,7 +1424,7 @@ const buildDemoCacheData = (): DemoCacheData | null => {
         charts: s.flowResult.charts,
         kpiSummary: s.flowResult.kpiSummary,
         structuredAI: s.flowResult.structuredAI,
-        financialMetrics: (s.flowResult as any).financialMetrics,
+        financialMetrics: ((s.flowResult as Record<string, unknown>)).financialMetrics,
       } : undefined,
     })),
     uploadResult: {
@@ -1768,6 +1777,10 @@ const uploadFile = async () => {
       autoConfirm: true
     }));
 
+  // Abort any in-flight SSE upload before starting a new one
+  if (uploadAbortController) uploadAbortController.abort();
+  uploadAbortController = new AbortController();
+
   // 初始化 Sheet 进度列表
   sheetProgressList.value = sheetConfigs.map(config => {
     const sheetInfo = availableSheets.value.find(s => s.index === config.sheetIndex);
@@ -1796,6 +1809,10 @@ const uploadFile = async () => {
     const response = await fetch(url, {
       method: 'POST',
       body: formData,
+      headers: {
+        'Authorization': `Bearer ${authStore.accessToken}`,
+      },
+      signal: uploadAbortController?.signal,
     });
 
     if (!response.ok) {
@@ -1844,6 +1861,7 @@ const uploadFile = async () => {
     }
 
   } catch (error: any) {
+    if (error.name === 'AbortError') return; // Component unmounted or new upload started
     uploadStatus.value = 'exception';
     progressText.value = '上传失败';
     ElMessage.error(`上传失败: ${error.message || '未知错误'}`);
@@ -1932,21 +1950,25 @@ const handleSSEEvent = (event: any) => {
         }, 100); // 额外延迟确保 DOM 完全渲染
       });
 
-      // P5: Enrich all sheets progressively — limiter(2) controls concurrency
-      // Only 1 starts immediately; rest stagger at 3s intervals to avoid DashScope QPS saturation
+      // P5: Enrich all sheets with concurrency limit (max 2 parallel, no fixed stagger)
       const dataSheets = uploadedSheets.value.filter(s => !isIndexSheet(s) && s.uploadId);
-      for (let i = 0; i < dataSheets.length; i++) {
-        const sheet = dataSheets[i];
+      const sheetsToEnrich = dataSheets.filter(sheet => {
         const sheetHasCharts = hasChartData(sheet);
         const hasAI = !!sheet.flowResult?.aiAnalysis;
-        if ((!sheetHasCharts || !hasAI) && sheet.uploadId) {
-          if (i === 0) {
-            enrichSheet(sheet);
-          } else {
-            // Stagger at 3s intervals; enrichmentLimiter(2) provides backpressure
-            setTimeout(() => enrichSheet(sheet), i * 3000);
+        return (!sheetHasCharts || !hasAI) && sheet.uploadId;
+      });
+      if (sheetsToEnrich.length > 0) {
+        // Semaphore-style concurrency limiter (max 2 to respect DashScope QPS)
+        let running = 0;
+        let idx = 0;
+        const startNext = () => {
+          while (running < 2 && idx < sheetsToEnrich.length) {
+            running++;
+            const sheet = sheetsToEnrich[idx++];
+            enrichSheet(sheet).catch(() => {}).finally(() => { running--; startNext(); });
           }
-        }
+        };
+        startNext();
       }
     }
 
@@ -2013,12 +2035,12 @@ const processEChartsOptions = (opts: Record<string, unknown>): Record<string, un
  * Resolve ECharts options from various config formats
  */
 const resolveEChartsOptions = (config: Record<string, unknown>): Record<string, unknown> | null => {
-  if ((config as any).series || (config as any).xAxis || (config as any).yAxis) {
+  if (((config as SmartBIChartOption)).series || ((config as SmartBIChartOption)).xAxis || ((config as SmartBIChartOption)).yAxis) {
     return config;
-  } else if (typeof (config as any).chartOptions === 'string') {
-    try { return JSON.parse((config as any).chartOptions); } catch { return null; }
-  } else if ((config as any).options) {
-    return (config as any).options;
+  } else if (typeof ((config as SmartBIChartOption)).chartOptions === 'string') {
+    try { return JSON.parse(((config as SmartBIChartOption)).chartOptions); } catch { return null; }
+  } else if (((config as SmartBIChartOption)).options) {
+    return ((config as SmartBIChartOption)).options;
   }
   return null;
 };
@@ -2029,7 +2051,7 @@ const resolveEChartsOptions = (config: Record<string, unknown>): Record<string, 
  */
 const applyAnomalyOverlay = (opts: Record<string, unknown>, anomalies: Record<string, any>) => {
   if (!anomalies || !opts) return;
-  const series = (opts as any).series;
+  const series = ((opts as SmartBIChartOption)).series;
   if (!Array.isArray(series)) return;
 
   for (const s of series) {
@@ -2088,17 +2110,17 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
   const nameOf = (col: string) => displayNameMap?.[col] || humanizeColumnName(col);
   // === Clean meaningless suffixes in title, series names, legend, radar indicators ===
   {
-    const _title = (opts as any).title;
+    const _title = ((opts as SmartBIChartOption)).title;
     if (_title && typeof _title.text === 'string') _title.text = cleanDisplayLabel(_title.text);
   }
   {
-    const _series = (opts as any).series;
+    const _series = ((opts as SmartBIChartOption)).series;
     if (Array.isArray(_series)) {
       for (const s of _series) {
         if (typeof s.name === 'string') s.name = cleanDisplayLabel(s.name);
       }
     }
-    const _legend = (opts as any).legend;
+    const _legend = ((opts as SmartBIChartOption)).legend;
     if (_legend && Array.isArray(_legend.data)) {
       _legend.data = _legend.data.map((d: unknown) =>
         typeof d === 'string' ? cleanDisplayLabel(d) : d
@@ -2107,7 +2129,7 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
   }
   // Clean radar indicator names (before radar max rounding)
   {
-    const _radar = (opts as any).radar;
+    const _radar = ((opts as SmartBIChartOption)).radar;
     if (_radar) {
       const radarItems = Array.isArray(_radar) ? _radar : [_radar];
       for (const r of radarItems) {
@@ -2122,7 +2144,7 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
 
   // Helper: extract all numeric values from series data
   const getSeriesStats = (o: Record<string, unknown>): { max: number; min: number; count: number; nonZeroMin: number; zeroCount: number; median: number } => {
-    const series = (o as any).series;
+    const series = ((o as SmartBIChartOption)).series;
     if (!Array.isArray(series)) return { max: 0, min: 0, count: 0, nonZeroMin: Infinity, zeroCount: 0, median: 0 };
     let maxVal = 0, minVal = Infinity, count = 0, nonZeroMin = Infinity, zeroCount = 0;
     const allValues: number[] = [];
@@ -2147,9 +2169,9 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
   };
 
   const stats = getSeriesStats(opts);
-  const xAxis = (opts as any).xAxis;
-  const yAxis = (opts as any).yAxis;
-  const series = (opts as any).series;
+  const xAxis = ((opts as SmartBIChartOption)).xAxis;
+  const yAxis = ((opts as SmartBIChartOption)).yAxis;
+  const series = ((opts as SmartBIChartOption)).series;
   const chartType = Array.isArray(series) ? series[0]?.type : '';
 
   // === D2: 图例名称人性化 (uses displayNameMap when available) ===
@@ -2161,7 +2183,7 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
     }
   }
   // Legend data humanization
-  const legend = (opts as any).legend;
+  const legend = ((opts as SmartBIChartOption)).legend;
   if (legend && Array.isArray(legend.data)) {
     legend.data = legend.data.map((item: any) => {
       if (typeof item === 'string') return nameOf(item);
@@ -2219,15 +2241,15 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
   if (xAxis && xAxis.type === 'category' && Array.isArray(xAxis.data) && xAxis.data.length > 30) {
     const dataLen = xAxis.data.length;
     const endPercent = Math.min(100, Math.round((25 / dataLen) * 100));
-    if (!(opts as any).dataZoom) {
-      (opts as any).dataZoom = [
+    if (!((opts as SmartBIChartOption)).dataZoom) {
+      ((opts as SmartBIChartOption)).dataZoom = [
         { type: 'slider', show: true, xAxisIndex: 0, start: 0, end: endPercent, height: 20, bottom: 8 },
         { type: 'inside', xAxisIndex: 0, start: 0, end: endPercent }
       ];
-      const grid = (opts as any).grid || {};
+      const grid = ((opts as SmartBIChartOption)).grid || {};
       const curBottom = typeof grid.bottom === 'number' ? grid.bottom : 50;
       grid.bottom = Math.max(curBottom, 60);
-      (opts as any).grid = grid;
+      ((opts as SmartBIChartOption)).grid = grid;
     }
   }
 
@@ -2253,13 +2275,13 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
     // Adjust grid bottom when labels are rotated to prevent clipping
     const curRotate = xAxis.axisLabel.rotate || 0;
     if (curRotate >= 30) {
-      const grid = (opts as any).grid || {};
+      const grid = ((opts as SmartBIChartOption)).grid || {};
       const curBottom = typeof grid.bottom === 'number' ? grid.bottom :
                         (typeof grid.bottom === 'string' && grid.bottom.endsWith('%') ? parseInt(grid.bottom) : 50);
       const neededBottom = curRotate >= 45 ? 85 : 70;
       if (curBottom < neededBottom) {
         grid.bottom = neededBottom;
-        (opts as any).grid = grid;
+        ((opts as SmartBIChartOption)).grid = grid;
       }
     }
     // D5: 标签截断 — rotated labels can be shorter since they have more vertical space
@@ -2295,10 +2317,10 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
       };
     }
     // Ensure enough left margin for horizontal bar labels
-    const grid = (opts as any).grid || {};
+    const grid = ((opts as SmartBIChartOption)).grid || {};
     if (!grid.left || (typeof grid.left === 'number' && grid.left < 100)) {
       grid.left = '18%';
-      (opts as any).grid = grid;
+      ((opts as SmartBIChartOption)).grid = grid;
     }
   }
 
@@ -2308,7 +2330,7 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
       // Hide zero-value bar/line labels to reduce visual noise
       if ((s.type === 'bar' || s.type === 'line') && s.label && s.label.show) {
         const origFormatter = s.label.formatter;
-        s.label.formatter = (params: any) => {
+        s.label.formatter = (params: unknown) => {
           const val = typeof params.value === 'number' ? params.value :
                       (Array.isArray(params.value) ? Number(params.value[1]) : Number(params.value));
           // Hide zero or near-zero labels
@@ -2345,7 +2367,7 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
   }
 
   // === Radar indicator max rounding — fix "ticks may be not readable" warnings ===
-  const radar = (opts as any).radar;
+  const radar = ((opts as SmartBIChartOption)).radar;
   if (radar) {
     const radarItems = Array.isArray(radar) ? radar : [radar];
     for (const r of radarItems) {
@@ -2379,10 +2401,10 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
   // === D3: 极端离群值检测 ===
   // 当最大值 > 10x 中位数时，在 tooltip 中提示
   if (chartType === 'bar' && stats.median > 0 && stats.max > stats.median * 10) {
-    (opts as any).tooltip = (opts as any).tooltip || {};
-    const origTipFormatter = (opts as any).tooltip.formatter;
+    ((opts as SmartBIChartOption)).tooltip = ((opts as SmartBIChartOption)).tooltip || {};
+    const origTipFormatter = ((opts as SmartBIChartOption)).tooltip.formatter;
     if (!origTipFormatter) {
-      (opts as any).tooltip.formatter = (params: any) => {
+      ((opts as SmartBIChartOption)).tooltip.formatter = (params: unknown) => {
         const p = Array.isArray(params) ? params[0] : params;
         const val = typeof p.value === 'number' ? p.value : (Array.isArray(p.value) ? p.value[1] : p.value);
         const numVal = Number(val);
@@ -2552,7 +2574,7 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
     enhanceChartOption(echartsOptions, activeSheet?.flowResult?.displayNameMap);
 
     // D4: 全零图表检测 — 当95%+数据为零时添加提示水印
-    const eSeries = (echartsOptions as any).series;
+    const eSeries = ((echartsOptions as SmartBIChartOption)).series;
     if (Array.isArray(eSeries) && eSeries[0]?.type !== 'pie') {
       let totalVals = 0, zeroVals = 0;
       for (const s of eSeries) {
@@ -2565,7 +2587,7 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
       }
       if (totalVals > 5 && zeroVals / totalVals > 0.9) {
         // Add watermark-style hint
-        (echartsOptions as any).graphic = [
+        ((echartsOptions as SmartBIChartOption)).graphic = [
           {
             type: 'text',
             left: 'center',
@@ -2594,7 +2616,7 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
     }
 
     // Apply anomaly overlay if available
-    const anomalies = (config as any).anomalies || (chart as any).anomalies;
+    const anomalies = ((config as SmartBIChartOption)).anomalies || ((chart as SmartBIChartItem)).anomalies;
     if (anomalies) {
       applyAnomalyOverlay(echartsOptions, anomalies);
     }
@@ -2607,8 +2629,8 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
       }
       // Suppress ECharts false-positive "alignTicks" warning on radar indicator axes
       // (radar internal axes set alignTicks:true by default; our nice-rounded max values ARE readable)
-      const chartType = (echartsOptions as any).series?.[0]?.type
-        ?? (Array.isArray((echartsOptions as any).series) ? (echartsOptions as any).series[0]?.type : undefined);
+      const chartType = ((echartsOptions as SmartBIChartOption)).series?.[0]?.type
+        ?? (Array.isArray(((echartsOptions as SmartBIChartOption)).series) ? ((echartsOptions as SmartBIChartOption)).series[0]?.type : undefined);
       if (chartType === 'radar') {
         const _origWarn = console.warn;
         // eslint-disable-next-line no-console
@@ -2616,8 +2638,11 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
           if (typeof args[0] === 'string' && args[0].includes('alignTicks')) return;
           _origWarn.apply(console, args);
         };
-        instance.setOption(echartsOptions, { notMerge: true });
-        console.warn = _origWarn;
+        try {
+          instance.setOption(echartsOptions, { notMerge: true });
+        } finally {
+          console.warn = _origWarn;
+        }
       } else {
         instance.setOption(echartsOptions, { notMerge: true });
       }
@@ -2626,7 +2651,7 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
       if (activeFilter.value) {
         const filterVal = activeFilter.value.value;
         // Find matching data index from xAxis
-        const xData = (echartsOptions as any)?.xAxis?.data;
+        const xData = (echartsOptions as SmartBIChartOption)?.xAxis?.data;
         if (Array.isArray(xData)) {
           const matchIdx = xData.indexOf(filterVal);
           if (matchIdx >= 0) {
@@ -2636,7 +2661,7 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
           }
         }
         // For pie charts, match by name
-        const seriesArr = (echartsOptions as any)?.series;
+        const seriesArr = (echartsOptions as SmartBIChartOption)?.series;
         if (Array.isArray(seriesArr)) {
           for (const s of seriesArr) {
             if (s.type === 'pie' && Array.isArray(s.data)) {
@@ -2652,7 +2677,7 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
 
       // Click events: Ctrl+Click = filter, normal Click = drill-down
       instance.off('click');
-      instance.on('click', (params: any) => {
+      instance.on('click', (params: unknown) => {
         if (params.event?.event?.ctrlKey || params.event?.event?.metaKey) {
           applyChartFilter(activeSheet, params);
         } else {
@@ -2663,7 +2688,7 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
       // P0-B: Throttled hover cross-filtering with dispatchAction (100ms throttle)
       const chartKey = `chart-${activeSheet.sheetIndex}-${idx}`;
       instance.off('mouseover');
-      instance.on('mouseover', (params: any) => {
+      instance.on('mouseover', (params: unknown) => {
         const hoverValue = params.name || params.seriesName;
         if (!hoverValue) return;
         if (hoverThrottleTimers.has(chartKey)) return; // throttle: skip if pending
@@ -2675,7 +2700,7 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
           if (!sibDom) return;
           const sibInstance = echarts.getInstanceByDom(sibDom);
           if (!sibInstance) return;
-          const sibOpt = sibInstance.getOption() as any;
+          const sibOpt = sibInstance.getOption() as Record<string, unknown>;
           // Bar/line: match xAxis by name (not index — safe with DataZoom)
           const xData = sibOpt?.xAxis?.[0]?.data;
           if (Array.isArray(xData)) {
@@ -2788,7 +2813,7 @@ watch(activeTab, (newTab, oldTab) => {
   // instances are reused on tab switch back (avoid dispose+init cycle ~500ms overhead).
   // Instances are disposed only when component unmounts or after 60s idle.
   if (oldTab) {
-    document.querySelectorAll(`[id^="chart-${oldTab}-"]`).forEach(dom => {
+    (rootRef.value || document).querySelectorAll(`[id^="chart-${oldTab}-"]`).forEach(dom => {
       const inst = echarts.getInstanceByDom(dom as HTMLElement);
       if (inst) {
         inst.off('click');
@@ -2965,7 +2990,7 @@ const formatAIText = (text: string): string => {
   // Step 4: 清理空段落
   formatted = formatted.replace(/<p>\s*<\/p>/g, '');
 
-  return formatted;
+  return DOMPurify.sanitize(formatted);
 };
 
 // 刷新分析：清除缓存后强制重新 enrichment
@@ -3035,7 +3060,7 @@ const isChartDataEmpty = (chartConfig: any): boolean => {
 // P2.1: 使用 idle callback 预缓存下一个 sheet
 const idleEnrichNext = (currentSheetIndex: number) => {
   // Polyfill for requestIdleCallback (not available in all browsers)
-  const idleCb = (window as any).requestIdleCallback || ((fn: Function) => setTimeout(fn, 2000));
+  const idleCb = (window as unknown as { requestIdleCallback?: (fn: () => void) => number }).requestIdleCallback || ((fn: Function) => setTimeout(fn, 2000));
 
   idleCb(() => {
     // 仅在网络空闲时预加载（没有其他正在进行的 enrichment）
@@ -3053,8 +3078,6 @@ const idleEnrichNext = (currentSheetIndex: number) => {
     );
 
     if (nextSheet?.uploadId) {
-      console.log(`[P2.1] Pre-caching next sheet: ${nextSheet.sheetName} (index ${nextSheet.sheetIndex})`);
-
       // 静默预加载（无加载 UI）
       enrichSheetAnalysis(nextSheet.uploadId).then(result => {
         if (result && result.success) {
@@ -3091,7 +3114,6 @@ const idleEnrichNext = (currentSheetIndex: number) => {
 
             // 标记为已 enriched
             enrichedSheets.value.add(nextSheet.sheetIndex);
-            console.log(`[P2.1] Pre-cache complete for sheet ${nextSheet.sheetIndex}`);
           }
         }
       }).catch(err => {
@@ -3584,7 +3606,7 @@ const getSheetColumns = (sheet: SheetResult): Array<{ name: string; type: 'numer
 
 // ========== P1.3: View More (truncated chart data) ==========
 const getDisplayedCount = (chart: { chartType: string; config: Record<string, unknown> }): number => {
-  const opt = chart.config as any;
+  const opt = chart.config as SmartBIChartOption;
   if (chart.chartType === 'pie') {
     return opt?.series?.[0]?.data?.length ?? 0;
   }
@@ -3594,7 +3616,7 @@ const getDisplayedCount = (chart: { chartType: string; config: Record<string, un
 const handleViewMoreData = (sheet: SheetResult, chartIdx: number, chart: { chartType: string; title: string; totalItems?: number }) => {
   // Show the raw data tab for this sheet, which contains all rows
   loadSheetData(sheet);
-  ElMessage.info(`图表"${chart.title}"显示了前 ${getDisplayedCount(chart as any)} 项，完整 ${chart.totalItems} 项数据可在下方原始数据中查看`);
+  ElMessage.info(`图表"${chart.title}"显示了前 ${getDisplayedCount(chart as SmartBIChartItem)} 项，完整 ${chart.totalItems} 项数据可在下方原始数据中查看`);
 };
 
 // ========== Chart Export (Phase 3.3 — industry standard, 8/8 benchmarks) ==========
@@ -3883,6 +3905,9 @@ const handleGlobalFilterChange = (_sheet: SheetResult) => {
   filteredRowCount.value = 0;
 };
 
+// SSE upload abort controller — aborted on unmount or new upload
+let uploadAbortController: AbortController | null = null;
+
 // Q1: Data filtering with debounce
 let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -4012,9 +4037,9 @@ const applyChartFilter = (sheet: SheetResult, params: any) => {
   const charts = getSheetCharts(sheet);
   let dimension = '';
   for (const c of charts) {
-    const xField = (c as any).xField;
+    const xField = ((c as SmartBIChartItem)).xField;
     if (xField) { dimension = xField; break; }
-    const xName = (c.config as any)?.xAxis?.name;
+    const xName = ((c.config as SmartBIChartOption))?.xAxis?.name;
     if (xName) { dimension = xName; break; }
   }
 
@@ -4075,7 +4100,8 @@ onActivated(() => {
   window.addEventListener('resize', handleResize);
   // Resize ECharts to fit (container size may have changed)
   nextTick(() => {
-    document.querySelectorAll('[id^="chart-"]').forEach(dom => {
+    const root = rootRef.value;
+    (root || document).querySelectorAll('[id^="chart-"]').forEach(dom => {
       const instance = echarts.getInstanceByDom(dom as HTMLElement);
       if (instance) instance.resize();
     });
@@ -4083,6 +4109,8 @@ onActivated(() => {
 });
 
 onBeforeUnmount(() => {
+  if (uploadAbortController) { uploadAbortController.abort(); uploadAbortController = null; }
+  if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
   if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
   clearHoverThrottleTimers();
   if (autoRefreshTimer) clearInterval(autoRefreshTimer);
@@ -4090,8 +4118,10 @@ onBeforeUnmount(() => {
   // T5.2: Disconnect intersection observer
   if (chartObserver) { chartObserver.disconnect(); chartObserver = null; }
   pendingChartConfigs.clear();
+  sheetRawDataCache.clear();
+  kpiCache.clear();
   // Dispose all ECharts instances within this component's scope
-  const root = document.querySelector('.smart-bi-analysis');
+  const root = rootRef.value;
   (root || document).querySelectorAll('[id^="chart-"]').forEach(dom => {
     const instance = echarts.getInstanceByDom(dom as HTMLElement);
     if (instance) instance.dispose();
@@ -4299,7 +4329,7 @@ const selectBatch = (index: number) => {
   // 因此同时按 tableType 和 sheet 名称模式匹配检测索引页
   const indexNamePattern = /^(索引|目录|index|目次|sheet\s*index)$/i;
   const indexSheet = uploadedSheets.value.find(
-    s => s.tableType === 'index' || indexNamePattern.test(s.sheetName.trim())
+    s => s.tableType === 'index' || indexNamePattern.test((s.sheetName || '').trim())
   );
   if (indexSheet) {
     indexSheet.tableType = 'index';  // 补齐 tableType
@@ -4323,6 +4353,10 @@ const selectBatch = (index: number) => {
     message: `${safeBatchName(batch)} (${batch.sheetCount} 表, ${batch.totalRows} 行)`,
     results: uploadedSheets.value,
   };
+
+  // Clear stale cache banner when switching batches
+  usingDemoCache.value = false;
+  demoCacheFileName.value = '';
 
   enrichedSheets.value = new Set();
   enrichingSheets.value = new Set();
@@ -4395,10 +4429,15 @@ const loadHistory = async () => {
 };
 
 // ========== Window resize handler for ECharts (R-9) ==========
+let resizeRaf = 0;
 const handleResize = () => {
-  document.querySelectorAll('[id^="chart-"]').forEach(dom => {
-    const instance = echarts.getInstanceByDom(dom as HTMLElement);
-    if (instance) instance.resize();
+  if (resizeRaf) return;
+  resizeRaf = requestAnimationFrame(() => {
+    (rootRef.value || document).querySelectorAll('[id^="chart-"]').forEach(dom => {
+      const instance = echarts.getInstanceByDom(dom as HTMLElement);
+      if (instance) instance.resize();
+    });
+    resizeRaf = 0;
   });
 };
 
@@ -4501,20 +4540,20 @@ onMounted(() => {
 
     .upload-dragger {
       :deep(.el-upload-dragger) {
-        width: 600px;
+        width: min(600px, 100%);
         padding: 60px 40px;
       }
 
       .el-icon--upload {
         font-size: 80px;
-        color: #409eff;
+        color: var(--color-primary);
         margin-bottom: 20px;
       }
     }
   }
 
   .progress-section {
-    padding: 60px 100px;
+    padding: 40px var(--page-padding, 100px);
 
     .progress-text {
       text-align: center;
@@ -4599,7 +4638,7 @@ onMounted(() => {
               }
 
               &.loading {
-                color: #409eff;
+                color: var(--color-primary);
                 animation: rotating 2s linear infinite;
               }
             }
@@ -4714,9 +4753,9 @@ onMounted(() => {
         gap: 14px;
         padding: 18px 22px;
         margin-bottom: 20px;
-        background: linear-gradient(135deg, #2563eb06 0%, #7c3aed06 100%);
-        border: 1px solid #2563eb20;
-        border-left: 4px solid #2563eb;
+        background: linear-gradient(135deg, #1B65A806 0%, #2B7EC106 100%);
+        border: 1px solid #1B65A820;
+        border-left: 4px solid #1B65A8;
         border-radius: 12px;
 
         .summary-icon {
@@ -4724,7 +4763,7 @@ onMounted(() => {
           width: 36px;
           height: 36px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+          background: linear-gradient(135deg, #1B65A8 0%, #2B7EC1 100%);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -4914,7 +4953,7 @@ onMounted(() => {
             background: #eff6ff;
             border-radius: 8px;
             font-size: 13px;
-            color: #2563eb;
+            color: #1B65A8;
           }
         }
 
@@ -5023,7 +5062,7 @@ onMounted(() => {
             }
 
             :deep(.highlight) {
-              color: #409eff;
+              color: var(--color-primary);
               font-weight: 500;
             }
 
