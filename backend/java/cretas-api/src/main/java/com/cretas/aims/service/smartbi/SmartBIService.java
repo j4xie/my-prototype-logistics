@@ -209,6 +209,15 @@ public interface SmartBIService {
      */
     List<AIInsight> generateAIInsights(String factoryId, DashboardResponse dashboard);
 
+    /**
+     * 获取驾驶舱 LLM 洞察 (独立于主 dashboard 调用，供前端异步加载)
+     *
+     * @param factoryId 工厂ID
+     * @param period    时间周期
+     * @return LLM 生成的洞察列表
+     */
+    List<AIInsight> getDashboardLLMInsights(String factoryId, String period);
+
     // ==================== 数据日期范围检测 ====================
 
     /**

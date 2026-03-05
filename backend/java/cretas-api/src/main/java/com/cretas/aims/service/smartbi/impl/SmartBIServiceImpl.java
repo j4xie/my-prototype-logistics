@@ -27,12 +27,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PreDestroy;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
@@ -171,8 +175,15 @@ public class SmartBIServiceImpl implements SmartBIService {
 
     // ==================== 经营驾驶舱 ====================
 
+    /** Shared thread pool for parallel dashboard queries (bounded to avoid connection pool exhaustion) */
+    private static final ExecutorService DASHBOARD_EXECUTOR = Executors.newFixedThreadPool(4);
+
+    @PreDestroy
+    public void shutdownExecutor() {
+        DASHBOARD_EXECUTOR.shutdown();
+    }
+
     @Override
-    @Transactional  // 移除 readOnly=true，因为 saveToCache() 和 recordUsage() 需要写入数据库
     public DashboardResponse getExecutiveDashboard(String factoryId, String period) {
         log.info("获取经营驾驶舱: factoryId={}, period={}", factoryId, period);
         long startTime = System.currentTimeMillis();
@@ -198,31 +209,51 @@ public class SmartBIServiceImpl implements SmartBIService {
             if (dataRange != null && dataRange.isValid()) {
                 log.info("自动检测到数据日期范围: {} 至 {}", dataRange.getStartDate(), dataRange.getEndDate());
                 range = dataRange;
-                // 更新缓存键以反映实际使用的日期范围
                 cacheKey = buildCacheKey("dashboard", "auto_" + range.getStartDate() + "_" + range.getEndDate());
             } else {
                 log.warn("未检测到任何销售数据: factoryId={}", factoryId);
             }
         }
 
-        // 3. 获取各维度数据
-        DashboardResponse salesDashboard = salesService.getSalesOverview(
-                factoryId, range.getStartDate(), range.getEndDate());
+        // 3. 并行获取各维度数据 (每个 service 方法有自己的 @Transactional)
+        final DateRange finalRange = range;
+        CompletableFuture<DashboardResponse> salesFuture = CompletableFuture.supplyAsync(
+                () -> salesService.getSalesOverview(factoryId, finalRange.getStartDate(), finalRange.getEndDate()),
+                DASHBOARD_EXECUTOR);
+        CompletableFuture<List<RankingItem>> deptRankingFuture = CompletableFuture.supplyAsync(
+                () -> deptService.getDepartmentRanking(factoryId, finalRange.getStartDate(), finalRange.getEndDate()),
+                DASHBOARD_EXECUTOR);
+        CompletableFuture<List<RankingItem>> regionRankingFuture = CompletableFuture.supplyAsync(
+                () -> regionService.getRegionRanking(factoryId, finalRange.getStartDate(), finalRange.getEndDate()),
+                DASHBOARD_EXECUTOR);
+        CompletableFuture<ChartConfig> deptTrendFuture = CompletableFuture.supplyAsync(
+                () -> deptService.getDepartmentTrendComparison(factoryId, finalRange.getStartDate(), finalRange.getEndDate(), "WEEK"),
+                DASHBOARD_EXECUTOR);
 
-        // 4. 获取部门排名
-        List<RankingItem> deptRankings = deptService.getDepartmentRanking(
-                factoryId, range.getStartDate(), range.getEndDate());
+        // 等待所有查询完成 (join+get wrapped in try-catch for serial fallback)
+        DashboardResponse salesDashboard;
+        List<RankingItem> deptRankings;
+        List<RankingItem> regionRankings;
+        ChartConfig deptTrendChart;
+        try {
+            CompletableFuture.allOf(salesFuture, deptRankingFuture, regionRankingFuture, deptTrendFuture).join();
+            salesDashboard = salesFuture.join();
+            deptRankings = deptRankingFuture.join();
+            regionRankings = regionRankingFuture.join();
+            deptTrendChart = deptTrendFuture.join();
+        } catch (Exception e) {
+            log.error("并行查询异常, 回退到串行: {}", e.getMessage(), e);
+            salesDashboard = salesService.getSalesOverview(factoryId, range.getStartDate(), range.getEndDate());
+            deptRankings = deptService.getDepartmentRanking(factoryId, range.getStartDate(), range.getEndDate());
+            regionRankings = regionService.getRegionRanking(factoryId, range.getStartDate(), range.getEndDate());
+            deptTrendChart = deptService.getDepartmentTrendComparison(factoryId, range.getStartDate(), range.getEndDate(), "WEEK");
+        }
 
-        // 5. 获取区域排名
-        List<RankingItem> regionRankings = regionService.getRegionRanking(
-                factoryId, range.getStartDate(), range.getEndDate());
-
-        // 6. 组装响应 - 合并排名数据
+        // 4. 组装响应 - 合并排名数据
         Map<String, List<RankingItem>> rankingMap = new HashMap<>();
         if (salesDashboard.getRankings() != null) {
             rankingMap.putAll(salesDashboard.getRankings());
         }
-        // 添加部门和区域排名到各自的分类中
         if (deptRankings != null && !deptRankings.isEmpty()) {
             rankingMap.put("department", deptRankings);
         }
@@ -235,22 +266,21 @@ public class SmartBIServiceImpl implements SmartBIService {
         if (salesDashboard.getCharts() != null) {
             chartMap.putAll(salesDashboard.getCharts());
         }
-
-        // 添加部门趋势对比图
-        ChartConfig deptTrendChart = deptService.getDepartmentTrendComparison(
-                factoryId, range.getStartDate(), range.getEndDate(), "WEEK");
         if (deptTrendChart != null) {
             chartMap.put("department_trend", deptTrendChart);
         }
 
-        // 7. 生成 AI 洞察
+        // 5. 规则引擎洞察 (快, <100ms) — LLM 洞察已移至独立端点
         List<AIInsight> aiInsights = new ArrayList<>();
         if (salesDashboard.getAiInsights() != null) {
             aiInsights.addAll(salesDashboard.getAiInsights());
         }
-        aiInsights.addAll(generateAIInsights(factoryId, salesDashboard));
+        List<AIInsight> ruleInsights = recommendationService.generateInsightSummary(salesDashboard);
+        if (ruleInsights != null) {
+            aiInsights.addAll(ruleInsights);
+        }
 
-        // 8. 组装最终响应
+        // 6. 组装最终响应
         DashboardResponse response = DashboardResponse.builder()
                 .kpiCards(salesDashboard.getKpiCards())
                 .charts(chartMap)
@@ -260,16 +290,64 @@ public class SmartBIServiceImpl implements SmartBIService {
                 .lastUpdated(LocalDateTime.now())
                 .build();
 
-        // 9. 保存缓存
+        // 7. 保存缓存
         Duration ttl = calculateCacheTtl(period);
         saveToCache(factoryId, cacheKey, response, ttl);
 
-        // 10. 记录使用
+        // 8. 记录使用
         long elapsed = System.currentTimeMillis() - startTime;
         log.info("驾驶舱数据生成完成: factoryId={}, period={}, elapsed={}ms", factoryId, period, elapsed);
         recordUsage(factoryId, null, ActionType.DASHBOARD.name(), 0, false);
 
         return response;
+    }
+
+    @Override
+    public List<AIInsight> getDashboardLLMInsights(String factoryId, String period) {
+        log.info("获取驾驶舱 LLM 洞察: factoryId={}, period={}", factoryId, period);
+        long startTime = System.currentTimeMillis();
+
+        // Resolve actual date range (mirrors getDashboard auto-range logic)
+        DateRange range = calculateDateRange(period);
+        String effectivePeriod = period;
+        Long dataCount = salesDataRepository.countByFactoryIdAndDateRange(
+                factoryId, range.getStartDate(), range.getEndDate());
+        if (dataCount == null || dataCount == 0) {
+            DateRange dataRange = getDataDateRange(factoryId);
+            if (dataRange != null && dataRange.isValid()) {
+                range = dataRange;
+                effectivePeriod = "auto_" + range.getStartDate() + "_" + range.getEndDate();
+            }
+        }
+
+        // Try cache with effective period (matches dashboard cache key pattern)
+        String insightCacheKey = buildCacheKey("dashboard_llm_insights", effectivePeriod);
+        Optional<Object> cached = getFromCache(factoryId, insightCacheKey);
+        if (cached.isPresent()) {
+            log.info("命中 LLM 洞察缓存: factoryId={}", factoryId);
+            return (List<AIInsight>) cached.get();
+        }
+
+        // Try dashboard cache with effective period
+        String dashboardCacheKey = buildCacheKey("dashboard", effectivePeriod);
+        Optional<Object> dashboardCached = getFromCache(factoryId, dashboardCacheKey);
+        DashboardResponse dashboard;
+        if (dashboardCached.isPresent()) {
+            dashboard = (DashboardResponse) dashboardCached.get();
+        } else {
+            dashboard = salesService.getSalesOverview(factoryId, range.getStartDate(), range.getEndDate());
+        }
+
+        // 生成 LLM 洞察
+        List<AIInsight> llmInsights = generateAIInsights(factoryId, dashboard);
+
+        // 缓存 LLM 洞察
+        Duration ttl = calculateCacheTtl(period);
+        saveToCache(factoryId, insightCacheKey, llmInsights, ttl);
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        log.info("LLM 洞察生成完成: factoryId={}, count={}, elapsed={}ms", factoryId, llmInsights.size(), elapsed);
+        return llmInsights;
     }
 
     // ==================== 综合分析 ====================
@@ -326,13 +404,12 @@ public class SmartBIServiceImpl implements SmartBIService {
     // ==================== 自然语言问答 ====================
 
     @Override
-    @Transactional
     public NLQueryResponse processQuery(String factoryId, Long userId, NLQueryRequest request) {
         log.info("处理自然语言查询: factoryId={}, userId={}, query={}",
                 factoryId, userId, request.getEffectiveQuery());
         long startTime = System.currentTimeMillis();
 
-        // 1. 检查配额
+        // 1. 检查配额 (readOnly query, no transaction needed)
         if (!checkQuota(factoryId)) {
             throw new BusinessException("今日查询配额已用完，请明日再试或升级套餐");
         }
@@ -347,7 +424,7 @@ public class SmartBIServiceImpl implements SmartBIService {
         IntentResult intentResult = intentService.recognizeIntent(resolvedQuery);
         log.info("意图识别结果: intent={}, confidence={}", intentResult.getIntent(), intentResult.getConfidence());
 
-        // 4. 处理低置信度情况 - LLM Fallback（复用 AI Chat LLM 能力）
+        // 4. 处理低置信度情况 - LLM Fallback (HTTP call, outside transaction to avoid holding DB connection)
         if (intentResult.isNeedsLLMFallback()) {
             log.info("触发 LLM Fallback: confidence={}, threshold={}",
                     intentResult.getConfidence(), llmFallbackThreshold);
@@ -369,13 +446,9 @@ public class SmartBIServiceImpl implements SmartBIService {
         // 9. 更新对话记忆（复用 AI Chat 会话记忆能力）
         updateConversationMemory(request.getSessionId(), request, intentResult, responseText);
 
-        // 10. 保存查询历史
-        saveQueryHistory(factoryId, userId, request, intentResult, responseText);
-
-        // 11. 记录使用
+        // 10-11. 保存查询历史 + 记录使用 (transactional writes)
         long elapsed = System.currentTimeMillis() - startTime;
-        recordUsageWithQuery(factoryId, userId, request.getEffectiveQuery(), intentResult.getIntent().getCode(),
-                0, false, (int) elapsed);
+        persistQueryRecord(factoryId, userId, request, intentResult, responseText, elapsed);
 
         // 12. 构建响应
         Map<String, Object> parameters = intentResult.getParameters() != null ?
@@ -391,6 +464,19 @@ public class SmartBIServiceImpl implements SmartBIService {
                 .charts(charts)
                 .followUpQuestions(followUpQuestions)
                 .build();
+    }
+
+    // Note: no @Transactional needed — saveQueryHistory and recordUsageWithQuery each use
+    // repository.save() which auto-commits independently. Try-catch provides error isolation.
+    private void persistQueryRecord(String factoryId, Long userId, NLQueryRequest request,
+                                       IntentResult intentResult, String responseText, long elapsed) {
+        try {
+            saveQueryHistory(factoryId, userId, request, intentResult, responseText);
+            recordUsageWithQuery(factoryId, userId, request.getEffectiveQuery(), intentResult.getIntent().getCode(),
+                    0, false, (int) elapsed);
+        } catch (Exception e) {
+            log.warn("保存查询记录失败 (非关键): {}", e.getMessage());
+        }
     }
 
     // ==================== AI Chat 能力集成方法 ====================
@@ -604,8 +690,8 @@ public class SmartBIServiceImpl implements SmartBIService {
 
         if (CACHE_TYPE_ALL.equalsIgnoreCase(analysisType)) {
             // 清除所有缓存
-            List<SmartBiAnalysisCache> caches = cacheRepository.findByFactoryIdAndAnalysisType(
-                    factoryId, CACHE_TYPE_DASHBOARD);
+            List<SmartBiAnalysisCache> caches = new ArrayList<>(cacheRepository.findByFactoryIdAndAnalysisType(
+                    factoryId, CACHE_TYPE_DASHBOARD));
             caches.addAll(cacheRepository.findByFactoryIdAndAnalysisType(factoryId, CACHE_TYPE_SALES));
             caches.addAll(cacheRepository.findByFactoryIdAndAnalysisType(factoryId, CACHE_TYPE_DEPARTMENT));
             caches.addAll(cacheRepository.findByFactoryIdAndAnalysisType(factoryId, CACHE_TYPE_REGION));
@@ -640,6 +726,11 @@ public class SmartBIServiceImpl implements SmartBIService {
             if (cacheKey.startsWith("dashboard:")) {
                 DashboardResponse response = objectMapper.readValue(cache.getKpiData(), DashboardResponse.class);
                 return Optional.of(response);
+            }
+            if (cacheKey.startsWith("dashboard_llm_insights:")) {
+                List<AIInsight> insights = objectMapper.readValue(cache.getKpiData(),
+                        new TypeReference<List<AIInsight>>() {});
+                return Optional.of(insights);
             }
             // 其他类型的缓存反序列化
             return Optional.of(cache.getKpiData());
@@ -923,10 +1014,12 @@ public class SmartBIServiceImpl implements SmartBIService {
             String jsonContent = llmResponse;
             if (jsonContent.contains("```json")) {
                 jsonContent = jsonContent.substring(jsonContent.indexOf("```json") + 7);
-                jsonContent = jsonContent.substring(0, jsonContent.indexOf("```"));
+                int closeIdx = jsonContent.indexOf("```");
+                jsonContent = jsonContent.substring(0, closeIdx >= 0 ? closeIdx : jsonContent.length());
             } else if (jsonContent.contains("```")) {
                 jsonContent = jsonContent.substring(jsonContent.indexOf("```") + 3);
-                jsonContent = jsonContent.substring(0, jsonContent.indexOf("```"));
+                int closeIdx = jsonContent.indexOf("```");
+                jsonContent = jsonContent.substring(0, closeIdx >= 0 ? closeIdx : jsonContent.length());
             }
             jsonContent = jsonContent.trim();
 

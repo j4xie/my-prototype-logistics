@@ -21,7 +21,7 @@ public interface InternalTransferRepository extends JpaRepository<InternalTransf
     Page<InternalTransfer> findByTargetFactoryIdOrderByCreatedAtDesc(String targetFactoryId, Pageable pageable);
 
     /** 双向视角：调出或调入 */
-    @Query("SELECT t FROM InternalTransfer t WHERE t.sourceFactoryId = :factoryId OR t.targetFactoryId = :factoryId ORDER BY t.createdAt DESC")
+    @Query("SELECT DISTINCT t FROM InternalTransfer t WHERE t.sourceFactoryId = :factoryId OR t.targetFactoryId = :factoryId ORDER BY t.createdAt DESC")
     Page<InternalTransfer> findByFactoryId(@Param("factoryId") String factoryId, Pageable pageable);
 
     Page<InternalTransfer> findBySourceFactoryIdAndStatusOrderByCreatedAtDesc(String sourceFactoryId, TransferStatus status, Pageable pageable);

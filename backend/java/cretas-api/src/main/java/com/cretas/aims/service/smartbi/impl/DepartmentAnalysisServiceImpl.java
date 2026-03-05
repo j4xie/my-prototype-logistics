@@ -354,19 +354,27 @@ public class DepartmentAnalysisServiceImpl implements DepartmentAnalysisService 
     @Override
     public ChartConfig getDepartmentTrendComparison(String factoryId, LocalDate startDate,
                                                      LocalDate endDate, String period) {
-        log.info("获取部门趋势对比: factoryId={}, period={} to {}, granularity={}",
+        log.info("获取部门趋势对比(聚合优化): factoryId={}, period={} to {}, granularity={}",
                 factoryId, startDate, endDate, period);
 
-        // 从销售数据获取趋势
-        List<SmartBiSalesData> salesDataList = salesDataRepository
-                .findByFactoryIdAndOrderDateBetween(factoryId, startDate, endDate);
+        // Use aggregation query instead of loading all sales data
+        List<Object[]> deptDailyTrend = salesDataRepository
+                .findDepartmentDailyTrend(factoryId, startDate, endDate);
 
-        if (salesDataList.isEmpty()) {
+        if (deptDailyTrend.isEmpty()) {
             return createEmptyLineChart("部门销售趋势对比");
         }
 
-        // 按时间粒度和部门聚合
-        Map<String, Map<String, BigDecimal>> trendData = aggregateTrendData(salesDataList, period);
+        // Build trend data from aggregation results: [orderDate, department, SUM(amount)]
+        Map<String, Map<String, BigDecimal>> trendData = new LinkedHashMap<>();
+        for (Object[] row : deptDailyTrend) {
+            LocalDate date = (LocalDate) row[0];
+            String dept = row[1] != null ? row[1].toString() : "未知部门";
+            BigDecimal amount = row[2] != null ? new BigDecimal(row[2].toString()) : BigDecimal.ZERO;
+            String periodKey = getPeriodKey(date, period);
+            trendData.computeIfAbsent(periodKey, k -> new LinkedHashMap<>())
+                    .merge(dept, amount, BigDecimal::add);
+        }
 
         // 获取所有时间点和部门
         Set<String> allPeriods = new TreeSet<>();

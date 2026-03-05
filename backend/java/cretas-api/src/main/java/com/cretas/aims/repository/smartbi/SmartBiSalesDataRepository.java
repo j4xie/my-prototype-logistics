@@ -80,6 +80,48 @@ public interface SmartBiSalesDataRepository extends JpaRepository<SmartBiSalesDa
                                      @Param("end") LocalDate end);
 
     /**
+     * KPI 聚合查询: 一次查询返回总销售额, 总数量, 总利润, 总成本, 总目标, 订单数(distinct productId)
+     */
+    @Query("SELECT COALESCE(SUM(s.amount),0), COALESCE(SUM(s.quantity),0), " +
+           "COALESCE(SUM(s.profit),0), COALESCE(SUM(s.cost),0), " +
+           "COALESCE(SUM(s.monthlyTarget),0), COUNT(DISTINCT s.productId) " +
+           "FROM SmartBiSalesData s WHERE s.factoryId = :factoryId " +
+           "AND s.orderDate BETWEEN :start AND :end")
+    Object[] findKpiSummary(@Param("factoryId") String factoryId,
+                            @Param("start") LocalDate start,
+                            @Param("end") LocalDate end);
+
+    /**
+     * 按日期聚合销售趋势 (用于趋势图，替代全量加载)
+     */
+    @Query("SELECT s.orderDate, SUM(s.amount), SUM(s.quantity) FROM SmartBiSalesData s " +
+           "WHERE s.factoryId = :factoryId AND s.orderDate BETWEEN :start AND :end " +
+           "GROUP BY s.orderDate ORDER BY s.orderDate")
+    List<Object[]> findDailySalesTrend(@Param("factoryId") String factoryId,
+                                       @Param("start") LocalDate start,
+                                       @Param("end") LocalDate end);
+
+    /**
+     * 按日期+部门聚合 (用于部门趋势对比，替代全量加载)
+     */
+    @Query("SELECT s.orderDate, s.department, SUM(s.amount) FROM SmartBiSalesData s " +
+           "WHERE s.factoryId = :factoryId AND s.orderDate BETWEEN :start AND :end " +
+           "GROUP BY s.orderDate, s.department ORDER BY s.orderDate")
+    List<Object[]> findDepartmentDailyTrend(@Param("factoryId") String factoryId,
+                                            @Param("start") LocalDate start,
+                                            @Param("end") LocalDate end);
+
+    /**
+     * 按产品类别分组统计 (用于饼图)
+     */
+    @Query("SELECT s.productCategory, SUM(s.amount) FROM SmartBiSalesData s " +
+           "WHERE s.factoryId = :factoryId AND s.orderDate BETWEEN :start AND :end " +
+           "GROUP BY s.productCategory ORDER BY SUM(s.amount) DESC")
+    List<Object[]> findSalesByProductCategory(@Param("factoryId") String factoryId,
+                                              @Param("start") LocalDate start,
+                                              @Param("end") LocalDate end);
+
+    /**
      * 根据上传ID查询销售数据
      *
      * @param uploadId 上传记录ID

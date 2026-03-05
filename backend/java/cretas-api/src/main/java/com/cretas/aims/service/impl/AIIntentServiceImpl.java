@@ -484,6 +484,14 @@ public class AIIntentServiceImpl implements AIIntentService {
         //     return noMatchResult;
         // }
 
+        // ========== Wave-8: 输入清洗 — 去除 HTML/XSS 标签 ==========
+        // <script>alert(1)</script>查库存 → 查库存
+        // 查看<img src=x onerror=alert(1)>订单 → 查看订单
+        userInput = stripHtmlTags(userInput);
+        if (userInput.trim().isEmpty()) {
+            return IntentMatchResult.empty(userInput);
+        }
+
         // === 新增：查询预处理 ===
         String processedInput = userInput;
         PreprocessedQuery preprocessedQuery = null;
@@ -776,58 +784,82 @@ public class AIIntentServiceImpl implements AIIntentService {
                 } else if (reverseConflict) {
                     log.info("v17 跳过短语短路: input='{}' 短语命中FOOD_KNOWLEDGE但含数据指标'{}', 走深层匹配", userInput, matchedIntentCode);
                 } else {
-                    List<AIIntentConfig> allIntents = getAllIntents(factoryId);
-
-                    // v26g: 动词感知后处理 — 创建/删除/审批动词 override 只读意图
-                    String verbOverrideCode = tryVerbAwareOverride(matchedIntentCode, userInput, allIntents);
-                    final String effectiveIntentCode;
-                    if (verbOverrideCode != null) {
-                        effectiveIntentCode = verbOverrideCode;
-                        log.info("v26g 动词感知override: '{}' → {} (原: {})", userInput, effectiveIntentCode, matchedIntentCode);
-                    } else {
-                        effectiveIntentCode = matchedIntentCode;
+                    // [S3] BERT优先意图短语覆盖率检查
+                    boolean skipForBertPrimary = false;
+                    if (matchingConfig.isBertPrimaryIntent(matchedIntentCode)) {
+                        double phraseCoverage = knowledgeBase.getPhraseCoverage(
+                                filterFillerWordsForPhrase(userInput), matchedIntentCode, businessDomain);
+                        if (phraseCoverage >= 0.4) {
+                            log.info("[S3] BERT优先但高覆盖短语保留: input='{}', phraseIntent={}, coverage={}",
+                                    userInput, matchedIntentCode, String.format("%.2f", phraseCoverage));
+                        } else {
+                            skipForBertPrimary = true;
+                            log.info("[S3] BERT优先意图跳过短语: input='{}', phraseIntent={}, coverage={}, 走分类器",
+                                    userInput, matchedIntentCode, String.format("%.2f", phraseCoverage));
+                        }
                     }
+                    if (!skipForBertPrimary) {
+                        List<AIIntentConfig> allIntents = getAllIntents(factoryId);
 
-                    Optional<AIIntentConfig> intentOpt = allIntents.stream()
-                            .filter(i -> i.getIntentCode().equals(effectiveIntentCode))
-                            .findFirst();
-
-                    if (intentOpt.isPresent()) {
-                        AIIntentConfig intent = intentOpt.get();
-                        ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
-                        log.info("v11.7 PhraseMatch shortcut: input='{}', intent={}", userInput, effectiveIntentCode);
-
-                        IntentMatchResult phraseResult = IntentMatchResult.builder()
-                                .bestMatch(intent)
-                                .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
-                                        intent, 0.98, 98, Collections.emptyList(), MatchMethod.PHRASE_MATCH)))
-                                .confidence(0.98)
-                                .matchMethod(MatchMethod.PHRASE_MATCH)
-                                .matchedKeywords(Collections.emptyList())
-                                .isStrongSignal(true)
-                                .requiresConfirmation(false)
-                                .userInput(userInput)
-                                .actionType(detectedActionType)
-                                .build();
-
-                        if (preprocessedQuery != null) {
-                            phraseResult.setPreprocessedQuery(preprocessedQuery);
+                        // v26g: 动词感知后处理 — 创建/删除/审批动词 override 只读意图
+                        String verbOverrideCode = tryVerbAwareOverride(matchedIntentCode, userInput, allIntents);
+                        final String effectiveIntentCode;
+                        if (verbOverrideCode != null) {
+                            effectiveIntentCode = verbOverrideCode;
+                            log.info("v26g 动词感知override: '{}' → {} (原: {})", userInput, effectiveIntentCode, matchedIntentCode);
+                        } else {
+                            effectiveIntentCode = matchedIntentCode;
                         }
 
-                        saveIntentMatchRecord(phraseResult, factoryId, userId, sessionId, false);
-                        return attachTiming(applyNegationConversion(phraseResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
-                    } else {
-                        // v21.0: 短语匹配到的意图代码在DB中不存在，记录警告以便排查
-                        log.warn("v21.0 短语匹配意图不在DB中: input='{}', phrase_intent='{}', 将继续走分类器", userInput, matchedIntentCode);
+                        Optional<AIIntentConfig> intentOpt = allIntents.stream()
+                                .filter(i -> i.getIntentCode().equals(effectiveIntentCode))
+                                .findFirst();
+
+                        if (intentOpt.isPresent()) {
+                            AIIntentConfig intent = intentOpt.get();
+                            ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
+                            log.info("v11.7 PhraseMatch shortcut: input='{}', intent={}", userInput, effectiveIntentCode);
+
+                            IntentMatchResult phraseResult = IntentMatchResult.builder()
+                                    .bestMatch(intent)
+                                    .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                            intent, 0.98, 98, Collections.emptyList(), MatchMethod.PHRASE_MATCH)))
+                                    .confidence(0.98)
+                                    .matchMethod(MatchMethod.PHRASE_MATCH)
+                                    .matchedKeywords(Collections.emptyList())
+                                    .isStrongSignal(true)
+                                    .requiresConfirmation(false)
+                                    .userInput(userInput)
+                                    .actionType(detectedActionType)
+                                    .build();
+
+                            if (preprocessedQuery != null) {
+                                phraseResult.setPreprocessedQuery(preprocessedQuery);
+                            }
+
+                            saveIntentMatchRecord(phraseResult, factoryId, userId, sessionId, false);
+                            return attachTiming(applyNegationConversion(phraseResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
+                        } else {
+                            // v21.0: 短语匹配到的意图代码在DB中不存在，记录警告以便排查
+                            log.warn("v21.0 短语匹配意图不在DB中: input='{}', phrase_intent='{}', 将继续走分类器", userInput, matchedIntentCode);
+                        }
                     }
                 }
             }
         }
 
+        // ========== v35.1: OOD 短文本防护 ==========
+        boolean oodDetected = false;
+        if (userInput != null && userInput.trim().length() <= 2) {
+            log.info("[v35.1-OOD] 短文本防护: 输入长度={}字符, 跳过分类器, input='{}'",
+                    userInput.trim().length(), userInput);
+            oodDetected = true;
+        }
+
         // ========== v16.0: Python 分类器快速决策 ==========
         // 使用 BERT 模型直接分类，准确率 97.45% Top-1
         // 高置信度直接返回，低置信度继续走语义路由器
-        if (classifierEnabled && classifierIntentMatcher != null && classifierIntentMatcher.isAvailable()
+        if (!oodDetected && classifierEnabled && classifierIntentMatcher != null && classifierIntentMatcher.isAvailable()
                 && !skipPhraseShortcut) {
             try {
                 Optional<ClassifierResult> classifierResult = classifierIntentMatcher.classify(processedInput);
@@ -845,9 +877,21 @@ public class AIIntentServiceImpl implements AIIntentService {
                         log.info("[v35.0-OOD] 检测到 OOD 输入, entropy={}, margin={}, maxLogit={}, intent={}, input='{}'",
                                 result.getEntropy(), result.getMargin(), result.getMaxLogit(),
                                 result.getIntentCode(), userInput);
-                        // OOD 结果不存入 onnxFallbackResultHolder，避免污染训练数据
-                        // 不返回分类结果，继续进入下一层 (SEMANTIC_ROUTER / LLM_FALLBACK)
-                    } else if (result.getConfidence() >= classifierHighConfidenceThreshold) {
+                        oodDetected = true;
+                        // OOD — 跳过分类器，进入 OOD 兜底流程
+                    } else if ("OUT_OF_DOMAIN".equals(result.getIntentCode())) {
+                        log.info("[v35.0-OOD] 分类器识别为 OUT_OF_DOMAIN (confidence={}), 跳过语义路由器",
+                                String.format("%.4f", result.getConfidence()));
+                        oodDetected = true;
+                    } else if (result.getConfidence() >= classifierHighConfidenceThreshold
+                            || (matchingConfig.isBertPrimaryIntent(result.getIntentCode())
+                                && result.getConfidence() >= 0.5)) {
+                        // S3: BERT优先意图低阈值接受
+                        if (matchingConfig.isBertPrimaryIntent(result.getIntentCode())
+                                && result.getConfidence() < classifierHighConfidenceThreshold) {
+                            log.info("[S3] BERT优先意图低阈值接受: intent={}, confidence={}, threshold=0.5",
+                                    result.getIntentCode(), String.format("%.4f", result.getConfidence()));
+                        }
                         // 高置信度直接返回
                         List<AIIntentConfig> allIntents = getAllIntents(factoryId);
                         Optional<AIIntentConfig> intentOpt = allIntents.stream()
@@ -920,13 +964,81 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
+        // ========== v35.0: OOD 兜底流程 ==========
+        // OOD 输入先尝试 phrase match 挽救，否则路由到 GENERIC_AI_CHAT
+        if (oodDetected) {
+            // 尝试 phrase match 挽救
+            Optional<String> oodPhraseMatch = knowledgeBase.matchPhrase(
+                    filterFillerWordsForPhrase(userInput), businessDomain);
+            if (oodPhraseMatch.isPresent()) {
+                String phraseIntent = oodPhraseMatch.get();
+                List<AIIntentConfig> allIntentsForPhrase = getAllIntents(factoryId);
+                Optional<AIIntentConfig> phraseIntentOpt = allIntentsForPhrase.stream()
+                        .filter(i -> i.getIntentCode().equals(phraseIntent))
+                        .findFirst();
+                if (phraseIntentOpt.isPresent()) {
+                    AIIntentConfig intent = phraseIntentOpt.get();
+                    ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
+                    IntentMatchResult phraseResult = IntentMatchResult.builder()
+                            .bestMatch(intent)
+                            .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                    intent, 0.98, 98, Collections.emptyList(), MatchMethod.PHRASE_MATCH)))
+                            .confidence(0.98)
+                            .matchMethod(MatchMethod.PHRASE_MATCH)
+                            .matchedKeywords(Collections.emptyList())
+                            .isStrongSignal(true)
+                            .requiresConfirmation(false)
+                            .userInput(userInput)
+                            .actionType(detectedActionType)
+                            .build();
+                    if (preprocessedQuery != null) {
+                        phraseResult.setPreprocessedQuery(preprocessedQuery);
+                    }
+                    log.info("[R2.4] OOD但有phrase match, 使用phrase结果: input='{}', intent={}", userInput, phraseIntent);
+                    saveIntentMatchRecord(phraseResult, factoryId, userId, sessionId, false);
+                    return attachTiming(applyNegationConversion(phraseResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
+                }
+            }
+            // 无 phrase match — 路由到 GENERIC_AI_CHAT
+            log.info("[v35.0-OOD] 检测到 OOD 输入，路由到 GENERIC_AI_CHAT, input='{}'", userInput);
+            List<AIIntentConfig> allIntentsForOod = getAllIntents(factoryId);
+            Optional<AIIntentConfig> genericChatOpt = allIntentsForOod.stream()
+                    .filter(i -> "GENERIC_AI_CHAT".equals(i.getIntentCode()))
+                    .findFirst();
+            if (!genericChatOpt.isPresent()) {
+                IntentMatchResult oodFallback = IntentMatchResult.builder()
+                        .bestMatch(null).topCandidates(List.of()).confidence(0.0)
+                        .matchMethod(MatchMethod.REJECTED).matchedKeywords(List.of())
+                        .isStrongSignal(false).requiresConfirmation(false)
+                        .userInput(userInput).actionType(ActionType.UNKNOWN)
+                        .conversationMessage("抱歉，这个问题超出了系统的服务范围。我是食品生产管理助手，可以帮您处理生产计划、批次管理、质量检查、设备维护等工厂相关业务。请问有什么相关的问题我可以帮您？")
+                        .build();
+                if (preprocessedQuery != null) oodFallback.setPreprocessedQuery(preprocessedQuery);
+                return attachTiming(oodFallback, startTimeMs, preprocessEndMs);
+            }
+            AIIntentConfig genericChat = genericChatOpt.get();
+            IntentMatchResult oodResult = IntentMatchResult.builder()
+                    .bestMatch(genericChat)
+                    .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                            genericChat, 0.5, 50, Collections.emptyList(), MatchMethod.CLASSIFIER)))
+                    .confidence(0.5)
+                    .matchMethod(MatchMethod.CLASSIFIER)
+                    .matchedKeywords(List.of())
+                    .isStrongSignal(false).requiresConfirmation(false)
+                    .userInput(userInput).actionType(ActionType.UNKNOWN)
+                    .build();
+            if (preprocessedQuery != null) oodResult.setPreprocessedQuery(preprocessedQuery);
+            saveIntentMatchRecord(oodResult, factoryId, userId, sessionId, false);
+            return attachTiming(oodResult, startTimeMs, preprocessEndMs);
+        }
+
         // ========== v11.0: 语义路由器快速决策 ==========
         // 在 LLM 调用前使用向量相似度做快速路由决策
         // - DIRECT_EXECUTE (score >= 0.92): 直接返回，跳过 LLM
         // - NEED_RERANKING (score >= 0.75): 只对 top candidates 调用 LLM 确认
         // - NEED_FULL_LLM (score < 0.75): 走完整 LLM 流程
         // v12.1: 当检测到多意图触发词时，跳过语义路由器，走多意图检测流程
-        if (semanticRouterEnabled && semanticRouterService.isAvailable() && !skipPhraseShortcut) {
+        if (semanticRouterEnabled && semanticRouterService.isAvailable() && !skipPhraseShortcut && !oodDetected) {
             try {
                 RouteDecision routeDecision = semanticRouterService.route(factoryId, processedInput, topN);
 
@@ -941,6 +1053,29 @@ public class AIIntentServiceImpl implements AIIntentService {
                     if (routeDecision.canDirectExecute()) {
                         String routedIntent = routeDecision.getBestMatchIntentCode();
 
+                        // v32.1: 业务领域前缀过滤
+                        boolean semanticBizMismatch = false;
+                        if ("RESTAURANT".equals(businessDomain)) {
+                            boolean isRestaurantIntent = routedIntent.startsWith("RESTAURANT_");
+                            boolean isCommonIntent = "FOOD_KNOWLEDGE_QUERY".equals(routedIntent)
+                                    || "DATA_QUERY".equals(routedIntent)
+                                    || "GENERIC_AI_CHAT".equals(routedIntent)
+                                    || "SYSTEM_HELP".equals(routedIntent)
+                                    || "SYSTEM_NAVIGATION".equals(routedIntent)
+                                    || "OUT_OF_DOMAIN".equals(routedIntent)
+                                    || "CONTEXT_CONTINUE".equals(routedIntent);
+                            if (!isRestaurantIntent && !isCommonIntent) {
+                                log.info("v32.1 SemanticRouter餐饮前缀过滤: input='{}', intent={} (非RESTAURANT_*), 跳过语义路由→走LLM",
+                                        userInput, routedIntent);
+                                semanticBizMismatch = true;
+                            }
+                        } else if (routedIntent.startsWith("RESTAURANT_")) {
+                            log.info("v32.1 SemanticRouter工厂前缀过滤: input='{}', intent={} (RESTAURANT_*), 跳过语义路由",
+                                    userInput, routedIntent);
+                            semanticBizMismatch = true;
+                        }
+
+                        if (!semanticBizMismatch) {
                         // Wave-7e: 语义黑洞守卫 — 某些意图的embedding向量位于语义空间中心
                         // 导致大量不相关输入匹配到它们（cosine 1.00 异常）
                         // 降级到 NEED_RERANKING 让 LLM 二次确认
@@ -990,6 +1125,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                             return attachTiming(applyNegationConversion(directResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
                         }
                         } // end Wave-7e else (not semantic black hole)
+                        } // end !semanticBizMismatch
                     }
 
                     // NEED_RERANKING: 中等置信度，使用候选进行 LLM Reranking
@@ -999,6 +1135,33 @@ public class AIIntentServiceImpl implements AIIntentService {
                                 userId, userRole, enhancedResult);
 
                         if (rerankingResult != null && rerankingResult.hasMatch()) {
+                            String rerankIntentCode = rerankingResult.getBestMatch().getIntentCode();
+                            // v32.1: Reranking 业务领域前缀过滤
+                            boolean rerankBizMismatch = false;
+                            if ("RESTAURANT".equals(businessDomain)) {
+                                boolean isRestaurant = rerankIntentCode.startsWith("RESTAURANT_");
+                                boolean isCommon = "FOOD_KNOWLEDGE_QUERY".equals(rerankIntentCode)
+                                        || "DATA_QUERY".equals(rerankIntentCode)
+                                        || "GENERIC_AI_CHAT".equals(rerankIntentCode)
+                                        || "SYSTEM_HELP".equals(rerankIntentCode)
+                                        || "SYSTEM_NAVIGATION".equals(rerankIntentCode)
+                                        || "OUT_OF_DOMAIN".equals(rerankIntentCode)
+                                        || "CONTEXT_CONTINUE".equals(rerankIntentCode);
+                                if (!isRestaurant && !isCommon) {
+                                    log.info("v32.1 SemanticRouter-Reranking餐饮前缀过滤: intent={}, 跳过", rerankIntentCode);
+                                    rerankBizMismatch = true;
+                                }
+                            } else if (rerankIntentCode.startsWith("RESTAURANT_")) {
+                                log.info("v32.1 SemanticRouter-Reranking工厂前缀过滤: intent={}, 跳过", rerankIntentCode);
+                                rerankBizMismatch = true;
+                            }
+
+                            if (!rerankBizMismatch) {
+                            // Wave-8: Reranking 路径也检查语义黑洞
+                            if (isSemanticBlackHoleIntent(rerankIntentCode, userInput)) {
+                                log.info("Wave-8 Reranking黑洞守卫: input='{}' reranking到 '{}' 但不含相关关键词，跳过→走BERT/LLM",
+                                        userInput, rerankIntentCode);
+                            } else {
                             // 附加预处理结果
                             if (preprocessedQuery != null) {
                                 rerankingResult.setPreprocessedQuery(preprocessedQuery);
@@ -1009,6 +1172,8 @@ public class AIIntentServiceImpl implements AIIntentService {
                                     rerankingResult.getConfidence());
 
                             return attachTiming(applyNegationConversion(rerankingResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
+                            } // end Wave-8 else (not reranking black hole)
+                            }
                         }
                         // Reranking 失败，继续走完整流程
                         log.debug("v11.0 NEED_RERANKING failed, falling through to full LLM");
@@ -1570,6 +1735,46 @@ public class AIIntentServiceImpl implements AIIntentService {
                     log.info("语义优先匹配: intent={}, semantic={:.3f}, adjusted={:.3f}",
                             bestCandidate.intentCode, bestCandidate.semanticScore, confidence);
 
+                    // v32.2: 内部语义路径黑洞意图防护 (与外部SemanticRouter GUARD_INTENTS对齐)
+                    // MATERIAL_BATCH_RELEASE/QUALITY_CHECK_CREATE/SYSTEM_HELP 在嵌入空间中是黑洞，
+                    // 会吸引大量不相关输入。需要关键词确认才允许高置信度直接返回
+                    boolean innerSemanticBlackHole = false;
+                    String bc = bestCandidate.intentCode;
+                    if ("MATERIAL_BATCH_RELEASE".equals(bc) || "QUALITY_CHECK_CREATE".equals(bc) || "SYSTEM_HELP".equals(bc)) {
+                        boolean hasRelevantKeyword = false;
+                        if ("MATERIAL_BATCH_RELEASE".equals(bc)) {
+                            hasRelevantKeyword = userInput.contains("放行") || userInput.contains("释放") || userInput.contains("解锁")
+                                    || userInput.contains("release") || userInput.contains("批次放行");
+                        } else if ("QUALITY_CHECK_CREATE".equals(bc)) {
+                            hasRelevantKeyword = userInput.contains("质检") || userInput.contains("检验") || userInput.contains("抽检")
+                                    || userInput.contains("quality") || userInput.contains("创建质检");
+                        } else {
+                            hasRelevantKeyword = userInput.contains("帮助") || userInput.contains("help") || userInput.contains("怎么用");
+                        }
+                        if (!hasRelevantKeyword) {
+                            innerSemanticBlackHole = true;
+                            log.info("v32.2 内部语义黑洞防护: input='{}', intent={}, score={:.3f} → 跳过，缺少关键词确认",
+                                    userInput, bc, confidence);
+                            // 尝试使用第二候选
+                            if (verifiedCandidates.size() >= 2) {
+                                SemanticCandidate secondCandidate = verifiedCandidates.get(1);
+                                if (!("MATERIAL_BATCH_RELEASE".equals(secondCandidate.intentCode)
+                                        || "QUALITY_CHECK_CREATE".equals(secondCandidate.intentCode)
+                                        || "SYSTEM_HELP".equals(secondCandidate.intentCode))) {
+                                    bestCandidate = secondCandidate;
+                                    confidence = secondCandidate.adjustedScore;
+                                    innerSemanticBlackHole = false;
+                                    log.info("v32.2 内部语义黑洞防护: 使用第二候选 intent={}, score={:.3f}",
+                                            secondCandidate.intentCode, confidence);
+                                }
+                            }
+                        }
+                    }
+                    if (innerSemanticBlackHole) {
+                        // 所有候选都是黑洞意图，跳过语义路径，让后续分类器/LLM处理
+                        log.info("v32.2 内部语义黑洞: 全部候选均为黑洞意图，跳过语义匹配");
+                    } else {
+
                     // 构建候选列表
                     List<CandidateIntent> candidates = verifiedCandidates.stream()
                             .limit(5)
@@ -1947,6 +2152,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                     // 低置信度走 LLM Fallback
                     log.info("语义优先低置信度 ({:.3f})，触发 LLM Fallback", confidence);
                     return tryLlmFallback(userInput, originalInput, factoryId, allIntents, semanticResult, opType, userId, userRole);
+                    } // end !innerSemanticBlackHole else block
                 }
             }
 
@@ -2399,19 +2605,34 @@ public class AIIntentServiceImpl implements AIIntentService {
         log.info(">>> Entering tryLlmFallback: userInput='{}', llmFallbackEnabled={}",
                 userInput, matchingConfig.isLlmFallbackEnabled());
 
-        // v32: 业态隔离 — 过滤掉不属于当前业态的意图
+        // v32.1: 业态隔离 — 过滤掉不属于当前业态的意图（工厂和餐饮均过滤）
         String biz = resolveBusinessDomain(factoryId);
-        if (!"FACTORY".equals(biz)) {
+        if ("RESTAURANT".equals(biz)) {
             List<AIIntentConfig> filtered = allIntents.stream()
                     .filter(i -> {
                         String bt = i.getBusinessType();
-                        return bt == null || "COMMON".equals(bt) || bt.equals(biz);
+                        return bt == null || "COMMON".equals(bt) || "RESTAURANT".equals(bt);
                     })
                     .collect(Collectors.toList());
-            log.info("v32 LLM fallback 业态过滤: {} → {} intents (biz={})",
-                    allIntents.size(), filtered.size(), biz);
+            log.info("v32.1 LLM fallback 餐饮过滤: {} → {} intents", allIntents.size(), filtered.size());
+            allIntents = filtered;
+        } else {
+            // 工厂（FACTORY/COMMON/default）: 排除 RESTAURANT 专属意图
+            List<AIIntentConfig> filtered = allIntents.stream()
+                    .filter(i -> !"RESTAURANT".equals(i.getBusinessType()))
+                    .collect(Collectors.toList());
+            log.info("v32.1 LLM fallback 工厂过滤: {} → {} intents (排除RESTAURANT)", allIntents.size(), filtered.size());
             allIntents = filtered;
         }
+
+        // v32.4: 从 LLM 候选列表中排除语义黑洞意图 (扩展)
+        Set<String> LLM_BLACKHOLE_INTENTS_FB = Set.of(
+                "MATERIAL_BATCH_RELEASE", "QUALITY_CHECK_CREATE", "SYSTEM_HELP",
+                "SYSTEM_SWITCH_FACTORY", "CUSTOMER_BY_TYPE", "SHIPMENT_STATS",
+                "ISAPI_QUERY_CAPABILITIES", "TRACE_PUBLIC");
+        allIntents = allIntents.stream()
+                .filter(i -> !LLM_BLACKHOLE_INTENTS_FB.contains(i.getIntentCode()))
+                .collect(Collectors.toList());
 
         // 检查是否启用 LLM Fallback
         if (!matchingConfig.isLlmFallbackEnabled()) {
@@ -2635,9 +2856,28 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         try {
+            // v32.4: 从候选中排除语义黑洞意图 (扩展)
+            // 这些意图的 embedding 位于语义空间中心，吸引大量不相关输入
+            Set<String> LLM_BLACKHOLE_INTENTS = Set.of(
+                    "MATERIAL_BATCH_RELEASE", "QUALITY_CHECK_CREATE", "SYSTEM_HELP",
+                    "SYSTEM_SWITCH_FACTORY", "CUSTOMER_BY_TYPE", "SHIPMENT_STATS",
+                    "ISAPI_QUERY_CAPABILITIES", "TRACE_PUBLIC");
+            List<CandidateIntent> filteredCandidates = candidates.stream()
+                    .filter(c -> !LLM_BLACKHOLE_INTENTS.contains(c.getIntentCode()))
+                    .collect(Collectors.toList());
+            if (filteredCandidates.isEmpty()) {
+                log.info("v32.3: All candidates are black hole intents, skipping reranking → LLM fallback");
+                return tryLlmFallback(userInput, userInput, factoryId,
+                        intentRepository.findAll(), semanticResult, actionType, userId, userRole);
+            }
+            if (filteredCandidates.size() < candidates.size()) {
+                log.info("v32.3: Filtered {} black hole intents from {} candidates → {} remaining",
+                        candidates.size() - filteredCandidates.size(), candidates.size(), filteredCandidates.size());
+            }
+
             // 限制候选数量
             int topK = matchingConfig.getLlmRerankingTopCandidates();
-            List<CandidateIntent> topCandidates = candidates.stream()
+            List<CandidateIntent> topCandidates = filteredCandidates.stream()
                     .limit(topK)
                     .collect(Collectors.toList());
 
@@ -3055,6 +3295,50 @@ public class AIIntentServiceImpl implements AIIntentService {
             return !input.contains("摄像") && !input.contains("流媒体") && !input.contains("视频")
                     && !input.contains("camera") && !input.contains("stream");
         }
+
+        // Wave-8 新增黑洞意图:
+
+        // ISAPI_QUERY_CAPABILITIES: 只有包含ISAPI/海康/协议/接口/摄像头连接相关词才合理
+        // E2E: "猪肉的保质期是多久" → ISAPI_QUERY_CAPABILITIES (cosine 1.00) 误匹配
+        if ("ISAPI_QUERY_CAPABILITIES".equals(routedIntent)) {
+            return !input.contains("isapi") && !input.contains("海康") && !input.contains("协议")
+                    && !input.contains("接口") && !input.contains("摄像") && !input.contains("capabilities")
+                    && !input.contains("连接");
+        }
+
+        // ATTENDANCE_TODAY: 只有包含考勤/打卡/签到/出勤/到岗相关词才合理
+        // E2E: "下架麻辣小龙虾这道菜" → ATTENDANCE_TODAY (cosine 1.00) 误匹配
+        if ("ATTENDANCE_TODAY".equals(routedIntent)) {
+            return !input.contains("考勤") && !input.contains("打卡") && !input.contains("签到")
+                    && !input.contains("出勤") && !input.contains("到岗") && !input.contains("上班")
+                    && !input.contains("attendance");
+        }
+
+        // SYSTEM_FEEDBACK: 只有包含反馈/建议/意见/评价相关词才合理
+        // E2E: "让李四去处理这批货" → SYSTEM_FEEDBACK (cosine 1.00) 误匹配
+        if ("SYSTEM_FEEDBACK".equals(routedIntent)) {
+            return !input.contains("反馈") && !input.contains("建议") && !input.contains("意见")
+                    && !input.contains("评价") && !input.contains("投诉") && !input.contains("feedback");
+        }
+
+        // SHIPMENT_CREATE: cosine 1.00 但输入是库存查询而非发货创建
+        // E2E: "库存【猪肉】【牛肉】【鸡肉】" → SHIPMENT_CREATE (cosine 1.00) 误匹配
+        if ("SHIPMENT_CREATE".equals(routedIntent)) {
+            return !input.contains("发货") && !input.contains("出货") && !input.contains("配送")
+                    && !input.contains("物流") && !input.contains("shipment") && !input.contains("ship")
+                    && !input.contains("寄");
+        }
+
+        // FOOD_KNOWLEDGE_QUERY: 纯编号/代码输入不应匹配食品知识
+        // E2E: "PO-001" → FOOD_KNOWLEDGE_QUERY (cosine 1.00) 误匹配
+        if ("FOOD_KNOWLEDGE_QUERY".equals(routedIntent)) {
+            // 如果输入是纯编号模式(字母+数字，无中文)，不应匹配食品知识
+            String trimmed = input.trim();
+            if (trimmed.matches("[a-zA-Z0-9\\-_.]+") && trimmed.length() <= 20) {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -5989,6 +6273,38 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
         String cleaned = FILLER_WORDS_PREFIX_PATTERN.matcher(input).replaceFirst("").trim();
         return cleaned.isEmpty() ? input : cleaned;
+    }
+
+    // Wave-8: HTML/XSS 标签移除 pattern
+    private static final Pattern HTML_TAG_PATTERN = Pattern.compile(
+            "</?\\s*(?:script|img|iframe|svg|object|embed|link|style|meta|form|input|button|textarea|select|video|audio|source|canvas|applet)[^>]*>",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern JS_PROTOCOL_PATTERN = Pattern.compile(
+            "javascript\\s*:", Pattern.CASE_INSENSITIVE);
+    private static final Pattern EVENT_HANDLER_PATTERN = Pattern.compile(
+            "\\bon\\w+\\s*=\\s*[\"'][^\"']*[\"']", Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Wave-8: 输入清洗 — 移除 HTML 标签和 XSS 攻击向量
+     * 保留中文/英文/数字等正常文本内容
+     */
+    private String stripHtmlTags(String input) {
+        if (input == null) return input;
+        String cleaned = input;
+        // 移除危险 HTML 标签 (保留标签内的正常文本)
+        cleaned = HTML_TAG_PATTERN.matcher(cleaned).replaceAll("");
+        // 移除 javascript: 伪协议
+        cleaned = JS_PROTOCOL_PATTERN.matcher(cleaned).replaceAll("");
+        // 移除事件处理器属性 (onerror=, onload= 等)
+        cleaned = EVENT_HANDLER_PATTERN.matcher(cleaned).replaceAll("");
+        // 移除残留的通用 HTML 标签 (如 <div>, <span> 等)
+        cleaned = cleaned.replaceAll("<[^>]+>", "");
+        // 清理 void(0) 等残留
+        cleaned = cleaned.replaceAll("void\\s*\\(\\s*\\d+\\s*\\)", "").trim();
+        if (!cleaned.equals(input.trim())) {
+            log.info("Wave-8 HTML清洗: '{}' → '{}'", input, cleaned);
+        }
+        return cleaned;
     }
 
     private String resolveBusinessDomain(String factoryId) {

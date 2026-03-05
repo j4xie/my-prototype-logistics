@@ -81,7 +81,13 @@ public class SemanticRouterServiceImpl implements SemanticRouterService {
     // Wave-7c: 语义黑洞意图守卫 — 这些意图向量位于语义空间中心，易吸引不相关输入
     // 匹配到这些意图时强制降级为 NEED_RERANKING (走LLM二次确认)
     private static final Set<String> SEMANTIC_GUARD_INTENTS = Set.of(
-            "QUALITY_CHECK_CREATE", "SYSTEM_HELP", "MATERIAL_BATCH_RELEASE"
+            "QUALITY_CHECK_CREATE", "SYSTEM_HELP", "MATERIAL_BATCH_RELEASE",
+            // v32.4: 扩展黑洞列表 — E2E数据验证的高误吸引率意图
+            "SYSTEM_SWITCH_FACTORY", "CUSTOMER_BY_TYPE", "SHIPMENT_STATS",
+            "ISAPI_QUERY_CAPABILITIES", "TRACE_PUBLIC",
+            // Wave-8: 新增黑洞 — cosine 1.00 误匹配
+            "ATTENDANCE_TODAY", "SYSTEM_FEEDBACK", "SHIPMENT_CREATE",
+            "FOOD_KNOWLEDGE_QUERY"
     );
 
     private final AtomicLong totalRoutes = new AtomicLong(0);

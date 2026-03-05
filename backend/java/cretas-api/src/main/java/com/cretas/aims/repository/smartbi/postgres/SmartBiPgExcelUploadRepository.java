@@ -1,5 +1,6 @@
 package com.cretas.aims.repository.smartbi.postgres;
 
+import com.cretas.aims.dto.smartbi.UploadHistoryDTO;
 import com.cretas.aims.entity.smartbi.enums.UploadStatus;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiPgExcelUpload;
 import org.springframework.data.domain.Page;
@@ -33,6 +34,18 @@ public interface SmartBiPgExcelUploadRepository extends JpaRepository<SmartBiPgE
      * Find uploads for a factory with pagination
      */
     Page<SmartBiPgExcelUpload> findByFactoryIdOrderByCreatedAtDesc(String factoryId, Pageable pageable);
+
+    /**
+     * Lightweight projection query — skips large JSONB columns (detectedStructure, fieldMappings, contextInfo).
+     * Use this for listing endpoints to avoid loading 250KB+ per record.
+     */
+    @Query("SELECT new com.cretas.aims.dto.smartbi.UploadHistoryDTO(" +
+           "u.id, u.fileName, u.sheetName, u.detectedTableType, " +
+           "u.rowCount, u.columnCount, u.uploadStatus, u.createdAt) " +
+           "FROM SmartBiPgExcelUpload u WHERE u.factoryId = :factoryId " +
+           "ORDER BY u.createdAt DESC")
+    Page<UploadHistoryDTO> findUploadHistoryLightweight(
+            @Param("factoryId") String factoryId, Pageable pageable);
 
     /**
      * Find uploads by factory and status

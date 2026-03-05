@@ -66,39 +66,52 @@ public class SalesAnalysisServiceImpl implements SalesAnalysisService {
     @Override
     @Transactional(readOnly = true)
     public DashboardResponse getSalesOverview(String factoryId, LocalDate startDate, LocalDate endDate) {
-        log.info("获取销售概览: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+        log.info("获取销售概览(聚合优化): factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
 
-        List<SmartBiSalesData> salesData = salesDataRepository
-                .findByFactoryIdAndOrderDateBetween(factoryId, startDate, endDate);
+        // Step 1: Use DB aggregation for KPI cards (single query instead of loading all rows)
+        Object[] kpiSummary = salesDataRepository.findKpiSummary(factoryId, startDate, endDate);
+        BigDecimal totalSales = toBigDecimal(kpiSummary[0]);
+        BigDecimal totalQuantity = toBigDecimal(kpiSummary[1]);
+        BigDecimal totalProfit = toBigDecimal(kpiSummary[2]);
+        BigDecimal totalCost = toBigDecimal(kpiSummary[3]);
+        BigDecimal totalTarget = toBigDecimal(kpiSummary[4]);
+        long orderCount = ((Number) kpiSummary[5]).longValue();
 
-        if (salesData.isEmpty()) {
+        if (totalSales.compareTo(BigDecimal.ZERO) == 0 && orderCount == 0) {
             log.warn("未找到销售数据: factoryId={}", factoryId);
             return buildEmptyDashboard();
         }
 
-        // 计算 KPI 卡片
-        List<MetricResult> metricResults = calculateKpiCards(salesData, factoryId, startDate, endDate);
+        // Step 2: Build KPI cards from aggregated data
+        List<MetricResult> metricResults = buildKpiFromAggregates(
+                totalSales, totalQuantity, totalProfit, totalCost, totalTarget, orderCount,
+                factoryId, startDate, endDate);
         List<KPICard> kpiCards = convertToKPICards(metricResults);
 
-        // 生成图表
-        List<ChartConfig> chartList = new ArrayList<>();
-        chartList.add(buildSalesTrendChartFromData(salesData, "DAY"));
-        chartList.add(buildProductPieChart(salesData));
+        // Step 3: Build charts from lightweight aggregation queries (no full load)
         Map<String, ChartConfig> charts = new LinkedHashMap<>();
-        for (ChartConfig chart : chartList) {
-            charts.put(chart.getTitle() != null ? chart.getTitle().replace(" ", "_") : "chart_" + charts.size(), chart);
+
+        // Trend chart from daily aggregation
+        List<Object[]> dailyTrend = salesDataRepository.findDailySalesTrend(factoryId, startDate, endDate);
+        if (!dailyTrend.isEmpty()) {
+            charts.put("销售趋势", buildTrendChartFromAggregates(dailyTrend));
         }
 
-        // 生成排名
-        List<RankingItem> salespersonRankings = calculateSalespersonRankingFromData(salesData);
+        // Product pie chart from category aggregation
+        List<Object[]> categoryData = salesDataRepository.findSalesByProductCategory(factoryId, startDate, endDate);
+        if (!categoryData.isEmpty()) {
+            charts.put("产品分布", buildPieChartFromAggregates(categoryData));
+        }
+
+        // Step 4: Rankings from existing aggregation queries
+        List<Object[]> salespersonData = salesDataRepository.findSalesBySalesperson(factoryId, startDate, endDate);
+        List<RankingItem> salespersonRankings = buildRankingsFromAggregates(salespersonData);
         Map<String, List<RankingItem>> rankings = new LinkedHashMap<>();
         rankings.put("salesperson", salespersonRankings);
 
-        // 生成 AI 洞察
-        List<AIInsight> aiInsights = generateAiInsights(salesData, metricResults);
-
-        // 生成建议
-        List<String> suggestions = generateSuggestions(salesData, metricResults);
+        // Step 5: AI insights from aggregated metrics (no full data needed)
+        List<AIInsight> aiInsights = generateAiInsightsFromMetrics(metricResults, totalSales, totalProfit, orderCount);
+        List<String> suggestions = generateSuggestionsFromMetrics(metricResults, totalSales, totalTarget);
 
         return DashboardResponse.builder()
                 .kpiCards(kpiCards)
@@ -108,6 +121,185 @@ public class SalesAnalysisServiceImpl implements SalesAnalysisService {
                 .suggestions(suggestions)
                 .lastUpdated(LocalDateTime.now())
                 .build();
+    }
+
+    private BigDecimal toBigDecimal(Object val) {
+        if (val == null) return BigDecimal.ZERO;
+        if (val instanceof BigDecimal) return (BigDecimal) val;
+        return new BigDecimal(val.toString());
+    }
+
+    /**
+     * Build KPI cards from DB aggregation results (no in-memory processing)
+     */
+    private List<MetricResult> buildKpiFromAggregates(
+            BigDecimal totalSales, BigDecimal totalQuantity, BigDecimal totalProfit,
+            BigDecimal totalCost, BigDecimal totalTarget, long orderCount,
+            String factoryId, LocalDate startDate, LocalDate endDate) {
+
+        List<MetricResult> kpiCards = new ArrayList<>();
+
+        kpiCards.add(MetricResult.builder()
+                .metricCode(MetricCalculatorService.SALES_AMOUNT)
+                .metricName("总销售额")
+                .value(totalSales.setScale(DISPLAY_SCALE, ROUNDING_MODE))
+                .formattedValue(formatCurrency(totalSales))
+                .unit("元")
+                .alertLevel(MetricResult.AlertLevel.GREEN.name())
+                .build());
+
+        kpiCards.add(MetricResult.builder()
+                .metricCode(MetricCalculatorService.ORDER_COUNT)
+                .metricName("订单数")
+                .value(new BigDecimal(orderCount))
+                .formattedValue(String.format("%,d", orderCount))
+                .unit("单")
+                .alertLevel(MetricResult.AlertLevel.GREEN.name())
+                .build());
+
+        BigDecimal avgOrderValue = orderCount > 0
+                ? totalSales.divide(new BigDecimal(orderCount), SCALE, ROUNDING_MODE)
+                : BigDecimal.ZERO;
+        kpiCards.add(MetricResult.builder()
+                .metricCode(MetricCalculatorService.AVG_ORDER_VALUE)
+                .metricName("客单价")
+                .value(avgOrderValue.setScale(DISPLAY_SCALE, ROUNDING_MODE))
+                .formattedValue(formatCurrency(avgOrderValue))
+                .unit("元")
+                .alertLevel(MetricResult.AlertLevel.GREEN.name())
+                .build());
+
+        BigDecimal completionRate = calculateCompletionRate(totalSales, totalTarget);
+        String completionAlertLevel = determineCompletionAlertLevel(completionRate);
+        kpiCards.add(MetricResult.builder()
+                .metricCode(MetricCalculatorService.TARGET_COMPLETION)
+                .metricName("目标完成率")
+                .value(completionRate.setScale(DISPLAY_SCALE, ROUNDING_MODE))
+                .formattedValue(String.format("%.1f%%", completionRate.doubleValue()))
+                .unit("%")
+                .alertLevel(completionAlertLevel)
+                .build());
+
+        // 环比: use aggregation query for previous period too
+        Object[] prevSummary = salesDataRepository.findKpiSummary(
+                factoryId, startDate.minusMonths(1), endDate.minusMonths(1));
+        BigDecimal previousSales = toBigDecimal(prevSummary[0]);
+        if (previousSales.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal momGrowth = metricCalculatorService.calculateMomGrowth(totalSales, previousSales);
+            kpiCards.add(MetricResult.builder()
+                    .metricCode(MetricCalculatorService.MOM_GROWTH)
+                    .metricName("环比增长")
+                    .value(momGrowth.setScale(DISPLAY_SCALE, ROUNDING_MODE))
+                    .formattedValue(String.format("%+.1f%%", momGrowth.doubleValue()))
+                    .unit("%")
+                    .changePercent(momGrowth)
+                    .changeDirection(determineChangeDirection(momGrowth))
+                    .alertLevel(determineGrowthAlertLevel(momGrowth))
+                    .build());
+        }
+
+        return kpiCards;
+    }
+
+    /**
+     * Build trend line chart from daily aggregation query results
+     */
+    private ChartConfig buildTrendChartFromAggregates(List<Object[]> dailyTrend) {
+        List<Map<String, Object>> data = new ArrayList<>();
+        for (Object[] row : dailyTrend) {
+            Map<String, Object> point = new LinkedHashMap<>();
+            point.put("date", row[0] != null ? row[0].toString() : "");
+            point.put("amount", toBigDecimal(row[1]).setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            point.put("quantity", toBigDecimal(row[2]).setScale(0, ROUNDING_MODE));
+            data.add(point);
+        }
+        return ChartConfig.builder()
+                .chartType("LINE")
+                .title("销售趋势")
+                .xAxisField("date")
+                .yAxisField("amount")
+                .data(data)
+                .build();
+    }
+
+    /**
+     * Build pie chart from category aggregation query results
+     */
+    private ChartConfig buildPieChartFromAggregates(List<Object[]> categoryData) {
+        List<Map<String, Object>> data = new ArrayList<>();
+        for (Object[] row : categoryData) {
+            Map<String, Object> point = new LinkedHashMap<>();
+            point.put("category", row[0] != null ? row[0].toString() : "未分类");
+            point.put("amount", toBigDecimal(row[1]).setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            data.add(point);
+        }
+        return ChartConfig.builder()
+                .chartType("PIE")
+                .title("产品分布")
+                .xAxisField("category")
+                .yAxisField("amount")
+                .data(data)
+                .build();
+    }
+
+    /**
+     * Build rankings from aggregation query results
+     */
+    private List<RankingItem> buildRankingsFromAggregates(List<Object[]> salespersonData) {
+        List<RankingItem> rankings = new ArrayList<>();
+        int rank = 1;
+        for (Object[] row : salespersonData) {
+            if (row[0] == null) continue;
+            BigDecimal amount = toBigDecimal(row[1]);
+            rankings.add(RankingItem.builder()
+                    .rank(rank++)
+                    .name(row[0].toString())
+                    .value(amount.setScale(DISPLAY_SCALE, ROUNDING_MODE))
+                    .build());
+            if (rank > 10) break; // Top 10 only
+        }
+        return rankings;
+    }
+
+    /**
+     * Generate insights from aggregated metrics (no full data load needed)
+     */
+    private List<AIInsight> generateAiInsightsFromMetrics(List<MetricResult> metrics,
+                                                           BigDecimal totalSales,
+                                                           BigDecimal totalProfit,
+                                                           long orderCount) {
+        List<AIInsight> insights = new ArrayList<>();
+        insights.add(AIInsight.builder()
+                .level("INFO")
+                .category("销售概况")
+                .message(String.format("期间总销售额 %s，共 %,d 笔订单，总利润 %s",
+                        formatCurrency(totalSales), orderCount, formatCurrency(totalProfit)))
+                .build());
+
+        if (totalSales.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal profitRate = totalProfit.multiply(new BigDecimal("100"))
+                    .divide(totalSales, SCALE, ROUNDING_MODE);
+            insights.add(AIInsight.builder()
+                    .level("INFO")
+                    .category("利润率分析")
+                    .message(String.format("综合利润率 %.1f%%", profitRate.doubleValue()))
+                    .build());
+        }
+        return insights;
+    }
+
+    /**
+     * Generate suggestions from aggregated metrics
+     */
+    private List<String> generateSuggestionsFromMetrics(List<MetricResult> metrics,
+                                                         BigDecimal totalSales,
+                                                         BigDecimal totalTarget) {
+        List<String> suggestions = new ArrayList<>();
+        BigDecimal completionRate = calculateCompletionRate(totalSales, totalTarget);
+        if (completionRate.compareTo(new BigDecimal("80")) < 0 && totalTarget.compareTo(BigDecimal.ZERO) > 0) {
+            suggestions.add("目标完成率不足80%，建议加强销售推进");
+        }
+        return suggestions;
     }
 
     // ==================== 销售员分析 ====================
@@ -993,22 +1185,6 @@ public class SalesAnalysisServiceImpl implements SalesAnalysisService {
                 .map(extractor)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    /**
-     * 转换为 BigDecimal
-     */
-    private BigDecimal toBigDecimal(Object value) {
-        if (value == null) {
-            return BigDecimal.ZERO;
-        }
-        if (value instanceof BigDecimal) {
-            return (BigDecimal) value;
-        }
-        if (value instanceof Number) {
-            return new BigDecimal(value.toString());
-        }
-        return BigDecimal.ZERO;
     }
 
     /**

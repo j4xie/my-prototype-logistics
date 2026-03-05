@@ -51,6 +51,14 @@ public interface SmartBiAnalysisCacheRepository extends JpaRepository<SmartBiAna
     void deleteByExpiresAtBefore(LocalDateTime dateTime);
 
     /**
+     * 删除指定工厂的所有缓存（用于重新上传时失效旧分析）
+     *
+     * @param factoryId 工厂ID
+     */
+    @Modifying
+    void deleteByFactoryId(String factoryId);
+
+    /**
      * 查询最新的分析缓存（按工厂、类型和日期）
      *
      * @param factoryId 工厂ID

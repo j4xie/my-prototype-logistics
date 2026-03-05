@@ -5510,6 +5510,941 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("订单超时", "ORDER_LIST");
         phraseToIntentMapping.put("订单都超时了", "ORDER_LIST");
 
+        // ========== Wave-8c: 19→10 intent mismatch 修复 ==========
+
+        // --- Wave-8c: SEMANTIC 黑洞修复 (phrase 短路绕过向量) ---
+        // [A1] "猪肉的保质期是多久" → ISAPI_QUERY_CAPABILITIES (黑洞吸收)
+        phraseToIntentMapping.put("保质期是多久", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("保质期多久", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("保质期多长", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("保质期多少天", "FOOD_KNOWLEDGE_QUERY");
+
+        // [AB14] "库存【猪肉】【牛肉】【鸡肉】" → SHIPMENT_CREATE (方括号干扰)
+        // 方括号会被预处理清掉，实际输入变为 "库存猪肉牛肉鸡肉"
+        phraseToIntentMapping.put("库存猪肉牛肉鸡肉", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("库存猪肉牛肉", "MATERIAL_BATCH_QUERY");
+
+        // [AG2] "这批全部报废" → APPROVAL_SUBMIT (报废=质量处置)
+        phraseToIntentMapping.put("全部报废", "QUALITY_DISPOSITION_EXECUTE");
+        phraseToIntentMapping.put("这批报废", "QUALITY_DISPOSITION_EXECUTE");
+        phraseToIntentMapping.put("报废处理", "QUALITY_DISPOSITION_EXECUTE");
+        phraseToIntentMapping.put("批次报废", "QUALITY_DISPOSITION_EXECUTE");
+
+        // [AM1] "下架麻辣小龙虾这道菜" → ATTENDANCE_TODAY (黑洞)
+        phraseToIntentMapping.put("下架菜品", "RESTAURANT_DISH_DELETE");
+        phraseToIntentMapping.put("下架这道菜", "RESTAURANT_DISH_DELETE");
+        phraseToIntentMapping.put("菜品下架", "RESTAURANT_DISH_DELETE");
+
+        // [AV2] "让李四去处理这批货" → SYSTEM_FEEDBACK (黑洞)
+        phraseToIntentMapping.put("去处理这批货", "TASK_ASSIGN_WORKER");
+        phraseToIntentMapping.put("去处理这批", "TASK_ASSIGN_WORKER");
+        phraseToIntentMapping.put("安排去处理", "TASK_ASSIGN_WORKER");
+
+        // --- Wave-8c: LLM fallback 误路由修复 ---
+        // [AU1] "下一页"/"翻到下一页" → 应为 PAGINATION_NEXT
+        phraseToIntentMapping.put("下一页", "PAGINATION_NEXT");
+        phraseToIntentMapping.put("翻到下一页", "PAGINATION_NEXT");
+        phraseToIntentMapping.put("翻页", "PAGINATION_NEXT");
+        phraseToIntentMapping.put("上一页", "PAGINATION_PREVIOUS");
+
+        // [AN1] "接上条" → 上下文续查
+        phraseToIntentMapping.put("接上条", "CONTEXT_CONTINUE");
+
+        // [AV2] "安排小陈去3号线" → 任务分配
+        phraseToIntentMapping.put("安排去", "TASK_ASSIGN_WORKER");
+
+        // [AW5] "驳回的审批单" → 审批记录查询
+        phraseToIntentMapping.put("驳回的审批", "QUERY_APPROVAL_RECORD");
+        phraseToIntentMapping.put("驳回审批", "QUERY_APPROVAL_RECORD");
+
+        // [AX4] "打开摄像头" → 摄像头操作
+        phraseToIntentMapping.put("打开摄像头", "EQUIPMENT_CAMERA_START");
+
+        // [AM1] "今天的食材采购单生成一下" → 采购单创建
+        phraseToIntentMapping.put("采购单生成", "ORDER_NEW");
+        phraseToIntentMapping.put("生成采购单", "ORDER_NEW");
+
+        // === Wave-7e-sync: 从备份JAR恢复缺失短语 (745条工厂意图) ===
+        // ALERT_ACKNOWLEDGE (2)
+        phraseToIntentMapping.put("消除报警", "ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("消除设备报警", "ALERT_ACKNOWLEDGE");
+        // ALERT_BY_LEVEL (1)
+        phraseToIntentMapping.put("告警是什么级别", "ALERT_BY_LEVEL");
+        // ALERT_LIST (1)
+        phraseToIntentMapping.put("有什么问题吗", "ALERT_LIST");
+        // APPROVAL_LIST_QUERY (1)
+        phraseToIntentMapping.put("approval list", "APPROVAL_LIST_QUERY");
+        // ATTENDANCE_ANOMALY (2)
+        phraseToIntentMapping.put("who is absent", "ATTENDANCE_ANOMALY");
+        phraseToIntentMapping.put("边个冇返工", "ATTENDANCE_ANOMALY");
+        // ATTENDANCE_HISTORY (3)
+        phraseToIntentMapping.put("attendance record", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("我是查考勤", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("查考勤", "ATTENDANCE_HISTORY");
+        // ATTENDANCE_QUERY (1)
+        phraseToIntentMapping.put("attendance today", "ATTENDANCE_QUERY");
+        // ATTENDANCE_STATS (4)
+        phraseToIntentMapping.put("出勤率", "ATTENDANCE_STATS");
+        phraseToIntentMapping.put("出勤率这么低", "ATTENDANCE_STATS");
+        phraseToIntentMapping.put("部门考勤", "ATTENDANCE_STATS");
+        phraseToIntentMapping.put("采购部门的考勤", "ATTENDANCE_STATS");
+        // ATTENDANCE_STATS_BY_DEPT (2)
+        phraseToIntentMapping.put("出勤异常", "ATTENDANCE_STATS_BY_DEPT");
+        phraseToIntentMapping.put("考勤异常", "ATTENDANCE_STATS_BY_DEPT");
+        // ATTENDANCE_STATUS (4)
+        phraseToIntentMapping.put("今天打卡了吗", "ATTENDANCE_STATUS");
+        phraseToIntentMapping.put("我的打卡状态", "ATTENDANCE_STATUS");
+        phraseToIntentMapping.put("现在是上班状态", "ATTENDANCE_STATUS");
+        phraseToIntentMapping.put("算上班还是下班", "ATTENDANCE_STATUS");
+        // ATTENDANCE_TODAY (21)
+        phraseToIntentMapping.put("不是打卡", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("今儿谁没来", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("今天上班了吗", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("今天几个人在干活", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("今天请假", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("今天谁没到岗", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("几个人在干活", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("工人今天来的不太齐", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("工人出勤", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("工人打卡", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("工人考勤", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("帮我查考勤", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("是查考勤", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("来的不太齐", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("查一下考勤", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("查考勤", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("王芳今天上班了吗", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("考勤嘛", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("谁没到岗", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("谁还没来", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("迟到了几个人", "ATTENDANCE_TODAY");
+        // CAMERA_DETAIL (1)
+        phraseToIntentMapping.put("1号摄像头详情", "CAMERA_DETAIL");
+        // CAMERA_EVENTS (1)
+        phraseToIntentMapping.put("摄像头告警事件", "CAMERA_EVENTS");
+        // CAMERA_STREAMS (4)
+        phraseToIntentMapping.put("摄像头流媒体", "CAMERA_STREAMS");
+        phraseToIntentMapping.put("摄像头流媒体地址", "CAMERA_STREAMS");
+        phraseToIntentMapping.put("摄像头的流媒体", "CAMERA_STREAMS");
+        phraseToIntentMapping.put("摄像头的流媒体地址", "CAMERA_STREAMS");
+        // CAMERA_SUBSCRIBE (1)
+        phraseToIntentMapping.put("摄像头事件订阅", "CAMERA_SUBSCRIBE");
+        // CAMERA_TEST_CONNECTION (1)
+        phraseToIntentMapping.put("摄像头连接是否正常", "CAMERA_TEST_CONNECTION");
+        // CAMERA_UNSUBSCRIBE (4)
+        phraseToIntentMapping.put("事件订阅", "CAMERA_UNSUBSCRIBE");
+        phraseToIntentMapping.put("取消事件订阅", "CAMERA_UNSUBSCRIBE");
+        phraseToIntentMapping.put("取消摄像头事件", "CAMERA_UNSUBSCRIBE");
+        phraseToIntentMapping.put("取消摄像头事件订阅", "CAMERA_UNSUBSCRIBE");
+        // CCP_MONITOR_DATA_DETECTION (3)
+        phraseToIntentMapping.put("CCP异常", "CCP_MONITOR_DATA_DETECTION");
+        phraseToIntentMapping.put("CCP检测异常", "CCP_MONITOR_DATA_DETECTION");
+        phraseToIntentMapping.put("CCP检测有没有异常", "CCP_MONITOR_DATA_DETECTION");
+        // CLOCK_IN (5)
+        phraseToIntentMapping.put("clock in", "CLOCK_IN");
+        phraseToIntentMapping.put("不管了帮我先打个卡", "CLOCK_IN");
+        phraseToIntentMapping.put("帮我先打个卡", "CLOCK_IN");
+        phraseToIntentMapping.put("打完卡顺便", "CLOCK_IN");
+        phraseToIntentMapping.put("签到", "CLOCK_IN");
+        // CONFIG_RESET (2)
+        phraseToIntentMapping.put("告警规则配置", "CONFIG_RESET");
+        phraseToIntentMapping.put("重置告警", "CONFIG_RESET");
+        // CUSTOMER_LIST (1)
+        phraseToIntentMapping.put("是找客户", "CUSTOMER_LIST");
+        // CUSTOMER_PEAK_HOUR_QUERY (1)
+        phraseToIntentMapping.put("customer list", "CUSTOMER_PEAK_HOUR_QUERY");
+        // CUSTOMER_STATS (1)
+        phraseToIntentMapping.put("客户对质量有什么反馈", "CUSTOMER_STATS");
+        // DAHUA_DEVICE_DISCOVERY (5)
+        phraseToIntentMapping.put("发现摄像头", "DAHUA_DEVICE_DISCOVERY");
+        phraseToIntentMapping.put("局域网摄像头", "DAHUA_DEVICE_DISCOVERY");
+        phraseToIntentMapping.put("扫描摄像头", "DAHUA_DEVICE_DISCOVERY");
+        phraseToIntentMapping.put("扫描网络设备", "DAHUA_DEVICE_DISCOVERY");
+        phraseToIntentMapping.put("搜索摄像头", "DAHUA_DEVICE_DISCOVERY");
+        // DAHUA_DEVICE_MANAGE (5)
+        phraseToIntentMapping.put("删除摄像头", "DAHUA_DEVICE_MANAGE");
+        phraseToIntentMapping.put("摄像头管理", "DAHUA_DEVICE_MANAGE");
+        phraseToIntentMapping.put("查看摄像头", "DAHUA_DEVICE_MANAGE");
+        phraseToIntentMapping.put("添加摄像头", "DAHUA_DEVICE_MANAGE");
+        phraseToIntentMapping.put("视频流地址", "DAHUA_DEVICE_MANAGE");
+        // DAHUA_SMART_CONFIG (4)
+        phraseToIntentMapping.put("人脸检测配置", "DAHUA_SMART_CONFIG");
+        phraseToIntentMapping.put("区域入侵检测", "DAHUA_SMART_CONFIG");
+        phraseToIntentMapping.put("智能检测配置", "DAHUA_SMART_CONFIG");
+        phraseToIntentMapping.put("越界检测配置", "DAHUA_SMART_CONFIG");
+        // DICTIONARY_ADD (5)
+        phraseToIntentMapping.put("也叫做", "DICTIONARY_ADD");
+        phraseToIntentMapping.put("加到字典", "DICTIONARY_ADD");
+        phraseToIntentMapping.put("添加别名", "DICTIONARY_ADD");
+        phraseToIntentMapping.put("添加到字典", "DICTIONARY_ADD");
+        phraseToIntentMapping.put("添加同义词", "DICTIONARY_ADD");
+        // DICTIONARY_BATCH_IMPORT (3)
+        phraseToIntentMapping.put("批量导入字典", "DICTIONARY_BATCH_IMPORT");
+        phraseToIntentMapping.put("批量导入部门", "DICTIONARY_BATCH_IMPORT");
+        phraseToIntentMapping.put("批量添加同义词", "DICTIONARY_BATCH_IMPORT");
+        // DICTIONARY_LIST (6)
+        phraseToIntentMapping.put("同义词列表", "DICTIONARY_LIST");
+        phraseToIntentMapping.put("字典列表", "DICTIONARY_LIST");
+        phraseToIntentMapping.put("支持哪些部门", "DICTIONARY_LIST");
+        phraseToIntentMapping.put("查字典", "DICTIONARY_LIST");
+        phraseToIntentMapping.put("查看字典", "DICTIONARY_LIST");
+        phraseToIntentMapping.put("能识别哪些", "DICTIONARY_LIST");
+        // EQUIPMENT_ALERT_ACKNOWLEDGE (13)
+        phraseToIntentMapping.put("告警已处理", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("告警已读", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("告警我看到了", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("处理告警", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("我知道这个告警了", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("把告警处理掉", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("标记告警已读", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("清除告警", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("知悉告警", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("确认告警", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("确认收到告警", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("确认警报", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("确认这个警报", "EQUIPMENT_ALERT_ACKNOWLEDGE");
+        // EQUIPMENT_ALERT_LIST (151)
+        phraseToIntentMapping.put("alert list", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("equipment alert", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("一般性告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("严重告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("之前的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("之前的告警记录", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("什么告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("今天异常", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("今天异常情况", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("今天异常警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("今日告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("低优先级告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("冷链断链告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("出了问题", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("出毛病", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("出毛病了", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("出问题", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("分级告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("列出告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("历史告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警严重吗", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警事件处理记录", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警信息", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警分级", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警分诊", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警列表", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警历史", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警历史记录", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警情况", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警有没有", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警清单", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警级别", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警记录", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警通知中心", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警问题", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("告警需要处理", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("实时告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("实时告警信息", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("尚未关闭的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("帮我查告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("帮我看告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("异常", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("异常告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("异常情况", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("异常报警汇总", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("异常提醒", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("异常数据", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("异常数据有多少", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("异常警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("当前告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("当前的异常", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("当前的警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("待处理", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("待处理告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("待处理工作", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("待处理的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("待处理的工作", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("待解决的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("待解决警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("我要看告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("所有报警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("报警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("报警汇总", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("报警记录", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("按级别查告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("按级别警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("按设备警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("断链告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("显示告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("显示告警列表", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("显示所有告警记录", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("最严重告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("最严重的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("最新告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("最新的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有什么告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有什么异常", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有什么异常吗", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有什么问题", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有啥问题", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有异常", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有没有异常", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有没有报警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有没有遗漏", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有警告吗", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有遗漏吗", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有问题", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("有问题吗", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("未关闭的警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("未关闭警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("未处理告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("未处理的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("未解决告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("未解决的警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("查看告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("查询告警信息列表", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("正在发生的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("正在发生的异常", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("正在发生的警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("正在发生警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("正在报警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("活动中的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("活跃告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("活跃的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("浏览告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("温度异常", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("温度异常统计", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("现在有哪些告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("现有告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("看下告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("看告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("看看有啥问题", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("系统有没有报警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("系统警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("紧急事项", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("紧急告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("紧急的", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("紧急的事情", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("紧急的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("紧急的告警需要处理", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("紧急的警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("紧急级别告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("给我看告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("获取告警信息", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("要做什么", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("警告信息", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("警报级别", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("警报都有哪些", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("设备A01", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("设备告警另外", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("该做什么了", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("过去的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("还有什么告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("还未关闭告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("还没处理的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("进行中告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("进行中的告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("进行中的警报", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("重点关注", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("需要关注", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("需要关注的", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("需要关注的事项", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("预警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("预警信息", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("预警信息汇总", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("预警消息", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("预警监控平台", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("高优先级告警", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("高级别警报", "EQUIPMENT_ALERT_LIST");
+        // EQUIPMENT_ALERT_RESOLVE (14)
+        phraseToIntentMapping.put("关闭告警", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("关闭这个告警", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("告警可以关了", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("告警处理完毕", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("处理掉告警", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("处理掉这个告警", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("完成告警处理", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("故障排除", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("标记为已处理", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("标记已处理", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("解决告警", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("解决警报", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("解决这个告警", "EQUIPMENT_ALERT_RESOLVE");
+        phraseToIntentMapping.put("问题已解决", "EQUIPMENT_ALERT_RESOLVE");
+        // EQUIPMENT_ALERT_STATS (21)
+        phraseToIntentMapping.put("告警事件的原因", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("告警分析", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("告警处理响应时间", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("告警处理情况", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("告警报表", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("告警数量", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("告警汇总", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("告警统计", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("告警统计分析", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("告警统计数据", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("告警趋势", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("处理响应时间", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("处理响应时间情况", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("异常发生频率", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("报警次数统计", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("报警统计", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("警报数量分析", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("警报统计", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("设备告警事件", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("设备告警事件的原因分类", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("过去三天告警", "EQUIPMENT_ALERT_STATS");
+        // EQUIPMENT_CAMERA_START (6)
+        phraseToIntentMapping.put("关摄像头", "EQUIPMENT_CAMERA_START");
+        phraseToIntentMapping.put("启动3号车间的监控", "EQUIPMENT_CAMERA_START");
+        phraseToIntentMapping.put("启动监控", "EQUIPMENT_CAMERA_START");
+        phraseToIntentMapping.put("启动车间监控", "EQUIPMENT_CAMERA_START");
+        phraseToIntentMapping.put("开启视频监控", "EQUIPMENT_CAMERA_START");
+        phraseToIntentMapping.put("摄像头关了", "EQUIPMENT_CAMERA_START");
+        // EQUIPMENT_DETAIL (1)
+        phraseToIntentMapping.put("maintenance log", "EQUIPMENT_DETAIL");
+        // EQUIPMENT_HEALTH_DIAGNOSIS (10)
+        phraseToIntentMapping.put("为什么会报警", "EQUIPMENT_HEALTH_DIAGNOSIS");
+        phraseToIntentMapping.put("分析告警原因", "EQUIPMENT_HEALTH_DIAGNOSIS");
+        phraseToIntentMapping.put("告警原因", "EQUIPMENT_HEALTH_DIAGNOSIS");
+        phraseToIntentMapping.put("告警怎么回事", "EQUIPMENT_HEALTH_DIAGNOSIS");
+        phraseToIntentMapping.put("告警根因分析", "EQUIPMENT_HEALTH_DIAGNOSIS");
+        phraseToIntentMapping.put("告警诊断", "EQUIPMENT_HEALTH_DIAGNOSIS");
+        phraseToIntentMapping.put("报警原因", "EQUIPMENT_HEALTH_DIAGNOSIS");
+        phraseToIntentMapping.put("智能诊断", "EQUIPMENT_HEALTH_DIAGNOSIS");
+        phraseToIntentMapping.put("诊断告警", "EQUIPMENT_HEALTH_DIAGNOSIS");
+        phraseToIntentMapping.put("诊断这个异常", "EQUIPMENT_HEALTH_DIAGNOSIS");
+        // EQUIPMENT_LIST (2)
+        phraseToIntentMapping.put("注册表信息", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("注册表查询", "EQUIPMENT_LIST");
+        // EQUIPMENT_STATUS_QUERY (11)
+        phraseToIntentMapping.put("equipment status", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("不太对劲", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("有没有问题", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("有点问题", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("机器坏了", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("机器歇菜", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("点解设备坏咗", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("设备不对劲", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("设备怎么又坏了", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("设备有问题", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("部机坏咗", "EQUIPMENT_STATUS_QUERY");
+        // FACTORY_NOTIFICATION_CONFIG (1)
+        phraseToIntentMapping.put("配置通知", "FACTORY_NOTIFICATION_CONFIG");
+        // FINANCE_METRIC_CALCULATION (1)
+        phraseToIntentMapping.put("finance report", "FINANCE_METRIC_CALCULATION");
+        // FOOD_KNOWLEDGE_QUERY (51)
+        phraseToIntentMapping.put("为什么会变色", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("保存多长时间", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("保存方法", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("保存温度", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("保质期多久", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("保鲜", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("保鲜时间", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("储存方法", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("储存条件", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("加工工艺", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("卡路里", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("发酵需要什么条件", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("含什么营养", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("哪个热量", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("如何保存", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("如何防止肉类变质", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("对身体", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("怎么保存", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("怎么保鲜", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("有什么危害", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("有什么营养", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("有害吗", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("有营养吗", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("检疫标准", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("检疫要求", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("温度要求", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("溯源码是什么格式", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("溯源码是什么格式的", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("溯源码格式", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("热量", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("热量高", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("生产工艺流程", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("生产注意事项", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("益生菌", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("益生菌标准", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("矿物质", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("碳水化合物", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("维生素", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("能吃吗", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("脂肪含量", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("膳食纤维", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("营养价值", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("营养成分", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("蛋白质", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("蛋白质含量", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("解冻后", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("防止变质", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("防腐剂使用量", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("防腐剂最大使用量", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("防腐剂限量", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("食用安全", "FOOD_KNOWLEDGE_QUERY");
+        // FORM_GENERATION (2)
+        phraseToIntentMapping.put("生成首页布局", "FORM_GENERATION");
+        phraseToIntentMapping.put("首页布局", "FORM_GENERATION");
+        // HR_DELETE_EMPLOYEE (20)
+        phraseToIntentMapping.put("人员离职", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("停用员工", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("停用账号", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("办理离职", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("办理离职手续", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("员工离职", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("员工解除雇佣", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("已离职的员工清理", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("开除", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("开除员工", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("注销员工", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("注销员工账号", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("清理员工", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("离职办理", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("移除员工", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("裁掉员工", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("解除雇佣", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("解雇员工", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("辞退", "HR_DELETE_EMPLOYEE");
+        phraseToIntentMapping.put("辞退员工", "HR_DELETE_EMPLOYEE");
+        // INVENTORY_CLEAR (1)
+        phraseToIntentMapping.put("仓位库存归零", "INVENTORY_CLEAR");
+        // INVENTORY_OUTBOUND (2)
+        phraseToIntentMapping.put("出库一百五十斤", "INVENTORY_OUTBOUND");
+        phraseToIntentMapping.put("出库鸡肉", "INVENTORY_OUTBOUND");
+        // INVENTORY_SUMMARY_QUERY (5)
+        phraseToIntentMapping.put("check inventory", "INVENTORY_SUMMARY_QUERY");
+        phraseToIntentMapping.put("inventory check", "INVENTORY_SUMMARY_QUERY");
+        phraseToIntentMapping.put("stock level", "INVENTORY_SUMMARY_QUERY");
+        phraseToIntentMapping.put("库存盘点", "INVENTORY_SUMMARY_QUERY");
+        phraseToIntentMapping.put("盘点", "INVENTORY_SUMMARY_QUERY");
+        // ISAPI_QUERY_CAPABILITIES (4)
+        phraseToIntentMapping.put("摄像头检测事件", "ISAPI_QUERY_CAPABILITIES");
+        phraseToIntentMapping.put("摄像头能力", "ISAPI_QUERY_CAPABILITIES");
+        phraseToIntentMapping.put("查看摄像头能力", "ISAPI_QUERY_CAPABILITIES");
+        phraseToIntentMapping.put("能力集", "ISAPI_QUERY_CAPABILITIES");
+        // MATERIAL_BATCH_CONSUME (3)
+        phraseToIntentMapping.put("出库50箱", "MATERIAL_BATCH_CONSUME");
+        phraseToIntentMapping.put("应该是出库", "MATERIAL_BATCH_CONSUME");
+        phraseToIntentMapping.put("消耗一批", "MATERIAL_BATCH_CONSUME");
+        // MATERIAL_BATCH_CREATE (1)
+        phraseToIntentMapping.put("入库", "MATERIAL_BATCH_CREATE");
+        // MATERIAL_BATCH_QUERY (17)
+        phraseToIntentMapping.put("100kg的原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("50到100公斤", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("产量翻倍需要多少原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("价格5到10", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("元一斤的原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("大于100", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("库存50到100", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("库存不够", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("库存不够顺便", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("库存大于100", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("库存量和物料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("有几多货", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("物料使用情况", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("睇下库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("被退回的原材料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("退回的原材料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("齐活了没", "MATERIAL_BATCH_QUERY");
+        // MATERIAL_BATCH_USE (1)
+        phraseToIntentMapping.put("申请使用", "MATERIAL_BATCH_USE");
+        // MATERIAL_FIFO_RECOMMEND (2)
+        phraseToIntentMapping.put("FIFO推荐出库", "MATERIAL_FIFO_RECOMMEND");
+        phraseToIntentMapping.put("先进先出推荐", "MATERIAL_FIFO_RECOMMEND");
+        // MATERIAL_LOW_STOCK_ALERT (2)
+        phraseToIntentMapping.put("低库纯预警", "MATERIAL_LOW_STOCK_ALERT");
+        phraseToIntentMapping.put("每次都这样", "MATERIAL_LOW_STOCK_ALERT");
+        // NOTIFICATION_SEND_WECHAT (12)
+        phraseToIntentMapping.put("send notification", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("催货通知", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("发个通知", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("发催货通知", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("发消息给", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("微信推送", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("推送告警信息", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("推送消息", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("提醒供应商", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("群发消息", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("补货通知", "NOTIFICATION_SEND_WECHAT");
+        phraseToIntentMapping.put("通知一下", "NOTIFICATION_SEND_WECHAT");
+        // ORDER_CREATE (2)
+        phraseToIntentMapping.put("create order", "ORDER_CREATE");
+        phraseToIntentMapping.put("new order", "ORDER_CREATE");
+        // ORDER_DELETE (4)
+        phraseToIntentMapping.put("delete", "ORDER_DELETE");
+        phraseToIntentMapping.put("delete这个order", "ORDER_DELETE");
+        phraseToIntentMapping.put("删除订单记录", "ORDER_DELETE");
+        phraseToIntentMapping.put("永久删除订单", "ORDER_DELETE");
+        // ORDER_LIST (14)
+        phraseToIntentMapping.put("order list", "ORDER_LIST");
+        phraseToIntentMapping.put("今天几个单", "ORDER_LIST");
+        phraseToIntentMapping.put("今天新增订单", "ORDER_LIST");
+        phraseToIntentMapping.put("从去年到今年的订单", "ORDER_LIST");
+        phraseToIntentMapping.put("去年12月到今年2月", "ORDER_LIST");
+        phraseToIntentMapping.put("是查订单", "ORDER_LIST");
+        phraseToIntentMapping.put("有几个单", "ORDER_LIST");
+        phraseToIntentMapping.put("查一下订单", "ORDER_LIST");
+        phraseToIntentMapping.put("查订单状态", "ORDER_LIST");
+        phraseToIntentMapping.put("睇下订单", "ORDER_LIST");
+        phraseToIntentMapping.put("瞅瞅订单", "ORDER_LIST");
+        phraseToIntentMapping.put("要查订单", "ORDER_LIST");
+        phraseToIntentMapping.put("订单情况", "ORDER_LIST");
+        phraseToIntentMapping.put("退货情况", "ORDER_LIST");
+        // ORDER_STATUS (8)
+        phraseToIntentMapping.put("order status", "ORDER_STATUS");
+        phraseToIntentMapping.put("交付状态", "ORDER_STATUS");
+        phraseToIntentMapping.put("交付进度", "ORDER_STATUS");
+        phraseToIntentMapping.put("交货进度", "ORDER_STATUS");
+        phraseToIntentMapping.put("嗌个订单", "ORDER_STATUS");
+        phraseToIntentMapping.put("嗰个订单", "ORDER_STATUS");
+        phraseToIntentMapping.put("订单到底发了没", "ORDER_STATUS");
+        phraseToIntentMapping.put("订单发了没", "ORDER_STATUS");
+        // ORDER_TODAY (2)
+        phraseToIntentMapping.put("今天新增了几个订单", "ORDER_TODAY");
+        phraseToIntentMapping.put("今天新增订单", "ORDER_TODAY");
+        // ORDER_TYPE_RATIO_QUERY (3)
+        phraseToIntentMapping.put("how many orders", "ORDER_TYPE_RATIO_QUERY");
+        phraseToIntentMapping.put("orders today", "ORDER_TYPE_RATIO_QUERY");
+        phraseToIntentMapping.put("today orders", "ORDER_TYPE_RATIO_QUERY");
+        // PROCESSING_BATCH_COMPLETE (2)
+        phraseToIntentMapping.put("做完这批", "PROCESSING_BATCH_COMPLETE");
+        phraseToIntentMapping.put("批次生产完成", "PROCESSING_BATCH_COMPLETE");
+        // PROCESSING_BATCH_CREATE (4)
+        phraseToIntentMapping.put("create batch", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("create new production batch", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("create production batch", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("new batch", "PROCESSING_BATCH_CREATE");
+        // PROCESSING_BATCH_DETAIL (1)
+        phraseToIntentMapping.put("batch detail", "PROCESSING_BATCH_DETAIL");
+        // PROCESSING_BATCH_LIST (6)
+        phraseToIntentMapping.put("WIP", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("WIP在制品", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("只是想查一下", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("在制品", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("在制品数量", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("搞得定不", "PROCESSING_BATCH_LIST");
+        // PROCESSING_BATCH_PAUSE (1)
+        phraseToIntentMapping.put("暂停生产去维修", "PROCESSING_BATCH_PAUSE");
+        // PROCESSING_BATCH_RESUME (2)
+        phraseToIntentMapping.put("恢复批次", "PROCESSING_BATCH_RESUME");
+        phraseToIntentMapping.put("恢复暂停的批次", "PROCESSING_BATCH_RESUME");
+        // PROCESSING_BATCH_WORKERS (2)
+        phraseToIntentMapping.put("线上几个工人", "PROCESSING_BATCH_WORKERS");
+        phraseToIntentMapping.put("这条线上有几个工人", "PROCESSING_BATCH_WORKERS");
+        // PROCESSING_WORKER_CHECKOUT (1)
+        phraseToIntentMapping.put("clock out", "PROCESSING_WORKER_CHECKOUT");
+        // PRODUCTION_CONFIRM_WORKERS_PRESENT (7)
+        phraseToIntentMapping.put("人都到了", "PRODUCTION_CONFIRM_WORKERS_PRESENT");
+        phraseToIntentMapping.put("工人到了", "PRODUCTION_CONFIRM_WORKERS_PRESENT");
+        phraseToIntentMapping.put("工人就位确认", "PRODUCTION_CONFIRM_WORKERS_PRESENT");
+        phraseToIntentMapping.put("确认产线工人", "PRODUCTION_CONFIRM_WORKERS_PRESENT");
+        phraseToIntentMapping.put("确认就位", "PRODUCTION_CONFIRM_WORKERS_PRESENT");
+        phraseToIntentMapping.put("确认工人已到位", "PRODUCTION_CONFIRM_WORKERS_PRESENT");
+        phraseToIntentMapping.put("车间人员到齐", "PRODUCTION_CONFIRM_WORKERS_PRESENT");
+        // PRODUCTION_HOURS_REPORT (6)
+        phraseToIntentMapping.put("今日产出进度", "PRODUCTION_HOURS_REPORT");
+        phraseToIntentMapping.put("多少工时", "PRODUCTION_HOURS_REPORT");
+        phraseToIntentMapping.put("完成了多少工时", "PRODUCTION_HOURS_REPORT");
+        phraseToIntentMapping.put("工人工时统计", "PRODUCTION_HOURS_REPORT");
+        phraseToIntentMapping.put("工时", "PRODUCTION_HOURS_REPORT");
+        phraseToIntentMapping.put("生产进度报告", "PRODUCTION_HOURS_REPORT");
+        // PRODUCTION_STATUS_QUERY (7)
+        phraseToIntentMapping.put("A车间产量", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("产量超过", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("今日出咗几多", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("做完了吗", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("搞掂了冇", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("搞掂未", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("搞掂条生产线未", "PRODUCTION_STATUS_QUERY");
+        // PURCHASE_ORDER_QUERY (1)
+        phraseToIntentMapping.put("purchase order", "PURCHASE_ORDER_QUERY");
+        // QUALITY_BATCH_MARK_AS_INSPECTED (5)
+        phraseToIntentMapping.put("不合格品", "QUALITY_BATCH_MARK_AS_INSPECTED");
+        phraseToIntentMapping.put("判定不合格", "QUALITY_BATCH_MARK_AS_INSPECTED");
+        phraseToIntentMapping.put("判定不合格品", "QUALITY_BATCH_MARK_AS_INSPECTED");
+        phraseToIntentMapping.put("判定该批次为不合格品", "QUALITY_BATCH_MARK_AS_INSPECTED");
+        phraseToIntentMapping.put("标记为已检验", "QUALITY_BATCH_MARK_AS_INSPECTED");
+        // QUALITY_CHECK_QUERY (17)
+        phraseToIntentMapping.put("quality check result", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("quality check结果", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("zj结果", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("七天的质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("不合格产品", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("不合格产品清单", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("不合格的产品", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("不用质检吗", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("合格还是不合格", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("最近质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("查质检的", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("检测报告", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("的质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("质检怎么样了", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("质检情况", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("质检的", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("质检这块", "QUALITY_CHECK_QUERY");
+        // QUALITY_CRITICAL_ITEMS (2)
+        phraseToIntentMapping.put("关键项目清单", "QUALITY_CRITICAL_ITEMS");
+        phraseToIntentMapping.put("质检关键项", "QUALITY_CRITICAL_ITEMS");
+        // QUALITY_DISPOSITION_EVALUATE (2)
+        phraseToIntentMapping.put("不合格品处置方案", "QUALITY_DISPOSITION_EVALUATE");
+        phraseToIntentMapping.put("处置方案", "QUALITY_DISPOSITION_EVALUATE");
+        // QUALITY_DISPOSITION_EXECUTE (2)
+        phraseToIntentMapping.put("处置不合格品", "QUALITY_DISPOSITION_EXECUTE");
+        phraseToIntentMapping.put("隔离不合格", "QUALITY_DISPOSITION_EXECUTE");
+        // QUALITY_PHYSICAL_CHEMICAL_QUERY (1)
+        phraseToIntentMapping.put("quality check", "QUALITY_PHYSICAL_CHEMICAL_QUERY");
+        // QUERY_APPROVAL_RECORD (2)
+        phraseToIntentMapping.put("待审批", "QUERY_APPROVAL_RECORD");
+        phraseToIntentMapping.put("待审批的采购", "QUERY_APPROVAL_RECORD");
+        // QUERY_FINANCE_ROA (1)
+        phraseToIntentMapping.put("ROA", "QUERY_FINANCE_ROA");
+        // QUERY_FINANCE_ROE (1)
+        phraseToIntentMapping.put("ROE", "QUERY_FINANCE_ROE");
+        // QUERY_INVENTORY_QUANTITY (2)
+        phraseToIntentMapping.put("有多少伐", "QUERY_INVENTORY_QUANTITY");
+        phraseToIntentMapping.put("还有货伐", "QUERY_INVENTORY_QUANTITY");
+        // QUERY_INVENTORY_TOTAL (1)
+        phraseToIntentMapping.put("好多货伐", "QUERY_INVENTORY_TOTAL");
+        // QUERY_LIQUIDITY (2)
+        phraseToIntentMapping.put("流动比率", "QUERY_LIQUIDITY");
+        phraseToIntentMapping.put("流动比率查询", "QUERY_LIQUIDITY");
+        // QUERY_PROCESSING_CURRENT_STEP (2)
+        phraseToIntentMapping.put("哪道工序卡住", "QUERY_PROCESSING_CURRENT_STEP");
+        phraseToIntentMapping.put("工序卡住", "QUERY_PROCESSING_CURRENT_STEP");
+        // QUERY_TRANSPORT_LINE (2)
+        phraseToIntentMapping.put("上海到北京", "QUERY_TRANSPORT_LINE");
+        phraseToIntentMapping.put("物流线路", "QUERY_TRANSPORT_LINE");
+        // REPORT_EXECUTIVE_DAILY (1)
+        phraseToIntentMapping.put("kpi report", "REPORT_EXECUTIVE_DAILY");
+        // REPORT_FINANCE (6)
+        phraseToIntentMapping.put("不看生产数据看财务", "REPORT_FINANCE");
+        phraseToIntentMapping.put("审计", "REPORT_FINANCE");
+        phraseToIntentMapping.put("审计报表", "REPORT_FINANCE");
+        phraseToIntentMapping.put("拉报表", "REPORT_FINANCE");
+        phraseToIntentMapping.put("看财务的", "REPORT_FINANCE");
+        phraseToIntentMapping.put("赶紧把报表拉出来", "REPORT_FINANCE");
+        // REPORT_INVENTORY (2)
+        phraseToIntentMapping.put("inventory status", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("show inventory", "REPORT_INVENTORY");
+        // REPORT_KPI (8)
+        phraseToIntentMapping.put("KPI", "REPORT_KPI");
+        phraseToIntentMapping.put("KPI dashboard", "REPORT_KPI");
+        phraseToIntentMapping.put("今日生产报告", "REPORT_KPI");
+        phraseToIntentMapping.put("本月销售额", "REPORT_KPI");
+        phraseToIntentMapping.put("本月销售额统计", "REPORT_KPI");
+        phraseToIntentMapping.put("每日生产", "REPORT_KPI");
+        phraseToIntentMapping.put("生产报告", "REPORT_KPI");
+        phraseToIntentMapping.put("生产日报", "REPORT_KPI");
+        // REPORT_PRODUCTION (14)
+        phraseToIntentMapping.put("production report", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("产量不达标", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("产量报告", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("今天的产量", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("今天的厂量是多少", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("厂量", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("去年12月到今年2月的生产数据", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("导出生产数据", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("月度生产数据", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("月的生产数据", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("比上个月多了多少产量", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("生产数据", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("生产进度报告", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("调取生产数据", "REPORT_PRODUCTION");
+        // REPORT_QUALITY (2)
+        phraseToIntentMapping.put("编制简报", "REPORT_QUALITY");
+        phraseToIntentMapping.put("质量管理简报", "REPORT_QUALITY");
+        // REPORT_SALES_DETAIL (1)
+        phraseToIntentMapping.put("sales report", "REPORT_SALES_DETAIL");
+        // REPORT_WORKSHOP_DAILY (1)
+        phraseToIntentMapping.put("daily report", "REPORT_WORKSHOP_DAILY");
+        // REVENUE_TODAY_QUERY (2)
+        phraseToIntentMapping.put("revenue today", "REVENUE_TODAY_QUERY");
+        phraseToIntentMapping.put("today revenue", "REVENUE_TODAY_QUERY");
+        // RULE_CONFIG (3)
+        phraseToIntentMapping.put("修改告警阈值", "RULE_CONFIG");
+        phraseToIntentMapping.put("告警阈值", "RULE_CONFIG");
+        phraseToIntentMapping.put("温度阈值", "RULE_CONFIG");
+        // SCALE_ADD_DEVICE_VISION (1)
+        phraseToIntentMapping.put("视觉识别方式添加秤", "SCALE_ADD_DEVICE_VISION");
+        // SCALE_CALIBRATE (1)
+        phraseToIntentMapping.put("秤需要校准", "SCALE_CALIBRATE");
+        // SCALE_CALIBRATION_DIAGNOSIS (14)
+        phraseToIntentMapping.put("calibrate scale", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("去皮校准", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("标定秤", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("校准地磅", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("校准电子秤", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("校准秤", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("检定秤", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("秤归零", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("秤标定", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("秤检定", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("秤精度校准", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("秤调零", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("调零", "SCALE_CALIBRATION_DIAGNOSIS");
+        phraseToIntentMapping.put("零点校准", "SCALE_CALIBRATION_DIAGNOSIS");
+        // SCALE_CALIBRATION_START (1)
+        phraseToIntentMapping.put("电子秤校准", "SCALE_CALIBRATION_START");
+        // SCALE_LIST_DEVICES (1)
+        phraseToIntentMapping.put("scale list", "SCALE_LIST_DEVICES");
+        // SCALE_LIST_PROTOCOLS (2)
+        phraseToIntentMapping.put("支持的秤协议", "SCALE_LIST_PROTOCOLS");
+        phraseToIntentMapping.put("秤协议列表", "SCALE_LIST_PROTOCOLS");
+        // SCALE_PROTOCOL_DETECT (4)
+        phraseToIntentMapping.put("秤的协议", "SCALE_PROTOCOL_DETECT");
+        phraseToIntentMapping.put("自动识别秤", "SCALE_PROTOCOL_DETECT");
+        phraseToIntentMapping.put("自动识别秤的协议", "SCALE_PROTOCOL_DETECT");
+        phraseToIntentMapping.put("识别秤的协议", "SCALE_PROTOCOL_DETECT");
+        // SCALE_TROUBLESHOOT (3)
+        phraseToIntentMapping.put("电子秤读数异常", "SCALE_TROUBLESHOOT");
+        phraseToIntentMapping.put("秤读数", "SCALE_TROUBLESHOOT");
+        phraseToIntentMapping.put("秤重量显示不对", "SCALE_TROUBLESHOOT");
+        // SCALE_WEIGHT_DIAGNOSIS (16)
+        phraseToIntentMapping.put("scale error", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("台秤故障", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("地磅不准", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("地磅故障", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("秤不亮", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("秤不准", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("秤偏差大", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("秤坏了", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("秤抖动", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("秤报错", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("秤数值跳动", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("秤显示不对", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("秤死机", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("秤没反应", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("秤称不准", "SCALE_WEIGHT_DIAGNOSIS");
+        phraseToIntentMapping.put("秤读数异常", "SCALE_WEIGHT_DIAGNOSIS");
+        // SCALE_WEIGHT_QUERY (2)
+        phraseToIntentMapping.put("秤数据导出", "SCALE_WEIGHT_QUERY");
+        phraseToIntentMapping.put("称重数据", "SCALE_WEIGHT_QUERY");
+        // SCHEDULING_EXECUTE_FOR_DATE (10)
+        phraseToIntentMapping.put("号的排班表", "SCHEDULING_EXECUTE_FOR_DATE");
+        phraseToIntentMapping.put("后天排班", "SCHEDULING_EXECUTE_FOR_DATE");
+        phraseToIntentMapping.put("排下周", "SCHEDULING_EXECUTE_FOR_DATE");
+        phraseToIntentMapping.put("排下周一", "SCHEDULING_EXECUTE_FOR_DATE");
+        phraseToIntentMapping.put("排班确定", "SCHEDULING_EXECUTE_FOR_DATE");
+        phraseToIntentMapping.put("标准模板排班", "SCHEDULING_EXECUTE_FOR_DATE");
+        phraseToIntentMapping.put("生成排班", "SCHEDULING_EXECUTE_FOR_DATE");
+        phraseToIntentMapping.put("生成排班表", "SCHEDULING_EXECUTE_FOR_DATE");
+        phraseToIntentMapping.put("确定排班", "SCHEDULING_EXECUTE_FOR_DATE");
+        phraseToIntentMapping.put("自动排班", "SCHEDULING_EXECUTE_FOR_DATE");
+        // SCHEDULING_RUN_TOMORROW (1)
+        phraseToIntentMapping.put("schedule tomorrow", "SCHEDULING_RUN_TOMORROW");
+        // SCHEDULING_SET_AUTO (4)
+        phraseToIntentMapping.put("排班系统自动跑", "SCHEDULING_SET_AUTO");
+        phraseToIntentMapping.put("自动排班规则", "SCHEDULING_SET_AUTO");
+        phraseToIntentMapping.put("自动跑排班", "SCHEDULING_SET_AUTO");
+        phraseToIntentMapping.put("配置排班规则", "SCHEDULING_SET_AUTO");
+        // SCHEDULING_SET_DISABLED (2)
+        phraseToIntentMapping.put("排班暂停用", "SCHEDULING_SET_DISABLED");
+        phraseToIntentMapping.put("排班系统暂停", "SCHEDULING_SET_DISABLED");
+        // SHIPMENT_EXPEDITE (4)
+        phraseToIntentMapping.put("提前发", "SHIPMENT_EXPEDITE");
+        phraseToIntentMapping.put("提前发货", "SHIPMENT_EXPEDITE");
+        phraseToIntentMapping.put("紧急出货", "SHIPMENT_EXPEDITE");
+        phraseToIntentMapping.put("能不能提前发", "SHIPMENT_EXPEDITE");
+        // SHIPMENT_NOTIFY_WAREHOUSE_PREPARE (2)
+        phraseToIntentMapping.put("仓库备一批", "SHIPMENT_NOTIFY_WAREHOUSE_PREPARE");
+        phraseToIntentMapping.put("仓库备货", "SHIPMENT_NOTIFY_WAREHOUSE_PREPARE");
+        // SHIPMENT_QUERY (5)
+        phraseToIntentMapping.put("今日出咗几多货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("今日出货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("出咗几多", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("出咗几多货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("出咗几趟货", "SHIPMENT_QUERY");
+        // SHIPMENT_UPDATE (2)
+        phraseToIntentMapping.put("修改发货地址", "SHIPMENT_UPDATE");
+        phraseToIntentMapping.put("更新发货单信息", "SHIPMENT_UPDATE");
+        // SKU_UPDATE_COMPLEXITY (3)
+        phraseToIntentMapping.put("SKU工序复杂度", "SKU_UPDATE_COMPLEXITY");
+        phraseToIntentMapping.put("更新SKU复杂度", "SKU_UPDATE_COMPLEXITY");
+        phraseToIntentMapping.put("设置SKU复杂度", "SKU_UPDATE_COMPLEXITY");
+        // SOP_ANALYZE_COMPLEXITY (3)
+        phraseToIntentMapping.put("SOP复杂度", "SOP_ANALYZE_COMPLEXITY");
+        phraseToIntentMapping.put("分析SOP复杂度", "SOP_ANALYZE_COMPLEXITY");
+        phraseToIntentMapping.put("评估SOP", "SOP_ANALYZE_COMPLEXITY");
+        // SOP_PARSE_DOCUMENT (4)
+        phraseToIntentMapping.put("SOP解析", "SOP_PARSE_DOCUMENT");
+        phraseToIntentMapping.put("上传SOP", "SOP_PARSE_DOCUMENT");
+        phraseToIntentMapping.put("分析SOP文件", "SOP_PARSE_DOCUMENT");
+        phraseToIntentMapping.put("解析SOP", "SOP_PARSE_DOCUMENT");
+        // SUPPLIER_EVALUATE (3)
+        phraseToIntentMapping.put("供应商延迟交货", "SUPPLIER_EVALUATE");
+        phraseToIntentMapping.put("供应商延迟交货影响", "SUPPLIER_EVALUATE");
+        phraseToIntentMapping.put("延迟交货影响", "SUPPLIER_EVALUATE");
+        // SUPPLIER_LIST (1)
+        phraseToIntentMapping.put("调阅供应商资质", "SUPPLIER_LIST");
+        // SUPPLIER_PRICE_COMPARISON (1)
+        phraseToIntentMapping.put("supplier list", "SUPPLIER_PRICE_COMPARISON");
+        // SUPPLIER_SEARCH (4)
+        phraseToIntentMapping.put("查一下供应商", "SUPPLIER_SEARCH");
+        phraseToIntentMapping.put("查一下那个供应商", "SUPPLIER_SEARCH");
+        phraseToIntentMapping.put("查供应商", "SUPPLIER_SEARCH");
+        phraseToIntentMapping.put("那个供应商", "SUPPLIER_SEARCH");
+        // SUPPLY_CHAIN_STATUS_QUERY (2)
+        phraseToIntentMapping.put("delivery status", "SUPPLY_CHAIN_STATUS_QUERY");
+        phraseToIntentMapping.put("shipment status", "SUPPLY_CHAIN_STATUS_QUERY");
+        // SYSTEM_HELP (1)
+        phraseToIntentMapping.put("帮我睇下", "SYSTEM_HELP");
+        // TASK_ASSIGN_BY_NAME (2)
+        phraseToIntentMapping.put("指派刘工", "TASK_ASSIGN_BY_NAME");
+        phraseToIntentMapping.put("指派检修", "TASK_ASSIGN_BY_NAME");
+        // TASK_ASSIGN_WORKER (4)
+        phraseToIntentMapping.put("任务分配给刘伟", "TASK_ASSIGN_WORKER");
+        phraseToIntentMapping.put("分配任务给", "TASK_ASSIGN_WORKER");
+        phraseToIntentMapping.put("分配任务给张三", "TASK_ASSIGN_WORKER");
+        phraseToIntentMapping.put("把任务分配给", "TASK_ASSIGN_WORKER");
+        // TRACE_BATCH (3)
+        phraseToIntentMapping.put("批次的溯源", "TRACE_BATCH");
+        phraseToIntentMapping.put("追溯MB002", "TRACE_BATCH");
+        phraseToIntentMapping.put("追溯原料来源", "TRACE_BATCH");
+        // TRACE_CODE_FORMAT_QUERY (5)
+        phraseToIntentMapping.put("扫码溯源", "TRACE_CODE_FORMAT_QUERY");
+        phraseToIntentMapping.put("扫码追溯", "TRACE_CODE_FORMAT_QUERY");
+        phraseToIntentMapping.put("溯源码格式", "TRACE_CODE_FORMAT_QUERY");
+        phraseToIntentMapping.put("追溯码查询", "TRACE_CODE_FORMAT_QUERY");
+        phraseToIntentMapping.put("追溯码格式", "TRACE_CODE_FORMAT_QUERY");
+        // TRACE_CODE_GENERATE (18)
+        phraseToIntentMapping.put("产品溯源二维码", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("公开溯源", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("创建溯源码", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("可查溯源", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("对外溯源", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("打印溯源码", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("打印追溯码", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("消费者可查的溯源", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("消费者溯源", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("溯源二维码", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("溯源码", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("溯源码查询", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("溯源码生成", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("生成二维码", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("生成溯源码", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("生成追溯", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("追溯二维码", "TRACE_CODE_GENERATE");
+        phraseToIntentMapping.put("追溯码", "TRACE_CODE_GENERATE");
+        // TRACE_FULL (2)
+        phraseToIntentMapping.put("完整流转记录", "TRACE_FULL");
+        phraseToIntentMapping.put("完整溯源链条", "TRACE_FULL");
+        // TRACE_PUBLIC (1)
+        phraseToIntentMapping.put("公开溯源码", "TRACE_PUBLIC");
+        // TRACE_QUERY (3)
+        phraseToIntentMapping.put("查溯源", "TRACE_QUERY");
+        phraseToIntentMapping.put("溯源信息", "TRACE_QUERY");
+        phraseToIntentMapping.put("追溯链路", "TRACE_QUERY");
+        // USER_CREATE (1)
+        phraseToIntentMapping.put("新员工信息", "USER_CREATE");
+        // USER_DELETE (1)
+        phraseToIntentMapping.put("员工账号注销", "USER_DELETE");
+        // USER_ROLE_ASSIGN (1)
+        phraseToIntentMapping.put("分配仓管员", "USER_ROLE_ASSIGN");
+        // WORKER_IN_SHOP_REALTIME_COUNT (3)
+        phraseToIntentMapping.put("worker count", "WORKER_IN_SHOP_REALTIME_COUNT");
+        phraseToIntentMapping.put("几个人在岗", "WORKER_IN_SHOP_REALTIME_COUNT");
+        phraseToIntentMapping.put("后厨几个人", "WORKER_IN_SHOP_REALTIME_COUNT");
         log.debug("短语映射初始化完成，共 {} 条映射", phraseToIntentMapping.size());
 
         // ========== v32/v33: 业态隔离 — 餐饮专用短语映射 ==========
@@ -5861,6 +6796,51 @@ public class IntentKnowledgeBase {
         restaurantPhraseMapping.put("报表", "RESTAURANT_REVENUE_TREND");
         restaurantPhraseMapping.put("数据分析", "RESTAURANT_REVENUE_TREND");
         restaurantPhraseMapping.put("经营分析", "RESTAURANT_MARGIN_ANALYSIS");
+
+        // === Wave-7e-sync: 从备份JAR恢复缺失短语 (29条餐饮意图) ===
+        // RESTAURANT_AVG_TICKET (2)
+        restaurantPhraseMapping.put("人均消费", "RESTAURANT_AVG_TICKET");
+        restaurantPhraseMapping.put("人均消费是多少", "RESTAURANT_AVG_TICKET");
+        // RESTAURANT_DISH_CREATE (3)
+        restaurantPhraseMapping.put("新增菜品", "RESTAURANT_DISH_CREATE");
+        restaurantPhraseMapping.put("添加新菜品", "RESTAURANT_DISH_CREATE");
+        restaurantPhraseMapping.put("添加菜", "RESTAURANT_DISH_CREATE");
+        // RESTAURANT_DISH_DELETE (2)
+        restaurantPhraseMapping.put("下架菜品", "RESTAURANT_DISH_DELETE");
+        restaurantPhraseMapping.put("停售菜品", "RESTAURANT_DISH_DELETE");
+        // RESTAURANT_DISH_LIST (1)
+        restaurantPhraseMapping.put("今天有哪些菜品", "RESTAURANT_DISH_LIST");
+        // RESTAURANT_DISH_PRODUCT_SALES_RANKING (2)
+        restaurantPhraseMapping.put("菜是哪几道", "RESTAURANT_DISH_PRODUCT_SALES_RANKING");
+        restaurantPhraseMapping.put("销量最好的菜", "RESTAURANT_DISH_PRODUCT_SALES_RANKING");
+        // RESTAURANT_DISH_UPDATE (2)
+        restaurantPhraseMapping.put("修改菜品", "RESTAURANT_DISH_UPDATE");
+        restaurantPhraseMapping.put("更新菜品价格", "RESTAURANT_DISH_UPDATE");
+        // RESTAURANT_INGREDIENT_LOW_STOCK (1)
+        restaurantPhraseMapping.put("食材不够", "RESTAURANT_INGREDIENT_LOW_STOCK");
+        // RESTAURANT_PEAK_HOURS_ANALYSIS (1)
+        restaurantPhraseMapping.put("时段客人", "RESTAURANT_PEAK_HOURS_ANALYSIS");
+        // RESTAURANT_PROCUREMENT_CREATE (2)
+        restaurantPhraseMapping.put("生成采购单", "RESTAURANT_PROCUREMENT_CREATE");
+        restaurantPhraseMapping.put("食材采购单", "RESTAURANT_PROCUREMENT_CREATE");
+        // RESTAURANT_RETURN_RATE (2)
+        restaurantPhraseMapping.put("哪个菜退单", "RESTAURANT_RETURN_RATE");
+        restaurantPhraseMapping.put("退单率", "RESTAURANT_RETURN_RATE");
+        // RESTAURANT_TABLE_TURNOVER (2)
+        restaurantPhraseMapping.put("中午翻台率", "RESTAURANT_TABLE_TURNOVER");
+        restaurantPhraseMapping.put("翻台率", "RESTAURANT_TABLE_TURNOVER");
+        // RESTAURANT_WASTAGE_ANOMALY (4)
+        restaurantPhraseMapping.put("损耗太大", "RESTAURANT_WASTAGE_ANOMALY");
+        restaurantPhraseMapping.put("损耗太大了要查原因", "RESTAURANT_WASTAGE_ANOMALY");
+        restaurantPhraseMapping.put("损耗查原因", "RESTAURANT_WASTAGE_ANOMALY");
+        restaurantPhraseMapping.put("有没有异常损耗", "RESTAURANT_WASTAGE_ANOMALY");
+        // RESTAURANT_WASTAGE_RECORD (4)
+        restaurantPhraseMapping.put("今天的食材损耗", "RESTAURANT_WASTAGE_RECORD");
+        restaurantPhraseMapping.put("记录今天的食材损耗", "RESTAURANT_WASTAGE_RECORD");
+        restaurantPhraseMapping.put("记录损耗", "RESTAURANT_WASTAGE_RECORD");
+        restaurantPhraseMapping.put("记录食材损耗", "RESTAURANT_WASTAGE_RECORD");
+        // RESTAURANT_WASTAGE_SUMMARY (1)
+        restaurantPhraseMapping.put("浪费了多少食材", "RESTAURANT_WASTAGE_SUMMARY");
 
         log.debug("v32 餐饮短语映射初始化完成，共 {} 条映射", restaurantPhraseMapping.size());
 
@@ -7016,6 +7996,44 @@ public class IntentKnowledgeBase {
      * @param matchedIntentCode 短语匹配到的意图代码
      * @return true 如果存在冲突，短语匹配结果不应被信任
      */
+    public double getPhraseCoverage(String input, String matchedIntentCode, String businessDomain) {
+        if (input == null || input.trim().isEmpty()) {
+            return 0.0;
+        }
+        String normalizedInput = input.trim().toLowerCase()
+                .replaceAll("\\d+(\\.\\d+)?\\s*(kg|g|公斤|斤|吨|升|ml|l|个|箱|袋|包|瓶|件|台|号|%)", "")
+                .replaceAll("[a-zA-Z]{1,3}[-]?\\d{3,}(?:[-]\\d+)*", "")
+                .replaceAll("\\s+", "");
+        int inputLength = normalizedInput.length();
+        if (inputLength == 0) {
+            return 1.0;
+        }
+        double bestCoverage = 0.0;
+        for (Map<String, String> map : List.of(this.phraseToIntentMapping, this.commonPhraseMapping)) {
+            for (Map.Entry<String, String> entry : map.entrySet()) {
+                if (!entry.getValue().equals(matchedIntentCode)) continue;
+                String phrase = entry.getKey().toLowerCase();
+                if (!normalizedInput.contains(phrase)) continue;
+                double coverage = (double) phrase.length() / (double) inputLength;
+                if (coverage > bestCoverage) {
+                    bestCoverage = coverage;
+                }
+            }
+        }
+        if (businessDomain != null && businessDomain.equals("RESTAURANT") && this.restaurantPhraseMapping != null) {
+            for (Map.Entry<String, String> entry : this.restaurantPhraseMapping.entrySet()) {
+                if (!entry.getValue().equals(matchedIntentCode)) continue;
+                String phrase = entry.getKey().toLowerCase();
+                if (!normalizedInput.contains(phrase)) continue;
+                double coverage = (double) phrase.length() / (double) inputLength;
+                if (coverage > bestCoverage) {
+                    bestCoverage = coverage;
+                }
+            }
+        }
+        return bestCoverage;
+    }
+
     public boolean hasEntityIntentConflict(String input, String matchedIntentCode) {
         if (input == null || matchedIntentCode == null) {
             return false;

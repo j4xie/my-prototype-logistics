@@ -49,13 +49,21 @@ public class ExcelDataPersistenceServiceImpl implements ExcelDataPersistenceServ
     // 销售数据关键字段
     private static final Set<String> SALES_KEYWORDS = Set.of(
             "销售额", "销售金额", "订单金额", "销售员", "销售日期", "客户", "产品",
-            "sales", "amount", "salesperson", "order", "customer", "product"
+            "营业额", "门店", "翻台率", "客单价", "营收", "订单量", "商品",
+            "sales", "amount", "salesperson", "order", "customer", "product", "revenue"
     );
 
     // 财务数据关键字段
     private static final Set<String> FINANCE_KEYWORDS = Set.of(
             "成本", "费用", "预算", "应收", "应付", "收入", "利润", "毛利",
-            "cost", "expense", "budget", "receivable", "payable", "revenue", "profit"
+            "净利", "税", "折旧", "摊销", "资产", "负债",
+            "cost", "expense", "budget", "receivable", "payable", "revenue", "profit", "margin"
+    );
+
+    // 部门/HR数据关键字段
+    private static final Set<String> DEPARTMENT_KEYWORDS = Set.of(
+            "部门", "员工", "人数", "考勤", "出勤", "工资", "薪资", "绩效",
+            "department", "employee", "attendance", "salary", "staff", "headcount"
     );
 
     // 日期格式
@@ -87,12 +95,26 @@ public class ExcelDataPersistenceServiceImpl implements ExcelDataPersistenceServ
                 .filter(h -> FINANCE_KEYWORDS.stream().anyMatch(k -> h.contains(k.toLowerCase())))
                 .count();
 
-        log.debug("数据类型检测 - salesScore: {}, financeScore: {}", salesScore, financeScore);
+        long deptScore = headerLower.stream()
+                .filter(h -> DEPARTMENT_KEYWORDS.stream().anyMatch(k -> h.contains(k.toLowerCase())))
+                .count();
 
-        if (salesScore > financeScore && salesScore >= 2) {
+        log.debug("数据类型检测 - salesScore: {}, financeScore: {}, deptScore: {}", salesScore, financeScore, deptScore);
+
+        // 取最高分（>=2 匹配）
+        if (salesScore >= 2 && salesScore >= financeScore && salesScore >= deptScore) {
             return DataType.SALES;
-        } else if (financeScore > salesScore && financeScore >= 2) {
+        } else if (financeScore >= 2 && financeScore >= salesScore && financeScore >= deptScore) {
             return DataType.FINANCE;
+        } else if (deptScore >= 2 && deptScore >= salesScore && deptScore >= financeScore) {
+            return DataType.DEPARTMENT;
+        }
+        // 单关键词匹配也可通过（降低阈值从2到1）
+        long maxScore = Math.max(salesScore, Math.max(financeScore, deptScore));
+        if (maxScore >= 1) {
+            if (salesScore == maxScore) return DataType.SALES;
+            if (financeScore == maxScore) return DataType.FINANCE;
+            if (deptScore == maxScore) return DataType.DEPARTMENT;
         }
 
         // 通过字段映射结果判断
@@ -136,6 +158,11 @@ public class ExcelDataPersistenceServiceImpl implements ExcelDataPersistenceServ
         if (dataType == null || dataType == DataType.UNKNOWN) {
             dataType = detectDataType(parseResponse);
             log.info("自动检测数据类型: {}", dataType);
+        }
+        // UNKNOWN 回退为 GENERAL，避免下游拒绝
+        if (dataType == DataType.UNKNOWN) {
+            dataType = DataType.GENERAL;
+            log.info("数据类型仍为 UNKNOWN，回退为 GENERAL");
         }
 
         if (dataType == DataType.UNKNOWN) {

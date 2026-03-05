@@ -98,6 +98,10 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     @Autowired(required = false)
     private SmartBiPgExcelUploadRepository pgUploadRepository;
 
+    // Analysis cache repository (invalidate on re-upload)
+    @Autowired(required = false)
+    private com.cretas.aims.repository.smartbi.SmartBiAnalysisCacheRepository analysisCacheRepository;
+
     @org.springframework.beans.factory.annotation.Value("${smartbi.postgres.enabled:false}")
     private boolean postgresEnabled;
 
@@ -121,7 +125,8 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     private static final Map<String, String> DATA_TYPE_TO_CATEGORY = Map.of(
             "SALES", SmartBiChartTemplate.CATEGORY_SALES,
             "FINANCE", SmartBiChartTemplate.CATEGORY_FINANCE,
-            "DEPARTMENT", SmartBiChartTemplate.CATEGORY_HR
+            "DEPARTMENT", SmartBiChartTemplate.CATEGORY_HR,
+            "GENERAL", SmartBiChartTemplate.CATEGORY_SALES
     );
 
     @Override
@@ -223,6 +228,15 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                     persistResult.getUploadId(), persistResult.getSavedRows(),
                     postgresEnabled ? "PostgreSQL" : "MySQL");
 
+            // 5.05 失效旧分析缓存
+            try {
+                if (analysisCacheRepository != null) {
+                    analysisCacheRepository.deleteByFactoryId(factoryId);
+                }
+            } catch (Exception e) {
+                log.warn("清除分析缓存失败: {}", e.getMessage());
+            }
+
             // 5.1 自动提取财务数据（非阻塞）
             try {
                 tryExtractAndSaveFinanceData(factoryId, persistResult.getUploadId(), parseResult);
@@ -302,10 +316,11 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         }
 
         try {
-            // 1. 解析数据类型
+            // 1. 解析数据类型 — UNKNOWN 回退为 GENERAL
             DataType detectedType = parseDataType(dataType);
             if (detectedType == DataType.UNKNOWN) {
-                return UploadFlowResult.failure("无效的数据类型: " + dataType);
+                detectedType = DataType.GENERAL;
+                log.info("数据类型 '{}' 未匹配已知类型，回退为 GENERAL", dataType);
             }
 
             // 2. 使用确认的字段映射持久化数据 - 优先使用 PostgreSQL
@@ -334,6 +349,16 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             log.info("确认后数据持久化成功: uploadId={}, savedRows={}, storage={}",
                     persistResult.getUploadId(), persistResult.getSavedRows(),
                     postgresEnabled ? "PostgreSQL" : "MySQL");
+
+            // 2.01 失效旧分析缓存（防止重新上传后返回过期分析）
+            try {
+                if (analysisCacheRepository != null) {
+                    analysisCacheRepository.deleteByFactoryId(factoryId);
+                    log.info("已清除工厂 {} 的分析缓存", factoryId);
+                }
+            } catch (Exception e) {
+                log.warn("清除分析缓存失败(不影响上传): {}", e.getMessage());
+            }
 
             // 2.05 自动提取财务数据（非阻塞）
             try {

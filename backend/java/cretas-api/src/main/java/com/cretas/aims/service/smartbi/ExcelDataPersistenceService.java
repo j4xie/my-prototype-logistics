@@ -29,6 +29,7 @@ public interface ExcelDataPersistenceService {
         SALES("销售数据"),
         FINANCE("财务数据"),
         DEPARTMENT("部门数据"),
+        GENERAL("通用数据"),
         UNKNOWN("未知数据");
 
         private final String displayName;

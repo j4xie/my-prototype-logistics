@@ -181,11 +181,13 @@ public class WastageRecord extends BaseEntity {
      *   <li>DRAFT — 草稿</li>
      *   <li>SUBMITTED — 已提交</li>
      *   <li>APPROVED — 已审批（自动扣减库存）</li>
+     *   <li>REJECTED — 已驳回</li>
      * </ul>
      */
     public enum Status {
         DRAFT,
         SUBMITTED,
-        APPROVED
+        APPROVED,
+        REJECTED
     }
 }

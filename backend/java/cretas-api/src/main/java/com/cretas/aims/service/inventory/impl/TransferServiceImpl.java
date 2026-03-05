@@ -90,12 +90,18 @@ public class TransferServiceImpl implements TransferService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public InternalTransfer getTransferById(String transferId) {
-        return transferRepository.findById(transferId)
+        InternalTransfer transfer = transferRepository.findById(transferId)
                 .orElseThrow(() -> new ResourceNotFoundException("调拨单不存在"));
+        // Force-initialize items within transaction to prevent LazyInitializationException
+        // and ensure clean serialization without duplicates
+        transfer.getItems().size();
+        return transfer;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<InternalTransfer> getTransfers(String factoryId, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<InternalTransfer> result = transferRepository.findByFactoryId(factoryId, pageRequest);
