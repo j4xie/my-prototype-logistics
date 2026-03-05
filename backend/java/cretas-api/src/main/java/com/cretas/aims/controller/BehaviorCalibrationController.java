@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 行为校准控制器
@@ -85,7 +86,7 @@ public class BehaviorCalibrationController {
             return ApiResponse.success(dashboard);
         } catch (Exception e) {
             log.error("获取仪表盘数据失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取仪表盘数据失败: " + e.getMessage());
+            return ApiResponse.error("获取仪表盘数据失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -115,7 +116,7 @@ public class BehaviorCalibrationController {
             return ApiResponse.success(realtimeMetrics);
         } catch (Exception e) {
             log.error("获取实时指标失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取实时指标失败: " + e.getMessage());
+            return ApiResponse.error("获取实时指标失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -153,7 +154,7 @@ public class BehaviorCalibrationController {
             return ApiResponse.error("无效的周期类型: " + periodType + "，支持: DAILY, WEEKLY, MONTHLY");
         } catch (Exception e) {
             log.error("获取指标趋势失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取指标趋势失败: " + e.getMessage());
+            return ApiResponse.error("获取指标趋势失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -183,7 +184,7 @@ public class BehaviorCalibrationController {
             return ApiResponse.success(ranking);
         } catch (Exception e) {
             log.error("获取工具可靠性排名失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取工具可靠性排名失败: " + e.getMessage());
+            return ApiResponse.error("获取工具可靠性排名失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -237,7 +238,7 @@ public class BehaviorCalibrationController {
             return ApiResponse.success(records);
         } catch (Exception e) {
             log.error("获取工具调用记录失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取工具调用记录失败: " + e.getMessage());
+            return ApiResponse.error("获取工具调用记录失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -292,7 +293,7 @@ public class BehaviorCalibrationController {
             return ApiResponse.success(ranking);
         } catch (Exception e) {
             log.error("获取工厂排名失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取工厂排名失败: " + e.getMessage());
+            return ApiResponse.error("获取工厂排名失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -328,7 +329,7 @@ public class BehaviorCalibrationController {
             return ApiResponse.success("指标计算完成", metrics);
         } catch (Exception e) {
             log.error("指标计算失败: {}", e.getMessage(), e);
-            return ApiResponse.error("指标计算失败: " + e.getMessage());
+            return ApiResponse.error("指标计算失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -361,7 +362,7 @@ public class BehaviorCalibrationController {
             return ApiResponse.success(lowReliabilityTools);
         } catch (Exception e) {
             log.error("获取低可靠性工具失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取低可靠性工具失败: " + e.getMessage());
+            return ApiResponse.error("获取低可靠性工具失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -398,7 +399,7 @@ public class BehaviorCalibrationController {
             return ApiResponse.success(result);
         } catch (Exception e) {
             log.error("获取平均综合得分失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取平均综合得分失败: " + e.getMessage());
+            return ApiResponse.error("获取平均综合得分失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 图像分析测试 API
@@ -151,7 +152,7 @@ public class ImageAnalysisTestController {
 
         } catch (IOException e) {
             log.error("文件读取失败", e);
-            return ApiResponse.error("文件读取失败: " + e.getMessage());
+            return ApiResponse.error("文件读取失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 

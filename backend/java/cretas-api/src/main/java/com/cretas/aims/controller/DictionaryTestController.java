@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 字典工具测试控制器
@@ -69,7 +70,7 @@ public class DictionaryTestController {
 
         } catch (Exception e) {
             log.error("dictionary_add 执行失败: {}", e.getMessage(), e);
-            return ApiResponse.error("执行失败: " + e.getMessage());
+            return ApiResponse.error("执行失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -112,7 +113,7 @@ public class DictionaryTestController {
 
         } catch (Exception e) {
             log.error("dictionary_list 执行失败: {}", e.getMessage(), e);
-            return ApiResponse.error("执行失败: " + e.getMessage());
+            return ApiResponse.error("执行失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -148,7 +149,7 @@ public class DictionaryTestController {
 
         } catch (Exception e) {
             log.error("dictionary_batch_import 执行失败: {}", e.getMessage(), e);
-            return ApiResponse.error("执行失败: " + e.getMessage());
+            return ApiResponse.error("执行失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 

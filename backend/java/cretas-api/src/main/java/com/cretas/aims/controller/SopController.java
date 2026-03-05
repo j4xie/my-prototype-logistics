@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * SOP 文档上传控制器
@@ -114,7 +115,7 @@ public class SopController {
             }
         } catch (Exception e) {
             log.error("文件上传失败: {}", e.getMessage(), e);
-            return ApiResponse.error(500, "文件上传失败: " + e.getMessage());
+            return ApiResponse.error(500, "文件上传失败: " + ErrorSanitizer.sanitize(e));
         }
 
         // 4. 获取用户ID
@@ -167,13 +168,13 @@ public class SopController {
                 // 分析失败不影响上传结果，只记录日志
                 response.setAnalysisResultMap(Map.of(
                         "success", false,
-                        "errorMessage", e.getMessage()
+                        "errorMessage", ErrorSanitizer.sanitize(e)
                 ));
                 response.setAnalysisResult(SopAnalysisResult.builder()
                         .success(false)
                         .fileUrl(fileUrl)
                         .skuCode(skuCode)
-                        .errorMessage(e.getMessage())
+                        .errorMessage(ErrorSanitizer.sanitize(e))
                         .analyzedAt(LocalDateTime.now())
                         .build());
             }
@@ -223,10 +224,10 @@ public class SopController {
                     .success(false)
                     .fileUrl(fileUrl)
                     .skuCode(skuCode)
-                    .errorMessage(e.getMessage())
+                    .errorMessage(ErrorSanitizer.sanitize(e))
                     .analyzedAt(LocalDateTime.now())
                     .build();
-            return ApiResponse.error(500, "SOP分析失败: " + e.getMessage());
+            return ApiResponse.error(500, "SOP分析失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 

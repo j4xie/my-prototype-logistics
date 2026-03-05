@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 标签识别 REST API 控制器
@@ -71,7 +72,7 @@ public class LabelRecognitionController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("获取配置列表失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("获取配置列表失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("获取配置列表失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -93,10 +94,10 @@ public class LabelRecognitionController {
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("获取配置详情失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("获取配置详情失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("获取配置详情失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -118,10 +119,10 @@ public class LabelRecognitionController {
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("创建配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("创建配置失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("创建配置失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -144,10 +145,10 @@ public class LabelRecognitionController {
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("更新配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("更新配置失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("更新配置失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -168,10 +169,10 @@ public class LabelRecognitionController {
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("删除配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("删除配置失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("删除配置失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -199,10 +200,10 @@ public class LabelRecognitionController {
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("切换配置状态失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("切换配置状态失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("切换配置状态失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -226,10 +227,10 @@ public class LabelRecognitionController {
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("手动触发识别失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("手动触发识别失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("手动触发识别失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -274,7 +275,7 @@ public class LabelRecognitionController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("获取识别历史失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("获取识别历史失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("获取识别历史失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -302,7 +303,7 @@ public class LabelRecognitionController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("获取最近识别记录失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("获取最近识别记录失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("获取最近识别记录失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -332,7 +333,7 @@ public class LabelRecognitionController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("获取统计数据失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("获取统计数据失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("获取统计数据失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 

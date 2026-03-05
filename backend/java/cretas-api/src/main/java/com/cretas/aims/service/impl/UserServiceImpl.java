@@ -664,7 +664,11 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new EntityNotFoundException("Factory", factoryId));
 
         String prefix = factoryId.toLowerCase();
-        String encodedPassword = passwordEncoder.encode("123456");
+        // 安全：为每个默认用户生成随机初始密码，不使用弱默认密码
+        // 管理员需通过密码重置流程获取访问权限
+        String initialPassword = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        String encodedPassword = passwordEncoder.encode(initialPassword);
+        log.info("Provisioned default users for factory {} with random initial password (admin must reset)", factoryId);
         LocalDateTime now = LocalDateTime.now();
 
         // Define default users: {suffix, roleCode, level, fullName}

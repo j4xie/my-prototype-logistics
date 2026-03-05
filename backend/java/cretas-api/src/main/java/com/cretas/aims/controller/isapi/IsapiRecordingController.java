@@ -15,6 +15,7 @@ import javax.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * NVR 录像管理 API 控制器 (Phase 3)
@@ -90,7 +91,7 @@ public class IsapiRecordingController {
 
         } catch (Exception e) {
             log.error("获取回放地址失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取回放地址失败: " + e.getMessage());
+            return ApiResponse.error("获取回放地址失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 

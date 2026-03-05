@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * ISAPI 设备管理 Controller
@@ -68,7 +69,7 @@ public class IsapiDeviceController {
             IsapiDevice device = deviceService.addDevice(factoryId, dto);
             return ApiResponse.success("设备添加成功", deviceService.toDTO(device));
         } catch (IllegalArgumentException e) {
-            return ApiResponse.error(e.getMessage());
+            return ApiResponse.error(ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -82,7 +83,7 @@ public class IsapiDeviceController {
             IsapiDevice device = deviceService.updateDevice(deviceId, dto);
             return ApiResponse.success("设备更新成功", deviceService.toDTO(device));
         } catch (IllegalArgumentException e) {
-            return ApiResponse.error(e.getMessage());
+            return ApiResponse.error(ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -97,7 +98,7 @@ public class IsapiDeviceController {
             deviceService.deleteDevice(deviceId);
             return ApiResponse.successMessage("设备删除成功");
         } catch (IllegalArgumentException e) {
-            return ApiResponse.error(e.getMessage());
+            return ApiResponse.error(ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -110,7 +111,7 @@ public class IsapiDeviceController {
             IsapiDevice device = deviceService.getDevice(deviceId);
             return ApiResponse.success(deviceService.toDTO(device));
         } catch (IllegalArgumentException e) {
-            return ApiResponse.error(e.getMessage());
+            return ApiResponse.error(ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -184,10 +185,10 @@ public class IsapiDeviceController {
             }
         } catch (IllegalArgumentException e) {
             log.error("配置 HTTP Host 失败: deviceId={}, error={}", deviceId, e.getMessage());
-            return ApiResponse.error(e.getMessage());
+            return ApiResponse.error(ErrorSanitizer.sanitize(e));
         } catch (Exception e) {
             log.error("配置 HTTP Host 异常: deviceId={}, error={}", deviceId, e.getMessage(), e);
-            return ApiResponse.error("配置失败: " + e.getMessage());
+            return ApiResponse.error("配置失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -205,7 +206,7 @@ public class IsapiDeviceController {
             result.put("deviceId", deviceId);
             return ApiResponse.success(result);
         } catch (Exception e) {
-            return ApiResponse.error("获取密码失败: " + e.getMessage());
+            return ApiResponse.error("获取密码失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -223,7 +224,7 @@ public class IsapiDeviceController {
             deviceService.changeDevicePassword(deviceId, newPassword);
             return ApiResponse.successMessage("密码修改成功");
         } catch (Exception e) {
-            return ApiResponse.error("修改密码失败: " + e.getMessage());
+            return ApiResponse.error("修改密码失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -236,7 +237,7 @@ public class IsapiDeviceController {
             deviceService.rebootDevice(deviceId);
             return ApiResponse.successMessage("重启命令已发送，设备将在数秒后重启");
         } catch (Exception e) {
-            return ApiResponse.error("重启失败: " + e.getMessage());
+            return ApiResponse.error("重启失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -249,7 +250,7 @@ public class IsapiDeviceController {
             deviceService.factoryResetDevice(deviceId);
             return ApiResponse.successMessage("恢复出厂设置命令已发送");
         } catch (Exception e) {
-            return ApiResponse.error("恢复出厂设置失败: " + e.getMessage());
+            return ApiResponse.error("恢复出厂设置失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -505,7 +506,7 @@ public class IsapiDeviceController {
             return ApiResponse.error(result.getMessage());
         } catch (Exception e) {
             log.error("重新分析事件失败: eventId={}, error={}", eventId, e.getMessage());
-            return ApiResponse.error("分析失败: " + e.getMessage());
+            return ApiResponse.error("分析失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -589,7 +590,7 @@ public class IsapiDeviceController {
             return ApiResponse.success("发现 " + devices.size() + " 个设备", devices);
         } catch (Exception e) {
             log.error("设备发现失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return ApiResponse.error("设备发现失败: " + e.getMessage());
+            return ApiResponse.error("设备发现失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -631,7 +632,7 @@ public class IsapiDeviceController {
                     successCount++;
                 } catch (Exception e) {
                     failCount++;
-                    failedDevices.add(item.getIpAddress() + ": " + e.getMessage());
+                    failedDevices.add(item.getIpAddress() + ": " + ErrorSanitizer.sanitize(e));
                     log.warn("导入设备失败: ip={}, error={}", item.getIpAddress(), e.getMessage());
                 }
             }
@@ -653,7 +654,7 @@ public class IsapiDeviceController {
             }
         } catch (Exception e) {
             log.error("批量导入设备失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return ApiResponse.error("批量导入失败: " + e.getMessage());
+            return ApiResponse.error("批量导入失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -673,7 +674,7 @@ public class IsapiDeviceController {
             return ApiResponse.success("发现 " + devices.size() + " 个设备", devices);
         } catch (Exception e) {
             log.error("单IP扫描失败: factoryId={}, ip={}, error={}", factoryId, ip, e.getMessage(), e);
-            return ApiResponse.error("扫描失败: " + e.getMessage());
+            return ApiResponse.error("扫描失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 

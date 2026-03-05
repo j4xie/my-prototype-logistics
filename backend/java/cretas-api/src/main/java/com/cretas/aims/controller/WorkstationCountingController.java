@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 工位计数 REST API 控制器
@@ -61,10 +62,10 @@ public class WorkstationCountingController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("初始化工位参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("初始化工位失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("初始化工位失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("初始化工位失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -87,10 +88,10 @@ public class WorkstationCountingController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("停止工位参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("停止工位失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("停止工位失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("停止工位失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -121,10 +122,10 @@ public class WorkstationCountingController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("处理图像帧参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("处理图像帧失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("处理图像帧失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("处理图像帧失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -157,10 +158,10 @@ public class WorkstationCountingController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("手动计数参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("手动计数失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("手动计数失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("手动计数失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -191,10 +192,10 @@ public class WorkstationCountingController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("验证标签参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("验证标签失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("验证标签失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("验证标签失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -219,10 +220,10 @@ public class WorkstationCountingController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("获取工位状态参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("获取工位状态失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("获取工位状态失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("获取工位状态失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 

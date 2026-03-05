@@ -112,7 +112,8 @@ public class UserIntentHandler implements IntentHandler {
         if (params.has("password")) {
             createRequest.setPassword(params.get("password").asText());
         } else {
-            createRequest.setPassword("123456");
+            // 安全：生成随机初始密码（12 位字母数字），禁止使用弱默认密码
+            createRequest.setPassword(java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 12));
         }
 
         // 验证必填字段

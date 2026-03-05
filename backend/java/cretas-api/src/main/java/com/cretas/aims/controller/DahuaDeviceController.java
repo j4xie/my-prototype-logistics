@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * Dahua Device Controller
@@ -64,7 +65,7 @@ public class DahuaDeviceController {
             return ApiResponse.success("发现 " + devices.size() + " 台设备", devices);
         } catch (Exception e) {
             log.error("大华设备发现失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return ApiResponse.error("设备发现失败: " + e.getMessage());
+            return ApiResponse.error("设备发现失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -80,7 +81,7 @@ public class DahuaDeviceController {
             return ApiResponse.success("发现 " + devices.size() + " 台设备", devices);
         } catch (Exception e) {
             log.error("多接口大华设备发现失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return ApiResponse.error("设备发现失败: " + e.getMessage());
+            return ApiResponse.error("设备发现失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -91,6 +92,14 @@ public class DahuaDeviceController {
             @RequestParam String ipAddress,
             @RequestParam(defaultValue = "80") int port) {
         try {
+            // SSRF 防护：拒绝探测内网保留地址、本地回环、云元数据服务
+            if (!isAllowedProbeTarget(ipAddress)) {
+                return ApiResponse.error("不允许探测该 IP 地址（保留地址/回环地址/元数据服务）");
+            }
+            if (port < 1 || port > 65535) {
+                return ApiResponse.error("端口号必须在 1-65535 之间");
+            }
+
             log.info("探测大华设备: factoryId={}, ip={}:{}", factoryId, ipAddress, port);
 
             // 创建临时设备对象用于探测
@@ -122,7 +131,7 @@ public class DahuaDeviceController {
             return ApiResponse.success("设备探测成功", discovered);
         } catch (Exception e) {
             log.error("探测大华设备失败: ip={}:{}, error={}", ipAddress, port, e.getMessage());
-            return ApiResponse.error("设备探测失败: " + e.getMessage());
+            return ApiResponse.error("设备探测失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -177,7 +186,7 @@ public class DahuaDeviceController {
             return ApiResponse.success("设备添加成功", saved);
         } catch (Exception e) {
             log.error("添加大华设备失败: error={}", e.getMessage(), e);
-            return ApiResponse.error("设备添加失败: " + e.getMessage());
+            return ApiResponse.error("设备添加失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -229,7 +238,7 @@ public class DahuaDeviceController {
             return ApiResponse.success("设备更新成功", saved);
         } catch (Exception e) {
             log.error("更新大华设备失败: deviceId={}, error={}", deviceId, e.getMessage(), e);
-            return ApiResponse.error("设备更新失败: " + e.getMessage());
+            return ApiResponse.error("设备更新失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -252,7 +261,7 @@ public class DahuaDeviceController {
             return ApiResponse.successMessage("设备删除成功");
         } catch (Exception e) {
             log.error("删除大华设备失败: deviceId={}, error={}", deviceId, e.getMessage(), e);
-            return ApiResponse.error("设备删除失败: " + e.getMessage());
+            return ApiResponse.error("设备删除失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -269,7 +278,7 @@ public class DahuaDeviceController {
             return ApiResponse.success(optDevice.get());
         } catch (Exception e) {
             log.error("获取大华设备失败: deviceId={}, error={}", deviceId, e.getMessage());
-            return ApiResponse.error("获取设备失败: " + e.getMessage());
+            return ApiResponse.error("获取设备失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -361,7 +370,7 @@ public class DahuaDeviceController {
             return ApiResponse.success("设备导入成功", saved);
         } catch (Exception e) {
             log.error("导入大华设备失败: error={}", e.getMessage(), e);
-            return ApiResponse.error("设备导入失败: " + e.getMessage());
+            return ApiResponse.error("设备导入失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -396,7 +405,7 @@ public class DahuaDeviceController {
             }
         } catch (Exception e) {
             log.error("测试大华设备连接失败: deviceId={}, error={}", deviceId, e.getMessage());
-            return ApiResponse.error("连接测试失败: " + e.getMessage());
+            return ApiResponse.error("连接测试失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -441,7 +450,7 @@ public class DahuaDeviceController {
             return ApiResponse.successMessage("同步成功");
         } catch (Exception e) {
             log.error("同步大华设备信息失败: deviceId={}, error={}", deviceId, e.getMessage());
-            return ApiResponse.error("同步失败: " + e.getMessage());
+            return ApiResponse.error("同步失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -480,7 +489,7 @@ public class DahuaDeviceController {
             return ApiResponse.success(streams);
         } catch (Exception e) {
             log.error("获取大华流媒体地址失败: deviceId={}, error={}", deviceId, e.getMessage());
-            return ApiResponse.error("获取流媒体地址失败: " + e.getMessage());
+            return ApiResponse.error("获取流媒体地址失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -507,7 +516,7 @@ public class DahuaDeviceController {
             return ApiResponse.success("抓拍成功", base64Image);
         } catch (Exception e) {
             log.error("大华设备抓拍失败: deviceId={}, channelId={}, error={}", deviceId, channelId, e.getMessage());
-            return ApiResponse.error("抓拍失败: " + e.getMessage());
+            return ApiResponse.error("抓拍失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -566,7 +575,7 @@ public class DahuaDeviceController {
             return ApiResponse.success("请使用大华官方工具进行配网", result);
         } catch (Exception e) {
             log.error("配网大华设备失败: mac={}, error={}", config.getDeviceMac(), e.getMessage());
-            return ApiResponse.error("配网失败: " + e.getMessage());
+            return ApiResponse.error("配网失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -592,7 +601,7 @@ public class DahuaDeviceController {
             return ApiResponse.success("请使用大华官方工具进行激活", result);
         } catch (Exception e) {
             log.error("激活大华设备失败: mac={}, error={}", deviceMac, e.getMessage());
-            return ApiResponse.error("激活失败: " + e.getMessage());
+            return ApiResponse.error("激活失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -635,7 +644,7 @@ public class DahuaDeviceController {
             return ApiResponse.success(stats);
         } catch (Exception e) {
             log.error("获取大华设备统计失败: factoryId={}, error={}", factoryId, e.getMessage());
-            return ApiResponse.error("获取统计失败: " + e.getMessage());
+            return ApiResponse.error("获取统计失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -658,5 +667,22 @@ public class DahuaDeviceController {
             return DeviceType.XVR;
         }
         return DeviceType.IPC;
+    }
+
+    /**
+     * SSRF 防护：检查目标 IP 是否允许探测（拒绝回环、元数据、保留地址）
+     */
+    private boolean isAllowedProbeTarget(String ip) {
+        if (ip == null || ip.isBlank()) return false;
+        String trimmed = ip.trim();
+        // 拒绝回环地址
+        if (trimmed.equals("127.0.0.1") || trimmed.equals("0.0.0.0") || trimmed.equals("localhost")) return false;
+        // 拒绝 IPv6 回环
+        if (trimmed.equals("::1") || trimmed.equals("0:0:0:0:0:0:0:1")) return false;
+        // 拒绝云元数据服务
+        if (trimmed.startsWith("169.254.")) return false;
+        // 拒绝非 IP 格式（防止 DNS rebinding）
+        if (!trimmed.matches("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$")) return false;
+        return true;
     }
 }

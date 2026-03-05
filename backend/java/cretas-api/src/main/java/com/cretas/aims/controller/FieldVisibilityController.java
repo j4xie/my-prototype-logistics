@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.cretas.aims.util.ErrorSanitizer;
 
 @RestController
 @RequestMapping("/api/mobile/{factoryId}")
@@ -37,7 +38,7 @@ public class FieldVisibilityController {
             return ResponseEntity.ok(Map.of("success", true, "data", hiddenFields));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(
-                Map.of("success", false, "message", e.getMessage())
+                Map.of("success", false, "message", ErrorSanitizer.sanitize(e))
             );
         }
     }
@@ -49,7 +50,7 @@ public class FieldVisibilityController {
             return ResponseEntity.ok(Map.of("success", true, "message", "Visibility recomputed"));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(
-                Map.of("success", false, "message", e.getMessage())
+                Map.of("success", false, "message", ErrorSanitizer.sanitize(e))
             );
         }
     }
@@ -89,7 +90,7 @@ public class FieldVisibilityController {
         } catch (Exception e) {
             log.error("Failed to link survey company for factory {}", factoryId, e);
             return ResponseEntity.internalServerError().body(
-                Map.of("success", false, "message", e.getMessage())
+                Map.of("success", false, "message", ErrorSanitizer.sanitize(e))
             );
         }
     }
@@ -103,11 +104,11 @@ public class FieldVisibilityController {
             return ResponseEntity.ok(Map.of("success", true, "data", nullRates));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(
-                Map.of("success", false, "message", e.getMessage())
+                Map.of("success", false, "message", ErrorSanitizer.sanitize(e))
             );
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(
-                Map.of("success", false, "message", e.getMessage())
+                Map.of("success", false, "message", ErrorSanitizer.sanitize(e))
             );
         }
     }

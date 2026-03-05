@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * AI报告提示词配置控制器

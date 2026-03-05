@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 生产告警控制器
@@ -68,7 +69,7 @@ public class AlertController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Failed to get alerts for factory {}", factoryId, e);
-            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -83,7 +84,7 @@ public class AlertController {
             return ResponseEntity.ok(Map.of("success", true, "data", summary));
         } catch (Exception e) {
             log.error("Failed to get alert summary for factory {}", factoryId, e);
-            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -97,7 +98,7 @@ public class AlertController {
             }
             return ResponseEntity.ok(Map.of("success", true, "data", alert.get()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -121,7 +122,7 @@ public class AlertController {
             alertRepository.save(alert);
             return ResponseEntity.ok(Map.of("success", true, "data", alert));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -148,7 +149,7 @@ public class AlertController {
             alertRepository.save(alert);
             return ResponseEntity.ok(Map.of("success", true, "data", alert));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -163,7 +164,7 @@ public class AlertController {
             return ResponseEntity.ok(Map.of("success", true, "data", Map.of("newAlerts", count)));
         } catch (Exception e) {
             log.error("Manual detection failed for factory {}", factoryId, e);
-            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", ErrorSanitizer.sanitize(e)));
         }
     }
 }

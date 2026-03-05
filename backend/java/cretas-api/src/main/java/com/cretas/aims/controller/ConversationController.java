@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 多轮对话控制器
@@ -141,7 +142,7 @@ public class ConversationController {
             } catch (Exception e) {
                 try {
                     emitter.send(SseEmitter.event().name("error")
-                            .data("{\"message\":\"" + e.getMessage().replace("\"", "'") + "\"}"));
+                            .data("{\"message\":\"" + ErrorSanitizer.sanitize(e).replace("\"", "'") + "\"}"));
                     emitter.complete();
                 } catch (Exception ex) {
                     emitter.completeWithError(e);
@@ -186,7 +187,7 @@ public class ConversationController {
             } catch (Exception e) {
                 try {
                     emitter.send(SseEmitter.event().name("error")
-                            .data("{\"message\":\"" + e.getMessage().replace("\"", "'") + "\"}"));
+                            .data("{\"message\":\"" + ErrorSanitizer.sanitize(e).replace("\"", "'") + "\"}"));
                     emitter.complete();
                 } catch (Exception ex) {
                     emitter.completeWithError(e);

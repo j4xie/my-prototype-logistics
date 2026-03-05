@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.*;
+import com.cretas.aims.util.ErrorSanitizer;
 
 @Slf4j
 @RestController
@@ -78,7 +79,7 @@ public class SmartBIPublicDemoController {
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
             log.error("查询失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("查询失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("查询失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -108,7 +109,7 @@ public class SmartBIPublicDemoController {
             resp.put("supportedIntents", intents);
             return ResponseEntity.ok(ApiResponse.success(resp));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.error("测试失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("测试失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -118,7 +119,7 @@ public class SmartBIPublicDemoController {
             LocalDate[] range = DateRangeUtils.getDateRangeByPeriod(period);
             return ResponseEntity.ok(ApiResponse.success(salesAnalysisService.getSalesOverview(DEMO_FACTORY_ID, range[0], range[1])));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -145,15 +146,15 @@ public class SmartBIPublicDemoController {
                     .build();
 
             // 聚合各维度数据
-            try { response.setSales(salesAnalysisService.getSalesOverview(DEMO_FACTORY_ID, startDate, endDate)); } catch (Exception e) { log.warn("销售数据获取失败: {}", e.getMessage()); }
-            try { response.setFinance(financeAnalysisService.getFinanceOverview(DEMO_FACTORY_ID, startDate, endDate)); } catch (Exception e) { log.warn("财务数据获取失败: {}", e.getMessage()); }
-            try { response.setDepartmentRanking(departmentAnalysisService.getDepartmentRanking(DEMO_FACTORY_ID, startDate, endDate)); } catch (Exception e) { log.warn("部门排名获取失败: {}", e.getMessage()); }
-            try { response.setRegionRanking(regionAnalysisService.getRegionRanking(DEMO_FACTORY_ID, startDate, endDate)); } catch (Exception e) { log.warn("区域排名获取失败: {}", e.getMessage()); }
+            try { response.setSales(salesAnalysisService.getSalesOverview(DEMO_FACTORY_ID, startDate, endDate)); } catch (Exception e) { log.warn("销售数据获取失败: {}", ErrorSanitizer.sanitize(e)); }
+            try { response.setFinance(financeAnalysisService.getFinanceOverview(DEMO_FACTORY_ID, startDate, endDate)); } catch (Exception e) { log.warn("财务数据获取失败: {}", ErrorSanitizer.sanitize(e)); }
+            try { response.setDepartmentRanking(departmentAnalysisService.getDepartmentRanking(DEMO_FACTORY_ID, startDate, endDate)); } catch (Exception e) { log.warn("部门排名获取失败: {}", ErrorSanitizer.sanitize(e)); }
+            try { response.setRegionRanking(regionAnalysisService.getRegionRanking(DEMO_FACTORY_ID, startDate, endDate)); } catch (Exception e) { log.warn("区域排名获取失败: {}", ErrorSanitizer.sanitize(e)); }
             try {
                 DateRangeUtils.DateRange range = DateRangeUtils.rangeByPeriod(period);
                 response.setAlerts(recommendationService.generateAllAlerts(DEMO_FACTORY_ID, range));
-            } catch (Exception e) { log.warn("预警获取失败: {}", e.getMessage()); }
-            try { response.setRecommendations(recommendationService.generateRecommendations(DEMO_FACTORY_ID, "all")); } catch (Exception e) { log.warn("建议获取失败: {}", e.getMessage()); }
+            } catch (Exception e) { log.warn("预警获取失败: {}", ErrorSanitizer.sanitize(e)); }
+            try { response.setRecommendations(recommendationService.generateRecommendations(DEMO_FACTORY_ID, "all")); } catch (Exception e) { log.warn("建议获取失败: {}", ErrorSanitizer.sanitize(e)); }
 
             response.setGeneratedAt(java.time.LocalDateTime.now());
             return ResponseEntity.ok(ApiResponse.success(response));
@@ -183,7 +184,7 @@ public class SmartBIPublicDemoController {
             }
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -199,7 +200,7 @@ public class SmartBIPublicDemoController {
             result.put("chartType", "BAR");
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -216,7 +217,7 @@ public class SmartBIPublicDemoController {
             result.put("chartType", "MAP");
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -225,7 +226,7 @@ public class SmartBIPublicDemoController {
         try {
             return ResponseEntity.ok(ApiResponse.success(recommendationService.generateRecommendations(DEMO_FACTORY_ID, type)));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -253,7 +254,7 @@ public class SmartBIPublicDemoController {
             return ResponseEntity.ok(ApiResponse.success(plan));
         } catch (Exception e) {
             log.error("获取激励方案失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -272,7 +273,7 @@ public class SmartBIPublicDemoController {
             result.put("hints", Arrays.asList("查看更多详情", "返回上一级"));
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.error("下钻失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("下钻失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 

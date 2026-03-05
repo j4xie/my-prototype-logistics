@@ -29,6 +29,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * SmartBI Analysis Controller
@@ -131,7 +132,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Get sales analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get sales analysis failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get sales analysis failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -170,7 +171,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Get department analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get department analysis failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get department analysis failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -211,7 +212,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Get region analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get region analysis failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get region analysis failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -267,7 +268,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Get finance analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get finance analysis failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get finance analysis failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -285,7 +286,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Get budget achievement failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get budget achievement failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get budget achievement failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -305,7 +306,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Get YoY/MoM failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get YoY/MoM failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get YoY/MoM failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -323,7 +324,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Get category comparison failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get category comparison failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get category comparison failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -362,7 +363,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Get production analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get production analysis failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get production analysis failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -400,7 +401,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Get quality analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get quality analysis failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get quality analysis failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -441,7 +442,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Get inventory analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get inventory analysis failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get inventory analysis failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -479,7 +480,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Get procurement analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get procurement analysis failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get procurement analysis failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -518,7 +519,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
             log.error("NL query failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Query failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Query failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -577,7 +578,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Drill-down failed", e);
-            return ResponseEntity.ok(ApiResponse.error("Drill-down failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Drill-down failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -608,7 +609,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(alerts));
         } catch (Exception e) {
             log.error("Get alerts failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get alerts failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get alerts failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -628,7 +629,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(recommendations));
         } catch (Exception e) {
             log.error("Get recommendations failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get recommendations failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get recommendations failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -664,7 +665,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(plan));
         } catch (Exception e) {
             log.error("Get incentive plan failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get incentive plan failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get incentive plan failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -684,7 +685,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success("Schema detection complete", preview));
         } catch (Exception e) {
             log.error("Schema detection failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Schema detection failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Schema detection failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -701,7 +702,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(preview));
         } catch (Exception e) {
             log.error("Get schema preview failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get preview failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get preview failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -718,7 +719,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.successMessage("Schema changes applied"));
         } catch (Exception e) {
             log.error("Apply schema changes failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Apply changes failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Apply changes failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -734,7 +735,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(datasources));
         } catch (Exception e) {
             log.error("List datasources failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("List failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("List failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -751,7 +752,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(fields));
         } catch (Exception e) {
             log.error("Get field definitions failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get field definitions failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get field definitions failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -769,7 +770,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(history));
         } catch (Exception e) {
             log.error("Get schema history failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get history failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get history failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * SmartBI Upload Controller
@@ -110,10 +111,10 @@ public class SmartBIUploadController {
             return ResponseEntity.ok(ApiResponse.success("Excel parsed successfully", response));
         } catch (IOException e) {
             log.error("Excel file read failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("File read failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("File read failed: " + ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("Excel parse error: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Parse failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Parse failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -150,7 +151,7 @@ public class SmartBIUploadController {
             }
         } catch (Exception e) {
             log.error("Upload and analyze failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Upload and analyze failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Upload and analyze failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -189,7 +190,7 @@ public class SmartBIUploadController {
             }
         } catch (Exception e) {
             log.error("Confirm and save failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Save failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Save failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -208,10 +209,10 @@ public class SmartBIUploadController {
             return ResponseEntity.ok(ApiResponse.success("Success", sheets));
         } catch (IOException e) {
             log.error("File read failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("File read failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("File read failed: " + ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("List sheets failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -253,13 +254,13 @@ public class SmartBIUploadController {
 
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             log.error("Parse sheetConfigs failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("sheetConfigs format error: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("sheetConfigs format error: " + ErrorSanitizer.sanitize(e)));
         } catch (IOException e) {
             log.error("File read failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("File read failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("File read failed: " + ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("Batch upload failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Batch upload failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Batch upload failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -302,7 +303,7 @@ public class SmartBIUploadController {
             } catch (Exception e) {
                 log.error("Batch upload (streaming) failed: {}", e.getMessage(), e);
                 try {
-                    sendEvent(emitter, UploadProgressEvent.error(e.getMessage()));
+                    sendEvent(emitter, UploadProgressEvent.error(ErrorSanitizer.sanitize(e)));
                     emitter.complete();
                 } catch (Exception ex) {
                     emitter.completeWithError(ex);
@@ -312,7 +313,7 @@ public class SmartBIUploadController {
 
         emitter.onCompletion(() -> log.debug("SSE connection completed"));
         emitter.onTimeout(() -> log.warn("SSE connection timeout"));
-        emitter.onError(e -> log.error("SSE connection error: {}", e.getMessage()));
+        emitter.onError(e -> log.error("SSE connection error: {}", ErrorSanitizer.sanitize(e)));
 
         return emitter;
     }
@@ -348,33 +349,35 @@ public class SmartBIUploadController {
             }
         } catch (Exception e) {
             log.error("Retry sheet failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Retry failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Retry failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
     // ==================== Upload History & Data Preview ====================
 
     @GetMapping("/uploads")
-    @Operation(summary = "Get upload history", description = "Get all uploaded Excel files for the factory")
-    public ResponseEntity<ApiResponse<List<UploadHistoryDTO>>> getUploadHistory(
+    @Operation(summary = "Get upload history", description = "Get uploaded Excel files for the factory (paginated, lightweight)")
+    public ResponseEntity<ApiResponse<?>> getUploadHistory(
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
-            @Parameter(description = "Status filter") @RequestParam(required = false) String status) {
+            @Parameter(description = "Status filter") @RequestParam(required = false) String status,
+            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "50") int size) {
 
-        log.info("Get upload history: factoryId={}, status={}", factoryId, status);
+        log.info("Get upload history: factoryId={}, status={}, page={}, size={}", factoryId, status, page, size);
 
         if (pgUploadRepository == null) {
             return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
         }
 
         try {
-            List<SmartBiPgExcelUpload> uploads = pgUploadRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId);
-            List<UploadHistoryDTO> dtos = uploads.stream()
-                    .map(UploadHistoryDTO::fromEntity)
-                    .collect(java.util.stream.Collectors.toList());
-            return ResponseEntity.ok(ApiResponse.success(dtos));
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                    page, Math.min(size, 200));
+            org.springframework.data.domain.Page<UploadHistoryDTO> dtoPage =
+                    pgUploadRepository.findUploadHistoryLightweight(factoryId, pageable);
+            return ResponseEntity.ok(ApiResponse.success(dtoPage));
         } catch (Exception e) {
             log.error("Get upload history failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get upload history failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get upload history failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -396,7 +399,7 @@ public class SmartBIUploadController {
             return ResponseEntity.ok(ApiResponse.success(fields));
         } catch (Exception e) {
             log.error("Get upload fields failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get fields failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get fields failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -440,7 +443,7 @@ public class SmartBIUploadController {
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
             log.error("Get upload data failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get data failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get data failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -479,7 +482,7 @@ public class SmartBIUploadController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Diagnose failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Diagnose failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Diagnose failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -500,7 +503,7 @@ public class SmartBIUploadController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Backfill failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Backfill failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Backfill failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -521,7 +524,7 @@ public class SmartBIUploadController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Batch backfill failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Batch backfill failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Batch backfill failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 

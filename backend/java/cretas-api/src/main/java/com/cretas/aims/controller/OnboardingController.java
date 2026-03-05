@@ -114,7 +114,7 @@ public class OnboardingController {
                         configCount++;
                     } catch (Exception e) {
                         log.warn("Onboarding: failed to save feature config for module '{}': {}",
-                                mc.getModuleId(), e.getMessage());
+                                mc.getModuleId(), ErrorSanitizer.sanitize(e));
                     }
                 }
                 log.info("Onboarding: {} feature configs saved", configCount);
@@ -134,7 +134,7 @@ public class OnboardingController {
                         formTemplateCount++;
                     } catch (Exception e) {
                         log.warn("Onboarding: failed to save form template for '{}': {}",
-                                entry.getKey(), e.getMessage());
+                                entry.getKey(), ErrorSanitizer.sanitize(e));
                     }
                 }
                 log.info("Onboarding: {} form templates saved", formTemplateCount);
@@ -159,7 +159,7 @@ public class OnboardingController {
                         alertCount++;
                     } catch (Exception e) {
                         log.warn("Onboarding: failed to save alert threshold for '{}': {}",
-                                at.getMetric(), e.getMessage());
+                                at.getMetric(), ErrorSanitizer.sanitize(e));
                     }
                 }
                 log.info("Onboarding: {} alert thresholds saved", alertCount);

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * ISAPI 智能分析配置 REST API
@@ -56,10 +57,10 @@ public class IsapiSmartAnalysisController {
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             log.warn("获取智能分析能力参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("获取智能分析能力失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("获取智能分析能力失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("获取智能分析能力失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -85,10 +86,10 @@ public class IsapiSmartAnalysisController {
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             log.warn("获取越界检测配置参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("获取越界检测配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("获取越界检测配置失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("获取越界检测配置失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -112,10 +113,10 @@ public class IsapiSmartAnalysisController {
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             log.warn("保存越界检测配置参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("保存越界检测配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("保存越界检测配置失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("保存越界检测配置失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -141,10 +142,10 @@ public class IsapiSmartAnalysisController {
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             log.warn("获取区域入侵配置参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("获取区域入侵配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("获取区域入侵配置失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("获取区域入侵配置失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -168,10 +169,10 @@ public class IsapiSmartAnalysisController {
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             log.warn("保存区域入侵配置参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("保存区域入侵配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("保存区域入侵配置失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("保存区域入侵配置失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -197,10 +198,10 @@ public class IsapiSmartAnalysisController {
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             log.warn("获取人脸检测配置参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("获取人脸检测配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("获取人脸检测配置失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("获取人脸检测配置失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -224,10 +225,10 @@ public class IsapiSmartAnalysisController {
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             log.warn("保存人脸检测配置参数错误: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(errorResponse(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("保存人脸检测配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(errorResponse("保存人脸检测配置失败: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(errorResponse("保存人脸检测配置失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 

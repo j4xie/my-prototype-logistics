@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * AI公开演示控制器
@@ -54,12 +55,12 @@ public class AIPublicDemoController {
     private final ResultFormatterService resultFormatterService;
     private final LinUCBService linUCBService;
 
-    // 演示用的默认工厂ID (使用真实工厂以获取正确的意图配置)
-    private static final String DEMO_FACTORY_ID = "F001";
+    // 安全：演示用沙盒工厂 ID（非真实生产工厂）
+    // 若 F_DEMO 不存在则查询会返回空结果（安全降级），不会暴露真实业务数据
+    private static final String DEMO_FACTORY_ID = "F_DEMO";
 
-    // 演示用的默认用户信息 (使用 factory_super_admin 确保所有 LOW 敏感度查询能执行)
-    // 写入操作（MEDIUM/HIGH/CRITICAL）会在敏感度检查阶段被拦截，不会执行
-    private static final String DEMO_USER_ROLE = "factory_super_admin";
+    // 演示用的默认用户角色 — 降级为只读角色，减少攻击面
+    private static final String DEMO_USER_ROLE = "viewer";
 
     // 允许执行的敏感度级别（只允许查询类）
     private static final Set<String> ALLOWED_SENSITIVITY_LEVELS = new HashSet<>(Arrays.asList("LOW"));
@@ -223,14 +224,14 @@ public class AIPublicDemoController {
 
         } catch (Exception e) {
             log.error("AI演示执行失败: intentCode={}, sessionId={}, error={}",
-                    matchedIntent.getIntentCode(), sessionId, e.getMessage(), e);
+                    matchedIntent.getIntentCode(), sessionId, ErrorSanitizer.sanitize(e), e);
 
             IntentExecuteResponse response = IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(matchedIntent.getIntentCode())
                     .intentName(matchedIntent.getIntentName())
                     .status("FAILED")
-                    .message("演示执行失败: " + e.getMessage())
+                    .message("演示执行失败: " + ErrorSanitizer.sanitize(e))
                     .sessionId(sessionId)  // 返回会话ID供前端续接对话
                     .executedAt(LocalDateTime.now())
                     .build();
@@ -494,7 +495,7 @@ public class AIPublicDemoController {
         } catch (Exception e) {
             log.error("LinUCB测试失败: {}", e.getMessage(), e);
             result.put("success", false);
-            result.put("message", "LinUCB测试失败: " + e.getMessage());
+            result.put("message", "LinUCB测试失败: " + ErrorSanitizer.sanitize(e));
         }
 
         return ResponseEntity.ok(ApiResponse.success(result));

@@ -20,6 +20,7 @@ import javax.validation.Valid;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * SmartBI Dashboard Controller
@@ -100,7 +101,7 @@ public class SmartBIDashboardController {
             return ResponseEntity.ok(ApiResponse.success(message, response));
         } catch (Exception e) {
             log.error("Generate adaptive charts failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Chart generation failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Chart generation failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -136,7 +137,7 @@ public class SmartBIDashboardController {
             }
         } catch (Exception e) {
             log.error("Quick generate chart failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Chart generation failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Chart generation failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -171,6 +172,27 @@ public class SmartBIDashboardController {
                     .lastUpdated(java.time.LocalDateTime.now())
                     .build();
             return ResponseEntity.ok(ApiResponse.success(emptyDashboard));
+        }
+    }
+
+    @GetMapping("/dashboard/executive/insights")
+    @Operation(summary = "Get LLM insights for dashboard", description = "Async-loaded LLM insights, called after main dashboard renders")
+    public ResponseEntity<ApiResponse<java.util.List<AIInsight>>> getDashboardLLMInsights(
+            @Parameter(description = "Factory ID") @PathVariable String factoryId,
+            @Parameter(description = "Period: today/week/month/quarter/year")
+            @RequestParam(defaultValue = "month") String period) {
+
+        log.info("Get dashboard LLM insights: factoryId={}, period={}", factoryId, period);
+
+        try {
+            if (smartBIService != null) {
+                java.util.List<AIInsight> insights = smartBIService.getDashboardLLMInsights(factoryId, period);
+                return ResponseEntity.ok(ApiResponse.success(insights));
+            }
+            return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
+        } catch (Exception e) {
+            log.error("Get dashboard LLM insights failed: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
         }
     }
 
@@ -229,7 +251,7 @@ public class SmartBIDashboardController {
             return ResponseEntity.ok(ApiResponse.success("No sales data detected", result));
         } catch (Exception e) {
             log.error("Get data date range failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get data date range failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get data date range failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -280,7 +302,7 @@ public class SmartBIDashboardController {
                     .build();
 
             try { response.setSales(salesAnalysisService.getSalesOverview(factoryId, startDate, endDate)); }
-            catch (Exception e) { log.warn("Get sales data failed: {}", e.getMessage()); }
+            catch (Exception e) { log.warn("Get sales data failed: {}", ErrorSanitizer.sanitize(e)); }
 
             enrichUnifiedDashboard(response, factoryId, startDate, endDate, period);
 
@@ -337,7 +359,7 @@ public class SmartBIDashboardController {
             return ResponseEntity.ok(ApiResponse.success(kpis));
         } catch (Exception e) {
             log.error("Get KPIs failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get KPIs failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Get KPIs failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -365,7 +387,7 @@ public class SmartBIDashboardController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Dynamic data analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Analysis failed: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("Analysis failed: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -376,33 +398,51 @@ public class SmartBIDashboardController {
      */
     private void enrichUnifiedDashboard(UnifiedDashboardResponse response, String factoryId,
                                          LocalDate startDate, LocalDate endDate, String period) {
-        try { response.setFinance(financeAnalysisService.getFinanceOverview(factoryId, startDate, endDate)); }
-        catch (Exception e) { log.warn("Get finance data failed: {}", e.getMessage()); }
-
-        try { response.setInventory(inventoryHealthAnalysisService.getInventoryHealth(factoryId, startDate, endDate)); }
-        catch (Exception e) { log.warn("Get inventory data failed: {}", e.getMessage()); }
-
-        try { response.setProduction(productionAnalysisService.getOEEOverview(factoryId, startDate, endDate)); }
-        catch (Exception e) { log.warn("Get production data failed: {}", e.getMessage()); }
-
-        try { response.setQuality(qualityAnalysisService.getQualitySummary(factoryId, startDate, endDate)); }
-        catch (Exception e) { log.warn("Get quality data failed: {}", e.getMessage()); }
-
-        try { response.setProcurement(procurementAnalysisService.getProcurementOverview(factoryId, startDate, endDate)); }
-        catch (Exception e) { log.warn("Get procurement data failed: {}", e.getMessage()); }
-
-        try { response.setDepartmentRanking(departmentAnalysisService.getDepartmentRanking(factoryId, startDate, endDate)); }
-        catch (Exception e) { log.warn("Get department ranking failed: {}", e.getMessage()); }
-
-        try { response.setRegionRanking(regionAnalysisService.getRegionRanking(factoryId, startDate, endDate)); }
-        catch (Exception e) { log.warn("Get region ranking failed: {}", e.getMessage()); }
-
+        // Parallel enrichment — all queries are independent, each with its own try-catch
+        java.util.concurrent.CompletableFuture<?>[] futures = {
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try { response.setFinance(financeAnalysisService.getFinanceOverview(factoryId, startDate, endDate)); }
+                catch (Exception e) { log.warn("Get finance data failed: {}", ErrorSanitizer.sanitize(e)); }
+            }),
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try { response.setInventory(inventoryHealthAnalysisService.getInventoryHealth(factoryId, startDate, endDate)); }
+                catch (Exception e) { log.warn("Get inventory data failed: {}", ErrorSanitizer.sanitize(e)); }
+            }),
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try { response.setProduction(productionAnalysisService.getOEEOverview(factoryId, startDate, endDate)); }
+                catch (Exception e) { log.warn("Get production data failed: {}", ErrorSanitizer.sanitize(e)); }
+            }),
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try { response.setQuality(qualityAnalysisService.getQualitySummary(factoryId, startDate, endDate)); }
+                catch (Exception e) { log.warn("Get quality data failed: {}", ErrorSanitizer.sanitize(e)); }
+            }),
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try { response.setProcurement(procurementAnalysisService.getProcurementOverview(factoryId, startDate, endDate)); }
+                catch (Exception e) { log.warn("Get procurement data failed: {}", ErrorSanitizer.sanitize(e)); }
+            }),
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try { response.setDepartmentRanking(departmentAnalysisService.getDepartmentRanking(factoryId, startDate, endDate)); }
+                catch (Exception e) { log.warn("Get department ranking failed: {}", ErrorSanitizer.sanitize(e)); }
+            }),
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try { response.setRegionRanking(regionAnalysisService.getRegionRanking(factoryId, startDate, endDate)); }
+                catch (Exception e) { log.warn("Get region ranking failed: {}", ErrorSanitizer.sanitize(e)); }
+            }),
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    DateRangeUtils.DateRange range = DateRangeUtils.rangeByPeriod(period);
+                    response.setAlerts(recommendationService.generateAllAlerts(factoryId, range));
+                } catch (Exception e) { log.warn("Get alerts failed: {}", ErrorSanitizer.sanitize(e)); }
+            }),
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try { response.setRecommendations(recommendationService.generateRecommendations(factoryId, "all")); }
+                catch (Exception e) { log.warn("Get recommendations failed: {}", ErrorSanitizer.sanitize(e)); }
+            })
+        };
         try {
-            DateRangeUtils.DateRange range = DateRangeUtils.rangeByPeriod(period);
-            response.setAlerts(recommendationService.generateAllAlerts(factoryId, range));
-        } catch (Exception e) { log.warn("Get alerts failed: {}", e.getMessage()); }
-
-        try { response.setRecommendations(recommendationService.generateRecommendations(factoryId, "all")); }
-        catch (Exception e) { log.warn("Get recommendations failed: {}", e.getMessage()); }
+            java.util.concurrent.CompletableFuture.allOf(futures).join();
+        } catch (Exception e) {
+            log.warn("Some enrichment tasks failed: {}", e.getMessage());
+        }
     }
 }

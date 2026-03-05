@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * SmartBI 配置管理控制器
@@ -59,7 +60,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success(intents));
         } catch (Exception e) {
             log.error("获取意图配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -78,7 +79,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("创建意图配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("创建失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("创建失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -98,7 +99,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("更新意图配置失败: id={}, error={}", id, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("更新失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("更新失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -117,7 +118,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("删除意图配置失败: id={}, error={}", id, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("删除失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("删除失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -131,7 +132,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success("重载成功", result));
         } catch (Exception e) {
             log.error("重载意图配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("重载失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("重载失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -149,7 +150,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success(thresholds));
         } catch (Exception e) {
             log.error("获取告警阈值失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -169,7 +170,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("创建告警阈值失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("创建失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("创建失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -189,7 +190,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("更新告警阈值失败: id={}, error={}", id, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("更新失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("更新失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -208,7 +209,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("删除告警阈值失败: id={}, error={}", id, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("删除失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("删除失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -222,7 +223,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success("重载成功", result));
         } catch (Exception e) {
             log.error("重载告警阈值失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("重载失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("重载失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -240,7 +241,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success(rules));
         } catch (Exception e) {
             log.error("获取激励规则失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -260,7 +261,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("创建激励规则失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("创建失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("创建失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -280,7 +281,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("更新激励规则失败: id={}, error={}", id, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("更新失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("更新失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -299,7 +300,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("删除激励规则失败: id={}, error={}", id, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("删除失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("删除失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -313,7 +314,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success("重载成功", result));
         } catch (Exception e) {
             log.error("重载激励规则失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("重载失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("重载失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -331,7 +332,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success(mappings));
         } catch (Exception e) {
             log.error("获取字段映射失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -351,7 +352,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("创建字段映射失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("创建失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("创建失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -371,7 +372,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("更新字段映射失败: id={}, error={}", id, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("更新失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("更新失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -390,7 +391,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("删除字段映射失败: id={}, error={}", id, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("删除失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("删除失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -404,7 +405,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success("重载成功", result));
         } catch (Exception e) {
             log.error("重载字段映射失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("重载失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("重载失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -422,7 +423,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success(formulas));
         } catch (Exception e) {
             log.error("获取指标公式失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -441,7 +442,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("创建指标公式失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("创建失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("创建失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -461,7 +462,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("更新指标公式失败: id={}, error={}", id, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("更新失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("更新失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -480,7 +481,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("删除指标公式失败: id={}, error={}", id, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("删除失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("删除失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -494,7 +495,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success("重载成功", result));
         } catch (Exception e) {
             log.error("重载指标公式失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("重载失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("重载失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -514,7 +515,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success(templates));
         } catch (Exception e) {
             log.error("获取图表模板失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -535,7 +536,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("获取图表模板失败: code={}, error={}", code, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -555,7 +556,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("创建图表模板失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("创建失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("创建失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -575,7 +576,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("更新图表模板失败: id={}, error={}", id, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("更新失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("更新失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -594,7 +595,7 @@ public class SmartBIConfigController {
             }
         } catch (Exception e) {
             log.error("删除图表模板失败: id={}, error={}", id, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("删除失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("删除失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -608,7 +609,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success("重载成功", result));
         } catch (Exception e) {
             log.error("重载图表模板失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("重载失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("重载失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -631,7 +632,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("推荐图表类型失败: metricCode={}, error={}", metricCode, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("推荐失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("推荐失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -646,7 +647,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success(templates));
         } catch (Exception e) {
             log.error("获取指标图表模板失败: metricCode={}, error={}", metricCode, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -663,7 +664,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("构建图表失败: code={}, error={}", code, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("构建失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("构建失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -679,7 +680,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success("重载成功", result));
         } catch (Exception e) {
             log.error("重载所有配置失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("重载失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("重载失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -693,7 +694,7 @@ public class SmartBIConfigController {
             return ResponseEntity.ok(ApiResponse.success(status));
         } catch (Exception e) {
             log.error("获取配置状态失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 }

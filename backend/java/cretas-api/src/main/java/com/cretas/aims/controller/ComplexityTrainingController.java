@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 复杂度分类器训练 API
@@ -59,7 +60,7 @@ public class ComplexityTrainingController {
             return ApiResponse.success(result);
         } catch (Exception e) {
             log.error("训练失败", e);
-            return ApiResponse.error("训练失败: " + e.getMessage());
+            return ApiResponse.error("训练失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -94,7 +95,7 @@ public class ComplexityTrainingController {
             return ApiResponse.success(result);
         } catch (Exception e) {
             log.error("测试失败", e);
-            return ApiResponse.error("测试失败: " + e.getMessage());
+            return ApiResponse.error("测试失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -137,7 +138,7 @@ public class ComplexityTrainingController {
             return ApiResponse.success(result);
         } catch (Exception e) {
             log.error("从文件训练失败", e);
-            return ApiResponse.error("训练失败: " + e.getMessage());
+            return ApiResponse.error("训练失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 }

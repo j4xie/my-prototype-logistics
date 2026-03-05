@@ -731,14 +731,24 @@ def rule_function(data: List[Dict], columns: List[str]) -> int:
                 logger.error("Rule code failed security validation")
                 return None
 
-            # 执行代码（提供已导入的模块）
-            local_namespace = {
+            # 执行代码（受限沙箱 — 禁止 __builtins__ 访问）
+            safe_globals = {
+                '__builtins__': {},  # 阻断 __import__, eval, exec 等内置函数
                 're': re,
                 'datetime': datetime,
                 'List': List,
-                'Dict': Dict
+                'Dict': Dict,
+                # 仅暴露安全的内置函数
+                'len': len, 'str': str, 'int': int, 'float': float, 'bool': bool,
+                'list': list, 'dict': dict, 'set': set, 'tuple': tuple,
+                'range': range, 'enumerate': enumerate, 'zip': zip,
+                'min': min, 'max': max, 'sum': sum, 'abs': abs, 'round': round,
+                'sorted': sorted, 'reversed': reversed, 'filter': filter, 'map': map,
+                'any': any, 'all': all, 'isinstance': isinstance,
+                'None': None, 'True': True, 'False': False,
             }
-            exec(code, local_namespace)
+            local_namespace = {}
+            exec(code, safe_globals, local_namespace)
 
             # 获取函数
             func_name = f"rule_{rule_name}"
@@ -758,26 +768,80 @@ def rule_function(data: List[Dict], columns: List[str]) -> int:
             return None
 
     def _validate_rule_code(self, code: str) -> bool:
-        """验证规则代码安全性"""
-        # 禁止的关键词
-        forbidden = [
-            'import ', 'from ', '__', 'eval', 'exec', 'compile',
-            'open(', 'file(', 'os.', 'sys.', 'subprocess',
-            'shutil', 'socket', 'urllib', 'requests',
-            'globals', 'locals', 'getattr', 'setattr', 'delattr',
-            'input(', 'raw_input'
-        ]
-
-        code_lower = code.lower()
-        for kw in forbidden:
-            if kw.lower() in code_lower:
-                logger.warning(f"Forbidden keyword '{kw}' found in rule code")
-                return False
+        """验证规则代码安全性 — AST 白名单方式（不可被字符串拼接绕过）"""
+        import ast
 
         # 必须包含函数定义
         if 'def rule_' not in code:
             logger.warning("Rule code must contain 'def rule_' function")
             return False
+
+        # AST 解析
+        try:
+            tree = ast.parse(code)
+        except SyntaxError as e:
+            logger.warning(f"Rule code has syntax error: {e}")
+            return False
+
+        # 白名单 AST 节点类型 — 仅允许安全的 Python 子集
+        ALLOWED_NODES = {
+            # 模块/函数结构
+            ast.Module, ast.FunctionDef, ast.arguments, ast.arg,
+            ast.Return, ast.Pass,
+            # 控制流
+            ast.If, ast.For, ast.While, ast.Break, ast.Continue,
+            # 表达式
+            ast.Expr, ast.Call, ast.Name, ast.Load, ast.Store, ast.Del,
+            ast.Constant, ast.Num, ast.Str,  # Num/Str for Python 3.7 compat
+            ast.BinOp, ast.UnaryOp, ast.BoolOp, ast.Compare,
+            ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow,
+            ast.USub, ast.UAdd, ast.Not,
+            ast.And, ast.Or,
+            ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE, ast.In, ast.NotIn, ast.Is, ast.IsNot,
+            # 数据结构
+            ast.List, ast.Tuple, ast.Dict, ast.Set,
+            ast.ListComp, ast.DictComp, ast.SetComp, ast.GeneratorExp,
+            ast.comprehension,
+            # 索引/切片
+            ast.Subscript, ast.Index, ast.Slice,
+            # 赋值
+            ast.Assign, ast.AugAssign, ast.AnnAssign,
+            # 字符串格式化
+            ast.JoinedStr, ast.FormattedValue,
+            # 条件表达式
+            ast.IfExp,
+            # 星号解包
+            ast.Starred,
+        }
+
+        # 禁止的函数名 — 即使在白名单 AST 中也不允许调用
+        FORBIDDEN_CALLS = {
+            'eval', 'exec', 'compile', 'open', 'input', 'raw_input',
+            'getattr', 'setattr', 'delattr', 'globals', 'locals', 'vars',
+            'dir', 'type', 'super', '__import__', 'breakpoint',
+            'memoryview', 'bytearray',
+        }
+
+        for node in ast.walk(tree):
+            node_type = type(node)
+
+            # 拒绝不在白名单中的节点类型（如 Import, ImportFrom, Attribute 等）
+            if node_type not in ALLOWED_NODES:
+                # 特例: 允许 ast.Attribute 但只允许安全的属性访问
+                if node_type == ast.Attribute:
+                    # 禁止 __dunder__ 属性
+                    if node.attr.startswith('_'):
+                        logger.warning(f"Forbidden private/dunder attribute access: {node.attr}")
+                        return False
+                    continue
+                logger.warning(f"Forbidden AST node type: {node_type.__name__}")
+                return False
+
+            # 检查函数调用是否在禁止列表中
+            if node_type == ast.Call and isinstance(node.func, ast.Name):
+                if node.func.id in FORBIDDEN_CALLS:
+                    logger.warning(f"Forbidden function call: {node.func.id}")
+                    return False
 
         return True
 

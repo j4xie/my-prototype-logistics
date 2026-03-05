@@ -32,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.cretas.aims.util.ErrorSanitizer;
 
 @Slf4j
 @RestController
@@ -263,7 +264,7 @@ public class WorkReportingController {
             return ApiResponse.success(result);
         } catch (Exception e) {
             log.error("SmartBI同步失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return ApiResponse.error("同步失败: " + e.getMessage());
+            return ApiResponse.error("同步失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 }

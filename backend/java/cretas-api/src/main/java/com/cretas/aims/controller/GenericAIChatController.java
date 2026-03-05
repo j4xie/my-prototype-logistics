@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 通用 AI Chat Controller
@@ -143,7 +144,7 @@ public class GenericAIChatController {
 
         } catch (Exception e) {
             log.error("AI Chat 失败: {}", e.getMessage(), e);
-            return ApiResponse.error("AI 服务暂时不可用: " + e.getMessage());
+            return ApiResponse.error("AI 服务暂时不可用: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -161,7 +162,7 @@ public class GenericAIChatController {
 
         emitter.onCompletion(() -> log.debug("Chat stream completed"));
         emitter.onTimeout(() -> log.warn("Chat stream timeout"));
-        emitter.onError(e -> log.error("Chat stream error: {}", e.getMessage()));
+        emitter.onError(e -> log.error("Chat stream error: {}", ErrorSanitizer.sanitize(e)));
 
         sseExecutor.execute(() -> {
             try {
@@ -244,7 +245,7 @@ public class GenericAIChatController {
                 log.error("Chat stream failed: {}", e.getMessage(), e);
                 try {
                     emitter.send(SseEmitter.event().name("error")
-                            .data("{\"message\":\"" + e.getMessage().replace("\"", "'") + "\"}"));
+                            .data("{\"message\":\"" + ErrorSanitizer.sanitize(e).replace("\"", "'") + "\"}"));
                     emitter.complete();
                 } catch (Exception sendErr) {
                     emitter.completeWithError(e);

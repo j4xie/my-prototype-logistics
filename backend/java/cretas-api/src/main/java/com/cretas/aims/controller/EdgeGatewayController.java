@@ -18,6 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 边缘网关 Controller
@@ -56,7 +57,7 @@ public class EdgeGatewayController {
             }
         } catch (Exception e) {
             log.error("边缘上传处理失败: {}", e.getMessage(), e);
-            return ApiResponse.error("上传处理失败: " + e.getMessage());
+            return ApiResponse.error("上传处理失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -89,7 +90,7 @@ public class EdgeGatewayController {
             }
         } catch (Exception e) {
             log.error("图片上传处理失败: {}", e.getMessage(), e);
-            return ApiResponse.error("图片上传失败: " + e.getMessage());
+            return ApiResponse.error("图片上传失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
