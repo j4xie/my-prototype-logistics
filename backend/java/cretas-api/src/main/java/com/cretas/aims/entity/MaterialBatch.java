@@ -124,12 +124,15 @@ public class MaterialBatch extends BaseEntity {
     private User createdByUser;
 
     @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<MaterialConsumption> consumptions = new ArrayList<>();
 
     @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<MaterialBatchAdjustment> adjustments = new ArrayList<>();
 
     @OneToMany(mappedBy = "materialBatch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<ProductionPlanBatchUsage> planBatchUsages = new ArrayList<>();
 
     // ===================================================================

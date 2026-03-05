@@ -101,7 +101,7 @@ class CrossSheetCache:
         )
         to_remove = max(1, len(sorted_keys) // 10)
         for k in sorted_keys[:to_remove]:
-            del self._cache[k]
+            self._cache.pop(k, None)
         logger.debug("CrossSheetCache evicted %d entries", to_remove)
 
 
@@ -591,7 +591,8 @@ class CrossSheetAggregator:
             # Build KPI summary for LLM
             kpi_text_parts = []
             for item in kpi_comparison:
-                kpi_lines = [f"  {k}: {v:,.2f}" for k, v in item.get("kpis", {}).items()]
+                kpi_lines = [f"  {k}: {v:,.2f}" for k, v in item.get("kpis", {}).items()
+                             if isinstance(v, (int, float)) and v == v]  # filter NaN
                 kpi_text_parts.append(
                     f"**{item['sheetName']}**:\n" + "\n".join(kpi_lines) if kpi_lines
                     else f"**{item['sheetName']}**: 无数据"

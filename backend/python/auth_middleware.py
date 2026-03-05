@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Optional, Set
 
 import jwt as pyjwt
@@ -99,7 +100,8 @@ class JWTAuthMiddleware:
 
         # Allow legacy X-Internal-Secret for Java->Python internal calls
         internal_secret = headers.get("x-internal-secret", "")
-        if internal_secret == "cretas-internal-2026":
+        expected_secret = os.environ.get("INTERNAL_API_SECRET", "")
+        if expected_secret and internal_secret == expected_secret:
             # Inject auth info into scope state
             if "state" not in scope:
                 scope["state"] = {}

@@ -7,8 +7,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.concurrent.ConcurrentMapCache;
+import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.cache.support.SimpleCacheManager;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -148,50 +149,32 @@ public class CacheConfig {
     }
 
     private CacheManager buildSimpleCacheManager() {
-        log.warn("Redis 不可用，使用内存缓存作为降级方案");
+        log.warn("Redis 不可用，使用 Caffeine 内存缓存作为降级方案");
+
+        // Caffeine cache with TTL and size limits (prevents OOM unlike ConcurrentMapCache)
+        String[] cacheNames = {
+                "aiAnalysisResults", "aiIntents", "aiQuota", "dashboardStats",
+                "allIntents", "intentsByCategory", "intentCategories", "intentsBySensitivity",
+                "allIntents_legacy", "intentsByCategory_legacy", "intentCategories_legacy",
+                "qualityStats", "shipmentStats", "customerStats", "alertStats",
+                "equipmentStats", "productTypes", "materialTypes", "equipmentList", "customerList",
+                "dailySummary", "weeklySummary", "aiToolResult",
+                "realtimeReport", "oeeReport", "kpiMetrics", "costVarianceReport",
+                "capacityUtilization", "onTimeDelivery", "productionByProduct",
+                "monthlyReport", "yearlyReport", "inventoryReport", "financeReport"
+        };
+
+        java.util.List<org.springframework.cache.Cache> caches = new java.util.ArrayList<>();
+        for (String name : cacheNames) {
+            caches.add(new CaffeineCache(name,
+                    Caffeine.newBuilder()
+                            .maximumSize(500)
+                            .expireAfterWrite(Duration.ofMinutes(10))
+                            .build()));
+        }
 
         SimpleCacheManager cacheManager = new SimpleCacheManager();
-        cacheManager.setCaches(Arrays.asList(
-                new ConcurrentMapCache("aiAnalysisResults"),
-                new ConcurrentMapCache("aiIntents"),
-                new ConcurrentMapCache("aiQuota"),
-                new ConcurrentMapCache("dashboardStats"),
-                // AI意图服务缓存
-                new ConcurrentMapCache("allIntents"),
-                new ConcurrentMapCache("intentsByCategory"),
-                new ConcurrentMapCache("intentCategories"),
-                new ConcurrentMapCache("intentsBySensitivity"),
-                // Legacy 缓存（向后兼容）
-                new ConcurrentMapCache("allIntents_legacy"),
-                new ConcurrentMapCache("intentsByCategory_legacy"),
-                new ConcurrentMapCache("intentCategories_legacy"),
-                // AI Tool 数据查询缓存 - 提升 SSE 流式响应性能
-                new ConcurrentMapCache("qualityStats"),
-                new ConcurrentMapCache("shipmentStats"),
-                new ConcurrentMapCache("customerStats"),
-                new ConcurrentMapCache("alertStats"),
-                new ConcurrentMapCache("equipmentStats"),
-                new ConcurrentMapCache("productTypes"),
-                new ConcurrentMapCache("materialTypes"),
-                new ConcurrentMapCache("equipmentList"),
-                new ConcurrentMapCache("customerList"),
-                // AI 报告缓存
-                new ConcurrentMapCache("dailySummary"),
-                new ConcurrentMapCache("weeklySummary"),
-                new ConcurrentMapCache("aiToolResult"),
-                // 报表缓存 (2026-01-14)
-                new ConcurrentMapCache("realtimeReport"),
-                new ConcurrentMapCache("oeeReport"),
-                new ConcurrentMapCache("kpiMetrics"),
-                new ConcurrentMapCache("costVarianceReport"),
-                new ConcurrentMapCache("capacityUtilization"),
-                new ConcurrentMapCache("onTimeDelivery"),
-                new ConcurrentMapCache("productionByProduct"),
-                new ConcurrentMapCache("monthlyReport"),
-                new ConcurrentMapCache("yearlyReport"),
-                new ConcurrentMapCache("inventoryReport"),
-                new ConcurrentMapCache("financeReport")
-        ));
+        cacheManager.setCaches(caches);
         return cacheManager;
     }
 }

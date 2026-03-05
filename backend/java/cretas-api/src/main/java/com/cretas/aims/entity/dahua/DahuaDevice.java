@@ -194,6 +194,7 @@ public class DahuaDevice extends BaseEntity {
     // ==================== 通道关系 ====================
 
     @OneToMany(mappedBy = "device", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<DahuaDeviceChannel> channels;
 
     // ==================== 统一设备类型方法 ====================

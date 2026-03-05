@@ -1029,41 +1029,4 @@ class DataTransformer:
         agg_dict = {col: agg_func for col in value_columns if col in df.columns}
         return df.groupby(category_column).agg(agg_dict).reset_index()
 
-    @staticmethod
-    def calculate_derived_columns(
-        data: ExtractedData,
-        calculations: List[Dict[str, Any]]
-    ) -> ExtractedData:
-        """
-        Calculate derived columns based on predefined formulas.
-
-        Args:
-            data: Extracted data
-            calculations: List of calculation specs:
-                [{"name": "variance", "formula": "budget_amount - actual_amount"}]
-
-        Returns:
-            ExtractedData with new columns
-        """
-        df = data.to_dataframe()
-
-        for calc in calculations:
-            name = calc.get("name")
-            formula = calc.get("formula")
-
-            if not name or not formula:
-                continue
-
-            # Supported operations: +, -, *, /, ()
-            try:
-                # Safe evaluation with only numeric operations
-                df[name] = df.eval(formula)
-            except Exception as e:
-                logger.warning(f"Failed to calculate '{name}': {e}")
-
-        # Update result
-        data.rows = df.to_dict(orient='records')
-        data.headers = df.columns.tolist()
-        data.column_count = len(data.headers)
-
-        return data
+    # calculate_derived_columns removed in Round 8 audit (dead code, df.eval security risk)

@@ -14,6 +14,66 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
+def _sanitize_for_json(obj):
+    """Replace NaN/Infinity with None for JSON serialization."""
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_for_json(v) for v in obj]
+    if isinstance(obj, float):
+        if np.isnan(obj) or np.isinf(obj):
+            return None
+    if isinstance(obj, (np.floating, np.integer)):
+        val = float(obj)
+        if np.isnan(val) or np.isinf(val):
+            return None
+        return val
+    return obj
+
+
+_ID_NAME_PATTERNS = {'行次', '序号', '编号', '行号', '项目编号', 'index', 'no', 'no.', 'id', 'row_num', 'row_number', 'sn'}
+_ID_NAME_FRAGMENTS = ['订单号', '单号', '编码', '工号', '货号', '票号', '凭证号',
+                      'order_id', 'order_no', 'item_id', 'sku_id', 'batch_no']
+
+
+def _is_id_column(col_name: str, series) -> bool:
+    """Detect if a column is an ID/index/sequence column (not useful for chart Y-axis)."""
+    lower = col_name.lower().strip()
+    if lower in _ID_NAME_PATTERNS:
+        return True
+    if any(frag in lower for frag in _ID_NAME_FRAGMENTS):
+        return True
+    try:
+        vals = pd.to_numeric(series.dropna().head(20), errors='coerce').dropna()
+        if len(vals) >= 3:
+            diffs = vals.diff().dropna()
+            if len(diffs) > 0 and all(d == 1 for d in diffs):
+                return True
+            if vals.nunique() == len(vals) and vals.min() > 1000 and all(v == int(v) for v in vals):
+                return True
+    except (TypeError, ValueError, OverflowError) as e:
+        logger.debug("_is_id_column check failed for %s: %s", col_name, e)
+    return False
+
+
+def _coerce_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Try to convert object columns that look numeric to actual numeric dtype.
+
+    Fixes the issue where mixed-type columns (e.g., "123.4" as str) are
+    invisible to select_dtypes(include=[np.number]).
+    Only converts columns where >50% of non-null values are numeric.
+    Skips ID/index columns to avoid polluting Y-axis candidates.
+    """
+    for col in df.select_dtypes(include=['object']).columns:
+        if _is_id_column(col, df[col]):
+            continue
+        coerced = pd.to_numeric(df[col], errors='coerce')
+        non_null = df[col].notna().sum()
+        if non_null > 0 and coerced.notna().sum() / non_null > 0.5:
+            df[col] = coerced
+    return df
+
+
 class ChartType(str, Enum):
     """Supported chart types"""
     # Basic charts
@@ -282,6 +342,15 @@ class ChartBuilder:
             if df.empty:
                 return self._empty_chart_config(title)
 
+            # Downsample very large datasets to prevent browser OOM
+            MAX_CHART_ROWS = 10000
+            if len(df) > MAX_CHART_ROWS:
+                logger.info(f"Chart data downsampled: {len(df)} → {MAX_CHART_ROWS} rows")
+                df = df.iloc[::len(df) // MAX_CHART_ROWS][:MAX_CHART_ROWS]
+
+            # Coerce object columns that contain numeric data (e.g., "123.4" as str)
+            df = _coerce_numeric_columns(df)
+
             chart_type_enum = ChartType(chart_type.lower())
 
             # Validate and resolve field names
@@ -336,6 +405,9 @@ class ChartBuilder:
 
             # Add common options
             config = self._add_common_options(config, title, subtitle, theme, options)
+
+            # Sanitize NaN/Infinity values for JSON serialization
+            config = _sanitize_for_json(config)
 
             return {
                 "success": True,
@@ -469,12 +541,14 @@ class ChartBuilder:
         if value_field is None:
             raise ValueError("No valid numeric column found for pie chart")
 
-        # 安全地构建数据，跳过无效值
-        data = []
-        for _, row in df.iterrows():
-            val = pd.to_numeric(row[value_field], errors='coerce')
-            if pd.notna(val) and val > 0:  # 饼图只接受正数
-                data.append({"name": str(row[name_field]), "value": float(val)})
+        # 安全地构建数据，跳过无效值 (vectorized — avoid iterrows)
+        valid = df[[name_field, value_field]].copy()
+        valid[value_field] = pd.to_numeric(valid[value_field], errors='coerce')
+        valid = valid[valid[value_field].notna() & (valid[value_field] > 0)]
+        data = [
+            {"name": str(n), "value": float(v)}
+            for n, v in zip(valid[name_field], valid[value_field])
+        ]
 
         if not data:
             raise ValueError("No valid data points for pie chart")
@@ -524,12 +598,22 @@ class ChartBuilder:
         """Build area chart configuration"""
         config = self._build_line_chart(df, x_field, y_fields, series_field)
 
+        is_stacked = len(config["series"]) > 1
         # Add area style to series
         for i, s in enumerate(config["series"]):
             s["areaStyle"] = {
                 "opacity": 0.3
             }
-            s["stack"] = "total" if len(config["series"]) > 1 else None
+            s["stack"] = "total" if is_stacked else None
+
+        # Add stacking indicator in title so users know values are cumulative
+        if is_stacked:
+            title = config.get("title", {})
+            if isinstance(title, dict):
+                existing = title.get("subtext", "")
+                title["subtext"] = ("堆叠面积图（数值为累计叠加）" +
+                                    (f" | {existing}" if existing else ""))
+                config["title"] = title
 
         return config
 
@@ -550,7 +634,7 @@ class ChartBuilder:
         series = []
         if series_field and series_field in df.columns:
             for name, group in df.groupby(series_field):
-                data = [[float(row[x_col]), float(row[y_col])] for _, row in group.iterrows()]
+                data = list(zip(group[x_col].astype(float).tolist(), group[y_col].astype(float).tolist()))
                 series.append({
                     "name": str(name),
                     "type": "scatter",
@@ -558,7 +642,7 @@ class ChartBuilder:
                     "symbolSize": 10
                 })
         else:
-            data = [[float(row[x_col]), float(row[y_col])] for _, row in df.iterrows()]
+            data = list(zip(df[x_col].astype(float).tolist(), df[y_col].astype(float).tolist()))
             series.append({
                 "name": f"{x_col} vs {y_col}",
                 "type": "scatter",
@@ -661,9 +745,13 @@ class ChartBuilder:
         x_field: Optional[str],
         y_fields: Optional[List[str]]
     ) -> dict:
-        """Build radar chart configuration"""
+        """Build radar chart configuration.
+
+        When x_field is provided (category column), each unique category
+        becomes a separate radar polygon for multi-series comparison.
+        Otherwise, aggregates all rows using mean values.
+        """
         indicators = []
-        data_values = []
 
         def safe_max(series):
             """Safely get max value from a series, handling non-numeric data."""
@@ -674,41 +762,52 @@ class ChartBuilder:
             except Exception:
                 return 100
 
-        def safe_first(series):
-            """Safely get first value from a series."""
+        def safe_mean(series):
+            """Safely get mean value from a series."""
             try:
-                if len(series) > 0:
-                    val = pd.to_numeric(series.iloc[0], errors='coerce')
-                    return float(val) if pd.notna(val) else 0
-                return 0
+                numeric_vals = pd.to_numeric(series, errors='coerce')
+                mean_val = numeric_vals.mean()
+                return round(float(mean_val), 2) if pd.notna(mean_val) else 0
             except Exception:
                 return 0
 
-        # Use y_fields as indicators
+        # Determine indicator fields
+        indicator_fields = []
         if y_fields:
-            for field in y_fields:
-                if field in df.columns:
-                    max_val = safe_max(df[field])
-                    indicators.append({"name": field, "max": max_val * 1.2})
-                    data_values.append(safe_first(df[field]))
+            indicator_fields = [f for f in y_fields if f in df.columns]
+        if not indicator_fields:
+            indicator_fields = list(df.select_dtypes(include=[np.number]).columns[:6])
+
+        if not indicator_fields:
+            return {"series": [], "tooltip": {"trigger": "item"}}
+
+        # Build indicators with max values
+        for field in indicator_fields:
+            max_val = safe_max(df[field])
+            indicators.append({"name": field, "max": max_val * 1.2})
+
+        # Build radar data series
+        radar_data = []
+
+        if x_field and x_field in df.columns:
+            # Multi-series: each unique x_field value becomes a radar polygon
+            groups = df.groupby(x_field)
+            for name, group in list(groups)[:8]:  # Cap at 8 series
+                values = [safe_mean(group[f]) for f in indicator_fields]
+                radar_data.append({"value": values, "name": str(name)})
         else:
-            # Use numeric columns
-            for col in df.select_dtypes(include=[np.number]).columns[:6]:
-                max_val = safe_max(df[col])
-                indicators.append({"name": col, "max": max_val * 1.2})
-                data_values.append(safe_first(df[col]))
+            # Single series: aggregate all rows using mean
+            values = [safe_mean(df[f]) for f in indicator_fields]
+            radar_data.append({"value": values, "name": "均值"})
 
         return {
             "radar": {
                 "indicator": indicators
             },
             "series": [{
-                "name": "Radar",
+                "name": "对比",
                 "type": "radar",
-                "data": [{
-                    "value": data_values,
-                    "name": "Value"
-                }]
+                "data": radar_data
             }],
             "tooltip": {
                 "trigger": "item"
@@ -727,10 +826,14 @@ class ChartBuilder:
         if value_field is None:
             return {"series": [], "tooltip": {"trigger": "item"}}
 
-        data = sorted([
-            {"name": str(row[name_field]), "value": float(row[value_field])}
-            for _, row in df.iterrows()
-        ], key=lambda x: x["value"], reverse=True)
+        # Vectorized — avoid iterrows
+        valid = df[[name_field, value_field]].copy()
+        valid[value_field] = pd.to_numeric(valid[value_field], errors='coerce')
+        valid = valid.dropna(subset=[value_field]).sort_values(value_field, ascending=False)
+        data = [
+            {"name": str(n), "value": float(v)}
+            for n, v in zip(valid[name_field], valid[value_field])
+        ]
 
         return {
             "series": [{
@@ -801,17 +904,18 @@ class ChartBuilder:
         x_data = df_clean[x_col].unique().tolist()
         y_data = df_clean[y_col].unique().tolist()
 
-        # 安全地转换数值
-        data = []
-        for _, row in df_clean.iterrows():
-            try:
-                x_idx = x_data.index(row[x_col])
-                y_idx = y_data.index(row[y_col])
-                val = pd.to_numeric(row[value_col], errors='coerce')
-                if pd.notna(val):
-                    data.append([x_idx, y_idx, float(val)])
-            except (ValueError, KeyError):
-                continue
+        # Vectorized heatmap data — avoid iterrows
+        x_index_map = {v: i for i, v in enumerate(x_data)}
+        y_index_map = {v: i for i, v in enumerate(y_data)}
+        df_hm = df_clean[[x_col, y_col, value_col]].copy()
+        df_hm['_x_idx'] = df_hm[x_col].map(x_index_map)
+        df_hm['_y_idx'] = df_hm[y_col].map(y_index_map)
+        df_hm[value_col] = pd.to_numeric(df_hm[value_col], errors='coerce')
+        df_hm = df_hm.dropna(subset=['_x_idx', '_y_idx', value_col])
+        data = [
+            [int(xi), int(yi), float(v)]
+            for xi, yi, v in zip(df_hm['_x_idx'], df_hm['_y_idx'], df_hm[value_col])
+        ]
 
         if not data:
             raise ValueError("No valid data points for heatmap chart")
@@ -919,11 +1023,13 @@ class ChartBuilder:
         options: Optional[dict]
     ) -> dict:
         """Add common ECharts options"""
-        # Add title
+        # Add title — preserve existing subtext (e.g., area chart stacking indicator)
         if title:
+            existing_title = config.get("title", {}) if isinstance(config.get("title"), dict) else {}
+            existing_subtext = existing_title.get("subtext", "")
             config["title"] = {
                 "text": title,
-                "subtext": subtitle or "",
+                "subtext": subtitle or existing_subtext or "",
                 "left": "center"
             }
 
@@ -1304,18 +1410,18 @@ class ChartBuilder:
         if value_field is None:
             return {"series": []}
 
-        # Inner ring data (aggregated by inner_field)
-        inner_data = df.groupby(inner_field)[value_field].sum().reset_index()
+        # Inner ring data (aggregated by inner_field) — vectorized
+        inner_agg = df.groupby(inner_field)[value_field].sum()
         inner_series_data = [
-            {"name": str(row[inner_field]), "value": float(row[value_field])}
-            for _, row in inner_data.iterrows()
+            {"name": str(n), "value": float(v)}
+            for n, v in inner_agg.items()
         ]
 
-        # Outer ring data (by outer_field)
-        outer_data = df.groupby(outer_field)[value_field].sum().reset_index()
+        # Outer ring data (by outer_field) — vectorized
+        outer_agg = df.groupby(outer_field)[value_field].sum()
         outer_series_data = [
-            {"name": str(row[outer_field]), "value": float(row[value_field])}
-            for _, row in outer_data.iterrows()
+            {"name": str(n), "value": float(v)}
+            for n, v in outer_agg.items()
         ]
 
         return {

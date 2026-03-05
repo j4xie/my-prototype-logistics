@@ -16,13 +16,13 @@ except ImportError:
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
 
-    # LLM Configuration - Text Models (all using free-quota qwen3.5 models)
+    # LLM Configuration - Text Models (all using free-quota models during testing)
     llm_api_key: str = ""
     llm_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    llm_model: str = "qwen3.5-plus-2026-02-15"  # Main text model (cross-sheet, ai-proxy, excel)
+    llm_model: str = "qwen3-max-2026-01-23"  # Main text model — free quota (was: qwen3.5-plus-2026-02-15)
 
     # LLM Configuration - Vision Model (for structure detection)
-    llm_vl_model: str = "qwen-vl-max"  # Vision-Language model for Excel structure analysis
+    llm_vl_model: str = "qwen3-vl-plus-2025-12-19"  # VL model — free quota (was: qwen-vl-max)
     llm_vl_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     # LLM Configuration - Fast Model (field detection, scenario detection)
@@ -48,7 +48,8 @@ class Settings(BaseSettings):
     use_llm_first: bool = True  # Use LLM as default detection method instead of rules
 
     # JWT Authentication (must match Java backend's cretas.jwt.secret)
-    jwt_secret: str = "cretas-food-traceability-system-secret-key-2025-do-not-change-in-production"
+    # MUST be set via JWT_SECRET env var in production
+    jwt_secret: str = ""
     jwt_auth_enabled: bool = True
 
     # Service Configuration
@@ -57,7 +58,12 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
 
     # CORS Configuration
-    cors_origins: List[str] = ["*"]
+    cors_origins: List[str] = [
+        "http://139.196.165.140:8086",
+        "http://47.100.235.168:10010",
+        "http://localhost:5173",
+        "http://localhost:3000",
+    ]
 
     # File Upload Configuration
     max_file_size_mb: int = 50
@@ -125,3 +131,49 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get cached settings instance"""
     return Settings()
+
+
+# ==========================================
+# DataFrame numeric coercion utility
+# ==========================================
+
+def coerce_numeric_columns(df):
+    """Coerce string columns that contain numeric values to numeric dtype.
+
+    JSON data from PostgreSQL comes as strings. pd.select_dtypes(include=['number'])
+    returns empty unless we explicitly convert. This fixes "No numeric measures detected".
+    """
+    import pandas as pd
+    for col in df.columns:
+        if df[col].dtype == object:
+            converted = pd.to_numeric(df[col], errors='coerce')
+            # Only convert if >50% of non-null values are numeric
+            non_null = df[col].dropna()
+            if len(non_null) > 0:
+                numeric_count = converted.notna().sum()
+                if numeric_count / max(len(non_null), 1) > 0.5:
+                    df[col] = converted
+    return df
+
+
+# ==========================================
+# Shared asyncpg connection pool
+# ==========================================
+_pg_pool = None
+
+
+async def get_pg_pool():
+    """Get or create shared asyncpg connection pool for SmartBI database."""
+    global _pg_pool
+    if _pg_pool is None or _pg_pool._closed:
+        import asyncpg
+        settings = get_settings()
+        pg_url = settings.postgres_url
+        if not pg_url:
+            return None
+        _pg_pool = await asyncpg.create_pool(
+            pg_url,
+            min_size=2,
+            max_size=settings.postgres_pool_size or 5,
+        )
+    return _pg_pool
