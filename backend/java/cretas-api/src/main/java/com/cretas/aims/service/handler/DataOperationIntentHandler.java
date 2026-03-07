@@ -2110,22 +2110,113 @@ public class DataOperationIntentHandler implements IntentHandler {
 
     private IntentExecuteResponse handleBatchUpdate(String factoryId, IntentExecuteRequest request,
                                                       AIIntentConfig intentConfig) {
-        return IntentExecuteResponse.builder()
-                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
-                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
-                .status("NEED_MORE_INFO")
-                .message("请提供批次修改信息：批次ID (batchId) 和要修改的内容 (updates)")
-                .executedAt(LocalDateTime.now()).build();
+        Map<String, Object> ctx = request.getContext();
+        if (ctx == null || ctx.get("batchId") == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("NEED_MORE_INFO")
+                    .message("请提供批次修改信息：\n1. 批次ID (batchId)\n2. 修改内容（如 status, plannedQuantity 等）")
+                    .executedAt(LocalDateTime.now()).build();
+        }
+
+        String batchId = ctx.get("batchId").toString();
+
+        // 如果有 status 变更请求，走状态变更流程
+        if (ctx.get("status") != null && processingService != null) {
+            String targetStatus = ctx.get("status").toString().toLowerCase();
+            try {
+                ProductionBatch updated;
+                switch (targetStatus) {
+                    case "start", "in_progress" -> updated = processingService.startProduction(factoryId, batchId, null);
+                    case "pause", "paused" -> updated = processingService.pauseProduction(factoryId, batchId, "对话修改");
+                    case "resume" -> updated = processingService.resumeProduction(factoryId, batchId);
+                    case "complete", "completed" -> updated = processingService.completeProduction(factoryId, batchId,
+                            BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+                    case "cancel", "cancelled" -> updated = processingService.cancelProduction(factoryId, batchId, "对话修改取消");
+                    default -> {
+                        return buildFailedResponse(intentConfig, "不支持的状态: " + targetStatus);
+                    }
+                }
+                Map<String, Object> result = new HashMap<>();
+                result.put("batchId", batchId);
+                result.put("status", updated.getStatus() != null ? updated.getStatus().name() : targetStatus);
+                String msg = "批次 " + batchId + " 状态已更新为 " + (updated.getStatus() != null ? updated.getStatus().name() : targetStatus);
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                        .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                        .status("COMPLETED").message(msg).formattedText(msg)
+                        .resultData(result).executedAt(LocalDateTime.now()).build();
+            } catch (Exception e) {
+                log.error("更新批次状态失败: batchId={}, error={}", batchId, e.getMessage(), e);
+                return buildFailedResponse(intentConfig, "更新失败: " + ErrorSanitizer.sanitize(e));
+            }
+        }
+
+        // 查询当前批次信息
+        if (processingService != null) {
+            try {
+                ProductionBatch batch = processingService.getBatchById(factoryId, batchId);
+                Map<String, Object> result = new HashMap<>();
+                result.put("batchId", batchId);
+                result.put("batchNumber", batch.getBatchNumber());
+                result.put("currentStatus", batch.getStatus() != null ? batch.getStatus().name() : "UNKNOWN");
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                        .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                        .status("NEED_MORE_INFO")
+                        .message("批次 " + batchId + " 当前状态: " + (batch.getStatus() != null ? batch.getStatus().name() : "UNKNOWN") +
+                                "\n请指定要修改的内容（如 status: start/pause/resume/complete/cancel）")
+                        .resultData(result).executedAt(LocalDateTime.now()).build();
+            } catch (Exception e) {
+                return buildFailedResponse(intentConfig, "查询批次失败: " + ErrorSanitizer.sanitize(e));
+            }
+        }
+
+        return buildFailedResponse(intentConfig, "生产批次服务暂不可用");
     }
 
     private IntentExecuteResponse handlePlanUpdate(String factoryId, IntentExecuteRequest request,
                                                      AIIntentConfig intentConfig) {
-        return IntentExecuteResponse.builder()
-                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
-                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
-                .status("NEED_MORE_INFO")
-                .message("请提供生产计划修改信息：计划ID (planId) 和要修改的内容")
-                .executedAt(LocalDateTime.now()).build();
+        Map<String, Object> ctx = request.getContext();
+        if (ctx == null || ctx.get("planId") == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("NEED_MORE_INFO")
+                    .message("请提供生产计划修改信息：\n1. 计划ID (planId)\n2. 修改内容（如 plannedQuantity, startDate 等）")
+                    .executedAt(LocalDateTime.now()).build();
+        }
+
+        if (productionPlanService == null) {
+            return buildFailedResponse(intentConfig, "生产计划服务暂不可用");
+        }
+
+        String planId = ctx.get("planId").toString();
+        try {
+            CreateProductionPlanRequest updateReq = new CreateProductionPlanRequest();
+            if (ctx.get("productTypeId") != null) updateReq.setProductTypeId(ctx.get("productTypeId").toString());
+            if (ctx.get("plannedQuantity") != null) updateReq.setPlannedQuantity(new BigDecimal(ctx.get("plannedQuantity").toString()));
+
+            ProductionPlanDTO updated = productionPlanService.updateProductionPlan(factoryId, planId, updateReq);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("planId", updated.getId());
+            result.put("planNumber", updated.getPlanNumber());
+            result.put("status", updated.getStatus());
+            result.put("operation", "UPDATE");
+
+            String msg = "生产计划 " + updated.getPlanNumber() + " 已更新";
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("COMPLETED").message(msg).formattedText(msg)
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+
+        } catch (Exception e) {
+            log.error("更新生产计划失败: planId={}, error={}", planId, e.getMessage(), e);
+            return buildFailedResponse(intentConfig, "更新失败: " + ErrorSanitizer.sanitize(e));
+        }
     }
 
     private IntentExecuteResponse handleProductUpdate(String factoryId, IntentExecuteRequest request,

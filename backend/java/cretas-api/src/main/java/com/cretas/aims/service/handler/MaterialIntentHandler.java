@@ -929,12 +929,49 @@ public class MaterialIntentHandler implements IntentHandler {
 
     private IntentExecuteResponse handleBatchWorkers(String factoryId, IntentExecuteRequest request,
                                                        AIIntentConfig intentConfig) {
-        return IntentExecuteResponse.builder()
-                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
-                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
-                .status("COMPLETED")
-                .message("批次工人信息查询功能尚在开发中。请使用排班系统查看工人分配情况。")
-                .executedAt(java.time.LocalDateTime.now()).build();
+        String batchId = extractBatchId(request);
+        if (batchId == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentCategory("MATERIAL").status("NEED_MORE_INFO")
+                    .message("请提供批次ID (batchId) 以查询工人信息")
+                    .executedAt(LocalDateTime.now()).build();
+        }
+
+        try {
+            List<Map<String, Object>> workers = processingService.getBatchWorkers(factoryId, Long.parseLong(batchId));
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("batchId", batchId);
+            result.put("workers", workers);
+            result.put("total", workers.size());
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("批次 ").append(batchId).append(" 工人信息\n");
+            if (workers.isEmpty()) {
+                sb.append("暂无分配工人");
+            } else {
+                sb.append("共 ").append(workers.size()).append(" 名工人\n");
+                workers.stream().limit(10).forEach(w -> {
+                    sb.append("  - ").append(w.getOrDefault("workerName", w.getOrDefault("name", "未知")));
+                    if (w.get("status") != null) sb.append(" (").append(w.get("status")).append(")");
+                    sb.append("\n");
+                });
+            }
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                    .status("COMPLETED").message(sb.toString().trim()).formattedText(sb.toString().trim())
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+        } catch (Exception e) {
+            log.error("查询批次工人失败: batchId={}, error={}", batchId, e.getMessage(), e);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentCategory("MATERIAL").status("FAILED")
+                    .message("查询失败: " + ErrorSanitizer.sanitize(e))
+                    .executedAt(LocalDateTime.now()).build();
+        }
     }
 
     private IntentExecuteResponse handleProductionLineStart(String factoryId, IntentExecuteRequest request,
@@ -948,12 +985,46 @@ public class MaterialIntentHandler implements IntentHandler {
     }
 
     private IntentExecuteResponse handleWorkerCount(String factoryId, AIIntentConfig intentConfig) {
-        return IntentExecuteResponse.builder()
-                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
-                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
-                .status("COMPLETED")
-                .message("车间实时在岗人数统计功能需要考勤系统联动，请查看今日考勤数据。")
-                .executedAt(java.time.LocalDateTime.now()).build();
+        try {
+            Map<String, Object> dashboard = processingService.getDashboardOverview(factoryId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("factoryId", factoryId);
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("车间实时概况\n");
+
+            if (dashboard.get("activeWorkers") != null) {
+                result.put("activeWorkers", dashboard.get("activeWorkers"));
+                sb.append("在岗工人: ").append(dashboard.get("activeWorkers")).append("人\n");
+            }
+            if (dashboard.get("activeBatches") != null) {
+                result.put("activeBatches", dashboard.get("activeBatches"));
+                sb.append("进行中批次: ").append(dashboard.get("activeBatches")).append("个\n");
+            }
+            if (dashboard.get("todayOutput") != null) {
+                result.put("todayOutput", dashboard.get("todayOutput"));
+                sb.append("今日产出: ").append(dashboard.get("todayOutput")).append("\n");
+            }
+
+            // 额外信息
+            if (dashboard.get("productionLines") != null) {
+                result.put("productionLines", dashboard.get("productionLines"));
+            }
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                    .status("COMPLETED").message(sb.toString().trim()).formattedText(sb.toString().trim())
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+        } catch (Exception e) {
+            log.error("获取车间概况失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentCategory("MATERIAL").status("FAILED")
+                    .message("查询失败: " + ErrorSanitizer.sanitize(e))
+                    .executedAt(LocalDateTime.now()).build();
+        }
     }
 
     private IntentExecuteResponse handleRejectionReason(String factoryId, IntentExecuteRequest request,
