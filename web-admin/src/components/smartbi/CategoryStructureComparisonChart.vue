@@ -176,6 +176,7 @@ const buildBarChartOptions = (): EChartsOption => {
   return {
     tooltip: {
       trigger: 'axis',
+      confine: true,
       axisPointer: {
         type: 'cross',
         crossStyle: { color: '#999' }
@@ -357,6 +358,7 @@ const buildPieChartOptions = (): EChartsOption => {
   return {
     tooltip: {
       trigger: 'item',
+      confine: true,
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       borderColor: '#ebeef5',
       borderWidth: 1,

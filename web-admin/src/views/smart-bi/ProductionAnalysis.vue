@@ -122,7 +122,7 @@ function buildCharts(data: Record<string, unknown>) {
     chartConfigs.push({
       title: '日产量趋势',
       option: {
-        tooltip: { trigger: 'axis' },
+        tooltip: { trigger: 'axis', confine: true },
         legend: { data: ['总产量', '合格产量', '缺陷数'] },
         xAxis: { type: 'category', data: dailySummary.map(r => String(r['date'] || r['日期'] || '')) },
         yAxis: { type: 'value', name: '数量' },
@@ -140,7 +140,7 @@ function buildCharts(data: Record<string, unknown>) {
     chartConfigs.push({
       title: '良率趋势',
       option: {
-        tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
+        tooltip: { trigger: 'axis', confine: true, formatter: '{b}: {c}%' },
         xAxis: { type: 'category', data: dailySummary.map(r => String(r['date'] || r['日期'] || '')) },
         yAxis: { type: 'value', name: '良率(%)', min: 0, max: 100 },
         series: [{
@@ -159,7 +159,7 @@ function buildCharts(data: Record<string, unknown>) {
     chartConfigs.push({
       title: '产品产量对比',
       option: {
-        tooltip: { trigger: 'axis' },
+        tooltip: { trigger: 'axis', confine: true },
         xAxis: { type: 'category', data: byProduct.map(r => String(r['productName'] || '')), axisLabel: { rotate: 30 } },
         yAxis: { type: 'value', name: '产量' },
         series: [{
@@ -176,7 +176,7 @@ function buildCharts(data: Record<string, unknown>) {
     chartConfigs.push({
       title: '设备效率排行',
       option: {
-        tooltip: { trigger: 'axis' },
+        tooltip: { trigger: 'axis', confine: true },
         xAxis: { type: 'value', name: '效率(%)' },
         yAxis: { type: 'category', data: byEquipment.map(r => String(r['equipmentName'] || r['equipmentId'] || '')) },
         series: [{ type: 'bar', data: byEquipment.map(r => Number(r['avgEfficiency'] || 0)) }]
@@ -189,7 +189,7 @@ function buildCharts(data: Record<string, unknown>) {
     chartConfigs.push({
       title: '人员产出排行',
       option: {
-        tooltip: { trigger: 'axis' },
+        tooltip: { trigger: 'axis', confine: true },
         xAxis: { type: 'value', name: '产量' },
         yAxis: { type: 'category', data: byPersonnel.map(r => String(r['operatorName'] || r['personnelName'] || '')) },
         series: [{ type: 'bar', data: byPersonnel.map(r => Number(r['totalOutput'] || r['totalQuantity'] || 0)) }]

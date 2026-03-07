@@ -164,6 +164,7 @@ function updateGanttChart() {
 
   const option: echarts.EChartsOption = {
     tooltip: {
+      confine: true,
       formatter: (params: any) => {
         const schedule = params.data.schedule as LineSchedule;
         const start = new Date(schedule.plannedStartTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });

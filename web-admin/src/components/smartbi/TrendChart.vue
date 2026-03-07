@@ -286,6 +286,7 @@ const chartOptions = computed<EChartsOption>(() => {
   const options: EChartsOption = {
     tooltip: {
       trigger: 'axis',
+      confine: true,
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       borderColor: '#ebeef5',
       borderWidth: 1,

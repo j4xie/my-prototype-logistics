@@ -877,6 +877,7 @@ function updateTrendChart() {
   const option: echarts.EChartsOption = {
     tooltip: {
       trigger: 'axis',
+      confine: true,
       axisPointer: { type: 'cross' }
     },
     legend: {
@@ -1039,6 +1040,7 @@ function updatePieChart() {
   const option: echarts.EChartsOption = {
     tooltip: {
       trigger: 'item',
+      confine: true,
       formatter: '{b}: {c}万 ({d}%)'
     },
     legend: {

@@ -265,7 +265,7 @@ function renderCharts() {
     const ratings = stats.value.by_rating || {}
     const colors = ['#F56C6C', '#E6A23C', '#909399', '#67C23A', '#1B65A8']
     ratingChart.setOption({
-      tooltip: { trigger: 'axis' },
+      tooltip: { trigger: 'axis', confine: true },
       xAxis: {
         type: 'category',
         data: ['1星', '2星', '3星', '4星', '5星'],
@@ -293,7 +293,7 @@ function renderCharts() {
       value: v,
     }))
     typeChart.setOption({
-      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      tooltip: { trigger: 'item', confine: true, formatter: '{b}: {c} ({d}%)' },
       series: [{
         type: 'pie',
         radius: ['40%', '70%'],

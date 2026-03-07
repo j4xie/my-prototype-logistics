@@ -824,7 +824,7 @@ function updateChartFromDynamicData(charts: DynamicAnalysisResponse['charts']) {
         value: datasets[0]?.data?.[idx] || 0
       }));
       option = {
-        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        tooltip: { trigger: 'item', confine: true, formatter: '{b}: {c} ({d}%)' },
         legend: { orient: 'vertical', right: '10%', top: 'center' },
         series: [{
           type: 'pie',
@@ -840,6 +840,7 @@ function updateChartFromDynamicData(charts: DynamicAnalysisResponse['charts']) {
       option = {
         tooltip: {
           trigger: 'axis',
+          confine: true,
           axisPointer: { type: chart.type === 'line' ? 'cross' : 'shadow' }
         },
         grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
@@ -1358,6 +1359,7 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
   const option: echarts.EChartsOption = {
     tooltip: {
       trigger: config.tooltip?.trigger || 'axis',
+      confine: true,
       axisPointer: config.tooltip?.axisPointer || { type: 'shadow' }
     },
     grid: {
@@ -1451,6 +1453,7 @@ function buildPieChart(config: ChartConfig_Local): echarts.EChartsOption {
   return {
     tooltip: {
       trigger: 'item',
+      confine: true,
       formatter: '{b}: {c} ({d}%)'
     },
     legend: {
@@ -1491,6 +1494,7 @@ function buildAxisChart(config: ChartConfig_Local): echarts.EChartsOption {
   return {
     tooltip: {
       trigger: 'axis',
+      confine: true,
       axisPointer: { type: chartType === 'line' ? 'cross' : 'shadow' },
       formatter: (params: unknown) => {
         const items = Array.isArray(params) ? params : [params];

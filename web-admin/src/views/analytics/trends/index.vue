@@ -95,7 +95,7 @@ function updateCharts() {
     const data = trendData.value.productionTrend || [];
     productionChart.setOption({
       title: { text: '生产趋势', left: 'center' },
-      tooltip: { trigger: 'axis' },
+      tooltip: { trigger: 'axis', confine: true },
       xAxis: {
         type: 'category',
         data: data.map((d: any) => d.date || d.label)
@@ -117,7 +117,7 @@ function updateCharts() {
     const data = trendData.value.qualityTrend || [];
     qualityChart.setOption({
       title: { text: '质量趋势', left: 'center' },
-      tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
+      tooltip: { trigger: 'axis', confine: true, formatter: '{b}: {c}%' },
       xAxis: {
         type: 'category',
         data: data.map((d: any) => d.date || d.label)
@@ -139,7 +139,7 @@ function updateCharts() {
     const data = trendData.value.costTrend || [];
     costChart.setOption({
       title: { text: '成本趋势', left: 'center' },
-      tooltip: { trigger: 'axis' },
+      tooltip: { trigger: 'axis', confine: true },
       xAxis: {
         type: 'category',
         data: data.map((d: any) => d.date || d.label)

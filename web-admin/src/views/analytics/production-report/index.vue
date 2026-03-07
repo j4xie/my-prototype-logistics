@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import echarts from '@/utils/echarts';
+import { FullScreen } from '@element-plus/icons-vue';
 
 interface ProductionData {
   productTypeId: string;
@@ -15,6 +16,30 @@ const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
+const isFullscreen = ref(false);
+let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+function toggleFullscreen() {
+  if (!isFullscreen.value) {
+    document.documentElement.requestFullscreen?.();
+    isFullscreen.value = true;
+    refreshTimer = setInterval(() => { loadProductionData(); }, 30000);
+  } else {
+    document.exitFullscreen?.();
+    isFullscreen.value = false;
+    if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+  }
+}
+
+function onFullscreenChange() {
+  if (!document.fullscreenElement) {
+    isFullscreen.value = false;
+    if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+  }
+}
+
+document.addEventListener('fullscreenchange', onFullscreenChange);
+
 const selectedPeriod = ref('today');
 const customDateRange = ref<[Date, Date] | null>(null);
 const productionData = ref<ProductionData[]>([]);
@@ -83,6 +108,8 @@ onUnmounted(() => {
   if (resizeRaf) cancelAnimationFrame(resizeRaf);
   window.removeEventListener('resize', handleResize);
   productionChart?.dispose();
+  if (refreshTimer) clearInterval(refreshTimer);
+  document.removeEventListener('fullscreenchange', onFullscreenChange);
 });
 
 async function loadProductionData() {
@@ -146,6 +173,7 @@ function updateChart() {
     },
     tooltip: {
       trigger: 'axis',
+      confine: true,
       axisPointer: { type: 'shadow' },
       formatter: (params: any) => {
         const item = params[0];
@@ -236,7 +264,7 @@ function handleRefresh() {
 </script>
 
 <template>
-  <div class="production-report-page">
+  <div class="production-report-page" :class="{ 'fullscreen-mode': isFullscreen }">
     <div class="page-header">
       <div class="header-left">
         <el-breadcrumb separator="/">
@@ -271,6 +299,9 @@ function handleRefresh() {
         <el-button type="primary" @click="handleRefresh">
           <el-icon style="margin-right: 4px;"><Refresh /></el-icon>
           刷新
+        </el-button>
+        <el-button :icon="FullScreen" @click="toggleFullscreen" style="margin-left: 8px;">
+          {{ isFullscreen ? '退出全屏' : '全屏投影' }}
         </el-button>
       </div>
     </div>
@@ -329,6 +360,18 @@ function handleRefresh() {
 <style lang="scss" scoped>
 .production-report-page {
   padding: 20px;
+}
+
+.fullscreen-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  overflow: auto;
 }
 
 .page-header {

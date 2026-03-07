@@ -79,6 +79,7 @@ const chartOptions = computed<EChartsOption>(() => {
   const options: EChartsOption = {
     tooltip: {
       trigger: 'axis',
+      confine: true,
       axisPointer: {
         type: 'shadow'
       },

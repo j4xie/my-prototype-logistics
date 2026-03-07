@@ -110,7 +110,7 @@ function renderTrendChart() {
   const data = dashboard.value.dailyTrend;
   const dates = data.map(d => String(d.date).slice(5));
   trendChart.setOption({
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: 'axis', confine: true },
     legend: { data: ['产出', '良品', '不良'], bottom: 0 },
     grid: { top: 30, right: 20, bottom: 40, left: 60 },
     xAxis: { type: 'category', data: dates },
@@ -135,7 +135,7 @@ function renderYieldChart() {
     return output > 0 ? Number(((good / output) * 100).toFixed(1)) : 0;
   });
   yieldChart.setOption({
-    tooltip: { trigger: 'axis', formatter: '{b}<br/>{a}: {c}%' },
+    tooltip: { trigger: 'axis', confine: true, formatter: '{b}<br/>{a}: {c}%' },
     grid: { top: 30, right: 20, bottom: 30, left: 60 },
     xAxis: { type: 'category', data: dates },
     yAxis: { type: 'value', name: '良率(%)', min: Math.max(0, Math.min(...yieldRates) - 5), max: 100 },
@@ -155,7 +155,7 @@ function renderProductChart() {
   productChart = echarts.init(productChartRef.value);
   const data = dashboard.value.byProduct;
   productChart.setOption({
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: 'axis', confine: true },
     grid: { top: 20, right: 20, bottom: 60, left: 60 },
     xAxis: { type: 'category', data: data.map(d => d.product_name), axisLabel: { rotate: 30, fontSize: 11 } },
     yAxis: { type: 'value', name: '产出量' },
@@ -172,7 +172,7 @@ function renderProcessChart() {
   processChart = echarts.init(processChartRef.value);
   const data = dashboard.value.byProcess;
   processChart.setOption({
-    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    tooltip: { trigger: 'item', confine: true, formatter: '{b}: {c} ({d}%)' },
     legend: { orient: 'vertical', right: 10, top: 'center' },
     series: [{
       type: 'pie', radius: ['35%', '65%'], center: ['40%', '50%'],

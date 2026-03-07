@@ -163,6 +163,7 @@ function updateProgressChart() {
     },
     tooltip: {
       trigger: 'axis',
+      confine: true,
       axisPointer: { type: 'shadow' }
     },
     grid: {
@@ -218,6 +219,7 @@ function updateProbabilityChart() {
     },
     tooltip: {
       trigger: 'item',
+      confine: true,
       formatter: '{b}: {c}%'
     },
     series: [{

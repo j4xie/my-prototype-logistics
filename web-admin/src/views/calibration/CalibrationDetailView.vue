@@ -267,7 +267,8 @@ function updateRadarChart() {
   const results = session.value.results;
   const option: echarts.EChartsOption = {
     tooltip: {
-      trigger: 'item'
+      trigger: 'item',
+      confine: true
     },
     radar: {
       indicator: [
@@ -331,6 +332,7 @@ function updateTrendChart() {
   const option: echarts.EChartsOption = {
     tooltip: {
       trigger: 'axis',
+      confine: true,
       axisPointer: {
         type: 'cross'
       }

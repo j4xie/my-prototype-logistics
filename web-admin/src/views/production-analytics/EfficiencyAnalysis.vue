@@ -4,6 +4,40 @@ import { ElMessage } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
 import { getEfficiencyDashboard, type KPIItem, type EfficiencyDashboard } from '@/api/productionAnalytics';
+import { useAuthStore } from '@/store/modules/auth';
+import { get } from '@/api/request';
+
+const authStore = useAuthStore();
+const factoryId = computed(() => authStore.factoryId);
+
+// ==================== 预算 vs 实际 ====================
+const activeMainTab = ref('efficiency');
+const budgetLoading = ref(false);
+const budgetData = ref<any[]>([]);
+
+async function loadBudgetVsActual() {
+  if (!factoryId.value) return;
+  budgetLoading.value = true;
+  try {
+    const res = await get(`/${factoryId.value}/production-analytics/budget-vs-actual`);
+    if (res.success && res.data) {
+      budgetData.value = Array.isArray(res.data) ? res.data : res.data.content || [];
+    } else {
+      ElMessage.warning(res.message || '加载预算数据失败');
+    }
+  } catch (e: unknown) {
+    ElMessage.error('加载预算 vs 实际数据失败');
+    console.error(e);
+  } finally {
+    budgetLoading.value = false;
+  }
+}
+
+function onMainTabChange(tab: string) {
+  if (tab === 'budget' && budgetData.value.length === 0) {
+    loadBudgetVsActual();
+  }
+}
 
 // ==================== 状态 ====================
 
@@ -110,7 +144,7 @@ function renderTrendChart() {
   const data = dashboard.value.dailyTrend;
   const dates = data.map(d => String(d.date).slice(5));
   trendChart.setOption({
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: 'axis', confine: true },
     grid: { top: 30, right: 20, bottom: 30, left: 60 },
     xAxis: { type: 'category', data: dates },
     yAxis: { type: 'value', name: '产出/小时' },
@@ -132,7 +166,7 @@ function renderRankingChart() {
   const values = data.map(d => Number(d.efficiency) || 0);
   const maxVal = Math.max(...values, 1);
   rankingChart.setOption({
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (params: unknown) => {
+    tooltip: { trigger: 'axis', confine: true, axisPointer: { type: 'shadow' }, formatter: (params: unknown) => {
       const p = (params as { name: string; value: number }[])[0];
       return `${p.name}: ${p.value} 产出/时`;
     }},
@@ -159,7 +193,7 @@ function renderHoursChart() {
   hoursChart = echarts.init(hoursChartRef.value);
   const data = dashboard.value.hoursByProduct;
   hoursChart.setOption({
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: 'axis', confine: true },
     grid: { top: 20, right: 20, bottom: 60, left: 60 },
     xAxis: { type: 'category', data: data.map(d => d.product_name), axisLabel: { rotate: 30, fontSize: 11 } },
     yAxis: { type: 'value', name: '工时(分钟)' },
@@ -193,7 +227,7 @@ function renderHeatmapChart() {
   }
 
   heatmapChart.setOption({
-    tooltip: { position: 'top', formatter: (params: unknown) => {
+    tooltip: { position: 'top', confine: true, formatter: (params: unknown) => {
       const p = params as { value: [number, number, number] };
       return `${workers[p.value[1]]} × ${processes[p.value[0]]}: ${p.value[2]}`;
     }},
@@ -261,7 +295,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="efficiency-analysis" v-loading="loading">
+  <div class="efficiency-analysis">
+    <el-tabs v-model="activeMainTab" @tab-change="onMainTabChange" style="margin-bottom: 0;">
+      <el-tab-pane label="人效分析" name="efficiency">
+        <div v-loading="loading">
     <!-- 顶部控件 -->
     <div class="toolbar">
       <h2 class="page-title">人效分析</h2>
@@ -341,6 +378,59 @@ onBeforeUnmount(() => {
 
     <!-- 空状态 -->
     <el-empty v-if="!loading && !dashboard?.kpis?.length" description="暂无人效数据，请先提交生产报工和工时记录" />
+        </div>
+      </el-tab-pane>
+
+      <el-tab-pane label="预算 vs 实际" name="budget">
+        <div v-loading="budgetLoading" style="padding: 20px;">
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+            <el-button :icon="Refresh" @click="loadBudgetVsActual">刷新</el-button>
+          </div>
+          <el-table
+            :data="budgetData"
+            empty-text="暂无预算对比数据"
+            stripe
+            border
+            style="width: 100%"
+          >
+            <el-table-column prop="period" label="期间" width="120" />
+            <el-table-column prop="productName" label="产品" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="budgetQuantity" label="预算数量" width="110" align="right" />
+            <el-table-column prop="actualQuantity" label="实际数量" width="110" align="right" />
+            <el-table-column prop="budgetCost" label="预算成本" width="120" align="right">
+              <template #default="{ row }">
+                {{ row.budgetCost != null ? Number(row.budgetCost).toFixed(2) : '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="actualCost" label="实际成本" width="120" align="right">
+              <template #default="{ row }">
+                {{ row.actualCost != null ? Number(row.actualCost).toFixed(2) : '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="成本差异" width="120" align="right">
+              <template #default="{ row }">
+                <span
+                  v-if="row.budgetCost != null && row.actualCost != null"
+                  :style="{ color: row.actualCost > row.budgetCost ? '#F56C6C' : '#67C23A', fontWeight: 600 }"
+                >
+                  {{ (row.actualCost - row.budgetCost).toFixed(2) }}
+                </span>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="达成率" width="100" align="center">
+              <template #default="{ row }">
+                <span v-if="row.budgetQuantity > 0">
+                  {{ ((row.actualQuantity / row.budgetQuantity) * 100).toFixed(1) }}%
+                </span>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-empty v-if="!budgetLoading && budgetData.length === 0" description="暂无预算对比数据" />
+        </div>
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 

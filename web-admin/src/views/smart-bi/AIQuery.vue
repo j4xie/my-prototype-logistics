@@ -513,7 +513,7 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
 
   if (chartConfig.type === 'line') {
     option = {
-      tooltip: { trigger: 'axis' },
+      tooltip: { trigger: 'axis', confine: true },
       legend: { bottom: 0 },
       grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
       xAxis: { type: 'category', data: chartConfig.data.xAxis },
@@ -533,7 +533,7 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
     };
   } else if (chartConfig.type === 'bar') {
     option = {
-      tooltip: { trigger: 'axis' },
+      tooltip: { trigger: 'axis', confine: true },
       legend: { bottom: 0 },
       grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
       xAxis: { type: 'category', data: chartConfig.data.xAxis },
@@ -550,7 +550,7 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
     };
   } else if (chartConfig.type === 'pie') {
     option = {
-      tooltip: { trigger: 'item', formatter: '{b}: {c}万 ({d}%)' },
+      tooltip: { trigger: 'item', confine: true, formatter: '{b}: {c}万 ({d}%)' },
       legend: { orient: 'vertical', right: '10%', top: 'center' },
       series: [{
         type: 'pie',
