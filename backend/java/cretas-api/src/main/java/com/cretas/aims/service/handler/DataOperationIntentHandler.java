@@ -26,8 +26,12 @@ import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.PreviewTokenService;
 import com.cretas.aims.service.ProductionPlanService;
 import com.cretas.aims.service.RuleEngineService;
+import com.cretas.aims.service.ProcessingService;
+import com.cretas.aims.service.inventory.SalesService;
 import com.cretas.aims.service.inventory.TransferService;
+import com.cretas.aims.dto.inventory.CreateSalesOrderRequest;
 import com.cretas.aims.entity.inventory.InternalTransfer;
+import com.cretas.aims.entity.inventory.SalesOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import com.cretas.aims.util.ErrorSanitizer;
@@ -78,6 +82,12 @@ public class DataOperationIntentHandler implements IntentHandler {
 
     @Autowired(required = false)
     private TransferService transferService;
+
+    @Autowired(required = false)
+    private SalesService salesService;
+
+    @Autowired(required = false)
+    private ProcessingService processingService;
 
     @Value("${cretas.ai.service.url:http://localhost:8083}")
     private String aiServiceUrl;
@@ -169,7 +179,7 @@ public class DataOperationIntentHandler implements IntentHandler {
 
             // ORDER_NEW / ORDER_CREATE: 订单创建需要slot filling
             if ("ORDER_NEW".equals(intentCode) || "ORDER_CREATE".equals(intentCode)) {
-                return handleOrderCreate(factoryId, request, intentConfig);
+                return handleOrderCreate(factoryId, request, intentConfig, userId);
             }
 
             // ORDER_UPDATE / ORDER_MODIFY: 修改订单
@@ -179,7 +189,7 @@ public class DataOperationIntentHandler implements IntentHandler {
 
             // ORDER_DELETE / ORDER_CANCEL: 删除/取消订单
             if ("ORDER_DELETE".equals(intentCode) || "ORDER_CANCEL".equals(intentCode)) {
-                return handleOrderDelete(factoryId, request, intentConfig);
+                return handleOrderDelete(factoryId, request, intentConfig, userId);
             }
 
             // ORDER_STATUS / ORDER_DETAIL / ORDER_TODAY: 订单查询
@@ -1077,32 +1087,89 @@ public class DataOperationIntentHandler implements IntentHandler {
     }
 
     /**
-     * 订单创建 (slot filling)
+     * 订单创建 (slot filling + 实际执行)
      */
     private IntentExecuteResponse handleOrderCreate(String factoryId, IntentExecuteRequest request,
-                                                     AIIntentConfig intentConfig) {
-        Map<String, Object> resultData = new HashMap<>();
-        resultData.put("requiredFields", List.of("customerName", "productType", "quantity"));
+                                                     AIIntentConfig intentConfig, Long userId) {
+        Map<String, Object> ctx = request.getContext();
 
-        Map<String, Object> clarification = new HashMap<>();
-        clarification.put("questions", List.of(
-            Map.of("field", "customerName", "label", "客户名称", "type", "text"),
-            Map.of("field", "productType", "label", "产品类型", "type", "select"),
-            Map.of("field", "quantity", "label", "数量", "type", "number")
-        ));
-        resultData.put("clarification", clarification);
+        // 检查必填字段
+        if (ctx == null || ctx.get("customerId") == null) {
+            Map<String, Object> resultData = new HashMap<>();
+            resultData.put("requiredFields", List.of("customerId", "productTypeId", "quantity"));
 
-        return IntentExecuteResponse.builder()
-                .intentRecognized(true)
-                .intentCode(intentConfig.getIntentCode())
-                .intentName(intentConfig.getIntentName())
-                .intentCategory("DATA_OP")
-                .status("NEED_MORE_INFO")
-                .message("创建订单需要以下信息：(customerName) 客户名称、(productType) 产品类型、(quantity) 数量")
-                .formattedText("创建订单需要以下信息：\n1. 客户名称\n2. 产品类型\n3. 数量\n\n请补充完整信息后重新提交。")
-                .resultData(resultData)
-                .executedAt(java.time.LocalDateTime.now())
-                .build();
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName())
+                    .intentCategory("DATA_OP")
+                    .status("NEED_MORE_INFO")
+                    .message("创建订单需要以下信息：\n1. 客户ID (customerId)\n2. 产品类型ID (productTypeId)\n3. 数量 (quantity)\n4. 单位 (unit)\n\n示例：「为客户C001下单100箱红烧牛肉」")
+                    .resultData(resultData)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        if (ctx.get("productTypeId") == null || ctx.get("quantity") == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentCategory("DATA_OP").status("NEED_MORE_INFO")
+                    .message("请补充产品类型ID (productTypeId) 和数量 (quantity)")
+                    .executedAt(LocalDateTime.now()).build();
+        }
+
+        if (salesService == null) {
+            return buildFailedResponse(intentConfig, "销售服务暂不可用");
+        }
+
+        try {
+            CreateSalesOrderRequest createReq = new CreateSalesOrderRequest();
+            createReq.setCustomerId(ctx.get("customerId").toString());
+            createReq.setOrderDate(LocalDate.now());
+
+            if (ctx.get("requiredDeliveryDate") != null) {
+                createReq.setRequiredDeliveryDate(LocalDate.parse(ctx.get("requiredDeliveryDate").toString()));
+            }
+            if (ctx.get("deliveryAddress") != null) {
+                createReq.setDeliveryAddress(ctx.get("deliveryAddress").toString());
+            }
+            if (ctx.get("remark") != null) {
+                createReq.setRemark(ctx.get("remark").toString());
+            }
+
+            // 构建订单行项目
+            CreateSalesOrderRequest.SalesOrderItemDTO item = new CreateSalesOrderRequest.SalesOrderItemDTO();
+            item.setProductTypeId(ctx.get("productTypeId").toString());
+            item.setProductName(ctx.get("productName") != null ? ctx.get("productName").toString() : "");
+            item.setQuantity(new BigDecimal(ctx.get("quantity").toString()));
+            item.setUnit(ctx.get("unit") != null ? ctx.get("unit").toString() : "箱");
+            if (ctx.get("unitPrice") != null) {
+                item.setUnitPrice(new BigDecimal(ctx.get("unitPrice").toString()));
+            }
+            createReq.setItems(List.of(item));
+
+            SalesOrder order = salesService.createSalesOrder(factoryId, createReq, userId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("orderId", order.getId());
+            result.put("orderNumber", order.getOrderNumber());
+            result.put("customerId", order.getCustomerId());
+            result.put("status", order.getStatus().name());
+            result.put("operation", "CREATE");
+
+            String msg = String.format("订单创建成功！订单号: %s，客户: %s",
+                    order.getOrderNumber(), order.getCustomerId());
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("COMPLETED").message(msg).formattedText(msg)
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+
+        } catch (Exception e) {
+            log.error("创建订单失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
+            return buildFailedResponse(intentConfig, "订单创建失败: " + ErrorSanitizer.sanitize(e));
+        }
     }
 
     /**
@@ -1389,54 +1456,138 @@ public class DataOperationIntentHandler implements IntentHandler {
                                                       AIIntentConfig intentConfig) {
         Map<String, Object> ctx = request.getContext();
         if (ctx == null || ctx.get("orderId") == null) {
-            Map<String, Object> result = new HashMap<>();
-            result.put("requiredFields", List.of("orderId", "updates"));
             return IntentExecuteResponse.builder()
                     .intentRecognized(true).intentCode(intentConfig.getIntentCode())
                     .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
                     .status("NEED_MORE_INFO")
-                    .message("请提供订单修改信息。\n必填: 订单ID (orderId)\n可选: 修改内容 (updates: {status, quantity, remark})")
-                    .formattedText("请提供要修改的订单信息：\n1. 订单编号\n2. 要修改的内容（如状态、数量、备注）\n\n示例：「修改订单 ORD-001 状态为已发货」")
-                    .resultData(result).executedAt(LocalDateTime.now()).build();
+                    .message("请提供订单修改信息。\n必填: 订单ID (orderId)\n可选: 状态操作 (action: confirm/cancel)\n\n示例：「确认订单 ORD-001」或「取消订单 ORD-001」")
+                    .executedAt(LocalDateTime.now()).build();
         }
-        // 实际更新逻辑
+
+        if (salesService == null) {
+            return buildFailedResponse(intentConfig, "销售服务暂不可用");
+        }
+
         String orderId = ctx.get("orderId").toString();
-        Map<String, Object> result = new HashMap<>();
-        result.put("orderId", orderId);
-        result.put("operation", "UPDATE");
-        result.put("status", "需要确认修改内容");
-        return IntentExecuteResponse.builder()
-                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
-                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
-                .status("NEED_MORE_INFO")
-                .message("请确认要修改的订单内容。订单ID: " + orderId)
-                .resultData(result).executedAt(LocalDateTime.now()).build();
+        String action = ctx.get("action") != null ? ctx.get("action").toString().toLowerCase() : "";
+
+        try {
+            SalesOrder updated;
+            String actionDesc;
+
+            if ("confirm".equals(action)) {
+                updated = salesService.confirmOrder(factoryId, orderId);
+                actionDesc = "确认";
+            } else if ("cancel".equals(action)) {
+                updated = salesService.cancelOrder(factoryId, orderId);
+                actionDesc = "取消";
+            } else {
+                // 查询当前订单状态
+                SalesOrder current = salesService.getSalesOrderById(factoryId, orderId);
+                Map<String, Object> result = new HashMap<>();
+                result.put("orderId", orderId);
+                result.put("currentStatus", current.getStatus().name());
+                result.put("availableActions", List.of("confirm", "cancel"));
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                        .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                        .status("NEED_MORE_INFO")
+                        .message("订单 " + orderId + " 当前状态: " + current.getStatus().name() +
+                                "\n请指定操作: confirm(确认) 或 cancel(取消)")
+                        .resultData(result).executedAt(LocalDateTime.now()).build();
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("orderId", orderId);
+            result.put("status", updated.getStatus().name());
+            result.put("operation", "UPDATE");
+            result.put("action", actionDesc);
+
+            String msg = String.format("订单 %s 已%s，当前状态: %s", orderId, actionDesc, updated.getStatus().name());
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("COMPLETED").message(msg).formattedText(msg)
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+
+        } catch (Exception e) {
+            log.error("更新订单失败: orderId={}, error={}", orderId, e.getMessage(), e);
+            return buildFailedResponse(intentConfig, "订单更新失败: " + ErrorSanitizer.sanitize(e));
+        }
     }
 
     private IntentExecuteResponse handleOrderDelete(String factoryId, IntentExecuteRequest request,
-                                                      AIIntentConfig intentConfig) {
+                                                      AIIntentConfig intentConfig, Long userId) {
         Map<String, Object> ctx = request.getContext();
         if (ctx == null || ctx.get("orderId") == null) {
             return IntentExecuteResponse.builder()
                     .intentRecognized(true).intentCode(intentConfig.getIntentCode())
                     .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
                     .status("NEED_MORE_INFO")
-                    .message("请提供要删除/取消的订单编号 (orderId)")
-                    .formattedText("请提供要操作的订单：\n1. 订单编号\n\n示例：「取消订单 ORD-001」")
+                    .message("请提供要取消的订单编号 (orderId)")
                     .executedAt(LocalDateTime.now()).build();
         }
+
         String orderId = ctx.get("orderId").toString();
-        Map<String, Object> result = new HashMap<>();
-        result.put("orderId", orderId);
-        result.put("operation", intentConfig.getIntentCode().contains("CANCEL") ? "CANCEL" : "DELETE");
-        result.put("warning", "此操作不可撤销，请确认");
+
+        // 如果已确认，执行取消
+        if (Boolean.TRUE.equals(ctx.get("confirmed"))) {
+            if (salesService == null) {
+                return buildFailedResponse(intentConfig, "销售服务暂不可用");
+            }
+            try {
+                SalesOrder cancelled = salesService.cancelOrder(factoryId, orderId);
+                Map<String, Object> result = new HashMap<>();
+                result.put("orderId", orderId);
+                result.put("status", cancelled.getStatus().name());
+                result.put("operation", "CANCEL");
+
+                String msg = "订单 " + orderId + " 已取消";
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                        .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                        .status("COMPLETED").message(msg).formattedText(msg)
+                        .resultData(result).executedAt(LocalDateTime.now()).build();
+
+            } catch (Exception e) {
+                log.error("取消订单失败: orderId={}, error={}", orderId, e.getMessage(), e);
+                return buildFailedResponse(intentConfig, "取消失败: " + ErrorSanitizer.sanitize(e));
+            }
+        }
+
+        // 未确认，返回 NEED_CONFIRM
+        Map<String, Object> previewData = new HashMap<>();
+        previewData.put("orderId", orderId);
+        previewData.put("operation", "CANCEL");
+
+        // 使用 PreviewTokenService 创建确认令牌
+        String tokenStr = UUID.randomUUID().toString();
+        if (previewTokenService != null) {
+            try {
+                var token = previewTokenService.createToken(
+                        factoryId, userId, "system",
+                        intentConfig.getIntentCode(), intentConfig.getIntentName(),
+                        "SALES_ORDER", orderId, "CANCEL",
+                        previewData, null, null);
+                tokenStr = token.getToken();
+            } catch (Exception e) {
+                log.warn("创建确认令牌失败，使用临时令牌: {}", e.getMessage());
+            }
+        }
+
         return IntentExecuteResponse.builder()
                 .intentRecognized(true).intentCode(intentConfig.getIntentCode())
                 .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
                 .status("NEED_CONFIRM")
-                .message("确认要" + (intentConfig.getIntentCode().contains("CANCEL") ? "取消" : "删除") +
-                        "订单 " + orderId + " 吗？此操作不可撤销。")
-                .resultData(result).executedAt(LocalDateTime.now()).build();
+                .message("确认要取消订单 " + orderId + " 吗？此操作不可撤销。")
+                .confirmableAction(IntentExecuteResponse.ConfirmableAction.builder()
+                        .confirmToken(tokenStr)
+                        .description("取消订单 " + orderId)
+                        .expiresInSeconds(300)
+                        .previewData(previewData)
+                        .build())
+                .resultData(previewData).executedAt(LocalDateTime.now()).build();
     }
 
     private IntentExecuteResponse handleOrderQuery(String factoryId, IntentExecuteRequest request,
@@ -1517,8 +1668,11 @@ public class DataOperationIntentHandler implements IntentHandler {
                              "3. 预计完成日期\n" +
                              "4. 生产线（名称或编号）\n" +
                              "5. 需要工人数\n" +
-                             "6. 负责主管（用户名或姓名）\n\n" +
-                             "示例：「创建豆腐生产计划，500公斤，明天完成，A线，8人，张主管」")
+                             "6. 负责主管（用户名或姓名）\n" +
+                             "7. 客户名称（可选）\n" +
+                             "8. 工序（可选，如分切、包装）\n" +
+                             "9. 批次日期（可选）\n\n" +
+                             "示例：「永佑要做澳洲牛蝎子分切270箱，明天完成，A线，8人，张主管，生产日期20260308」")
                     .resultData(result).executedAt(LocalDateTime.now()).build();
         }
 
@@ -1647,6 +1801,30 @@ public class DataOperationIntentHandler implements IntentHandler {
                 planRequest.setNotes(notes);
             }
 
+            // 9. Customer name (optional)
+            String customerName = getStringValue(slots, "customerName");
+            if (customerName == null) customerName = getStringValue(slots, "sourceCustomerName");
+            if (customerName != null) {
+                planRequest.setSourceCustomerName(customerName);
+            }
+
+            // 10. Process name (optional)
+            String processName = getStringValue(slots, "processName");
+            if (processName == null) processName = getStringValue(slots, "process");
+            if (processName != null) {
+                planRequest.setProcessName(processName);
+            }
+
+            // 11. Batch date (optional)
+            String batchDateStr = getStringValue(slots, "batchDate");
+            if (batchDateStr != null) {
+                try {
+                    planRequest.setBatchDate(parseFlexibleDate(batchDateStr));
+                } catch (Exception e) {
+                    log.warn("AI创建计划: 批次日期解析失败: {}", batchDateStr);
+                }
+            }
+
             // Set source type to AI_CHAT
             planRequest.setSourceType(PlanSourceType.AI_CHAT);
 
@@ -1669,6 +1847,15 @@ public class DataOperationIntentHandler implements IntentHandler {
             }
             if (created.getAssignedSupervisorName() != null) {
                 resultData.put("supervisor", created.getAssignedSupervisorName());
+            }
+            if (created.getSourceCustomerName() != null) {
+                resultData.put("customerName", created.getSourceCustomerName());
+            }
+            if (created.getProcessName() != null) {
+                resultData.put("processName", created.getProcessName());
+            }
+            if (created.getBatchDate() != null) {
+                resultData.put("batchDate", created.getBatchDate());
             }
 
             String successMsg = String.format("生产计划创建成功！\n计划编号: %s\n产品: %s\n数量: %s",
@@ -1800,16 +1987,42 @@ public class DataOperationIntentHandler implements IntentHandler {
                     .message("好的，正在准备创建新批次。\n\n需要您提供以下信息：\n1. 产品类型ID（productTypeId）\n2. 计划产量（plannedQuantity）\n\n示例：「创建猪肉加工批次，计划产量500公斤」")
                     .resultData(result).executedAt(LocalDateTime.now()).build();
         }
-        // 有足够信息，尝试创建
+
+        if (processingService == null) {
+            return buildFailedResponse(intentConfig, "生产批次服务暂不可用");
+        }
+
         String productTypeId = ctx.get("productTypeId").toString();
-        Map<String, Object> result = new HashMap<>();
-        result.put("productTypeId", productTypeId);
-        result.put("operation", "CREATE");
-        return IntentExecuteResponse.builder()
-                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
-                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
-                .status("COMPLETED").message("批次创建请求已提交，产品类型: " + productTypeId)
-                .resultData(result).executedAt(LocalDateTime.now()).build();
+        try {
+            ProductionBatch batch = new ProductionBatch();
+            batch.setFactoryId(factoryId);
+            batch.setProductTypeId(productTypeId);
+            if (ctx.get("plannedQuantity") != null) {
+                batch.setPlannedQuantity(new BigDecimal(ctx.get("plannedQuantity").toString()));
+            }
+
+            ProductionBatch created = processingService.createBatch(factoryId, batch);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("batchId", created.getId());
+            result.put("batchNumber", created.getBatchNumber());
+            result.put("productTypeId", productTypeId);
+            result.put("status", created.getStatus() != null ? created.getStatus().name() : "PENDING");
+            result.put("operation", "CREATE");
+
+            String msg = String.format("生产批次创建成功！批次号: %s，产品: %s",
+                    created.getBatchNumber(), productTypeId);
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("COMPLETED").message(msg).formattedText(msg)
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+
+        } catch (Exception e) {
+            log.error("创建生产批次失败: productTypeId={}, error={}", productTypeId, e.getMessage(), e);
+            return buildFailedResponse(intentConfig, "批次创建失败: " + ErrorSanitizer.sanitize(e));
+        }
     }
 
     private IntentExecuteResponse handleBatchStatusChange(String factoryId, IntentExecuteRequest request,
@@ -1826,16 +2039,62 @@ public class DataOperationIntentHandler implements IntentHandler {
                     .executedAt(LocalDateTime.now()).build();
         }
 
-        String batchId = ctx.get("batchId").toString();
-        Map<String, Object> result = new HashMap<>();
-        result.put("batchId", batchId);
-        result.put("operation", operation);
+        if (processingService == null) {
+            return buildFailedResponse(intentConfig, "生产批次服务暂不可用");
+        }
 
-        return IntentExecuteResponse.builder()
-                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
-                .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
-                .status("COMPLETED").message("批次 " + batchId + " 已" + getOperationName(operation))
-                .resultData(result).executedAt(LocalDateTime.now()).build();
+        String batchId = ctx.get("batchId").toString();
+        try {
+            ProductionBatch updated;
+            switch (operation) {
+                case "start":
+                    Integer supervisorId = ctx.get("supervisorId") != null
+                            ? Integer.parseInt(ctx.get("supervisorId").toString()) : null;
+                    updated = processingService.startProduction(factoryId, batchId, supervisorId);
+                    break;
+                case "pause":
+                    String pauseReason = ctx.get("reason") != null ? ctx.get("reason").toString() : "对话指令暂停";
+                    updated = processingService.pauseProduction(factoryId, batchId, pauseReason);
+                    break;
+                case "resume":
+                    updated = processingService.resumeProduction(factoryId, batchId);
+                    break;
+                case "complete":
+                    BigDecimal actualQty = ctx.get("actualQuantity") != null
+                            ? new BigDecimal(ctx.get("actualQuantity").toString()) : BigDecimal.ZERO;
+                    BigDecimal goodQty = ctx.get("goodQuantity") != null
+                            ? new BigDecimal(ctx.get("goodQuantity").toString()) : actualQty;
+                    BigDecimal defectQty = ctx.get("defectQuantity") != null
+                            ? new BigDecimal(ctx.get("defectQuantity").toString()) : BigDecimal.ZERO;
+                    updated = processingService.completeProduction(factoryId, batchId, actualQty, goodQty, defectQty);
+                    break;
+                case "cancel":
+                    String cancelReason = ctx.get("reason") != null ? ctx.get("reason").toString() : "对话指令取消";
+                    updated = processingService.cancelProduction(factoryId, batchId, cancelReason);
+                    break;
+                default:
+                    return buildFailedResponse(intentConfig, "不支持的批次操作: " + operation);
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("batchId", batchId);
+            result.put("batchNumber", updated.getBatchNumber());
+            result.put("status", updated.getStatus() != null ? updated.getStatus().name() : "UNKNOWN");
+            result.put("operation", operation);
+
+            String msg = "批次 " + batchId + " 已" + getOperationName(operation) +
+                    "，当前状态: " + (updated.getStatus() != null ? updated.getStatus().name() : "UNKNOWN");
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("DATA_OP")
+                    .status("COMPLETED").message(msg).formattedText(msg)
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+
+        } catch (Exception e) {
+            log.error("批次操作失败: batchId={}, op={}, error={}", batchId, operation, e.getMessage(), e);
+            return buildFailedResponse(intentConfig, getOperationName(operation) + "失败: " + ErrorSanitizer.sanitize(e));
+        }
     }
 
     private String getOperationName(String op) {

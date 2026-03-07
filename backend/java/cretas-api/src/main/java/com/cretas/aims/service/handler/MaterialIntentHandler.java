@@ -2,6 +2,7 @@ package com.cretas.aims.service.handler;
 
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
+import com.cretas.aims.dto.material.CreateMaterialBatchRequest;
 import com.cretas.aims.dto.material.MaterialBatchDTO;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.service.MaterialBatchService;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
 import com.cretas.aims.util.ErrorSanitizer;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -734,17 +736,72 @@ public class MaterialIntentHandler implements IntentHandler {
                     .intentRecognized(true).intentCode(intentConfig.getIntentCode())
                     .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
                     .status("NEED_MORE_INFO")
-                    .message("请提供入库信息：\n1. 原料类型ID (materialTypeId)\n2. 数量 (quantity)\n3. 供应商 (supplierId, 可选)\n\n示例：「入库猪肉500公斤」")
+                    .message("请提供入库信息：\n1. 原料类型ID (materialTypeId)\n2. 数量 (quantity)\n3. 供应商ID (supplierId)\n4. 重量 (totalWeight, kg)\n5. 总价值 (totalValue, 元)\n\n示例：「入库猪肉500公斤，供应商S001，总重500kg，价值25000元」")
                     .executedAt(LocalDateTime.now()).build();
         }
-        Map<String, Object> result = new java.util.HashMap<>();
-        result.put("materialTypeId", ctx.get("materialTypeId"));
-        result.put("operation", "CREATE");
-        return IntentExecuteResponse.builder()
-                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
-                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
-                .status("COMPLETED").message("入库记录创建成功")
-                .resultData(result).executedAt(java.time.LocalDateTime.now()).build();
+
+        // 检查必填字段
+        String materialTypeId = ctx.get("materialTypeId").toString();
+        if (ctx.get("quantity") == null && ctx.get("receiptQuantity") == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentCategory("MATERIAL").status("NEED_MORE_INFO")
+                    .message("请提供入库数量 (quantity)")
+                    .executedAt(LocalDateTime.now()).build();
+        }
+
+        try {
+            CreateMaterialBatchRequest createReq = new CreateMaterialBatchRequest();
+            createReq.setMaterialTypeId(materialTypeId);
+            createReq.setSupplierId(ctx.get("supplierId") != null ? ctx.get("supplierId").toString() : "DEFAULT");
+            createReq.setReceiptDate(LocalDate.now());
+
+            BigDecimal qty = new BigDecimal(ctx.getOrDefault("receiptQuantity",
+                    ctx.getOrDefault("quantity", "1")).toString());
+            createReq.setReceiptQuantity(qty);
+            createReq.setQuantityUnit(ctx.get("unit") != null ? ctx.get("unit").toString() : "kg");
+
+            BigDecimal weight = ctx.get("totalWeight") != null
+                    ? new BigDecimal(ctx.get("totalWeight").toString()) : qty;
+            createReq.setTotalWeight(weight);
+
+            BigDecimal value = ctx.get("totalValue") != null
+                    ? new BigDecimal(ctx.get("totalValue").toString()) : qty.multiply(BigDecimal.TEN);
+            createReq.setTotalValue(value);
+
+            if (ctx.get("storageLocation") != null) {
+                createReq.setStorageLocation(ctx.get("storageLocation").toString());
+            }
+            if (ctx.get("notes") != null) {
+                createReq.setNotes(ctx.get("notes").toString());
+            }
+
+            MaterialBatchDTO created = materialBatchService.createMaterialBatch(factoryId, createReq, userId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("batchId", created.getId());
+            result.put("batchNumber", created.getBatchNumber());
+            result.put("materialTypeId", materialTypeId);
+            result.put("quantity", qty);
+            result.put("operation", "CREATE");
+
+            String msg = String.format("入库成功！批次号: %s，原料: %s，数量: %s %s",
+                    created.getBatchNumber(), materialTypeId, qty, createReq.getQuantityUnit());
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                    .status("COMPLETED").message(msg).formattedText(msg)
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+
+        } catch (Exception e) {
+            log.error("创建原材料批次失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentCategory("MATERIAL").status("FAILED")
+                    .message("入库失败: " + ErrorSanitizer.sanitize(e))
+                    .executedAt(LocalDateTime.now()).build();
+        }
     }
 
     private IntentExecuteResponse handleBatchDelete(String factoryId, IntentExecuteRequest request,
@@ -755,25 +812,92 @@ public class MaterialIntentHandler implements IntentHandler {
                     .intentRecognized(true).intentCode(intentConfig.getIntentCode())
                     .intentCategory("MATERIAL").status("NEED_MORE_INFO")
                     .message("请提供要删除的批次编号 (batchId)")
-                    .executedAt(java.time.LocalDateTime.now()).build();
+                    .executedAt(LocalDateTime.now()).build();
         }
         String batchId = ctx.get("batchId").toString();
+
+        // 如果已确认，直接执行删除
+        if (Boolean.TRUE.equals(ctx.get("confirmed"))) {
+            try {
+                materialBatchService.deleteMaterialBatch(factoryId, batchId);
+                Map<String, Object> result = new HashMap<>();
+                result.put("batchId", batchId);
+                result.put("operation", "DELETE");
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                        .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                        .status("COMPLETED")
+                        .message("批次 " + batchId + " 已成功删除")
+                        .resultData(result).executedAt(LocalDateTime.now()).build();
+            } catch (Exception e) {
+                log.error("删除批次失败: batchId={}, error={}", batchId, e.getMessage(), e);
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                        .intentCategory("MATERIAL").status("FAILED")
+                        .message("删除失败: " + ErrorSanitizer.sanitize(e))
+                        .executedAt(LocalDateTime.now()).build();
+            }
+        }
+
+        // 未确认，返回 NEED_CONFIRM
         return IntentExecuteResponse.builder()
                 .intentRecognized(true).intentCode(intentConfig.getIntentCode())
                 .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
                 .status("NEED_CONFIRM")
                 .message("确认删除批次 " + batchId + "？此操作不可撤销。")
-                .executedAt(java.time.LocalDateTime.now()).build();
+                .confirmableAction(IntentExecuteResponse.ConfirmableAction.builder()
+                        .confirmToken(java.util.UUID.randomUUID().toString())
+                        .description("删除原材料批次 " + batchId)
+                        .expiresInSeconds(300)
+                        .previewData(Map.of("batchId", batchId, "operation", "DELETE"))
+                        .build())
+                .executedAt(LocalDateTime.now()).build();
     }
 
     private IntentExecuteResponse handleMaterialUpdate(String factoryId, IntentExecuteRequest request,
                                                          AIIntentConfig intentConfig) {
-        return IntentExecuteResponse.builder()
-                .intentRecognized(true).intentCode(intentConfig.getIntentCode())
-                .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
-                .status("NEED_MORE_INFO")
-                .message("请提供原料修改信息：批次ID (batchId) 和修改内容")
-                .executedAt(java.time.LocalDateTime.now()).build();
+        Map<String, Object> ctx = request.getContext();
+        if (ctx == null || ctx.get("batchId") == null) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                    .status("NEED_MORE_INFO")
+                    .message("请提供原料修改信息：\n1. 批次ID (batchId)\n2. 修改内容（如 storageLocation, notes 等）")
+                    .executedAt(LocalDateTime.now()).build();
+        }
+
+        String batchId = ctx.get("batchId").toString();
+        try {
+            CreateMaterialBatchRequest updateReq = new CreateMaterialBatchRequest();
+            if (ctx.get("storageLocation") != null) {
+                updateReq.setStorageLocation(ctx.get("storageLocation").toString());
+            }
+            if (ctx.get("notes") != null) {
+                updateReq.setNotes(ctx.get("notes").toString());
+            }
+
+            MaterialBatchDTO updated = materialBatchService.updateMaterialBatch(factoryId, batchId, updateReq);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("batchId", batchId);
+            result.put("batchNumber", updated.getBatchNumber());
+            result.put("operation", "UPDATE");
+
+            String msg = "批次 " + batchId + " 信息已更新";
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName()).intentCategory("MATERIAL")
+                    .status("COMPLETED").message(msg).formattedText(msg)
+                    .resultData(result).executedAt(LocalDateTime.now()).build();
+
+        } catch (Exception e) {
+            log.error("更新原材料批次失败: batchId={}, error={}", batchId, e.getMessage(), e);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true).intentCode(intentConfig.getIntentCode())
+                    .intentCategory("MATERIAL").status("FAILED")
+                    .message("更新失败: " + ErrorSanitizer.sanitize(e))
+                    .executedAt(LocalDateTime.now()).build();
+        }
     }
 
     private IntentExecuteResponse handleStockSummary(String factoryId, AIIntentConfig intentConfig) {

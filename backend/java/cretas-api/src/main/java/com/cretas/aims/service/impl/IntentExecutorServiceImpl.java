@@ -42,6 +42,7 @@ import com.cretas.aims.dto.ai.ConsultationType;
 import com.cretas.aims.dto.ai.AnalysisResult;
 import com.cretas.aims.dto.ai.AnalysisTopic;
 import com.cretas.aims.dto.ai.ProcessingMode;
+import com.cretas.aims.service.PreviewTokenService;
 import com.cretas.aims.service.handler.IntentHandler;
 import com.cretas.aims.dto.ai.PreprocessedQuery;
 import com.cretas.aims.dto.conversation.ConversationContext;
@@ -153,12 +154,20 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     // 新增：Slot Filling 服务
     private final com.cretas.aims.service.SlotFillingService slotFillingService;
 
+    // 预览令牌服务 (TCC 确认流)
+    private PreviewTokenService previewTokenService;
+
     // 结果格式化服务
     private ResultFormatterService resultFormatterService;
 
     @Autowired(required = false)
     public void setResultFormatterService(ResultFormatterService resultFormatterService) {
         this.resultFormatterService = resultFormatterService;
+    }
+
+    @Autowired(required = false)
+    public void setPreviewTokenService(PreviewTokenService previewTokenService) {
+        this.previewTokenService = previewTokenService;
     }
 
     // 处理器映射表: category -> handler
@@ -1856,14 +1865,84 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     @Override
     public IntentExecuteResponse confirm(String factoryId, String confirmToken,
                                          Long userId, String userRole) {
-        // TODO: 从缓存中获取预览数据，执行确认操作
         log.info("确认执行: factoryId={}, confirmToken={}", factoryId, confirmToken);
 
-        return IntentExecuteResponse.builder()
-                .status("FAILED")
-                .message("确认功能暂未实现，请直接执行")
-                .executedAt(LocalDateTime.now())
-                .build();
+        if (previewTokenService == null) {
+            return IntentExecuteResponse.builder()
+                    .status("FAILED")
+                    .message("确认服务不可用")
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        // 1. 验证并确认令牌
+        PreviewTokenService.ConfirmResult confirmResult = previewTokenService.confirmToken(confirmToken, userId);
+        if (!confirmResult.isSuccess()) {
+            return IntentExecuteResponse.builder()
+                    .status("FAILED")
+                    .message(confirmResult.getMessage())
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        // 2. 从令牌中恢复意图和参数信息
+        var token = confirmResult.getToken();
+        String intentCode = token.getIntentCode();
+        String entityType = token.getEntityType();
+        String entityId = token.getEntityId();
+        String operation = token.getOperation();
+
+        log.info("令牌确认成功，执行操作: intent={}, entity={}/{}, op={}",
+                intentCode, entityType, entityId, operation);
+
+        // 3. 构建执行请求并重新路由到 handler
+        try {
+            Map<String, Object> context = confirmResult.getExecutionResult() != null
+                    ? confirmResult.getExecutionResult() : new HashMap<>();
+            context.put("confirmed", true);
+            context.put("entityId", entityId);
+            context.put("entityType", entityType);
+
+            IntentExecuteRequest execRequest = IntentExecuteRequest.builder()
+                    .userInput("确认执行: " + intentCode)
+                    .context(context)
+                    .build();
+
+            // 查找对应的意图配置
+            Optional<AIIntentConfig> intentConfigOpt = aiIntentService.getIntentByCode(factoryId, intentCode);
+            if (intentConfigOpt.isEmpty()) {
+                return IntentExecuteResponse.builder()
+                        .status("FAILED")
+                        .message("意图配置不存在: " + intentCode)
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+
+            AIIntentConfig intentConfig = intentConfigOpt.get();
+
+            // 路由到对应 handler
+            String category = intentConfig.getIntentCategory();
+            IntentHandler handler = handlerMap.get(category);
+            if (handler == null) {
+                return IntentExecuteResponse.builder()
+                        .status("FAILED")
+                        .message("未找到处理器: " + category)
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+
+            IntentExecuteResponse response = handler.handle(factoryId, execRequest, intentConfig, userId, userRole);
+            log.info("确认执行完成: intent={}, status={}", intentCode, response.getStatus());
+            return response;
+
+        } catch (Exception e) {
+            log.error("确认执行失败: confirmToken={}, error={}", confirmToken, e.getMessage(), e);
+            return IntentExecuteResponse.builder()
+                    .status("FAILED")
+                    .message("执行失败: " + ErrorSanitizer.sanitize(e))
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
     }
 
     /**
