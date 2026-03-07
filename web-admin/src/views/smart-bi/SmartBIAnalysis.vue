@@ -1653,6 +1653,16 @@ const hasChartData = (sheet: SheetResult): boolean => {
 type LayoutMode = 'compact' | 'comfortable' | 'presentation';
 const chartLayoutMode = ref<LayoutMode>('comfortable');
 
+// Resize all ECharts instances when layout mode changes (CSS grid reflow doesn't trigger ResizeObserver on root)
+watch(chartLayoutMode, () => {
+  nextTick(() => {
+    (rootRef.value || document).querySelectorAll('[id^="chart-"]').forEach(dom => {
+      const instance = echarts.getInstanceByDom(dom as HTMLElement);
+      if (instance) instance.resize();
+    });
+  });
+});
+
 // === P2: Chart grouping by semantic category ===
 interface ChartGroup {
   label: string;
