@@ -41,6 +41,20 @@ public interface SemanticRouterService {
     RouteDecision route(String factoryId, String userInput, int topN);
 
     /**
+     * Wave-12: 执行语义路由 (带 BERT 候选提示)
+     *
+     * 当 BERT 有中等置信度结果 (0.3-0.70) 时，传入 top-5 候选意图，
+     * 语义路由器优先在这些意图中搜索，提高匹配准确率。
+     *
+     * @param factoryId 工厂ID
+     * @param userInput 用户输入
+     * @param topN      返回的候选数量
+     * @param bertHintIntents BERT 分类器的 top-K 候选意图代码
+     * @return 路由决策结果
+     */
+    RouteDecision route(String factoryId, String userInput, int topN, java.util.Set<String> bertHintIntents);
+
+    /**
      * 刷新工厂的意图向量缓存
      *
      * @param factoryId 工厂ID

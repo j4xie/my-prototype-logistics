@@ -1054,7 +1054,28 @@ public class AIIntentServiceImpl implements AIIntentService {
         // v12.1: 当检测到多意图触发词时，跳过语义路由器，走多意图检测流程
         if (semanticRouterEnabled && semanticRouterService.isAvailable() && !skipPhraseShortcut && !oodDetected) {
             try {
-                RouteDecision routeDecision = semanticRouterService.route(factoryId, processedInput, topN);
+                // Wave-12: 提取 BERT 低置信度候选，传递给语义路由器缩小搜索范围
+                Set<String> bertHintIntents = null;
+                ClassifierResult bertFallback = onnxFallbackResultHolder.get();
+                if (bertFallback != null && bertFallback.getPredictions() != null
+                        && !bertFallback.getPredictions().isEmpty()
+                        && bertFallback.getConfidence() >= 0.3) {
+                    bertHintIntents = bertFallback.getPredictions().stream()
+                            .map(ClassifierResult.PredictionEntry::getIntent)
+                            .filter(i -> i != null && !"OUT_OF_DOMAIN".equals(i))
+                            .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+                    if (!bertHintIntents.isEmpty()) {
+                        log.info("Wave-12 BERT hints: {} intents (top={}, conf={})",
+                                bertHintIntents.size(), bertFallback.getIntentCode(),
+                                String.format("%.4f", bertFallback.getConfidence()));
+                    } else {
+                        bertHintIntents = null;
+                    }
+                }
+
+                RouteDecision routeDecision = (bertHintIntents != null)
+                        ? semanticRouterService.route(factoryId, processedInput, topN, bertHintIntents)
+                        : semanticRouterService.route(factoryId, processedInput, topN);
 
                 if (routeDecision != null) {
                     log.info("v11.0 SemanticRouter: type={}, score={}, intent={}, latency={}ms",

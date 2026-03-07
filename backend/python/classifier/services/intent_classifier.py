@@ -6,6 +6,7 @@ Intent Classifier Service
 """
 import json
 import logging
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -18,12 +19,13 @@ logger = logging.getLogger(__name__)
 class IntentClassifierService:
     """意图分类器服务"""
 
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: Optional[str] = None, temperature: float = 1.5):
         """
         初始化分类器
 
         Args:
             model_path: 模型路径，如果为 None 则使用默认路径
+            temperature: Temperature Scaling 参数 (>1 使概率分布更平滑，改善 OOD 检测)
         """
         self.model = None
         self.tokenizer = None
@@ -31,6 +33,7 @@ class IntentClassifierService:
         self.id_to_label = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._loaded = False
+        self.temperature = temperature
 
         if model_path:
             self.load_model(model_path)
@@ -119,14 +122,17 @@ class IntentClassifierService:
                 outputs = self.model(**inputs)
                 logits = outputs.logits
 
-            # Softmax 转换为概率
-            probs = torch.softmax(logits, dim=-1)
+            # Wave-12: Temperature Scaling — 使概率分布更平滑，改善 OOD 检测
+            # T>1 降低过度自信，让 entropy/margin 信号更可靠
+            # argmax 不变（不影响 top intent 选择），仅改变置信度数值
+            scaled_logits = logits / self.temperature
+            probs = torch.softmax(scaled_logits, dim=-1)
 
-            # v35.0: OOD 指标计算
+            # v35.0: OOD 指标计算 (基于 scaled probs)
             entropy = -torch.sum(probs[0] * torch.log(probs[0] + 1e-10)).item()
             sorted_probs = torch.sort(probs[0], descending=True).values
             margin = (sorted_probs[0] - sorted_probs[1]).item()
-            max_logit = logits.max().item()
+            max_logit = logits.max().item()  # raw logit, not scaled
 
             # 获取 top-k 结果
             top_k = min(top_k, probs.shape[-1])
@@ -191,8 +197,8 @@ class IntentClassifierService:
                 outputs = self.model(**inputs)
                 logits = outputs.logits
 
-            # Softmax
-            probs = torch.softmax(logits, dim=-1)
+            # Wave-12: Temperature Scaling (same as classify)
+            probs = torch.softmax(logits / self.temperature, dim=-1)
 
             results = []
             for i, text in enumerate(texts):
@@ -245,7 +251,9 @@ def get_classifier() -> IntentClassifierService:
     global _classifier_instance
 
     if _classifier_instance is None:
-        _classifier_instance = IntentClassifierService()
+        temperature = float(os.environ.get("CLASSIFIER_TEMPERATURE", "1.5"))
+        _classifier_instance = IntentClassifierService(temperature=temperature)
+        logger.info(f"分类器 Temperature Scaling: T={temperature}")
 
         # 尝试加载默认模型路径
         default_paths = [

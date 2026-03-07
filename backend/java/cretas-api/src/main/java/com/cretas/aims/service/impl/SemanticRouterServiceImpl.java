@@ -240,6 +240,85 @@ public class SemanticRouterServiceImpl implements SemanticRouterService {
     }
 
     @Override
+    public RouteDecision route(String factoryId, String userInput, int topN, Set<String> bertHintIntents) {
+        if (bertHintIntents == null || bertHintIntents.isEmpty()) {
+            return route(factoryId, userInput, topN);
+        }
+
+        long startTime = System.currentTimeMillis();
+
+        if (userInput == null || userInput.trim().isEmpty() || !embeddingClient.isAvailable()) {
+            return route(factoryId, userInput, topN);
+        }
+
+        try {
+            float[] inputEmbedding = requestScopedCache.getOrCompute(userInput);
+            Map<String, CachedIntent> combinedCache = getCombinedCache(factoryId);
+
+            if (combinedCache.isEmpty()) {
+                return route(factoryId, userInput, topN);
+            }
+
+            // Wave-12: 先在 BERT 候选意图中搜索
+            List<ScoredIntent> hintScored = new ArrayList<>();
+            for (String hintIntent : bertHintIntents) {
+                CachedIntent cached = combinedCache.get(hintIntent);
+                if (cached != null) {
+                    double similarity = VectorUtils.cosineSimilarity(inputEmbedding, cached.embedding);
+                    hintScored.add(new ScoredIntent(hintIntent, cached.intent, similarity));
+                }
+            }
+
+            if (!hintScored.isEmpty()) {
+                hintScored.sort((a, b) -> Double.compare(b.score, a.score));
+                double bestHintScore = hintScored.get(0).score;
+
+                // 如果 BERT 候选中有 >= rerankingThreshold 的匹配，优先使用
+                if (bestHintScore >= rerankingThreshold) {
+                    long latencyMs = System.currentTimeMillis() - startTime;
+                    totalLatencyMs.addAndGet(latencyMs);
+                    totalRoutes.incrementAndGet();
+
+                    List<CandidateMatch> candidates = hintScored.stream()
+                            .limit(topN)
+                            .map(si -> CandidateMatch.fromConfig(si.intent, si.score))
+                            .collect(Collectors.toList());
+
+                    AIIntentConfig bestIntent = hintScored.get(0).intent;
+
+                    if (SEMANTIC_GUARD_INTENTS.contains(bestIntent.getIntentCode())) {
+                        needRerankingCount.incrementAndGet();
+                        log.info("Wave-12 BERT-Hint GUARD_DOWNGRADE: '{}' -> {} (score={}, hints={})",
+                                truncate(userInput, 50), bestIntent.getIntentCode(), bestHintScore, bertHintIntents.size());
+                        return RouteDecision.needReranking(bestIntent, bestHintScore, candidates, userInput, latencyMs);
+                    }
+
+                    if (bestHintScore >= directExecuteThreshold) {
+                        directExecuteCount.incrementAndGet();
+                        log.info("Wave-12 BERT-Hint DIRECT: '{}' -> {} (score={}, hints={})",
+                                truncate(userInput, 50), bestIntent.getIntentCode(), bestHintScore, bertHintIntents.size());
+                        return RouteDecision.directExecute(bestIntent, bestHintScore, candidates, userInput, latencyMs);
+                    } else {
+                        needRerankingCount.incrementAndGet();
+                        log.info("Wave-12 BERT-Hint RERANKING: '{}' -> {} (score={}, hints={})",
+                                truncate(userInput, 50), bestIntent.getIntentCode(), bestHintScore, bertHintIntents.size());
+                        return RouteDecision.needReranking(bestIntent, bestHintScore, candidates, userInput, latencyMs);
+                    }
+                }
+            }
+
+            // BERT 候选中没有好的匹配，回退到全量搜索
+            log.debug("Wave-12 BERT-Hint fallback to full search: hints={}, bestHintScore={}",
+                    bertHintIntents.size(), hintScored.isEmpty() ? "N/A" : hintScored.get(0).score);
+            return route(factoryId, userInput, topN);
+
+        } catch (Exception e) {
+            log.error("Wave-12 BERT-Hint route error: {}", e.getMessage(), e);
+            return route(factoryId, userInput, topN);
+        }
+    }
+
+    @Override
     public void refreshCache(String factoryId) {
         log.info("Refreshing semantic router cache for factory: {}", factoryId);
 
