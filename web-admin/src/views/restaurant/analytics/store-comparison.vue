@@ -113,6 +113,7 @@ function renderChart() {
   chart.setOption({
     tooltip: {
       trigger: 'axis',
+      confine: true,
       axisPointer: { type: 'shadow' },
       formatter: (params: any) => {
         const p = params[0]

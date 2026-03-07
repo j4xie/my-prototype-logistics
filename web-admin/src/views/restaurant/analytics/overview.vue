@@ -126,7 +126,7 @@
           <el-col :xs="24" :md="12">
             <el-card shadow="hover" class="chart-card">
               <template #header><div class="chart-title">品类结构</div></template>
-              <div id="chart-category-pie" style="height: 280px" />
+              <div id="chart-category-pie" class="chart-pie-square" />
             </el-card>
           </el-col>
 
@@ -139,7 +139,7 @@
                   <el-tag size="small" type="info">点击查看详情</el-tag>
                 </div>
               </template>
-              <div id="chart-ops-radar-mini" style="height: 280px" />
+              <div id="chart-ops-radar-mini" class="chart-pie-square" />
             </el-card>
           </el-col>
         </el-row>
@@ -194,7 +194,7 @@
                   <el-tag size="small">{{ data.timePeriodAnalysis.mainMealPeriod }} {{ data.timePeriodAnalysis.mainMealPct }}%</el-tag>
                 </div>
               </template>
-              <div id="chart-meal-pie" style="height: 240px" />
+              <div id="chart-meal-pie" class="chart-pie-square chart-pie-small" />
               <div class="chart-footer">
                 工作日均 ¥{{ formatMoney(data.timePeriodAnalysis.weekdayAvg) }}
                 · 周末均 ¥{{ formatMoney(data.timePeriodAnalysis.weekendAvg) }}
@@ -286,7 +286,7 @@
                   </el-tag>
                 </div>
               </template>
-              <div id="chart-supplier-pie" style="height: 240px" />
+              <div id="chart-supplier-pie" class="chart-pie-square chart-pie-small" />
               <div class="chart-footer">
                 供应商: <strong>{{ data.supplyChainAnalysis.supplierConcentration.supplierCount }}家</strong>
                 · Top 1 占比: {{ data.supplyChainAnalysis.supplierConcentration.top1Pct }}%
@@ -411,7 +411,7 @@ function renderQuadrantMini() {
   }))
 
   chart.setOption({
-    tooltip: { trigger: 'item', formatter: (p: any) => { const raw = p.data._raw || p.value; return `销量: ${raw[0]}, 品均收入: ¥${raw[1].toFixed(1)}` } },
+    tooltip: { trigger: 'item', confine: true, formatter: (p: any) => { const raw = p.data._raw || p.value; return `销量: ${raw[0]}, 品均收入: ¥${raw[1].toFixed(1)}` } },
     legend: { bottom: 0, textStyle: { fontSize: 11 } },
     grid: { left: 50, right: 20, top: 20, bottom: 40 },
     xAxis: { name: '销量', type: 'value', max: xMax, splitLine: { show: false } },
@@ -427,7 +427,7 @@ function renderStoreTop5() {
 
   const top5 = data.value.storeComparison.stores.slice(0, 5).reverse()
   chart.setOption({
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    tooltip: { trigger: 'axis', confine: true, axisPointer: { type: 'shadow' } },
     grid: { left: 120, right: 30, top: 10, bottom: 20 },
     xAxis: { type: 'value', axisLabel: { formatter: (v: number) => v >= 1e4 ? (v / 1e4).toFixed(0) + '万' : String(v) } },
     yAxis: { type: 'category', data: top5.map(s => s.name), axisLabel: { width: 100, overflow: 'truncate' } },
@@ -455,7 +455,7 @@ function renderCategoryPie() {
   }
 
   chart.setOption({
-    tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
+    tooltip: { trigger: 'item', confine: true, formatter: '{b}: ¥{c} ({d}%)' },
     legend: { bottom: 0, textStyle: { fontSize: 11 } },
     series: [{
       type: 'pie',
@@ -475,7 +475,7 @@ function renderOpsRadarMini() {
 
   const ops = data.value.operationsMetrics
   chart.setOption({
-    tooltip: {},
+    tooltip: { confine: true },
     radar: {
       indicator: [
         { name: '招牌集中度', max: 100 },
@@ -536,7 +536,7 @@ function renderTrendLine() {
   }
 
   chart.setOption({
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: 'axis', confine: true },
     legend: { bottom: 0, textStyle: { fontSize: 10 } },
     grid: { left: 60, right: 20, top: 10, bottom: series.length > 1 ? 40 : 20 },
     xAxis: { type: 'time', axisLabel: { formatter: '{MM}-{dd}' } },
@@ -552,7 +552,7 @@ function renderWeeklyBar() {
   const weekly = data.value.trendAnalysis.weeklyTrend
 
   chart.setOption({
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    tooltip: { trigger: 'axis', confine: true, axisPointer: { type: 'shadow' } },
     grid: { left: 50, right: 20, top: 10, bottom: 20 },
     xAxis: { type: 'category', data: weekly.map(w => w.week), axisLabel: { fontSize: 11 } },
     yAxis: { type: 'value', axisLabel: { formatter: (v: number) => v >= 1e4 ? (v / 1e4).toFixed(0) + '万' : String(v) } },
@@ -583,6 +583,7 @@ function renderHourlyBar() {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
+      confine: true,
       formatter: (params: any) => {
         const p = params[0]
         const item = hourly.find((d: any) => d.hour === p.dataIndex)
@@ -623,6 +624,7 @@ function renderMealPie() {
 
   chart.setOption({
     tooltip: {
+      confine: true,
       formatter: (p: any) => `${p.name}<br/>¥${p.value.toLocaleString()} (${p.data.pct}%)<br/>${p.data.orderCount}笔`,
     },
     series: [{
@@ -649,7 +651,7 @@ function renderPriceBand() {
   const pb = data.value.priceBandAnalysis
 
   chart.setOption({
-    tooltip: { trigger: 'axis', formatter: (p: any) => `${p[0].name}<br/>营收占比: ${p[0].data.pct}%<br/>SKU: ${p[0].data.skuCount}` },
+    tooltip: { trigger: 'axis', confine: true, formatter: (p: any) => `${p[0].name}<br/>营收占比: ${p[0].data.pct}%<br/>SKU: ${p[0].data.skuCount}` },
     grid: { left: 50, right: 20, top: 10, bottom: 30 },
     xAxis: { type: 'category', data: pb.bands.map(b => b.band), axisLabel: { fontSize: 11 } },
     yAxis: { type: 'value', axisLabel: { formatter: '{value}%' } },
@@ -714,7 +716,7 @@ function renderStoreEfficiency() {
   }))
 
   chart.setOption({
-    tooltip: { trigger: 'item', formatter: (p: any) => `营收: ¥${p.value[0].toLocaleString()}<br/>品项数: ${p.value[1]}` },
+    tooltip: { trigger: 'item', confine: true, formatter: (p: any) => `营收: ¥${p.value[0].toLocaleString()}<br/>品项数: ${p.value[1]}` },
     legend: { top: 0, textStyle: { fontSize: 10 } },
     grid: { left: 50, right: 20, top: 30, bottom: 20 },
     xAxis: { name: '营收', type: 'value', splitLine: { show: false }, axisLabel: { formatter: (v: number) => v >= 1e4 ? (v / 1e4).toFixed(0) + '万' : String(v) } },
@@ -736,7 +738,7 @@ function renderSupplierPie() {
   }
 
   chart.setOption({
-    tooltip: { trigger: 'item', formatter: '{b}: {d}%' },
+    tooltip: { trigger: 'item', confine: true, formatter: '{b}: {d}%' },
     legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 10 } },
     series: [{
       type: 'pie',
@@ -784,9 +786,21 @@ function renderSupplierPie() {
 .roadmap-label { font-size: 13px; font-weight: 500; }
 .roadmap-action { font-size: 12px; color: var(--el-text-color-secondary); padding-left: 4px; }
 
+.chart-pie-square {
+  aspect-ratio: 1 / 1;
+  max-height: 320px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+.chart-pie-small {
+  max-height: 260px;
+  max-width: 260px;
+}
+
 @media (max-width: 768px) {
   .card-header { flex-direction: column; align-items: flex-start; }
   .header-right { width: 100%; }
   .header-right .el-select { flex: 1; }
+  .chart-pie-square { max-width: 100%; }
 }
 </style>

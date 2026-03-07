@@ -356,7 +356,7 @@ function renderOpsRadar() {
   const g = ops.value
 
   chart.setOption({
-    tooltip: {},
+    tooltip: { confine: true },
     radar: {
       indicator: [
         { name: '招牌菜集中度', max: 100 },

@@ -214,6 +214,7 @@ function renderChart() {
   chart.setOption({
     tooltip: {
       trigger: 'item',
+      confine: true,
       formatter: (p: any) => {
         const raw = p.data._raw || p.value
         return `<b>${p.name}</b><br/>销量: ${raw[0]}<br/>品均收入: ¥${raw[1].toFixed(1)}`
