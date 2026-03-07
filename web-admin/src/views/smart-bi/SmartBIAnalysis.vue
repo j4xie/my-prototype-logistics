@@ -1629,7 +1629,8 @@ const getChartSizeClass = (chart: { chartType: string; config: Record<string, un
   if (type === 'pie' || type === 'radar') return 'chart-size-square';
 
   // Horizontal bar (category on yAxis) — needs width for labels + bars
-  const yAxis = config.yAxis as Record<string, unknown> | undefined;
+  const yAxisRaw = config.yAxis;
+  const yAxis = (Array.isArray(yAxisRaw) ? yAxisRaw[0] : yAxisRaw) as Record<string, unknown> | undefined;
   if (yAxis && yAxis.type === 'category') return 'chart-size-wide';
 
   // Many x-axis categories — span full width so labels aren't crushed
@@ -1655,12 +1656,13 @@ const chartLayoutMode = ref<LayoutMode>('comfortable');
 
 // Resize all ECharts instances when layout mode changes (CSS grid reflow doesn't trigger ResizeObserver on root)
 watch(chartLayoutMode, () => {
-  nextTick(() => {
+  // Wait for CSS transition (0.25s) to complete before resizing
+  setTimeout(() => {
     (rootRef.value || document).querySelectorAll('[id^="chart-"]').forEach(dom => {
       const instance = echarts.getInstanceByDom(dom as HTMLElement);
       if (instance) instance.resize();
     });
-  });
+  }, 300);
 });
 
 // === P2: Chart grouping by semantic category ===
@@ -1730,8 +1732,8 @@ const getGroupedCharts = (sheet: SheetResult): ChartGroup[] => {
   }
   if (ungrouped.charts.length > 0) result.push(ungrouped);
 
-  // If everything ended up in one group, don't bother grouping
-  if (result.length <= 1) return [];
+  // If only one group and it's "其他分析" (no semantic match), skip grouping
+  if (result.length <= 1 && result[0]?.label === '其他分析') return [];
 
   return result;
 };
@@ -5312,8 +5314,9 @@ onMounted(() => {
             // Smart sizing: square charts (pie/radar) — constrain to square aspect ratio
             &.chart-size-square {
               .chart-container {
-                height: 400px;
+                width: 100%;
                 max-width: 560px;
+                max-height: 560px;
                 margin: 0 auto;
                 aspect-ratio: 1 / 1;
               }
@@ -5385,12 +5388,12 @@ onMounted(() => {
 
               .chart-container { height: 320px; }
 
-              &:first-child .chart-container,
+              &:first-of-type .chart-container,
               &.chart-size-wide .chart-container { height: 350px; }
 
               &.chart-size-square .chart-container {
-                height: 320px;
                 max-width: 440px;
+                max-height: 440px;
               }
             }
           }
@@ -5404,13 +5407,13 @@ onMounted(() => {
 
               .chart-container { height: 520px; }
 
-              &:first-child .chart-container { height: 560px; }
+              &:first-of-type .chart-container { height: 560px; }
 
               &.chart-size-wide .chart-container { height: 520px; }
 
               &.chart-size-square .chart-container {
-                height: 520px;
                 max-width: 640px;
+                max-height: 640px;
               }
             }
 
