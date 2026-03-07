@@ -3,6 +3,8 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.analytics.EfficiencyDashboardResponse;
 import com.cretas.aims.dto.analytics.ProductionDashboardResponse;
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.entity.ProductionPlan;
+import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.service.impl.ProductionAnalyticsServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,8 +14,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -23,6 +27,7 @@ import java.util.Map;
 public class ProductionAnalyticsController {
 
     private final ProductionAnalyticsServiceImpl analyticsService;
+    private final ProductionPlanRepository planRepository;
 
     // ==================== 生产分析 ====================
 
@@ -116,6 +121,38 @@ public class ProductionAnalyticsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         LocalDate[] dates = resolveDefaultDates(startDate, endDate);
         return ApiResponse.success(analyticsService.getWorkerProcessCross(factoryId, dates[0], dates[1]));
+    }
+
+    @GetMapping("/budget-vs-actual")
+    @Operation(summary = "预算 vs 实际成本对比")
+    public ApiResponse<List<Map<String, Object>>> getBudgetVsActual(
+            @PathVariable String factoryId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+
+        List<ProductionPlan> plans = planRepository.findByFactoryId(factoryId);
+
+        List<Map<String, Object>> result = plans.stream()
+                .filter(p -> p.getEstimatedLaborCost() != null || p.getActualLaborCost() != null)
+                .map(p -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("planId", p.getId());
+                    item.put("planNumber", p.getPlanNumber());
+                    item.put("productName", p.getProductType() != null ? p.getProductType().getName() : "");
+                    item.put("estimatedMaterialCost", p.getEstimatedMaterialCost());
+                    item.put("actualMaterialCost", p.getActualMaterialCost());
+                    item.put("estimatedLaborCost", p.getEstimatedLaborCost());
+                    item.put("actualLaborCost", p.getActualLaborCost());
+                    item.put("estimatedEquipmentCost", p.getEstimatedEquipmentCost());
+                    item.put("actualEquipmentCost", p.getActualEquipmentCost());
+                    item.put("estimatedOtherCost", p.getEstimatedOtherCost());
+                    item.put("actualOtherCost", p.getActualOtherCost());
+                    item.put("status", p.getStatus());
+                    return item;
+                })
+                .collect(Collectors.toList());
+
+        return ApiResponse.success(result);
     }
 
     // ==================== 内部方法 ====================

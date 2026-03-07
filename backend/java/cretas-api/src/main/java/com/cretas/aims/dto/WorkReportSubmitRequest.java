@@ -49,4 +49,5 @@ public class WorkReportSubmitRequest {
 
     private Map<String, Object> customFields;
     private List<String> photos;
+    private String containerSequence;
 }

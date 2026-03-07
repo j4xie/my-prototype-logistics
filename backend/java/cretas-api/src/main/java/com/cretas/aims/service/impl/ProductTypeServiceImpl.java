@@ -57,8 +57,9 @@ public class ProductTypeServiceImpl implements ProductTypeService {
     public ProductTypeDTO createProductType(String factoryId, ProductTypeDTO dto) {
         // 如果没有提供 code，自动生成 SKU
         if (dto.getCode() == null || dto.getCode().trim().isEmpty()) {
+            String prefix = getCategoryPrefix(dto.getCategory());
             long count = productTypeRepository.countByFactoryId(factoryId);
-            String generatedCode = String.format("PT-%s-%03d", factoryId, count + 1);
+            String generatedCode = String.format("%s-%s-%03d", prefix, factoryId, count + 1);
             dto.setCode(generatedCode);
             log.info("自动生成产品代码: {}", generatedCode);
         }
@@ -301,6 +302,18 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         }
 
         log.info("批量更新产品类型状态成功: count={}", ids.size());
+    }
+
+    private String getCategoryPrefix(String category) {
+        if (category == null) return "PT";
+        switch (category.toUpperCase()) {
+            case "FINISHED_PRODUCT": return "CP";
+            case "RAW_MATERIAL": return "YL";
+            case "PACKAGING": return "BF";
+            case "SEASONING": return "TW";
+            case "CUSTOMER_MATERIAL": return "KH";
+            default: return "PT";
+        }
     }
 
     @Override

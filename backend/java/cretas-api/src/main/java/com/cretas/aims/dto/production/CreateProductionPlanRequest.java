@@ -106,6 +106,13 @@ public class CreateProductionPlanRequest {
     @Size(max = 100, message = "客户名称不能超过100个字符")
     private String sourceCustomerName;
 
+    @Schema(description = "工序名称")
+    @Size(max = 200, message = "工序名称不能超过200个字符")
+    private String processName;
+
+    @Schema(description = "批次日期")
+    private LocalDate batchDate;
+
     @Schema(description = "AI预测置信度 (0-100)，仅AI预测计划需要")
     @Min(value = 0, message = "AI置信度最小为0")
     @Max(value = 100, message = "AI置信度最大为100")

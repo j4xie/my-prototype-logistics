@@ -92,6 +92,8 @@ public class ProductionPlanMapper {
         dto.setSourceTypeDisplayName(plan.getSourceTypeDisplayName());
         dto.setSourceOrderId(plan.getSourceOrderId());
         dto.setSourceCustomerName(plan.getSourceCustomerName());
+        dto.setProcessName(plan.getProcessName());
+        dto.setBatchDate(plan.getBatchDate());
         dto.setAiConfidence(plan.getAiConfidence());
         dto.setAiConfidenceLevel(plan.getAiConfidenceLevel());
         dto.setForecastReason(plan.getForecastReason());
@@ -172,6 +174,8 @@ public class ProductionPlanMapper {
         plan.setSourceType(request.getSourceType() != null ? request.getSourceType() : PlanSourceType.MANUAL);
         plan.setSourceOrderId(request.getSourceOrderId());
         plan.setSourceCustomerName(request.getSourceCustomerName());
+        plan.setProcessName(request.getProcessName());
+        plan.setBatchDate(request.getBatchDate());
         plan.setAiConfidence(request.getAiConfidence());
         plan.setForecastReason(request.getForecastReason());
         plan.setIsMixedBatch(request.getIsMixedBatch() != null ? request.getIsMixedBatch() : false);

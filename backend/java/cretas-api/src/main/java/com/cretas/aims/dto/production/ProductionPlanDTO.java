@@ -179,6 +179,12 @@ public class ProductionPlanDTO {
     @Schema(description = "客户名称")
     private String sourceCustomerName;
 
+    @Schema(description = "工序名称")
+    private String processName;
+
+    @Schema(description = "批次日期")
+    private LocalDate batchDate;
+
     @Schema(description = "AI预测置信度 (0-100)")
     private Integer aiConfidence;
 

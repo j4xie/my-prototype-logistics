@@ -131,6 +131,12 @@ public class ProductionPlan extends BaseEntity {
     @Column(name = "source_customer_name", length = 100)
     private String sourceCustomerName;
 
+    @Column(name = "process_name", length = 200)
+    private String processName;
+
+    @Column(name = "batch_date")
+    private LocalDate batchDate;
+
     /**
      * AI预测置信度 (0-100)
      */

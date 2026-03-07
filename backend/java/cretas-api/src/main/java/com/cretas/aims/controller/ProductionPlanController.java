@@ -6,7 +6,9 @@ import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.production.CreateProductionPlanRequest;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
+import com.cretas.aims.entity.ProductionPlan;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
+import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.ProductionPlanService;
 import com.cretas.aims.utils.TokenUtils;
@@ -27,8 +29,10 @@ import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 生产计划管理控制器
@@ -46,6 +50,7 @@ public class ProductionPlanController {
 
     private final ProductionPlanService productionPlanService;
     private final MobileService mobileService;
+    private final ProductionPlanRepository planRepository;
 
     /**
      * 创建生产计划
@@ -446,5 +451,45 @@ public class ProductionPlanController {
         ImportResult<ProductionPlanDTO> result = productionPlanService.importProductionPlansFromExcel(
                 factoryId, file.getInputStream(), userId);
         return ApiResponse.success("导入完成", result);
+    }
+
+    /**
+     * 获取今日生产看板卡片（进行中/计划中/待处理）
+     */
+    @GetMapping("/today-cards")
+    @Operation(summary = "获取今日生产看板卡片")
+    public ApiResponse<List<Map<String, Object>>> getTodayCards(
+            @Parameter(description = "工厂ID", required = true, example = "F001")
+            @PathVariable @NotBlank String factoryId) {
+
+        List<ProductionPlan> plans = planRepository.findByFactoryId(factoryId).stream()
+                .filter(p -> {
+                    ProductionPlanStatus s = p.getStatus();
+                    return s == ProductionPlanStatus.IN_PROGRESS
+                            || s == ProductionPlanStatus.PLANNED
+                            || s == ProductionPlanStatus.PENDING;
+                })
+                .collect(Collectors.toList());
+
+        List<Map<String, Object>> cards = plans.stream().map(p -> {
+            Map<String, Object> card = new HashMap<>();
+            card.put("planId", p.getId());
+            card.put("planNumber", p.getPlanNumber());
+            card.put("customerName", p.getSourceCustomerName());
+            card.put("productName", p.getProductType() != null ? p.getProductType().getName() : "");
+            card.put("processName", p.getProcessName());
+            card.put("plannedQty", p.getPlannedQuantity());
+            card.put("reportedQty", p.getActualQuantity() != null ? p.getActualQuantity() : BigDecimal.ZERO);
+            BigDecimal planned = p.getPlannedQuantity();
+            BigDecimal actual = p.getActualQuantity() != null ? p.getActualQuantity() : BigDecimal.ZERO;
+            int progress = planned != null && planned.compareTo(BigDecimal.ZERO) > 0
+                    ? actual.multiply(BigDecimal.valueOf(100))
+                            .divide(planned, 0, java.math.RoundingMode.HALF_UP).intValue()
+                    : 0;
+            card.put("progress", progress);
+            return card;
+        }).collect(Collectors.toList());
+
+        return ApiResponse.success(cards);
     }
 }
