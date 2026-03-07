@@ -434,7 +434,7 @@
                 </div>
 
                 <!-- 标准模式 (v-show preserves ECharts DOM) -->
-                <div v-show="!layoutEditMode || !hasChartData(sheet)" class="chart-dashboard">
+                <div v-show="!layoutEditMode || !hasChartData(sheet)" class="chart-dashboard" :class="`layout-${chartLayoutMode}`">
                   <!-- Chart action bar -->
                   <div class="chart-action-bar">
                     <el-button
@@ -466,6 +466,12 @@
                       导出 PDF
                     </el-button>
                     <span class="chart-count-hint">{{ getSheetCharts(sheet).filter(c => !isChartDataEmpty(c.config)).length }} 个图表</span>
+                    <!-- P2: Layout mode toggle -->
+                    <el-radio-group v-model="chartLayoutMode" size="small" style="margin-left: auto;">
+                      <el-radio-button value="compact">紧凑</el-radio-button>
+                      <el-radio-button value="comfortable">舒适</el-radio-button>
+                      <el-radio-button value="presentation">演示</el-radio-button>
+                    </el-radio-group>
                   </div>
                   <!-- Cross-chart filter bar -->
                   <div v-if="activeFilter" class="chart-filter-bar">
@@ -473,9 +479,74 @@
                     <span>过滤: {{ activeFilter.dimension }} = <strong>{{ activeFilter.value }}</strong></span>
                     <el-button type="primary" link size="small" @click="clearChartFilter">清除过滤</el-button>
                   </div>
+                  <!-- P2: Grouped charts with section headers (when enough charts to group) -->
+                  <template v-if="getGroupedCharts(sheet).length > 1">
+                    <template v-for="(group, gIdx) in getGroupedCharts(sheet)" :key="`group-${gIdx}`">
+                      <div class="chart-section-header">
+                        <span class="section-icon">{{ group.icon }}</span>
+                        <span class="section-label">{{ group.label }}</span>
+                        <span class="section-count">{{ group.charts.length }}</span>
+                      </div>
+                      <div v-for="{ chart, originalIndex } in group.charts" :key="`chart-${sheet.sheetIndex}-${chart.title || originalIndex}`" class="chart-grid-item"
+                           :class="[getChartSizeClass(chart), { 'chart-empty': isChartDataEmpty(chart.config) }]">
+                        <template v-if="isChartDataEmpty(chart.config)">
+                          <div class="chart-title-row">
+                            <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
+                            <div class="chart-controls">
+                              <el-button size="small" @click="handleRefreshChart(sheet, originalIndex)">
+                                <el-icon><Refresh /></el-icon> 重新生成
+                              </el-button>
+                            </div>
+                          </div>
+                          <div class="chart-no-data">
+                            <el-empty description="暂无数据" :image-size="60" />
+                          </div>
+                        </template>
+                        <template v-else>
+                        <div class="chart-title-row">
+                          <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
+                          <div class="chart-controls">
+                            <ChartTypeSelector
+                              :current-type="chart.chartType || 'bar'"
+                              :numeric-columns="getSheetColumns(sheet).filter(c => c.type === 'numeric').map(c => c.name)"
+                              :categorical-columns="getSheetColumns(sheet).filter(c => c.type === 'categorical').map(c => c.name)"
+                              :date-columns="getSheetColumns(sheet).filter(c => c.type === 'date').map(c => c.name)"
+                              :row-count="sheet.flowResult?.kpiSummary?.rowCount || 0"
+                              :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === originalIndex"
+                              @switch-type="(type: string) => handleSwitchChartType(sheet, originalIndex, type)"
+                              @refresh="handleRefreshChart(sheet, originalIndex)"
+                            />
+                            <ChartConfigPanel
+                              :columns="getSheetColumns(sheet)"
+                              :current-config="{ chartType: chart.chartType || 'bar', xField: chart.xField, yFields: extractYFieldsFromConfig(chart.config) }"
+                              :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === originalIndex"
+                              @apply="(config: { xField: string; yFields: string[]; seriesField?: string; aggregation?: string }) => handleApplyChartConfig(sheet, originalIndex, config)"
+                            />
+                            <el-dropdown class="chart-export-btn" trigger="click" @command="(cmd: string) => handleChartExport(cmd, sheet.sheetIndex, originalIndex, chart.title)">
+                              <el-button :icon="Download" circle size="small" />
+                              <template #dropdown>
+                                <el-dropdown-menu>
+                                  <el-dropdown-item command="png">导出 PNG</el-dropdown-item>
+                                  <el-dropdown-item command="svg">导出 SVG</el-dropdown-item>
+                                </el-dropdown-menu>
+                              </template>
+                            </el-dropdown>
+                          </div>
+                        </div>
+                        <div :id="`chart-${sheet.sheetIndex}-${originalIndex}`" class="chart-container"></div>
+                        <div v-if="chart.totalItems" class="chart-view-more">
+                          <el-button type="primary" link size="small" @click="handleViewMoreData(sheet, originalIndex, chart)">
+                            查看更多 (共 {{ chart.totalItems }} 项，当前显示 {{ getDisplayedCount(chart) }} 项)
+                          </el-button>
+                        </div>
+                        </template>
+                      </div>
+                    </template>
+                  </template>
+                  <!-- Flat layout (few charts or no grouping match) -->
+                  <template v-else>
                   <div v-for="(chart, idx) in getSheetCharts(sheet)" :key="`chart-${sheet.sheetIndex}-${chart.title || idx}`" class="chart-grid-item"
-                       :class="{ 'chart-empty': isChartDataEmpty(chart.config) }">
-                    <!-- Empty chart: show "暂无数据" placeholder instead of blank container -->
+                       :class="[getChartSizeClass(chart), { 'chart-empty': isChartDataEmpty(chart.config) }]">
                     <template v-if="isChartDataEmpty(chart.config)">
                       <div class="chart-title-row">
                         <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
@@ -489,7 +560,6 @@
                         <el-empty description="暂无数据" :image-size="60" />
                       </div>
                     </template>
-                    <!-- Normal chart with data -->
                     <template v-else>
                     <div class="chart-title-row">
                       <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
@@ -522,7 +592,6 @@
                       </div>
                     </div>
                     <div :id="`chart-${sheet.sheetIndex}-${idx}`" class="chart-container"></div>
-                    <!-- P1.3: "查看更多" 按钮 (截断数据时显示) -->
                     <div v-if="chart.totalItems" class="chart-view-more">
                       <el-button type="primary" link size="small" @click="handleViewMoreData(sheet, idx, chart)">
                         查看更多 (共 {{ chart.totalItems }} 项，当前显示 {{ getDisplayedCount(chart) }} 项)
@@ -530,6 +599,7 @@
                     </div>
                     </template>
                   </div>
+                  </template>
                 </div>
               </div>
 
@@ -1545,10 +1615,115 @@ const getSheetCharts = (sheet: SheetResult): Array<{ chartType: string; title: s
   return [];
 };
 
+/**
+ * Smart chart sizing — returns CSS class based on chart type & data characteristics.
+ * - 'chart-size-wide': spans full row (complex bar/line with many categories, or horizontal bar)
+ * - 'chart-size-square': square-ish aspect ratio (pie, radar)
+ * - '': default half-width
+ */
+const getChartSizeClass = (chart: { chartType: string; config: Record<string, unknown> }): string => {
+  const type = chart.chartType || 'bar';
+  const config = (chart.config || {}) as SmartBIChartOption;
+
+  // Pie and radar work best in square aspect ratio
+  if (type === 'pie' || type === 'radar') return 'chart-size-square';
+
+  // Horizontal bar (category on yAxis) — needs width for labels + bars
+  const yAxis = config.yAxis as Record<string, unknown> | undefined;
+  if (yAxis && yAxis.type === 'category') return 'chart-size-wide';
+
+  // Many x-axis categories — span full width so labels aren't crushed
+  const xAxis = config.xAxis as Record<string, unknown> | undefined;
+  if (xAxis && Array.isArray(xAxis.data) && xAxis.data.length > 12) return 'chart-size-wide';
+
+  // Multi-series bar/line charts — need more room for legend + data
+  const series = config.series;
+  if (Array.isArray(series) && series.length > 3) return 'chart-size-wide';
+
+  return '';
+};
+
 // 判断 sheet 是否有图表数据
 const hasChartData = (sheet: SheetResult): boolean => {
   const charts = getSheetCharts(sheet);
   return charts.length > 0 && charts.some(c => c.config && !isChartDataEmpty(c.config));
+};
+
+// === P2: Layout mode (compact / comfortable / presentation) ===
+type LayoutMode = 'compact' | 'comfortable' | 'presentation';
+const chartLayoutMode = ref<LayoutMode>('comfortable');
+
+// === P2: Chart grouping by semantic category ===
+interface ChartGroup {
+  label: string;
+  icon: string;
+  charts: Array<{ chart: { chartType: string; title: string; config: Record<string, unknown>; xField?: string; totalItems?: number }; originalIndex: number }>;
+}
+
+const CHART_GROUP_RULES: Array<{ label: string; icon: string; patterns: RegExp[] }> = [
+  { label: '收入与销售', icon: '📊', patterns: [/收入|营收|销售|revenue|sales|金额|成交|GMV/i] },
+  { label: '成本与费用', icon: '💰', patterns: [/成本|费用|支出|cost|expense|开支/i] },
+  { label: '利润与效率', icon: '📈', patterns: [/利润|毛利|净利|profit|margin|效率|ROI|回报/i] },
+  { label: '趋势与时间', icon: '📅', patterns: [/趋势|月|季|年|时间|日期|trend|monthly|daily|weekly/i] },
+  { label: '分布与占比', icon: '🔵', patterns: [/占比|分布|比例|构成|distribution|proportion|结构/i] },
+  { label: '排名与对比', icon: '🏆', patterns: [/排名|排行|TOP|对比|比较|rank|comparison/i] },
+];
+
+const getGroupedCharts = (sheet: SheetResult): ChartGroup[] => {
+  const charts = getSheetCharts(sheet);
+  if (charts.length <= 3) return []; // Too few to group
+
+  const groups: Map<string, ChartGroup> = new Map();
+  const ungrouped: ChartGroup = { label: '其他分析', icon: '📋', charts: [] };
+
+  for (let i = 0; i < charts.length; i++) {
+    const chart = charts[i];
+    const title = chart.title || '';
+    const chartType = chart.chartType || '';
+    let matched = false;
+
+    // Try title-based matching
+    for (const rule of CHART_GROUP_RULES) {
+      if (rule.patterns.some(p => p.test(title))) {
+        if (!groups.has(rule.label)) {
+          groups.set(rule.label, { label: rule.label, icon: rule.icon, charts: [] });
+        }
+        groups.get(rule.label)!.charts.push({ chart, originalIndex: i });
+        matched = true;
+        break;
+      }
+    }
+
+    // Fallback: group pie charts into "分布与占比"
+    if (!matched && chartType === 'pie') {
+      const distLabel = '分布与占比';
+      if (!groups.has(distLabel)) {
+        groups.set(distLabel, { label: distLabel, icon: '🔵', charts: [] });
+      }
+      groups.get(distLabel)!.charts.push({ chart, originalIndex: i });
+      matched = true;
+    }
+
+    if (!matched) {
+      ungrouped.charts.push({ chart, originalIndex: i });
+    }
+  }
+
+  // Build result: only include groups with 1+ charts, merge single-chart groups into ungrouped
+  const result: ChartGroup[] = [];
+  for (const group of groups.values()) {
+    if (group.charts.length >= 1) {
+      result.push(group);
+    } else {
+      ungrouped.charts.push(...group.charts);
+    }
+  }
+  if (ungrouped.charts.length > 0) result.push(ungrouped);
+
+  // If everything ended up in one group, don't bother grouping
+  if (result.length <= 1) return [];
+
+  return result;
 };
 
 // 智能 KPI 选择（使用 smartbi.ts 的 getSmartKPIs），带缓存避免重复计算 (R-18)
@@ -2350,8 +2525,12 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
     const grid = ((opts as SmartBIChartOption)).grid || {};
     if (!grid.left || (typeof grid.left === 'number' && grid.left < 100)) {
       grid.left = '18%';
-      ((opts as SmartBIChartOption)).grid = grid;
     }
+    // Ensure enough right margin for data labels on horizontal bars
+    if (!grid.right || (typeof grid.right === 'number' && grid.right < 60)) {
+      grid.right = '12%';
+    }
+    ((opts as SmartBIChartOption)).grid = grid;
   }
 
   // === D1+D7: 零值标签隐藏 + 标签防重叠 ===
@@ -2427,12 +2606,52 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
     legend.pageTextStyle = { fontSize: 11 };
   }
 
-  // === D6: 饼图图例长文本截断 ===
+  // === D6: 饼图图例优化 — 右侧纵排 + 截断 + 缩小饼图留空间 ===
   if (chartType === 'pie' && legend) {
     legend.formatter = (name: string) => {
-      return name.length > 16 ? name.slice(0, 14) + '…' : name;
+      return name.length > 12 ? name.slice(0, 10) + '…' : name;
     };
     legend.tooltip = { show: true }; // hover to see full name
+    // Move legend to right side (vertical layout) for better space usage
+    const pieDataLen = Array.isArray(series) && series[0]?.data ? (series[0].data as unknown[]).length : 0;
+    if (pieDataLen > 4) {
+      legend.orient = 'vertical';
+      legend.right = '2%';
+      legend.top = 'middle';
+      legend.left = undefined;
+      legend.bottom = undefined;
+      legend.type = 'scroll';
+      legend.pageIconSize = 12;
+      legend.pageTextStyle = { fontSize: 11 };
+      legend.textStyle = { fontSize: 12 };
+      // Shrink pie radius and shift left to make room for legend
+      if (Array.isArray(series)) {
+        for (const s of series) {
+          if (s.type === 'pie') {
+            if (!s.center) s.center = ['38%', '50%'];
+            if (!s.radius) s.radius = pieDataLen > 8 ? '60%' : '65%';
+          }
+        }
+      }
+    }
+  }
+
+  // === Tooltip: show full category name (not truncated) ===
+  if (chartType !== 'pie' && chartType !== 'radar') {
+    const tooltip = ((opts as SmartBIChartOption)).tooltip || {};
+    if (!tooltip.trigger) tooltip.trigger = 'axis';
+    // confine tooltip to chart container to prevent overflow
+    tooltip.confine = true;
+    ((opts as SmartBIChartOption)).tooltip = tooltip;
+  }
+
+  // === Grid padding — ensure labels/legends have enough room ===
+  if (chartType !== 'pie' && chartType !== 'radar') {
+    const grid = ((opts as SmartBIChartOption)).grid || {};
+    // Ensure minimum padding so axis labels aren't clipped
+    if (!grid.top || (typeof grid.top === 'number' && grid.top < 40)) grid.top = 40;
+    if (!grid.right || (typeof grid.right === 'number' && grid.right < 30)) grid.right = 30;
+    ((opts as SmartBIChartOption)).grid = grid;
   }
 
   // === D3: 极端离群值检测 ===
@@ -4965,8 +5184,8 @@ onMounted(() => {
           grid-template-columns: repeat(2, 1fr);
           gap: 20px;
 
-          // Responsive breakpoints (Superset adaptive + Power BI magnetic grid)
-          @media (min-width: 1400px) { grid-template-columns: repeat(3, 1fr); }
+          // Responsive breakpoints — 2 cols default, 3 cols only on ultra-wide
+          @media (min-width: 1920px) { grid-template-columns: repeat(3, 1fr); }
           @media (max-width: 900px) { grid-template-columns: 1fr; }
 
           .chart-action-bar {
@@ -4996,7 +5215,7 @@ onMounted(() => {
             /* T5.1: CSS containment — prevents layout recalc cascade between chart cards */
             contain: layout style paint;
             content-visibility: auto;
-            contain-intrinsic-size: auto 360px;
+            contain-intrinsic-size: auto 440px;
             /* G3: Stagger animation — cards fade in sequentially */
             animation: chartCardFadeIn 0.4s ease-out both;
             &:nth-child(1) { animation-delay: 0s; }
@@ -5059,7 +5278,7 @@ onMounted(() => {
 
             .chart-container {
               width: 100%;
-              height: 320px;
+              height: 400px;
             }
 
             // Hero chart (first) — full width
@@ -5067,7 +5286,26 @@ onMounted(() => {
               grid-column: 1 / -1;
 
               .chart-container {
+                height: 480px;
+              }
+            }
+
+            // Smart sizing: wide charts span full row
+            &.chart-size-wide {
+              grid-column: 1 / -1;
+
+              .chart-container {
+                height: 420px;
+              }
+            }
+
+            // Smart sizing: square charts (pie/radar) — constrain to square aspect ratio
+            &.chart-size-square {
+              .chart-container {
                 height: 400px;
+                max-width: 560px;
+                margin: 0 auto;
+                aspect-ratio: 1 / 1;
               }
             }
           }
@@ -5077,7 +5315,7 @@ onMounted(() => {
             grid-template-columns: 1fr;
 
             .chart-container {
-              height: 450px;
+              height: 500px;
             }
           }
 
@@ -5092,6 +5330,86 @@ onMounted(() => {
             border-radius: 8px;
             font-size: 13px;
             color: var(--color-primary, #1B65A8);
+          }
+
+          // P2: Section headers for chart grouping
+          .chart-section-header {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 0 6px;
+            margin-top: 8px;
+            border-bottom: 2px solid var(--el-color-primary-light-7, #a0cfff);
+
+            &:first-of-type {
+              margin-top: 0;
+            }
+
+            .section-icon {
+              font-size: 18px;
+              line-height: 1;
+            }
+
+            .section-label {
+              font-size: 15px;
+              font-weight: 600;
+              color: var(--color-text-primary, #303133);
+            }
+
+            .section-count {
+              font-size: 12px;
+              color: var(--color-text-secondary, #909399);
+              background: var(--el-fill-color-light, #f0f2f5);
+              padding: 1px 8px;
+              border-radius: 10px;
+            }
+          }
+
+          // P2: Layout modes
+          &.layout-compact {
+            gap: 12px;
+
+            .chart-grid-item {
+              padding: 12px;
+
+              .chart-container { height: 320px; }
+
+              &:first-child .chart-container,
+              &.chart-size-wide .chart-container { height: 350px; }
+
+              &.chart-size-square .chart-container {
+                height: 320px;
+                max-width: 440px;
+              }
+            }
+          }
+
+          &.layout-presentation {
+            grid-template-columns: 1fr;
+            gap: 28px;
+
+            .chart-grid-item {
+              padding: 28px;
+
+              .chart-container { height: 520px; }
+
+              &:first-child .chart-container { height: 560px; }
+
+              &.chart-size-wide .chart-container { height: 520px; }
+
+              &.chart-size-square .chart-container {
+                height: 520px;
+                max-width: 640px;
+              }
+            }
+
+            @media (max-width: 900px) {
+              .chart-grid-item {
+                padding: 16px;
+                .chart-container { height: 400px; }
+              }
+            }
           }
         }
 

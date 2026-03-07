@@ -63,8 +63,41 @@ export interface OperationsMetrics {
   consistencyScore: number
 }
 
-/** @deprecated Use OperationsMetrics instead */
-export type DianpingGapData = OperationsMetrics
+/** 榜单资格评估项 */
+export interface ListEligibilityItem {
+  list: string
+  score: number | null
+  dataGaps: string[]
+  manualChecks: string[]
+  verdict: string
+}
+
+/** 行业对标项 */
+export interface BenchmarkComparisonItem {
+  metric: string
+  actual: number
+  benchmarkMedian: number
+  benchmarkRange: number[]
+  position: string
+  unit: string
+}
+
+/** 数据缺口项 */
+export interface MissingDataItem {
+  field: string
+  impact: string
+  priority: 'high' | 'medium' | 'low'
+}
+
+/** 大众点评差距分析 — 独立于 OperationsMetrics */
+export interface DianpingGapData {
+  listEligibility: ListEligibilityItem[]
+  benchmarkComparison: BenchmarkComparisonItem[]
+  missingData: MissingDataItem[]
+  overallScore: number
+  bestListMatch: string | null
+  summary: string
+}
 
 /** 平台准入检查项 */
 export interface PlatformCheckItem {
@@ -203,8 +236,8 @@ export interface RestaurantAnalyticsResult {
   categoryBreakdown: CategoryBreakdownItem[]
   comboEfficiency: { methods: ComboMethodItem[] }
   discountAlerts: DiscountAlert[]
-  /** @deprecated Use operationsMetrics instead */
-  dianpingGaps: OperationsMetrics
+  /** 大众点评差距分析 */
+  dianpingGaps: DianpingGapData
   /** 经营数据分析 */
   operationsMetrics: OperationsMetrics
   /** 平台运营分析 */

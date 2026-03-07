@@ -168,6 +168,86 @@
             </div>
           </el-card>
         </template>
+
+        <!-- ═══ Section 3: 大众点评差距分析 ═══ -->
+        <template v-if="gaps">
+          <el-divider />
+          <div class="section-header">
+            <h3 class="section-title">大众点评差距分析</h3>
+            <span class="section-subtitle">榜单资格评估 · 行业对标 · 数据缺口</span>
+          </div>
+
+          <!-- Overall score + best match -->
+          <el-row :gutter="16" style="margin-bottom: 16px">
+            <el-col :xs="24" :sm="8">
+              <div class="score-card" :class="gaps.overallScore >= 70 ? 'good' : gaps.overallScore >= 50 ? 'warning' : 'bad'">
+                <div class="score-value">{{ gaps.overallScore }}</div>
+                <div class="score-label">综合上榜潜力</div>
+                <div class="score-detail" v-if="gaps.bestListMatch">最有希望: {{ gaps.bestListMatch }}</div>
+              </div>
+            </el-col>
+            <el-col :xs="24" :sm="16">
+              <el-card shadow="hover" style="height: 100%">
+                <template #header><div class="chart-title">榜单资格评估</div></template>
+                <div class="list-eligibility">
+                  <div v-for="item in gaps.listEligibility" :key="item.list" class="eligibility-item">
+                    <div class="eligibility-header">
+                      <span class="eligibility-list">{{ item.list }}</span>
+                      <el-tag v-if="item.score !== null" :type="item.score >= 70 ? 'success' : item.score >= 50 ? 'warning' : 'danger'" size="small">
+                        {{ item.score }}分
+                      </el-tag>
+                      <el-tag v-else type="info" size="small">待评估</el-tag>
+                    </div>
+                    <div class="eligibility-verdict">{{ item.verdict }}</div>
+                    <div v-if="item.dataGaps.length > 0" class="eligibility-gaps">
+                      <span v-for="(g, i) in item.dataGaps" :key="i" class="gap-tag">{{ g }}</span>
+                    </div>
+                  </div>
+                </div>
+              </el-card>
+            </el-col>
+          </el-row>
+
+          <!-- Benchmark comparison -->
+          <el-card shadow="hover" style="margin-bottom: 16px">
+            <template #header><div class="chart-title">行业对标</div></template>
+            <el-table :data="gaps.benchmarkComparison" stripe style="width: 100%">
+              <el-table-column prop="metric" label="指标" width="120" />
+              <el-table-column label="实际值" width="100" align="center">
+                <template #default="{ row }">{{ row.actual }}{{ row.unit }}</template>
+              </el-table-column>
+              <el-table-column label="行业中位数" width="110" align="center">
+                <template #default="{ row }">{{ row.benchmarkMedian }}{{ row.unit }}</template>
+              </el-table-column>
+              <el-table-column label="行业区间" width="120" align="center">
+                <template #default="{ row }">{{ row.benchmarkRange[0] }}-{{ row.benchmarkRange[1] }}{{ row.unit }}</template>
+              </el-table-column>
+              <el-table-column label="定位" width="80" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="row.position === '适中' || row.position === '优秀' ? 'success' : 'warning'" size="small">
+                    {{ row.position }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+
+          <!-- Missing data -->
+          <el-card shadow="hover">
+            <template #header><div class="chart-title">数据缺口</div></template>
+            <div class="missing-data-list">
+              <div v-for="item in gaps.missingData" :key="item.field" class="missing-item">
+                <el-tag :type="item.priority === 'high' ? 'danger' : item.priority === 'medium' ? 'warning' : 'info'" size="small" style="min-width: 32px; text-align: center">
+                  {{ item.priority === 'high' ? '高' : item.priority === 'medium' ? '中' : '低' }}
+                </el-tag>
+                <div class="missing-content">
+                  <div class="missing-field">{{ item.field }}</div>
+                  <div class="missing-impact">{{ item.impact }}</div>
+                </div>
+              </div>
+            </div>
+          </el-card>
+        </template>
       </template>
     </el-card>
   </div>
@@ -179,7 +259,7 @@ import { ArrowLeft, CircleCheck, CircleClose, QuestionFilled } from '@element-pl
 import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
 import { useRestaurantAnalytics } from '@/composables/useRestaurantAnalytics'
-import type { OperationsMetrics, PlatformReadiness, RestaurantAnalyticsResult } from '@/types/restaurant-analytics'
+import type { OperationsMetrics, PlatformReadiness, DianpingGapData, RestaurantAnalyticsResult } from '@/types/restaurant-analytics'
 
 const containerRef = ref<HTMLElement>()
 useChartResize(containerRef)
@@ -189,8 +269,9 @@ const {
   handleSelectUpload,
 } = useRestaurantAnalytics<RestaurantAnalyticsResult>((result) => result)
 
-const ops = computed<OperationsMetrics | null>(() => fullData.value?.operationsMetrics ?? fullData.value?.dianpingGaps ?? null)
+const ops = computed<OperationsMetrics | null>(() => fullData.value?.operationsMetrics ?? null)
 const platform = computed<PlatformReadiness | null>(() => fullData.value?.platformReadiness ?? null)
+const gaps = computed<DianpingGapData | null>(() => fullData.value?.dianpingGaps ?? null)
 
 // Re-render chart when data changes
 watch(ops, (val) => {
@@ -384,4 +465,28 @@ function renderOpsRadar() {
 .roadmap-label { font-weight: 600; font-size: 13px; flex: 1; }
 .roadmap-timeline { font-size: 12px; color: var(--el-text-color-secondary); white-space: nowrap; }
 .roadmap-action { font-size: 13px; color: var(--el-text-color-regular); margin-top: 6px; line-height: 1.5; }
+
+.list-eligibility { display: flex; flex-direction: column; gap: 12px; }
+.eligibility-item {
+  background: var(--el-fill-color-light);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.eligibility-header { display: flex; align-items: center; gap: 8px; }
+.eligibility-list { font-weight: 600; font-size: 14px; }
+.eligibility-verdict { font-size: 12px; color: var(--el-text-color-secondary); margin-top: 4px; }
+.eligibility-gaps { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.gap-tag {
+  font-size: 11px;
+  background: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.missing-data-list { display: flex; flex-direction: column; gap: 10px; }
+.missing-item { display: flex; gap: 10px; align-items: flex-start; }
+.missing-content { flex: 1; }
+.missing-field { font-weight: 600; font-size: 13px; }
+.missing-impact { font-size: 12px; color: var(--el-text-color-secondary); margin-top: 2px; }
 </style>

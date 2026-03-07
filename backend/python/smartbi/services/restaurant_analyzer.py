@@ -418,15 +418,20 @@ class RestaurantAnalyzer:
         ops_metrics["storeCount"] = store_count
         ops_metrics["analysisMode"] = analysis_mode
 
+        # Compute menu count + total revenue for gap analysis
+        menu_count = int(df[product_col].nunique()) if product_col and product_col in df.columns else 0
+        total_revenue = float(df[actual_col].sum()) if actual_col and actual_col in df.columns else 0
+
         result: Dict[str, Any] = {
             "menuQuadrant": quadrant,
             "storeComparison": self._store_comparison(df, store_col, actual_col, store_disc_df, store_count),
             "categoryBreakdown": self._category_breakdown(df, category_col, actual_col),
             "comboEfficiency": self._combo_efficiency(df, order_method_col, actual_col),
             "discountAlerts": self._discount_alerts(store_col, store_disc_df),
-            # Legacy key preserved for backward compatibility
-            "dianpingGaps": ops_metrics,
-            # New split structure
+            "dianpingGaps": self._dianping_gaps(
+                ops_metrics, platform_readiness, sub_sector,
+                store_count, menu_count, total_revenue,
+            ),
             "operationsMetrics": ops_metrics,
             "platformReadiness": platform_readiness,
             "benchmarksUsed": sub_sector,
@@ -887,6 +892,188 @@ class RestaurantAnalyzer:
             "subSector": sub_sector,
             "recommendedLists": recommended_lists,
             "improvementRoadmap": roadmap,
+        }
+
+    # ── Dianping Gap Analysis (大众点评差距分析) ─────────────────
+
+    def _dianping_gaps(
+        self, ops: Dict[str, Any], platform: Dict[str, Any],
+        sub_sector: str, store_count: int, menu_count: int,
+        total_revenue: float,
+    ) -> Dict[str, Any]:
+        """Produce independent Dianping gap analysis — compares brand metrics
+        against platform listing requirements and sub-sector benchmarks.
+        Distinct from operationsMetrics (internal POS metrics) and
+        platformReadiness (pass/fail checklist).
+        """
+        from smartbi.api.benchmark import RESTAURANT_DINING_BENCHMARKS
+        dianping_std = RESTAURANT_DINING_BENCHMARKS.get("dianping_standards", {})
+        metrics_cfg = RESTAURANT_DINING_BENCHMARKS.get("metrics", {})
+
+        sig_conc = ops.get("signatureConcentration", 0)
+        return_rate = ops.get("returnRate", 0)
+        consistency = ops.get("consistencyScore", 0)
+        actual_price = ops.get("priceVsBenchmark", {}).get("actual", 0)
+        platform_score = platform.get("score", 0)
+
+        # ── 1. List eligibility (榜单资格评估) ──
+        list_eligibility = []
+
+        # 必吃榜
+        bichi_gaps = []
+        if consistency <= 50:
+            bichi_gaps.append("出品稳定性 %d/100，需 > 50" % int(consistency))
+        if sig_conc < 25:
+            bichi_gaps.append("招牌菜集中度 %.1f%%，需 > 25%%" % sig_conc)
+        if return_rate > 3:
+            bichi_gaps.append("退货率 %.1f%%，需 < 3%%" % return_rate)
+        bichi_gaps.append("需人工确认: 营业满365天且182天+正常经营")
+        bichi_gaps.append("需人工确认: 无刷评/食安问题")
+        bichi_score = max(0, min(100, platform_score + (10 if sig_conc > 30 else 0)))
+        list_eligibility.append({
+            "list": "必吃榜",
+            "score": bichi_score,
+            "dataGaps": [g for g in bichi_gaps if not g.startswith("需人工")],
+            "manualChecks": [g for g in bichi_gaps if g.startswith("需人工")],
+            "verdict": "数据指标达标" if bichi_score >= 75 else "存在差距",
+        })
+
+        # 好评榜
+        haoping_gaps = []
+        haoping_gaps.append("需平台数据: 星级 >= 4.0")
+        haoping_gaps.append("需平台数据: 总评价数 >= 50")
+        haoping_score = min(80, platform_score)  # capped — can't fully assess without platform data
+        list_eligibility.append({
+            "list": "好评榜",
+            "score": haoping_score,
+            "dataGaps": ["缺少大众点评星级评分", "缺少平台评价数量"],
+            "manualChecks": haoping_gaps,
+            "verdict": "POS指标良好，需补充平台数据" if haoping_score >= 60 else "需先提升POS指标",
+        })
+
+        # 热门榜
+        remen_score = min(90, 50 + store_count * 5 + (20 if total_revenue > 100_0000 else 10 if total_revenue > 50_0000 else 0))
+        list_eligibility.append({
+            "list": "热门榜",
+            "score": min(100, remen_score),
+            "dataGaps": ["缺少实时客流数据"] if store_count <= 1 else [],
+            "manualChecks": ["需平台数据: 7天内真实客流量"],
+            "verdict": "多店品牌客流优势明显" if store_count > 3 else "需提升线下客流",
+        })
+
+        # 口味榜
+        kouwei_score = 70 if sig_conc > 30 and consistency > 60 else 40
+        list_eligibility.append({
+            "list": "口味榜",
+            "score": kouwei_score,
+            "dataGaps": ["缺少大众点评口味单项评分"],
+            "manualChecks": ["需平台数据: 口味分 >= 4.0, 星级 >= 4.0"],
+            "verdict": "招牌菜突出，口味潜力大" if kouwei_score >= 60 else "需强化招牌菜",
+        })
+
+        # 回头客榜
+        list_eligibility.append({
+            "list": "回头客榜",
+            "score": None,
+            "dataGaps": ["缺少复购率数据", "缺少30天内二次消费比例"],
+            "manualChecks": ["需平台数据: 总评 >= 50, 30天内二次消费比例"],
+            "verdict": "无法从POS数据评估，需接入会员/平台数据",
+        })
+
+        # ── 2. Benchmark comparison (行业对标) ──
+        benchmark_comparison = []
+
+        # 客单价对标
+        avg_ticket_cfg = metrics_cfg.get("average_ticket", {})
+        sub_sectors = avg_ticket_cfg.get("sub_sectors", {})
+        if sub_sector in sub_sectors:
+            bm = sub_sectors[sub_sector]
+            bm_median = bm["median"]
+            bm_range = bm["range"]
+        else:
+            bm_median = avg_ticket_cfg.get("median", 75)
+            bm_range = avg_ticket_cfg.get("range", [50, 120])
+
+        if actual_price > 0:
+            if actual_price < bm_range[0]:
+                position = "偏低"
+            elif actual_price > bm_range[1]:
+                position = "偏高"
+            else:
+                position = "适中"
+            benchmark_comparison.append({
+                "metric": "品均价",
+                "actual": round(actual_price, 1),
+                "benchmarkMedian": bm_median,
+                "benchmarkRange": bm_range,
+                "position": position,
+                "unit": "元",
+            })
+
+        # 菜品数对标
+        typical_menu = {"火锅": [80, 200], "快餐": [40, 100], "鱼类餐饮": [60, 150],
+                        "西餐": [40, 120], "日料": [50, 150], "牛肉面": [30, 80],
+                        "中式海鲜": [80, 250], "餐饮连锁": [50, 150]}
+        menu_range = typical_menu.get(sub_sector, [50, 150])
+        if menu_count > 0:
+            if menu_count < menu_range[0]:
+                m_pos = "偏少"
+            elif menu_count > menu_range[1]:
+                m_pos = "偏多"
+            else:
+                m_pos = "适中"
+            benchmark_comparison.append({
+                "metric": "菜品数",
+                "actual": menu_count,
+                "benchmarkMedian": (menu_range[0] + menu_range[1]) // 2,
+                "benchmarkRange": menu_range,
+                "position": m_pos,
+                "unit": "个",
+            })
+
+        # 招牌菜集中度
+        benchmark_comparison.append({
+            "metric": "招牌菜集中度",
+            "actual": round(sig_conc, 1),
+            "benchmarkMedian": 30,
+            "benchmarkRange": [20, 45],
+            "position": "偏低" if sig_conc < 20 else "偏高" if sig_conc > 45 else "适中",
+            "unit": "%",
+        })
+
+        # 出品稳定性
+        benchmark_comparison.append({
+            "metric": "出品稳定性",
+            "actual": round(consistency, 1),
+            "benchmarkMedian": 65,
+            "benchmarkRange": [50, 85],
+            "position": "偏低" if consistency < 50 else "优秀" if consistency > 85 else "适中",
+            "unit": "分",
+        })
+
+        # ── 3. Missing data (数据缺口) ──
+        missing_data = [
+            {"field": "大众点评星级", "impact": "无法评估好评榜/口味榜资格", "priority": "high"},
+            {"field": "月均评价数", "impact": "无法评估好评榜最低评价门槛", "priority": "high"},
+            {"field": "30天复购率", "impact": "无法评估回头客榜资格", "priority": "medium"},
+            {"field": "外卖平台数据", "impact": "无法评估线上渠道表现", "priority": "medium"},
+            {"field": "食安证照状态", "impact": "必吃榜一票否决项", "priority": "high"},
+        ]
+
+        # ── 4. Overall assessment ──
+        assessable = [le for le in list_eligibility if le["score"] is not None]
+        avg_score = round(sum(le["score"] for le in assessable) / max(len(assessable), 1))
+        best_list = max(assessable, key=lambda x: x["score"]) if assessable else None
+
+        return {
+            "listEligibility": list_eligibility,
+            "benchmarkComparison": benchmark_comparison,
+            "missingData": missing_data,
+            "overallScore": avg_score,
+            "bestListMatch": best_list["list"] if best_list else None,
+            "summary": "最有希望: %s (评分 %d)，建议优先补充平台数据后申请" % (
+                best_list["list"], best_list["score"]
+            ) if best_list else "数据不足，无法评估",
         }
 
     # ── Price Band Analysis ──────────────────────────────────────

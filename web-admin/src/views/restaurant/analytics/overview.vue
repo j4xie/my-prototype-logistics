@@ -473,7 +473,7 @@ function renderOpsRadarMini() {
   if (!el || !data.value) return
   const chart = echarts.getInstanceByDom(el) || echarts.init(el)
 
-  const ops = data.value.operationsMetrics ?? data.value.dianpingGaps
+  const ops = data.value.operationsMetrics
   chart.setOption({
     tooltip: {},
     radar: {
