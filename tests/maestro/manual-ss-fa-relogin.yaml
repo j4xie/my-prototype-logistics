@@ -1,0 +1,92 @@
+appId: com.cretas.foodtrace
+---
+# Logout current user, login as factory_admin1
+# Uses percentage-based point taps to avoid Chinese encoding issues
+
+- waitForAnimationToEnd
+
+# Tap rightmost tab (Profile/我的) - ~92% from left, 97% from top
+- tapOn:
+    point: "92%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Scroll down to find Logout button
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# Take debug screenshot
+- takeScreenshot: screenshots/temp-profile-scroll
+
+# Tap Logout button area (should be visible after scroll)
+- tapOn:
+    text: "Logout"
+    optional: true
+- tapOn:
+    text: "Log Out"
+    optional: true
+- tapOn:
+    text: "Log out"
+    optional: true
+- waitForAnimationToEnd
+
+# Confirm dialog
+- tapOn:
+    text: "Confirm"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Wait for landing page
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Tap Login on landing page
+- tapOn:
+    text: "Login"
+    optional: true
+- tapOn:
+    id: "landing-login-btn"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Enter credentials using testIDs
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "factory_admin1"
+
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Submit
+- tapOn:
+    id: "login-submit-btn"
+
+# Wait for OK dialog
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Verify factory admin home
+- extendedWaitUntil:
+    visible: ".*Good.*|.*factory.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/manual-ss-fa-home

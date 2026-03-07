@@ -18,6 +18,7 @@ import com.cretas.aims.repository.config.AIIntentConfigRepository;
 import com.cretas.aims.entity.learning.LearnedExpression;
 import com.cretas.aims.entity.learning.TrainingSample;
 import com.cretas.aims.service.AIIntentService;
+import com.cretas.aims.service.ActiveLearningService;
 import com.cretas.aims.service.ConversationService;
 import com.cretas.aims.service.ExpressionLearningService;
 import com.cretas.aims.service.IntentFeedbackService;
@@ -230,6 +231,19 @@ public class AIIntentServiceImpl implements AIIntentService {
         this.classifierIntentMatcher = classifierIntentMatcher;
         log.info("[Classifier] ClassifierIntentMatcher 注入: {}",
                 classifierIntentMatcher != null ? "成功" : "未配置");
+    }
+
+    /**
+     * Wave-10: Active Learning 样本采集服务
+     * 低置信度匹配结果自动送入 MLRL 闭环
+     */
+    private ActiveLearningService activeLearningService;
+
+    @Autowired(required = false)
+    public void setActiveLearningService(ActiveLearningService activeLearningService) {
+        this.activeLearningService = activeLearningService;
+        log.info("[ActiveLearning] ActiveLearningService 注入: {}",
+                activeLearningService != null ? "成功" : "未配置");
     }
 
     /**
@@ -3339,6 +3353,18 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
+        // Wave-10b: SCALE_TROUBLESHOOT — 秤故障排查，4次误匹配 (FOB/pb/英文/溯源)
+        if ("SCALE_TROUBLESHOOT".equals(routedIntent)) {
+            return !input.contains("秤") && !input.contains("称重") && !input.contains("scale")
+                    && !input.contains("故障") && !input.contains("排查");
+        }
+
+        // Wave-10b: CAMERA_SUBSCRIBE — 3次误匹配 (下周/报表/让工人)
+        if ("CAMERA_SUBSCRIBE".equals(routedIntent)) {
+            return !input.contains("摄像") && !input.contains("订阅") && !input.contains("camera")
+                    && !input.contains("subscribe") && !input.contains("事件");
+        }
+
         return false;
     }
 
@@ -4464,6 +4490,26 @@ public class AIIntentServiceImpl implements AIIntentService {
             log.debug("Intent match record saved: id={}, intent={}, confidence={}",
                     record.getId(), record.getMatchedIntentCode(), record.getConfidenceScore());
 
+            // Wave-10: 低置信度样本自动送入 Active Learning 闭环
+            if (activeLearningService != null && record.getConfidenceScore() != null) {
+                try {
+                    activeLearningService.collectSample(
+                            record.getFactoryId(),
+                            record.getUserId(),
+                            record.getUserInput(),
+                            record.getNormalizedInput(),
+                            record.getMatchedIntentCode(),
+                            record.getConfidenceScore(),
+                            record.getMatchMethod() != null ? record.getMatchMethod().name() : null,
+                            record.getTopCandidates(),
+                            record.getMatchedKeywords(),
+                            record.getId() != null ? record.getId().toString() : null
+                    );
+                } catch (Exception alEx) {
+                    log.debug("Active learning sample collection skipped: {}", alEx.getMessage());
+                }
+            }
+
         } catch (Exception e) {
             // 记录失败不应该影响主流程
             log.warn("Failed to save intent match record: {}", e.getMessage());
@@ -5157,6 +5203,22 @@ public class AIIntentServiceImpl implements AIIntentService {
             Set<String> keywords = knowledgeBase.getDomainKeywords(domain);
             boolean hasKeyword = keywords.stream().anyMatch(kw -> userInput.contains(kw));
             if (!hasKeyword) {
+                oodVotes++;
+            }
+        } else if (domain == IntentKnowledgeBase.Domain.GENERAL) {
+            // Wave-11: GENERAL域不跳过关键词验证，改为检查是否包含任何已知领域的关键词
+            // 如果输入不含任何领域关键词且被分类为GENERAL，更可能是OOD
+            boolean matchesAnyDomain = false;
+            for (IntentKnowledgeBase.Domain d : IntentKnowledgeBase.Domain.values()) {
+                if (d == IntentKnowledgeBase.Domain.GENERAL) continue;
+                Set<String> kws = knowledgeBase.getDomainKeywords(d);
+                if (kws != null && kws.stream().anyMatch(kw -> userInput.contains(kw))) {
+                    matchesAnyDomain = true;
+                    break;
+                }
+            }
+            // GENERAL分类 + 不含任何领域关键词 → 更可能是OOD或闲聊
+            if (!matchesAnyDomain && userInput.length() <= 8) {
                 oodVotes++;
             }
         }

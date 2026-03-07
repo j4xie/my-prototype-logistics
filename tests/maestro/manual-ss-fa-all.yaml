@@ -1,0 +1,150 @@
+appId: com.cretas.foodtrace
+---
+# Complete FA PSI flow: launch -> login -> navigate all PSI screens
+# Uses launchApp + testIDs + English text only
+
+- launchApp
+
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 20000
+- waitForAnimationToEnd
+
+# Tap Login button on landing page (English)
+- tapOn:
+    text: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Wait for login form
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+
+# Username
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "factory_admin1"
+
+# Password
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Submit
+- tapOn:
+    id: "login-submit-btn"
+
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Verify home
+- extendedWaitUntil:
+    visible: ".*Good.*|.*factory_admin.*|.*AI Insights.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Screenshot: Home
+- takeScreenshot: screenshots/manual-ss-fa-home
+
+# Tap Management tab (4th from left in FA, ~72% from left)
+- tapOn:
+    point: "72%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Management top
+- takeScreenshot: screenshots/manual-ss-fa-management
+
+# Scroll to PSI section
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+
+# Screenshot: PSI grid
+- takeScreenshot: screenshots/manual-ss-fa-management-psi
+
+# --- PSI Items (Chinese labels, use point taps on grid) ---
+# PSI grid is 2-col layout. After scroll, items should be visible:
+# Row 1: 采购订单 (left), 销售订单 (right)
+# Row 2: 成品库存 (left), 调拨管理 (right)
+# Row 3: 应收应付 (left), 价格表 (right)
+# Row 4: 退货管理 (left)
+
+# Approximate grid positions (after scroll to PSI section):
+# Left col: ~25%, Right col: ~75%
+# Row spacing: ~12% each starting from ~40%
+
+# 1. Purchase Orders (top-left of PSI grid)
+- tapOn:
+    point: "25%,45%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-purchase-list
+- back
+- waitForAnimationToEnd
+
+# 2. Sales Orders (top-right)
+- tapOn:
+    point: "75%,45%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-sales-list
+- back
+- waitForAnimationToEnd
+
+# 3. Finished Goods (2nd row left)
+- tapOn:
+    point: "25%,57%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-finished-goods
+- back
+- waitForAnimationToEnd
+
+# 4. Transfer (2nd row right)
+- tapOn:
+    point: "75%,57%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-transfer
+- back
+- waitForAnimationToEnd
+
+# 5. AR/AP (3rd row left)
+- tapOn:
+    point: "25%,69%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-arap
+- back
+- waitForAnimationToEnd
+
+# 6. Price List (3rd row right)
+- tapOn:
+    point: "75%,69%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-pricelist
+- back
+- waitForAnimationToEnd
+
+# 7. Return Orders (4th row left)
+- tapOn:
+    point: "25%,81%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-returns
+- back
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/manual-ss-fa-complete

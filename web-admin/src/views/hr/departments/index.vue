@@ -200,7 +200,7 @@ async function handleDelete(row: any) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="name" label="部门名称" min-width="150" />
         <el-table-column prop="code" label="部门编码" width="120" />
         <el-table-column prop="parentName" label="上级部门" width="150">

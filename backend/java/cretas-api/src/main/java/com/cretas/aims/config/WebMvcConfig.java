@@ -38,13 +38,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
         // 1. JWT认证拦截器 - 验证Token，设置用户信息
         registry.addInterceptor(jwtAuthInterceptor)
-                .addPathPatterns("/api/mobile/**", "/api/platform/**")  // 拦截所有mobile和platform API
+                .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**")  // 拦截所有API
                 .excludePathPatterns(swaggerWhitelist)  // 排除Swagger
                 .order(1);  // 最高优先级
 
         // 2. 权限检查拦截器 - 检查 @RequirePermission 注解
         registry.addInterceptor(permissionInterceptor)
-                .addPathPatterns("/api/mobile/**", "/api/platform/**")  // 拦截所有mobile和platform API
+                .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**")  // 拦截所有API
                 .excludePathPatterns(swaggerWhitelist)  // 排除Swagger
                 .order(2);  // 在JWT之后执行
 

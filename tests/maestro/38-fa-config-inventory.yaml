@@ -1,0 +1,86 @@
+appId: com.cretas.foodtrace
+---
+# Test 38: Factory Admin - Config & Inventory (ERP)
+# Verifies SchemaConfig, FormTemplate, PurchaseOrders, SalesOrders
+# Note: Management sub-screens hide bottom tabs, so use back for navigation
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Navigate to Management tab (管理)
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/38-fa-management-top
+
+# Scroll down to System Config section
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/38-fa-management-config-section
+
+# === Schema Config (表单配置) ===
+- tapOn:
+    text: ".*Form Config.*|.*\u8868\u5355\u914D\u7F6E.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/38-fa-schema-config
+
+# Go back (safe: either from sub-screen or no-op if tap was skipped)
+- back
+- waitForAnimationToEnd
+
+# Scroll down again (back may have reset scroll position)
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Form Templates (表单模版管理) ===
+- tapOn:
+    text: ".*Form Template.*|.*\u8868\u5355\u6A21\u7248.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/38-fa-form-template
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Scroll down more to ERP section (进销存管理)
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/38-fa-management-erp-section
+
+# === Purchase Orders (采购订单) ===
+- tapOn:
+    text: ".*Purchase.*Order.*|.*\u91C7\u8D2D\u8BA2\u5355.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/38-fa-purchase-orders
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Scroll down again
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# === Sales Orders (销售订单) ===
+- tapOn:
+    text: ".*Sales.*Order.*|.*\u9500\u552E\u8BA2\u5355.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/38-fa-sales-orders

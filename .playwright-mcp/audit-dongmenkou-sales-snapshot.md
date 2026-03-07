@@ -1,0 +1,331 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - img "Logo" [ref=e6]
+      - generic [ref=e7]: 白垩纪AI Agent
+    - menubar [ref=e11]:
+      - menuitem "首页" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - text: 首页
+      - menuitem "生产管理" [ref=e16]:
+        - generic [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - generic [ref=e21]: 生产管理
+          - img [ref=e23]
+      - menuitem "仓储管理" [ref=e25]:
+        - generic [ref=e26] [cursor=pointer]:
+          - img [ref=e28]
+          - generic [ref=e32]: 仓储管理
+          - img [ref=e34]
+      - menuitem "质量管理" [ref=e36]:
+        - generic [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e41]: 质量管理
+          - img [ref=e43]
+      - menuitem "采购管理" [ref=e45]:
+        - generic [ref=e46] [cursor=pointer]:
+          - img [ref=e48]
+          - generic [ref=e50]: 采购管理
+          - img [ref=e52]
+      - menuitem "销售管理" [ref=e54]:
+        - generic [ref=e55] [cursor=pointer]:
+          - img [ref=e57]
+          - generic [ref=e59]: 销售管理
+          - img [ref=e61]
+      - menuitem "人事管理" [ref=e63]:
+        - generic [ref=e64] [cursor=pointer]:
+          - img [ref=e66]
+          - generic [ref=e68]: 人事管理
+          - img [ref=e70]
+      - menuitem "调拨管理" [ref=e72]:
+        - generic [ref=e73] [cursor=pointer]:
+          - img [ref=e75]
+          - generic [ref=e77]: 调拨管理
+          - img [ref=e79]
+      - menuitem "设备管理" [ref=e81]:
+        - generic [ref=e82] [cursor=pointer]:
+          - img [ref=e84]
+          - generic [ref=e86]: 设备管理
+          - img [ref=e88]
+      - menuitem "财务管理" [ref=e90]:
+        - generic [ref=e91] [cursor=pointer]:
+          - img [ref=e93]
+          - generic [ref=e97]: 财务管理
+          - img [ref=e99]
+      - menuitem "系统管理" [ref=e101]:
+        - generic [ref=e102] [cursor=pointer]:
+          - img [ref=e104]
+          - generic [ref=e106]: 系统管理
+          - img [ref=e108]
+      - menuitem "数据分析" [ref=e110]:
+        - generic [ref=e111] [cursor=pointer]:
+          - img [ref=e113]
+          - generic [ref=e115]: 数据分析
+          - img [ref=e117]
+      - menuitem "智能调度" [ref=e119]:
+        - generic [ref=e120] [cursor=pointer]:
+          - img [ref=e122]
+          - generic [ref=e124]: 智能调度
+          - img [ref=e126]
+      - menuitem "生产分析" [ref=e128]:
+        - generic [ref=e129] [cursor=pointer]:
+          - img [ref=e131]
+          - generic [ref=e133]: 生产分析
+          - img [ref=e135]
+      - menuitem "智能BI" [expanded] [ref=e137]:
+        - generic [ref=e138] [cursor=pointer]:
+          - img [ref=e140]
+          - generic [ref=e142]: 智能BI
+          - img [ref=e144]
+        - menu [ref=e146]:
+          - generic [ref=e147]: 分析入口
+          - menuitem "经营驾驶舱" [ref=e148] [cursor=pointer]
+          - menuitem "智能数据分析" [ref=e149] [cursor=pointer]
+          - menuitem "AI问答" [ref=e150] [cursor=pointer]
+          - generic [ref=e151]: 预定义报表
+          - menuitem "销售数据分析" [ref=e152] [cursor=pointer]
+          - menuitem "财务数据分析" [ref=e153] [cursor=pointer]
+          - generic [ref=e154]: 数据管理
+          - menuitem "Excel上传" [ref=e155] [cursor=pointer]
+          - menuitem "查询模板" [ref=e156] [cursor=pointer]
+          - menuitem "数据完整度" [ref=e157] [cursor=pointer]
+          - generic [ref=e158]: 质量管理
+          - menuitem "知识库反馈" [ref=e159] [cursor=pointer]
+  - generic [ref=e160]:
+    - banner [ref=e161]:
+      - generic [ref=e162]:
+        - img [ref=e164] [cursor=pointer]
+        - navigation "面包屑" [ref=e166]:
+          - generic [ref=e167]:
+            - link "智能BI" [ref=e168]
+            - text: /
+          - link "智能数据分析" [ref=e170]
+      - generic [ref=e171]:
+        - img [ref=e173] [cursor=pointer]
+        - button "factory_admin1 工厂总监" [ref=e176] [cursor=pointer]:
+          - img [ref=e179]
+          - generic [ref=e181]:
+            - generic [ref=e182]: factory_admin1
+            - generic [ref=e183]: 工厂总监
+    - main [ref=e184]:
+      - generic [ref=e186]:
+        - generic [ref=e188]:
+          - generic [ref=e189]: 智能数据分析
+          - generic [ref=e191]:
+            - generic [ref=e193] [cursor=pointer]:
+              - generic:
+                - combobox [active] [ref=e195]
+                - generic [ref=e196]: 东门口2月商品销量报表.xlsx (1 表)
+              - img [ref=e199]
+            - button "同比分析" [ref=e201] [cursor=pointer]:
+              - generic [ref=e202]:
+                - img [ref=e204]
+                - text: 同比分析
+            - button "因果分析" [ref=e206] [cursor=pointer]:
+              - generic [ref=e207]:
+                - img [ref=e209]
+                - text: 因果分析
+            - button "分享" [ref=e211] [cursor=pointer]:
+              - generic [ref=e212]:
+                - img [ref=e214]
+                - text: 分享
+            - button "上传新文件" [ref=e216] [cursor=pointer]:
+              - generic [ref=e217]:
+                - img [ref=e219]
+                - text: 上传新文件
+            - button "功能引导" [ref=e221] [cursor=pointer]:
+              - img [ref=e224]
+        - generic [ref=e226]:
+          - generic [ref=e227]:
+            - generic [ref=e228]:
+              - img [ref=e230]
+              - generic [ref=e232]: 已从缓存加载「Restaurant-fish-normal-s42.xlsx」的分析结果，无需等待
+            - button "从服务器刷新" [ref=e233] [cursor=pointer]:
+              - generic [ref=e234]:
+                - img [ref=e236]
+                - text: 从服务器刷新
+          - generic [ref=e238]:
+            - alert [ref=e239]:
+              - img [ref=e241]
+              - generic [ref=e244]: 成功处理 1 个 Sheet，共 3461 行数据
+            - generic [ref=e245]:
+              - tablist [ref=e249]:
+                - tab "Sheet1 3461行" [selected] [ref=e585]:
+                  - generic [ref=e252]:
+                    - img [ref=e254]
+                    - generic [ref=e256]: Sheet1
+                    - generic [ref=e258]: 3461行
+              - tabpanel "Sheet1 3461行" [ref=e586]:
+                - table [ref=e264]:
+                  - rowgroup [ref=e265]:
+                    - row "数据类型 general 推荐图表 自动推荐 保存行数 3461" [ref=e587]:
+                      - cell "数据类型" [ref=e267]
+                      - cell "general" [ref=e588]:
+                        - generic [ref=e270]: general
+                      - cell "推荐图表" [ref=e271]
+                      - cell "自动推荐" [ref=e589]:
+                        - generic [ref=e274]: 自动推荐
+                      - cell "保存行数" [ref=e275]
+                      - cell "3461" [ref=e590]
+                - generic [ref=e609]:
+                  - generic [ref=e610]:
+                    - heading "数据可视化" [level=3] [ref=e611]
+                    - generic [ref=e612]:
+                      - generic [ref=e613]: 点击图表数据点可下钻分析
+                      - button "刷新分析" [ref=e903] [cursor=pointer]:
+                        - img [ref=e905]
+                        - generic [ref=e907]: 刷新分析
+                      - button "自动" [ref=e615] [cursor=pointer]:
+                        - generic [ref=e616]:
+                          - img [ref=e618]
+                          - text: 自动
+                      - generic [ref=e622]:
+                        - switch
+                        - generic [ref=e624] [cursor=pointer]: 标准
+                        - generic [ref=e628] [cursor=pointer]: 编排
+                  - generic [ref=e629]:
+                    - img [ref=e631]
+                    - generic [ref=e634]:
+                      - generic [ref=e635]:
+                        - combobox [ref=e637]
+                        - generic [ref=e638]: 维度筛选
+                      - img [ref=e641] [cursor=pointer]
+                  - generic [ref=e643]:
+                    - generic [ref=e644]:
+                      - button "换一批图表" [ref=e645] [cursor=pointer]:
+                        - generic [ref=e646]:
+                          - img [ref=e648]
+                          - text: 换一批图表
+                      - button "导出 Excel" [ref=e650] [cursor=pointer]:
+                        - generic [ref=e651]:
+                          - img [ref=e653]
+                          - text: 导出 Excel
+                      - button "导出 PDF" [ref=e655] [cursor=pointer]:
+                        - generic [ref=e656]:
+                          - img [ref=e658]
+                          - text: 导出 PDF
+                      - generic [ref=e660]: 6 个图表
+                    - generic [ref=e662]:
+                      - generic [ref=e663]: 各单位3项指标对比 (前20项)
+                      - generic [ref=e664]:
+                        - generic [ref=e665]:
+                          - button [ref=e667] [cursor=pointer]:
+                            - img [ref=e670]
+                          - button [ref=e672] [cursor=pointer]:
+                            - img [ref=e674]
+                        - button [ref=e676] [cursor=pointer]:
+                          - img [ref=e678]
+                        - button [ref=e681] [cursor=pointer]:
+                          - img [ref=e683]
+                    - generic [ref=e687]:
+                      - generic [ref=e688]: 实收 构成占比 (前10项)
+                      - generic [ref=e689]:
+                        - generic [ref=e690]:
+                          - button [ref=e692] [cursor=pointer]:
+                            - img [ref=e695]
+                          - button [ref=e697] [cursor=pointer]:
+                            - img [ref=e699]
+                        - button [ref=e701] [cursor=pointer]:
+                          - img [ref=e703]
+                        - button [ref=e706] [cursor=pointer]:
+                          - img [ref=e708]
+                    - generic [ref=e712]:
+                      - generic [ref=e713]: 分类 排行
+                      - generic [ref=e714]:
+                        - generic [ref=e715]:
+                          - button [ref=e717] [cursor=pointer]:
+                            - img [ref=e720]
+                          - button [ref=e722] [cursor=pointer]:
+                            - img [ref=e724]
+                        - button [ref=e726] [cursor=pointer]:
+                          - img [ref=e728]
+                        - button [ref=e731] [cursor=pointer]:
+                          - img [ref=e733]
+                    - generic [ref=e737]:
+                      - generic [ref=e738]: 销售金额 帕累托分析
+                      - generic [ref=e739]:
+                        - generic [ref=e740]:
+                          - button [ref=e742] [cursor=pointer]:
+                            - img [ref=e745]
+                          - button [ref=e747] [cursor=pointer]:
+                            - img [ref=e749]
+                        - button [ref=e751] [cursor=pointer]:
+                          - img [ref=e753]
+                        - button [ref=e756] [cursor=pointer]:
+                          - img [ref=e758]
+                    - generic [ref=e761]:
+                      - generic [ref=e762]:
+                        - generic [ref=e763]: 销售单价 vs 销售金额 相关性
+                        - button "重新生成" [ref=e765] [cursor=pointer]:
+                          - generic [ref=e766]:
+                            - img [ref=e768]
+                            - text: 重新生成
+                      - generic [ref=e771]:
+                        - img [ref=e773]
+                        - paragraph [ref=e790]: 暂无数据
+                    - generic [ref=e792]:
+                      - generic [ref=e793]: 销售金额、分摊优惠 双指标对比
+                      - generic [ref=e794]:
+                        - generic [ref=e795]:
+                          - button [ref=e797] [cursor=pointer]:
+                            - img [ref=e800]
+                          - button [ref=e802] [cursor=pointer]:
+                            - img [ref=e804]
+                        - button [ref=e806] [cursor=pointer]:
+                          - img [ref=e808]
+                        - button [ref=e811] [cursor=pointer]:
+                          - img [ref=e813]
+                    - generic [ref=e817]:
+                      - generic [ref=e818]: 实收 增减分析
+                      - generic [ref=e819]:
+                        - generic [ref=e820]:
+                          - button [ref=e822] [cursor=pointer]:
+                            - img [ref=e825]
+                          - button [ref=e827] [cursor=pointer]:
+                            - img [ref=e829]
+                        - button [ref=e831] [cursor=pointer]:
+                          - img [ref=e833]
+                        - button [ref=e836] [cursor=pointer]:
+                          - img [ref=e838]
+                - generic [ref=e841]:
+                  - img [ref=e843]
+                  - generic [ref=e846]: 单店样本显示套餐内销量占比高但实收折损严重，需优化定价结构以提升客单价与毛利。
+                - generic [ref=e847]:
+                  - generic [ref=e848]:
+                    - generic [ref=e849] [cursor=pointer]:
+                      - generic [ref=e850]:
+                        - img [ref=e852]
+                        - generic [ref=e854]: AI 分析结论
+                      - generic [ref=e855]:
+                        - generic [ref=e856]:
+                          - img [ref=e858]
+                          - text: 03/03 16:27
+                        - img [ref=e864]
+                    - generic [ref=e866]:
+                      - generic [ref=e867]:
+                        - generic [ref=e868]:
+                          - img [ref=e870]
+                          - generic [ref=e872]: 风险关注
+                          - generic [ref=e873]: "3"
+                        - list [ref=e874]:
+                          - listitem [ref=e875]:
+                            - generic [ref=e877]: "实收与账面差异风险: 部分订单'实收金额'远低于'销售金额'且伴随高额'分摊优惠'，可能导致现金流预测偏差及税务合规风险。 (建议: 财务部门需在3日内完成所有'套餐内销量'订单的复核，确保优惠分摊逻辑符合会计准则。)"
+                          - listitem [ref=e878]:
+                            - generic [ref=e880]: "异常检测: 数据显示'套餐内销量'列在部分记录中高达244份，但对应'实收金额'仅为1971.3元，而'销售金额'为2440元。这表明大量交易通过套餐核销，实际现金流入低于账面销售额，且存在明显的'分摊优惠'（468.7元），导致实际毛利率被低估。 建议: 立即审查套餐定价模型，预计可提升实际净利率2-3个百分点。"
+                          - listitem [ref=e881]:
+                            - generic [ref=e883]: "对比分析: 核心产品'老北京锅底'作为高频引流品，其'分摊优惠'占'销售金额'比例平均达14%（如624元销售对应873元优惠逻辑异常，需核实数据口径，若按实收看则折扣极大）。对比行业基准，餐饮连锁食材成本率应为30-38%，但该品类因过度依赖'小料'和'锅底'低价引流，导致整体毛利空间被压缩至临界点以下。 建议: 下季度将'捞捞桶'等高毛利组合的推广权重提升至60%，预期提升综合毛利率5%。"
+                      - generic [ref=e884]:
+                        - generic [ref=e885]:
+                          - img [ref=e887]
+                          - generic [ref=e889]: 改进建议
+                          - generic [ref=e890]: "2"
+                        - list [ref=e891]:
+                          - listitem [ref=e892]:
+                            - generic [ref=e894]: "高毛利配菜渗透机会: 数据显示'劲爽方便面'、'土豆粉'等配菜在'捞捞桶'中已有出现，但占比极低。这些低成本高毛利产品是提升翻台率和客单价的关键。 → 在收银系统设置'捞捞桶'必选配菜推荐，并针对服务员设置专项提成激励。"
+                          - listitem [ref=e895]:
+                            - generic [ref=e897]: "趋势分析: 当前'招牌涮[牛羊]'等组合虽销量稳定，但缺乏高附加值单品搭配。建议参考大众点评必吃榜标准，推出'高毛利+高体验'的限定套餐，将客单价从目前的约10元（单品价）提升至行业均值85元区间，通过增加'毛肚'、'虾滑'等高价食材占比来改善利润结构。 建议: 本月内上线3款高毛利新品组合，目标将客单价提升20%，带动净利润增长15%。"
+                  - generic [ref=e920]: 分析结果来自缓存（2026-03-03 21:11），点击"刷新分析"获取最新结果
+                - generic [ref=e898]:
+                  - heading "数据预览" [level=3] [ref=e899]: 数据预览
+                  - button "查看原始数据" [ref=e901] [cursor=pointer]:
+                    - generic [ref=e902]: 查看原始数据

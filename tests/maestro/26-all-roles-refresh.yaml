@@ -1,0 +1,54 @@
+appId: com.cretas.foodtrace
+---
+# Test 26: Cross-Role Pull-to-Refresh Test
+# Verifies pull-to-refresh works on Home, Management, and Profile screens (FA role)
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# === Pull-to-refresh on Home ===
+- swipe:
+    direction: DOWN
+    duration: 1000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/26-fa-home-refreshed
+
+# === Pull-to-refresh on Management ===
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+- swipe:
+    direction: DOWN
+    duration: 1000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/26-fa-mgmt-refreshed
+
+# === Profile Tab ===
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/26-fa-profile
+
+# Scroll down on profile
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/26-fa-profile-scroll
+
+# Tap Language option if visible
+- tapOn:
+    text: ".*Language.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/26-fa-language-option
+
+# Go back if navigated away
+- back:
+    optional: true

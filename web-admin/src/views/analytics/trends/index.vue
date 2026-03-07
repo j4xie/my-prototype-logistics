@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import echarts from '@/utils/echarts';
@@ -13,17 +13,18 @@ const selectedModule = ref('all');
 
 // 趋势数据
 const trendData = ref({
-  productionTrend: [] as any[],
-  qualityTrend: [] as any[],
-  costTrend: [] as any[],
-  materialTrend: [] as any[],
-  equipmentTrend: [] as any[]
+  productionTrend: [] as { date: string; value: number }[],
+  qualityTrend: [] as { date: string; value: number }[],
+  costTrend: [] as { date: string; value: number }[],
+  materialTrend: [] as { date: string; value: number }[],
+  equipmentTrend: [] as { date: string; value: number }[]
 });
 
 // 图表实例
 let productionChart: echarts.ECharts | null = null;
 let qualityChart: echarts.ECharts | null = null;
 let costChart: echarts.ECharts | null = null;
+let resizeRaf = 0;
 
 const periodOptions = [
   { label: '近7天', value: 'week' },
@@ -38,9 +39,15 @@ const moduleOptions = [
   { label: '成本', value: 'cost' }
 ];
 
+let resizeObserver: ResizeObserver | null = null;
+
 onMounted(() => {
   loadTrendData();
   initCharts();
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    document.querySelectorAll('.chart').forEach(el => resizeObserver!.observe(el));
+  }
   window.addEventListener('resize', handleResize);
 });
 
@@ -149,14 +156,30 @@ function updateCharts() {
 }
 
 function handleResize() {
-  productionChart?.resize();
-  qualityChart?.resize();
-  costChart?.resize();
+  if (resizeRaf) return;
+  resizeRaf = requestAnimationFrame(() => {
+    resizeRaf = 0;
+    productionChart?.resize();
+    qualityChart?.resize();
+    costChart?.resize();
+  });
 }
 
 function handleRefresh() {
   loadTrendData();
 }
+
+onUnmounted(() => {
+  resizeObserver?.disconnect();
+  if (resizeRaf) cancelAnimationFrame(resizeRaf);
+  window.removeEventListener('resize', handleResize);
+  productionChart?.dispose();
+  qualityChart?.dispose();
+  costChart?.dispose();
+  productionChart = null;
+  qualityChart = null;
+  costChart = null;
+});
 </script>
 
 <template>

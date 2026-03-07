@@ -1,0 +1,123 @@
+appId: com.cretas.foodtrace
+---
+# Test 66: In-depth Wastage Create Form Interaction
+# Opens WastageCreate and exercises all 5 type chips + form fields
+# Safety: back without submitting
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant admin
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: ".*AI Insights.*|.*AI 智能洞察.*|.*Today.*Overview.*|.*首页.*"
+    timeout: 15000
+
+# Navigate to 管理 tab first, then 损耗 sub-section
+- tapOn:
+    text: ".*Management.*|.*Manage.*|.*管理.*"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Wastage.*|.*Loss.*|.*损耗.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Wastage.*|.*Loss.*|.*损耗.*|.*记录.*|.*管理.*"
+    timeout: 5000
+- takeScreenshot: screenshots/66-wastage-list
+
+# Open create form
+- tapOn:
+    text: ".*Record Wastage.*|.*Create.*|.*记录损耗.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Expired.*|.*Type.*|.*Wastage.*|.*损耗类型.*|.*过期.*|.*损耗.*|.*管理.*"
+    timeout: 5000
+- takeScreenshot: screenshots/66-create-form-initial
+
+# === Cycle all 5 type chips ===
+- tapOn:
+    text: ".*Expired.*|.*过期.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-type-1-expired
+
+- tapOn:
+    text: ".*Damaged.*|.*破损.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-type-2-damaged
+
+- tapOn:
+    text: ".*Spoiled.*|.*变质.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-type-3-spoiled
+
+- tapOn:
+    text: ".*Processing.*Loss.*|.*加工损耗.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-type-4-processing
+
+- tapOn:
+    text: ".*Other.*|.*其他.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-type-5-other
+
+# Select Expired as final type
+- tapOn:
+    text: ".*Expired.*|.*过期.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Fill text inputs (without submitting) ===
+- tapOn:
+    text: ".*Quantity.*|.*损耗数量.*"
+    optional: true
+- inputText: "5"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-qty-filled
+
+- tapOn:
+    text: ".*Cost.*|.*估计成本.*"
+    optional: true
+- inputText: "25"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-cost-filled
+
+- tapOn:
+    text: ".*Notes.*|.*Reason.*|.*原因说明.*|.*备注.*"
+    optional: true
+- inputText: "E2E test"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-notes-filled
+
+# Scroll to see buttons
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-form-complete
+
+# === Back without submitting ===
+- back
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-back-to-list
+
+# Return to home
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Home.*|.*首页.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-complete

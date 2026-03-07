@@ -227,8 +227,17 @@ public class AiChatApi {
      */
     @GetMapping("/session/{sessionId}/history")
     public AjaxResult getSessionHistory(@PathVariable("sessionId") String sessionId) {
+        WxUser wxUser = getCurrentWxUser();
+        if (wxUser == null) {
+            return AjaxResult.error("请先登录");
+        }
         try {
             List<AiDemandRecord> history = aiRecommendService.getSessionHistory(sessionId);
+            // 验证会话归属：检查第一条记录的 userId
+            if (!history.isEmpty() && history.get(0).getUserId() != null
+                    && !history.get(0).getUserId().equals(Long.parseLong(wxUser.getId()))) {
+                return AjaxResult.error("无权查看此会话");
+            }
             return AjaxResult.success(history);
         } catch (Exception e) {
             log.error("获取会话历史失败: sessionId={}", sessionId, e);
@@ -244,7 +253,17 @@ public class AiChatApi {
      */
     @DeleteMapping("/session/{sessionId}/history")
     public AjaxResult clearSessionHistory(@PathVariable("sessionId") String sessionId) {
+        WxUser wxUser = getCurrentWxUser();
+        if (wxUser == null) {
+            return AjaxResult.error("请先登录");
+        }
         try {
+            // 验证会话归属
+            List<AiDemandRecord> history = aiRecommendService.getSessionHistory(sessionId);
+            if (!history.isEmpty() && history.get(0).getUserId() != null
+                    && !history.get(0).getUserId().equals(Long.parseLong(wxUser.getId()))) {
+                return AjaxResult.error("无权操作此会话");
+            }
             aiRecommendService.clearConversationHistory(sessionId);
             log.info("清空会话历史: sessionId={}", sessionId);
             return AjaxResult.success("会话历史已清空");
@@ -292,6 +311,11 @@ public class AiChatApi {
     public AjaxResult updateFeedback(
             @PathVariable("id") Long id,
             @RequestBody Map<String, Object> params) {
+        WxUser wxUser = getCurrentWxUser();
+        if (wxUser == null) {
+            return AjaxResult.error("请先登录");
+        }
+
         Object feedbackObj = params.get("feedback");
 
         if (feedbackObj == null) {

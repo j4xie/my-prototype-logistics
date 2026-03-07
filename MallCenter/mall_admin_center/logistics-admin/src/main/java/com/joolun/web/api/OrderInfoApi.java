@@ -75,6 +75,14 @@ public class OrderInfoApi {
     */
     @GetMapping("/{id}")
     public AjaxResult getById(@PathVariable("id") String id){
+		String userId = ThirdSessionHolder.getWxUserId();
+		OrderInfo orderInfo = orderInfoService.getById(id);
+		if(orderInfo == null){
+			return AjaxResult.error(MyReturnCode.ERR_70005.getCode(), MyReturnCode.ERR_70005.getMsg());
+		}
+		if(!orderInfo.getUserId().equals(userId)){
+			return AjaxResult.error("无权查看此订单");
+		}
 		return AjaxResult.success(orderInfoService.getById2(id));
     }
 
@@ -101,9 +109,13 @@ public class OrderInfoApi {
     */
     @DeleteMapping("/{id}")
     public AjaxResult removeById(@PathVariable String id){
+		String userId = ThirdSessionHolder.getWxUserId();
 		OrderInfo orderInfo = orderInfoService.getById(id);
 		if(orderInfo == null){
 			return AjaxResult.error(MyReturnCode.ERR_70005.getCode(), MyReturnCode.ERR_70005.getMsg());
+		}
+		if(!orderInfo.getUserId().equals(userId)){
+			return AjaxResult.error("无权操作此订单");
 		}
 		if(!OrderInfoEnum.STATUS_5.getValue().equals(orderInfo.getStatus()) || CommonConstants.YES.equals(orderInfo.getIsPay())){
 			return AjaxResult.error(MyReturnCode.ERR_70001.getCode(), MyReturnCode.ERR_70001.getMsg());
@@ -118,9 +130,13 @@ public class OrderInfoApi {
 	 */
 	@PutMapping("/cancel/{id}")
 	public AjaxResult orderCancel(@PathVariable String id){
+		String userId = ThirdSessionHolder.getWxUserId();
 		OrderInfo orderInfo = orderInfoService.getById(id);
 		if(orderInfo == null){
 			return AjaxResult.error(MyReturnCode.ERR_70005.getCode(), MyReturnCode.ERR_70005.getMsg());
+		}
+		if(!orderInfo.getUserId().equals(userId)){
+			return AjaxResult.error("无权操作此订单");
 		}
 		if(!CommonConstants.NO.equals(orderInfo.getIsPay())){//只有未支付订单能取消
 			return AjaxResult.error(MyReturnCode.ERR_70001.getCode(), MyReturnCode.ERR_70001.getMsg());
@@ -136,9 +152,13 @@ public class OrderInfoApi {
 	 */
 	@PutMapping("/receive/{id}")
 	public AjaxResult orderReceive(@PathVariable String id){
+		String userId = ThirdSessionHolder.getWxUserId();
 		OrderInfo orderInfo = orderInfoService.getById(id);
 		if(orderInfo == null){
 			return AjaxResult.error(MyReturnCode.ERR_70005.getCode(), MyReturnCode.ERR_70005.getMsg());
+		}
+		if(!orderInfo.getUserId().equals(userId)){
+			return AjaxResult.error("无权操作此订单");
 		}
 		if(!OrderInfoEnum.STATUS_2.getValue().equals(orderInfo.getStatus())){//只有待收货订单能确认收货
 			return AjaxResult.error(MyReturnCode.ERR_70001.getCode(), MyReturnCode.ERR_70001.getMsg());
@@ -286,6 +306,12 @@ public class OrderInfoApi {
 	 */
 	@PostMapping("/refunds")
 	public AjaxResult saveRefunds(@RequestBody OrderItem orderItem) {
+		String userId = ThirdSessionHolder.getWxUserId();
+		// 验证订单归属
+		OrderInfo orderInfo = orderInfoService.getById(orderItem.getOrderId());
+		if(orderInfo == null || !orderInfo.getUserId().equals(userId)){
+			return AjaxResult.error("无权操作此订单");
+		}
 		orderInfoService.saveRefunds(orderItem);
 		return AjaxResult.success();
 	}

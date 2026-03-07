@@ -209,7 +209,7 @@ async function handleDelete(row: any) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="materialTypeName" label="原料类型" min-width="150" show-overflow-tooltip />
         <el-table-column prop="productTypeName" label="产品类型" min-width="150" show-overflow-tooltip />
         <el-table-column prop="conversionRate" label="转换率" width="120" align="center">

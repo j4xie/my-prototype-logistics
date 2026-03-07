@@ -71,6 +71,9 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  if (resizeRaf) cancelAnimationFrame(resizeRaf);
+  window.removeEventListener('resize', handleResize);
   if (refreshInterval.value) {
     clearInterval(refreshInterval.value);
   }
@@ -137,8 +140,8 @@ function generateMockSession(): CalibrationSession {
     sessionName: '行为校准会话 #1',
     sessionType: 'manual',
     status: 'completed',
-    factoryId: 'F001',
-    factoryName: '上海食品加工厂',
+    factoryId: authStore.factoryId,
+    factoryName: authStore.factoryId || '未知工厂',
     description: '针对 ET-Agent 的行为校准，优化工具调用效率和准确性',
     targetMetrics: ['conciseness', 'successRate', 'efficiency'],
     startTime: new Date(Date.now() - 7200000).toISOString(),
@@ -239,12 +242,23 @@ function initCharts() {
     updateTrendChart();
   }
 
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    if (radarContainer.value) resizeObserver.observe(radarContainer.value);
+    if (trendContainer.value) resizeObserver.observe(trendContainer.value);
+  }
   window.addEventListener('resize', handleResize);
 }
 
+let resizeObserver: ResizeObserver | null = null;
+let resizeRaf = 0;
 function handleResize() {
-  radarChart.value?.resize();
-  trendChart.value?.resize();
+  if (resizeRaf) return;
+  resizeRaf = requestAnimationFrame(() => {
+    resizeRaf = 0;
+    radarChart.value?.resize();
+    trendChart.value?.resize();
+  });
 }
 
 function updateRadarChart() {
@@ -788,7 +802,7 @@ function getSeverityText(severity: string) {
           <span>发现的问题 ({{ session.results.issues.length }})</span>
         </div>
       </template>
-      <el-table :data="session.results.issues" stripe border>
+      <el-table :data="session.results.issues" stripe border empty-text="暂无问题记录">
         <el-table-column prop="type" label="类型" width="100" align="center">
           <template #default="{ row }">
             {{ row.type === 'efficiency' ? '效率' : row.type === 'conciseness' ? '简洁性' : row.type }}

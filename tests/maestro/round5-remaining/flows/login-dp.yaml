@@ -1,0 +1,22 @@
+appId: com.cretas.foodtrace
+---
+# Login as dispatcher (dispatcher1)
+- extendedWaitUntil:
+    visible: "Login"
+    timeout: 15000
+- tapOn: "Login"
+- waitForAnimationToEnd
+- tapOn: "Enter username"
+- inputText: "dispatcher1"
+- tapOn: "Enter password"
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    text: "Login"
+    index: 1
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd

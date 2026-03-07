@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI):
         db_port = _env("FOOD_KB_POSTGRES_PORT", "5432")
         db_name = _env("FOOD_KB_POSTGRES_DB", "cretas_db")
         db_user = _env("FOOD_KB_POSTGRES_USER", "cretas_user")
-        db_pass = _env("FOOD_KB_POSTGRES_PASSWORD", "cretas123")
+        db_pass = _env("FOOD_KB_POSTGRES_PASSWORD", "")
 
         import urllib.parse
         encoded_pass = urllib.parse.quote(db_pass, safe="")

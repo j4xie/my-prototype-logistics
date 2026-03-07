@@ -75,7 +75,7 @@ function getRoleText(role: string) {
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe>
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border>
         <el-table-column prop="username" label="用户名" width="120" />
         <el-table-column prop="fullName" label="姓名" />
         <el-table-column prop="phone" label="手机号" width="130" />
@@ -93,7 +93,7 @@ function getRoleText(role: string) {
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
-          <template #default>
+          <template #default="{ row }">
             <el-button type="primary" link>查看</el-button>
             <el-button v-if="canWrite" type="primary" link>编辑</el-button>
           </template>

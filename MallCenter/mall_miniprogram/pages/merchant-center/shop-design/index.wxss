@@ -1313,3 +1313,23 @@
 .guide-finish-btn::after {
   border: none;
 }
+
+/* AI 装修助手 FAB */
+.ai-chat-fab {
+  position: fixed;
+  right: 40rpx;
+  bottom: 160rpx;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 20rpx rgba(102, 126, 234, 0.4);
+  z-index: 999;
+}
+.ai-chat-fab text {
+  font-size: 44rpx;
+  color: #fff;
+}

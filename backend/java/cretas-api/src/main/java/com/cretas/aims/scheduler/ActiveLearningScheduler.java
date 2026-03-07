@@ -8,6 +8,7 @@ import com.cretas.aims.service.FactoryConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +29,7 @@ import java.util.List;
  * @since 2026-01-24
  */
 @Component
+@ConditionalOnProperty(name = "cretas.active-learning.scheduler.enabled", havingValue = "true", matchIfMissing = false)
 @RequiredArgsConstructor
 @Slf4j
 public class ActiveLearningScheduler {
@@ -320,6 +322,99 @@ public class ActiveLearningScheduler {
             }
         } catch (Exception e) {
             log.debug("Hourly performance logging skipped: {}", e.getMessage());
+        }
+    }
+
+    // ==================== Auto-Apply Approved Suggestions ====================
+
+    /**
+     * Every day at 03:00 AM - Cluster samples and generate suggestions
+     *
+     * This task runs daily to:
+     * 1. Cluster pending low-confidence samples
+     * 2. Analyze clusters and generate learning suggestions
+     */
+    @Scheduled(cron = "0 0 3 * * ?")
+    public void dailyClusterAndSuggest() {
+        log.info("========== Starting daily cluster + suggest task ==========");
+
+        try {
+            List<String> factories = factoryConfigService.getAutoLearnEnabledFactories();
+            int totalClusters = 0;
+            int totalSuggestions = 0;
+
+            for (String factoryId : factories) {
+                try {
+                    int clusters = activeLearningService.clusterSamples(factoryId);
+                    totalClusters += clusters;
+
+                    List<LearningSuggestion> suggestions = activeLearningService
+                            .analyzeClustersAndGenerateSuggestions(factoryId, minClusterSize);
+                    totalSuggestions += suggestions.size();
+
+                    if (clusters > 0 || !suggestions.isEmpty()) {
+                        log.info("Daily cluster+suggest for factory {}: {} clusters, {} suggestions",
+                                factoryId, clusters, suggestions.size());
+                    }
+                } catch (Exception e) {
+                    log.error("Daily cluster+suggest failed for factory {}: {}", factoryId, e.getMessage(), e);
+                }
+            }
+
+            log.info("Daily cluster+suggest complete: {} factories, {} clusters, {} suggestions",
+                    factories.size(), totalClusters, totalSuggestions);
+
+        } catch (Exception e) {
+            log.error("Daily cluster+suggest task failed: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Every Sunday at 04:00 AM - Apply all APPROVED suggestions
+     *
+     * This task automatically applies suggestions that have been approved by reviewers.
+     * Only NEW_KEYWORD and NEW_EXPRESSION types are auto-applied;
+     * other types (MERGE_INTENT, NEW_INTENT, etc.) are logged but require manual action.
+     */
+    @Scheduled(cron = "0 0 4 * * SUN")
+    public void weeklyApplyApprovedSuggestions() {
+        log.info("========== Starting weekly approved suggestion application ==========");
+
+        try {
+            List<String> factories = factoryConfigService.getAutoLearnEnabledFactories();
+            int totalApplied = 0;
+            int totalSkipped = 0;
+
+            for (String factoryId : factories) {
+                try {
+                    List<LearningSuggestion> approved = activeLearningService
+                            .getPendingSuggestionsForApply(factoryId);
+
+                    for (LearningSuggestion suggestion : approved) {
+                        try {
+                            activeLearningService.applySuggestion(suggestion.getId(), "SCHEDULER");
+                            totalApplied++;
+                        } catch (Exception e) {
+                            log.error("Failed to apply suggestion {} for factory {}: {}",
+                                    suggestion.getId(), factoryId, e.getMessage());
+                            totalSkipped++;
+                        }
+                    }
+
+                    if (!approved.isEmpty()) {
+                        log.info("Weekly apply for factory {}: {} approved suggestions processed",
+                                factoryId, approved.size());
+                    }
+                } catch (Exception e) {
+                    log.error("Weekly apply failed for factory {}: {}", factoryId, e.getMessage(), e);
+                }
+            }
+
+            log.info("Weekly approved suggestion application complete: {} applied, {} skipped",
+                    totalApplied, totalSkipped);
+
+        } catch (Exception e) {
+            log.error("Weekly approved suggestion application task failed: {}", e.getMessage(), e);
         }
     }
 

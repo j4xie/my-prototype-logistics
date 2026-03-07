@@ -1,0 +1,80 @@
+appId: com.cretas.foodtrace
+---
+# Login as factory_admin1 only - no navigation after
+
+- waitForAnimationToEnd
+
+# Go to Profile tab to logout
+- tapOn:
+    text: ".*我的.*|.*Mine.*|.*My.*|.*Profile.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Scroll down to find Logout
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+
+# Tap Logout
+- tapOn:
+    text: ".*Logout.*|.*Log out.*|.*退出.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Confirm logout dialog
+- tapOn:
+    text: ".*Confirm.*|.*OK.*|.*确定.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Wait for landing/login screen
+- extendedWaitUntil:
+    visible: ".*Login.*|.*登录.*"
+    timeout: 15000
+
+# Tap Login button on landing page
+- tapOn:
+    id: "landing-login-btn"
+    optional: true
+- tapOn:
+    text: "Login"
+    optional: true
+- waitForAnimationToEnd
+
+# Wait for login form
+- extendedWaitUntil:
+    visible: ".*Username.*|.*Enter username.*"
+    timeout: 10000
+
+# Enter username
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "factory_admin1"
+
+# Enter password
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Submit login
+- tapOn:
+    id: "login-submit-btn"
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+
+# Verify home screen loaded
+- extendedWaitUntil:
+    visible: ".*Home.*|.*Management.*|.*Good morning.*|.*Good.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-login-verify

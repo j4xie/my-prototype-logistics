@@ -225,7 +225,7 @@ def list_companies(db: Session = Depends(get_db)):
 
 ai_consultant = AIConsultant()
 
-INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY", "cretas-internal-2026")
+INTERNAL_API_KEY = os.getenv("INTERNAL_API_SECRET", "")
 
 
 class WizardStartRequest(BaseModel):

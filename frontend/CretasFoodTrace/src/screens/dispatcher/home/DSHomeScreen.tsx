@@ -123,12 +123,12 @@ export default function DSHomeScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <MaterialCommunityIcons name="cloud-off-outline" size={48} color="#C0C4CC" />
-          <Text style={{ color: '#606266', marginTop: 12, fontSize: 14 }}>加载失败，请检查网络</Text>
+          <Text style={{ color: '#606266', marginTop: 12, fontSize: 14 }}>{t('error.loadFailed', '加载失败，请检查网络')}</Text>
           <TouchableOpacity
             style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: DISPATCHER_THEME.primary, borderRadius: 6 }}
             onPress={() => loadData()}
           >
-            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>重试</Text>
+            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>{t('error.retry', '重试')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

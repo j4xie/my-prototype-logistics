@@ -1,6 +1,7 @@
 import { login, logout, getInfo } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import defAva from '@/assets/images/profile.jpg'
+import store from '@/store'
 
 const useUserStore = defineStore(
   'user',
@@ -71,3 +72,6 @@ const useUserStore = defineStore(
 
 export default useUserStore
 export { useUserStore }
+export function useUserStoreHook() {
+  return useUserStore(store)
+}

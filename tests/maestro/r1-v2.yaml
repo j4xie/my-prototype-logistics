@@ -1,0 +1,35 @@
+appId: com.cretas.foodtrace
+---
+# Restaurant login test v2 - uses launchApp without clearState
+- launchApp
+- extendedWaitUntil:
+    visible: "Login"
+    timeout: 15000
+- tapOn: "Login"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Enter username"
+    timeout: 5000
+- tapOn: "Enter username"
+- inputText: "restaurant_admin1"
+- tapOn: "Enter password"
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    text: "Login"
+    index: 1
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 25000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "\u9996\u9875"
+    timeout: 15000
+- takeScreenshot: screenshots/r1-restaurant-home
+- assertVisible: "\u914D\u65B9"
+- assertVisible: "\u9886\u6599"
+- assertVisible: "\u76D8\u70B9"
+- assertVisible: "\u635F\u8017"
+- takeScreenshot: screenshots/r1-restaurant-tabs-verified

@@ -1,0 +1,25 @@
+appId: com.cretas.foodtrace
+---
+# Test 01: Login Flow
+# Verifies complete login with factory_admin1
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Verify welcome page
+- assertVisible: "Cretas Food Trace"
+- assertVisible: "Login"
+- assertVisible: "Register"
+- takeScreenshot: screenshots/01-welcome
+
+# Execute login
+- runFlow: flows/login.yaml
+
+# Verify home page loaded (wait for dialog dismiss animation)
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+- assertVisible: "Quality Rate"
+- assertVisible: "Materials"
+- takeScreenshot: screenshots/01-home

@@ -183,14 +183,7 @@ export function ProductionDashboardScreen() {
       // TODO: Replace with actual API call when backend is ready
       // const factoryId = getFactoryId();
       // const response = await smartBIApiClient.getProductionDashboard({ period: selectedDateRange, factoryId });
-
-      // Mock data for now
-      await new Promise(resolve => setTimeout(resolve, 800));
-      const mockData = generateMockData();
-      setOEEMetrics(mockData.oeeMetrics);
-      setProductionKPI(mockData.productionKPI);
-      setProductionLines(mockData.productionLines);
-      setOEETrend(mockData.oeeTrend);
+      setError(t('errors.notImplemented', { defaultValue: '该功能数据接口尚未实现，请通过SmartBI上传Excel查看分析' }));
     } catch (err) {
       console.error('Load production dashboard failed:', err);
       setError(t('errors.loadFailed', { defaultValue: '数据加载失败，请重试' }));

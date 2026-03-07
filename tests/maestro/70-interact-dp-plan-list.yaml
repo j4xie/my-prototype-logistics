@@ -1,0 +1,131 @@
+appId: com.cretas.foodtrace
+---
+# Test 70: In-depth Dispatcher Plan List Interaction
+# Exercises status filters, quick actions (甘特图/紧急插单), card tap
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as dispatcher
+- runFlow: flows/login-dp.yaml
+- extendedWaitUntil:
+    visible: ".*AI调度.*|.*计划.*|.*首页.*|.*加载失败.*"
+    timeout: 15000
+- takeScreenshot: screenshots/70-dp-home
+
+# Navigate to plan list (生产计划)
+- tapOn:
+    text: ".*Plan.*|.*生产计划.*|.*计划列表.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*计划.*|.*Plan.*|.*全部.*|.*All.*"
+    timeout: 5000
+- takeScreenshot: screenshots/70-plan-list-initial
+
+# === Filter chip cycle ===
+# Filter: 全部
+- tapOn:
+    text: ".*All.*|.*全部.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/70-filter-all
+
+# Filter: 今日
+- tapOn:
+    text: ".*Today.*|.*今日.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/70-filter-today
+
+# Filter: 待审批
+- tapOn:
+    text: ".*Pending.*|.*待审批.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/70-filter-pending
+
+# Filter: 进行中
+- tapOn:
+    text: ".*In Progress.*|.*进行中.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/70-filter-active
+
+# Back to all
+- tapOn:
+    text: ".*All.*|.*全部.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Quick action: 甘特图 ===
+- tapOn:
+    text: ".*Gantt.*|.*甘特图.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/70-gantt-entry
+
+# Back from gantt
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Plan.*|.*生产计划.*|.*计划列表.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Quick action: 紧急插单 ===
+- tapOn:
+    text: ".*Urgent.*|.*紧急插单.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/70-urgent-insert
+
+# Back from urgent
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Plan.*|.*生产计划.*|.*计划列表.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Search bar ===
+- tapOn:
+    text: ".*Search.*|.*搜索计划.*|.*搜索.*"
+    optional: true
+- inputText: "PB"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/70-search-results
+- eraseText: 2
+- hideKeyboard
+- waitForAnimationToEnd
+
+# === Card tap ===
+- tapOn:
+    text: ".*PP2026.*|.*PB2026.*|.*计划编号.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/70-plan-detail
+
+# Back from detail
+- back
+- waitForAnimationToEnd
+
+# === Scroll ===
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/70-scrolled
+
+# Return to home
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/70-complete

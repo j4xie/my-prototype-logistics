@@ -1,0 +1,66 @@
+appId: com.cretas.foodtrace
+---
+# Test 37: Factory Admin - AI Analysis Center
+# Verifies CostAnalysis, QualityAnalysis, AIReport, AIChat sub-screens
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Navigate to AI Analysis tab (AI分析)
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/37-fa-ai-center
+
+# === Cost Analysis (成本分析) ===
+- tapOn:
+    text: ".*Cost.*Analysis.*|.*\u6210\u672C\u5206\u6790.*|.*\u6210\u672C\u8D8B\u52BF.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/37-fa-cost-analysis
+
+# Scroll to see analysis charts
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/37-fa-cost-analysis-scroll
+
+# Return to AI Analysis tab safely
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+
+# === Quality Analysis (质检分析) ===
+- tapOn:
+    text: ".*Quality.*Analysis.*|.*\u8D28\u68C0\u5206\u6790.*|.*\u8D28\u91CF\u5206\u6790.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/37-fa-quality-analysis
+
+# Return to AI Analysis tab safely
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+
+# === Data Report (数据报表) ===
+- tapOn:
+    text: ".*Data Report.*|.*\u6570\u636E\u62A5\u8868.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/37-fa-ai-report
+
+# Return to AI Analysis tab safely
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+
+# === AI Chat (AI对话) ===
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/37-fa-ai-chat

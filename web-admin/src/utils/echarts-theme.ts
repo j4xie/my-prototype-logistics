@@ -91,12 +91,45 @@ const theme: Record<string, unknown> = {
   },
 }
 
+/** Dark variant — same palette, inverted backgrounds */
+const darkTheme: Record<string, unknown> = {
+  ...theme,
+  backgroundColor: '#1a1a2e',
+  textStyle: { ...theme.textStyle as Record<string, unknown>, color: '#e0e0e0' },
+  title: {
+    textStyle: { color: '#f0f0f0', fontSize: 16, fontWeight: 600 },
+    subtextStyle: { color: '#a0a0b0', fontSize: 13 },
+  },
+  legend: { textStyle: { color: '#c0c0d0', fontSize: 12 } },
+  tooltip: {
+    backgroundColor: 'rgba(30, 30, 50, 0.95)',
+    borderColor: '#3a3a5a',
+    borderWidth: 1,
+    textStyle: { color: '#e0e0e0', fontSize: 13 },
+    extraCssText: 'box-shadow: 0 6px 20px rgba(0,0,0,0.3); border-radius: 10px; backdrop-filter: blur(8px);',
+  },
+  categoryAxis: {
+    axisLine: { lineStyle: { color: '#3a3a5a' } },
+    axisTick: { lineStyle: { color: '#3a3a5a' } },
+    axisLabel: { color: '#a0a0b0', fontSize: 12 },
+    splitLine: { lineStyle: { color: '#2a2a4a', type: 'dashed' } },
+  },
+  valueAxis: {
+    axisLine: { show: false },
+    axisTick: { show: false },
+    axisLabel: { color: '#a0a0b0', fontSize: 12 },
+    splitLine: { lineStyle: { color: '#2a2a4a', type: 'dashed' } },
+  },
+  pie: { itemStyle: { borderColor: '#1a1a2e', borderWidth: 2 } },
+}
+
 /**
- * Register the 'cretas' theme with ECharts.
+ * Register the 'cretas' and 'cretas-dark' themes with ECharts.
  * Call this once before any chart is initialised (typically in main.ts).
  */
 export function registerEChartsTheme(): void {
   echarts.registerTheme('cretas', theme)
+  echarts.registerTheme('cretas-dark', darkTheme)
 }
 
 export { CHART_COLORS }

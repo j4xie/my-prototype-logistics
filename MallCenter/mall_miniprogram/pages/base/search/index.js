@@ -165,7 +165,7 @@ Page({
 
   // 执行搜索
   searchHandle(e) {
-    let value = e.detail?.value || e.currentTarget?.dataset?.name || this.data.searchValue
+    let value = (e.detail && e.detail.value) || (e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.name) || this.data.searchValue
     if (!value) return
     this.doSearch(value)
   },

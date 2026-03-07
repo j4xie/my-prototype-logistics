@@ -41,7 +41,7 @@ watch(activeTab, (newTab) => {
 
 // 跳转到子页面
 function goToPage(page: string) {
-  router.push(`/smartbi-config/${page}`);
+  router.push(`/system/smartbi-config/${page}`);
 }
 
 // 加载阈值配置
@@ -223,7 +223,7 @@ function getDirectionType(direction: string) {
               </template>
             </el-alert>
 
-            <el-table :data="thresholdList" border stripe>
+            <el-table :data="thresholdList" border stripe empty-text="暂无阈值配置">
               <el-table-column prop="metricCode" label="指标代码" width="150">
                 <template #default="{ row }">
                   <code class="metric-code">{{ row.metricCode }}</code>

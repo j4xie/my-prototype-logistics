@@ -1,0 +1,62 @@
+appId: com.cretas.foodtrace
+---
+# Test 56: Factory Admin Regression Test
+# Verifies factory_admin1 still sees all factory tabs after restaurant changes
+# Run on emulator-5554 (Pixel_9a)
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory_admin1
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 10000
+
+# Verify factory home page content
+- assertVisible: "Quality Rate"
+- assertVisible: "Materials"
+- takeScreenshot: screenshots/56-factory-home
+
+# Verify factory-specific bottom tabs exist
+- assertVisible: "AI\u5206\u6790"
+- assertVisible: "\u62A5\u8868"
+- assertVisible: "\u667A\u80FD\u5206\u6790"
+- assertVisible: "\u7BA1\u7406"
+- assertVisible: "\u6211\u7684"
+- assertVisible: "\u9996\u9875"
+
+# Verify restaurant-specific tabs are NOT visible
+- assertNotVisible: "\u914D\u65B9"
+- assertNotVisible: "\u9886\u6599"
+- assertNotVisible: "\u76D8\u70B9"
+- assertNotVisible: "\u635F\u8017"
+- takeScreenshot: screenshots/56-factory-tabs-verified
+
+# Quick tab cycle to verify no crash
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/56-factory-ai-tab
+
+- tapOn: "\u62A5\u8868"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/56-factory-reports-tab
+
+- tapOn: "\u667A\u80FD\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/56-factory-smartbi-tab
+
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/56-factory-management-tab
+
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/56-factory-profile-tab
+
+# Return to home
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+- assertVisible: "Quality Rate"
+- takeScreenshot: screenshots/56-factory-regression-pass

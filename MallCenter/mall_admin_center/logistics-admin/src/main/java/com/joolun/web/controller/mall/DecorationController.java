@@ -345,6 +345,69 @@ public class DecorationController extends BaseController {
         return AjaxResult.success(sessionMapper.deleteById(id));
     }
 
+    // ============ AI Chat 实时对话装修 (Admin 版) ============
+
+    /**
+     * Admin 端 AI 装修 Chat 对话
+     * 复用小程序端的 decorationChat 服务，Admin 由管理员指定 merchantId
+     */
+    @PostMapping("/ai/chat")
+    @PreAuthorize("@ss.hasPermi('mall:decoration:edit')")
+    public AjaxResult aiChat(@RequestBody Map<String, Object> request) {
+        String message = (String) request.get("message");
+        String sessionId = (String) request.get("sessionId");
+        Long merchantId = request.get("merchantId") != null ? Long.valueOf(request.get("merchantId").toString()) : null;
+
+        if (message == null || message.trim().isEmpty()) {
+            return AjaxResult.error("请输入消息");
+        }
+        if (merchantId == null) {
+            return AjaxResult.error("请选择商户");
+        }
+
+        try {
+            Map<String, Object> result = aiService.decorationChat(sessionId, message, merchantId);
+            return AjaxResult.success(result);
+        } catch (Exception e) {
+            log.error("Admin装修AI对话失败: merchantId={}", merchantId, e);
+            return AjaxResult.error("对话失败: " + e.getMessage());
+        }
+    }
+
+    // ============ 版本历史 ============
+
+    /**
+     * 获取商户装修版本历史
+     */
+    @GetMapping("/versions")
+    @PreAuthorize("@ss.hasPermi('mall:decoration:index')")
+    public AjaxResult getVersionHistory(
+            @RequestParam Long merchantId,
+            @RequestParam(defaultValue = "home") String pageType) {
+        try {
+            return AjaxResult.success(aiService.getVersionHistory(merchantId, pageType));
+        } catch (Exception e) {
+            log.error("获取版本历史失败: merchantId={}", merchantId, e);
+            return AjaxResult.error("获取版本历史失败");
+        }
+    }
+
+    /**
+     * 回滚到指定版本
+     */
+    @PostMapping("/versions/{versionId}/rollback")
+    @PreAuthorize("@ss.hasPermi('mall:decoration:edit')")
+    public AjaxResult rollbackVersion(
+            @PathVariable("versionId") Long versionId,
+            @RequestParam Long merchantId) {
+        try {
+            return AjaxResult.success(aiService.rollbackToVersion(merchantId, versionId));
+        } catch (Exception e) {
+            log.error("版本回滚失败: merchantId={}, versionId={}", merchantId, versionId, e);
+            return AjaxResult.error("回滚失败: " + e.getMessage());
+        }
+    }
+
     // ============ AI使用统计 ============
 
     /**

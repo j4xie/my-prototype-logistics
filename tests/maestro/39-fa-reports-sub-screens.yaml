@@ -1,0 +1,84 @@
+appId: com.cretas.foodtrace
+---
+# Test 39: Factory Admin - Reports Sub-Screens
+# Covers: QualityReport, CostReport, EfficiencyReport, TrendReport
+# Previously tested: ReportDashboard (11), ProductionReport (11)
+# Round 4.1 fix: Added scrolling + correct labels from ReportDashboardScreen.tsx:
+#   Cards: 成本概览→CostReport, 人效概览→PersonnelReport, 人效分析→EfficiencyAnalysis
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Navigate to Reports tab (报表)
+- tapOn: "\u62A5\u8868"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/39-fa-reports-tab
+
+# === Quality metrics card (质量指标) — usually visible at top ===
+- tapOn:
+    text: ".*Quality.*Report.*|.*\u8D28\u91CF\u62A5\u8868.*|.*\u8D28\u91CF\u6982\u89C8.*|.*\u8D28\u91CF.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/39-fa-quality-report
+
+# Return to Reports tab
+- tapOn: "\u62A5\u8868"
+- waitForAnimationToEnd
+
+# Scroll down to Cost overview card
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Cost Report (成本概览) ===
+- tapOn:
+    text: ".*Cost.*Report.*|.*\u6210\u672C\u6982\u89C8.*|.*\u6210\u672C\u62A5\u8868.*|.*\u6210\u672C.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/39-fa-cost-report
+
+# Return to Reports tab
+- tapOn: "\u62A5\u8868"
+- waitForAnimationToEnd
+
+# Scroll down to find Efficiency
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Efficiency Report (人效分析) ===
+- tapOn:
+    text: ".*Efficiency.*|.*\u6548\u7387\u62A5\u8868.*|.*\u4EBA\u6548\u5206\u6790.*|.*\u4EBA\u6548.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/39-fa-efficiency-report
+
+# Return to Reports tab
+- tapOn: "\u62A5\u8868"
+- waitForAnimationToEnd
+
+# Scroll down further for trend/more reports
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# === Trend/OEE Report (OEE分析 / 趋势) ===
+- tapOn:
+    text: ".*Trend.*Report.*|.*OEE\u5206\u6790.*|.*\u8D8B\u52BF\u62A5\u8868.*|.*\u8D8B\u52BF.*|.*OEE.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/39-fa-trend-report

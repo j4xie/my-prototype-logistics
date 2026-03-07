@@ -1,0 +1,56 @@
+appId: com.cretas.foodtrace
+---
+# Test 57: Restaurant Full Tab Cycle
+# Comprehensive test: login → cycle all 6 tabs → verify no crash
+# This is the main integration test for restaurant mode
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant_admin1
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: "AI \u667A\u80FD\u6D1E\u5BDF"
+    timeout: 10000
+
+# === Tab 1: 首页 (Home) — already here ===
+- assertVisible: "\u9996\u9875"
+- assertVisible: "AI \u667A\u80FD\u6D1E\u5BDF"
+- assertVisible: "\u4ECA\u65E5\u6982\u89C8"
+- assertVisible: "\u5FEB\u6377\u64CD\u4F5C"
+# Restaurant quick actions
+- assertVisible: "\u65B0\u5EFA\u91C7\u8D2D"
+- assertVisible: "\u5E93\u5B58\u67E5\u8BE2"
+- takeScreenshot: screenshots/57-cycle-home
+
+# === Tab 2: 配方 (Recipe) ===
+- tapOn: "\u914D\u65B9"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/57-cycle-recipe
+
+# === Tab 3: 领料 (Requisition) ===
+- tapOn: "\u9886\u6599"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/57-cycle-requisition
+
+# === Tab 4: 盘点 (Stocktaking) ===
+- tapOn: "\u76D8\u70B9"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/57-cycle-stocktaking
+
+# === Tab 5: 损耗 (Wastage) ===
+- tapOn: "\u635F\u8017"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/57-cycle-wastage
+
+# === Tab 6: 我的 (Profile) ===
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/57-cycle-profile
+
+# === Return to Home — full cycle complete ===
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+- assertVisible: "AI \u667A\u80FD\u6D1E\u5BDF"
+- takeScreenshot: screenshots/57-cycle-complete

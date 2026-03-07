@@ -1,0 +1,52 @@
+appId: com.cretas.foodtrace
+---
+# Test 18: Quality Inspector - Records & Analysis Tabs
+# Verifies QI records list, analysis charts, and profile tabs
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as quality inspector
+- runFlow: flows/login-qi.yaml
+
+# Wait for QI home to load
+- extendedWaitUntil:
+    visible: "Start Inspection"
+    timeout: 15000
+
+# Tap records tab (记录)
+- tapOn: "\u8BB0\u5F55"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 10000
+- takeScreenshot: screenshots/18-qi-records-tab
+
+# Scroll down to see more records (use shorter swipe to avoid system gesture)
+- swipe:
+    direction: UP
+    duration: 300
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/18-qi-records-scroll
+
+# Navigate to home first, then analysis tab (avoid cross-tab issue)
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# Tap analysis tab (分析)
+- tapOn: "\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/18-qi-analysis-tab
+
+# Scroll down for charts
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/18-qi-analysis-charts
+
+# Tap profile tab (我的)
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/18-qi-profile

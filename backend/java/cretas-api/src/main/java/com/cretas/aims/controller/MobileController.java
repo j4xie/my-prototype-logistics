@@ -19,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
+
 import javax.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -345,17 +347,25 @@ public class MobileController {
 
     /**
      * 重置密码（管理员功能）
+     * 需要 factory_super_admin 或 platform_admin 角色
      */
     @PostMapping("/auth/reset-password")
-    @Operation(summary = "重置密码（管理员）", description = "管理员重置指定用户的密码")
+    @Operation(summary = "重置密码（管理员）", description = "管理员重置指定用户的密码，需要管理员权限")
     public ApiResponse<Void> resetPassword(
+            HttpServletRequest request,
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @RequestParam String factoryId,
             @Parameter(description = "用户名", required = true, example = "worker001")
             @RequestParam String username,
             @Parameter(description = "新密码", required = true, example = "NewPass@123")
             @RequestParam String newPassword) {
-        log.info("重置密码: factoryId={}, username={}", factoryId, username);
+        // 验证调用者是管理员
+        String role = (String) request.getAttribute("role");
+        if (role == null || (!role.equals("factory_super_admin") && !role.equals("platform_admin")
+                && !role.equals("super_admin") && !role.equals("hr_admin"))) {
+            return ApiResponse.error("无权重置密码，需要管理员权限");
+        }
+        log.info("重置密码: factoryId={}, username={}, operator={}", factoryId, username, request.getAttribute("username"));
         mobileService.resetPassword(factoryId, username, newPassword);
         return ApiResponse.success("密码重置成功", null);
     }

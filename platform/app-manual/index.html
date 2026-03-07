@@ -1,0 +1,2776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App 操作手册 - 白垩纪智能科技</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%234F46E5'/><text x='16' y='23' text-anchor='middle' font-size='20' font-weight='bold' fill='white'>C</text></svg>">
+<link rel="apple-touch-icon" href="https://www.cretaceousfuture.com/app-manual/screenshots/og-preview.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta name="description" content="白垩纪智能科技 App 操作手册 - 涵盖车间报工、批次管理、进销存、仓储、HR、质检、销售等角色的完整操作指南">
+<meta property="og:title" content="App 操作手册 - 白垩纪智能科技">
+<meta property="og:description" content="涵盖 9 大角色、6 章详尽操作流程，每步均有截图指引">
+<meta property="og:image" content="https://www.cretaceousfuture.com/app-manual/screenshots/og-preview.png">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#050810">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; script-src 'self' 'unsafe-inline'">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="App 操作手册 - 白垩纪智能科技">
+<meta name="twitter:description" content="涵盖 9 大角色、6 章详尽操作流程，每步均有截图指引">
+<meta name="twitter:image" content="https://www.cretaceousfuture.com/app-manual/screenshots/og-preview.png">
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&family=Azeret+Mono:wght@400;500&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&family=Azeret+Mono:wght@400;500&display=swap"></noscript>
+<style>
+/* ═══════════════════════════════════════════════════
+   CSS VARIABLES
+   ═══════════════════════════════════════════════════ */
+:root {
+  --bg: #050810;
+  --surface: #0b1120;
+  --surface-alt: #111a2e;
+  --border: rgba(59, 130, 246, 0.08);
+  --border-hover: rgba(59, 130, 246, 0.25);
+  --accent: #3b82f6;
+  --accent2: #22d3ee;
+  --accent3: #a78bfa;
+  --accent4: #34d399;
+  --accent5: #fbbf24;
+  --accent-fa: #fb923c;
+  --text: #e8edf5;
+  --text-secondary: #a1b2c8;
+  --muted: #7c8da3;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --font-sans: 'Outfit', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-mono: 'Azeret Mono', 'Menlo', monospace;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 28px;
+  /* Typography scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.125rem;
+  /* Line-height scale */
+  --leading-tight: 1.2;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.8;
+  /* Shadow scale */
+  --shadow-sm: 0 4px 16px rgba(59, 130, 246, 0.3);
+  --shadow-md: 0 16px 48px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
+  --shadow-lg: 0 24px 80px rgba(0,0,0,0.5);
+  /* Z-index scale */
+  --z-content: 1;
+  --z-phone-overlay: 3;
+  --z-back-to-top: 900;
+  --z-nav: 1000;
+  --z-noise: 9999;
+  --z-lightbox: 10000;
+  /* Role badge colors */
+  --badge-dispatcher: #93c5fd;
+  --badge-supervisor: #c4b5fd;
+  --badge-factory-admin: #fdba74;
+  --badge-hr-admin: #c4b5fd;
+  --badge-prod-mgr: #93c5fd;
+}
+
+/* ═══════════════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+::selection { background: rgba(59, 130, 246, 0.3); color: #fff; }
+a { color: var(--accent); text-decoration: none; transition: color 0.25s; }
+a:hover { color: var(--accent2); }
+
+/* ═══════════════════════════════════════════════════
+   NOISE OVERLAY
+   ═══════════════════════════════════════════════════ */
+.noise {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: var(--z-noise); opacity: 0.035; mix-blend-mode: overlay;
+  will-change: transform;
+}
+
+/* ═══════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════ */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-nav);
+  padding: 0 clamp(1rem, 4vw, 3rem);
+  height: 64px; display: flex; align-items: center; justify-content: space-between;
+  background: rgba(5, 8, 16, 0.85);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-brand {
+  font-weight: 700; font-size: 15px; color: var(--text);
+  letter-spacing: -0.02em;
+}
+.nav-brand span { color: var(--accent); }
+.nav-links { display: flex; gap: 8px; }
+.nav-links a {
+  padding: 10px 16px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500;
+  color: var(--text-secondary); transition: color 0.25s, background 0.25s;
+}
+.nav-links a:hover { color: var(--text); background: rgba(59, 130, 246, 0.06); }
+.nav-links a.active { color: var(--accent); background: rgba(59, 130, 246, 0.08); box-shadow: inset 0 -2px 0 var(--accent); }
+
+/* ═══════════════════════════════════════════════════
+   HERO
+   ═══════════════════════════════════════════════════ */
+.hero {
+  min-height: auto; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 120px clamp(1rem, 4vw, 3rem) 40px; position: relative; overflow: hidden;
+}
+.hero-mesh { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.hero-orb {
+  position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15;
+  will-change: transform;
+}
+.hero-orb.o1 { width: 400px; height: 400px; background: var(--accent); top: 10%; left: 20%; animation: orbFloat1 25s ease-in-out infinite; }
+.hero-orb.o2 { width: 300px; height: 300px; background: var(--accent2); top: 40%; right: 15%; animation: orbFloat2 20s ease-in-out infinite; }
+.hero-orb.o3 { width: 250px; height: 250px; background: var(--accent3); bottom: 10%; left: 40%; animation: orbFloat3 30s ease-in-out infinite; }
+
+@keyframes orbFloat1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px,-50px) scale(1.1); } }
+@keyframes orbFloat2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-30px,40px) scale(0.9); } }
+@keyframes orbFloat3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(50px,-30px) scale(1.05); } }
+
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 16px; border-radius: var(--radius-xl); font-size: 12px; font-weight: 600;
+  color: var(--accent2); background: rgba(34, 211, 238, 0.06);
+  border: 1px solid rgba(34, 211, 238, 0.12);
+  letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px;
+  animation: fadeInUp 0.8s var(--ease-out-expo) 0.1s both;
+}
+.hero h1 {
+  font-size: clamp(2.2rem, 5vw, 4rem); font-weight: 900;
+  letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 16px;
+  animation: fadeInUp 0.8s var(--ease-out-expo) 0.2s both;
+}
+.hero h1 .gradient {
+  background: linear-gradient(135deg, #3b82f6 0%, #22d3ee 50%, #a78bfa 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-desc {
+  font-size: clamp(0.95rem, 1.5vw, 1.15rem); color: var(--text-secondary);
+  max-width: 600px; line-height: 1.7; margin-bottom: 32px;
+  animation: fadeInUp 0.8s var(--ease-out-expo) 0.3s both;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hero role cards */
+.hero-roles {
+  display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+  animation: fadeInUp 0.8s var(--ease-out-expo) 0.4s both;
+}
+.hero-role {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px; border-radius: var(--radius-lg);
+  background: var(--surface); border: 1px solid var(--border);
+  transition: border-color 0.3s, transform 0.3s;
+}
+.hero-role:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.hero-role-icon {
+  width: 36px; height: 36px; border-radius: var(--radius-md); display: flex;
+  align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+  font-family: var(--font-mono);
+}
+.hero-role-icon.dispatcher { background: rgba(59, 130, 246, 0.12); color: var(--accent); }
+.hero-role-icon.supervisor { background: rgba(167, 139, 250, 0.12); color: var(--accent3); }
+.hero-role-icon.warehouse { background: rgba(52, 211, 153, 0.12); color: var(--accent4); }
+.hero-role-icon.factory-admin { background: rgba(251, 146, 60, 0.12); color: var(--accent-fa); }
+.hero-role-icon.hr-admin { background: rgba(167, 139, 250, 0.12); color: var(--accent3); }
+.hero-role-icon.quality { background: rgba(52, 211, 153, 0.12); color: var(--accent4); }
+.hero-role-icon.sales { background: rgba(251, 191, 36, 0.12); color: var(--accent5); }
+.hero-role-icon.operator { background: rgba(34, 211, 238, 0.12); color: var(--accent2); }
+.hero-role-icon.prod-mgr { background: rgba(59, 130, 246, 0.12); color: var(--accent); }
+.hero-role-label { font-size: 13px; font-weight: 600; }
+.hero-role-sub { font-size: 12px; color: var(--muted); }
+
+/* ═══════════════════════════════════════════════════
+   SECTION LAYOUT
+   ═══════════════════════════════════════════════════ */
+.section {
+  padding: clamp(60px, 8vw, 100px) clamp(1rem, 4vw, 3rem);
+  max-width: 1200px; margin: 0 auto;
+}
+.section-header {
+  text-align: center; margin-bottom: clamp(40px, 6vw, 60px);
+}
+.section-label {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--accent2); margin-bottom: 12px;
+}
+.section-label::before {
+  content: ''; width: 20px; height: 2px;
+  background: linear-gradient(90deg, var(--accent2), transparent);
+}
+.section-title {
+  font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800;
+  letter-spacing: -0.02em; margin-bottom: 12px;
+}
+.section-desc {
+  font-size: clamp(0.9rem, 1.3vw, 1rem); color: var(--text-secondary);
+  max-width: 600px; margin: 0 auto;
+}
+
+/* ═══════════════════════════════════════════════════
+   FLOW CHART (Horizontal)
+   ═══════════════════════════════════════════════════ */
+.flow-chart {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; flex-wrap: wrap; margin-bottom: 48px;
+  padding: 24px; border-radius: var(--radius-xl);
+  background: var(--surface); border: 1px solid var(--border);
+}
+.flow-node {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px 16px; border-radius: var(--radius-lg);
+  background: rgba(59, 130, 246, 0.04); border: 1px solid var(--border);
+  transition: border-color 0.3s, transform 0.3s;
+}
+.flow-node:hover { border-color: var(--border-hover); transform: scale(1.05); }
+.flow-icon {
+  width: 44px; height: 44px; border-radius: var(--radius-lg); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; font-family: var(--font-mono);
+}
+.flow-icon.dp { background: rgba(59, 130, 246, 0.12); color: var(--accent); }
+.flow-icon.ws { background: rgba(167, 139, 250, 0.12); color: var(--accent3); }
+.flow-icon.wm { background: rgba(52, 211, 153, 0.12); color: var(--accent4); }
+.flow-icon.fa { background: rgba(251, 146, 60, 0.12); color: var(--accent-fa); }
+.flow-label {
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  text-align: center; max-width: 72px;
+}
+.flow-arrow {
+  font-size: 18px; color: var(--muted); font-family: var(--font-mono);
+}
+
+/* ═══════════════════════════════════════════════════
+   ROLE BADGE
+   ═══════════════════════════════════════════════════ */
+.role-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+}
+.role-badge.dispatcher {
+  background: rgba(59, 130, 246, 0.1); color: var(--badge-dispatcher);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+.role-badge.supervisor {
+  background: rgba(167, 139, 250, 0.1); color: var(--badge-supervisor);
+  border: 1px solid rgba(167, 139, 250, 0.15);
+}
+.role-badge.warehouse {
+  background: rgba(52, 211, 153, 0.1); color: var(--accent4);
+  border: 1px solid rgba(52, 211, 153, 0.15);
+}
+.role-badge.factory-admin {
+  background: rgba(251, 146, 60, 0.1); color: var(--badge-factory-admin);
+  border: 1px solid rgba(251, 146, 60, 0.15);
+}
+.role-badge.hr-admin {
+  background: rgba(167, 139, 250, 0.1); color: var(--badge-hr-admin);
+  border: 1px solid rgba(167, 139, 250, 0.15);
+}
+.role-badge.quality {
+  background: rgba(52, 211, 153, 0.1); color: var(--accent4);
+  border: 1px solid rgba(52, 211, 153, 0.15);
+}
+.role-badge.sales {
+  background: rgba(251, 191, 36, 0.1); color: var(--accent5);
+  border: 1px solid rgba(251, 191, 36, 0.15);
+}
+.role-badge.operator {
+  background: rgba(34, 211, 238, 0.1); color: var(--accent2);
+  border: 1px solid rgba(34, 211, 238, 0.15);
+}
+.role-badge.prod-mgr {
+  background: rgba(59, 130, 246, 0.1); color: var(--badge-prod-mgr);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════
+   TIMELINE
+   ═══════════════════════════════════════════════════ */
+.timeline { position: relative; padding-left: 60px; }
+.timeline::before {
+  content: ''; position: absolute; left: 20px; top: 0; bottom: 0; width: 2px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+  opacity: 0.3;
+}
+.timeline-step {
+  position: relative; margin-bottom: 48px;
+  animation: fadeInUp 0.6s var(--ease-out-expo) both;
+}
+.timeline-step:last-child { margin-bottom: 0; }
+.timeline-number {
+  position: absolute; left: -60px; top: 0;
+  width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 14px; font-weight: 700;
+  background: var(--surface); border: 2px solid var(--accent);
+  color: var(--accent); z-index: var(--z-content);
+}
+.timeline-step:nth-child(even) .timeline-number { border-color: var(--accent2); color: var(--accent2); }
+.timeline-step:nth-child(3n) .timeline-number { border-color: var(--accent3); color: var(--accent3); }
+.timeline-content {
+  padding: 24px; border-radius: var(--radius-xl);
+  background: var(--surface); border: 1px solid var(--border);
+  transition: border-color 0.3s, transform 0.3s;
+}
+.timeline-content:hover { border-color: var(--border-hover); transform: translateX(4px); }
+.timeline-role { margin-bottom: 8px; }
+.timeline-title {
+  font-size: clamp(1.1rem, 1.8vw, 1.3rem); font-weight: 700;
+  margin-bottom: 8px; letter-spacing: -0.01em;
+}
+.timeline-desc {
+  font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;
+}
+
+/* Info Box (操作指引) */
+.info-box {
+  padding: 14px 18px; border-radius: 0 10px 10px 0;
+  border-left: 3px solid var(--accent);
+  background: rgba(59, 130, 246, 0.04);
+  font-size: 13px; color: var(--text-secondary); line-height: 1.7;
+  margin-bottom: 16px;
+}
+.info-box strong { color: var(--accent); font-weight: 600; }
+.info-box .btn-name {
+  display: inline-block; padding: 1px 8px; border-radius: var(--radius-sm);
+  background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.12);
+  font-family: var(--font-mono); font-size: 12px; color: var(--accent2);
+  white-space: nowrap;
+}
+
+/* Visual layout (text + phone) */
+.timeline-visual {
+  display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;
+}
+.timeline-visual-text {
+  flex: 1; min-width: 200px;
+}
+.timeline-phones {
+  display: flex; gap: 16px; flex-wrap: wrap;
+}
+
+/* Feature dots */
+.feature-list { list-style: none; }
+.feature-list li {
+  position: relative; padding-left: 20px; margin-bottom: 8px;
+  font-size: 13px; color: var(--text-secondary);
+}
+.feature-list li::before {
+  content: ''; position: absolute; left: 0; top: 7px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+}
+
+/* ═══════════════════════════════════════════════════
+   PHONE FRAME
+   ═══════════════════════════════════════════════════ */
+.phone-frame {
+  width: 180px; flex-shrink: 0; position: relative;
+  border-radius: var(--radius-pill); padding: 10px;
+  background: linear-gradient(145deg, #1a1a2e, #0d0d1a);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.4s var(--ease-out-expo);
+  cursor: pointer;
+}
+.phone-frame:hover { transform: translateY(-4px); }
+.phone-frame::before {
+  content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  width: 60px; height: 18px; border-radius: var(--radius-md);
+  background: #0d0d1a; z-index: var(--z-phone-overlay);
+}
+.phone-screen {
+  border-radius: var(--radius-xl); overflow: hidden; position: relative;
+  aspect-ratio: 9 / 19.5;
+  background: linear-gradient(110deg, var(--surface-alt) 30%, #1a2438 50%, var(--surface-alt) 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.phone-screen img {
+  width: 100%; height: 100%; object-fit: cover; object-position: top;
+  display: block; position: relative; z-index: var(--z-content);
+}
+.phone-label {
+  text-align: center; margin-top: 8px; font-size: 12px;
+  color: var(--muted); font-weight: 500;
+}
+
+/* Large phone frame for standalone display */
+.phone-frame.large {
+  width: 240px;
+}
+
+/* ═══════════════════════════════════════════════════
+   STEP GRID (左右交替)
+   ═══════════════════════════════════════════════════ */
+.step-grid { display: flex; flex-direction: column; gap: 48px; }
+.step-card {
+  display: flex; gap: 32px; align-items: flex-start;
+  padding: 32px; border-radius: var(--radius-xl);
+  background: var(--surface); border: 1px solid var(--border);
+  transition: border-color 0.3s;
+  animation: fadeInUp 0.6s var(--ease-out-expo) both;
+}
+.step-card:hover { border-color: var(--border-hover); }
+.step-card.reverse { flex-direction: row-reverse; }
+.step-text { flex: 1; min-width: 240px; }
+.step-number {
+  font-family: var(--font-mono); font-size: 48px; font-weight: 900;
+  color: rgba(59, 130, 246, 0.08); line-height: 1; margin-bottom: 8px;
+}
+.step-card:nth-child(2) .step-number { color: rgba(34, 211, 238, 0.08); }
+.step-card:nth-child(3) .step-number { color: rgba(167, 139, 250, 0.08); }
+.step-card:nth-child(4) .step-number { color: rgba(52, 211, 153, 0.08); }
+.step-card:nth-child(5) .step-number { color: rgba(251, 191, 36, 0.08); }
+.step-title {
+  font-size: clamp(1.1rem, 1.8vw, 1.3rem); font-weight: 700;
+  margin: 0 0 8px 0;
+}
+.step-desc {
+  font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;
+}
+.step-phones {
+  display: flex; gap: 16px; flex-wrap: wrap; flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════
+   CREDENTIAL CARD
+   ═══════════════════════════════════════════════════ */
+.credential-card {
+  display: inline-flex; gap: 16px; padding: 12px 16px; border-radius: var(--radius-md);
+  background: rgba(59, 130, 246, 0.04); border: 1px solid rgba(59, 130, 246, 0.1);
+  margin-bottom: 12px; margin-top: 12px;
+}
+.credential-label {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--muted); margin-bottom: 2px;
+}
+.credential-value {
+  font-family: var(--font-mono); font-size: 13px; color: var(--accent2);
+}
+
+/* ═══════════════════════════════════════════════════
+   LIGHTBOX
+   ═══════════════════════════════════════════════════ */
+.lightbox {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: var(--z-lightbox); display: flex; align-items: center; justify-content: center;
+  background: rgba(5, 8, 16, 0.92);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  opacity: 0; pointer-events: none; transition: opacity 0.35s;
+}
+.lightbox.active { opacity: 1; pointer-events: auto; }
+.lightbox img {
+  max-width: 90vw; max-height: 85vh; border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.9); transition: transform 0.4s var(--ease-out-expo);
+}
+.lightbox.active img { transform: scale(1); }
+.lightbox-close {
+  position: absolute; top: 24px; right: 24px;
+  width: 40px; height: 40px; border-radius: var(--radius-md); border: none;
+  background: rgba(255,255,255,0.08); color: var(--text);
+  font-size: 18px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; transition: background 0.25s;
+}
+.lightbox-close:hover { background: rgba(255,255,255,0.15); }
+.lightbox-caption {
+  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+  font-size: 13px; color: var(--text-secondary);
+  padding: 8px 16px; border-radius: var(--radius-md);
+  background: rgba(0,0,0,0.4); white-space: nowrap;
+  max-width: 90vw; text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════
+   TIPS BOX
+   ═══════════════════════════════════════════════════ */
+.tips-box {
+  padding: 14px 18px; border-radius: var(--radius-md); margin-top: 12px;
+  background: rgba(251, 191, 36, 0.04);
+  border: 1px solid rgba(251, 191, 36, 0.1);
+  font-size: 12px; color: var(--text-secondary); line-height: 1.6;
+}
+.tips-box .tips-label {
+  font-weight: 700; color: var(--accent5); font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;
+}
+
+/* ═══════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════ */
+.footer {
+  text-align: center; padding: 60px clamp(1rem, 4vw, 3rem);
+  border-top: 1px solid var(--border);
+}
+.footer-brand {
+  font-size: 15px; font-weight: 700; margin-bottom: 8px;
+}
+.footer-brand span { color: var(--accent); }
+.footer-text {
+  font-size: 12px; color: var(--muted);
+}
+
+/* ═══════════════════════════════════════════════════
+   TABLE OF CONTENTS (Quick Nav)
+   ═══════════════════════════════════════════════════ */
+.toc {
+  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+  margin-bottom: 48px;
+  animation: fadeInUp 0.8s var(--ease-out-expo) 0.5s both;
+}
+.toc a {
+  padding: 10px 20px; border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  background: var(--surface); border: 1px solid var(--border);
+  transition: color 0.25s, border-color 0.25s, background 0.25s;
+}
+.toc a:hover {
+  color: var(--text); border-color: var(--border-hover);
+  background: rgba(59, 130, 246, 0.04);
+}
+
+/* ═══════════════════════════════════════════════════
+   SCROLL REVEAL
+   ═══════════════════════════════════════════════════ */
+.reveal {
+  opacity: 0; transform: translateY(24px);
+  transition: opacity 0.7s var(--ease-out-expo), transform 0.7s var(--ease-out-expo);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-d1 { transition-delay: 0.06s; }
+.reveal-d2 { transition-delay: 0.12s; }
+.reveal-d3 { transition-delay: 0.18s; }
+.reveal-d4 { transition-delay: 0.24s; }
+
+/* ═══════════════════════════════════════════════════
+   SEPARATOR
+   ═══════════════════════════════════════════════════ */
+.separator {
+  height: 1px; max-width: 1200px; margin: 0 auto;
+  background: linear-gradient(90deg, transparent, var(--border-hover), transparent);
+}
+
+/* ═══════════════════════════════════════════════════
+   FOCUS & KEYBOARD ACCESSIBILITY
+   ═══════════════════════════════════════════════════ */
+a:focus-visible, button:focus-visible, .phone-frame:focus-visible, .toc a:focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+.phone-frame:focus-visible { outline-offset: 4px; border-radius: var(--radius-pill); }
+.lightbox-close:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* ═══════════════════════════════════════════════════
+   MOBILE NAV TOGGLE
+   ═══════════════════════════════════════════════════ */
+.nav-toggle {
+  display: none; background: none; border: none; cursor: pointer;
+  width: 36px; height: 36px; flex-direction: column;
+  align-items: center; justify-content: center; gap: 5px;
+}
+.nav-toggle span {
+  display: block; width: 22px; height: 2px; background: var(--text-secondary);
+  border-radius: 2px; transition: transform 0.25s, background 0.25s;
+}
+.nav-links.open { display: flex !important; }
+
+/* ═══════════════════════════════════════════════════
+   ROLE TRANSITION CALLOUT
+   ═══════════════════════════════════════════════════ */
+.role-transition {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px; margin: 24px 0 24px 60px; border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.06) 0%, rgba(167, 139, 250, 0.06) 100%);
+  border: 1px dashed rgba(167, 139, 250, 0.2);
+  font-size: 13px; color: var(--text-secondary);
+}
+.role-transition-arrow {
+  font-family: var(--font-mono); font-size: 20px; color: var(--muted);
+  flex-shrink: 0;
+}
+.role-transition-note { margin-left: 8px; }
+.role-legend {
+  display: flex; gap: 20px; justify-content: center;
+  margin: 12px 0 4px; font-size: 13px; color: var(--text-secondary);
+}
+.role-legend .role-badge { font-size: 12px; padding: 2px 8px; }
+.link-accent2 { color: var(--accent2); }
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════ */
+@media (min-width: 1440px) {
+  .section { max-width: 1400px; }
+  .hero { padding-top: 140px; padding-bottom: 60px; }
+  .step-card { padding: 40px; }
+  .timeline-content { padding: 28px; }
+}
+@media (max-width: 900px) {
+  .step-card { flex-direction: column; }
+  .step-card.reverse { flex-direction: column-reverse; }
+  .step-phones { justify-content: center; }
+  .timeline-visual { flex-direction: column; }
+  .timeline-phones { justify-content: center; }
+}
+@media (max-width: 768px) {
+  .nav-links { display: none; flex-direction: column; position: absolute; top: 64px; right: 16px;
+    background: rgba(5, 8, 16, 0.96); backdrop-filter: blur(20px); border-radius: var(--radius-lg);
+    padding: 8px; border: 1px solid var(--border); min-width: 160px; }
+  .nav-toggle { display: flex; }
+  .timeline { padding-left: 48px; }
+  .timeline::before { left: 14px; }
+  .timeline-number { left: -48px; width: 36px; height: 36px; font-size: 12px; }
+  .phone-frame { width: 150px; }
+  .phone-frame.large { width: 200px; }
+  .flow-chart { gap: 6px; }
+  .flow-node { padding: 8px 10px; }
+  .hero-roles { flex-direction: column; align-items: center; }
+  .role-transition { margin-left: 48px; }
+}
+@media (max-width: 480px) {
+  .phone-frame { width: 130px; }
+  .phone-frame.large { width: 160px; }
+  .step-card { padding: 20px; }
+  .timeline-content { padding: 16px; }
+  .toc a { padding: 8px 14px; font-size: 12px; }
+  .flow-arrow { display: none; }
+  .flow-chart { flex-direction: column; gap: 12px; }
+  .step-phones, .timeline-phones { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+@media (max-width: 375px) {
+  .timeline { padding-left: 44px; }
+  .timeline-number { left: -44px; width: 32px; height: 32px; font-size: 12px; }
+  .timeline::before { left: 14px; }
+  .phone-frame { width: 110px; }
+  .phone-frame.large { width: 140px; }
+  .section { padding-left: 0.75rem; padding-right: 0.75rem; }
+  .hero h1 { font-size: 1.8rem; }
+  .hero-role { padding: 10px 14px; }
+  .hero-role-sub { font-size: 12px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (max-width: 320px) {
+  .hero h1 { font-size: 1.5rem; }
+  .nav-container { padding: 0 8px; }
+  .section { padding-left: 0.5rem; padding-right: 0.5rem; }
+  .step-card { padding: 14px; gap: 16px; }
+  .phone-frame { width: 90px; }
+  .phone-frame.large { width: 110px; }
+  .hero-roles { gap: 8px; }
+  .hero-role { padding: 8px 10px; gap: 6px; }
+  .toc { gap: 6px; }
+  .toc a { padding: 6px 10px; font-size: 12px; }
+}
+
+/* Back to top button */
+.back-to-top {
+  position: fixed; bottom: 32px; right: 32px; z-index: var(--z-back-to-top);
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--accent); color: #fff; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transform: translateY(12px);
+  transition: opacity 0.3s, transform 0.3s;
+  box-shadow: var(--shadow-sm);
+}
+.back-to-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.back-to-top:hover { background: #2563eb; }
+.back-to-top svg { width: 20px; height: 20px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .hero-orb { animation: none; }
+  html { scroll-behavior: auto; }
+}
+/* High contrast mode fallback */
+@media (forced-colors: active) {
+  .hero h1 .gradient {
+    background: none; -webkit-background-clip: initial;
+    -webkit-text-fill-color: initial; color: CanvasText;
+  }
+}
+/* Focus visible (keyboard navigation) */
+:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px;
+}
+:focus:not(:focus-visible) { outline: none; }
+/* Skip link (a11y) */
+.skip-link {
+  position: absolute; top: -100px; left: 16px;
+  background: var(--accent); color: #fff; padding: 8px 16px;
+  border-radius: 0 0 8px 8px; z-index: var(--z-lightbox); font-size: 14px;
+  transition: top 0.2s;
+}
+.skip-link:focus { top: 0; }
+@media print {
+  body { background: #fff; color: #111; }
+  .noise, .hero-orb, .back-to-top, .lightbox, .nav-toggle, .flow-arrow, .toc, .skip-link { display: none !important; }
+  nav { position: static; background: #fff; border-bottom: 1px solid #ccc; }
+  .nav-links { display: flex !important; }
+  .nav-links a { color: #333; }
+  .section, .hero, .chapter { background: #fff; padding: 20px 0; }
+  .phone-frame { border: 1px solid #ccc; break-inside: avoid; }
+  .step-card, .timeline-content { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; background: #fafafa; }
+  .timeline-step { break-inside: avoid; }
+  .role-badge { border: 1px solid #999; color: #333 !important; background: #f0f0f0 !important; }
+  .info-box, .tips-box { border: 1px solid #ccc; background: #f9f9f9; }
+  h1, h2, h3 { color: #111; break-after: avoid; }
+  .hero h1 .gradient { background: none; -webkit-text-fill-color: #111; color: #111; }
+  .reveal { opacity: 1; transform: none; }
+  a { color: #111; text-decoration: underline; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 12px; color: #666; }
+  * { color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">跳转到主要内容</a>
+
+<!-- Noise Texture Overlay -->
+<svg class="noise" width="100%" height="100%" aria-hidden="true"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>
+
+<!-- ═══════════════════════════════════════════════════
+     NAVIGATION
+     ═══════════════════════════════════════════════════ -->
+<nav class="nav" aria-label="Main navigation">
+  <div class="nav-brand"><span>Cretas</span> App 操作手册</div>
+  <div class="nav-links" id="navLinks">
+    <a href="../" >首页</a>
+    <a href="#reporting" class="active">报工流程</a>
+    <a href="#batch">批次管理</a>
+    <a href="#psi">进销存</a>
+    <a href="#warehouse">仓储管理</a>
+    <a href="#roles">更多角色</a>
+    <a href="#fa-extended">管理员扩展</a>
+  </div>
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<main id="main-content">
+<!-- ═══════════════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-mesh">
+    <div class="hero-orb o1"></div>
+    <div class="hero-orb o2"></div>
+    <div class="hero-orb o3"></div>
+  </div>
+
+  <div class="hero-badge">Operations Manual / v2.0</div>
+
+  <h1>白垩纪 App<br><span class="gradient">操作手册</span></h1>
+
+  <p class="hero-desc">
+    涵盖车间报工全流程、批次生命周期管理、进销存管理、仓储出入库管理，以及 HR、质检、销售、操作工、采购等角色的完整操作指南。
+    每个步骤均包含详细的操作路径和截图指引。
+  </p>
+
+  <!-- Table of contents -->
+  <div class="toc">
+    <a href="#reporting">第一章: 报工流程</a>
+    <a href="#batch">第二章: 批次管理</a>
+    <a href="#psi">第三章: 进销存管理</a>
+    <a href="#warehouse">第四章: 仓储管理</a>
+    <a href="#roles">第五章: 系统角色全览</a>
+    <a href="#fa-extended">第六章: 管理员扩展功能</a>
+  </div>
+
+  <!-- Role cards -->
+  <div class="hero-roles">
+    <div class="hero-role">
+      <div class="hero-role-icon dispatcher">DP</div>
+      <div>
+        <div class="hero-role-label">调度员</div>
+        <div class="hero-role-sub">生产计划 / 任务分配</div>
+      </div>
+    </div>
+    <div class="hero-role">
+      <div class="hero-role-icon supervisor">WS</div>
+      <div>
+        <div class="hero-role-label">车间主管</div>
+        <div class="hero-role-sub">领人签到 / 报工 / 批次管理</div>
+      </div>
+    </div>
+    <div class="hero-role">
+      <div class="hero-role-icon factory-admin">FA</div>
+      <div>
+        <div class="hero-role-label">工厂管理员</div>
+        <div class="hero-role-sub">采购 / 销售 / 库存 / 财务 / AI</div>
+      </div>
+    </div>
+    <div class="hero-role">
+      <div class="hero-role-icon warehouse">WM</div>
+      <div>
+        <div class="hero-role-label">仓储主管</div>
+        <div class="hero-role-sub">入库 / 出库 / 库存盘点</div>
+      </div>
+    </div>
+    <div class="hero-role">
+      <div class="hero-role-icon hr-admin">HR</div>
+      <div>
+        <div class="hero-role-label">HR 管理员</div>
+        <div class="hero-role-sub">员工管理 / 考勤 / 排班</div>
+      </div>
+    </div>
+    <div class="hero-role">
+      <div class="hero-role-icon quality">QI</div>
+      <div>
+        <div class="hero-role-label">质检员</div>
+        <div class="hero-role-sub">质检报告 / 标准管理</div>
+      </div>
+    </div>
+    <div class="hero-role">
+      <div class="hero-role-icon sales">SM</div>
+      <div>
+        <div class="hero-role-label">销售经理</div>
+        <div class="hero-role-sub">销售订单 / 客户管理</div>
+      </div>
+    </div>
+    <div class="hero-role">
+      <div class="hero-role-icon operator">OP</div>
+      <div>
+        <div class="hero-role-label">操作工</div>
+        <div class="hero-role-sub">考勤打卡 / 报工</div>
+      </div>
+    </div>
+    <div class="hero-role">
+      <div class="hero-role-icon prod-mgr">PM</div>
+      <div>
+        <div class="hero-role-label">采购经理</div>
+        <div class="hero-role-sub">采购订单 / 供应商</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="separator"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 1: 报工全流程
+     ═══════════════════════════════════════════════════ -->
+<section class="section" id="reporting" aria-labelledby="heading-reporting">
+  <div class="section-header reveal">
+    <div class="section-label">Chapter 01</div>
+    <h2 class="section-title" id="heading-reporting">报工全流程</h2>
+    <p class="section-desc">
+      从调度员创建生产计划到车间主管完成报工的完整操作链路，
+      涵盖 7 个关键步骤和 2 个角色的交接。
+    </p>
+  </div>
+
+  <!-- Flow overview -->
+  <div class="flow-chart reveal">
+    <div class="flow-node">
+      <div class="flow-icon dp">DP</div>
+      <span class="flow-label">创建计划</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon dp">DP</div>
+      <span class="flow-label">分配任务</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon ws">WS</div>
+      <span class="flow-label">接收任务</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon ws">WS</div>
+      <span class="flow-label">任务引导</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon ws">WS</div>
+      <span class="flow-label">NFC签到</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon ws">WS</div>
+      <span class="flow-label">班组报工</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon ws">WS</div>
+      <span class="flow-label">历史记录</span>
+    </div>
+  </div>
+
+  <!-- Role Legend -->
+  <div class="role-legend reveal">
+    <span><span class="role-badge dispatcher">DP</span> = 调度员</span>
+    <span><span class="role-badge supervisor">WS</span> = 车间主管</span>
+    <span><span class="role-badge factory-admin">FA</span> = 工厂管理员</span>
+    <span><span class="role-badge warehouse">WM</span> = 仓储主管</span>
+    <span><span class="role-badge hr-admin">HR</span> = HR 管理员</span>
+    <span><span class="role-badge quality">QI</span> = 质检员</span>
+    <span><span class="role-badge sales">SM</span> = 销售经理</span>
+    <span><span class="role-badge operator">OP</span> = 操作工</span>
+    <span><span class="role-badge prod-mgr">PM</span> = 采购经理</span>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline">
+
+    <!-- Step 1: 创建生产计划 -->
+    <div class="timeline-step reveal">
+      <div class="timeline-number">01</div>
+      <div class="timeline-content">
+        <div class="timeline-role">
+          <span class="role-badge dispatcher">调度员</span>
+        </div>
+        <div class="timeline-title">创建生产计划</div>
+        <div class="timeline-desc">
+          调度员根据客户订单或库存预测，创建新的生产计划，指定产品、数量、交付日期和优先级。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          登录调度员账号 &rarr; 点击底部 <span class="btn-name">计划</span> Tab
+          &rarr; 点击右上角 <span class="btn-name">新建</span> 按钮
+          &rarr; 填写计划信息 &rarr; 点击 <span class="btn-name">提交</span>
+        </div>
+        <div class="timeline-visual">
+          <div class="timeline-visual-text">
+            <ul class="feature-list">
+              <li>支持客户订单、AI预测、安全库存等多种计划来源</li>
+              <li>自动计算产能和交期冲突提醒</li>
+              <li>支持甘特图可视化排程</li>
+              <li>紧急插单和混批排产功能</li>
+            </ul>
+            <div class="credential-card">
+              <div>
+                <div class="credential-label">测试账号</div>
+                <div class="credential-value">dispatcher1 / 123456</div>
+              </div>
+            </div>
+          </div>
+          <div class="timeline-phones">
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/dp-plan-list.webp" alt="计划列表" loading="lazy">
+              </div>
+              <div class="phone-label">计划列表</div>
+            </div>
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/dp-create-plan.webp" alt="新建计划" loading="lazy">
+              </div>
+              <div class="phone-label">新建计划</div>
+            </div>
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/dp-gantt.webp" alt="甘特图排程" loading="lazy">
+              </div>
+              <div class="phone-label">甘特图排程</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: 计划分配到车间主管 -->
+    <div class="timeline-step reveal">
+      <div class="timeline-number">02</div>
+      <div class="timeline-content">
+        <div class="timeline-role">
+          <span class="role-badge dispatcher">调度员</span>
+        </div>
+        <div class="timeline-title">分配任务到车间主管</div>
+        <div class="timeline-desc">
+          调度员在计划详情中将生产任务分配给具体的车间主管，系统自动推送通知。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          在计划列表点击目标计划 &rarr; 进入计划详情页
+          &rarr; 点击 <span class="btn-name">分配</span> 按钮
+          &rarr; 选择车间主管 &rarr; 确认分配
+        </div>
+        <div class="timeline-visual">
+          <div class="timeline-visual-text">
+            <ul class="feature-list">
+              <li>查看计划详情: 产品、数量、交期、优先级</li>
+              <li>一键分配到指定车间主管</li>
+              <li>分配后自动推送 App 通知</li>
+              <li>支持查看甘特图时间线</li>
+            </ul>
+          </div>
+          <div class="timeline-phones">
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/dp-plan-detail.webp" alt="计划详情" loading="lazy">
+              </div>
+              <div class="phone-label">计划详情</div>
+            </div>
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/dp-task-assign.webp" alt="任务分配" loading="lazy">
+              </div>
+              <div class="phone-label">任务分配</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Role Transition Callout -->
+    <div class="role-transition reveal">
+      <span class="role-badge dispatcher">调度员</span>
+      <span class="role-transition-arrow">&rarr;</span>
+      <span class="role-badge supervisor">车间主管</span>
+      <span class="role-transition-note">角色切换: 计划分配完成后，流程转交给车间主管执行。车间主管登录 App 即可查看已分配的任务。</span>
+    </div>
+
+    <!-- Step 3: 车间主管接收任务 -->
+    <div class="timeline-step reveal">
+      <div class="timeline-number">03</div>
+      <div class="timeline-content">
+        <div class="timeline-role">
+          <span class="role-badge supervisor">车间主管</span>
+        </div>
+        <div class="timeline-title">接收任务 - 首页 Dashboard</div>
+        <div class="timeline-desc">
+          车间主管登录后，首页 Dashboard 自动显示"下一批任务"卡片和今日任务概览。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          登录车间主管账号 &rarr; 自动进入 <span class="btn-name">首页</span>
+          &rarr; 查看顶部 <span class="btn-name">下一批任务</span> 卡片 &rarr; 下方显示今日任务统计
+        </div>
+        <div class="timeline-visual">
+          <div class="timeline-visual-text">
+            <ul class="feature-list">
+              <li>时段问候语 + 任务概览</li>
+              <li>下一批任务: 批次号、产品、目标产量、计划开始时间</li>
+              <li>今日任务统计: 已分配、进行中、已完成</li>
+              <li>进行中批次列表 + 进度条</li>
+              <li>人员和设备状态实时展示</li>
+            </ul>
+            <div class="credential-card">
+              <div>
+                <div class="credential-label">测试账号</div>
+                <div class="credential-value">workshop_sup1 / 123456</div>
+              </div>
+            </div>
+          </div>
+          <div class="timeline-phones">
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/ws-home.webp" alt="车间主管首页" loading="lazy">
+              </div>
+              <div class="phone-label">主管首页</div>
+            </div>
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/ws-next-task.webp" alt="下一批任务" loading="lazy">
+              </div>
+              <div class="phone-label">下一批任务</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: 任务引导 -->
+    <div class="timeline-step reveal">
+      <div class="timeline-number">04</div>
+      <div class="timeline-content">
+        <div class="timeline-role">
+          <span class="role-badge supervisor">车间主管</span>
+        </div>
+        <div class="timeline-title">任务引导 (3步流程)</div>
+        <div class="timeline-desc">
+          点击"开始任务"后进入3步引导流程，确保主管在开始生产前完成所有准备工作。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          首页点击 <span class="btn-name">开始任务</span>
+          &rarr; 第1步: 前往工位，点击 <span class="btn-name">我已到达工位</span>
+          &rarr; 第2步: 确认设备，点击 <span class="btn-name">启动设备</span>
+          &rarr; 第3步: 召集人员，确认到岗
+        </div>
+        <div class="timeline-visual">
+          <div class="timeline-visual-text">
+            <ul class="feature-list">
+              <li>Step 1: 前往工位 - 导航至指定车间工位</li>
+              <li>Step 2: 确认设备 - 检查并启动生产设备</li>
+              <li>Step 3: 召集人员 - 确认工人到岗情况</li>
+            </ul>
+            <div class="tips-box">
+              <div class="tips-label">Tips</div>
+              每一步完成后才能进入下一步，确保生产准备万无一失。
+              任务引导可随时中断，下次打开将从上次位置继续。
+            </div>
+          </div>
+          <div class="timeline-phones">
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/ws-task-guide.webp" alt="任务引导" loading="lazy">
+              </div>
+              <div class="phone-label">任务引导</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5: NFC 领人签到 -->
+    <div class="timeline-step reveal">
+      <div class="timeline-number">05</div>
+      <div class="timeline-content">
+        <div class="timeline-role">
+          <span class="role-badge supervisor">车间主管</span>
+        </div>
+        <div class="timeline-title">NFC 领人签到</div>
+        <div class="timeline-desc">
+          工人通过 NFC 碰触或扫码方式完成签到，系统自动记录签到时间和人员信息。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          首页点击 <span class="btn-name">领人签到</span>
+          &rarr; 选择当前批次 &rarr; 工人 NFC 碰触手机签到
+          &rarr; 查看签到人员列表
+        </div>
+        <div class="timeline-visual">
+          <div class="timeline-visual-text">
+            <ul class="feature-list">
+              <li>NFC 碰触签到: 工人工牌靠近手机即可完成</li>
+              <li>二维码签到: 备用方式，扫描工位二维码</li>
+              <li>实时显示已签到人员列表</li>
+              <li>自动匹配批次和工位信息</li>
+              <li>考勤打卡: 查看工人上/下班打卡记录</li>
+            </ul>
+            <div class="tips-box">
+              <div class="tips-label">Tips</div>
+              前置条件: 手机需支持 NFC 功能并已开启；工人工牌需提前在系统中绑定。
+              无 NFC 设备时可使用二维码签到作为备用方式。
+            </div>
+          </div>
+          <div class="timeline-phones">
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/ws-nfc-checkin.webp" alt="NFC签到" loading="lazy">
+              </div>
+              <div class="phone-label">NFC签到</div>
+            </div>
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/ws-clockin.webp" alt="考勤打卡" loading="lazy">
+              </div>
+              <div class="phone-label">考勤打卡</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6: 班组报工 -->
+    <div class="timeline-step reveal">
+      <div class="timeline-number">06</div>
+      <div class="timeline-content">
+        <div class="timeline-role">
+          <span class="role-badge supervisor">车间主管</span>
+        </div>
+        <div class="timeline-title">班组报工</div>
+        <div class="timeline-desc">
+          车间主管选择当前批次，填写本班次的产出数量、合格率等数据，提交报工记录。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          首页点击 <span class="btn-name">班组报工</span>
+          &rarr; 选择批次 &rarr; 填写产出数量(kg)、合格品数、工时等
+          &rarr; 点击 <span class="btn-name">提交</span>
+        </div>
+        <div class="timeline-visual">
+          <div class="timeline-visual-text">
+            <ul class="feature-list">
+              <li>选择当前生产批次</li>
+              <li>填写产出数量、合格品数量</li>
+              <li>记录工时和参与人员</li>
+              <li>支持拍照上传现场记录</li>
+              <li>提交成功后自动更新批次进度</li>
+            </ul>
+            <div class="tips-box">
+              <div class="tips-label">Tips</div>
+              报工数据与批次进度联动 -- 提交报工后，对应批次的产量和进度自动更新。
+              批次的完整生命周期管理(开工/阶段/完工)详见 <a href="#batch" class="link-accent2">第二章: 批次管理</a>。
+            </div>
+          </div>
+          <div class="timeline-phones">
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/ws-batch-select.webp" alt="选择批次" loading="lazy">
+              </div>
+              <div class="phone-label">选择批次</div>
+            </div>
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/ws-report-form.webp" alt="报工表单" loading="lazy">
+              </div>
+              <div class="phone-label">报工表单</div>
+            </div>
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/ws-report-filled.webp" alt="填写完成" loading="lazy">
+              </div>
+              <div class="phone-label">填写完成</div>
+            </div>
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/ws-report-success.webp" alt="提交成功" loading="lazy">
+              </div>
+              <div class="phone-label">提交成功</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 7: 草稿管理 & 历史记录 -->
+    <div class="timeline-step reveal">
+      <div class="timeline-number">07</div>
+      <div class="timeline-content">
+        <div class="timeline-role">
+          <span class="role-badge supervisor">车间主管</span>
+        </div>
+        <div class="timeline-title">草稿管理与历史记录</div>
+        <div class="timeline-desc">
+          支持离线状态下保存报工草稿，联网后批量提交。所有报工历史可在"我的报工"中查看。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          首页点击 <span class="btn-name">草稿管理</span> 查看离线保存的草稿
+          &rarr; 或点击 <span class="btn-name">我的报工</span> 查看历史报工记录
+        </div>
+        <div class="timeline-visual">
+          <div class="timeline-visual-text">
+            <ul class="feature-list">
+              <li>草稿管理: 离线保存、批量提交、编辑修改</li>
+              <li>我的报工: 按时间排序的完整报工记录</li>
+              <li>支持查看每条记录的详细数据</li>
+              <li>人员 Tab: 查看工人列表和考勤打卡记录</li>
+            </ul>
+          </div>
+          <div class="timeline-phones">
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/ws-drafts.webp" alt="草稿管理" loading="lazy">
+              </div>
+              <div class="phone-label">草稿管理</div>
+            </div>
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/ws-my-reports.webp" alt="我的报工" loading="lazy">
+              </div>
+              <div class="phone-label">我的报工</div>
+            </div>
+            <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+              <div class="phone-screen">
+                <img src="screenshots/ws-personnel.webp" alt="人员列表" loading="lazy">
+              </div>
+              <div class="phone-label">人员列表</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /timeline -->
+</section>
+
+<div class="separator"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 1.5: 批次管理
+     ═══════════════════════════════════════════════════ -->
+<section class="section" id="batch" aria-labelledby="heading-batch">
+  <div class="section-header reveal">
+    <div class="section-label">Chapter 02</div>
+    <h2 class="section-title" id="heading-batch">批次生命周期管理</h2>
+    <p class="section-desc">
+      车间主管在 <span class="btn-name">批次</span> Tab 中管理所有生产批次的完整生命周期:
+      查看批次列表、启动生产、记录阶段进度、完成报工直至批次结束。
+    </p>
+  </div>
+
+  <div class="step-grid">
+
+    <!-- 批次列表 & 详情 -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">01</div>
+        <div class="timeline-role">
+          <span class="role-badge supervisor">车间主管</span>
+        </div>
+        <h3 class="step-title">批次列表与详情</h3>
+        <div class="step-desc">
+          查看当前工厂所有生产批次的状态和进度，点击批次查看详细信息。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          点击底部 <span class="btn-name">批次</span> Tab
+          &rarr; 查看批次列表 (按状态筛选: 待开工/进行中/已完工)
+          &rarr; 点击目标批次查看详情
+        </div>
+        <ul class="feature-list">
+          <li>批次列表: 批次号、产品名称、目标产量、当前状态</li>
+          <li>状态筛选: 待开工 / 进行中 / 已完工</li>
+          <li>批次详情: 计划信息、分配人员、进度百分比</li>
+          <li>物料消耗: 查看该批次已消耗的原材料明细</li>
+        </ul>
+        <div class="credential-card">
+          <div>
+            <div class="credential-label">测试账号</div>
+            <div class="credential-value">workshop_sup1 / 123456</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+          <div class="phone-screen">
+            <img src="screenshots/ws-batch-list.webp" alt="批次列表" loading="lazy">
+          </div>
+          <div class="phone-label">批次列表</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+          <div class="phone-screen">
+            <img src="screenshots/ws-batch-detail.webp" alt="批次详情" loading="lazy">
+          </div>
+          <div class="phone-label">批次详情</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 批次开工 & 操作 -->
+    <div class="step-card reverse reveal">
+      <div class="step-text">
+        <div class="step-number">02</div>
+        <div class="timeline-role">
+          <span class="role-badge supervisor">车间主管</span>
+        </div>
+        <h3 class="step-title">批次开工与阶段管理</h3>
+        <div class="step-desc">
+          启动批次生产，记录各阶段进度，直到批次完工。支持查看物料消耗明细。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          在批次详情页点击 <span class="btn-name">开始生产</span>
+          &rarr; 批次状态变为"进行中"
+          &rarr; 点击 <span class="btn-name">记录阶段</span> 更新进度
+          &rarr; 完成后点击 <span class="btn-name">完工</span>
+        </div>
+        <ul class="feature-list">
+          <li>开始生产: 确认人员、设备就绪后启动批次</li>
+          <li>阶段记录: 按生产工序记录各阶段完成情况</li>
+          <li>物料消耗: 记录各原材料实际使用量</li>
+          <li>批次完工: 录入最终产出、合格率，结束批次</li>
+        </ul>
+        <div class="tips-box">
+          <div class="tips-label">Tips</div>
+          批次开工前需确保已通过"任务引导"完成准备工作。
+          物料消耗数据将自动同步到仓储系统的库存扣减。
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+          <div class="phone-screen">
+            <img src="screenshots/ws-batch-start.webp" alt="批次开工" loading="lazy">
+          </div>
+          <div class="phone-label">批次开工</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+          <div class="phone-screen">
+            <img src="screenshots/ws-batch-actions.webp" alt="批次操作" loading="lazy">
+          </div>
+          <div class="phone-label">批次操作</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button">
+          <div class="phone-screen">
+            <img src="screenshots/ws-material-consumption.webp" alt="物料消耗" loading="lazy">
+          </div>
+          <div class="phone-label">物料消耗</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /step-grid -->
+</section>
+
+<div class="separator"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 2: 进销存管理
+     ═══════════════════════════════════════════════════ -->
+<section class="section" id="psi" aria-labelledby="heading-psi">
+  <div class="section-header reveal">
+    <div class="section-label">Chapter 03</div>
+    <h2 class="section-title" id="heading-psi">进销存管理</h2>
+    <p class="section-desc">
+      工厂管理员的核心业务模块: 采购、销售、库存、调拨、财务、价格、退货七大功能，
+      覆盖从原料采购到成品出货的全链路管理。
+    </p>
+  </div>
+
+  <!-- Flow overview -->
+  <div class="flow-chart reveal">
+    <div class="flow-node">
+      <div class="flow-icon fa">FA</div>
+      <span class="flow-label">采购订单</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon fa">FA</div>
+      <span class="flow-label">成品库存</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon fa">FA</div>
+      <span class="flow-label">销售订单</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon fa">FA</div>
+      <span class="flow-label">应收应付</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon fa">FA</div>
+      <span class="flow-label">调拨 / 退货</span>
+    </div>
+  </div>
+
+  <!-- Step Grid -->
+  <div class="step-grid">
+
+    <!-- 3.1 管理首页概览 -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">01</div>
+        <div class="timeline-role">
+          <span class="role-badge factory-admin">工厂管理员</span>
+        </div>
+        <h3 class="step-title">管理中心概览</h3>
+        <div class="step-desc">
+          工厂管理员的管理 Tab 包含全部业务功能入口，按模块分区:
+          核心管理、供应链管理、进销存管理 (7大功能)、系统配置。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          登录工厂管理员账号 &rarr; 点击底部 <span class="btn-name">管理</span> Tab
+          &rarr; 向下滑动查看进销存管理区域
+        </div>
+        <ul class="feature-list">
+          <li>核心管理: 产品类型、物料类型、换算率</li>
+          <li>供应链管理: 供应商管理、客户管理、物流发货</li>
+          <li>进销存管理: 采购/销售/库存/调拨/财务/价格/退货</li>
+          <li>系统配置: 表单配置、模板、规则引擎</li>
+        </ul>
+        <div class="credential-card">
+          <div>
+            <div class="credential-label">测试账号</div>
+            <div class="credential-value">factory_admin1 / 123456</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看管理中心截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-management-top.webp" alt="管理中心上半部分" loading="lazy">
+          </div>
+          <div class="phone-label">管理中心 (上半)</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看进销存功能入口截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-psi-overview.webp" alt="进销存管理功能入口" loading="lazy">
+          </div>
+          <div class="phone-label">进销存入口 (下半)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.2 采购订单 -->
+    <div class="step-card reverse reveal">
+      <div class="step-text">
+        <div class="step-number">02</div>
+        <div class="timeline-role">
+          <span class="role-badge factory-admin">工厂管理员</span>
+        </div>
+        <h3 class="step-title">采购订单</h3>
+        <div class="step-desc">
+          管理原材料采购全流程: 创建采购单、选择供应商、确认到货、质检入库。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          <span class="btn-name">管理</span> Tab &rarr; 向下滑到进销存区域
+          &rarr; 点击 <span class="btn-name">采购订单</span>
+          &rarr; 查看列表 / 点击 <span class="btn-name">+</span> 新建采购单
+        </div>
+        <ul class="feature-list">
+          <li>采购列表: 按状态筛选 (全部/草稿/已审批/已完成)</li>
+          <li>采购明细: 订单号、供应商、金额、下单日期</li>
+          <li>新建采购: 选择供应商、添加物料明细、预期交货日期</li>
+          <li>到货确认: 核对数量与质量，关联入库单</li>
+        </ul>
+        <div class="tips-box">
+          <div class="tips-label">Tips</div>
+          创建采购订单时，系统会根据历史数据自动推荐常用供应商和采购数量。
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame large" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看采购订单列表截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-purchase-list.webp" alt="采购订单列表" loading="lazy">
+          </div>
+          <div class="phone-label">采购订单列表</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.3 销售订单 -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">03</div>
+        <div class="timeline-role">
+          <span class="role-badge factory-admin">工厂管理员</span>
+        </div>
+        <h3 class="step-title">销售订单</h3>
+        <div class="step-desc">
+          管理客户销售订单: 创建销售单、确认发货、跟踪回款状态。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          <span class="btn-name">管理</span> Tab &rarr; 进销存区域
+          &rarr; 点击 <span class="btn-name">销售订单</span>
+          &rarr; 查看列表 / 新建销售单
+        </div>
+        <ul class="feature-list">
+          <li>销售列表: 按状态筛选 (全部/草稿/已确认/已完成)</li>
+          <li>销售明细: 订单号、客户名称、金额、下单日期</li>
+          <li>订单确认: 审核价格和数量，确认交期</li>
+          <li>发货关联: 自动关联仓储出库单</li>
+        </ul>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame large" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看销售订单列表截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-sales-list.webp" alt="销售订单列表" loading="lazy">
+          </div>
+          <div class="phone-label">销售订单列表</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.4 成品库存 -->
+    <div class="step-card reverse reveal">
+      <div class="step-text">
+        <div class="step-number">04</div>
+        <div class="timeline-role">
+          <span class="role-badge factory-admin">工厂管理员</span>
+        </div>
+        <h3 class="step-title">成品库存</h3>
+        <div class="step-desc">
+          查看成品库存总览，按批次追踪库存数量、可用量、冻结量。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          <span class="btn-name">管理</span> Tab &rarr; 进销存区域
+          &rarr; 点击 <span class="btn-name">成品库存</span>
+          &rarr; 查看各产品批次的库存明细
+        </div>
+        <ul class="feature-list">
+          <li>库存列表: 按产品编号、批次号查看库存</li>
+          <li>库存状态: 充足 (Sufficient) / 不足 (Low) / 预警</li>
+          <li>批次明细: 总量、可用量、冻结量、生产日期</li>
+          <li>库存搜索: 按产品编号或名称快速定位</li>
+        </ul>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame large" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看成品库存列表截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-finished-goods.webp" alt="成品库存列表" loading="lazy">
+          </div>
+          <div class="phone-label">成品库存列表</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.5 调拨管理 -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">05</div>
+        <div class="timeline-role">
+          <span class="role-badge factory-admin">工厂管理员</span>
+        </div>
+        <h3 class="step-title">调拨管理</h3>
+        <div class="step-desc">
+          管理跨仓库/跨工厂的物料调拨，支持调拨审批和物流跟踪。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          <span class="btn-name">管理</span> Tab &rarr; 进销存区域
+          &rarr; 点击 <span class="btn-name">调拨管理</span>
+          &rarr; 查看调拨列表 / 新建调拨单
+        </div>
+        <ul class="feature-list">
+          <li>调拨列表: 按状态筛选 (全部/申请中/运输中/已完成)</li>
+          <li>调拨明细: 类型、调出方、调入方、金额、日期</li>
+          <li>新建调拨: 指定来源/目标工厂，选择物料和数量</li>
+          <li>调拨审批: 大额调拨需上级审批后方可执行</li>
+        </ul>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame large" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看调拨管理列表截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-transfer.webp" alt="调拨管理列表" loading="lazy">
+          </div>
+          <div class="phone-label">调拨管理列表</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.6 应收应付 -->
+    <div class="step-card reverse reveal">
+      <div class="step-text">
+        <div class="step-number">06</div>
+        <div class="timeline-role">
+          <span class="role-badge factory-admin">工厂管理员</span>
+        </div>
+        <h3 class="step-title">应收应付</h3>
+        <div class="step-desc">
+          管理客户应收账款和供应商应付账款，查看净额、账龄、最近交易。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          <span class="btn-name">管理</span> Tab &rarr; 进销存区域
+          &rarr; 点击 <span class="btn-name">应收应付</span>
+          &rarr; 概览 / 应收 / 应付 / 账龄 四个 Tab 切换
+        </div>
+        <ul class="feature-list">
+          <li>概览: 应收总额、应付总额、净额、逾期金额</li>
+          <li>应收管理: 客户欠款列表、账龄分析、催收提醒</li>
+          <li>应付管理: 供应商付款计划、到期提醒</li>
+          <li>最近交易: 收款/付款记录，支持一键收款操作</li>
+        </ul>
+        <div class="tips-box">
+          <div class="tips-label">Tips</div>
+          应收账款超过约定账期将自动标记预警，并生成催收提醒。
+          点击右下角 <span class="btn-name">+ 收款</span> 按钮可快速录入收款记录。
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame large" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看应收应付管理截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-arap.webp" alt="应收应付管理" loading="lazy">
+          </div>
+          <div class="phone-label">应收应付管理</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.7 价格表 -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">07</div>
+        <div class="timeline-role">
+          <span class="role-badge factory-admin">工厂管理员</span>
+        </div>
+        <h3 class="step-title">价格表管理</h3>
+        <div class="step-desc">
+          维护采购价和销售价体系，支持按年度/客户等级设定不同价格策略。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          <span class="btn-name">管理</span> Tab &rarr; 进销存区域
+          &rarr; 点击 <span class="btn-name">价格表</span>
+          &rarr; 查看采购/销售价格表
+        </div>
+        <ul class="feature-list">
+          <li>采购价格表: 年度原料采购价，含明细条数</li>
+          <li>销售价格表: 年度成品销售价，含明细条数</li>
+          <li>生效期间: 价格表有效期管理 (过期自动标记)</li>
+          <li>价格历史: 查看调价记录和趋势变化</li>
+        </ul>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame large" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看价格表管理截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-pricelist.webp" alt="价格表管理" loading="lazy">
+          </div>
+          <div class="phone-label">价格表管理</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.8 退货管理 -->
+    <div class="step-card reverse reveal">
+      <div class="step-text">
+        <div class="step-number">08</div>
+        <div class="timeline-role">
+          <span class="role-badge factory-admin">工厂管理员</span>
+        </div>
+        <h3 class="step-title">退货管理</h3>
+        <div class="step-desc">
+          处理采购退货和销售退货，管理退货原因、质检和退款流程。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          <span class="btn-name">管理</span> Tab &rarr; 进销存区域
+          &rarr; 点击 <span class="btn-name">退货管理</span>
+          &rarr; 切换 <span class="btn-name">采购退货</span> / <span class="btn-name">销售退货</span> Tab
+        </div>
+        <ul class="feature-list">
+          <li>退货分类: 采购退货 (退给供应商) / 销售退货 (客户退回)</li>
+          <li>退货申请: 关联原订单、填写退货原因和数量</li>
+          <li>退货质检: 检验退回商品状态和质量</li>
+          <li>退款处理: 确认退款金额，自动更新应收应付</li>
+        </ul>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame large" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看退货管理截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-returns.webp" alt="退货管理" loading="lazy">
+          </div>
+          <div class="phone-label">退货管理</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /step-grid -->
+</section>
+
+<div class="separator"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 4: 仓储管理
+     ═══════════════════════════════════════════════════ -->
+<section class="section" id="warehouse" aria-labelledby="heading-warehouse">
+  <div class="section-header reveal">
+    <div class="section-label">Chapter 04</div>
+    <h2 class="section-title" id="heading-warehouse">仓储管理</h2>
+    <p class="section-desc">
+      仓储主管的日常操作: 入库验收、库存盘点、出库发货、物流追踪，
+      覆盖从原料入库到成品出库的完整仓储链路。
+    </p>
+  </div>
+
+  <!-- Flow overview -->
+  <div class="flow-chart reveal">
+    <div class="flow-node">
+      <div class="flow-icon wm">WM</div>
+      <span class="flow-label">仓储首页</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon wm">WM</div>
+      <span class="flow-label">入库管理</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon wm">WM</div>
+      <span class="flow-label">库存管理</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon wm">WM</div>
+      <span class="flow-label">出库发货</span>
+    </div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node">
+      <div class="flow-icon wm">WM</div>
+      <span class="flow-label">出入库统计</span>
+    </div>
+  </div>
+
+  <!-- Step Grid -->
+  <div class="step-grid">
+
+    <!-- 4.1 仓储首页 Dashboard -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">01</div>
+        <div class="timeline-role">
+          <span class="role-badge warehouse">仓储主管</span>
+        </div>
+        <h3 class="step-title">仓储首页 Dashboard</h3>
+        <div class="step-desc">
+          仓储主管登录后进入首页 Dashboard，展示今日关键指标和近期动态:
+          待入库、待出库、库存预警、近期操作等核心数据一目了然。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          登录仓储管理员账号 &rarr; 自动进入首页 Dashboard
+        </div>
+        <ul class="feature-list">
+          <li>KPI 指标: 今日待入库/待出库/库存预警数量</li>
+          <li>快捷入口: 快速创建入库单、出库单</li>
+          <li>近期动态: 最近的入库/出库/盘点记录</li>
+          <li>库存预警: 低于安全库存的物料提醒</li>
+        </ul>
+        <div class="credential-card">
+          <div>
+            <div class="credential-label">测试账号</div>
+            <div class="credential-value">warehouse_mgr1 / 123456</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame large" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看仓储首页截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-home.webp" alt="仓储首页 Dashboard" loading="lazy">
+          </div>
+          <div class="phone-label">仓储首页</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4.2 入库管理 -->
+    <div class="step-card reverse reveal">
+      <div class="step-text">
+        <div class="step-number">02</div>
+        <div class="timeline-role">
+          <span class="role-badge warehouse">仓储主管</span>
+        </div>
+        <h3 class="step-title">入库管理</h3>
+        <div class="step-desc">
+          管理原材料和成品入库全流程: 查看入库列表、新建入库单、确认入库并分配库位。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          点击底部 <span class="btn-name">入库</span> Tab
+          &rarr; 查看入库列表 / 点击 <span class="btn-name">+</span> 新建入库单
+          &rarr; 填写物料明细 &rarr; 确认入库
+        </div>
+        <ul class="feature-list">
+          <li>入库列表: 按状态筛选 (待验收/已入库/已退回)</li>
+          <li>新建入库: 选择物料类型、输入数量、关联采购单</li>
+          <li>入库详情: 查看物料明细、批次号、供应商信息</li>
+          <li>质检作业: 5项质检检查，不合格可直接退回</li>
+          <li>确认上架: 分配库位、扫码确认入库</li>
+        </ul>
+        <div class="tips-box">
+          <div class="tips-label">Tips</div>
+          入库时扫描物料条码可自动填充物料信息，减少手动输入。
+          关联采购单后，系统自动匹配数量差异并提示。
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看入库列表截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-inbound-list.webp" alt="入库列表" loading="lazy">
+          </div>
+          <div class="phone-label">入库列表</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看入库详情截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-inbound-detail.webp" alt="入库详情" loading="lazy">
+          </div>
+          <div class="phone-label">入库详情</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看新建入库截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-inbound-create.webp" alt="新建入库" loading="lazy">
+          </div>
+          <div class="phone-label">新建入库</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4.3 库存管理 -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">03</div>
+        <div class="timeline-role">
+          <span class="role-badge warehouse">仓储主管</span>
+        </div>
+        <h3 class="step-title">库存管理</h3>
+        <div class="step-desc">
+          全面管理在库物料: 库存查看、盘点作业、库间调拨、库位管理，确保账实相符。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          点击底部 <span class="btn-name">库存</span> Tab
+          &rarr; 搜索/筛选物料 &rarr; 点击查看详情
+          &rarr; 或使用顶部功能入口进入 <span class="btn-name">盘点</span> / <span class="btn-name">调拨</span> / <span class="btn-name">库位</span>
+        </div>
+        <ul class="feature-list">
+          <li>库存列表: 按类别筛选，搜索物料名称或编号</li>
+          <li>库存详情: 当前数量、安全库存、近期出入记录</li>
+          <li>库存盘点: 创建盘点任务，逐项核对并记录差异</li>
+          <li>库间调拨: 创建调拨单，指定来源/目标仓库</li>
+          <li>库位管理: 查看各库位占用情况，调整存放位置</li>
+        </ul>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看库存列表截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-inventory-list.webp" alt="库存列表" loading="lazy">
+          </div>
+          <div class="phone-label">库存列表</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看库存详情截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-inventory-detail.webp" alt="库存详情" loading="lazy">
+          </div>
+          <div class="phone-label">库存详情</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看库存盘点截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-stocktake.webp" alt="库存盘点" loading="lazy">
+          </div>
+          <div class="phone-label">库存盘点</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看调拨管理截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-transfer.webp" alt="库间调拨" loading="lazy">
+          </div>
+          <div class="phone-label">库间调拨</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看库位管理截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-location.webp" alt="库位管理" loading="lazy">
+          </div>
+          <div class="phone-label">库位管理</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4.4 出库发货 -->
+    <div class="step-card reverse reveal">
+      <div class="step-text">
+        <div class="step-number">04</div>
+        <div class="timeline-role">
+          <span class="role-badge warehouse">仓储主管</span>
+        </div>
+        <h3 class="step-title">出库发货</h3>
+        <div class="step-desc">
+          处理出库订单全流程: 查看出库列表、确认发货、物流追踪，确保准时交付。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          点击底部 <span class="btn-name">出货</span> Tab
+          &rarr; 选择出库订单 &rarr; 打包 &rarr; 确认发货
+          &rarr; 填写物流信息 &rarr; 跟踪物流状态
+        </div>
+        <ul class="feature-list">
+          <li>出库列表: 按状态筛选 (待拣货/待打包/待发货/已发货)</li>
+          <li>出库详情: 查看订单明细、客户信息、交货要求</li>
+          <li>发货确认: 核对数量、拍照记录、填写物流单号</li>
+          <li>物流追踪: 实时查看运输状态和预计到达时间</li>
+        </ul>
+        <div class="tips-box">
+          <div class="tips-label">Tips</div>
+          发货前系统会自动校验库存余量，不足时会阻止发货并提示补货。
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看出库列表截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-outbound-list.webp" alt="出库列表" loading="lazy">
+          </div>
+          <div class="phone-label">出库列表</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看出库详情截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-outbound-detail.webp" alt="出库详情" loading="lazy">
+          </div>
+          <div class="phone-label">出库详情</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看发货确认截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-shipping-confirm.webp" alt="发货确认" loading="lazy">
+          </div>
+          <div class="phone-label">发货确认</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看物流追踪截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-tracking.webp" alt="物流追踪" loading="lazy">
+          </div>
+          <div class="phone-label">物流追踪</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4.5 出入库统计 -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">05</div>
+        <div class="timeline-role">
+          <span class="role-badge warehouse">仓储主管</span>
+        </div>
+        <h3 class="step-title">出入库统计</h3>
+        <div class="step-desc">
+          查看仓储运营数据分析: 出入库趋势、周转率、库龄分析，辅助仓储决策。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          <span class="btn-name">我的</span> Tab &rarr; 点击 <span class="btn-name">出入库统计</span>
+          &rarr; 选择时间范围查看报表
+        </div>
+        <ul class="feature-list">
+          <li>出入库趋势: 日/周/月维度的出入库数量和金额</li>
+          <li>周转率分析: 各品类库存周转天数</li>
+          <li>库龄分析: 超期物料预警</li>
+          <li>导出报表: 支持导出 Excel 格式</li>
+        </ul>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame large" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看出入库统计截图">
+          <div class="phone-screen">
+            <img src="screenshots/wm-io-stats.webp" alt="出入库统计" loading="lazy">
+          </div>
+          <div class="phone-label">出入库统计</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /step-grid -->
+</section>
+
+<div class="separator"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 5: 系统角色全览
+     ═══════════════════════════════════════════════════ -->
+<section class="section" id="roles" aria-labelledby="heading-roles">
+  <div class="section-header reveal">
+    <div class="section-label">Chapter 05</div>
+    <h2 class="section-title" id="heading-roles">系统角色全览</h2>
+    <p class="section-desc">
+      除了报工和进销存流程中涉及的角色，系统还支持 HR 管理员、质检员、销售经理、操作工、采购经理等角色，
+      以及调度员的 AI 排产扩展功能。以下展示各角色的核心操作界面。
+    </p>
+  </div>
+
+  <div class="step-grid">
+
+    <!-- 5.1 调度员扩展: AI 排产 -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">01</div>
+        <div class="timeline-role">
+          <span class="role-badge dispatcher">调度员</span>
+        </div>
+        <h3 class="step-title">AI 智能排产</h3>
+        <div class="step-desc">
+          调度员可使用 AI 辅助排产功能，系统根据订单、产能、人员状况自动生成最优排产方案，
+          并提供人员优化建议和完成概率预测。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          首页 &rarr; 点击 <span class="btn-name">AI 排产</span> Tab
+          &rarr; 选择排产模式 &rarr; 查看 AI 推荐方案
+        </div>
+        <ul class="feature-list">
+          <li>AI 排产主页: 选择计划模式或批次模式</li>
+          <li>人员优化: AI 推荐最佳人员配置方案</li>
+          <li>统计分析: 产能利用率、完成率等关键指标</li>
+          <li>人员管理: 查看在岗人员、考勤、调岗记录</li>
+        </ul>
+        <div class="credential-card">
+          <div>
+            <div class="credential-label">测试账号</div>
+            <div class="credential-value">dispatcher1 / 123456</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看AI排产截图">
+          <div class="phone-screen">
+            <img src="screenshots/dp-ai-schedule.webp" alt="AI 排产主页" loading="lazy">
+          </div>
+          <div class="phone-label">AI 排产</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看人员优化截图">
+          <div class="phone-screen">
+            <img src="screenshots/dp-ai-worker.webp" alt="AI 人员优化" loading="lazy">
+          </div>
+          <div class="phone-label">人员优化</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看统计分析截图">
+          <div class="phone-screen">
+            <img src="screenshots/dp-statistics.webp" alt="统计分析" loading="lazy">
+          </div>
+          <div class="phone-label">统计分析</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看人员管理截图">
+          <div class="phone-screen">
+            <img src="screenshots/dp-personnel-list.webp" alt="人员管理" loading="lazy">
+          </div>
+          <div class="phone-label">人员管理</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5.2 HR 管理员 -->
+    <div class="step-card reverse reveal">
+      <div class="step-text">
+        <div class="step-number">02</div>
+        <div class="timeline-role">
+          <span class="role-badge hr-admin">HR 管理员</span>
+        </div>
+        <h3 class="step-title">人事与考勤管理</h3>
+        <div class="step-desc">
+          HR 管理员负责员工信息管理、考勤监控、排班配置等人事相关工作，
+          确保工厂人力资源的高效运转。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          登录 HR 管理员账号 &rarr; 首页查看考勤概览
+          &rarr; 底部 Tab 切换员工管理 / 考勤 / 排班
+        </div>
+        <ul class="feature-list">
+          <li>首页 Dashboard: 今日出勤率、异常考勤、待处理事项</li>
+          <li>员工管理: 员工列表、详情、新增员工</li>
+          <li>考勤管理: 考勤记录、异常处理、统计报表</li>
+          <li>排班管理: 班次配置、排班表、调班申请</li>
+        </ul>
+        <div class="credential-card">
+          <div>
+            <div class="credential-label">测试账号</div>
+            <div class="credential-value">hr_admin1 / 123456</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看HR首页截图">
+          <div class="phone-screen">
+            <img src="screenshots/hr-home.webp" alt="HR 首页" loading="lazy">
+          </div>
+          <div class="phone-label">HR 首页</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看员工列表截图">
+          <div class="phone-screen">
+            <img src="screenshots/hr-staff-list.webp" alt="员工列表" loading="lazy">
+          </div>
+          <div class="phone-label">员工列表</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看考勤管理截图">
+          <div class="phone-screen">
+            <img src="screenshots/hr-attendance.webp" alt="考勤管理" loading="lazy">
+          </div>
+          <div class="phone-label">考勤管理</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看排班管理截图">
+          <div class="phone-screen">
+            <img src="screenshots/hr-schedule.webp" alt="排班管理" loading="lazy">
+          </div>
+          <div class="phone-label">排班管理</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5.3 质检员 -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">03</div>
+        <div class="timeline-role">
+          <span class="role-badge quality">质检员</span>
+        </div>
+        <h3 class="step-title">质量检验</h3>
+        <div class="step-desc">
+          质检员负责生产过程中的质量检验工作，包括巡检、抽检、成品检验，
+          确保产品质量符合标准要求。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          登录质检员账号 &rarr; 首页查看待检任务
+          &rarr; 选择批次 &rarr; 填写质检表单 &rarr; 提交检验结果
+        </div>
+        <ul class="feature-list">
+          <li>首页: 待检批次数、今日已检、合格率、快捷操作</li>
+          <li>质检列表: 待检批次一键开始检验</li>
+          <li>质检表单: 多维度评分 (外观/气味/规格/包装)</li>
+          <li>检验记录: 历史检验详情，支持按日期/结果筛选</li>
+          <li>记录详情: 单条检验的完整评分和照片</li>
+          <li>数据分析: 合格率趋势、等级分布、分项评分</li>
+          <li>个人中心: 今日检验数、考勤打卡、设置</li>
+        </ul>
+        <div class="credential-card">
+          <div>
+            <div class="credential-label">测试账号</div>
+            <div class="credential-value">quality_insp1 / 123456</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看质检首页截图">
+          <div class="phone-screen">
+            <img src="screenshots/qi-home.webp" alt="质检首页" loading="lazy">
+          </div>
+          <div class="phone-label">质检首页</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看待检批次截图">
+          <div class="phone-screen">
+            <img src="screenshots/qi-inspect-list.webp" alt="待检批次" loading="lazy">
+          </div>
+          <div class="phone-label">待检批次</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看检验记录截图">
+          <div class="phone-screen">
+            <img src="screenshots/qi-records.webp" alt="检验记录" loading="lazy">
+          </div>
+          <div class="phone-label">检验记录</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看数据分析截图">
+          <div class="phone-screen">
+            <img src="screenshots/qi-analysis.webp" alt="数据分析" loading="lazy">
+          </div>
+          <div class="phone-label">数据分析</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看个人中心截图">
+          <div class="phone-screen">
+            <img src="screenshots/qi-profile.webp" alt="个人中心" loading="lazy">
+          </div>
+          <div class="phone-label">个人中心</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看质检表单截图">
+          <div class="phone-screen">
+            <img src="screenshots/qi-form.webp" alt="质检表单" loading="lazy">
+          </div>
+          <div class="phone-label">质检表单</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看记录详情截图">
+          <div class="phone-screen">
+            <img src="screenshots/qi-record-detail.webp" alt="记录详情" loading="lazy">
+          </div>
+          <div class="phone-label">记录详情</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5.4 销售经理 -->
+    <div class="step-card reverse reveal">
+      <div class="step-text">
+        <div class="step-number">04</div>
+        <div class="timeline-role">
+          <span class="role-badge sales">销售经理</span>
+        </div>
+        <h3 class="step-title">销售与客户管理</h3>
+        <div class="step-desc">
+          销售经理负责销售订单管理、客户关系维护、销售数据分析，
+          驱动销售业绩增长。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          登录销售经理账号 &rarr; 首页查看销售概览
+          &rarr; 底部 Tab 切换订单 / 客户 / 数据
+        </div>
+        <ul class="feature-list">
+          <li>首页 Dashboard: 本月销售额、订单数、回款率</li>
+          <li>销售订单: 订单列表、详情、状态跟踪</li>
+          <li>应收应付: 客户欠款、回款跟踪、账龄分析</li>
+          <li>销售详情: 订单明细、发货状态、收款记录</li>
+        </ul>
+        <div class="credential-card">
+          <div>
+            <div class="credential-label">测试账号</div>
+            <div class="credential-value">sales_mgr1 / 123456</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看销售首页截图">
+          <div class="phone-screen">
+            <img src="screenshots/sm-home.webp" alt="销售首页" loading="lazy">
+          </div>
+          <div class="phone-label">销售首页</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看销售订单截图">
+          <div class="phone-screen">
+            <img src="screenshots/sm-sales-list.webp" alt="销售订单" loading="lazy">
+          </div>
+          <div class="phone-label">销售订单</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看应收应付截图">
+          <div class="phone-screen">
+            <img src="screenshots/sm-ar-ap.webp" alt="应收应付" loading="lazy">
+          </div>
+          <div class="phone-label">应收应付</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看销售详情截图">
+          <div class="phone-screen">
+            <img src="screenshots/sm-sales-detail.webp" alt="销售详情" loading="lazy">
+          </div>
+          <div class="phone-label">销售详情</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看客户管理截图">
+          <div class="phone-screen">
+            <img src="screenshots/sm-customer-list.webp" alt="客户管理" loading="lazy">
+          </div>
+          <div class="phone-label">客户管理</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5.5 操作工 -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">05</div>
+        <div class="timeline-role">
+          <span class="role-badge operator">操作工</span>
+        </div>
+        <h3 class="step-title">考勤与报工</h3>
+        <div class="step-desc">
+          操作工的日常操作: 考勤打卡、查看工作任务、提交报工记录，
+          是车间生产一线的核心操作角色。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          登录操作工账号 &rarr; 首页考勤打卡
+          &rarr; 查看任务列表 &rarr; 填写报工
+        </div>
+        <ul class="feature-list">
+          <li>考勤打卡: 上班/下班打卡，查看打卡记录</li>
+          <li>打卡操作: 一键打卡，支持 NFC 和定位</li>
+          <li>扫码报工: 扫描批次条码开始报工</li>
+          <li>工作任务: 查看当日分配的生产任务</li>
+        </ul>
+        <div class="credential-card">
+          <div>
+            <div class="credential-label">测试账号</div>
+            <div class="credential-value">operator1 / 123456</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看考勤首页截图">
+          <div class="phone-screen">
+            <img src="screenshots/op-attendance.webp" alt="考勤首页" loading="lazy">
+          </div>
+          <div class="phone-label">考勤首页</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看打卡操作截图">
+          <div class="phone-screen">
+            <img src="screenshots/op-clockin.webp" alt="打卡操作" loading="lazy">
+          </div>
+          <div class="phone-label">打卡操作</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看扫码报工截图">
+          <div class="phone-screen">
+            <img src="screenshots/op-report.webp" alt="扫码报工" loading="lazy">
+          </div>
+          <div class="phone-label">扫码报工</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看工作任务截图">
+          <div class="phone-screen">
+            <img src="screenshots/op-work-list.webp" alt="工作任务" loading="lazy">
+          </div>
+          <div class="phone-label">工作任务</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5.6 采购经理 -->
+    <div class="step-card reverse reveal">
+      <div class="step-text">
+        <div class="step-number">06</div>
+        <div class="timeline-role">
+          <span class="role-badge prod-mgr">采购经理</span>
+        </div>
+        <h3 class="step-title">采购与供应商管理</h3>
+        <div class="step-desc">
+          采购经理负责采购订单管理、供应商维护、价格管理，
+          确保原材料供应的稳定性和成本控制。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          登录采购经理账号 &rarr; 首页查看采购概览
+          &rarr; 底部 Tab 切换订单 / 供应商 / 价格
+        </div>
+        <ul class="feature-list">
+          <li>首页 Dashboard: 本月采购额、待审核订单、到货提醒</li>
+          <li>采购订单: 订单列表、详情、审批状态</li>
+          <li>采购详情: 订单明细、供应商、物料信息</li>
+          <li>退货管理: 采购退货申请与处理</li>
+        </ul>
+        <div class="credential-card">
+          <div>
+            <div class="credential-label">测试账号</div>
+            <div class="credential-value">procurement_mgr1 / 123456</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看采购首页截图">
+          <div class="phone-screen">
+            <img src="screenshots/pm-home.webp" alt="采购首页" loading="lazy">
+          </div>
+          <div class="phone-label">采购首页</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看采购订单截图">
+          <div class="phone-screen">
+            <img src="screenshots/pm-purchase-list.webp" alt="采购订单" loading="lazy">
+          </div>
+          <div class="phone-label">采购订单</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看采购详情截图">
+          <div class="phone-screen">
+            <img src="screenshots/pm-purchase-detail.webp" alt="采购详情" loading="lazy">
+          </div>
+          <div class="phone-label">采购详情</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看退货管理截图">
+          <div class="phone-screen">
+            <img src="screenshots/pm-return-orders.webp" alt="退货管理" loading="lazy">
+          </div>
+          <div class="phone-label">退货管理</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看供应商列表截图">
+          <div class="phone-screen">
+            <img src="screenshots/pm-supplier-list.webp" alt="供应商列表" loading="lazy">
+          </div>
+          <div class="phone-label">供应商列表</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看价格管理截图">
+          <div class="phone-screen">
+            <img src="screenshots/pm-price-list.webp" alt="价格管理" loading="lazy">
+          </div>
+          <div class="phone-label">价格管理</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /step-grid -->
+</section>
+
+<div class="separator"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 6: 工厂管理员扩展功能
+     ═══════════════════════════════════════════════════ -->
+<section class="section" id="fa-extended" aria-labelledby="heading-fa-extended">
+  <div class="section-header reveal">
+    <div class="section-label">Chapter 06</div>
+    <h2 class="section-title" id="heading-fa-extended">管理员扩展功能</h2>
+    <p class="section-desc">
+      工厂管理员除了进销存管理外，还拥有 AI 智能分析、报表中心、SmartBI 数据分析三大扩展功能模块，
+      提供深度的经营洞察和数据驱动决策能力。
+    </p>
+  </div>
+
+  <div class="step-grid">
+
+    <!-- 6.1 AI 智能分析 -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">01</div>
+        <div class="timeline-role">
+          <span class="role-badge factory-admin">工厂管理员</span>
+        </div>
+        <h3 class="step-title">AI 智能分析</h3>
+        <div class="step-desc">
+          通过自然语言对话与 AI 交互，查询经营数据、生成分析报告，
+          无需编写 SQL 或手动制表。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          首页 &rarr; 点击底部 <span class="btn-name">AI</span> Tab
+          &rarr; 输入问题开始对话 / 查看 AI 分析报告
+        </div>
+        <ul class="feature-list">
+          <li>AI 主页: 快捷问题模板和最近对话记录</li>
+          <li>AI 对话: 自然语言查询经营数据，支持图表展示</li>
+          <li>分析报告: AI 自动生成的经营分析报告</li>
+        </ul>
+        <div class="tips-box">
+          <div class="tips-label">Tips</div>
+          可以直接问"本月销售额多少"、"库存周转率如何"等自然语言问题，
+          AI 会自动查询数据并以图表形式展示结果。
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看AI主页截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-ai-main.webp" alt="AI 主页" loading="lazy">
+          </div>
+          <div class="phone-label">AI 主页</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看AI对话截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-ai-chat.webp" alt="AI 对话" loading="lazy">
+          </div>
+          <div class="phone-label">AI 对话</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看AI报告截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-ai-report.webp" alt="AI 分析报告" loading="lazy">
+          </div>
+          <div class="phone-label">AI 报告</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6.2 报表中心 -->
+    <div class="step-card reverse reveal">
+      <div class="step-text">
+        <div class="step-number">02</div>
+        <div class="timeline-role">
+          <span class="role-badge factory-admin">工厂管理员</span>
+        </div>
+        <h3 class="step-title">报表中心</h3>
+        <div class="step-desc">
+          集中查看和管理各类经营报表，包括生产报表、销售报表、财务报表等，
+          支持导出和分享功能。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          首页 &rarr; 点击底部 <span class="btn-name">报表</span> Tab
+          &rarr; 选择报表类型 &rarr; 查看详情或导出
+        </div>
+        <ul class="feature-list">
+          <li>报表列表: 按类别浏览所有可用报表</li>
+          <li>报表详情: 图表+数据表格展示</li>
+          <li>导出: 支持 Excel / PDF 格式导出</li>
+        </ul>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看报表中心截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-reports-main.webp" alt="报表中心" loading="lazy">
+          </div>
+          <div class="phone-label">报表中心</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看报表详情截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-report-detail.webp" alt="报表详情" loading="lazy">
+          </div>
+          <div class="phone-label">报表详情</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6.3 SmartBI 数据分析 -->
+    <div class="step-card reveal">
+      <div class="step-text">
+        <div class="step-number">03</div>
+        <div class="timeline-role">
+          <span class="role-badge factory-admin">工厂管理员</span>
+        </div>
+        <h3 class="step-title">SmartBI 数据分析</h3>
+        <div class="step-desc">
+          上传 Excel 数据文件，系统自动解析并生成可视化图表和 AI 洞察分析，
+          帮助管理者快速理解业务数据趋势。
+        </div>
+        <div class="info-box">
+          <strong>操作路径:</strong>
+          首页 &rarr; 点击底部 <span class="btn-name">SmartBI</span> Tab
+          &rarr; 上传 Excel 文件 &rarr; 查看图表和 AI 分析
+        </div>
+        <ul class="feature-list">
+          <li>SmartBI 主页: 最近分析记录和快速上传入口</li>
+          <li>数据上传: 支持 xlsx/csv 文件，自动解析表结构</li>
+          <li>图表分析: 系统自动推荐最佳图表类型并生成</li>
+          <li>AI 洞察: 自动识别数据趋势、异常和改进建议</li>
+        </ul>
+        <div class="tips-box">
+          <div class="tips-label">Tips</div>
+          上传的 Excel 文件支持多 Sheet，系统会自动为每个 Sheet 生成独立的分析 Dashboard。
+          支持餐饮、零售等行业的专业分析维度。
+        </div>
+      </div>
+      <div class="step-phones">
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看SmartBI主页截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-smartbi-main.webp" alt="SmartBI 主页" loading="lazy">
+          </div>
+          <div class="phone-label">SmartBI 主页</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看数据上传截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-smartbi-upload.webp" alt="数据上传" loading="lazy">
+          </div>
+          <div class="phone-label">数据上传</div>
+        </div>
+        <div class="phone-frame" onclick="openLightbox(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightbox(this)}" tabindex="0" role="button" aria-label="查看图表分析截图">
+          <div class="phone-screen">
+            <img src="screenshots/fa-smartbi-chart.webp" alt="图表分析" loading="lazy">
+          </div>
+          <div class="phone-label">图表分析</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /step-grid -->
+</section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer-brand"><span>Cretas</span> 白垩纪智能科技</div>
+  <p class="footer-text">App 操作手册 v2.0 - 内部使用</p>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════
+     LIGHTBOX
+     ═══════════════════════════════════════════════════ -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)" role="dialog" aria-modal="true" aria-label="截图预览">
+  <button class="lightbox-close" onclick="closeLightbox(event)" aria-label="Close">&times;</button>
+  <img id="lightbox-img" alt="" loading="lazy">
+  <div class="lightbox-caption" id="lightbox-caption"></div>
+</div>
+
+<!-- Back to top -->
+<button class="back-to-top" id="backToTop" aria-label="Back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<!-- ═══════════════════════════════════════════════════
+     SCRIPTS
+     ═══════════════════════════════════════════════════ -->
+<script>
+// Lightbox with focus trap
+var _lbTrigger = null;
+function openLightbox(el) {
+  const img = el.querySelector('.phone-screen img');
+  const label = el.querySelector('.phone-label');
+  if (!img) return;
+  _lbTrigger = el;
+  const lb = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lightbox-img');
+  lbImg.src = img.src;
+  lbImg.alt = img.alt || (label ? label.textContent : '');
+  document.getElementById('lightbox-caption').textContent = label ? label.textContent : '';
+  lb.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  document.querySelector('.lightbox-close').focus();
+}
+function closeLightbox(e) {
+  if (e.target === document.getElementById('lightbox-img')) return;
+  document.getElementById('lightbox').classList.remove('active');
+  document.body.style.overflow = '';
+  if (_lbTrigger) { _lbTrigger.focus(); _lbTrigger = null; }
+}
+document.addEventListener('keydown', function(e) {
+  var lb = document.getElementById('lightbox');
+  if (!lb.classList.contains('active')) return;
+  if (e.key === 'Escape') { closeLightbox(e); return; }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    document.querySelector('.lightbox-close').focus();
+  }
+});
+
+// Scroll reveal
+const revealObserver = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(function(el) {
+  revealObserver.observe(el);
+});
+
+// Smooth scroll for nav links
+document.querySelectorAll('.nav-links a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function(e) {
+    e.preventDefault();
+    var target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    document.querySelectorAll('.nav-links a').forEach(function(a) { a.classList.remove('active'); });
+    this.classList.add('active');
+  });
+});
+
+// Mobile nav toggle with aria-expanded
+var navToggle = document.getElementById('navToggle');
+navToggle.setAttribute('aria-expanded', 'false');
+navToggle.addEventListener('click', function() {
+  var links = document.getElementById('navLinks');
+  links.classList.toggle('open');
+  navToggle.setAttribute('aria-expanded', links.classList.contains('open') ? 'true' : 'false');
+});
+// Close nav when clicking a link
+document.querySelectorAll('#navLinks a').forEach(function(a) {
+  a.addEventListener('click', function() {
+    document.getElementById('navLinks').classList.remove('open');
+  });
+});
+
+// Auto-add aria-labels to phone-frames without one
+document.querySelectorAll('.phone-frame:not([aria-label])').forEach(function(frame) {
+  var label = frame.querySelector('.phone-label');
+  if (label) frame.setAttribute('aria-label', '\u67E5\u770B' + label.textContent + '\u622A\u56FE');
+});
+
+// Update active nav on scroll (throttled)
+var sections = document.querySelectorAll('.section[id]');
+var backToTop = document.getElementById('backToTop');
+var scrollTicking = false;
+window.addEventListener('scroll', function() {
+  if (!scrollTicking) {
+    requestAnimationFrame(function() {
+      var current = '';
+      sections.forEach(function(section) {
+        var top = section.offsetTop - 100;
+        if (window.scrollY >= top) current = section.getAttribute('id');
+      });
+      document.querySelectorAll('.nav-links a').forEach(function(a) {
+        a.classList.remove('active');
+        if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+      });
+      // Back to top visibility
+      if (window.scrollY > 600) {
+        backToTop.classList.add('visible');
+      } else {
+        backToTop.classList.remove('visible');
+      }
+      scrollTicking = false;
+    });
+    scrollTicking = true;
+  }
+});
+backToTop.addEventListener('click', function() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+</script>
+</body>
+</html>

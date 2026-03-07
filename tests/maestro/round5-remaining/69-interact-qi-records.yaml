@@ -1,0 +1,103 @@
+appId: com.cretas.foodtrace
+---
+# Test 69: In-depth QI Records Interaction
+# Exercises filter cycle, pull-to-refresh, card tap→detail→back, scroll
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as quality inspector
+- runFlow: flows/login-qi.yaml
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/69-qi-home
+
+# Navigate to inspection records
+# QI home should have records entry or bottom tab
+- tapOn:
+    text: ".*检验记录.*|.*Records.*|.*历史.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/69-qi-records-initial
+
+# === Filter chip cycle ===
+# Filter: 全部
+- tapOn:
+    text: "全部"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/69-filter-all
+
+# Filter: 今日
+- tapOn:
+    text: "今日"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/69-filter-today
+
+# Filter: 合格
+- tapOn:
+    text: "合格"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/69-filter-pass
+
+# Filter: 不合格
+- tapOn:
+    text: "不合格"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/69-filter-fail
+
+# Back to all
+- tapOn:
+    text: "全部"
+    optional: true
+- waitForAnimationToEnd
+
+# === Pull-to-refresh ===
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/69-after-refresh
+
+# === Card tap → detail → back ===
+# Try tapping first record card
+- tapOn:
+    text: ".*PB2026.*|.*QB2026.*|.*检验.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/69-record-detail
+
+# Verify detail content
+- tapOn:
+    text: ".*检验项.*|.*检验结果.*|.*评分.*|.*grade.*"
+    optional: true
+- takeScreenshot: screenshots/69-detail-content
+
+# Back from detail
+- back
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/69-back-to-list
+
+# === Scroll down ===
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/69-scrolled-down
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/69-scrolled-up
+
+# Return to home
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/69-complete

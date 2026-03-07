@@ -1,0 +1,41 @@
+appId: com.cretas.foodtrace
+---
+# Explore Dispatcher screens
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- runFlow: flows/login-dp.yaml
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 15000
+- takeScreenshot: screenshots/explore-dp-home
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-dp-home-scroll
+
+# Try tabs
+- tapOn:
+    text: ".*\u8BA1\u5212.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-dp-tab2
+
+- tapOn:
+    text: ".*\u4EBA\u5458.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-dp-tab3
+
+- tapOn:
+    text: ".*\u8BBE\u5907.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-dp-tab4
+
+- tapOn:
+    text: ".*\u6211\u7684.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-dp-profile

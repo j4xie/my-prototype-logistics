@@ -7,6 +7,7 @@ import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
+import { formatAmount } from '@/utils/tableFormatters';
 
 const route = useRoute();
 const router = useRouter();
@@ -18,6 +19,7 @@ const canWrite = computed(() => permissionStore.canWrite('sales'));
 const orderId = computed(() => route.params.id as string);
 
 const loading = ref(false);
+const submitting = ref(false);
 const order = ref<any>(null);
 const deliveries = ref<any[]>([]);
 const deliveryDialogVisible = ref(false);
@@ -63,6 +65,7 @@ async function loadDeliveries() {
 }
 
 async function handleAction(action: string) {
+  if (submitting.value) return;
   const map: Record<string, { label: string; url: string }> = {
     confirm: { label: '确认订单', url: `/${factoryId.value}/sales/orders/${orderId.value}/confirm` },
     cancel: { label: '取消订单', url: `/${factoryId.value}/sales/orders/${orderId.value}/cancel` },
@@ -71,9 +74,14 @@ async function handleAction(action: string) {
   if (!a) return;
   try {
     await ElMessageBox.confirm(`确认${a.label}？`, '操作确认');
+  } catch { return; }
+  submitting.value = true;
+  try {
     const res = await post(a.url);
     if (res.success) { ElMessage.success(`${a.label}成功`); loadOrder(); }
-  } catch { /* cancelled */ }
+    else { ElMessage.error(res.message || `${a.label}失败，请重试`); }
+  } catch { ElMessage.error(`${a.label}失败，请检查网络`); }
+  finally { submitting.value = false; }
 }
 
 function openDeliveryDialog() {
@@ -93,6 +101,8 @@ function openDeliveryDialog() {
 }
 
 async function handleCreateDelivery() {
+  if (submitting.value) return;
+  submitting.value = true;
   try {
     const res = await post(`/${factoryId.value}/sales/deliveries`, {
       salesOrderId: orderId.value,
@@ -104,29 +114,37 @@ async function handleCreateDelivery() {
       ElMessage.success('发货单创建成功');
       deliveryDialogVisible.value = false;
       loadOrder(); loadDeliveries();
-    }
-  } catch { ElMessage.error('创建失败'); }
+    } else { ElMessage.error(res.message || '创建失败，请重试'); }
+  } catch { ElMessage.error('创建失败，请检查网络'); }
+  finally { submitting.value = false; }
 }
 
 async function handleShip(deliveryId: string) {
+  if (submitting.value) return;
   try {
     await ElMessageBox.confirm('确认发货？将扣减成品库存', '确认');
+  } catch { return; }
+  submitting.value = true;
+  try {
     const res = await post(`/${factoryId.value}/sales/deliveries/${deliveryId}/ship`);
     if (res.success) { ElMessage.success('发货成功'); loadDeliveries(); loadOrder(); }
-  } catch { /* cancelled */ }
+    else { ElMessage.error(res.message || '发货失败，请重试'); }
+  } catch { ElMessage.error('发货失败，请检查网络'); }
+  finally { submitting.value = false; }
 }
 
 async function handleDelivered(deliveryId: string) {
+  if (submitting.value) return;
   try {
     await ElMessageBox.confirm('确认客户已签收？', '确认');
+  } catch { return; }
+  submitting.value = true;
+  try {
     const res = await post(`/${factoryId.value}/sales/deliveries/${deliveryId}/delivered`);
     if (res.success) { ElMessage.success('签收确认成功'); loadDeliveries(); loadOrder(); }
-  } catch { /* cancelled */ }
-}
-
-function formatAmount(val: number) {
-  if (val == null) return '-';
-  return `¥${Number(val).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+    else { ElMessage.error(res.message || '签收确认失败，请重试'); }
+  } catch { ElMessage.error('签收确认失败，请检查网络'); }
+  finally { submitting.value = false; }
 }
 </script>
 
@@ -138,14 +156,14 @@ function formatAmount(val: number) {
           <div class="header-left">
             <el-button :icon="ArrowLeft" @click="router.push('/sales/orders')">返回</el-button>
             <span class="page-title">{{ label('salesOrder') }}详情</span>
-            <el-tag v-if="order" :type="(statusMap[order.status]?.type as any) || 'info'" size="large">
+            <el-tag v-if="order" :type="(statusMap[order.status]?.type) || 'info'" size="large">
               {{ statusMap[order.status]?.text || order.status }}
             </el-tag>
           </div>
           <div class="header-right" v-if="order && canWrite">
-            <el-button v-if="order.status === 'DRAFT'" type="success" @click="handleAction('confirm')">确认订单</el-button>
-            <el-button v-if="['CONFIRMED','PROCESSING','PARTIAL_DELIVERED'].includes(order.status)" type="primary" @click="openDeliveryDialog">{{ label('delivery') }}</el-button>
-            <el-button v-if="['DRAFT','CONFIRMED'].includes(order.status)" type="danger" @click="handleAction('cancel')">取消</el-button>
+            <el-button v-if="order.status === 'DRAFT'" type="success" :loading="submitting" @click="handleAction('confirm')">确认订单</el-button>
+            <el-button v-if="['CONFIRMED','PROCESSING','PARTIAL_DELIVERED'].includes(order.status)" type="primary" :loading="submitting" @click="openDeliveryDialog">{{ label('delivery') }}</el-button>
+            <el-button v-if="['DRAFT','CONFIRMED'].includes(order.status)" type="danger" :disabled="submitting" @click="handleAction('cancel')">取消</el-button>
           </div>
         </div>
       </template>
@@ -186,7 +204,7 @@ function formatAmount(val: number) {
           <el-table-column prop="trackingNumber" label="运单号" width="150" />
           <el-table-column prop="status" label="状态" width="100" align="center">
             <template #default="{ row }">
-              <el-tag :type="(delStatusMap[row.status]?.type as any) || 'info'" size="small">
+              <el-tag :type="(delStatusMap[row.status]?.type) || 'info'" size="small">
                 {{ delStatusMap[row.status]?.text || row.status }}
               </el-tag>
             </template>
@@ -196,8 +214,8 @@ function formatAmount(val: number) {
           </el-table-column>
           <el-table-column label="操作" width="150" align="center">
             <template #default="{ row }">
-              <el-button v-if="['DRAFT','PICKED'].includes(row.status) && canWrite" type="warning" link size="small" @click="handleShip(row.id)">发货</el-button>
-              <el-button v-if="row.status === 'SHIPPED' && canWrite" type="success" link size="small" @click="handleDelivered(row.id)">签收</el-button>
+              <el-button v-if="['DRAFT','PICKED'].includes(row.status) && canWrite" type="warning" link size="small" :disabled="submitting" @click="handleShip(row.id)">发货</el-button>
+              <el-button v-if="row.status === 'SHIPPED' && canWrite" type="success" link size="small" :disabled="submitting" @click="handleDelivered(row.id)">签收</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -223,7 +241,7 @@ function formatAmount(val: number) {
       </el-table>
       <template #footer>
         <el-button @click="deliveryDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleCreateDelivery">创建发货单</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleCreateDelivery">创建发货单</el-button>
       </template>
     </el-dialog>
   </div>

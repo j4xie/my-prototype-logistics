@@ -54,7 +54,7 @@ logger = logging.getLogger("auto_annotate_ner")
 # 常量
 # ---------------------------------------------------------------------------
 DEFAULT_BATCH_SIZE = 10
-DEFAULT_MODEL = "qwen-plus"
+DEFAULT_MODEL = "qwen3.5-122b-a10b"  # free quota (was: qwen-plus)
 MAX_RETRIES = 3
 RETRY_DELAY = 2.0
 

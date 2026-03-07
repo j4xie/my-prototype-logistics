@@ -85,6 +85,19 @@ import ReturnOrderListScreen from "../../screens/factory-admin/inventory/ReturnO
 import ReturnOrderDetailScreen from "../../screens/factory-admin/inventory/ReturnOrderDetailScreen";
 import WorkReportApprovalScreen from "../../screens/factory-admin/management/WorkReportApprovalScreen";
 
+// 餐饮模块页面
+import RecipeListScreen from "../../screens/restaurant/recipes/RecipeListScreen";
+import RecipeDetailScreen from "../../screens/restaurant/recipes/RecipeDetailScreen";
+import RecipeEditScreen from "../../screens/restaurant/recipes/RecipeEditScreen";
+import RequisitionCreateScreen from "../../screens/restaurant/requisition/RequisitionCreateScreen";
+import RequisitionApprovalScreen from "../../screens/restaurant/requisition/RequisitionApprovalScreen";
+import RequisitionDetailScreen from "../../screens/restaurant/requisition/RequisitionDetailScreen";
+import WastageListScreen from "../../screens/restaurant/wastage/WastageListScreen";
+import WastageCreateScreen from "../../screens/restaurant/wastage/WastageCreateScreen";
+import StocktakingListScreen from "../../screens/restaurant/stocktaking/StocktakingListScreen";
+import StocktakingExecuteScreen from "../../screens/restaurant/stocktaking/StocktakingExecuteScreen";
+import StocktakingSummaryScreen from "../../screens/restaurant/stocktaking/StocktakingSummaryScreen";
+
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
 export function FAManagementStackNavigator() {
@@ -441,6 +454,23 @@ export function FAManagementStackNavigator() {
         component={ReturnOrderDetailScreen}
         options={{ title: "退货详情" }}
       />
+
+      {/* 餐饮模块 (restaurant mode only in UI, but routes registered for all) */}
+      {isRestaurantMode && (
+        <>
+          <Stack.Screen name="RecipeList" component={RecipeListScreen} options={{ title: "配方管理" }} />
+          <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} options={{ title: "配方详情" }} />
+          <Stack.Screen name="RecipeEdit" component={RecipeEditScreen} options={{ title: "编辑配方" }} />
+          <Stack.Screen name="RequisitionCreate" component={RequisitionCreateScreen} options={{ title: "新建领料" }} />
+          <Stack.Screen name="RequisitionApproval" component={RequisitionApprovalScreen} options={{ title: "领料审批" }} />
+          <Stack.Screen name="RequisitionDetail" component={RequisitionDetailScreen} options={{ title: "领料详情" }} />
+          <Stack.Screen name="WastageList" component={WastageListScreen} options={{ title: "损耗记录" }} />
+          <Stack.Screen name="WastageCreate" component={WastageCreateScreen} options={{ title: "记录损耗" }} />
+          <Stack.Screen name="StocktakingList" component={StocktakingListScreen} options={{ title: "盘点管理" }} />
+          <Stack.Screen name="StocktakingExecute" component={StocktakingExecuteScreen} options={{ title: "执行盘点" }} />
+          <Stack.Screen name="StocktakingSummary" component={StocktakingSummaryScreen} options={{ title: "盘点汇总" }} />
+        </>
+      )}
     </Stack.Navigator>
   );
 }

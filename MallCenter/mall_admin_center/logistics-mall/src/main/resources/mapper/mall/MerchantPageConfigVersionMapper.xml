@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.MerchantPageConfigVersionMapper">
+
+    <select id="selectVersions" resultType="com.joolun.mall.entity.MerchantPageConfigVersion">
+        SELECT id, config_id, merchant_id, page_type, version_no,
+               theme_code, shop_name, slogan, change_source, change_description, create_time
+        FROM merchant_page_config_version
+        WHERE
+        <if test="merchantId != null">
+            merchant_id = #{merchantId}
+        </if>
+        <if test="merchantId == null">
+            merchant_id IS NULL
+        </if>
+          AND page_type = #{pageType}
+        ORDER BY version_no DESC
+        LIMIT 20
+    </select>
+
+    <select id="selectMaxVersionNo" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(version_no), 0)
+        FROM merchant_page_config_version
+        WHERE
+        <if test="merchantId != null">
+            merchant_id = #{merchantId}
+        </if>
+        <if test="merchantId == null">
+            merchant_id IS NULL
+        </if>
+          AND page_type = #{pageType}
+    </select>
+
+    <delete id="deleteOldVersions">
+        DELETE FROM merchant_page_config_version
+        WHERE id NOT IN (
+            SELECT id FROM (
+                SELECT id FROM merchant_page_config_version
+                WHERE
+                <if test="merchantId != null">
+                    merchant_id = #{merchantId}
+                </if>
+                <if test="merchantId == null">
+                    merchant_id IS NULL
+                </if>
+                  AND page_type = #{pageType}
+                ORDER BY version_no DESC
+                LIMIT #{keepCount}
+            ) AS keep_ids
+        )
+        AND
+        <if test="merchantId != null">
+            merchant_id = #{merchantId}
+        </if>
+        <if test="merchantId == null">
+            merchant_id IS NULL
+        </if>
+        AND page_type = #{pageType}
+    </delete>
+
+</mapper>

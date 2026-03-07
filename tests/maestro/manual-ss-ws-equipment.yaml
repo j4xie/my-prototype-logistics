@@ -1,0 +1,219 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: Workshop Supervisor - Equipment Management
+# Captures: equipment list overview, equipment detail, alert detail, maintenance records
+# Screens: WSEquipmentScreen, EquipmentDetailScreen, EquipmentAlertScreen, EquipmentMaintenanceScreen
+# Tab layout (5 tabs): Home(首页) | Batches(批次) | Workers(人员) | Equipment(设备) | Profile(我的)
+# Equipment tab is the 4th tab from left (~72% from left)
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Login as workshop_sup1
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "workshop_sup1"
+
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "login-submit-btn"
+
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Verify home screen loaded
+- extendedWaitUntil:
+    visible: ".*Good.*|.*workshop.*|.*Start Task.*|.*AI Insights.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Screenshot: WS home before navigating to equipment
+- takeScreenshot: screenshots/manual-ss-ws-equipment-pre-nav
+
+# Navigate to Equipment tab (设备) — 4th tab, ~72% from left
+- tapOn:
+    point: "72%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Equipment list overview (stats grid + sections)
+- takeScreenshot: screenshots/manual-ss-ws-equipment-list
+
+# Scroll down to see more equipment cards
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-equipment-list-scroll
+
+# Scroll back to top
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# === Equipment Detail — tap first equipment card ===
+# Cards show: 切片机A (EQ-001), 解冻设备B (EQ-002), 清洗线C (EQ-003), etc.
+- tapOn:
+    text: ".*EQ-.*|\u5207\u7247\u673CA|\u5207\u7247\u673C|\u89E3\u51BB\u8BBE\u5907|\u6E05\u6D17\u7EBF"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Equipment detail (realtime parameters, status)
+- takeScreenshot: screenshots/manual-ss-ws-equipment-detail
+
+# Scroll down in equipment detail to see maintenance history
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-equipment-detail-scroll
+
+# Scroll further to see bottom of detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-equipment-detail-bottom
+
+# Return to equipment list
+- back
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# === Alert Screen — tap the alerted equipment (冷冻设备E / EQ-005 has alertCount=2) ===
+# Alert cards have red left border and alert badge
+- tapOn:
+    text: ".*\u51B7\u51BB\u8BBE\u5907E|\u51B7\u51BB\u8BBE\u5907|\u544A\u8B66.*|.*Alert.*|.*\u5F85\u5173\u6CE8.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Equipment with alert badge visible (from list, before entering alert screen)
+- takeScreenshot: screenshots/manual-ss-ws-equipment-alert-entry
+
+# Try to navigate into alert detail if available from detail screen
+- tapOn:
+    text: ".*\u544A\u8B66\u8BE6\u60C5.*|.*Alert.*Detail.*|.*\u67E5\u770B\u544A\u8B66.*|.*\u544A\u8B66.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-equipment-alert-detail
+
+# Scroll to see suggested actions
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-equipment-alert-actions
+
+# Return
+- back
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Recovery back to equipment list
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Start Task.*|.*\u9996\u9875.*|.*Good.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate back to Equipment tab
+- tapOn:
+    point: "72%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# === Maintenance Screen — tap on a running equipment then look for maintenance entry ===
+# Tap 切片机A (EQ-001) to enter detail, then find maintenance records button
+- tapOn:
+    text: ".*EQ-001|\u5207\u7247\u673CA|\u5207\u7247\u673C"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Look for "维护记录" / "Maintenance" button in equipment detail
+- tapOn:
+    text: ".*\u7EF4\u62A4\u8BB0\u5F55.*|.*Maintenance.*|.*\u7EF4\u4FEE.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Maintenance records screen (equipment info card + record list)
+- takeScreenshot: screenshots/manual-ss-ws-equipment-maintenance
+
+# Scroll down to see maintenance history records
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-equipment-maintenance-records
+
+# Scroll further to see scheduled maintenance entry
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-equipment-maintenance-scheduled
+
+# Return from maintenance screen
+- back
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Return from detail screen
+- back
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Final screenshot: equipment list overview after all navigation
+- takeScreenshot: screenshots/manual-ss-ws-equipment-complete
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-equipment-final

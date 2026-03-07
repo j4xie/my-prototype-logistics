@@ -35,6 +35,8 @@ const emit = defineEmits<{
 
 const chartRef = ref<HTMLDivElement | null>(null);
 const chartInstance = ref<ECharts | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+let rafId = 0;
 const granularity = ref<TimeGranularity>(props.defaultGranularity);
 
 // 指标配置
@@ -179,7 +181,11 @@ function updateChart() {
 }
 
 function handleResize() {
-  chartInstance.value?.resize();
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = 0;
+    chartInstance.value?.resize();
+  });
 }
 
 function onGranularityChange(value: TimeGranularity) {
@@ -189,10 +195,17 @@ function onGranularityChange(value: TimeGranularity) {
 // Lifecycle
 onMounted(() => {
   initChart();
+  if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartRef.value);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (rafId) cancelAnimationFrame(rafId);
   window.removeEventListener('resize', handleResize);
   chartInstance.value?.dispose();
 });

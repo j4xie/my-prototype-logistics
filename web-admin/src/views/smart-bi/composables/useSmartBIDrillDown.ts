@@ -152,17 +152,17 @@ export function useSmartBIDrillDown(deps: {
     if (!chartItem) return;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let dimension = (chartItem as any).xField || '';
+    let dimension = (chartItem as Record<string, string>).xField || '';
     if (!dimension) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const config = chartItem.config as any;
+      const config = chartItem.config as Record<string, unknown>;
       if (config?.xAxis?.name) {
         dimension = config.xAxis.name;
       }
     }
     if (!dimension) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const config = chartItem.config as any;
+      const config = chartItem.config as Record<string, unknown>;
       if (config?.xAxis?.type === 'category' && Array.isArray(config.xAxis.data) && config.xAxis.data.length > 0) {
         const firstCat = config.xAxis.data[0];
         if (typeof firstCat === 'string' && isNaN(Number(firstCat))) {
@@ -175,7 +175,7 @@ export function useSmartBIDrillDown(deps: {
       if (flowCharts?.length) {
         for (const fc of flowCharts) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if ((fc as any).xField) { dimension = (fc as any).xField; break; }
+          if ((fc as Record<string, string>).xField) { dimension = (fc as Record<string, string>).xField; break; }
         }
       }
     }

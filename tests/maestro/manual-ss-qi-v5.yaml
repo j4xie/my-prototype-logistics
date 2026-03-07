@@ -1,0 +1,155 @@
+appId: com.cretas.foodtrace
+---
+# QI Quality Inspector screenshots - v5
+# Uses content-desc accessibility labels for tab taps (from uiautomator dump):
+#   Tab bar labels: ", 首页", ", 质检", ", 记录", ", 分析", ", 我的"
+#   Quick Actions (English): ", Records", ", Analysis"
+# CRITICAL: Must match the CHINESE tab labels, not the English Quick Action labels.
+
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "quality_insp1"
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "login-submit-btn"
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 60000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*Good.*|.*Pending.*|.*Working.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# ============================================================
+# 1. QI Home — already here after login
+# ============================================================
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-home
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-home-scroll
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 2. 质检 Tab - use exact pixel tap in tab bar center
+#    Tab bar 质检: [216,2265][432,2379], center = (324, 2322)
+# ============================================================
+- tapOn:
+    point: "324,2322"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-inspect-list
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-inspect-list-scroll
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 3. 记录 Tab - exact pixel tap
+#    Tab bar 记录: [432,2265][648,2379], center = (540, 2322)
+# ============================================================
+- tapOn:
+    point: "540,2322"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-records
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-records-scroll
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 4. 分析 Tab - exact pixel tap
+#    Tab bar 分析: [648,2265][864,2379], center = (756, 2322)
+# ============================================================
+- tapOn:
+    point: "756,2322"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-analysis
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-analysis-scroll
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 5. 我的 Tab - exact pixel tap
+#    Tab bar 我的: [864,2265][1080,2379], center = (972, 2322)
+# ============================================================
+- tapOn:
+    point: "972,2322"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-profile
+
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-profile-scroll
+
+# Final: back to home
+- tapOn:
+    point: "108,2322"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-complete

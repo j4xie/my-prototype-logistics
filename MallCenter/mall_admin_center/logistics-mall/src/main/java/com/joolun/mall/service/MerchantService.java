@@ -67,4 +67,27 @@ public interface MerchantService extends IService<Merchant> {
      * 获取商户简要列表（下拉框用）
      */
     List<Map<String, Object>> listSimple();
+
+    /**
+     * 获取商城主下的入驻商户列表
+     * @param mallOwnerId 商城主的商户ID
+     */
+    List<Merchant> listSubMerchants(Long mallOwnerId);
+
+    /**
+     * 商户入驻某个商城
+     * @param merchantId 要入驻的商户ID
+     * @param mallOwnerId 商城主的商户ID
+     */
+    boolean joinMall(Long merchantId, Long mallOwnerId);
+
+    /**
+     * 获取所有商城主（parent_id 为空的已认证商户）
+     */
+    List<Merchant> listMallOwners();
+
+    /**
+     * 获取所有已授权小程序的商户
+     */
+    List<Merchant> listAuthorized();
 }

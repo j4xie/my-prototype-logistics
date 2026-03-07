@@ -251,6 +251,14 @@ public interface ActiveLearningService {
      */
     void applySuggestion(Long suggestionId, String applier);
 
+    /**
+     * Get all APPROVED suggestions for a factory, ready to be applied
+     *
+     * @param factoryId Factory ID
+     * @return List of approved suggestions
+     */
+    List<LearningSuggestion> getPendingSuggestionsForApply(String factoryId);
+
     // ==================== Model Performance ====================
 
     /**

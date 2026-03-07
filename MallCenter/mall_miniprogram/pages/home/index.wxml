@@ -1,44 +1,53 @@
 <!--
   - Copyright (C) 2018-2019
-  - 食品商城小程序
+  - 商城小程序
   - 注意：
   - 基于 JooLun 框架二次开发
+  - 动态模块渲染引擎 — 通过 renderModules 配置驱动首页布局
 -->
-<!-- 动态装修容器 - 应用CSS变量 -->
-<view class="decoration-container" style="{{cssVariablesStyle}}">
 
-<!-- 顶部导航栏 - 黑底金字 -->
-<view class="header-bar">
-  <view class="logo">
-    <image class="logo-img" src="/public/img/logo-duxianlai.png" mode="aspectFit"></image>
-  </view>
-  <view class="header-search" bindtap="goSearch">
-    <text class="cuIcon-search"></text>
-    <text class="search-placeholder">搜索商品</text>
-  </view>
-</view>
+<!-- ==================== 模块模板定义 ==================== -->
 
-<view class="page-content">
-  <!-- 通知栏 - 浅金背景 -->
+<!-- 顶部导航栏 -->
+<template name="mod-header">
+  <view class="header-bar">
+    <view class="logo">
+      <image class="logo-img" src="{{logoUrl || '/public/img/default-logo.png'}}" mode="aspectFit"></image>
+    </view>
+    <view class="header-search" bindtap="goSearch" wx:if="{{showProducts !== false}}">
+      <text class="cuIcon-search"></text>
+      <text class="search-placeholder">搜索商品</text>
+    </view>
+  </view>
+</template>
+
+<!-- 通知栏 -->
+<template name="mod-notice_bar">
   <view class="notice-bar">
     <text class="cuIcon-notice"></text>
-    <swiper class="notice-swiper" autoplay="true" circular="true" vertical="true" interval="4000">
-      <swiper-item>
-        <text class="notice-text">欢迎使用白垩纪食品溯源商城</text>
-      </swiper-item>
-      <swiper-item>
-        <text class="notice-text">扫码即可查看商品溯源信息</text>
-      </swiper-item>
-      <swiper-item>
-        <text class="notice-text">联系电话：13916928096</text>
+    <swiper class="notice-swiper" autoplay="true" circular="true" vertical="true" interval="{{interval || 4000}}">
+      <swiper-item wx:for="{{texts}}" wx:for-item="noticeText" wx:key="index">
+        <text class="notice-text">{{noticeText}}</text>
       </swiper-item>
     </swiper>
   </view>
+</template>
 
-  <!-- 食品分类网格 - 动态从后端获取 (可通过后端配置隐藏) -->
-  <view class="category-section" wx:if="{{showCategories}}">
+<!-- Banner轮播 -->
+<template name="mod-banner">
+  <view class="banner-section">
+    <swiper class="banner-swiper" indicator-dots="true" circular="true" autoplay="{{autoplay !== false}}" interval="{{interval || 5000}}" duration="500" bindchange="onBannerChange" indicator-color="rgba(212, 175, 55, 0.3)" indicator-active-color="#D4AF37">
+      <swiper-item wx:for="{{swiperData}}" wx:key="index" bindtap="onBannerClick" data-index="{{index}}">
+        <image class="banner-image" src="{{item}}" mode="aspectFill" binderror="onBannerImageError" data-index="{{index}}"></image>
+      </swiper-item>
+    </swiper>
+  </view>
+</template>
+
+<!-- 分类导航网格 -->
+<template name="mod-category_grid">
+  <view class="category-section" wx:if="{{categoryList.length > 0}}">
     <view class="category-grid">
-      <!-- 动态分类列表 -->
       <navigator class="category-item" hover-class="none"
         wx:for="{{categoryList}}" wx:key="id"
         url='/pages/goods/goods-list/index?categoryFirst={{item.id}}'>
@@ -47,7 +56,6 @@
         </view>
         <text class="category-name">{{item.name}}</text>
       </navigator>
-      <!-- 所有分类入口（固定显示） -->
       <navigator class="category-item" hover-class="none" url='/pages/goods/goods-list/index'>
         <view class="category-icon-box category-all">
           <text class="cuIcon-apps category-icon-cuicon"></text>
@@ -56,17 +64,10 @@
       </navigator>
     </view>
   </view>
+</template>
 
-  <!-- Banner轮播 -->
-  <view class="banner-section">
-    <swiper class="banner-swiper" indicator-dots="true" circular="true" autoplay="true" interval="5000" duration="500" bindchange="onBannerChange" indicator-color="rgba(212, 175, 55, 0.3)" indicator-active-color="#D4AF37">
-      <swiper-item wx:for="{{swiperData}}" wx:key="index" bindtap="onBannerClick" data-index="{{index}}">
-        <image class="banner-image" src="{{item}}" mode="aspectFill" binderror="onBannerImageError" data-index="{{index}}"></image>
-      </swiper-item>
-    </swiper>
-  </view>
-
-  <!-- 快捷功能入口 -->
+<!-- 快捷入口 -->
+<template name="mod-quick_actions">
   <view class="quick-actions">
     <navigator class="quick-action-item" hover-class="none" url='/pages/traceability/scan/index'>
       <view class="quick-action-icon trace-icon">
@@ -89,21 +90,20 @@
       <text class="cuIcon-right"></text>
     </navigator>
   </view>
+</template>
 
-  <!-- 商品区域 (可通过后端配置隐藏) -->
-  <block wx:if="{{showProducts}}">
-  <!-- 推荐商品 -->
+<!-- 横向商品滚动(热销) -->
+<template name="mod-product_scroll">
   <view class="section-header">
     <view class="section-title">
       <view class="title-decoration"></view>
-      <text>热销单品</text>
+      <text>{{title || '热销单品'}}</text>
     </view>
     <navigator hover-class="none" url='/pages/goods/goods-list/index?type=2' class='section-more'>
       <text>更多</text>
       <text class='cuIcon-right'></text>
     </navigator>
   </view>
-
   <view class='goods-scroll-wrapper'>
     <scroll-view class="goods-scroll" scroll-x>
       <block wx:for="{{goodsListHot}}" wx:key="index">
@@ -115,9 +115,7 @@
             <text class='goods-name'>{{item.name}}</text>
             <text class='goods-desc'>{{item.sellPoint}}</text>
             <view class="goods-price-row">
-              <!-- 已登录显示价格 -->
               <text wx:if="{{isLoggedIn}}" class="goods-price"><text class="price-symbol">¥</text>{{item.salesPrice}}</text>
-              <!-- 未登录显示登录提示 -->
               <text wx:else class="price-login-hint" catchtap="goToLogin">登录查看价格</text>
               <view class="goods-buy-btn">购买</view>
             </view>
@@ -126,19 +124,19 @@
       </block>
     </scroll-view>
   </view>
+</template>
 
-  <!-- 猜你喜欢 - 个性化推荐模块 -->
+<!-- 商品网格(推荐) -->
+<template name="mod-product_grid">
   <view class="section-header">
     <view class="section-title">
       <view class="title-decoration"></view>
-      <text>猜你喜欢</text>
-      <!-- 个性化推荐标签 -->
+      <text>{{title || '猜你喜欢'}}</text>
       <view class="recommend-tag" wx:if="{{usePersonalized}}">
         <text class="cuIcon-likefill"></text>
         <text>为你推荐</text>
       </view>
     </view>
-    <!-- 刷新按钮 -->
     <view class="refresh-btn" bindtap="refresh" wx:if="{{isLoggedIn}}">
       <text class="cuIcon-refresh"></text>
       <text>换一批</text>
@@ -147,15 +145,13 @@
 
   <!-- 推荐商品列表 -->
   <view class="recommend-list" wx:if="{{recommendList.length > 0}}">
-    <view class="recommend-grid">
+    <view class="recommend-grid {{columns == 3 ? 'three-columns' : ''}}">
       <view class="recommend-item" wx:for="{{recommendList}}" wx:key="id" data-product="{{item}}" bindtap="onRecommendClick">
         <view class="recommend-img-box">
           <image src="{{item.picUrls[0] ? item.picUrls[0] : '/public/img/no_pic.png'}}" mode="aspectFill"></image>
-          <!-- 推荐理由标签 -->
           <view class="recommend-reason" wx:if="{{item.recommendReason}}">
             <text>{{item.recommendReason}}</text>
           </view>
-          <!-- 探索标签 -->
           <view class="explore-tag" wx:if="{{item.isExploration}}">
             <text>新发现</text>
           </view>
@@ -164,9 +160,7 @@
           <text class="recommend-name">{{item.name}}</text>
           <text class="recommend-desc">{{item.sellPoint}}</text>
           <view class="recommend-price-row">
-            <!-- 已登录显示价格 -->
             <text wx:if="{{isLoggedIn}}" class="recommend-price"><text class="price-symbol">¥</text>{{item.salesPrice}}</text>
-            <!-- 未登录显示登录提示 -->
             <text wx:else class="price-login-hint" catchtap="goToLogin">登录查看价格</text>
             <view class="recommend-buy-btn">购买</view>
           </view>
@@ -186,40 +180,301 @@
     <view wx:elif="{{!hasMoreRecommend}}" class="over">— 已经到底了 —</view>
   </view>
   <view class="cu-load {{loadmore?'loading':'over'}}" wx:else></view>
-  </block>
-</view>
+</template>
 
-<!-- 浮动AI客服按钮 -->
-<navigator class="floating-ai-btn" hover-class="floating-ai-btn-active" url="/pages/ai-rag/chat/index" wx:if="{{showAiAssistant}}">
-  <text class="cuIcon-service"></text>
-</navigator>
+<!-- AI悬浮按钮 -->
+<template name="mod-ai_float">
+  <navigator class="floating-ai-btn" hover-class="floating-ai-btn-active" url="/pages/ai-rag/chat/index" wx:if="{{showAiAssistant}}">
+    <text class="cuIcon-service"></text>
+  </navigator>
+</template>
+
+<!-- 图文模块(新增) -->
+<template name="mod-text_image">
+  <view class="text-image-section">
+    <view class="text-image-title" wx:if="{{title}}">
+      <view class="title-decoration"></view>
+      <text>{{title}}</text>
+    </view>
+    <view class="text-image-content">
+      <image wx:if="{{imageUrl}}" class="text-image-img" src="{{imageUrl}}" mode="widthFix"></image>
+      <view class="text-image-text" wx:if="{{content}}">
+        <text>{{content}}</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<!-- 广告图片模块(新增) -->
+<template name="mod-image_ad">
+  <view class="image-ad-section" bindtap="onImageAdClick" data-link="{{linkUrl}}">
+    <image class="image-ad-img" src="{{imageUrl || '/public/img/banner_1.jpg'}}" mode="widthFix"></image>
+  </view>
+</template>
+
+
+<!-- 视频模块 -->
+<template name="mod-video">
+  <view class="video-section">
+    <view class="section-header" wx:if="{{title}}">
+      <view class="section-title">
+        <view class="title-decoration"></view>
+        <text>{{title}}</text>
+      </view>
+    </view>
+    <video class="video-player" src="{{videoUrl}}" poster="{{posterUrl}}" controls
+      autoplay="{{autoplay === true}}" loop="{{loop === true}}" object-fit="contain"
+      show-center-play-btn="{{true}}" show-play-btn="{{true}}"></video>
+  </view>
+</template>
+
+<!-- 倒计时模块 -->
+<template name="mod-countdown">
+  <view class="countdown-section">
+    <view class="countdown-left">
+      <text class="countdown-title">{{title || '限时特惠'}}</text>
+      <text class="countdown-subtitle" wx:if="{{subtitle}}">{{subtitle}}</text>
+    </view>
+    <view class="countdown-timer">
+      <text class="cd-num">{{countdownData.hours || '00'}}</text>
+      <text class="cd-sep">:</text>
+      <text class="cd-num">{{countdownData.minutes || '00'}}</text>
+      <text class="cd-sep">:</text>
+      <text class="cd-num">{{countdownData.seconds || '00'}}</text>
+    </view>
+  </view>
+</template>
+
+<!-- 优惠券模块 -->
+<template name="mod-coupon">
+  <view class="coupon-section">
+    <view class="section-header">
+      <view class="section-title">
+        <view class="title-decoration"></view>
+        <text>{{title || '优惠券'}}</text>
+      </view>
+    </view>
+    <scroll-view scroll-x class="coupon-scroll" wx:if="{{couponList.length > 0}}">
+      <view class="coupon-item {{item.claimed ? 'coupon-claimed' : ''}}" wx:for="{{couponList}}" wx:key="id">
+        <view class="coupon-badge" wx:if="{{item.isNewUser}}">新人专属</view>
+        <view class="coupon-amount">
+          <text class="coupon-symbol">¥</text>
+          <text>{{item.discountAmount || item.amount}}</text>
+        </view>
+        <view class="coupon-info">
+          <text class="coupon-name">{{item.name || item.couponName}}</text>
+          <text class="coupon-condition">满{{item.minAmount || item.threshold || 0}}可用</text>
+          <text class="coupon-expiry" wx:if="{{item.expiryText}}">{{item.expiryText}}</text>
+        </view>
+        <button class="coupon-claim-btn {{item.claimed ? 'coupon-btn-disabled' : ''}}" catchtap="claimCoupon" data-id="{{item.id}}" disabled="{{item.claimed}}">{{item.claimed ? '已领取' : '领取'}}</button>
+      </view>
+    </scroll-view>
+    <view class="coupon-empty" wx:else>
+      <text>暂无可领优惠券</text>
+    </view>
+  </view>
+</template>
+
+<!-- 分销裂变入口 -->
+<template name="mod-referral">
+  <view class="referral-section">
+    <view class="referral-bg">
+      <view class="referral-content">
+        <view class="referral-text">
+          <text class="referral-title">{{title || '邀请好友 赚奖励'}}</text>
+          <text class="referral-desc">{{desc || '好友下单，你得佣金'}}</text>
+        </view>
+        <button class="referral-btn" catchtap="onShareReferral" open-type="share">
+          <text class="cuIcon-friendfavor"></text>
+          <text>立即邀请</text>
+        </button>
+      </view>
+      <view class="referral-stats" wx:if="{{referralData.totalInvites > 0}}">
+        <text>已邀请 {{referralData.totalInvites}} 人 · 累计奖励 ¥{{referralData.totalReward || '0.00'}}</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<!-- 食品资质展示 -->
+<template name="mod-license">
+  <view class="license-section">
+    <view class="license-header">
+      <text class="cuIcon-safe license-icon"></text>
+      <text class="license-title">{{title || '食品安全资质'}}</text>
+    </view>
+    <view class="license-list">
+      <view class="license-item" wx:if="{{licenseNo}}">
+        <text class="license-label">食品经营许可证</text>
+        <text class="license-value">{{licenseNo}}</text>
+      </view>
+      <view class="license-item" wx:if="{{scCode}}">
+        <text class="license-label">SC生产许可编号</text>
+        <text class="license-value">{{scCode}}</text>
+      </view>
+      <view class="license-item" wx:if="{{businessLicense}}">
+        <text class="license-label">营业执照</text>
+        <text class="license-value">{{businessLicense}}</text>
+      </view>
+    </view>
+    <view class="license-footer">
+      <text class="cuIcon-roundcheckfill"></text>
+      <text>资质信息已核验</text>
+    </view>
+  </view>
+</template>
+
+<!-- 公告模块 -->
+<template name="mod-announcement">
+  <view class="announcement-section">
+    <view class="announcement-badge">
+      <text class="cuIcon-noticefill"></text>
+      <text>公告</text>
+    </view>
+    <text class="announcement-text">{{content || '暂无公告'}}</text>
+  </view>
+</template>
+
+<!-- 新品推荐模块 -->
+<template name="mod-new_arrivals">
+  <view class="section-header">
+    <view class="section-title">
+      <view class="title-decoration"></view>
+      <text>{{title || '新品推荐'}}</text>
+      <view class="new-arrivals-tag">
+        <text>NEW</text>
+      </view>
+    </view>
+    <navigator hover-class="none" url='/pages/goods/goods-list/index?type=new' class='section-more'>
+      <text>更多</text>
+      <text class='cuIcon-right'></text>
+    </navigator>
+  </view>
+  <view class='goods-scroll-wrapper'>
+    <scroll-view class="goods-scroll" scroll-x>
+      <block wx:for="{{newArrivalsList}}" wx:key="index">
+        <navigator hover-class="none" url='/pages/goods/goods-detail/index?id={{item.id}}' class='goods-card'>
+          <view class='goods-img-box'>
+            <image src="{{item.picUrls[0] ? item.picUrls[0] : '/public/img/no_pic.png'}}" mode="aspectFill"></image>
+            <view class="new-badge">新品</view>
+          </view>
+          <view class="goods-info">
+            <text class='goods-name'>{{item.name}}</text>
+            <text class='goods-desc'>{{item.sellPoint}}</text>
+            <view class="goods-price-row">
+              <text wx:if="{{isLoggedIn}}" class="goods-price"><text class="price-symbol">¥</text>{{item.salesPrice}}</text>
+              <text wx:else class="price-login-hint" catchtap="goToLogin">登录查看价格</text>
+            </view>
+          </view>
+        </navigator>
+      </block>
+    </scroll-view>
+  </view>
+</template>
+
+<!-- ==================== 动态渲染引擎 ==================== -->
+<view class="decoration-container" style="{{cssVariablesStyle}}">
+
+  <!-- 按 renderModules 配置循环渲染 -->
+  <block wx:for="{{renderModules}}" wx:key="id">
+    <block wx:if="{{item.visible !== false}}">
+
+      <!-- header 固定在顶部，在循环外也需要考虑，但为了统一用 template 渲染 -->
+      <template wx:if="{{item.type === 'header'}}" is="mod-header"
+        data="{{...item.props, logoUrl: logoUrl, showProducts: showProducts}}" />
+
+      <!-- page-content wrapper for non-header, non-float modules -->
+    </block>
+  </block>
+
+  <view class="page-content">
+    <block wx:for="{{renderModules}}" wx:key="id">
+      <block wx:if="{{item.visible !== false && item.type !== 'header' && item.type !== 'ai_float'}}">
+
+        <template wx:if="{{item.type === 'notice_bar'}}" is="mod-notice_bar"
+          data="{{...item.props, texts: item.props.texts || moduleData.noticeTexts}}" />
+
+        <template wx:elif="{{item.type === 'banner'}}" is="mod-banner"
+          data="{{...item.props, swiperData: moduleData.swiperData}}" />
+
+        <template wx:elif="{{item.type === 'category_grid'}}" is="mod-category_grid"
+          data="{{...item.props, categoryList: moduleData.categoryList}}" />
+
+        <template wx:elif="{{item.type === 'quick_actions'}}" is="mod-quick_actions"
+          data="{{...item.props, showAiAssistant: showAiAssistant}}" />
+
+        <template wx:elif="{{item.type === 'product_scroll'}}" is="mod-product_scroll"
+          data="{{...item.props, goodsListHot: moduleData.goodsListHot, isLoggedIn: isLoggedIn}}" />
+
+        <template wx:elif="{{item.type === 'product_grid'}}" is="mod-product_grid"
+          data="{{...item.props, recommendList: recommendList, goodsList: goodsList, isLoggedIn: isLoggedIn, usePersonalized: usePersonalized, recommendLoading: recommendLoading, hasMoreRecommend: hasMoreRecommend, loadmore: loadmore}}" />
+
+        <template wx:elif="{{item.type === 'text_image'}}" is="mod-text_image"
+          data="{{...item.props}}" />
+
+        <template wx:elif="{{item.type === 'image_ad'}}" is="mod-image_ad"
+          data="{{...item.props}}" />
+
+        <template wx:elif="{{item.type === 'video'}}" is="mod-video"
+          data="{{...item.props}}" />
+
+        <template wx:elif="{{item.type === 'countdown'}}" is="mod-countdown"
+          data="{{...item.props, countdownData: moduleData.countdownData}}" />
+
+        <template wx:elif="{{item.type === 'coupon'}}" is="mod-coupon"
+          data="{{...item.props, couponList: moduleData.couponList}}" />
+
+        <template wx:elif="{{item.type === 'announcement'}}" is="mod-announcement"
+          data="{{...item.props}}" />
+
+        <template wx:elif="{{item.type === 'new_arrivals'}}" is="mod-new_arrivals"
+          data="{{...item.props, newArrivalsList: moduleData.newArrivalsList, isLoggedIn: isLoggedIn}}" />
+
+        <template wx:elif="{{item.type === 'referral_banner'}}" is="mod-referral"
+          data="{{...item.props, referralData: moduleData.referralData}}" />
+
+        <template wx:elif="{{item.type === 'license_badge'}}" is="mod-license"
+          data="{{...item.props}}" />
+
+      </block>
+    </block>
+  </view>
+
+  <!-- AI悬浮按钮单独渲染(fixed定位，不在page-content流中) -->
+  <block wx:for="{{renderModules}}" wx:key="id">
+    <block wx:if="{{item.type === 'ai_float' && item.visible !== false}}">
+      <template is="mod-ai_float" data="{{showAiAssistant: showAiAssistant}}" />
+    </block>
+  </block>
+
+  <!-- 底部技术支持 -->
+  <view class="tech-support-footer">
+    <text class="tech-support-text">技术支持：白垩纪 AI Agent</text>
+  </view>
+
+</view><!-- 关闭 decoration-container -->
 
 <!-- 启动广告弹窗 -->
 <view class="splash-ad-modal" wx:if="{{showSplashAd}}" bindtap="closeSplashAd">
   <view class="splash-ad-content" catchtap="preventClose">
-    <!-- 顶部：倒计时和关闭按钮 -->
     <view class="splash-ad-header">
       <view class="splash-ad-countdown">{{splashAdCountdown}}秒后关闭</view>
       <view class="splash-ad-close" bindtap="closeSplashAd">
         <text class="cuIcon-close"></text>
       </view>
     </view>
-    <!-- 广告图片 -->
     <image
       class="splash-ad-image"
       src="{{splashAdData.imageUrl}}"
       mode="widthFix"
       bindtap="onSplashAdClick"
     ></image>
-    <!-- 跳过按钮 -->
     <view class="splash-ad-skip" bindtap="closeSplashAd">跳过广告</view>
   </view>
 </view>
 
-<!-- 冷启动偏好设置弹窗 - 首次用户显示 -->
+<!-- 冷启动偏好设置弹窗 -->
 <cold-start-popup
   show="{{showColdStartPopup}}"
   bind:complete="onColdStartComplete"
 />
-
-</view><!-- 关闭 decoration-container -->

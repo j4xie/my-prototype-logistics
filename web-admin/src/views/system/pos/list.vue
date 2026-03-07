@@ -64,7 +64,7 @@ async function handleDelete(id: string) {
 
 async function handleToggle(id: string, active: boolean) {
   try {
-    const res = await post(`/${factoryId.value}/pos/connections/${id}/toggle`, undefined, { params: { active } } as any);
+    const res = await post(`/${factoryId.value}/pos/connections/${id}/toggle`, undefined, { params: { active } } as Record<string, unknown>);
     if (res.success) { ElMessage.success(active ? '已启用' : '已停用'); loadConnections(); }
   } catch { ElMessage.error('操作失败'); }
 }
@@ -188,7 +188,7 @@ async function handleSync(id: string) {
   }
   .header-right { display: flex; gap: 8px; }
 }
-.connection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); gap: 16px; }
+.connection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(480px, 100%), 1fr)); gap: 16px; }
 .conn-card {
   .conn-header { display: flex; justify-content: space-between; align-items: center; }
   .conn-brand { display: flex; align-items: center; gap: 8px;

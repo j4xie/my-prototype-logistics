@@ -1,0 +1,537 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: HR Admin - Full Coverage
+# Captures: home dashboard, staff list/detail, attendance, whitelist, analytics, profile
+# Role: hr_admin1 (HR 管理员)
+# Tabs: 首页 | 人员 | 考勤 | 白名单 | 我的
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "hr_admin1"
+
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "login-submit-btn"
+
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*Good.*|.*HR.*|\u4EBA\u529B.*|\u52A0\u8F7D\u5931\u8D25.*|\u9996\u9875.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 1: 首页 (Home) - already on this tab after login
+# ============================================================
+
+# Screenshot: HR Home dashboard (stat cards + attendance rate)
+- takeScreenshot: screenshots/manual-ss-hr-home
+
+# Scroll down to see quick actions and anomaly list
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-home-scroll
+
+# Scroll down more to see anomaly section
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-home-anomaly
+
+# Scroll back to top
+- swipe:
+    direction: DOWN
+    duration: 1000
+- waitForAnimationToEnd
+
+# Tap on NewHires quick action if visible (新入职/入职跟踪)
+- tapOn:
+    text: ".*\u65B0\u5165\u804C.*|.*\u5165\u804C\u8DDF\u8E2A.*|.*New.*Hire.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-new-hires
+
+# Recovery back to home
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Tap Work Schedule quick action (排班/班次)
+- tapOn:
+    text: ".*\u6392\u73ED.*|.*\u73ED\u6B21.*|.*Work.*Schedule.*|.*Schedule.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-work-schedule
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 2: 人员 (Staff) - 2nd tab, ~30% from left
+# ============================================================
+
+- tapOn:
+    point: "30%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Staff list
+- takeScreenshot: screenshots/manual-ss-hr-staff-list
+
+# Scroll down to see more staff entries
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-staff-list-scroll
+
+# Scroll back
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# Tap on first staff card to see detail
+- tapOn:
+    text: ".*\u5458\u5DE5.*|.*\u64CD\u4F5C\u5458.*|.*\u4E3B\u7BA1.*|.*\u8D28\u68C0.*|.*admin.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-staff-detail
+
+# Scroll in staff detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-staff-detail-scroll
+
+# Tap AI Analysis button if present
+- tapOn:
+    text: ".*AI.*|.*\u5206\u6790.*|.*\u667A\u80FD.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-staff-ai-analysis
+
+# Recovery back to staff list
+- back
+- waitForAnimationToEnd
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate back to Staff tab
+- tapOn:
+    point: "30%,97%"
+- waitForAnimationToEnd
+
+# Try to add new staff (FAB or 新增 button)
+- tapOn:
+    text: ".*\u65B0\u589E.*|.*\u6DFB\u52A0.*|.*Add.*|.*New.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-staff-add
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 3: 考勤 (Attendance) - 3rd tab, ~50% from left
+# ============================================================
+
+- tapOn:
+    point: "50%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Attendance management list (today view)
+- takeScreenshot: screenshots/manual-ss-hr-attendance-manage
+
+# Scroll down in attendance list
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-attendance-manage-scroll
+
+# Scroll back
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# Switch to history view (历史)
+- tapOn:
+    text: ".*\u5386\u53F2.*|.*History.*|.*\u5386\u53F2\u8BB0\u5F55.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-attendance-history
+
+# Tap first attendance record for detail
+- tapOn:
+    text: ".*\u6B63\u5E38.*|.*\u8FDF\u5230.*|.*\u65E9\u9000.*|.*\u7F3A\u52E4.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-attendance-detail
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate back to Attendance tab
+- tapOn:
+    point: "50%,97%"
+- waitForAnimationToEnd
+
+# Navigate to Attendance Stats (统计)
+- tapOn:
+    text: ".*\u7EDF\u8BA1.*|.*Stats.*|.*\u8003\u52E4\u7EDF\u8BA1.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-attendance-stats
+
+# Scroll in stats
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-attendance-stats-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Attendance tab again for anomaly screen
+- tapOn:
+    point: "50%,97%"
+- waitForAnimationToEnd
+
+# Navigate to Attendance Anomaly (异常)
+- tapOn:
+    text: ".*\u5F02\u5E38.*|.*Anomaly.*|.*\u8003\u52E4\u5F02\u5E38.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-attendance-anomaly
+
+# Scroll in anomaly list
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-attendance-anomaly-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 4: 白名单 (Whitelist) - 4th tab, ~70% from left
+# ============================================================
+
+- tapOn:
+    point: "70%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Whitelist list
+- takeScreenshot: screenshots/manual-ss-hr-whitelist-list
+
+# Scroll in whitelist
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-whitelist-list-scroll
+
+# Scroll back
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# Tap on first whitelist entry for detail
+- tapOn:
+    text: ".*\u5F85\u6FC0\u6D3B.*|.*\u5DF2\u6FC0\u6D3B.*|.*\u5DF2\u7981\u7528.*|.*pending.*|.*active.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-whitelist-detail
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate back to Whitelist tab
+- tapOn:
+    point: "70%,97%"
+- waitForAnimationToEnd
+
+# Try adding new whitelist entry (FAB or 添加)
+- tapOn:
+    text: ".*\u6DFB\u52A0.*|.*\u65B0\u589E.*|.*Add.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-whitelist-add
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate to Whitelist tab - Department sub-section
+- tapOn:
+    point: "70%,97%"
+- waitForAnimationToEnd
+
+# Navigate to Department list (部门)
+- tapOn:
+    text: ".*\u90E8\u95E8.*|.*Department.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-department-list
+
+# Scroll in departments
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-department-list-scroll
+
+# Tap first department for detail
+- tapOn:
+    text: ".*\u751F\u4EA7.*|.*\u8D28\u68C0.*|.*\u4ED3\u50A8.*|.*\u884C\u653F.*|.*\u8D22\u52A1.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-department-detail
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# ============================================================
+# Analytics screens from Home quick actions
+# ============================================================
+
+# Navigate to Home tab first
+- tapOn:
+    point: "10%,97%"
+- waitForAnimationToEnd
+
+# Labor Cost screen (人工成本)
+- tapOn:
+    text: ".*\u4EBA\u5DE5\u6210\u672C.*|.*Labor.*Cost.*|.*\u6210\u672C.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-labor-cost
+
+# Scroll in labor cost
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-labor-cost-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate to Home tab
+- tapOn:
+    point: "10%,97%"
+- waitForAnimationToEnd
+
+# Performance screen (绩效)
+- tapOn:
+    text: ".*\u7EE9\u6548.*|.*Performance.*|.*\u8001\u5217\u5DE5.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-performance
+
+# Scroll in performance
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-performance-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 5: 我的 (Profile) - 5th tab, ~90% from left
+# ============================================================
+
+- tapOn:
+    point: "90%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: HR Profile / My page
+- takeScreenshot: screenshots/manual-ss-hr-profile
+
+# Scroll down in profile
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-profile-scroll
+
+# Tap My Info (我的信息)
+- tapOn:
+    text: ".*\u6211\u7684\u4FE1\u606F.*|.*My.*Info.*|.*\u4E2A\u4EBA\u4FE1\u606F.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-my-info
+
+# Scroll in my info
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-my-info-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate back to Profile tab
+- tapOn:
+    point: "90%,97%"
+- waitForAnimationToEnd
+
+# Tap My Attendance (我的考勤)
+- tapOn:
+    text: ".*\u6211\u7684\u8003\u52E4.*|.*My.*Attendance.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-my-attendance
+
+# Scroll in my attendance
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-my-attendance-scroll
+
+# Final recovery and completion screenshot
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*HR.*|.*\u9996\u9875.*|.*\u4EBA\u529B.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-hr-complete

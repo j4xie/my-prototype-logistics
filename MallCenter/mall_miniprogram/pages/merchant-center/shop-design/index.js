@@ -66,12 +66,20 @@ Page({
     // AI图片生成
     generatingImage: false,
     generatedImages: [],
-    selectedImageIndex: -1
+    selectedImageIndex: -1,
+
+    // AI功能开关
+    showAI: false
   },
 
   onLoad() {
     this.loadCurrentConfig()
     this.loadThemes()
+    // 从全局读取AI开关
+    var self = this
+    app.onFeatureReady(function (flags) {
+      self.setData({ showAI: flags.showAI === true })
+    })
   },
 
   /**
@@ -885,8 +893,8 @@ Page({
     this.setData({
       recommendedThemes: recommended,
       // 默认选中第一个推荐
-      'guideData.themeCode': recommended[0]?.code || '',
-      'guideData.themeName': recommended[0]?.name || '',
+      'guideData.themeCode': (recommended[0] && recommended[0].code) || '',
+      'guideData.themeName': (recommended[0] && recommended[0].name) || '',
       'guideData.selectedTheme': recommended[0] || null,
       canProceed: recommended.length > 0
     })
@@ -1007,11 +1015,13 @@ Page({
         method: 'POST',
         data: {
           sessionId: this.data.guideSessionId,
-          merchantId: merchantId,
-          industry: guideData.industry,
-          style: guideData.style,
-          themeCode: guideData.themeCode,
-          selectedImageUrl: selectedImage?.url || null
+          finalConfig: {
+            merchantId: merchantId,
+            industry: guideData.industry,
+            style: guideData.style,
+            themeCode: guideData.themeCode,
+            selectedImageUrl: selectedImage ? selectedImage.url : null
+          }
         },
         header: {
           'content-type': 'application/json',
@@ -1059,5 +1069,9 @@ Page({
       showGuideWizard: false
     })
     wx.showToast({ title: '主题已应用（本地）', icon: 'success' })
+  },
+
+  goDecorationChat() {
+    wx.navigateTo({ url: '/pages/merchant-center/decoration-chat/index' })
   }
 })

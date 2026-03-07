@@ -1,0 +1,239 @@
+appId: com.cretas.foodtrace
+---
+# FA Expanded screenshots - AI分析, 报表, 智能分析, 我的 tabs
+# FA has 6 tabs: 首页(8%), AI分析(25%), 报表(42%), 智能分析(58%), 管理(75%), 我的(92%)
+# CRITICAL: Never use "back" command - it can exit the app. Use tab taps to navigate.
+
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "factory_admin1"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "login-submit-btn"
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 60000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Dismiss Location Accuracy dialog if it appears
+- tapOn:
+    text: "No thanks"
+    optional: true
+- waitForAnimationToEnd
+
+# Wait for home to load
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*Good.*|.*Working.*|.*Loading.*|.*factory_admin.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-home-base
+
+# ── AI分析 Tab (25%) ──────────────────────────────────────────
+- tapOn:
+    point: "25%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*AI.*|.*Chat.*|.*Report.*|.*Loading.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-ai-main
+
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-ai-scroll
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 800
+- waitForAnimationToEnd
+
+# Try AI Chat entry
+- tapOn:
+    text: ".*Chat.*|.*AI.*chat.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-ai-chat
+
+# Recovery via tab tap
+- tapOn:
+    point: "25%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Try AI Report entry
+- tapOn:
+    text: ".*Report.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-ai-report
+
+# Recovery via tab tap
+- tapOn:
+    point: "25%,97%"
+- waitForAnimationToEnd
+
+# ── 报表 Tab (42%) ──────────────────────────────────────────
+- tapOn:
+    point: "42%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Report.*|.*Production.*|.*Loading.*|.*No.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-reports-main
+
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-reports-scroll
+
+# Scroll back
+- swipe:
+    direction: DOWN
+    duration: 800
+- waitForAnimationToEnd
+
+# Try tapping first report item
+- tapOn:
+    text: ".*Production.*|.*Sales.*|.*Daily.*|.*Weekly.*|.*Monthly.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-report-detail
+
+# Recovery via tab tap
+- tapOn:
+    point: "42%,97%"
+- waitForAnimationToEnd
+
+# ── 智能分析 Tab / SmartBI (58%) ────────────────────────────
+- tapOn:
+    point: "58%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Smart.*|.*BI.*|.*Upload.*|.*Excel.*|.*Loading.*|.*Analysis.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-smartbi-main
+
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-smartbi-scroll
+
+# Scroll back
+- swipe:
+    direction: DOWN
+    duration: 800
+- waitForAnimationToEnd
+
+# Try Upload entry
+- tapOn:
+    text: ".*Upload.*|.*Excel.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-smartbi-upload
+
+# Recovery via tab tap
+- tapOn:
+    point: "58%,97%"
+- waitForAnimationToEnd
+
+# Try tapping a recent analysis item
+- tapOn:
+    text: ".*Recent.*|.*History.*|.*Analysis.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-smartbi-chart
+
+# Recovery via tab tap
+- tapOn:
+    point: "58%,97%"
+- waitForAnimationToEnd
+
+# ── 我的 Tab (92%) ──────────────────────────────────────────
+- tapOn:
+    point: "92%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Profile.*|.*Settings.*|.*factory.*|.*About.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-profile
+
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-profile-scroll
+
+# Settings
+- tapOn:
+    text: ".*Settings.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-settings
+
+# Recovery via tab tap
+- tapOn:
+    point: "92%,97%"
+- waitForAnimationToEnd
+
+# About
+- tapOn:
+    text: ".*About.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-about
+
+# Final: back to home
+- tapOn:
+    point: "8%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/fa/manual-ss-fa-done

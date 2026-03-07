@@ -1,0 +1,56 @@
+appId: com.cretas.foodtrace
+---
+# Deep explore QI: quality inspection tab + records tab + analysis tab
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- runFlow: flows/login-qi.yaml
+- extendedWaitUntil:
+    visible: "Start Inspection"
+    timeout: 15000
+
+# Tap quality inspection tab (质检)
+- tapOn: "\u8D28\u68C0"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-qi-inspect-tab
+
+# Scroll down
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-qi-inspect-scroll
+
+# Go back to home
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# Tap Start Inspection button on home
+- tapOn: "Start Inspection"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-qi-start-inspect
+
+# Go back from Start Inspection (lands on InspectList, not home)
+- back
+- waitForAnimationToEnd
+
+# Go back to home tab first (since back goes to inspect list, not home)
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# Tap analysis tab (分析)
+- tapOn: "\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-qi-analysis-tab
+
+# Scroll
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-qi-analysis-scroll
+
+# Tap profile tab (我的)
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-qi-profile-tab

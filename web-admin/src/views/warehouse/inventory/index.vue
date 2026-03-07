@@ -182,12 +182,17 @@ async function handleExport() {
     const response = await get(`/${factoryId.value}/material-batches/export`, {
       responseType: 'blob'
     });
-    const blob = new Blob([response as any], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const raw = (response as Record<string, unknown>).data ?? response;
+    const blob = raw instanceof Blob
+      ? raw
+      : new Blob([raw], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `库存盘点报告_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
     ElMessage.success('导出成功');
   } catch {
@@ -290,7 +295,7 @@ function getStatusText(status: string) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="batchNumber" label="批次号" width="160" />
         <el-table-column prop="materialTypeName" label="材料类型" min-width="150" show-overflow-tooltip />
         <el-table-column label="当前数量" width="120" align="right">
@@ -348,7 +353,7 @@ function getStatusText(status: string) {
     </el-card>
 
     <!-- 调整库存对话框 -->
-    <el-dialog v-model="adjustDialogVisible" title="调整库存" width="450px">
+    <el-dialog v-model="adjustDialogVisible" title="调整库存" width="450px" :close-on-click-modal="false">
       <el-form :model="adjustForm" label-width="100px">
         <el-form-item label="批次号">
           <el-input v-model="adjustForm.batchNumber" disabled />

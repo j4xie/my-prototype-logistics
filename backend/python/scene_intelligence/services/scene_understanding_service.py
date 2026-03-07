@@ -85,7 +85,7 @@ class SceneUnderstandingService:
         # API 配置
         self.api_key = os.getenv("LLM_API_KEY", os.getenv("DASHSCOPE_API_KEY", ""))
         self.base_url = os.getenv("LLM_VL_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
-        self.model = os.getenv("VL_MODEL_DEEP_REASONING", os.getenv("LLM_VL_MODEL", "qwen-vl-max"))
+        self.model = os.getenv("VL_MODEL_DEEP_REASONING", os.getenv("LLM_VL_MODEL", "qwen3-vl-plus-2025-12-19"))
 
     def _call_vl_model(
         self,

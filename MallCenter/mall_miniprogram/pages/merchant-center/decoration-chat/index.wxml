@@ -1,0 +1,366 @@
+<!--
+  AI装修对话助手
+-->
+<view class="container">
+  <!-- 欢迎区域 -->
+  <view class="welcome-section" wx:if="{{messages.length === 0}}">
+    <view class="welcome-icon">
+      <text class="cuIcon-creativefill"></text>
+    </view>
+    <text class="welcome-title">AI装修助手</text>
+    <text class="welcome-subtitle">告诉我您的行业和喜好，帮您一键装修店铺</text>
+
+    <!-- 快捷问题 -->
+    <view class="quick-questions">
+      <view class="quick-question-btn" wx:for="{{quickQuestions}}" wx:key="index" bindtap="askQuickQuestion" data-question="{{item}}">
+        <text class="cuIcon-message"></text>
+        <text>{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 聊天消息区域 -->
+  <scroll-view
+    class="chat-scroll"
+    scroll-y
+    scroll-into-view="{{scrollToMessage}}"
+    wx:if="{{messages.length > 0}}"
+  >
+    <view class="messages-list">
+      <view
+        class="message {{item.sender === 'user' ? 'user' : 'ai'}}"
+        wx:for="{{messages}}"
+        wx:key="id"
+        id="msg-{{item.id}}"
+      >
+        <!-- 头像 -->
+        <view class="message-avatar">
+          <text wx:if="{{item.sender === 'ai'}}" class="cuIcon-creativefill"></text>
+          <text wx:else class="cuIcon-people"></text>
+        </view>
+
+        <!-- 消息内容 -->
+        <view class="message-content">
+          <view class="message-bubble">
+            <text>{{item.text}}</text>
+          </view>
+
+          <!-- 主题预览卡片 -->
+          <view class="theme-card" wx:if="{{item.themeCard}}">
+            <view class="theme-header">
+              <text class="theme-name">{{item.themeCard.name}}</text>
+              <text class="theme-code">{{item.themeCard.code}}</text>
+            </view>
+            <view class="color-dots">
+              <view class="dot" style="background:{{item.themeCard.primaryColor}}"></view>
+              <view class="dot" style="background:{{item.themeCard.secondaryColor}}"></view>
+              <view class="dot" style="background:{{item.themeCard.backgroundColor}}; border: 1rpx solid #eee;"></view>
+              <view class="dot" style="background:{{item.themeCard.accentColor}}"></view>
+              <view class="dot" style="background:{{item.themeCard.borderColor}}"></view>
+            </view>
+            <view class="theme-preview-strip" style="background: linear-gradient(135deg, {{item.themeCard.primaryColor}}, {{item.themeCard.secondaryColor}})"></view>
+            <button class="apply-btn" catchtap="applyThemeFromChat" data-theme="{{item.themeCard}}">
+              应用此主题
+            </button>
+          </view>
+
+          <!-- 模板推荐卡 -->
+          <view class="template-card" wx:if="{{item.templateCard}}">
+            <view class="template-card-header">
+              <text class="template-card-name">{{item.templateCard.name}}</text>
+              <text class="template-card-desc">{{item.templateCard.description}}</text>
+            </view>
+            <view class="template-card-modules">
+              <text class="module-tag" wx:for="{{item.templateCard.moduleNames}}" wx:key="index">{{item}}</text>
+            </view>
+            <button class="apply-btn" catchtap="applyTemplateFromChat" data-template="{{item.templateCard}}" wx:if="{{!item.applied}}">
+              应用此模板
+            </button>
+          </view>
+
+          <!-- 模块变更卡 -->
+          <view class="module-change-card" wx:if="{{item.moduleChange}}">
+            <view class="change-icon">
+              <text class="cuIcon-{{item.moduleChange.action === 'add' ? 'roundaddfill' : item.moduleChange.action === 'remove' ? 'roundclosefill' : 'writefill'}}"></text>
+            </view>
+            <view class="change-info">
+              <text class="change-action-text">{{item.moduleChange.actionText}}</text>
+              <text class="change-detail">{{item.moduleChange.detail}}</text>
+            </view>
+            <text class="cuIcon-roundcheckfill change-success" wx:if="{{item.moduleChange.success}}"></text>
+          </view>
+
+          <!-- 应用成功卡 -->
+          <view class="applied-card" wx:if="{{item.applied && !item.templateCard}}">
+            <text class="cuIcon-roundcheckfill"></text>
+            <text>{{item.appliedText || '主题已成功应用'}}</text>
+          </view>
+
+          <!-- AI 生成图片卡 -->
+          <view class="image-card" wx:if="{{item.imageCard}}">
+            <view class="image-card-header">
+              <text class="cuIcon-picfill"></text>
+              <text>AI 生成图片</text>
+            </view>
+            <image class="image-card-preview" src="{{item.imageCard.imageUrl}}" mode="aspectFill" />
+            <view class="image-card-info">
+              <text class="image-card-prompt">{{item.imageCard.prompt}}</text>
+              <view class="image-card-status" wx:if="{{item.imageCard.applied}}">
+                <text class="cuIcon-roundcheckfill"></text>
+                <text>已应用到{{item.imageCard.target === 'banner' ? '轮播图' : item.imageCard.target === 'image_ad' ? '广告图' : '图文'}}</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- AI 生图错误 -->
+          <view class="image-error-card" wx:if="{{item.imageError}}">
+            <text class="cuIcon-warnfill"></text>
+            <text>{{item.imageError}}</text>
+          </view>
+
+          <!-- 编辑卡（内联在消息中） -->
+          <view class="edit-card" wx:if="{{item.editCard}}">
+            <view class="edit-card-header">
+              <text class="cuIcon-writefill"></text>
+              <text>编辑{{item.editCard.moduleName}}</text>
+            </view>
+
+            <!-- 通用标题字段 -->
+            <view class="edit-card-field" wx:if="{{item.editCard.showTitle !== false}}">
+              <text class="edit-label">标题</text>
+              <input class="edit-input" value="{{item.editCard.title}}" placeholder="输入标题" data-field="title" bindinput="onEditCardInput" />
+            </view>
+
+            <!-- 图文：内容字段 -->
+            <view class="edit-card-field" wx:if="{{item.editCard.showContent}}">
+              <text class="edit-label">内容</text>
+              <textarea class="edit-textarea" value="{{item.editCard.content}}" placeholder="输入内容" data-field="content" bindinput="onEditCardInput" auto-height maxlength="500" />
+            </view>
+
+            <!-- 图片预览（图文/广告图） -->
+            <view class="edit-card-image" wx:if="{{editCardImageUrl}}">
+              <image src="{{editCardImageUrl}}" mode="aspectFill" class="edit-preview-img"></image>
+              <view class="edit-change-img" bindtap="changeEditImage">
+                <text class="cuIcon-camerafill"></text>
+                <text>更换图片</text>
+              </view>
+            </view>
+
+            <!-- 视频：URL + 自动播放 + 循环 -->
+            <block wx:if="{{item.editCard.moduleType === 'video'}}">
+              <view class="edit-card-field">
+                <text class="edit-label">视频URL</text>
+                <input class="edit-input" value="{{item.editCard.videoUrl}}" placeholder="输入视频链接" data-field="videoUrl" bindinput="onEditCardInput" />
+              </view>
+              <view class="edit-card-field">
+                <text class="edit-label">封面图URL</text>
+                <input class="edit-input" value="{{item.editCard.posterUrl}}" placeholder="输入封面图链接（可选）" data-field="posterUrl" bindinput="onEditCardInput" />
+              </view>
+              <view class="edit-card-row">
+                <view class="edit-switch-item" bindtap="toggleEditSwitch" data-field="autoplay">
+                  <text>自动播放</text>
+                  <switch checked="{{item.editCard.autoplay}}" />
+                </view>
+                <view class="edit-switch-item" bindtap="toggleEditSwitch" data-field="loop">
+                  <text>循环播放</text>
+                  <switch checked="{{item.editCard.loop}}" />
+                </view>
+              </view>
+            </block>
+
+            <!-- 倒计时：结束时间 -->
+            <block wx:if="{{item.editCard.moduleType === 'countdown'}}">
+              <view class="edit-card-field">
+                <text class="edit-label">副标题</text>
+                <input class="edit-input" value="{{item.editCard.subtitle}}" placeholder="如：限时特惠" data-field="subtitle" bindinput="onEditCardInput" />
+              </view>
+              <view class="edit-card-field">
+                <text class="edit-label">结束时间</text>
+                <picker mode="date" value="{{item.editCard.endDate}}" bindchange="onEditDateChange" data-field="endDate">
+                  <input class="edit-input" value="{{item.editCard.endDate || '选择日期'}}" disabled placeholder="选择结束日期" />
+                </picker>
+              </view>
+              <view class="edit-card-field">
+                <picker mode="time" value="{{item.editCard.endTimeStr}}" bindchange="onEditTimeChange" data-field="endTimeStr">
+                  <input class="edit-input" value="{{item.editCard.endTimeStr || '选择时间'}}" disabled placeholder="选择结束时间" />
+                </picker>
+              </view>
+            </block>
+
+            <!-- 商品网格：列数 -->
+            <block wx:if="{{item.editCard.moduleType === 'product_grid'}}">
+              <view class="edit-card-field">
+                <text class="edit-label">列数</text>
+                <view class="edit-columns-picker">
+                  <view class="column-opt {{item.editCard.columns === 2 ? 'active' : ''}}" bindtap="setEditColumns" data-columns="2">2列</view>
+                  <view class="column-opt {{item.editCard.columns === 3 ? 'active' : ''}}" bindtap="setEditColumns" data-columns="3">3列</view>
+                </view>
+              </view>
+              <view class="edit-card-row">
+                <view class="edit-switch-item" bindtap="toggleEditSwitch" data-field="showPrice">
+                  <text>显示价格</text>
+                  <switch checked="{{item.editCard.showPrice !== false}}" />
+                </view>
+                <view class="edit-switch-item" bindtap="toggleEditSwitch" data-field="showSales">
+                  <text>显示销量</text>
+                  <switch checked="{{item.editCard.showSales}}" />
+                </view>
+              </view>
+            </block>
+
+            <!-- 公告：内容 -->
+            <view class="edit-card-field" wx:if="{{item.editCard.moduleType === 'announcement'}}">
+              <text class="edit-label">公告内容</text>
+              <textarea class="edit-textarea" value="{{item.editCard.announcementContent}}" placeholder="输入公告内容" data-field="announcementContent" bindinput="onEditCardInput" auto-height maxlength="200" />
+            </view>
+
+            <view class="edit-card-actions">
+              <button class="edit-cancel-btn" bindtap="cancelEditCard">取消</button>
+              <button class="edit-save-btn" bindtap="applyEditCard">保存</button>
+            </view>
+          </view>
+
+          <text class="message-time">{{item.timeStr}}</text>
+        </view>
+      </view>
+
+      <!-- 输入中指示器 -->
+      <view class="message ai" wx:if="{{isTyping}}">
+        <view class="message-avatar">
+          <text class="cuIcon-creativefill"></text>
+        </view>
+        <view class="message-content">
+          <view class="typing-indicator">
+            <view class="typing-dot"></view>
+            <view class="typing-dot"></view>
+            <view class="typing-dot"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部占位 (含 safe area) -->
+    <view style="height: calc(140rpx + env(safe-area-inset-bottom));" id="msg-bottom"></view>
+  </scroll-view>
+
+  <!-- 输入区域 -->
+  <view class="input-area">
+    <view class="input-wrapper">
+      <textarea
+        class="input-field"
+        placeholder="描述您的装修需求..."
+        value="{{inputText}}"
+        bindinput="onInputChange"
+        bindconfirm="sendMessage"
+        confirm-type="send"
+        disabled="{{isTyping}}"
+        auto-height
+        maxlength="500"
+        show-confirm-bar="{{false}}"
+        cursor-spacing="20"
+      />
+      <button class="send-btn {{!inputText ? 'disabled' : ''}}" bindtap="sendMessage" disabled="{{!inputText || isTyping}}">
+        <text class="cuIcon-send"></text>
+      </button>
+    </view>
+
+    <!-- 功能按钮 -->
+    <view class="action-bar">
+      <view class="action-btn" bindtap="goBack">
+        <text class="cuIcon-back"></text>
+        <text>返回</text>
+      </view>
+      <view class="action-btn" bindtap="toggleUploadMenu">
+        <text class="cuIcon-picfill"></text>
+        <text>上传图片</text>
+      </view>
+      <view class="action-btn" bindtap="togglePreview">
+        <text class="cuIcon-eyefill"></text>
+        <text>预览</text>
+      </view>
+      <view class="action-btn" bindtap="showVersionHistory">
+        <text class="cuIcon-timefill"></text>
+        <text>版本</text>
+      </view>
+      <view class="action-btn" bindtap="clearChat">
+        <text class="cuIcon-delete"></text>
+        <text>清空</text>
+      </view>
+    </view>
+
+    <!-- 上传目标选择菜单 -->
+    <view class="upload-menu" wx:if="{{showUploadMenu}}">
+      <view class="upload-menu-item" bindtap="uploadImageForModule" data-target="banner">
+        <text class="cuIcon-picfill"></text>
+        <text>轮播图</text>
+      </view>
+      <view class="upload-menu-item" bindtap="uploadImageForModule" data-target="image_ad">
+        <text class="cuIcon-pic"></text>
+        <text>广告图</text>
+      </view>
+      <view class="upload-menu-item" bindtap="uploadImageForModule" data-target="text_image">
+        <text class="cuIcon-text"></text>
+        <text>图文</text>
+      </view>
+      <view class="upload-menu-item" bindtap="uploadVideoForModule">
+        <text class="cuIcon-videofill"></text>
+        <text>视频</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 预览面板 -->
+  <view class="preview-overlay" wx:if="{{showPreview}}" bindtap="closePreview"></view>
+  <view class="preview-panel" wx:if="{{showPreview}}">
+    <view class="preview-header">
+      <text class="preview-title">首页预览</text>
+      <text class="cuIcon-close preview-close" bindtap="closePreview"></text>
+    </view>
+    <scroll-view class="preview-body" scroll-y style="{{previewCssVars}}">
+      <block wx:for="{{previewModules}}" wx:key="id">
+        <view class="preview-module" wx:if="{{item.visible !== false}}">
+          <text class="cuIcon-{{moduleIconMap[item.type] || 'apps'}} preview-mod-icon"></text>
+          <view class="preview-mod-info">
+            <text class="preview-mod-name">{{moduleNameMap[item.type] || item.type}}</text>
+            <text class="preview-mod-detail" wx:if="{{item.props.title}}">{{item.props.title}}</text>
+          </view>
+          <text class="preview-mod-order">#{{item.order + 1}}</text>
+        </view>
+      </block>
+      <view wx:if="{{previewModules.length === 0}}" class="preview-empty">
+        <text>暂无模块配置</text>
+      </view>
+    </scroll-view>
+    <button class="preview-home-btn" bindtap="goToHomePreview">在首页查看完整效果</button>
+  </view>
+
+  <!-- 版本历史面板 -->
+  <view class="preview-overlay" wx:if="{{showVersionPanel}}" bindtap="closeVersionPanel"></view>
+  <view class="preview-panel" wx:if="{{showVersionPanel}}">
+    <view class="preview-header">
+      <text class="preview-title">版本历史</text>
+      <text class="cuIcon-close preview-close" bindtap="closeVersionPanel"></text>
+    </view>
+    <scroll-view class="preview-body" scroll-y>
+      <block wx:for="{{versionList}}" wx:key="id">
+        <view class="version-item">
+          <view class="version-info">
+            <text class="version-no">v{{item.versionNo}}</text>
+            <text class="version-source">{{item.changeSource === 'chat' ? 'AI对话' : item.changeSource === 'template' ? '模板应用' : item.changeSource === 'rollback' ? '回滚' : '手动'}}</text>
+          </view>
+          <text class="version-desc">{{item.changeDescription}}</text>
+          <view class="version-bottom">
+            <text class="version-time">{{item.createTime}}</text>
+            <view class="version-rollback-btn" bindtap="rollbackVersion" data-id="{{item.id}}" data-no="{{item.versionNo}}">
+              <text class="cuIcon-refreshfill"></text>
+              <text>回滚</text>
+            </view>
+          </view>
+        </view>
+      </block>
+      <view wx:if="{{versionList.length === 0}}" class="preview-empty">
+        <text>暂无版本记录</text>
+      </view>
+    </scroll-view>
+  </view>
+</view>

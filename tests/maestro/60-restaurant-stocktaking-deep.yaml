@@ -1,0 +1,98 @@
+appId: com.cretas.foodtrace
+---
+# Test 60: Restaurant Stocktaking Deep Navigation
+# Navigates into StocktakingSummary and StocktakingExecute sub-screens
+# Phase A: Deep navigation beyond tab-level coverage
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant admin
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: ".*AI Insights.*|.*AI 智能洞察.*|.*Today.*Overview.*|.*首页.*"
+    timeout: 15000
+
+# Navigate to 管理 tab first, then 盘点 (Stocktaking) sub-section
+- takeScreenshot: screenshots/60-pre-tab
+- tapOn:
+    text: ".*Management.*|.*Manage.*|.*管理.*"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Stocktak.*|.*Inventory.*Count.*|.*盘点.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*盘点.*|.*Stocktak.*|.*全部.*|.*All.*|.*进行中.*"
+    timeout: 5000
+- takeScreenshot: screenshots/60-stocktaking-list
+
+# === Verify filter chips ===
+- tapOn:
+    text: ".*In Progress.*|.*进行中.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/60-filter-in-progress
+
+- tapOn:
+    text: ".*Completed.*|.*已完成.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/60-filter-completed
+
+- tapOn:
+    text: ".*All.*|.*全部.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Navigate to 盘点汇总 (StocktakingSummary) ===
+- tapOn:
+    text: ".*Summary.*|.*盘点汇总.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/60-stocktaking-summary
+
+- tapOn:
+    text: ".*Surplus.*|.*Shortage.*|.*Match.*|.*盘点项目.*|.*盘盈.*|.*盘亏.*|.*相符.*"
+    optional: true
+- takeScreenshot: screenshots/60-summary-stats
+
+# Back from summary
+- back
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/60-after-summary-back
+
+# Recovery
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Stocktak.*|.*盘点.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Try FAB to open StocktakingExecute ===
+- tapOn:
+    text: ".*Start.*Count.*|.*Execute.*|.*发起盘点.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/60-stocktaking-execute
+
+- tapOn:
+    text: ".*System.*Qty.*|.*系统库存.*"
+    optional: true
+- takeScreenshot: screenshots/60-execute-fields
+
+# Back without executing
+- back
+- waitForAnimationToEnd
+
+# Return to home
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Home.*|.*首页.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/60-complete

@@ -1,0 +1,111 @@
+appId: com.cretas.foodtrace
+---
+# Test 66: In-depth Wastage Create Form Interaction
+# Opens WastageCreate and exercises all 5 type chips + form fields
+# Safety: back without submitting
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant admin
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: ".*AI Insights.*|.*AI 智能洞察.*|.*Today.*Overview.*|.*首页.*"
+    timeout: 15000
+
+# Navigate to 损耗 (Wastage) tab
+- tapOn:
+    text: ".*损耗.*|.*Wastage.*|.*Loss.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-wastage-list
+
+# Open create form
+- tapOn:
+    text: ".*记录损耗.*|.*Record Wastage.*|.*Create.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-create-form-initial
+
+# === Cycle all 5 type chips ===
+- tapOn:
+    text: ".*过期.*|.*Expired.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-type-1-expired
+
+- tapOn:
+    text: ".*破损.*|.*Damaged.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-type-2-damaged
+
+- tapOn:
+    text: ".*变质.*|.*Spoiled.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-type-3-spoiled
+
+- tapOn:
+    text: ".*加工损耗.*|.*Processing.*Loss.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-type-4-processing
+
+- tapOn:
+    text: ".*其他.*|.*Other.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-type-5-other
+
+# Select 过期 as final type
+- tapOn:
+    text: ".*过期.*|.*Expired.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Fill text inputs (without submitting) ===
+- tapOn:
+    text: ".*损耗数量.*|.*Quantity.*"
+    optional: true
+- inputText: "5"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-qty-filled
+
+- tapOn:
+    text: ".*估计成本.*|.*Cost.*"
+    optional: true
+- inputText: "25"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-cost-filled
+
+- tapOn:
+    text: ".*原因说明.*|.*备注.*|.*Notes.*|.*Reason.*"
+    optional: true
+- inputText: "E2E test"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-notes-filled
+
+# Scroll to see buttons
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-form-complete
+
+# === Back without submitting ===
+- back
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-back-to-list
+
+# Return to home
+- launchApp
+- waitForAnimationToEnd
+- tapOn: "首页"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/66-complete

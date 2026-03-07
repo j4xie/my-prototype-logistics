@@ -1,0 +1,434 @@
+appId: com.cretas.foodtrace
+---
+# DP AI Scheduling + additional dispatcher screenshots
+# Covers: Home dashboard, AI Schedule tab (AIScheduleScreen, AIScheduleAnalysisScreen,
+#         AICompletionProbScreen, AIWorkerOptimizeScreen), SmartBI/Analysis tab,
+#         Personnel tab (list, schedule calendar, attendance), Profile tab
+# Login: dispatcher1 / 123456
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "dispatcher1"
+
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "login-submit-btn"
+
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*Good.*|.*dispatch.*|\u8C03\u5EA6.*|\u52A0\u8F7D\u5931\u8D25.*|\u9996\u9875.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# ======================================================
+# SECTION 1: Home Dashboard (首页)
+# ======================================================
+
+- takeScreenshot: screenshots/manual-ss-dp-schedule-home-top
+
+# Scroll down to see more dashboard cards (workshop status, risk alerts, pending tasks)
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-schedule-home-mid
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-schedule-home-bottom
+
+# Scroll back to top
+- swipe:
+    direction: DOWN
+    duration: 800
+- waitForAnimationToEnd
+
+# Try Workshop Status drill-down from home
+- tapOn:
+    text: ".*\u8F66\u95F4.*|.*Workshop.*|.*\u5B9E\u65F6\u72B6\u6001.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-schedule-workshop-status
+
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# ======================================================
+# SECTION 2: AI Schedule Tab (AI调度)
+# Tabs order: 首页(1) | 计划(2) | AI调度(3) | 智能分析(4) | 人员(5) | 我的(6)
+# With optional tabs, AI调度 is ~3rd tab — approx 42% from left
+# ======================================================
+
+- tapOn:
+    point: "42%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-ai-schedule-main
+
+# Scroll down on AI Schedule screen to see batch list / plan list
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-ai-schedule-scroll
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# Switch to plan mode (按计划排产) if visible
+- tapOn:
+    text: ".*\u6309\u8BA1\u5212\u6392\u4EA7.*|\u6309\u8BA1\u5212.*|By Plan.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-ai-schedule-plan-mode
+
+# Switch back to batch mode (按批次排产)
+- tapOn:
+    text: ".*\u6309\u6279\u6B21\u6392\u4EA7.*|\u6309\u6279\u6B21.*|By Batch.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-ai-schedule-batch-mode
+
+# Tap the AI tab again to reset
+- tapOn:
+    point: "42%,97%"
+- waitForAnimationToEnd
+
+# Try AI Schedule Generate — tap generate/AI button
+- tapOn:
+    text: ".*AI\u4E00\u952E\u667A\u80FD\u6392\u4EA7.*|.*\u4E00\u952E\u6392\u4EA7.*|.*Generate.*|.*AI\u6392\u4EA7.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-ai-generate
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate back to AI tab
+- tapOn:
+    point: "42%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Try AIScheduleAnalysis — look for analysis/overview entry card
+- tapOn:
+    text: ".*\u8C03\u5EA6\u4F18\u5316.*|.*\u4F18\u5316\u5EFA\u8BAE.*|.*Analysis.*|.*\u5206\u6790.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-ai-analysis
+
+# Scroll down in analysis screen
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-ai-analysis-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate back to AI tab
+- tapOn:
+    point: "42%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Try AICompletionProb — look for completion probability card
+- tapOn:
+    text: ".*\u5B8C\u5DE5\u6982\u7387.*|.*Completion Prob.*|.*Monte Carlo.*|\u6982\u7387.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-ai-completion-prob
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate back to AI tab
+- tapOn:
+    point: "42%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Try AIWorkerOptimize — look for worker optimization entry
+- tapOn:
+    text: ".*\u4EBA\u5458\u4F18\u5316.*|.*\u4EBA\u529B\u4F18\u5316.*|.*Worker.*Optim.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-ai-worker-optimize
+
+# Scroll down in worker optimize screen
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-ai-worker-optimize-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# ======================================================
+# SECTION 3: SmartBI / 智能分析 Tab
+# ~57% from left (4th tab when Plan+AI+SmartBI all enabled)
+# ======================================================
+
+- tapOn:
+    point: "57%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-smartbi-main
+
+# Scroll down to see charts / upload area
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-smartbi-scroll
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# Try tapping Upload / Excel entry if visible
+- tapOn:
+    text: ".*\u4E0A\u4F20.*|.*Upload.*|.*Excel.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-smartbi-upload
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# ======================================================
+# SECTION 4: Personnel Tab (人员)
+# ~72% from left (5th tab)
+# ======================================================
+
+- tapOn:
+    point: "72%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-personnel-list
+
+# Scroll down to see more personnel entries
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-personnel-list-scroll
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# Try to tap the first personnel card for detail view
+- tapOn:
+    text: ".*workshop_sup.*|.*dispatcher.*|.*\u59D3\u540D.*|.*\u5458\u5DE5.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-personnel-detail
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate back to Personnel tab
+- tapOn:
+    point: "72%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Try PersonnelSchedule (排班日历) — look for schedule/calendar button
+- tapOn:
+    text: ".*\u6392\u73ED\u65E5\u5386.*|.*\u6392\u73ED.*|.*Schedule.*|.*Calendar.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-personnel-schedule
+
+# Scroll down to see calendar grid
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-personnel-schedule-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate back to Personnel tab
+- tapOn:
+    point: "72%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Try PersonnelAttendance (考勤) — look for attendance button
+- tapOn:
+    text: ".*\u8003\u52E4.*|.*Attendance.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-personnel-attendance
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate back to Personnel tab
+- tapOn:
+    point: "72%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Try PersonnelTransfer (人员调动)
+- tapOn:
+    text: ".*\u8C03\u52A8.*|.*Transfer.*|.*\u8C03\u914D.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-personnel-transfer
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# ======================================================
+# SECTION 5: Profile Tab (我的)
+# Rightmost tab (~86% from left)
+# ======================================================
+
+- tapOn:
+    point: "86%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-profile-top
+
+# Scroll down to see all profile options
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-profile-scroll
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# Try DSStatistics (调度统计)
+- tapOn:
+    text: ".*\u8C03\u5EA6\u7EDF\u8BA1.*|.*Statistics.*|\u7EDF\u8BA1.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-statistics
+
+# Scroll down in statistics
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-statistics-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate back to Profile tab
+- tapOn:
+    point: "86%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Try SchedulingSettings (排产设置)
+- tapOn:
+    text: ".*\u6392\u4EA7\u8BBE\u7F6E.*|.*\u8C03\u5EA6\u8BBE\u7F6E.*|.*Scheduling Settings.*|.*\u8BBE\u7F6E.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-scheduling-settings
+
+# Scroll down in settings
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-scheduling-settings-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate back to Profile tab
+- tapOn:
+    point: "86%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Final profile screenshot
+- takeScreenshot: screenshots/manual-ss-dp-schedule-complete

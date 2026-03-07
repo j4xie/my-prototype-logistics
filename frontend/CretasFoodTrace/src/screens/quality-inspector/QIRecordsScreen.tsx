@@ -157,7 +157,7 @@ export default function QIRecordsScreen() {
         </View>
         <View style={styles.detailItem}>
           <Ionicons name="person" size={14} color={QI_COLORS.textSecondary} />
-          <Text style={styles.detailText}>{item.inspector.name}</Text>
+          <Text style={styles.detailText}>{item.inspector?.name || '-'}</Text>
         </View>
       </View>
 

@@ -22,7 +22,6 @@ from enum import Enum
 import httpx
 
 from config import get_settings
-from services.utils.json_parser import robust_json_parse
 
 logger = logging.getLogger(__name__)
 
@@ -181,8 +180,9 @@ class ChartRecommendationCache:
         ])
 
         signature_parts = [
-            "|".join(col_names[:20]),
-            "|".join(col_types[:20]),
+            "|".join(col_names),
+            "|".join(col_types),
+            str(getattr(data_summary, 'row_count', 0)),
             "|".join(sorted(data_summary.time_columns[:5])),
             "|".join(sorted(data_summary.category_columns[:5])),
             "|".join(sorted(data_summary.measures[:5])),
@@ -363,12 +363,7 @@ class ChartRecommender:
             "best_for": ["KPI展示", "目标达成", "进度监控"],
             "requires": {"y_axis": True}
         },
-        "treemap": {
-            "name": "矩形树图",
-            "description": "展示层级数据的占比关系",
-            "best_for": ["层级占比", "空间利用", "分类构成"],
-            "requires": {"x_axis": True, "y_axis": True}
-        },
+        # treemap: removed from recommendations — no builder implementation in v1 (falls back to line silently)
         "sunburst": {
             "name": "旭日图",
             "description": "展示层级数据的嵌套结构",
@@ -393,12 +388,7 @@ class ChartRecommender:
             "best_for": ["目标达成", "KPI对比", "进度条"],
             "requires": {"x_axis": True, "y_axis": True}
         },
-        "sankey": {
-            "name": "桑基图",
-            "description": "展示流量或能量的流向",
-            "best_for": ["流向分析", "转化路径", "资源分配"],
-            "requires": {"x_axis": True, "y_axis": True}
-        },
+        # sankey: removed from recommendations — no builder implementation (falls back to line silently)
         "combination": {
             "name": "组合图",
             "description": "柱状图和折线图的组合",

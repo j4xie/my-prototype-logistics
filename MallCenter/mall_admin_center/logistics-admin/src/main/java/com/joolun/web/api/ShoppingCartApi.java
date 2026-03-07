@@ -84,6 +84,11 @@ public class ShoppingCartApi {
 	 */
 	@PostMapping("/del")
 	public AjaxResult del(@RequestBody List<String> ids){
-		return AjaxResult.success(shoppingCartService.removeByIds(ids));
+		String userId = ThirdSessionHolder.getWxUserId();
+		// 只删除属于当前用户的购物车项
+		return AjaxResult.success(shoppingCartService.remove(
+				Wrappers.<ShoppingCart>lambdaQuery()
+						.eq(ShoppingCart::getUserId, userId)
+						.in(ShoppingCart::getId, ids)));
 	}
 }

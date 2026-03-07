@@ -1,0 +1,79 @@
+// 餐饮模块 4 页共享样式
+.page-wrapper { height: 100%; display: flex; flex-direction: column; }
+.page-card { flex: 1; display: flex; flex-direction: column; }
+.card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.page-title { font-size: 18px; font-weight: 600; }
+.data-count { font-size: 13px; color: #909399; }
+.stat-row { margin-bottom: 16px; }
+.stat-item {
+  background: var(--el-fill-color-light);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-label { font-size: 12px; color: var(--el-text-color-secondary); }
+.stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  &.danger { color: var(--el-color-danger); }
+  &.warning { color: var(--el-color-warning); }
+}
+.search-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.pagination-wrapper { display: flex; justify-content: flex-end; padding-top: 16px; }
+
+// ==================== 移动端适配 ====================
+@media (max-width: 768px) {
+  :deep(.hidden-sm-col) { display: none; }
+
+  // 页头：标题和按钮组垂直堆叠
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .header-right {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    .el-button { flex: 1; }
+  }
+
+  // 统计卡片：缩小字号
+  .stat-item { padding: 8px 12px; }
+  .stat-value { font-size: 16px; }
+
+  // 搜索栏：输入框撑满
+  .search-bar {
+    .el-select, .el-date-editor { width: 100% !important; }
+  }
+
+  // 表格：横向滚动
+  :deep(.el-table) {
+    overflow-x: auto;
+    .el-table__body-wrapper { overflow-x: auto; }
+  }
+
+  // 分页：简化布局
+  .pagination-wrapper {
+    justify-content: center;
+    :deep(.el-pagination) {
+      flex-wrap: wrap;
+      justify-content: center;
+      .el-pagination__jump { display: none; }
+    }
+  }
+}
+
+// 对话框移动端宽度
+@media (max-width: 520px) {
+  :deep(.el-dialog) {
+    --el-dialog-width: 92vw !important;
+    width: 92vw !important;
+    margin: 0 auto;
+  }
+  :deep(.el-drawer) {
+    width: 100vw !important;
+  }
+}

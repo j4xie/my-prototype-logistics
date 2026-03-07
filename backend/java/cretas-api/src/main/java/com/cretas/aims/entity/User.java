@@ -46,6 +46,7 @@ public class User extends BaseEntity {
     private String factoryId;
     @Column(name = "username", nullable = false)
     private String username;
+    @JsonIgnore
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
     @Column(name = "phone")
@@ -172,6 +173,7 @@ public class User extends BaseEntity {
     /**
      * 获取密码（兼容方法）
      */
+    @JsonIgnore
     public String getPassword() {
         return this.passwordHash;
     }

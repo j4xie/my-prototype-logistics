@@ -1,0 +1,133 @@
+appId: com.cretas.foodtrace
+---
+# Test 72: In-depth Warehouse Inventory Interaction
+# Exercises search, material type filter, card tap→detail→back, pull-to-refresh
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as warehouse manager
+- runFlow: flows/login-wm.yaml
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*仓储.*|.*库存.*|.*Warehouse.*|.*Inventory.*"
+    timeout: 10000
+- takeScreenshot: screenshots/72-wm-home
+
+# Navigate to inventory (库存管理)
+- tapOn:
+    text: ".*Inventory.*|.*库存管理.*|.*库存.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-inventory-initial
+
+# === Search bar interaction ===
+- tapOn:
+    text: ".*Search.*|.*搜索物料.*|.*搜索.*"
+    optional: true
+- waitForAnimationToEnd
+- inputText: "test"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-search-results
+- eraseText: 4
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-search-cleared
+
+# === Material type filter cycle ===
+# Filter: 鲜品
+- tapOn:
+    text: ".*Fresh.*|.*鲜品.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-filter-fresh
+
+# Filter: 冷冻
+- tapOn:
+    text: ".*Frozen.*|.*冷冻.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-filter-frozen
+
+# Filter: 干货
+- tapOn:
+    text: ".*Dry.*|.*干货.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-filter-dry
+
+# Filter: back to all
+- tapOn:
+    text: ".*All.*|.*全部.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-filter-all
+
+# === Quick action buttons ===
+- tapOn:
+    text: ".*Stocktak.*|.*盘点.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-quick-stocktake
+
+# Back from stocktake
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Inventory.*|.*库存管理.*|.*库存.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Quick action: 预警
+- tapOn:
+    text: ".*Warning.*|.*预警.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-quick-alert
+
+# Back from alert
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Inventory.*|.*库存管理.*|.*库存.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Card tap → detail → back ===
+- tapOn:
+    text: ".*kg.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-batch-detail
+
+# Back from detail
+- back
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-back-to-list
+
+# === Pull-to-refresh ===
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-after-refresh
+
+# === Scroll ===
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-scrolled
+
+# Return to home
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/72-complete

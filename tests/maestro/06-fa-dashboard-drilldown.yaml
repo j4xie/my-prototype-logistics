@@ -1,0 +1,54 @@
+appId: com.cretas.foodtrace
+---
+# Test 06: Factory Admin - Dashboard Data Flow Drilldown
+# Verifies stats cards load data and drilldown screens work
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Verify AI Insights card
+- assertVisible: "AI\u6D1E\u5BDF"
+- assertVisible: "Quality Rate"
+- assertVisible: "Unit Cost"
+- assertVisible: "Avg Cycle"
+
+# Verify stats grid has data
+- assertVisible: "Materials"
+- assertVisible: "Alerts"
+- takeScreenshot: screenshots/06-fa-dashboard
+
+# Tap Materials card to drill down
+- tapOn: "Materials"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/06-fa-materials-drilldown
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Tap Alerts card to drill down
+- tapOn: "Alerts"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/06-fa-alerts-drilldown
+
+# Go back to home
+- back
+- waitForAnimationToEnd
+
+# Scroll down to see more dashboard content
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# Verify Batches card exists
+- assertVisible:
+    text: ".*Batches.*|.*Output.*"
+- takeScreenshot: screenshots/06-fa-dashboard-scrolled

@@ -1,0 +1,166 @@
+appId: com.cretas.foodtrace
+---
+# Test 50: Factory Admin - Management Config & Remaining Modules
+# Round 4.1d fix: back + launchApp recovery pattern
+#   Problem: back from tab's initial screen or stack screen EXITS the app
+#   Solution: back → launchApp (bring app back) → tapOn tab (re-navigate)
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Timing stabilizer: screenshot before tab tap (proven pattern from test 43)
+- takeScreenshot: screenshots/50-fa-pre-tab
+# Navigate to Management tab (管理)
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/50-fa-management-home
+
+# === Batch 1: Top section items (visible without scroll) ===
+
+# Department Management (部门管理)
+- tapOn:
+    text: ".*\u90E8\u95E8\u7BA1\u7406.*|.*Department.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/50-fa-department-mgmt
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/50-fa-recovery-timing
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# Work Report (生产报工)
+- tapOn:
+    text: ".*\u751F\u4EA7\u62A5\u5DE5.*|.*\u62A5\u5DE5.*|.*Work.*Report.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/50-fa-work-report
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/50-fa-recovery-timing
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# === Batch 2: Scroll to middle (past ~12 grid items) ===
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# Return Orders (退货管理)
+- tapOn:
+    text: ".*\u9000\u8D27\u7BA1\u7406.*|.*\u9000\u8D27.*|.*Return.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/50-fa-return-orders
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/50-fa-recovery-timing
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# === Batch 3: Scroll to config section (past ~18 items) ===
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# Rule Configuration (规则配置)
+- tapOn:
+    text: ".*\u89C4\u5219\u914D\u7F6E.*|.*\u89C4\u5219.*|.*Rule.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/50-fa-rule-config
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/50-fa-recovery-timing
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# === Batch 4: Scroll to bottom (past ~22 items) ===
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# SOP Config (SOP 配置)
+- tapOn:
+    text: ".*SOP.*\u914D\u7F6E.*|.*SOP.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/50-fa-sop-config
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/50-fa-recovery-timing
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# Scroll to very bottom again
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# AI Intent View (AI意图查看) — near bottom of grid
+- tapOn:
+    text: ".*AI\u610F\u56FE\u67E5\u770B.*|.*\u610F\u56FE.*|.*Intent.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/50-fa-intent-mgmt

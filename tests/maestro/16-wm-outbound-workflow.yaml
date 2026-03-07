@@ -1,0 +1,52 @@
+appId: com.cretas.foodtrace
+---
+# Test 16: Warehouse Manager - Outbound Workflow
+# Verifies outbound list, pending pack filter, loading management, and scan outbound
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as warehouse manager
+- runFlow: flows/login-wm.yaml
+- extendedWaitUntil:
+    visible: ".*Warehouse.*"
+    timeout: 15000
+
+# Navigate to Outbound tab (出货)
+- tapOn: "\u51FA\u8D27"
+- waitForAnimationToEnd
+
+# Wait for outbound list to load
+- extendedWaitUntil:
+    visible: ".*\u51FA\u8D27\u7BA1\u7406.*"
+    timeout: 10000
+- takeScreenshot: screenshots/16-wm-outbound-list
+
+# Tap pending pack filter (待打包)
+- tapOn:
+    text: ".*\u5F85\u6253\u5305.*"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/16-wm-pending-pack
+
+# Tap loading management button (装车管理)
+- tapOn:
+    text: ".*\u88C5\u8F66\u7BA1\u7406.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/16-wm-loading-mgmt
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Tap scan outbound button (扫码出库)
+- tapOn:
+    text: ".*\u626B\u7801\u51FA\u5E93.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/16-wm-scan-outbound
+
+# Go back
+- back
+- waitForAnimationToEnd

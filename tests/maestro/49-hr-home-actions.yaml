@@ -1,0 +1,80 @@
+appId: com.cretas.foodtrace
+---
+# Test 49: HR Admin - Home Stat Cards & Quick Actions
+# Covers: StaffAIAnalysis, BatchAssignment, HomeStatCards deep
+# Previously tested: HRHome(20,32), StaffList(20,21), AttendanceManage(31)
+# Round 4.1 fix: Better Chinese selectors, more scroll before BatchAssign
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as HR admin
+- runFlow: flows/login-hr.yaml
+- extendedWaitUntil:
+    visible: ".*Total Staff.*"
+    timeout: 15000
+
+# === Tap stat cards on Home ===
+# Today On-site (今日在岗)
+- tapOn:
+    text: ".*On.?site.*|.*\u4ECA\u65E5\u5728\u5C97.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/49-hr-onsite-detail
+
+# Return to Home
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# Anomaly count card (异常)
+- tapOn:
+    text: ".*Anomal.*|.*\u5F02\u5E38.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/49-hr-anomaly-from-home
+
+# Return to Home
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# Scroll down for more actions
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Batch Assignment (批量分配/排班) ===
+- tapOn:
+    text: ".*Batch.*Assign.*|.*\u6279\u91CF\u5206\u914D.*|.*\u6392\u73ED.*|.*\u4EBA\u5458\u5206\u914D.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/49-hr-batch-assignment
+
+# Return to Home
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# Scroll down more
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Staff AI Analysis (AI分析/智能分析) ===
+- tapOn:
+    text: ".*AI.*Analy.*|.*AI\u5206\u6790.*|.*\u667A\u80FD\u5206\u6790.*|.*\u4EBA\u6548\u5206\u6790.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/49-hr-staff-ai-analysis
+
+# Return to Home
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# === Quick action: Attendance records (考勤记录) ===
+- tapOn:
+    text: ".*Attendance.*|.*\u8003\u52E4\u8BB0\u5F55.*|.*\u8003\u52E4.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/49-hr-attendance-records

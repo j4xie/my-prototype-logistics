@@ -3,8 +3,8 @@ package com.cretas.aims.controller;
 import com.cretas.aims.entity.learning.*;
 import com.cretas.aims.scheduler.ActiveLearningScheduler;
 import com.cretas.aims.service.ActiveLearningService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,13 +28,18 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/ai/active-learning")
-@RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {"https://www.cretaceousfuture.com", "http://139.196.165.140:8086", "http://localhost:5173"})
 public class ActiveLearningController {
 
     private final ActiveLearningService activeLearningService;
-    private final ActiveLearningScheduler activeLearningScheduler;
+
+    @Autowired(required = false)
+    private ActiveLearningScheduler activeLearningScheduler;
+
+    public ActiveLearningController(ActiveLearningService activeLearningService) {
+        this.activeLearningService = activeLearningService;
+    }
 
     // ==================== Suggestions ====================
 
@@ -297,6 +302,9 @@ public class ActiveLearningController {
     public ResponseEntity<Map<String, Object>> triggerSampleAnalysis(
             @PathVariable String factoryId) {
 
+        if (activeLearningScheduler == null) {
+            return ResponseEntity.ok(Map.of("success", false, "message", "Scheduler not enabled"));
+        }
         int suggestions = activeLearningScheduler.triggerSampleAnalysis(factoryId);
 
         Map<String, Object> response = new HashMap<>();
@@ -314,6 +322,9 @@ public class ActiveLearningController {
     public ResponseEntity<Map<String, Object>> triggerTransitionUpdate(
             @PathVariable String factoryId) {
 
+        if (activeLearningScheduler == null) {
+            return ResponseEntity.ok(Map.of("success", false, "message", "Scheduler not enabled"));
+        }
         activeLearningScheduler.triggerTransitionMatrixUpdate(factoryId);
 
         Map<String, Object> response = new HashMap<>();
@@ -330,6 +341,9 @@ public class ActiveLearningController {
     public ResponseEntity<Map<String, Object>> triggerKnowledgePromotion(
             @PathVariable String factoryId) {
 
+        if (activeLearningScheduler == null) {
+            return ResponseEntity.ok(Map.of("success", false, "message", "Scheduler not enabled"));
+        }
         int promoted = activeLearningScheduler.triggerKnowledgePromotion();
 
         Map<String, Object> response = new HashMap<>();

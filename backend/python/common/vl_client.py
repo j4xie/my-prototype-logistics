@@ -54,20 +54,20 @@ class TaskType(Enum):
 class ModelConfig:
     """业务场景对应的模型配置"""
 
-    # 实时分析（高频、低延迟）
-    REALTIME_ANALYSIS = os.getenv("VL_MODEL_REALTIME", "qwen-vl-plus")
+    # 实时分析（高频、低延迟）— free quota (was: qwen-vl-plus)
+    REALTIME_ANALYSIS = os.getenv("VL_MODEL_REALTIME", "qwen3-vl-plus-2025-12-19")
 
-    # 批量分析（成本优先）
-    BATCH_ANALYSIS = os.getenv("VL_MODEL_BATCH", "qwen-vl-plus")
+    # 批量分析（成本优先）— free quota (was: qwen-vl-plus)
+    BATCH_ANALYSIS = os.getenv("VL_MODEL_BATCH", "qwen3-vl-plus-2025-12-19")
 
-    # 高精度任务（OCR、特征提取）
-    HIGH_PRECISION = os.getenv("VL_MODEL_HIGH_PRECISION", "qwen-vl-max")
+    # 高精度任务（OCR、特征提取）— free quota (was: qwen-vl-max)
+    HIGH_PRECISION = os.getenv("VL_MODEL_HIGH_PRECISION", "qwen3-vl-plus-2025-12-19")
 
-    # 深度推理（场景理解、变化检测）
-    DEEP_REASONING = os.getenv("VL_MODEL_DEEP_REASONING", "qwen-vl-max")
+    # 深度推理（场景理解、变化检测）— free quota (was: qwen-vl-max)
+    DEEP_REASONING = os.getenv("VL_MODEL_DEEP_REASONING", "qwen3-vl-plus-2025-12-19")
 
-    # 文本生成（报告、摘要）
-    TEXT_GENERATION = os.getenv("TEXT_MODEL", "qwen3.5-plus-2026-02-15")
+    # 文本生成（报告、摘要）— free quota (was: qwen3.5-plus-2026-02-15)
+    TEXT_GENERATION = os.getenv("TEXT_MODEL", "qwen3-max-2026-01-23")
 
     @classmethod
     def get_model_for_task(cls, task_type: str) -> str:
@@ -111,7 +111,7 @@ class QwenVLClient:
             "LLM_VL_BASE_URL",
             "https://dashscope.aliyuncs.com/compatible-mode/v1"
         )
-        self.default_model = default_model or os.getenv("LLM_VL_MODEL", "qwen-vl-max")
+        self.default_model = default_model or os.getenv("LLM_VL_MODEL", "qwen3-vl-plus-2025-12-19")
         self.client = httpx.Client(timeout=timeout)
 
     def analyze(

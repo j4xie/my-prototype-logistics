@@ -1,0 +1,16 @@
+{
+  "name": "mall_miniprogram",
+  "version": "1.0.0",
+  "description": "食品商城微信小程序，提供生鲜食品、加工食品、酒水饮料的在线购买服务。",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@babel/runtime": "^7.28.6"
+  }
+}

@@ -1,0 +1,72 @@
+appId: com.cretas.foodtrace
+---
+# Test 32: HR Admin - Department & Analytics
+# Verifies Department CRUD, WorkSchedule, Performance, LaborCost
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as HR admin
+- runFlow: flows/login-hr.yaml
+- extendedWaitUntil:
+    visible: ".*Total Staff.*"
+    timeout: 15000
+
+# Navigate to Profile tab to access Department Management
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/32-hr-profile-tab
+
+# === Department Management (部门管理) ===
+- tapOn:
+    text: ".*Department.*|.*\u90E8\u95E8\u7BA1\u7406.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/32-hr-department-list
+
+# Scroll to see departments
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/32-hr-department-scroll
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === Scheduling Management (排班管理) ===
+- tapOn:
+    text: ".*Scheduling.*|.*\u6392\u73ED\u7BA1\u7406.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/32-hr-work-schedule
+
+# Return to Home tab safely
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# Scroll down on home to find analytics entries
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Performance Analysis (绩效分析) ===
+- tapOn:
+    text: ".*Performance.*|.*\u7EE9\u6548\u5206\u6790.*|.*\u7EE9\u6548.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/32-hr-performance
+
+# Return to Home tab safely
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# === Labor Cost (人力成本) ===
+- tapOn:
+    text: ".*Labor Cost.*|.*\u4EBA\u529B\u6210\u672C.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/32-hr-labor-cost

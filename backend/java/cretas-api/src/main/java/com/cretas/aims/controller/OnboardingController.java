@@ -41,7 +41,7 @@ public class OnboardingController {
     private final FactoryFeatureConfigRepository featureConfigRepository;
     private final AlertThresholdRepository alertThresholdRepository;
 
-    @Value("${internal.api.key:cretas-internal-2026}")
+    @Value("${internal.api.key:#{T(java.util.UUID).randomUUID().toString()}}")
     private String internalApiKey;
 
     @Transactional

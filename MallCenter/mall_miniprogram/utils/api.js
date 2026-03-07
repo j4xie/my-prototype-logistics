@@ -4,7 +4,7 @@
  * 注意：
  * 基于 JooLun 框架二次开发
  */
-import __config from '../config/env'
+const __config = require('../config/env')
 
 const request = (url, method, data, showLoading) => {
   let _url = __config.basePath + url
@@ -42,7 +42,7 @@ const request = (url, method, data, showLoading) => {
                 }
               }
             })
-            reject(res.data.msg)
+            return reject(res.data.msg)
           }
           resolve(res.data)
         } else if (res.statusCode == 404) {
@@ -470,5 +470,30 @@ module.exports = {
       url += '?merchantId=' + merchantId
     }
     return request(url, 'get', null, false)
+  },
+  decorationChat: (data) => {
+    return request('/weixin/api/ma/decoration/ai/chat', 'post', data, false)
+  },
+  /**
+   * 获取页面模板列表
+   */
+  getDecorationTemplates: () => {
+    return request('/weixin/api/ma/decoration/templates', 'get', null, false)
+  },
+  /**
+   * 应用页面模板
+   * @param {string} templateCode - 模板编码
+   * @param {number} merchantId - 商户ID（可选）
+   */
+  applyDecorationTemplate: (templateCode, merchantId = null) => {
+    return request('/weixin/api/ma/decoration/template/apply', 'post', { templateCode, merchantId }, true)
+  },
+  getDecorationVersions: (merchantId = null, pageType = 'home') => {
+    const params = { pageType }
+    if (merchantId) params.merchantId = merchantId
+    return request('/weixin/api/ma/decoration/versions', 'get', params, false)
+  },
+  rollbackDecorationVersion: (versionId, merchantId = null) => {
+    return request('/weixin/api/ma/decoration/versions/rollback', 'post', { versionId, merchantId }, false)
   }
 }

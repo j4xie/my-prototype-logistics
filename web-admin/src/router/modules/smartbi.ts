@@ -76,16 +76,7 @@ const smartBIRoutes: RouteRecordRaw[] = [
   },
 ];
 
-// 快捷入口重定向路由 (需要在顶层路由注册)
-export const smartBIRedirects: RouteRecordRaw[] = [
-  {
-    path: '/sales/smart-analysis',
-    redirect: '/smart-bi/sales',
-  },
-  {
-    path: '/finance/smart-analysis',
-    redirect: '/smart-bi/finance',
-  },
-];
+// No longer needed — sidebar entries for these paths were removed
+export const smartBIRedirects: RouteRecordRaw[] = [];
 
 export default smartBIRoutes;

@@ -63,7 +63,8 @@ public class FormAssistantController {
     @Autowired
     private AIQuotaUsageRepository quotaUsageRepository;
 
-    private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
+    private final ExecutorService sseExecutor = java.util.concurrent.Executors.newFixedThreadPool(
+            4, r -> { Thread t = new Thread(r, "form-assist-sse"); t.setDaemon(true); return t; });
 
     // 每次Schema生成消耗的配额
     private static final int SCHEMA_GENERATE_QUOTA_COST = 1;

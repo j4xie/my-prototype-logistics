@@ -1,0 +1,74 @@
+appId: com.cretas.foodtrace
+---
+# Test 40: Workshop Supervisor - Profile & Notifications
+# Covers: WSProfile, Notifications, DraftReports, MyWorkReports, TaskGuide
+# Previously tested: WSHome(07), WSBatches(08), WSWorkers(12), WSEquipment(12)
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as workshop supervisor
+- runFlow: flows/login-ws.yaml
+- extendedWaitUntil:
+    visible: "Start Task"
+    timeout: 15000
+
+# Take WS Home screenshot first
+- takeScreenshot: screenshots/40-ws-home-overview
+
+# === Notifications (通知) — try bell icon or text ===
+- tapOn:
+    text: ".*Notification.*|.*\u901A\u77E5.*|.*\u6D88\u606F.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/40-ws-notifications
+
+# Return to Home via tab (safe after optional taps)
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# === Task Guide (任务引导 / 开始任务) ===
+- tapOn:
+    text: ".*Task Guide.*|.*\u4EFB\u52A1\u5F15\u5BFC.*|.*Start Task.*|.*\u5F00\u59CB\u4EFB\u52A1.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/40-ws-task-guide
+
+# Return to Home via tab
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# === My Work Reports (我的报工) ===
+- tapOn:
+    text: ".*My Report.*|.*\u6211\u7684\u62A5\u5DE5.*|.*\u62A5\u5DE5\u8BB0\u5F55.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/40-ws-my-reports
+
+# Return to Home via tab
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# === Draft Reports (草稿) ===
+- tapOn:
+    text: ".*Draft.*|.*\u8349\u7A3F.*|.*\u8349\u7A3F\u7BA1\u7406.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/40-ws-drafts
+
+# Return to Home via tab
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# === Profile tab (我的) ===
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/40-ws-profile
+
+# Scroll down
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/40-ws-profile-scroll

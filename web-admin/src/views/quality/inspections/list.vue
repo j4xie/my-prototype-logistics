@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
-import { get } from '@/api/request';
+import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 
@@ -12,10 +12,23 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('quality'));
 
 const loading = ref(false);
+const submitting = ref(false);
 const tableData = ref<any[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 const filterResult = ref('');
+
+// 新建对话框
+const dialogVisible = ref(false);
+const dialogForm = ref({
+  batchNumber: '',
+  productTypeId: '',
+  notes: ''
+});
+
+// 详情抽屉
+const detailVisible = ref(false);
+const detailData = ref<any>(null);
 
 onMounted(() => {
   loadData();
@@ -68,6 +81,38 @@ function handleSizeChange(size: number) {
   pagination.value.page = 1;
   loadData();
 }
+
+function handleCreate() {
+  dialogForm.value = { batchNumber: '', productTypeId: '', notes: '' };
+  dialogVisible.value = true;
+}
+
+async function submitCreateForm() {
+  if (!dialogForm.value.batchNumber) {
+    ElMessage.warning('请输入批次号');
+    return;
+  }
+  submitting.value = true;
+  try {
+    const response = await post(`/${factoryId.value}/processing/quality/inspections`, dialogForm.value);
+    if (response.success) {
+      ElMessage.success('质检记录已创建');
+      dialogVisible.value = false;
+      loadData();
+    } else {
+      ElMessage.error(response.message || '创建失败');
+    }
+  } catch {
+    ElMessage.error('创建失败，请检查网络连接');
+  } finally {
+    submitting.value = false;
+  }
+}
+
+function showDetail(row: any) {
+  detailData.value = row;
+  detailVisible.value = true;
+}
 </script>
 
 <template>
@@ -80,7 +125,7 @@ function handleSizeChange(size: number) {
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
-            <el-button v-if="canWrite" type="primary" :icon="Plus">新建质检</el-button>
+            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新建质检</el-button>
           </div>
         </div>
       </template>
@@ -102,7 +147,7 @@ function handleSizeChange(size: number) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="inspectionNumber" label="质检编号" width="160" />
         <el-table-column prop="batchNumber" label="批次号" width="160" />
         <el-table-column prop="productTypeName" label="产品类型" min-width="150" show-overflow-tooltip />
@@ -117,8 +162,8 @@ function handleSizeChange(size: number) {
         <el-table-column prop="score" label="评分" width="80" align="center" />
         <el-table-column prop="createdAt" label="检测时间" width="180" />
         <el-table-column label="操作" width="120" fixed="right" align="center">
-          <template #default>
-            <el-button type="primary" link size="small">查看详情</el-button>
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="showDetail(row)">查看详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -135,6 +180,43 @@ function handleSizeChange(size: number) {
         />
       </div>
     </el-card>
+
+    <!-- 新建质检对话框 -->
+    <el-dialog v-model="dialogVisible" title="新建质检记录" width="480px" :close-on-click-modal="false">
+      <el-form :model="dialogForm" label-width="90px">
+        <el-form-item label="批次号" required>
+          <el-input v-model="dialogForm.batchNumber" placeholder="输入生产批次号" />
+        </el-form-item>
+        <el-form-item label="产品类型">
+          <el-input v-model="dialogForm.productTypeId" placeholder="产品类型ID（可选）" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="dialogForm.notes" type="textarea" :rows="2" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitCreateForm">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 详情抽屉 -->
+    <el-drawer v-model="detailVisible" title="质检记录详情" size="420px">
+      <el-descriptions :column="1" border v-if="detailData">
+        <el-descriptions-item label="质检编号">{{ detailData.inspectionNumber || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="批次号">{{ detailData.batchNumber || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="产品类型">{{ detailData.productTypeName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="质检员">{{ detailData.inspectorName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="检测结果">
+          <el-tag :type="detailData.result === 'PASSED' ? 'success' : 'danger'" size="small">
+            {{ detailData.result === 'PASSED' ? '合格' : '不合格' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="评分">{{ detailData.score ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="检测时间">{{ detailData.createdAt || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="备注">{{ detailData.notes || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-drawer>
   </div>
 </template>
 

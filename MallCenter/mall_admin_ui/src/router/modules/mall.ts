@@ -114,6 +114,37 @@ export default [
       }
     ]
   },
+  // AI Chat 装修 - 隐藏菜单
+  {
+    path: "/mall/merchant/decoration/ai-chat",
+    component: Layout,
+    meta: { showLink: false },
+    children: [
+      {
+        path: "",
+        component: () => import("@/views/mall/decoration/ai-chat.vue"),
+        name: "AiChat",
+        meta: { title: "AI对话装修", activeMenu: "/mall/merchant/decoration" }
+      }
+    ]
+  },
+  // 版本历史 - 隐藏菜单
+  {
+    path: "/mall/merchant/decoration/versions",
+    component: Layout,
+    meta: { showLink: false },
+    children: [
+      {
+        path: "",
+        component: () => import("@/views/mall/decoration/versions.vue"),
+        name: "DecorationVersions",
+        meta: {
+          title: "版本历史",
+          activeMenu: "/mall/merchant/decoration"
+        }
+      }
+    ]
+  },
   // AI装修管理 - 独立的父级菜单
   {
     path: "/mall/ai-decoration",

@@ -33,7 +33,7 @@ def _get_db_url() -> str:
     """Build database connection URL from environment variables."""
     from urllib.parse import quote
     user = os.getenv("FOOD_KB_POSTGRES_USER", "cretas_user")
-    password = os.getenv("FOOD_KB_POSTGRES_PASSWORD", "cretas123")
+    password = os.getenv("FOOD_KB_POSTGRES_PASSWORD", "")
     host = os.getenv("FOOD_KB_POSTGRES_HOST", "localhost")
     db = os.getenv("FOOD_KB_POSTGRES_DB", "cretas_db")
     port = os.getenv("FOOD_KB_POSTGRES_PORT", "5432")

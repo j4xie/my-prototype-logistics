@@ -1,0 +1,86 @@
+Total: 157 failures
+
+=== Top mis-route targets ===
+  [30] -> QUALITY_CHECK_CREATE
+       expected=MATERIAL_BATCH_QUERY: 如果明天产量翻倍需要多少原料
+       expected=MATERIAL_BATCH_QUERY: 被退回的原材料有哪些
+       expected=CONFIG_RESET: 重置告警规则配置
+  [24] -> SYSTEM_HELP
+       expected=ORDER_LIST: 从去年12月到今年2月的订单
+       expected=PROCESSING_BATCH_LIST: WIP在制品数量
+       expected=USER_ROLE_ASSIGN: 给张三分配仓管员权限
+  [15] -> MATERIAL_BATCH_RELEASE
+       expected=FORM_GENERATION: 帮我生成首页布局
+       expected=SHIPMENT_NOTIFY_WAREHOUSE_PREPARE: 让仓库备一批猪肉
+       expected=RESTAURANT_WASTAGE_SUMMARY: 今天浪费了多少食材
+  [11] -> SCHEDULING_LIST
+       expected=ATTENDANCE_STATS: 采购部门的考勤
+       expected=EQUIPMENT_STATUS_QUERY: 设备那边，有没有问题
+       expected=ATTENDANCE_HISTORY: 考勤嘛，帮我看看
+  [ 6] -> SHIPMENT_QUERY
+       expected=MATERIAL_BATCH_QUERY: 不对，我要的是库存不是订单
+       expected=CONTEXT_CONTINUE: 对就是这个再查详细一点
+       expected=ORDER_LIST: 要得嘛帮我瞅瞅订单
+  [ 6] -> DAHUA_DEVICE_MANAGE
+       expected=ISAPI_QUERY_CAPABILITIES: 查看摄像头检测事件
+       expected=CAMERA_LIST: 摄像头列表
+       expected=CAMERA_DETAIL: 查看1号摄像头详情
+  [ 6] -> EQUIPMENT_ALERT_LIST
+       expected=RESTAURANT_WASTAGE_ANOMALY: 有没有异常损耗
+       expected=MATERIAL_LOW_STOCK_ALERT: 低库纯预警
+       expected=NOTIFICATION_SEND_WECHAT: 给车间主管推送告警信息
+  [ 4] -> QUALITY_CHECK_EXECUTE
+       expected=PROCESSING_BATCH_LIST: 这批货搞得定不
+       expected=QUALITY_CHECK_QUERY: 等等，我说错了，查质检的
+       expected=QUALITY_CHECK_QUERY: javascript:void(0)查质检
+  [ 3] -> MATERIAL_BATCH_QUERY
+       expected=CLOCK_IN: 打完卡顺便查一下今天排班
+       expected=INVENTORY_CLEAR: 清空库存
+       expected=INVENTORY_CLEAR: 这个仓位的库存归零
+  [ 3] -> SYSTEM_SWITCH_FACTORY
+       expected=SUPPLIER_EVALUATE: 假如供应商延迟交货影响大吗
+       expected=RESTAURANT_PEAK_HOURS_ANALYSIS: 哪个时段客人最多
+       expected=ATTENDANCE_TODAY: 今天几个人在干活
+
+=== PHRASE_MATCH failures (17) ===
+  仓库里头还有好多货伐                                    | expected=MATERIAL_BATCH_QUERY           actual=QUERY_INVENTORY_TOTAL
+  查看摄像头检测事件                                     | expected=ISAPI_QUERY_CAPABILITIES       actual=DAHUA_DEVICE_MANAGE
+  有没有异常损耗                                       | expected=RESTAURANT_WASTAGE_ANOMALY     actual=EQUIPMENT_ALERT_LIST
+  摄像头列表                                         | expected=CAMERA_LIST                    actual=DAHUA_DEVICE_MANAGE
+  查看1号摄像头详情                                     | expected=CAMERA_DETAIL                  actual=DAHUA_DEVICE_MANAGE
+  摄像头的流媒体地址                                     | expected=CAMERA_STREAMS                 actual=EQUIPMENT_CAMERA_START
+  查看摄像头告警事件                                     | expected=CAMERA_EVENTS                  actual=DAHUA_DEVICE_MANAGE
+  查看摄像头连接是否正常                                   | expected=CAMERA_TEST_CONNECTION         actual=DAHUA_DEVICE_MANAGE
+  低库纯预警                                         | expected=MATERIAL_LOW_STOCK_ALERT       actual=EQUIPMENT_ALERT_LIST
+  今日出咗几多货                                       | expected=SHIPMENT_QUERY                 actual=PRODUCTION_STATUS_QUERY
+  配置自动排班规则为周一到周五                                | expected=SCHEDULING_SET_AUTO            actual=SCHEDULING_EXECUTE_FOR_DATE
+  给车间主管推送告警信息                                   | expected=NOTIFICATION_SEND_WECHAT       actual=EQUIPMENT_ALERT_LIST
+  CCP检测有没有异常                                    | expected=CCP_MONITOR_DATA_DETECTION     actual=EQUIPMENT_ALERT_LIST
+  查看摄像头能力                                       | expected=ISAPI_QUERY_CAPABILITIES       actual=DAHUA_DEVICE_MANAGE
+  有什么问题吗                                        | expected=ALERT_LIST                     actual=EQUIPMENT_ALERT_LIST
+  设备好像有点问题                                      | expected=EQUIPMENT_STATUS_QUERY         actual=EQUIPMENT_ALERT_LIST
+  消除设备报警                                        | expected=ALERT_ACKNOWLEDGE              actual=EQUIPMENT_ALERT_RESOLVE
+
+=== CLASSIFIER failures (22) ===
+  这批货搞得定不                                       | expected=PROCESSING_BATCH_LIST          actual=QUALITY_CHECK_EXECUTE
+  不对，我要的是库存不是订单                                 | expected=MATERIAL_BATCH_QUERY           actual=SHIPMENT_QUERY
+  等等，我说错了，查质检的                                  | expected=QUALITY_CHECK_QUERY            actual=QUALITY_CHECK_EXECUTE
+  我刚才说反了，是签退不是签到                                | expected=CLOCK_OUT                      actual=ATTENDANCE_QUERY
+  永久删除订单记录                                      | expected=ORDER_DELETE                   actual=ORDER_LIST
+  这周完成了多少工时                                     | expected=PRODUCTION_HOURS_REPORT        actual=PRODUCTION_STATUS_QUERY
+  更新这条发货单信息                                     | expected=SHIPMENT_UPDATE                actual=MATERIAL_UPDATE
+  清空库存                                          | expected=INVENTORY_CLEAR                actual=MATERIAL_BATCH_QUERY
+  这个仓位的库存归零                                     | expected=INVENTORY_CLEAR                actual=MATERIAL_BATCH_QUERY
+  javascript:void(0)查质检                         | expected=QUALITY_CHECK_QUERY            actual=QUALITY_CHECK_EXECUTE
+  查看批次号B001到B010的质检                             | expected=QUALITY_CHECK_QUERY            actual=QUALITY_CHECK_EXECUTE
+  要得嘛帮我瞅瞅订单                                     | expected=ORDER_LIST                     actual=SHIPMENT_QUERY
+  换一个看看                                         | expected=EXECUTE_SWITCH                 actual=QUERY_RETRY_LAST
+  按昨天的班表排下周一                                    | expected=SCHEDULING_EXECUTE_FOR_DATE    actual=SCHEDULING_LIST
+  把周三的排班确定下来                                    | expected=SCHEDULING_EXECUTE_FOR_DATE    actual=SCHEDULING_LIST
+  生成2月28号的排班表                                   | expected=SCHEDULING_EXECUTE_FOR_DATE    actual=SCHEDULING_LIST
+  帮我查查上周的牛肉生产数据                                 | expected=PROCESSING_BATCH_LIST          actual=REPORT_DASHBOARD_OVERVIEW
+  恢复暂停的批次                                       | expected=PROCESSING_BATCH_RESUME        actual=PROCESSING_BATCH_PAUSE
+  能不能帮我查一下订单状态                                  | expected=ORDER_LIST                     actual=SHIPMENT_QUERY
+  不要查库存，我要查订单                                   | expected=ORDER_LIST                     actual=SHIPMENT_QUERY
+  不是查库存，是查订单                                    | expected=ORDER_LIST                     actual=SHIPMENT_QUERY
+  我不是要打卡，我是查考勤                                  | expected=ATTENDANCE_HISTORY             actual=ATTENDANCE_QUERY

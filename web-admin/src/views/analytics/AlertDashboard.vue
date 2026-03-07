@@ -201,7 +201,7 @@ onMounted(() => loadData())
     </div>
 
     <!-- Summary Cards -->
-    <div class="summary-row" v-loading="loading">
+    <div class="summary-row" v-loading="loading" empty-text="暂无数据">
       <div class="summary-card critical">
         <div class="summary-count">{{ summary.criticalCount || 0 }}</div>
         <div class="summary-label">严重告警</div>
@@ -236,7 +236,7 @@ onMounted(() => loadData())
     </div>
 
     <!-- Alert List -->
-    <el-table :data="alerts" stripe v-loading="loadingAlerts" style="margin-top: 16px">
+    <el-table :data="alerts" stripe border v-loading="loadingAlerts" empty-text="暂无数据" style="margin-top: 16px">
       <el-table-column prop="level" label="级别" width="80">
         <template #default="{ row }">
           <el-tag :type="row.level === 'CRITICAL' ? 'danger' : row.level === 'WARNING' ? 'warning' : 'info'" size="small">
@@ -284,7 +284,7 @@ onMounted(() => loadData())
     />
 
     <!-- Resolve Dialog -->
-    <el-dialog v-model="resolveDialogVisible" title="解决告警" width="500px">
+    <el-dialog v-model="resolveDialogVisible" title="解决告警" width="500px" destroy-on-close>
       <el-input v-model="resolutionNotes" type="textarea" :rows="4" placeholder="请输入解决说明..." />
       <template #footer>
         <el-button @click="resolveDialogVisible = false">取消</el-button>

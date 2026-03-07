@@ -1,0 +1,27 @@
+[
+  {
+    "q": "是查考勤",
+    "intent": "ATTENDANCE_TODAY",
+    "status": "SUCCESS"
+  },
+  {
+    "q": "查考勤",
+    "intent": "ATTENDANCE_TODAY",
+    "status": "SUCCESS"
+  },
+  {
+    "q": "我是查考勤",
+    "intent": "ATTENDANCE_TODAY",
+    "status": "SUCCESS"
+  },
+  {
+    "q": "帮我查考勤",
+    "intent": "SCHEDULING_LIST",
+    "status": "COMPLETED"
+  },
+  {
+    "q": "不是打卡查考勤",
+    "intent": "ATTENDANCE_QUERY",
+    "status": "NO_PERMISSION"
+  }
+]

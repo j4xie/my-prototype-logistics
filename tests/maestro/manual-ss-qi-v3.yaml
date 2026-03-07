@@ -1,0 +1,156 @@
+appId: com.cretas.foodtrace
+---
+# QI Quality Inspector screenshots - v3
+# QI has 5 tabs: 首页(10%), 质检(30%), 记录(50%), 分析(70%), 我的(90%)
+# IMPORTANT: Use y=99% to hit the actual tab bar text labels at very bottom,
+# NOT y=97% which hits "Quick Actions" row (Scan QR, Voice Input, Records, Analysis)
+# that sits ABOVE the tab bar on the QI home screen.
+
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "quality_insp1"
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "login-submit-btn"
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 60000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*Good.*|.*Pending.*|.*Working.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# ============================================================
+# 1. QI Home (首页 tab) — already here after login
+# ============================================================
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-home
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-home-scroll
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 2. 质检 Tab (30%) - Inspect List
+# ============================================================
+- tapOn:
+    point: "30%,99%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-inspect-list
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-inspect-list-scroll
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 3. 记录 Tab (50%) - Records
+# ============================================================
+- tapOn:
+    point: "10%,99%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "50%,99%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-records
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-records-scroll
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 4. 分析 Tab (70%) - Analysis
+# ============================================================
+- tapOn:
+    point: "70%,99%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-analysis
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-analysis-scroll
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 5. 我的 Tab (90%) - Profile
+# ============================================================
+- tapOn:
+    point: "90%,99%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-profile
+
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-profile-scroll
+
+# Final: back to home tab
+- tapOn:
+    point: "10%,99%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-complete

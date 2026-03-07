@@ -1,0 +1,41 @@
+appId: com.cretas.foodtrace
+---
+# Explore HR Admin screens
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- runFlow: flows/login-hr.yaml
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 15000
+- takeScreenshot: screenshots/explore-hr-home
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-hr-home-scroll
+
+# Try tabs
+- tapOn:
+    text: ".*\u5458\u5DE5.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-hr-tab2
+
+- tapOn:
+    text: ".*\u8003\u52E4.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-hr-tab3
+
+- tapOn:
+    text: ".*\u767D\u540D\u5355.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-hr-tab4
+
+- tapOn:
+    text: ".*\u6211\u7684.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-hr-profile

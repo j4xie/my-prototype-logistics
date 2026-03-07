@@ -51,6 +51,12 @@ public class DahuaDeviceController {
     private final DahuaClient dahuaClient;
     private final DahuaDiscoveryClient discoveryClient;
 
+    @org.springframework.beans.factory.annotation.Value("${dahua.probe.default-username:admin}")
+    private String probeDefaultUsername;
+
+    @org.springframework.beans.factory.annotation.Value("${dahua.probe.default-password:admin}")
+    private String probeDefaultPassword;
+
     // ==================== 设备发现 ====================
 
     @PostMapping("/discover")
@@ -107,8 +113,8 @@ public class DahuaDeviceController {
                     .ipAddress(ipAddress)
                     .port(port)
                     .protocol(Protocol.HTTP)
-                    .username("admin")
-                    .passwordEncrypted(dahuaClient.encryptPassword("admin"))
+                    .username(probeDefaultUsername)
+                    .passwordEncrypted(dahuaClient.encryptPassword(probeDefaultPassword))
                     .build();
 
             Map<String, Object> deviceInfo = dahuaClient.getDeviceInfo(tempDevice);

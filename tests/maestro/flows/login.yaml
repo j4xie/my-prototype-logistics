@@ -1,0 +1,57 @@
+appId: com.cretas.foodtrace
+---
+# Reusable Login Sub-flow (factory_admin1)
+# Dismiss any system dialogs
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Close app"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+# Wait for welcome screen
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*"
+    timeout: 20000
+- tapOn: "Login"
+- waitForAnimationToEnd
+# Enter username
+- tapOn: "Enter username"
+- inputText: "factory_admin1"
+- hideKeyboard
+- waitForAnimationToEnd
+# Scroll up to ensure password field visible
+- swipe:
+    direction: DOWN
+    duration: 200
+- waitForAnimationToEnd
+# Enter password
+- tapOn:
+    text: ".*Enter password.*|.*密码.*|.*Password.*"
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+# Dismiss any mid-login system dialogs
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Close app"
+    optional: true
+# Tap Login button
+- tapOn:
+    text: "Login"
+    index: 1
+- waitForAnimationToEnd
+# Wait for success dialog
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 60000
+- tapOn: "OK"
+- waitForAnimationToEnd
+# Wait for home page
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 10000

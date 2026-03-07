@@ -178,6 +178,160 @@ FOOD_PROCESSING_BENCHMARKS = {
 
 
 # ============================================================
+# Industry Benchmark Data — Restaurant Dining
+# ============================================================
+
+RESTAURANT_DINING_BENCHMARKS = {
+    "industry": "餐饮连锁",
+    "source": "中国烹饪协会 / 大众点评行业报告 / 美团餐饮数据观 / 2025中国餐饮连锁化发展白皮书",
+    "year": 2024,
+    "industry_overview": {
+        "source": "2025中国餐饮连锁化发展白皮书 (美团/中国连锁经营协会)",
+        "chain_rate": 23,
+        "avg_ticket_decline": -10.2,
+        "avg_ticket_decline_note": "堂食平均单价同比下降，非全渠道客单价",
+        "category_chain_rates": {
+            "饮品": 50, "茶饮": 49, "咖啡": 45,
+            "小吃快餐": 27, "面包甜点": 29,
+            "火锅": 27, "西餐": 22, "日料": 18,
+        },
+        "top_chain_scale": {
+            "万店品牌": 7,
+            "5000店以上": 25,
+            "note": "截至2024年中约6-7个万店品牌，2025年接近10个",
+        },
+    },
+    "metrics": {
+        "food_cost_ratio": {
+            "name": "食材成本率",
+            "range": [35.0, 45.0],
+            "median": 40.0,
+            "unit": "%",
+            "description": "食材成本占营收比例 (2024年中国饭店协会数据: 行业均值42.1%)",
+            "_source": "中国饭店协会《2024中国餐饮业年度报告》; 子行业数据综合美团餐饮数据观+品牌POS实测",
+            "sub_sectors": {
+                "火锅": {"range": [38.0, 48.0], "median": 43.0, "_source": "东门口/上马火锅 POS 实测 + 中国火锅产业报告"},
+                "快餐": {"range": [35.0, 45.0], "median": 40.0, "_source": "永和豆浆 POS 实测 + 中国快餐产业发展报告"},
+                "鱼类餐饮": {"range": [33.0, 42.0], "median": 37.0, "_source": "青花椒 60+店 POS 实测"},
+                "烧烤": {"range": [28.0, 38.0], "median": 33.0, "_source": "中国烹饪协会行业数据"},
+                "餐饮连锁": {"range": [35.0, 45.0], "median": 40.0, "_source": "2025中国餐饮连锁化发展白皮书"},
+                "西餐": {"range": [33.0, 43.0], "median": 38.0, "_source": "IL TEATRO POS 实测 + 行业报告"},
+                "日料": {"range": [35.0, 45.0], "median": 40.0, "_source": "御九井 POS 实测 + 行业报告"},
+                "牛肉面": {"range": [30.0, 38.0], "median": 34.0, "_source": "唏嘛香 POS 实测 + 面食行业数据"},
+                "中式海鲜": {"range": [38.0, 48.0], "median": 43.0, "_source": "馨厨香 7 店 POS 实测"},
+            },
+        },
+        "labor_cost_ratio": {
+            "name": "人力成本率",
+            "range": [20.0, 30.0],
+            "median": 24.0,
+            "unit": "%",
+            "description": "人力成本占营收比例 (2024年中国饭店协会数据: 行业均值22.2%)",
+            "_source": "中国饭店协会《2024中国餐饮业年度报告》",
+        },
+        "table_turnover": {
+            "name": "翻台率",
+            "range": [2.0, 4.5],
+            "median": 3.0,
+            "unit": "次/天",
+            "description": "日均翻台次数",
+            "_source": "美团餐饮数据观 + 品牌POS实测翻台数据",
+            "sub_sectors": {
+                "火锅": {"range": [2.5, 5.0], "median": 3.5, "_source": "海底捞/东门口公开翻台数据"},
+                "快餐": {"range": [4.0, 8.0], "median": 5.5, "_source": "永和豆浆运营数据"},
+                "餐饮连锁": {"range": [2.0, 4.5], "median": 3.0},
+                "西餐": {"range": [1.5, 3.0], "median": 2.0, "_source": "IL TEATRO 运营数据"},
+                "日料": {"range": [1.5, 3.0], "median": 2.2, "_source": "御九井运营数据"},
+                "牛肉面": {"range": [5.0, 10.0], "median": 7.0, "_source": "唏嘛香运营数据"},
+                "中式海鲜": {"range": [2.0, 3.5], "median": 2.5, "_source": "馨厨香运营数据"},
+            },
+        },
+        "average_ticket": {
+            "name": "客单价",
+            "range": [50.0, 120.0],
+            "median": 75.0,
+            "unit": "元",
+            "description": "人均消费金额",
+            "_source": "美团/大众点评公开客单价数据 + 品牌POS实测",
+            "sub_sectors": {
+                "火锅": {"range": [55.0, 120.0], "median": 75.0, "_source": "东门口/上马火锅 POS 实测"},
+                "快餐": {"range": [18.0, 45.0], "median": 30.0, "_source": "永和豆浆 POS 实测"},
+                "鱼类餐饮": {"range": [50.0, 100.0], "median": 70.0, "_source": "青花椒 POS 实测"},
+                "烧烤": {"range": [50.0, 100.0], "median": 70.0},
+                "餐饮连锁": {"range": [40.0, 100.0], "median": 65.0, "_source": "2025中国餐饮连锁化发展白皮书"},
+                "西餐": {"range": [100.0, 350.0], "median": 180.0, "_source": "IL TEATRO POS 实测"},
+                "日料": {"range": [80.0, 250.0], "median": 120.0, "_source": "御九井 POS 实测"},
+                "牛肉面": {"range": [20.0, 45.0], "median": 30.0, "_source": "唏嘛香 POS 实测"},
+                "中式海鲜": {"range": [80.0, 180.0], "median": 120.0, "_source": "馨厨香 POS 实测"},
+            },
+        },
+        "restaurant_net_margin": {
+            "name": "餐饮净利率",
+            "range": [1.0, 10.0],
+            "median": 4.0,
+            "unit": "%",
+            "description": "扣除租金人工食材后净利润率 (2024年行业均值约3-4%)",
+            "_source": "中国饭店协会《2024中国餐饮业年度报告》; 2025中国餐饮连锁化发展白皮书",
+        },
+        "combo_attachment_rate": {
+            "name": "套餐附加率",
+            "range": [15.0, 40.0],
+            "median": 25.0,
+            "unit": "%",
+            "description": "套餐订单占总订单比例",
+            "_source": "美团外卖商家版公开数据; 品牌POS实测",
+        },
+        "discount_rate": {
+            "name": "折扣率",
+            "range": [5.0, 20.0],
+            "median": 12.0,
+            "unit": "%",
+            "description": "平均折扣力度(1-实收/原价)",
+            "_source": "品牌POS实测(东门口/青花椒/唏嘛香/馨厨香)",
+        },
+    },
+    "dianping_standards": {
+        "必吃榜": {
+            "dimensions": {
+                "taste": {"name": "口味优中选优", "priority": "核心", "description": "口味持续保持高水平，是最核心评选维度"},
+                "stability": {"name": "长期稳定体验佳", "priority": "核心", "description": "出品/服务/环境长期稳定"},
+                "authentic_reviews": {"name": "评价真实可靠", "priority": "高", "description": "无刷评行为，真实用户好评"},
+                "daily_consumption": {"name": "符合日常消费水平", "priority": "高", "description": "性价比合理，满足日常用餐选择"},
+                "no_violation": {"name": "无违法违规行为", "priority": "高", "description": "证照齐全，无食安问题"},
+                "no_commercial_bias": {"name": "不受合作影响", "priority": "高", "description": "评选独立于商业合作关系"},
+                "daily_dining": {"name": "满足日常用餐选择", "priority": "中", "description": "面向大众消费者，非小众品类"},
+            },
+            "disqualifiers": [
+                "食安问题", "证照不全", "恶意刷评", "品质严重下降", "主营品类变更",
+            ],
+            "data_period": "365天+营业182天+",
+        },
+        "黑珍珠": {
+            "dimensions": {
+                "cooking": {"name": "烹饪出品", "priority": "核心", "description": "食材选择/烹饪技艺/出品稳定性"},
+                "service": {"name": "服务环境", "priority": "高", "description": "服务专业度/空间设计/氛围营造"},
+                "heritage": {"name": "传承创新", "priority": "高", "description": "饮食文化传承/创新表达"},
+            },
+            "levels": ["一钻(聚会必吃)", "二钻(纪念日必吃)", "三钻(一生必吃一次)"],
+        },
+        "点评榜单": {
+            "types": {
+                "热门榜": {"period": "7天", "metric": "真实客流", "threshold": "星级>=3.5"},
+                "好评榜": {"period": "30天", "metric": "好评+星级", "threshold": "星级>=4.0, 总评>=50"},
+                "销量榜": {"period": "7天", "metric": "订单+销售额", "threshold": "无最低"},
+                "口味榜": {"period": "60天", "metric": "口味单项分", "threshold": "星级>=4.0"},
+                "环境榜": {"period": "60天", "metric": "环境单项分", "threshold": "星级>=4.0"},
+                "服务榜": {"period": "60天", "metric": "服务单项分", "threshold": "星级>=4.0"},
+                "人气套餐榜": {"period": "30天", "metric": "套餐销量+评价", "threshold": "无最低"},
+                "回头客榜": {"period": "90天", "metric": "30天内二次消费比例", "threshold": "总评>=50"},
+                "必吃街": {"period": "持续", "metric": "商圈内多维度", "threshold": "商圈级"},
+            },
+        },
+    },
+}
+
+
+# ============================================================
 # Request/Response Models
 # ============================================================
 
@@ -218,6 +372,15 @@ async def get_food_processing_benchmarks():
     return {
         "success": True,
         "data": FOOD_PROCESSING_BENCHMARKS,
+    }
+
+
+@router.get("/benchmark/restaurant")
+async def get_restaurant_benchmarks():
+    """Return restaurant dining industry benchmark data"""
+    return {
+        "success": True,
+        "data": RESTAURANT_DINING_BENCHMARKS,
     }
 
 

@@ -1,0 +1,39 @@
+Total messages: 11 (Errors: 9, Warnings: 0)
+Returning 9 messages for level "error"
+
+[ERROR] Failed to load resource: the server responded with a status of 400 () @ http://139.196.165.140:8086/api/mobile/F001/equipment/maintenance-stats:0
+[ERROR] 加载统计失败: ApiError: 数字格式不正确
+    at http://139.196.165.140:8086/assets/request-BmTs4Np8.js:2:2267
+    at async j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:1982)
+    at async I (http://139.196.165.140:8086/assets/list-RBYfetTl.js:1:1720)
+    at j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:2078)
+    at async I (http://139.196.165.140:8086/assets/list-RBYfetTl.js:1:1720) @ http://139.196.165.140:8086/assets/list-RBYfetTl.js:0
+[ERROR] TypeError: re is not iterable
+    at de (http://139.196.165.140:8086/assets/index-92249kBv.js:23:91995)
+    at Object.q [as updateAllSelected] (http://139.196.165.140:8086/assets/index-92249kBv.js:23:92170)
+    at Object.setData (http://139.196.165.140:8086/assets/index-92249kBv.js:23:95717)
+    at Object.commit (http://139.196.165.140:8086/assets/index-92249kBv.js:23:97668)
+    at ce.immediate (http://139.196.165.140:8086/assets/index-92249kBv.js:23:127480)
+    at $u (http://139.196.165.140:8086/assets/index-Db3T4nJH.js:2:22292)
+    at cn (http://139.196.165.140:8086/assets/index-Db3T4nJH.js:2:22363)
+    at s.call (http://139.196.165.140:8086/assets/index-Db3T4nJH.js:2:25731)
+    at _ (http://139.196.165.140:8086/assets/index-Db3T4nJH.js:2:21538)
+    at hS (http://139.196.165.140:8086/assets/index-Db3T4nJH.js:2:23639) @ http://139.196.165.140:8086/assets/index-Db3T4nJH.js:1
+[ERROR] TypeError: n.reduce is not a function
+    at Proxy.render (http://139.196.165.140:8086/assets/index-92249kBv.js:23:124365)
+    at TS (http://139.196.165.140:8086/assets/index-Db3T4nJH.js:2:47847)
+    at KC.Q [as fn] (http://139.196.165.140:8086/assets/index-Db3T4nJH.js:2:57149)
+    at KC.run (http://139.196.165.140:8086/assets/index-Db3T4nJH.js:2:7233)
+    at KC.runIfDirty (http://139.196.165.140:8086/assets/index-Db3T4nJH.js:2:7543)
+    at $u (http://139.196.165.140:8086/assets/index-Db3T4nJH.js:2:22300)
+    at gM (http://139.196.165.140:8086/assets/index-Db3T4nJH.js:2:24053) @ http://139.196.165.140:8086/assets/index-Db3T4nJH.js:1
+[ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://139.196.165.140:8086/api/mobile/F001/reports/dashboard/overview:0
+[ERROR] 加载失败: ApiError: Request failed with status code 502
+    at http://139.196.165.140:8086/assets/request-BmTs4Np8.js:2:2267
+    at async j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:1982)
+    at async y (http://139.196.165.140:8086/assets/analysis-CdFvE6le.js:1:987)
+    at j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:2078)
+    at async y (http://139.196.165.140:8086/assets/analysis-CdFvE6le.js:1:987) @ http://139.196.165.140:8086/assets/analysis-CdFvE6le.js:0
+[ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://139.196.165.140:8086/api/mobile/F001/finance/overview:0
+[ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://139.196.165.140:8086/api/mobile/F001/finance/transactions?page=1&size=10:0
+[ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://139.196.165.140:8086/api/mobile/F001/finance/aging?counterpartyType=CUSTOMER:0

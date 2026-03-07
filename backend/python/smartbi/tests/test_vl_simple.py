@@ -17,7 +17,7 @@ if env_path.exists():
 
 API_KEY = os.getenv("LLM_API_KEY", "")
 BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-MODEL = "qwen-vl-max"
+MODEL = "qwen3-vl-plus-2025-12-19"
 
 print(f"API Key: {API_KEY[:10]}..." if API_KEY else "API Key: NOT SET")
 print(f"Model: {MODEL}")

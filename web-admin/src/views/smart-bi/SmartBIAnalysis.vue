@@ -23,7 +23,7 @@
                     <el-tag v-if="isAutoSyncBatch(batch)" size="small" type="success" style="margin-right: 6px;">自动同步</el-tag>
                     {{ safeBatchName(batch) }}
                   </span>
-                  <span style="color: #909399; font-size: 12px; margin-left: 12px;">
+                  <span style="color: var(--color-text-secondary, #909399); font-size: 12px; margin-left: 12px;">
                     {{ batch.uploadTime }} · {{ batch.sheetCount }} 表
                   </span>
                 </div>
@@ -72,7 +72,7 @@
         <!-- 加载中 -->
         <div v-if="historyLoading" style="text-align: center; padding: 60px 0;">
           <el-icon class="is-loading" :size="32"><Loading /></el-icon>
-          <p style="color: #909399; margin-top: 12px;">正在加载历史数据...</p>
+          <p style="color: var(--color-text-secondary, #909399); margin-top: 12px;">正在加载历史数据...</p>
         </div>
         <!-- 管理员：显示上传区域 -->
         <template v-else-if="canUpload">
@@ -779,7 +779,7 @@
   <!-- 分享链接对话框 -->
   <el-dialog v-model="shareDialogVisible" title="分享分析报告" width="500px">
     <div v-if="!shareLink" style="text-align: center; padding: 20px;">
-      <p style="margin-bottom: 16px; color: #606266;">生成公开链接，无需登录即可查看分析报告</p>
+      <p style="margin-bottom: 16px; color: var(--color-text-regular, #606266);">生成公开链接，无需登录即可查看分析报告</p>
       <el-form label-width="80px" style="max-width: 380px; margin: 0 auto;">
         <el-form-item label="标题">
           <el-input v-model="shareTitle" placeholder="分析报告标题" />
@@ -807,7 +807,7 @@
               </el-button>
             </template>
           </el-input>
-          <div style="color: #909399; font-size: 12px;">
+          <div style="color: var(--color-text-secondary, #909399); font-size: 12px;">
             有效期 {{ shareTTL }} 天 · 到期自动失效
           </div>
         </template>
@@ -865,7 +865,7 @@
   <el-dialog v-model="yoyVisible" title="年度同比分析" width="90%" top="3vh">
     <!-- Sheet 选择器 -->
     <div v-if="!yoyLoading && !yoyResult" class="yoy-sheet-selector">
-      <p style="margin-bottom: 12px; color: #606266;">选择要进行同比分析的报表：</p>
+      <p style="margin-bottom: 12px; color: var(--color-text-regular, #606266);">选择要进行同比分析的报表：</p>
       <div style="display: flex; flex-wrap: wrap; gap: 8px;">
         <el-button
           v-for="sheet in dataSheets"
@@ -884,7 +884,7 @@
     </div>
 
     <div v-else-if="yoyResult && yoyResult.success && yoyResult.comparison.length > 0">
-      <div style="margin-bottom: 16px; color: #909399; font-size: 13px;">
+      <div style="margin-bottom: 16px; color: var(--color-text-secondary, #909399); font-size: 13px;">
         <span v-if="yoyResult.currentPeriod">当期: {{ yoyResult.currentPeriod }}</span>
         <span v-if="yoyResult.comparePeriod"> vs 对比期: {{ yoyResult.comparePeriod }}</span>
       </div>
@@ -912,7 +912,7 @@
   <el-dialog v-model="statisticalVisible" title="因果分析" width="90%" top="3vh" destroy-on-close @close="disposeStatHeatmap">
     <!-- Sheet 选择器 -->
     <div v-if="!statisticalLoading && !statisticalResult" class="yoy-sheet-selector">
-      <p style="margin-bottom: 12px; color: #606266;">选择要分析的报表：</p>
+      <p style="margin-bottom: 12px; color: var(--color-text-regular, #606266);">选择要分析的报表：</p>
       <div style="display: flex; flex-wrap: wrap; gap: 8px;">
         <el-button
           v-for="sheet in dataSheets"
@@ -1010,7 +1010,7 @@
         </div>
       </div>
 
-      <div style="margin-top: 12px; color: #909399; font-size: 12px;">
+      <div style="margin-top: 12px; color: var(--color-text-secondary, #909399); font-size: 12px;">
         分析耗时: {{ statisticalResult.processingTimeMs }}ms
       </div>
     </div>
@@ -1056,6 +1056,7 @@
 defineOptions({ name: 'SmartBIAnalysis' });
 import { ref, reactive, computed, onMounted, onBeforeUnmount, onDeactivated, onActivated, nextTick, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
+import { useAppStore } from '@/store/modules/app';
 import { usePermissionStore } from '@/store/modules/permission';
 import { post } from '@/api/request';
 import { getUploadTableData, getUploadHistory, deduplicateUploads, enrichSheetAnalysis, getSmartKPIs, chartDrillDown, crossSheetAnalysis, yoyComparison, renameMeaninglessColumns, statisticalAnalysis, invalidateAnalysisCache, retrySheetUpload, smartRecommendChart, buildChart, checkPythonHealth, humanizeColumnName, FOOD_TEMPLATES, mapColumnsToTemplate, detectFoodIndustryLocal } from '@/api/smartbi';
@@ -1085,6 +1086,7 @@ import type { AIInsight } from '@/components/smartbi/AIInsightPanel.vue';
 import { saveDemoCache, loadDemoCache } from '@/utils/demo-cache';
 import type { DemoCacheData } from '@/utils/demo-cache';
 import { useSmartBIShortcuts } from '@/composables/useSmartBIShortcuts';
+import { compactAxisFormatter, compactTooltipFormatter, compactLabelFormatter } from '@/composables/useChartEnhancer';
 import { useSmartBIDrillDown } from './composables/useSmartBIDrillDown';
 import { useSmartBIStatistical } from './composables/useSmartBIStatistical';
 import { useSmartBICrossSheet } from './composables/useSmartBICrossSheet';
@@ -1092,6 +1094,8 @@ import { useSmartBIDashboardLayout } from './composables/useSmartBIDashboardLayo
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
+const appStore = useAppStore();
+const echartsThemeName = computed(() => appStore.theme === 'dark' ? 'cretas-dark' : 'cretas');
 const permissionStore = usePermissionStore();
 const canUpload = computed(() => permissionStore.canWrite('analytics'));
 
@@ -1106,6 +1110,7 @@ interface UploadBatch {
   id?: number;
 }
 const rootRef = ref<HTMLDivElement>();
+let resizeObserver: ResizeObserver | null = null; // container resize for sidebar toggle etc.
 const uploadBatches = ref<UploadBatch[]>([]);
 const selectedBatchIndex = ref<number>(0);
 const historyLoading = ref(false);
@@ -1996,6 +2001,13 @@ const ANIM_REGISTRY: Record<string, (idx: number) => number> = {
 /** Formatter registry — tooltip/label callbacks by named key */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
+  thousands_sep: (v: any) => {
+    if (typeof v !== 'number' || isNaN(v)) return v == null || isNaN(v) ? '-' : String(v);
+    const abs = Math.abs(v);
+    if (abs >= 1e8) return (v / 1e8).toFixed(1) + '亿';
+    if (abs >= 1e4) return (v / 1e4).toFixed(1) + '万';
+    return v.toLocaleString('zh-CN');
+  },
   boxplot_tooltip: (p: any) => {
     const d = p.data;
     return `${p.name}<br/>最小: ${d[0]}<br/>Q1: ${d[1]}<br/>中位数: ${d[2]}<br/>Q3: ${d[3]}<br/>最大: ${d[4]}`;
@@ -2237,6 +2249,24 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
     }
   }
 
+  // === P2: Gradient area fill for line series (subtle depth effect) ===
+  if (Array.isArray(series)) {
+    for (const s of series) {
+      if (s.type !== 'line' || s.areaStyle) continue; // skip if already has areaStyle
+      const baseColor = s.itemStyle?.color || s.lineStyle?.color;
+      if (!baseColor || typeof baseColor !== 'string') continue;
+      s.areaStyle = {
+        color: {
+          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: baseColor + '30' },
+            { offset: 1, color: baseColor + '05' },
+          ],
+        },
+      };
+    }
+  }
+
   // === DataZoom — 数据量>30时自动启用 slider+inside ===
   if (xAxis && xAxis.type === 'category' && Array.isArray(xAxis.data) && xAxis.data.length > 30) {
     const dataLen = xAxis.data.length;
@@ -2390,6 +2420,13 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
     }
   }
 
+  // === P3: Legend scroll mode when many series ===
+  if (legend && Array.isArray(series) && series.length > 5) {
+    legend.type = 'scroll';
+    legend.pageIconSize = 12;
+    legend.pageTextStyle = { fontSize: 11 };
+  }
+
   // === D6: 饼图图例长文本截断 ===
   if (chartType === 'pie' && legend) {
     legend.formatter = (name: string) => {
@@ -2475,18 +2512,24 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
     }
   }
 
-  // Auto Y-axis formatter: if no explicit (万)/(亿) in name but values are large
-  if (yAxis && chartType !== 'pie' && !yAxis.axisLabel?.formatter && stats.max >= 10000) {
-    yAxis.axisLabel = yAxis.axisLabel || {};
-    yAxis.axisLabel.formatter = (value: number) => {
-      if (value === 0) return '0';
-      if (Math.abs(value) >= 1e8) return `${(value / 1e8).toFixed(1)}亿`;
-      if (Math.abs(value) >= 1e4) return `${(value / 1e4).toFixed(0)}万`;
-      return String(value);
-    };
+  // === G1: Auto 万/亿 axis formatter (handles dual-axis arrays + horizontal bars) ===
+  if (chartType !== 'pie' && stats.max >= 10000) {
+    // Y-axis: iterate array for dual-axis charts
+    const yAxesList = Array.isArray(yAxis) ? yAxis : (yAxis ? [yAxis] : []);
+    for (const ax of yAxesList) {
+      if (ax && ax.type !== 'category' && !ax.axisLabel?.formatter) {
+        ax.axisLabel = ax.axisLabel || {};
+        ax.axisLabel.formatter = compactAxisFormatter;
+      }
+    }
+    // X-axis type=value: horizontal bars + scatter (auto, no name match needed)
+    if (xAxis && xAxis.type === 'value' && !xAxis.axisLabel?.formatter) {
+      xAxis.axisLabel = xAxis.axisLabel || {};
+      xAxis.axisLabel.formatter = compactAxisFormatter;
+    }
   }
 
-  // Scatter charts: also format xAxis if values are large
+  // Scatter/explicit xAxis with (万)/(亿) in name
   if (xAxis && xAxis.type === 'value' && typeof xAxis.name === 'string') {
     const xMatch = xAxis.name.match(/\(([万亿])\)/);
     if (xMatch) {
@@ -2505,6 +2548,48 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
           };
         }
       }
+    }
+  }
+
+  // === G2: Compact data labels for series with label.show ===
+  if (Array.isArray(series) && stats.max >= 10000) {
+    for (const s of series) {
+      if (s.label?.show && !s.label.formatter) {
+        s.label.formatter = compactLabelFormatter;
+      }
+    }
+  }
+
+  // === Tooltip style unification (white card, box-shadow, confine) ===
+  {
+    const tip = ((opts as SmartBIChartOption)).tooltip || {};
+    tip.confine = true;
+    tip.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+    tip.borderColor = '#ebeef5';
+    tip.borderWidth = 1;
+    tip.textStyle = { ...((tip.textStyle as Record<string, unknown>) || {}), color: '#303133' };
+    tip.extraCssText = 'box-shadow: 0 2px 12px rgba(0,0,0,0.1); backdrop-filter: blur(4px);';
+    // P1: Compact number formatting in tooltip values (万/亿)
+    if (!tip.valueFormatter) {
+      tip.valueFormatter = compactTooltipFormatter;
+    }
+    ((opts as SmartBIChartOption)).tooltip = tip;
+  }
+
+  // === Mobile adaptive: shrink labels when container is narrow ===
+  // Charts at ≤ 50% viewport width (2-col grid) get smaller text
+  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    if (xAxis && xAxis.axisLabel) {
+      xAxis.axisLabel.fontSize = Math.min(xAxis.axisLabel.fontSize || 11, 9);
+    }
+    const yAxes2 = Array.isArray(yAxis) ? yAxis : (yAxis ? [yAxis] : []);
+    for (const ax of yAxes2) {
+      if (ax?.axisLabel) ax.axisLabel.fontSize = Math.min(ax.axisLabel.fontSize || 11, 9);
+    }
+    if (legend) {
+      legend.textStyle = { ...((legend.textStyle as Record<string, unknown>) || {}), fontSize: 10 };
+      legend.itemWidth = 12;
+      legend.itemHeight = 8;
     }
   }
 };
@@ -2543,6 +2628,7 @@ const renderActiveCharts = () => {
   const charts = getSheetCharts(activeSheet);
   const observer = getOrCreateChartObserver();
 
+  // P0: Render first 2 charts immediately (above fold), defer rest via IntersectionObserver
   charts.forEach((chart, idx) => {
     const chartId = `chart-${activeSheet.sheetIndex}-${idx}`;
     const dom = document.getElementById(chartId);
@@ -2551,7 +2637,12 @@ const renderActiveCharts = () => {
     const config = chart.config;
     if (!config || isChartDataEmpty(config)) return;
 
-    renderSingleChart(dom, chart, idx, activeSheet);
+    if (idx < 2) {
+      renderSingleChart(dom, chart, idx, activeSheet);
+    } else {
+      pendingChartConfigs.set(chartId, { chart, idx, sheet: activeSheet });
+      observer.observe(dom);
+    }
   });
 };
 
@@ -2572,6 +2663,10 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
     // Process __ANIM__/__FMT__ named references from Python
     echartsOptions = processEChartsOptions(echartsOptions);
     enhanceChartOption(echartsOptions, activeSheet?.flowResult?.displayNameMap);
+    // H3: ARIA accessibility for screen readers (parity with DynamicChartRenderer)
+    (echartsOptions as SmartBIChartOption).aria = { enabled: true, decal: { show: true } };
+    // Strip ECharts-internal title — Vue card header already displays it
+    delete echartsOptions.title;
 
     // D4: 全零图表检测 — 当95%+数据为零时添加提示水印
     const eSeries = ((echartsOptions as SmartBIChartOption)).series;
@@ -2625,8 +2720,12 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
       // ECharts instance reuse (Phase 2.2) — avoid dispose+init cycle
       let instance = echarts.getInstanceByDom(dom);
       if (!instance) {
-        instance = echarts.init(dom, 'cretas');
+        instance = echarts.init(dom, echartsThemeName.value);
       }
+      // G-9: Connect chart instances in same sheet for cross-chart tooltip sync
+      const groupName = `sheet-${activeSheet.sheetIndex}`;
+      instance.group = groupName;
+      echarts.connect(groupName);
       // Suppress ECharts false-positive "alignTicks" warning on radar indicator axes
       // (radar internal axes set alignTicks:true by default; our nice-rounded max values ARE readable)
       const chartType = ((echartsOptions as SmartBIChartOption)).series?.[0]?.type
@@ -2765,10 +2864,13 @@ watch(layoutEditMode, (isBuilder) => {
           if (!dom) return;
           try {
             let instance = echarts.getInstanceByDom(dom);
-            if (!instance) instance = echarts.init(dom, 'cretas');
+            if (!instance) instance = echarts.init(dom, echartsThemeName.value);
             const config = charts[i].config;
             if (config) {
-              instance.setOption(processEChartsOptions(config as Record<string, unknown>), { notMerge: true });
+              const processed = processEChartsOptions(JSON.parse(JSON.stringify(config)) as Record<string, unknown>);
+              enhanceChartOption(processed, activeSheet?.flowResult?.displayNameMap);
+              delete processed.title;
+              instance.setOption(processed, { notMerge: true });
             }
           } catch (e) {
             console.error(`Failed to render builder chart ${card.id}:`, e);
@@ -2843,6 +2945,16 @@ watch(activeTab, (newTab, oldTab) => {
   }, 150);
 });
 
+// H1: Re-render all charts when theme toggles (ECharts doesn't support runtime theme swap)
+watch(echartsThemeName, () => {
+  const root = rootRef.value || document;
+  root.querySelectorAll('[id^="chart-"]').forEach(dom => {
+    const inst = echarts.getInstanceByDom(dom as HTMLElement);
+    if (inst) inst.dispose();
+  });
+  nextTick(() => renderActiveCharts());
+});
+
 // 渲染单个图表
 const renderChart = (sheet: SheetResult) => {
   const chartId = `chart-${sheet.sheetIndex}`;
@@ -2900,7 +3012,7 @@ const renderChart = (sheet: SheetResult) => {
     if (existingInstance) {
       existingInstance.dispose();
     }
-    const myChart = echarts.init(chartDom, 'cretas');
+    const myChart = echarts.init(chartDom, echartsThemeName.value);
     myChart.setOption(echartsOptions);
   } catch (error) {
     console.error('Failed to render chart:', error);
@@ -4088,6 +4200,7 @@ const waitForElement = (id: string, timeout = 2000): Promise<HTMLElement | null>
 onDeactivated(() => {
   // Pause resize listener & auto-refresh when cached (navigated away)
   window.removeEventListener('resize', handleResize);
+  resizeObserver?.disconnect(); resizeObserver = null;
   if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
   clearHoverThrottleTimers();
   // Disconnect IntersectionObserver to prevent stale callbacks and memory leaks
@@ -4098,12 +4211,21 @@ onDeactivated(() => {
 onActivated(() => {
   // Resume resize listener when re-entering
   window.addEventListener('resize', handleResize);
-  // Resize ECharts to fit (container size may have changed)
+  // Resume ResizeObserver for sidebar toggle / container resize
+  if (rootRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(rootRef.value);
+  }
+  // Resize ECharts to fit (container size may have changed) + reconnect groups
   nextTick(() => {
     const root = rootRef.value;
     (root || document).querySelectorAll('[id^="chart-"]').forEach(dom => {
       const instance = echarts.getInstanceByDom(dom as HTMLElement);
-      if (instance) instance.resize();
+      if (instance) {
+        instance.resize();
+        // Re-establish connect group after reactivation
+        if (instance.group) echarts.connect(instance.group);
+      }
     });
   });
 });
@@ -4115,6 +4237,7 @@ onBeforeUnmount(() => {
   clearHoverThrottleTimers();
   if (autoRefreshTimer) clearInterval(autoRefreshTimer);
   window.removeEventListener('resize', handleResize);
+  resizeObserver?.disconnect(); resizeObserver = null;
   // T5.2: Disconnect intersection observer
   if (chartObserver) { chartObserver.disconnect(); chartObserver = null; }
   pendingChartConfigs.clear();
@@ -4508,6 +4631,11 @@ onMounted(() => {
     loadHistory();
   }
   window.addEventListener('resize', handleResize);
+  // ResizeObserver for container resize (sidebar toggle, panel collapse)
+  if (rootRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(rootRef.value);
+  }
 });
 </script>
 
@@ -4558,16 +4686,16 @@ onMounted(() => {
     .progress-text {
       text-align: center;
       margin-top: 16px;
-      color: #606266;
+      color: var(--color-text-regular, #606266);
       font-size: 14px;
     }
 
     .sheet-progress-panel {
       margin-top: 24px;
       padding: 16px;
-      background: #f5f7fa;
+      background: var(--color-bg-page, #f5f7fa);
       border-radius: 8px;
-      border: 1px solid #e4e7ed;
+      border: 1px solid var(--color-border, #e4e7ed);
 
       .progress-header {
         display: flex;
@@ -4575,11 +4703,11 @@ onMounted(() => {
         gap: 12px;
         margin-bottom: 16px;
         padding-bottom: 12px;
-        border-bottom: 1px solid #e4e7ed;
+        border-bottom: 1px solid var(--color-border, #e4e7ed);
 
         span {
           font-weight: 600;
-          color: #303133;
+          color: var(--color-text-primary, #303133);
         }
 
         .el-tag {
@@ -4604,9 +4732,9 @@ onMounted(() => {
           gap: 16px;
           align-items: center;
           padding: 12px 16px;
-          background: #fff;
+          background: var(--color-bg-card, #fff);
           border-radius: 6px;
-          border: 1px solid #e4e7ed;
+          border: 1px solid var(--color-border, #e4e7ed);
           transition: all 0.3s ease;
 
           &.is-complete {
@@ -4624,7 +4752,7 @@ onMounted(() => {
             align-items: center;
             gap: 8px;
             font-weight: 500;
-            color: #303133;
+            color: var(--color-text-primary, #303133);
 
             .status-icon {
               font-size: 16px;
@@ -4646,16 +4774,16 @@ onMounted(() => {
 
           .sheet-stage {
             font-size: 13px;
-            color: #909399;
+            color: var(--color-text-secondary, #909399);
             padding: 4px 8px;
-            background: #f4f4f5;
+            background: var(--el-fill-color-light, #f4f4f5);
             border-radius: 4px;
             text-align: center;
           }
 
           .sheet-message {
             font-size: 13px;
-            color: #606266;
+            color: var(--color-text-regular, #606266);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -4778,7 +4906,7 @@ onMounted(() => {
         .summary-text {
           font-size: 14px;
           line-height: 1.6;
-          color: #1f2937;
+          color: var(--color-text-primary, #1f2937);
           font-weight: 500;
         }
 
@@ -4788,7 +4916,7 @@ onMounted(() => {
           gap: 16px;
           margin-top: 10px;
           padding-top: 10px;
-          border-top: 1px solid #e5e7eb;
+          border-top: 1px solid var(--color-border, #e5e7eb);
 
           .inline-kpi {
             display: flex;
@@ -4797,14 +4925,14 @@ onMounted(() => {
 
             .inline-kpi-label {
               font-size: 11px;
-              color: #9ca3af;
+              color: var(--color-text-secondary, #9ca3af);
               font-weight: 500;
             }
 
             .inline-kpi-value {
               font-size: 16px;
               font-weight: 700;
-              color: #1f2937;
+              color: var(--color-text-primary, #1f2937);
             }
 
             .inline-kpi-trend {
@@ -4829,7 +4957,7 @@ onMounted(() => {
         h3 {
           margin-bottom: 16px;
           font-size: 16px;
-          color: #303133;
+          color: var(--color-text-primary, #303133);
         }
 
         .chart-dashboard {
@@ -4848,17 +4976,17 @@ onMounted(() => {
             gap: 12px;
             margin-bottom: 4px;
             padding: 8px 12px;
-            background: #f5f7fa;
+            background: var(--color-bg-page, #f5f7fa);
             border-radius: 6px;
           }
 
           .chart-count-hint {
             font-size: 12px;
-            color: #909399;
+            color: var(--color-text-secondary, #909399);
           }
 
           .chart-grid-item {
-            background: #fff;
+            background: var(--color-bg-card, #fff);
             border-radius: 12px;
             border: none;
             padding: 20px;
@@ -4869,6 +4997,16 @@ onMounted(() => {
             contain: layout style paint;
             content-visibility: auto;
             contain-intrinsic-size: auto 360px;
+            /* G3: Stagger animation — cards fade in sequentially */
+            animation: chartCardFadeIn 0.4s ease-out both;
+            &:nth-child(1) { animation-delay: 0s; }
+            &:nth-child(2) { animation-delay: 0.08s; }
+            &:nth-child(3) { animation-delay: 0.16s; }
+            &:nth-child(4) { animation-delay: 0.2s; }
+            &:nth-child(5) { animation-delay: 0.24s; }
+            &:nth-child(6) { animation-delay: 0.28s; }
+            &:nth-child(7) { animation-delay: 0.32s; }
+            &:nth-child(8) { animation-delay: 0.36s; }
 
             &:hover {
               box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06);
@@ -4885,7 +5023,7 @@ onMounted(() => {
             .chart-title {
               font-size: 14px;
               font-weight: 600;
-              color: #374151;
+              color: var(--color-text-primary, #374151);
               margin-bottom: 16px;
               padding-bottom: 0;
               border-bottom: none;
@@ -4950,10 +5088,10 @@ onMounted(() => {
             align-items: center;
             gap: 8px;
             padding: 8px 16px;
-            background: #eff6ff;
+            background: var(--el-color-primary-light-9, #eff6ff);
             border-radius: 8px;
             font-size: 13px;
-            color: #1B65A8;
+            color: var(--color-primary, #1B65A8);
           }
         }
 
@@ -5001,7 +5139,7 @@ onMounted(() => {
             height: 200px;
             border: 1px dashed #dcdfe6;
             border-radius: 8px;
-            background: #fafafa;
+            background: var(--color-bg-page, #fafafa);
           }
         }
 
@@ -5011,7 +5149,7 @@ onMounted(() => {
           align-items: center;
           justify-content: center;
           height: 300px;
-          color: #909399;
+          color: var(--color-text-secondary, #909399);
 
           p {
             margin-top: 12px;
@@ -5027,7 +5165,7 @@ onMounted(() => {
           .chart-progress-hint {
             grid-column: 1 / -1;
             text-align: center;
-            color: #909399;
+            color: var(--color-text-secondary, #909399);
             font-size: 13px;
             padding: 4px 0;
             animation: pulse-opacity 1.5s ease-in-out infinite;
@@ -5046,15 +5184,15 @@ onMounted(() => {
         h3 {
           margin-bottom: 16px;
           font-size: 16px;
-          color: #303133;
+          color: var(--color-text-primary, #303133);
         }
 
         .analysis-card {
-          background: #f9fafc;
+          background: var(--color-bg-page, #f9fafc);
 
           .analysis-content {
             line-height: 1.8;
-            color: #606266;
+            color: var(--color-text-regular, #606266);
 
             :deep(p) {
               margin: 0 0 10px;
@@ -5067,7 +5205,7 @@ onMounted(() => {
             }
 
             :deep(strong) {
-              color: #303133;
+              color: var(--color-text-primary, #303133);
               font-weight: 600;
             }
           }
@@ -5081,7 +5219,7 @@ onMounted(() => {
         .cache-hint {
           margin-top: 12px;
           font-size: 12px;
-          color: #909399;
+          color: var(--color-text-secondary, #909399);
           text-align: right;
         }
       }
@@ -5092,7 +5230,7 @@ onMounted(() => {
         h3 {
           margin-bottom: 16px;
           font-size: 16px;
-          color: #303133;
+          color: var(--color-text-primary, #303133);
         }
       }
 
@@ -5109,7 +5247,7 @@ onMounted(() => {
         }
 
         :deep(.el-empty__description p) {
-          color: #6b7280;
+          color: var(--color-text-secondary, #6b7280);
           font-size: 14px;
         }
       }
@@ -5156,7 +5294,7 @@ onMounted(() => {
 
         h3 {
           font-size: 16px;
-          color: #303133;
+          color: var(--color-text-primary, #303133);
           margin: 0;
         }
 
@@ -5168,8 +5306,8 @@ onMounted(() => {
 
         .drill-hint {
           font-size: 12px;
-          color: #909399;
-          background: #f4f4f5;
+          color: var(--color-text-secondary, #909399);
+          background: var(--el-fill-color-light, #f4f4f5);
           padding: 4px 10px;
           border-radius: 12px;
         }
@@ -5192,7 +5330,7 @@ onMounted(() => {
           gap: 12px;
           margin-bottom: 24px;
           padding-bottom: 16px;
-          border-bottom: 2px solid #e5e7eb;
+          border-bottom: 2px solid var(--color-border, #e5e7eb);
 
           .index-icon {
             font-size: 28px;
@@ -5202,15 +5340,15 @@ onMounted(() => {
           h2 {
             font-size: 20px;
             font-weight: 600;
-            color: #1f2937;
+            color: var(--color-text-primary, #1f2937);
             margin: 0;
             flex: 1;
           }
 
           .index-count {
             font-size: 14px;
-            color: #6b7280;
-            background: #f3f4f6;
+            color: var(--color-text-secondary, #6b7280);
+            background: var(--color-bg-page, #f3f4f6);
             padding: 4px 12px;
             border-radius: 16px;
           }
@@ -5225,8 +5363,8 @@ onMounted(() => {
             display: flex;
             align-items: center;
             padding: 16px;
-            background: #fff;
-            border: 1px solid #e5e7eb;
+            background: var(--color-bg-card, #fff);
+            border: 1px solid var(--color-border, #e5e7eb);
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -5246,12 +5384,12 @@ onMounted(() => {
               width: 36px;
               height: 36px;
               border-radius: 50%;
-              background: #f3f4f6;
+              background: var(--color-bg-page, #f3f4f6);
               display: flex;
               align-items: center;
               justify-content: center;
               font-weight: 600;
-              color: #4b5563;
+              color: var(--color-text-secondary, #4b5563);
               margin-right: 16px;
               flex-shrink: 0;
             }
@@ -5269,13 +5407,13 @@ onMounted(() => {
               .item-name {
                 font-size: 15px;
                 font-weight: 600;
-                color: #1f2937;
+                color: var(--color-text-primary, #1f2937);
                 margin-bottom: 4px;
               }
 
               .item-sheet {
                 font-size: 12px;
-                color: #9ca3af;
+                color: var(--color-text-secondary, #9ca3af);
                 margin-bottom: 4px;
               }
 
@@ -5284,11 +5422,11 @@ onMounted(() => {
                 align-items: flex-start;
                 gap: 6px;
                 font-size: 13px;
-                color: #6b7280;
+                color: var(--color-text-secondary, #6b7280);
                 line-height: 1.5;
                 margin-top: 8px;
                 padding: 8px 12px;
-                background: #f9fafb;
+                background: var(--color-bg-page, #f9fafb);
                 border-radius: 6px;
 
                 .el-icon {
@@ -5301,7 +5439,7 @@ onMounted(() => {
 
             .item-arrow {
               font-size: 20px;
-              color: #9ca3af;
+              color: var(--color-text-secondary, #9ca3af);
               margin-left: 12px;
               flex-shrink: 0;
             }
@@ -5319,8 +5457,8 @@ onMounted(() => {
           gap: 8px;
           margin-top: 24px;
           padding-top: 16px;
-          border-top: 1px solid #e5e7eb;
-          color: #9ca3af;
+          border-top: 1px solid var(--color-border, #e5e7eb);
+          color: var(--color-text-secondary, #9ca3af);
           font-size: 13px;
 
           .el-icon {
@@ -5348,7 +5486,7 @@ onMounted(() => {
 .drill-breadcrumb {
   margin-bottom: 16px;
   padding: 8px 12px;
-  background: #f5f7fa;
+  background: var(--color-bg-page, #f5f7fa);
   border-radius: 4px;
 }
 
@@ -5361,14 +5499,14 @@ onMounted(() => {
   flex-wrap: wrap;
 
   .drill-dim-label {
-    color: #606266;
+    color: var(--color-text-regular, #606266);
     font-size: 13px;
   }
 }
 
 .drill-hint-inline {
   font-size: 12px;
-  color: #909399;
+  color: var(--color-text-secondary, #909399);
   font-weight: normal;
 }
 
@@ -5378,7 +5516,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 300px;
-  color: #909399;
+  color: var(--color-text-secondary, #909399);
 
   p {
     margin-top: 16px;
@@ -5395,10 +5533,10 @@ onMounted(() => {
   h4 {
     font-size: 15px;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--color-text-primary, #1f2937);
     margin-bottom: 12px;
     padding-bottom: 8px;
-    border-bottom: 2px solid #f0f0f0;
+    border-bottom: 2px solid var(--color-border-light, #f0f0f0);
   }
 }
 
@@ -5408,11 +5546,11 @@ onMounted(() => {
 }
 
 .drill-insight-card {
-  background: #f9fafc;
+  background: var(--color-bg-page, #f9fafc);
 
   .analysis-content {
     line-height: 1.8;
-    color: #606266;
+    color: var(--color-text-regular, #606266);
 
     :deep(p) {
       margin: 0 0 10px;
@@ -5420,7 +5558,7 @@ onMounted(() => {
     }
 
     :deep(strong) {
-      color: #303133;
+      color: var(--color-text-primary, #303133);
       font-weight: 600;
     }
   }
@@ -5433,7 +5571,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 400px;
-  color: #909399;
+  color: var(--color-text-secondary, #909399);
 
   p {
     margin-top: 16px;
@@ -5467,7 +5605,7 @@ onMounted(() => {
   .summary-text {
     font-size: 14px;
     line-height: 1.7;
-    color: #1f2937;
+    color: var(--color-text-primary, #1f2937);
   }
 }
 
@@ -5478,7 +5616,7 @@ onMounted(() => {
   h3 {
     font-size: 17px;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--color-text-primary, #1f2937);
     margin-bottom: 16px;
   }
 }
@@ -5489,9 +5627,9 @@ onMounted(() => {
   gap: 16px;
 
   .cross-chart-item {
-    background: #fff;
+    background: var(--color-bg-card, #fff);
     border-radius: 8px;
-    border: 1px solid #ebeef5;
+    border: 1px solid var(--color-border-light, #ebeef5);
     padding: 16px;
 
     &:first-child {
@@ -5501,7 +5639,7 @@ onMounted(() => {
     .chart-title {
       font-size: 15px;
       font-weight: 600;
-      color: #1f2937;
+      color: var(--color-text-primary, #1f2937);
       margin-bottom: 12px;
     }
 
@@ -5519,13 +5657,13 @@ onMounted(() => {
       margin: 0 0 12px;
       font-size: 16px;
       font-weight: 600;
-      color: #303133;
+      color: var(--color-text-primary, #303133);
     }
   }
 
   .stat-chart-container {
     width: 100%;
-    border: 1px solid #ebeef5;
+    border: 1px solid var(--color-border-light, #ebeef5);
     border-radius: 4px;
     margin-bottom: 16px;
   }
@@ -5536,7 +5674,7 @@ onMounted(() => {
     h4 {
       margin: 0 0 8px;
       font-size: 14px;
-      color: #606266;
+      color: var(--color-text-regular, #606266);
     }
   }
 
@@ -5557,7 +5695,7 @@ onMounted(() => {
     h5 {
       margin: 0 0 6px;
       font-size: 13px;
-      color: #606266;
+      color: var(--color-text-regular, #606266);
     }
   }
 
@@ -5623,14 +5761,14 @@ onMounted(() => {
       h4 {
         font-size: 13px;
         font-weight: 600;
-        color: #1f2937;
+        color: var(--color-text-primary, #1f2937);
         margin: 0 0 8px;
       }
 
       ul {
         margin: 0;
         padding-left: 20px;
-        color: #4b5563;
+        color: var(--color-text-secondary, #4b5563);
         font-size: 13px;
         line-height: 1.8;
       }
@@ -5644,5 +5782,11 @@ onMounted(() => {
   padding: 6px 0 2px;
   border-top: 1px dashed #e5e7eb;
   margin-top: 4px;
+}
+
+/* G3: Chart card stagger entrance animation */
+@keyframes chartCardFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

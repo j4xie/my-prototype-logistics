@@ -1,0 +1,51 @@
+appId: com.cretas.foodtrace
+---
+# Test 10: Factory Admin - Production Report Approval (生产报工审批)
+# Verifies FA can view and manage pending work reports from workers
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Navigate to Management tab
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# Tap 生产报工 (Production Report)
+- tapOn:
+    text: ".*\u751F\u4EA7\u62A5\u5DE5.*"
+- waitForAnimationToEnd
+
+# Wait for report list to load - verify real data (production quantity 80)
+- extendedWaitUntil:
+    visible: "80"
+    timeout: 10000
+- takeScreenshot: screenshots/10-fa-approval-list
+
+# Verify production data present (良品 76)
+- assertVisible: "76"
+- takeScreenshot: screenshots/10-fa-approval-detail
+
+# Scroll to see more reports
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/10-fa-approval-scrolled
+
+# Tap on 已批准 tab
+- tapOn:
+    text: ".*\u5DF2\u6279\u51C6.*"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/10-fa-approved-list
+
+# Tap back to 待审批
+- tapOn:
+    text: ".*\u5F85\u5BA1\u6279.*"
+- waitForAnimationToEnd

@@ -1,0 +1,54 @@
+appId: com.cretas.foodtrace
+---
+# Test 27: Factory Admin - Device & Equipment Management
+# Verifies UnifiedDeviceMgmt, IoT devices, Camera management, EquipmentAnalysis
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Navigate to Management tab (管理)
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# === Device Center (设备中心) ===
+- tapOn:
+    text: ".*Device Center.*|.*\u8BBE\u5907\u4E2D\u5FC3.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/27-fa-device-center
+
+# Scroll down to see device list
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/27-fa-device-center-scroll
+
+# Go back to management
+- back
+- waitForAnimationToEnd
+
+# === Equipment Analysis (设备分析) ===
+- tapOn:
+    text: ".*Equipment Analysis.*|.*\u8BBE\u5907\u5206\u6790.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/27-fa-equipment-analysis
+
+# Scroll down to see analysis charts
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/27-fa-equipment-analysis-scroll
+
+# Go back to management
+- back
+- waitForAnimationToEnd

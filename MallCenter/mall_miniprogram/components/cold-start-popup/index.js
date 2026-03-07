@@ -178,7 +178,7 @@ Component({
         categories: selectedCategoryNames,
         priceRange: {
           range: this.data.selectedPriceRange,
-          label: this.data.priceRanges.find(p => p.id === this.data.selectedPriceRange)?.name
+          label: (this.data.priceRanges.find(p => p.id === this.data.selectedPriceRange) || {}).name
         }
       }
 

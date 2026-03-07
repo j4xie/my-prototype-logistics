@@ -110,7 +110,7 @@ const PYTHON_TIMEOUT_MS = 30000;
 export const PYTHON_LLM_TIMEOUT_MS = 200000; // LLM-heavy calls — must exceed Python retry chain (max ~139s after reduction)
 export const PYTHON_HEADERS: Record<string, string> = {
   'Content-Type': 'application/json',
-  'X-Internal-Secret': import.meta.env.VITE_PYTHON_SECRET || 'cretas-internal-2026',
+  'X-Internal-Secret': import.meta.env.VITE_PYTHON_SECRET || '',
 };
 
 /**

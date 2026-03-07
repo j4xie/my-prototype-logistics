@@ -16,13 +16,18 @@ import me.chanjar.weixin.common.error.WxErrorException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * @author <a href="https://github.com/binarywang">Binary Wang</a>
+ * 微信小程序配置 — 支持多 AppID 动态注册
+ *
+ * 初始化时从 yml 加载配置（平台自有小程序）。
+ * 商户授权后，通过 registerMaService() 动态注册新的 AppID。
  */
 @Slf4j
 @Configuration
@@ -31,20 +36,61 @@ public class WxMaConfiguration {
 	private final WxMaProperties properties;
 
 	private static final Map<String, WxMaMessageRouter> routers = Maps.newHashMap();
-	private static Map<String, WxMaService> maServices;
+	/** 改为 ConcurrentHashMap 支持运行时动态注册 */
+	private static final ConcurrentHashMap<String, WxMaService> maServices = new ConcurrentHashMap<>();
 
 	@Autowired
 	public WxMaConfiguration(WxMaProperties properties) {
 		this.properties = properties;
 	}
 
+	/**
+	 * 根据 appId 获取 WxMaService
+	 * 支持 yml 配置 + 动态注册的 appId
+	 */
 	public static WxMaService getMaService(String appId) {
 		WxMaService wxService = maServices.get(appId);
 		if (wxService == null) {
 			throw new IllegalArgumentException(String.format("未找到对应appId=[%s]的配置，请核实！", appId));
 		}
-
 		return wxService;
+	}
+
+	/**
+	 * 检查 appId 是否已注册
+	 */
+	public static boolean hasMaService(String appId) {
+		return maServices.containsKey(appId);
+	}
+
+	/**
+	 * 动态注册新的小程序 AppID（商户授权后调用）
+	 * 使用第三方平台模式：不需要 secret，通过 component_access_token 操作
+	 */
+	public static void registerMaService(String appId, String componentAppId, String componentAccessToken) {
+		if (maServices.containsKey(appId)) {
+			log.info("AppID={} 已注册，跳过", appId);
+			return;
+		}
+
+		WxMaDefaultConfigImpl config = new WxMaDefaultConfigImpl();
+		config.setAppid(appId);
+		// 第三方平台模式下不需要单独的 secret
+		// 而是通过 component_access_token 代调用
+		config.setSecret("");
+
+		WxMaService service = new WxMaServiceImpl();
+		service.setWxMaConfig(config);
+		maServices.put(appId, service);
+
+		log.info("动态注册小程序 AppID={}", appId);
+	}
+
+	/**
+	 * 获取所有已注册的 AppID 列表
+	 */
+	public static List<String> getAllRegisteredAppIds() {
+		return List.copyOf(maServices.keySet());
 	}
 
 	public static WxMaMessageRouter getRouter(String appId) {
@@ -55,24 +101,26 @@ public class WxMaConfiguration {
 	public void init() {
 		List<WxMaProperties.Config> configs = this.properties.getConfigs();
 		if (configs == null) {
-			throw new RuntimeException("大哥，拜托先看下项目首页的说明（readme文件），添加下相关配置，注意别配错了！");
+			log.warn("未配置小程序 AppID，跳过初始化（将依赖动态注册）");
+			return;
 		}
 
-		maServices = configs.stream()
-				.map(a -> {
-					WxMaDefaultConfigImpl config = new WxMaDefaultConfigImpl();
-					// 使用上面的配置时，需要同时引入jedis-lock的依赖，否则会报类无法找到的异常
-					config.setAppid(a.getAppId());
-					config.setSecret(a.getSecret());
-					config.setToken(a.getToken());
-					config.setAesKey(a.getAesKey());
-					config.setMsgDataFormat(a.getMsgDataFormat());
+		configs.forEach(a -> {
+			WxMaDefaultConfigImpl config = new WxMaDefaultConfigImpl();
+			config.setAppid(a.getAppId());
+			config.setSecret(a.getSecret());
+			config.setToken(a.getToken());
+			config.setAesKey(a.getAesKey());
+			config.setMsgDataFormat(a.getMsgDataFormat());
 
-					WxMaService service = new WxMaServiceImpl();
-					service.setWxMaConfig(config);
-					routers.put(a.getAppId(), this.newRouter(service));
-					return service;
-				}).collect(Collectors.toMap(s -> s.getWxMaConfig().getAppid(), a -> a));
+			WxMaService service = new WxMaServiceImpl();
+			service.setWxMaConfig(config);
+			maServices.put(a.getAppId(), service);
+			routers.put(a.getAppId(), this.newRouter(service));
+		});
+
+		log.info("从 yml 加载了 {} 个小程序配置: {}", configs.size(),
+				configs.stream().map(WxMaProperties.Config::getAppId).collect(Collectors.toList()));
 	}
 
 	private WxMaMessageRouter newRouter(WxMaService service) {

@@ -85,9 +85,37 @@ public class SemanticRouterServiceImpl implements SemanticRouterService {
             // v32.4: 扩展黑洞列表 — E2E数据验证的高误吸引率意图
             "SYSTEM_SWITCH_FACTORY", "CUSTOMER_BY_TYPE", "SHIPMENT_STATS",
             "ISAPI_QUERY_CAPABILITIES", "TRACE_PUBLIC",
-            // Wave-8: 新增黑洞 — cosine 1.00 误匹配
+            // Wave-8: cosine 1.00 误匹配
             "ATTENDANCE_TODAY", "SYSTEM_FEEDBACK", "SHIPMENT_CREATE",
-            "FOOD_KNOWLEDGE_QUERY"
+            "FOOD_KNOWLEDGE_QUERY",
+            // Wave-9: prod E2E分析 — Tier 1 黑洞 (>60%误匹配率)
+            "MATERIAL_BATCH_QUERY",        // 4 wrong, 2 correct
+            "TASK_ASSIGN_WORKER",          // 2 wrong, 0 correct
+            "CUSTOMER_STATS",              // 2 wrong, 0 correct
+            // Wave-9 Tier 2: 50% false positive
+            "REPORT_PRODUCTION",           // 2 wrong, 3 correct
+            "PROCESSING_BATCH_CREATE",     // 2 wrong, 2 correct
+            // Wave-10b: E2E 73-miss 分析 — 高频语义黑洞
+            "RESTAURANT_DISH_DELETE",      // 4 wrong, 0 correct — 写入意图不应语义直达
+            "RESTAURANT_DISH_UPDATE",      // 3 wrong, 0 correct — 写入意图不应语义直达
+            "RESTAURANT_PROCUREMENT_SUGGESTION", // 3 wrong — 泛化吸引
+            "CAMERA_SUBSCRIBE",            // 3 wrong, 0 correct — 硬件订阅
+            "RESTAURANT_REVENUE_TREND",    // 2 wrong — 趋势类泛化
+            "ORDER_TODAY",                 // 2 wrong — 日期类泛化
+            "ORDER_LIST",                  // 2 wrong — 通用查询泛化
+            "RESTAURANT_ORDER_STATISTICS", // 吸引"创建时间"等无关输入
+            "RESTAURANT_DAILY_REVENUE",    // 吸引"今天入了多少出了多少"
+            "RESTAURANT_DISH_SALES_RANKING" // 吸引"经营状况总览"
+    );
+
+    // Wave-10: 完全排除意图 — 从语义路由器缓存中彻底移除，不参与任何语义匹配
+    // 这些意图的embedding向量存在异常(cosine 1.00命中率100%错误)，GUARD降级不够，需完全排除
+    private static final Set<String> SEMANTIC_EXCLUDE_INTENTS = Set.of(
+            "CAMERA_UNSUBSCRIBE",          // 3 wrong, 0 correct — cosine 1.00 吸引所有不相关输入
+            "SCALE_PROTOCOL_DETECT",       // 秤协议检测 — 硬件专用，不应参与语义路由
+            "SCALE_CALIBRATE",             // 秤校准 — 硬件专用
+            "SCALE_TROUBLESHOOT",          // Wave-10b: 4次错误命中(FOB/pb/英文/溯源) — 秤故障排查不应语义匹配
+            "CAMERA_STREAMS"               // 摄像头流 — 硬件专用
     );
 
     private final AtomicLong totalRoutes = new AtomicLong(0);
@@ -222,6 +250,11 @@ public class SemanticRouterServiceImpl implements SemanticRouterService {
             Map<String, CachedIntent> factoryCache = new ConcurrentHashMap<>();
 
             for (AIIntentConfig intent : intents) {
+                // Wave-10: 完全排除的意图不加入语义缓存
+                if (SEMANTIC_EXCLUDE_INTENTS.contains(intent.getIntentCode())) {
+                    continue;
+                }
+
                 // 从 IntentEmbeddingCacheService 获取预计算的 embedding
                 Optional<float[]> embeddingOpt = embeddingCacheService.getIntentEmbedding(factoryId, intent.getIntentCode());
 
@@ -309,6 +342,11 @@ public class SemanticRouterServiceImpl implements SemanticRouterService {
             Map<String, CachedIntent> globalCache = new ConcurrentHashMap<>();
 
             for (AIIntentConfig intent : globalIntents) {
+                // Wave-10: 完全排除的意图不加入语义缓存
+                if (SEMANTIC_EXCLUDE_INTENTS.contains(intent.getIntentCode())) {
+                    continue;
+                }
+
                 // 从 IntentEmbeddingCacheService 获取预计算的 embedding
                 // 全局意图存储在 "*" key 下
                 Optional<float[]> embeddingOpt = embeddingCacheService.getIntentEmbedding("*", intent.getIntentCode());

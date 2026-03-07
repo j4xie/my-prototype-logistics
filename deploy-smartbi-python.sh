@@ -124,94 +124,48 @@ restart_test_python() {
     ssh $SERVER "cd $REMOTE_CRETAS_DIR && bash restart-test.sh" 2>&1 | grep -i python || true
 }
 
+restart_prod_via_systemd() {
+    ssh $SERVER "
+        # Use systemd for production — preserves all env vars (JWT_SECRET, LLM keys, DB config)
+        systemctl restart cretas-python
+        echo 'Production Python restarted (systemd)'
+    "
+}
+
+restart_test_via_nohup() {
+    ssh $SERVER "
+        PID_PY=\$(lsof -ti :8084 2>/dev/null)
+        if [ -n \"\$PID_PY\" ]; then kill \$PID_PY 2>/dev/null; sleep 2; fi
+        cd $REMOTE_CRETAS_DIR/code/backend/python
+        POSTGRES_DB=smartbi_db \
+        POSTGRES_PASSWORD=smartbi_secure_password_2025 \
+        POSTGRES_ENABLED=true \
+        POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_USER=smartbi_user \
+        FOOD_KB_POSTGRES_DB=cretas_db \
+        FOOD_KB_POSTGRES_PASSWORD=cretas123 \
+        FOOD_KB_POSTGRES_USER=cretas_user \
+        FOOD_KB_POSTGRES_HOST=localhost FOOD_KB_POSTGRES_PORT=5432 \
+        LLM_API_KEY=sk-da3b827e6a00404a8bc869296f8690bc \
+        LLM_MODEL=qwen3-max-2026-01-23 LLM_FAST_MODEL=qwen3.5-flash \
+        LLM_REASONING_MODEL=qwen3.5-flash LLM_VL_MODEL=qwen3-vl-plus-2025-12-19 \
+        JWT_SECRET=cretas-jwt-secret-key-2026 \
+        nohup $REMOTE_CRETAS_DIR/code/backend/python/venv38/bin/python \
+            -m uvicorn main:app --host 0.0.0.0 --port 8084 \
+            > $REMOTE_CRETAS_DIR/python-test.log 2>&1 &
+        echo 'Test Python restarted (nohup)'
+    "
+}
+
 case "$DEPLOY_ENV" in
     prod)
-        # 只重启生产 Python (restart-prod.sh 会同时重启 Java，但这没关系)
-        # 更精准: 只杀 Python，通过 restart-prod.sh 里的逻辑
-        ssh $SERVER "
-            PID_PY=\$(lsof -ti :8083 2>/dev/null)
-            if [ -n \"\$PID_PY\" ]; then kill \$PID_PY 2>/dev/null; sleep 2; fi
-            cd $REMOTE_CRETAS_DIR/code/backend/python
-            POSTGRES_DB=smartbi_prod_db \
-            POSTGRES_PASSWORD=smartbi_secure_password_2025 \
-            POSTGRES_ENABLED=true \
-            POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_USER=smartbi_user \
-            FOOD_KB_POSTGRES_DB=cretas_prod_db \
-            FOOD_KB_POSTGRES_PASSWORD=cretas123 \
-            FOOD_KB_POSTGRES_USER=cretas_user \
-            FOOD_KB_POSTGRES_HOST=localhost FOOD_KB_POSTGRES_PORT=5432 \
-            LLM_API_KEY=sk-da3b827e6a00404a8bc869296f8690bc \
-            LLM_MODEL=qwen3.5-plus LLM_FAST_MODEL=qwen3.5-flash \
-            LLM_REASONING_MODEL=qwen3.5-flash LLM_VL_MODEL=qwen3.5-plus \
-            nohup $REMOTE_CRETAS_DIR/code/backend/python/venv38/bin/python \
-                -m uvicorn main:app --host 0.0.0.0 --port 8083 \
-                > $REMOTE_CRETAS_DIR/python-prod.log 2>&1 &
-            echo 'Production Python restarted'
-        "
+        restart_prod_via_systemd
         ;;
     test)
-        ssh $SERVER "
-            PID_PY=\$(lsof -ti :8084 2>/dev/null)
-            if [ -n \"\$PID_PY\" ]; then kill \$PID_PY 2>/dev/null; sleep 2; fi
-            cd $REMOTE_CRETAS_DIR/code/backend/python
-            POSTGRES_DB=smartbi_db \
-            POSTGRES_PASSWORD=smartbi_secure_password_2025 \
-            POSTGRES_ENABLED=true \
-            POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_USER=smartbi_user \
-            FOOD_KB_POSTGRES_DB=cretas_db \
-            FOOD_KB_POSTGRES_PASSWORD=cretas123 \
-            FOOD_KB_POSTGRES_USER=cretas_user \
-            FOOD_KB_POSTGRES_HOST=localhost FOOD_KB_POSTGRES_PORT=5432 \
-            LLM_API_KEY=sk-da3b827e6a00404a8bc869296f8690bc \
-            LLM_MODEL=qwen3.5-plus LLM_FAST_MODEL=qwen3.5-flash \
-            LLM_REASONING_MODEL=qwen3.5-flash LLM_VL_MODEL=qwen3.5-plus \
-            nohup $REMOTE_CRETAS_DIR/code/backend/python/venv38/bin/python \
-                -m uvicorn main:app --host 0.0.0.0 --port 8084 \
-                > $REMOTE_CRETAS_DIR/python-test.log 2>&1 &
-            echo 'Test Python restarted'
-        "
+        restart_test_via_nohup
         ;;
     all)
-        ssh $SERVER "
-            # Production Python
-            PID_PY=\$(lsof -ti :8083 2>/dev/null)
-            if [ -n \"\$PID_PY\" ]; then kill \$PID_PY 2>/dev/null; sleep 2; fi
-            cd $REMOTE_CRETAS_DIR/code/backend/python
-            POSTGRES_DB=smartbi_prod_db \
-            POSTGRES_PASSWORD=smartbi_secure_password_2025 \
-            POSTGRES_ENABLED=true \
-            POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_USER=smartbi_user \
-            FOOD_KB_POSTGRES_DB=cretas_prod_db \
-            FOOD_KB_POSTGRES_PASSWORD=cretas123 \
-            FOOD_KB_POSTGRES_USER=cretas_user \
-            FOOD_KB_POSTGRES_HOST=localhost FOOD_KB_POSTGRES_PORT=5432 \
-            LLM_API_KEY=sk-da3b827e6a00404a8bc869296f8690bc \
-            LLM_MODEL=qwen3.5-plus LLM_FAST_MODEL=qwen3.5-flash \
-            LLM_REASONING_MODEL=qwen3.5-flash LLM_VL_MODEL=qwen3.5-plus \
-            nohup $REMOTE_CRETAS_DIR/code/backend/python/venv38/bin/python \
-                -m uvicorn main:app --host 0.0.0.0 --port 8083 \
-                > $REMOTE_CRETAS_DIR/python-prod.log 2>&1 &
-            echo 'Production Python restarted'
-
-            # Test Python
-            PID_PY=\$(lsof -ti :8084 2>/dev/null)
-            if [ -n \"\$PID_PY\" ]; then kill \$PID_PY 2>/dev/null; sleep 2; fi
-            POSTGRES_DB=smartbi_db \
-            POSTGRES_PASSWORD=smartbi_secure_password_2025 \
-            POSTGRES_ENABLED=true \
-            POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_USER=smartbi_user \
-            FOOD_KB_POSTGRES_DB=cretas_db \
-            FOOD_KB_POSTGRES_PASSWORD=cretas123 \
-            FOOD_KB_POSTGRES_USER=cretas_user \
-            FOOD_KB_POSTGRES_HOST=localhost FOOD_KB_POSTGRES_PORT=5432 \
-            LLM_API_KEY=sk-da3b827e6a00404a8bc869296f8690bc \
-            LLM_MODEL=qwen3.5-plus LLM_FAST_MODEL=qwen3.5-flash \
-            LLM_REASONING_MODEL=qwen3.5-flash LLM_VL_MODEL=qwen3.5-plus \
-            nohup $REMOTE_CRETAS_DIR/code/backend/python/venv38/bin/python \
-                -m uvicorn main:app --host 0.0.0.0 --port 8084 \
-                > $REMOTE_CRETAS_DIR/python-test.log 2>&1 &
-            echo 'Test Python restarted'
-        "
+        restart_prod_via_systemd
+        restart_test_via_nohup
         ;;
 esac
 

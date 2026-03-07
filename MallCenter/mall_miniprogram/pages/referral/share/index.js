@@ -261,7 +261,7 @@ Page({
    */
   onShareAppMessage() {
     return {
-      title: `我正在使用白垩纪溯源，邀请您一起加入！输入推荐码 ${this.data.referralCode} 可获得新人奖励`,
+      title: `邀请您一起加入！输入推荐码 ${this.data.referralCode} 可获得新人奖励`,
       path: `/pages/auth/register/index?ref=${this.data.referralCode}`,
       imageUrl: '/public/img/banner_1.jpg'
     }
@@ -272,7 +272,7 @@ Page({
    */
   onShareTimeline() {
     return {
-      title: `使用推荐码 ${this.data.referralCode} 注册白垩纪溯源，新人专享优惠！`,
+      title: `使用推荐码 ${this.data.referralCode} 注册，新人专享优惠！`,
       query: `ref=${this.data.referralCode}`
     }
   }

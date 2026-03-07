@@ -3,12 +3,15 @@
  * DynamicChartRenderer - 通用图表渲染器
  * 自动检测图表配置格式 (legacy/dynamic/dashboard) 并转换为 ECharts option
  */
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import echarts from '@/utils/echarts';
+import { useAppStore } from '@/store/modules/app';
 import type { ChartConfig, LegacyChartConfig, DynamicChartConfig, DashboardChartConfig } from '@/types/smartbi';
 import { chartHasData } from '@/types/smartbi';
 import { registerChinaMap, normalizeProvinceName } from '@/utils/chinaMap';
 import { CHART_COLORS } from '@/constants/chart-colors';
+import { defaultTooltip } from './chart-helpers';
+import { enhanceChartDefaults } from '@/composables/useChartEnhancer';
 
 interface Props {
   config: ChartConfig;
@@ -21,8 +24,13 @@ const props = withDefaults(defineProps<Props>(), {
   title: undefined,
 });
 
+const appStore = useAppStore();
+const echartsThemeName = computed(() => appStore.theme === 'dark' ? 'cretas-dark' : 'cretas');
+
 const chartRef = ref<HTMLDivElement | null>(null);
 let chartInstance: echarts.ECharts | null = null;
+let resizeObserver: ResizeObserver | null = null;
+let rafId = 0;
 
 const PIE_COLORS = CHART_COLORS;
 
@@ -33,10 +41,18 @@ function extractField(config: Record<string, unknown>, primary: string, fallback
 
 onMounted(() => {
   initChart();
+  // G-19: Use ResizeObserver for container-aware resize (sidebar toggle, panel adjust)
+  if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartRef.value);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (rafId) cancelAnimationFrame(rafId);
   window.removeEventListener('resize', handleResize);
   chartInstance?.dispose();
   chartInstance = null;
@@ -46,10 +62,23 @@ watch(() => props.config, () => {
   nextTick(() => updateChart());
 }, { deep: true });
 
+// H1: Re-init chart when theme changes (ECharts doesn't support runtime theme swap)
+watch(echartsThemeName, () => {
+  if (chartInstance) {
+    chartInstance.dispose();
+    chartInstance = null;
+  }
+  nextTick(() => initChart());
+});
+
 function initChart() {
   if (!chartRef.value) return;
-  chartInstance = echarts.init(chartRef.value, 'cretas');
-  updateChart();
+  try {
+    chartInstance = echarts.init(chartRef.value, echartsThemeName.value);
+    updateChart();
+  } catch (err) {
+    console.error('[DynamicChartRenderer] initChart failed:', err);
+  }
 }
 
 function updateChart() {
@@ -67,14 +96,82 @@ function updateChart() {
     return;
   }
 
-  const option = buildOption(props.config);
-  if (option) {
-    chartInstance.setOption(option, true);
+  try {
+    const option = buildOption(props.config);
+    if (option) {
+      const opt = option as Record<string, unknown>;
+      // Strip ECharts-internal title — Vue card header already displays it
+      delete opt.title;
+      // G-11: ARIA accessibility for screen readers
+      opt.aria = { enabled: true, decal: { show: true } };
+      // G-20: Unified animation config
+      opt.animation = true;
+      opt.animationDuration = 600;
+      opt.animationEasing = 'cubicOut';
+      opt.animationThreshold = 2000;
+      // G-22: emphasis/blur — hover one series dims others
+      if (Array.isArray(opt.series)) {
+        (opt.series as Record<string, unknown>[]).forEach(s => {
+          if (!s.emphasis) s.emphasis = {};
+          (s.emphasis as Record<string, unknown>).focus = 'series';
+          if (!s.blur) s.blur = {};
+          const blur = s.blur as Record<string, unknown>;
+          if (!blur.itemStyle) blur.itemStyle = {};
+          (blur.itemStyle as Record<string, unknown>).opacity = 0.15;
+        });
+      }
+      // G-23: universalTransition — smooth morph between config changes
+      if (Array.isArray(opt.series)) {
+        (opt.series as Record<string, unknown>[]).forEach(s => {
+          s.universalTransition = { enabled: true, divideShape: 'clone' };
+        });
+      }
+      // Shared enhancements: semantic coloring, compact formatters, gradients, outlier detection
+      enhanceChartDefaults(opt);
+      // G-21: Toolbox — save/zoom/restore + magicType switching
+      const chartType = (props.config as Record<string, unknown>).chartType as string | undefined;
+      const lcType = (chartType || '').toLowerCase();
+      const supportsMagicType = ['line', 'bar', 'area', 'stacked_bar', 'combination', 'line_bar'].includes(lcType) || (!chartType && opt.series);
+      opt.toolbox = {
+        feature: {
+          saveAsImage: { pixelRatio: 2, title: '保存' },
+          dataZoom: { title: { zoom: '缩放', back: '还原' } },
+          restore: { title: '重置' },
+          ...(supportsMagicType ? {
+            magicType: {
+              type: ['line', 'bar', 'stack'],
+              title: { line: '折线', bar: '柱状', stack: '堆叠' },
+            },
+          } : {}),
+        },
+        right: 16, top: 4,
+        iconStyle: { borderColor: '#9ca3af' },
+        emphasis: { iconStyle: { borderColor: '#1B65A8' } },
+      };
+      chartInstance.setOption(option, { notMerge: true, lazyUpdate: true });
+    }
+  } catch (err) {
+    console.error('[DynamicChartRenderer] setOption failed:', err);
+    // Show error fallback in chart area
+    try {
+      chartInstance.setOption({
+        graphic: [{
+          type: 'text',
+          left: 'center',
+          top: 'center',
+          style: { text: '图表渲染异常', fontSize: 14, fill: '#F56C6C' },
+        }],
+      }, true);
+    } catch { /* prevent infinite error loop */ }
   }
 }
 
 function handleResize() {
-  chartInstance?.resize();
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = 0;
+    chartInstance?.resize();
+  });
 }
 
 // ==================== Option 构建逻辑 ====================
@@ -108,10 +205,11 @@ function buildFromDashboardConfig(config: DashboardChartConfig): echarts.ECharts
   }
 
   const option: echarts.EChartsOption = {
-    tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+    tooltip: { ...defaultTooltip('axis'), axisPointer: { type: 'cross' } },
     legend: {
       data: config.legend?.data || config.series.map(s => s.name),
       bottom: 0,
+      type: (config.legend?.data || config.series)?.length > 5 ? 'scroll' : 'plain',
     },
     grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
     xAxis: {
@@ -136,14 +234,21 @@ function buildFromDashboardConfig(config: DashboardChartConfig): echarts.ECharts
       data: s.data,
       areaStyle: index === 0
         ? { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(64, 158, 255, 0.3)' },
-            { offset: 1, color: 'rgba(64, 158, 255, 0.05)' },
+            { offset: 0, color: 'rgba(27, 101, 168, 0.3)' },
+            { offset: 1, color: 'rgba(27, 101, 168, 0.05)' },
           ]) }
         : undefined,
       lineStyle: { width: 3, color: PIE_COLORS[index % PIE_COLORS.length] },
       itemStyle: { color: PIE_COLORS[index % PIE_COLORS.length] },
     })),
   };
+  const xLen = config.xAxis?.data?.length || 0;
+  if (xLen > 15) {
+    option.dataZoom = [
+      { type: 'slider', start: 0, end: Math.round(15 / xLen * 100) },
+      { type: 'inside' },
+    ];
+  }
   return option;
 }
 
@@ -158,7 +263,7 @@ function buildDashboardPie(config: DashboardChartConfig): echarts.EChartsOption 
   }));
 
   return {
-    tooltip: { trigger: 'item', formatter: '{b}: {c}万 ({d}%)' },
+    tooltip: defaultTooltip('item', '{b}: {c}万 ({d}%)'),
     legend: { orient: 'vertical', right: '5%', top: 'center' },
     series: [{
       type: 'pie',
@@ -177,7 +282,7 @@ function buildDashboardPie(config: DashboardChartConfig): echarts.EChartsOption 
 function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOption {
   const option: echarts.EChartsOption = {
     tooltip: {
-      trigger: config.tooltip?.trigger || 'axis',
+      ...defaultTooltip((config.tooltip?.trigger as 'axis' | 'item') || 'axis'),
       axisPointer: config.tooltip?.axisPointer || { type: 'shadow' },
     },
     grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
@@ -194,6 +299,7 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
       bottom: config.legend.position === 'bottom' ? 0 : undefined,
       top: config.legend.position === 'top' ? 0 : undefined,
       orient: (config.legend.orient as 'horizontal' | 'vertical') || 'horizontal',
+      type: (config.legend.data?.length ?? 0) > 5 ? 'scroll' : 'plain',
     };
   }
 
@@ -249,6 +355,13 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
     }) as echarts.SeriesOption[];
   }
 
+  const xLen = config.xAxis?.data?.length || 0;
+  if (xLen > 15) {
+    option.dataZoom = [
+      { type: 'slider', start: 0, end: Math.round(15 / xLen * 100) },
+      { type: 'inside' },
+    ];
+  }
   return option;
 }
 
@@ -327,19 +440,17 @@ function buildFromLegacyConfig(config: LegacyChartConfig): echarts.EChartsOption
   const yData = config.data.map(item => Number(item[yField] || 0));
 
   const hasNegative = yData.some(v => v < 0);
-  return {
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: chartType === 'line' ? 'cross' : 'shadow' },
-    },
-    grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
+  const needsDataZoom = xData.length > 15;
+  const result: echarts.EChartsOption = {
+    tooltip: { ...defaultTooltip('axis'), axisPointer: { type: chartType === 'line' ? 'cross' : 'shadow' } },
+    grid: { left: '3%', right: '4%', bottom: needsDataZoom ? '20%' : '15%', top: '10%', containLabel: true },
     xAxis: { type: 'category', data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
     yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
     series: [{
       type: chartType as 'bar' | 'line',
       data: yData,
       smooth: chartType === 'line',
-      itemStyle: { color: '#409EFF' },
+      itemStyle: { color: CHART_COLORS[0] },
       ...(chartType === 'line' && hasNegative ? {
         markPoint: {
           data: [{ type: 'min', name: '最低值', symbol: 'pin', symbolSize: 40, label: { formatter: '{c}', fontSize: 10 } }],
@@ -353,6 +464,14 @@ function buildFromLegacyConfig(config: LegacyChartConfig): echarts.EChartsOption
       } : {}),
     }],
   };
+  // G-17: Auto DataZoom for long x-axis
+  if (needsDataZoom) {
+    result.dataZoom = [
+      { type: 'slider', start: 0, end: Math.round(15 / xData.length * 100) },
+      { type: 'inside' },
+    ];
+  }
+  return result;
 }
 
 /** Build waterfall chart for budget execution */
@@ -364,7 +483,7 @@ function buildWaterfallChart(config: LegacyChartConfig): echarts.EChartsOption {
   const yData = config.data.map(item => Number(item[yField] || 0));
 
   return {
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    tooltip: { ...defaultTooltip('axis'), axisPointer: { type: 'shadow' } },
     grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
     xAxis: { type: 'category', data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
     yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
@@ -372,7 +491,7 @@ function buildWaterfallChart(config: LegacyChartConfig): echarts.EChartsOption {
       type: 'bar',
       data: yData.map((val, idx) => ({
         value: val,
-        itemStyle: { color: idx === 0 ? '#5470c6' : '#91cc75' },
+        itemStyle: { color: idx === 0 ? CHART_COLORS[0] : CHART_COLORS[1] },
       })),
       label: { show: true, position: 'top', formatter: (p: { value: number }) => formatAxisValue(p.value) },
     }],
@@ -391,7 +510,7 @@ function buildLineBudgetChart(config: LegacyChartConfig): echarts.EChartsOption 
   if (optSeries && optSeries.length > 0) {
     // Generic path: build series from options.series metadata
     const dataKeys = Object.keys(config.data[0] || {}).filter(k => k !== xField);
-    const seriesColors = ['#5470c6', '#91cc75', '#ee6666', '#fac858', '#73c0de'];
+    const seriesColors = [CHART_COLORS[0], CHART_COLORS[1], CHART_COLORS[3], CHART_COLORS[2], CHART_COLORS[4]];
     const legendData: string[] = [];
 
     const series = optSeries.map((sDef, idx) => {
@@ -427,7 +546,7 @@ function buildLineBudgetChart(config: LegacyChartConfig): echarts.EChartsOption 
       : [{ type: 'value' as const, name: '金额', axisLabel: { formatter: (v: number) => formatAxisValue(v) } }];
 
     return {
-      tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+      tooltip: { ...defaultTooltip('axis'), axisPointer: { type: 'cross' } },
       legend: { data: legendData, bottom: 0 },
       grid: { left: '3%', right: '8%', bottom: '15%', top: '10%', containLabel: true },
       xAxis: { type: 'category', data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
@@ -442,7 +561,7 @@ function buildLineBudgetChart(config: LegacyChartConfig): echarts.EChartsOption 
   const rateData = config.data.map(item => Number(item.achievementRate || 0));
 
   return {
-    tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+    tooltip: { ...defaultTooltip('axis'), axisPointer: { type: 'cross' } },
     legend: { data: ['预算', '实际', '达成率'], bottom: 0 },
     grid: { left: '3%', right: '8%', bottom: '15%', top: '10%', containLabel: true },
     xAxis: { type: 'category', data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
@@ -451,9 +570,9 @@ function buildLineBudgetChart(config: LegacyChartConfig): echarts.EChartsOption 
       { type: 'value', name: '达成率(%)', min: 0, max: 200, position: 'right', axisLabel: { formatter: '{value}%' } },
     ],
     series: [
-      { name: '预算', type: 'bar', data: budgetData, itemStyle: { color: '#5470c6' } },
-      { name: '实际', type: 'bar', data: actualData, itemStyle: { color: '#91cc75' } },
-      { name: '达成率', type: 'line', yAxisIndex: 1, data: rateData, smooth: true, itemStyle: { color: '#ee6666' } },
+      { name: '预算', type: 'bar', data: budgetData, itemStyle: { color: CHART_COLORS[0] } },
+      { name: '实际', type: 'bar', data: actualData, itemStyle: { color: CHART_COLORS[1] } },
+      { name: '达成率', type: 'line', yAxisIndex: 1, data: rateData, smooth: true, itemStyle: { color: CHART_COLORS[3] } },
     ],
   };
 }
@@ -472,7 +591,7 @@ function buildRadarChart(config: LegacyChartConfig): echarts.EChartsOption {
   const values = config.data.map(item => Number(item[yField] || 0));
 
   return {
-    tooltip: { trigger: 'item' },
+    tooltip: defaultTooltip('item'),
     radar: {
       indicator,
       shape: 'polygon',
@@ -484,9 +603,9 @@ function buildRadarChart(config: LegacyChartConfig): echarts.EChartsOption {
       data: [{
         value: values,
         name: '指标值',
-        areaStyle: { color: 'rgba(64, 158, 255, 0.3)' },
-        lineStyle: { color: '#409EFF', width: 2 },
-        itemStyle: { color: '#409EFF' },
+        areaStyle: { color: 'rgba(27, 101, 168, 0.3)' },
+        lineStyle: { color: CHART_COLORS[0], width: 2 },
+        itemStyle: { color: CHART_COLORS[0] },
       }],
     }],
   };
@@ -504,7 +623,7 @@ function buildScatterChart(config: LegacyChartConfig): echarts.EChartsOption {
 
   return {
     tooltip: {
-      trigger: 'item',
+      ...defaultTooltip('item'),
       formatter: (params: { value: number[] }) => `(${params.value[0]}, ${params.value[1]})`,
     },
     grid: { left: '3%', right: '4%', bottom: '10%', top: '10%', containLabel: true },
@@ -514,7 +633,7 @@ function buildScatterChart(config: LegacyChartConfig): echarts.EChartsOption {
       type: 'scatter',
       data: scatterData,
       symbolSize: 12,
-      itemStyle: { color: '#409EFF' },
+      itemStyle: { color: CHART_COLORS[0] },
     }],
   };
 }
@@ -528,7 +647,7 @@ function buildAreaChart(config: LegacyChartConfig): echarts.EChartsOption {
   const yData = config.data.map(item => Number(item[yField] || 0));
 
   return {
-    tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+    tooltip: { ...defaultTooltip('axis'), axisPointer: { type: 'cross' } },
     grid: { left: '3%', right: '4%', bottom: '10%', top: '10%', containLabel: true },
     xAxis: { type: 'category', boundaryGap: false, data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
     yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
@@ -538,12 +657,12 @@ function buildAreaChart(config: LegacyChartConfig): echarts.EChartsOption {
       smooth: true,
       areaStyle: {
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(64, 158, 255, 0.5)' },
-          { offset: 1, color: 'rgba(64, 158, 255, 0.05)' },
+          { offset: 0, color: 'rgba(27, 101, 168, 0.5)' },
+          { offset: 1, color: 'rgba(27, 101, 168, 0.05)' },
         ]),
       },
-      lineStyle: { color: '#409EFF', width: 2 },
-      itemStyle: { color: '#409EFF' },
+      lineStyle: { color: CHART_COLORS[0], width: 2 },
+      itemStyle: { color: CHART_COLORS[0] },
     }],
   };
 }
@@ -559,7 +678,7 @@ function buildGaugeChart(config: LegacyChartConfig): echarts.EChartsOption {
   const name = String(firstItem[xField] || '指标');
 
   return {
-    tooltip: { formatter: '{b}: {c}%' },
+    tooltip: defaultTooltip('item', '{b}: {c}%'),
     series: [{
       type: 'gauge',
       startAngle: 180,
@@ -607,7 +726,7 @@ function buildFunnelChart(config: LegacyChartConfig): echarts.EChartsOption {
   }));
 
   return {
-    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    tooltip: defaultTooltip('item', '{b}: {c} ({d}%)'),
     legend: { orient: 'vertical', right: '5%', top: 'center' },
     series: [{
       type: 'funnel',
@@ -646,8 +765,8 @@ function buildStackedBarChart(config: LegacyChartConfig): echarts.EChartsOption 
   }));
 
   return {
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    legend: { data: valueKeys, bottom: 0 },
+    tooltip: { ...defaultTooltip('axis'), axisPointer: { type: 'shadow' } },
+    legend: { data: valueKeys, bottom: 0, type: valueKeys.length > 5 ? 'scroll' as const : 'plain' as const },
     grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
     xAxis: { type: 'category', data: xData },
     yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
@@ -670,7 +789,7 @@ function buildDoughnutChart(config: LegacyChartConfig): echarts.EChartsOption {
   const total = pieData.reduce((sum, item) => sum + item.value, 0);
 
   return {
-    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    tooltip: defaultTooltip('item', '{b}: {c} ({d}%)'),
     legend: { orient: 'vertical', right: '5%', top: 'center' },
     series: [{
       type: 'pie',
@@ -716,7 +835,7 @@ function buildTreemapChart(config: LegacyChartConfig): echarts.EChartsOption {
 
   return {
     tooltip: {
-      trigger: 'item',
+      ...defaultTooltip('item'),
       formatter: (params: { name: string; value: number }) => `${params.name}: ${formatAxisValue(params.value)}`,
     },
     series: [{
@@ -760,7 +879,7 @@ function buildMapChart(config: LegacyChartConfig): echarts.EChartsOption {
 
   return {
     tooltip: {
-      trigger: 'item',
+      ...defaultTooltip('item'),
       formatter: (params: { name: string; value: number }) => {
         if (params.value === undefined) return `${params.name}: 暂无数据`;
         return `${params.name}: ${formatAxisValue(params.value)}`;
@@ -814,7 +933,7 @@ function buildLegacyPie(config: LegacyChartConfig): echarts.EChartsOption {
   })) || [];
 
   return {
-    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    tooltip: defaultTooltip('item', '{b}: {c} ({d}%)'),
     legend: { orient: 'vertical', right: '10%', top: 'center' },
     series: [{
       type: 'pie',
@@ -832,10 +951,11 @@ function formatAxisValue(value: number): string {
   const abs = Math.abs(value);
   if (abs >= 100000000) return (value / 100000000).toFixed(1) + '亿';
   if (abs >= 10000) return (value / 10000).toFixed(0) + '万';
+  if (abs >= 1000) return value.toLocaleString('zh-CN');
   return String(value);
 }
 </script>
 
 <template>
-  <div ref="chartRef" :style="{ height: height + 'px', width: '100%' }"></div>
+  <div ref="chartRef" role="img" :aria-label="title || '数据图表'" :style="{ height: height + 'px', width: '100%' }"></div>
 </template>

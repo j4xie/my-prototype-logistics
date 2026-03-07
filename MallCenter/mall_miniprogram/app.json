@@ -40,6 +40,7 @@
     "pages/merchant-center/stats/index",
     "pages/merchant-center/settings/index",
     "pages/merchant-center/shop-design/index",
+    "pages/merchant-center/decoration-chat/index",
     "pages/orders/checkout/index"
   ],
   "window": {

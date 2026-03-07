@@ -272,7 +272,7 @@ function getRoleText(role: string) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="phoneNumber" label="手机号" width="140" />
         <el-table-column prop="name" label="姓名" width="120" />
         <el-table-column prop="role" label="角色" width="150">
@@ -326,7 +326,7 @@ function getRoleText(role: string) {
     </el-card>
 
     <!-- 编辑对话框 -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑白名单' : '添加白名单'" width="500px">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑白名单' : '添加白名单'" width="500px" :close-on-click-modal="false">
       <el-form :model="whitelistForm" label-width="100px">
         <el-form-item label="手机号" required>
           <el-input

@@ -1,0 +1,53 @@
+appId: com.cretas.foodtrace
+---
+# Test 21: HR Admin - Whitelist CRUD & Profile
+# Verifies whitelist list, scroll, add form, profile, and department management
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as HR admin
+- runFlow: flows/login-hr.yaml
+- extendedWaitUntil:
+    visible: ".*Total Staff.*"
+    timeout: 15000
+
+# Navigate to Whitelist tab (白名单)
+- tapOn: "\u767D\u540D\u5355"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/21-hr-whitelist-list
+
+# Scroll down to see more entries
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/21-hr-whitelist-scroll
+
+# Tap + button to add new whitelist entry
+- tapOn:
+    text: ".*\\+.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/21-hr-whitelist-add-form
+
+# Go back from add form
+- back
+- waitForAnimationToEnd
+
+# Navigate to Profile tab (我的)
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/21-hr-profile
+
+# Tap Department Management
+- tapOn:
+    text: ".*Department.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/21-hr-department-mgmt
+
+# Go back to profile
+- back
+- waitForAnimationToEnd

@@ -167,8 +167,9 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     // Tool 注册中心（新架构）
     private final ToolRegistry toolRegistry;
 
-    // SSE 异步执行器
-    private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
+    // SSE 异步执行器 — bounded to prevent thread exhaustion
+    private final ExecutorService sseExecutor = java.util.concurrent.Executors.newFixedThreadPool(
+            8, r -> { Thread t = new Thread(r, "intent-sse"); t.setDaemon(true); return t; });
 
     // SSE 超时时间 (2分钟)
     private static final long SSE_TIMEOUT_MS = 120_000L;

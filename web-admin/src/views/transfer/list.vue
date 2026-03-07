@@ -7,6 +7,7 @@ import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Plus, Refresh } from '@element-plus/icons-vue';
+import { formatAmount } from '@/utils/tableFormatters';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -58,11 +59,6 @@ function handlePageChange(page: number) { pagination.value.page = page; loadData
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
 
 function isOutbound(row: any) { return row.sourceFactoryId === factoryId.value; }
-
-function formatAmount(val: number) {
-  if (val == null) return '-';
-  return `¥${Number(val).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
-}
 </script>
 
 <template>
@@ -80,7 +76,7 @@ function formatAmount(val: number) {
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="transferNumber" label="调拨编号" width="170" />
         <el-table-column label="方向" width="80" align="center">
           <template #default="{ row }">
@@ -104,7 +100,7 @@ function formatAmount(val: number) {
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="(statusMap[row.status]?.type as any) || 'info'" size="small">
+            <el-tag :type="(statusMap[row.status]?.type) || 'info'" size="small">
               {{ statusMap[row.status]?.text || row.status }}
             </el-tag>
           </template>

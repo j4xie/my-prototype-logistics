@@ -15,6 +15,8 @@ import {
 } from '@/api/scheduling';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, Calendar, View, Check, Close } from '@element-plus/icons-vue';
+import { formatDateTimeCell } from '@/utils/tableFormatters';
+import { formatDateTime } from '@/utils/dateFormat';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -222,7 +224,7 @@ function getProbabilityClass(prob: number) {
       </div>
 
       <!-- 数据表格 -->
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="planDate" label="计划日期" width="120" align="center">
           <template #default="{ row }">
             <div class="date-cell">
@@ -252,10 +254,10 @@ function getProbabilityClass(prob: number) {
             {{ row.lineSchedules?.length || 0 }}
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="160" />
+        <el-table-column prop="createdAt" label="创建时间" width="160" :formatter="formatDateTimeCell" />
         <el-table-column prop="confirmedAt" label="确认时间" width="160">
           <template #default="{ row }">
-            {{ row.confirmedAt || '-' }}
+            {{ formatDateTime(row.confirmedAt) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right" align="center">

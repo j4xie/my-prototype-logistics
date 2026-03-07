@@ -69,21 +69,37 @@ function handleSizeChange(size: number) {
 function getStatusType(status: string) {
   const map: Record<string, string> = {
     RUNNING: 'success',
+    ACTIVE: 'success',
+    ONLINE: 'success',
     IDLE: 'info',
+    STANDBY: 'info',
+    INACTIVE: 'info',
+    OFFLINE: 'info',
+    DISABLED: 'info',
     MAINTENANCE: 'warning',
-    FAULT: 'danger'
+    FAULT: 'danger',
+    ERROR: 'danger',
+    STOPPED: 'warning',
   };
-  return map[status] || 'info';
+  return map[status?.toUpperCase()] || 'info';
 }
 
 function getStatusText(status: string) {
   const map: Record<string, string> = {
     RUNNING: '运行中',
+    ACTIVE: '运行中',
+    ONLINE: '在线',
     IDLE: '空闲',
+    STANDBY: '待机',
+    INACTIVE: '停用',
+    OFFLINE: '离线',
+    DISABLED: '已禁用',
     MAINTENANCE: '维护中',
-    FAULT: '故障'
+    FAULT: '故障',
+    ERROR: '故障',
+    STOPPED: '已停止',
   };
-  return map[status] || status;
+  return map[status?.toUpperCase()] || status;
 }
 </script>
 
@@ -115,7 +131,7 @@ function getStatusText(status: string) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="equipmentCode" label="设备编号" width="140" />
         <el-table-column prop="name" label="设备名称" min-width="150" show-overflow-tooltip />
         <el-table-column prop="model" label="型号" width="120" />
@@ -129,7 +145,7 @@ function getStatusText(status: string) {
         </el-table-column>
         <el-table-column prop="lastMaintenanceDate" label="上次维护" width="120" />
         <el-table-column label="操作" width="200" fixed="right" align="center">
-          <template #default>
+          <template #default="{ row }">
             <el-button type="primary" link size="small">查看</el-button>
             <el-button v-if="canWrite" type="primary" link size="small">维护</el-button>
             <el-button v-if="canWrite" type="primary" link size="small">编辑</el-button>

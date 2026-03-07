@@ -1,0 +1,105 @@
+appId: com.cretas.foodtrace
+---
+# Test 62: Restaurant Home Quick Actions + Profile Sub-screens
+# Verifies home page interactive elements and 我的 tab depth
+# Phase A: Fill remaining restaurant gaps
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant admin
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: ".*AI Insights.*|.*AI 智能洞察.*|.*Today.*Overview.*|.*首页.*"
+    timeout: 15000
+- takeScreenshot: screenshots/62-home
+
+# === Verify home quick actions (English or Chinese) ===
+- tapOn:
+    text: ".*Purchase.*|.*Staff.*|.*新建采购.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/62-quick-action-1
+
+# Back from quick action screen
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Try inventory/stock quick action
+- tapOn:
+    text: ".*Inventory.*|.*Stock.*|.*库存查询.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/62-quick-action-2
+
+# Back and recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Scroll to see more quick actions
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/62-scrolled-actions
+
+# Back and recovery
+- launchApp
+- waitForAnimationToEnd
+
+# === Navigate to 我的 (Profile) tab ===
+- takeScreenshot: screenshots/62-pre-profile-tab
+- tapOn: "我的"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*个人信息.*|.*Personal.*|.*修改密码.*|.*Change.*Password.*|.*我的.*"
+    timeout: 5000
+- takeScreenshot: screenshots/62-profile-main
+
+# === Try PersonalInfo sub-screen ===
+- tapOn:
+    text: ".*Personal.*Info.*|.*个人信息.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/62-personal-info
+- back
+- waitForAnimationToEnd
+
+# === Try ChangePassword sub-screen ===
+- tapOn:
+    text: ".*Change.*Password.*|.*修改密码.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/62-change-password
+- back
+- waitForAnimationToEnd
+
+# === Try HelpCenter sub-screen ===
+- tapOn:
+    text: ".*Help.*Center.*|.*帮助中心.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/62-help-center
+- back
+- waitForAnimationToEnd
+
+# === Try About sub-screen ===
+- tapOn:
+    text: ".*About.*|.*关于.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/62-about
+- back
+- waitForAnimationToEnd
+
+# Return to home
+- tapOn:
+    text: ".*Home.*|.*首页.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/62-complete

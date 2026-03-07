@@ -233,9 +233,9 @@ public class ArenaRLConfig {
     public static class LlmConfig {
         /**
          * 使用的模型名称
-         * 推荐: qwen-turbo (快速) 或 qwen-plus (准确)
+         * free quota (was: qwen-turbo)
          */
-        private String model = "qwen-turbo";
+        private String model = "qwen3.5-27b";
 
         /**
          * 单次比较超时时间 (毫秒)

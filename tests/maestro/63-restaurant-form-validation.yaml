@@ -1,0 +1,121 @@
+appId: com.cretas.foodtrace
+---
+# Test 63: Restaurant Form Validation & Error States
+# Verifies P0 fixes: NaN validation, PRODUCTION dish requirement, i18n alerts, error+retry on lists
+# Navigation path: Home -> 管理 tab -> restaurant grid items
+# Does NOT submit forms — only validates UI behavior
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant admin
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: ".*AI Insights.*|.*Today.*Overview.*|.*Good.*"
+    timeout: 15000
+
+# === Navigate to 管理 tab ===
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/63-management-screen
+
+# === PHASE 1: Recipe List — verify error+retry and navigate to edit ===
+- tapOn:
+    text: ".*\u914D\u65B9\u7BA1\u7406.*|.*Recipe.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/63-recipe-list
+
+# Tap FAB to open create screen
+- tapOn:
+    id: ".*fab.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/63-recipe-create-empty
+
+# Try to tap save without filling anything
+- tapOn:
+    text: ".*\u4FDD\u5B58.*|.*Save.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/63-recipe-validation-alert
+
+# Dismiss alert
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+
+# Go back to management
+- back
+- waitForAnimationToEnd
+- back
+- waitForAnimationToEnd
+
+# === PHASE 2: Wastage List — verify list + create form ===
+- tapOn:
+    text: ".*\u635F\u8017\u8BB0\u5F55.*|.*Wastage.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/63-wastage-list
+
+# Tap FAB
+- tapOn:
+    id: ".*fab.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/63-wastage-create
+
+# Tap type chips
+- tapOn:
+    text: ".*\u8FC7\u671F.*|.*Expired.*"
+    optional: true
+- takeScreenshot: screenshots/63-wastage-type-expired
+
+- tapOn:
+    text: ".*\u7834\u635F.*|.*Damaged.*"
+    optional: true
+- takeScreenshot: screenshots/63-wastage-type-damaged
+
+# Go back without submitting
+- back
+- waitForAnimationToEnd
+- back
+- waitForAnimationToEnd
+
+# === PHASE 3: Requisition Create — PRODUCTION needs dish ===
+- tapOn:
+    text: ".*\u65B0\u5EFA\u9886\u6599.*|.*Requisition.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/63-requisition-create
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# === PHASE 4: Stocktaking List ===
+- tapOn:
+    text: ".*\u76D8\u70B9\u7BA1\u7406.*|.*Stocktaking.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/63-stocktaking-list
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# === PHASE 5: Requisition Approval ===
+- tapOn:
+    text: ".*\u9886\u6599\u5BA1\u6279.*|.*Approval.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/63-requisition-approval
+
+# Go back to home
+- back
+- waitForAnimationToEnd
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/63-done

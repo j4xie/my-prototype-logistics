@@ -1,0 +1,185 @@
+{
+  "IL_TEATRO (西餐)": {
+    "rows": 524,
+    "detected": {
+      "store": "门店名称",
+      "product": "商品名称",
+      "category": "商品分类",
+      "order_method": "点单方式",
+      "qty_single": "单卖数量(不含套餐子商品)",
+      "qty_combo": null,
+      "amount": "销售金额",
+      "actual": "实收",
+      "date": null,
+      "supplier": null,
+      "ingredient": null,
+      "inbound_qty": null,
+      "inbound_cost": null
+    }
+  },
+  "上马火锅 (火锅)": {
+    "rows": 252,
+    "detected": {
+      "store": "门店名称",
+      "product": "商品名称",
+      "category": "商品分类",
+      "order_method": "点单方式",
+      "qty_single": "单卖数量(不含套餐子商品)",
+      "qty_combo": null,
+      "amount": "销售金额",
+      "actual": "实收",
+      "date": null,
+      "supplier": null,
+      "ingredient": null,
+      "inbound_qty": null,
+      "inbound_cost": null
+    }
+  },
+  "唏嘛香 (牛肉面)": {
+    "rows": 203,
+    "detected": {
+      "store": "门店名称",
+      "product": "商品名称",
+      "category": "商品分类",
+      "order_method": "点单方式",
+      "qty_single": "单卖数量(不含套餐子商品)",
+      "qty_combo": null,
+      "amount": "销售金额",
+      "actual": "实收",
+      "date": null,
+      "supplier": null,
+      "ingredient": null,
+      "inbound_qty": null,
+      "inbound_cost": null
+    }
+  },
+  "御九井 (日料)": {
+    "rows": 436,
+    "detected": {
+      "store": "门店名称",
+      "product": "商品名称",
+      "category": "商品分类",
+      "order_method": "点单方式",
+      "qty_single": "单卖数量(不含套餐子商品)",
+      "qty_combo": null,
+      "amount": "销售金额",
+      "actual": "实收",
+      "date": null,
+      "supplier": null,
+      "ingredient": null,
+      "inbound_qty": null,
+      "inbound_cost": null
+    }
+  },
+  "永和豆浆 (快餐)": {
+    "rows": 102,
+    "detected": {
+      "store": "门店名称",
+      "product": "商品名称",
+      "category": "商品分类",
+      "order_method": "点单方式",
+      "qty_single": "单卖数量(不含套餐子商品)",
+      "qty_combo": null,
+      "amount": "销售金额",
+      "actual": "实收",
+      "date": null,
+      "supplier": null,
+      "ingredient": null,
+      "inbound_qty": null,
+      "inbound_cost": null
+    }
+  },
+  "馨厨香 (中式海鲜)": {
+    "rows": 2175,
+    "detected": {
+      "store": "门店名称",
+      "product": "商品名称",
+      "category": "商品分类",
+      "order_method": "点单方式",
+      "qty_single": "单卖数量(不含套餐子商品)",
+      "qty_combo": null,
+      "amount": "销售金额",
+      "actual": "实收",
+      "date": null,
+      "supplier": null,
+      "ingredient": null,
+      "inbound_qty": null,
+      "inbound_cost": null
+    }
+  },
+  "东门口 (火锅) CSV": {
+    "rows": 3463,
+    "cols": [
+      "门店名称:九记·東門口",
+      "Unnamed: 1",
+      "Unnamed: 2",
+      "Unnamed: 3",
+      "Unnamed: 4"
+    ],
+    "detected": {
+      "store": "门店名称:九记·東門口",
+      "product": null,
+      "category": null,
+      "order_method": null,
+      "qty_single": null,
+      "qty_combo": null,
+      "amount": null,
+      "actual": null,
+      "date": null,
+      "supplier": null,
+      "ingredient": null,
+      "inbound_qty": null,
+      "inbound_cost": null
+    }
+  },
+  "青花椒 (鱼类) CSV": {
+    "rows": 4053,
+    "cols": [
+      "门店名称:青花椒砂锅鱼",
+      "Unnamed: 1",
+      "Unnamed: 2",
+      "Unnamed: 3",
+      "Unnamed: 4"
+    ],
+    "detected": {
+      "store": "门店名称:青花椒砂锅鱼",
+      "product": null,
+      "category": null,
+      "order_method": null,
+      "qty_single": null,
+      "qty_combo": null,
+      "amount": null,
+      "actual": null,
+      "date": null,
+      "supplier": null,
+      "ingredient": null,
+      "inbound_qty": null,
+      "inbound_cost": null
+    }
+  },
+  "东门口采购入库": {
+    "rows": 11097,
+    "cols": [
+      "门店名称:九记·東門口",
+      "Unnamed: 1",
+      "Unnamed: 2",
+      "Unnamed: 3",
+      "Unnamed: 4"
+    ],
+    "detected": {
+      "store": "门店名称:九记·東門口",
+      "product": null,
+      "category": null,
+      "order_method": null,
+      "qty_single": null,
+      "qty_combo": null,
+      "amount": null,
+      "actual": null,
+      "date": null,
+      "supplier": null,
+      "ingredient": null,
+      "inbound_qty": null,
+      "inbound_cost": null
+    }
+  }
+}

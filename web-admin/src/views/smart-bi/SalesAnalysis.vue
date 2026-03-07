@@ -40,6 +40,7 @@ import {
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
+const rootRef = ref<HTMLDivElement>();
 
 // 筛选条件
 const dateRange = ref<[Date, Date] | null>(null);
@@ -529,6 +530,16 @@ async function loadSalesData() {
   trendLoading.value = true;
   pieLoading.value = true;
 
+  if (!factoryId.value) {
+    loadError.value = '未找到工厂ID，请重新登录';
+    loading.value = false;
+    kpiLoading.value = false;
+    rankingLoading.value = false;
+    trendLoading.value = false;
+    pieLoading.value = false;
+    return;
+  }
+
   try {
     // Load overview data first (contains KPIs, charts, rankings in unified response)
     await loadOverviewData();
@@ -555,10 +566,10 @@ async function loadSalesData() {
     }
     // Auto-switch to uploaded data if system data is empty and uploads exist
     const allZero = kpiCards.value.length === 0 || kpiCards.value.every(c => c.rawValue == null || c.rawValue === 0);
-    if (allZero && dataSources.value.length > 0) {
-      const firstUpload = dataSources.value[0];
-      selectedDataSource.value = String(firstUpload.id);
-      await loadDynamicSalesData(firstUpload.id);
+    const validUpload = dataSources.value.find(ds => ds.id && ds.fileName);
+    if (allZero && validUpload) {
+      selectedDataSource.value = String(validUpload.id);
+      await loadDynamicSalesData(validUpload.id);
       return;
     }
   } catch (error) {
@@ -660,7 +671,7 @@ async function loadOverviewData() {
       endDate: formatDate(dateRange.value[1]),
       groupBy: dimensionType.value, // daily/weekly/monthly
     };
-    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
+    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params, _silent: true } as never);
     if (response.success && response.data) {
       // Handle double-wrapped response: interceptor wraps {code,data:{...}} into {success,data:{code,data:{...}}}
       const raw = response.data as Record<string, unknown>;
@@ -673,8 +684,8 @@ async function loadOverviewData() {
       console.warn('Sales overview returned non-success:', response.message);
     }
   } catch (error) {
-    console.error('加载销售概览失败:', error);
-    // Don't show ElMessage error here - will show loadError if all calls fail
+    console.warn('加载销售概览失败:', error);
+    // Silent - will show loadError if all calls fail
   } finally {
     kpiLoading.value = false;
   }
@@ -692,7 +703,7 @@ async function loadRankingData() {
       endDate: formatDate(dateRange.value[1]),
       dimension: 'salesperson'
     };
-    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
+    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params, _silent: true } as never);
     if (response.success && response.data) {
       const data = response.data as Record<string, unknown>;
       // May return { ranking: [...] } or unified response with overview.rankings
@@ -727,7 +738,7 @@ async function loadTrendData() {
       endDate: formatDate(dateRange.value[1]),
       dimension: 'trend'
     };
-    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
+    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params, _silent: true } as never);
     if (response.success && response.data) {
       const data = response.data as Record<string, unknown>;
       if (data.chart) {
@@ -757,7 +768,7 @@ async function loadProductData() {
       endDate: formatDate(dateRange.value[1]),
       dimension: 'product'
     };
-    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
+    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params, _silent: true } as never);
     if (response.success && response.data) {
       const data = response.data as Record<string, unknown>;
       if (data.chart) {
@@ -795,6 +806,10 @@ function initCharts() {
   initTrendChart();
   initPieChart();
   window.addEventListener('resize', handleResize);
+  if (rootRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(rootRef.value);
+  }
 }
 
 function initTrendChart() {
@@ -916,8 +931,8 @@ function updateTrendChart() {
             { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
           ])
         },
-        lineStyle: { width: 3, color: '#409EFF' },
-        itemStyle: { color: '#409EFF' },
+        lineStyle: { width: 3, color: '#1B65A8' },
+        itemStyle: { color: '#1B65A8' },
         markPoint: salesData.some(v => v < 0) ? {
           data: [
             { type: 'min', name: '最低值', symbol: 'pin', symbolSize: 40, label: { formatter: '{c}', fontSize: 10 } }
@@ -956,8 +971,8 @@ function updateTrendChart() {
             { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
           ])
         },
-        lineStyle: { width: 3, color: '#409EFF' },
-        itemStyle: { color: '#409EFF' },
+        lineStyle: { width: 3, color: '#1B65A8' },
+        itemStyle: { color: '#1B65A8' },
         markPoint: salesData.some(v => v < 0) ? {
           data: [
             { type: 'min', name: '最低值', symbol: 'pin', symbolSize: 40, label: { formatter: '{c}', fontSize: 10 } }
@@ -1012,7 +1027,7 @@ function updatePieChart() {
   if (!pieChart) return;
 
   // 预定义颜色
-  const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#00CED1', '#FF69B4', '#8A2BE2'];
+  const colors = ['#1B65A8', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#00CED1', '#FF69B4', '#8A2BE2'];
 
   // 从 API 数据中提取饼图数据
   const pieData = config.data.map((item, index) => ({
@@ -1057,9 +1072,15 @@ function updatePieChart() {
   pieChart.setOption(option, true);
 }
 
+let resizeObserver: ResizeObserver | null = null;
+let resizeRaf = 0;
 function handleResize() {
-  trendChart?.resize();
-  pieChart?.resize();
+  if (resizeRaf) return;
+  resizeRaf = requestAnimationFrame(() => {
+    trendChart?.resize();
+    pieChart?.resize();
+    resizeRaf = 0;
+  });
 }
 
 /**
@@ -1178,6 +1199,8 @@ function handleRefresh() {
 }
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
   window.removeEventListener('resize', handleResize);
   trendChart?.dispose();
   pieChart?.dispose();
@@ -1185,7 +1208,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="sales-analysis-page">
+  <div ref="rootRef" class="sales-analysis-page">
     <div class="page-header">
       <div class="header-left">
         <h1>销售分析</h1>
@@ -1215,7 +1238,7 @@ onUnmounted(() => {
             <el-option
               v-for="ds in dataSources"
               :key="ds.id"
-              :label="`${ds.fileName}${ds.sheetName ? ' - ' + ds.sheetName : ''}`"
+              :label="`${ds.fileName || '未命名文件'}${ds.sheetName ? ' - ' + ds.sheetName : ''}`"
               :value="String(ds.id)"
             >
               <div class="datasource-option">
@@ -1426,7 +1449,7 @@ onUnmounted(() => {
           />
           <!-- Single category: show stat instead of useless full-circle pie -->
           <div v-else-if="useDynamicPie && pieDynamicConfig && pieDynamicConfig.data?.length === 1" class="single-category-stat">
-            <el-icon :size="40" color="#409EFF"><TrendCharts /></el-icon>
+            <el-icon :size="40" color="#1B65A8"><TrendCharts /></el-icon>
             <div class="stat-info">
               <div class="stat-label">{{ pieDynamicConfig.data[0]?.[pieDynamicConfig.xAxisField || 'name'] || '产品类别' }}</div>
               <div class="stat-value">100%</div>
@@ -1706,7 +1729,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #409EFF;
+      color: #1B65A8;
     }
   }
 }
@@ -1773,7 +1796,7 @@ onUnmounted(() => {
   .stat-value {
     font-size: 32px;
     font-weight: 700;
-    color: #409EFF;
+    color: #1B65A8;
     margin-bottom: 4px;
   }
 
@@ -1840,7 +1863,7 @@ onUnmounted(() => {
 .exploration-card {
   margin-top: 16px;
   border-radius: 8px;
-  border-left: 4px solid #409EFF;
+  border-left: 4px solid #1B65A8;
 
   .card-header {
     display: flex;
@@ -1849,7 +1872,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #409EFF;
+      color: #1B65A8;
     }
   }
 }

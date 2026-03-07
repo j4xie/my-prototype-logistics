@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import { getEfficiencyDashboard, type KPIItem, type EfficiencyDashboard } from '@/api/productionAnalytics';
 
 // ==================== 状态 ====================
@@ -68,8 +68,8 @@ function changeIcon(kpi: KPIItem) {
 }
 
 function changeColor(kpi: KPIItem) {
-  if (kpi.changeType === 'up') return kpi.key === 'defect_rate' ? '#ff4d4f' : '#52c41a';
-  if (kpi.changeType === 'down') return kpi.key === 'defect_rate' ? '#52c41a' : '#ff4d4f';
+  if (kpi.changeType === 'up') return kpi.key === 'defect_rate' ? '#F56C6C' : '#67C23A';
+  if (kpi.changeType === 'down') return kpi.key === 'defect_rate' ? '#67C23A' : '#F56C6C';
   return '#d9d9d9';
 }
 
@@ -90,10 +90,12 @@ let trendChart: echarts.ECharts | null = null;
 let rankingChart: echarts.ECharts | null = null;
 let hoursChart: echarts.ECharts | null = null;
 let heatmapChart: echarts.ECharts | null = null;
+let renderTimer: ReturnType<typeof setTimeout> | null = null;
 
 function renderCharts() {
   if (!dashboard.value) return;
-  setTimeout(() => {
+  if (renderTimer) clearTimeout(renderTimer);
+  renderTimer = setTimeout(() => {
     renderTrendChart();
     renderRankingChart();
     renderHoursChart();
@@ -116,7 +118,7 @@ function renderTrendChart() {
       name: '人效', type: 'line', data: data.map(d => d.efficiency), smooth: true,
       itemStyle: { color: '#667eea' },
       areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(102,126,234,0.3)' }, { offset: 1, color: 'rgba(102,126,234,0.02)' }] } },
-      markLine: { data: [{ type: 'average', name: '均值', lineStyle: { color: '#52c41a', type: 'dashed' }, label: { formatter: '均值 {c}' } }], silent: true },
+      markLine: { data: [{ type: 'average', name: '均值', lineStyle: { color: '#67C23A', type: 'dashed' }, label: { formatter: '均值 {c}' } }], silent: true },
     }],
   });
 }
@@ -142,7 +144,7 @@ function renderRankingChart() {
       data: values.map(v => ({
         value: v,
         itemStyle: {
-          color: v >= maxVal * 0.8 ? '#52c41a' : v >= maxVal * 0.5 ? '#faad14' : '#ff4d4f',
+          color: v >= maxVal * 0.8 ? '#67C23A' : v >= maxVal * 0.5 ? '#E6A23C' : '#F56C6C',
         },
       })),
       barMaxWidth: 20,
@@ -224,14 +226,37 @@ const rankingTable = computed(() => {
 
 // ==================== 生命周期 ====================
 
-onMounted(() => {
-  loadData();
-  window.addEventListener('resize', () => {
+let resizeRaf = 0;
+function handleResize() {
+  if (resizeRaf) return;
+  resizeRaf = requestAnimationFrame(() => {
     trendChart?.resize();
     rankingChart?.resize();
     hoursChart?.resize();
     heatmapChart?.resize();
+    resizeRaf = 0;
   });
+}
+
+let resizeObserver: ResizeObserver | null = null;
+
+onMounted(() => {
+  loadData();
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    document.querySelectorAll('.chart').forEach(el => resizeObserver!.observe(el));
+  }
+  window.addEventListener('resize', handleResize);
+});
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+  if (renderTimer) clearTimeout(renderTimer);
+  window.removeEventListener('resize', handleResize);
+  trendChart?.dispose();
+  rankingChart?.dispose();
+  hoursChart?.dispose();
+  heatmapChart?.dispose();
 });
 </script>
 
@@ -295,14 +320,14 @@ onMounted(() => {
     <!-- 排名表格 -->
     <div class="detail-section" v-if="rankingTable.length">
       <h3>员工人效排名</h3>
-      <el-table :data="rankingTable" stripe border size="small" style="width: 100%">
+      <el-table empty-text="暂无数据" :data="rankingTable" stripe border size="small" style="width: 100%">
         <el-table-column prop="rank" label="排名" width="60" align="center" />
         <el-table-column prop="workerName" label="员工姓名" min-width="120" />
         <el-table-column prop="totalOutput" label="总产出" width="100" align="right" />
         <el-table-column prop="totalHours" label="总工时(h)" width="100" align="right" />
         <el-table-column prop="efficiency" label="人效(产出/h)" width="120" align="right">
           <template #default="{ row }">
-            <span :style="{ color: row.efficiency >= 10 ? '#52c41a' : row.efficiency >= 5 ? '#faad14' : '#ff4d4f', fontWeight: 600 }">
+            <span :style="{ color: row.efficiency >= 10 ? '#67C23A' : row.efficiency >= 5 ? '#E6A23C' : '#F56C6C', fontWeight: 600 }">
               {{ row.efficiency }}
             </span>
           </template>

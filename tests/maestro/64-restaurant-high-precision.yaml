@@ -1,0 +1,395 @@
+appId: com.cretas.foodtrace
+---
+# Test 64: HIGH-PRECISION Restaurant Module Test
+# Tests EVERY button, EVERY field, EVERY data value, EVERY validation rule
+# NOT just "open page + screenshot" — this asserts actual content
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# =====================================================
+# PHASE 0: LOGIN + HOME ASSERTIONS
+# =====================================================
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: ".*AI Insights.*|.*Good.*"
+    timeout: 15000
+
+# Assert home page has real data (not empty/mock)
+- assertVisible: ".*restaurant_admin1.*"
+- assertVisible: "AI Insights"
+- assertVisible: "Today's Overview"
+- assertVisible: "Today's Orders"
+- assertVisible: "Pending Approval"
+- assertVisible: "Alerts"
+- assertVisible: "Quick Actions"
+- assertVisible: "Staff"
+
+# Assert bottom tabs exist
+- assertVisible: "\u9996\u9875"
+- assertVisible: "AI\u5206\u6790"
+- assertVisible: "\u667A\u80FD\u5206\u6790"
+- assertVisible: "\u7BA1\u7406"
+- assertVisible: "\u6211\u7684"
+- takeScreenshot: screenshots/64-home-verified
+
+# =====================================================
+# PHASE 1: MANAGEMENT SCREEN — every grid item visible
+# =====================================================
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# Assert header
+- assertVisible: "Management"
+
+# Assert restaurant ops section exists with all 5 items
+- assertVisible: "Restaurant Operations"
+- assertVisible: "Recipes"
+- assertVisible: "New Requisition"
+- assertVisible: "Approval"
+- assertVisible: "Wastage"
+- assertVisible: "Stocktaking"
+
+# Assert business section
+- assertVisible: "Business Management"
+- assertVisible: "Dishes"
+- assertVisible: "Ingredient Types"
+
+# Assert core section
+- assertVisible: "Core Management"
+- assertVisible: "Employees"
+- assertVisible: "Departments"
+- takeScreenshot: screenshots/64-management-all-verified
+
+# =====================================================
+# PHASE 2: RECIPE LIST — data integrity check
+# =====================================================
+- tapOn: "Recipes"
+- waitForAnimationToEnd
+
+# Assert page structure
+- assertVisible: "Recipes"
+- assertVisible: "40 Items"
+- assertVisible: "Search dish or ingredient"
+
+# Assert filter chips
+- assertVisible: "All"
+- assertVisible: "Active"
+- assertVisible: "Inactive"
+
+# Assert first recipe card has complete data
+- assertVisible: "F002-PT-001"
+- assertVisible: "Active"
+- assertVisible: "Main"
+- assertVisible: "Auxiliary"
+- assertVisible: "F002-RM-001"
+- assertVisible: "0.2 kg"
+- takeScreenshot: screenshots/64-recipe-list-data-verified
+
+# --- Test search functionality ---
+- tapOn: "Search dish or ingredient"
+- inputText: "PT-003"
+- hideKeyboard
+- waitForAnimationToEnd
+# After search, PT-003 should be visible, PT-001 should not
+- assertVisible: "F002-PT-003"
+- takeScreenshot: screenshots/64-recipe-search-result
+
+# Clear search
+- tapOn: "Search dish or ingredient"
+- eraseText: 6
+- hideKeyboard
+- waitForAnimationToEnd
+
+# --- Test filter chips ---
+- tapOn: "Active"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/64-recipe-filter-active
+# All visible cards should show "Active" status
+- assertVisible: "Active"
+
+- tapOn: "All"
+- waitForAnimationToEnd
+
+# --- Test FAB exists ---
+- assertVisible:
+    id: ".*fab.*"
+- takeScreenshot: screenshots/64-recipe-list-complete
+
+# =====================================================
+# PHASE 3: RECIPE CREATE — form validation deep test
+# =====================================================
+- tapOn:
+    id: ".*fab.*"
+- waitForAnimationToEnd
+
+# Assert create form structure
+- assertVisible: "New Recipe"
+- assertVisible: "Back"
+- assertVisible: "Select Dish *"
+- assertVisible: "Select Ingredient *"
+- assertVisible: "Standard Qty *"
+- assertVisible: "Unit"
+- assertVisible: "Save"
+- assertVisible: "PT-XXX"
+- assertVisible: "MT-XXX"
+- assertVisible: "kg"
+- takeScreenshot: screenshots/64-recipe-form-structure
+
+# TEST 1: Submit empty form → should show validation error (lists missing fields)
+- scrollUntilVisible:
+    element: "Save"
+    direction: DOWN
+- tapOn: "Save"
+- waitForAnimationToEnd
+- assertVisible: ".*Select Dish.*"
+- takeScreenshot: screenshots/64-recipe-empty-validation
+- tapOn: "OK"
+- waitForAnimationToEnd
+
+# TEST 2: Fill dish + material but leave qty empty → still fails (shows Standard Qty)
+- tapOn: "PT-XXX"
+- inputText: "PT-TEST"
+- hideKeyboard
+- tapOn: "MT-XXX"
+- inputText: "MT-TEST"
+- hideKeyboard
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: "Save"
+    direction: DOWN
+- tapOn: "Save"
+- waitForAnimationToEnd
+- assertVisible: ".*Standard Qty.*"
+- takeScreenshot: screenshots/64-recipe-partial-validation
+- tapOn: "OK"
+- waitForAnimationToEnd
+
+# Go back to recipe list
+- tapOn: "Back"
+- waitForAnimationToEnd
+
+# =====================================================
+# PHASE 4: RECIPE DETAIL — verify drill-down shows correct data
+# =====================================================
+# Tap first card to open detail
+- tapOn: "F002-PT-001"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/64-recipe-detail
+
+# Go back
+- back
+- waitForAnimationToEnd
+- back
+- waitForAnimationToEnd
+
+# =====================================================
+# PHASE 5: WASTAGE — form fields + type chip interaction
+# =====================================================
+- tapOn: "Wastage"
+- waitForAnimationToEnd
+
+# Assert wastage list structure
+- assertVisible: "Wastage Records"
+- assertVisible: "All"
+- takeScreenshot: screenshots/64-wastage-list-verified
+
+# Open create form
+- tapOn:
+    id: ".*fab.*"
+- waitForAnimationToEnd
+
+# Assert all form elements
+- assertVisible: "Record Wastage"
+- assertVisible: "Back"
+- assertVisible: "Wastage Type"
+- assertVisible: "Select Ingredient *"
+- assertVisible: "Quantity *"
+- assertVisible: "Unit"
+- assertVisible: "Est. Cost"
+- assertVisible: "Notes"
+- assertVisible: "Save Draft"
+- assertVisible: "Submit"
+- takeScreenshot: screenshots/64-wastage-form-structure
+
+# TEST: Tap each type chip and verify it changes
+- tapOn:
+    text: ".*Da.*"
+- takeScreenshot: screenshots/64-wastage-chip-damaged
+- tapOn:
+    text: ".*Spoi.*"
+- takeScreenshot: screenshots/64-wastage-chip-spoiled
+- tapOn:
+    text: ".*Pro.*"
+- takeScreenshot: screenshots/64-wastage-chip-processing
+- tapOn:
+    text: ".*Other.*"
+- takeScreenshot: screenshots/64-wastage-chip-other
+- tapOn:
+    text: ".*Expi.*"
+- takeScreenshot: screenshots/64-wastage-chip-expired-reselect
+
+# TEST: Submit empty → validation (shows missing fields)
+- tapOn: "Submit"
+- waitForAnimationToEnd
+- assertVisible: ".*Select Ingredient.*"
+- tapOn: "OK"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/64-wastage-empty-validation
+
+# Go back
+- tapOn: "Back"
+- waitForAnimationToEnd
+- back
+- waitForAnimationToEnd
+
+# =====================================================
+# PHASE 6: REQUISITION CREATE — type toggle + dish requirement
+# =====================================================
+- tapOn: "New Requisition"
+- waitForAnimationToEnd
+
+# Assert form structure
+- assertVisible: "New Requisition"
+- assertVisible: "Type"
+- assertVisible: "By Recipe"
+- assertVisible: "Manual"
+- assertVisible: "Select Dish"
+- assertVisible: "Select Ingredient *"
+- assertVisible: "Quantity *"
+- assertVisible: "Notes"
+- assertVisible: "Save Draft"
+- assertVisible: "Submit"
+- takeScreenshot: screenshots/64-requisition-form-verified
+
+# TEST: Toggle to Manual → dish field might change behavior
+- tapOn: "Manual"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/64-requisition-manual-mode
+
+# TEST: Toggle back to By Recipe
+- tapOn: "By Recipe"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/64-requisition-recipe-mode
+
+# Go back
+- tapOn: "Back"
+- waitForAnimationToEnd
+
+# =====================================================
+# PHASE 7: STOCKTAKING LIST — data + filters + summary button
+# =====================================================
+- tapOn: "Stocktaking"
+- waitForAnimationToEnd
+
+# Assert list structure
+- assertVisible: "Stocktaking Records"
+- assertVisible: "Stocktaking Summary"
+- assertVisible: "Search ingredient"
+- assertVisible: "8 Items"
+
+# Assert filter chips
+- assertVisible: "All"
+- assertVisible: "In Progress"
+- assertVisible: "Completed"
+- assertVisible: "Cancelled"
+
+# Assert real data
+- assertVisible: "STK-20260303-002"
+- assertVisible: "F002-RM-006"
+- assertVisible: "12 kg"
+- assertVisible: "In Progress"
+- takeScreenshot: screenshots/64-stocktaking-data-verified
+
+# TEST: Filter to "Completed" only
+- tapOn: "Completed"
+- waitForAnimationToEnd
+- assertVisible: "Completed"
+- takeScreenshot: screenshots/64-stocktaking-filter-completed
+
+# TEST: Filter to "In Progress"
+- tapOn: "In Progress"
+- waitForAnimationToEnd
+- assertVisible: "In Progress"
+- takeScreenshot: screenshots/64-stocktaking-filter-inprogress
+
+# Reset to All
+- tapOn: "All"
+- waitForAnimationToEnd
+
+# TEST: Stocktaking Summary button
+- tapOn: "Stocktaking Summary"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/64-stocktaking-summary
+
+# Go back
+- back
+- waitForAnimationToEnd
+- back
+- waitForAnimationToEnd
+
+# =====================================================
+# PHASE 8: REQUISITION APPROVAL — real data + action buttons
+# =====================================================
+- tapOn: "Approval"
+- waitForAnimationToEnd
+
+# Assert approval screen structure
+- assertVisible: "Approve Requisition"
+- assertVisible: "Back"
+
+# Assert real pending data
+- assertVisible: "REQ-20260303-005"
+- assertVisible: "Pending"
+- assertVisible: "Ingredient"
+- assertVisible: "F002-RM-006"
+- assertVisible: "Requested"
+- assertVisible: "7.5 kg"
+- assertVisible: "Date"
+- assertVisible: "Notes"
+
+# Assert action buttons for each card
+- assertVisible: "Actual Quantity"
+- assertVisible: "Approve"
+- assertVisible: "Reason"
+- assertVisible: "Reject"
+
+# Assert second pending item
+- assertVisible: "REQ-20260303-004"
+- assertVisible: "3 kg"
+- takeScreenshot: screenshots/64-approval-data-verified
+
+# TEST: Try approve without filling actual qty → should show error
+- tapOn:
+    text: "Approve"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/64-approval-no-qty-error
+# Dismiss if alert shown
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+
+# TEST: Try reject without filling reason → should show error
+- tapOn:
+    text: "Reject"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/64-reject-no-reason-error
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+
+# Go back to home
+- tapOn: "Back"
+- waitForAnimationToEnd
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# Final verification: we're back on home
+- assertVisible: "AI Insights"
+- assertVisible: "Today's Overview"
+- takeScreenshot: screenshots/64-final-home

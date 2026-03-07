@@ -14,7 +14,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple, Callable
-from concurrent.futures import ThreadPoolExecutor
+
 
 import pandas as pd
 import openpyxl
@@ -168,7 +168,8 @@ class ParallelProcessor:
         self.max_workers = max_workers
         self.max_concurrent_llm_calls = max_concurrent_llm_calls
         self._llm_semaphore = asyncio.Semaphore(max_concurrent_llm_calls)
-        self._executor = ThreadPoolExecutor(max_workers=max_workers)
+        from .shared_pool import shared_executor
+        self._executor = shared_executor
 
     async def process_workbook(
         self,

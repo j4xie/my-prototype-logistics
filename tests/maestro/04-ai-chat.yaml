@@ -1,0 +1,33 @@
+appId: com.cretas.foodtrace
+---
+# Test 04: AI Analysis Tab
+# Verifies AI tab loads and shows content
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login fresh
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Navigate to AI tab (exact match)
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/04-ai-tab
+
+# Explore AI tab content
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/04-ai-scrolled
+
+# Swipe back up
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/04-ai-top

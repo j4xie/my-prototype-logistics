@@ -2,13 +2,23 @@ package com.cretas.aims.service.handler;
 
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
+import com.cretas.aims.entity.Factory;
+import com.cretas.aims.entity.ProductType;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.entity.MaterialBatch;
+import com.cretas.aims.entity.enums.FactoryType;
+import com.cretas.aims.entity.enums.PurchaseOrderStatus;
+import com.cretas.aims.entity.enums.SalesOrderStatus;
+import com.cretas.aims.entity.inventory.PurchaseOrder;
+import com.cretas.aims.entity.restaurant.WastageRecord;
+import com.cretas.aims.repository.FactoryRepository;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
+import com.cretas.aims.repository.inventory.PurchaseOrderRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.repository.inventory.SalesOrderItemRepository;
+import com.cretas.aims.repository.restaurant.WastageRecordRepository;
 import com.cretas.aims.util.ErrorSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,13 +63,28 @@ import java.util.stream.Collectors;
  * - RESTAURANT_PEAK_HOURS_ANALYSIS: 高峰时段分析
  * - RESTAURANT_MARGIN_ANALYSIS: 毛利率分析
  *
- * 损耗管理类 (3个):
+ * 损耗管理类 (3+1个):
  * - RESTAURANT_WASTAGE_SUMMARY: 损耗汇总
  * - RESTAURANT_WASTAGE_RATE: 损耗率查询
  * - RESTAURANT_WASTAGE_ANOMALY: 损耗异常检测
+ * - RESTAURANT_WASTAGE_RECORD: 记录损耗（写操作）
+ *
+ * 菜品管理写操作类 (3个):
+ * - RESTAURANT_DISH_CREATE: 新增菜品
+ * - RESTAURANT_DISH_UPDATE: 修改菜品
+ * - RESTAURANT_DISH_DELETE: 下架菜品
+ *
+ * 营业分析补充类 (4个):
+ * - RESTAURANT_DISH_PRODUCT_SALES_RANKING: 按产品维度销量排行
+ * - RESTAURANT_AVG_TICKET: 客单价查询
+ * - RESTAURANT_RETURN_RATE: 退单率查询
+ * - RESTAURANT_TABLE_TURNOVER: 翻台率估算
+ *
+ * 采购操作类 (1个):
+ * - RESTAURANT_PROCUREMENT_CREATE: 创建采购单
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2026-02-20
  */
 @Slf4j
@@ -67,11 +92,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RestaurantIntentHandler implements IntentHandler {
 
+    private final FactoryRepository factoryRepository;
     private final ProductTypeRepository productTypeRepository;
     private final MaterialBatchRepository materialBatchRepository;
     private final RawMaterialTypeRepository rawMaterialTypeRepository;
     private final SalesOrderRepository salesOrderRepository;
     private final SalesOrderItemRepository salesOrderItemRepository;
+    private final PurchaseOrderRepository purchaseOrderRepository;
+    private final WastageRecordRepository wastageRecordRepository;
 
     @Override
     public String getSupportedCategory() {
@@ -85,6 +113,24 @@ public class RestaurantIntentHandler implements IntentHandler {
         String intentCode = intentConfig.getIntentCode();
         log.info("RestaurantIntentHandler处理: intentCode={}, factoryId={}, userId={}",
                 intentCode, factoryId, userId);
+
+        // 校验 factoryType — 仅餐饮业态允许使用
+        Factory factory = factoryRepository.findById(factoryId).orElse(null);
+        if (factory == null || factory.getType() != FactoryType.RESTAURANT) {
+            String msg = "此意图仅适用于餐饮业态";
+            log.warn("factoryType校验失败: factoryId={}, type={}, intentCode={}",
+                    factoryId, factory != null ? factory.getType() : "null", intentCode);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intentCode)
+                    .intentName(intentConfig.getIntentName())
+                    .intentCategory("RESTAURANT")
+                    .status("FAILED")
+                    .message(msg)
+                    .formattedText(msg)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
 
         try {
             return switch (intentCode) {
@@ -110,6 +156,18 @@ public class RestaurantIntentHandler implements IntentHandler {
                 case "RESTAURANT_WASTAGE_SUMMARY"       -> handleWastageSummary(factoryId, request, intentConfig);
                 case "RESTAURANT_WASTAGE_RATE"          -> handleWastageRate(factoryId, request, intentConfig);
                 case "RESTAURANT_WASTAGE_ANOMALY"       -> handleWastageAnomaly(factoryId, intentConfig);
+                // 菜品管理类 (写操作)
+                case "RESTAURANT_DISH_CREATE"           -> handleDishCreate(factoryId, request, intentConfig, userId);
+                case "RESTAURANT_DISH_UPDATE"           -> handleDishUpdate(factoryId, request, intentConfig);
+                case "RESTAURANT_DISH_DELETE"            -> handleDishDelete(factoryId, request, intentConfig);
+                case "RESTAURANT_DISH_PRODUCT_SALES_RANKING" -> handleDishProductSalesRanking(factoryId, request, intentConfig);
+                // 营业额补充
+                case "RESTAURANT_AVG_TICKET"            -> handleAvgTicket(factoryId, request, intentConfig);
+                case "RESTAURANT_RETURN_RATE"            -> handleReturnRate(factoryId, request, intentConfig);
+                case "RESTAURANT_TABLE_TURNOVER"         -> handleTableTurnover(factoryId, request, intentConfig);
+                // 采购 & 损耗写操作
+                case "RESTAURANT_PROCUREMENT_CREATE"     -> handleProcurementCreate(factoryId, request, intentConfig, userId);
+                case "RESTAURANT_WASTAGE_RECORD"         -> handleWastageRecordCreate(factoryId, request, intentConfig, userId);
                 default -> {
                     log.warn("未知的RESTAURANT意图: {}", intentCode);
                     String msg = "暂不支持此餐饮操作: " + intentCode;
@@ -1114,6 +1172,541 @@ public class RestaurantIntentHandler implements IntentHandler {
                     "损耗异常检测功能正在建设中。建议定期盘点食材库存，对比理论用量与实际用量，发现异常及时上报。",
                     null);
         }
+    }
+
+    // ==================== 菜品管理写操作类 ====================
+
+    /**
+     * RESTAURANT_DISH_CREATE — 新增菜品
+     * 从 params 中解析 name/price/category，创建新的 ProductType 记录
+     */
+    private IntentExecuteResponse handleDishCreate(String factoryId, IntentExecuteRequest request,
+                                                     AIIntentConfig intentConfig, Long userId) {
+        Map<String, Object> context = request.getContext();
+        if (context == null) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    "请提供菜品信息，例如：「添加菜品 宫保鸡丁 价格38 分类川菜」", null);
+        }
+
+        String name = context.get("name") != null ? context.get("name").toString() : null;
+        if (name == null || name.trim().isEmpty()) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    "请提供菜品名称（name），例如：「添加菜品 宫保鸡丁」", null);
+        }
+
+        // 检查重名
+        if (productTypeRepository.findByFactoryIdAndName(factoryId, name.trim()).isPresent()) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    String.format("菜品「%s」已存在，请勿重复添加。", name.trim()), null);
+        }
+
+        ProductType dish = new ProductType();
+        dish.setFactoryId(factoryId);
+        dish.setName(name.trim());
+        dish.setCode("DISH-" + System.currentTimeMillis());
+        dish.setUnit("份");
+        dish.setIsActive(true);
+        dish.setCreatedBy(userId != null ? userId : 0L);
+
+        if (context.get("price") != null) {
+            try {
+                dish.setUnitPrice(new BigDecimal(context.get("price").toString()));
+            } catch (NumberFormatException e) {
+                log.warn("菜品价格解析失败: {}", context.get("price"));
+            }
+        }
+        if (context.get("category") != null) {
+            dish.setCategory(context.get("category").toString());
+        }
+
+        productTypeRepository.save(dish);
+        log.info("新增菜品成功: factoryId={}, name={}, id={}", factoryId, name, dish.getId());
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("id", dish.getId());
+        result.put("名称", dish.getName());
+        result.put("编码", dish.getCode());
+        result.put("单价", dish.getUnitPrice() != null ? "¥" + dish.getUnitPrice() : "未设置");
+        result.put("分类", dish.getCategory() != null ? dish.getCategory() : "未分类");
+
+        return buildCompleted(intentConfig, "RESTAURANT",
+                String.format("菜品「%s」已成功添加。", name.trim()), result);
+    }
+
+    /**
+     * RESTAURANT_DISH_UPDATE — 更新菜品信息
+     * 根据 id 或 name 定位菜品，更新 price/category/name 等字段
+     */
+    private IntentExecuteResponse handleDishUpdate(String factoryId, IntentExecuteRequest request,
+                                                     AIIntentConfig intentConfig) {
+        Map<String, Object> context = request.getContext();
+        if (context == null) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    "请提供需要修改的菜品信息，例如：「修改菜品 宫保鸡丁 价格42」", null);
+        }
+
+        String dishId = context.get("id") != null ? context.get("id").toString() : null;
+        String dishName = context.get("name") != null ? context.get("name").toString() : null;
+
+        ProductType dish = null;
+        if (dishId != null) {
+            dish = productTypeRepository.findByIdAndFactoryId(dishId, factoryId).orElse(null);
+        }
+        if (dish == null && dishName != null) {
+            dish = productTypeRepository.findByFactoryIdAndName(factoryId, dishName.trim()).orElse(null);
+        }
+
+        if (dish == null) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    String.format("未找到菜品「%s」，请确认菜品名称或ID是否正确。",
+                            dishName != null ? dishName : dishId), null);
+        }
+
+        boolean updated = false;
+        if (context.get("newName") != null) {
+            dish.setName(context.get("newName").toString().trim());
+            updated = true;
+        }
+        if (context.get("price") != null) {
+            try {
+                dish.setUnitPrice(new BigDecimal(context.get("price").toString()));
+                updated = true;
+            } catch (NumberFormatException e) {
+                log.warn("菜品价格解析失败: {}", context.get("price"));
+            }
+        }
+        if (context.get("category") != null) {
+            dish.setCategory(context.get("category").toString());
+            updated = true;
+        }
+
+        if (!updated) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    "请提供需要修改的字段（price/category/newName）。", null);
+        }
+
+        productTypeRepository.save(dish);
+        log.info("更新菜品成功: factoryId={}, id={}, name={}", factoryId, dish.getId(), dish.getName());
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("id", dish.getId());
+        result.put("名称", dish.getName());
+        result.put("单价", dish.getUnitPrice() != null ? "¥" + dish.getUnitPrice() : "未设置");
+        result.put("分类", dish.getCategory() != null ? dish.getCategory() : "未分类");
+
+        return buildCompleted(intentConfig, "RESTAURANT",
+                String.format("菜品「%s」已更新成功。", dish.getName()), result);
+    }
+
+    /**
+     * RESTAURANT_DISH_DELETE — 下架菜品（软删除，设 isActive=false）
+     */
+    private IntentExecuteResponse handleDishDelete(String factoryId, IntentExecuteRequest request,
+                                                     AIIntentConfig intentConfig) {
+        Map<String, Object> context = request.getContext();
+        if (context == null) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    "请提供需要下架的菜品名称或ID，例如：「下架菜品 宫保鸡丁」", null);
+        }
+
+        String dishId = context.get("id") != null ? context.get("id").toString() : null;
+        String dishName = context.get("name") != null ? context.get("name").toString() : null;
+
+        ProductType dish = null;
+        if (dishId != null) {
+            dish = productTypeRepository.findByIdAndFactoryId(dishId, factoryId).orElse(null);
+        }
+        if (dish == null && dishName != null) {
+            dish = productTypeRepository.findByFactoryIdAndName(factoryId, dishName.trim()).orElse(null);
+        }
+
+        if (dish == null) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    String.format("未找到菜品「%s」，请确认菜品名称或ID。",
+                            dishName != null ? dishName : dishId), null);
+        }
+
+        if (!Boolean.TRUE.equals(dish.getIsActive())) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    String.format("菜品「%s」已处于下架状态，无需重复操作。", dish.getName()), null);
+        }
+
+        dish.setIsActive(false);
+        productTypeRepository.save(dish);
+        log.info("下架菜品成功: factoryId={}, id={}, name={}", factoryId, dish.getId(), dish.getName());
+
+        return buildCompleted(intentConfig, "RESTAURANT",
+                String.format("菜品「%s」已成功下架。如需重新上架，请在菜品管理中操作。", dish.getName()), null);
+    }
+
+    /**
+     * RESTAURANT_DISH_PRODUCT_SALES_RANKING — 按产品维度菜品销量排行
+     * 类似 handleDishSalesRanking，但按产品类型聚合并包含产品分类信息
+     */
+    private IntentExecuteResponse handleDishProductSalesRanking(String factoryId, IntentExecuteRequest request,
+                                                                  AIIntentConfig intentConfig) {
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(30);
+        if (request.getContext() != null) {
+            if (request.getContext().get("startDate") != null) {
+                try { startDate = LocalDate.parse((String) request.getContext().get("startDate")); }
+                catch (Exception ignored) {}
+            }
+            if (request.getContext().get("endDate") != null) {
+                try { endDate = LocalDate.parse((String) request.getContext().get("endDate")); }
+                catch (Exception ignored) {}
+            }
+        }
+
+        List<ProductType> allDishes = productTypeRepository.findByFactoryIdAndIsActive(factoryId, true);
+        Map<String, String> categoryMap = new HashMap<>();
+        for (ProductType d : allDishes) {
+            categoryMap.put(d.getId(), d.getCategory() != null ? d.getCategory() : "未分类");
+        }
+
+        var orders = salesOrderRepository.findByFactoryIdAndDateRange(factoryId, startDate, endDate);
+        if (orders.isEmpty()) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    String.format("近30天（%s 至 %s）暂无销售记录。", startDate, endDate), null);
+        }
+
+        Map<String, SalesAccumulator> accumulator = new HashMap<>();
+        for (var order : orders) {
+            var items = salesOrderItemRepository.findBySalesOrderId(order.getId());
+            for (var item : items) {
+                if (item.getProductTypeId() == null) continue;
+                accumulator.computeIfAbsent(item.getProductTypeId(), k -> new SalesAccumulator())
+                        .add(item.getQuantity(), item.getUnitPrice(), item.getProductName());
+            }
+        }
+
+        List<Map<String, Object>> ranking = accumulator.entrySet().stream()
+                .sorted(Comparator.comparingDouble((Map.Entry<String, SalesAccumulator> e) ->
+                        e.getValue().totalQty).reversed())
+                .limit(15)
+                .map(e -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("菜品名称", e.getValue().name != null ? e.getValue().name : e.getKey());
+                    row.put("分类", categoryMap.getOrDefault(e.getKey(), "未分类"));
+                    row.put("销售数量", String.format("%.1f", e.getValue().totalQty));
+                    row.put("销售金额", String.format("¥%.2f", e.getValue().totalAmount));
+                    return row;
+                }).collect(Collectors.toList());
+
+        for (int i = 0; i < ranking.size(); i++) {
+            ranking.get(i).put("排名", i + 1);
+        }
+
+        // 按分类汇总
+        Map<String, Double> categoryRevenue = new LinkedHashMap<>();
+        for (Map.Entry<String, SalesAccumulator> e : accumulator.entrySet()) {
+            String cat = categoryMap.getOrDefault(e.getKey(), "未分类");
+            categoryRevenue.merge(cat, e.getValue().totalAmount, Double::sum);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("period", startDate + " 至 " + endDate);
+        result.put("产品销量排行（TOP 15）", ranking);
+        result.put("分类销售额汇总", categoryRevenue);
+
+        return buildCompleted(intentConfig, "RESTAURANT",
+                String.format("近30天产品销量排行已生成（共 %d 个产品），%s 排名第一。",
+                        ranking.size(), ranking.isEmpty() ? "-" : ranking.get(0).get("菜品名称")),
+                result);
+    }
+
+    // ==================== 营业分析补充类 ====================
+
+    /**
+     * RESTAURANT_AVG_TICKET — 客单价查询
+     * 基于 salesOrderRepository 计算 totalAmount / orderCount
+     */
+    private IntentExecuteResponse handleAvgTicket(String factoryId, IntentExecuteRequest request,
+                                                    AIIntentConfig intentConfig) {
+        int days = 30;
+        if (request.getContext() != null && request.getContext().get("days") != null) {
+            try { days = Integer.parseInt(request.getContext().get("days").toString()); }
+            catch (NumberFormatException ignored) {}
+        }
+
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(days);
+
+        var orders = salesOrderRepository.findByFactoryIdAndDateRange(factoryId, startDate, endDate);
+
+        if (orders.isEmpty()) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    String.format("近%d天暂无订单数据，无法计算客单价。", days), null);
+        }
+
+        double totalRevenue = orders.stream()
+                .mapToDouble(o -> o.getTotalAmount() != null ? o.getTotalAmount().doubleValue() : 0)
+                .sum();
+        long orderCount = orders.size();
+        double avgTicket = totalRevenue / orderCount;
+
+        // 今日客单价
+        var todayOrders = salesOrderRepository.findByFactoryIdAndDateRange(factoryId, LocalDate.now(), LocalDate.now());
+        double todayRevenue = todayOrders.stream()
+                .mapToDouble(o -> o.getTotalAmount() != null ? o.getTotalAmount().doubleValue() : 0)
+                .sum();
+        double todayAvgTicket = todayOrders.isEmpty() ? 0 : todayRevenue / todayOrders.size();
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("统计周期", String.format("近%d天（%s 至 %s）", days, startDate, endDate));
+        result.put("总营业额", String.format("¥%.2f", totalRevenue));
+        result.put("总订单数", orderCount);
+        result.put("平均客单价", String.format("¥%.2f", avgTicket));
+        result.put("今日客单价", todayOrders.isEmpty() ? "今日暂无订单" : String.format("¥%.2f", todayAvgTicket));
+        result.put("行业参考", "餐饮业平均客单价因品类差异较大，快餐30-60元，正餐80-200元");
+
+        return buildCompleted(intentConfig, "RESTAURANT",
+                String.format("近%d天平均客单价 ¥%.2f（共 %d 单），今日客单价 %s。",
+                        days, avgTicket, orderCount,
+                        todayOrders.isEmpty() ? "暂无数据" : String.format("¥%.2f", todayAvgTicket)),
+                result);
+    }
+
+    /**
+     * RESTAURANT_RETURN_RATE — 退单/取消率
+     * 使用 SalesOrder 中 CANCELLED 状态占比作为近似退货率
+     */
+    private IntentExecuteResponse handleReturnRate(String factoryId, IntentExecuteRequest request,
+                                                     AIIntentConfig intentConfig) {
+        int days = 30;
+        if (request.getContext() != null && request.getContext().get("days") != null) {
+            try { days = Integer.parseInt(request.getContext().get("days").toString()); }
+            catch (NumberFormatException ignored) {}
+        }
+
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(days);
+
+        var orders = salesOrderRepository.findByFactoryIdAndDateRange(factoryId, startDate, endDate);
+
+        if (orders.isEmpty()) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    String.format("近%d天暂无订单数据，无法计算退单率。", days), null);
+        }
+
+        long totalCount = orders.size();
+        long cancelledCount = orders.stream()
+                .filter(o -> o.getStatus() == SalesOrderStatus.CANCELLED)
+                .count();
+        double returnRate = totalCount > 0 ?
+                BigDecimal.valueOf(cancelledCount * 100.0 / totalCount)
+                        .setScale(2, RoundingMode.HALF_UP).doubleValue() : 0;
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("统计周期", String.format("近%d天（%s 至 %s）", days, startDate, endDate));
+        result.put("总订单数", totalCount);
+        result.put("取消订单数", cancelledCount);
+        result.put("退单率", String.format("%.2f%%", returnRate));
+        result.put("行业参考", "餐饮业退单率建议控制在 3% 以内");
+        result.put("说明", "退单率 = 已取消订单数 / 总订单数。包含主动取消和被动取消。");
+
+        String assessment = returnRate > 10 ? "偏高，建议排查原因" :
+                returnRate > 5 ? "中等，有改善空间" : "良好，继续保持";
+
+        return buildCompleted(intentConfig, "RESTAURANT",
+                String.format("近%d天退单率 %.2f%%（%d/%d 单，%s）。行业建议控制在3%%以内。",
+                        days, returnRate, cancelledCount, totalCount, assessment),
+                result);
+    }
+
+    /**
+     * RESTAURANT_TABLE_TURNOVER — 翻台率估算
+     * 当日订单数 / 座位数 = 翻台率。座位数从 params 获取或使用默认值。
+     */
+    private IntentExecuteResponse handleTableTurnover(String factoryId, IntentExecuteRequest request,
+                                                        AIIntentConfig intentConfig) {
+        int seatCount = 40; // 默认座位数
+        if (request.getContext() != null && request.getContext().get("seatCount") != null) {
+            try { seatCount = Integer.parseInt(request.getContext().get("seatCount").toString()); }
+            catch (NumberFormatException ignored) {}
+        }
+
+        int days = 7;
+        if (request.getContext() != null && request.getContext().get("days") != null) {
+            try { days = Integer.parseInt(request.getContext().get("days").toString()); }
+            catch (NumberFormatException ignored) {}
+        }
+
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(days - 1);
+
+        List<Map<String, Object>> dailyList = new ArrayList<>();
+        double totalTurnover = 0;
+        int validDays = 0;
+
+        for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
+            long dayOrders = salesOrderRepository.countByFactoryIdAndDate(factoryId, d);
+            double turnover = seatCount > 0 ? (double) dayOrders / seatCount : 0;
+            totalTurnover += turnover;
+            if (dayOrders > 0) validDays++;
+
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("日期", d.toString());
+            row.put("订单数", dayOrders);
+            row.put("翻台率", String.format("%.2f", turnover));
+            dailyList.add(row);
+        }
+
+        double avgTurnover = validDays > 0 ? totalTurnover / days : 0;
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("统计周期", String.format("近%d天（%s 至 %s）", days, startDate, endDate));
+        result.put("座位数", seatCount);
+        result.put("平均翻台率", String.format("%.2f 次/天", avgTurnover));
+        result.put("每日详情", dailyList);
+        result.put("行业参考", "快餐 4-6 次/天，正餐 2-3 次/天，火锅 2-4 次/天");
+        result.put("说明", "翻台率 = 当日订单数 / 座位数。如座位数不准确，请在参数中提供实际座位数。");
+
+        return buildCompleted(intentConfig, "RESTAURANT",
+                String.format("近%d天平均翻台率 %.2f 次/天（%d 座位，行业正餐参考 2-3 次/天）。",
+                        days, avgTurnover, seatCount),
+                result);
+    }
+
+    // ==================== 采购与损耗写操作类 ====================
+
+    /**
+     * RESTAURANT_PROCUREMENT_CREATE — 创建采购单
+     * 需要从 params 解析 supplierId、采购明细等信息
+     */
+    private IntentExecuteResponse handleProcurementCreate(String factoryId, IntentExecuteRequest request,
+                                                            AIIntentConfig intentConfig, Long userId) {
+        Map<String, Object> context = request.getContext();
+        if (context == null) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    "请提供采购信息，例如：「创建采购单 供应商ID XXX」。" +
+                    "需要的字段：supplierId（供应商ID）、remark（备注，可选）。", null);
+        }
+
+        String supplierId = context.get("supplierId") != null ? context.get("supplierId").toString() : null;
+        if (supplierId == null || supplierId.trim().isEmpty()) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    "请提供供应商ID（supplierId）。可通过「供应商列表」查看可用供应商。", null);
+        }
+
+        // 生成采购单号
+        long todayCount = purchaseOrderRepository.countByFactoryIdAndDate(factoryId, LocalDate.now());
+        String orderNumber = String.format("PO-%s-%03d", LocalDate.now().toString().replace("-", ""), todayCount + 1);
+
+        PurchaseOrder po = new PurchaseOrder();
+        po.setFactoryId(factoryId);
+        po.setOrderNumber(orderNumber);
+        po.setSupplierId(supplierId.trim());
+        po.setOrderDate(LocalDate.now());
+        po.setStatus(PurchaseOrderStatus.DRAFT);
+        po.setCreatedBy(userId != null ? userId : 0L);
+
+        if (context.get("remark") != null) {
+            po.setRemark(context.get("remark").toString());
+        }
+        if (context.get("expectedDeliveryDate") != null) {
+            try {
+                po.setExpectedDeliveryDate(LocalDate.parse(context.get("expectedDeliveryDate").toString()));
+            } catch (Exception ignored) {}
+        }
+
+        purchaseOrderRepository.save(po);
+        log.info("创建采购单成功: factoryId={}, orderNumber={}, id={}", factoryId, orderNumber, po.getId());
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("采购单号", orderNumber);
+        result.put("id", po.getId());
+        result.put("供应商ID", supplierId);
+        result.put("状态", "草稿");
+        result.put("下一步", "请在「采购管理」中添加采购明细（食材种类、数量、单价），然后提交审批。");
+
+        return buildCompleted(intentConfig, "RESTAURANT",
+                String.format("采购单「%s」已创建（草稿状态），请在采购管理中完善明细。", orderNumber), result);
+    }
+
+    /**
+     * RESTAURANT_WASTAGE_RECORD — 记录食材损耗
+     * 需要从 params 解析 rawMaterialTypeId、quantity、type、reason 等
+     */
+    private IntentExecuteResponse handleWastageRecordCreate(String factoryId, IntentExecuteRequest request,
+                                                              AIIntentConfig intentConfig, Long userId) {
+        Map<String, Object> context = request.getContext();
+        if (context == null) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    "请提供损耗信息，例如：「记录损耗 食材ID XXX 数量 5 类型 EXPIRED 原因 过期」。" +
+                    "需要的字段：rawMaterialTypeId（食材ID）、quantity（数量）、type（EXPIRED/DAMAGED/SPOILED/PROCESSING/OTHER）。", null);
+        }
+
+        String rawMaterialTypeId = context.get("rawMaterialTypeId") != null ?
+                context.get("rawMaterialTypeId").toString() : null;
+        if (rawMaterialTypeId == null || rawMaterialTypeId.trim().isEmpty()) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    "请提供食材类型ID（rawMaterialTypeId）。可通过「食材库存」查看食材列表。", null);
+        }
+
+        BigDecimal quantity = null;
+        if (context.get("quantity") != null) {
+            try {
+                quantity = new BigDecimal(context.get("quantity").toString());
+            } catch (NumberFormatException e) {
+                return buildCompleted(intentConfig, "RESTAURANT",
+                        "损耗数量格式不正确，请提供数字。", null);
+            }
+        }
+        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+            return buildCompleted(intentConfig, "RESTAURANT",
+                    "请提供有效的损耗数量（quantity），必须大于0。", null);
+        }
+
+        // 解析损耗类型
+        WastageRecord.WastageType wastageType = WastageRecord.WastageType.OTHER;
+        if (context.get("type") != null) {
+            try {
+                wastageType = WastageRecord.WastageType.valueOf(context.get("type").toString().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("损耗类型无效: {}, 使用默认 OTHER", context.get("type"));
+            }
+        }
+
+        // 生成损耗单号
+        long todayCount = wastageRecordRepository.countByFactoryIdAndDate(factoryId, LocalDate.now());
+        String wastageNumber = String.format("WST-%s-%03d", LocalDate.now().toString().replace("-", ""), todayCount + 1);
+
+        WastageRecord record = new WastageRecord();
+        record.setFactoryId(factoryId);
+        record.setWastageNumber(wastageNumber);
+        record.setWastageDate(LocalDate.now());
+        record.setType(wastageType);
+        record.setStatus(WastageRecord.Status.DRAFT);
+        record.setRawMaterialTypeId(rawMaterialTypeId.trim());
+        record.setQuantity(quantity);
+        record.setReportedBy(userId);
+
+        if (context.get("reason") != null) {
+            record.setReason(context.get("reason").toString());
+        }
+        if (context.get("unit") != null) {
+            record.setUnit(context.get("unit").toString());
+        }
+        if (context.get("materialBatchId") != null) {
+            record.setMaterialBatchId(context.get("materialBatchId").toString());
+        }
+
+        wastageRecordRepository.save(record);
+        log.info("记录损耗成功: factoryId={}, wastageNumber={}, id={}", factoryId, wastageNumber, record.getId());
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("损耗单号", wastageNumber);
+        result.put("id", record.getId());
+        result.put("食材ID", rawMaterialTypeId);
+        result.put("数量", quantity);
+        result.put("类型", wastageType.name());
+        result.put("状态", "草稿");
+        result.put("下一步", "损耗记录已创建（草稿），提交后由管理员审批，审批通过将自动扣减库存。");
+
+        return buildCompleted(intentConfig, "RESTAURANT",
+                String.format("损耗记录「%s」已创建（%s，数量 %s），待提交审批。",
+                        wastageNumber, wastageType.name(), quantity), result);
     }
 
     // ==================== 工具方法 ====================

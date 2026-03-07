@@ -46,7 +46,7 @@ public class DashScopeConfig {
      * 默认文本模型 (用于复杂查询)
      * 可选: qwen-turbo (快速), qwen-plus (平衡), qwen-max (最强)
      */
-    private String model = "qwen3.5-plus";
+    private String model = "qwen3-max-2026-01-23";  // free quota (was: qwen3.5-plus)
 
     /**
      * 快速模型 (用于简单查询，如问候、简单问答)
@@ -60,7 +60,7 @@ public class DashScopeConfig {
      * - CRITIC (ICLR 2024): 工具交互式批评
      * - Reflexion (NeurIPS 2023): 语言反思学习
      */
-    private String correctionModel = "qwen-turbo";
+    private String correctionModel = "qwen3.5-27b";  // free quota (was: qwen-turbo)
 
     /**
      * 视觉模型

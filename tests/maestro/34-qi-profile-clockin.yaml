@@ -1,0 +1,55 @@
+appId: com.cretas.foodtrace
+---
+# Test 34: Quality Inspector - Profile & ClockIn
+# Verifies QIProfile menu items, QISettings, QIClockIn
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as quality inspector
+- runFlow: flows/login-qi.yaml
+- extendedWaitUntil:
+    visible: ".*Start Inspection.*|.*\u5F00\u59CB\u8D28\u68C0.*"
+    timeout: 25000
+
+# Navigate to Profile tab (我的)
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/34-qi-profile-tab
+
+# Scroll to see all profile menu items
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/34-qi-profile-scroll
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+
+# === Settings (设置) ===
+- tapOn:
+    text: ".*Settings.*|.*\u8BBE\u7F6E.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/34-qi-settings
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === Clock In (考勤打卡) ===
+- tapOn:
+    text: ".*Clock In.*|.*\u8003\u52E4\u6253\u5361.*|.*\u6253\u5361.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/34-qi-clock-in
+
+# Return to Home tab safely
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/34-qi-home-return

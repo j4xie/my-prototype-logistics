@@ -1,0 +1,39 @@
+appId: com.cretas.foodtrace
+---
+# Test 11: Factory Admin - Reports & Analytics Center
+# Verifies production, quality, and efficiency report sections with data
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Navigate to Reports tab
+- tapOn: "\u62A5\u8868"
+- waitForAnimationToEnd
+
+# Wait for analytics center to load (75.0% = OEE value)
+- extendedWaitUntil:
+    visible: "75.0%"
+    timeout: 10000
+- takeScreenshot: screenshots/11-fa-reports-top
+
+# Verify quality rate section
+- assertVisible: "0.0%"
+- takeScreenshot: screenshots/11-fa-reports-scrolled
+
+# Tap on production overview section arrow to drill down
+- tapOn:
+    text: ".*\u751F\u4EA7\u6982\u89C8.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/11-fa-production-detail
+
+# Go back
+- back
+- waitForAnimationToEnd

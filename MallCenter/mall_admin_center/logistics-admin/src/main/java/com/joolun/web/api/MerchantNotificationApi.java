@@ -159,6 +159,11 @@ public class MerchantNotificationApi {
             return AjaxResult.error("请先登录");
         }
 
+        Long merchantId = getMerchantIdFromUser(wxUser);
+        if (merchantId == null) {
+            return AjaxResult.error("未绑定商户");
+        }
+
         @SuppressWarnings("unchecked")
         List<Long> ids = (List<Long>) params.get("ids");
         if (ids == null || ids.isEmpty()) {
@@ -166,6 +171,13 @@ public class MerchantNotificationApi {
         }
 
         try {
+            // 验证所有通知都属于当前商户
+            for (Long nid : ids) {
+                MerchantNotification n = notificationService.getById(nid);
+                if (n != null && !n.getMerchantId().equals(merchantId)) {
+                    return AjaxResult.error("包含无权操作的通知");
+                }
+            }
             boolean result = notificationService.markAsRead(ids);
             return result ? AjaxResult.success("标记成功") : AjaxResult.error("标记失败");
         } catch (Exception e) {

@@ -178,6 +178,24 @@ class MultiStreamSampler:
             self._preprocessor = get_preprocessor()
         return self._preprocessor
 
+    @staticmethod
+    def _validate_rtsp_url(url: str) -> bool:
+        """Validate RTSP URL to prevent SSRF — block file://, internal IPs, etc."""
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        if parsed.scheme not in ('rtsp', 'rtsps'):
+            return False
+        hostname = parsed.hostname or ''
+        # Block internal/private IPs
+        if hostname in ('localhost', '127.0.0.1', '0.0.0.0', '::1'):
+            return False
+        if hostname.startswith(('10.', '172.16.', '172.17.', '172.18.', '172.19.',
+                                '172.20.', '172.21.', '172.22.', '172.23.', '172.24.',
+                                '172.25.', '172.26.', '172.27.', '172.28.', '172.29.',
+                                '172.30.', '172.31.', '192.168.')):
+            return False
+        return True
+
     def capture_frame(self, rtsp_url: str, timeout: int = 10) -> Optional[str]:
         """
         从 RTSP 流捕获单帧
@@ -189,6 +207,10 @@ class MultiStreamSampler:
         Returns:
             Base64 编码的图片，失败返回 None
         """
+        if not self._validate_rtsp_url(rtsp_url):
+            logger.error(f"RTSP URL validation failed (blocked): {rtsp_url}")
+            return None
+
         temp_file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
         temp_path = temp_file.name
         temp_file.close()
@@ -570,7 +592,7 @@ class MultiStreamSampler:
                         input_tokens = 2000  # 图片 + prompt
                         output_tokens = 1000 if task.config.analysis_type != "mixed" else 2000
                         cost_monitor.record_api_call(
-                            model="qwen-vl-plus",  # 默认模型
+                            model="qwen3-vl-plus-2025-12-19",  # free quota (was: qwen-vl-plus)
                             analysis_type=task.config.analysis_type,
                             input_tokens=input_tokens,
                             output_tokens=output_tokens,

@@ -70,12 +70,20 @@ public class SalesAnalysisServiceImpl implements SalesAnalysisService {
 
         // Step 1: Use DB aggregation for KPI cards (single query instead of loading all rows)
         Object[] kpiSummary = salesDataRepository.findKpiSummary(factoryId, startDate, endDate);
+        // JPA may wrap single-row aggregate as nested Object[] — unwrap if needed
+        if (kpiSummary != null && kpiSummary.length == 1 && kpiSummary[0] instanceof Object[]) {
+            kpiSummary = (Object[]) kpiSummary[0];
+        }
+        if (kpiSummary == null || kpiSummary.length < 6) {
+            log.warn("未找到销售数据(查询结果为空): factoryId={}", factoryId);
+            return buildEmptyDashboard();
+        }
         BigDecimal totalSales = toBigDecimal(kpiSummary[0]);
         BigDecimal totalQuantity = toBigDecimal(kpiSummary[1]);
         BigDecimal totalProfit = toBigDecimal(kpiSummary[2]);
         BigDecimal totalCost = toBigDecimal(kpiSummary[3]);
         BigDecimal totalTarget = toBigDecimal(kpiSummary[4]);
-        long orderCount = ((Number) kpiSummary[5]).longValue();
+        long orderCount = kpiSummary[5] instanceof Number ? ((Number) kpiSummary[5]).longValue() : 0L;
 
         if (totalSales.compareTo(BigDecimal.ZERO) == 0 && orderCount == 0) {
             log.warn("未找到销售数据: factoryId={}", factoryId);
@@ -126,7 +134,14 @@ public class SalesAnalysisServiceImpl implements SalesAnalysisService {
     private BigDecimal toBigDecimal(Object val) {
         if (val == null) return BigDecimal.ZERO;
         if (val instanceof BigDecimal) return (BigDecimal) val;
-        return new BigDecimal(val.toString());
+        if (val instanceof Number) return BigDecimal.valueOf(((Number) val).doubleValue());
+        try {
+            String s = val.toString().trim();
+            if (s.isEmpty() || s.equals("-") || s.equals("N/A")) return BigDecimal.ZERO;
+            return new BigDecimal(s);
+        } catch (NumberFormatException e) {
+            return BigDecimal.ZERO;
+        }
     }
 
     /**
@@ -183,7 +198,11 @@ public class SalesAnalysisServiceImpl implements SalesAnalysisService {
         // 环比: use aggregation query for previous period too
         Object[] prevSummary = salesDataRepository.findKpiSummary(
                 factoryId, startDate.minusMonths(1), endDate.minusMonths(1));
-        BigDecimal previousSales = toBigDecimal(prevSummary[0]);
+        if (prevSummary != null && prevSummary.length == 1 && prevSummary[0] instanceof Object[]) {
+            prevSummary = (Object[]) prevSummary[0];
+        }
+        BigDecimal previousSales = (prevSummary != null && prevSummary.length > 0)
+                ? toBigDecimal(prevSummary[0]) : BigDecimal.ZERO;
         if (previousSales.compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal momGrowth = metricCalculatorService.calculateMomGrowth(totalSales, previousSales);
             kpiCards.add(MetricResult.builder()

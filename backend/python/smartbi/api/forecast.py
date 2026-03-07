@@ -190,10 +190,15 @@ async def batch_forecast(requests: List[ForecastRequest]):
     Generate forecasts for multiple time series in batch
 
     Useful for forecasting multiple metrics or dimensions simultaneously.
+    Max 20 series per batch, max 365 periods per series.
     """
     try:
+        if len(requests) > 20:
+            return {"success": False, "message": "批量预测最多支持 20 个序列"}
         results = []
         for req in requests:
+            if req.periods and req.periods > 365:
+                req.periods = 365
             result = forecast_service.forecast(
                 data=req.data,
                 algorithm=req.algorithm,

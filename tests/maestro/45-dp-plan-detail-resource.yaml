@@ -1,0 +1,66 @@
+appId: com.cretas.foodtrace
+---
+# Test 45: Dispatcher - Plan Detail, Resource Overview & Workshop Status
+# Covers: PlanDetail, ResourceOverview, WorkshopStatus
+# Previously tested: PlanList(22), PlanCreate(22), PlanGantt(22), AISchedule(23,35)
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as dispatcher
+- runFlow: flows/login-dp.yaml
+- extendedWaitUntil:
+    visible: ".*Scheduling.*|.*\u8C03\u5EA6\u5DE5\u4F5C\u53F0.*"
+    timeout: 15000
+
+# Scroll down to find Resource Overview entry
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Resource Overview (资源总览) from Home ===
+- tapOn:
+    text: ".*Resource.*Overview.*|.*\u8D44\u6E90\u603B\u89C8.*|.*\u8D44\u6E90.*|.*\u5B9E\u65F6\u76D1\u63A7.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/45-dp-resource-overview
+
+# Return to Home
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# === Workshop Status (车间实时状态) from Home ===
+- tapOn:
+    text: ".*Workshop.*Status.*|.*\u8F66\u95F4\u5B9E\u65F6\u72B6\u6001.*|.*\u67E5\u770B\u5168\u90E8.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/45-dp-workshop-status
+
+# Return to Home
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# Navigate to Plan tab (计划)
+- tapOn: "\u8BA1\u5212"
+- waitForAnimationToEnd
+
+# === Plan Detail — tap first plan in list ===
+- tapOn:
+    text: ".*Plan.*|.*\u8BA1\u5212.*|.*PP-.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/45-dp-plan-detail
+
+# Scroll down to see more detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/45-dp-plan-detail-scroll
+
+# Return to Plan list
+- tapOn: "\u8BA1\u5212"
+- waitForAnimationToEnd

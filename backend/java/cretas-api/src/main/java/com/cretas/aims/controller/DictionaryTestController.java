@@ -32,7 +32,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 @RequestMapping("/api/public/dictionary-test")
 @RequiredArgsConstructor
 @Tag(name = "字典工具测试", description = "测试动态字典工具的API")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {"https://www.cretaceousfuture.com", "http://139.196.165.140:8086", "http://localhost:5173"})
 public class DictionaryTestController {
 
     private final ToolRegistry toolRegistry;

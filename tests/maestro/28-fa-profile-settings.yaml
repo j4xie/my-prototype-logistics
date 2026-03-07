@@ -1,0 +1,93 @@
+appId: com.cretas.foodtrace
+---
+# Test 28: Factory Admin - Profile & Settings Deep
+# Verifies PersonalInfo, ChangePassword, NotificationSettings, SystemSettings, HelpCenter, About
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Navigate to Profile tab (我的)
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/28-fa-profile-tab
+
+# === Personal Info (个人信息) ===
+- tapOn:
+    text: ".*Personal Info.*|.*\u4E2A\u4EBA\u4FE1\u606F.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/28-fa-personal-info
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === Change Password (修改密码) ===
+- tapOn:
+    text: ".*Change Password.*|.*\u4FEE\u6539\u5BC6\u7801.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/28-fa-change-password
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === Notification Settings (通知设置) ===
+- tapOn:
+    text: ".*Notification.*|.*\u901A\u77E5\u8BBE\u7F6E.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/28-fa-notification-settings
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === System Settings (系统设置) ===
+- tapOn:
+    text: ".*System Settings.*|.*\u7CFB\u7EDF\u8BBE\u7F6E.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/28-fa-system-settings
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# Scroll down to see Help Center and About
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Help Center (帮助中心) ===
+- tapOn:
+    text: ".*Help Center.*|.*\u5E2E\u52A9\u4E2D\u5FC3.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/28-fa-help-center
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# Scroll down again
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === About (关于) ===
+- tapOn:
+    text: ".*About.*|.*\u5173\u4E8E.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/28-fa-about

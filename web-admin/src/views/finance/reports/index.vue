@@ -88,6 +88,7 @@ async function loadFinanceData() {
 
   loading.value = true;
   try {
+    if (!dateRange.value) return;
     const [startDate, endDate] = dateRange.value;
     const startStr = formatDate(startDate);
     const endStr = formatDate(endDate);
@@ -96,32 +97,18 @@ async function loadFinanceData() {
     if (response.success && response.data) {
       financeData.value = response.data;
     } else {
-      // 使用模拟数据
-      financeData.value = getMockData();
+      ElMessage.error('加载财务数据失败');
     }
   } catch (error) {
     console.error('加载财务数据失败:', error);
-    // 使用模拟数据
-    financeData.value = getMockData();
+    ElMessage.error('加载财务数据失败，请检查网络连接');
   } finally {
     loading.value = false;
   }
 }
 
-function getMockData() {
-  return {
-    totalRevenue: 1250000,
-    totalCost: 875000,
-    grossProfit: 375000,
-    profitMargin: 30.0,
-    materialCost: 525000,
-    laborCost: 175000,
-    equipmentCost: 87500,
-    otherCost: 87500
-  };
-}
-
-function formatDate(date: Date) {
+function formatDate(date: Date | null | undefined) {
+  if (!date) return '';
   return date.toISOString().split('T')[0];
 }
 
@@ -129,25 +116,37 @@ function handleDateChange() {
   loadFinanceData();
 }
 
-async function handleExport() {
-  if (!factoryId.value) return;
-
-  try {
-    const [startDate, endDate] = dateRange.value;
-    const startStr = formatDate(startDate);
-    const endStr = formatDate(endDate);
-
-    // 调用导出 API
-    ElMessage.info('正在生成报表，请稍候...');
-    const response = await get<any>(`/${factoryId.value}/reports/export/excel?type=finance&startDate=${startStr}&endDate=${endStr}`);
-    if (response.success) {
-      ElMessage.success('报表导出成功');
-    } else {
-      ElMessage.warning('导出功能暂未实现');
-    }
-  } catch (error) {
-    ElMessage.warning('导出功能暂未实现');
+function handleExport() {
+  const data = financeData.value;
+  if (!data || (!data.totalRevenue && !data.totalCost)) {
+    ElMessage.warning('暂无数据可导出');
+    return;
   }
+  const [startDate, endDate] = dateRange.value;
+  const headers = ['项目', '金额(元)', '占比(%)'];
+  const rows = [
+    ['总收入', String(data.totalRevenue ?? 0), '-'],
+    ['总成本', String(data.totalCost ?? 0), '100.0'],
+    ['  原材料成本', String(data.materialCost ?? 0), getPercentage('material')],
+    ['  人工成本', String(data.laborCost ?? 0), getPercentage('labor')],
+    ['  设备成本', String(data.equipmentCost ?? 0), getPercentage('equipment')],
+    ['  其他成本', String(data.otherCost ?? 0), getPercentage('other')],
+    ['毛利润', String(data.grossProfit ?? 0), '-'],
+    ['利润率(%)', String((data.profitMargin ?? 0).toFixed(1)), '-']
+  ];
+  const csvContent = '\uFEFF' + [
+    [`财务报表 (${formatDate(startDate)} ~ ${formatDate(endDate)})`],
+    [],
+    headers,
+    ...rows
+  ].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `财务报表_${formatDate(startDate)}_${formatDate(endDate)}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  ElMessage.success('导出成功');
 }
 </script>
 
@@ -198,7 +197,7 @@ async function handleExport() {
       <!-- 成本分解 -->
       <div class="section">
         <h3 class="section-title">成本分解</h3>
-        <el-table :data="costBreakdown" stripe style="width: 100%">
+        <el-table empty-text="暂无数据" :data="costBreakdown" stripe border style="width: 100%">
           <el-table-column prop="name" label="成本类型" width="180" />
           <el-table-column label="金额 (元)" min-width="200">
             <template #default="{ row }">

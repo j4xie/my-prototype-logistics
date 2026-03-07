@@ -1,0 +1,182 @@
+{
+  "recipe": {
+    "title": "Recipe Management",
+    "list": {
+      "title": "Recipes",
+      "searchPlaceholder": "Search dish or ingredient",
+      "empty": "No recipes yet",
+      "emptyAction": "Create Recipe",
+      "dishName": "Dish",
+      "material": "Ingredient",
+      "quantity": "Standard Qty",
+      "yieldRate": "Net Yield",
+      "main": "Main",
+      "auxiliary": "Auxiliary",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "detail": {
+      "title": "Recipe Detail",
+      "ingredients": "Ingredients",
+      "standardQty": "Standard Qty",
+      "actualQty": "Actual Consumption",
+      "yieldRate": "Net Yield Rate",
+      "mainIngredient": "Main Ingredient",
+      "notes": "Notes"
+    },
+    "edit": {
+      "titleCreate": "New Recipe",
+      "titleEdit": "Edit Recipe",
+      "selectDish": "Select Dish",
+      "selectMaterial": "Select Ingredient",
+      "quantity": "Standard Qty",
+      "unit": "Unit",
+      "yieldRate": "Net Yield Rate",
+      "isMain": "Main Ingredient",
+      "notes": "Notes",
+      "save": "Save",
+      "saved": "Saved"
+    }
+  },
+  "requisition": {
+    "title": "Requisition",
+    "list": {
+      "title": "Requisitions"
+    },
+    "create": {
+      "title": "New Requisition",
+      "type": "Type",
+      "typeProduction": "By Recipe",
+      "typeManual": "Manual",
+      "selectDish": "Select Dish",
+      "selectMaterial": "Select Ingredient",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "notes": "Notes",
+      "saveDraft": "Save Draft",
+      "submitNow": "Submit",
+      "created": "Requisition created"
+    },
+    "approval": {
+      "title": "Approve Requisition",
+      "actualQuantity": "Actual Quantity",
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectReason": "Reason",
+      "enterActualQty": "Please enter actual quantity before approving",
+      "enterRejectReason": "Please enter rejection reason",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "empty": "No pending requisitions"
+    },
+    "detail": {
+      "title": "Requisition Detail",
+      "reqNumber": "Req No.",
+      "reqDate": "Date",
+      "material": "Ingredient",
+      "requestedQty": "Requested",
+      "actualQty": "Actual",
+      "applicant": "Applicant",
+      "approver": "Approver"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    }
+  },
+  "stocktaking": {
+    "title": "Stocktaking",
+    "list": {
+      "title": "Stocktaking Records",
+      "searchPlaceholder": "Search ingredient",
+      "empty": "No stocktaking records",
+      "emptyAction": "Start Stocktaking",
+      "material": "Ingredient",
+      "systemQty": "System Qty",
+      "actualQty": "Actual Qty",
+      "difference": "Difference"
+    },
+    "execute": {
+      "title": "Execute Stocktaking",
+      "systemQty": "System Qty",
+      "inputActual": "Enter actual quantity",
+      "reason": "Reason",
+      "complete": "Complete",
+      "cancel": "Cancel",
+      "completed": "Stocktaking completed"
+    },
+    "summary": {
+      "title": "Stocktaking Summary",
+      "totalItems": "Total Items",
+      "surplus": "Surplus",
+      "shortage": "Shortage",
+      "matched": "Matched",
+      "recentRecords": "Recent Records"
+    },
+    "status": {
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "difference": {
+      "SURPLUS": "Surplus",
+      "SHORTAGE": "Shortage",
+      "MATCH": "Match"
+    }
+  },
+  "wastage": {
+    "title": "Wastage",
+    "list": {
+      "title": "Wastage Records",
+      "searchPlaceholder": "Search ingredient",
+      "empty": "No wastage records",
+      "emptyAction": "Record Wastage",
+      "material": "Ingredient",
+      "quantity": "Quantity",
+      "cost": "Est. Cost"
+    },
+    "create": {
+      "title": "Record Wastage",
+      "type": "Wastage Type",
+      "selectMaterial": "Select Ingredient",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "cost": "Est. Cost",
+      "notes": "Notes",
+      "saveDraft": "Save Draft",
+      "submitNow": "Submit",
+      "created": "Wastage recorded"
+    },
+    "type": {
+      "EXPIRED": "Expired",
+      "DAMAGED": "Damaged",
+      "SPOILED": "Spoiled",
+      "PROCESSING_LOSS": "Processing Loss",
+      "OTHER": "Other"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    }
+  },
+  "common": {
+    "all": "All",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "back": "Back",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "loadFailed": "Failed to load",
+    "submitSuccess": "Submitted",
+    "submitFailed": "Submit failed",
+    "operationSuccess": "Success",
+    "operationFailed": "Operation failed",
+    "yuan": "CNY",
+    "items": "items"
+  }
+}

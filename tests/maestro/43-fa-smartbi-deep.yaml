@@ -1,0 +1,111 @@
+appId: com.cretas.foodtrace
+---
+# Test 43: Factory Admin - SmartBI Deep Sub-Screens
+# Round 4.1f fix: takeScreenshot before tab tap provides timing delay
+#   Root cause: tapOn "智能分析" reports COMPLETED but touch doesn't register
+#   with React Native tab bar unless there's sufficient processing delay.
+#   takeScreenshot provides 500ms+ which makes the tap reliable.
+# Menu items: 经营驾驶舱, 销售分析, 财务分析, AI问答 (all in Chinese)
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+- waitForAnimationToEnd
+
+# Timing stabilizer: screenshot before tab tap (proven in diagnostic)
+- takeScreenshot: screenshots/43-fa-home-pre-tab
+
+# Navigate to Smart Analysis tab (智能分析)
+- tapOn: "\u667A\u80FD\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/43-fa-smartbi-home
+
+# === AI Chat (AI问答) — Quick Actions card ===
+- tapOn:
+    text: ".*AI\u95EE\u7B54.*|.*\u667A\u80FD\u95EE\u7B54.*|.*AI.*Q.*A.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/43-fa-nl-query
+# Safe return: back + launchApp + tab (with screenshot for timing)
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/43-fa-recovery-1
+- tapOn: "\u667A\u80FD\u5206\u6790"
+- waitForAnimationToEnd
+
+# Scroll to Full Functions section (need 2 scrolls to reach it)
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# === Executive Dashboard (经营驾驶舱) — in Full Functions list ===
+- tapOn:
+    text: ".*\u7ECF\u8425\u9A7E\u9A76\u8231.*|.*Executive.*Dashboard.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/43-fa-executive-dashboard
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/43-fa-recovery-2
+- tapOn: "\u667A\u80FD\u5206\u6790"
+- waitForAnimationToEnd
+
+# Scroll to find Sales Analysis in Full Functions (3 scrolls from top)
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# === Sales Analysis (销售分析) ===
+- tapOn:
+    text: ".*\u9500\u552E\u5206\u6790.*|.*Sales.*Analysis.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/43-fa-sales-analysis
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/43-fa-recovery-3
+- tapOn: "\u667A\u80FD\u5206\u6790"
+- waitForAnimationToEnd
+
+# Scroll to Finance Analysis
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# === Finance Analysis (财务分析) ===
+- tapOn:
+    text: ".*\u8D22\u52A1\u5206\u6790.*|.*Finance.*Analysis.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/43-fa-finance-analysis

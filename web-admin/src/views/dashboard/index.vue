@@ -11,37 +11,34 @@
  * - finance_manager → DashboardFinance (财务管理)
  * - 其他角色 → DashboardDefault (通用版)
  */
-import { computed, defineAsyncComponent } from 'vue';
+import { computed, defineAsyncComponent, h } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { getDashboardComponent } from '@/components/dashboard';
 
 const authStore = useAuthStore();
 
-// 获取当前角色对应的 Dashboard 组件名称
+// 获取当前角色对应的 Dashboard 组件名称（含工厂类型覆盖）
 const dashboardComponentName = computed(() => {
-  return getDashboardComponent(authStore.currentRole);
+  return getDashboardComponent(authStore.currentRole, authStore.factoryId);
+});
+
+const asyncOpts = (loader: () => Promise<any>) => defineAsyncComponent({
+  loader,
+  loadingComponent: { render: () => h('div', { style: 'text-align:center;padding:60px;color:#7A8599' }, '加载中...') },
+  errorComponent: { render: () => h('div', { style: 'text-align:center;padding:60px;color:#FF5630' }, '加载失败，请刷新页面') },
+  delay: 200,
+  timeout: 15000,
 });
 
 // 动态组件映射
 const dashboardComponents = {
-  DashboardAdmin: defineAsyncComponent(() =>
-    import('@/components/dashboard/DashboardAdmin.vue')
-  ),
-  DashboardHR: defineAsyncComponent(() =>
-    import('@/components/dashboard/DashboardHR.vue')
-  ),
-  DashboardProduction: defineAsyncComponent(() =>
-    import('@/components/dashboard/DashboardProduction.vue')
-  ),
-  DashboardWarehouse: defineAsyncComponent(() =>
-    import('@/components/dashboard/DashboardWarehouse.vue')
-  ),
-  DashboardFinance: defineAsyncComponent(() =>
-    import('@/components/dashboard/DashboardFinance.vue')
-  ),
-  DashboardDefault: defineAsyncComponent(() =>
-    import('@/components/dashboard/DashboardDefault.vue')
-  )
+  DashboardAdmin: asyncOpts(() => import('@/components/dashboard/DashboardAdmin.vue')),
+  DashboardHR: asyncOpts(() => import('@/components/dashboard/DashboardHR.vue')),
+  DashboardProduction: asyncOpts(() => import('@/components/dashboard/DashboardProduction.vue')),
+  DashboardWarehouse: asyncOpts(() => import('@/components/dashboard/DashboardWarehouse.vue')),
+  DashboardFinance: asyncOpts(() => import('@/components/dashboard/DashboardFinance.vue')),
+  DashboardDefault: asyncOpts(() => import('@/components/dashboard/DashboardDefault.vue')),
+  DashboardRestaurant: asyncOpts(() => import('@/components/dashboard/DashboardRestaurant.vue')),
 };
 
 // 获取当前角色对应的组件

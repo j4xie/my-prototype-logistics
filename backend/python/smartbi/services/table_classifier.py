@@ -328,9 +328,12 @@ class TableClassifier:
                 scores[TableType.TIME_SERIES] = 0.7
                 scores[TableType.MATRIX_TABLE] = 0.5
 
-        # Metadata: few columns, key-value structure
-        if cols == 2 and rows < 50:
-            scores[TableType.METADATA_TABLE] = 0.6
+        # Metadata: few columns, key-value structure (require high first-col uniqueness)
+        if cols <= 3 and rows < 50:
+            first_col = df.iloc[:, 0]
+            uniqueness = first_col.nunique() / max(len(first_col), 1)
+            if first_col.dtype == object and uniqueness > 0.8:
+                scores[TableType.METADATA_TABLE] = 0.6
 
         return scores
 

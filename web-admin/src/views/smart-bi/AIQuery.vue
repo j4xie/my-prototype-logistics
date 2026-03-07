@@ -4,7 +4,8 @@
  * 支持自然语言查询、快捷问题、对话历史和图表展示
  * 连接 Python SmartBI 服务获取真实分析结果
  */
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import { useChartResize } from '@/composables/useChartResize';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { chatAnalysis, chatAnalysisStream, getUploadHistory, deduplicateUploads, type AnalysisResult, type AIInsightData, type ChartConfig, type UploadHistoryItem } from '@/api/smartbi';
@@ -71,6 +72,7 @@ interface ChatMessage {
     data: Record<string, unknown>[];
   };
   loading?: boolean;
+  streaming?: boolean;
 }
 
 // 当前分析上下文 (用于连续对话)
@@ -114,7 +116,7 @@ interface QueryTemplate {
 }
 
 const templateCategories = [
-  { key: 'sales', label: '销售分析', icon: 'TrendCharts', color: '#409EFF' },
+  { key: 'sales', label: '销售分析', icon: 'TrendCharts', color: '#1B65A8' },
   { key: 'finance', label: '财务分析', icon: 'Money', color: '#67C23A' },
   { key: 'cost', label: '成本分析', icon: 'PieChart', color: '#E6A23C' },
   { key: 'comparison', label: '对比分析', icon: 'DataAnalysis', color: '#F56C6C' },
@@ -160,6 +162,9 @@ const isTyping = ref(false);
 
 // 图表实例缓存
 const chartInstances: Map<string, echarts.ECharts> = new Map();
+
+// Container ref for ResizeObserver-based chart resize
+const pageRef = ref<HTMLElement>();
 
 onMounted(async () => {
   // 加载可用数据源列表，去重 + 智能默认选择
@@ -208,19 +213,23 @@ onUnmounted(() => {
     activeStreamController.abort();
     activeStreamController = null;
   }
+  if (scrollRafId !== null) cancelAnimationFrame(scrollRafId);
+  if (chunkFlushTimer) clearTimeout(chunkFlushTimer);
   chartInstances.forEach(chart => chart.dispose());
   chartInstances.clear();
-  window.removeEventListener('resize', handleResize);
 });
 
-// 监听窗口大小变化，调整图表大小
-function handleResize() {
+// ResizeObserver-based chart resize (also handles sidebar toggle)
+useChartResize(pageRef, () => {
   chartInstances.forEach(chart => chart.resize());
-}
-window.addEventListener('resize', handleResize);
+});
 
 // Active stream controller (to cancel on new message or cleanup)
 let activeStreamController: AbortController | null = null;
+
+// Cancel flag for chart retry timers after unmount
+let isComponentAlive = true;
+onBeforeUnmount(() => { isComponentAlive = false; });
 
 // 发送消息
 async function handleSendMessage() {
@@ -256,8 +265,8 @@ async function handleSendMessage() {
   };
   chatHistory.value.push(loadingMessage);
 
-  // 滚动到底部
-  await scrollToBottom();
+  // 滚动到底部 (force: user just sent message)
+  scrollToBottom(true);
 
   isTyping.value = true;
 
@@ -277,46 +286,43 @@ async function handleSendMessage() {
     onStatus(status: string) {
       const idx = getMessageIndex();
       if (idx !== -1) {
-        chatHistory.value[idx] = {
-          ...chatHistory.value[idx],
-          content: status,
-          loading: true,
-        };
+        const msg = chatHistory.value[idx];
+        msg.content = status;
+        msg.loading = true;
       }
       scrollToBottom();
     },
 
     onChunk(text: string) {
-      const idx = getMessageIndex();
-      if (idx !== -1) {
-        const msg = chatHistory.value[idx];
-        // First chunk: switch from loading to streaming text
-        chatHistory.value[idx] = {
-          ...msg,
-          content: (msg.loading ? '' : msg.content) + text,
-          loading: false,
-        };
+      // Buffer chunks for 16ms before flushing to reduce Vue reactivity triggers
+      chunkTargetId = assistantId;
+      chunkBuffer += text;
+      if (!chunkFlushTimer) {
+        chunkFlushTimer = setTimeout(flushChunkBuffer, 16);
       }
-      scrollToBottom();
     },
 
     async onCharts(charts: ChartConfig[]) {
       const idx = getMessageIndex();
       if (idx !== -1 && charts.length > 0) {
-        chatHistory.value[idx] = {
-          ...chatHistory.value[idx],
-          chartConfig: charts[0],
-        };
+        chatHistory.value[idx].chartConfig = charts[0];
         await nextTick();
         renderChartFromConfig(assistantId, charts[0]);
       }
     },
 
     async onDone(result: AnalysisResult) {
+      // Flush any remaining buffered chunks
+      if (chunkFlushTimer) { clearTimeout(chunkFlushTimer); chunkFlushTimer = null; }
+      flushChunkBuffer();
+
       const idx = getMessageIndex();
       if (idx !== -1) {
         const msg = chatHistory.value[idx];
-        const finalContent = msg.content || result.answer || '分析完成';
+        // If still loading (no chunks arrived), content is just status text — prefer result.answer
+        const finalContent = msg.loading
+          ? (result.answer || '分析完成')
+          : (msg.content || result.answer || '分析完成');
 
         // Build chart data for compat
         let chartData: ChatMessage['chart'] | undefined;
@@ -328,17 +334,14 @@ async function handleSendMessage() {
           };
         }
 
-        chatHistory.value[idx] = {
-          id: assistantId,
-          role: 'assistant',
-          content: finalContent,
-          timestamp: new Date(),
-          chart: chartData,
-          chartConfig: msg.chartConfig || result.charts?.[0],
-          insights: result.insights,
-          table: result.table as ChatMessage['table'],
-          loading: false
-        };
+        // Direct mutation instead of object spread
+        msg.content = finalContent;
+        msg.chart = chartData;
+        msg.chartConfig = msg.chartConfig || result.charts?.[0];
+        msg.insights = result.insights;
+        msg.table = result.table as ChatMessage['table'];
+        msg.loading = false;
+        msg.streaming = false;
 
         // Render chart if not already rendered via onCharts
         if (!msg.chartConfig && result.charts && result.charts.length > 0) {
@@ -349,10 +352,13 @@ async function handleSendMessage() {
 
       isTyping.value = false;
       activeStreamController = null;
-      await scrollToBottom();
+      scrollToBottom(true);
     },
 
     async onError(error: string) {
+      // Clear chunk buffer on error
+      if (chunkFlushTimer) { clearTimeout(chunkFlushTimer); chunkFlushTimer = null; }
+      chunkBuffer = '';
       console.error('AI 流式查询失败:', error);
 
       // Convert to user-friendly message
@@ -423,7 +429,7 @@ async function handleSendMessage() {
 
       isTyping.value = false;
       activeStreamController = null;
-      await scrollToBottom();
+      scrollToBottom(true);
     },
   });
 }
@@ -456,10 +462,11 @@ function renderChartFromConfig(messageId: string, chartConfig: ChartConfig) {
 
   // Try to get chart container — may need a small delay for Vue to render the v-if container
   const tryRender = (attempt = 0) => {
+    if (!isComponentAlive) return;
     const chartDom = document.getElementById(`chart-${messageId}`);
     if (!chartDom) {
-      if (attempt < 3) {
-        setTimeout(() => tryRender(attempt + 1), 200);
+      if (attempt < 5) {
+        setTimeout(() => tryRender(attempt + 1), 300);
       }
       return;
     }
@@ -511,15 +518,15 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
       grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
       xAxis: { type: 'category', data: chartConfig.data.xAxis },
       yAxis: { type: 'value' },
-      series: chartConfig.data.series.map((s: any) => ({
+      series: (chartConfig.data.series || []).map((s: { name: string; data: number[] }) => ({
         name: s.name,
         type: 'line',
         smooth: true,
         data: s.data,
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(64, 158, 255, 0.3)' },
-            { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
+            { offset: 0, color: 'rgba(27, 101, 168, 0.3)' },
+            { offset: 1, color: 'rgba(27, 101, 168, 0.05)' }
           ])
         }
       }))
@@ -531,12 +538,12 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
       grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
       xAxis: { type: 'category', data: chartConfig.data.xAxis },
       yAxis: { type: 'value' },
-      series: chartConfig.data.series.map((s: any, i: number) => ({
+      series: (chartConfig.data.series || []).map((s: { name: string; data: number[] }, i: number) => ({
         name: s.name,
         type: 'bar',
         data: s.data,
         itemStyle: {
-          color: i === 0 ? '#409EFF' : '#67C23A',
+          color: i === 0 ? '#1B65A8' : '#67C23A',
           borderRadius: [4, 4, 0, 0]
         }
       }))
@@ -549,11 +556,11 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
         type: 'pie',
         radius: ['40%', '70%'],
         center: ['40%', '50%'],
-        data: chartConfig.data.series.map((s: any, i: number) => ({
+        data: (chartConfig.data.series || []).map((s: { name: string; value: number }, i: number) => ({
           name: s.name,
           value: s.value,
           itemStyle: {
-            color: ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399'][i % 5]
+            color: ['#1B65A8', '#67C23A', '#E6A23C', '#F56C6C', '#909399'][i % 5]
           }
         })),
         emphasis: {
@@ -565,17 +572,53 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
         }
       }]
     };
+  } else {
+    console.warn(`Unsupported chart type: ${chartConfig.type}`);
+    return;
   }
 
-  chart.setOption(option!);
+  chart.setOption(option);
 }
 
-// 滚动到底部
-async function scrollToBottom() {
-  await nextTick();
-  if (chatContainerRef.value) {
-    chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight;
+// 滚动到底部 — rAF 节流 + 用户上翻暂停
+let scrollRafId: number | null = null;
+let userIsScrollingUp = false;
+
+function onChatScroll() {
+  if (!chatContainerRef.value) return;
+  const el = chatContainerRef.value;
+  const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+  userIsScrollingUp = !isAtBottom;
+}
+
+function scrollToBottom(force = false) {
+  if (!force && userIsScrollingUp) return;
+  if (scrollRafId !== null) return;
+  scrollRafId = requestAnimationFrame(() => {
+    if (chatContainerRef.value) {
+      chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight;
+    }
+    scrollRafId = null;
+  });
+}
+
+// chunk 缓冲 — 16ms 内累积后批量更新
+let chunkBuffer = '';
+let chunkFlushTimer: ReturnType<typeof setTimeout> | null = null;
+let chunkTargetId = '';
+
+function flushChunkBuffer() {
+  if (!chunkBuffer || !chunkTargetId) return;
+  const idx = chatHistory.value.findIndex(m => m.id === chunkTargetId);
+  if (idx !== -1) {
+    const msg = chatHistory.value[idx];
+    msg.content = (msg.loading ? '' : msg.content) + chunkBuffer;
+    msg.loading = false;
+    msg.streaming = true;
   }
+  chunkBuffer = '';
+  chunkFlushTimer = null;
+  scrollToBottom();
 }
 
 // 处理快捷问题
@@ -613,7 +656,7 @@ function handleKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="ai-query-page">
+  <div ref="pageRef" class="ai-query-page">
     <div class="page-header">
       <div class="header-left">
         <h1>
@@ -642,7 +685,7 @@ function handleKeydown(event: KeyboardEvent) {
 
     <div class="chat-container">
       <!-- 对话历史区 -->
-      <div class="chat-history" ref="chatContainerRef">
+      <div class="chat-history" ref="chatContainerRef" @scroll="onChatScroll">
         <div
           v-for="message in chatHistory"
           :key="message.id"
@@ -664,7 +707,8 @@ function handleKeydown(event: KeyboardEvent) {
                 <span>{{ message.content || '正在思考...' }}</span>
               </div>
               <template v-else>
-                <div v-if="message.role === 'assistant'" class="message-text markdown-body" v-html="renderMarkdown(message.content)"></div>
+                <div v-if="message.role === 'assistant' && message.streaming" class="message-text streaming-text">{{ message.content }}</div>
+                <div v-else-if="message.role === 'assistant'" class="message-text markdown-body" v-html="renderMarkdown(message.content)"></div>
                 <div v-else class="message-text">{{ message.content }}</div>
 
                 <!-- AI 洞察面板 (only show if insights has actual content) -->
@@ -789,7 +833,7 @@ function handleKeydown(event: KeyboardEvent) {
 <style lang="scss" scoped>
 .ai-query-page {
   padding: 20px;
-  height: calc(100vh - 144px);
+  height: calc(100vh - var(--header-height, 64px) - 80px);
   display: flex;
   flex-direction: column;
 }
@@ -811,7 +855,7 @@ function handleKeydown(event: KeyboardEvent) {
       font-weight: 600;
 
       .el-icon {
-        color: #409EFF;
+        color: var(--color-primary);
       }
     }
   }
@@ -853,7 +897,7 @@ function handleKeydown(event: KeyboardEvent) {
     }
 
     .message-body {
-      background: #409EFF;
+      background: var(--color-primary);
       color: #fff;
       border-radius: 12px 0 12px 12px;
     }
@@ -874,7 +918,7 @@ function handleKeydown(event: KeyboardEvent) {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: #409EFF;
+    background: var(--color-primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -936,10 +980,15 @@ function handleKeydown(event: KeyboardEvent) {
       :deep(strong) { font-weight: 600; }
       :deep(code) { background: rgba(0,0,0,0.06); padding: 2px 4px; border-radius: 3px; font-size: 13px; }
       :deep(pre) { background: rgba(0,0,0,0.04); padding: 8px 12px; border-radius: 6px; overflow-x: auto; }
-      :deep(blockquote) { border-left: 3px solid #409EFF; padding-left: 12px; margin: 0.4em 0; color: #606266; }
+      :deep(blockquote) { border-left: 3px solid var(--color-primary); padding-left: 12px; margin: 0.4em 0; color: #606266; }
       :deep(table) { border-collapse: collapse; margin: 0.5em 0; }
       :deep(th), :deep(td) { border: 1px solid #dcdfe6; padding: 4px 8px; font-size: 13px; }
       :deep(th) { background: #f5f7fa; }
+    }
+
+    // Streaming plain text — pre-wrap preserves newlines, no markdown overhead
+    &.streaming-text {
+      white-space: pre-wrap;
     }
   }
 
@@ -1032,7 +1081,7 @@ function handleKeydown(event: KeyboardEvent) {
   gap: 6px;
 
   .el-icon {
-    color: #409EFF;
+    color: var(--color-primary);
   }
 }
 
@@ -1058,8 +1107,8 @@ function handleKeydown(event: KeyboardEvent) {
   transition: all 0.2s;
 
   &:hover {
-    border-color: #409EFF;
-    box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(27, 101, 168, 0.15);
     transform: translateY(-2px);
   }
 }
@@ -1086,15 +1135,20 @@ function handleKeydown(event: KeyboardEvent) {
 
 // 响应式
 @media (max-width: 768px) {
+  .ai-query-page {
+    padding: 12px;
+    height: calc(100vh - var(--header-height, 56px) - 24px);
+  }
+
   .chat-message {
     .message-content {
-      max-width: 85%;
+      max-width: 90%;
     }
   }
 
   .quick-questions {
     .questions-list {
-      max-height: 80px;
+      max-height: 120px;
       overflow-y: auto;
     }
   }

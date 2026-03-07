@@ -2,6 +2,7 @@
 
 # FastAPI and server
 fastapi>=0.70.0,<1.0.0
+cachetools>=5.3.0
 uvicorn>=0.15.0,<1.0.0
 python-multipart>=0.0.5
 

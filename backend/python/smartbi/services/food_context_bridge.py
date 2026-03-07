@@ -11,7 +11,7 @@ import logging
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from services.food_industry_detector import detect_food_industry, detect_food_sub_sector
+from services.food_industry_detector import detect_food_industry, detect_food_sub_sector, detect_restaurant_chain
 
 logger = logging.getLogger(__name__)
 
@@ -104,13 +104,28 @@ class FoodContextBridge:
             "benchmarks": {},
         }
 
-        if not detection["is_food_industry"]:
+        # Check for restaurant chain data
+        restaurant_info = detect_restaurant_chain(column_names, sample_data)
+        result["restaurant_info"] = restaurant_info
+
+        if not detection["is_food_industry"] and not restaurant_info["is_restaurant_chain"]:
             _cache_set(cache_key, result)
             return result
 
-        # Step 2: Get benchmark data
-        from smartbi.api.benchmark import FOOD_PROCESSING_BENCHMARKS
-        benchmarks = FOOD_PROCESSING_BENCHMARKS["metrics"]
+        # If restaurant chain detected, override food_industry flag and sub_sector
+        if restaurant_info["is_restaurant_chain"]:
+            result["is_food_industry"] = True
+            result["sub_sector"] = restaurant_info["chain_type"]
+            sub_sector = restaurant_info["chain_type"]
+
+        # Step 2: Get benchmark data — use restaurant benchmarks for restaurant data
+        if restaurant_info["is_restaurant_chain"]:
+            from smartbi.api.benchmark import RESTAURANT_DINING_BENCHMARKS
+            benchmarks = RESTAURANT_DINING_BENCHMARKS["metrics"]
+        else:
+            from smartbi.api.benchmark import FOOD_PROCESSING_BENCHMARKS
+            benchmarks = FOOD_PROCESSING_BENCHMARKS["metrics"]
+
         relevant_benchmarks = {}
         for bkey in detection.get("suggested_benchmarks", []):
             if bkey in benchmarks:
@@ -144,10 +159,28 @@ class FoodContextBridge:
 
         # Step 4: Build context string for LLM
         context_parts = []
-        if sub_sector:
+        if restaurant_info["is_restaurant_chain"]:
+            chain_type = restaurant_info["chain_type"]
+            store_count = restaurant_info["store_count"]
+            data_type = restaurant_info["data_type"]
+            context_parts.append(f"数据属于餐饮连锁行业-{chain_type}（{store_count}家门店, {data_type}数据）")
+        elif sub_sector:
             context_parts.append(f"数据属于食品行业-{sub_sector}子行业")
         else:
             context_parts.append("数据属于食品加工行业")
+
+        # Inject Dianping context for restaurant data
+        if restaurant_info["is_restaurant_chain"]:
+            from smartbi.api.benchmark import RESTAURANT_DINING_BENCHMARKS
+            dp = RESTAURANT_DINING_BENCHMARKS.get("dianping_standards", {})
+            if dp:
+                context_parts.append("大众点评上榜标准:")
+                bichi = dp.get("必吃榜", {})
+                if bichi.get("criteria"):
+                    context_parts.append(f"  - 必吃榜: {', '.join(bichi['criteria'])}")
+                榜单 = dp.get("点评榜单", {})
+                if 榜单.get("门槛"):
+                    context_parts.append(f"  - 榜单门槛: {榜单['门槛']}")
 
         if relevant_benchmarks:
             context_parts.append("行业基准参考:")

@@ -1,0 +1,33 @@
+appId: com.cretas.foodtrace
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Cretas Food Trace"
+    timeout: 15000
+- assertVisible: "Login"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- tapOn: "Enter username"
+- inputText: "restaurant_admin1"
+- tapOn: "Enter password"
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    text: "Login"
+    index: 1
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 25000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "\u9996\u9875"
+    timeout: 10000
+- takeScreenshot: screenshots/r1-home
+- assertVisible: "\u914D\u65B9"
+- assertVisible: "\u9886\u6599"
+- assertVisible: "\u76D8\u70B9"
+- assertVisible: "\u635F\u8017"
+- takeScreenshot: screenshots/r1-tabs

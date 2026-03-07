@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, Check, Close } from '@element-plus/icons-vue';
+import { formatDateTimeCell } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -29,6 +30,7 @@ const disposalForm = ref({
   reason: '',
   notes: ''
 });
+const actionLoading = ref(false);
 const batches = ref<any[]>([]);
 
 onMounted(() => {
@@ -132,8 +134,12 @@ async function submitDisposal() {
 }
 
 async function handleApprove(row: any) {
+  if (actionLoading.value) return;
   try {
     await ElMessageBox.confirm('确定批准此废弃申请?', '审批确认', { type: 'warning' });
+  } catch { return; }
+  actionLoading.value = true;
+  try {
     const response = await put(`/${factoryId.value}/disposal-records/${row.id}/approve`, {
       approved: true
     });
@@ -143,22 +149,28 @@ async function handleApprove(row: any) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+  } catch {
+    ElMessage.error('操作失败');
+  } finally {
+    actionLoading.value = false;
   }
 }
 
 async function handleReject(row: any) {
+  if (actionLoading.value) return;
+  let reason: string;
   try {
     const { value } = await ElMessageBox.prompt('请输入拒绝原因', '拒绝申请', {
       inputPattern: /.+/,
       inputErrorMessage: '请输入拒绝原因'
     });
+    reason = value;
+  } catch { return; }
+  actionLoading.value = true;
+  try {
     const response = await put(`/${factoryId.value}/disposal-records/${row.id}/approve`, {
       approved: false,
-      rejectReason: value
+      rejectReason: reason
     });
     if (response.success) {
       ElMessage.success('已拒绝');
@@ -166,10 +178,10 @@ async function handleReject(row: any) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+  } catch {
+    ElMessage.error('操作失败');
+  } finally {
+    actionLoading.value = false;
   }
 }
 
@@ -180,7 +192,7 @@ function getStatusType(status: string) {
     REJECTED: 'danger',
     COMPLETED: 'info'
   };
-  return map[status] || 'info';
+  return map[status?.toUpperCase()] || 'info';
 }
 
 function getStatusText(status: string) {
@@ -190,7 +202,7 @@ function getStatusText(status: string) {
     REJECTED: '已拒绝',
     COMPLETED: '已完成'
   };
-  return map[status] || status;
+  return map[status?.toUpperCase()] || status;
 }
 
 function getTypeText(type: string) {
@@ -200,7 +212,7 @@ function getTypeText(type: string) {
     QUALITY_ISSUE: '质量问题',
     OTHER: '其他'
   };
-  return map[type] || type;
+  return map[type?.toUpperCase()] || type;
 }
 </script>
 
@@ -240,7 +252,7 @@ function getTypeText(type: string) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="recordNumber" label="记录编号" width="160" />
         <el-table-column prop="batchNumber" label="批次号" width="160" />
         <el-table-column prop="disposalType" label="废弃类型" width="120" align="center">
@@ -258,7 +270,7 @@ function getTypeText(type: string) {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="申请时间" width="180" />
+        <el-table-column prop="createdAt" label="申请时间" width="180" :formatter="formatDateTimeCell" />
         <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small">查看</el-button>
@@ -268,6 +280,7 @@ function getTypeText(type: string) {
               link
               size="small"
               :icon="Check"
+              :disabled="actionLoading"
               @click="handleApprove(row)"
             >批准</el-button>
             <el-button
@@ -276,6 +289,7 @@ function getTypeText(type: string) {
               link
               size="small"
               :icon="Close"
+              :disabled="actionLoading"
               @click="handleReject(row)"
             >拒绝</el-button>
           </template>

@@ -385,6 +385,19 @@ export type FAManagementStackParamList = {
   ReturnOrderDetail: { returnId: string };
   // 报工审批
   WorkReportApproval: undefined;
+  // 餐饮模块 (restaurant mode)
+  RecipeList: undefined;
+  RecipeDetail: { productTypeId: string; dishName: string };
+  RecipeEdit: { recipeId?: string } | undefined;
+  RequisitionList: undefined;
+  RequisitionCreate: undefined;
+  RequisitionApproval: undefined;
+  RequisitionDetail: { requisitionId: string };
+  WastageList: undefined;
+  WastageCreate: undefined;
+  StocktakingList: undefined;
+  StocktakingExecute: { recordId?: string } | undefined;
+  StocktakingSummary: undefined;
 };
 
 export type FAProfileStackParamList = {
@@ -399,6 +412,12 @@ export type FAProfileStackParamList = {
   Membership: undefined;
   DataExport: { reportType?: 'production' | 'cost' | 'attendance' };
 };
+
+// Restaurant module type aliases (screens live inside FAManagementStack)
+export type RRecipeStackParamList = FAManagementStackParamList;
+export type RWastageStackParamList = FAManagementStackParamList;
+export type RStocktakingStackParamList = FAManagementStackParamList;
+export type RRequisitionStackParamList = FAManagementStackParamList;
 
 // Factory Admin 屏幕Props
 export type FAHomeScreenProps<T extends keyof FAHomeStackParamList> =

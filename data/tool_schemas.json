@@ -1,0 +1,4569 @@
+[
+  {
+    "name": "alert_acknowledge",
+    "description": "确认（知晓）指定的告警。需要提供告警ID。确认后告警状态变为ACKNOWLEDGED，表示已知晓该告警但尚未解决。适用场景：确认已收到告警、标记正在处理中的告警。",
+    "category": "alert",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "alertId": {
+          "type": "integer",
+          "description": "告警ID，要确认的告警的唯一标识"
+        },
+        "note": {
+          "type": "string",
+          "description": "确认备注，说明确认原因或处理计划"
+        }
+      },
+      "required": [
+        "alertId"
+      ]
+    }
+  },
+  {
+    "name": "alert_active",
+    "description": "查询当前活动的告警列表。仅返回状态为ACTIVE的告警，即未确认、未解决的告警。适用场景：查看需要立即处理的告警、监控当前问题、快速了解系统异常状态。",
+    "category": "alert",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "description": "告警级别筛选",
+          "enum": [
+            "CRITICAL",
+            "WARNING",
+            "INFO"
+          ]
+        },
+        "equipmentId": {
+          "type": "integer",
+          "description": "设备ID，精确匹配"
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 20
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "alert_by_equipment",
+    "description": "查询指定设备的告警列表。根据设备ID获取该设备的所有告警记录，支持按状态和级别筛选。适用场景：分析设备故障历史、查看设备当前问题、设备健康评估。",
+    "category": "alert",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "equipmentId": {
+          "type": "integer",
+          "description": "设备ID，用于查询特定设备的告警"
+        },
+        "equipmentName": {
+          "type": "string",
+          "description": "设备名称，模糊匹配"
+        },
+        "status": {
+          "type": "string",
+          "description": "告警状态筛选",
+          "enum": [
+            "ACTIVE",
+            "ACKNOWLEDGED",
+            "RESOLVED",
+            "IGNORED"
+          ]
+        },
+        "level": {
+          "type": "string",
+          "description": "告警级别筛选",
+          "enum": [
+            "CRITICAL",
+            "WARNING",
+            "INFO"
+          ]
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 20
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "alert_by_level",
+    "description": "按告警级别查询告警列表。可查询CRITICAL(严重)、WARNING(警告)、INFO(提示)级别的告警。适用场景：查看严重告警、筛选警告级别问题、获取提示信息。",
+    "category": "alert",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "description": "告警级别：CRITICAL(严重)、WARNING(警告)、INFO(提示)",
+          "enum": [
+            "CRITICAL",
+            "WARNING",
+            "INFO"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "description": "告警状态筛选",
+          "enum": [
+            "ACTIVE",
+            "ACKNOWLEDGED",
+            "RESOLVED",
+            "IGNORED"
+          ]
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 20
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "alert_diagnose",
+    "description": "诊断分析指定的告警。需要提供告警ID。返回告警的详细信息、可能的原因分析和建议的解决方案。适用场景：分析告警原因、获取解决建议、了解告警详情。",
+    "category": "alert",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "alertId": {
+          "type": "integer",
+          "description": "告警ID，要诊断的告警的唯一标识"
+        },
+        "includeHistory": {
+          "type": "boolean",
+          "description": "是否包含该设备的历史告警信息",
+          "default": "false"
+        }
+      },
+      "required": [
+        "alertId"
+      ]
+    }
+  },
+  {
+    "name": "alert_list",
+    "description": "查询设备告警列表。支持按级别(CRITICAL/WARNING/INFO)、状态(ACTIVE/ACKNOWLEDGED/RESOLVED/IGNORED)、设备ID进行筛选，支持分页。适用场景：查看所有告警、查找特定告警、监控告警状态。",
+    "category": "alert",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "description": "告警级别筛选",
+          "enum": [
+            "CRITICAL",
+            "WARNING",
+            "INFO"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "description": "告警状态筛选",
+          "enum": [
+            "ACTIVE",
+            "ACKNOWLEDGED",
+            "RESOLVED",
+            "IGNORED"
+          ]
+        },
+        "equipmentId": {
+          "type": "integer",
+          "description": "设备ID，精确匹配"
+        },
+        "keyword": {
+          "type": "string",
+          "description": "关键词，模糊搜索告警消息"
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "alert_resolve",
+    "description": "解决（关闭）指定的告警。需要提供告警ID和解决方案说明。解决后告警状态变为RESOLVED。适用场景：标记已修复的问题、关闭已处理的告警、记录解决方案。",
+    "category": "alert",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "alertId": {
+          "type": "integer",
+          "description": "告警ID，要解决的告警的唯一标识"
+        },
+        "resolution": {
+          "type": "string",
+          "description": "解决方案说明，描述如何解决这个问题"
+        }
+      },
+      "required": [
+        "alertId"
+      ]
+    }
+  },
+  {
+    "name": "alert_stats",
+    "description": "获取告警统计信息。返回各级别(CRITICAL/WARNING/INFO)和各状态(ACTIVE/ACKNOWLEDGED/RESOLVED/IGNORED)的告警数量。适用场景：了解告警整体情况、生成告警报表、监控系统健康状态。",
+    "category": "alert",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "startDate": {
+          "type": "string",
+          "description": "统计开始日期，格式：yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "统计结束日期，格式：yyyy-MM-dd"
+        },
+        "equipmentId": {
+          "type": "integer",
+          "description": "设备ID，统计特定设备的告警"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "alert_triage",
+    "description": "对告警进行分诊排序。分析当前所有活动告警，综合告警级别、持续时间等因素，返回按优先级排序的处理建议。适用场景：确定处理顺序、资源分配决策、批量告警管理。",
+    "category": "alert",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "alertId": {
+          "type": "integer",
+          "description": "告警ID，如果提供则只分诊该告警，否则分诊所有活动告警"
+        },
+        "maxResults": {
+          "type": "integer",
+          "description": "最大返回数量",
+          "default": 10
+        },
+        "includeRecommendations": {
+          "type": "boolean",
+          "description": "是否包含每个告警的处理建议",
+          "default": "true"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "conversion_rate_update",
+    "description": "更新原材料到成品的转化率配置。设置特定原材料类型与产品类型之间的转化比例。适用场景：调整生产转化率、配置新产品的原料消耗比例。",
+    "category": "config",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "rawMaterialTypeId": {
+          "type": "string",
+          "description": "原材料类型ID"
+        },
+        "productTypeId": {
+          "type": "string",
+          "description": "产品类型ID"
+        },
+        "conversionRate": {
+          "type": "number",
+          "description": "转化率，表示生产1单位产品需要多少单位原材料"
+        },
+        "effectiveDate": {
+          "type": "string",
+          "description": "生效日期，格式 YYYY-MM-DD，默认立即生效"
+        },
+        "remark": {
+          "type": "string",
+          "description": "配置变更备注"
+        }
+      },
+      "required": [
+        "rawMaterialTypeId",
+        "productTypeId",
+        "conversionRate"
+      ]
+    }
+  },
+  {
+    "name": "equipment_maintenance",
+    "description": "创建或执行设备维护任务。支持例行保养、故障维修、校准、检验等多种维护类型。适用场景：安排设备保养、记录设备维修、设备校准申请。",
+    "category": "config",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "equipmentId": {
+          "type": "string",
+          "description": "设备ID或设备编号"
+        },
+        "maintenanceType": {
+          "type": "string",
+          "description": "维护类型",
+          "enum": [
+            "ROUTINE",
+            "REPAIR",
+            "CALIBRATION",
+            "INSPECTION",
+            "UPGRADE",
+            "CLEANING"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "维护任务描述"
+        },
+        "priority": {
+          "type": "string",
+          "description": "优先级",
+          "default": "MEDIUM",
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "URGENT"
+          ]
+        },
+        "scheduledDate": {
+          "type": "string",
+          "description": "计划执行日期，格式 YYYY-MM-DD"
+        },
+        "assignee": {
+          "type": "string",
+          "description": "维护负责人ID或姓名"
+        }
+      },
+      "required": [
+        "equipmentId",
+        "maintenanceType"
+      ]
+    }
+  },
+  {
+    "name": "rule_config",
+    "description": "管理业务规则配置。支持质检规则、库存规则、生产规则等的创建和更新。适用场景：配置质检标准、设置库存预警阈值、调整生产参数规则。",
+    "category": "config",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "ruleId": {
+          "type": "string",
+          "description": "规则ID，更新现有规则时提供"
+        },
+        "ruleCode": {
+          "type": "string",
+          "description": "规则编码，唯一标识符"
+        },
+        "ruleConfig": {
+          "type": "object",
+          "description": "规则配置内容，JSON格式"
+        },
+        "ruleName": {
+          "type": "string",
+          "description": "规则名称"
+        },
+        "ruleType": {
+          "type": "string",
+          "description": "规则类型",
+          "enum": [
+            "QUALITY_CHECK",
+            "INVENTORY_ALERT",
+            "PRODUCTION",
+            "EXPIRY_ALERT",
+            "APPROVAL_FLOW",
+            "NOTIFICATION"
+          ]
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "是否启用规则",
+          "default": "true"
+        },
+        "description": {
+          "type": "string",
+          "description": "规则描述"
+        }
+      },
+      "required": [
+        "ruleConfig"
+      ]
+    }
+  },
+  {
+    "name": "create_new_intent",
+    "description": "当用户请求无法匹配现有意图时，创建新的意图配置。新意图将处于待审核状态，需要管理员激活后才能使用。适用场景：用户提出新的查询需求、数据操作需求或表单生成需求。",
+    "category": "general",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "intentCode": {
+          "type": "string",
+          "description": "意图唯一代码，建议格式：[类别]_[动作]_[对象]，如 QUERY_MATERIAL_BATCH"
+        },
+        "intentName": {
+          "type": "string",
+          "description": "意图的中文名称，简洁明了，如：查询原料批次"
+        },
+        "category": {
+          "type": "string",
+          "description": "意图类别，决定路由到哪个Handler",
+          "enum": [
+            "QUERY",
+            "DATA_OP",
+            "FORM",
+            "REPORT",
+            "MATERIAL",
+            "PRODUCTION",
+            "QUALITY",
+            "SHIPMENT",
+            "EQUIPMENT",
+            "ATTENDANCE",
+            "SYSTEM"
+          ]
+        },
+        "keywords": {
+          "type": "array",
+          "description": "触发此意图的关键词列表，建议3-5个"
+        },
+        "description": {
+          "type": "string",
+          "description": "详细描述此意图的用途和触发场景"
+        },
+        "semanticDomain": {
+          "type": "string",
+          "description": "语义分类 - 领域，如：物料、生产、质量、设备"
+        },
+        "semanticAction": {
+          "type": "string",
+          "description": "语义分类 - 动作，如：查询、创建、更新、删除"
+        },
+        "semanticObject": {
+          "type": "string",
+          "description": "语义分类 - 对象，如：批次、计划、记录"
+        },
+        "sensitivityLevel": {
+          "type": "string",
+          "description": "数据敏感级别，决定权限要求",
+          "default": "MEDIUM",
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "CRITICAL"
+          ]
+        }
+      },
+      "required": [
+        "intentCode",
+        "intentName",
+        "category",
+        "keywords"
+      ]
+    }
+  },
+  {
+    "name": "customer_active",
+    "description": "获取所有活跃客户列表。返回当前处于活跃状态的所有客户。适用场景：查看活跃客户、获取可合作客户、筛选有效客户。",
+    "category": "crm",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "description": "返回结果数量限制",
+          "default": 50
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "customer_by_type",
+    "description": "按客户类型查询客户列表。根据指定的客户类型筛选客户。适用场景：查看特定类型客户、按类别分类查询、获取某类客户清单。",
+    "category": "crm",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "客户类型，如：企业客户、个人客户、经销商、零售商等",
+          "enum": [
+            "ENTERPRISE",
+            "INDIVIDUAL",
+            "DEALER",
+            "RETAILER",
+            "WHOLESALER",
+            "RESTAURANT",
+            "SUPERMARKET",
+            "OTHER"
+          ]
+        },
+        "limit": {
+          "type": "integer",
+          "description": "返回结果数量限制",
+          "default": 50
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "customer_list",
+    "description": "查询客户列表。支持分页查询，返回客户基本信息、类型、评级等。适用场景：查看所有客户、浏览客户清单、获取客户概览。",
+    "category": "crm",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "客户状态筛选",
+          "enum": [
+            "ACTIVE",
+            "INACTIVE"
+          ]
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "customer_purchase_history",
+    "description": "查询客户购买历史。获取指定客户的历史购买记录，包括购买时间、产品、数量等信息。适用场景：查看客户订单历史、分析客户购买行为、了解客户消费情况。",
+    "category": "crm",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "customerId": {
+          "type": "string",
+          "description": "客户ID，用于指定要查询的客户"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "返回记录数量限制",
+          "default": 50
+        }
+      },
+      "required": [
+        "customerId"
+      ]
+    }
+  },
+  {
+    "name": "customer_search",
+    "description": "按关键词搜索客户。支持按客户名称模糊匹配，返回匹配的客户列表。适用场景：查找特定客户、按名称检索客户、模糊查询客户。",
+    "category": "crm",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "keyword": {
+          "type": "string",
+          "description": "搜索关键词，用于匹配客户名称"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "返回结果数量限制",
+          "default": 20
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "customer_stats",
+    "description": "获取客户统计信息。可查询单个客户的详细统计或获取整体客户统计数据。适用场景：分析客户数据、查看客户概况、获取客户报表、了解客户分布。",
+    "category": "crm",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "customerId": {
+          "type": "string",
+          "description": "客户ID，不指定则返回整体客户统计"
+        },
+        "includeRatingDistribution": {
+          "type": "boolean",
+          "description": "是否包含客户评级分布统计",
+          "default": "true"
+        },
+        "includeTypeDistribution": {
+          "type": "boolean",
+          "description": "是否包含客户类型分布统计",
+          "default": "true"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "supplier_active",
+    "description": "获取所有活跃供应商列表。返回当前处于活跃状态的所有供应商。适用场景：查看活跃供应商、获取可合作供应商、筛选有效供应商。",
+    "category": "crm",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "description": "返回结果数量限制",
+          "default": 50
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "supplier_by_category",
+    "description": "按供应类别查询供应商。根据供应商提供的原材料类别筛选供应商列表。适用场景：查找特定原料供应商、按供应品类筛选、寻找某类材料的供应商。",
+    "category": "crm",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "供应类别或原材料类型，如：肉类、蔬菜、调味料、包装材料等"
+        },
+        "materialType": {
+          "type": "string",
+          "description": "原材料类型（与category同义）"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "返回结果数量限制",
+          "default": 50
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "supplier_evaluate",
+    "description": "评价供应商。对指定供应商进行评级，可添加评价备注。适用场景：更新供应商评分、进行供应商考核、记录供应商表现评价。",
+    "category": "crm",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "supplierId": {
+          "type": "string",
+          "description": "供应商ID，用于指定要评价的供应商"
+        },
+        "rating": {
+          "type": "integer",
+          "description": "供应商评级，1-5分，5分为最高"
+        },
+        "notes": {
+          "type": "string",
+          "description": "评价备注说明"
+        }
+      },
+      "required": [
+        "supplierId",
+        "rating"
+      ]
+    }
+  },
+  {
+    "name": "supplier_list",
+    "description": "查询供应商列表。支持分页查询，返回供应商基本信息、评级、供应类别等。适用场景：查看所有供应商、浏览供应商清单、获取供应商概览。",
+    "category": "crm",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "供应商状态筛选",
+          "enum": [
+            "ACTIVE",
+            "INACTIVE",
+            "PENDING",
+            "BLACKLISTED"
+          ]
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "supplier_ranking",
+    "description": "获取供应商排名。按评级、供货表现等维度对供应商进行排名。适用场景：查看供应商排行、筛选优质供应商、分析供应商表现。",
+    "category": "crm",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "sortBy": {
+          "type": "string",
+          "description": "排序依据",
+          "default": "RATING",
+          "enum": [
+            "RATING",
+            "DELIVERY_RATE",
+            "QUALITY_RATE",
+            "TOTAL_ORDERS"
+          ]
+        },
+        "order": {
+          "type": "string",
+          "description": "排序方向，DESC为降序（默认），ASC为升序",
+          "default": "DESC",
+          "enum": [
+            "DESC",
+            "ASC"
+          ]
+        },
+        "limit": {
+          "type": "integer",
+          "description": "返回排名数量，如TOP10、TOP20",
+          "default": 10
+        },
+        "minRating": {
+          "type": "integer",
+          "description": "最低评级筛选，只显示评级大于等于该值的供应商"
+        },
+        "includeRatingDistribution": {
+          "type": "boolean",
+          "description": "是否包含评级分布统计",
+          "default": "false"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "supplier_search",
+    "description": "按关键词搜索供应商。支持按供应商名称模糊匹配，返回匹配的供应商列表。适用场景：查找特定供应商、按名称检索供应商、模糊查询供应商。",
+    "category": "crm",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "keyword": {
+          "type": "string",
+          "description": "搜索关键词，用于匹配供应商名称"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "返回结果数量限制",
+          "default": 20
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "dahua_device_manage",
+    "description": "管理大华设备：查询设备列表、添加设备、测试连接、获取流地址、抓拍图片、查询智能分析能力。适用场景：设备管理、监控预览、视频流获取、设备状态检查。",
+    "category": "dahua",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "操作类型：list=设备列表，add=添加设备，test=测试连接，streams=获取流地址，capture=抓拍，capabilities=查询智能能力，info=设备信息",
+          "enum": [
+            "list",
+            "add",
+            "test",
+            "streams",
+            "capture",
+            "capabilities",
+            "info"
+          ]
+        },
+        "deviceId": {
+          "type": "string",
+          "description": "设备ID（test/streams/capture/capabilities/info 操作需要）"
+        },
+        "channelId": {
+          "type": "integer",
+          "description": "通道ID（从0开始），默认0",
+          "default": 0
+        },
+        "subStream": {
+          "type": "boolean",
+          "description": "获取流地址时，是否使用子码流（低分辨率），默认false",
+          "default": "false"
+        },
+        "deviceName": {
+          "type": "string",
+          "description": "设备名称（add 操作需要）"
+        },
+        "ipAddress": {
+          "type": "string",
+          "description": "设备IP地址（add 操作需要）"
+        },
+        "port": {
+          "type": "integer",
+          "description": "HTTP端口，默认80",
+          "default": 80
+        },
+        "username": {
+          "type": "string",
+          "description": "登录用户名（add 操作需要）"
+        },
+        "password": {
+          "type": "string",
+          "description": "登录密码（add 操作需要）"
+        },
+        "deviceType": {
+          "type": "string",
+          "description": "设备类型：IPC/NVR/DVR/XVR",
+          "default": "IPC",
+          "enum": [
+            "IPC",
+            "NVR",
+            "DVR",
+            "XVR"
+          ]
+        }
+      },
+      "required": [
+        "action"
+      ]
+    }
+  },
+  {
+    "name": "dahua_device_discovery",
+    "description": "自动发现局域网内的大华摄像头设备。使用 DHDiscover 协议扫描网络，返回发现的设备列表，包含 IP、型号、MAC 地址等信息。适用场景：设备初始化配置、网络摄像头巡检、新设备接入。",
+    "category": "dahua",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "timeout": {
+          "type": "integer",
+          "description": "发现超时时间（毫秒），默认 5000ms",
+          "default": 5000
+        },
+        "scanAllInterfaces": {
+          "type": "boolean",
+          "description": "是否扫描所有网络接口，默认 false（仅广播）",
+          "default": "false"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "dahua_smart_config",
+    "description": "配置大华摄像头智能分析功能（越界检测、区域入侵、人脸检测）。支持查询当前配置状态或修改配置。适用场景：配置行为检测、设置警戒线、启用/禁用智能分析功能。",
+    "category": "dahua",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "type": "string",
+          "description": "大华摄像头设备ID"
+        },
+        "channelId": {
+          "type": "integer",
+          "description": "摄像头通道ID（从0开始），默认0",
+          "default": 0
+        },
+        "action": {
+          "type": "string",
+          "description": "操作类型：query=查询配置，enable=启用，disable=禁用",
+          "default": "query",
+          "enum": [
+            "query",
+            "enable",
+            "disable"
+          ]
+        },
+        "feature": {
+          "type": "string",
+          "description": "智能分析功能：line=越界检测，intrusion=区域入侵，face=人脸检测",
+          "enum": [
+            "line",
+            "intrusion",
+            "face"
+          ]
+        },
+        "sensitivity": {
+          "type": "integer",
+          "description": "检测灵敏度，1-100，默认50",
+          "default": 50
+        }
+      },
+      "required": [
+        "deviceId",
+        "feature"
+      ]
+    }
+  },
+  {
+    "name": "batch_update",
+    "description": "更新批次信息。支持更新批次状态、数量、有效期、备注等字段。适用场景：修改批次状态（如标记为已用完、冻结）、调整数量、更新有效期。",
+    "category": "dataop",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "批次ID，必需参数"
+        },
+        "status": {
+          "type": "string",
+          "description": "批次状态",
+          "enum": [
+            "PENDING",
+            "AVAILABLE",
+            "RESERVED",
+            "IN_USE",
+            "USED_UP",
+            "EXPIRED",
+            "FROZEN",
+            "REJECTED"
+          ]
+        },
+        "quantity": {
+          "type": "number",
+          "description": "更新后的数量"
+        },
+        "expirationDate": {
+          "type": "string",
+          "description": "有效期，格式：YYYY-MM-DD"
+        },
+        "remark": {
+          "type": "string",
+          "description": "批次备注信息"
+        },
+        "reason": {
+          "type": "string",
+          "description": "更新原因，用于操作记录"
+        }
+      },
+      "required": [
+        "batchId"
+      ]
+    }
+  },
+  {
+    "name": "material_update",
+    "description": "更新原材料批次信息。支持更新供应商、存储位置、质量等级、数量、备注等字段。适用场景：修改原材料供应商、调整存储位置、更新质量检验结果。",
+    "category": "dataop",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "materialBatchId": {
+          "type": "string",
+          "description": "原材料批次ID，必需参数"
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "供应商ID"
+        },
+        "storageLocation": {
+          "type": "string",
+          "description": "存储位置，如：A区-1排-3层"
+        },
+        "qualityGrade": {
+          "type": "string",
+          "description": "质量等级",
+          "enum": [
+            "A",
+            "B",
+            "C",
+            "REJECT"
+          ]
+        },
+        "quantity": {
+          "type": "number",
+          "description": "更新后的数量"
+        },
+        "unit": {
+          "type": "string",
+          "description": "数量单位，如：kg、个、箱"
+        },
+        "temperature": {
+          "type": "number",
+          "description": "存储温度（摄氏度）"
+        },
+        "remark": {
+          "type": "string",
+          "description": "备注信息"
+        },
+        "reason": {
+          "type": "string",
+          "description": "更新原因，用于操作记录"
+        }
+      },
+      "required": [
+        "materialBatchId"
+      ]
+    }
+  },
+  {
+    "name": "plan_update",
+    "description": "更新生产计划信息。支持更新计划状态、计划数量、开始日期、结束日期、优先级等字段。适用场景：调整生产计划、修改计划状态（如暂停、恢复）、更新计划时间安排。",
+    "category": "dataop",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "planId": {
+          "type": "string",
+          "description": "生产计划ID，必需参数"
+        },
+        "status": {
+          "type": "string",
+          "description": "计划状态",
+          "enum": [
+            "DRAFT",
+            "PENDING",
+            "IN_PROGRESS",
+            "PAUSED",
+            "COMPLETED",
+            "CANCELLED"
+          ]
+        },
+        "plannedQuantity": {
+          "type": "number",
+          "description": "计划生产数量"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "计划开始日期，格式：YYYY-MM-DD"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "计划结束日期，格式：YYYY-MM-DD"
+        },
+        "priority": {
+          "type": "string",
+          "description": "计划优先级",
+          "enum": [
+            "LOW",
+            "NORMAL",
+            "HIGH",
+            "URGENT"
+          ]
+        },
+        "productionLineId": {
+          "type": "string",
+          "description": "生产线ID"
+        },
+        "remark": {
+          "type": "string",
+          "description": "计划备注信息"
+        },
+        "reason": {
+          "type": "string",
+          "description": "更新原因，用于操作记录"
+        }
+      },
+      "required": [
+        "planId"
+      ]
+    }
+  },
+  {
+    "name": "product_type_query",
+    "description": "查询产品类型列表。支持按产品名称、类别、状态进行筛选，支持分页。适用场景：查看产品目录、查找特定产品类型、查询某类别下的所有产品。",
+    "category": "dataop",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "productName": {
+          "type": "string",
+          "description": "产品名称，支持模糊查询"
+        },
+        "productCode": {
+          "type": "string",
+          "description": "产品编码，精确匹配"
+        },
+        "category": {
+          "type": "string",
+          "description": "产品类别，如：肉类、蔬菜、水产等"
+        },
+        "status": {
+          "type": "string",
+          "description": "产品状态筛选",
+          "enum": [
+            "ACTIVE",
+            "INACTIVE",
+            "DEVELOPING",
+            "DISCONTINUED"
+          ]
+        },
+        "shelfLifeMin": {
+          "type": "integer",
+          "description": "最小保质期（天）"
+        },
+        "shelfLifeMax": {
+          "type": "integer",
+          "description": "最大保质期（天）"
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "product_update",
+    "description": "更新产品类型信息。支持更新产品名称、规格、保质期、状态、描述等字段。适用场景：修改产品基本信息、调整产品保质期、更新产品状态（如停产）。",
+    "category": "dataop",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "productTypeId": {
+          "type": "string",
+          "description": "产品类型ID，必需参数"
+        },
+        "productName": {
+          "type": "string",
+          "description": "产品名称"
+        },
+        "productCode": {
+          "type": "string",
+          "description": "产品编码"
+        },
+        "category": {
+          "type": "string",
+          "description": "产品类别，如：肉类、蔬菜、水产等"
+        },
+        "specification": {
+          "type": "string",
+          "description": "产品规格，如：500g/袋、1kg/箱"
+        },
+        "shelfLife": {
+          "type": "integer",
+          "description": "保质期（天）"
+        },
+        "status": {
+          "type": "string",
+          "description": "产品状态",
+          "enum": [
+            "ACTIVE",
+            "INACTIVE",
+            "DEVELOPING",
+            "DISCONTINUED"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "description": "计量单位，如：kg、个、箱"
+        },
+        "price": {
+          "type": "number",
+          "description": "产品单价"
+        },
+        "description": {
+          "type": "string",
+          "description": "产品描述"
+        },
+        "storageCondition": {
+          "type": "string",
+          "description": "存储条件，如：冷藏、冷冻、常温"
+        },
+        "reason": {
+          "type": "string",
+          "description": "更新原因，用于操作记录"
+        }
+      },
+      "required": [
+        "productTypeId"
+      ]
+    }
+  },
+  {
+    "name": "dictionary_add",
+    "description": "添加新的识别词条到字典。当用户说'xxx也是部门'、'把xxx加到区域词典'、'以后xxx也要能识别'等场景时调用。支持添加区域、部门、指标、时间表达式、维度等类型。",
+    "category": "dictionary",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "dictType": {
+          "type": "string",
+          "description": "字典类型",
+          "enum": [
+            "region",
+            "department",
+            "metric",
+            "time",
+            "dimension"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "标准名称，如：研发部、华东区、销售额"
+        },
+        "aliases": {
+          "type": "array",
+          "description": "别名列表，如：['研发', 'RD', '技术部']"
+        },
+        "parentName": {
+          "type": "string",
+          "description": "父级名称，用于层级关系。如城市的父级是省份"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "扩展元数据，如指标的单位、聚合方式等"
+        }
+      },
+      "required": [
+        "dictType",
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "dictionary_batch_import",
+    "description": "批量导入词条到字典。当上传 Excel 后发现新的部门、区域等字段时调用。会自动去重，只导入不存在的新词条。",
+    "category": "dictionary",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "dictType": {
+          "type": "string",
+          "description": "字典类型",
+          "enum": [
+            "region",
+            "department",
+            "metric",
+            "time",
+            "dimension"
+          ]
+        },
+        "values": {
+          "type": "array",
+          "description": "要导入的值列表，如：['研发部', '产品部', '运维部']"
+        }
+      },
+      "required": [
+        "dictType",
+        "values"
+      ]
+    }
+  },
+  {
+    "name": "dictionary_list",
+    "description": "查询字典中的条目列表。当用户问'有哪些部门'、'支持哪些区域'、'能识别哪些指标'等场景时调用。",
+    "category": "dictionary",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "dictType": {
+          "type": "string",
+          "description": "字典类型，不传则返回所有类型的统计",
+          "enum": [
+            "region",
+            "department",
+            "metric",
+            "time",
+            "dimension"
+          ]
+        },
+        "limit": {
+          "type": "integer",
+          "description": "最多返回多少条，默认20",
+          "default": 20
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "equipment_alert_acknowledge",
+    "description": "确认（知晓）指定的设备告警。需要提供告警ID。确认后告警状态变为ACKNOWLEDGED，表示已知晓该告警但尚未解决。适用场景：确认已收到告警、标记正在处理中的告警。",
+    "category": "equipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "alertId": {
+          "type": "integer",
+          "description": "告警ID，要确认的告警的唯一标识"
+        },
+        "note": {
+          "type": "string",
+          "description": "确认备注，说明确认原因或处理计划"
+        }
+      },
+      "required": [
+        "alertId"
+      ]
+    }
+  },
+  {
+    "name": "equipment_alert_list",
+    "description": "查询设备告警列表。支持按严重程度(CRITICAL/WARNING/INFO)、状态(ACTIVE/ACKNOWLEDGED/RESOLVED/IGNORED)、关键词进行筛选，支持分页。适用场景：查看设备告警、监控设备状态、排查设备问题。",
+    "category": "equipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "severity": {
+          "type": "string",
+          "description": "告警严重程度筛选",
+          "enum": [
+            "CRITICAL",
+            "WARNING",
+            "INFO"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "description": "告警状态筛选",
+          "enum": [
+            "ACTIVE",
+            "ACKNOWLEDGED",
+            "RESOLVED",
+            "IGNORED"
+          ]
+        },
+        "keyword": {
+          "type": "string",
+          "description": "关键词，模糊搜索告警消息或设备名称"
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "equipment_alert_resolve",
+    "description": "解决（关闭）指定的设备告警。需要提供告警ID和解决方案说明。解决后告警状态变为RESOLVED。适用场景：标记已修复的设备问题、关闭已处理的告警、记录解决方案。",
+    "category": "equipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "alertId": {
+          "type": "integer",
+          "description": "告警ID，要解决的告警的唯一标识"
+        },
+        "resolution": {
+          "type": "string",
+          "description": "解决方案说明，描述如何解决这个问题"
+        }
+      },
+      "required": [
+        "alertId",
+        "resolution"
+      ]
+    }
+  },
+  {
+    "name": "equipment_alert_stats",
+    "description": "获取设备告警统计信息。返回各严重程度(CRITICAL/WARNING/INFO)和各状态(ACTIVE/ACKNOWLEDGED/RESOLVED/IGNORED)的告警数量。适用场景：了解设备告警整体情况、生成设备告警报表、监控设备健康状态。",
+    "category": "equipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "startDate": {
+          "type": "string",
+          "description": "统计开始日期，格式：yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "统计结束日期，格式：yyyy-MM-dd"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "equipment_detail",
+    "description": "查询设备详情。返回指定设备的完整信息，包括设备名称、状态、类型、位置、维护记录等。适用场景：查看设备详细信息、了解设备当前状态、获取设备配置。",
+    "category": "equipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "equipmentId": {
+          "type": "string",
+          "description": "设备ID"
+        }
+      },
+      "required": [
+        "equipmentId"
+      ]
+    }
+  },
+  {
+    "name": "equipment_list",
+    "description": "查询设备列表。支持分页查询，返回设备基本信息、状态、类型等。适用场景：查看所有设备、浏览设备清单、获取设备概览。",
+    "category": "equipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 20
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "equipment_start",
+    "description": "启动设备。将指定设备的状态设置为运行中（ACTIVE），记录设备启动时间。适用场景：启动生产设备、开机操作、恢复设备运行。",
+    "category": "equipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "equipmentId": {
+          "type": "string",
+          "description": "设备ID"
+        }
+      },
+      "required": [
+        "equipmentId"
+      ]
+    }
+  },
+  {
+    "name": "equipment_stats",
+    "description": "获取设备统计信息。返回工厂设备的总体统计数据，包括总设备数、各状态设备数量、设备类型分布等。适用场景：了解设备整体情况、生成设备报表、监控设备运行状态分布。",
+    "category": "equipment",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "equipment_status_update",
+    "description": "更新设备状态。可将设备状态设置为：ACTIVE（运行中）、INACTIVE（停止）、MAINTENANCE（维护中）、OFFLINE（离线）。适用场景：变更设备运行状态、标记设备维护、设备上下线管理。",
+    "category": "equipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "equipmentId": {
+          "type": "string",
+          "description": "设备ID"
+        },
+        "status": {
+          "type": "string",
+          "description": "目标状态",
+          "enum": [
+            "ACTIVE",
+            "INACTIVE",
+            "MAINTENANCE",
+            "OFFLINE"
+          ]
+        }
+      },
+      "required": [
+        "equipmentId",
+        "status"
+      ]
+    }
+  },
+  {
+    "name": "equipment_stop",
+    "description": "停止设备。将指定设备的状态设置为停止（INACTIVE），并记录本次运行时长。适用场景：停止生产设备、关机操作、记录设备运行时间。",
+    "category": "equipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "equipmentId": {
+          "type": "string",
+          "description": "设备ID"
+        },
+        "runningHours": {
+          "type": "integer",
+          "description": "本次运行时长（小时）"
+        }
+      },
+      "required": [
+        "equipmentId",
+        "runningHours"
+      ]
+    }
+  },
+  {
+    "name": "form_generation",
+    "description": "根据实体类型和用途生成动态表单配置。支持创建、编辑、查询等多种表单类型。适用场景：生成数据录入表单、创建查询筛选表单、生成审批表单。",
+    "category": "form",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "entityType": {
+          "type": "string",
+          "description": "实体类型",
+          "enum": [
+            "MATERIAL_BATCH",
+            "PRODUCT",
+            "QUALITY_CHECK",
+            "SHIPMENT",
+            "SUPPLIER",
+            "CUSTOMER",
+            "EQUIPMENT",
+            "USER",
+            "PRODUCTION_PLAN"
+          ]
+        },
+        "formPurpose": {
+          "type": "string",
+          "description": "表单用途",
+          "enum": [
+            "CREATE",
+            "EDIT",
+            "VIEW",
+            "QUERY",
+            "APPROVAL",
+            "IMPORT"
+          ]
+        },
+        "includeFields": {
+          "type": "array",
+          "description": "指定包含的字段列表，不指定则包含所有可用字段"
+        },
+        "excludeFields": {
+          "type": "array",
+          "description": "指定排除的字段列表"
+        },
+        "layout": {
+          "type": "string",
+          "description": "表单布局类型",
+          "default": "VERTICAL",
+          "enum": [
+            "VERTICAL",
+            "HORIZONTAL",
+            "GRID",
+            "INLINE"
+          ]
+        },
+        "columns": {
+          "type": "integer",
+          "description": "表单列数，用于GRID布局",
+          "default": 1
+        }
+      },
+      "required": [
+        "entityType",
+        "formPurpose"
+      ]
+    }
+  },
+  {
+    "name": "generate_handler_config",
+    "description": "生成Handler配置建议，包括：推荐的Handler类别、参数模板、验证规则模板。这是一个纯建议工具，不执行实际操作，仅提供配置指导。适用场景：创建新的数据操作意图、表单生成意图、了解现有Handler参数结构。",
+    "category": "general",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "entityType": {
+          "type": "string",
+          "description": "实体类型，如：MaterialBatch、ProcessingBatch、QualityCheckRecord等"
+        },
+        "operationType": {
+          "type": "string",
+          "description": "操作类型，决定Handler的处理逻辑",
+          "enum": [
+            "QUERY",
+            "CREATE",
+            "UPDATE",
+            "DELETE",
+            "FORM"
+          ]
+        }
+      },
+      "required": [
+        "entityType",
+        "operationType"
+      ]
+    }
+  },
+  {
+    "name": "attendance_anomaly",
+    "description": "查询考勤异常记录。获取迟到、早退、缺勤、漏打卡等异常情况列表，支持按用户、部门、日期范围筛选。适用场景：查看今日迟到人员、本周缺勤记录、查找漏打卡员工。",
+    "category": "hr",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "用户ID，不传则查询全部用户"
+        },
+        "departmentId": {
+          "type": "string",
+          "description": "部门ID，不传则查询全部部门"
+        },
+        "anomalyType": {
+          "type": "string",
+          "description": "异常类型筛选",
+          "enum": [
+            "LATE",
+            "EARLY_LEAVE",
+            "ABSENT",
+            "MISSING_CLOCK_IN",
+            "MISSING_CLOCK_OUT",
+            "OVERTIME"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式：YYYY-MM-DD"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式：YYYY-MM-DD"
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "attendance_department",
+    "description": "查询部门考勤汇总。获取指定部门在某一天或某段时间内的考勤统计，包括出勤人数、缺勤人数、迟到早退情况。适用场景：查看部门今日出勤情况、部门考勤统计报表。",
+    "category": "hr",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "departmentId": {
+          "type": "string",
+          "description": "部门ID，不传则查询用户所属部门或全部部门（需权限）"
+        },
+        "date": {
+          "type": "string",
+          "description": "查询日期，格式：YYYY-MM-DD，默认今天"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式：YYYY-MM-DD"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式：YYYY-MM-DD"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "attendance_history",
+    "description": "查询考勤历史记录。获取指定用户在一段时间内的考勤详情，支持分页。适用场景：查看过去一周/一个月的考勤、查看某人的考勤记录。",
+    "category": "hr",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "用户ID，不传则查询当前登录用户"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式：YYYY-MM-DD"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式：YYYY-MM-DD"
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "attendance_monthly",
+    "description": "查询月度考勤报表。获取指定用户某月的考勤统计汇总，包括出勤天数、迟到早退次数、缺勤天数、加班时长等。适用场景：查看本月考勤汇总、查看某人某月出勤情况。",
+    "category": "hr",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "用户ID，不传则查询当前登录用户"
+        },
+        "year": {
+          "type": "integer",
+          "description": "年份，如2026"
+        },
+        "month": {
+          "type": "integer",
+          "description": "月份，1-12"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "attendance_stats",
+    "description": "获取考勤统计数据。查看出勤率、迟到率、平均工作时长等关键指标，支持按用户、部门、时间段统计。适用场景：查看整体考勤情况、生成考勤报表、分析出勤趋势。",
+    "category": "hr",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "用户ID，不传则统计全体员工"
+        },
+        "departmentId": {
+          "type": "string",
+          "description": "部门ID，不传则统计全部部门"
+        },
+        "period": {
+          "type": "string",
+          "description": "统计周期",
+          "default": "MONTH",
+          "enum": [
+            "TODAY",
+            "WEEK",
+            "MONTH",
+            "QUARTER",
+            "YEAR",
+            "CUSTOM"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式：YYYY-MM-DD"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式：YYYY-MM-DD"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "attendance_status",
+    "description": "查询考勤状态。获取指定用户的实时考勤状态，包括是否已签到、是否在岗、迟到早退情况。适用场景：查看某人是否在岗、查看自己的考勤状态。",
+    "category": "hr",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "用户ID，不传则查询当前登录用户"
+        },
+        "date": {
+          "type": "string",
+          "description": "查询日期，格式：YYYY-MM-DD，默认今天"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "attendance_today",
+    "description": "查询今日考勤记录。获取当前用户今天的签到签退情况、工作时长统计。适用场景：查看今天是否已签到、查看今日工作时长。",
+    "category": "hr",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "用户ID，不传则查询当前登录用户"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "clock_in",
+    "description": "执行签到打卡。记录当前用户的上班签到时间，支持添加签到备注和位置信息。适用场景：上班打卡、补签到。",
+    "category": "hr",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "remark": {
+          "type": "string",
+          "description": "签到备注，如外勤说明"
+        },
+        "location": {
+          "type": "string",
+          "description": "签到位置描述"
+        },
+        "latitude": {
+          "type": "number",
+          "description": "签到位置纬度"
+        },
+        "longitude": {
+          "type": "number",
+          "description": "签到位置经度"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "clock_out",
+    "description": "执行签退打卡。记录当前用户的下班签退时间，自动计算当日工作时长。适用场景：下班打卡、补签退。",
+    "category": "hr",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "remark": {
+          "type": "string",
+          "description": "签退备注，如加班说明"
+        },
+        "location": {
+          "type": "string",
+          "description": "签退位置描述"
+        },
+        "latitude": {
+          "type": "number",
+          "description": "签退位置纬度"
+        },
+        "longitude": {
+          "type": "number",
+          "description": "签退位置经度"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "isapi_smart_capabilities_query",
+    "description": "查询摄像头智能分析能力。查看设备支持哪些智能分析功能。适用场景：检查设备能力、查询智能分析状态、了解设备支持的功能。",
+    "category": "isapi",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "type": "string",
+          "description": "摄像头设备ID"
+        }
+      },
+      "required": [
+        "deviceId"
+      ]
+    }
+  },
+  {
+    "name": "isapi_field_detection_config",
+    "description": "配置摄像头区域入侵检测。支持查询当前配置或设置新配置。适用场景：配置入侵检测、设置禁区、启用/禁用区域布防。",
+    "category": "isapi",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "type": "string",
+          "description": "摄像头设备ID"
+        },
+        "channelId": {
+          "type": "integer",
+          "description": "摄像头通道ID，默认1",
+          "default": 1
+        },
+        "action": {
+          "type": "string",
+          "description": "操作类型：query=查询配置，enable=启用，disable=禁用",
+          "default": "query",
+          "enum": [
+            "query",
+            "enable",
+            "disable"
+          ]
+        },
+        "sensitivity": {
+          "type": "integer",
+          "description": "检测灵敏度，1-100"
+        },
+        "threshold": {
+          "type": "integer",
+          "description": "触发阈值（秒），在区域内停留多长时间触发告警"
+        }
+      },
+      "required": [
+        "deviceId"
+      ]
+    }
+  },
+  {
+    "name": "isapi_line_detection_config",
+    "description": "配置摄像头越界检测（虚拟警戒线）。支持查询当前配置或设置新配置。适用场景：配置行为检测、设置警戒线、启用/禁用越界检测。",
+    "category": "isapi",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "type": "string",
+          "description": "摄像头设备ID"
+        },
+        "channelId": {
+          "type": "integer",
+          "description": "摄像头通道ID，默认1",
+          "default": 1
+        },
+        "action": {
+          "type": "string",
+          "description": "操作类型：query=查询配置，enable=启用，disable=禁用",
+          "default": "query",
+          "enum": [
+            "query",
+            "enable",
+            "disable"
+          ]
+        },
+        "sensitivity": {
+          "type": "integer",
+          "description": "检测灵敏度，1-100"
+        }
+      },
+      "required": [
+        "deviceId"
+      ]
+    }
+  },
+  {
+    "name": "material_adjust_quantity",
+    "description": "调整原材料批次的库存数量。可用于库存盘点调整、损耗记录、入库补录等场景。需要提供批次ID、调整后的数量以及调整原因。此操作需要管理员权限。",
+    "category": "material",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "原材料批次的唯一标识符（批次ID或批次号）"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "调整后的库存数量，必须是非负数。单位与批次原有单位一致"
+        },
+        "reason": {
+          "type": "string",
+          "description": "库存调整的原因说明，如：盘点调整、损耗、入库补录等"
+        }
+      },
+      "required": [
+        "batchId",
+        "quantity",
+        "reason"
+      ]
+    }
+  },
+  {
+    "name": "material_batch_consume",
+    "description": "消耗已预留的原材料，从预留数量中扣减。用于生产过程中实际使用预留的原材料。需要提供批次ID和消耗数量，可选关联生产计划ID。",
+    "category": "material",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "要消耗的原材料批次ID"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "消耗数量，必须为正数，单位与批次一致（通常为kg）"
+        },
+        "productionPlanId": {
+          "type": "string",
+          "description": "关联的生产计划ID，用于追溯原材料使用"
+        }
+      },
+      "required": [
+        "batchId",
+        "quantity"
+      ]
+    }
+  },
+  {
+    "name": "material_batch_create",
+    "description": "创建原材料入库批次。用于登记新到货的原材料。需要提供原材料类型ID、供应商ID、数量等信息。",
+    "category": "material",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "materialTypeId": {
+          "type": "string",
+          "description": "原材料类型ID"
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "供应商ID"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "入库数量，必须大于0"
+        },
+        "unit": {
+          "type": "string",
+          "description": "数量单位，如：公斤、箱、袋等"
+        },
+        "totalValue": {
+          "type": "number",
+          "description": "入库总价值(元)"
+        }
+      },
+      "required": [
+        "materialTypeId",
+        "supplierId",
+        "quantity",
+        "unit"
+      ]
+    }
+  },
+  {
+    "name": "material_batch_query",
+    "description": "查询原料批次列表。支持按批次号、原料类型ID、状态进行筛选，支持分页。适用场景：查看库存批次、查找特定批次、查询某类原料的所有批次。",
+    "category": "material",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchNumber": {
+          "type": "string",
+          "description": "批次号，支持模糊查询"
+        },
+        "materialTypeId": {
+          "type": "string",
+          "description": "原料类型ID，精确匹配"
+        },
+        "status": {
+          "type": "string",
+          "description": "批次状态筛选",
+          "enum": [
+            "PENDING",
+            "AVAILABLE",
+            "RESERVED",
+            "IN_USE",
+            "USED_UP",
+            "EXPIRED",
+            "FROZEN",
+            "REJECTED"
+          ]
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        },
+        "startDate": {
+          "type": "string",
+          "description": "入库日期开始（含），格式：YYYY-MM-DD"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "入库日期结束（含），格式：YYYY-MM-DD"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "material_batch_release",
+    "description": "释放预留的原材料批次数量。释放后，该数量将归还到可用库存中。可指定生产计划ID以释放特定计划的预留。适用场景：生产计划取消、订单变更、预留调整等。",
+    "category": "material",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "原材料批次ID"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "释放数量，必须大于0且不超过已预留数量"
+        },
+        "productionPlanId": {
+          "type": "string",
+          "description": "关联的生产计划ID，用于释放特定计划的预留"
+        }
+      },
+      "required": [
+        "batchId",
+        "quantity"
+      ]
+    }
+  },
+  {
+    "name": "material_batch_reserve",
+    "description": "预留原材料批次的指定数量。预留后，该数量将从可用库存中扣除，但不会实际消耗材料。可关联生产计划进行预留追踪。适用场景：生产计划备料、订单预留、紧急备货等。",
+    "category": "material",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "原材料批次ID"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "预留数量，必须大于0"
+        },
+        "productionPlanId": {
+          "type": "string",
+          "description": "关联的生产计划ID，用于追踪预留来源"
+        }
+      },
+      "required": [
+        "batchId",
+        "quantity"
+      ]
+    }
+  },
+  {
+    "name": "material_batch_use",
+    "description": "使用/消耗原材料，记录原料出库。需要指定批次和消耗数量。",
+    "category": "material",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "原材料批次ID，用于唯一标识要消耗的批次"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "消耗数量，必须大于0且不超过批次剩余可用数量"
+        },
+        "productionPlanId": {
+          "type": "string",
+          "description": "关联的生产计划ID，用于追溯原料使用去向"
+        },
+        "reason": {
+          "type": "string",
+          "description": "使用/消耗原因说明，如：生产使用、样品制作、损耗等"
+        }
+      },
+      "required": [
+        "batchId",
+        "quantity"
+      ]
+    }
+  },
+  {
+    "name": "material_expired_query",
+    "description": "查询已过期的原材料批次。返回所有过期批次的详细信息，包括批次号、原材料名称、过期日期、当前数量、供应商等。适用于过期物料盘点、库存清理、质量管理等场景。",
+    "category": "material",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "material_expiring_alert",
+    "description": "查询即将过期的原材料批次预警。返回指定天数内即将过期的批次列表，包括批次号、原材料名称、过期日期、剩余天数、当前数量等。默认查询7天内过期的批次。适用于保质期管理、库存预警、先进先出提醒等场景。",
+    "category": "material",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "warningDays": {
+          "type": "integer",
+          "description": "预警天数，查询多少天内即将过期的批次。默认为7天。",
+          "default": "DEFAULT_WARNING_DAYS"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "material_fifo_recommend",
+    "description": "根据FIFO（先进先出）原则推荐应该优先使用的原材料批次。系统会按照入库时间排序，优先推荐较早入库且未过期的批次。适用于生产领料、库存分配等场景。",
+    "category": "material",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "materialTypeId": {
+          "type": "string",
+          "description": "原材料类型的唯一标识符，用于筛选特定类型的批次"
+        },
+        "requiredQuantity": {
+          "type": "number",
+          "description": "需要使用的原材料数量，系统将推荐足够满足此数量的批次组合"
+        }
+      },
+      "required": [
+        "materialTypeId",
+        "requiredQuantity"
+      ]
+    }
+  },
+  {
+    "name": "material_low_stock_alert",
+    "description": "查询低库存预警。返回所有低于安全库存水平的原材料列表，包括原材料名称、当前库存量、安全库存量、缺口数量等。适用于采购计划制定、库存补货提醒、供应链管理等场景。",
+    "category": "material",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "processing_batch_cancel",
+    "description": "取消生产批次。将批次状态改为「已取消」，需要指定批次ID和取消原因。注意：已完成的批次不能取消。适用场景：订单取消、计划变更、原料问题取消生产。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "生产批次ID"
+        },
+        "reason": {
+          "type": "string",
+          "description": "取消原因，如：订单取消、计划变更、原料问题等"
+        }
+      },
+      "required": [
+        "batchId",
+        "reason"
+      ]
+    }
+  },
+  {
+    "name": "processing_batch_complete",
+    "description": "完成生产批次。记录实际产量、良品数量、不良品数量，将批次状态改为「已完成」。系统会自动计算良品率、效率等指标。适用场景：生产结束、产量录入、完工确认。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "生产批次ID"
+        },
+        "actualQuantity": {
+          "type": "number",
+          "description": "实际生产总数量"
+        },
+        "goodQuantity": {
+          "type": "number",
+          "description": "良品数量（合格产品）"
+        },
+        "defectQuantity": {
+          "type": "number",
+          "description": "不良品数量（不合格产品）"
+        }
+      },
+      "required": [
+        "batchId",
+        "actualQuantity",
+        "goodQuantity",
+        "defectQuantity"
+      ]
+    }
+  },
+  {
+    "name": "processing_batch_create",
+    "description": "创建生产批次。需要指定产品类型ID、批次号、计划数量，可选指定负责人ID和开始时间。适用场景：新建生产任务、创建加工批次、安排生产计划。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "productTypeId": {
+          "type": "string",
+          "description": "产品类型ID，关联ProductType表"
+        },
+        "batchNumber": {
+          "type": "string",
+          "description": "批次号，唯一标识生产批次"
+        },
+        "plannedQuantity": {
+          "type": "number",
+          "description": "计划生产数量"
+        },
+        "supervisorId": {
+          "type": "integer",
+          "description": "生产负责人ID"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "计划开始时间，格式：yyyy-MM-dd HH:mm:ss"
+        },
+        "unit": {
+          "type": "string",
+          "description": "计量单位，如：kg、件、箱",
+          "default": "kg"
+        },
+        "notes": {
+          "type": "string",
+          "description": "批次备注信息"
+        }
+      },
+      "required": [
+        "productTypeId",
+        "batchNumber",
+        "plannedQuantity"
+      ]
+    }
+  },
+  {
+    "name": "processing_batch_detail",
+    "description": "获取生产批次详情。返回批次的完整信息，包括基本信息、生产数据、成本数据、质量指标等。适用场景：查看批次详情、追踪生产状态、查询产量数据。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "生产批次ID或批次号"
+        }
+      },
+      "required": [
+        "batchId"
+      ]
+    }
+  },
+  {
+    "name": "processing_batch_list",
+    "description": "获取生产批次列表。支持按状态（计划中、生产中、已暂停、已完成、已取消）筛选，支持分页。适用场景：查看生产任务列表、筛选特定状态的批次、批次概览。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "批次状态筛选",
+          "enum": [
+            "PLANNED",
+            "IN_PROGRESS",
+            "PAUSED",
+            "COMPLETED",
+            "CANCELLED"
+          ]
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "processing_batch_pause",
+    "description": "暂停生产批次。将批次状态从「生产中」改为「已暂停」，需要指定批次ID和暂停原因。适用场景：设备故障暂停、原料不足暂停、质量问题暂停、其他原因暂停。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "生产批次ID"
+        },
+        "reason": {
+          "type": "string",
+          "description": "暂停原因，如：设备故障、原料不足、质量问题、人员调配等"
+        }
+      },
+      "required": [
+        "batchId",
+        "reason"
+      ]
+    }
+  },
+  {
+    "name": "processing_batch_resume",
+    "description": "恢复生产批次。将批次状态从「已暂停」改为「生产中」，继续之前暂停的生产。适用场景：故障修复后恢复、原料补充后恢复、问题解决后恢复生产。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "生产批次ID"
+        }
+      },
+      "required": [
+        "batchId"
+      ]
+    }
+  },
+  {
+    "name": "processing_batch_start",
+    "description": "开始生产批次。将批次状态从「已计划」改为「生产中」，需要指定批次ID和负责人ID。适用场景：开始生产任务、启动加工流程、开工确认。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "生产批次ID"
+        },
+        "supervisorId": {
+          "type": "integer",
+          "description": "生产负责人ID，必须指定当前负责人"
+        }
+      },
+      "required": [
+        "batchId",
+        "supervisorId"
+      ]
+    }
+  },
+  {
+    "name": "processing_batch_timeline",
+    "description": "获取生产批次时间线。返回批次从创建到当前状态的所有操作记录，包括状态变更、暂停原因、完成数据等。适用场景：追踪生产历程、查看操作记录、审计生产过程。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "生产批次ID或批次号"
+        }
+      },
+      "required": [
+        "batchId"
+      ]
+    }
+  },
+  {
+    "name": "processing_batch_workers",
+    "description": "查询生产批次分配的员工列表。返回员工信息和工作状态（进行中/已完成）。适用场景：查看批次人员配置、了解工作分配情况。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "integer",
+          "description": "要查询的生产批次ID"
+        }
+      },
+      "required": [
+        "batchId"
+      ]
+    }
+  },
+  {
+    "name": "processing_worker_assign",
+    "description": "将员工分配到生产批次。支持一次分配多个员工。用于记录员工参与哪个批次的生产工作。适用场景：开始生产时分配工人、调整人员安排。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "integer",
+          "description": "要分配员工的生产批次ID"
+        },
+        "workerIds": {
+          "type": "array",
+          "description": "要分配的员工ID列表"
+        },
+        "notes": {
+          "type": "string",
+          "description": "分配备注，如工作职责说明"
+        }
+      },
+      "required": [
+        "batchId",
+        "workerIds"
+      ]
+    }
+  },
+  {
+    "name": "processing_worker_checkout",
+    "description": "记录员工完成批次工作并签出。用于统计员工工时和工作记录。可选记录实际工作时间。适用场景：员工完成工作签出、记录工时。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "integer",
+          "description": "员工所在的生产批次ID"
+        },
+        "workerId": {
+          "type": "integer",
+          "description": "要签出的员工ID"
+        },
+        "workMinutes": {
+          "type": "integer",
+          "description": "实际工作分钟数，用于工时统计。不填则自动计算"
+        },
+        "notes": {
+          "type": "string",
+          "description": "签出备注，如工作内容说明"
+        }
+      },
+      "required": [
+        "batchId",
+        "workerId"
+      ]
+    }
+  },
+  {
+    "name": "production_confirm_workers_present",
+    "description": "确认生产人员已就位。查询当前进行中的生产批次及其分配的员工状态，汇总就位人数和缺勤人数。适用场景：确认人员到齐、检查开工就绪状态、人员就位确认。",
+    "category": "processing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "integer",
+          "description": "指定批次ID（可选，不传则查询所有进行中批次）"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "quality_check_create",
+    "description": "创建质检任务。需要指定生产批次ID和质检类型，可选指定检验员和计划时间。适用场景：新建质检任务、安排质检计划、记录质检需求。",
+    "category": "quality",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "生产批次ID，用于关联要进行质检的批次"
+        },
+        "checkType": {
+          "type": "string",
+          "description": "质检类型，如：感官检验、理化检验、微生物检验等",
+          "enum": [
+            "SENSORY",
+            "PHYSICAL",
+            "CHEMICAL",
+            "MICROBIOLOGICAL",
+            "MATERIAL"
+          ]
+        },
+        "inspectorId": {
+          "type": "integer",
+          "description": "检验员用户ID，不指定则使用当前用户"
+        },
+        "scheduledTime": {
+          "type": "string",
+          "description": "计划检验时间，格式：yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss，不指定则默认今天"
+        },
+        "notes": {
+          "type": "string",
+          "description": "质检任务备注信息"
+        }
+      },
+      "required": [
+        "batchId",
+        "checkType"
+      ]
+    }
+  },
+  {
+    "name": "quality_check_query",
+    "description": "查询质检任务列表。支持按批次ID、检验结果状态、质检类型进行筛选，支持分页。适用场景：查看质检记录、查找特定批次的质检结果、统计质检数据。",
+    "category": "quality",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "description": "生产批次ID，筛选特定批次的质检记录"
+        },
+        "status": {
+          "type": "string",
+          "description": "检验结果状态筛选",
+          "enum": [
+            "PENDING",
+            "PASS",
+            "FAIL",
+            "CONDITIONAL"
+          ]
+        },
+        "checkType": {
+          "type": "string",
+          "description": "质检类型筛选",
+          "enum": [
+            "SENSORY",
+            "PHYSICAL",
+            "CHEMICAL",
+            "MICROBIOLOGICAL",
+            "MATERIAL"
+          ]
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "quality_check_update",
+    "description": "更新质检任务信息。需要指定质检任务ID，可更新检验结果、检验员、样本数据等。适用场景：录入质检结果、更新质检状态、修改检验员、添加备注。",
+    "category": "quality",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "checkId": {
+          "type": "string",
+          "description": "质检任务ID，用于标识要更新的质检记录"
+        },
+        "status": {
+          "type": "string",
+          "description": "检验结果状态",
+          "enum": [
+            "PENDING",
+            "PASS",
+            "FAIL",
+            "CONDITIONAL"
+          ]
+        },
+        "result": {
+          "type": "string",
+          "description": "检验结果，与status参数作用相同",
+          "enum": [
+            "PENDING",
+            "PASS",
+            "FAIL",
+            "CONDITIONAL"
+          ]
+        },
+        "inspectorId": {
+          "type": "integer",
+          "description": "更换检验员，提供新的检验员用户ID"
+        },
+        "sampleSize": {
+          "type": "number",
+          "description": "抽样数量"
+        },
+        "passCount": {
+          "type": "number",
+          "description": "合格数量"
+        },
+        "failCount": {
+          "type": "number",
+          "description": "不合格数量"
+        },
+        "notes": {
+          "type": "string",
+          "description": "质检任务备注信息，追加到现有备注"
+        }
+      },
+      "required": [
+        "checkId"
+      ]
+    }
+  },
+  {
+    "name": "quality_record_query",
+    "description": "查询质检记录（历史结果）。支持按批次ID、检验结果、日期范围筛选，支持分页。适用场景：查看历史质检记录、查找特定批次质检结果、统计质检通过率。",
+    "category": "quality",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "integer",
+          "description": "生产批次ID，精确匹配"
+        },
+        "result": {
+          "type": "string",
+          "description": "质检结果筛选：PASS-合格，FAIL-不合格，CONDITIONAL-有条件放行",
+          "enum": [
+            "PASS",
+            "FAIL",
+            "CONDITIONAL"
+          ]
+        },
+        "dateFrom": {
+          "type": "string",
+          "description": "查询开始日期，格式：yyyy-MM-dd"
+        },
+        "dateTo": {
+          "type": "string",
+          "description": "查询结束日期，格式：yyyy-MM-dd"
+        },
+        "inspectorId": {
+          "type": "integer",
+          "description": "检验员ID，精确匹配"
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "quality_result_submit",
+    "description": "提交质检结果。用于记录质量检验的最终结论，包括检验数据、合格率、结论说明等。适用场景：提交成品质检、原料来料检验、过程检验结果。",
+    "category": "quality",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "checkId": {
+          "type": "string",
+          "description": "质检记录ID，用于更新现有记录；如果为空则创建新记录"
+        },
+        "productionBatchId": {
+          "type": "integer",
+          "description": "关联的生产批次ID，创建新质检记录时必需"
+        },
+        "result": {
+          "type": "string",
+          "description": "质检结果：PASS-合格，FAIL-不合格，CONDITIONAL-有条件放行",
+          "enum": [
+            "PASS",
+            "FAIL",
+            "CONDITIONAL"
+          ]
+        },
+        "conclusion": {
+          "type": "string",
+          "description": "质检结论说明，如：各项指标均符合标准、存在外观缺陷等"
+        },
+        "sampleSize": {
+          "type": "number",
+          "description": "抽检样本数量"
+        },
+        "passCount": {
+          "type": "number",
+          "description": "合格样本数量"
+        },
+        "failCount": {
+          "type": "number",
+          "description": "不合格样本数量"
+        },
+        "checkItems": {
+          "type": "array",
+          "description": "检测项详细数据，包含各项检测指标的值"
+        },
+        "photos": {
+          "type": "array",
+          "description": "质检照片URL列表"
+        },
+        "notes": {
+          "type": "string",
+          "description": "其他备注说明"
+        }
+      },
+      "required": [
+        "checkId",
+        "result",
+        "conclusion"
+      ]
+    }
+  },
+  {
+    "name": "quality_stats_query",
+    "description": "查询质检统计数据。返回指定时间段内的质检合格率、不合格率、质量问题数等统计指标。适用场景：查看今日/本周/本月质检统计、生成质量报表、分析质量趋势。",
+    "category": "quality",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "统计周期：today-今日，week-本周，month-本月，year-本年，custom-自定义",
+          "default": "today",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "year",
+            "custom"
+          ]
+        },
+        "dateFrom": {
+          "type": "string",
+          "description": "自定义查询开始日期，格式：yyyy-MM-dd（period=custom时使用）"
+        },
+        "dateTo": {
+          "type": "string",
+          "description": "自定义查询结束日期，格式：yyyy-MM-dd（period=custom时使用）"
+        },
+        "productTypeId": {
+          "type": "string",
+          "description": "产品类型ID，用于筛选特定产品的质检统计"
+        },
+        "includeDetails": {
+          "type": "boolean",
+          "description": "是否包含检验员统计等详细数据",
+          "default": "false"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "query_drools_rules",
+    "description": "查询现有的Drools验证规则，提取与指定实体类型和操作类型相关的规则。返回规则名称、优先级、条件、动作等信息。适用场景：创建新意图前了解现有验证规则、分析验证逻辑、排查验证失败原因。",
+    "category": "general",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "entityType": {
+          "type": "string",
+          "description": "实体类型，用于过滤相关规则。如：MaterialBatch、ProcessingBatch等"
+        },
+        "operationType": {
+          "type": "string",
+          "description": "操作类型，用于过滤相关规则",
+          "enum": [
+            "QUERY",
+            "CREATE",
+            "UPDATE",
+            "DELETE",
+            "BATCH_UPDATE",
+            "BATCH_DELETE"
+          ]
+        },
+        "ruleFile": {
+          "type": "string",
+          "description": "指定规则文件名，如：intent-validation.drl、field-validation.drl等"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "query_entity_schema",
+    "description": "查询指定实体的Schema信息，包括所有字段名称、类型、是否必填等。用于辅助生成数据查询、数据操作、表单生成等意图。支持中文、英文和下划线格式的实体名称。",
+    "category": "general",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "entityName": {
+          "type": "string",
+          "description": "实体名称，支持中文（如：原料批次）、英文（如：MaterialBatch）、下划线格式（如：material_batch）"
+        }
+      },
+      "required": [
+        "entityName"
+      ]
+    }
+  },
+  {
+    "name": "report_anomaly",
+    "description": "获取异常分析报表，包含异常模式检测、离群值分析、告警汇总、风险评估等数据。适用场景：异常监控、风险预警、问题追踪、质量异常分析。",
+    "category": "report",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "时间周期：today(今日), week(本周), month(本月), quarter(本季度), year(本年)",
+          "default": "week",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式: yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式: yyyy-MM-dd"
+        },
+        "anomalyType": {
+          "type": "string",
+          "description": "异常类型筛选",
+          "enum": [
+            "PRODUCTION",
+            "QUALITY",
+            "EQUIPMENT",
+            "INVENTORY",
+            "SAFETY",
+            "ALL"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "description": "严重程度筛选",
+          "enum": [
+            "CRITICAL",
+            "HIGH",
+            "MEDIUM",
+            "LOW",
+            "ALL"
+          ]
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "report_bom_cost",
+    "description": "获取 BOM 成本分析报表，包含理论成本与实际成本对比、成本差异分析、成本异常检测。适用场景：成本核算、差异分析、成本优化、报价参考。数据已预计算，可直接用于分析，无需额外聚合。",
+    "category": "report",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "productTypeId": {
+          "type": "string",
+          "description": "产品类型ID，指定时返回单个产品的详细成本分析"
+        },
+        "period": {
+          "type": "string",
+          "description": "时间周期：today(今日), week(本周), month(本月)，用于生产统计",
+          "default": "week",
+          "enum": [
+            "today",
+            "week",
+            "month"
+          ]
+        },
+        "analysisType": {
+          "type": "string",
+          "description": "分析类型：summary(汇总), detail(详细), variance(差异分析)",
+          "default": "summary",
+          "enum": [
+            "summary",
+            "detail",
+            "variance"
+          ]
+        },
+        "includeZeroCost": {
+          "type": "boolean",
+          "description": "是否包含零成本产品",
+          "default": "false"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "report_cost_variance",
+    "description": "获取成本差异分析报表，包含BOM理论成本与实际成本对比、差异分析、成本异常检测。适用场景：成本控制、BOM优化、降本增效分析。",
+    "category": "report",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "时间周期：today(今日), week(本周), month(本月), quarter(本季度), year(本年)",
+          "default": "month",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式: yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式: yyyy-MM-dd"
+        },
+        "productTypeId": {
+          "type": "string",
+          "description": "产品类型ID，筛选特定产品的成本差异数据"
+        },
+        "varianceThreshold": {
+          "type": "number",
+          "description": "差异阈值百分比，只显示差异超过此阈值的数据（例如: 5 表示只显示差异超过5%的）"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "report_dashboard_overview",
+    "description": "获取仪表盘概览报表，包含关键指标、生产概况、质量概况、库存状态等综合数据。适用场景：管理层总览、每日经营概况、实时监控、快速了解工厂整体运营状态。",
+    "category": "report",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "时间周期：today(今日), week(本周), month(本月), quarter(本季度), year(本年)",
+          "default": "today",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式: yyyy-MM-dd，如指定则覆盖period参数"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式: yyyy-MM-dd，如指定则覆盖period参数"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "report_efficiency",
+    "description": "获取效率报表，包含设备利用率、生产效率、劳动生产率、资源优化分析等数据。适用场景：效率分析、产能利用、设备OEE分析、人均产出评估。",
+    "category": "report",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "时间周期：today(今日), week(本周), month(本月), quarter(本季度), year(本年)",
+          "default": "week",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式: yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式: yyyy-MM-dd"
+        },
+        "efficiencyType": {
+          "type": "string",
+          "description": "效率类型筛选",
+          "enum": [
+            "EQUIPMENT",
+            "LABOR",
+            "PRODUCTION_LINE",
+            "OVERALL",
+            "ALL"
+          ]
+        },
+        "equipmentId": {
+          "type": "string",
+          "description": "设备ID，筛选特定设备的效率数据"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "report_finance",
+    "description": "获取财务报表，包含成本分析、收入统计、利润率、财务趋势等数据。适用场景：成本核算、利润分析、预算对比、财务决策支持。",
+    "category": "report",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "时间周期：today(今日), week(本周), month(本月), quarter(本季度), year(本年)",
+          "default": "month",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式: yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式: yyyy-MM-dd"
+        },
+        "financeType": {
+          "type": "string",
+          "description": "财务类型筛选",
+          "enum": [
+            "COST",
+            "REVENUE",
+            "PROFIT",
+            "BUDGET",
+            "ALL"
+          ]
+        },
+        "costCenter": {
+          "type": "string",
+          "description": "成本中心ID，筛选特定成本中心的数据"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "report_inventory",
+    "description": "获取库存报表，包含库存水平、库存周转、库龄分析、出入库流水等数据。适用场景：库存盘点、库龄预警、周转率分析、库存成本分析。",
+    "category": "report",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "时间周期：today(今日), week(本周), month(本月), quarter(本季度), year(本年)",
+          "default": "today",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式: yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式: yyyy-MM-dd"
+        },
+        "warehouseId": {
+          "type": "string",
+          "description": "仓库ID，筛选特定仓库的库存数据"
+        },
+        "category": {
+          "type": "string",
+          "description": "物料类别筛选",
+          "enum": [
+            "RAW_MATERIAL",
+            "SEMI_FINISHED",
+            "FINISHED",
+            "PACKAGING",
+            "ALL"
+          ]
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "report_kpi",
+    "description": "获取KPI报表，包含关键绩效指标、目标完成率、绩效对比、记分卡等数据。适用场景：绩效评估、目标跟踪、KPI仪表盘、管理决策支持。",
+    "category": "report",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "时间周期：today(今日), week(本周), month(本月), quarter(本季度), year(本年)",
+          "default": "month",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式: yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式: yyyy-MM-dd"
+        },
+        "kpiCategory": {
+          "type": "string",
+          "description": "KPI类别筛选",
+          "enum": [
+            "PRODUCTION",
+            "QUALITY",
+            "EFFICIENCY",
+            "FINANCE",
+            "SAFETY",
+            "ALL"
+          ]
+        },
+        "departmentId": {
+          "type": "string",
+          "description": "部门ID，筛选特定部门的KPI数据"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "report_oee",
+    "description": "获取OEE设备综合效率报表，包含可用性、表现性、质量率、设备效率分析等数据。适用场景：设备效率分析、生产瓶颈识别、效率优化决策。",
+    "category": "report",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "时间周期：today(今日), week(本周), month(本月), quarter(本季度), year(本年)",
+          "default": "week",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式: yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式: yyyy-MM-dd"
+        },
+        "equipmentId": {
+          "type": "string",
+          "description": "设备ID，筛选特定设备的OEE数据"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "report_production",
+    "description": "获取生产报表，包含产量统计、生产线效率、批次完成率、生产趋势等数据。适用场景：生产分析、产能评估、生产计划完成情况、班组产量对比。",
+    "category": "report",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "时间周期：today(今日), week(本周), month(本月), quarter(本季度), year(本年)",
+          "default": "week",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式: yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式: yyyy-MM-dd"
+        },
+        "productionLineId": {
+          "type": "string",
+          "description": "生产线ID，筛选特定生产线的数据"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "report_quality",
+    "description": "获取质量报表，包含检验结果统计、质量合格率、缺陷分析、质量趋势等数据。适用场景：质量分析、合格率统计、缺陷追踪、质量改进跟踪。",
+    "category": "report",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "时间周期：today(今日), week(本周), month(本月), quarter(本季度), year(本年)",
+          "default": "month",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式: yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式: yyyy-MM-dd"
+        },
+        "inspectionType": {
+          "type": "string",
+          "description": "检验类型筛选",
+          "enum": [
+            "INCOMING",
+            "IN_PROCESS",
+            "FINAL",
+            "ALL"
+          ]
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "report_trends",
+    "description": "获取趋势分析报表，包含历史数据趋势、预测分析、模式识别、同比环比对比等数据。适用场景：趋势分析、预测决策、历史对比、周期性分析。",
+    "category": "report",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "时间周期：today(今日), week(本周), month(本月), quarter(本季度), year(本年)",
+          "default": "month",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式: yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式: yyyy-MM-dd"
+        },
+        "metric": {
+          "type": "string",
+          "description": "趋势指标类型",
+          "enum": [
+            "PRODUCTION",
+            "QUALITY",
+            "EFFICIENCY",
+            "INVENTORY",
+            "COST",
+            "REVENUE",
+            "ALL"
+          ]
+        },
+        "days": {
+          "type": "integer",
+          "description": "趋势分析的天数范围",
+          "default": 30
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "scale_add_device",
+    "description": "添加新的 IoT 电子秤设备。支持指定设备名称、IP地址、端口、协议等配置。可自动识别品牌型号并匹配对应的通信协议。适用场景：添加新电子秤、配置设备连接参数。",
+    "category": "scale",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "设备名称，例如「包装车间柯力电子秤」"
+        },
+        "ip": {
+          "type": "string",
+          "description": "设备 IP 地址，例如 192.168.1.100"
+        },
+        "port": {
+          "type": "integer",
+          "description": "通信端口号，例如 502 (Modbus), 9600 (串口服务器)"
+        },
+        "protocol": {
+          "type": "string",
+          "description": "通信协议类型或协议ID",
+          "enum": [
+            "MODBUS_RTU",
+            "MODBUS_TCP",
+            "SERIAL_ASCII",
+            "TCP_SOCKET",
+            "MQTT"
+          ]
+        },
+        "workstationId": {
+          "type": "string",
+          "description": "关联的工位ID，用于绑定到特定工作站"
+        },
+        "location": {
+          "type": "string",
+          "description": "设备安装位置，例如「包装车间」"
+        },
+        "brandCode": {
+          "type": "string",
+          "description": "品牌代码，例如 KELI (柯力), YAOHUA (耀华)"
+        },
+        "modelCode": {
+          "type": "string",
+          "description": "型号代码，例如 D2008, XK3190-A9"
+        },
+        "serialPort": {
+          "type": "string",
+          "description": "串口号，例如 COM3, /dev/ttyUSB0"
+        },
+        "baudRate": {
+          "type": "integer",
+          "description": "波特率，例如 9600, 19200, 115200",
+          "default": 9600
+        }
+      },
+      "required": [
+        "name",
+        "ip",
+        "port",
+        "protocol"
+      ]
+    }
+  },
+  {
+    "name": "scale_add_device_vision",
+    "description": "通过图片识别添加 IoT 电子秤设备。上传设备铭牌或规格书照片，AI 自动提取设备信息。适用场景：快速录入新设备、识别设备铭牌、批量设备登记。",
+    "category": "scale",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "设备名称，如果图片识别失败会使用此名称"
+        },
+        "cameraConfig": {
+          "type": "object",
+          "description": "图片配置，包含 imageBase64 或 imageUrl"
+        },
+        "location": {
+          "type": "string",
+          "description": "设备安装位置"
+        },
+        "workstationId": {
+          "type": "string",
+          "description": "关联的工位ID"
+        }
+      },
+      "required": [
+        "name",
+        "cameraConfig"
+      ]
+    }
+  },
+  {
+    "name": "scale_delete_device",
+    "description": "删除 IoT 电子秤设备。会检查设备是否有使用记录，有记录的设备无法删除。适用场景：移除废弃设备、删除测试设备、清理无用配置。注意：此操作不可恢复，请谨慎使用。",
+    "category": "scale",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "type": "integer",
+          "description": "要删除的设备ID"
+        },
+        "force": {
+          "type": "boolean",
+          "description": "是否强制删除（即使有使用记录）",
+          "default": "false"
+        },
+        "reason": {
+          "type": "string",
+          "description": "删除原因，用于审计记录"
+        }
+      },
+      "required": [
+        "deviceId"
+      ]
+    }
+  },
+  {
+    "name": "scale_device_detail",
+    "description": "查询 IoT 电子秤设备详情。返回设备的完整配置信息，包括连接参数、协议配置、品牌型号等。适用场景：查看设备详细配置、排查连接问题、检查协议绑定状态。",
+    "category": "scale",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "type": "integer",
+          "description": "设备ID，必须是 IoT 电子秤设备的 ID"
+        },
+        "deviceCode": {
+          "type": "string",
+          "description": "设备编码，例如 SCALE-0001，可替代 deviceId 使用"
+        }
+      },
+      "required": [
+        "deviceId"
+      ]
+    }
+  },
+  {
+    "name": "scale_list_devices",
+    "description": "查询 IoT 电子秤设备列表。支持按状态筛选，返回设备基本信息和状态分布统计。适用场景：查看所有电子秤、查找特定状态的设备、获取设备统计。",
+    "category": "scale",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "设备状态筛选",
+          "enum": [
+            "idle",
+            "active",
+            "offline",
+            "error",
+            "disabled"
+          ]
+        },
+        "keyword": {
+          "type": "string",
+          "description": "关键词搜索，匹配设备名称或编码"
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 20
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "scale_update_device",
+    "description": "更新 IoT 电子秤设备信息。支持修改设备名称、位置、状态、协议等配置。适用场景：修改设备配置、更新设备状态、变更设备位置、绑定新协议。",
+    "category": "scale",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "type": "integer",
+          "description": "要更新的设备ID"
+        },
+        "equipmentName": {
+          "type": "string",
+          "description": "新的设备名称"
+        },
+        "location": {
+          "type": "string",
+          "description": "新的设备位置"
+        },
+        "status": {
+          "type": "string",
+          "description": "新的设备状态",
+          "enum": [
+            "idle",
+            "active",
+            "offline",
+            "error",
+            "disabled"
+          ]
+        },
+        "protocolId": {
+          "type": "string",
+          "description": "要绑定的协议ID"
+        },
+        "mqttTopic": {
+          "type": "string",
+          "description": "MQTT 订阅主题"
+        },
+        "ip": {
+          "type": "string",
+          "description": "设备 IP 地址"
+        },
+        "port": {
+          "type": "integer",
+          "description": "通信端口号"
+        },
+        "serialPort": {
+          "type": "string",
+          "description": "串口号"
+        },
+        "baudRate": {
+          "type": "integer",
+          "description": "波特率"
+        },
+        "notes": {
+          "type": "string",
+          "description": "设备备注信息"
+        }
+      },
+      "required": [
+        "deviceId"
+      ]
+    }
+  },
+  {
+    "name": "shipment_by_customer",
+    "description": "按客户查询出货记录。需要提供客户ID。可选按日期范围、状态筛选，支持分页。适用场景：查看客户的出货历史、客户对账、客户服务查询。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "customerId": {
+          "type": "string",
+          "description": "客户ID"
+        },
+        "status": {
+          "type": "string",
+          "description": "按状态筛选",
+          "enum": [
+            "pending",
+            "shipped",
+            "delivered",
+            "returned"
+          ]
+        },
+        "dateFrom": {
+          "type": "string",
+          "description": "筛选开始日期，格式: yyyy-MM-dd"
+        },
+        "dateTo": {
+          "type": "string",
+          "description": "筛选结束日期，格式: yyyy-MM-dd"
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": [
+        "customerId"
+      ]
+    }
+  },
+  {
+    "name": "shipment_by_date",
+    "description": "按日期范围查询出货记录。需要提供开始日期和结束日期（格式：yyyy-MM-dd）。可选按状态筛选，支持分页。适用场景：查询某段时间的出货记录、月度报表、历史记录查询。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "startDate": {
+          "type": "string",
+          "description": "开始日期，格式: yyyy-MM-dd"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "结束日期，格式: yyyy-MM-dd"
+        },
+        "status": {
+          "type": "string",
+          "description": "按状态筛选",
+          "enum": [
+            "pending",
+            "shipped",
+            "delivered",
+            "returned"
+          ]
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从1开始",
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": [
+        "startDate",
+        "endDate"
+      ]
+    }
+  },
+  {
+    "name": "shipment_cancel",
+    "description": "取消出货单。需要提供出货单ID和取消原因。取消后不可恢复。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "shipmentId": {
+          "type": "string",
+          "description": "出货单ID，用于标识要取消的出货单"
+        },
+        "reason": {
+          "type": "string",
+          "description": "取消原因，必须提供，用于记录和追溯"
+        }
+      },
+      "required": [
+        "shipmentId",
+        "reason"
+      ]
+    }
+  },
+  {
+    "name": "shipment_complete",
+    "description": "完成出货单（已送达）。将出货单状态更新为'已送达'。可以同时记录送达时间、签收人、备注等信息。适用场景：确认签收、完成配送、结束出货流程。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "shipmentId": {
+          "type": "string",
+          "description": "出货单ID或出货单号"
+        },
+        "deliveryTime": {
+          "type": "string",
+          "description": "实际送达时间，格式: yyyy-MM-dd HH:mm:ss，默认当前时间"
+        },
+        "signedBy": {
+          "type": "string",
+          "description": "签收人姓名"
+        },
+        "notes": {
+          "type": "string",
+          "description": "送达备注信息"
+        }
+      },
+      "required": [
+        "shipmentId"
+      ]
+    }
+  },
+  {
+    "name": "shipment_confirm",
+    "description": "确认出货单（开始发货）。将出货单状态从'待发货'更新为'已发货'。可以同时更新实际发货时间、车辆号码、司机姓名等信息。适用场景：确认发货、更新物流信息、开始配送。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "shipmentId": {
+          "type": "string",
+          "description": "出货单ID或出货单号"
+        },
+        "actualShipTime": {
+          "type": "string",
+          "description": "实际发货时间，格式: yyyy-MM-dd HH:mm:ss，默认当前时间"
+        },
+        "vehicleNumber": {
+          "type": "string",
+          "description": "配送车辆号码/车牌号"
+        },
+        "driverName": {
+          "type": "string",
+          "description": "配送司机姓名"
+        }
+      },
+      "required": [
+        "shipmentId"
+      ]
+    }
+  },
+  {
+    "name": "shipment_create",
+    "description": "创建出货单。需要指定客户ID和产品批次列表，可选指定计划发货日期、备注和车辆编号。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "customerId": {
+          "type": "string",
+          "description": "客户ID，用于标识出货目标客户"
+        },
+        "productBatchIds": {
+          "type": "array",
+          "description": "产品批次ID列表，关联本次出货的所有产品批次"
+        },
+        "productName": {
+          "type": "string",
+          "description": "产品名称，用于出货记录显示"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "出货数量"
+        },
+        "unit": {
+          "type": "string",
+          "description": "计量单位，如：kg、箱、件"
+        },
+        "scheduledDate": {
+          "type": "string",
+          "description": "计划发货日期，格式：yyyy-MM-dd，不指定则使用当天"
+        },
+        "notes": {
+          "type": "string",
+          "description": "出货单备注信息"
+        },
+        "vehicleNumber": {
+          "type": "string",
+          "description": "运输车辆编号或物流单号"
+        },
+        "deliveryAddress": {
+          "type": "string",
+          "description": "配送目的地址"
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "产品单价"
+        }
+      },
+      "required": [
+        "customerId",
+        "productBatchIds"
+      ]
+    }
+  },
+  {
+    "name": "shipment_query",
+    "description": "查询出货单列表。支持按状态、客户ID、日期范围进行筛选，支持分页。适用场景：查看出货记录、查找特定客户的出货单、查询某时间段的出货情况。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "出货单状态筛选",
+          "enum": [
+            "PENDING",
+            "SHIPPED",
+            "DELIVERED",
+            "CANCELLED"
+          ]
+        },
+        "customerId": {
+          "type": "string",
+          "description": "客户ID，筛选指定客户的出货单"
+        },
+        "dateFrom": {
+          "type": "string",
+          "description": "查询开始日期，格式：yyyy-MM-dd"
+        },
+        "dateTo": {
+          "type": "string",
+          "description": "查询结束日期，格式：yyyy-MM-dd"
+        },
+        "shipmentNumber": {
+          "type": "string",
+          "description": "出货单号，用于精确查询单个出货单"
+        },
+        "shipmentId": {
+          "type": "string",
+          "description": "出货单ID，用于精确查询单个出货单"
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，从0开始",
+          "default": 0
+        },
+        "size": {
+          "type": "integer",
+          "description": "每页记录数",
+          "default": 10
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "shipment_stats_query",
+    "description": "查询出货统计数据。支持按时间周期（今日/本周/本月）或按客户维度统计。返回总数、各状态数量（待发货、已发货、已送达、已退回）等信息。适用场景：查看出货概况、业务报表、绩效统计。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "统计时间周期",
+          "default": "all",
+          "enum": [
+            "today",
+            "week",
+            "month",
+            "all"
+          ]
+        },
+        "customerId": {
+          "type": "string",
+          "description": "按客户ID筛选统计，可选"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "shipment_status_update",
+    "description": "更新出货单状态。支持状态：PENDING(待发货)、SHIPPED(已发货)、DELIVERED(已送达)、CANCELLED(已取消)。取消操作需要提供原因。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "shipmentId": {
+          "type": "string",
+          "description": "出货单ID，用于标识要更新状态的出货单"
+        },
+        "status": {
+          "type": "string",
+          "description": "新的出货单状态"
+        },
+        "reason": {
+          "type": "string",
+          "description": "状态变更原因，取消操作时必须提供"
+        }
+      },
+      "required": [
+        "shipmentId",
+        "status"
+      ]
+    }
+  },
+  {
+    "name": "shipment_update",
+    "description": "更新出货单信息。需要指定出货单ID，可更新客户、计划发货日期、备注、车辆编号等信息。注意：状态更新请使用 shipment_status_update 工具。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "shipmentId": {
+          "type": "string",
+          "description": "出货单ID，用于标识要更新的出货单"
+        },
+        "customerId": {
+          "type": "string",
+          "description": "新的客户ID"
+        },
+        "scheduledDate": {
+          "type": "string",
+          "description": "新的计划发货日期，格式：yyyy-MM-dd"
+        },
+        "notes": {
+          "type": "string",
+          "description": "新的备注信息"
+        },
+        "vehicleNumber": {
+          "type": "string",
+          "description": "新的车辆编号或物流单号"
+        },
+        "deliveryAddress": {
+          "type": "string",
+          "description": "新的配送地址"
+        },
+        "logisticsCompany": {
+          "type": "string",
+          "description": "物流公司名称"
+        },
+        "productName": {
+          "type": "string",
+          "description": "产品名称"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "出货数量"
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "产品单价"
+        }
+      },
+      "required": [
+        "shipmentId"
+      ]
+    }
+  },
+  {
+    "name": "trace_batch",
+    "description": "查询批次的基础溯源信息。包括原材料来源、生产日期、加工环节等基本追溯数据。适用场景：查询产品批次的来源信息、追溯生产过程。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchNumber": {
+          "type": "string",
+          "description": "要溯源的批次号"
+        }
+      },
+      "required": [
+        "batchNumber"
+      ]
+    }
+  },
+  {
+    "name": "trace_full",
+    "description": "查询批次的完整溯源链路。包括原材料采购、入库检验、生产加工、质检、出库等全流程追踪信息。适用场景：需要完整追溯链的质量问题调查、客户溯源要求。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchNumber": {
+          "type": "string",
+          "description": "要完整溯源的批次号"
+        }
+      },
+      "required": [
+        "batchNumber"
+      ]
+    }
+  },
+  {
+    "name": "trace_public",
+    "description": "公开溯源查询，供消费者使用。返回脱敏后的产品追溯信息，包括产地、生产日期、质检结果等。适用场景：消费者扫码查询、公开透明度展示。",
+    "category": "shipment",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "batchNumber": {
+          "type": "string",
+          "description": "产品批次号（通常从二维码扫描获取）"
+        }
+      },
+      "required": [
+        "batchNumber"
+      ]
+    }
+  },
+  {
+    "name": "sku_update_complexity",
+    "description": "更新或创建SKU的复杂度记录。支持记录复杂度等级、分析原因、步骤数等详细信息，并自动触发排产特征重算。",
+    "category": "sop",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "skuCode": {
+          "type": "string",
+          "description": "SKU的唯一编码"
+        },
+        "complexity": {
+          "type": "integer",
+          "description": "复杂度等级，1-5，1为最简单，5为最复杂"
+        },
+        "reason": {
+          "type": "string",
+          "description": "复杂度分析的原因说明"
+        },
+        "skuName": {
+          "type": "string",
+          "description": "SKU的名称"
+        },
+        "sopConfigId": {
+          "type": "string",
+          "description": "关联的SOP配置ID"
+        },
+        "stepCount": {
+          "type": "integer",
+          "description": "工序步骤数量"
+        },
+        "skillRequired": {
+          "type": "integer",
+          "description": "技能要求等级，1-5"
+        },
+        "qualityCheckCount": {
+          "type": "integer",
+          "description": "质检点数量"
+        },
+        "specialEquipment": {
+          "type": "boolean",
+          "description": "是否需要特殊设备"
+        },
+        "estimatedMinutes": {
+          "type": "integer",
+          "description": "预估工时（分钟）"
+        }
+      },
+      "required": [
+        "skuCode",
+        "complexity"
+      ]
+    }
+  },
+  {
+    "name": "sop_analyze_complexity",
+    "description": "分析SOP文档的复杂度，评估1-5级。基于步骤数量、技能要求、特殊设备、质检点等维度综合评估。",
+    "category": "sop",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "sopContent": {
+          "type": "string",
+          "description": "SOP文档的内容文本或解析后的JSON结构"
+        },
+        "steps": {
+          "type": "array",
+          "description": "已解析的步骤列表（JSON数组）"
+        },
+        "useAi": {
+          "type": "boolean",
+          "description": "是否使用AI进行复杂度分析。默认为true。",
+          "default": "true"
+        }
+      },
+      "required": [
+        "sopContent"
+      ]
+    }
+  },
+  {
+    "name": "sop_parse_document",
+    "description": "解析SOP文档(PDF/Excel/图片)，提取工序步骤、时间要求、技能要求等信息。支持自动识别文件类型并选择相应的解析策略。针对中文PDF进行了特别优化，当文本提取失败时会自动切换到OCR模式。",
+    "category": "sop",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "fileUrl": {
+          "type": "string",
+          "description": "SOP文档的URL地址，支持PDF、Excel、图片格式"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "文件类型: PDF, EXCEL, IMAGE。如不提供则自动检测。",
+          "enum": [
+            "PDF",
+            "EXCEL",
+            "IMAGE"
+          ]
+        },
+        "forceOcr": {
+          "type": "boolean",
+          "description": "是否强制使用Vision AI OCR解析PDF，适用于扫描件"
+        }
+      },
+      "required": [
+        "fileUrl"
+      ]
+    }
+  },
+  {
+    "name": "factory_feature_toggle",
+    "description": "启用或禁用工厂的特定功能模块。需要提供功能代码和启用/禁用状态。可控制的功能包括：追溯功能、质检模块、预警系统、报表功能等。适用场景：按需开启功能、临时禁用某功能、功能配置管理。",
+    "category": "system",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "featureCode": {
+          "type": "string",
+          "description": "功能代码，唯一标识要操作的功能",
+          "enum": [
+            "TRACEABILITY",
+            "QUALITY_CHECK",
+            "ALERT_SYSTEM",
+            "REPORT_MODULE",
+            "AI_ASSISTANT",
+            "AUTO_SCHEDULING",
+            "INVENTORY_ALERT",
+            "EXPIRY_ALERT",
+            "SCALE_INTEGRATION",
+            "CAMERA_INTEGRATION"
+          ]
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "true启用，false禁用"
+        },
+        "reason": {
+          "type": "string",
+          "description": "操作原因或备注"
+        }
+      },
+      "required": [
+        "featureCode",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "factory_notification_config",
+    "description": "配置工厂的通知设置。需要提供通知类型，可选配置通知渠道、接收人等。支持的通知类型：告警通知、任务提醒、质检通知、库存预警、系统公告等。适用场景：设置通知方式、配置接收人员、调整通知频率。",
+    "category": "system",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "notificationType": {
+          "type": "string",
+          "description": "通知类型",
+          "enum": [
+            "ALERT",
+            "TASK_REMINDER",
+            "QUALITY_NOTICE",
+            "INVENTORY_WARNING",
+            "EXPIRY_WARNING",
+            "SYSTEM_ANNOUNCEMENT",
+            "ORDER_UPDATE",
+            "PRODUCTION_STATUS"
+          ]
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "是否启用此类通知，默认为true"
+        },
+        "channels": {
+          "type": "array",
+          "description": "通知渠道列表，可多选"
+        },
+        "priority": {
+          "type": "string",
+          "description": "通知优先级",
+          "enum": [
+            "HIGH",
+            "MEDIUM",
+            "LOW"
+          ]
+        },
+        "quietHours": {
+          "type": "object",
+          "description": "免打扰时段设置"
+        }
+      },
+      "required": [
+        "notificationType"
+      ]
+    }
+  },
+  {
+    "name": "scheduling_set_auto",
+    "description": "将工厂的调度模式设置为自动模式。自动模式下系统会根据订单、库存和产能自动生成生产计划和调度。适用场景：启用智能调度、自动化生产排程、提高调度效率。",
+    "category": "system",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "description": "设置原因或备注"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "scheduling_set_disabled",
+    "description": "将工厂的调度模式设置为禁用状态。禁用后系统将暂停所有调度功能，已有计划保持不变但不会生成新计划。适用场景：工厂停产维护、系统升级、紧急暂停调度。",
+    "category": "system",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "description": "禁用原因或备注，建议提供"
+        },
+        "duration": {
+          "type": "string",
+          "description": "预计禁用时长，如：2小时、1天"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "scheduling_set_manual",
+    "description": "将工厂的调度模式设置为手动模式。手动模式下生产计划和调度完全由人工控制，系统仅提供辅助功能。适用场景：需要人工精细控制生产、特殊订单处理、调试生产流程。",
+    "category": "system",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "description": "设置原因或备注"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "test_intent_matching",
+    "description": "测试用户输入与指定意图的匹配度，返回匹配得分、匹配原因、置信度等信息。可以测试单个意图，也可以对比多个意图的匹配情况。适用场景：验证新意图、优化关键词、排查匹配问题、对比意图优先级。",
+    "category": "general",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userInput": {
+          "type": "string",
+          "description": "要测试的用户输入文本"
+        },
+        "intentCode": {
+          "type": "string",
+          "description": "要测试的意图代码。如果不提供，将返回所有匹配的意图排名"
+        },
+        "topN": {
+          "type": "integer",
+          "description": "返回的候选意图数量，默认3",
+          "default": 3
+        }
+      },
+      "required": [
+        "userInput"
+      ]
+    }
+  },
+  {
+    "name": "update_intent",
+    "description": "更新现有的意图配置。支持部分字段更新，包括：意图名称、关键词列表、类别、描述、语义分类、敏感级别、启用状态等。适用场景：关键词优化、意图重分类、敏感度调整、启用/禁用意图。",
+    "category": "general",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "intentCode": {
+          "type": "string",
+          "description": "要更新的意图代码，必须是已存在的意图"
+        },
+        "intentName": {
+          "type": "string",
+          "description": "更新后的意图名称"
+        },
+        "category": {
+          "type": "string",
+          "description": "更新后的意图类别",
+          "enum": [
+            "QUERY",
+            "DATA_OP",
+            "FORM",
+            "REPORT",
+            "MATERIAL",
+            "PRODUCTION",
+            "QUALITY",
+            "SHIPMENT",
+            "EQUIPMENT",
+            "ATTENDANCE",
+            "SYSTEM"
+          ]
+        },
+        "keywords": {
+          "type": "array",
+          "description": "更新后的关键词列表，会完全替换现有关键词"
+        },
+        "addKeywords": {
+          "type": "array",
+          "description": "追加的关键词列表，会与现有关键词合并"
+        },
+        "removeKeywords": {
+          "type": "array",
+          "description": "要移除的关键词列表"
+        },
+        "description": {
+          "type": "string",
+          "description": "更新后的意图描述"
+        },
+        "semanticDomain": {
+          "type": "string",
+          "description": "更新后的语义域"
+        },
+        "semanticAction": {
+          "type": "string",
+          "description": "更新后的语义动作"
+        },
+        "semanticObject": {
+          "type": "string",
+          "description": "更新后的语义对象"
+        },
+        "sensitivityLevel": {
+          "type": "string",
+          "description": "更新后的敏感级别",
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "CRITICAL"
+          ]
+        },
+        "active": {
+          "type": "boolean",
+          "description": "是否启用此意图"
+        }
+      },
+      "required": [
+        "intentCode"
+      ]
+    }
+  },
+  {
+    "name": "user_create",
+    "description": "创建新用户账号。支持设置用户名、角色、联系方式等基本信息。适用场景：新员工入职开户、添加系统用户、创建操作员账号。",
+    "category": "user",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "用户名，用于登录"
+        },
+        "role": {
+          "type": "string",
+          "description": "用户角色",
+          "enum": [
+            "ADMIN",
+            "OPERATOR",
+            "QUALITY_INSPECTOR",
+            "WAREHOUSE_KEEPER",
+            "PRODUCTION_MANAGER",
+            "VIEWER"
+          ]
+        },
+        "realName": {
+          "type": "string",
+          "description": "用户真实姓名"
+        },
+        "phone": {
+          "type": "string",
+          "description": "手机号码"
+        },
+        "email": {
+          "type": "string",
+          "description": "电子邮箱"
+        },
+        "department": {
+          "type": "string",
+          "description": "所属部门"
+        },
+        "initialPassword": {
+          "type": "string",
+          "description": "初始密码，不提供则自动生成"
+        }
+      },
+      "required": [
+        "username",
+        "role"
+      ]
+    }
+  },
+  {
+    "name": "user_disable",
+    "description": "禁用用户账号。禁用后用户将无法登录系统，可后续重新启用。适用场景：员工离职、账号安全问题、临时停用账号。",
+    "category": "user",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "要禁用的用户ID或用户名"
+        },
+        "reason": {
+          "type": "string",
+          "description": "禁用原因"
+        },
+        "forceLogout": {
+          "type": "boolean",
+          "description": "是否强制当前已登录的会话登出",
+          "default": "true"
+        },
+        "notifyUser": {
+          "type": "boolean",
+          "description": "是否发送通知给被禁用用户",
+          "default": "false"
+        }
+      },
+      "required": [
+        "userId"
+      ]
+    }
+  },
+  {
+    "name": "user_role_assign",
+    "description": "为用户分配或更新角色。支持设置用户的系统角色和权限级别。适用场景：员工岗位调整、权限提升/降级、角色变更。",
+    "category": "user",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "要分配角色的用户ID或用户名"
+        },
+        "role": {
+          "type": "string",
+          "description": "要分配的角色",
+          "enum": [
+            "ADMIN",
+            "OPERATOR",
+            "QUALITY_INSPECTOR",
+            "WAREHOUSE_KEEPER",
+            "PRODUCTION_MANAGER",
+            "VIEWER"
+          ]
+        },
+        "additionalRoles": {
+          "type": "array",
+          "description": "附加角色列表，用于多角色场景"
+        },
+        "reason": {
+          "type": "string",
+          "description": "角色变更原因"
+        },
+        "effectiveDate": {
+          "type": "string",
+          "description": "生效日期，格式 YYYY-MM-DD，默认立即生效"
+        }
+      },
+      "required": [
+        "userId",
+        "role"
+      ]
+    }
+  }
+]

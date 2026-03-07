@@ -246,7 +246,15 @@
     "iotManagement": "IoT 设备管理",
     "scaleDevices": "电子秤设备",
     "cameraDevices": "摄像头设备",
-    "deviceCenter": "设备中心"
+    "deviceCenter": "设备中心",
+    "equipmentAnalysis": "设备分析",
+    "workReport": "生产报工",
+    "purchaseOrders": "采购订单",
+    "salesOrders": "销售订单",
+    "transfer": "调拨管理",
+    "arAp": "应收应付",
+    "priceList": "价格表",
+    "returns": "退货管理"
   },
   "schemaConfig": {
     "title": "表单配置",

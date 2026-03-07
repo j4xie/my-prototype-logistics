@@ -1,0 +1,63 @@
+appId: com.cretas.foodtrace
+---
+# Test 22: Dispatcher - Plan & Scheduling
+# Verifies plan list, create plan, Gantt chart, urgent order, and mixed batch scheduling
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as dispatcher
+- runFlow: flows/login-dp.yaml
+- extendedWaitUntil:
+    visible: ".*\u8BA1\u5212.*"
+    timeout: 15000
+
+# Navigate to Plan tab (计划)
+- tapOn: "\u8BA1\u5212"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/22-dp-plan-list
+
+# Tap New Plan button (+ 新建)
+- tapOn:
+    text: ".*\u65B0\u5EFA.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/22-dp-create-plan
+
+# Go back from create plan
+- back
+- waitForAnimationToEnd
+
+# Tap Gantt chart button (甘特图)
+- tapOn:
+    text: ".*\u7518\u7279\u56FE.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/22-dp-gantt
+
+# Go back from Gantt view
+- back
+- waitForAnimationToEnd
+
+# Tap Urgent Order (紧急插单)
+- tapOn:
+    text: ".*\u7D27\u6025\u63D2\u5355.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/22-dp-urgent-order
+
+# Go back from urgent order
+- back
+- waitForAnimationToEnd
+
+# Tap Mixed Batch Scheduling (混批排产)
+- tapOn:
+    text: ".*\u6DF7\u6279\u6392\u4EA7.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/22-dp-mixed-batch
+
+# Go back
+- back
+- waitForAnimationToEnd

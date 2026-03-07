@@ -322,4 +322,4 @@ async def extract_finance_data(req: ExtractRequest):
         return ExtractResponse(success=True, records=records)
     except Exception as e:
         logger.exception("Finance extraction failed for sheet '%s'", req.sheet_name)
-        return ExtractResponse(success=False, records=[], error=str(e))
+        return ExtractResponse(success=False, records=[], error="Finance extraction failed")

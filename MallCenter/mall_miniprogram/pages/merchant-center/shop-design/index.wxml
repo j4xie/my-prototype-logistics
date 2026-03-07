@@ -26,7 +26,7 @@
   </view>
 
   <!-- AI智能装修入口 -->
-  <view class="ai-section">
+  <view class="ai-section" wx:if="{{showAI}}">
     <view class="section-header">
       <text class="section-title">AI智能装修</text>
       <view class="ai-tag">
@@ -359,10 +359,14 @@
       </view>
     </view>
   </view>
-</view>
 
-<!-- 预览弹窗 -->
-<view class="preview-modal" wx:if="{{showPreview}}">
+  <!-- AI 装修助手浮动按钮 -->
+  <view class="ai-chat-fab" bindtap="goDecorationChat" wx:if="{{showAI && !showGuideWizard}}">
+    <text class="cuIcon-message"></text>
+  </view>
+
+  <!-- 预览弹窗 -->
+  <view class="preview-modal" wx:if="{{showPreview}}">
   <view class="preview-mask" bindtap="closePreview"></view>
   <view class="preview-content">
     <view class="preview-header">
@@ -404,10 +408,10 @@
       <button class="apply-btn primary" bindtap="applyTheme">应用此主题</button>
     </view>
   </view>
-</view>
+  </view>
 
-<!-- 引导式装修向导 -->
-<view class="guide-wizard" wx:if="{{showGuideWizard}}">
+  <!-- 引导式装修向导 -->
+  <view class="guide-wizard" wx:if="{{showGuideWizard}}">
   <view class="guide-wizard-mask" bindtap="closeGuideWizard"></view>
   <view class="guide-wizard-content">
     <!-- 向导头部 -->
@@ -630,5 +634,6 @@
         <text>{{applyingConfig ? '应用中...' : '完成并应用'}}</text>
       </button>
     </view>
+  </view>
   </view>
 </view>

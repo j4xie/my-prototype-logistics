@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "miniprogram-automator": "^0.12.1"
+  }
+}

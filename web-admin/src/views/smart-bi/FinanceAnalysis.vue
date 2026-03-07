@@ -5,6 +5,7 @@
  * Phase 6: Enhanced with DynamicChartRenderer + ChartTypeSelector for dynamic chart views
  */
 import { ref, computed, onMounted, watch, onUnmounted, nextTick } from 'vue';
+import { useChartResize } from '@/composables/useChartResize';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
@@ -453,6 +454,9 @@ function convertToDynamicConfig(config: ChartConfig_Local | DynamicChartConfig |
   return null;
 }
 
+// Container ref for ResizeObserver-based chart resize
+const financePageRef = ref<HTMLElement>();
+
 // 图表实例 (kept for legacy fallback)
 let mainChart: echarts.ECharts | null = null;
 
@@ -849,7 +853,7 @@ function updateChartFromDynamicData(charts: DynamicAnalysisResponse['charts']) {
           type: chart.type as 'bar' | 'line',
           data: ds.data,
           smooth: chart.type === 'line',
-          itemStyle: { color: '#409EFF' }
+          itemStyle: { color: '#1B65A8' }
         }))
       };
     }
@@ -859,10 +863,12 @@ function updateChartFromDynamicData(charts: DynamicAnalysisResponse['charts']) {
 }
 
 // Only reload system finance data when analysis type or date range changes
-// Skip if using dynamic (uploaded) data source — those are not filtered by date/type
+// Debounced to prevent double-fire when date picker emits start+end separately
+let financeWatchTimer: ReturnType<typeof setTimeout> | null = null;
 watch([analysisType, dateRange], () => {
   if (selectedDataSource.value === 'system') {
-    loadFinanceData();
+    if (financeWatchTimer) clearTimeout(financeWatchTimer);
+    financeWatchTimer = setTimeout(() => loadFinanceData(), 300);
   }
 });
 
@@ -1288,7 +1294,6 @@ function initChart() {
   if (!chartDom) return;
 
   mainChart = echarts.init(chartDom, 'cretas');
-  window.addEventListener('resize', handleResize);
 }
 
 function updateChart() {
@@ -1527,7 +1532,7 @@ function buildAxisChart(config: ChartConfig_Local): echarts.EChartsOption {
         data: yData,
         smooth: chartType === 'line',
         itemStyle: {
-          color: '#409EFF'
+          color: '#1B65A8'
         }
       }
     ]
@@ -1548,9 +1553,10 @@ function getEmptyChartOption(): echarts.EChartsOption {
   };
 }
 
-function handleResize() {
+// ResizeObserver-based chart resize (also handles sidebar toggle)
+useChartResize(financePageRef, () => {
   mainChart?.resize();
-}
+});
 
 function formatMoney(value: number | null | undefined): string {
   if (value == null) return '--';
@@ -1629,13 +1635,12 @@ function closeDataPreview() {
 }
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize);
   mainChart?.dispose();
 });
 </script>
 
 <template>
-  <div class="finance-analysis-page">
+  <div ref="financePageRef" class="finance-analysis-page">
     <div class="page-header">
       <div class="header-left">
         <h1>财务分析</h1>
@@ -1929,7 +1934,7 @@ onUnmounted(() => {
             <p style="color: #909399; margin-top: 12px;">
               当前{{ analysisTypes.find(t => t.type === analysisType)?.label || '' }}暂无图表数据
             </p>
-            <p v-if="dataSources.length > 0" style="color: #409EFF; font-size: 12px; cursor: pointer;" @click="selectedDataSource = String(dataSources[0].id)">
+            <p v-if="dataSources.length > 0" style="color: #1B65A8; font-size: 12px; cursor: pointer;" @click="selectedDataSource = String(dataSources[0].id)">
               切换到上传数据查看分析
             </p>
           </div>
@@ -2183,12 +2188,12 @@ onUnmounted(() => {
       background: #ecf5ff;
 
       .el-icon, span {
-        color: #409EFF;
+        color: #1B65A8;
       }
     }
 
     &.active {
-      background: #409EFF;
+      background: #1B65A8;
 
       .el-icon, span {
         color: #fff;
@@ -2210,7 +2215,7 @@ onUnmounted(() => {
   border-radius: 8px;
   text-align: center;
   padding: 8px 0;
-  border-left: 4px solid #409EFF;
+  border-left: 4px solid #1B65A8;
 
   &.success {
     border-left-color: #67C23A;
@@ -2276,7 +2281,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #409EFF;
+      color: #1B65A8;
     }
   }
 }
@@ -2336,7 +2341,7 @@ onUnmounted(() => {
 .exploration-card {
   margin-top: 16px;
   border-radius: 8px;
-  border-left: 4px solid #409EFF;
+  border-left: 4px solid #1B65A8;
 
   .card-header {
     display: flex;
@@ -2345,7 +2350,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #409EFF;
+      color: #1B65A8;
     }
   }
 }

@@ -57,6 +57,7 @@ interface Props {
   showAnomalies?: boolean;
   anomalyThreshold?: number;
   showDataTable?: boolean;
+  loading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -88,12 +89,14 @@ const emit = defineEmits<{
 
 const chartRef = ref<HTMLDivElement | null>(null);
 const chartInstance = ref<ECharts | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+let rafId = 0;
 const granularity = ref<'day' | 'week' | 'month'>(props.defaultGranularity);
 const selectedRowIndex = ref<number | null>(null);
 
 // Default color palette
 const colorPalette = [
-  '#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
+  '#1B65A8', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
   '#00d4ff', '#ff6b9d', '#c084fc', '#fbbf24', '#34d399'
 ];
 
@@ -387,7 +390,7 @@ const chartOptions = computed<EChartsOption>(() => {
         borderColor: '#dcdfe6',
         fillerColor: 'rgba(64, 158, 255, 0.2)',
         handleStyle: {
-          color: '#409eff'
+          color: '#1B65A8'
         }
       },
       {
@@ -427,7 +430,11 @@ function updateChart() {
 }
 
 function handleResize() {
-  chartInstance.value?.resize();
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = 0;
+    chartInstance.value?.resize();
+  });
 }
 
 function onGranularityChange(value: 'day' | 'week' | 'month') {
@@ -478,10 +485,17 @@ function formatChange(value: number): string {
 // Lifecycle
 onMounted(() => {
   initChart();
+  if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartRef.value);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (rafId) cancelAnimationFrame(rafId);
   window.removeEventListener('resize', handleResize);
   chartInstance.value?.dispose();
 });
@@ -498,7 +512,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="trend-chart">
+  <div v-loading="loading" class="trend-chart">
     <div v-if="title || showGranularity" class="chart-header">
       <h3 v-if="title">{{ title }}</h3>
       <div class="header-controls">
@@ -517,7 +531,12 @@ defineExpose({
         </el-radio-group>
       </div>
     </div>
-    <div ref="chartRef" :style="{ width: '100%', height: height + 'px' }"></div>
+    <div class="chart-wrapper" :style="{ position: 'relative', width: '100%', height: height + 'px' }">
+      <div ref="chartRef" role="img" :aria-label="title || '趋势图'" style="width: 100%; height: 100%"></div>
+      <div v-if="!loading && series.length === 0" class="chart-empty">
+        <el-empty description="暂无数据" :image-size="80" />
+      </div>
+    </div>
 
     <!-- Data Table -->
     <div v-if="showDataTable && tableData.length > 0" class="data-table-container">
@@ -592,6 +611,13 @@ defineExpose({
       align-items: center;
       gap: 12px;
     }
+  }
+
+  .chart-empty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
 
   .data-table-container {

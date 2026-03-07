@@ -618,7 +618,7 @@ watch(selectedFactoryId, () => {
       color: #303133;
 
       .el-icon {
-        color: #409eff;
+        color: #1B65A8;
       }
     }
   }

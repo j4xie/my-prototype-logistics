@@ -1,12 +1,24 @@
 {
   "mcpServers": {
     "playwright-test": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "playwright",
         "run-test-mcp-server"
+      ]
+    },
+    "weapp-dev": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y", "@yfme/weapp-dev-mcp"
       ],
-      "cwd": "./tests/e2e-smartbi"
+      "env": {
+        "WEAPP_WS_ENDPOINT": "ws://localhost:9420"
+      }
     }
   }
 }

@@ -90,8 +90,9 @@ public class AIEnterpriseService {
     @Value("${cretas.ai.service.url:http://localhost:8083}")
     private String aiServiceUrl;
 
-    // SSE 流式处理线程池
-    private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
+    // SSE 流式处理线程池 — bounded to prevent thread exhaustion
+    private final ExecutorService sseExecutor = java.util.concurrent.Executors.newFixedThreadPool(
+            4, r -> { Thread t = new Thread(r, "enterprise-sse"); t.setDaemon(true); return t; });
 
     /**
      * AI成本分析 - 主入口（智能路由）

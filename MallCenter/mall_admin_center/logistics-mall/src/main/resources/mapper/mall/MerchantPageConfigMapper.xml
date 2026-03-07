@@ -6,28 +6,51 @@
         <id property="id" column="id"/>
         <result property="merchantId" column="merchant_id"/>
         <result property="pageType" column="page_type"/>
+        <result property="pageName" column="page_name"/>
         <result property="templateId" column="template_id"/>
-        <result property="themeConfig" column="theme_config"/>
+        <result property="themePresetId" column="theme_preset_id"/>
+        <result property="themeCode" column="theme_code"/>
+        <result property="customTheme" column="custom_theme"/>
         <result property="modulesConfig" column="modules_config"/>
+        <result property="pageConfig" column="page_config"/>
+        <result property="shopName" column="shop_name"/>
+        <result property="logoUrl" column="logo_url"/>
+        <result property="slogan" column="slogan"/>
+        <result property="noticeTexts" column="notice_texts"/>
+        <result property="bannerConfig" column="banner_config"/>
+        <result property="seoTitle" column="seo_title"/>
+        <result property="seoKeywords" column="seo_keywords"/>
+        <result property="seoDescription" column="seo_description"/>
         <result property="status" column="status"/>
+        <result property="version" column="version"/>
         <result property="publishTime" column="published_at"/>
-        <result property="aiGenerated" column="ai_generated"/>
-        <result property="aiPrompt" column="ai_prompt"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateTime" column="update_time"/>
     </resultMap>
 
     <sql id="configSql">
-        c.id, c.merchant_id, c.page_type, c.template_id, c.theme_config,
-        c.modules_config, c.status, c.published_at, c.ai_generated, c.ai_prompt,
-        c.create_by, c.create_time, c.update_time
+        c.id, c.merchant_id, c.page_type, c.page_name, c.template_id, c.theme_preset_id,
+        c.theme_code, c.custom_theme, c.modules_config, c.page_config,
+        c.shop_name, c.logo_url, c.slogan, c.notice_texts, c.banner_config,
+        c.seo_title, c.seo_keywords, c.seo_description,
+        c.status, c.version, c.published_at, c.create_by, c.create_time, c.update_time
     </sql>
 
     <select id="selectByMerchantAndPageType" resultMap="configMap">
         SELECT <include refid="configSql"/>
         FROM merchant_page_config c
-        WHERE c.merchant_id = #{merchantId} AND c.page_type = #{pageType}
+        <where>
+            <choose>
+                <when test="merchantId != null">
+                    c.merchant_id = #{merchantId}
+                </when>
+                <otherwise>
+                    c.merchant_id IS NULL
+                </otherwise>
+            </choose>
+            AND c.page_type = #{pageType}
+        </where>
         LIMIT 1
     </select>
 

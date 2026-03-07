@@ -8,7 +8,7 @@ import {
   House, Operation, Box, Checked, ShoppingCart, Goods,
   User, Monitor, Money, Setting, DataAnalysis, Calendar,
   TrendCharts, Sell, Upload, ChatDotRound, Aim, Odometer, Tickets,
-  Histogram
+  Histogram, KnifeFork
 } from '@element-plus/icons-vue';
 
 const router = useRouter();
@@ -25,7 +25,7 @@ const iconMap: Record<string, any> = {
   House, Operation, Box, Checked, ShoppingCart, Goods,
   User, Monitor, Money, Setting, DataAnalysis, Calendar,
   TrendCharts, Sell, Upload, ChatDotRound, Aim, Odometer, Tickets,
-  Histogram
+  Histogram, KnifeFork
 };
 
 // 菜单配置
@@ -35,6 +35,7 @@ interface MenuItem {
   icon: string;
   module: ModuleName;
   roles?: string[];  // 可选：限制特定角色可见
+  hideForFactories?: string[];  // 可选：在特定工厂类型下隐藏
   children?: MenuItem[];
   groupLabel?: string;  // 可选：分组标签（仅作为子菜单内的分割标题）
 }
@@ -72,7 +73,8 @@ const menuConfig: MenuItem[] = [
     path: '/quality', title: '质量管理', icon: 'Checked', module: 'quality',
     children: [
       { path: '/quality/inspections', title: '质检记录', icon: '', module: 'quality' },
-      { path: '/quality/disposals', title: '废弃处理', icon: '', module: 'quality' }
+      { path: '/quality/disposals', title: '废弃处理', icon: '', module: 'quality' },
+      { path: '/quality/standards', title: '质检标准', icon: '', module: 'quality' }
     ]
   },
   {
@@ -89,7 +91,7 @@ const menuConfig: MenuItem[] = [
       { path: '/sales/orders', title: '销售订单', icon: '', module: 'sales' },
       { path: '/sales/finished-goods', title: '成品库存', icon: '', module: 'sales' },
       { path: '/sales/customers', title: '客户管理', icon: '', module: 'sales' },
-      { path: '/sales/smart-analysis', title: '智能销售分析', icon: 'TrendCharts', module: 'sales' }
+      { path: '/sales/shipments', title: '出货记录', icon: '', module: 'sales' }
     ]
   },
   {
@@ -120,8 +122,7 @@ const menuConfig: MenuItem[] = [
     children: [
       { path: '/finance/costs', title: '成本分析', icon: '', module: 'finance' },
       { path: '/finance/reports', title: '财务报表', icon: '', module: 'finance' },
-      { path: '/finance/ar-ap', title: '应收应付', icon: '', module: 'finance' },
-      { path: '/finance/smart-analysis', title: '智能财务分析', icon: 'TrendCharts', module: 'finance' }
+      { path: '/finance/ar-ap', title: '应收应付', icon: '', module: 'finance' }
     ]
   },
   {
@@ -134,7 +135,8 @@ const menuConfig: MenuItem[] = [
       { path: '/system/ai-intents', title: 'AI意图配置', icon: '', module: 'system' },
       { path: '/system/products', title: '产品信息管理', icon: '', module: 'system' },
       { path: '/system/features', title: '功能模块配置', icon: '', module: 'system' },
-      { path: '/system/pos', title: 'POS集成', icon: '', module: 'system' }
+      { path: '/system/pos', title: 'POS集成', icon: '', module: 'system' },
+      { path: '/system/smartbi-config', title: 'SmartBI配置', icon: '', module: 'system' }
     ]
   },
   {
@@ -159,13 +161,28 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
+    path: '/restaurant', title: '餐饮运营', icon: 'KnifeFork', module: 'restaurant',
+    children: [
+      { path: '/restaurant/analytics', title: '运营总览', icon: '', module: 'restaurant', groupLabel: '运营分析' },
+      { path: '/restaurant/analytics/menu', title: '菜品四象限', icon: '', module: 'restaurant' },
+      { path: '/restaurant/analytics/stores', title: '门店对比', icon: '', module: 'restaurant' },
+      { path: '/restaurant/analytics/dianping', title: '经营与平台分析', icon: '', module: 'restaurant' },
+      { path: '/restaurant/requisitions', title: '领料管理', icon: '', module: 'restaurant', groupLabel: '日常管理' },
+      { path: '/restaurant/wastage', title: '损耗管理', icon: '', module: 'restaurant' },
+      { path: '/restaurant/recipes', title: '配方管理', icon: '', module: 'restaurant' },
+      { path: '/restaurant/stocktaking', title: '盘点管理', icon: '', module: 'restaurant' }
+    ]
+  },
+  {
     path: '/calibration', title: '行为校准', icon: 'Aim', module: 'system',
+    hideForFactories: ['F002'],
     children: [
       { path: '/calibration/list', title: '校准管理', icon: '', module: 'system' }
     ]
   },
   {
     path: '/production-analytics', title: '生产分析', icon: 'Histogram', module: 'analytics',
+    hideForFactories: ['F002'],
     children: [
       { path: '/production-analytics/production', title: '生产数据分析', icon: 'Histogram', module: 'analytics' },
       { path: '/production-analytics/efficiency', title: '人效分析', icon: 'User', module: 'analytics' }
@@ -191,8 +208,12 @@ const menuConfig: MenuItem[] = [
   }
 ];
 
-// 检查菜单项是否可见（基于角色限制）
+// 检查菜单项是否可见（基于角色限制 + 工厂类型限制）
 function canSeeMenuItem(item: MenuItem): boolean {
+  // 工厂类型隐藏: 在特定工厂下不显示
+  if (item.hideForFactories?.includes(authStore.factoryId)) {
+    return false;
+  }
   // 如果没有 roles 限制，只检查模块权限
   if (!item.roles || item.roles.length === 0) {
     return permissionStore.canAccess(item.module);
@@ -209,7 +230,7 @@ const filteredMenu = computed(() => {
   }
 
   return menuConfig
-    .filter(item => permissionStore.canAccess(item.module))
+    .filter(item => canSeeMenuItem(item))
     .map(item => {
       if (!item.children) return item;
       // 过滤子菜单中有角色限制的项
@@ -233,18 +254,32 @@ const defaultOpeneds = computed(() => {
 
 function handleSelect(path: string) {
   router.push(path);
+  // 移动端点击菜单项后自动关闭抽屉
+  if (appStore.isMobile) {
+    appStore.closeMobileMenu();
+  }
 }
 </script>
 
 <template>
+  <!-- 移动端遮罩层 -->
+  <div
+    v-if="appStore.isMobile && appStore.mobileMenuOpen"
+    class="sidebar-overlay"
+    @click="appStore.closeMobileMenu()"
+  />
+
   <aside
     class="app-sidebar"
-    :class="{ 'is-collapsed': appStore.sidebarCollapsed }"
+    :class="{
+      'is-collapsed': appStore.sidebarCollapsed && !appStore.isMobile,
+      'mobile-open': appStore.isMobile && appStore.mobileMenuOpen
+    }"
   >
     <!-- Logo -->
     <div class="sidebar-logo">
       <img src="/logo.svg" alt="Logo" class="logo-icon" />
-      <span v-if="!appStore.sidebarCollapsed" class="logo-text">白垩纪管理系统</span>
+      <span v-if="!appStore.sidebarCollapsed || appStore.isMobile" class="logo-text">白垩纪管理系统</span>
     </div>
 
     <!-- 菜单 -->
@@ -252,7 +287,7 @@ function handleSelect(path: string) {
       <el-menu
         :default-active="activeMenu"
         :default-openeds="defaultOpeneds"
-        :collapse="appStore.sidebarCollapsed"
+        :collapse="appStore.sidebarCollapsed && !appStore.isMobile"
         unique-opened
         background-color="transparent"
         text-color="#ffffffa6"
@@ -398,6 +433,31 @@ function handleSelect(path: string) {
     margin-top: 4px;
     border-top: 1px solid rgba(255, 255, 255, 0.04);
     padding-top: 10px;
+  }
+}
+
+// 移动端遮罩
+.sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .app-sidebar {
+    transform: translateX(-100%);
+    z-index: 1001;
+    width: 260px;
+
+    &.mobile-open {
+      transform: translateX(0);
+    }
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1000;
   }
 }
 </style>

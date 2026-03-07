@@ -113,7 +113,7 @@ async function loadFactoryOptions() {
   } catch {
     // Backend endpoint not implemented — use demo data
     factoryOptions.value = [
-      { id: '1', factoryId: 'F001', name: '上海食品加工厂' },
+      { id: '1', factoryId: authStore.factoryId || '', name: '上海食品加工厂' },
       { id: '2', factoryId: 'F002', name: '北京冷链物流中心' }
     ];
   }
@@ -173,8 +173,8 @@ function generateMockData(): CalibrationSession[] {
     sessionName: `校准会话 ${i + 1}`,
     sessionType: types[Math.floor(Math.random() * types.length)],
     status: statuses[Math.floor(Math.random() * statuses.length)],
-    factoryId: 'F001',
-    factoryName: '上海食品加工厂',
+    factoryId: authStore.factoryId,
+    factoryName: authStore.factoryId || '未知工厂',
     description: `第 ${i + 1} 次行为校准会话`,
     progress: Math.floor(Math.random() * 100),
     results: Math.random() > 0.5 ? {
@@ -557,7 +557,7 @@ function getScoreColor(score?: number) {
       </div>
 
       <!-- 数据表格 -->
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="sessionName" label="会话名称" min-width="180">
           <template #default="{ row }">
             <div class="session-name-cell">
@@ -696,6 +696,7 @@ function getScoreColor(score?: number) {
       v-model="createDialogVisible"
       title="新建校准会话"
       width="500px"
+      :close-on-click-modal="false"
       destroy-on-close
     >
       <el-form

@@ -1,4 +1,5 @@
 import vue from '@vitejs/plugin-vue'
+import Icons from 'unplugin-icons/vite'
 
 import createAutoImport from './auto-import'
 import createSvgIcon from './svg-icon'
@@ -10,6 +11,7 @@ export default function createVitePlugins(viteEnv, isBuild = false) {
     vitePlugins.push(createAutoImport())
 	vitePlugins.push(createSetupExtend())
     vitePlugins.push(createSvgIcon(isBuild))
+    vitePlugins.push(Icons({ compiler: 'vue3', autoInstall: true }))
 	isBuild && vitePlugins.push(...createCompression(viteEnv))
     return vitePlugins
 }

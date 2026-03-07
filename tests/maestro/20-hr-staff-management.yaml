@@ -1,0 +1,54 @@
+appId: com.cretas.foodtrace
+---
+# Test 20: HR Admin - Staff Management
+# Verifies staff list, search, staff detail, and add staff form
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as HR admin
+- runFlow: flows/login-hr.yaml
+- extendedWaitUntil:
+    visible: ".*Total Staff.*"
+    timeout: 15000
+
+# Navigate to Staff tab (人员)
+- tapOn: "\u4EBA\u5458"
+- waitForAnimationToEnd
+
+# Wait for staff list to load
+- extendedWaitUntil:
+    visible: ".*Staff.*"
+    timeout: 10000
+- takeScreenshot: screenshots/20-hr-staff-list
+
+# Tap search bar and search for dispatcher
+- tapOn:
+    text: ".*Search.*"
+- inputText: "dispatcher"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/20-hr-search-result
+
+# Tap on dispatcher1 entry to view detail
+- tapOn:
+    text: ".*dispatcher1.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/20-hr-staff-detail
+
+# Go back to staff list
+- back
+- waitForAnimationToEnd
+
+# Go back to home
+- back
+- waitForAnimationToEnd
+
+# Tap + button to add new staff
+- tapOn:
+    text: ".*\\+.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/20-hr-add-staff

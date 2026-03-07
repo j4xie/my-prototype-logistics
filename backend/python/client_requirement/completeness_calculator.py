@@ -36,7 +36,7 @@ ENTITY_FIELD_MAP = {
             "batch_number", "product_name", "planned_quantity", "actual_quantity",
             "good_quantity", "defect_quantity", "yield_rate", "material_cost",
             "labor_cost", "equipment_cost", "total_cost", "unit_cost",
-            "equipment_id", "supervisor_id", "worker_count", "start_time", "completed_time"
+            "equipment_id", "supervisor_id", "worker_count", "start_time", "end_time"
         ]
     },
     "WORK_SESSION": {
@@ -51,23 +51,23 @@ ENTITY_FIELD_MAP = {
         "table": "material_batches",
         "factory_filter": "factory_id",
         "fields": [
-            "batch_number", "material_type_id", "quantity", "unit_price",
-            "supplier_id", "expiry_date", "storage_location"
+            "batch_number", "material_type_id", "receipt_quantity", "unit_price",
+            "supplier_id", "expire_date", "storage_location"
         ]
     },
     "QUALITY_INSPECTION": {
         "table": "quality_inspections",
         "factory_filter": "factory_id",
         "fields": [
-            "batch_id", "inspector_id", "inspection_type", "result",
-            "defect_count", "defect_type"
+            "production_batch_id", "inspector_id", "inspection_date", "result",
+            "pass_count", "fail_count", "sample_size", "pass_rate"
         ]
     },
     "EQUIPMENT": {
         "table": "factory_equipment",
         "factory_filter": "factory_id",
         "fields": [
-            "equipment_name", "equipment_type", "operating_hours",
+            "equipment_name", "type", "total_running_hours",
             "last_maintenance_date", "status"
         ]
     }
@@ -75,8 +75,16 @@ ENTITY_FIELD_MAP = {
 
 
 async def _get_db_pool():
-    """Get asyncpg connection pool using cretas database config."""
-    db_url = os.getenv("COMPLETENESS_DB_URL", "postgresql://cretas_user:cretas_pass@localhost:5432/cretas_db")
+    """Get asyncpg connection pool using cretas database config.
+    Reuses the FOOD_KB_POSTGRES_* env vars (same DB, set in systemd)."""
+    db_url = os.getenv("COMPLETENESS_DB_URL")
+    if not db_url:
+        host = os.getenv("FOOD_KB_POSTGRES_HOST", "localhost")
+        port = os.getenv("FOOD_KB_POSTGRES_PORT", "5432")
+        db = os.getenv("FOOD_KB_POSTGRES_DB", "cretas_db")
+        user = os.getenv("FOOD_KB_POSTGRES_USER", "cretas_user")
+        password = os.getenv("FOOD_KB_POSTGRES_PASSWORD", "")
+        db_url = f"postgresql://{user}:{password}@{host}:{port}/{db}"
     return await asyncpg.create_pool(db_url, min_size=1, max_size=3)
 
 

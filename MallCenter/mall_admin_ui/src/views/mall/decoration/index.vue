@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Search, Refresh, MagicStick, View } from "@element-plus/icons-vue";
+import { Search, Refresh, MagicStick, View, ChatDotRound, Clock } from "@element-plus/icons-vue";
 import { message } from "@/utils/message";
 import { getThemes, getModules } from "@/api/mall/decoration";
 import type { DecorationTheme, DecorationModule } from "@/api/mall/types/decoration";
@@ -80,6 +80,24 @@ const goToAiDesign = () => {
   router.push(`/mall/merchant/decoration/ai-design?merchantId=${selectedMerchantId.value}`);
 };
 
+// 跳转AI对话装修
+const goToAiChat = () => {
+  if (!selectedMerchantId.value) {
+    message("请先选择要装修的商户", { type: "warning" });
+    return;
+  }
+  router.push(`/mall/merchant/decoration/ai-chat?merchantId=${selectedMerchantId.value}`);
+};
+
+// 跳转版本历史
+const goToVersions = () => {
+  if (!selectedMerchantId.value) {
+    message("请先选择要装修的商户", { type: "warning" });
+    return;
+  }
+  router.push(`/mall/merchant/decoration/versions?merchantId=${selectedMerchantId.value}`);
+};
+
 // 风格标签颜色
 const getStyleTagType = (style: string) => {
   const map: Record<string, string> = {
@@ -141,9 +159,17 @@ onMounted(() => {
             <el-option label="多巴胺" value="dopamine" />
           </el-select>
         </div>
-        <el-button type="primary" :icon="MagicStick" @click="goToAiDesign">
-          AI智能装修
-        </el-button>
+        <div class="flex gap-2">
+          <el-button type="primary" :icon="MagicStick" @click="goToAiDesign">
+            AI智能装修
+          </el-button>
+          <el-button type="success" :icon="ChatDotRound" @click="goToAiChat">
+            AI对话装修
+          </el-button>
+          <el-button :icon="Clock" @click="goToVersions">
+            版本历史
+          </el-button>
+        </div>
       </div>
     </el-card>
 

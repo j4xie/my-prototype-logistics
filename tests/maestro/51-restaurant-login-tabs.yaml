@@ -1,0 +1,81 @@
+appId: com.cretas.foodtrace
+---
+# Test 51: Restaurant Admin Login + Tab Verification
+# Verifies restaurant_admin1 sees restaurant-specific tabs (配方/领料/盘点/损耗)
+# and does NOT see factory-specific tabs (AI分析/报表/智能分析/管理)
+
+- launchApp:
+    clearState: true
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible: "Cretas Food Trace"
+    timeout: 15000
+
+# Verify welcome page
+- assertVisible: "Cretas Food Trace"
+- assertVisible: "Login"
+- assertVisible: "Register"
+- takeScreenshot: screenshots/51-welcome
+
+# Navigate to login screen
+- tapOn: "Login"
+- waitForAnimationToEnd
+
+# Enter username
+- tapOn: "Enter username"
+- inputText: "restaurant_admin1"
+
+# Enter password
+- tapOn: "Enter password"
+- inputText: "123456"
+
+# Hide keyboard and submit
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Tap the Login submit button (index 1 = submit button, index 0 = title)
+- tapOn:
+    text: "Login"
+    index: 1
+
+# Wait for login success dialog
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 25000
+- tapOn: "OK"
+- waitForAnimationToEnd
+
+# Wait for home page
+- extendedWaitUntil:
+    visible: "AI \u667A\u80FD\u6D1E\u5BDF"
+    timeout: 10000
+
+# Verify home page loaded with restaurant content
+- assertVisible: "AI \u667A\u80FD\u6D1E\u5BDF"
+- assertVisible: "\u4ECA\u65E5\u6982\u89C8"
+- assertVisible: "\u5FEB\u6377\u64CD\u4F5C"
+- takeScreenshot: screenshots/51-restaurant-home
+
+# Verify restaurant quick actions are visible
+- assertVisible: "\u65B0\u5EFA\u91C7\u8D2D"
+- assertVisible: "\u65B0\u5EFA\u9500\u552E"
+- assertVisible: "\u5E93\u5B58\u67E5\u8BE2"
+- assertVisible: "\u4EBA\u5458\u7BA1\u7406"
+
+# Verify restaurant-specific bottom tabs exist
+- assertVisible: "\u914D\u65B9"
+- assertVisible: "\u9886\u6599"
+- assertVisible: "\u76D8\u70B9"
+- assertVisible: "\u635F\u8017"
+- assertVisible: "\u6211\u7684"
+- assertVisible: "\u9996\u9875"
+- takeScreenshot: screenshots/51-restaurant-tabs
+
+# Verify factory-specific tabs are NOT visible
+- assertNotVisible: "AI\u5206\u6790"
+- assertNotVisible: "\u62A5\u8868"
+- assertNotVisible: "\u667A\u80FD\u5206\u6790"
+- assertNotVisible:
+    text: "\u7BA1\u7406"
+    enabled: true

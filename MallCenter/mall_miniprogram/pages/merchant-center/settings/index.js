@@ -56,11 +56,11 @@ Page({
       // 模拟数据
       this.setData({
         shopInfo: {
-          name: '白垩纪优选',
+          name: '我的店铺',
           logo: '/public/img/no_pic.png',
-          description: '专注高品质食材供应，新鲜直达',
-          phone: '400-888-8888',
-          address: '上海市浦东新区张江高科技园区',
+          description: '欢迎光临',
+          phone: '',
+          address: '',
           businessHours: '09:00 - 21:00',
           isOpen: true
         }

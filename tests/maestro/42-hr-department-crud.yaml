@@ -1,0 +1,69 @@
+appId: com.cretas.foodtrace
+---
+# Test 42: HR Admin - Department CRUD & New Hires
+# Covers: DepartmentAdd, DepartmentDetail, NewHires, MyInfo
+# Previously tested: DepartmentList(21), StaffList(20), Attendance(31)
+# Round 4.1 fix: Better department name patterns (加工部/物流部/质检部/管理层)
+#   from DepartmentListScreen.tsx, departments show: name, managerName, memberCount
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as HR admin
+- runFlow: flows/login-hr.yaml
+- extendedWaitUntil:
+    visible: ".*Total Staff.*"
+    timeout: 15000
+
+# === New Hires (新入职) — from home quick actions ===
+- tapOn:
+    text: ".*New Hire.*|.*\u65B0\u5165\u804C.*|.*\u65B0\u5458\u5DE5.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/42-hr-new-hires
+
+# Return to Home
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# Navigate to Profile for My Info and Department Management
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === My Info (我的信息) ===
+- tapOn:
+    text: ".*My Info.*|.*\u6211\u7684\u4FE1\u606F.*|.*\u4E2A\u4EBA\u4FE1\u606F.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/42-hr-my-info
+
+# Return to Profile
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === Department Management (部门管理) ===
+- tapOn:
+    text: ".*Department.*|.*\u90E8\u95E8\u7BA1\u7406.*|.*\u90E8\u95E8.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/42-hr-department-list
+
+# Tap on first department for detail (common names: 加工部, 物流部, 质检部, 管理层)
+- tapOn:
+    text: ".*\u52A0\u5DE5\u90E8.*|.*\u751F\u4EA7\u90E8.*|.*\u7269\u6D41\u90E8.*|.*\u8D28\u68C0\u90E8.*|.*Production.*|.*Processing.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/42-hr-department-detail
+
+# Return to department list
+- back
+- waitForAnimationToEnd
+
+# Look for add button (FAB or header button)
+- tapOn:
+    text: ".*\u6DFB\u52A0\u90E8\u95E8.*|.*Add.*|.*\u521B\u5EFA.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/42-hr-department-add

@@ -1,0 +1,41 @@
+appId: com.cretas.foodtrace
+---
+# Explore Warehouse Manager screens
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- runFlow: flows/login-wm.yaml
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 15000
+- takeScreenshot: screenshots/explore-wm-home
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-wm-home-scroll
+
+# Try tabs
+- tapOn:
+    text: ".*\u5165\u5E93.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-wm-tab2
+
+- tapOn:
+    text: ".*\u51FA\u5E93.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-wm-tab3
+
+- tapOn:
+    text: ".*\u5E93\u5B58.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-wm-tab4
+
+- tapOn:
+    text: ".*\u6211\u7684.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-wm-profile

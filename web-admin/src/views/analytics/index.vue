@@ -26,9 +26,9 @@ const overviewData = ref({
 
 // 趋势数据
 const trendData = ref({
-  productionTrend: [] as any[],
-  qualityTrend: [] as any[],
-  costTrend: [] as any[]
+  productionTrend: [] as { date: string; value: number }[],
+  qualityTrend: [] as { date: string; value: number }[],
+  costTrend: [] as { date: string; value: number }[]
 });
 
 onMounted(() => {

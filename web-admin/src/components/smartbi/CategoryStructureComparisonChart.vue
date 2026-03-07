@@ -81,18 +81,20 @@ const emit = defineEmits<{
 
 const chartRef = ref<HTMLDivElement | null>(null);
 const chartInstance = ref<ECharts | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+let rafId = 0;
 const viewMode = ref<ChartViewMode>(props.defaultViewMode);
 
 // Color palette
 const colors = {
-  currentYear: '#409eff',      // Blue - current year
+  currentYear: '#1B65A8',      // Blue - current year
   compareYear: '#91cc75',      // Light green - compare year
   growthLine: '#ee6666',       // Red - growth rate line
   positive: '#67c23a',         // Green - positive growth
   negative: '#f56c6c',         // Red - negative growth
   neutral: '#909399',          // Gray - neutral
   pieColors: [
-    '#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
+    '#1B65A8', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
     '#00d4ff', '#ff6b9d', '#c084fc', '#fbbf24', '#34d399'
   ]
 };
@@ -506,7 +508,11 @@ function updateChart() {
 
 // Handle resize
 function handleResize() {
-  chartInstance.value?.resize();
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = 0;
+    chartInstance.value?.resize();
+  });
 }
 
 // Handle view mode change
@@ -518,10 +524,17 @@ function onViewModeChange(mode: ChartViewMode) {
 // Lifecycle
 onMounted(() => {
   initChart();
+  if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartRef.value);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (rafId) cancelAnimationFrame(rafId);
   window.removeEventListener('resize', handleResize);
   chartInstance.value?.dispose();
 });
@@ -618,7 +631,7 @@ defineExpose({
     </div>
 
     <!-- Chart Container -->
-    <div ref="chartRef" :style="{ width: '100%', height: height }"></div>
+    <div ref="chartRef" role="img" :aria-label="title || '分类结构对比图表'" :style="{ width: '100%', height: height }"></div>
 
     <!-- Detailed Table -->
     <div v-if="showTable" class="detail-table">
@@ -720,7 +733,7 @@ defineExpose({
         font-variant-numeric: tabular-nums;
 
         &.primary {
-          color: #409eff;
+          color: #1B65A8;
         }
 
         &.positive {

@@ -5,6 +5,7 @@ import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
+import { formatAmount } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
 const { label } = useBusinessMode();
@@ -44,11 +45,6 @@ function statusType(row: any) {
   if (avail < (row.producedQuantity || 1) * 0.2) return 'warning';
   return 'success';
 }
-
-function formatAmount(val: number) {
-  if (val == null) return '-';
-  return `¥${Number(val).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
-}
 </script>
 
 <template>
@@ -66,7 +62,7 @@ function formatAmount(val: number) {
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="batchNumber" label="批次号" width="170" />
         <el-table-column label="产品" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ row.productType?.name || row.productTypeId || '-' }}</template>

@@ -1,0 +1,121 @@
+appId: com.cretas.foodtrace
+---
+# Test 71: In-depth Dispatcher Gantt Chart Interaction
+# Exercises horizontal/vertical scroll, view switch (时/日)
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as dispatcher
+- runFlow: flows/login-dp.yaml
+- extendedWaitUntil:
+    visible: "调度工作台"
+    timeout: 15000
+- takeScreenshot: screenshots/71-dp-home
+
+# Navigate to plan list first
+- tapOn:
+    text: ".*生产计划.*|.*计划列表.*|.*Plan.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Then to Gantt chart
+- tapOn:
+    text: ".*甘特图.*|.*Gantt.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "甘特图"
+    timeout: 8000
+- takeScreenshot: screenshots/71-gantt-initial
+
+# === View mode toggle ===
+# Switch to 时 (hour view)
+- tapOn:
+    text: "时"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/71-view-hour
+
+# Switch to 日 (day view)
+- tapOn:
+    text: "日"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/71-view-day
+
+# Switch back to hour view
+- tapOn:
+    text: "时"
+    optional: true
+- waitForAnimationToEnd
+
+# === Date navigation ===
+# Try forward date navigation (>)
+- tapOn:
+    text: ">"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/71-date-forward
+
+# Try backward date navigation (<)
+- tapOn:
+    text: "<"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/71-date-backward
+
+# === Horizontal scroll (timeline) ===
+- swipe:
+    direction: LEFT
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/71-scroll-right
+
+- swipe:
+    direction: RIGHT
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/71-scroll-left
+
+# === Vertical scroll (production lines) ===
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/71-scroll-down
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/71-scroll-up
+
+# === Try tapping a task bar ===
+- tapOn:
+    text: ".*切片.*|.*包装.*|.*A线.*|.*B线.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/71-task-tap
+
+# === Verify legend items ===
+- tapOn:
+    text: ".*进行中.*|.*待开始.*|.*已完成.*|.*延迟.*"
+    optional: true
+- takeScreenshot: screenshots/71-legend
+
+# === Footer stats ===
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/71-footer-stats
+
+# Return to home
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/71-complete

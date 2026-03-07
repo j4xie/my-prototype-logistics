@@ -1,0 +1,41 @@
+appId: com.cretas.foodtrace
+---
+# Deep explore HR: staff list + attendance + whitelist
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- runFlow: flows/login-hr.yaml
+- extendedWaitUntil:
+    visible: "Total Staff 31"
+    timeout: 15000
+
+# Go to staff tab (人员)
+- tapOn: "\u4EBA\u5458"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-hr-staff-list
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Go to attendance tab (考勤)
+- tapOn: "\u8003\u52E4"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-hr-attendance
+
+# Scroll
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-hr-attendance-scroll
+
+# Go to whitelist tab (白名单)
+- tapOn: "\u767D\u540D\u5355"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-hr-whitelist
+
+# Go to profile tab (我的)
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-hr-profile-tab

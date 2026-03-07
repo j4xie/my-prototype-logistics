@@ -198,6 +198,41 @@ public class Merchant extends Model<Merchant> {
     private LocalDateTime updateTime;
 
     /**
+     * 上级商城ID，NULL=商城主，有值=入驻商户
+     */
+    private Long parentId;
+
+    /**
+     * 商户授权的小程序AppID
+     */
+    private String wxAuthorizerAppid;
+
+    /**
+     * 授权刷新令牌
+     */
+    private String wxAuthorizerRefreshToken;
+
+    /**
+     * 授权状态：0未授权 1已授权 2已过期
+     */
+    private Integer wxAuthorizationStatus;
+
+    /**
+     * 当前小程序版本号
+     */
+    private String wxMiniVersion;
+
+    /**
+     * 小程序状态：0未部署 1已上传 2审核中 3已发布 4审核失败
+     */
+    private Integer wxMiniStatus;
+
+    /**
+     * 最近一次审核ID
+     */
+    private Long wxMiniAuditId;
+
+    /**
      * 删除标记
      */
     @TableLogic

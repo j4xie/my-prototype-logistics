@@ -1,0 +1,125 @@
+appId: com.cretas.foodtrace
+---
+# Test 73: In-depth HR Attendance Interaction
+# Exercises stats cards, date filter (今日/历史), status filters, refresh
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as HR admin
+- runFlow: flows/login-hr.yaml
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*人力.*|.*HR.*|.*Staff.*|.*考勤.*|.*Attendance.*"
+    timeout: 10000
+- takeScreenshot: screenshots/73-hr-home
+
+# Navigate to attendance management (考勤管理)
+- tapOn:
+    text: ".*Attendance.*|.*考勤.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-attendance-initial
+
+# === Date filter toggle ===
+# Toggle to 今日
+- tapOn:
+    text: ".*Today.*|.*今日.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-date-today
+
+# Toggle to 历史
+- tapOn:
+    text: ".*History.*|.*历史.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-date-history
+
+# Back to 今日
+- tapOn:
+    text: ".*Today.*|.*今日.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Status filter cycle ===
+# Filter: 正常
+- tapOn:
+    text: ".*Normal.*|.*正常.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-status-normal
+
+# Filter: 迟到
+- tapOn:
+    text: ".*Late.*|.*迟到.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-status-late
+
+# Filter: 早退
+- tapOn:
+    text: ".*Early Leave.*|.*早退.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-status-early
+
+# Filter: 缺勤
+- tapOn:
+    text: ".*Absent.*|.*缺勤.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-status-absent
+
+# Back to all (tap 正常 to deselect or tap all)
+- tapOn:
+    text: ".*All.*|.*全部.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-status-all
+
+# === Search bar ===
+- tapOn:
+    text: ".*Search.*|.*搜索员工.*|.*搜索.*"
+    optional: true
+- waitForAnimationToEnd
+- inputText: "test"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-search-results
+- eraseText: 4
+- hideKeyboard
+- waitForAnimationToEnd
+
+# === Tap on an attendance card (anomaly) ===
+- tapOn:
+    text: ".*Late.*|.*Early Leave.*|.*Absent.*|.*Clock.*|.*迟到.*|.*早退.*|.*缺勤.*|.*打卡时间.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-anomaly-detail
+
+# Back from detail
+- back
+- waitForAnimationToEnd
+
+# === Pull-to-refresh ===
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-after-refresh
+
+# === Scroll ===
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-scrolled
+
+# Return to home
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/73-complete

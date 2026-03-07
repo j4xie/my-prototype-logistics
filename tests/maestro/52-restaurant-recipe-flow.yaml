@@ -1,0 +1,32 @@
+appId: com.cretas.foodtrace
+---
+# Test 52: Restaurant Recipe Module Navigation
+# Verifies 配方 tab → RecipeList → RecipeDetail flow
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant_admin1
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: "AI \u667A\u80FD\u6D1E\u5BDF"
+    timeout: 10000
+
+# Navigate to 配方 tab
+- tapOn: "\u914D\u65B9"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/52-recipe-list
+
+# Verify recipe list screen loaded (search bar should be visible)
+- extendedWaitUntil:
+    visible: "\u914D\u65B9"
+    timeout: 5000
+
+# Take screenshot of recipe list
+- takeScreenshot: screenshots/52-recipe-list-loaded
+
+# Go back to 首页
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+- assertVisible: "AI \u667A\u80FD\u6D1E\u5BDF"

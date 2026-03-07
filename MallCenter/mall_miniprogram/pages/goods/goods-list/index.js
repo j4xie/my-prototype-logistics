@@ -188,19 +188,11 @@ Page({
       url: '/pages/ai-rag/chat/index?keyword=' + encodeURIComponent(this.data.searchKeyword)
     })
   },
-  // 加载 AI 配置
+  // 从全局读取AI配置
   loadAiConfig() {
-    const config = app.globalData.config
-    wx.request({
-      url: config.basePath + '/weixin/api/ma/ai/config',
-      method: 'GET',
-      success: (res) => {
-        if (res.statusCode === 200 && res.data.data) {
-          this.setData({
-            showAiAssistant: res.data.data.enabled === true
-          })
-        }
-      }
+    var self = this
+    app.onFeatureReady(function (flags) {
+      self.setData({ showAiAssistant: flags.showAI === true })
     })
   },
   viewTypeEdit(){

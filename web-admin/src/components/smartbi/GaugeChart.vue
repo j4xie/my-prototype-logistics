@@ -20,6 +20,7 @@ interface Props {
   startAngle?: number;
   endAngle?: number;
   radius?: string;
+  loading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -42,6 +43,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const chartRef = ref<HTMLDivElement | null>(null);
 const chartInstance = ref<ECharts | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+let rafId = 0;
 
 // Calculate percentage
 const percentage = computed(() => {
@@ -265,16 +268,27 @@ function updateChart() {
 }
 
 function handleResize() {
-  chartInstance.value?.resize();
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = 0;
+    chartInstance.value?.resize();
+  });
 }
 
 // Lifecycle
 onMounted(() => {
   initChart();
+  if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartRef.value);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (rafId) cancelAnimationFrame(rafId);
   window.removeEventListener('resize', handleResize);
   chartInstance.value?.dispose();
 });
@@ -291,7 +305,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="gauge-chart">
+  <div v-loading="loading" class="gauge-chart">
     <div v-if="title" class="chart-header">
       <h3>{{ title }}</h3>
       <div v-if="showTarget && targetValue" class="target-info">
@@ -299,7 +313,7 @@ defineExpose({
         <span class="target-value">{{ targetValue }}{{ unit }}</span>
       </div>
     </div>
-    <div ref="chartRef" :style="{ width: '100%', height: height + 'px' }"></div>
+    <div ref="chartRef" role="img" :aria-label="title || '仪表盘图表'" :style="{ width: '100%', height: height + 'px' }"></div>
   </div>
 </template>
 

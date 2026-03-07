@@ -61,7 +61,7 @@ public class DahuaDiscoveryClient {
 
     public DahuaDiscoveryClient() {
         this.objectMapper = new ObjectMapper();
-        this.executorService = Executors.newCachedThreadPool(r -> {
+        this.executorService = java.util.concurrent.Executors.newFixedThreadPool(2, r -> {
             Thread t = new Thread(r, "dahua-discovery");
             t.setDaemon(true);
             return t;

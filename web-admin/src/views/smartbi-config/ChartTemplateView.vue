@@ -329,7 +329,7 @@ function handleTypeChange(type: string) {
 }
 
 function goBack() {
-  router.push('/smartbi-config');
+  router.push('/system/smartbi-config');
 }
 </script>
 
@@ -398,7 +398,7 @@ function goBack() {
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe border>
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border>
         <el-table-column prop="code" label="模板代码" width="180">
           <template #default="{ row }">
             <code class="template-code">{{ row.code }}</code>
@@ -587,7 +587,7 @@ function goBack() {
     <el-dialog
       v-model="previewVisible"
       title="图表预览"
-      width="800px"
+      width="min(800px, 92vw)"
       destroy-on-close
     >
       <div v-loading="previewLoading" class="preview-container">

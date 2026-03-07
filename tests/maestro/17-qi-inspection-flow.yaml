@@ -1,0 +1,33 @@
+appId: com.cretas.foodtrace
+---
+# Test 17: Quality Inspector - Full Inspection Workflow
+# Verifies QI home, Start Inspection button, and inspection form
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as quality inspector
+- runFlow: flows/login-qi.yaml
+
+# Wait for QI home dashboard to fully load
+- extendedWaitUntil:
+    visible: "Start Inspection"
+    timeout: 15000
+- takeScreenshot: screenshots/17-qi-home
+
+# Tap Start Inspection button
+- tapOn: "Start Inspection"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/17-qi-form-start
+
+# Scroll down to see form fields
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/17-qi-form-fields
+
+# Go back
+- back
+- waitForAnimationToEnd

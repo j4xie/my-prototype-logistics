@@ -1,0 +1,262 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: Sales Manager - Full Coverage
+# Captures: home dashboard, sales orders, return orders, AR/AP, customers, profile
+# Role: sales_mgr1 (销售经理)
+# Tabs: 首页 | 销售 | 客户 | 我的
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "sales_mgr1"
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "login-submit-btn"
+
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*Good.*|.*\u9500\u552E.*|\u52A0\u8F7D\u5931\u8D25.*|\u9996\u9875.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 1: 首页 (Home) - already on this tab after login
+# ============================================================
+
+# Screenshot: Sales home dashboard (stat cards, revenue KPIs)
+- takeScreenshot: screenshots/manual-ss-sm-home-top
+
+# Scroll down to see quick actions and recent activity
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-home-scroll
+
+# Scroll back to top
+- swipe:
+    direction: UP
+    duration: 1000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 2: 销售 (Sales Orders) - 2nd tab, 35% from left
+# ============================================================
+
+- tapOn:
+    point: "35%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Sales order list
+- takeScreenshot: screenshots/manual-ss-sm-sales-list
+
+# Scroll down to see more sales orders
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-sales-list-scroll
+
+# Scroll back to top
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# Tap on first sales order for detail
+- tapOn:
+    text: ".*SO-.*|.*\u9500\u552E\u5355.*|.*\u8BA2\u5355.*|\u5F85\u53D1\u8D27.*|\u5DF2\u53D1\u8D27.*|\u5F85\u5BA1\u6838.*|\u5DF2\u5B8C\u6210.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-sales-detail
+
+# Scroll in sales order detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-sales-detail-scroll
+
+# Recovery back to sales tab
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u9500\u552E.*|.*\u9996\u9875.*|.*\u5BA2\u6237.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate back to sales tab
+- tapOn:
+    point: "35%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Tap Return Orders tab/section (退货/Return)
+- tapOn:
+    text: ".*\u9000\u8D27.*|.*Return.*|.*\u9000\u8D27\u5355.*|.*\u9000\u8D27\u7533\u8BF7.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-return-orders
+
+# Scroll in return orders
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-return-orders-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u9500\u552E.*|.*\u9996\u9875.*|.*\u5BA2\u6237.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate back to sales tab
+- tapOn:
+    point: "35%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Tap AR/AP tab/section (应收应付/ArAp)
+- tapOn:
+    text: ".*\u5E94\u6536.*|.*\u5E94\u4ED8.*|.*ArAp.*|.*AR.*AP.*|.*\u5E94\u6536\u5E94\u4ED8.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-ar-ap
+
+# Scroll in AR/AP
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-ar-ap-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u9500\u552E.*|.*\u9996\u9875.*|.*\u5BA2\u6237.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 3: 客户 (Customers) - 3rd tab, 65% from left
+# ============================================================
+
+- tapOn:
+    point: "65%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Customer list
+- takeScreenshot: screenshots/manual-ss-sm-customer-list
+
+# Scroll down to see more customers
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-customer-list-scroll
+
+# Scroll back to top
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# Tap on first customer for detail
+- tapOn:
+    text: ".*\u5BA2\u6237.*|.*Customer.*|.*\u516C\u53F8.*|.*\u6709\u9650\u516C\u53F8.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-customer-detail
+
+# Scroll in customer detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-customer-detail-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u9500\u552E.*|.*\u9996\u9875.*|.*\u5BA2\u6237.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 4: 我的 (Profile) - 4th tab, 90% from left
+# ============================================================
+
+- tapOn:
+    point: "90%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Profile / My page
+- takeScreenshot: screenshots/manual-ss-sm-profile
+
+# Scroll down in profile
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-profile-scroll
+
+# Final completion screenshot
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u9500\u552E.*|.*\u9996\u9875.*|.*\u5BA2\u6237.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-sm-complete

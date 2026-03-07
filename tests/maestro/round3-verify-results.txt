@@ -1,0 +1,16 @@
+=== Round 3 Verification Tue, Mar  3, 2026 10:54:39 AM ===
+
+PASS: 27-fa-device-equipment.yaml
+PASS: 28-fa-profile-settings.yaml
+PASS: 29-wm-inventory-advanced.yaml
+PASS: 31-hr-attendance-deep.yaml
+PASS: 33-qi-analysis-report.yaml
+FAIL: 35-dp-ai-schedule-deep.yaml
+FAIL: 30-wm-profile-alerts.yaml
+FAIL: 32-hr-department-analytics.yaml
+FAIL: 34-qi-profile-clockin.yaml
+FAIL: 36-dp-personnel-profile.yaml
+FAIL: 37-fa-ai-analysis.yaml
+FAIL: 38-fa-config-inventory.yaml
+
+=== Summary: 5/12 PASS, 7 FAIL ===

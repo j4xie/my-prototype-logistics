@@ -9,7 +9,7 @@
 
 import { getFactoryId } from '@/api/smartbi/common';
 
-const CACHE_VERSION = 3; // v3: factory-scoped cache keys
+const CACHE_VERSION = 4; // v4: invalidate old English AI insight cache
 const MAX_CACHE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 /** Get factory-scoped cache key prefix */
@@ -162,7 +162,6 @@ export function saveDemoCache(uploadId: number, data: DemoCacheData): boolean {
     });
     saveCacheIndex(index);
 
-    console.log(`[DemoCache] 已缓存 uploadId=${uploadId}, 大小=${(sizeBytes / 1024).toFixed(0)}KB`);
     return true;
   } catch (e) {
     // localStorage 配额不足等异常

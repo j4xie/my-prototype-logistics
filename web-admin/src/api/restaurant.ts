@@ -1,0 +1,112 @@
+/**
+ * 餐饮模块 API
+ * 配方、领料、盘点、损耗
+ */
+import { get, post, put, del } from './request';
+
+// ==================== 配方管理 ====================
+
+export const getRecipes = (factoryId: string, params?: Record<string, unknown>) =>
+  get(`/${factoryId}/restaurant/recipes`, { params });
+
+export const getRecipe = (factoryId: string, recipeId: string) =>
+  get(`/${factoryId}/restaurant/recipes/${recipeId}`);
+
+export const createRecipe = (factoryId: string, data: Record<string, unknown>) =>
+  post(`/${factoryId}/restaurant/recipes`, data);
+
+export const updateRecipe = (factoryId: string, recipeId: string, data: Record<string, unknown>) =>
+  put(`/${factoryId}/restaurant/recipes/${recipeId}`, data);
+
+export const deleteRecipe = (factoryId: string, recipeId: string) =>
+  del(`/${factoryId}/restaurant/recipes/${recipeId}`);
+
+export const getRecipeSummary = (factoryId: string) =>
+  get(`/${factoryId}/restaurant/recipes/summary`);
+
+export const calculateRecipeIngredients = (factoryId: string, productTypeId: string, quantity: number = 1) =>
+  get(`/${factoryId}/restaurant/recipes/by-dish/${productTypeId}/calculate`, { params: { quantity } });
+
+// ==================== 领料管理 ====================
+
+export const getRequisitions = (factoryId: string, params?: Record<string, unknown>) =>
+  get(`/${factoryId}/restaurant/requisitions`, { params });
+
+export const getRequisition = (factoryId: string, id: string) =>
+  get(`/${factoryId}/restaurant/requisitions/${id}`);
+
+export const createRequisition = (factoryId: string, data: Record<string, unknown>) =>
+  post(`/${factoryId}/restaurant/requisitions`, data);
+
+export const submitRequisition = (factoryId: string, id: string) =>
+  post(`/${factoryId}/restaurant/requisitions/${id}/submit`);
+
+export const approveRequisition = (factoryId: string, id: string, data?: Record<string, unknown>) =>
+  post(`/${factoryId}/restaurant/requisitions/${id}/approve`, data);
+
+export const rejectRequisition = (factoryId: string, id: string, data: { reason: string }) =>
+  post(`/${factoryId}/restaurant/requisitions/${id}/reject`, data);
+
+export const getRequisitionStatistics = (factoryId: string) =>
+  get<{ totalRequisitions: number; pendingApproval: number; approved: number }>(`/${factoryId}/restaurant/requisitions/statistics`);
+
+// ==================== 盘点管理 ====================
+
+export const getStocktakingRecords = (factoryId: string, params?: Record<string, unknown>) =>
+  get(`/${factoryId}/restaurant/stocktaking`, { params });
+
+export const getStocktakingRecord = (factoryId: string, id: string) =>
+  get(`/${factoryId}/restaurant/stocktaking/${id}`);
+
+export const createStocktakingRecord = (factoryId: string, data: Record<string, unknown>) =>
+  post(`/${factoryId}/restaurant/stocktaking`, data);
+
+export const completeStocktaking = (factoryId: string, id: string, data: Record<string, unknown>) =>
+  post(`/${factoryId}/restaurant/stocktaking/${id}/complete`, data);
+
+export const cancelStocktaking = (factoryId: string, id: string) =>
+  post(`/${factoryId}/restaurant/stocktaking/${id}/cancel`);
+
+export const getStocktakingSummary = (factoryId: string) =>
+  get(`/${factoryId}/restaurant/stocktaking/latest-summary`);
+
+// ==================== 损耗管理 ====================
+
+export const getWastageRecords = (factoryId: string, params?: Record<string, unknown>) =>
+  get(`/${factoryId}/restaurant/wastage`, { params });
+
+export const getWastageRecord = (factoryId: string, id: string) =>
+  get(`/${factoryId}/restaurant/wastage/${id}`);
+
+export const createWastageRecord = (factoryId: string, data: Record<string, unknown>) =>
+  post(`/${factoryId}/restaurant/wastage`, data);
+
+export const submitWastage = (factoryId: string, id: string) =>
+  post(`/${factoryId}/restaurant/wastage/${id}/submit`);
+
+export const approveWastage = (factoryId: string, id: string) =>
+  post(`/${factoryId}/restaurant/wastage/${id}/approve`);
+
+export const rejectWastage = (factoryId: string, id: string, data: { reason: string }) =>
+  post(`/${factoryId}/restaurant/wastage/${id}/reject`, data);
+
+export const getWastageStatistics = (factoryId: string, params?: Record<string, unknown>) =>
+  get(`/${factoryId}/restaurant/wastage/statistics`, { params });
+
+// ==================== 基础数据 (选择器用) ====================
+
+export const getProductTypesActive = (factoryId: string) =>
+  get<{ id: string; name: string; code?: string }[]>(`/${factoryId}/product-types/active`);
+
+export const getRawMaterialTypes = (factoryId: string) =>
+  get<{ content?: { id: string; name: string; code?: string }[] }>(`/${factoryId}/raw-material-types`);
+
+// ==================== Dashboard 聚合 ====================
+
+export const getRestaurantDashboardSummary = (factoryId: string) =>
+  get<{
+    todayRequisitionCount: number;
+    pendingApprovalCount: number;
+    thisMonthWastageCost: number;
+    latestStocktakingDate: string | null;
+  }>(`/${factoryId}/restaurant-dashboard/summary`);

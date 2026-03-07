@@ -72,7 +72,7 @@ public class PythonSmartBIClient {
                 .addInterceptor(chain -> {
                     Request original = chain.request();
                     Request withAuth = original.newBuilder()
-                            .header("X-Internal-Secret", "cretas-internal-2026")
+                            .header("X-Internal-Secret", System.getenv().getOrDefault("INTERNAL_API_SECRET", "cretas-internal-2026"))
                             .build();
                     return chain.proceed(withAuth);
                 })

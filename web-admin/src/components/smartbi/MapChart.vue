@@ -7,6 +7,7 @@
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import echarts from '@/utils/echarts';
 import type { EChartsOption, ECharts } from 'echarts';
+import { defaultTooltip } from './chart-helpers';
 
 // Types
 export interface MapDataItem {
@@ -35,7 +36,7 @@ const props = withDefaults(defineProps<Props>(), {
   valueLabel: 'Value',
   valueUnit: '',
   minColor: '#e0f3ff',
-  maxColor: '#409eff',
+  maxColor: '#1B65A8',
   showLabel: true,
   zoom: 1.2,
   roam: true,
@@ -48,6 +49,8 @@ const emit = defineEmits<{
 
 const chartRef = ref<HTMLDivElement | null>(null);
 const chartInstance = ref<ECharts | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+let rafId = 0;
 const isMapRegistered = ref(false);
 const mapLoading = ref(true);
 const mapError = ref<string | null>(null);
@@ -68,13 +71,7 @@ const chartOptions = computed<EChartsOption>(() => {
 
   const options: EChartsOption = {
     tooltip: {
-      trigger: 'item',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderColor: '#ebeef5',
-      borderWidth: 1,
-      textStyle: {
-        color: '#303133'
-      },
+      ...defaultTooltip('item'),
       formatter: (params) => {
         const data = params as echarts.DefaultLabelFormatterCallbackParams;
         const value = data.value ?? 0;
@@ -140,7 +137,7 @@ const chartOptions = computed<EChartsOption>(() => {
             color: '#303133'
           },
           itemStyle: {
-            areaColor: '#409eff'
+            areaColor: '#1B65A8'
           }
         },
         data: props.data.map(d => ({
@@ -216,7 +213,11 @@ function updateChart() {
 }
 
 function handleResize() {
-  chartInstance.value?.resize();
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = 0;
+    chartInstance.value?.resize();
+  });
 }
 
 // Lifecycle
@@ -225,10 +226,17 @@ onMounted(async () => {
   if (isMapRegistered.value) {
     initChart();
   }
+  if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartRef.value);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (rafId) cancelAnimationFrame(rafId);
   window.removeEventListener('resize', handleResize);
   chartInstance.value?.dispose();
 });
@@ -291,6 +299,8 @@ defineExpose({
     <div
       v-else
       ref="chartRef"
+      role="img"
+      :aria-label="title || '地图图表'"
       :style="{ width: '100%', height: height + 'px' }"
     ></div>
   </div>

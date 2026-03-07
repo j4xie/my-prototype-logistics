@@ -139,7 +139,7 @@ async function loadKPIData() {
     });
 
     if (response.success && response.data) {
-      const data = response.data as any;
+      const data = response.data as Record<string, unknown>;
       kpiData.value = {
         revenue: { value: data.revenue || 0, trend: data.revenueTrend || 'flat', trendValue: data.revenueGrowth || 0 },
         cost: { value: data.cost || 0, trend: data.costTrend || 'flat', trendValue: data.costGrowth || 0 },
@@ -334,29 +334,23 @@ async function loadAIInsight() {
 }
 
 // Event handlers
-function handleKPIClick(kpi: string) {
-  console.log('KPI clicked:', kpi);
-  // Can navigate to detailed analysis
+function handleKPIClick(_kpi: string) {
+  // TODO: navigate to detailed analysis
 }
 
-function handleBudgetPeriodClick(data: BudgetData) {
-  console.log('Budget period clicked:', data);
+function handleBudgetPeriodClick(_data: BudgetData) {
 }
 
-function handleYoYDataClick(data: { period: string; dataPoint: ComparisonData }) {
-  console.log('YoY data clicked:', data);
+function handleYoYDataClick(_data: { period: string; dataPoint: ComparisonData }) {
 }
 
-function handleDonutCategoryClick(data: { item: NestedDonutDataItem; year: 'current' | 'previous' }) {
-  console.log('Donut category clicked:', data);
+function handleDonutCategoryClick(_data: { item: NestedDonutDataItem; year: 'current' | 'previous' }) {
 }
 
-function handleCategoryClick(data: CategoryComparisonData) {
-  console.log('Category clicked:', data);
+function handleCategoryClick(_data: CategoryComparisonData) {
 }
 
-function handleWaterfallClick(data: { dataPoint: WaterfallDataPoint; index: number }) {
-  console.log('Waterfall clicked:', data);
+function handleWaterfallClick(_data: { dataPoint: WaterfallDataPoint; index: number }) {
 }
 
 function handleInsightRefresh() {

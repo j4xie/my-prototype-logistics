@@ -1,0 +1,69 @@
+appId: com.cretas.foodtrace
+---
+# Test 08: Workshop Supervisor - Batch Management & Detail
+# Verifies batch list, filters, detail view, and consumption records
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as workshop supervisor
+- runFlow: flows/login-ws.yaml
+- waitForAnimationToEnd
+
+# Navigate to Batch tab
+- tapOn: "\u6279\u6B21"
+- waitForAnimationToEnd
+
+# Wait for batch list to load (verify real batch data exists)
+- extendedWaitUntil:
+    visible: "PB-20251227-001"
+    timeout: 10000
+- takeScreenshot: screenshots/08-ws-batch-list
+
+# Tap on in-progress filter
+- tapOn:
+    text: ".*\u8FDB\u884C\u4E2D.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/08-ws-batch-in-progress
+
+# Tap on a batch to see detail
+- tapOn: "PB-20251227-001"
+- waitForAnimationToEnd
+
+# Verify batch detail loaded with real data
+- extendedWaitUntil:
+    visible: "PB-2025-001"
+    timeout: 5000
+- takeScreenshot: screenshots/08-ws-batch-detail
+
+# Verify production data is present (100 kg target, 448 kg actual)
+- assertVisible: "100 kg"
+- assertVisible: "448 kg"
+
+# Switch to consumption records tab
+- tapOn:
+    text: ".*\u6D88\u8017\u8BB0\u5F55.*"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/08-ws-consumption-records
+
+# Switch back to detail tab
+- tapOn:
+    text: ".*\u8BE6\u60C5.*"
+    index: 0
+- waitForAnimationToEnd
+
+# Scroll to see quick actions (质检记录, 成本分析, 效率分析)
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/08-ws-batch-actions
+
+# Go back to batch list
+- back
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "PB-20251227-001"
+    timeout: 5000

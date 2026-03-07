@@ -6,20 +6,20 @@ Endpoints for building ECharts configurations.
 """
 import asyncio
 import logging
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional, List, Dict
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from services.chart_builder import ChartBuilder, _sanitize_for_json
+from services.shared_pool import shared_executor
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Initialize service
 chart_builder = ChartBuilder()
-_chart_executor = ThreadPoolExecutor(max_workers=4)
+_chart_executor = shared_executor
 
 
 class ChartBuildRequest(BaseModel):
@@ -238,8 +238,9 @@ async def recommend_chart(data: List[Dict[str, Any]], fields: Optional[List[dict
     """
     try:
         import pandas as pd
+        from smartbi.config import coerce_numeric_columns
 
-        df = pd.DataFrame(data)
+        df = coerce_numeric_columns(pd.DataFrame(data))
         recommendations = []
 
         # Analyze data characteristics

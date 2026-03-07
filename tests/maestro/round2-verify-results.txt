@@ -1,0 +1,16 @@
+=== Round 2 Verification Mon, Mar  2, 2026  3:05:53 PM ===
+
+PASS: 14-wm-inbound-workflow.yaml
+PASS: 15-wm-inventory-ops.yaml
+PASS: 16-wm-outbound-workflow.yaml
+PASS: 17-qi-inspection-flow.yaml
+PASS: 18-qi-records-analysis.yaml
+PASS: 19-qi-inspect-list-search.yaml
+PASS: 20-hr-staff-management.yaml
+PASS: 21-hr-whitelist-crud.yaml
+FAIL: 22-dp-plan-scheduling.yaml
+FAIL: 23-dp-ai-analysis.yaml
+PASS: 24-fa-management-deep.yaml
+PASS: 25-fa-reports-deep.yaml
+
+=== Summary: 10/12 PASS, 2 FAIL ===

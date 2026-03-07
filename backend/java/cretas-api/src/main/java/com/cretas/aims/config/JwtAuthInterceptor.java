@@ -42,6 +42,10 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
     // 平台API路径前缀
     private static final String PLATFORM_API_PREFIX = "/api/platform";
 
+    // Internal API shared secret (Python→Java calls)
+    private static final String INTERNAL_API_SECRET = System.getenv("INTERNAL_API_SECRET") != null
+            ? System.getenv("INTERNAL_API_SECRET") : "";
+
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -105,6 +109,17 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
         // 跨工厂权限验证
         String requestUri = request.getRequestURI();
 
+        // Admin API 权限验证 — 仅允许已认证用户(平台管理员或工厂管理员)访问
+        if (requestUri.startsWith("/api/admin/")) {
+            if (userId == null) {
+                log.warn("Admin API 未认证请求: uri={}", requestUri);
+                sendUnauthorizedResponse(response, "未授权，请先登录");
+                return false;
+            }
+            log.debug("Admin API 认证通过: userId={}, role={}, uri={}", userId, tokenRole, requestUri);
+            return true;
+        }
+
         // 平台API权限验证 - BUG-044修复: 只有平台管理员才能访问/api/platform/**
         if (requestUri.startsWith(PLATFORM_API_PREFIX)) {
             // 首先检查是否有有效的认证信息
@@ -123,6 +138,19 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
             }
 
             log.debug("平台API权限验证通过: userId={}, role={}", userId, tokenRole);
+            return true;
+        }
+
+        // Internal API: validate shared secret (Python→Java calls)
+        if (requestUri.startsWith("/api/internal/")) {
+            String internalKey = request.getHeader("X-Internal-Key");
+            if (INTERNAL_API_SECRET.isEmpty() || !INTERNAL_API_SECRET.equals(internalKey)) {
+                log.warn("内部API认证失败: uri={}, key={}", requestUri,
+                        internalKey != null ? "provided-but-invalid" : "missing");
+                sendForbiddenResponse(response, "内部API认证失败");
+                return false;
+            }
+            log.debug("内部API认证通过: uri={}", requestUri);
             return true;
         }
 
@@ -172,15 +200,20 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
      * 检查是否为公开端点（不需要权限验证）
      */
     private boolean isPublicEndpoint(String uri) {
-        return uri.contains("/auth/") ||
-               uri.contains("/activation/") ||
-               uri.contains("/health") ||
+        return uri.equals("/api/mobile/auth/login") ||  // 登录（精确匹配）
+               uri.equals("/api/mobile/auth/unified-login") ||  // 统一登录
+               uri.equals("/api/mobile/auth/register") ||  // 注册
+               uri.equals("/api/mobile/auth/refresh") ||  // 刷新token
+               uri.equals("/api/mobile/auth/refresh-token") ||  // 刷新token（别名）
+               uri.startsWith("/api/mobile/activation/") ||  // 设备激活
+               uri.equals("/api/mobile/health") ||  // 健康检查（精确匹配）
+               uri.equals("/api/mobile/voice/health") ||  // 语音模块健康检查
+               uri.equals("/api/mobile/ai/health") ||  // AI模块健康检查
                uri.startsWith("/api/mobile/edge/upload") ||  // IoT 边缘设备上传（无 JWT）
-               uri.contains("/voice/") ||  // 语音识别接口（不需要工厂权限）
+               uri.startsWith("/api/mobile/voice/") ||  // 语音识别接口（顶层，无工厂）
                uri.endsWith("/link-survey-company") ||  // Python→Java 内部调用
                uri.endsWith("/field-visibility/recompute") ||  // Python→Java 内部调用
-               uri.startsWith("/api/public/") ||  // 公开溯源查询接口
-               uri.startsWith("/api/internal/");  // Python→Java 内部入驻调用
+               uri.startsWith("/api/public/");  // 公开溯源查询接口（SmartBI分享等）
     }
 
     /**

@@ -1,0 +1,58 @@
+appId: com.cretas.foodtrace
+---
+# Test 25: Factory Admin - Reports and Analytics Deep Testing
+# Explores Reports, Smart, and AI tabs with scrolling and detail navigation
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# === Reports Tab ===
+- tapOn: "\u62A5\u8868"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/25-fa-reports-tab
+
+# Scroll down to see analytics content
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/25-fa-reports-scroll
+
+# Tap on first report entry if available
+- tapOn:
+    text: ".*PB-.*|.*report.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/25-fa-report-detail
+
+# === Smart Analysis Tab (bottom tab: 智能分析) ===
+- tapOn: "\u667A\u80FD\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/25-fa-smart-tab
+
+# Scroll down
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/25-fa-smart-scroll
+
+# === AI Analysis Tab (bottom tab: AI分析) ===
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/25-fa-ai-tab
+
+# Scroll down
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/25-fa-ai-scroll

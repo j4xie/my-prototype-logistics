@@ -1,0 +1,222 @@
+appId: com.cretas.foodtrace
+---
+# QI Quality Inspector screenshots - v2
+# Uses percentage taps (Maestro on Windows garbles Chinese text)
+# QI has 5 tabs: 首页(10%), 质检(30%), 记录(50%), 分析(70%), 我的(90%)
+# CRITICAL: Never use "back" command - it exits the app. Use tab taps to navigate.
+
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "quality_insp1"
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "login-submit-btn"
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*Good.*|.*Pending.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# ============================================================
+# 1. QI Home (首页 tab - 10%)
+# ============================================================
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-home
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-home-scroll
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 2. 质检 Tab (30%) - Inspect List
+# ============================================================
+- tapOn:
+    point: "30%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-inspect-list
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-inspect-list-scroll
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# Try tapping first batch item (if exists)
+- tapOn:
+    text: ".*BATCH.*|.*B-.*|.*PB-.*|.*MB-.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-batch-detail
+
+# Try "Start Inspection" button
+- tapOn:
+    text: ".*Start Inspection.*|.*Begin.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-form
+
+# Scroll form
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-form-items
+
+# Recovery: go back to 质检 tab via tab tap (NOT back button)
+- tapOn:
+    point: "30%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# ============================================================
+# 3. 记录 Tab (50%) - Records
+# ============================================================
+- tapOn:
+    point: "50%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-records
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-records-scroll
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# Tap first record for detail
+- tapOn:
+    text: ".*QC-.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-record-detail
+
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-record-detail-scroll
+
+# Recovery: go back to 记录 tab
+- tapOn:
+    point: "50%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# ============================================================
+# 4. 分析 Tab (70%) - Analysis
+# ============================================================
+- tapOn:
+    point: "70%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-analysis
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-analysis-scroll
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 5. 我的 Tab (90%) - Profile
+# ============================================================
+- tapOn:
+    point: "90%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-profile
+
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-profile-scroll
+
+# Settings
+- tapOn:
+    text: ".*Settings.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-settings
+
+# Go back to 我的 tab (not back button)
+- tapOn:
+    point: "90%,97%"
+- waitForAnimationToEnd
+
+# Clock In
+- tapOn:
+    text: ".*Clock.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-clockin
+
+# Final: back to home tab
+- tapOn:
+    point: "10%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/by-role/qi/manual-ss-qi-complete

@@ -34,8 +34,20 @@ public class WebConfig implements WebMvcConfigurer {
 						"/weixin/api/ma/ai/health",
 						"/weixin/api/ma/ai/config",
 						"/weixin/api/ma/ai/feature-config",
-						"/weixin/api/ma/decoration/**",
+						"/weixin/api/ma/decoration/page",
+						"/weixin/api/ma/decoration/css-variables",
+						"/weixin/api/ma/decoration/themes",
+						"/weixin/api/ma/decoration/templates",
+						"/weixin/api/ma/decoration/theme/*/assets",
+						"/weixin/api/ma/decoration/layouts",
+						"/weixin/api/ma/decoration/images/**",
+						"/weixin/api/ma/decoration/component-styles",
+						"/weixin/api/ma/decoration/icons",
+						"/weixin/api/ma/decoration/fonts",
+						"/weixin/api/ma/decoration/versions",
 						"/weixin/api/ma/goodscategory/**",   // 放行商品分类
-						"/weixin/api/ma/goodsspu/**");//放行接口 - 登录、回调通知、健康检查、AI配置、装修配置、商品分类、商品列表
+						"/weixin/api/ma/goodsspu/**",        // 放行商品列表
+						"/weixin/api/ma/coupon/public/**",   // 放行公开优惠券列表
+						"/weixin/api/open-platform/**");     // 放行微信开放平台回调
 	}
 }

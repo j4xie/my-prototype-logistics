@@ -202,14 +202,7 @@ export function InventoryDashboardScreen() {
       // TODO: Replace with actual API call when backend is ready
       // const factoryId = getFactoryId();
       // const response = await smartBIApiClient.getInventoryDashboard({ period: selectedDateRange, factoryId });
-
-      // Mock data for now
-      await new Promise(resolve => setTimeout(resolve, 800));
-      const mockData = generateMockData();
-      setInventoryKPI(mockData.inventoryKPI);
-      setAgingDistribution(mockData.agingDistribution);
-      setExpiryRiskItems(mockData.expiryRiskItems);
-      setExpiryWarningData(mockData.expiryWarningData);
+      setError(t('errors.notImplemented', { defaultValue: '该功能数据接口尚未实现，请通过SmartBI上传Excel查看分析' }));
     } catch (err) {
       console.error('Load inventory dashboard failed:', err);
       setError(t('errors.loadFailed', { defaultValue: '数据加载失败，请重试' }));

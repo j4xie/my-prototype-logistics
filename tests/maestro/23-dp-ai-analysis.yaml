@@ -1,0 +1,53 @@
+appId: com.cretas.foodtrace
+---
+# Test 23: Dispatcher - AI Schedule & Smart Analysis
+# Verifies AI scheduling tab, batch schedule, smart analysis, and personnel transfer
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as dispatcher
+- runFlow: flows/login-dp.yaml
+- extendedWaitUntil:
+    visible: ".*\u8BA1\u5212.*"
+    timeout: 15000
+
+# Navigate to AI Schedule tab (AI调度)
+- tapOn: "AI\u8C03\u5EA6"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/23-dp-ai-schedule-tab
+
+# Tap Batch Schedule button (按批次排产)
+- tapOn:
+    text: ".*\u6309\u6279\u6B21\u6392\u4EA7.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/23-dp-batch-schedule
+
+# Go back if navigated away
+- back
+- waitForAnimationToEnd
+
+# Navigate to Smart Analysis tab (智能分析)
+- tapOn: "\u667A\u80FD\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/23-dp-smart-analysis
+
+# Scroll down to see more analysis content
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/23-dp-analysis-scroll
+
+# Navigate to Personnel tab (人员)
+- tapOn: "\u4EBA\u5458"
+- waitForAnimationToEnd
+
+# Tap Transfer button
+- tapOn:
+    text: ".*Transfer.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/23-dp-personnel-transfer

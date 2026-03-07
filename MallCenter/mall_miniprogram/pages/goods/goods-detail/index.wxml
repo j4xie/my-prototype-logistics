@@ -70,8 +70,8 @@
     <view class="supplier-header">
       <view class="supplier-logo">工</view>
       <view class="supplier-info">
-        <view class="supplier-name">白垩纪食品有限公司</view>
-        <view class="supplier-meta">上海市浦东新区 · 5年经营</view>
+        <view class="supplier-name">{{goods.merchantName || '供应商'}}</view>
+        <view class="supplier-meta">{{goods.merchantAddress || ''}}</view>
       </view>
       <view class="supplier-arrow">
         <text class="cuIcon-right"></text>

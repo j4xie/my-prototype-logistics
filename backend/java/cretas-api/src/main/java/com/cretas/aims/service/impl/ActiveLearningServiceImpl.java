@@ -1,10 +1,12 @@
 package com.cretas.aims.service.impl;
 
+import com.cretas.aims.config.IntentKnowledgeBase;
 import com.cretas.aims.entity.intent.IntentMatchRecord;
 import com.cretas.aims.entity.learning.*;
 import com.cretas.aims.repository.IntentMatchRecordRepository;
 import com.cretas.aims.repository.learning.*;
 import com.cretas.aims.service.ActiveLearningService;
+import com.cretas.aims.service.ExpressionLearningService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +52,8 @@ public class ActiveLearningServiceImpl implements ActiveLearningService {
     private final SampleClusterRepository clusterRepository;
     private final IntentMatchRecordRepository matchRecordRepository;
     private final ObjectMapper objectMapper;
+    private final IntentKnowledgeBase intentKnowledgeBase;
+    private final ExpressionLearningService expressionLearningService;
 
     @Value("${cretas.ai.active-learning.confidence-threshold:0.7}")
     private BigDecimal confidenceThreshold;
@@ -506,16 +510,170 @@ public class ActiveLearningServiceImpl implements ActiveLearningService {
             return;
         }
 
-        // Record current effectiveness before applying
-        BigDecimal effectivenessBefore = BigDecimal.valueOf(0.5); // TODO: Calculate from actual data
+        // Wave-10: 使用实际关键词有效性评估替代硬编码值
+        Map<String, BigDecimal> effectiveness = evaluateKeywordEffectiveness(suggestion.getFactoryId());
+        BigDecimal effectivenessBefore = effectiveness.getOrDefault(
+                suggestion.getIntentCode(), BigDecimal.valueOf(0.5));
 
-        suggestionRepository.applySuggestion(
-                suggestionId, applier, LocalDateTime.now(), effectivenessBefore);
+        String intentCode = suggestion.getIntentCode();
+        String content = suggestion.getContent();
+        LearningSuggestion.SuggestionType type = suggestion.getSuggestionType();
 
-        // TODO: Actually apply the suggestion (add keyword, expression, etc.)
-        // This depends on the suggestion type and should integrate with AIIntentConfigService
+        log.info("Applying suggestion {}: type={}, intent={}, content={}",
+                suggestionId, type, intentCode, truncate(content, 80));
 
-        log.info("Suggestion {} applied by {}", suggestionId, applier);
+        boolean applied = false;
+
+        switch (type) {
+            case NEW_KEYWORD:
+                applied = applyNewKeyword(suggestion, intentCode, content);
+                break;
+
+            case NEW_EXPRESSION:
+                applied = applyNewExpression(suggestion, intentCode, content);
+                break;
+
+            case MERGE_INTENT:
+                // Merge intent requires human review and manual execution
+                log.info("MERGE_INTENT suggestion {} marked for manual review (intent={})",
+                        suggestionId, intentCode);
+                applied = false;
+                break;
+
+            case NEW_INTENT:
+                // New intent creation requires human review
+                log.info("NEW_INTENT suggestion {} requires manual creation (content={})",
+                        suggestionId, truncate(content, 80));
+                applied = false;
+                break;
+
+            case SPLIT_INTENT:
+                log.info("SPLIT_INTENT suggestion {} requires manual execution (intent={})",
+                        suggestionId, intentCode);
+                applied = false;
+                break;
+
+            case DEPRECATE_KEYWORD:
+                log.info("DEPRECATE_KEYWORD suggestion {} logged for review: intent={}, keyword={}",
+                        suggestionId, intentCode, content);
+                applied = false;
+                break;
+
+            case UPDATE_WEIGHT:
+                log.info("UPDATE_WEIGHT suggestion {} logged for review: intent={}, content={}",
+                        suggestionId, intentCode, truncate(content, 80));
+                applied = false;
+                break;
+
+            default:
+                log.warn("Unknown suggestion type {} for suggestion {}", type, suggestionId);
+                applied = false;
+                break;
+        }
+
+        if (applied) {
+            suggestionRepository.applySuggestion(
+                    suggestionId, applier, LocalDateTime.now(), effectivenessBefore);
+            log.info("Suggestion {} applied successfully by {}: type={}, intent={}, content={}",
+                    suggestionId, applier, type, intentCode, truncate(content, 50));
+        } else {
+            log.info("Suggestion {} not auto-applied (type={}, requires manual action)",
+                    suggestionId, type);
+        }
+    }
+
+    /**
+     * Apply a NEW_KEYWORD suggestion: add phrase mapping to IntentKnowledgeBase
+     */
+    private boolean applyNewKeyword(LearningSuggestion suggestion, String intentCode, String keyword) {
+        if (intentCode == null || keyword == null || keyword.trim().isEmpty()) {
+            log.warn("Cannot apply NEW_KEYWORD: intentCode or keyword is null/empty");
+            return false;
+        }
+
+        try {
+            // Log the state before modification for audit/rollback purposes
+            Map<String, String> currentMapping = intentKnowledgeBase.getPhraseToIntentMapping();
+            String existingIntent = currentMapping.get(keyword.trim());
+            if (existingIntent != null) {
+                log.info("NEW_KEYWORD pre-apply state: keyword='{}' already mapped to '{}', will override to '{}'",
+                        keyword.trim(), existingIntent, intentCode);
+            } else {
+                log.info("NEW_KEYWORD pre-apply state: keyword='{}' is new, mapping to '{}'",
+                        keyword.trim(), intentCode);
+            }
+
+            // Add the phrase mapping (runtime in-memory update)
+            intentKnowledgeBase.addPhraseMapping(keyword.trim(), intentCode);
+
+            // Also learn as expression for persistence across restarts
+            expressionLearningService.learnExpression(
+                    suggestion.getFactoryId(),
+                    intentCode,
+                    keyword.trim(),
+                    0.85,
+                    LearnedExpression.SourceType.MANUAL
+            );
+
+            log.info("NEW_KEYWORD applied: keyword='{}' -> intent='{}' (factory={})",
+                    keyword.trim(), intentCode, suggestion.getFactoryId());
+            return true;
+
+        } catch (Exception e) {
+            log.error("Failed to apply NEW_KEYWORD suggestion {}: {}", suggestion.getId(), e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Apply a NEW_EXPRESSION suggestion: add expression via ExpressionLearningService
+     */
+    private boolean applyNewExpression(LearningSuggestion suggestion, String intentCode, String expression) {
+        if (intentCode == null || expression == null || expression.trim().isEmpty()) {
+            log.warn("Cannot apply NEW_EXPRESSION: intentCode or expression is null/empty");
+            return false;
+        }
+
+        try {
+            // Log pre-apply state
+            log.info("NEW_EXPRESSION pre-apply state: expression='{}' will be added to intent '{}'",
+                    truncate(expression.trim(), 80), intentCode);
+
+            // Add to phrase mapping for immediate runtime matching
+            intentKnowledgeBase.addPhraseMapping(expression.trim(), intentCode);
+
+            // Persist via ExpressionLearningService for cross-restart durability
+            LearnedExpression learned = expressionLearningService.learnExpression(
+                    suggestion.getFactoryId(),
+                    intentCode,
+                    expression.trim(),
+                    0.85,
+                    LearnedExpression.SourceType.MANUAL
+            );
+
+            if (learned != null) {
+                log.info("NEW_EXPRESSION applied: expression='{}' -> intent='{}' (factory={}, id={})",
+                        truncate(expression.trim(), 50), intentCode,
+                        suggestion.getFactoryId(), learned.getId());
+            } else {
+                log.info("NEW_EXPRESSION: expression already existed, phrase mapping updated");
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            log.error("Failed to apply NEW_EXPRESSION suggestion {}: {}", suggestion.getId(), e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public List<LearningSuggestion> getPendingSuggestionsForApply(String factoryId) {
+        return suggestionRepository.findByFactoryIdAndStatusOrderByPriorityDesc(
+                factoryId,
+                LearningSuggestion.SuggestionStatus.APPROVED,
+                PageRequest.of(0, 100)
+        ).getContent();
     }
 
     // ==================== Model Performance ====================
@@ -662,11 +820,11 @@ public class ActiveLearningServiceImpl implements ActiveLearningService {
     }
 
     private String generateClusterKey(ActiveLearningSample sample) {
-        // Simple key based on matched intent and first few words
+        // Wave-10: 使用字符级前缀替代空格分词 (中文无空格分隔)
         String input = sample.getNormalizedInput() != null
                 ? sample.getNormalizedInput() : sample.getUserInput();
-        String[] words = input.split("\\s+");
-        String prefix = Arrays.stream(words).limit(3).collect(Collectors.joining(" "));
+        // 取前6个字符作为聚类前缀 (中文2-3个词的长度)
+        String prefix = input.length() > 6 ? input.substring(0, 6) : input;
         return (sample.getMatchedIntentCode() != null ? sample.getMatchedIntentCode() : "UNKNOWN")
                 + "_" + prefix.hashCode();
     }

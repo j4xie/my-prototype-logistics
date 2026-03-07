@@ -55,7 +55,8 @@ public class GenericAIChatController {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
+    private final ExecutorService sseExecutor = java.util.concurrent.Executors.newFixedThreadPool(
+            4, r -> { Thread t = new Thread(r, "ai-chat-sse"); t.setDaemon(true); return t; });
 
     /**
      * 通用 AI Chat 接口

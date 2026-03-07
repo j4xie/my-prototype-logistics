@@ -185,7 +185,7 @@ async def analyze_from_db(request: AnalyzeRequest):
                         })
 
             # Generate insights
-            insights = [f"Data contains {len(data)} records"]
+            insights = [f"数据集共 {len(data)} 条记录"]
             if dimensions and measures:
                 top_data = data_repo.aggregate(
                     request.factory_id, request.upload_id,
@@ -194,7 +194,7 @@ async def analyze_from_db(request: AnalyzeRequest):
                 if top_data:
                     top = top_data[0]
                     insights.append(
-                        f"Top {dimensions[0].standard_name or dimensions[0].original_name}: "
+                        f"{dimensions[0].standard_name or dimensions[0].original_name} 排名第一: "
                         f"{top['group']} ({format_number(top['value'])})"
                     )
 

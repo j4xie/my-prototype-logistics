@@ -1,0 +1,35 @@
+appId: com.cretas.foodtrace
+---
+# Test 02: Home Dashboard Verification
+# Verifies dashboard sections render with data
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Always login fresh
+- runFlow: flows/login.yaml
+
+# Wait for dashboard to fully load
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# AI Insights card
+- assertVisible: "Quality Rate"
+- assertVisible: "Unit Cost"
+- assertVisible: "Avg Cycle"
+
+# Stats grid
+- assertVisible: "Materials"
+- assertVisible: "Alerts"
+
+- takeScreenshot: screenshots/02-dashboard-top
+
+# Scroll down to see more
+- swipe:
+    direction: UP
+    duration: 500
+
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/02-dashboard-bottom

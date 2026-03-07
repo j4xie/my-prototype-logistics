@@ -1,0 +1,111 @@
+appId: com.cretas.foodtrace
+---
+# Test 67: In-depth Stocktaking List Interaction
+# Exercises filter chips, summary button, FAB, search, scroll
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant admin
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: ".*AI Insights.*|.*AI 智能洞察.*|.*Today.*Overview.*|.*首页.*"
+    timeout: 15000
+
+# Navigate to 盘点 (Stocktaking) tab
+- tapOn:
+    text: ".*盘点.*|.*Stocktak.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/67-stocktaking-initial
+
+# === Filter chip cycle ===
+- tapOn:
+    text: ".*进行中.*|.*In Progress.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/67-filter-in-progress
+
+- tapOn:
+    text: ".*已完成.*|.*Completed.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/67-filter-completed
+
+- tapOn:
+    text: ".*已取消.*|.*Cancelled.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/67-filter-cancelled
+
+- tapOn:
+    text: ".*全部.*|.*All.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/67-filter-all
+
+# === Search bar ===
+- tapOn:
+    text: ".*搜索食材.*|.*搜索.*|.*Search.*"
+    optional: true
+- waitForAnimationToEnd
+- inputText: "test"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/67-search-results
+- eraseText: 4
+- hideKeyboard
+- waitForAnimationToEnd
+
+# === Summary button ===
+- tapOn:
+    text: ".*盘点汇总.*|.*Summary.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/67-summary
+
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*盘点.*|.*Stocktak.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === FAB ===
+- tapOn:
+    text: ".*发起盘点.*|.*Start.*Count.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/67-execute-form
+
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*盘点.*|.*Stocktak.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Pull-to-refresh ===
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/67-after-refresh
+
+# === Scroll ===
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/67-scrolled
+
+# Return to home
+- tapOn: "首页"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/67-complete

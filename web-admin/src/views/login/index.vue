@@ -143,6 +143,9 @@ function quickLogin(username: string) {
           <el-button size="small" @click="quickLogin('viewer1')">
             访客
           </el-button>
+          <el-button size="small" style="background: #FF5630; color: #fff; border-color: #FF5630" @click="quickLogin('restaurant_admin1')">
+            餐饮管理
+          </el-button>
         </div>
         <p class="quick-note">* 一线员工 (operator1) 仅限移动端登录</p>
       </div>
@@ -305,6 +308,20 @@ function quickLogin(username: string) {
     font-size: 12px;
     color: var(--color-text-secondary, #7A8599);
     margin: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 32px 20px;
+    border-radius: 12px;
+  }
+  .login-header {
+    margin-bottom: 24px;
+
+    .login-title {
+      font-size: 20px;
+    }
   }
 }
 </style>

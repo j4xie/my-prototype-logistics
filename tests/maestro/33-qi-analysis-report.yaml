@@ -1,0 +1,56 @@
+appId: com.cretas.foodtrace
+---
+# Test 33: Quality Inspector - Analysis & Report
+# Verifies QIAnalysis, QITrend, QIReport, QINotifications screens
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as quality inspector
+- runFlow: flows/login-qi.yaml
+- extendedWaitUntil:
+    visible: "Start Inspection"
+    timeout: 15000
+
+# === Analysis Tab (分析) ===
+- tapOn: "\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/33-qi-analysis-tab
+
+# Scroll down to see analysis charts
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/33-qi-analysis-charts
+
+# === Trend Analysis (趋势分析) ===
+- tapOn:
+    text: ".*Trend.*|.*\u8D8B\u52BF\u5206\u6790.*|.*\u8D8B\u52BF.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/33-qi-trend-analysis
+
+# Return to Analysis tab safely via bottom tab
+- tapOn: "\u5206\u6790"
+- waitForAnimationToEnd
+
+# === Generate Report (生成报告) ===
+- tapOn:
+    text: ".*Report.*|.*\u751F\u6210\u62A5\u544A.*|.*\u62A5\u544A.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/33-qi-report
+
+# Return to Home tab safely
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# === Notifications ===
+# Tap notifications icon/bell
+- tapOn:
+    text: ".*Notification.*|.*\u901A\u77E5.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/33-qi-notifications

@@ -202,7 +202,7 @@ class WorkerTrackingService:
 
             api_key = os.getenv("LLM_API_KEY", os.getenv("DASHSCOPE_API_KEY", ""))
             base_url = os.getenv("LLM_VL_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
-            model = os.getenv("LLM_VL_MODEL", "qwen-vl-max")
+            model = os.getenv("LLM_VL_MODEL", "qwen3-vl-plus-2025-12-19")
 
             response = client.post(
                 f"{base_url}/chat/completions",

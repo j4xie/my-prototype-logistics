@@ -47,6 +47,17 @@ PUBLIC_PREFIXES = (
     "/api/chart/",       # Chart building — stateless data processing, no user context needed
     "/api/smartbi/chart/",  # SmartBI chart endpoints (same reason)
     "/api/insight/",     # Insight endpoints — stateless LLM analysis, no user context needed
+    "/api/excel/",       # Excel parsing — called by Java backend internally (no JWT forwarded)
+    "/api/smartbi/excel/",  # SmartBI Excel endpoints — called by Java backend internally
+    "/api/smartbi/analysis-cache/",  # SmartBI analysis cache — browser direct calls
+    "/api/smartbi/cross-sheet",  # Cross-sheet analysis
+    "/api/smartbi/yoy-",  # YoY comparison
+    "/api/smartbi/benchmark",  # Industry benchmarks
+    # "/api/smartbi/restaurant-analytics/" — removed: requires JWT auth (IDOR fix)
+    "/api/statistical/",  # Statistical analysis
+    "/api/analysis/",  # Analysis endpoints
+    "/api/forecast/",  # Forecast endpoints
+    "/api/efficiency/",  # Efficiency recognition — called by Java backend internally
 )
 
 

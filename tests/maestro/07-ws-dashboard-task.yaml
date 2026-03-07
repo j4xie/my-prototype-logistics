@@ -1,0 +1,54 @@
+appId: com.cretas.foodtrace
+---
+# Test 07: Workshop Supervisor - Dashboard & Task Schedule
+# Verifies WS home with tasks, quick actions, and schedule
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as workshop supervisor
+- runFlow: flows/login-ws.yaml
+
+# Wait for WS home dashboard to fully load
+- extendedWaitUntil:
+    visible: "Start Task"
+    timeout: 10000
+- takeScreenshot: screenshots/07-ws-dashboard-top
+
+# Verify quick actions section
+- assertVisible:
+    text: ".*\u5FEB\u6377\u64CD\u4F5C.*"
+
+# Verify Next Task card exists
+- assertVisible:
+    text: ".*Next Task.*|.*PB-PLAN.*"
+
+# Verify Start Task button
+- assertVisible: "Start Task"
+- takeScreenshot: screenshots/07-ws-next-task
+
+# Scroll to see schedule
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/07-ws-schedule
+
+# Scroll more to see full schedule
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/07-ws-schedule-more
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 800
+- waitForAnimationToEnd
+
+# Tap Start Task to verify flow initiates
+- tapOn: "Start Task"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/07-ws-start-task

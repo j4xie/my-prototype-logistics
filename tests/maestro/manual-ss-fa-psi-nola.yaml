@@ -1,0 +1,178 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: Factory Admin - 进销存管理
+# NOTE: App must already be on login screen or logged in
+
+- waitForAnimationToEnd
+
+# Check if we're on login screen or already logged in
+- extendedWaitUntil:
+    visible: ".*Login.*|.*首页.*|.*Home.*|.*管理.*"
+    timeout: 10000
+
+# Try login if we see Login button
+- tapOn:
+    text: "Login"
+    optional: true
+- waitForAnimationToEnd
+
+# Clear any existing input and enter factory admin credentials
+- tapOn:
+    text: "Enter username"
+    optional: true
+- eraseText: 30
+- inputText: "factory_admin1"
+- tapOn:
+    text: "Enter password"
+    optional: true
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Tap Login button (second one - the submit button)
+- tapOn:
+    text: "Login"
+    index: 1
+    optional: true
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+
+# Wait for home
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*|.*管理.*|.*生产.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Screenshot: Factory Admin Home
+- takeScreenshot: screenshots/manual-ss-fa-home
+
+# Navigate to Management tab (管理)
+- tapOn:
+    text: "管理"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*进销存.*|.*采购.*|.*员工.*|.*管理.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Screenshot: Management grid
+- takeScreenshot: screenshots/manual-ss-fa-management
+
+# Scroll down to see 进销存 section
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-management-psi
+
+# --- 1. Purchase Orders (采购订单) ---
+- tapOn:
+    text: "采购订单"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*采购.*|.*Purchase.*|.*订单.*|.*暂无.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-purchase-list
+
+# Back to management
+- back
+- waitForAnimationToEnd
+
+# --- 2. Sales Orders (销售订单) ---
+- tapOn:
+    text: "销售订单"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*销售.*|.*Sale.*|.*订单.*|.*暂无.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-sales-list
+
+# Back to management
+- back
+- waitForAnimationToEnd
+
+# --- 3. Finished Goods (成品库存) ---
+- tapOn:
+    text: "成品库存"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*成品.*|.*库存.*|.*Finished.*|.*暂无.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-finished-goods
+
+# Back to management
+- back
+- waitForAnimationToEnd
+
+# --- 4. Transfer (调拨管理) ---
+- tapOn:
+    text: "调拨管理"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*调拨.*|.*Transfer.*|.*暂无.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-transfer
+
+# Back to management
+- back
+- waitForAnimationToEnd
+
+# --- 5. AR/AP (应收应付) ---
+- tapOn:
+    text: "应收应付"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*应收.*|.*应付.*|.*账龄.*|.*总额.*|.*暂无.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-arap
+
+# Back to management
+- back
+- waitForAnimationToEnd
+
+# --- 6. Price List (价格表) ---
+- tapOn:
+    text: "价格表"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*价格.*|.*Price.*|.*暂无.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-pricelist
+
+# Back to management
+- back
+- waitForAnimationToEnd
+
+# --- 7. Return Orders (退货管理) ---
+- tapOn:
+    text: "退货管理"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*退货.*|.*Return.*|.*暂无.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-returns
+
+# Done
+- back
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-complete

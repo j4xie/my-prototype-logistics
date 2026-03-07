@@ -151,6 +151,72 @@
 }
 
 /* ============================================================
+ * Dark Mode — override design tokens via data-theme attribute
+ * ============================================================ */
+[data-theme="dark"] {
+  --primary-color: #4A9FE5;
+  --color-primary: #4A9FE5;
+  --color-primary-light: #6BB5F0;
+  --color-primary-dark: #2B7EC1;
+  --color-success: #57D9A3;
+  --color-warning: #FFC400;
+  --color-danger: #FF8B6A;
+  --color-info: #9CA3AF;
+
+  --text-color-primary: #E8ECF1;
+  --text-color-regular: #C8CDD5;
+  --text-color-secondary: #9CA3AF;
+  --text-color-placeholder: #6B7280;
+  --color-text-primary: #E8ECF1;
+  --color-text-regular: #C8CDD5;
+  --color-text-secondary: #9CA3AF;
+  --color-text-placeholder: #6B7280;
+
+  --bg-color: #0F1420;
+  --bg-color-page: #0F1420;
+  --bg-color-overlay: #1A2332;
+  --color-bg-page: #0F1420;
+  --color-bg-card: #1A2332;
+  --color-bg-hover: #243044;
+
+  --border-color: #2D3748;
+  --border-color-light: #243044;
+  --border-color-lighter: #1A2332;
+  --color-border: #2D3748;
+  --color-border-light: #243044;
+  --color-border-lighter: #1A2332;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 8px 28px rgba(0, 0, 0, 0.6);
+  --box-shadow-base: 0 2px 12px rgba(0, 0, 0, 0.4);
+  --box-shadow-light: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  /* Element Plus dark overrides */
+  --el-color-primary: #4A9FE5;
+  --el-color-primary-light-3: #6BB5F0;
+  --el-color-primary-light-5: #8DC8F5;
+  --el-color-primary-light-7: #B0D9F8;
+  --el-color-primary-light-8: #C5E3FA;
+  --el-color-primary-light-9: #1E3A5F;
+  --el-color-primary-dark-2: #2B7EC1;
+  --el-text-color-primary: #E8ECF1;
+  --el-text-color-regular: #C8CDD5;
+  --el-text-color-secondary: #9CA3AF;
+  --el-text-color-placeholder: #6B7280;
+  --el-border-color: #2D3748;
+  --el-border-color-light: #243044;
+  --el-border-color-lighter: #1A2332;
+  --el-bg-color: #1A2332;
+  --el-bg-color-page: #0F1420;
+  --el-bg-color-overlay: #1E293B;
+  --el-fill-color-light: #243044;
+  --el-fill-color-blank: #1A2332;
+  --el-mask-color: rgba(0, 0, 0, 0.6);
+}
+
+/* ============================================================
  * Global Reset
  * ============================================================ */
 *,
@@ -357,4 +423,183 @@ textarea:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
+}
+
+/* ============================================================
+ * Mobile Responsive — Global Rules
+ * Covers all 80+ pages without per-page changes
+ * ============================================================ */
+
+/* ---- Tablet breakpoint ---- */
+@media (max-width: 1024px) {
+  :root {
+    --page-padding: 16px;
+    --card-padding: 16px;
+  }
+}
+
+/* ---- Mobile breakpoint ---- */
+@media (max-width: 768px) {
+  :root {
+    --page-padding: 12px;
+    --card-padding: 12px;
+    --section-gap: 16px;
+    --header-height: 56px;
+  }
+
+  /* Global table horizontal scroll (covers 35+ table pages) */
+  .el-table {
+    overflow-x: auto;
+  }
+  .el-card__body {
+    overflow-x: auto;
+  }
+
+  /* Global dialog max-width (covers 30+ dialogs) */
+  .el-dialog {
+    --el-dialog-width: 92vw !important;
+    max-width: 92vw !important;
+    margin: 8vh auto !important;
+  }
+  .el-drawer {
+    width: 100% !important;
+  }
+
+  /* Dialog body overflow protection */
+  .el-dialog__body {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  .el-dialog__body > * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Card headers wrap on mobile */
+  .card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .card-header .header-right,
+  .card-header .header-left {
+    flex-wrap: wrap;
+  }
+
+  /* Search bars wrap */
+  .search-bar {
+    flex-wrap: wrap;
+  }
+  .el-form--inline .el-form-item {
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+
+  /* Content padding reduction */
+  .page-container,
+  .ai-reports-page {
+    padding: var(--page-padding) !important;
+  }
+  .el-card__header {
+    padding: 12px 16px !important;
+  }
+  .el-card__body {
+    padding: 12px 16px !important;
+  }
+
+  /* Descriptions responsive */
+  .el-descriptions {
+    --el-descriptions-item-bordered-label-background: var(--bg-color);
+  }
+  .el-descriptions .el-descriptions__body .el-descriptions__table {
+    display: block;
+  }
+
+  /* Pagination compact */
+  .pagination-wrapper {
+    flex-wrap: wrap;
+    justify-content: center !important;
+  }
+
+  /* Steps compact */
+  .el-steps {
+    flex-wrap: wrap;
+  }
+
+  /* Form items stack */
+  .item-row {
+    flex-wrap: wrap;
+  }
+
+  /* Grid layouts single column */
+  .connection-grid,
+  .module-grid,
+  [class*="stats-grid"],
+  [class*="summary-grid"],
+  [class*="metric-grid"],
+  [class*="kpi-grid"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Search bar fixed-width inputs → fluid */
+  .search-bar .el-select,
+  .search-bar .el-input,
+  .card-header .el-select,
+  .card-header .el-input {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+}
+
+/* ============================================================
+ * Print Styles — SmartBI charts & dashboards
+ * ============================================================ */
+@media print {
+  /* Hide interactive controls */
+  .app-sidebar,
+  .app-header,
+  .el-overlay,
+  .header-actions,
+  .search-bar,
+  .pagination-wrapper,
+  .el-upload,
+  .upload-section,
+  .el-button,
+  [class*="toolbox"] {
+    display: none !important;
+  }
+
+  /* Full-width content */
+  .app-main,
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Cards: remove shadow, thin border */
+  .el-card {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    break-inside: avoid;
+  }
+
+  /* Charts: ensure visible height and avoid page breaks inside */
+  [id^="chart-"],
+  .chart-container {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    min-height: 200px;
+  }
+
+  /* KPI cards: inline layout for print */
+  .kpi-grid,
+  [class*="kpi-grid"] {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+
+  /* Force background colors for charts */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }

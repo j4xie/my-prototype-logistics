@@ -1,0 +1,215 @@
+appId: com.cretas.foodtrace
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "factory_admin1"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "login-submit-btn"
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Dismiss Location Accuracy dialog if it appears
+- tapOn:
+    text: "No thanks"
+    optional: true
+- waitForAnimationToEnd
+
+# Verify home screen loaded
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*Good.*|.*首页.*|.*加载失败.*"
+    timeout: 15000
+- takeScreenshot: screenshots/manual-ss-fa-home-base
+
+# ── AI分析 Tab (x=25%, y=97%) ─────────────────────────────────────────────────
+- tapOn:
+    point: "25%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*AI.*|.*分析.*|.*对话.*|.*报告.*|.*首页.*|.*管理.*"
+    timeout: 10000
+- takeScreenshot: screenshots/manual-ss-fa-ai-main
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-ai-scroll
+
+# Try tapping AI Chat entry
+- tapOn:
+    text: ".*AI对话|Chat|问答.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-ai-chat
+- back
+- waitForAnimationToEnd
+
+# Try tapping Report entry
+- tapOn:
+    text: ".*分析报告|Report.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-ai-report
+- back
+- waitForAnimationToEnd
+
+# Recovery check after AI tab
+- extendedWaitUntil:
+    visible: ".*首页.*|.*管理.*|.*AI.*"
+    timeout: 8000
+
+# ── 报表 Tab (x=42%, y=97%) ──────────────────────────────────────────────────
+- tapOn:
+    point: "42%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*报表.*|.*报告.*|.*首页.*|.*管理.*|.*AI.*"
+    timeout: 10000
+- takeScreenshot: screenshots/manual-ss-fa-reports-main
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-reports-scroll
+
+# Try tapping the first report item
+- tapOn:
+    index: 0
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-report-detail
+- back
+- waitForAnimationToEnd
+
+# Recovery check after reports tab
+- extendedWaitUntil:
+    visible: ".*首页.*|.*管理.*|.*AI.*"
+    timeout: 8000
+
+# ── 智能分析 Tab / SmartBI (x=58%, y=97%) ─────────────────────────────────────
+- tapOn:
+    point: "58%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*智能.*|.*分析.*|.*SmartBI.*|.*首页.*|.*管理.*|.*AI.*"
+    timeout: 10000
+- takeScreenshot: screenshots/manual-ss-fa-smartbi-main
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-smartbi-scroll
+
+# Try tapping Upload entry
+- tapOn:
+    text: ".*上传|Upload.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-smartbi-upload
+- back
+- waitForAnimationToEnd
+
+# Try tapping Chart entry
+- tapOn:
+    text: ".*图表|Chart.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-smartbi-chart
+- back
+- waitForAnimationToEnd
+
+# Recovery check after SmartBI tab
+- extendedWaitUntil:
+    visible: ".*首页.*|.*管理.*|.*AI.*"
+    timeout: 8000
+
+# ── 管理 Tab (x=75%, y=97%) — quick visit for context ─────────────────────────
+- tapOn:
+    point: "75%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*管理.*|.*首页.*|.*AI.*"
+    timeout: 10000
+- takeScreenshot: screenshots/manual-ss-fa-manage-main
+
+# Recovery check after manage tab
+- extendedWaitUntil:
+    visible: ".*首页.*|.*管理.*|.*AI.*"
+    timeout: 8000
+
+# ── 我的 Tab (x=92%, y=97%) ──────────────────────────────────────────────────
+- tapOn:
+    point: "92%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*我的.*|.*Profile.*|.*个人.*|.*首页.*|.*管理.*|.*AI.*"
+    timeout: 10000
+- takeScreenshot: screenshots/manual-ss-fa-profile
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-profile-scroll
+
+# Try tapping My Info entry
+- tapOn:
+    text: ".*我的信息|My Info.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-my-info
+- back
+- waitForAnimationToEnd
+
+# Try tapping Settings entry
+- tapOn:
+    text: ".*设置|Settings.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-settings
+- back
+- waitForAnimationToEnd
+
+# Try tapping About entry
+- tapOn:
+    text: ".*关于|About.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-about
+- back
+- waitForAnimationToEnd
+
+# Final recovery check
+- extendedWaitUntil:
+    visible: ".*首页.*|.*管理.*|.*AI.*"
+    timeout: 8000
+- takeScreenshot: screenshots/manual-ss-fa-done

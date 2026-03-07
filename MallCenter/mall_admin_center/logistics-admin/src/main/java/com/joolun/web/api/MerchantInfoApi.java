@@ -206,6 +206,15 @@ public class MerchantInfoApi {
      */
     @GetMapping("/{id}/stats")
     public AjaxResult getMerchantStats(@PathVariable("id") Long id) {
+        WxUser wxUser = getCurrentWxUser();
+        if (wxUser == null) {
+            return AjaxResult.error("请先登录");
+        }
+        // 验证商户归属
+        Merchant merchant = merchantMapper.selectByUserId(Long.parseLong(wxUser.getId()));
+        if (merchant == null || !merchant.getId().equals(id)) {
+            return AjaxResult.error("无权查看此商户统计");
+        }
         try {
             Map<String, Object> stats = merchantService.getStats(id);
             if (stats == null || stats.isEmpty()) {

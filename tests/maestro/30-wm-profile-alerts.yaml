@@ -1,0 +1,70 @@
+appId: com.cretas.foodtrace
+---
+# Test 30: Warehouse Manager - Profile, Alerts & Recall
+# Verifies WHProfile sub-screens, AlertList, RecallManage
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as warehouse manager
+- runFlow: flows/login-wm.yaml
+- extendedWaitUntil:
+    visible: ".*Warehouse.*"
+    timeout: 15000
+
+# Navigate to Profile tab (我的)
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/30-wm-profile-tab
+
+# === I/O Statistics (出入库统计) ===
+- tapOn:
+    text: ".*I/O Statistics.*|.*\u51FA\u5165\u5E93\u7EDF\u8BA1.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/30-wm-io-stats
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === Operation Log (操作记录) ===
+- tapOn:
+    text: ".*Operation Log.*|.*\u64CD\u4F5C\u8BB0\u5F55.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/30-wm-operation-log
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === Check Record (盘点记录) ===
+- tapOn:
+    text: ".*Check Record.*|.*\u76D8\u70B9\u8BB0\u5F55.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/30-wm-check-record
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === Recall Management (召回管理) ===
+- tapOn:
+    text: ".*Recall.*|.*\u53EC\u56DE\u7BA1\u7406.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/30-wm-recall-manage
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === Settings (设置) ===
+- tapOn:
+    text: ".*Settings.*|.*\u8BBE\u7F6E.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/30-wm-settings

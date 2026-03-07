@@ -26,4 +26,4 @@ function base64src(base64data, cb) {
   })
 };
 
-export { base64src };
+module.exports = { base64src };

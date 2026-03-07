@@ -239,11 +239,33 @@ async function handleSubmit() {
 }
 
 function handleExport() {
-  ElMessage.info('导出功能开发中');
+  if (tableData.value.length === 0) {
+    ElMessage.warning('暂无数据可导出');
+    return;
+  }
+  const headers = ['产品编号', '产品名称', '分类', '单位', '规格', '关联客户', '状态', '备注'];
+  const rows = tableData.value.map((row: ProductType) => [
+    row.code || '',
+    row.name || '',
+    getCategoryLabel(row.productCategory || row.category),
+    row.unit || '',
+    row.specification || '',
+    row.relatedCustomer || '',
+    row.isActive ? '启用' : '停用',
+    row.notes || ''
+  ]);
+  const csvContent = '\uFEFF' + [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `产品列表_${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  ElMessage.success('导出成功');
 }
 
 function handleImport() {
-  ElMessage.info('导入功能开发中');
+  ElMessage.info('请使用 Excel 上传功能批量导入产品');
 }
 
 function getCategoryLabel(value?: string) {

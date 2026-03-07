@@ -1,0 +1,198 @@
+appId: com.cretas.foodtrace
+---
+# WS Workers/Personnel management screenshots
+# Captures: workers list overview, worker detail, clock-in/attendance records, worker assignments
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "workshop_sup1"
+
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "login-submit-btn"
+
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Start Task.*|.*\u9996\u9875.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Navigate to Workers tab (人员) - 3rd tab from left
+- takeScreenshot: screenshots/manual-ss-ws-workers-pre-tab
+- tapOn:
+    text: "\u4EBA\u5458"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Workers list overview (all filter active, stats row visible)
+- takeScreenshot: screenshots/manual-ss-ws-workers-list-overview
+
+# Scroll down to see more workers in the list
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-workers-list-scroll
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd
+
+# Tap the "On Duty" filter tab (在岗)
+- tapOn:
+    text: ".*\u5728\u5C97.*|.*On Duty.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-workers-filter-onduty
+
+# Tap back to "All" filter (全部)
+- tapOn:
+    text: ".*\u5168\u90E8.*|.*All.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Tap the temporary workers filter (临时工)
+- tapOn:
+    text: ".*\u4E34\u65F6\u5DE5.*|.*Temp.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-workers-filter-temporary
+
+# Reset to all
+- tapOn:
+    text: ".*\u5168\u90E8.*|.*All.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Tap first worker card (王建国 / EMP-001) to open detail
+- tapOn:
+    text: ".*\u738B\u5EFA\u56FD.*|.*EMP-001.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-worker-detail-top
+
+# Scroll down in worker detail to see AI efficiency score section
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-worker-detail-ai-score
+
+# Scroll further to see recent tasks section
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-worker-detail-recent-tasks
+
+# Scroll further to see basic info section
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-worker-detail-basic-info
+
+# Go back to workers list
+- back
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Tap the clock-in button in the workers list header (clock icon top-right)
+- tapOn:
+    text: ".*\u6253\u5361.*|.*Clock.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-workers-clockin-screen
+
+# Scroll down in clock-in screen to see today's records list
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-workers-clockin-records
+
+# Go back to workers list
+- back
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Recovery: relaunch and navigate back to workers tab for attendance history flow
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Start Task.*|.*\u9996\u9875.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "\u4EBA\u5458"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Tap second worker (李明辉 / EMP-002) to navigate to detail
+- tapOn:
+    text: ".*\u674E\u660E\u8F89.*|.*EMP-002.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-worker2-detail
+
+# Go back to workers list
+- back
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot workers list after returning from detail
+- takeScreenshot: screenshots/manual-ss-ws-workers-list-final
+
+# Navigate to attendance history via the first worker card -> detail
+# then back to workers list, confirm full workers overview
+- takeScreenshot: screenshots/manual-ss-ws-workers-complete

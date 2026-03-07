@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="emulator-5554" tests="2" failures="0" time="380.0">
+    <testcase id="65-interact-recipe-list" name="65-interact-recipe-list" classname="65-interact-recipe-list" time="185.0" status="SUCCESS"/>
+    <testcase id="70-interact-dp-plan-list" name="70-interact-dp-plan-list" classname="70-interact-dp-plan-list" time="195.0" status="SUCCESS"/>
+  </testsuite>
+  <testsuite name="Test Suite" device="emulator-5556" tests="2" failures="2" time="66.0">
+    <testcase id="66-interact-wastage-form" name="66-interact-wastage-form" classname="66-interact-wastage-form" time="33.0" status="ERROR">
+      <failure>[shard 2] Assertion is false: "Cretas Food Trace" is visible</failure>
+    </testcase>
+    <testcase id="71-interact-dp-gantt" name="71-interact-dp-gantt" classname="71-interact-dp-gantt" time="33.0" status="ERROR">
+      <failure>[shard 2] Assertion is false: "Login" is visible</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Test Suite" device="emulator-5558" tests="2" failures="2" time="79.0">
+    <testcase id="67-interact-stocktaking-list" name="67-interact-stocktaking-list" classname="67-interact-stocktaking-list" time="44.0" status="ERROR">
+      <failure>[shard 3] Assertion is false: "Cretas Food Trace" is visible</failure>
+    </testcase>
+    <testcase id="72-interact-wm-inventory" name="72-interact-wm-inventory" classname="72-interact-wm-inventory" time="35.0" status="ERROR">
+      <failure>[shard 3] Assertion is false: "Login" is visible</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Test Suite" device="emulator-5560" tests="2" failures="1" time="240.0">
+    <testcase id="68-interact-requisition-form" name="68-interact-requisition-form" classname="68-interact-requisition-form" time="86.0" status="ERROR">
+      <failure>[shard 4] Assertion is false: "首页" is visible</failure>
+    </testcase>
+    <testcase id="73-interact-hr-attendance" name="73-interact-hr-attendance" classname="73-interact-hr-attendance" time="154.0" status="SUCCESS"/>
+  </testsuite>
+  <testsuite name="Test Suite" device="emulator-5562" tests="2" failures="2" time="79.0">
+    <testcase id="69-interact-qi-records" name="69-interact-qi-records" classname="69-interact-qi-records" time="46.0" status="ERROR">
+      <failure>[shard 5] Assertion is false: "Login" is visible</failure>
+    </testcase>
+    <testcase id="75-interact-profile-settings" name="75-interact-profile-settings" classname="75-interact-profile-settings" time="33.0" status="ERROR">
+      <failure>[shard 5] Assertion is false: "Login" is visible</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

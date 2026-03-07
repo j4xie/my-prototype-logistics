@@ -7,8 +7,8 @@
 /**
  * <version>3.3.2</version>
  */
-import api from './utils/api'
-import __config from './config/env'
+const api = require('./utils/api')
+const __config = require('./config/env')
 const tracker = require('./utils/tracker')
 
 App({
@@ -32,6 +32,8 @@ App({
 
     //检测新版本
     this.updateManager()
+    // 加载功能开关配置
+    this.loadFeatureConfig()
     wx.getSystemInfo({
       success: e => {
         this.globalData.StatusBar = e.statusBarHeight;
@@ -40,6 +42,43 @@ App({
         this.globalData.CustomBar = custom.bottom + custom.top - e.statusBarHeight;
       }
     })
+  },
+  // 全局功能开关加载（一次请求，各页面共享）
+  loadFeatureConfig: function () {
+    var self = this
+    wx.request({
+      url: __config.basePath + '/weixin/api/ma/ai/feature-config',
+      method: 'GET',
+      success: function (res) {
+        if (res.statusCode === 200 && res.data.code === 200 && res.data.data) {
+          var cfg = res.data.data
+          self.globalData.featureFlags = {
+            showAI: cfg.showAI === true,
+            showCategories: cfg.showCategories !== false,
+            showProducts: cfg.showProducts !== false,
+            showCategoryTab: cfg.showCategoryTab !== false
+          }
+          self.globalData._featureLoaded = true
+          // 通知已注册的监听页面
+          if (self._featureCallbacks) {
+            self._featureCallbacks.forEach(function (cb) { cb(self.globalData.featureFlags) })
+            self._featureCallbacks = []
+          }
+        }
+      },
+      fail: function () {
+        console.log('功能配置加载失败，使用默认值')
+      }
+    })
+  },
+  // 页面注册回调：如果配置已加载立即回调，否则等待
+  onFeatureReady: function (callback) {
+    if (this.globalData._featureLoaded) {
+      callback(this.globalData.featureFlags)
+    } else {
+      if (!this._featureCallbacks) this._featureCallbacks = []
+      this._featureCallbacks.push(callback)
+    }
   },
   onShow: function () {
     // 恢复行为追踪

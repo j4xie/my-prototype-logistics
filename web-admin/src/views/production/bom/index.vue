@@ -448,7 +448,39 @@ const totalCost = computed(() => {
 
 // ========== Export ==========
 function exportToExcel(type: string) {
-  ElMessage.info('Export functionality coming soon');
+  let headers: string[];
+  let rows: string[][];
+  if (type === 'material') {
+    if (bomItems.value.length === 0) { ElMessage.warning('暂无BOM数据可导出'); return; }
+    headers = ['物料名称', '物料编号', '数量', '单位', '单价(元)', '小计(元)', '备注'];
+    rows = bomItems.value.map((item: any) => [
+      item.materialName || '', item.materialCode || '', String(item.quantity ?? ''),
+      item.unit || '', String(item.unitPrice ?? ''),
+      String(((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)), item.notes || ''
+    ]);
+  } else if (type === 'labor') {
+    if (laborCosts.value.length === 0) { ElMessage.warning('暂无人工成本数据'); return; }
+    headers = ['工序名称', '工时(分钟)', '单价(元/时)', '费用(元)'];
+    rows = laborCosts.value.map((item: any) => [
+      item.processName || '', String(item.duration ?? ''), String(item.unitPrice ?? ''),
+      String(((item.duration || 0) / 60 * (item.unitPrice || 0)).toFixed(2))
+    ]);
+  } else {
+    if (overheadCosts.value.length === 0) { ElMessage.warning('暂无制造费用数据'); return; }
+    headers = ['费用名称', '金额(元)', '分摊率', '分摊金额(元)'];
+    rows = overheadCosts.value.map((item: any) => [
+      item.name || '', String(item.unitPrice ?? ''), String(item.allocationRate ?? 1),
+      String(((item.unitPrice || 0) * (item.allocationRate || 1)).toFixed(2))
+    ]);
+  }
+  const csvContent = '\uFEFF' + [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `BOM_${type}_${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  ElMessage.success('导出成功');
 }
 
 function refreshData() {
@@ -521,7 +553,7 @@ function refreshData() {
             </div>
           </div>
         </template>
-        <el-table :data="bomItems" v-loading="loading" stripe border size="small" style="width: 100%">
+        <el-table empty-text="暂无数据" :data="bomItems" v-loading="loading" stripe border size="small" style="width: 100%">
           <el-table-column prop="materialName" label="物料名称" min-width="120" show-overflow-tooltip />
           <el-table-column prop="standardQuantity" label="成品含量" width="90" align="right">
             <template #default="{ row }">

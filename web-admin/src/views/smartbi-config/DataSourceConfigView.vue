@@ -240,7 +240,7 @@ function formatDate(dateStr?: string) {
 }
 
 function goBack() {
-  router.push('/smartbi-config');
+  router.push('/system/smartbi-config');
 }
 </script>
 
@@ -299,7 +299,7 @@ function goBack() {
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe border>
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border>
         <el-table-column prop="code" label="代码" width="150">
           <template #default="{ row }">
             <code class="source-code">{{ row.code }}</code>

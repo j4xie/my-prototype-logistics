@@ -1,0 +1,61 @@
+appId: com.cretas.foodtrace
+---
+# Test 58: Restaurant Recipe Deep Navigation
+# Navigates into RecipeDetail and RecipeEdit (create) sub-screens
+# Phase A: Deep navigation beyond tab-level coverage
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant admin
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: ".*AI Insights.*|.*Good.*"
+    timeout: 15000
+
+# Navigate to Management tab
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/58-management
+
+# Open Recipe List
+- tapOn: "Recipes"
+- waitForAnimationToEnd
+- assertVisible: "Recipes"
+- takeScreenshot: screenshots/58-recipe-list
+
+# Tap first recipe card to open detail
+- tapOn: "F002-PT-001"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/58-recipe-detail
+
+# Back to list
+- back
+- waitForAnimationToEnd
+
+# Tap FAB to open create form
+- tapOn:
+    id: ".*fab.*"
+- waitForAnimationToEnd
+- assertVisible: "New Recipe"
+- takeScreenshot: screenshots/58-recipe-create
+
+# Verify form fields exist
+- assertVisible: "Select Dish *"
+- assertVisible: "Select Ingredient *"
+- assertVisible: "Standard Qty *"
+
+# Back without saving
+- tapOn: "Back"
+- waitForAnimationToEnd
+
+# Back to management
+- back
+- waitForAnimationToEnd
+
+# Return to home
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+- assertVisible: "AI Insights"
+- takeScreenshot: screenshots/58-complete

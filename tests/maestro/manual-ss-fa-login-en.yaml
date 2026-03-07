@@ -1,0 +1,43 @@
+appId: com.cretas.foodtrace
+---
+# Login as factory_admin1 - English text only + testIDs
+
+- waitForAnimationToEnd
+
+# Tap Login on landing page
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Enter username using testID
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "factory_admin1"
+
+# Enter password using testID
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Submit login - use testID
+- tapOn:
+    id: "login-submit-btn"
+
+# Wait for success dialog
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Verify we're on home screen
+- extendedWaitUntil:
+    visible: ".*Good.*|.*Home.*|.*Management.*"
+    timeout: 15000
+
+- takeScreenshot: screenshots/manual-ss-fa-login-verify

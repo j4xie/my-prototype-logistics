@@ -164,6 +164,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'QualityDisposals',
             component: () => import('@/views/quality/disposals/list.vue'),
             meta: { requiresAuth: true, title: '废弃处理', module: 'quality' }
+          },
+          {
+            path: 'standards',
+            name: 'QualityStandards',
+            component: () => import('@/views/quality/standards/list.vue'),
+            meta: { requiresAuth: true, title: '质检标准', module: 'quality' }
           }
         ]
       },
@@ -232,6 +238,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SalesCustomers',
             component: () => import('@/views/sales/customers/list.vue'),
             meta: { requiresAuth: true, title: '客户管理', module: 'sales' }
+          },
+          {
+            path: 'shipments',
+            name: 'SalesShipments',
+            component: () => import('@/views/sales/shipments/list.vue'),
+            meta: { requiresAuth: true, title: '出货记录', module: 'sales' }
           }
         ]
       },
@@ -286,7 +298,7 @@ const businessRoutes: RouteRecordRaw[] = [
           {
             path: 'maintenance',
             name: 'EquipmentMaintenance',
-            component: () => import('@/views/equipment/maintenance/index.vue'),
+            component: () => import('@/views/equipment/maintenance/list.vue'),
             meta: { requiresAuth: true, title: '维护记录', module: 'equipment' }
           },
           {
@@ -342,7 +354,7 @@ const businessRoutes: RouteRecordRaw[] = [
           {
             path: 'roles',
             name: 'SystemRoles',
-            component: () => import('@/views/system/roles/index.vue'),
+            component: () => import('@/views/system/roles/list.vue'),
             meta: { requiresAuth: true, title: '角色管理', module: 'system' }
           },
           {
@@ -380,6 +392,24 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SystemPos',
             component: () => import('@/views/system/pos/list.vue'),
             meta: { requiresAuth: true, title: 'POS集成', module: 'system' }
+          },
+          {
+            path: 'smartbi-config',
+            name: 'SmartBIConfig',
+            component: () => import('@/views/smartbi-config/SmartBIConfigView.vue'),
+            meta: { requiresAuth: true, title: 'SmartBI配置', module: 'system' }
+          },
+          {
+            path: 'smartbi-config/data-sources',
+            name: 'SmartBIDataSources',
+            component: () => import('@/views/smartbi-config/DataSourceConfigView.vue'),
+            meta: { requiresAuth: true, title: '数据源配置', module: 'system' }
+          },
+          {
+            path: 'smartbi-config/chart-templates',
+            name: 'SmartBIChartTemplates',
+            component: () => import('@/views/smartbi-config/ChartTemplateView.vue'),
+            meta: { requiresAuth: true, title: '图表模板', module: 'system' }
           }
         ]
       },
@@ -500,6 +530,64 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SchedulingAlerts',
             component: () => import('@/views/scheduling/alerts/index.vue'),
             meta: { requiresAuth: true, title: '告警管理', module: 'scheduling' }
+          }
+        ]
+      },
+
+      // 餐饮运营
+      {
+        path: 'restaurant',
+        name: 'Restaurant',
+        redirect: '/restaurant/requisitions',
+        meta: { requiresAuth: true, title: '餐饮运营', icon: 'Bowl', module: 'restaurant' },
+        children: [
+          {
+            path: 'requisitions',
+            name: 'RestaurantRequisitions',
+            component: () => import('@/views/restaurant/requisitions/list.vue'),
+            meta: { requiresAuth: true, title: '领料管理', module: 'restaurant' }
+          },
+          {
+            path: 'wastage',
+            name: 'RestaurantWastage',
+            component: () => import('@/views/restaurant/wastage/list.vue'),
+            meta: { requiresAuth: true, title: '损耗管理', module: 'restaurant' }
+          },
+          {
+            path: 'recipes',
+            name: 'RestaurantRecipes',
+            component: () => import('@/views/restaurant/recipes/list.vue'),
+            meta: { requiresAuth: true, title: '配方管理', module: 'restaurant' }
+          },
+          {
+            path: 'stocktaking',
+            name: 'RestaurantStocktaking',
+            component: () => import('@/views/restaurant/stocktaking/list.vue'),
+            meta: { requiresAuth: true, title: '盘点管理', module: 'restaurant' }
+          },
+          {
+            path: 'analytics',
+            name: 'RestaurantAnalyticsOverview',
+            component: () => import('@/views/restaurant/analytics/overview.vue'),
+            meta: { requiresAuth: true, title: '运营分析', module: 'restaurant' }
+          },
+          {
+            path: 'analytics/menu',
+            name: 'RestaurantMenuBoard',
+            component: () => import('@/views/restaurant/analytics/menu-board.vue'),
+            meta: { requiresAuth: true, title: '菜品四象限', module: 'restaurant' }
+          },
+          {
+            path: 'analytics/stores',
+            name: 'RestaurantStoreComparison',
+            component: () => import('@/views/restaurant/analytics/store-comparison.vue'),
+            meta: { requiresAuth: true, title: '门店对比', module: 'restaurant' }
+          },
+          {
+            path: 'analytics/dianping',
+            name: 'RestaurantDianpingGap',
+            component: () => import('@/views/restaurant/analytics/dianping-gap.vue'),
+            meta: { requiresAuth: true, title: '经营与平台分析', module: 'restaurant' }
           }
         ]
       },

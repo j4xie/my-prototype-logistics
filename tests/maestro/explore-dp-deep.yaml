@@ -1,0 +1,49 @@
+appId: com.cretas.foodtrace
+---
+# Deep explore Dispatcher: plan tab + AI scheduling + personnel
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- runFlow: flows/login-dp.yaml
+- extendedWaitUntil:
+    visible: "80%"
+    timeout: 15000
+
+# Tap plan tab (计划)
+- tapOn: "\u8BA1\u5212"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-dp-plan-tab
+
+# Scroll
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-dp-plan-scroll
+
+# Go back to home
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# Try AI智能排产 button
+- tapOn:
+    text: ".*AI.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-dp-ai-schedule
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Go to personnel tab (人员)
+- tapOn: "\u4EBA\u5458"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-dp-personnel-tab
+
+# Scroll
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-dp-personnel-scroll

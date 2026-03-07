@@ -249,7 +249,7 @@ function getAlertTypeText(type: string) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="equipmentName" label="设备名称" min-width="150" show-overflow-tooltip />
         <el-table-column prop="alertType" label="告警类型" width="120" align="center">
           <template #default="{ row }">

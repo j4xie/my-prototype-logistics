@@ -1,0 +1,182 @@
+{
+  "recipe": {
+    "title": "配方管理",
+    "list": {
+      "title": "配方列表",
+      "searchPlaceholder": "搜索菜品或食材",
+      "empty": "暂无配方数据",
+      "emptyAction": "创建配方",
+      "dishName": "菜品",
+      "material": "食材",
+      "quantity": "标准用量",
+      "yieldRate": "净出成率",
+      "main": "主料",
+      "auxiliary": "辅料",
+      "active": "启用",
+      "inactive": "停用"
+    },
+    "detail": {
+      "title": "配方详情",
+      "ingredients": "配料清单",
+      "standardQty": "标准用量",
+      "actualQty": "实际消耗",
+      "yieldRate": "净出成率",
+      "mainIngredient": "主要食材",
+      "notes": "备注"
+    },
+    "edit": {
+      "titleCreate": "新建配方",
+      "titleEdit": "编辑配方",
+      "selectDish": "选择菜品",
+      "selectMaterial": "选择食材",
+      "quantity": "标准用量",
+      "unit": "单位",
+      "yieldRate": "净出成率",
+      "isMain": "主要食材",
+      "notes": "备注",
+      "save": "保存",
+      "saved": "保存成功"
+    }
+  },
+  "requisition": {
+    "title": "领料管理",
+    "list": {
+      "title": "领料列表"
+    },
+    "create": {
+      "title": "领料申请",
+      "type": "领料类型",
+      "typeProduction": "按配方领料",
+      "typeManual": "手动领料",
+      "selectDish": "选择菜品",
+      "selectMaterial": "选择食材",
+      "quantity": "申请数量",
+      "unit": "单位",
+      "notes": "备注",
+      "saveDraft": "保存草稿",
+      "submitNow": "提交审批",
+      "created": "领料单已创建"
+    },
+    "approval": {
+      "title": "领料审批",
+      "actualQuantity": "实际领用量",
+      "approve": "审批通过",
+      "reject": "驳回",
+      "rejectReason": "驳回原因",
+      "enterActualQty": "请先输入实际领料数量",
+      "enterRejectReason": "请输入驳回原因",
+      "approved": "已审批通过",
+      "rejected": "已驳回",
+      "empty": "暂无待审批领料单"
+    },
+    "detail": {
+      "title": "领料详情",
+      "reqNumber": "领料单号",
+      "reqDate": "领料日期",
+      "material": "食材",
+      "requestedQty": "申请数量",
+      "actualQty": "实际领用",
+      "applicant": "申请人",
+      "approver": "审批人"
+    },
+    "status": {
+      "DRAFT": "草稿",
+      "SUBMITTED": "待审批",
+      "APPROVED": "已通过",
+      "REJECTED": "已驳回"
+    }
+  },
+  "stocktaking": {
+    "title": "盘点管理",
+    "list": {
+      "title": "盘点列表",
+      "searchPlaceholder": "搜索食材",
+      "empty": "暂无盘点记录",
+      "emptyAction": "发起盘点",
+      "material": "食材",
+      "systemQty": "系统库存",
+      "actualQty": "实盘数量",
+      "difference": "差异"
+    },
+    "execute": {
+      "title": "执行盘点",
+      "systemQty": "系统库存",
+      "inputActual": "输入实盘数量",
+      "reason": "差异原因",
+      "complete": "完成盘点",
+      "cancel": "取消盘点",
+      "completed": "盘点完成"
+    },
+    "summary": {
+      "title": "盘点汇总",
+      "totalItems": "盘点项目",
+      "surplus": "盘盈",
+      "shortage": "盘亏",
+      "matched": "相符",
+      "recentRecords": "近期盘点"
+    },
+    "status": {
+      "IN_PROGRESS": "进行中",
+      "COMPLETED": "已完成",
+      "CANCELLED": "已取消"
+    },
+    "difference": {
+      "SURPLUS": "盘盈",
+      "SHORTAGE": "盘亏",
+      "MATCH": "相符"
+    }
+  },
+  "wastage": {
+    "title": "损耗管理",
+    "list": {
+      "title": "损耗列表",
+      "searchPlaceholder": "搜索食材",
+      "empty": "暂无损耗记录",
+      "emptyAction": "记录损耗",
+      "material": "食材",
+      "quantity": "损耗数量",
+      "cost": "估计成本"
+    },
+    "create": {
+      "title": "记录损耗",
+      "type": "损耗类型",
+      "selectMaterial": "选择食材",
+      "quantity": "损耗数量",
+      "unit": "单位",
+      "cost": "估计成本(元)",
+      "notes": "原因说明",
+      "saveDraft": "保存草稿",
+      "submitNow": "提交审批",
+      "created": "损耗记录已创建"
+    },
+    "type": {
+      "EXPIRED": "过期",
+      "DAMAGED": "破损",
+      "SPOILED": "变质",
+      "PROCESSING_LOSS": "加工损耗",
+      "OTHER": "其他"
+    },
+    "status": {
+      "DRAFT": "草稿",
+      "SUBMITTED": "待审批",
+      "APPROVED": "已通过",
+      "REJECTED": "已驳回"
+    }
+  },
+  "common": {
+    "all": "全部",
+    "filter": "筛选",
+    "refresh": "刷新",
+    "back": "返回",
+    "submit": "提交",
+    "cancel": "取消",
+    "confirm": "确认",
+    "loadFailed": "加载失败",
+    "submitSuccess": "提交成功",
+    "submitFailed": "提交失败",
+    "operationSuccess": "操作成功",
+    "operationFailed": "操作失败",
+    "yuan": "元",
+    "items": "项"
+  }
+}

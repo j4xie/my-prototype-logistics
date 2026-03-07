@@ -1,0 +1,69 @@
+appId: com.cretas.foodtrace
+---
+# Test 24: Factory Admin - Management Module Deep Testing
+# Deep-dives into Inventory, Employees, Suppliers, and Product Types sub-modules
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Navigate to Management tab
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/24-fa-management-tab
+
+# === Inventory Module ===
+- tapOn:
+    text: ".*Inventory.*|.*\u5E93\u5B58.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/24-fa-inventory-mgmt
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# === Employees Module ===
+- tapOn:
+    text: ".*Employees.*|.*\u5458\u5DE5.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/24-fa-employees
+
+# Scroll down to see more employee data
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/24-fa-employees-scroll
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# === Suppliers Module ===
+- tapOn:
+    text: ".*Suppliers.*|.*\u4F9B\u5E94\u5546.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/24-fa-suppliers
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# === Product Types Module ===
+- tapOn:
+    text: ".*Product.*|.*\u4EA7\u54C1.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/24-fa-products
+
+# Go back
+- back

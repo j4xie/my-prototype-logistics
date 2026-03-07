@@ -1,0 +1,148 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: Warehouse Manager - Inventory Management
+# Captures: inventory list, detail, stocktake, transfer, location, temp monitor, IO stats
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as warehouse manager
+- runFlow: flows/login-wm.yaml
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u5165\u5E93.*|.*\u9996\u9875.*|.*Home.*|.*\u51FA\u8D27.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Navigate to Inventory tab (库存)
+- takeScreenshot: screenshots/manual-ss-wm-pre-inventory
+- tapOn:
+    text: "\u5E93\u5B58"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u5E93\u5B58.*|.*Inventory.*|.*\u76D8\u70B9.*|.*\u8C03\u62E8.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Screenshot: Inventory list
+- takeScreenshot: screenshots/manual-ss-wm-inventory-list
+
+# Scroll to see inventory cards
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-inventory-list-scroll
+
+# Scroll back
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+
+# Tap on first inventory item for detail
+- tapOn:
+    text: ".*\u67E5\u770B\u8BE6\u60C5.*|.*View.*Detail.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-inventory-detail
+
+# Scroll in detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-inventory-detail-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u5E93\u5B58.*|.*\u9996\u9875.*"
+    timeout: 10000
+
+# Back to inventory tab
+- tapOn:
+    text: "\u5E93\u5B58"
+    optional: true
+- waitForAnimationToEnd
+
+# Tap Stocktake shortcut (盘点)
+- tapOn:
+    text: ".*\u76D8\u70B9.*|.*Stocktake.*|.*Stock.*Count.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-stocktake
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: "\u5E93\u5B58"
+    optional: true
+- waitForAnimationToEnd
+
+# Tap Transfer shortcut (调拨)
+- tapOn:
+    text: ".*\u8C03\u62E8.*|.*Transfer.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-transfer
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: "\u5E93\u5B58"
+    optional: true
+- waitForAnimationToEnd
+
+# Tap Location shortcut (库位)
+- tapOn:
+    text: ".*\u5E93\u4F4D.*|.*Location.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-location
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Profile tab (我的) for IO statistics
+- tapOn:
+    text: "\u6211\u7684"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-profile
+
+# Tap IO Statistics (出入库统计)
+- tapOn:
+    text: ".*\u51FA\u5165\u5E93\u7EDF\u8BA1.*|.*IO.*Stat.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-io-stats
+
+# Scroll in stats
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-io-stats-scroll
+
+# Final
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-inventory-complete

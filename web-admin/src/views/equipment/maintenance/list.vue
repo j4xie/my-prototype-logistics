@@ -197,7 +197,7 @@ function getUrgencyText(days: number) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="code" label="设备编号" width="140" />
         <el-table-column prop="name" label="设备名称" min-width="150" show-overflow-tooltip />
         <el-table-column prop="type" label="设备类型" width="120" />
@@ -247,7 +247,7 @@ function getUrgencyText(days: number) {
     </el-card>
 
     <!-- 维护记录对话框 -->
-    <el-dialog v-model="dialogVisible" title="记录维护" width="500px">
+    <el-dialog v-model="dialogVisible" title="记录维护" width="500px" :close-on-click-modal="false">
       <el-form :model="maintenanceForm" label-width="100px">
         <el-form-item label="设备名称">
           <el-input v-model="maintenanceForm.equipmentName" disabled />

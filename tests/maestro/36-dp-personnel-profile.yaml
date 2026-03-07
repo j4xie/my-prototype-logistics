@@ -1,0 +1,76 @@
+appId: com.cretas.foodtrace
+---
+# Test 36: Dispatcher - Personnel & Profile
+# Verifies PersonnelDetail, Attendance, DSProfile, Statistics
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as dispatcher
+- runFlow: flows/login-dp.yaml
+- extendedWaitUntil:
+    visible: ".*\u8BA1\u5212.*"
+    timeout: 15000
+
+# Navigate to Personnel tab (人员)
+- tapOn: "\u4EBA\u5458"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/36-dp-personnel-list
+
+# Tap on first personnel entry to view detail
+- tapOn:
+    text: ".*workshop_sup1.*|.*dispatcher1.*|.*\u5458\u5DE5.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/36-dp-personnel-detail
+
+# Return to Personnel tab safely
+- tapOn: "\u4EBA\u5458"
+- waitForAnimationToEnd
+
+# === Navigate to Profile tab (我的) ===
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/36-dp-profile-tab
+
+# === My Approval Records (我的审批记录) ===
+- tapOn:
+    text: ".*\u6211\u7684\u5BA1\u6279\u8BB0\u5F55.*|.*Approval.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/36-dp-approval-records
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === Scheduling Statistics (调度统计) ===
+- tapOn:
+    text: ".*\u8C03\u5EA6\u7EDF\u8BA1.*|.*Statistics.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/36-dp-statistics
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === Attendance (考勤打卡) ===
+- tapOn:
+    text: ".*\u8003\u52E4\u6253\u5361.*|.*Clock.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/36-dp-attendance
+
+# Return to Profile tab safely
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# === Shift Calendar (排班日历) ===
+- tapOn:
+    text: ".*\u6392\u73ED\u65E5\u5386.*|.*Shift Calendar.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/36-dp-shift-calendar

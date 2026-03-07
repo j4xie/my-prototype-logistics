@@ -4,7 +4,7 @@
  * 注意：
  * 基于 JooLun 框架二次开发
  */
-export default {
+module.exports = {
   //服务器地址，即后台服务的访问地址；本地开发填http://localhost:7500即可，正式服务器环境https://centerapi.cretaceousfuture.com；如果要用真机调试要把localhost换成局域网ip，手机和电脑要处于同一局域网中
   basePath: 'https://centerapi.cretaceousfuture.com',
   //广告配置，小程序流量主：https://mp.weixin.qq.com/wxopen/frame

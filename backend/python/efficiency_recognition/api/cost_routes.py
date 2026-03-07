@@ -253,9 +253,10 @@ async def get_model_pricing():
 def _get_model_recommendation(model: str) -> str:
     """获取模型推荐使用场景"""
     recommendations = {
-        "qwen-vl-plus": "标准分析、多摄像头并行（推荐）",
+        "qwen3-vl-plus-2025-12-19": "当前默认（免费额度）— 全场景通用",
+        "qwen-vl-plus": "标准分析、多摄像头并行",
         "qwen-vl-max": "高精度任务、OCR、特征提取",
         "qwen3-vl-flash": "实时分析、省钱模式、快速识别",
-        "qwen3-vl-plus": "深度推理、场景理解、变化检测"
+        "qwen3-vl-plus": "深度推理、场景理解、变化检测",
     }
     return recommendations.get(model, "通用分析")

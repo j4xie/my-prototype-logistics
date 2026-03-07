@@ -1,0 +1,52 @@
+appId: com.cretas.foodtrace
+---
+# Test 19: Quality Inspector - Inspection List with Search/Filter
+# Verifies QI inspection list, scrolling, and inspect form entry
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as quality inspector
+- runFlow: flows/login-qi.yaml
+
+# Wait for QI home to load
+- extendedWaitUntil:
+    visible: "Start Inspection"
+    timeout: 15000
+
+# Tap inspection tab (质检)
+- tapOn: "\u8D28\u68C0"
+- waitForAnimationToEnd
+
+# Wait for inspection list to load
+- extendedWaitUntil:
+    visible: ".*\u5F85\u68C0\u6279\u6B21.*"
+    timeout: 10000
+- takeScreenshot: screenshots/19-qi-inspect-list
+
+# Scroll to see more batches
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/19-qi-list-scroll
+
+# Scroll more
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/19-qi-list-more
+
+# Tap on a batch's inspect button (开始检验)
+- tapOn:
+    text: ".*\u5F00\u59CB\u68C0\u9A8C.*"
+    index: 0
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/19-qi-inspect-form
+
+# Go back
+- back
+- waitForAnimationToEnd

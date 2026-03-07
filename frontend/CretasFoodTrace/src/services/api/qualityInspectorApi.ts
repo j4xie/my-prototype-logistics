@@ -134,6 +134,38 @@ class QualityInspectorApiClient {
   }
 
   /**
+   * 将后端质检记录映射为前端 QualityRecord 格式
+   * 后端返回: { id, productionBatchId, inspectorId, inspectionDate, sampleSize, passCount, failCount, passRate, result, qualityGrade, ... }
+   * 前端期望: { id, batchId, batchNumber, productName, grade, passed, inspectedAt, inspector, totalScore, ... }
+   */
+  private mapInspectionToRecord(raw: Record<string, unknown>): QualityRecord {
+    const passRate = Number(raw.passRate ?? 0);
+    return {
+      id: String(raw.id ?? ''),
+      batchId: String(raw.productionBatchId ?? ''),
+      batchNumber: String(raw.batchNumber || `B-${raw.productionBatchId ?? ''}`),
+      productName: String(raw.productName || raw.notes || '质检记录'),
+      sampleSize: Number(raw.sampleSize ?? 0),
+      appearance: { score: 0, notes: [] },
+      smell: { score: 0, notes: [] },
+      specification: { score: 0, notes: [] },
+      weight: { score: 0, notes: [] },
+      packaging: { score: 0, notes: [] },
+      totalScore: passRate,
+      grade: (raw.qualityGrade as QualityRecord['grade']) ?? 'D',
+      passed: String(raw.result).toUpperCase() === 'PASS',
+      photos: [],
+      inspector: {
+        id: Number(raw.inspectorId ?? 0),
+        name: String(raw.inspectorName || ''),
+      },
+      inspectedAt: raw.inspectionDate
+        ? `${raw.inspectionDate}T00:00:00`
+        : new Date().toISOString(),
+    };
+  }
+
+  /**
    * 获取质检记录列表
    */
   async getInspectionRecords(params?: {
@@ -144,21 +176,25 @@ class QualityInspectorApiClient {
     grade?: string;
     inspectorId?: number;
   }): Promise<QIPagedResponse<QualityRecord>> {
-    const response = await apiClient.get<QIApiResponse<QIPagedResponse<QualityRecord>>>(
+    const response = await apiClient.get<QIApiResponse<QIPagedResponse<Record<string, unknown>>>>(
       `${this.getBasePath()}/processing/quality/inspections`,
       { params }
     );
-    return response.data;
+    const data = response.data;
+    return {
+      ...data,
+      content: (data.content || []).map((item) => this.mapInspectionToRecord(item)),
+    };
   }
 
   /**
    * 获取质检记录详情
    */
   async getRecordDetail(recordId: string): Promise<QualityRecord> {
-    const response = await apiClient.get<QIApiResponse<QualityRecord>>(
+    const response = await apiClient.get<QIApiResponse<Record<string, unknown>>>(
       `${this.getBasePath()}/processing/quality/inspections/${recordId}`
     );
-    return response.data;
+    return this.mapInspectionToRecord(response.data);
   }
 
   // ============================================

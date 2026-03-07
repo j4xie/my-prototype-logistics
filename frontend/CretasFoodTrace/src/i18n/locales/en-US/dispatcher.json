@@ -609,5 +609,9 @@
     "more": "more",
     "idlePersonnel": "Idle Personnel",
     "transferable": "Transferable"
+  },
+  "error": {
+    "loadFailed": "Failed to load. Please check network.",
+    "retry": "Retry"
   }
 }

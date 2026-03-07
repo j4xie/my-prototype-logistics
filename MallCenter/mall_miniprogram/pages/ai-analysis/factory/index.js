@@ -6,7 +6,7 @@ const app = getApp()
 // Mock数据 - 当API不可用时使用
 const MOCK_FACTORY_DATA = {
   factory: {
-    name: '白垩纪食品加工厂'
+    name: '食品加工厂'
   },
   reportDate: new Date().toLocaleDateString('zh-CN'),
   overallScore: '92',

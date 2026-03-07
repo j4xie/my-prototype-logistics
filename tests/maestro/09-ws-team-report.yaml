@@ -1,0 +1,45 @@
+appId: com.cretas.foodtrace
+---
+# Test 09: Workshop Supervisor - Team Production Report (班组报工)
+# Verifies: quick action → batch selection → report form → fill data
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as workshop supervisor
+- runFlow: flows/login-ws.yaml
+- waitForAnimationToEnd
+
+# Tap 班组报工 quick action
+- tapOn:
+    text: ".*\u73ED\u7EC4\u62A5\u5DE5.*"
+- waitForAnimationToEnd
+
+# Wait for batch selection screen to load
+- extendedWaitUntil:
+    visible: "PB20260212002"
+    timeout: 10000
+- takeScreenshot: screenshots/09-ws-batch-selection
+
+# Select a batch
+- tapOn: "PB20260212002"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/09-ws-report-form
+
+# Enter output quantity (tap on the "0" input field then type)
+- tapOn:
+    text: "0"
+    index: 0
+- eraseText: 1
+- inputText: "50"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/09-ws-report-filled
+
+# Verify submit button exists (一键提交) - tap on it using regex
+- tapOn:
+    text: ".*\u63D0\u4EA4.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/09-ws-report-submitted

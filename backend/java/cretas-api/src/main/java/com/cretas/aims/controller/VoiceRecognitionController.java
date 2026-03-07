@@ -44,7 +44,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 @Tag(name = "语音识别", description = "讯飞语音识别代理 API，支持实时识别、历史记录、配置管理、批量识别")
 @RestController
 @RequestMapping("/api/mobile")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {"https://www.cretaceousfuture.com", "http://139.196.165.140:8086", "http://localhost:5173"})
 @RequiredArgsConstructor
 @Slf4j
 public class VoiceRecognitionController {

@@ -45,6 +45,11 @@ public class MerchantPageConfig extends Model<MerchantPageConfig> {
     private Long themePresetId;
 
     /**
+     * 主题编码
+     */
+    private String themeCode;
+
+    /**
      * 自定义主题配置 JSON
      */
     private String customTheme;
@@ -58,6 +63,31 @@ public class MerchantPageConfig extends Model<MerchantPageConfig> {
      * 页面配置 JSON
      */
     private String pageConfig;
+
+    /**
+     * 店铺名称
+     */
+    private String shopName;
+
+    /**
+     * Logo URL
+     */
+    private String logoUrl;
+
+    /**
+     * 宣传语
+     */
+    private String slogan;
+
+    /**
+     * 通知文字 JSON数组
+     */
+    private String noticeTexts;
+
+    /**
+     * Banner配置 JSON
+     */
+    private String bannerConfig;
 
     /**
      * SEO标题
@@ -87,6 +117,7 @@ public class MerchantPageConfig extends Model<MerchantPageConfig> {
     /**
      * 发布时间
      */
+    @TableField("published_at")
     private LocalDateTime publishTime;
 
     /**

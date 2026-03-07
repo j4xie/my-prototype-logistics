@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
+import { formatAmount } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -78,11 +79,6 @@ function handleTxPageChange(page: number) { txPagination.value.page = page; load
 function handleTxSizeChange(size: number) { txPagination.value.size = size; txPagination.value.page = 1; loadTransactions(); }
 function handleTxTypeChange() { txPagination.value.page = 1; loadTransactions(); }
 function handleAgingTypeChange() { loadAging(); }
-
-function formatAmount(val: number) {
-  if (val == null) return '-';
-  return `¥${Number(val).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
-}
 </script>
 
 <template>
@@ -128,12 +124,12 @@ function formatAmount(val: number) {
           <div class="tab-toolbar">
             <el-button :icon="Refresh" @click="txTypeFilter = 'CUSTOMER'; loadTransactions()">刷新</el-button>
           </div>
-          <el-table :data="transactions.filter(t => ['AR_INVOICE','AR_PAYMENT','AR_ADJUSTMENT'].includes(t.transactionType))" border stripe v-loading="loading">
+          <el-table empty-text="暂无数据" :data="transactions.filter(t => ['AR_INVOICE','AR_PAYMENT','AR_ADJUSTMENT'].includes(t.transactionType))" border stripe v-loading="loading">
             <el-table-column prop="transactionNumber" label="交易编号" width="150" />
             <el-table-column prop="counterpartyName" label="客户" min-width="140" show-overflow-tooltip />
             <el-table-column prop="transactionType" label="类型" width="120" align="center">
               <template #default="{ row }">
-                <el-tag :type="(txTypeMap[row.transactionType]?.type as any) || 'info'" size="small">
+                <el-tag :type="(txTypeMap[row.transactionType]?.type) || 'info'" size="small">
                   {{ txTypeMap[row.transactionType]?.text || row.transactionType }}
                 </el-tag>
               </template>
@@ -160,7 +156,7 @@ function formatAmount(val: number) {
             <el-table-column prop="counterpartyName" label="供应商" min-width="140" show-overflow-tooltip />
             <el-table-column prop="transactionType" label="类型" width="120" align="center">
               <template #default="{ row }">
-                <el-tag :type="(txTypeMap[row.transactionType]?.type as any) || 'info'" size="small">
+                <el-tag :type="(txTypeMap[row.transactionType]?.type) || 'info'" size="small">
                   {{ txTypeMap[row.transactionType]?.text || row.transactionType }}
                 </el-tag>
               </template>

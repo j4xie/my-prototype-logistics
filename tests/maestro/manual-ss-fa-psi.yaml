@@ -1,0 +1,229 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: Factory Admin - 进销存管理
+# Captures: management grid, purchase orders, sales orders, finished goods,
+#           transfer, AR/AP, price list, return orders
+
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+
+# Wait for home to load
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*|.*管理.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Screenshot: Factory Admin Home
+- takeScreenshot: screenshots/manual-ss-fa-home
+
+# Navigate to Management tab (管理)
+- tapOn:
+    text: "管理"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*管理.*|.*Management.*|.*进销存.*|.*采购.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Screenshot: Management grid (showing all menu items)
+- takeScreenshot: screenshots/manual-ss-fa-management
+
+# Scroll down to see more management items (进销存 section)
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-management-scroll
+
+# --- 1. Purchase Orders (采购订单) ---
+- tapOn:
+    text: "采购订单"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*采购.*|.*Purchase.*|.*订单.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-purchase-list
+
+# Tap on first purchase order for detail
+- tapOn:
+    text: ".*PO-.*|.*采购.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-purchase-detail
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# --- 2. Sales Orders (销售订单) ---
+- tapOn:
+    text: "管理"
+    optional: true
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: "销售订单"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*销售.*|.*Sale.*|.*订单.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-sales-list
+
+# Tap on first sales order for detail
+- tapOn:
+    text: ".*SO-.*|.*销售.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-sales-detail
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# --- 3. Finished Goods (成品库存) ---
+- tapOn:
+    text: "管理"
+    optional: true
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: "成品库存"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*成品.*|.*库存.*|.*Finished.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-finished-goods
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# --- 4. Transfer (调拨管理) ---
+- tapOn:
+    text: "管理"
+    optional: true
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: "调拨管理"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*调拨.*|.*Transfer.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-transfer
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# --- 5. AR/AP Overview (应收应付) ---
+- tapOn:
+    text: "管理"
+    optional: true
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: "应收应付"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*应收.*|.*应付.*|.*账龄.*|.*AR.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-arap
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# --- 6. Price List (价格表) ---
+- tapOn:
+    text: "管理"
+    optional: true
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: "价格表"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*价格.*|.*Price.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-pricelist
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# --- 7. Return Orders (退货管理) ---
+- tapOn:
+    text: "管理"
+    optional: true
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: "退货管理"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*退货.*|.*Return.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-returns
+
+# Final recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-complete

@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useAppStore } from '@/store/modules/app';
 import { useAuthStore } from '@/store/modules/auth';
 import { ElMessageBox, ElMessage } from 'element-plus';
-import { Fold, Expand, User, SwitchButton, Refresh } from '@element-plus/icons-vue';
+import { Fold, Expand, User, SwitchButton, Refresh, Moon, Sunny } from '@element-plus/icons-vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -27,9 +27,13 @@ const userInfo = computed(() => ({
   factoryId: authStore.factoryId
 }));
 
-// 切换侧边栏
+// 切换侧边栏（桌面折叠 / 移动端打开抽屉）
 function toggleSidebar() {
-  appStore.toggleSidebar();
+  if (appStore.isMobile) {
+    appStore.openMobileMenu();
+  } else {
+    appStore.toggleSidebar();
+  }
 }
 
 // 刷新页面
@@ -58,14 +62,14 @@ async function handleLogout() {
 <template>
   <header class="app-header">
     <div class="header-left">
-      <!-- 折叠按钮 -->
+      <!-- 折叠/汉堡按钮 -->
       <el-icon class="collapse-btn" @click="toggleSidebar">
-        <Fold v-if="!appStore.sidebarCollapsed" />
+        <Fold v-if="!appStore.sidebarCollapsed && !appStore.isMobile" />
         <Expand v-else />
       </el-icon>
 
-      <!-- 面包屑 -->
-      <el-breadcrumb separator="/">
+      <!-- 面包屑（移动端隐藏） -->
+      <el-breadcrumb v-if="!appStore.isMobile" separator="/">
         <el-breadcrumb-item
           v-for="item in breadcrumbs"
           :key="item.path"
@@ -77,6 +81,14 @@ async function handleLogout() {
     </div>
 
     <div class="header-right">
+      <!-- 暗色模式切换 -->
+      <el-tooltip :content="appStore.theme === 'light' ? '暗色模式' : '亮色模式'" placement="bottom">
+        <el-icon class="header-action" @click="appStore.toggleTheme()">
+          <Moon v-if="appStore.theme === 'light'" />
+          <Sunny v-else />
+        </el-icon>
+      </el-tooltip>
+
       <!-- 刷新按钮 -->
       <el-tooltip content="刷新页面" placement="bottom">
         <el-icon class="header-action" @click="handleRefresh">
@@ -113,7 +125,7 @@ async function handleLogout() {
 <style lang="scss" scoped>
 .app-header {
   height: 64px;
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: var(--color-bg-card, rgba(255, 255, 255, 0.85));
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color-light, #EDF2F7);
@@ -136,6 +148,11 @@ async function handleLogout() {
     cursor: pointer;
     color: var(--color-text-secondary, #7A8599);
     transition: color 0.2s;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     &:hover {
       color: var(--color-primary, #1B65A8);
@@ -195,6 +212,16 @@ async function handleLogout() {
       font-size: 12px;
       color: var(--color-text-secondary, #7A8599);
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    height: var(--header-height, 56px);
+    padding: 0 12px;
+  }
+  .user-detail {
+    display: none !important;
   }
 }
 </style>

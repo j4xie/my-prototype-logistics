@@ -25,6 +25,7 @@ interface Props {
   barColor?: string | string[];
   showPercentage?: boolean;
   clickable?: boolean;
+  loading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -33,7 +34,7 @@ const props = withDefaults(defineProps<Props>(), {
   maxItems: 10,
   showRank: true,
   valueUnit: '',
-  barColor: '#409eff',
+  barColor: '#1B65A8',
   showPercentage: false,
   clickable: true
 });
@@ -44,6 +45,8 @@ const emit = defineEmits<{
 
 const chartRef = ref<HTMLDivElement | null>(null);
 const chartInstance = ref<ECharts | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+let rafId = 0;
 
 // Process data for display
 const processedData = computed(() => {
@@ -63,7 +66,7 @@ const getBarColor = (index: number): string => {
     return props.barColor[index % props.barColor.length];
   }
   // Default gradient based on rank
-  const colors = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399'];
+  const colors = ['#1B65A8', '#67c23a', '#e6a23c', '#f56c6c', '#909399'];
   if (index < 3) return colors[index];
   return props.barColor;
 };
@@ -196,16 +199,27 @@ function updateChart() {
 }
 
 function handleResize() {
-  chartInstance.value?.resize();
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = 0;
+    chartInstance.value?.resize();
+  });
 }
 
 // Lifecycle
 onMounted(() => {
   initChart();
+  if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartRef.value);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (rafId) cancelAnimationFrame(rafId);
   window.removeEventListener('resize', handleResize);
   chartInstance.value?.dispose();
 });
@@ -222,20 +236,32 @@ defineExpose({
 </script>
 
 <template>
-  <div class="ranking-chart">
+  <div v-loading="loading" class="ranking-chart">
     <div v-if="title" class="chart-header">
       <h3>{{ title }}</h3>
       <el-tag v-if="maxItems < data.length" type="info" size="small">
         Top {{ maxItems }}
       </el-tag>
     </div>
-    <div ref="chartRef" :style="{ width: '100%', height: height + 'px' }"></div>
+    <div class="chart-wrapper" :style="{ position: 'relative', width: '100%', height: height + 'px' }">
+      <div ref="chartRef" role="img" :aria-label="title || '排行图'" style="width: 100%; height: 100%"></div>
+      <div v-if="!loading && data.length === 0" class="chart-empty">
+        <el-empty description="暂无数据" :image-size="80" />
+      </div>
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .ranking-chart {
   width: 100%;
+
+  .chart-empty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
 
   .chart-header {
     display: flex;

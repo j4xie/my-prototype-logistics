@@ -1,0 +1,45 @@
+appId: com.cretas.foodtrace
+---
+# Test 05: Profile & Logout
+# Verifies profile page and logout flow
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login fresh
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Navigate to Profile tab (我的)
+- tapOn:
+    text: ".*我的.*"
+- waitForAnimationToEnd
+
+# Verify user info displayed
+- assertVisible: "factory_admin1"
+- takeScreenshot: screenshots/05-profile
+
+# Scroll down to find logout
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/05-profile-options
+
+# Try to find and tap logout
+- tapOn:
+    text: ".*退出.*|.*Logout.*|.*登出.*|.*Sign Out.*"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Confirm logout if dialog appears
+- tapOn:
+    text: ".*确认.*|.*确定.*|.*OK.*|.*Yes.*"
+    optional: true
+
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/05-after-logout

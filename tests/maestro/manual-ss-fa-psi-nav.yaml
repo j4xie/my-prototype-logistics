@@ -1,0 +1,106 @@
+appId: com.cretas.foodtrace
+---
+# Factory Admin PSI Screenshots - Navigation only (already logged in)
+
+- waitForAnimationToEnd
+
+# Go to Home first to reset
+- tapOn:
+    text: ".*首页.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Take home screenshot
+- takeScreenshot: screenshots/manual-ss-fa-home
+
+# Navigate to Management tab
+- tapOn:
+    text: ".*管理.*"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-management
+
+# Scroll down to PSI section
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-management-psi
+
+# --- 1. Purchase Orders ---
+- tapOn:
+    text: ".*采购订单.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-purchase-list
+
+- back
+- waitForAnimationToEnd
+
+# --- 2. Sales Orders ---
+- tapOn:
+    text: ".*销售订单.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-sales-list
+
+- back
+- waitForAnimationToEnd
+
+# --- 3. Finished Goods ---
+- tapOn:
+    text: ".*成品库存.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-finished-goods
+
+- back
+- waitForAnimationToEnd
+
+# --- 4. Transfer ---
+- tapOn:
+    text: ".*调拨管理.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-transfer
+
+- back
+- waitForAnimationToEnd
+
+# --- 5. AR/AP ---
+- tapOn:
+    text: ".*应收应付.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-arap
+
+- back
+- waitForAnimationToEnd
+
+# --- 6. Price List ---
+- tapOn:
+    text: ".*价格表.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-pricelist
+
+- back
+- waitForAnimationToEnd
+
+# --- 7. Return Orders ---
+- tapOn:
+    text: ".*退货管理.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-returns
+
+- back
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-complete

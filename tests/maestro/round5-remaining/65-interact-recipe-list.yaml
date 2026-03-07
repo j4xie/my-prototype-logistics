@@ -1,0 +1,114 @@
+appId: com.cretas.foodtrace
+---
+# Test 65: In-depth Recipe List Interaction
+# Stays on RecipeList page and exercises all UI elements
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant admin
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: ".*AI Insights.*|.*AI 智能洞察.*|.*Today.*Overview.*|.*首页.*"
+    timeout: 15000
+
+# Navigate to 配方 (Recipe) tab
+- tapOn:
+    text: ".*配方.*|.*Recipe.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/65-recipe-list-initial
+
+# === Search bar interaction ===
+- tapOn:
+    text: ".*搜索菜品.*|.*搜索.*食材.*|.*Search.*"
+    optional: true
+- waitForAnimationToEnd
+- inputText: "test"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/65-search-results
+- eraseText: 4
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/65-search-cleared
+
+# === Filter chip cycle ===
+- tapOn:
+    text: ".*启用.*|.*Active.*|.*Enabled.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/65-filter-active
+
+- tapOn:
+    text: ".*停用.*|.*Inactive.*|.*Disabled.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/65-filter-inactive
+
+- tapOn:
+    text: ".*全部.*|.*All.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/65-filter-all
+
+# === Pull-to-refresh ===
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/65-after-refresh
+
+# === FAB tap (create recipe) ===
+- tapOn:
+    text: ".*创建配方.*|.*Create Recipe.*|.*新建.*|.*New.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/65-fab-create
+
+# If on create screen, go back
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*配方.*|.*Recipe.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Card tap (open detail) ===
+- tapOn:
+    text: ".*菜品.*|.*Dish.*|.*主料.*|.*Main.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/65-card-detail
+
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*配方.*|.*Recipe.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Scroll ===
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/65-scrolled-down
+
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/65-scrolled-up
+
+# Return to home
+- tapOn: "首页"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/65-complete

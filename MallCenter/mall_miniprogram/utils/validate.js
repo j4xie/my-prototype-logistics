@@ -2,7 +2,7 @@
  * 邮箱
  * @param {*} s
  */
-export function isEmail (s) {
+function isEmail (s) {
   return /^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+((.[a-zA-Z0-9_-]{2,3}){1,2})$/.test(s)
 }
 
@@ -10,7 +10,7 @@ export function isEmail (s) {
  * 手机号码
  * @param {*} s
  */
-export function isMobile (s) {
+function isMobile (s) {
   return /^1[0-9]{10}$/.test(s)
 }
 
@@ -18,7 +18,7 @@ export function isMobile (s) {
  * 电话号码
  * @param {*} s
  */
-export function isPhone (s) {
+function isPhone (s) {
   return /^([0-9]{3,4}-)?[0-9]{7,8}$/.test(s)
 }
 
@@ -26,41 +26,41 @@ export function isPhone (s) {
  * URL地址
  * @param {*} s
  */
-export function isURL (s) {
+function isURL (s) {
   return /^http[s]?:\/\/.*/.test(s)
 }
 
-export function isvalidUsername (str) {
+function isvalidUsername (str) {
   const valid_map = ['admin', 'editor']
   return valid_map.indexOf(str.trim()) >= 0
 }
 
 /* 合法uri */
-export function validateURL (textval) {
+function validateURL (textval) {
   const urlregex = /^(https?|ftp):\/\/([a-zA-Z0-9.-]+(:[a-zA-Z0-9.&%$-]+)*@)*((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|([a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+\.(com|edu|gov|int|mil|net|org|biz|arpa|info|name|pro|aero|coop|museum|[a-zA-Z]{2}))(:[0-9]+)*(\/($|[a-zA-Z0-9.,?'\\+&%$#=~_-]+))*$/
   return urlregex.test(textval)
 }
 
 /* 小写字母 */
-export function validateLowerCase (str) {
+function validateLowerCase (str) {
   const reg = /^[a-z]+$/
   return reg.test(str)
 }
 
 /* 大写字母 */
-export function validateUpperCase (str) {
+function validateUpperCase (str) {
   const reg = /^[A-Z]+$/
   return reg.test(str)
 }
 
 /* 大小写字母 */
-export function validatAlphabets (str) {
+function validatAlphabets (str) {
   const reg = /^[A-Za-z]+$/
   return reg.test(str)
 }
 
 /* 验证pad还是pc */
-export const vaildatePc = function () {
+const vaildatePc = function () {
   const userAgentInfo = navigator.userAgent
   const Agents = ['Android', 'iPhone',
     'SymbianOS', 'Windows Phone',
@@ -81,7 +81,7 @@ export const vaildatePc = function () {
  * @param email
  * @returns {boolean}
  */
-export function validateEmail (email) {
+function validateEmail (email) {
   const re = /^(([^<>()\\[\]\\.,;:\s@"]+(\.[^<>()\\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
   return re.test(email)
 }
@@ -89,7 +89,7 @@ export function validateEmail (email) {
 /**
  * 判断身份证号码
  */
-export function cardid (code) {
+function cardid (code) {
   let list = []
   let result = true
   let msg = ''
@@ -172,7 +172,7 @@ export function cardid (code) {
 /**
  * 判断手机号码是否正确
  */
-export function isvalidatemobile (phone) {
+function isvalidatemobile (phone) {
   let list = []
   let result = true
   let msg = ''
@@ -199,7 +199,7 @@ export function isvalidatemobile (phone) {
 /**
  * 判断姓名是否正确
  */
-export function validatename (name) {
+function validatename (name) {
   var regName = /^[\u4e00-\u9fa5]{2,4}$/
   if (!regName.test(name)) return false
   return true
@@ -208,7 +208,7 @@ export function validatename (name) {
 /**
  * 判断是否为整数
  */
-export function validatenum (num, type) {
+function validatenum (num, type) {
   let regName = /[^\d.]/g
   if (type == 1) {
     if (!regName.test(num)) return false
@@ -222,7 +222,7 @@ export function validatenum (num, type) {
 /**
  * 判断是否为小数
  */
-export function validatenumord (num, type) {
+function validatenumord (num, type) {
   let regName = /[^\d.]/g
   if (type == 1) {
     if (!regName.test(num)) return false
@@ -236,7 +236,7 @@ export function validatenumord (num, type) {
 /**
  * 判断是否为空
  */
-export function validatenull (val) {
+function validatenull (val) {
   if (typeof val === 'boolean') {
     return false
   }
@@ -255,5 +255,8 @@ export function validatenull (val) {
 }
 
 module.exports = {
-  validatenull: validatenull
+  isEmail, isMobile, isPhone, isURL, isvalidUsername,
+  validateURL, validateLowerCase, validateUpperCase, validatAlphabets,
+  vaildatePc, validateEmail, cardid, isvalidatemobile,
+  validatename, validatenum, validatenumord, validatenull
 }

@@ -203,7 +203,7 @@ async function handleToggleActive(row: any) {
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe>
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe>
         <el-table-column prop="username" label="用户名" width="120" />
         <el-table-column prop="fullName" label="姓名" />
         <el-table-column prop="phone" label="手机号" width="130" />

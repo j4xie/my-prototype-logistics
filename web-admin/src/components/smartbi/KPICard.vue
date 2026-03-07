@@ -4,8 +4,39 @@
  * Features: Title, value, unit, trend arrow, status color
  * Display Modes: default, sparkline, progressBar, waterWave
  */
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { formatPlainNumber } from '@/utils/format-number';
+
+// CountUp animation helper — eases from 0 to target over duration
+function useCountUp(targetRef: () => number, duration = 800) {
+  const display = ref(0);
+  let raf = 0;
+  let hasAnimated = false;
+
+  function animate(target: number) {
+    const start = display.value;
+    const diff = target - start;
+    if (diff === 0) return;
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      display.value = start + diff * eased;
+      if (progress < 1) {
+        raf = requestAnimationFrame(step);
+      } else {
+        display.value = target;
+      }
+    };
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(step);
+  }
+
+  return { display, animate, hasAnimated: () => hasAnimated, markAnimated: () => { hasAnimated = true; }, cancelRaf: () => { if (raf) cancelAnimationFrame(raf); } };
+}
 
 // Types
 export type TrendDirection = 'up' | 'down' | 'flat';
@@ -146,7 +177,7 @@ const progressPercent = computed(() => {
 // Get progress color based on percentage
 const progressColor = computed(() => {
   if (progressPercent.value >= 100) return '#67c23a';
-  if (progressPercent.value >= 70) return '#409eff';
+  if (progressPercent.value >= 70) return '#1B65A8';
   if (progressPercent.value >= 50) return '#e6a23c';
   return '#f56c6c';
 });
@@ -210,10 +241,48 @@ const displayProgressColor = computed(() => {
   return '#f56c6c';
 });
 
+// CountUp animation for numeric values (first-load only to avoid SSE flicker)
+const numericValue = computed(() => {
+  if (props.value == null) return null;
+  const val = typeof props.value === 'number' ? props.value : parseFloat(String(props.value));
+  return Number.isFinite(val) ? val : null;
+});
+
+const countUp = useCountUp(() => numericValue.value ?? 0);
+
+// Format the animated display value the same way as formattedValue
+const animatedFormattedValue = computed(() => {
+  if (numericValue.value == null) return formattedValue.value;
+  const val = countUp.display.value;
+  let formatted: string;
+  switch (props.format) {
+    case 'currency':
+      formatted = new Intl.NumberFormat('zh-CN', {
+        minimumFractionDigits: props.precision,
+        maximumFractionDigits: props.precision
+      }).format(val);
+      break;
+    case 'percent':
+      formatted = (val * 100).toFixed(props.precision) + '%';
+      break;
+    case 'number':
+    default:
+      formatted = formatPlainNumber(val, props.precision || 0);
+  }
+  return `${props.prefix}${formatted}${props.suffix}`;
+});
+
 // Water wave animation offset
 let animationId: number | null = null;
 const waveOffset = ref(0);
 onMounted(() => {
+  // Trigger countUp on first load only
+  if (numericValue.value != null) {
+    countUp.display.value = 0;
+    countUp.animate(numericValue.value);
+    countUp.markAnimated();
+  }
+
   if (props.displayMode === 'waterWave') {
     const animate = () => {
       waveOffset.value = (waveOffset.value + 1) % 100;
@@ -222,7 +291,19 @@ onMounted(() => {
     animate();
   }
 });
+// Re-animate on value change (debounced — skip rapid SSE updates)
+let valueDebounce = 0;
+watch(numericValue, (newVal) => {
+  if (newVal == null) return;
+  clearTimeout(valueDebounce);
+  valueDebounce = window.setTimeout(() => {
+    countUp.animate(newVal);
+  }, 300);
+});
+
 onBeforeUnmount(() => {
+  countUp.cancelRaf();
+  clearTimeout(valueDebounce);
   if (animationId != null) {
     cancelAnimationFrame(animationId);
     animationId = null;
@@ -252,7 +333,12 @@ function handleClick() {
       backgroundColor: currentStatusColor.bg,
       borderColor: currentStatusColor.border
     }"
+    :role="clickable ? 'button' : 'region'"
+    :tabindex="clickable ? 0 : undefined"
+    :aria-label="title + ': ' + formattedValue + (unit || '') + (formattedChange ? ' ' + formattedChange : '')"
     @click="handleClick"
+    @keydown.enter="handleClick"
+    @keydown.space.prevent="handleClick"
   >
     <!-- Loading overlay -->
     <div v-if="loading" class="loading-overlay">
@@ -270,7 +356,7 @@ function handleClick() {
         <span>{{ title }}</span>
       </div>
       <div v-if="trend || formattedChange" class="kpi-trend" :style="{ color: formattedChange ? changeColor : trendColors[trend!] }">
-        <span class="trend-arrow">
+        <span class="trend-arrow" aria-hidden="true">
           <template v-if="(changeRate != null ? changeRate > 0 : trend === 'up')">&#9650;</template>
           <template v-else-if="(changeRate != null ? changeRate < 0 : trend === 'down')">&#9660;</template>
           <template v-else>&#9654;</template>
@@ -296,7 +382,7 @@ function handleClick() {
             <div class="wave wave-2" :style="{ animationDelay: '-0.5s' }"></div>
           </div>
           <div class="water-value">
-            <span class="water-number">{{ formattedValue }}</span>
+            <span class="water-number">{{ animatedFormattedValue }}</span>
             <span v-if="unit" class="water-unit">{{ unit }}</span>
           </div>
         </div>
@@ -306,7 +392,7 @@ function handleClick() {
       <template v-else>
         <div class="kpi-value-row">
           <div class="kpi-value" :style="{ color: currentStatusColor.text }">
-            {{ formattedValue }}
+            {{ animatedFormattedValue }}
             <span v-if="unit" class="kpi-unit">{{ unit }}</span>
           </div>
 
@@ -438,7 +524,7 @@ function handleClick() {
     width: 24px;
     height: 24px;
     border: 2px solid #dcdfe6;
-    border-top-color: #409eff;
+    border-top-color: #1B65A8;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }

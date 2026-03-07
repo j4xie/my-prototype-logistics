@@ -7,6 +7,7 @@ import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
+import { formatAmount } from '@/utils/tableFormatters';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -137,11 +138,6 @@ function handlePageChange(page: number) { pagination.value.page = page; loadData
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
 function handleStatusChange() { pagination.value.page = 1; loadData(); }
 function handleRefresh() { statusFilter.value = ''; pagination.value.page = 1; loadData(); }
-
-function formatAmount(val: number) {
-  if (val == null) return '-';
-  return `¥${Number(val).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
-}
 </script>
 
 <template>
@@ -168,7 +164,7 @@ function formatAmount(val: number) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="orderNumber" label="订单编号" width="170" />
         <el-table-column label="供应商" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ row.supplier?.name || row.supplierId || '-' }}</template>
@@ -186,7 +182,7 @@ function formatAmount(val: number) {
         </el-table-column>
         <el-table-column prop="status" label="状态" width="110" align="center">
           <template #default="{ row }">
-            <el-tag :type="(statusMap[row.status]?.type as any) || 'info'" size="small">
+            <el-tag :type="(statusMap[row.status]?.type) || 'info'" size="small">
               {{ statusMap[row.status]?.text || row.status }}
             </el-tag>
           </template>

@@ -1,5 +1,5 @@
 <template>
-  <div class="food-kb-feedback">
+  <div ref="rootRef" class="food-kb-feedback">
     <el-card shadow="never" class="header-card">
       <div class="header-row">
         <div>
@@ -12,8 +12,11 @@
       </div>
     </el-card>
 
+    <!-- Error Alert -->
+    <el-alert v-if="loadError" type="error" :title="loadError" show-icon closable style="margin-bottom: 16px" />
+
     <!-- Stats Overview -->
-    <div class="stats-grid" v-if="stats">
+    <div v-loading="loading" class="stats-grid" v-if="stats || loading">
       <el-card shadow="hover" class="stat-card">
         <div class="stat-value">{{ stats.total }}</div>
         <div class="stat-label">反馈总数</div>
@@ -142,9 +145,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { Refresh, Download } from '@element-plus/icons-vue'
-import * as echarts from 'echarts'
+import { ElMessage } from 'element-plus'
+import echarts from '@/utils/echarts'
 import { getPythonAuthHeaders, PYTHON_SMARTBI_URL } from '@/api/smartbi/common'
 
 interface FeedbackStats {
@@ -170,6 +174,7 @@ interface FeedbackStats {
 }
 
 const loading = ref(false)
+const loadError = ref('')
 const exporting = ref(false)
 const stats = ref<FeedbackStats | null>(null)
 const exportResults = ref<any[]>([])
@@ -177,6 +182,7 @@ const exportSince = ref('')
 const exportType = ref('')
 const exportRatingRange = ref<[number, number]>([1, 5])
 
+const rootRef = ref<HTMLDivElement>()
 const ratingChartRef = ref<HTMLDivElement>()
 const typeChartRef = ref<HTMLDivElement>()
 
@@ -229,6 +235,7 @@ function formatTime(iso: string): string {
 
 async function loadData() {
   loading.value = true
+  loadError.value = ''
   try {
     const resp = await fetch(`${PYTHON_SMARTBI_URL}/api/food-kb/feedback/stats`, {
       headers: getPythonAuthHeaders(),
@@ -242,6 +249,7 @@ async function loadData() {
     }
   } catch (e) {
     console.error('Failed to load feedback stats:', e)
+    loadError.value = `加载反馈统计失败: ${e instanceof Error ? e.message : '未知错误'}`
   } finally {
     loading.value = false
   }
@@ -255,7 +263,7 @@ function renderCharts() {
     if (ratingChart) ratingChart.dispose()
     ratingChart = echarts.init(ratingChartRef.value)
     const ratings = stats.value.by_rating || {}
-    const colors = ['#F56C6C', '#E6A23C', '#909399', '#67C23A', '#409EFF']
+    const colors = ['#F56C6C', '#E6A23C', '#909399', '#67C23A', '#1B65A8']
     ratingChart.setOption({
       tooltip: { trigger: 'axis' },
       xAxis: {
@@ -313,17 +321,38 @@ async function exportData() {
     exportResults.value = await resp.json()
   } catch (e) {
     console.error('Failed to export feedback:', e)
+    ElMessage.error('导出反馈数据失败')
   } finally {
     exporting.value = false
   }
 }
 
-onMounted(() => {
-  loadData()
-  window.addEventListener('resize', () => {
+let resizeObserver: ResizeObserver | null = null
+let resizeRaf = 0
+function handleResize() {
+  if (resizeRaf) return
+  resizeRaf = requestAnimationFrame(() => {
     ratingChart?.resize()
     typeChart?.resize()
+    resizeRaf = 0
   })
+}
+
+onMounted(() => {
+  loadData()
+  window.addEventListener('resize', handleResize)
+  if (rootRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize)
+    resizeObserver.observe(rootRef.value)
+  }
+})
+
+onUnmounted(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+  window.removeEventListener('resize', handleResize)
+  ratingChart?.dispose()
+  typeChart?.dispose()
 })
 </script>
 

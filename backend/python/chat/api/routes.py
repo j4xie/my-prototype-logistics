@@ -137,7 +137,9 @@ class MultiDimensionResponse(BaseModel):
 # Data Store (In-memory cache for demo, replace with proper storage)
 # ============================================================================
 
-_sheet_data_cache: Dict[str, List[Dict[str, Any]]] = {}
+from cachetools import TTLCache
+
+_sheet_data_cache: TTLCache = TTLCache(maxsize=50, ttl=3600)
 
 
 def get_sheet_data(sheet_id: str) -> Optional[List[Dict[str, Any]]]:
@@ -207,7 +209,7 @@ async def drill_down(request: DrillDownRequest) -> DrillDownResponse:
         if not valid_measures:
             return DrillDownResponse(
                 success=False,
-                error="No numeric measures found for analysis",
+                error="未检测到数值型字段，无法进行分析",
                 processing_time_ms=int((time.time() - start_time) * 1000)
             )
 

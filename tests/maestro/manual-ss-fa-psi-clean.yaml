@@ -1,0 +1,207 @@
+appId: com.cretas.foodtrace
+---
+# Factory Admin PSI Screenshots - Clean version using testIDs
+# clearState: true ensures no leftover data from previous runs
+
+- waitForAnimationToEnd
+
+# Wait for landing page
+- extendedWaitUntil:
+    visible: "Login"
+    timeout: 15000
+
+# Tap Login button on landing page to go to login form
+- tapOn:
+    id: "landing-login-btn"
+    optional: true
+- tapOn:
+    text: "Login"
+    optional: true
+- waitForAnimationToEnd
+
+# Wait for login form to appear
+- extendedWaitUntil:
+    visible: ".*Username.*|.*Enter username.*"
+    timeout: 10000
+
+# Enter username using testID
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "factory_admin1"
+
+# Enter password using testID
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Submit login using testID
+- tapOn:
+    id: "login-submit-btn"
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+
+# Wait for home screen
+- extendedWaitUntil:
+    visible: ".*Home.*|.*Management.*|.*Scheduling.*|.*Good morning.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Screenshot: Factory Admin Home
+- takeScreenshot: screenshots/manual-ss-fa-home
+
+# Navigate to Management tab
+- tapOn:
+    text: "Management"
+    optional: true
+- tapOn:
+    text: ".*管理.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Management.*|.*Employee.*|.*Purchase.*|.*采购.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Screenshot: Management grid (top)
+- takeScreenshot: screenshots/manual-ss-fa-management
+
+# Scroll down to see PSI section
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-management-psi
+
+# --- 1. Purchase Orders ---
+- tapOn:
+    text: "Purchase Orders"
+    optional: true
+- tapOn:
+    text: ".*采购订单.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Purchase.*|.*采购.*|.*PO-.*|.*No.*|.*Empty.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-purchase-list
+
+# Back
+- back
+- waitForAnimationToEnd
+
+# --- 2. Sales Orders ---
+- tapOn:
+    text: "Sales Orders"
+    optional: true
+- tapOn:
+    text: ".*销售订单.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Sale.*|.*销售.*|.*SO-.*|.*No.*|.*Empty.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-sales-list
+
+# Back
+- back
+- waitForAnimationToEnd
+
+# --- 3. Finished Goods ---
+- tapOn:
+    text: "Finished Goods"
+    optional: true
+- tapOn:
+    text: ".*成品库存.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Finished.*|.*成品.*|.*Inventory.*|.*No.*|.*Empty.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-finished-goods
+
+# Back
+- back
+- waitForAnimationToEnd
+
+# --- 4. Transfer ---
+- tapOn:
+    text: "Transfer"
+    optional: true
+- tapOn:
+    text: ".*调拨.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Transfer.*|.*调拨.*|.*No.*|.*Empty.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-transfer
+
+# Back
+- back
+- waitForAnimationToEnd
+
+# --- 5. AR/AP ---
+- tapOn:
+    text: "AR/AP"
+    optional: true
+- tapOn:
+    text: ".*应收应付.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*AR.*|.*应收.*|.*应付.*|.*Receivable.*|.*No.*|.*Empty.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-arap
+
+# Back
+- back
+- waitForAnimationToEnd
+
+# --- 6. Price List ---
+- tapOn:
+    text: "Price List"
+    optional: true
+- tapOn:
+    text: ".*价格表.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Price.*|.*价格.*|.*No.*|.*Empty.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-pricelist
+
+# Back
+- back
+- waitForAnimationToEnd
+
+# --- 7. Return Orders ---
+- tapOn:
+    text: "Return"
+    optional: true
+- tapOn:
+    text: ".*退货.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Return.*|.*退货.*|.*No.*|.*Empty.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-returns
+
+# Done
+- back
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-complete

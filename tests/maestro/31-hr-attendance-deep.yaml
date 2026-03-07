@@ -1,0 +1,64 @@
+appId: com.cretas.foodtrace
+---
+# Test 31: HR Admin - Attendance Deep
+# Verifies AttendanceManage, Stats, Anomaly, MyAttendance screens
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as HR admin
+- runFlow: flows/login-hr.yaml
+- extendedWaitUntil:
+    visible: ".*Total Staff.*"
+    timeout: 15000
+
+# Navigate to Attendance tab (考勤)
+- tapOn: "\u8003\u52E4"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/31-hr-attendance-tab
+
+# Scroll down to see attendance records
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/31-hr-attendance-scroll
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+
+# === Attendance Stats (统计分析) ===
+- tapOn:
+    text: ".*Statistic.*|.*\u7EDF\u8BA1\u5206\u6790.*|.*\u7EDF\u8BA1.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/31-hr-attendance-stats
+
+# Return to Attendance tab (safe re-navigation via bottom tab)
+- tapOn: "\u8003\u52E4"
+- waitForAnimationToEnd
+
+# === Anomaly Records (异常记录) ===
+- tapOn:
+    text: ".*Anomal.*|.*\u5F02\u5E38\u8BB0\u5F55.*|.*\u5F02\u5E38.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/31-hr-anomaly-records
+
+# Return to Home tab (safe navigation)
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# === My Attendance (我的考勤) — via Profile tab ===
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+- tapOn:
+    text: ".*My Attendance.*|.*\u6211\u7684\u8003\u52E4.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/31-hr-my-attendance

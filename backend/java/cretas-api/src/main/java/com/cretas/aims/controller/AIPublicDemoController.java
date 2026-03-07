@@ -47,7 +47,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 @RequestMapping("/api/public/ai-demo")
 @RequiredArgsConstructor
 @Tag(name = "AI公开演示", description = "无需登录的AI意图识别演示API")
-@CrossOrigin(origins = "*") // 允许跨域访问
+@CrossOrigin(origins = {"https://www.cretaceousfuture.com", "http://139.196.165.140:8086", "http://localhost:5173"})
 public class AIPublicDemoController {
 
     private final AIIntentService aiIntentService;
@@ -70,6 +70,30 @@ public class AIPublicDemoController {
             "这批", "那批", "上一批", "刚才那个", "这个", "那个", "它", "这些", "那些",
             "上面的", "前面的", "刚刚的", "之前的"
     ));
+
+    // ==================== IP Rate Limiting ====================
+
+    /**
+     * IP rate limiter: max 10 requests per minute per IP
+     * Prevents LLM quota abuse from public demo endpoints
+     */
+    private final Cache<String, AtomicLong> ipRequestCounts = Caffeine.newBuilder()
+            .expireAfterWrite(1, TimeUnit.MINUTES)
+            .maximumSize(5000)
+            .build();
+
+    private static final long MAX_REQUESTS_PER_MINUTE = 10;
+
+    private boolean isRateLimited(javax.servlet.http.HttpServletRequest httpRequest) {
+        String ip = httpRequest.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty()) {
+            ip = httpRequest.getRemoteAddr();
+        } else {
+            ip = ip.split(",")[0].trim();
+        }
+        AtomicLong count = ipRequestCounts.get(ip, k -> new AtomicLong(0));
+        return count.incrementAndGet() > MAX_REQUESTS_PER_MINUTE;
+    }
 
     // ==================== Demo 会话管理 ====================
 
@@ -106,7 +130,13 @@ public class AIPublicDemoController {
     @PostMapping("/execute")
     @Operation(summary = "演示执行AI意图", description = "无需登录的AI意图识别与执行演示。查询类操作可执行，写入类操作需要权限验证。支持多轮对话。")
     public ResponseEntity<ApiResponse<IntentExecuteResponse>> executeDemo(
-            @RequestBody DemoExecuteRequest request) {
+            @RequestBody DemoExecuteRequest request,
+            javax.servlet.http.HttpServletRequest httpRequest) {
+
+        if (isRateLimited(httpRequest)) {
+            log.warn("AI Demo rate limited: IP={}", httpRequest.getRemoteAddr());
+            return ResponseEntity.status(429).body(ApiResponse.error("请求过于频繁，请稍后再试"));
+        }
 
         String userInput = request.getUserInput();
         log.info("AI演示请求: input='{}', sessionId={}",
@@ -243,7 +273,13 @@ public class AIPublicDemoController {
     @PostMapping("/recognize")
     @Operation(summary = "演示意图识别", description = "仅识别意图，不执行操作。支持多轮对话。")
     public ResponseEntity<ApiResponse<IntentRecognizeResponse>> recognizeDemo(
-            @RequestBody DemoExecuteRequest request) {
+            @RequestBody DemoExecuteRequest request,
+            javax.servlet.http.HttpServletRequest httpRequest) {
+
+        if (isRateLimited(httpRequest)) {
+            log.warn("AI Demo rate limited: IP={}", httpRequest.getRemoteAddr());
+            return ResponseEntity.status(429).body(ApiResponse.error("请求过于频繁，请稍后再试"));
+        }
 
         String userInput = request.getUserInput();
         log.info("AI演示识别请求: input='{}', sessionId={}",

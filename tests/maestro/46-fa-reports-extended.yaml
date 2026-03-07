@@ -1,0 +1,114 @@
+appId: com.cretas.foodtrace
+---
+# Test 46: Factory Admin - Extended Report Sub-Screens
+# Covers: PersonnelReport, KPIReport, ProductionAnalysis, EfficiencyAnalysis
+# Round 4.1b fix: More aggressive scrolling — dashboard card order is:
+#   1.TimeRange 2.MetricsGrid 3.成本概览 4.人效概览 5.生产数据分析 6.人效分析 7.更多报表
+#   Each tab tap resets scroll to top, so must scroll down each time
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Navigate to Reports tab (报表)
+- tapOn: "\u62A5\u8868"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/46-fa-reports-home
+
+# === Personnel Report (人效概览 → PersonnelReport, card #4) ===
+# Need 2 scrolls from top to reach card #4
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*\u4EBA\u6548\u6982\u89C8.*|.*Personnel.*|.*\u4EBA\u5458\u62A5\u8868.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/46-fa-personnel-report
+
+# Return to Reports tab (resets scroll to top)
+- tapOn: "\u62A5\u8868"
+- waitForAnimationToEnd
+
+# === Production Data Analysis (生产数据分析, card #5) ===
+# Need 3 scrolls from top
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*\u751F\u4EA7\u6570\u636E\u5206\u6790.*|.*Production.*Analysis.*|.*\u4EA7\u91CF\u8D8B\u52BF.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/46-fa-production-analysis
+
+# Return to Reports tab
+- tapOn: "\u62A5\u8868"
+- waitForAnimationToEnd
+
+# === Efficiency Analysis (人效分析, card #6) ===
+# Need 3-4 scrolls from top
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*\u4EBA\u6548\u5206\u6790.*|.*Efficiency.*Analysis.*|.*\u4EBA\u6548\u6392\u540D.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/46-fa-efficiency-analysis
+
+# Return to Reports tab
+- tapOn: "\u62A5\u8868"
+- waitForAnimationToEnd
+
+# === KPI Report (更多报表 → KPI指标 chip, card #7) ===
+# Need 4+ scrolls from top — already proved working with 2x800ms
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*KPI\u6307\u6807.*|.*KPI.*|.*\u66F4\u591A\u62A5\u8868.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/46-fa-kpi-report

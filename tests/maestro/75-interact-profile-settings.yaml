@@ -1,0 +1,150 @@
+appId: com.cretas.foodtrace
+---
+# Test 75: In-depth Profile & Settings Interaction
+# Cycles through all profile sub-screens: PersonalInfo, ChangePassword,
+# NotificationSettings, SystemSettings, HelpCenter, About
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 10000
+
+# Navigate to 我的 tab
+- takeScreenshot: screenshots/75-pre-profile
+- tapOn:
+    text: ".*Profile.*|.*Mine.*|.*Me.*|.*我的.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*个人信息.*|.*Personal.*|.*修改密码.*|.*Change.*Password.*"
+    timeout: 5000
+- takeScreenshot: screenshots/75-profile-main
+
+# === PersonalInfo sub-screen ===
+- tapOn:
+    text: ".*Personal.*Info.*|.*个人信息.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/75-personal-info
+
+# Try tapping on a field to see if it's editable
+- tapOn:
+    text: ".*Phone.*|.*Email.*|.*手机号.*|.*邮箱.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/75-personal-field
+
+# Back from PersonalInfo
+- back
+- waitForAnimationToEnd
+
+# === ChangePassword sub-screen ===
+- tapOn:
+    text: ".*Change.*Password.*|.*修改密码.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/75-change-password
+
+# Try tapping password fields (don't actually change)
+- tapOn:
+    text: ".*Old.*Password.*|.*Current.*|.*旧密码.*|.*当前密码.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/75-password-fields
+
+# Back from ChangePassword
+- back
+- waitForAnimationToEnd
+
+# === NotificationSettings sub-screen ===
+- tapOn:
+    text: ".*Notification.*Settings.*|.*通知设置.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/75-notification-settings
+
+# Try toggling a notification switch
+- tapOn:
+    text: ".*Push.*|.*推送通知.*|.*消息提醒.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/75-notification-toggle
+
+# Back from NotificationSettings
+- back
+- waitForAnimationToEnd
+
+# === SystemSettings sub-screen ===
+- tapOn:
+    text: ".*System.*Settings.*|.*系统设置.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/75-system-settings
+
+# Check for language/theme settings
+- tapOn:
+    text: ".*Language.*|.*Theme.*|.*语言.*|.*主题.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/75-system-options
+
+# Back from SystemSettings
+- back
+- waitForAnimationToEnd
+
+# === HelpCenter sub-screen ===
+- tapOn:
+    text: ".*Help.*Center.*|.*帮助中心.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/75-help-center
+
+# Try tapping a help topic
+- tapOn:
+    text: ".*FAQ.*|.*Guide.*|.*常见问题.*|.*使用指南.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/75-help-topic
+
+# Back from help topic and HelpCenter
+- back
+- waitForAnimationToEnd
+
+# Recovery before About
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Profile.*|.*Mine.*|.*Me.*|.*我的.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === About sub-screen ===
+- tapOn:
+    text: ".*About.*|.*关于.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/75-about
+
+# Verify version info
+- tapOn:
+    text: ".*Version.*|.*v[0-9].*|.*版本.*"
+    optional: true
+- takeScreenshot: screenshots/75-about-version
+
+# Back from About
+- back
+- waitForAnimationToEnd
+
+# Return to home safely
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*|.*Quality Rate.*|.*AI Insights.*"
+    timeout: 8000
+- takeScreenshot: screenshots/75-complete

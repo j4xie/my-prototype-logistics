@@ -1,0 +1,41 @@
+appId: com.cretas.foodtrace
+---
+# Explore Quality Inspector screens
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- runFlow: flows/login-qi.yaml
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 15000
+- takeScreenshot: screenshots/explore-qi-home
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-qi-home-scroll
+
+# Try all possible tab names
+- tapOn:
+    text: ".*\u68C0\u9A8C.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-qi-tab2
+
+- tapOn:
+    text: ".*\u8BB0\u5F55.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-qi-tab3
+
+- tapOn:
+    text: ".*\u5206\u6790.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-qi-tab4
+
+- tapOn:
+    text: ".*\u6211\u7684.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-qi-profile

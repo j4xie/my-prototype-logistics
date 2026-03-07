@@ -211,6 +211,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         m.put(IntentKnowledgeBase.Domain.USER, Set.of("user_"));
         m.put(IntentKnowledgeBase.Domain.SYSTEM, Set.of("scheduling_", "factory_"));
         m.put(IntentKnowledgeBase.Domain.FINANCE, Set.of("report_finance", "report_cost", "report_bom", "conversion_"));
+        m.put(IntentKnowledgeBase.Domain.RESTAURANT, Set.of("restaurant_", "menu_", "dish_", "order_"));
         DOMAIN_TOOL_PREFIXES = Collections.unmodifiableMap(m);
     }
 

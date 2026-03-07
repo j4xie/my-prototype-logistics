@@ -155,14 +155,17 @@ wx:
   # 小程序配置
   ma:
     configs:
-      - appId: wxf8e90943620b4080
-        secret: ea1be8e6df8c378a3239341296f4be84
+      - appId: wx8a458528c6dfb405
+        secret: ${WX_MA_SECRET:请在环境变量WX_MA_SECRET中配置}
         # 微信支付商户号，请去微信支付平台申请
         mchId: 1588227511
         # 微信支付商户APIv2密钥，请去微信支付平台申请
         mchKey: xxxxxxxxxxxxxxxxxxxxx
         # p12证书的位置，绝对路径
         keyPath: /mnt/install/joolun-wx/apiclient_cert.p12
+      # 商户小程序
+      - appId: wx0b2c60b0e4f36cd6
+        secret: 09133bf49bb9ac1550914ab41a0e2c32
 
 mall:
   # 支付、物流回调地址，即后台服务7500端口的外网访问域名，要保证外网能访问，如：https://后台地址/prod-api
@@ -206,8 +209,8 @@ ai:
     api-key: sk-da3b827e6a00404a8bc869296f8690bc
     # DashScope OpenAI兼容模式接口地址 (代码会自动添加 /v1/chat/completions)
     base-url: https://dashscope.aliyuncs.com/compatible-mode
-    # 使用通义千问 turbo 模型 (响应更快: 0.7s vs 2.3s)
-    model: qwen-turbo-latest
+    # 使用免费额度模型 (was: qwen-turbo-latest)
+    model: qwen3.5-27b
     # 限制回复长度以提高响应速度
     max-tokens: 500
     # 超时设置

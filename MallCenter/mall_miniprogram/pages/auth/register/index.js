@@ -218,7 +218,7 @@ Page({
       let licenseUrl = ''
       if (licenseImage) {
         const uploadRes = await api.uploadFile(licenseImage)
-        licenseUrl = uploadRes.data?.url || uploadRes.url || ''
+        licenseUrl = (uploadRes.data && uploadRes.data.url) || uploadRes.url || ''
       }
 
       // 获取选中的品类

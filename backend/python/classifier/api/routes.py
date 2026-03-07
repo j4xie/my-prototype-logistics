@@ -7,6 +7,7 @@ Intent Classifier API
 注意：响应格式兼容 Java ClassifierIntentMatcher
 """
 import logging
+import threading
 from pathlib import Path
 from typing import List, Optional
 
@@ -241,6 +242,126 @@ async def load_model(request: LoadModelRequest):
             status_code=500,
             detail="模型加载失败，请检查日志"
         )
+
+
+_reload_lock = threading.Lock()
+
+
+@router.post("/reload")
+async def reload_model():
+    """
+    Reload the ONNX/PyTorch model from disk.
+
+    Thread-safe: uses a lock to ensure atomic model swap.
+    Discovers the model path from the currently loaded classifier or
+    falls back to known default paths.
+
+    Returns:
+        Reload result with new model info (label count, model size)
+    """
+    classifier = get_classifier()
+
+    # Determine model path to reload from
+    model_path = None
+
+    # Try to find the current model path from known defaults
+    default_paths = [
+        "/www/wwwroot/python-services/models/chinese-roberta-wwm-ext-classifier/final",
+        "/www/wwwroot/smartbi/models/chinese-roberta-wwm-ext-classifier/final",
+        "C:/Users/Steve/my-prototype-logistics/scripts/finetune/models/chinese-roberta-wwm-ext-classifier/final",
+        "../scripts/finetune/models/chinese-roberta-wwm-ext-classifier/final",
+        "./models/chinese-roberta-wwm-ext-classifier/final"
+    ]
+
+    for path in default_paths:
+        if Path(path).exists():
+            model_path = path
+            break
+
+    if model_path is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No model path found. Checked default paths."
+        )
+
+    acquired = _reload_lock.acquire(blocking=False)
+    if not acquired:
+        raise HTTPException(
+            status_code=409,
+            detail="Model reload already in progress"
+        )
+
+    try:
+        logger.info(f"Reloading model from: {model_path}")
+
+        # Wave-10: 备份当前模型状态用于回滚
+        old_model = getattr(classifier, 'model', None)
+        old_tokenizer = getattr(classifier, 'tokenizer', None)
+        old_label_mapping = getattr(classifier, 'label_mapping', None)
+        old_id_to_label = getattr(classifier, 'id_to_label', None)
+        old_loaded = classifier.is_loaded()
+
+        success = classifier.load_model(model_path)
+
+        if not success:
+            # 回滚到旧模型
+            if old_loaded and old_model is not None:
+                logger.warning("Model reload failed, rolling back to previous model")
+                classifier.model = old_model
+                classifier.tokenizer = old_tokenizer
+                classifier.label_mapping = old_label_mapping
+                classifier.id_to_label = old_id_to_label
+                classifier._loaded = True
+            raise HTTPException(
+                status_code=500,
+                detail="Model reload failed — rolled back to previous model"
+            )
+
+        # 快速健全性检查: 用一个简单输入验证新模型能正常推理
+        try:
+            test_result = classifier.classify("测试查询", top_k=1)
+            if not test_result.get("success", False):
+                raise ValueError("Sanity check failed: classify returned success=False")
+        except Exception as sanity_err:
+            logger.error(f"New model sanity check failed: {sanity_err}, rolling back")
+            if old_loaded and old_model is not None:
+                classifier.model = old_model
+                classifier.tokenizer = old_tokenizer
+                classifier.label_mapping = old_label_mapping
+                classifier.id_to_label = old_id_to_label
+                classifier._loaded = True
+            raise HTTPException(
+                status_code=500,
+                detail=f"Model reload sanity check failed — rolled back. Error: {sanity_err}"
+            )
+
+        # Gather new model info
+        info = classifier.get_model_info()
+        label_count = info.get("num_labels", 0)
+
+        # Calculate model size on disk
+        model_dir = Path(model_path)
+        model_size_bytes = 0
+        if model_dir.exists():
+            for f in model_dir.rglob("*"):
+                if f.is_file():
+                    model_size_bytes += f.stat().st_size
+
+        model_size_mb = round(model_size_bytes / (1024 * 1024), 2)
+
+        logger.info(f"Model reloaded successfully: {label_count} labels, {model_size_mb} MB")
+
+        return {
+            "success": True,
+            "message": f"Model reloaded from {model_path}",
+            "label_count": label_count,
+            "model_size_mb": model_size_mb,
+            "device": info.get("device", "cpu"),
+            "model_type": info.get("model_type")
+        }
+
+    finally:
+        _reload_lock.release()
 
 
 @router.get("/info")

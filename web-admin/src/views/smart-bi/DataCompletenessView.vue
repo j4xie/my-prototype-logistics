@@ -346,7 +346,7 @@ onMounted(loadData)
 
 .notice-card {
   border-radius: 12px;
-  border-left: 4px solid #409eff;
+  border-left: 4px solid #1B65A8;
 
   :deep(.el-card__body) {
     padding: 32px;
@@ -359,7 +359,7 @@ onMounted(loadData)
   margin: 0 auto;
 
   .notice-icon {
-    color: #409eff;
+    color: #1B65A8;
     margin-bottom: 16px;
   }
 
@@ -453,7 +453,7 @@ onMounted(loadData)
   }
 
   &.selected {
-    border-color: #409eff;
+    border-color: #1B65A8;
   }
 
   &.score-good {

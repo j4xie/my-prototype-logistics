@@ -217,7 +217,7 @@ Page({
   aboutUs() {
     wx.showModal({
       title: '关于我们',
-      content: '白垩纪食品溯源商城\n致力于为您提供安全、可追溯的优质食品\n\n联系我们: support@cretas.com',
+      content: '食品溯源商城\n致力于为您提供安全、可追溯的优质食品\n\n技术支持：白垩纪 AI Agent',
       showCancel: false
     })
   },

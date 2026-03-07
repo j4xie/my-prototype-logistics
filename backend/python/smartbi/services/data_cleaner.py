@@ -748,7 +748,8 @@ def rule_function(data: List[Dict], columns: List[str]) -> int:
                 'None': None, 'True': True, 'False': False,
             }
             local_namespace = {}
-            exec(code, safe_globals, local_namespace)
+            compiled = compile(code, "<llm-rule>", "exec")
+            exec(compiled, safe_globals, local_namespace)
 
             # 获取函数
             func_name = f"rule_{rule_name}"
@@ -770,6 +771,11 @@ def rule_function(data: List[Dict], columns: List[str]) -> int:
     def _validate_rule_code(self, code: str) -> bool:
         """验证规则代码安全性 — AST 白名单方式（不可被字符串拼接绕过）"""
         import ast
+
+        # 代码长度限制 — 防止超大生成代码
+        if len(code) > 5000:
+            logger.warning(f"Rule code too large: {len(code)} chars (limit 5000)")
+            return False
 
         # 必须包含函数定义
         if 'def rule_' not in code:

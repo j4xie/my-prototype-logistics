@@ -182,4 +182,41 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             return map;
         }).collect(java.util.stream.Collectors.toList());
     }
+
+    @Override
+    public List<Merchant> listSubMerchants(Long mallOwnerId) {
+        LambdaQueryWrapper<Merchant> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Merchant::getParentId, mallOwnerId)
+               .eq(Merchant::getDelFlag, 0)
+               .orderByDesc(Merchant::getCreateTime);
+        return baseMapper.selectList(wrapper);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean joinMall(Long merchantId, Long mallOwnerId) {
+        Merchant merchant = new Merchant();
+        merchant.setId(merchantId);
+        merchant.setParentId(mallOwnerId);
+        merchant.setUpdateTime(LocalDateTime.now());
+        return baseMapper.updateById(merchant) > 0;
+    }
+
+    @Override
+    public List<Merchant> listMallOwners() {
+        LambdaQueryWrapper<Merchant> wrapper = new LambdaQueryWrapper<>();
+        wrapper.isNull(Merchant::getParentId)
+               .eq(Merchant::getStatus, 1)
+               .eq(Merchant::getDelFlag, 0)
+               .orderByDesc(Merchant::getCreateTime);
+        return baseMapper.selectList(wrapper);
+    }
+
+    @Override
+    public List<Merchant> listAuthorized() {
+        LambdaQueryWrapper<Merchant> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Merchant::getWxAuthorizationStatus, 1)
+               .eq(Merchant::getDelFlag, 0);
+        return baseMapper.selectList(wrapper);
+    }
 }

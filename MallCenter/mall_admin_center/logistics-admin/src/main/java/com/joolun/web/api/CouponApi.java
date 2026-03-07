@@ -16,6 +16,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -177,6 +179,7 @@ public class CouponApi {
      * @return 结果
      */
     @PostMapping("/{id}/receive")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult receiveCoupon(@PathVariable String id) {
         String userId = ThirdSessionHolder.getWxUserId();
 
@@ -199,6 +202,15 @@ public class CouponApi {
             return AjaxResult.error("您已领取过此优惠券");
         }
 
+        // 原子更新库存：UPDATE coupon SET received_count = received_count + 1 WHERE id = ? AND received_count < total_count
+        boolean updated = couponService.update(Wrappers.<Coupon>lambdaUpdate()
+                .setSql("received_count = received_count + 1")
+                .eq(Coupon::getId, id)
+                .apply("received_count < total_count"));
+        if (!updated) {
+            return AjaxResult.error("优惠券已领完");
+        }
+
         // 创建用户优惠券
         UserCoupon userCoupon = new UserCoupon();
         userCoupon.setUserId(userId);
@@ -207,10 +219,6 @@ public class CouponApi {
         userCoupon.setReceiveTime(LocalDateTime.now());
         userCoupon.setExpireTime(coupon.getExpireTime());
         userCouponService.save(userCoupon);
-
-        // 更新已领取数量
-        coupon.setReceivedCount(coupon.getReceivedCount() + 1);
-        couponService.updateById(coupon);
 
         return AjaxResult.success(userCoupon);
     }
@@ -227,5 +235,37 @@ public class CouponApi {
             return AjaxResult.error("优惠券不存在");
         }
         return AjaxResult.success(coupon);
+    }
+
+    /**
+     * 首页公开优惠券列表（不需要登录）
+     * 返回当前有效、库存未领完的优惠券
+     * @param limit 数量限制，默认10
+     * @return 可领取的优惠券列表
+     */
+    @GetMapping("/public/list")
+    public AjaxResult getPublicCouponList(
+            @RequestParam(value = "limit", defaultValue = "10") Integer limit) {
+        List<Coupon> coupons = couponService.list(Wrappers.<Coupon>lambdaQuery()
+                .eq(Coupon::getStatus, "1")
+                .gt(Coupon::getExpireTime, LocalDateTime.now())
+                .apply("received_count < total_count")
+                .orderByDesc(Coupon::getCreateTime)
+                .last("LIMIT " + Math.min(limit, 20)));
+
+        List<Map<String, Object>> result = coupons.stream().map(c -> {
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", c.getId());
+            item.put("name", c.getName());
+            item.put("type", c.getType());
+            item.put("minAmount", c.getMinAmount() != null ? c.getMinAmount() : BigDecimal.ZERO);
+            item.put("discountAmount", c.getDiscountAmount() != null ? c.getDiscountAmount() : BigDecimal.ZERO);
+            item.put("discountPercent", c.getDiscountPercent() != null ? c.getDiscountPercent() : BigDecimal.ZERO);
+            item.put("expireTime", c.getExpireTime() != null ? c.getExpireTime().toString() : "");
+            item.put("remaining", c.getTotalCount() - c.getReceivedCount());
+            return item;
+        }).collect(Collectors.toList());
+
+        return AjaxResult.success(result);
     }
 }

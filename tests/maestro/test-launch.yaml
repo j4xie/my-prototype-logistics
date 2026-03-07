@@ -1,0 +1,9 @@
+appId: com.cretas.foodtrace
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Cretas Food Trace"
+    timeout: 15000
+- assertVisible: "Cretas Food Trace"
+- takeScreenshot: screenshots/test-launch

@@ -46,7 +46,7 @@ async function loadData() {
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe row-key="id" default-expand-all>
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe row-key="id" default-expand-all>
         <el-table-column prop="name" label="部门名称" />
         <el-table-column prop="code" label="部门编号" width="120" />
         <el-table-column prop="managerName" label="负责人" />

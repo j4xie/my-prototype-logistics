@@ -1,0 +1,57 @@
+appId: com.cretas.foodtrace
+---
+# Test 14: Warehouse Manager - Inbound Receipt Workflow
+# Verifies inbound list, pending filter, detail view, and new inbound form
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as warehouse manager
+- runFlow: flows/login-wm.yaml
+- extendedWaitUntil:
+    visible: ".*Warehouse.*"
+    timeout: 15000
+
+# Navigate to Inbound tab (入库)
+- tapOn: "\u5165\u5E93"
+- waitForAnimationToEnd
+
+# Wait for inbound list to load
+- extendedWaitUntil:
+    visible: ".*All.*"
+    timeout: 10000
+- takeScreenshot: screenshots/14-wm-inbound-list
+
+# Tap on Pending filter tab
+- tapOn:
+    text: ".*Pending.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/14-wm-pending-filter
+
+# Tap on first item to see detail
+- tapOn:
+    text: "View Details"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "\u67E5\u770B\u8BE6\u60C5"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/14-wm-inbound-detail
+
+# Go back to inbound list
+- back
+- waitForAnimationToEnd
+
+# Tap New Inbound button
+- tapOn:
+    text: ".*New Inbound.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/14-wm-new-inbound-form
+
+# Go back
+- back
+- waitForAnimationToEnd

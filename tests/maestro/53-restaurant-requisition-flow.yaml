@@ -1,0 +1,27 @@
+appId: com.cretas.foodtrace
+---
+# Test 53: Restaurant Requisition Module Navigation
+# Verifies 领料 tab → RequisitionCreate screen
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant_admin1
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: "AI \u667A\u80FD\u6D1E\u5BDF"
+    timeout: 10000
+
+# Navigate to 领料 tab
+- tapOn: "\u9886\u6599"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/53-requisition-create
+
+# Take screenshot of requisition screen
+- takeScreenshot: screenshots/53-requisition-loaded
+
+# Go back to 首页
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+- assertVisible: "AI \u667A\u80FD\u6D1E\u5BDF"

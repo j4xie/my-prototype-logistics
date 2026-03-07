@@ -1,0 +1,111 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: Warehouse Manager - Outbound
+# Captures: outbound list, outbound detail, shipping confirm, tracking
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as warehouse manager
+- runFlow: flows/login-wm.yaml
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u5165\u5E93.*|.*\u9996\u9875.*|.*Home.*|.*\u51FA\u8D27.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Navigate to Outbound tab (出货)
+- takeScreenshot: screenshots/manual-ss-wm-pre-outbound
+- tapOn:
+    text: "\u51FA\u8D27"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u51FA\u8D27.*|.*\u51FA\u5E93.*|.*Outbound.*|.*Ship.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Screenshot: Outbound list
+- takeScreenshot: screenshots/manual-ss-wm-outbound-list
+
+# Scroll to see more
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-outbound-list-scroll
+
+# Scroll back
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+
+# Tap on first outbound record for detail
+- tapOn:
+    text: ".*\u5F00\u59CB\u6253\u5305.*|.*\u5B8C\u6210\u6253\u5305.*|.*\u67E5\u770B.*|.*\u8BE6\u60C5.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-outbound-detail
+
+# Scroll in detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-outbound-detail-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u51FA\u8D27.*|.*\u9996\u9875.*"
+    timeout: 10000
+
+# Back to outbound tab
+- tapOn:
+    text: "\u51FA\u8D27"
+    optional: true
+- waitForAnimationToEnd
+
+# Try to find shipping confirm / packing action
+- tapOn:
+    text: ".*\u5F00\u59CB\u6253\u5305.*|.*Start Pack.*|.*\u786E\u8BA4\u53D1\u8D27.*|.*Confirm Ship.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-shipping-confirm
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u51FA\u8D27.*|.*\u9996\u9875.*"
+    timeout: 10000
+
+# Back to outbound tab
+- tapOn:
+    text: "\u51FA\u8D27"
+    optional: true
+- waitForAnimationToEnd
+
+# Try to find tracking / logistics
+- tapOn:
+    text: ".*\u7269\u6D41.*|.*Track.*|.*\u8FFD\u8E2A.*|.*\u5DF2\u53D1\u8D27.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-tracking
+
+# Final recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-outbound-complete

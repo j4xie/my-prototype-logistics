@@ -1,0 +1,68 @@
+appId: com.cretas.foodtrace
+---
+# Reusable Login Sub-flow for restaurant_admin1
+# Precondition: app is on the welcome/landing screen (after launchApp clearState)
+
+# Dismiss any system dialogs (e.g. "Google Play services isn't responding")
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Close app"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+
+# Wait for welcome page to be visible
+- extendedWaitUntil:
+    visible: "Cretas Food Trace"
+    timeout: 20000
+
+# Tap Login button on welcome page
+- tapOn: "Login"
+- waitForAnimationToEnd
+
+# Enter username
+- tapOn: "Enter username"
+- inputText: "restaurant_admin1"
+
+# Hide keyboard to reveal password field
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Enter password
+- tapOn: "Enter password"
+- inputText: "123456"
+
+# Hide keyboard
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Dismiss any system dialogs that appeared during input
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Close app"
+    optional: true
+
+# Tap the Login submit button (index 1 = button, index 0 = header)
+- tapOn:
+    text: "Login"
+    index: 1
+- waitForAnimationToEnd
+
+# Wait for login success dialog
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 60000
+
+# Dismiss login success dialog
+- tapOn: "OK"
+- waitForAnimationToEnd
+
+# Wait for home page - restaurant home may show Chinese or English tabs
+- extendedWaitUntil:
+    visible: ".*首页.*|.*配方.*|.*Recipe.*|.*Home.*|.*AI Insights.*|.*AI 智能洞察.*"
+    timeout: 15000

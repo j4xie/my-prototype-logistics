@@ -1,0 +1,47 @@
+appId: com.cretas.foodtrace
+---
+# Test 03: Bottom Tab Navigation
+# Verifies each tab loads without crash
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login fresh
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Tab 1: Home (already here)
+- takeScreenshot: screenshots/03-tab-home
+
+# Tab 2: AI分析 — use exact Chinese text to avoid matching AI洞察 card
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/03-tab-ai
+
+# Tab 3: 报表
+- tapOn: "\u62A5\u8868"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/03-tab-reports
+
+# Tab 4: 智能分析
+- tapOn: "\u667A\u80FD\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/03-tab-smart
+
+# Tab 5: 管理
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/03-tab-management
+
+# Tab 6: 我的
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/03-tab-profile
+
+# Return to Home: 首页
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+- assertVisible: "Quality Rate"

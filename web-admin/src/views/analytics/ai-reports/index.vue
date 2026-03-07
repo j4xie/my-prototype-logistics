@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Document, Refresh, View, Warning } from '@element-plus/icons-vue';
+import DOMPurify from 'dompurify';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -30,7 +31,9 @@ async function loadReports() {
       params: { page: 0, size: 20 }
     });
     if (response.success && response.data) {
-      reports.value = response.data.content || response.data || [];
+      const data = response.data;
+      reports.value = Array.isArray(data?.content) ? data.content
+        : Array.isArray(data) ? data : [];
     }
   } catch (error) {
     console.error('加载AI报告失败:', error);
@@ -48,7 +51,7 @@ async function loadAnomalies() {
   try {
     const response = await get(`/${factoryId.value}/reports/anomalies`);
     if (response.success && response.data) {
-      anomalies.value = response.data.anomalies || [];
+      anomalies.value = Array.isArray(response.data?.anomalies) ? response.data.anomalies : [];
     }
   } catch {
     anomalyError.value = '异常检测服务暂不可用';
@@ -137,7 +140,7 @@ function getSeverityType(severity: string) {
             </div>
           </template>
 
-          <el-table :data="reports" v-loading="loading" stripe>
+          <el-table :data="reports" v-loading="loading" empty-text="暂无数据" stripe>
             <el-table-column prop="reportType" label="报告类型" width="120">
               <template #default="{ row }">
                 <el-tag size="small">{{ getReportTypeLabel(row.reportType) }}</el-tag>
@@ -212,7 +215,7 @@ function getSeverityType(severity: string) {
 
           <div v-if="selectedReport.aiAnalysis" class="section">
             <h3>AI分析结果</h3>
-            <div class="ai-analysis" v-html="selectedReport.aiAnalysis.replace(/\n/g, '<br>')"></div>
+            <div class="ai-analysis" v-html="DOMPurify.sanitize(selectedReport.aiAnalysis.replace(/\n/g, '<br>'))"></div>
           </div>
 
           <div v-if="selectedReport.recommendations" class="section">

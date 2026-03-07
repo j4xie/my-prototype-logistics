@@ -49,7 +49,8 @@ import com.cretas.aims.util.ErrorSanitizer;
 public class ConversationController {
 
     private final ConversationService conversationService;
-    private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
+    private final ExecutorService sseExecutor = java.util.concurrent.Executors.newFixedThreadPool(
+            4, r -> { Thread t = new Thread(r, "conversation-sse"); t.setDaemon(true); return t; });
 
     /**
      * 开始多轮对话

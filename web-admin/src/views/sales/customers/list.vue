@@ -3,7 +3,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { del } from '@/api/request';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 
 const authStore = useAuthStore();
@@ -65,6 +66,24 @@ function handleSizeChange(size: number) {
   pagination.value.page = 1;
   loadData();
 }
+
+async function handleDelete(row: any) {
+  try {
+    await ElMessageBox.confirm(`确定删除客户「${row.name}」吗？`, '删除确认', {
+      type: 'warning',
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+    });
+    await del(`/${factoryId.value}/sales/customers/${row.id}`);
+    ElMessage.success('删除成功');
+    loadData();
+  } catch (e) {
+    if (e !== 'cancel') {
+      console.error('Delete customer failed:', e);
+      ElMessage.error('删除失败');
+    }
+  }
+}
 </script>
 
 <template>
@@ -95,7 +114,7 @@ function handleSizeChange(size: number) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="customerCode" label="客户编号" width="140" />
         <el-table-column prop="name" label="客户名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="contactPerson" label="联系人" width="120" />
@@ -109,10 +128,10 @@ function handleSizeChange(size: number) {
           </template>
         </el-table-column>
         <el-table-column label="操作" width="160" fixed="right" align="center">
-          <template #default>
+          <template #default="{ row }">
             <el-button type="primary" link size="small">查看</el-button>
             <el-button v-if="canWrite" type="primary" link size="small">编辑</el-button>
-            <el-button v-if="canWrite" type="danger" link size="small">删除</el-button>
+            <el-button v-if="canWrite" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

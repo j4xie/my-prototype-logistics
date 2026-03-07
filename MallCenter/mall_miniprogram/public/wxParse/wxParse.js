@@ -12,8 +12,8 @@
 /**
  * utils函数引入
  **/
-import showdown from './showdown.js';
-import HtmlToJson from './html2json.js';
+var showdown = require('./showdown.js');
+var HtmlToJson = require('./html2json.js');
 /**
  * 配置及公有属性
  **/

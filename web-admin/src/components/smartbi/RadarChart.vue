@@ -11,6 +11,7 @@
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import echarts from '@/utils/echarts';
 import type { EChartsOption, ECharts } from 'echarts';
+import { defaultTooltip } from './chart-helpers';
 
 // Types
 export interface RadarIndicator {
@@ -51,7 +52,7 @@ const props = withDefaults(defineProps<Props>(), {
   areaStyle: true,
   splitNumber: 5,
   colors: () => [
-    '#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
+    '#1B65A8', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
     '#00d4ff', '#ff6b9d', '#c084fc', '#fbbf24', '#34d399'
   ],
   areaOpacity: 0.25,
@@ -65,6 +66,8 @@ const emit = defineEmits<{
 
 const chartRef = ref<HTMLDivElement | null>(null);
 const chartInstance = ref<ECharts | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+let rafId = 0;
 
 const chartOptions = computed<EChartsOption>(() => {
   const radarIndicators = props.indicators.map(ind => ({
@@ -98,13 +101,7 @@ const chartOptions = computed<EChartsOption>(() => {
 
   const options: EChartsOption = {
     tooltip: {
-      trigger: 'item',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderColor: '#ebeef5',
-      borderWidth: 1,
-      textStyle: {
-        color: '#303133'
-      },
+      ...defaultTooltip('item'),
       formatter: (params) => {
         const data = params as echarts.DefaultLabelFormatterCallbackParams;
         const values = data.value as number[];
@@ -275,16 +272,27 @@ function updateChart() {
 }
 
 function handleResize() {
-  chartInstance.value?.resize();
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = 0;
+    chartInstance.value?.resize();
+  });
 }
 
 // Lifecycle
 onMounted(() => {
   initChart();
+  if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartRef.value);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (rafId) cancelAnimationFrame(rafId);
   window.removeEventListener('resize', handleResize);
   chartInstance.value?.dispose();
 });
@@ -311,7 +319,7 @@ defineExpose({
       class="chart-container"
       :style="{ height }"
     >
-      <div ref="chartRef" class="chart-inner"></div>
+      <div ref="chartRef" role="img" :aria-label="title || '雷达图'" class="chart-inner"></div>
       <div v-if="!loading && series.length === 0" class="chart-empty">
         <el-empty description="暂无数据" :image-size="80" />
       </div>

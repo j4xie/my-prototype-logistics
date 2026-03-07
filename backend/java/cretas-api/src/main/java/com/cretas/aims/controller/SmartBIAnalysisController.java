@@ -132,7 +132,7 @@ public class SmartBIAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Get sales analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get sales analysis failed: " + ErrorSanitizer.sanitize(e)));
+            return ResponseEntity.ok(ApiResponse.error("获取销售分析失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 

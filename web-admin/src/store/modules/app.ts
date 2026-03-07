@@ -11,6 +11,8 @@ export const useAppStore = defineStore('app', () => {
   const theme = ref<'light' | 'dark'>('light');
   const locale = ref('zh-CN');
   const pageLoading = ref(false);
+  const isMobile = ref(window.innerWidth < 768);
+  const mobileMenuOpen = ref(false);
 
   // 从 localStorage 恢复设置
   const storedCollapsed = localStorage.getItem('sidebar_collapsed');
@@ -21,6 +23,7 @@ export const useAppStore = defineStore('app', () => {
   const storedTheme = localStorage.getItem('theme');
   if (storedTheme === 'dark' || storedTheme === 'light') {
     theme.value = storedTheme;
+    document.documentElement.setAttribute('data-theme', storedTheme);
   }
 
   // Getters
@@ -58,6 +61,26 @@ export const useAppStore = defineStore('app', () => {
     pageLoading.value = loading;
   }
 
+  function initResponsive() {
+    const check = () => {
+      isMobile.value = window.innerWidth < 768;
+      if (isMobile.value) {
+        sidebarCollapsed.value = true;
+        mobileMenuOpen.value = false;
+      }
+    };
+    window.addEventListener('resize', check);
+    check();
+  }
+
+  function openMobileMenu() {
+    mobileMenuOpen.value = true;
+  }
+
+  function closeMobileMenu() {
+    mobileMenuOpen.value = false;
+  }
+
   return {
     // State
     sidebarCollapsed,
@@ -65,6 +88,8 @@ export const useAppStore = defineStore('app', () => {
     theme,
     locale,
     pageLoading,
+    isMobile,
+    mobileMenuOpen,
 
     // Getters
     currentSidebarWidth,
@@ -75,6 +100,9 @@ export const useAppStore = defineStore('app', () => {
     setTheme,
     toggleTheme,
     setLocale,
-    setPageLoading
+    setPageLoading,
+    initResponsive,
+    openMobileMenu,
+    closeMobileMenu
   };
 });

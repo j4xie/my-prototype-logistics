@@ -19,6 +19,7 @@ import zhAlerts from './locales/zh-CN/alerts.json';
 import zhErrors from './locales/zh-CN/errors.json';
 import zhPlatform from './locales/zh-CN/platform.json';
 import zhWorkshop from './locales/zh-CN/workshop.json';
+import zhRestaurant from './locales/zh-CN/restaurant.json';
 
 // ========== en-US 英文资源 ==========
 import enCommon from './locales/en-US/common.json';
@@ -36,6 +37,7 @@ import enAlerts from './locales/en-US/alerts.json';
 import enErrors from './locales/en-US/errors.json';
 import enPlatform from './locales/en-US/platform.json';
 import enWorkshop from './locales/en-US/workshop.json';
+import enRestaurant from './locales/en-US/restaurant.json';
 
 /**
  * 翻译资源配置
@@ -58,6 +60,7 @@ export const resources = {
     errors: zhErrors,
     platform: zhPlatform,
     workshop: zhWorkshop,
+    restaurant: zhRestaurant,
   },
   'en-US': {
     common: enCommon,
@@ -75,6 +78,7 @@ export const resources = {
     errors: enErrors,
     platform: enPlatform,
     workshop: enWorkshop,
+    restaurant: enRestaurant,
   },
 } as const;
 

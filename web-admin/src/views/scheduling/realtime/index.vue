@@ -41,10 +41,25 @@ onMounted(async () => {
   }, 15000);
 });
 
+let resizeRaf = 0;
+function handleResize() {
+  if (resizeRaf) return;
+  resizeRaf = requestAnimationFrame(() => {
+    resizeRaf = 0;
+    progressChart.value?.resize();
+    probabilityChart.value?.resize();
+  });
+}
+
+let resizeObserver: ResizeObserver | null = null;
+
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  if (resizeRaf) cancelAnimationFrame(resizeRaf);
   if (refreshInterval.value) {
     clearInterval(refreshInterval.value);
   }
+  window.removeEventListener('resize', handleResize);
   progressChart.value?.dispose();
   probabilityChart.value?.dispose();
 });
@@ -113,10 +128,12 @@ function initCharts() {
     probabilityChart.value = echarts.init(probabilityContainer.value, 'cretas');
   }
 
-  window.addEventListener('resize', () => {
-    progressChart.value?.resize();
-    probabilityChart.value?.resize();
-  });
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    if (progressContainer.value) resizeObserver.observe(progressContainer.value);
+    if (probabilityContainer.value) resizeObserver.observe(probabilityContainer.value);
+  }
+  window.addEventListener('resize', handleResize);
 }
 
 function updateCharts() {
@@ -282,7 +299,7 @@ function getProbabilityColor(prob: number) {
       </div>
       <div class="bar-right">
         <span v-if="lastUpdated" class="last-updated">
-          更新于 {{ lastUpdated.toLocaleTimeString('zh-CN') }}
+          更新于 {{ formatTime(lastUpdated.toISOString()) }}
         </span>
         <el-button :icon="Refresh" circle @click="loadData(false)" />
       </div>
@@ -292,7 +309,7 @@ function getProbabilityColor(prob: number) {
     <div class="stats-row" v-if="dashboard">
       <el-card class="stat-card">
         <div class="stat-content">
-          <el-icon class="stat-icon" style="color: #409EFF"><Timer /></el-icon>
+          <el-icon class="stat-icon" style="color: var(--el-color-primary)"><Timer /></el-icon>
           <div class="stat-info">
             <div class="stat-value">{{ dashboard.todaySchedules?.length || 0 }}</div>
             <div class="stat-label">今日排程</div>
@@ -301,7 +318,7 @@ function getProbabilityColor(prob: number) {
       </el-card>
       <el-card class="stat-card">
         <div class="stat-content">
-          <el-icon class="stat-icon" style="color: #67C23A"><User /></el-icon>
+          <el-icon class="stat-icon" style="color: var(--el-color-success)"><User /></el-icon>
           <div class="stat-info">
             <div class="stat-value">{{ dashboard.workerStats?.checkedIn || 0 }}</div>
             <div class="stat-label">在岗工人</div>
@@ -310,7 +327,7 @@ function getProbabilityColor(prob: number) {
       </el-card>
       <el-card class="stat-card">
         <div class="stat-content">
-          <el-icon class="stat-icon" style="color: #E6A23C"><TrendCharts /></el-icon>
+          <el-icon class="stat-icon" style="color: var(--el-color-warning)"><TrendCharts /></el-icon>
           <div class="stat-info">
             <div class="stat-value">{{ ((dashboard.lineStats?.utilizationRate || 0) * 100).toFixed(0) }}%</div>
             <div class="stat-label">产线利用率</div>
@@ -319,7 +336,7 @@ function getProbabilityColor(prob: number) {
       </el-card>
       <el-card class="stat-card" :class="{ warning: dashboard.alerts?.length > 0 }">
         <div class="stat-content">
-          <el-icon class="stat-icon" :style="{ color: dashboard.alerts?.length > 0 ? '#F56C6C' : '#909399' }">
+          <el-icon class="stat-icon" :style="{ color: dashboard.alerts?.length > 0 ? 'var(--el-color-danger)' : 'var(--el-color-info)' }">
             <Warning />
           </el-icon>
           <div class="stat-info">
@@ -404,7 +421,7 @@ function getProbabilityColor(prob: number) {
             <div class="alert-message">{{ alert.message }}</div>
             <div class="alert-action" v-if="alert.suggestedAction">{{ alert.suggestedAction }}</div>
           </div>
-          <div class="alert-time">{{ new Date(alert.createdAt).toLocaleTimeString('zh-CN') }}</div>
+          <div class="alert-time">{{ formatTime(alert.createdAt) }}</div>
         </div>
       </div>
     </el-card>

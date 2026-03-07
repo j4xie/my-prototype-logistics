@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh } from '@element-plus/icons-vue';
+import { formatAmount } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -71,11 +72,6 @@ async function handleDelete(id: string) {
 
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
-
-function formatAmount(val: number) {
-  if (val == null) return '-';
-  return `¥${Number(val).toFixed(2)}`;
-}
 </script>
 
 <template>
@@ -93,7 +89,7 @@ function formatAmount(val: number) {
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe border row-key="id" style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border row-key="id" style="width: 100%">
         <el-table-column type="expand">
           <template #default="{ row }">
             <div style="padding: 12px 48px">

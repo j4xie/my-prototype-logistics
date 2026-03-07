@@ -1,0 +1,74 @@
+appId: com.cretas.foodtrace
+---
+# Test 29: Warehouse Manager - Inventory Advanced Operations
+# Verifies Transfer, LocationManage, ExpireHandle, TempMonitor sub-screens
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as warehouse manager
+- runFlow: flows/login-wm.yaml
+- extendedWaitUntil:
+    visible: ".*Warehouse.*"
+    timeout: 15000
+
+# Navigate to Inventory tab (库存)
+- tapOn: "\u5E93\u5B58"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/29-wm-inventory-tab
+
+# === Transfer (调拨) ===
+- tapOn:
+    text: ".*Transfer.*|.*\u8C03\u62E8.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/29-wm-transfer
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# === Location Management (库位) ===
+- tapOn:
+    text: ".*Location.*|.*\u5E93\u4F4D.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/29-wm-location-manage
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# === Expiry Handling (过期) ===
+- tapOn:
+    text: ".*Expir.*|.*\u8FC7\u671F.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/29-wm-expire-handle
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# === Temperature Monitor (温控监测) ===
+# Navigate to Home tab first (TempMonitor may be on home)
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+- tapOn:
+    text: ".*Temp.*Monitor.*|.*\u6E29\u63A7\u76D1\u6D4B.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/29-wm-temp-monitor
+
+# Scroll down to see temperature data
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/29-wm-temp-monitor-scroll
+
+# Go back
+- back
+- waitForAnimationToEnd

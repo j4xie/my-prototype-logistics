@@ -47,16 +47,18 @@ const emit = defineEmits<{
 
 const chartRef = ref<HTMLDivElement | null>(null);
 const chartInstance = ref<ECharts | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+let rafId = 0;
 
 // Color configuration
 const colors = {
-  budget: '#409eff',       // Blue for budget/target
+  budget: '#1B65A8',       // Blue for budget/target
   actual: '#67c23a',       // Green for actual
   overAchieve: '#67c23a',  // Green for >100%
   onTrack: '#e6a23c',      // Yellow for 80-100%
   underAchieve: '#f56c6c', // Red for <80%
   quarterBg: [
-    'rgba(64, 158, 255, 0.05)',   // Q1
+    'rgba(27, 101, 168, 0.05)',   // Q1
     'rgba(103, 194, 58, 0.05)',   // Q2
     'rgba(230, 162, 60, 0.05)',   // Q3
     'rgba(245, 108, 108, 0.05)'   // Q4
@@ -375,7 +377,11 @@ function updateChart() {
 
 // Handle resize
 function handleResize() {
-  chartInstance.value?.resize();
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = 0;
+    chartInstance.value?.resize();
+  });
 }
 
 // Handle KPI click
@@ -386,10 +392,17 @@ function handleKPIClick(kpiName: string) {
 // Lifecycle
 onMounted(() => {
   initChart();
+  if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartRef.value);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (rafId) cancelAnimationFrame(rafId);
   window.removeEventListener('resize', handleResize);
   chartInstance.value?.dispose();
 });
@@ -491,7 +504,7 @@ defineExpose({
     </div>
 
     <!-- ECharts Container -->
-    <div ref="chartRef" :style="{ width: '100%', height: height + 'px' }"></div>
+    <div ref="chartRef" role="img" :aria-label="title || '预算达成图表'" :style="{ width: '100%', height: height + 'px' }"></div>
   </div>
 </template>
 

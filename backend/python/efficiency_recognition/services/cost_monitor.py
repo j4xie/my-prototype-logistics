@@ -31,6 +31,7 @@ MODEL_PRICING = {
     "qwen-vl-max": {"input": 0.020, "output": 0.050, "avg_mixed": 0.035},
     "qwen3-vl-flash": {"input": 0.005, "output": 0.010, "avg_mixed": 0.0075},
     "qwen3-vl-plus": {"input": 0.010, "output": 0.030, "avg_mixed": 0.020},
+    "qwen3-vl-plus-2025-12-19": {"input": 0.000, "output": 0.000, "avg_mixed": 0.000},  # free quota
 }
 
 # 估算的每次分析 token 消耗
@@ -140,7 +141,7 @@ class CostMonitor:
         """
         with self._lock:
             # 计算成本
-            pricing = MODEL_PRICING.get(model, MODEL_PRICING["qwen-vl-plus"])
+            pricing = MODEL_PRICING.get(model, MODEL_PRICING["qwen3-vl-plus-2025-12-19"])
             cost = (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1000
 
             # 创建记录
@@ -186,7 +187,7 @@ class CostMonitor:
 
             return cost
 
-    def record_skipped_frame(self, model: str = "qwen-vl-plus"):
+    def record_skipped_frame(self, model: str = "qwen3-vl-plus-2025-12-19"):
         """记录跳过的帧（通过本地预处理节省的调用）"""
         with self._lock:
             today = date.today().isoformat()
@@ -197,7 +198,7 @@ class CostMonitor:
             daily.skipped_frames += 1
 
             # 估算节省的成本
-            pricing = MODEL_PRICING.get(model, MODEL_PRICING["qwen-vl-plus"])
+            pricing = MODEL_PRICING.get(model, MODEL_PRICING["qwen3-vl-plus-2025-12-19"])
             estimated_tokens = ANALYSIS_TOKEN_ESTIMATES["standard"]
             saved_cost = estimated_tokens * pricing["avg_mixed"] / 1000
             daily.saved_cost_rmb += saved_cost
@@ -394,7 +395,7 @@ class CostMonitor:
             "balanced": {
                 "mode": "balanced",
                 "description": "平衡模式 - 成本与性能平衡",
-                "default_model": "qwen-vl-plus",
+                "default_model": "qwen3-vl-plus-2025-12-19",
                 "sampling_interval": 30,
                 "skip_threshold": 0.05,
                 "deep_analysis_ratio": 0.15
@@ -402,7 +403,7 @@ class CostMonitor:
             "performance": {
                 "mode": "performance",
                 "description": "高性能模式 - 最大化分析精度",
-                "default_model": "qwen-vl-max",
+                "default_model": "qwen3-vl-plus-2025-12-19",
                 "sampling_interval": 10,
                 "skip_threshold": 0.02,  # 更严格的跳帧阈值
                 "deep_analysis_ratio": 0.30

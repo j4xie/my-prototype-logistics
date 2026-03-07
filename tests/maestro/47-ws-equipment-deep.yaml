@@ -1,0 +1,73 @@
+appId: com.cretas.foodtrace
+---
+# Test 47: Workshop Supervisor - Equipment Deep Screens
+# Covers: EquipmentDetail, EquipmentAlert, EquipmentMaintenance
+# Previously tested: WSEquipment(12), WSHome(07)
+# Note: Equipment Management is a full-screen stack (no bottom tabs),
+#       so use back to return.
+# Round 4.1 fix: Scroll in equipment list + improved Chinese selectors
+#   from equipmentManagement i18n: 设备管理, 运行中, 维护中, 已停用
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as workshop supervisor
+- runFlow: flows/login-ws.yaml
+- extendedWaitUntil:
+    visible: "Start Task"
+    timeout: 15000
+
+# Navigate to Equipment section from Home
+- tapOn:
+    text: ".*Equipment.*|.*\u8BBE\u5907.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Hide keyboard if search field got focus
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/47-ws-equipment-list
+
+# Scroll down to see more equipment items
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Equipment Detail — tap first equipment item ===
+- tapOn:
+    text: ".*\u8BBE\u5907.*|.*Machine.*|.*Line.*|.*\u4EA7\u7EBF.*|.*\u8FD0\u884C\u4E2D.*|.*\u7EF4\u62A4\u4E2D.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/47-ws-equipment-detail
+
+# Scroll down to see maintenance history
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/47-ws-equipment-detail-scroll
+
+# Return from detail to equipment list
+- back
+- waitForAnimationToEnd
+
+# === Equipment Alert (设备告警) — look for alert indicators ===
+- tapOn:
+    text: ".*Alert.*|.*\u544A\u8B66.*|.*\u9884\u8B66.*|.*Need Maintenance.*|.*\u5F85\u7EF4\u62A4.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/47-ws-equipment-alert
+
+# Return from equipment list to home
+- back
+- waitForAnimationToEnd
+
+# === Equipment Maintenance (设备维护) — from home quick actions ===
+- tapOn:
+    text: ".*Maintenance.*|.*\u7EF4\u62A4.*|.*\u8BBE\u5907\u7EF4\u62A4.*|.*\u7EF4\u62A4\u8BB0\u5F55.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/47-ws-equipment-maintenance

@@ -16,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 分类器意图匹配器
@@ -44,6 +45,8 @@ public class ClassifierIntentMatcher {
     private RestTemplate restTemplate;
     private final AtomicBoolean serviceAvailable = new AtomicBoolean(false);
     private volatile long lastHealthCheck = 0;
+    private final AtomicInteger consecutiveFailures = new AtomicInteger(0);
+    private static final int ALERT_THRESHOLD = 3; // 连续3次失败触发ERROR级别告警
 
     // ==================== Response DTOs ====================
 
@@ -154,14 +157,31 @@ public class ClassifierIntentMatcher {
                 lastHealthCheck = System.currentTimeMillis();
 
                 if (available) {
-                    log.debug("分类器服务健康检查通过");
+                    int prevFailures = consecutiveFailures.getAndSet(0);
+                    if (prevFailures >= ALERT_THRESHOLD) {
+                        log.info("BERT分类器已恢复 — 此前连续{}次失败", prevFailures);
+                    } else {
+                        log.debug("分类器服务健康检查通过");
+                    }
                 } else {
-                    log.warn("分类器服务可用但模型未加载: {}", response.getBody().getError());
+                    int failures = consecutiveFailures.incrementAndGet();
+                    if (failures >= ALERT_THRESHOLD) {
+                        log.error("BERT分类器模型未加载 — 连续{}次失败! 准确率将严重下降(历史教训:98%→92%). 原因: {}",
+                                failures, response.getBody().getError());
+                    } else {
+                        log.warn("分类器服务可用但模型未加载: {}", response.getBody().getError());
+                    }
                 }
                 return available;
             }
         } catch (Exception e) {
-            log.warn("分类器服务健康检查失败: {}", e.getMessage());
+            int failures = consecutiveFailures.incrementAndGet();
+            if (failures >= ALERT_THRESHOLD) {
+                log.error("BERT分类器服务不可达 — 连续{}次失败! 请检查Python服务(端口8083)和torch/transformers依赖. 错误: {}",
+                        failures, e.getMessage());
+            } else {
+                log.warn("分类器服务健康检查失败: {}", e.getMessage());
+            }
             serviceAvailable.set(false);
         }
         return false;

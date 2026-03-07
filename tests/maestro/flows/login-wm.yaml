@@ -1,0 +1,45 @@
+appId: com.cretas.foodtrace
+---
+# Login as warehouse manager (warehouse_mgr1)
+# Dismiss any system dialogs
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Close app"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*"
+    timeout: 20000
+- tapOn: "Login"
+- waitForAnimationToEnd
+- tapOn: "Enter username"
+- inputText: "warehouse_mgr1"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn: "Enter password"
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+# Dismiss any mid-login system dialogs
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Close app"
+    optional: true
+- tapOn:
+    text: "Login"
+    index: 1
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 60000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*仓储.*|.*库存.*|.*Warehouse.*|.*Inventory.*"
+    timeout: 10000

@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
+import { formatDateTimeCell } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -73,7 +74,7 @@ function getStatusType(status: string) {
     DEPLETED: 'info',
     EXPIRED: 'danger'
   };
-  return map[status] || 'info';
+  return map[status?.toUpperCase()] || 'info';
 }
 
 function getStatusText(status: string) {
@@ -83,7 +84,7 @@ function getStatusText(status: string) {
     DEPLETED: '已耗尽',
     EXPIRED: '已过期'
   };
-  return map[status] || status;
+  return map[status?.toUpperCase()] || status;
 }
 </script>
 
@@ -115,7 +116,7 @@ function getStatusText(status: string) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="batchNumber" label="批次号" width="160" />
         <el-table-column prop="materialTypeName" label="原料类型" min-width="150" show-overflow-tooltip />
         <el-table-column prop="supplierName" label="供应商" min-width="150" show-overflow-tooltip />
@@ -129,7 +130,7 @@ function getStatusText(status: string) {
           </template>
         </el-table-column>
         <el-table-column prop="expiryDate" label="过期日期" width="120" />
-        <el-table-column prop="createdAt" label="入库时间" width="180" />
+        <el-table-column prop="createdAt" label="入库时间" width="180" :formatter="formatDateTimeCell" />
         <el-table-column label="操作" width="120" fixed="right" align="center">
           <template #default>
             <el-button type="primary" link size="small">查看</el-button>

@@ -1,0 +1,4366 @@
+[
+  {
+    "tool_name": "alert_acknowledge",
+    "description": "确认（知晓）指定的告警。需要提供告警ID。确认后告警状态变为ACKNOWLEDGED，表示已知晓该告警但尚未解决。适用场景：确认已收到告警、标记正在处理中的告警。",
+    "category": "alert",
+    "test_cases": [
+      {
+        "query": "告警ID是123的我确认了，备注是正在处理中",
+        "expected_params": {
+          "alertId": 123,
+          "note": "正在处理中"
+        },
+        "expected_intent": "ALERT_ACKNOWLEDGE"
+      },
+      {
+        "query": "请确认告警ID为456的告警，备注是已经知晓",
+        "expected_params": {
+          "alertId": 456,
+          "note": "已经知晓"
+        },
+        "expected_intent": "ALERT_ACKNOWLEDGE"
+      },
+      {
+        "query": "我要确认告警ID是789的那个",
+        "expected_params": {
+          "alertId": 789
+        },
+        "expected_intent": "ALERT_ACKNOWLEDGE"
+      }
+    ]
+  },
+  {
+    "tool_name": "alert_active",
+    "description": "查询当前活动的告警列表。仅返回状态为ACTIVE的告警，即未确认、未解决的告警。适用场景：查看需要立即处理的告警、监控当前问题、快速了解系统异常状态。",
+    "category": "alert",
+    "test_cases": [
+      {
+        "query": "帮我查下现在正在活动的告警，特别是高级别的",
+        "expected_params": {
+          "level": "HIGH"
+        },
+        "expected_intent": "ALERT_ACTIVE"
+      },
+      {
+        "query": "请查询设备ID为123的当前告警，第一页，每页二十条",
+        "expected_params": {
+          "equipmentId": 123,
+          "page": 1,
+          "size": 20
+        },
+        "expected_intent": "ALERT_ACTIVE"
+      },
+      {
+        "query": "显示所有未确认的告警",
+        "expected_params": {},
+        "expected_intent": "ALERT_ACTIVE"
+      }
+    ]
+  },
+  {
+    "tool_name": "alert_by_equipment",
+    "description": "查询指定设备的告警列表。根据设备ID获取该设备的所有告警记录，支持按状态和级别筛选。适用场景：分析设备故障历史、查看设备当前问题、设备健康评估。",
+    "category": "alert",
+    "test_cases": [
+      {
+        "query": "帮我查下ID是102的设备的所有告警信息",
+        "expected_params": {
+          "equipmentId": 102
+        },
+        "expected_intent": "ALERT_BY_EQUIPMENT"
+      },
+      {
+        "query": "请查询名称包含‘搅拌机’的设备，告警状态为未处理，第一页每页20条记录",
+        "expected_params": {
+          "equipmentName": "搅拌机",
+          "status": "未处理",
+          "page": 1,
+          "size": 20
+        },
+        "expected_intent": "ALERT_BY_EQUIPMENT"
+      },
+      {
+        "query": "我想看设备ID是88的高级别告警",
+        "expected_params": {
+          "equipmentId": 88,
+          "level": "高级"
+        },
+        "expected_intent": "ALERT_BY_EQUIPMENT"
+      }
+    ]
+  },
+  {
+    "tool_name": "alert_by_level",
+    "description": "按告警级别查询告警列表。可查询CRITICAL(严重)、WARNING(警告)、INFO(提示)级别的告警。适用场景：查看严重告警、筛选警告级别问题、获取提示信息。",
+    "category": "alert",
+    "test_cases": [
+      {
+        "query": "帮我查下严重的告警信息",
+        "expected_params": {
+          "level": "CRITICAL"
+        },
+        "expected_intent": "ALERT_BY_LEVEL"
+      },
+      {
+        "query": "请查询警告级别的告警，第3页，每页15条",
+        "expected_params": {
+          "level": "WARNING",
+          "page": 3,
+          "size": 15
+        },
+        "expected_intent": "ALERT_BY_LEVEL"
+      },
+      {
+        "query": "显示提示级别的告警，状态是未处理的",
+        "expected_params": {
+          "level": "INFO",
+          "status": "未处理"
+        },
+        "expected_intent": "ALERT_BY_LEVEL"
+      }
+    ]
+  },
+  {
+    "tool_name": "alert_diagnose",
+    "description": "诊断分析指定的告警。需要提供告警ID。返回告警的详细信息、可能的原因分析和建议的解决方案。适用场景：分析告警原因、获取解决建议、了解告警详情。",
+    "category": "alert",
+    "test_cases": [
+      {
+        "query": "帮我查下告警ID是123的问题，顺便看看这个设备以前有没有出过问题",
+        "expected_params": {
+          "alertId": 123,
+          "includeHistory": true
+        },
+        "expected_intent": "ALERT_DIAGNOSE"
+      },
+      {
+        "query": "请诊断一下告警ID为456的异常情况",
+        "expected_params": {
+          "alertId": 456
+        },
+        "expected_intent": "ALERT_DIAGNOSE"
+      },
+      {
+        "query": "告警编号789是怎么回事？要不要包含历史记录我自己后面再看",
+        "expected_params": {
+          "alertId": 789
+        },
+        "expected_intent": "ALERT_DIAGNOSE"
+      }
+    ]
+  },
+  {
+    "tool_name": "alert_list",
+    "description": "查询设备告警列表。支持按级别(CRITICAL/WARNING/INFO)、状态(ACTIVE/ACKNOWLEDGED/RESOLVED/IGNORED)、设备ID进行筛选，支持分页。适用场景：查看所有告警、查找特定告警、监控告警状态。",
+    "category": "alert",
+    "test_cases": [
+      {
+        "query": "帮我查下当前所有告警信息，按第一页每页20条显示",
+        "expected_params": {
+          "page": 1,
+          "size": 20
+        },
+        "expected_intent": "ALERT_LIST"
+      },
+      {
+        "query": "请查询设备ID为1005的告警，状态是已确认，显示第3页",
+        "expected_params": {
+          "equipmentId": 1005,
+          "status": "ACKNOWLEDGED",
+          "page": 3
+        },
+        "expected_intent": "ALERT_LIST"
+      },
+      {
+        "query": "查找级别是严重并且状态是活跃的告警",
+        "expected_params": {
+          "level": "CRITICAL",
+          "status": "ACTIVE"
+        },
+        "expected_intent": "ALERT_LIST"
+      }
+    ]
+  },
+  {
+    "tool_name": "alert_resolve",
+    "description": "解决（关闭）指定的告警。需要提供告警ID和解决方案说明。解决后告警状态变为RESOLVED。适用场景：标记已修复的问题、关闭已处理的告警、记录解决方案。",
+    "category": "alert",
+    "test_cases": [
+      {
+        "query": "告警ID是123的问题我已经处理好了，用高温消毒解决了",
+        "expected_params": {
+          "alertId": 123,
+          "resolution": "用高温消毒解决了"
+        },
+        "expected_intent": "ALERT_RESOLVE"
+      },
+      {
+        "query": "帮我把ID为456的告警关掉，原因是传感器误报",
+        "expected_params": {
+          "alertId": 456,
+          "resolution": "传感器误报"
+        },
+        "expected_intent": "ALERT_RESOLVE"
+      },
+      {
+        "query": "请处理告警ID 789，已经按照标准流程完成整改",
+        "expected_params": {
+          "alertId": 789
+        },
+        "expected_intent": "ALERT_RESOLVE"
+      }
+    ]
+  },
+  {
+    "tool_name": "alert_stats",
+    "description": "获取告警统计信息。返回各级别(CRITICAL/WARNING/INFO)和各状态(ACTIVE/ACKNOWLEDGED/RESOLVED/IGNORED)的告警数量。适用场景：了解告警整体情况、生成告警报表、监控系统健康状态。",
+    "category": "alert",
+    "test_cases": [
+      {
+        "query": "帮我查下最近一周的告警情况",
+        "expected_params": {
+          "startDate": "2023-11-01",
+          "endDate": "2023-11-07"
+        },
+        "expected_intent": "ALERT_STATS"
+      },
+      {
+        "query": "请查询设备ID为123的所有告警信息",
+        "expected_params": {
+          "equipmentId": 123
+        },
+        "expected_intent": "ALERT_STATS"
+      },
+      {
+        "query": "显示今天的告警统计",
+        "expected_params": {
+          "startDate": "2023-11-07",
+          "endDate": "2023-11-07"
+        },
+        "expected_intent": "ALERT_STATS"
+      }
+    ]
+  },
+  {
+    "tool_name": "alert_triage",
+    "description": "对告警进行分诊排序。分析当前所有活动告警，综合告警级别、持续时间等因素，返回按优先级排序的处理建议。适用场景：确定处理顺序、资源分配决策、批量告警管理。",
+    "category": "alert",
+    "test_cases": [
+      {
+        "query": "帮我查下所有活动告警，按优先级排个序，最多显示5条",
+        "expected_params": {
+          "maxResults": 5
+        },
+        "expected_intent": "ALERT_TRIAGE"
+      },
+      {
+        "query": "请对告警ID为123的告警进行分诊，并且给出处理建议",
+        "expected_params": {
+          "alertId": 123,
+          "includeRecommendations": true
+        },
+        "expected_intent": "ALERT_TRIAGE"
+      },
+      {
+        "query": "现在有哪些告警需要处理？给我排个优先级",
+        "expected_params": {},
+        "expected_intent": "ALERT_TRIAGE"
+      }
+    ]
+  },
+  {
+    "tool_name": "conversion_rate_update",
+    "description": "更新原材料到成品的转化率配置。设置特定原材料类型与产品类型之间的转化比例。适用场景：调整生产转化率、配置新产品的原料消耗比例。",
+    "category": "config",
+    "test_cases": [
+      {
+        "query": "更新原材料类型A到产品类型X的转化率，1单位产品需要2.5单位原材料，下周一开始生效",
+        "expected_params": {
+          "rawMaterialTypeId": "A",
+          "productTypeId": "X",
+          "conversionRate": 2.5,
+          "effectiveDate": "2023-09-04"
+        },
+        "expected_intent": "CONVERSION_RATE_UPDATE"
+      },
+      {
+        "query": "请把原料类型B和产品类型Y的转化率设为3.0，并备注为测试用",
+        "expected_params": {
+          "rawMaterialTypeId": "B",
+          "productTypeId": "Y",
+          "conversionRate": 3.0,
+          "remark": "测试用"
+        },
+        "expected_intent": "CONVERSION_RATE_UPDATE"
+      },
+      {
+        "query": "设置原材料C到产品Z的转化率为4.2",
+        "expected_params": {
+          "rawMaterialTypeId": "C",
+          "productTypeId": "Z",
+          "conversionRate": 4.2
+        },
+        "expected_intent": "CONVERSION_RATE_UPDATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "equipment_maintenance",
+    "description": "创建或执行设备维护任务。支持例行保养、故障维修、校准、检验等多种维护类型。适用场景：安排设备保养、记录设备维修、设备校准申请。",
+    "category": "config",
+    "test_cases": [
+      {
+        "query": "设备A123需要做月度保养，请安排一下，优先级中等",
+        "expected_params": {
+          "equipmentId": "A123",
+          "maintenanceType": "月度保养",
+          "priority": "MEDIUM"
+        },
+        "expected_intent": "EQUIPMENT_MAINTENANCE"
+      },
+      {
+        "query": "设备B456的校准时间到了，请创建一个校准任务，下周三之前完成，负责人是张工",
+        "expected_params": {
+          "equipmentId": "B456",
+          "maintenanceType": "校准",
+          "scheduledDate": "2023-11-08",
+          "assignee": "张工"
+        },
+        "expected_intent": "EQUIPMENT_MAINTENANCE"
+      },
+      {
+        "query": "昨天那台出故障的机器要维修，麻烦记录一下，描述里写上更换损坏零件",
+        "expected_params": {
+          "equipmentId": "昨天那台出故障的机器",
+          "maintenanceType": "故障维修",
+          "description": "更换损坏零件"
+        },
+        "expected_intent": "EQUIPMENT_MAINTENANCE"
+      }
+    ]
+  },
+  {
+    "tool_name": "rule_config",
+    "description": "管理业务规则配置。支持质检规则、库存规则、生产规则等的创建和更新。适用场景：配置质检标准、设置库存预警阈值、调整生产参数规则。",
+    "category": "config",
+    "test_cases": [
+      {
+        "query": "我要添加一个新的质检规则，规则名称是微生物检测，规则类型是质检规则，阈值设置为5%",
+        "expected_params": {
+          "ruleName": "微生物检测",
+          "ruleType": "质检规则",
+          "ruleConfig": {
+            "threshold": "5%"
+          },
+          "enabled": true
+        },
+        "expected_intent": "RULE_CONFIG"
+      },
+      {
+        "query": "请更新库存预警规则，规则编码是INV-001，把预警阈值调整为100公斤",
+        "expected_params": {
+          "ruleCode": "INV-001",
+          "ruleConfig": {
+            "threshold": "100公斤"
+          }
+        },
+        "expected_intent": "RULE_CONFIG"
+      },
+      {
+        "query": "我现在要创建一个生产参数规则，名称是生产线速度控制，类型是生产规则，配置参数是速度上限每分钟120件",
+        "expected_params": {
+          "ruleName": "生产线速度控制",
+          "ruleType": "生产规则",
+          "ruleConfig": {
+            "speed_limit": "每分钟120件"
+          },
+          "description": "速度上限配置"
+        },
+        "expected_intent": "RULE_CONFIG"
+      }
+    ]
+  },
+  {
+    "tool_name": "create_new_intent",
+    "description": "当用户请求无法匹配现有意图时，创建新的意图配置。新意图将处于待审核状态，需要管理员激活后才能使用。适用场景：用户提出新的查询需求、数据操作需求或表单生成需求。",
+    "category": "general",
+    "test_cases": [
+      {
+        "query": "我要创建一个新的查询，用来查找产品的生产批次信息，关键词包括生产号和批次号",
+        "expected_params": {
+          "intentCode": "QUERY_PRODUCTION_BATCH",
+          "intentName": "查询生产批次",
+          "category": "production",
+          "keywords": [
+            "生产号",
+            "批次号",
+            "产品批次",
+            "生产信息"
+          ]
+        },
+        "expected_intent": "CREATE_NEW_INTENT"
+      },
+      {
+        "query": "请帮我创建一个意图，用来删除设备维护记录，关键词包括设备维修和维护记录，属于设备类别",
+        "expected_params": {
+          "intentCode": "DEVICE_DELETE_MAINTENANCE",
+          "intentName": "删除设备维护记录",
+          "category": "equipment",
+          "keywords": [
+            "设备维修",
+            "维护记录",
+            "删除设备信息",
+            "移除维护"
+          ],
+          "semanticDomain": "设备",
+          "semanticAction": "删除",
+          "semanticObject": "维护记录"
+        },
+        "expected_intent": "CREATE_NEW_INTENT"
+      },
+      {
+        "query": "我需要新增一个意图，用于录入新的原料信息，关键词包括添加原料、新建原料，属于物料类别",
+        "expected_params": {
+          "intentCode": "MATERIAL_CREATE_RAW",
+          "intentName": "新增原料信息",
+          "category": "material",
+          "keywords": [
+            "添加原料",
+            "新建原料",
+            "录入原料",
+            "增加原料"
+          ],
+          "semanticDomain": "物料",
+          "semanticAction": "创建",
+          "semanticObject": "原料",
+          "sensitivityLevel": "HIGH"
+        },
+        "expected_intent": "CREATE_NEW_INTENT"
+      }
+    ]
+  },
+  {
+    "tool_name": "customer_active",
+    "description": "获取所有活跃客户列表。返回当前处于活跃状态的所有客户。适用场景：查看活跃客户、获取可合作客户、筛选有效客户。",
+    "category": "crm",
+    "test_cases": [
+      {
+        "query": "帮我查下现在有哪些活跃客户",
+        "expected_params": {},
+        "expected_intent": "CUSTOMER_ACTIVE"
+      },
+      {
+        "query": "请查询活跃客户，返回20条记录",
+        "expected_params": {
+          "limit": 20
+        },
+        "expected_intent": "CUSTOMER_ACTIVE"
+      },
+      {
+        "query": "我要看看最近的活跃客户名单，最多50个",
+        "expected_params": {
+          "limit": 50
+        },
+        "expected_intent": "CUSTOMER_ACTIVE"
+      }
+    ]
+  },
+  {
+    "tool_name": "customer_by_type",
+    "description": "按客户类型查询客户列表。根据指定的客户类型筛选客户。适用场景：查看特定类型客户、按类别分类查询、获取某类客户清单。",
+    "category": "crm",
+    "test_cases": [
+      {
+        "query": "帮我查下企业客户的名单，返回30条",
+        "expected_params": {
+          "type": "企业客户",
+          "limit": 30
+        },
+        "expected_intent": "CUSTOMER_BY_TYPE"
+      },
+      {
+        "query": "请查询个人客户",
+        "expected_params": {
+          "type": "个人客户"
+        },
+        "expected_intent": "CUSTOMER_BY_TYPE"
+      },
+      {
+        "query": "经销商客户有哪些？限制50条",
+        "expected_params": {
+          "type": "经销商",
+          "limit": 50
+        },
+        "expected_intent": "CUSTOMER_BY_TYPE"
+      }
+    ]
+  },
+  {
+    "tool_name": "customer_list",
+    "description": "查询客户列表。支持分页查询，返回客户基本信息、类型、评级等。适用场景：查看所有客户、浏览客户清单、获取客户概览。",
+    "category": "crm",
+    "test_cases": [
+      {
+        "query": "帮我查下客户列表",
+        "expected_params": {},
+        "expected_intent": "CUSTOMER_LIST"
+      },
+      {
+        "query": "请查询第3页的客户，每页显示20条记录",
+        "expected_params": {
+          "page": 3,
+          "size": 20
+        },
+        "expected_intent": "CUSTOMER_LIST"
+      },
+      {
+        "query": "我想看状态是活跃的客户，第一页，每页5条",
+        "expected_params": {
+          "status": "活跃",
+          "page": 1,
+          "size": 5
+        },
+        "expected_intent": "CUSTOMER_LIST"
+      }
+    ]
+  },
+  {
+    "tool_name": "customer_purchase_history",
+    "description": "查询客户购买历史。获取指定客户的历史购买记录，包括购买时间、产品、数量等信息。适用场景：查看客户订单历史、分析客户购买行为、了解客户消费情况。",
+    "category": "crm",
+    "test_cases": [
+      {
+        "query": "帮我查下客户12345的购买记录",
+        "expected_params": {
+          "customerId": "12345"
+        },
+        "expected_intent": "CUSTOMER_PURCHASE_HISTORY"
+      },
+      {
+        "query": "请查询客户ID为67890的最近10条购买记录",
+        "expected_params": {
+          "customerId": "67890",
+          "limit": 10
+        },
+        "expected_intent": "CUSTOMER_PURCHASE_HISTORY"
+      },
+      {
+        "query": "客户A001的历史购买有哪些？",
+        "expected_params": {
+          "customerId": "A001"
+        },
+        "expected_intent": "CUSTOMER_PURCHASE_HISTORY"
+      }
+    ]
+  },
+  {
+    "tool_name": "customer_search",
+    "description": "按关键词搜索客户。支持按客户名称模糊匹配，返回匹配的客户列表。适用场景：查找特定客户、按名称检索客户、模糊查询客户。",
+    "category": "crm",
+    "test_cases": [
+      {
+        "query": "帮我查下客户张三的信息",
+        "expected_params": {
+          "keyword": "张三"
+        },
+        "expected_intent": "CUSTOMER_SEARCH"
+      },
+      {
+        "query": "请查询客户名称包含‘李’的客户，最多返回10个",
+        "expected_params": {
+          "keyword": "李",
+          "limit": 10
+        },
+        "expected_intent": "CUSTOMER_SEARCH"
+      },
+      {
+        "query": "显示最近的客户列表，不需要限制关键词",
+        "expected_params": {
+          "limit": 20
+        },
+        "expected_intent": "CUSTOMER_SEARCH"
+      }
+    ]
+  },
+  {
+    "tool_name": "customer_stats",
+    "description": "获取客户统计信息。可查询单个客户的详细统计或获取整体客户统计数据。适用场景：分析客户数据、查看客户概况、获取客户报表、了解客户分布。",
+    "category": "crm",
+    "test_cases": [
+      {
+        "query": "帮我查下客户ID是C1001的统计信息，包含评级分布",
+        "expected_params": {
+          "customerId": "C1001",
+          "includeRatingDistribution": true
+        },
+        "expected_intent": "CUSTOMER_STATS"
+      },
+      {
+        "query": "请查询整体客户统计信息，不包含类型分布",
+        "expected_params": {
+          "includeTypeDistribution": false
+        },
+        "expected_intent": "CUSTOMER_STATS"
+      },
+      {
+        "query": "显示客户ID为C2002的详细统计",
+        "expected_params": {
+          "customerId": "C2002"
+        },
+        "expected_intent": "CUSTOMER_STATS"
+      }
+    ]
+  },
+  {
+    "tool_name": "supplier_active",
+    "description": "获取所有活跃供应商列表。返回当前处于活跃状态的所有供应商。适用场景：查看活跃供应商、获取可合作供应商、筛选有效供应商。",
+    "category": "crm",
+    "test_cases": [
+      {
+        "query": "帮我查下现在有哪些活跃的供应商",
+        "expected_params": {},
+        "expected_intent": "SUPPLIER_ACTIVE"
+      },
+      {
+        "query": "请查询可合作的供应商，返回30条记录",
+        "expected_params": {
+          "limit": 30
+        },
+        "expected_intent": "SUPPLIER_ACTIVE"
+      },
+      {
+        "query": "显示所有有效的供应商，最多50个",
+        "expected_params": {
+          "limit": 50
+        },
+        "expected_intent": "SUPPLIER_ACTIVE"
+      }
+    ]
+  },
+  {
+    "tool_name": "supplier_by_category",
+    "description": "按供应类别查询供应商。根据供应商提供的原材料类别筛选供应商列表。适用场景：查找特定原料供应商、按供应品类筛选、寻找某类材料的供应商。",
+    "category": "crm",
+    "test_cases": [
+      {
+        "query": "帮我查下供应蔬菜的供应商有哪些",
+        "expected_params": {
+          "category": "蔬菜"
+        },
+        "expected_intent": "SUPPLIER_BY_CATEGORY"
+      },
+      {
+        "query": "请查询肉类供应商，返回最多20条",
+        "expected_params": {
+          "category": "肉类",
+          "limit": 20
+        },
+        "expected_intent": "SUPPLIER_BY_CATEGORY"
+      },
+      {
+        "query": "我想找包装材料的供应商，能给我列出来吗",
+        "expected_params": {
+          "materialType": "包装材料"
+        },
+        "expected_intent": "SUPPLIER_BY_CATEGORY"
+      }
+    ]
+  },
+  {
+    "tool_name": "supplier_evaluate",
+    "description": "评价供应商。对指定供应商进行评级，可添加评价备注。适用场景：更新供应商评分、进行供应商考核、记录供应商表现评价。",
+    "category": "crm",
+    "test_cases": [
+      {
+        "query": "我要给供应商SP12345评个4分，这次送货有点延迟",
+        "expected_params": {
+          "supplierId": "SP12345",
+          "rating": 4,
+          "notes": "这次送货有点延迟"
+        },
+        "expected_intent": "SUPPLIER_EVALUATE"
+      },
+      {
+        "query": "请更新供应商SP67890的评分到5分，他们最近表现很好",
+        "expected_params": {
+          "supplierId": "SP67890",
+          "rating": 5,
+          "notes": "他们最近表现很好"
+        },
+        "expected_intent": "SUPPLIER_EVALUATE"
+      },
+      {
+        "query": "给供应商SP11223评3分",
+        "expected_params": {
+          "supplierId": "SP11223",
+          "rating": 3
+        },
+        "expected_intent": "SUPPLIER_EVALUATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "supplier_list",
+    "description": "查询供应商列表。支持分页查询，返回供应商基本信息、评级、供应类别等。适用场景：查看所有供应商、浏览供应商清单、获取供应商概览。",
+    "category": "crm",
+    "test_cases": [
+      {
+        "query": "帮我查下所有供应商，第一页，每页十个",
+        "expected_params": {
+          "page": 1,
+          "size": 10
+        },
+        "expected_intent": "SUPPLIER_LIST"
+      },
+      {
+        "query": "请查询状态正常的供应商列表",
+        "expected_params": {
+          "status": "正常"
+        },
+        "expected_intent": "SUPPLIER_LIST"
+      },
+      {
+        "query": "我要看第3页的供应商，每页显示20条记录",
+        "expected_params": {
+          "page": 3,
+          "size": 20
+        },
+        "expected_intent": "SUPPLIER_LIST"
+      }
+    ]
+  },
+  {
+    "tool_name": "supplier_ranking",
+    "description": "获取供应商排名。按评级、供货表现等维度对供应商进行排名。适用场景：查看供应商排行、筛选优质供应商、分析供应商表现。",
+    "category": "crm",
+    "test_cases": [
+      {
+        "query": "帮我查下供应商排名，按评分从高到低排前10名",
+        "expected_params": {
+          "sortBy": "RATING",
+          "order": "DESC",
+          "limit": 10
+        },
+        "expected_intent": "SUPPLIER_RANKING"
+      },
+      {
+        "query": "请显示供货表现最好的前20个供应商",
+        "expected_params": {
+          "sortBy": "SUPPLY_PERFORMANCE",
+          "order": "DESC",
+          "limit": 20
+        },
+        "expected_intent": "SUPPLIER_RANKING"
+      },
+      {
+        "query": "我想看下按供货表现排名，升序显示，只要评级在3分及以上的",
+        "expected_params": {
+          "sortBy": "SUPPLY_PERFORMANCE",
+          "order": "ASC",
+          "limit": 10,
+          "minRating": 3,
+          "includeRatingDistribution": false
+        },
+        "expected_intent": "SUPPLIER_RANKING"
+      }
+    ]
+  },
+  {
+    "tool_name": "supplier_search",
+    "description": "按关键词搜索供应商。支持按供应商名称模糊匹配，返回匹配的供应商列表。适用场景：查找特定供应商、按名称检索供应商、模糊查询供应商。",
+    "category": "crm",
+    "test_cases": [
+      {
+        "query": "帮我查下供应商，关键词是‘天津’，返回10条结果",
+        "expected_params": {
+          "keyword": "天津",
+          "limit": 10
+        },
+        "expected_intent": "SUPPLIER_SEARCH"
+      },
+      {
+        "query": "请查找名称包含‘上海’的供应商",
+        "expected_params": {
+          "keyword": "上海"
+        },
+        "expected_intent": "SUPPLIER_SEARCH"
+      },
+      {
+        "query": "我要查供应商，关键词是‘成都’，限制输出15条",
+        "expected_params": {
+          "keyword": "成都",
+          "limit": 15
+        },
+        "expected_intent": "SUPPLIER_SEARCH"
+      }
+    ]
+  },
+  {
+    "tool_name": "dahua_device_manage",
+    "description": "管理大华设备：查询设备列表、添加设备、测试连接、获取流地址、抓拍图片、查询智能分析能力。适用场景：设备管理、监控预览、视频流获取、设备状态检查。",
+    "category": "dahua",
+    "test_cases": [
+      {
+        "query": "帮我测试一下ID为DH123456的设备连接是否正常",
+        "expected_params": {
+          "action": "test",
+          "deviceId": "DH123456"
+        },
+        "expected_intent": "DAHUA_DEVICE_MANAGE"
+      },
+      {
+        "query": "请获取设备ID是DH789012的通道3的主码流地址",
+        "expected_params": {
+          "action": "streams",
+          "deviceId": "DH789012",
+          "channelId": 3,
+          "subStream": false
+        },
+        "expected_intent": "DAHUA_DEVICE_MANAGE"
+      },
+      {
+        "query": "添加一个名为监控1号的新设备，IP地址是192.168.1.100，端口8080，用户名admin，密码123456",
+        "expected_params": {
+          "action": "add",
+          "deviceName": "监控1号",
+          "ipAddress": "192.168.1.100",
+          "port": 8080,
+          "username": "admin",
+          "password": "123456",
+          "deviceType": "IPC"
+        },
+        "expected_intent": "DAHUA_DEVICE_MANAGE"
+      }
+    ]
+  },
+  {
+    "tool_name": "dahua_device_discovery",
+    "description": "自动发现局域网内的大华摄像头设备。使用 DHDiscover 协议扫描网络，返回发现的设备列表，包含 IP、型号、MAC 地址等信息。适用场景：设备初始化配置、网络摄像头巡检、新设备接入。",
+    "category": "dahua",
+    "test_cases": [
+      {
+        "query": "帮我查下局域网里的摄像头设备，超时时间设为3000毫秒",
+        "expected_params": {
+          "timeout": 3000
+        },
+        "expected_intent": "DAHUA_DEVICE_DISCOVERY"
+      },
+      {
+        "query": "请扫描所有网络接口，找找有没有新接入的摄像头",
+        "expected_params": {
+          "scanAllInterfaces": true
+        },
+        "expected_intent": "DAHUA_DEVICE_DISCOVERY"
+      },
+      {
+        "query": "扫描下网络里的摄像头设备",
+        "expected_params": {},
+        "expected_intent": "DAHUA_DEVICE_DISCOVERY"
+      }
+    ]
+  },
+  {
+    "tool_name": "dahua_smart_config",
+    "description": "配置大华摄像头智能分析功能（越界检测、区域入侵、人脸检测）。支持查询当前配置状态或修改配置。适用场景：配置行为检测、设置警戒线、启用/禁用智能分析功能。",
+    "category": "dahua",
+    "test_cases": [
+      {
+        "query": "帮我查下设备DH123456的通道1的越界检测配置",
+        "expected_params": {
+          "deviceId": "DH123456",
+          "channelId": 1,
+          "feature": "line"
+        },
+        "expected_intent": "DAHUA_SMART_CONFIG"
+      },
+      {
+        "query": "请启用设备DH789012的人脸检测功能，灵敏度设为70",
+        "expected_params": {
+          "deviceId": "DH789012",
+          "action": "enable",
+          "feature": "face",
+          "sensitivity": 70
+        },
+        "expected_intent": "DAHUA_SMART_CONFIG"
+      },
+      {
+        "query": "禁用设备DH345678的区域入侵检测",
+        "expected_params": {
+          "deviceId": "DH345678",
+          "action": "disable",
+          "feature": "intrusion"
+        },
+        "expected_intent": "DAHUA_SMART_CONFIG"
+      }
+    ]
+  },
+  {
+    "tool_name": "batch_update",
+    "description": "更新批次信息。支持更新批次状态、数量、有效期、备注等字段。适用场景：修改批次状态（如标记为已用完、冻结）、调整数量、更新有效期。",
+    "category": "dataop",
+    "test_cases": [
+      {
+        "query": "把批次ID是B123456的状态改成已用完，备注写上原料已全部投入生产",
+        "expected_params": {
+          "batchId": "B123456",
+          "status": "已用完",
+          "remark": "原料已全部投入生产"
+        },
+        "expected_intent": "BATCH_UPDATE"
+      },
+      {
+        "query": "请更新批次B789012的数量为500公斤，有效期到2025-12-31",
+        "expected_params": {
+          "batchId": "B789012",
+          "quantity": 500,
+          "expirationDate": "2025-12-31"
+        },
+        "expected_intent": "BATCH_UPDATE"
+      },
+      {
+        "query": "批次B456789标记为冻结，原因是质检不合格，请记录一下",
+        "expected_params": {
+          "batchId": "B456789",
+          "status": "冻结",
+          "reason": "质检不合格"
+        },
+        "expected_intent": "BATCH_UPDATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "material_update",
+    "description": "更新原材料批次信息。支持更新供应商、存储位置、质量等级、数量、备注等字段。适用场景：修改原材料供应商、调整存储位置、更新质量检验结果。",
+    "category": "dataop",
+    "test_cases": [
+      {
+        "query": "我要更新原材料批次A00123的供应商，改成供应商B002，存储位置到B区-2排-5层，备注一下今天刚到货",
+        "expected_params": {
+          "materialBatchId": "A00123",
+          "supplierId": "B002",
+          "storageLocation": "B区-2排-5层",
+          "remark": "今天刚到货"
+        },
+        "expected_intent": "MATERIAL_UPDATE"
+      },
+      {
+        "query": "请更新原材料批次B00456的质量等级为A级，数量改为500公斤，温度设置为4度",
+        "expected_params": {
+          "materialBatchId": "B00456",
+          "qualityGrade": "A级",
+          "quantity": 500,
+          "unit": "kg",
+          "temperature": 4
+        },
+        "expected_intent": "MATERIAL_UPDATE"
+      },
+      {
+        "query": "修改原材料批次C00789的存储位置到C区-3排-2层，并说明是因为仓库调整",
+        "expected_params": {
+          "materialBatchId": "C00789",
+          "storageLocation": "C区-3排-2层",
+          "reason": "仓库调整"
+        },
+        "expected_intent": "MATERIAL_UPDATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "plan_update",
+    "description": "更新生产计划信息。支持更新计划状态、计划数量、开始日期、结束日期、优先级等字段。适用场景：调整生产计划、修改计划状态（如暂停、恢复）、更新计划时间安排。",
+    "category": "dataop",
+    "test_cases": [
+      {
+        "query": "我要更新生产计划1001的状态为暂停",
+        "expected_params": {
+          "planId": "1001",
+          "status": "暂停"
+        },
+        "expected_intent": "PLAN_UPDATE"
+      },
+      {
+        "query": "请把生产计划1002的开始日期改为2023-12-15，结束日期改为2023-12-20",
+        "expected_params": {
+          "planId": "1002",
+          "startDate": "2023-12-15",
+          "endDate": "2023-12-20"
+        },
+        "expected_intent": "PLAN_UPDATE"
+      },
+      {
+        "query": "帮我把计划ID 1003的生产数量改成5000，优先级调高，备注也更新一下",
+        "expected_params": {
+          "planId": "1003",
+          "plannedQuantity": 5000,
+          "priority": "高",
+          "remark": "数量和优先级已调整"
+        },
+        "expected_intent": "PLAN_UPDATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "product_type_query",
+    "description": "查询产品类型列表。支持按产品名称、类别、状态进行筛选，支持分页。适用场景：查看产品目录、查找特定产品类型、查询某类别下的所有产品。",
+    "category": "dataop",
+    "test_cases": [
+      {
+        "query": "帮我查下产品类型，我想看看肉类相关的",
+        "expected_params": {
+          "category": "肉类"
+        },
+        "expected_intent": "PRODUCT_TYPE_QUERY"
+      },
+      {
+        "query": "请查询产品名称包含‘鱼’的类型，状态是上架的，第一页每页显示5条",
+        "expected_params": {
+          "productName": "鱼",
+          "status": "上架",
+          "page": 1,
+          "size": 5
+        },
+        "expected_intent": "PRODUCT_TYPE_QUERY"
+      },
+      {
+        "query": "我想找找看有没有保质期在30到60天之间的蔬菜类产品",
+        "expected_params": {
+          "category": "蔬菜",
+          "shelfLifeMin": 30,
+          "shelfLifeMax": 60
+        },
+        "expected_intent": "PRODUCT_TYPE_QUERY"
+      }
+    ]
+  },
+  {
+    "tool_name": "product_update",
+    "description": "更新产品类型信息。支持更新产品名称、规格、保质期、状态、描述等字段。适用场景：修改产品基本信息、调整产品保质期、更新产品状态（如停产）。",
+    "category": "dataop",
+    "test_cases": [
+      {
+        "query": "更新产品类型ID是PT12345的信息，把产品名称改成牛肉丸，规格改为500g/袋，保质期设为90天，状态调整为停产",
+        "expected_params": {
+          "productTypeId": "PT12345",
+          "productName": "牛肉丸",
+          "specification": "500g/袋",
+          "shelfLife": 90,
+          "status": "停产"
+        },
+        "expected_intent": "PRODUCT_UPDATE"
+      },
+      {
+        "query": "请修改产品类型ID为PT67890的记录，产品编码设为PC9876，类别改为水产，存储条件更新为冷冻，并补充说明信息为速冻保存",
+        "expected_params": {
+          "productTypeId": "PT67890",
+          "productCode": "PC9876",
+          "category": "水产",
+          "storageCondition": "冷冻",
+          "description": "速冻保存"
+        },
+        "expected_intent": "PRODUCT_UPDATE"
+      },
+      {
+        "query": "我需要更新产品类型ID是PT112233的单价为15.8元，单位改为箱，并记录更新原因是调整市场价格",
+        "expected_params": {
+          "productTypeId": "PT112233",
+          "price": 15.8,
+          "unit": "箱",
+          "reason": "调整市场价格"
+        },
+        "expected_intent": "PRODUCT_UPDATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "dictionary_add",
+    "description": "添加新的识别词条到字典。当用户说'xxx也是部门'、'把xxx加到区域词典'、'以后xxx也要能识别'等场景时调用。支持添加区域、部门、指标、时间表达式、维度等类型。",
+    "category": "dictionary",
+    "test_cases": [
+      {
+        "query": "生产部也叫车间部，以后都要能识别",
+        "expected_params": {
+          "dictType": "部门",
+          "name": "生产部",
+          "aliases": [
+            "车间部"
+          ]
+        },
+        "expected_intent": "DICTIONARY_ADD"
+      },
+      {
+        "query": "把华南区加到区域字典里，它属于中国南部",
+        "expected_params": {
+          "dictType": "区域",
+          "name": "华南区",
+          "parentName": "中国南部"
+        },
+        "expected_intent": "DICTIONARY_ADD"
+      },
+      {
+        "query": "销售额也是指标，单位是元，要能识别",
+        "expected_params": {
+          "dictType": "指标",
+          "name": "销售额",
+          "metadata": {
+            "单位": "元"
+          }
+        },
+        "expected_intent": "DICTIONARY_ADD"
+      }
+    ]
+  },
+  {
+    "tool_name": "dictionary_batch_import",
+    "description": "批量导入词条到字典。当上传 Excel 后发现新的部门、区域等字段时调用。会自动去重，只导入不存在的新词条。",
+    "category": "dictionary",
+    "test_cases": [
+      {
+        "query": "帮我批量导入这些部门到字典：研发部、产品部、运维部",
+        "expected_params": {
+          "dictType": "部门",
+          "values": [
+            "研发部",
+            "产品部",
+            "运维部"
+          ]
+        },
+        "expected_intent": "DICTIONARY_BATCH_IMPORT"
+      },
+      {
+        "query": "请把区域信息更新一下，我要导入这些新的区域：A区、B区、C区",
+        "expected_params": {
+          "dictType": "区域",
+          "values": [
+            "A区",
+            "B区",
+            "C区"
+          ]
+        },
+        "expected_intent": "DICTIONARY_BATCH_IMPORT"
+      },
+      {
+        "query": "我上传了Excel，里面有新的部门数据，帮我导入到字典里面吧",
+        "expected_params": {
+          "dictType": "部门",
+          "values": [
+            "新数据1",
+            "新数据2",
+            "新数据3"
+          ]
+        },
+        "expected_intent": "DICTIONARY_BATCH_IMPORT"
+      }
+    ]
+  },
+  {
+    "tool_name": "dictionary_list",
+    "description": "查询字典中的条目列表。当用户问'有哪些部门'、'支持哪些区域'、'能识别哪些指标'等场景时调用。",
+    "category": "dictionary",
+    "test_cases": [
+      {
+        "query": "帮我查下有哪些部门",
+        "expected_params": {
+          "dictType": "department"
+        },
+        "expected_intent": "DICTIONARY_LIST"
+      },
+      {
+        "query": "请查询支持哪些区域",
+        "expected_params": {
+          "dictType": "region"
+        },
+        "expected_intent": "DICTIONARY_LIST"
+      },
+      {
+        "query": "能识别哪些指标",
+        "expected_params": {
+          "dictType": "indicator",
+          "limit": 10
+        },
+        "expected_intent": "DICTIONARY_LIST"
+      }
+    ]
+  },
+  {
+    "tool_name": "equipment_alert_acknowledge",
+    "description": "确认（知晓）指定的设备告警。需要提供告警ID。确认后告警状态变为ACKNOWLEDGED，表示已知晓该告警但尚未解决。适用场景：确认已收到告警、标记正在处理中的告警。",
+    "category": "equipment",
+    "test_cases": [
+      {
+        "query": "告警ID是123的我看到了，正在处理",
+        "expected_params": {
+          "alertId": 123,
+          "note": "正在处理"
+        },
+        "expected_intent": "EQUIPMENT_ALERT_ACKNOWLEDGE"
+      },
+      {
+        "query": "请确认一下告警编号456，先标记为已知晓",
+        "expected_params": {
+          "alertId": 456
+        },
+        "expected_intent": "EQUIPMENT_ALERT_ACKNOWLEDGE"
+      },
+      {
+        "query": "ID为789的设备告警我已经注意到，备注稍后更新",
+        "expected_params": {
+          "alertId": 789,
+          "note": "备注稍后更新"
+        },
+        "expected_intent": "EQUIPMENT_ALERT_ACKNOWLEDGE"
+      }
+    ]
+  },
+  {
+    "tool_name": "equipment_alert_list",
+    "description": "查询设备告警列表。支持按严重程度(CRITICAL/WARNING/INFO)、状态(ACTIVE/ACKNOWLEDGED/RESOLVED/IGNORED)、关键词进行筛选，支持分页。适用场景：查看设备告警、监控设备状态、排查设备问题。",
+    "category": "equipment",
+    "test_cases": [
+      {
+        "query": "帮我查下严重的设备报警，状态是激活的",
+        "expected_params": {
+          "severity": "CRITICAL",
+          "status": "ACTIVE"
+        },
+        "expected_intent": "EQUIPMENT_ALERT_LIST"
+      },
+      {
+        "query": "请查询包含‘温度’的告警信息，第一页，每页20条",
+        "expected_params": {
+          "keyword": "温度",
+          "page": 1,
+          "size": 20
+        },
+        "expected_intent": "EQUIPMENT_ALERT_LIST"
+      },
+      {
+        "query": "显示已解决的警告类设备告警",
+        "expected_params": {
+          "severity": "WARNING",
+          "status": "RESOLVED"
+        },
+        "expected_intent": "EQUIPMENT_ALERT_LIST"
+      }
+    ]
+  },
+  {
+    "tool_name": "equipment_alert_resolve",
+    "description": "解决（关闭）指定的设备告警。需要提供告警ID和解决方案说明。解决后告警状态变为RESOLVED。适用场景：标记已修复的设备问题、关闭已处理的告警、记录解决方案。",
+    "category": "equipment",
+    "test_cases": [
+      {
+        "query": "告警ID是5的问题已经修好了，用扳手把松动的螺丝拧紧了",
+        "expected_params": {
+          "alertId": 5,
+          "resolution": "用扳手把松动的螺丝拧紧了"
+        },
+        "expected_intent": "EQUIPMENT_ALERT_RESOLVE"
+      },
+      {
+        "query": "请处理一下ID为12的告警，原因是更换了新的过滤网",
+        "expected_params": {
+          "alertId": 12,
+          "resolution": "更换了新的过滤网"
+        },
+        "expected_intent": "EQUIPMENT_ALERT_RESOLVE"
+      },
+      {
+        "query": "那个ID是7的告警，我已经用重启设备的方式解决了",
+        "expected_params": {
+          "alertId": 7,
+          "resolution": "用重启设备的方式解决了"
+        },
+        "expected_intent": "EQUIPMENT_ALERT_RESOLVE"
+      }
+    ]
+  },
+  {
+    "tool_name": "equipment_alert_stats",
+    "description": "获取设备告警统计信息。返回各严重程度(CRITICAL/WARNING/INFO)和各状态(ACTIVE/ACKNOWLEDGED/RESOLVED/IGNORED)的告警数量。适用场景：了解设备告警整体情况、生成设备告警报表、监控设备健康状态。",
+    "category": "equipment",
+    "test_cases": [
+      {
+        "query": "帮我查下最近一周的设备告警统计信息",
+        "expected_params": {
+          "startDate": "2023-11-01",
+          "endDate": "2023-11-07"
+        },
+        "expected_intent": "EQUIPMENT_ALERT_STATS"
+      },
+      {
+        "query": "请查询一下昨天到今天的设备告警情况",
+        "expected_params": {
+          "startDate": "2023-11-06",
+          "endDate": "2023-11-08"
+        },
+        "expected_intent": "EQUIPMENT_ALERT_STATS"
+      },
+      {
+        "query": "我想了解下目前设备的告警整体情况",
+        "expected_params": {},
+        "expected_intent": "EQUIPMENT_ALERT_STATS"
+      }
+    ]
+  },
+  {
+    "tool_name": "equipment_detail",
+    "description": "查询设备详情。返回指定设备的完整信息，包括设备名称、状态、类型、位置、维护记录等。适用场景：查看设备详细信息、了解设备当前状态、获取设备配置。",
+    "category": "equipment",
+    "test_cases": [
+      {
+        "query": "帮我查下设备ID是EQ123456的设备详情",
+        "expected_params": {
+          "equipmentId": "EQ123456"
+        },
+        "expected_intent": "EQUIPMENT_DETAIL"
+      },
+      {
+        "query": "请查询一下设备编号为XYZ789的状态和位置信息",
+        "expected_params": {
+          "equipmentId": "XYZ789"
+        },
+        "expected_intent": "EQUIPMENT_DETAIL"
+      },
+      {
+        "query": "设备ID是MACH001的维护记录能看一下吗",
+        "expected_params": {
+          "equipmentId": "MACH001"
+        },
+        "expected_intent": "EQUIPMENT_DETAIL"
+      }
+    ]
+  },
+  {
+    "tool_name": "equipment_list",
+    "description": "查询设备列表。支持分页查询，返回设备基本信息、状态、类型等。适用场景：查看所有设备、浏览设备清单、获取设备概览。",
+    "category": "equipment",
+    "test_cases": [
+      {
+        "query": "帮我查下设备列表，第3页，每页15个",
+        "expected_params": {
+          "page": 3,
+          "size": 15
+        },
+        "expected_intent": "EQUIPMENT_LIST"
+      },
+      {
+        "query": "请查询设备清单",
+        "expected_params": {},
+        "expected_intent": "EQUIPMENT_LIST"
+      },
+      {
+        "query": "显示第2页的设备信息，每页数量设为10",
+        "expected_params": {
+          "page": 2,
+          "size": 10
+        },
+        "expected_intent": "EQUIPMENT_LIST"
+      }
+    ]
+  },
+  {
+    "tool_name": "equipment_start",
+    "description": "启动设备。将指定设备的状态设置为运行中（ACTIVE），记录设备启动时间。适用场景：启动生产设备、开机操作、恢复设备运行。",
+    "category": "equipment",
+    "test_cases": [
+      {
+        "query": "启动设备ID是EQ123456的机器",
+        "expected_params": {
+          "equipmentId": "EQ123456"
+        },
+        "expected_intent": "EQUIPMENT_START"
+      },
+      {
+        "query": "请把设备编号为MACH78901的生产线开启",
+        "expected_params": {
+          "equipmentId": "MACH78901"
+        },
+        "expected_intent": "EQUIPMENT_START"
+      },
+      {
+        "query": "我要启动设备，设备ID是PROD45678",
+        "expected_params": {
+          "equipmentId": "PROD45678"
+        },
+        "expected_intent": "EQUIPMENT_START"
+      }
+    ]
+  },
+  {
+    "tool_name": "equipment_stats",
+    "description": "获取设备统计信息。返回工厂设备的总体统计数据，包括总设备数、各状态设备数量、设备类型分布等。适用场景：了解设备整体情况、生成设备报表、监控设备运行状态分布。",
+    "category": "equipment",
+    "test_cases": [
+      {
+        "query": "帮我查下现在工厂里所有设备的统计情况",
+        "expected_params": {},
+        "expected_intent": "EQUIPMENT_STATS"
+      },
+      {
+        "query": "请查询一下设备的运行状态分布",
+        "expected_params": {},
+        "expected_intent": "EQUIPMENT_STATS"
+      },
+      {
+        "query": "我想了解下我们厂里设备的总体数量和分类情况",
+        "expected_params": {},
+        "expected_intent": "EQUIPMENT_STATS"
+      }
+    ]
+  },
+  {
+    "tool_name": "equipment_status_update",
+    "description": "更新设备状态。可将设备状态设置为：ACTIVE（运行中）、INACTIVE（停止）、MAINTENANCE（维护中）、OFFLINE（离线）。适用场景：变更设备运行状态、标记设备维护、设备上下线管理。",
+    "category": "equipment",
+    "test_cases": [
+      {
+        "query": "把设备ID是EQ12345的状态改成维护中",
+        "expected_params": {
+          "equipmentId": "EQ12345",
+          "status": "MAINTENANCE"
+        },
+        "expected_intent": "EQUIPMENT_STATUS_UPDATE"
+      },
+      {
+        "query": "请将设备ID为EQ67890的状态更新为运行中",
+        "expected_params": {
+          "equipmentId": "EQ67890",
+          "status": "ACTIVE"
+        },
+        "expected_intent": "EQUIPMENT_STATUS_UPDATE"
+      },
+      {
+        "query": "设备ID EQ001现在离线了，请更新状态",
+        "expected_params": {
+          "equipmentId": "EQ001",
+          "status": "OFFLINE"
+        },
+        "expected_intent": "EQUIPMENT_STATUS_UPDATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "equipment_stop",
+    "description": "停止设备。将指定设备的状态设置为停止（INACTIVE），并记录本次运行时长。适用场景：停止生产设备、关机操作、记录设备运行时间。",
+    "category": "equipment",
+    "test_cases": [
+      {
+        "query": "设备A12今天运行了3个小时，现在要关掉它",
+        "expected_params": {
+          "equipmentId": "A12",
+          "runningHours": 3
+        },
+        "expected_intent": "EQUIPMENT_STOP"
+      },
+      {
+        "query": "请停止设备B05，并记录这次运行了5小时",
+        "expected_params": {
+          "equipmentId": "B05",
+          "runningHours": 5
+        },
+        "expected_intent": "EQUIPMENT_STOP"
+      },
+      {
+        "query": "把设备C03停下来，今天用了8小时",
+        "expected_params": {
+          "equipmentId": "C03",
+          "runningHours": 8
+        },
+        "expected_intent": "EQUIPMENT_STOP"
+      }
+    ]
+  },
+  {
+    "tool_name": "form_generation",
+    "description": "根据实体类型和用途生成动态表单配置。支持创建、编辑、查询等多种表单类型。适用场景：生成数据录入表单、创建查询筛选表单、生成审批表单。",
+    "category": "form",
+    "test_cases": [
+      {
+        "query": "生成一个生产批次的创建表单，要包含原料编号和生产日期字段，用2列的布局",
+        "expected_params": {
+          "entityType": "生产批次",
+          "formPurpose": "创建",
+          "includeFields": [
+            "原料编号",
+            "生产日期"
+          ],
+          "layout": "GRID",
+          "columns": 2
+        },
+        "expected_intent": "FORM_GENERATION"
+      },
+      {
+        "query": "请生成一个供应商信息的编辑表单，不需要显示联系方式字段",
+        "expected_params": {
+          "entityType": "供应商",
+          "formPurpose": "编辑",
+          "excludeFields": [
+            "联系方式"
+          ]
+        },
+        "expected_intent": "FORM_GENERATION"
+      },
+      {
+        "query": "帮我生成一个产品检验的查询表单",
+        "expected_params": {
+          "entityType": "产品检验",
+          "formPurpose": "查询"
+        },
+        "expected_intent": "FORM_GENERATION"
+      }
+    ]
+  },
+  {
+    "tool_name": "generate_handler_config",
+    "description": "生成Handler配置建议，包括：推荐的Handler类别、参数模板、验证规则模板。这是一个纯建议工具，不执行实际操作，仅提供配置指导。适用场景：创建新的数据操作意图、表单生成意图、了解现有Handler参数结构。",
+    "category": "general",
+    "test_cases": [
+      {
+        "query": "帮我生成一个处理原料批次的Handler配置建议，操作类型是入库",
+        "expected_params": {
+          "entityType": "MaterialBatch",
+          "operationType": "入库"
+        },
+        "expected_intent": "GENERATE_HANDLER_CONFIG"
+      },
+      {
+        "query": "请推荐一个用于质检记录的Handler配置，操作类型是创建",
+        "expected_params": {
+          "entityType": "QualityCheckRecord",
+          "operationType": "创建"
+        },
+        "expected_intent": "GENERATE_HANDLER_CONFIG"
+      },
+      {
+        "query": "我需要一个关于加工批次的Handler模板，操作类型是更新",
+        "expected_params": {
+          "entityType": "ProcessingBatch",
+          "operationType": "更新"
+        },
+        "expected_intent": "GENERATE_HANDLER_CONFIG"
+      }
+    ]
+  },
+  {
+    "tool_name": "attendance_anomaly",
+    "description": "查询考勤异常记录。获取迟到、早退、缺勤、漏打卡等异常情况列表，支持按用户、部门、日期范围筛选。适用场景：查看今日迟到人员、本周缺勤记录、查找漏打卡员工。",
+    "category": "hr",
+    "test_cases": [
+      {
+        "query": "帮我查下今天迟到的员工有哪些",
+        "expected_params": {
+          "anomalyType": "迟到",
+          "startDate": "2023-10-10",
+          "endDate": "2023-10-10"
+        },
+        "expected_intent": "ATTENDANCE_ANOMALY"
+      },
+      {
+        "query": "请查询生产部门这个星期的缺勤记录",
+        "expected_params": {
+          "departmentId": "DEPT002",
+          "anomalyType": "缺勤",
+          "startDate": "2023-10-02",
+          "endDate": "2023-10-08"
+        },
+        "expected_intent": "ATTENDANCE_ANOMALY"
+      },
+      {
+        "query": "找一下昨天漏打卡的员工，第2页，每页15条",
+        "expected_params": {
+          "anomalyType": "漏打卡",
+          "startDate": "2023-10-09",
+          "endDate": "2023-10-09",
+          "page": 2,
+          "size": 15
+        },
+        "expected_intent": "ATTENDANCE_ANOMALY"
+      }
+    ]
+  },
+  {
+    "tool_name": "attendance_department",
+    "description": "查询部门考勤汇总。获取指定部门在某一天或某段时间内的考勤统计，包括出勤人数、缺勤人数、迟到早退情况。适用场景：查看部门今日出勤情况、部门考勤统计报表。",
+    "category": "hr",
+    "test_cases": [
+      {
+        "query": "帮我查下生产部今天谁迟到了",
+        "expected_params": {
+          "departmentId": "PROD",
+          "date": "2023-10-05"
+        },
+        "expected_intent": "ATTENDANCE_DEPARTMENT"
+      },
+      {
+        "query": "请查询包装部门从10月1号到10月4号的出勤情况",
+        "expected_params": {
+          "departmentId": "PACK",
+          "startDate": "2023-10-01",
+          "endDate": "2023-10-04"
+        },
+        "expected_intent": "ATTENDANCE_DEPARTMENT"
+      },
+      {
+        "query": "显示质量部门最近三天的考勤汇总",
+        "expected_params": {
+          "departmentId": "QUAL",
+          "startDate": "2023-10-02",
+          "endDate": "2023-10-05"
+        },
+        "expected_intent": "ATTENDANCE_DEPARTMENT"
+      }
+    ]
+  },
+  {
+    "tool_name": "attendance_history",
+    "description": "查询考勤历史记录。获取指定用户在一段时间内的考勤详情，支持分页。适用场景：查看过去一周/一个月的考勤、查看某人的考勤记录。",
+    "category": "hr",
+    "test_cases": [
+      {
+        "query": "帮我查下用户123过去一周的考勤记录",
+        "expected_params": {
+          "userId": "123",
+          "startDate": "2023-09-25",
+          "endDate": "2023-10-02"
+        },
+        "expected_intent": "ATTENDANCE_HISTORY"
+      },
+      {
+        "query": "请查询我的考勤记录，显示第2页，每页5条",
+        "expected_params": {
+          "page": 2,
+          "size": 5
+        },
+        "expected_intent": "ATTENDANCE_HISTORY"
+      },
+      {
+        "query": "我想看用户456在9月份的考勤情况",
+        "expected_params": {
+          "userId": "456",
+          "startDate": "2023-09-01",
+          "endDate": "2023-09-30"
+        },
+        "expected_intent": "ATTENDANCE_HISTORY"
+      }
+    ]
+  },
+  {
+    "tool_name": "attendance_monthly",
+    "description": "查询月度考勤报表。获取指定用户某月的考勤统计汇总，包括出勤天数、迟到早退次数、缺勤天数、加班时长等。适用场景：查看本月考勤汇总、查看某人某月出勤情况。",
+    "category": "hr",
+    "test_cases": [
+      {
+        "query": "帮我查下张三2025年12月的考勤情况",
+        "expected_params": {
+          "userId": "Z00123",
+          "year": 2025,
+          "month": 12
+        },
+        "expected_intent": "ATTENDANCE_MONTHLY"
+      },
+      {
+        "query": "请显示我这个月的考勤汇总",
+        "expected_params": {
+          "year": 2024,
+          "month": 4
+        },
+        "expected_intent": "ATTENDANCE_MONTHLY"
+      },
+      {
+        "query": "我想看李四的上个月考勤",
+        "expected_params": {
+          "userId": "L00456",
+          "month": 3
+        },
+        "expected_intent": "ATTENDANCE_MONTHLY"
+      }
+    ]
+  },
+  {
+    "tool_name": "attendance_stats",
+    "description": "获取考勤统计数据。查看出勤率、迟到率、平均工作时长等关键指标，支持按用户、部门、时间段统计。适用场景：查看整体考勤情况、生成考勤报表、分析出勤趋势。",
+    "category": "hr",
+    "test_cases": [
+      {
+        "query": "帮我查下生产部这个月的出勤情况",
+        "expected_params": {
+          "departmentId": "PRODUCTION",
+          "period": "MONTH"
+        },
+        "expected_intent": "ATTENDANCE_STATS"
+      },
+      {
+        "query": "请查询用户ID为EMP1001的员工最近一周的考勤统计",
+        "expected_params": {
+          "userId": "EMP1001",
+          "startDate": "2023-10-01",
+          "endDate": "2023-10-07"
+        },
+        "expected_intent": "ATTENDANCE_STATS"
+      },
+      {
+        "query": "显示全体员工上个月的平均工作时长",
+        "expected_params": {
+          "period": "LAST_MONTH"
+        },
+        "expected_intent": "ATTENDANCE_STATS"
+      }
+    ]
+  },
+  {
+    "tool_name": "attendance_status",
+    "description": "查询考勤状态。获取指定用户的实时考勤状态，包括是否已签到、是否在岗、迟到早退情况。适用场景：查看某人是否在岗、查看自己的考勤状态。",
+    "category": "hr",
+    "test_cases": [
+      {
+        "query": "帮我查下张三今天的考勤情况",
+        "expected_params": {
+          "userId": "U1001",
+          "date": "2023-10-05"
+        },
+        "expected_intent": "ATTENDANCE_STATUS"
+      },
+      {
+        "query": "请查询我自己的考勤状态",
+        "expected_params": {},
+        "expected_intent": "ATTENDANCE_STATUS"
+      },
+      {
+        "query": "我想看李四昨天的考勤状态",
+        "expected_params": {
+          "userId": "U1002",
+          "date": "2023-10-04"
+        },
+        "expected_intent": "ATTENDANCE_STATUS"
+      }
+    ]
+  },
+  {
+    "tool_name": "attendance_today",
+    "description": "查询今日考勤记录。获取当前用户今天的签到签退情况、工作时长统计。适用场景：查看今天是否已签到、查看今日工作时长。",
+    "category": "hr",
+    "test_cases": [
+      {
+        "query": "帮我查下今天的考勤情况",
+        "expected_params": {},
+        "expected_intent": "ATTENDANCE_TODAY"
+      },
+      {
+        "query": "请查询用户123456今天的签到签退记录",
+        "expected_params": {
+          "userId": "123456"
+        },
+        "expected_intent": "ATTENDANCE_TODAY"
+      },
+      {
+        "query": "我想知道今天工作了多长时间",
+        "expected_params": {},
+        "expected_intent": "ATTENDANCE_TODAY"
+      }
+    ]
+  },
+  {
+    "tool_name": "clock_in",
+    "description": "执行签到打卡。记录当前用户的上班签到时间，支持添加签到备注和位置信息。适用场景：上班打卡、补签到。",
+    "category": "hr",
+    "test_cases": [
+      {
+        "query": "我要上班打卡，现在在工厂门口",
+        "expected_params": {
+          "location": "工厂门口"
+        },
+        "expected_intent": "CLOCK_IN"
+      },
+      {
+        "query": "请帮我补签到，备注是去供应商那里了",
+        "expected_params": {
+          "remark": "去供应商那里了"
+        },
+        "expected_intent": "CLOCK_IN"
+      },
+      {
+        "query": "我现在到岗了，经纬度是北纬31.2304,东经121.4737，请记录一下",
+        "expected_params": {
+          "latitude": 31.2304,
+          "longitude": 121.4737
+        },
+        "expected_intent": "CLOCK_IN"
+      }
+    ]
+  },
+  {
+    "tool_name": "clock_out",
+    "description": "执行签退打卡。记录当前用户的下班签退时间，自动计算当日工作时长。适用场景：下班打卡、补签退。",
+    "category": "hr",
+    "test_cases": [
+      {
+        "query": "我要下班打卡，备注加班到8点",
+        "expected_params": {
+          "remark": "加班到8点"
+        },
+        "expected_intent": "CLOCK_OUT"
+      },
+      {
+        "query": "请执行签退，位置在包装车间东门",
+        "expected_params": {
+          "location": "包装车间东门"
+        },
+        "expected_intent": "CLOCK_OUT"
+      },
+      {
+        "query": "我现在的坐标是纬度39.9042，经度116.4074，下班打卡",
+        "expected_params": {
+          "latitude": 39.9042,
+          "longitude": 116.4074
+        },
+        "expected_intent": "CLOCK_OUT"
+      }
+    ]
+  },
+  {
+    "tool_name": "isapi_smart_capabilities_query",
+    "description": "查询摄像头智能分析能力。查看设备支持哪些智能分析功能。适用场景：检查设备能力、查询智能分析状态、了解设备支持的功能。",
+    "category": "isapi",
+    "test_cases": [
+      {
+        "query": "帮我查下设备ID是CAM-12345的摄像头支持哪些智能分析功能",
+        "expected_params": {
+          "deviceId": "CAM-12345"
+        },
+        "expected_intent": "ISAPI_SMART_CAPABILITIES_QUERY"
+      },
+      {
+        "query": "请查询设备ID为CAM-67890的智能分析状态",
+        "expected_params": {
+          "deviceId": "CAM-67890"
+        },
+        "expected_intent": "ISAPI_SMART_CAPABILITIES_QUERY"
+      },
+      {
+        "query": "这个摄像头的智能功能有哪些？设备ID是CAM-2023-AI",
+        "expected_params": {
+          "deviceId": "CAM-2023-AI"
+        },
+        "expected_intent": "ISAPI_SMART_CAPABILITIES_QUERY"
+      }
+    ]
+  },
+  {
+    "tool_name": "isapi_field_detection_config",
+    "description": "配置摄像头区域入侵检测。支持查询当前配置或设置新配置。适用场景：配置入侵检测、设置禁区、启用/禁用区域布防。",
+    "category": "isapi",
+    "test_cases": [
+      {
+        "query": "帮我查下设备ID是12345的摄像头的区域入侵配置",
+        "expected_params": {
+          "deviceId": "12345"
+        },
+        "expected_intent": "ISAPI_FIELD_DETECTION_CONFIG"
+      },
+      {
+        "query": "请启用设备ID为67890的摄像头在通道2的入侵检测，灵敏度设为80",
+        "expected_params": {
+          "deviceId": "67890",
+          "channelId": 2,
+          "action": "enable",
+          "sensitivity": 80
+        },
+        "expected_intent": "ISAPI_FIELD_DETECTION_CONFIG"
+      },
+      {
+        "query": "设备ABC123的禁区检测触发时间设成15秒，现在禁用",
+        "expected_params": {
+          "deviceId": "ABC123",
+          "threshold": 15,
+          "action": "disable"
+        },
+        "expected_intent": "ISAPI_FIELD_DETECTION_CONFIG"
+      }
+    ]
+  },
+  {
+    "tool_name": "isapi_line_detection_config",
+    "description": "配置摄像头越界检测（虚拟警戒线）。支持查询当前配置或设置新配置。适用场景：配置行为检测、设置警戒线、启用/禁用越界检测。",
+    "category": "isapi",
+    "test_cases": [
+      {
+        "query": "帮我查下设备ID是CAM12345的警戒线配置",
+        "expected_params": {
+          "deviceId": "CAM12345"
+        },
+        "expected_intent": "ISAPI_LINE_DETECTION_CONFIG"
+      },
+      {
+        "query": "请启用设备ID为CAM67890、通道2的越界检测，灵敏度设为80",
+        "expected_params": {
+          "deviceId": "CAM67890",
+          "channelId": 2,
+          "action": "enable",
+          "sensitivity": 80
+        },
+        "expected_intent": "ISAPI_LINE_DETECTION_CONFIG"
+      },
+      {
+        "query": "查询下设备CAM55555通道3的设置",
+        "expected_params": {
+          "deviceId": "CAM55555",
+          "channelId": 3
+        },
+        "expected_intent": "ISAPI_LINE_DETECTION_CONFIG"
+      }
+    ]
+  },
+  {
+    "tool_name": "material_adjust_quantity",
+    "description": "调整原材料批次的库存数量。可用于库存盘点调整、损耗记录、入库补录等场景。需要提供批次ID、调整后的数量以及调整原因。此操作需要管理员权限。",
+    "category": "material",
+    "test_cases": [
+      {
+        "query": "批次号是BATCH20231101的原材料，库存数量调整到500，原因是盘点调整",
+        "expected_params": {
+          "batchId": "BATCH20231101",
+          "quantity": 500,
+          "reason": "盘点调整"
+        },
+        "expected_intent": "MATERIAL_ADJUST_QUANTITY"
+      },
+      {
+        "query": "请将批次ID为RAW123456的原料库存改为200，损耗造成的",
+        "expected_params": {
+          "batchId": "RAW123456",
+          "quantity": 200,
+          "reason": "损耗"
+        },
+        "expected_intent": "MATERIAL_ADJUST_QUANTITY"
+      },
+      {
+        "query": "补录入库，批次号是MAT20231001，数量设为1000",
+        "expected_params": {
+          "batchId": "MAT20231001",
+          "quantity": 1000,
+          "reason": "入库补录"
+        },
+        "expected_intent": "MATERIAL_ADJUST_QUANTITY"
+      }
+    ]
+  },
+  {
+    "tool_name": "material_batch_consume",
+    "description": "消耗已预留的原材料，从预留数量中扣减。用于生产过程中实际使用预留的原材料。需要提供批次ID和消耗数量，可选关联生产计划ID。",
+    "category": "material",
+    "test_cases": [
+      {
+        "query": "我要消耗批次B123456的原料，数量是50公斤",
+        "expected_params": {
+          "batchId": "B123456",
+          "quantity": 50
+        },
+        "expected_intent": "MATERIAL_BATCH_CONSUME"
+      },
+      {
+        "query": "请扣减批次为C789012的原料，使用了30公斤，并关联生产计划P987654",
+        "expected_params": {
+          "batchId": "C789012",
+          "quantity": 30,
+          "productionPlanId": "P987654"
+        },
+        "expected_intent": "MATERIAL_BATCH_CONSUME"
+      },
+      {
+        "query": "把批次D345678的原料消耗掉20公斤，不需要关联生产计划",
+        "expected_params": {
+          "batchId": "D345678",
+          "quantity": 20
+        },
+        "expected_intent": "MATERIAL_BATCH_CONSUME"
+      }
+    ]
+  },
+  {
+    "tool_name": "material_batch_create",
+    "description": "创建原材料入库批次。用于登记新到货的原材料。需要提供原材料类型ID、供应商ID、数量等信息。",
+    "category": "material",
+    "test_cases": [
+      {
+        "query": "我要登记新到的50公斤大米原材料，供应商是SP1234，这批货总价值是2500元",
+        "expected_params": {
+          "materialTypeId": "MT5001",
+          "supplierId": "SP1234",
+          "quantity": 50,
+          "unit": "公斤",
+          "totalValue": 2500
+        },
+        "expected_intent": "MATERIAL_BATCH_CREATE"
+      },
+      {
+        "query": "帮我创建一个原材料入库批次，类型是面粉，供应商是SP5678，数量是100袋，单位是袋，总金额是8000元",
+        "expected_params": {
+          "materialTypeId": "MT5002",
+          "supplierId": "SP5678",
+          "quantity": 100,
+          "unit": "袋",
+          "totalValue": 8000
+        },
+        "expected_intent": "MATERIAL_BATCH_CREATE"
+      },
+      {
+        "query": "现在要登记一批新到的牛奶，供应商编号是SP9012，数量是200箱，单位是箱",
+        "expected_params": {
+          "materialTypeId": "MT5003",
+          "supplierId": "SP9012",
+          "quantity": 200,
+          "unit": "箱"
+        },
+        "expected_intent": "MATERIAL_BATCH_CREATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "material_batch_query",
+    "description": "查询原料批次列表。支持按批次号、原料类型ID、状态进行筛选，支持分页。适用场景：查看库存批次、查找特定批次、查询某类原料的所有批次。",
+    "category": "material",
+    "test_cases": [
+      {
+        "query": "帮我查下原料批次，状态是库存中的，第一页每页10条",
+        "expected_params": {
+          "status": "库存中",
+          "page": 1,
+          "size": 10
+        },
+        "expected_intent": "MATERIAL_BATCH_QUERY"
+      },
+      {
+        "query": "请查询原料类型ID是MT001的所有批次信息",
+        "expected_params": {
+          "materialTypeId": "MT001"
+        },
+        "expected_intent": "MATERIAL_BATCH_QUERY"
+      },
+      {
+        "query": "我想查批次号包含A123的原料，并且入库日期从2023-01-01到2023-01-31",
+        "expected_params": {
+          "batchNumber": "A123",
+          "startDate": "2023-01-01",
+          "endDate": "2023-01-31"
+        },
+        "expected_intent": "MATERIAL_BATCH_QUERY"
+      }
+    ]
+  },
+  {
+    "tool_name": "material_batch_release",
+    "description": "释放预留的原材料批次数量。释放后，该数量将归还到可用库存中。可指定生产计划ID以释放特定计划的预留。适用场景：生产计划取消、订单变更、预留调整等。",
+    "category": "material",
+    "test_cases": [
+      {
+        "query": "批次ABC123预留了50公斤，现在要释放30公斤出来",
+        "expected_params": {
+          "batchId": "ABC123",
+          "quantity": 30
+        },
+        "expected_intent": "MATERIAL_BATCH_RELEASE"
+      },
+      {
+        "query": "生产计划PP789取消了，把对应预留的批次XYZ456全部释放，数量是200公斤",
+        "expected_params": {
+          "batchId": "XYZ456",
+          "quantity": 200,
+          "productionPlanId": "PP789"
+        },
+        "expected_intent": "MATERIAL_BATCH_RELEASE"
+      },
+      {
+        "query": "请释放批次ABC123的100公斤原材料",
+        "expected_params": {
+          "batchId": "ABC123",
+          "quantity": 100
+        },
+        "expected_intent": "MATERIAL_BATCH_RELEASE"
+      }
+    ]
+  },
+  {
+    "tool_name": "material_batch_reserve",
+    "description": "预留原材料批次的指定数量。预留后，该数量将从可用库存中扣除，但不会实际消耗材料。可关联生产计划进行预留追踪。适用场景：生产计划备料、订单预留、紧急备货等。",
+    "category": "material",
+    "test_cases": [
+      {
+        "query": "帮我预留下批次BATCH123的50公斤原料，生产计划是PLAN789",
+        "expected_params": {
+          "batchId": "BATCH123",
+          "quantity": 50,
+          "productionPlanId": "PLAN789"
+        },
+        "expected_intent": "MATERIAL_BATCH_RESERVE"
+      },
+      {
+        "query": "请预留批次BATCH456的200个，先不关联生产计划",
+        "expected_params": {
+          "batchId": "BATCH456",
+          "quantity": 200
+        },
+        "expected_intent": "MATERIAL_BATCH_RESERVE"
+      },
+      {
+        "query": "我现在要为生产计划PLAN012预留批次BATCH789的150件，请处理一下",
+        "expected_params": {
+          "batchId": "BATCH789",
+          "quantity": 150,
+          "productionPlanId": "PLAN012"
+        },
+        "expected_intent": "MATERIAL_BATCH_RESERVE"
+      }
+    ]
+  },
+  {
+    "tool_name": "material_batch_use",
+    "description": "使用/消耗原材料，记录原料出库。需要指定批次和消耗数量。",
+    "category": "material",
+    "test_cases": [
+      {
+        "query": "我要使用批次号BATCH12345的面粉，数量是50公斤，用于今天的面包生产计划",
+        "expected_params": {
+          "batchId": "BATCH12345",
+          "quantity": 50,
+          "productionPlanId": "PROD20231001"
+        },
+        "expected_intent": "MATERIAL_BATCH_USE"
+      },
+      {
+        "query": "请记录下批次ID为MATERIAL67890的原料用了20吨，原因是生产过程中的正常损耗",
+        "expected_params": {
+          "batchId": "MATERIAL67890",
+          "quantity": 20,
+          "reason": "生产过程中的正常损耗"
+        },
+        "expected_intent": "MATERIAL_BATCH_USE"
+      },
+      {
+        "query": "我现在要消耗批次号是FLOUR2023的原料，用量是150千克，生产计划编号是PROD20231002，用来做今天的蛋糕",
+        "expected_params": {
+          "batchId": "FLOUR2023",
+          "quantity": 150,
+          "productionPlanId": "PROD20231002"
+        },
+        "expected_intent": "MATERIAL_BATCH_USE"
+      }
+    ]
+  },
+  {
+    "tool_name": "material_expired_query",
+    "description": "查询已过期的原材料批次。返回所有过期批次的详细信息，包括批次号、原材料名称、过期日期、当前数量、供应商等。适用于过期物料盘点、库存清理、质量管理等场景。",
+    "category": "material",
+    "test_cases": [
+      {
+        "query": "帮我查下有哪些过期的原材料批次",
+        "expected_params": {},
+        "expected_intent": "MATERIAL_EXPIRED_QUERY"
+      },
+      {
+        "query": "请查询已过期的原材料信息，我要做库存清理",
+        "expected_params": {},
+        "expected_intent": "MATERIAL_EXPIRED_QUERY"
+      },
+      {
+        "query": "有没有最近过期的原料，我想看看批次详情",
+        "expected_params": {},
+        "expected_intent": "MATERIAL_EXPIRED_QUERY"
+      }
+    ]
+  },
+  {
+    "tool_name": "material_expiring_alert",
+    "description": "查询即将过期的原材料批次预警。返回指定天数内即将过期的批次列表，包括批次号、原材料名称、过期日期、剩余天数、当前数量等。默认查询7天内过期的批次。适用于保质期管理、库存预警、先进先出提醒等场景。",
+    "category": "material",
+    "test_cases": [
+      {
+        "query": "帮我查下最近7天要过期的原材料批次",
+        "expected_params": {
+          "warningDays": 7
+        },
+        "expected_intent": "MATERIAL_EXPIRING_ALERT"
+      },
+      {
+        "query": "请查询5天内即将过期的原材料，要详细列表",
+        "expected_params": {
+          "warningDays": 5
+        },
+        "expected_intent": "MATERIAL_EXPIRING_ALERT"
+      },
+      {
+        "query": "有没有快过期的原料？",
+        "expected_params": {},
+        "expected_intent": "MATERIAL_EXPIRING_ALERT"
+      }
+    ]
+  },
+  {
+    "tool_name": "material_fifo_recommend",
+    "description": "根据FIFO（先进先出）原则推荐应该优先使用的原材料批次。系统会按照入库时间排序，优先推荐较早入库且未过期的批次。适用于生产领料、库存分配等场景。",
+    "category": "material",
+    "test_cases": [
+      {
+        "query": "帮我查下玉米淀粉的原料推荐，我需要使用200公斤",
+        "expected_params": {
+          "materialTypeId": "mt_0013",
+          "requiredQuantity": 200
+        },
+        "expected_intent": "MATERIAL_FIFO_RECOMMEND"
+      },
+      {
+        "query": "请推荐适合现在使用的面粉批次，用量是500公斤",
+        "expected_params": {
+          "materialTypeId": "mt_0027",
+          "requiredQuantity": 500
+        },
+        "expected_intent": "MATERIAL_FIFO_RECOMMEND"
+      },
+      {
+        "query": "查一下乳清粉的批次推荐，需要300公斤",
+        "expected_params": {
+          "materialTypeId": "mt_0045",
+          "requiredQuantity": 300
+        },
+        "expected_intent": "MATERIAL_FIFO_RECOMMEND"
+      }
+    ]
+  },
+  {
+    "tool_name": "material_low_stock_alert",
+    "description": "查询低库存预警。返回所有低于安全库存水平的原材料列表，包括原材料名称、当前库存量、安全库存量、缺口数量等。适用于采购计划制定、库存补货提醒、供应链管理等场景。",
+    "category": "material",
+    "test_cases": [
+      {
+        "query": "帮我查下哪些原材料库存不够用了",
+        "expected_params": {},
+        "expected_intent": "MATERIAL_LOW_STOCK_ALERT"
+      },
+      {
+        "query": "请查询当前低于安全库存的所有原材料信息",
+        "expected_params": {},
+        "expected_intent": "MATERIAL_LOW_STOCK_ALERT"
+      },
+      {
+        "query": "有没有需要补货的原料？给我看一下详细情况",
+        "expected_params": {},
+        "expected_intent": "MATERIAL_LOW_STOCK_ALERT"
+      }
+    ]
+  },
+  {
+    "tool_name": "processing_batch_cancel",
+    "description": "取消生产批次。将批次状态改为「已取消」，需要指定批次ID和取消原因。注意：已完成的批次不能取消。适用场景：订单取消、计划变更、原料问题取消生产。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "帮我取消一下生产批次BATCH12345，原因是订单取消了",
+        "expected_params": {
+          "batchId": "BATCH12345",
+          "reason": "订单取消"
+        },
+        "expected_intent": "PROCESSING_BATCH_CANCEL"
+      },
+      {
+        "query": "请取消生产批次BATCH67890，原因是原料有问题",
+        "expected_params": {
+          "batchId": "BATCH67890",
+          "reason": "原料问题"
+        },
+        "expected_intent": "PROCESSING_BATCH_CANCEL"
+      },
+      {
+        "query": "我要取消批次BATCH112233，因为生产计划有变动",
+        "expected_params": {
+          "batchId": "BATCH112233",
+          "reason": "计划变更"
+        },
+        "expected_intent": "PROCESSING_BATCH_CANCEL"
+      }
+    ]
+  },
+  {
+    "tool_name": "processing_batch_complete",
+    "description": "完成生产批次。记录实际产量、良品数量、不良品数量，将批次状态改为「已完成」。系统会自动计算良品率、效率等指标。适用场景：生产结束、产量录入、完工确认。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "批次BATCH12345实际生产了500个，良品480个，不良品20个，请确认完成",
+        "expected_params": {
+          "batchId": "BATCH12345",
+          "actualQuantity": 500,
+          "goodQuantity": 480,
+          "defectQuantity": 20
+        },
+        "expected_intent": "PROCESSING_BATCH_COMPLETE"
+      },
+      {
+        "query": "帮我完成批次BATCH67890，总产量300，合格品290，次品10",
+        "expected_params": {
+          "batchId": "BATCH67890",
+          "actualQuantity": 300,
+          "goodQuantity": 290,
+          "defectQuantity": 10
+        },
+        "expected_intent": "PROCESSING_BATCH_COMPLETE"
+      },
+      {
+        "query": "请将批次ID为BATCH55555的状态改为已完成，这次一共生产了200个产品，其中190个是良品，10个是不良品",
+        "expected_params": {
+          "batchId": "BATCH55555",
+          "actualQuantity": 200,
+          "goodQuantity": 190,
+          "defectQuantity": 10
+        },
+        "expected_intent": "PROCESSING_BATCH_COMPLETE"
+      }
+    ]
+  },
+  {
+    "tool_name": "processing_batch_create",
+    "description": "创建生产批次。需要指定产品类型ID、批次号、计划数量，可选指定负责人ID和开始时间。适用场景：新建生产任务、创建加工批次、安排生产计划。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "我要新建一个生产批次，产品类型是PT123，批次号是BATCH20231001，计划数量是500公斤",
+        "expected_params": {
+          "productTypeId": "PT123",
+          "batchNumber": "BATCH20231001",
+          "plannedQuantity": 500,
+          "unit": "kg"
+        },
+        "expected_intent": "PROCESSING_BATCH_CREATE"
+      },
+      {
+        "query": "请安排一个生产任务，产品类型ID是PT456，批次号是BATCH20231002，计划数量是200件，负责人是张三，预计明天早上9点开始",
+        "expected_params": {
+          "productTypeId": "PT456",
+          "batchNumber": "BATCH20231002",
+          "plannedQuantity": 200,
+          "supervisorId": 101,
+          "startTime": "2023-10-02 09:00:00",
+          "unit": "件"
+        },
+        "expected_intent": "PROCESSING_BATCH_CREATE"
+      },
+      {
+        "query": "创建一个加工批次，产品类型是PT789，批次号BATCH20231003，数量100kg，备注写‘特殊工艺处理’",
+        "expected_params": {
+          "productTypeId": "PT789",
+          "batchNumber": "BATCH20231003",
+          "plannedQuantity": 100,
+          "unit": "kg",
+          "notes": "特殊工艺处理"
+        },
+        "expected_intent": "PROCESSING_BATCH_CREATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "processing_batch_detail",
+    "description": "获取生产批次详情。返回批次的完整信息，包括基本信息、生产数据、成本数据、质量指标等。适用场景：查看批次详情、追踪生产状态、查询产量数据。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "帮我查下批次号BATCH20231001的详细信息",
+        "expected_params": {
+          "batchId": "BATCH20231001"
+        },
+        "expected_intent": "PROCESSING_BATCH_DETAIL"
+      },
+      {
+        "query": "请查询生产批次ID是P123456的产量和质量数据",
+        "expected_params": {
+          "batchId": "P123456"
+        },
+        "expected_intent": "PROCESSING_BATCH_DETAIL"
+      },
+      {
+        "query": "我想了解下批次号为BP202310A的成本数据和生产状态",
+        "expected_params": {
+          "batchId": "BP202310A"
+        },
+        "expected_intent": "PROCESSING_BATCH_DETAIL"
+      }
+    ]
+  },
+  {
+    "tool_name": "processing_batch_list",
+    "description": "获取生产批次列表。支持按状态（计划中、生产中、已暂停、已完成、已取消）筛选，支持分页。适用场景：查看生产任务列表、筛选特定状态的批次、批次概览。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "帮我查下正在进行的生产批次",
+        "expected_params": {
+          "status": "生产中"
+        },
+        "expected_intent": "PROCESSING_BATCH_LIST"
+      },
+      {
+        "query": "请查询第3页的生产批次，每页显示20条",
+        "expected_params": {
+          "page": 3,
+          "size": 20
+        },
+        "expected_intent": "PROCESSING_BATCH_LIST"
+      },
+      {
+        "query": "我想看已完成的生产批次",
+        "expected_params": {
+          "status": "已完成"
+        },
+        "expected_intent": "PROCESSING_BATCH_LIST"
+      }
+    ]
+  },
+  {
+    "tool_name": "processing_batch_pause",
+    "description": "暂停生产批次。将批次状态从「生产中」改为「已暂停」，需要指定批次ID和暂停原因。适用场景：设备故障暂停、原料不足暂停、质量问题暂停、其他原因暂停。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "帮我暂停一下生产批次B123456，原因是设备故障",
+        "expected_params": {
+          "batchId": "B123456",
+          "reason": "设备故障"
+        },
+        "expected_intent": "PROCESSING_BATCH_PAUSE"
+      },
+      {
+        "query": "请暂停生产批次C789012，暂停原因选原料不足",
+        "expected_params": {
+          "batchId": "C789012",
+          "reason": "原料不足"
+        },
+        "expected_intent": "PROCESSING_BATCH_PAUSE"
+      },
+      {
+        "query": "把批次D345678暂停了，原因是人员调配问题",
+        "expected_params": {
+          "batchId": "D345678",
+          "reason": "人员调配"
+        },
+        "expected_intent": "PROCESSING_BATCH_PAUSE"
+      }
+    ]
+  },
+  {
+    "tool_name": "processing_batch_resume",
+    "description": "恢复生产批次。将批次状态从「已暂停」改为「生产中」，继续之前暂停的生产。适用场景：故障修复后恢复、原料补充后恢复、问题解决后恢复生产。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "帮我恢复批次B12345的生产",
+        "expected_params": {
+          "batchId": "B12345"
+        },
+        "expected_intent": "PROCESSING_BATCH_RESUME"
+      },
+      {
+        "query": "请继续生产批次ID为C67890的订单，问题已经解决了",
+        "expected_params": {
+          "batchId": "C67890"
+        },
+        "expected_intent": "PROCESSING_BATCH_RESUME"
+      },
+      {
+        "query": "恢复一下暂停的批次D1122，现在原料已经补上了",
+        "expected_params": {
+          "batchId": "D1122"
+        },
+        "expected_intent": "PROCESSING_BATCH_RESUME"
+      }
+    ]
+  },
+  {
+    "tool_name": "processing_batch_start",
+    "description": "开始生产批次。将批次状态从「已计划」改为「生产中」，需要指定批次ID和负责人ID。适用场景：开始生产任务、启动加工流程、开工确认。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "我要开始生产批次BATCH12345，负责人是张三，工号8866",
+        "expected_params": {
+          "batchId": "BATCH12345",
+          "supervisorId": 8866
+        },
+        "expected_intent": "PROCESSING_BATCH_START"
+      },
+      {
+        "query": "请确认启动批次BATCH67890，负责人李四，员工ID是7755",
+        "expected_params": {
+          "batchId": "BATCH67890",
+          "supervisorId": 7755
+        },
+        "expected_intent": "PROCESSING_BATCH_START"
+      },
+      {
+        "query": "现在开始加工批次BATCH24680，负责人王五，ID是9933",
+        "expected_params": {
+          "batchId": "BATCH24680",
+          "supervisorId": 9933
+        },
+        "expected_intent": "PROCESSING_BATCH_START"
+      }
+    ]
+  },
+  {
+    "tool_name": "processing_batch_timeline",
+    "description": "获取生产批次时间线。返回批次从创建到当前状态的所有操作记录，包括状态变更、暂停原因、完成数据等。适用场景：追踪生产历程、查看操作记录、审计生产过程。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "帮我查下批次号B123456的时间线",
+        "expected_params": {
+          "batchId": "B123456"
+        },
+        "expected_intent": "PROCESSING_BATCH_TIMELINE"
+      },
+      {
+        "query": "请查询生产批次ID是P789012的操作记录",
+        "expected_params": {
+          "batchId": "P789012"
+        },
+        "expected_intent": "PROCESSING_BATCH_TIMELINE"
+      },
+      {
+        "query": "我想看一下批次号X987654的生产历程",
+        "expected_params": {
+          "batchId": "X987654"
+        },
+        "expected_intent": "PROCESSING_BATCH_TIMELINE"
+      }
+    ]
+  },
+  {
+    "tool_name": "processing_batch_workers",
+    "description": "查询生产批次分配的员工列表。返回员工信息和工作状态（进行中/已完成）。适用场景：查看批次人员配置、了解工作分配情况。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "帮我查下批次ID是1003的员工分配情况",
+        "expected_params": {
+          "batchId": 1003
+        },
+        "expected_intent": "PROCESSING_BATCH_WORKERS"
+      },
+      {
+        "query": "请查询生产批次8877的工作人员信息",
+        "expected_params": {
+          "batchId": 8877
+        },
+        "expected_intent": "PROCESSING_BATCH_WORKERS"
+      },
+      {
+        "query": "我想了解下批次1234分配了哪些员工",
+        "expected_params": {
+          "batchId": 1234
+        },
+        "expected_intent": "PROCESSING_BATCH_WORKERS"
+      }
+    ]
+  },
+  {
+    "tool_name": "processing_worker_assign",
+    "description": "将员工分配到生产批次。支持一次分配多个员工。用于记录员工参与哪个批次的生产工作。适用场景：开始生产时分配工人、调整人员安排。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "把员工101和102加到第58号生产批次里，他们负责质检",
+        "expected_params": {
+          "batchId": 58,
+          "workerIds": [
+            101,
+            102
+          ],
+          "notes": "负责质检"
+        },
+        "expected_intent": "PROCESSING_WORKER_ASSIGN"
+      },
+      {
+        "query": "请把工人103分配到批次34，临时替换请假的同事",
+        "expected_params": {
+          "batchId": 34,
+          "workerIds": [
+            103
+          ],
+          "notes": "临时替换请假的同事"
+        },
+        "expected_intent": "PROCESSING_WORKER_ASSIGN"
+      },
+      {
+        "query": "给第12号生产批次加上员工99和100",
+        "expected_params": {
+          "batchId": 12,
+          "workerIds": [
+            99,
+            100
+          ]
+        },
+        "expected_intent": "PROCESSING_WORKER_ASSIGN"
+      }
+    ]
+  },
+  {
+    "tool_name": "processing_worker_checkout",
+    "description": "记录员工完成批次工作并签出。用于统计员工工时和工作记录。可选记录实际工作时间。适用场景：员工完成工作签出、记录工时。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "员工32号刚完成B12批次的工作，帮我记录一下，工作了45分钟，备注是包装检查完成",
+        "expected_params": {
+          "batchId": 12,
+          "workerId": 32,
+          "workMinutes": 45,
+          "notes": "包装检查完成"
+        },
+        "expected_intent": "PROCESSING_WORKER_CHECKOUT"
+      },
+      {
+        "query": "请记录员工88号签出，他刚刚完成了A5批次的工作",
+        "expected_params": {
+          "batchId": 5,
+          "workerId": 88
+        },
+        "expected_intent": "PROCESSING_WORKER_CHECKOUT"
+      },
+      {
+        "query": "A3批次的小王工作了50分钟，现在完成工作了，请签出",
+        "expected_params": {
+          "batchId": 3,
+          "workerId": 103,
+          "workMinutes": 50
+        },
+        "expected_intent": "PROCESSING_WORKER_CHECKOUT"
+      }
+    ]
+  },
+  {
+    "tool_name": "production_confirm_workers_present",
+    "description": "确认生产人员已就位。查询当前进行中的生产批次及其分配的员工状态，汇总就位人数和缺勤人数。适用场景：确认人员到齐、检查开工就绪状态、人员就位确认。",
+    "category": "processing",
+    "test_cases": [
+      {
+        "query": "帮我查下当前生产批次的员工到岗情况",
+        "expected_params": {},
+        "expected_intent": "PRODUCTION_CONFIRM_WORKERS_PRESENT"
+      },
+      {
+        "query": "请查询批次ID为123的生产人员就位状态",
+        "expected_params": {
+          "batchId": 123
+        },
+        "expected_intent": "PRODUCTION_CONFIRM_WORKERS_PRESENT"
+      },
+      {
+        "query": "现在所有生产线上员工都到齐了吗？",
+        "expected_params": {},
+        "expected_intent": "PRODUCTION_CONFIRM_WORKERS_PRESENT"
+      }
+    ]
+  },
+  {
+    "tool_name": "quality_check_create",
+    "description": "创建质检任务。需要指定生产批次ID和质检类型，可选指定检验员和计划时间。适用场景：新建质检任务、安排质检计划、记录质检需求。",
+    "category": "quality",
+    "test_cases": [
+      {
+        "query": "我要为生产批次B12345创建一个微生物检验的任务，今天下午三点安排检验，备注写‘加急处理’",
+        "expected_params": {
+          "batchId": "B12345",
+          "checkType": "微生物检验",
+          "scheduledTime": "2023-09-15 15:00:00",
+          "notes": "加急处理"
+        },
+        "expected_intent": "QUALITY_CHECK_CREATE"
+      },
+      {
+        "query": "帮我创建一个感官检验任务，批次号是F67890，最好今天完成",
+        "expected_params": {
+          "batchId": "F67890",
+          "checkType": "感官检验",
+          "scheduledTime": "2023-09-15"
+        },
+        "expected_intent": "QUALITY_CHECK_CREATE"
+      },
+      {
+        "query": "请新建一个理化检验任务，批次是C112233，检验员是张三，明天上午做",
+        "expected_params": {
+          "batchId": "C112233",
+          "checkType": "理化检验",
+          "inspectorId": 1001,
+          "scheduledTime": "2023-09-16"
+        },
+        "expected_intent": "QUALITY_CHECK_CREATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "quality_check_query",
+    "description": "查询质检任务列表。支持按批次ID、检验结果状态、质检类型进行筛选，支持分页。适用场景：查看质检记录、查找特定批次的质检结果、统计质检数据。",
+    "category": "quality",
+    "test_cases": [
+      {
+        "query": "帮我查一下批次BATCH2023的质检结果",
+        "expected_params": {
+          "batchId": "BATCH2023"
+        },
+        "expected_intent": "QUALITY_CHECK_QUERY"
+      },
+      {
+        "query": "请查询第3页的质检任务，每页显示20条记录",
+        "expected_params": {
+          "page": 3,
+          "size": 20
+        },
+        "expected_intent": "QUALITY_CHECK_QUERY"
+      },
+      {
+        "query": "显示一下不合格的质检记录",
+        "expected_params": {
+          "status": "不合格"
+        },
+        "expected_intent": "QUALITY_CHECK_QUERY"
+      }
+    ]
+  },
+  {
+    "tool_name": "quality_check_update",
+    "description": "更新质检任务信息。需要指定质检任务ID，可更新检验结果、检验员、样本数据等。适用场景：录入质检结果、更新质检状态、修改检验员、添加备注。",
+    "category": "quality",
+    "test_cases": [
+      {
+        "query": "质检任务123456的结果更新一下，状态改成合格，合格数量是85，不合格数量是15，备注加上包装检查没问题",
+        "expected_params": {
+          "checkId": "123456",
+          "status": "合格",
+          "passCount": 85,
+          "failCount": 15,
+          "notes": "包装检查没问题"
+        },
+        "expected_intent": "QUALITY_CHECK_UPDATE"
+      },
+      {
+        "query": "请帮我把质检编号654321的状态设为不合格，并把检验员换成用户ID是789的检验员",
+        "expected_params": {
+          "checkId": "654321",
+          "status": "不合格",
+          "inspectorId": 789
+        },
+        "expected_intent": "QUALITY_CHECK_UPDATE"
+      },
+      {
+        "query": "质检任务ID是789012的，结果是合格，抽样数量是100，请更新一下",
+        "expected_params": {
+          "checkId": "789012",
+          "result": "合格",
+          "sampleSize": 100
+        },
+        "expected_intent": "QUALITY_CHECK_UPDATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "quality_record_query",
+    "description": "查询质检记录（历史结果）。支持按批次ID、检验结果、日期范围筛选，支持分页。适用场景：查看历史质检记录、查找特定批次质检结果、统计质检通过率。",
+    "category": "quality",
+    "test_cases": [
+      {
+        "query": "帮我查下生产批次1003的质检记录，要最近三天的",
+        "expected_params": {
+          "batchId": 1003,
+          "dateFrom": "2023-11-28",
+          "dateTo": "2023-12-01"
+        },
+        "expected_intent": "QUALITY_RECORD_QUERY"
+      },
+      {
+        "query": "请查询2023年11月25日到11月30日之间所有不合格的质检记录，第2页，每页15条",
+        "expected_params": {
+          "dateFrom": "2023-11-25",
+          "dateTo": "2023-11-30",
+          "result": "FAIL",
+          "page": 2,
+          "size": 15
+        },
+        "expected_intent": "QUALITY_RECORD_QUERY"
+      },
+      {
+        "query": "显示一下质检员456负责的质检记录，只要今天的数据",
+        "expected_params": {
+          "inspectorId": 456,
+          "dateFrom": "2023-12-01",
+          "dateTo": "2023-12-01"
+        },
+        "expected_intent": "QUALITY_RECORD_QUERY"
+      }
+    ]
+  },
+  {
+    "tool_name": "quality_result_submit",
+    "description": "提交质检结果。用于记录质量检验的最终结论，包括检验数据、合格率、结论说明等。适用场景：提交成品质检、原料来料检验、过程检验结果。",
+    "category": "quality",
+    "test_cases": [
+      {
+        "query": "我要提交一个质检结果，质检记录ID是Q123456，结果是合格，结论是各项指标都符合标准，抽检了50个，合格48个，不合格2个。",
+        "expected_params": {
+          "checkId": "Q123456",
+          "result": "PASS",
+          "conclusion": "各项指标都符合标准",
+          "sampleSize": 50,
+          "passCount": 48,
+          "failCount": 2
+        },
+        "expected_intent": "QUALITY_RESULT_SUBMIT"
+      },
+      {
+        "query": "我现在要提交一个生产批次ID为1001的原料质检结果，结果是不合格，结论是存在重金属超标问题，请记录下来。",
+        "expected_params": {
+          "productionBatchId": 1001,
+          "result": "FAIL",
+          "conclusion": "存在重金属超标问题"
+        },
+        "expected_intent": "QUALITY_RESULT_SUBMIT"
+      },
+      {
+        "query": "帮我提交质检结果，质检记录ID是QC789，结果是有条件放行，结论是外观有轻微瑕疵但不影响使用，样本数量是30，合格25个，不合格5个，检测项数据包括含水量3%，酸价0.5mg/g，照片链接有https://example.com/photo1.jpg 和 https://example.com/photo2.jpg。",
+        "expected_params": {
+          "checkId": "QC789",
+          "result": "CONDITIONAL",
+          "conclusion": "外观有轻微瑕疵但不影响使用",
+          "sampleSize": 30,
+          "passCount": 25,
+          "failCount": 5,
+          "checkItems": [
+            {
+              "name": "含水量",
+              "value": "3%"
+            },
+            {
+              "name": "酸价",
+              "value": "0.5mg/g"
+            }
+          ],
+          "photos": [
+            "https://example.com/photo1.jpg",
+            "https://example.com/photo2.jpg"
+          ]
+        },
+        "expected_intent": "QUALITY_RESULT_SUBMIT"
+      }
+    ]
+  },
+  {
+    "tool_name": "quality_stats_query",
+    "description": "查询质检统计数据。返回指定时间段内的质检合格率、不合格率、质量问题数等统计指标。适用场景：查看今日/本周/本月质检统计、生成质量报表、分析质量趋势。",
+    "category": "quality",
+    "test_cases": [
+      {
+        "query": "帮我查下今天所有产品的质检合格率和不合格率",
+        "expected_params": {
+          "period": "today"
+        },
+        "expected_intent": "QUALITY_STATS_QUERY"
+      },
+      {
+        "query": "请查询本月乳制品的质检统计，包含详细检验员数据",
+        "expected_params": {
+          "period": "month",
+          "productTypeId": "dairy_001",
+          "includeDetails": true
+        },
+        "expected_intent": "QUALITY_STATS_QUERY"
+      },
+      {
+        "query": "我想看下上周到这周五的质量统计数据",
+        "expected_params": {
+          "period": "custom",
+          "dateFrom": "2023-10-23",
+          "dateTo": "2023-10-27"
+        },
+        "expected_intent": "QUALITY_STATS_QUERY"
+      }
+    ]
+  },
+  {
+    "tool_name": "query_drools_rules",
+    "description": "查询现有的Drools验证规则，提取与指定实体类型和操作类型相关的规则。返回规则名称、优先级、条件、动作等信息。适用场景：创建新意图前了解现有验证规则、分析验证逻辑、排查验证失败原因。",
+    "category": "general",
+    "test_cases": [
+      {
+        "query": "帮我查下物料批次相关的验证规则",
+        "expected_params": {
+          "entityType": "MaterialBatch"
+        },
+        "expected_intent": "QUERY_DROOLS_RULES"
+      },
+      {
+        "query": "请查询和加工批次有关的所有规则",
+        "expected_params": {
+          "entityType": "ProcessingBatch"
+        },
+        "expected_intent": "QUERY_DROOLS_RULES"
+      },
+      {
+        "query": "我想看下字段验证文件里的规则，操作类型是创建",
+        "expected_params": {
+          "operationType": "create",
+          "ruleFile": "field-validation.drl"
+        },
+        "expected_intent": "QUERY_DROOLS_RULES"
+      }
+    ]
+  },
+  {
+    "tool_name": "query_entity_schema",
+    "description": "查询指定实体的Schema信息，包括所有字段名称、类型、是否必填等。用于辅助生成数据查询、数据操作、表单生成等意图。支持中文、英文和下划线格式的实体名称。",
+    "category": "general",
+    "test_cases": [
+      {
+        "query": "帮我查下原料批次的结构信息",
+        "expected_params": {
+          "entityName": "原料批次"
+        },
+        "expected_intent": "QUERY_ENTITY_SCHEMA"
+      },
+      {
+        "query": "请查询ProductBatch的schema",
+        "expected_params": {
+          "entityName": "ProductBatch"
+        },
+        "expected_intent": "QUERY_ENTITY_SCHEMA"
+      },
+      {
+        "query": "我想了解成品信息表的字段情况",
+        "expected_params": {
+          "entityName": "成品信息表"
+        },
+        "expected_intent": "QUERY_ENTITY_SCHEMA"
+      }
+    ]
+  },
+  {
+    "tool_name": "report_anomaly",
+    "description": "获取异常分析报表，包含异常模式检测、离群值分析、告警汇总、风险评估等数据。适用场景：异常监控、风险预警、问题追踪、质量异常分析。",
+    "category": "report",
+    "test_cases": [
+      {
+        "query": "帮我查一下最近一周的质量异常报告",
+        "expected_params": {
+          "period": "week"
+        },
+        "expected_intent": "REPORT_ANOMALY"
+      },
+      {
+        "query": "请查询本月的异常报表，只要严重程度高的",
+        "expected_params": {
+          "period": "month",
+          "severity": "高"
+        },
+        "expected_intent": "REPORT_ANOMALY"
+      },
+      {
+        "query": "我想看从上周一到这周五的所有设备异常分析",
+        "expected_params": {
+          "startDate": "2023-10-23",
+          "endDate": "2023-10-27"
+        },
+        "expected_intent": "REPORT_ANOMALY"
+      }
+    ]
+  },
+  {
+    "tool_name": "report_bom_cost",
+    "description": "获取 BOM 成本分析报表，包含理论成本与实际成本对比、成本差异分析、成本异常检测。适用场景：成本核算、差异分析、成本优化、报价参考。数据已预计算，可直接用于分析，无需额外聚合。",
+    "category": "report",
+    "test_cases": [
+      {
+        "query": "帮我查下最近一周的BOM成本汇总分析",
+        "expected_params": {
+          "period": "week",
+          "analysisType": "summary"
+        },
+        "expected_intent": "REPORT_BOM_COST"
+      },
+      {
+        "query": "请显示产品类型ID为PT12345的成本详细分析，时间范围是今天",
+        "expected_params": {
+          "productTypeId": "PT12345",
+          "period": "today",
+          "analysisType": "detail"
+        },
+        "expected_intent": "REPORT_BOM_COST"
+      },
+      {
+        "query": "我要查看这周的BOM成本差异分析，包含零成本的产品",
+        "expected_params": {
+          "period": "week",
+          "analysisType": "variance",
+          "includeZeroCost": true
+        },
+        "expected_intent": "REPORT_BOM_COST"
+      }
+    ]
+  },
+  {
+    "tool_name": "report_cost_variance",
+    "description": "获取成本差异分析报表，包含BOM理论成本与实际成本对比、差异分析、成本异常检测。适用场景：成本控制、BOM优化、降本增效分析。",
+    "category": "report",
+    "test_cases": [
+      {
+        "query": "帮我查下这个月的BOM成本和实际成本的差异，差异超过5%的显示出来",
+        "expected_params": {
+          "period": "month",
+          "varianceThreshold": 5
+        },
+        "expected_intent": "REPORT_COST_VARIANCE"
+      },
+      {
+        "query": "请查询一下今年第一季度的成本差异分析，特别是产品类型ID是PT12345的部分",
+        "expected_params": {
+          "period": "quarter",
+          "productTypeId": "PT12345"
+        },
+        "expected_intent": "REPORT_COST_VARIANCE"
+      },
+      {
+        "query": "我要看一下从2024-03-01到2024-03-31所有产品的成本差异情况",
+        "expected_params": {
+          "startDate": "2024-03-01",
+          "endDate": "2024-03-31"
+        },
+        "expected_intent": "REPORT_COST_VARIANCE"
+      }
+    ]
+  },
+  {
+    "tool_name": "report_dashboard_overview",
+    "description": "获取仪表盘概览报表，包含关键指标、生产概况、质量概况、库存状态等综合数据。适用场景：管理层总览、每日经营概况、实时监控、快速了解工厂整体运营状态。",
+    "category": "report",
+    "test_cases": [
+      {
+        "query": "帮我查下今天的生产概览，要包括质量情况和库存状态",
+        "expected_params": {
+          "period": "today"
+        },
+        "expected_intent": "REPORT_DASHBOARD_OVERVIEW"
+      },
+      {
+        "query": "请查询本月的关键指标和生产概况",
+        "expected_params": {
+          "period": "month"
+        },
+        "expected_intent": "REPORT_DASHBOARD_OVERVIEW"
+      },
+      {
+        "query": "我想看从10月1日到10月15日的经营概况",
+        "expected_params": {
+          "startDate": "2023-10-01",
+          "endDate": "2023-10-15"
+        },
+        "expected_intent": "REPORT_DASHBOARD_OVERVIEW"
+      }
+    ]
+  },
+  {
+    "tool_name": "report_efficiency",
+    "description": "获取效率报表，包含设备利用率、生产效率、劳动生产率、资源优化分析等数据。适用场景：效率分析、产能利用、设备OEE分析、人均产出评估。",
+    "category": "report",
+    "test_cases": [
+      {
+        "query": "帮我查下这周的生产效率，特别是设备利用率",
+        "expected_params": {
+          "period": "week"
+        },
+        "expected_intent": "REPORT_EFFICIENCY"
+      },
+      {
+        "query": "请查询本月的劳动生产率，设备ID是EQ123456",
+        "expected_params": {
+          "period": "month",
+          "equipmentId": "EQ123456"
+        },
+        "expected_intent": "REPORT_EFFICIENCY"
+      },
+      {
+        "query": "我要看今天从8点到18点的效率报表，类型是资源优化分析",
+        "expected_params": {
+          "startDate": "2023-10-01",
+          "endDate": "2023-10-01",
+          "efficiencyType": "resource_optimization"
+        },
+        "expected_intent": "REPORT_EFFICIENCY"
+      }
+    ]
+  },
+  {
+    "tool_name": "report_finance",
+    "description": "获取财务报表，包含成本分析、收入统计、利润率、财务趋势等数据。适用场景：成本核算、利润分析、预算对比、财务决策支持。",
+    "category": "report",
+    "test_cases": [
+      {
+        "query": "帮我查下这个月的财务报表，我要看看整体利润情况",
+        "expected_params": {
+          "period": "month"
+        },
+        "expected_intent": "REPORT_FINANCE"
+      },
+      {
+        "query": "请查询一下今年第一季度的成本分析，特别是生产部的成本中心数据",
+        "expected_params": {
+          "period": "quarter",
+          "financeType": "成本分析",
+          "costCenter": "生产部"
+        },
+        "expected_intent": "REPORT_FINANCE"
+      },
+      {
+        "query": "我想对比一下6月1号到15号和7月1号到15号的收入统计",
+        "expected_params": {
+          "startDate": "2023-07-01",
+          "endDate": "2023-07-15"
+        },
+        "expected_intent": "REPORT_FINANCE"
+      }
+    ]
+  },
+  {
+    "tool_name": "report_inventory",
+    "description": "获取库存报表，包含库存水平、库存周转、库龄分析、出入库流水等数据。适用场景：库存盘点、库龄预警、周转率分析、库存成本分析。",
+    "category": "report",
+    "test_cases": [
+      {
+        "query": "帮我查下今天各个仓库的库存情况",
+        "expected_params": {
+          "period": "today"
+        },
+        "expected_intent": "REPORT_INVENTORY"
+      },
+      {
+        "query": "请查询本月肉类库存周转数据，只看冷冻仓库",
+        "expected_params": {
+          "period": "month",
+          "category": "肉类",
+          "warehouseId": "WH002"
+        },
+        "expected_intent": "REPORT_INVENTORY"
+      },
+      {
+        "query": "我想看下上季度的库存报表，从7月1日到9月30日",
+        "expected_params": {
+          "startDate": "2023-07-01",
+          "endDate": "2023-09-30"
+        },
+        "expected_intent": "REPORT_INVENTORY"
+      }
+    ]
+  },
+  {
+    "tool_name": "report_kpi",
+    "description": "获取KPI报表，包含关键绩效指标、目标完成率、绩效对比、记分卡等数据。适用场景：绩效评估、目标跟踪、KPI仪表盘、管理决策支持。",
+    "category": "report",
+    "test_cases": [
+      {
+        "query": "帮我查下这个月的KPI报表，我想看看整体完成情况",
+        "expected_params": {
+          "period": "month"
+        },
+        "expected_intent": "REPORT_KPI"
+      },
+      {
+        "query": "请查询一下生产部最近一周的绩效数据，部门ID是DP1002",
+        "expected_params": {
+          "period": "week",
+          "departmentId": "DP1002"
+        },
+        "expected_intent": "REPORT_KPI"
+      },
+      {
+        "query": "我要查看质量检测类的KPI，时间从10月1日到10月31日",
+        "expected_params": {
+          "startDate": "2023-10-01",
+          "endDate": "2023-10-31",
+          "kpiCategory": "质量检测"
+        },
+        "expected_intent": "REPORT_KPI"
+      }
+    ]
+  },
+  {
+    "tool_name": "report_oee",
+    "description": "获取OEE设备综合效率报表，包含可用性、表现性、质量率、设备效率分析等数据。适用场景：设备效率分析、生产瓶颈识别、效率优化决策。",
+    "category": "report",
+    "test_cases": [
+      {
+        "query": "帮我查下设备ID是E1001的OEE数据，时间是今天",
+        "expected_params": {
+          "period": "today",
+          "equipmentId": "E1001"
+        },
+        "expected_intent": "REPORT_OEE"
+      },
+      {
+        "query": "请查询本月的OEE报表，设备是E2002",
+        "expected_params": {
+          "period": "month",
+          "equipmentId": "E2002"
+        },
+        "expected_intent": "REPORT_OEE"
+      },
+      {
+        "query": "我要看下上周的设备效率分析，不指定设备",
+        "expected_params": {
+          "startDate": "2023-11-20",
+          "endDate": "2023-11-26"
+        },
+        "expected_intent": "REPORT_OEE"
+      }
+    ]
+  },
+  {
+    "tool_name": "report_production",
+    "description": "获取生产报表，包含产量统计、生产线效率、批次完成率、生产趋势等数据。适用场景：生产分析、产能评估、生产计划完成情况、班组产量对比。",
+    "category": "report",
+    "test_cases": [
+      {
+        "query": "帮我查下本周的生产报表，我想看看整体情况",
+        "expected_params": {
+          "period": "week"
+        },
+        "expected_intent": "REPORT_PRODUCTION"
+      },
+      {
+        "query": "请查询本月的生产报表，特别是生产线3的产量统计",
+        "expected_params": {
+          "period": "month",
+          "productionLineId": "3"
+        },
+        "expected_intent": "REPORT_PRODUCTION"
+      },
+      {
+        "query": "最近从9月1号到9月15号的生产趋势怎么样？帮我调出来看看",
+        "expected_params": {
+          "startDate": "2023-09-01",
+          "endDate": "2023-09-15"
+        },
+        "expected_intent": "REPORT_PRODUCTION"
+      }
+    ]
+  },
+  {
+    "tool_name": "report_quality",
+    "description": "获取质量报表，包含检验结果统计、质量合格率、缺陷分析、质量趋势等数据。适用场景：质量分析、合格率统计、缺陷追踪、质量改进跟踪。",
+    "category": "report",
+    "test_cases": [
+      {
+        "query": "帮我查下这个月的质量报表，我想看看整体合格率",
+        "expected_params": {
+          "period": "month"
+        },
+        "expected_intent": "REPORT_QUALITY"
+      },
+      {
+        "query": "请查询最近一周的质检报告，重点是产品缺陷分析",
+        "expected_params": {
+          "period": "week"
+        },
+        "expected_intent": "REPORT_QUALITY"
+      },
+      {
+        "query": "我要查3月1号到3月31号之间的所有质检结果统计，检验类型是出厂检验",
+        "expected_params": {
+          "startDate": "2023-03-01",
+          "endDate": "2023-03-31",
+          "inspectionType": "出厂检验"
+        },
+        "expected_intent": "REPORT_QUALITY"
+      }
+    ]
+  },
+  {
+    "tool_name": "report_trends",
+    "description": "获取趋势分析报表，包含历史数据趋势、预测分析、模式识别、同比环比对比等数据。适用场景：趋势分析、预测决策、历史对比、周期性分析。",
+    "category": "report",
+    "test_cases": [
+      {
+        "query": "帮我查下最近30天的生产量趋势分析",
+        "expected_params": {
+          "days": 30,
+          "metric": "生产量"
+        },
+        "expected_intent": "REPORT_TRENDS"
+      },
+      {
+        "query": "请查询本月的原材料消耗趋势报表",
+        "expected_params": {
+          "period": "month",
+          "metric": "原材料消耗"
+        },
+        "expected_intent": "REPORT_TRENDS"
+      },
+      {
+        "query": "我想看从10月1日到10月15日的销售趋势数据",
+        "expected_params": {
+          "startDate": "2023-10-01",
+          "endDate": "2023-10-15"
+        },
+        "expected_intent": "REPORT_TRENDS"
+      }
+    ]
+  },
+  {
+    "tool_name": "scale_add_device",
+    "description": "添加新的 IoT 电子秤设备。支持指定设备名称、IP地址、端口、协议等配置。可自动识别品牌型号并匹配对应的通信协议。适用场景：添加新电子秤、配置设备连接参数。",
+    "category": "scale",
+    "test_cases": [
+      {
+        "query": "添加一个新的电子秤，名字叫包装车间柯力电子秤，IP地址是192.168.1.100，端口是502，协议选Modbus",
+        "expected_params": {
+          "name": "包装车间柯力电子秤",
+          "ip": "192.168.1.100",
+          "port": 502,
+          "protocol": "Modbus"
+        },
+        "expected_intent": "SCALE_ADD_DEVICE"
+      },
+      {
+        "query": "请添加一个型号为XK3190-A9的耀华电子秤，设备名称是质检科耀华秤，IP是192.168.2.50，端口9600，协议是HTTP，放在质检科",
+        "expected_params": {
+          "name": "质检科耀华秤",
+          "ip": "192.168.2.50",
+          "port": 9600,
+          "protocol": "HTTP",
+          "location": "质检科",
+          "brandCode": "YAOHUA",
+          "modelCode": "XK3190-A9"
+        },
+        "expected_intent": "SCALE_ADD_DEVICE"
+      },
+      {
+        "query": "我在包装车间加个新秤，叫D2008电子秤，IP是192.168.1.101，端口502，协议是Modbus，关联工位ID WS001",
+        "expected_params": {
+          "name": "D2008电子秤",
+          "ip": "192.168.1.101",
+          "port": 502,
+          "protocol": "Modbus",
+          "workstationId": "WS001"
+        },
+        "expected_intent": "SCALE_ADD_DEVICE"
+      }
+    ]
+  },
+  {
+    "tool_name": "scale_add_device_vision",
+    "description": "通过图片识别添加 IoT 电子秤设备。上传设备铭牌或规格书照片，AI 自动提取设备信息。适用场景：快速录入新设备、识别设备铭牌、批量设备登记。",
+    "category": "scale",
+    "test_cases": [
+      {
+        "query": "我拍了个新设备的铭牌照片，帮我添加一个叫电子秤A2的IoT设备吧，照片里应该有信息。",
+        "expected_params": {
+          "name": "电子秤A2",
+          "cameraConfig": {
+            "imageBase64": "base64_encoded_string"
+          }
+        },
+        "expected_intent": "SCALE_ADD_DEVICE_VISION"
+      },
+      {
+        "query": "请通过我上传的图片识别并添加设备，设备名称是包装秤B10，位置在包装车间第3区。",
+        "expected_params": {
+          "name": "包装秤B10",
+          "cameraConfig": {
+            "imageUrl": "http://example.com/image.jpg"
+          },
+          "location": "包装车间第3区"
+        },
+        "expected_intent": "SCALE_ADD_DEVICE_VISION"
+      },
+      {
+        "query": "我这边有一张设备规格书的照片，帮我添加一个叫称重仪X1的设备，关联工位ID是WS101。",
+        "expected_params": {
+          "name": "称重仪X1",
+          "cameraConfig": {
+            "imageBase64": "base64_encoded_string"
+          },
+          "workstationId": "WS101"
+        },
+        "expected_intent": "SCALE_ADD_DEVICE_VISION"
+      }
+    ]
+  },
+  {
+    "tool_name": "scale_delete_device",
+    "description": "删除 IoT 电子秤设备。会检查设备是否有使用记录，有记录的设备无法删除。适用场景：移除废弃设备、删除测试设备、清理无用配置。注意：此操作不可恢复，请谨慎使用。",
+    "category": "scale",
+    "test_cases": [
+      {
+        "query": "我要删掉设备ID是123的那个电子秤，它已经坏了",
+        "expected_params": {
+          "deviceId": 123
+        },
+        "expected_intent": "SCALE_DELETE_DEVICE"
+      },
+      {
+        "query": "请删除设备ID为456的电子秤，原因是我们不再使用这个设备了，强制删掉吧",
+        "expected_params": {
+          "deviceId": 456,
+          "force": true,
+          "reason": "不再使用"
+        },
+        "expected_intent": "SCALE_DELETE_DEVICE"
+      },
+      {
+        "query": "删掉设备ID是789的测试秤，如果有的话",
+        "expected_params": {
+          "deviceId": 789
+        },
+        "expected_intent": "SCALE_DELETE_DEVICE"
+      }
+    ]
+  },
+  {
+    "tool_name": "scale_device_detail",
+    "description": "查询 IoT 电子秤设备详情。返回设备的完整配置信息，包括连接参数、协议配置、品牌型号等。适用场景：查看设备详细配置、排查连接问题、检查协议绑定状态。",
+    "category": "scale",
+    "test_cases": [
+      {
+        "query": "帮我查下设备ID是123的电子秤详情",
+        "expected_params": {
+          "deviceId": 123
+        },
+        "expected_intent": "SCALE_DEVICE_DETAIL"
+      },
+      {
+        "query": "请查询设备编码为SCALE-0001的电子秤配置信息",
+        "expected_params": {
+          "deviceCode": "SCALE-0001"
+        },
+        "expected_intent": "SCALE_DEVICE_DETAIL"
+      },
+      {
+        "query": "我想查看设备ID是456的电子秤，包括它的连接参数和协议配置",
+        "expected_params": {
+          "deviceId": 456
+        },
+        "expected_intent": "SCALE_DEVICE_DETAIL"
+      }
+    ]
+  },
+  {
+    "tool_name": "scale_list_devices",
+    "description": "查询 IoT 电子秤设备列表。支持按状态筛选，返回设备基本信息和状态分布统计。适用场景：查看所有电子秤、查找特定状态的设备、获取设备统计。",
+    "category": "scale",
+    "test_cases": [
+      {
+        "query": "帮我查下在线的电子秤设备",
+        "expected_params": {
+          "status": "在线"
+        },
+        "expected_intent": "SCALE_LIST_DEVICES"
+      },
+      {
+        "query": "请查询名称包含‘A区’的设备，显示第3页，每页15条",
+        "expected_params": {
+          "keyword": "A区",
+          "page": 3,
+          "size": 15
+        },
+        "expected_intent": "SCALE_LIST_DEVICES"
+      },
+      {
+        "query": "显示所有设备的列表",
+        "expected_params": {},
+        "expected_intent": "SCALE_LIST_DEVICES"
+      }
+    ]
+  },
+  {
+    "tool_name": "scale_update_device",
+    "description": "更新 IoT 电子秤设备信息。支持修改设备名称、位置、状态、协议等配置。适用场景：修改设备配置、更新设备状态、变更设备位置、绑定新协议。",
+    "category": "scale",
+    "test_cases": [
+      {
+        "query": "把设备ID是1001的电子秤位置改成包装车间B区，状态设为维修中",
+        "expected_params": {
+          "deviceId": 1001,
+          "location": "包装车间B区",
+          "status": "维修中"
+        },
+        "expected_intent": "SCALE_UPDATE_DEVICE"
+      },
+      {
+        "query": "请更新设备ID为205的电子秤，设备名称改为‘高速称重机’，绑定协议ID是PROT_8831",
+        "expected_params": {
+          "deviceId": 205,
+          "equipmentName": "高速称重机",
+          "protocolId": "PROT_8831"
+        },
+        "expected_intent": "SCALE_UPDATE_DEVICE"
+      },
+      {
+        "query": "设备ID 887的电子秤IP地址变了，现在是192.168.1.150，端口是5000，帮忙改一下",
+        "expected_params": {
+          "deviceId": 887,
+          "ip": "192.168.1.150",
+          "port": 5000
+        },
+        "expected_intent": "SCALE_UPDATE_DEVICE"
+      }
+    ]
+  },
+  {
+    "tool_name": "shipment_by_customer",
+    "description": "按客户查询出货记录。需要提供客户ID。可选按日期范围、状态筛选，支持分页。适用场景：查看客户的出货历史、客户对账、客户服务查询。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "帮我查下客户C123456的出货记录，最近一个月的",
+        "expected_params": {
+          "customerId": "C123456",
+          "dateFrom": "2023-04-01",
+          "dateTo": "2023-04-30"
+        },
+        "expected_intent": "SHIPMENT_BY_CUSTOMER"
+      },
+      {
+        "query": "请查询客户C789012的出货情况，状态是已发货的，显示第2页，每页15条",
+        "expected_params": {
+          "customerId": "C789012",
+          "status": "已发货",
+          "page": 2,
+          "size": 15
+        },
+        "expected_intent": "SHIPMENT_BY_CUSTOMER"
+      },
+      {
+        "query": "客户C345678的出货历史能不能给我看一下",
+        "expected_params": {
+          "customerId": "C345678"
+        },
+        "expected_intent": "SHIPMENT_BY_CUSTOMER"
+      }
+    ]
+  },
+  {
+    "tool_name": "shipment_by_date",
+    "description": "按日期范围查询出货记录。需要提供开始日期和结束日期（格式：yyyy-MM-dd）。可选按状态筛选，支持分页。适用场景：查询某段时间的出货记录、月度报表、历史记录查询。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "帮我查下上个月1号到昨天的所有出货记录，状态是已发货的",
+        "expected_params": {
+          "startDate": "2023-04-01",
+          "endDate": "2023-04-30",
+          "status": "已发货",
+          "page": 1,
+          "size": 10
+        },
+        "expected_intent": "SHIPMENT_BY_DATE"
+      },
+      {
+        "query": "请查询本周的出货情况，只要未发货的部分，给我看第二页，每页20条",
+        "expected_params": {
+          "startDate": "2023-05-22",
+          "endDate": "2023-05-28",
+          "status": "未发货",
+          "page": 2,
+          "size": 20
+        },
+        "expected_intent": "SHIPMENT_BY_DATE"
+      },
+      {
+        "query": "我要看5月10号到5月20号之间的全部出货记录",
+        "expected_params": {
+          "startDate": "2023-05-10",
+          "endDate": "2023-05-20",
+          "page": 1,
+          "size": 10
+        },
+        "expected_intent": "SHIPMENT_BY_DATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "shipment_cancel",
+    "description": "取消出货单。需要提供出货单ID和取消原因。取消后不可恢复。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "我要取消出货单SH123456，原因是客户不要了",
+        "expected_params": {
+          "shipmentId": "SH123456",
+          "reason": "客户不要了"
+        },
+        "expected_intent": "SHIPMENT_CANCEL"
+      },
+      {
+        "query": "请取消出货单ID是SH789012的发货单，取消原因是没有库存了",
+        "expected_params": {
+          "shipmentId": "SH789012",
+          "reason": "没有库存了"
+        },
+        "expected_intent": "SHIPMENT_CANCEL"
+      },
+      {
+        "query": "帮我取消出货单SH345678，客户临时说不需要了",
+        "expected_params": {
+          "shipmentId": "SH345678",
+          "reason": "客户临时说不需要了"
+        },
+        "expected_intent": "SHIPMENT_CANCEL"
+      }
+    ]
+  },
+  {
+    "tool_name": "shipment_complete",
+    "description": "完成出货单（已送达）。将出货单状态更新为'已送达'。可以同时记录送达时间、签收人、备注等信息。适用场景：确认签收、完成配送、结束出货流程。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "出货单SH123456已经送到客户那里了，签收人是张三，时间是今天下午三点",
+        "expected_params": {
+          "shipmentId": "SH123456",
+          "deliveryTime": "2023-10-05 15:00:00",
+          "signedBy": "张三"
+        },
+        "expected_intent": "SHIPMENT_COMPLETE"
+      },
+      {
+        "query": "请把出货单SH789012标记为已送达，预计下午五点送到，备注写延迟送达",
+        "expected_params": {
+          "shipmentId": "SH789012",
+          "deliveryTime": "2023-10-05 17:00:00",
+          "notes": "延迟送达"
+        },
+        "expected_intent": "SHIPMENT_COMPLETE"
+      },
+      {
+        "query": "出货单SH345678已经完成了，帮我更新一下状态",
+        "expected_params": {
+          "shipmentId": "SH345678"
+        },
+        "expected_intent": "SHIPMENT_COMPLETE"
+      }
+    ]
+  },
+  {
+    "tool_name": "shipment_confirm",
+    "description": "确认出货单（开始发货）。将出货单状态从'待发货'更新为'已发货'。可以同时更新实际发货时间、车辆号码、司机姓名等信息。适用场景：确认发货、更新物流信息、开始配送。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "我要确认出货单SH123456开始发货，实际发货时间是2023-10-05 09:30:00，车牌号是京A12345，司机叫张三",
+        "expected_params": {
+          "shipmentId": "SH123456",
+          "actualShipTime": "2023-10-05 09:30:00",
+          "vehicleNumber": "京A12345",
+          "driverName": "张三"
+        },
+        "expected_intent": "SHIPMENT_CONFIRM"
+      },
+      {
+        "query": "请确认发货单SH789012已发货，并更新实际发货时间为2023-10-06 14:20:00",
+        "expected_params": {
+          "shipmentId": "SH789012",
+          "actualShipTime": "2023-10-06 14:20:00"
+        },
+        "expected_intent": "SHIPMENT_CONFIRM"
+      },
+      {
+        "query": "把出货单SH345678标记为已发货",
+        "expected_params": {
+          "shipmentId": "SH345678"
+        },
+        "expected_intent": "SHIPMENT_CONFIRM"
+      }
+    ]
+  },
+  {
+    "tool_name": "shipment_create",
+    "description": "创建出货单。需要指定客户ID和产品批次列表，可选指定计划发货日期、备注和车辆编号。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "我要创建一个出货单，客户是C1001，产品批次是PB202301和PB202302，尽快发走",
+        "expected_params": {
+          "customerId": "C1001",
+          "productBatchIds": [
+            "PB202301",
+            "PB202302"
+          ]
+        },
+        "expected_intent": "SHIPMENT_CREATE"
+      },
+      {
+        "query": "安排明天给客户C1002发货，产品批次PB202303，备注写加急，用货车号TRK8866运输",
+        "expected_params": {
+          "customerId": "C1002",
+          "productBatchIds": [
+            "PB202303"
+          ],
+          "scheduledDate": "2023-12-12",
+          "notes": "加急",
+          "vehicleNumber": "TRK8866"
+        },
+        "expected_intent": "SHIPMENT_CREATE"
+      },
+      {
+        "query": "创建出货单，客户ID是C1003，批次PB202304，产品名称是速冻水饺，数量500箱，单价35元，送到上海市浦东新区某路123号",
+        "expected_params": {
+          "customerId": "C1003",
+          "productBatchIds": [
+            "PB202304"
+          ],
+          "productName": "速冻水饺",
+          "quantity": 500,
+          "unit": "箱",
+          "unitPrice": 35,
+          "deliveryAddress": "上海市浦东新区某路123号"
+        },
+        "expected_intent": "SHIPMENT_CREATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "shipment_query",
+    "description": "查询出货单列表。支持按状态、客户ID、日期范围进行筛选，支持分页。适用场景：查看出货记录、查找特定客户的出货单、查询某时间段的出货情况。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "帮我查下昨天到今天的出货单，客户是C1001的",
+        "expected_params": {
+          "dateFrom": "2023-10-09",
+          "dateTo": "2023-10-10",
+          "customerId": "C1001"
+        },
+        "expected_intent": "SHIPMENT_QUERY"
+      },
+      {
+        "query": "请查询状态是已发货的出货单，显示第0页，每页15条",
+        "expected_params": {
+          "status": "已发货",
+          "page": 0,
+          "size": 15
+        },
+        "expected_intent": "SHIPMENT_QUERY"
+      },
+      {
+        "query": "我想查出货单号是S20231010的记录",
+        "expected_params": {
+          "shipmentNumber": "S20231010"
+        },
+        "expected_intent": "SHIPMENT_QUERY"
+      }
+    ]
+  },
+  {
+    "tool_name": "shipment_stats_query",
+    "description": "查询出货统计数据。支持按时间周期（今日/本周/本月）或按客户维度统计。返回总数、各状态数量（待发货、已发货、已送达、已退回）等信息。适用场景：查看出货概况、业务报表、绩效统计。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "帮我查下今天发出去的货有多少，各个状态的数量也一起显示",
+        "expected_params": {
+          "period": "今日"
+        },
+        "expected_intent": "SHIPMENT_STATS_QUERY"
+      },
+      {
+        "query": "请查询本月发给客户123456的货物统计信息",
+        "expected_params": {
+          "period": "本月",
+          "customerId": "123456"
+        },
+        "expected_intent": "SHIPMENT_STATS_QUERY"
+      },
+      {
+        "query": "我想知道这周的出货情况，包括待发货和已送达的数量",
+        "expected_params": {
+          "period": "本周"
+        },
+        "expected_intent": "SHIPMENT_STATS_QUERY"
+      }
+    ]
+  },
+  {
+    "tool_name": "shipment_status_update",
+    "description": "更新出货单状态。支持状态：PENDING(待发货)、SHIPPED(已发货)、DELIVERED(已送达)、CANCELLED(已取消)。取消操作需要提供原因。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "出货单SH2023100101的状态改成已发货",
+        "expected_params": {
+          "shipmentId": "SH2023100101",
+          "status": "SHIPPED"
+        },
+        "expected_intent": "SHIPMENT_STATUS_UPDATE"
+      },
+      {
+        "query": "请把出货单SH2023100102的状态更新为已送达",
+        "expected_params": {
+          "shipmentId": "SH2023100102",
+          "status": "DELIVERED"
+        },
+        "expected_intent": "SHIPMENT_STATUS_UPDATE"
+      },
+      {
+        "query": "取消出货单SH2023100103，原因是客户订单错误",
+        "expected_params": {
+          "shipmentId": "SH2023100103",
+          "status": "CANCELLED",
+          "reason": "客户订单错误"
+        },
+        "expected_intent": "SHIPMENT_STATUS_UPDATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "shipment_update",
+    "description": "更新出货单信息。需要指定出货单ID，可更新客户、计划发货日期、备注、车辆编号等信息。注意：状态更新请使用 shipment_status_update 工具。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "我要更新出货单1001的信息，客户改成张三，计划发货日期是2023-12-20，备注加一句请优先处理",
+        "expected_params": {
+          "shipmentId": "1001",
+          "customerId": "ZhangSan",
+          "scheduledDate": "2023-12-20",
+          "notes": "请优先处理"
+        },
+        "expected_intent": "SHIPMENT_UPDATE"
+      },
+      {
+        "query": "请帮我修改出货单1002的车辆编号为京A12345，并更新配送地址到北京市朝阳区某路123号",
+        "expected_params": {
+          "shipmentId": "1002",
+          "vehicleNumber": "京A12345",
+          "deliveryAddress": "北京市朝阳区某路123号"
+        },
+        "expected_intent": "SHIPMENT_UPDATE"
+      },
+      {
+        "query": "出货单1003的物流公司改成顺丰，产品名称是冷冻水饺，数量是500件",
+        "expected_params": {
+          "shipmentId": "1003",
+          "logisticsCompany": "顺丰",
+          "productName": "冷冻水饺",
+          "quantity": 500
+        },
+        "expected_intent": "SHIPMENT_UPDATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "trace_batch",
+    "description": "查询批次的基础溯源信息。包括原材料来源、生产日期、加工环节等基本追溯数据。适用场景：查询产品批次的来源信息、追溯生产过程。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "帮我查下批次号B123456的原材料来源和生产日期",
+        "expected_params": {
+          "batchNumber": "B123456"
+        },
+        "expected_intent": "TRACE_BATCH"
+      },
+      {
+        "query": "请查询一下批次号C789012的加工环节信息",
+        "expected_params": {
+          "batchNumber": "C789012"
+        },
+        "expected_intent": "TRACE_BATCH"
+      },
+      {
+        "query": "我想知道批次号D345678的溯源信息，包括生产过程",
+        "expected_params": {
+          "batchNumber": "D345678"
+        },
+        "expected_intent": "TRACE_BATCH"
+      }
+    ]
+  },
+  {
+    "tool_name": "trace_full",
+    "description": "查询批次的完整溯源链路。包括原材料采购、入库检验、生产加工、质检、出库等全流程追踪信息。适用场景：需要完整追溯链的质量问题调查、客户溯源要求。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "帮我查下批次号B20231001的完整溯源信息",
+        "expected_params": {
+          "batchNumber": "B20231001"
+        },
+        "expected_intent": "TRACE_FULL"
+      },
+      {
+        "query": "请查询批次号为C3045921的全流程溯源链路",
+        "expected_params": {
+          "batchNumber": "C3045921"
+        },
+        "expected_intent": "TRACE_FULL"
+      },
+      {
+        "query": "我想了解下批次号D889356的原材料采购到出库的全过程",
+        "expected_params": {
+          "batchNumber": "D889356"
+        },
+        "expected_intent": "TRACE_FULL"
+      }
+    ]
+  },
+  {
+    "tool_name": "trace_public",
+    "description": "公开溯源查询，供消费者使用。返回脱敏后的产品追溯信息，包括产地、生产日期、质检结果等。适用场景：消费者扫码查询、公开透明度展示。",
+    "category": "shipment",
+    "test_cases": [
+      {
+        "query": "帮我查下这个批次号123456的产品溯源信息",
+        "expected_params": {
+          "batchNumber": "123456"
+        },
+        "expected_intent": "TRACE_PUBLIC"
+      },
+      {
+        "query": "请查询一下批次号是789012的产品信息",
+        "expected_params": {
+          "batchNumber": "789012"
+        },
+        "expected_intent": "TRACE_PUBLIC"
+      },
+      {
+        "query": "这个批次号789ABC的产品能查吗？我想看一下溯源信息",
+        "expected_params": {
+          "batchNumber": "789ABC"
+        },
+        "expected_intent": "TRACE_PUBLIC"
+      }
+    ]
+  },
+  {
+    "tool_name": "sku_update_complexity",
+    "description": "更新或创建SKU的复杂度记录。支持记录复杂度等级、分析原因、步骤数等详细信息，并自动触发排产特征重算。",
+    "category": "sop",
+    "test_cases": [
+      {
+        "query": "帮我更新SKU001的复杂度为3，原因是工序步骤增加了",
+        "expected_params": {
+          "skuCode": "SKU001",
+          "complexity": 3,
+          "reason": "工序步骤增加了"
+        },
+        "expected_intent": "SKU_UPDATE_COMPLEXITY"
+      },
+      {
+        "query": "请记录SKU002的复杂度为5，并标记需要特殊设备，预估工时是45分钟",
+        "expected_params": {
+          "skuCode": "SKU002",
+          "complexity": 5,
+          "specialEquipment": true,
+          "estimatedMinutes": 45
+        },
+        "expected_intent": "SKU_UPDATE_COMPLEXITY"
+      },
+      {
+        "query": "创建一个复杂度为2的SKU记录，编码是SKU003，名称是红烧牛肉面，步骤数是6个",
+        "expected_params": {
+          "skuCode": "SKU003",
+          "complexity": 2,
+          "skuName": "红烧牛肉面",
+          "stepCount": 6
+        },
+        "expected_intent": "SKU_UPDATE_COMPLEXITY"
+      }
+    ]
+  },
+  {
+    "tool_name": "sop_analyze_complexity",
+    "description": "分析SOP文档的复杂度，评估1-5级。基于步骤数量、技能要求、特殊设备、质检点等维度综合评估。",
+    "category": "sop",
+    "test_cases": [
+      {
+        "query": "帮我分析一下这个SOP的复杂度，内容是关于包装线的标准操作流程。",
+        "expected_params": {
+          "sopContent": "包装线标准操作流程文档内容文本",
+          "useAi": true
+        },
+        "expected_intent": "SOP_ANALYZE_COMPLEXITY"
+      },
+      {
+        "query": "请评估这份杀菌工序SOP的复杂等级，步骤已经整理好了，请使用AI分析。",
+        "expected_params": {
+          "sopContent": "",
+          "steps": [
+            "准备设备",
+            "启动杀菌机",
+            "监控温度",
+            "完成杀菌并记录数据"
+          ],
+          "useAi": true
+        },
+        "expected_intent": "SOP_ANALYZE_COMPLEXITY"
+      },
+      {
+        "query": "这个清洗流程的SOP复杂度是多少？不需要用AI分析。",
+        "expected_params": {
+          "sopContent": "清洗流程标准操作流程文档内容文本",
+          "useAi": false
+        },
+        "expected_intent": "SOP_ANALYZE_COMPLEXITY"
+      }
+    ]
+  },
+  {
+    "tool_name": "sop_parse_document",
+    "description": "解析SOP文档(PDF/Excel/图片)，提取工序步骤、时间要求、技能要求等信息。支持自动识别文件类型并选择相应的解析策略。针对中文PDF进行了特别优化，当文本提取失败时会自动切换到OCR模式。",
+    "category": "sop",
+    "test_cases": [
+      {
+        "query": "帮我解析下这个SOP文件，地址是http://example.com/sop.pdf",
+        "expected_params": {
+          "fileUrl": "http://example.com/sop.pdf"
+        },
+        "expected_intent": "SOP_PARSE_DOCUMENT"
+      },
+      {
+        "query": "请解析这份Excel格式的SOP文档，地址是http://example.com/sop.xlsx，并指定文件类型为EXCEL",
+        "expected_params": {
+          "fileUrl": "http://example.com/sop.xlsx",
+          "fileType": "EXCEL"
+        },
+        "expected_intent": "SOP_PARSE_DOCUMENT"
+      },
+      {
+        "query": "强制用OCR解析图片版的SOP文件，URL是http://example.com/sop.jpg",
+        "expected_params": {
+          "fileUrl": "http://example.com/sop.jpg",
+          "forceOcr": true
+        },
+        "expected_intent": "SOP_PARSE_DOCUMENT"
+      }
+    ]
+  },
+  {
+    "tool_name": "factory_feature_toggle",
+    "description": "启用或禁用工厂的特定功能模块。需要提供功能代码和启用/禁用状态。可控制的功能包括：追溯功能、质检模块、预警系统、报表功能等。适用场景：按需开启功能、临时禁用某功能、功能配置管理。",
+    "category": "system",
+    "test_cases": [
+      {
+        "query": "追溯功能现在给我关掉，暂时用不上",
+        "expected_params": {
+          "featureCode": "traceability",
+          "enabled": false
+        },
+        "expected_intent": "FACTORY_FEATURE_TOGGLE"
+      },
+      {
+        "query": "请启用质检模块，今天开始正式使用",
+        "expected_params": {
+          "featureCode": "quality_inspection",
+          "enabled": true,
+          "reason": "今天开始正式使用"
+        },
+        "expected_intent": "FACTORY_FEATURE_TOGGLE"
+      },
+      {
+        "query": "预警系统先禁用一下，系统维护完再开",
+        "expected_params": {
+          "featureCode": "alert_system",
+          "enabled": false
+        },
+        "expected_intent": "FACTORY_FEATURE_TOGGLE"
+      }
+    ]
+  },
+  {
+    "tool_name": "factory_notification_config",
+    "description": "配置工厂的通知设置。需要提供通知类型，可选配置通知渠道、接收人等。支持的通知类型：告警通知、任务提醒、质检通知、库存预警、系统公告等。适用场景：设置通知方式、配置接收人员、调整通知频率。",
+    "category": "system",
+    "test_cases": [
+      {
+        "query": "帮我配置一下告警通知，要启用，通过短信和邮件发给负责人，优先级高一点，晚上10点到早上8点不要发",
+        "expected_params": {
+          "notificationType": "告警通知",
+          "enabled": true,
+          "channels": [
+            "短信",
+            "邮件"
+          ],
+          "priority": "高",
+          "quietHours": {
+            "start": "22:00",
+            "end": "08:00"
+          }
+        },
+        "expected_intent": "FACTORY_NOTIFICATION_CONFIG"
+      },
+      {
+        "query": "任务提醒的通知先关掉，暂时不需要",
+        "expected_params": {
+          "notificationType": "任务提醒",
+          "enabled": false
+        },
+        "expected_intent": "FACTORY_NOTIFICATION_CONFIG"
+      },
+      {
+        "query": "质检通知怎么设置？我想用站内信通知，时间段选早上9点到下午5点",
+        "expected_params": {
+          "notificationType": "质检通知",
+          "channels": [
+            "站内信"
+          ],
+          "quietHours": {
+            "start": "09:00",
+            "end": "17:00"
+          }
+        },
+        "expected_intent": "FACTORY_NOTIFICATION_CONFIG"
+      }
+    ]
+  },
+  {
+    "tool_name": "scheduling_set_auto",
+    "description": "将工厂的调度模式设置为自动模式。自动模式下系统会根据订单、库存和产能自动生成生产计划和调度。适用场景：启用智能调度、自动化生产排程、提高调度效率。",
+    "category": "system",
+    "test_cases": [
+      {
+        "query": "帮我把调度模式改成自动的，今天订单太多，想让系统帮忙排产",
+        "expected_params": {
+          "reason": "今天订单太多，想让系统帮忙排产"
+        },
+        "expected_intent": "SCHEDULING_SET_AUTO"
+      },
+      {
+        "query": "请切换到自动调度模式",
+        "expected_params": {},
+        "expected_intent": "SCHEDULING_SET_AUTO"
+      },
+      {
+        "query": "设置成自动调度吧，因为现在库存紧张，需要高效安排生产",
+        "expected_params": {
+          "reason": "现在库存紧张，需要高效安排生产"
+        },
+        "expected_intent": "SCHEDULING_SET_AUTO"
+      }
+    ]
+  },
+  {
+    "tool_name": "scheduling_set_disabled",
+    "description": "将工厂的调度模式设置为禁用状态。禁用后系统将暂停所有调度功能，已有计划保持不变但不会生成新计划。适用场景：工厂停产维护、系统升级、紧急暂停调度。",
+    "category": "system",
+    "test_cases": [
+      {
+        "query": "调度功能暂时不需要用了，先关了吧，今天系统要升级",
+        "expected_params": {
+          "reason": "系统升级",
+          "duration": "2小时"
+        },
+        "expected_intent": "SCHEDULING_SET_DISABLED"
+      },
+      {
+        "query": "请暂停调度模式，设备需要维护一下，大概半天时间",
+        "expected_params": {
+          "reason": "设备维护",
+          "duration": "半天"
+        },
+        "expected_intent": "SCHEDULING_SET_DISABLED"
+      },
+      {
+        "query": "把调度停掉，不用写原因",
+        "expected_params": {},
+        "expected_intent": "SCHEDULING_SET_DISABLED"
+      }
+    ]
+  },
+  {
+    "tool_name": "scheduling_set_manual",
+    "description": "将工厂的调度模式设置为手动模式。手动模式下生产计划和调度完全由人工控制，系统仅提供辅助功能。适用场景：需要人工精细控制生产、特殊订单处理、调试生产流程。",
+    "category": "system",
+    "test_cases": [
+      {
+        "query": "调度改成手动模式，今天有个特殊订单要处理",
+        "expected_params": {
+          "reason": "处理特殊订单"
+        },
+        "expected_intent": "SCHEDULING_SET_MANUAL"
+      },
+      {
+        "query": "请把调度模式设为手动，我需要调试一下流程",
+        "expected_params": {
+          "reason": "调试流程"
+        },
+        "expected_intent": "SCHEDULING_SET_MANUAL"
+      },
+      {
+        "query": "切换到手动调度模式",
+        "expected_params": {},
+        "expected_intent": "SCHEDULING_SET_MANUAL"
+      }
+    ]
+  },
+  {
+    "tool_name": "test_intent_matching",
+    "description": "测试用户输入与指定意图的匹配度，返回匹配得分、匹配原因、置信度等信息。可以测试单个意图，也可以对比多个意图的匹配情况。适用场景：验证新意图、优化关键词、排查匹配问题、对比意图优先级。",
+    "category": "general",
+    "test_cases": [
+      {
+        "query": "帮我测试一下用户说的“查看生产批次信息”会匹配到哪个意图",
+        "expected_params": {
+          "userInput": "查看生产批次信息"
+        },
+        "expected_intent": "TEST_INTENT_MATCHING"
+      },
+      {
+        "query": "请查询用户输入“原料来源查询”是否匹配测试意图，并返回前2个结果",
+        "expected_params": {
+          "userInput": "原料来源查询",
+          "topN": 2
+        },
+        "expected_intent": "TEST_INTENT_MATCHING"
+      },
+      {
+        "query": "测试用户说‘我想知道这个产品是哪里生产的’会不会匹配到TEST_INTENT_MATCHING意图",
+        "expected_params": {
+          "userInput": "我想知道这个产品是哪里生产的",
+          "intentCode": "TEST_INTENT_MATCHING"
+        },
+        "expected_intent": "TEST_INTENT_MATCHING"
+      }
+    ]
+  },
+  {
+    "tool_name": "update_intent",
+    "description": "更新现有的意图配置。支持部分字段更新，包括：意图名称、关键词列表、类别、描述、语义分类、敏感级别、启用状态等。适用场景：关键词优化、意图重分类、敏感度调整、启用/禁用意图。",
+    "category": "general",
+    "test_cases": [
+      {
+        "query": "更新意图配置，意图代码是UPDATE_INTENT，把意图名称改成“更新意图配置”，再加两个关键词“优化”和“调整”，描述也改成“用于更新意图信息\"",
+        "expected_params": {
+          "intentCode": "UPDATE_INTENT",
+          "intentName": "更新意图配置",
+          "addKeywords": [
+            "优化",
+            "调整"
+          ],
+          "description": "用于更新意图信息"
+        },
+        "expected_intent": "UPDATE_INTENT"
+      },
+      {
+        "query": "请把意图代码为UPDATE_INTENT的意图类别改成“系统配置”，并设置敏感级别为高",
+        "expected_params": {
+          "intentCode": "UPDATE_INTENT",
+          "category": "系统配置",
+          "sensitivityLevel": "高"
+        },
+        "expected_intent": "UPDATE_INTENT"
+      },
+      {
+        "query": "禁用意图代码是UPDATE_INTENT的那个意图，不需要启用状态了",
+        "expected_params": {
+          "intentCode": "UPDATE_INTENT",
+          "active": false
+        },
+        "expected_intent": "UPDATE_INTENT"
+      }
+    ]
+  },
+  {
+    "tool_name": "user_create",
+    "description": "创建新用户账号。支持设置用户名、角色、联系方式等基本信息。适用场景：新员工入职开户、添加系统用户、创建操作员账号。",
+    "category": "user",
+    "test_cases": [
+      {
+        "query": "新来的小王入职了，创建个账号吧，用户名是wang123，角色是生产操作员",
+        "expected_params": {
+          "username": "wang123",
+          "role": "生产操作员",
+          "realName": "小王"
+        },
+        "expected_intent": "USER_CREATE"
+      },
+      {
+        "query": "请帮人事部张经理创建一个账号，用户名zhang987，角色是管理员，他的邮箱是 zhang@company.com",
+        "expected_params": {
+          "username": "zhang987",
+          "role": "管理员",
+          "realName": "张经理",
+          "email": "zhang@company.com"
+        },
+        "expected_intent": "USER_CREATE"
+      },
+      {
+        "query": "需要创建一个质检员的账号，用户名质检员001，电话13812345678，初始密码123456",
+        "expected_params": {
+          "username": "质检员001",
+          "role": "质检员",
+          "phone": "13812345678",
+          "initialPassword": "123456"
+        },
+        "expected_intent": "USER_CREATE"
+      }
+    ]
+  },
+  {
+    "tool_name": "user_disable",
+    "description": "禁用用户账号。禁用后用户将无法登录系统，可后续重新启用。适用场景：员工离职、账号安全问题、临时停用账号。",
+    "category": "user",
+    "test_cases": [
+      {
+        "query": "请禁用用户ID为zhangsan的账号，原因是离职了",
+        "expected_params": {
+          "userId": "zhangsan",
+          "reason": "离职"
+        },
+        "expected_intent": "USER_DISABLE"
+      },
+      {
+        "query": "把用户lisi的账号禁用一下，强制登出，不通知他",
+        "expected_params": {
+          "userId": "lisi",
+          "forceLogout": true,
+          "notifyUser": false
+        },
+        "expected_intent": "USER_DISABLE"
+      },
+      {
+        "query": "用户wangwu的账号暂时停用，请帮我处理一下",
+        "expected_params": {
+          "userId": "wangwu"
+        },
+        "expected_intent": "USER_DISABLE"
+      }
+    ]
+  },
+  {
+    "tool_name": "user_role_assign",
+    "description": "为用户分配或更新角色。支持设置用户的系统角色和权限级别。适用场景：员工岗位调整、权限提升/降级、角色变更。",
+    "category": "user",
+    "test_cases": [
+      {
+        "query": "请把用户zhangsan的角色改为质检员，从明天开始生效",
+        "expected_params": {
+          "userId": "zhangsan",
+          "role": "质检员",
+          "effectiveDate": "2023-10-02"
+        },
+        "expected_intent": "USER_ROLE_ASSIGN"
+      },
+      {
+        "query": "把用户lisi的权限调整为生产主管，附加角色是临时管理员，原因是顶班",
+        "expected_params": {
+          "userId": "lisi",
+          "role": "生产主管",
+          "additionalRoles": [
+            "临时管理员"
+          ],
+          "reason": "顶班"
+        },
+        "expected_intent": "USER_ROLE_ASSIGN"
+      },
+      {
+        "query": "用户wangwu要升为高级审核员，请立即生效",
+        "expected_params": {
+          "userId": "wangwu",
+          "role": "高级审核员"
+        },
+        "expected_intent": "USER_ROLE_ASSIGN"
+      }
+    ]
+  }
+]

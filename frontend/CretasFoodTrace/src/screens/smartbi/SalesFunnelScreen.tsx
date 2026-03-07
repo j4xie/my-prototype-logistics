@@ -219,14 +219,7 @@ export function SalesFunnelScreen() {
       // TODO: Replace with actual API call when backend is ready
       // const factoryId = getFactoryId();
       // const response = await smartBIApiClient.getSalesFunnel({ period: selectedDateRange, factoryId });
-
-      // Mock data for now
-      await new Promise(resolve => setTimeout(resolve, 800));
-      const mockData = generateMockData();
-      setFunnelKPI(mockData.funnelKPI);
-      setFunnelStages(mockData.funnelStages);
-      setRFMSegments(mockData.rfmSegments);
-      setABCItems(mockData.abcItems);
+      setError(t('errors.notImplemented', { defaultValue: '该功能数据接口尚未实现，请通过SmartBI上传Excel查看分析' }));
     } catch (err) {
       console.error('Load sales funnel failed:', err);
       setError(t('errors.loadFailed', { defaultValue: '数据加载失败，请重试' }));

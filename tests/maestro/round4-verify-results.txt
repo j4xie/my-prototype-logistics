@@ -1,0 +1,33 @@
+=== Round 4 Verification Run ===
+Date: 2026-03-03
+Emulator: emulator-5554
+Maestro: 2.2.0
+
+[39] PASS - 39-fa-reports-sub-screens.yaml (QualityReport+EfficiencyReport found, CostReport+TrendReport WARNED)
+[40] PASS - 40-ws-profile-notifications.yaml (fixed: back→tab; TaskGuide+MyReport+Draft+Profile found)
+[41] PASS - 41-wm-alerts-trace.yaml (StockAlert found, BatchTrace+ConversionAnalysis+AlertHandle WARNED)
+[42] PASS - 42-hr-department-crud.yaml (NewHires+MyInfo+DepartmentList found, DeptDetail+Add WARNED)
+[43] PASS - 43-fa-smartbi-deep.yaml (DataAnalysis+NLQuery found, Executive+Sales+Finance WARNED)
+[44] PASS - 44-fa-erp-modules.yaml (all 8 modules WARNED - management grid scroll needed)
+[45] PASS - 45-dp-plan-detail-resource.yaml (WorkshopStatus+PlanDetail found, ResourceOverview WARNED)
+[46] PASS - 46-fa-reports-extended.yaml (all 4 extended reports WARNED - scroll/naming mismatch)
+[47] PASS - 47-ws-equipment-deep.yaml (fixed: back→tab; EquipmentList found, items WARNED)
+[48] PASS - 48-wm-outbound-deep.yaml (fixed: 出库→出货; OutboundDetail found, Shipping+Tracking WARNED)
+[49] PASS - 49-hr-home-actions.yaml (OnSite stat card found, Anomaly+BatchAssign+AI+Leave WARNED)
+[50] PASS - 50-fa-management-config.yaml (all optional - Dept+WorkReport+Rule+Return+Intent WARNED)
+
+=== Summary ===
+PASS: 12 / 12
+FAIL: 0 / 12
+
+=== Fixes Applied ===
+1. Test 40: Replaced back with tab re-navigation (首页) after optional taps
+2. Test 47: Replaced back with tab re-navigation + hideKeyboard for Equipment Management stack screen
+3. Test 48: Fixed tab name from 出库 (\u51FA\u5E93) to 出货 (\u51FA\u8D27)
+
+=== Coverage Notes ===
+Many optional screens WARNED (not found) - these may need:
+- Better scroll positioning to find items in management grids
+- Updated selectors matching actual Chinese/English text
+- Some screens may not be implemented yet
+Screenshots captured in tests/maestro/screenshots/ for manual review

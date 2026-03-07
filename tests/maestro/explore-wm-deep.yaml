@@ -1,0 +1,59 @@
+appId: com.cretas.foodtrace
+---
+# Deep explore WM: outbound tab + inbound detail + inventory detail
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- runFlow: flows/login-wm.yaml
+- extendedWaitUntil:
+    visible: "1241"
+    timeout: 15000
+
+# Tap outbound tab (出货)
+- tapOn: "\u51FA\u8D27"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-wm-outbound-tab
+
+# Scroll
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-wm-outbound-scroll
+
+# Go to inbound tab (入库)
+- tapOn: "\u5165\u5E93"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-wm-inbound-tab
+
+# Tap first inbound item detail
+- tapOn:
+    text: "View Details"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-wm-inbound-detail
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Go to inventory tab (库存)
+- tapOn: "\u5E93\u5B58"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-wm-inventory-tab
+
+# Tap on first inventory item detail
+- tapOn:
+    text: ".*\u67E5\u770B\u8BE6\u60C5.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-wm-inventory-detail
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Tap profile tab (我的)
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/explore-wm-profile-tab

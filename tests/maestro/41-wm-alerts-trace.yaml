@@ -1,0 +1,71 @@
+appId: com.cretas.foodtrace
+---
+# Test 41: Warehouse Manager - Alerts, Trace & Conversion
+# Covers: WHInventoryAlert, WHBatchTrace, WHConversionAnalysis
+# Previously tested: Profile(30), Inventory ops(29), Settings(30)
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as warehouse manager
+- runFlow: flows/login-wm.yaml
+- extendedWaitUntil:
+    visible: ".*Warehouse.*"
+    timeout: 15000
+
+# Navigate to Inventory tab (库存)
+- tapOn: "\u5E93\u5B58"
+- waitForAnimationToEnd
+
+# === Stock Alerts (库存预警) ===
+- tapOn:
+    text: ".*Stock Alert.*|.*\u5E93\u5B58\u9884\u8B66.*|.*\u9884\u8B66.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/41-wm-inventory-alert
+
+# Return to Inventory tab
+- tapOn: "\u5E93\u5B58"
+- waitForAnimationToEnd
+
+# Scroll down to see more options
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Batch Trace (批次溯源) ===
+- tapOn:
+    text: ".*Batch Trace.*|.*\u6279\u6B21\u6EAF\u6E90.*|.*\u6EAF\u6E90.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/41-wm-batch-trace
+
+# Return to Profile tab for Conversion Analysis
+- tapOn: "\u6211\u7684"
+- waitForAnimationToEnd
+
+# Scroll down on profile to find conversion analysis
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Conversion Analysis (转换率/转化分析) ===
+- tapOn:
+    text: ".*Conversion.*|.*\u8F6C\u6362\u7387.*|.*\u8F6C\u5316\u5206\u6790.*|.*\u8F6C\u6362.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/41-wm-conversion-analysis
+
+# Return to Home
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+
+# === Alert Handle from Home (预警处理) ===
+- tapOn:
+    text: ".*Alert.*Handle.*|.*\u9884\u8B66\u5904\u7406.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/41-wm-alert-handle

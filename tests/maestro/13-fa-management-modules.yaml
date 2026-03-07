@@ -1,0 +1,67 @@
+appId: com.cretas.foodtrace
+---
+# Test 13: Factory Admin - Management Modules Data Verification
+# Verifies Employees, Suppliers, Customers, Sales modules load with data
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Navigate to Management tab
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# === Employees Module ===
+- tapOn: "Employees"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/13-fa-employees
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# === Product Types Module ===
+- tapOn: "Product Types"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/13-fa-product-types
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Scroll to Supply Chain section
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Suppliers Module ===
+- tapOn: "Suppliers"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/13-fa-suppliers
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# === Customers Module ===
+- tapOn: "Customers"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/13-fa-customers
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Scroll to Inventory section
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/13-fa-management-inventory

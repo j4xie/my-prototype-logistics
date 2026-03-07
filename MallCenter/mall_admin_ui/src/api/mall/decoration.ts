@@ -289,6 +289,37 @@ export const deleteAiSession = (id: number) => {
   );
 };
 
+// ==================== AI Chat 实时对话装修 ====================
+
+/** Admin 端 AI 装修 Chat 对话 */
+export const decorationAiChat = (data: {
+  message: string;
+  sessionId?: string;
+  merchantId: number;
+}) => {
+  return http.request<ApiResult<any>>("post", "/mall/decoration/ai/chat", {
+    data
+  });
+};
+
+// ==================== 版本历史 ====================
+
+/** 获取版本历史 */
+export const getVersionHistory = (merchantId: number, pageType = "home") => {
+  return http.request<ApiResult<any[]>>("get", "/mall/decoration/versions", {
+    params: { merchantId, pageType }
+  });
+};
+
+/** 回滚到指定版本 */
+export const rollbackVersion = (versionId: number, merchantId: number) => {
+  return http.request<ApiResult<any>>(
+    "post",
+    `/mall/decoration/versions/${versionId}/rollback`,
+    { params: { merchantId } }
+  );
+};
+
 // ==================== 商户AI使用统计 ====================
 
 /** 获取商户AI使用统计列表 */

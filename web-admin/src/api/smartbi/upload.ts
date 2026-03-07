@@ -149,9 +149,19 @@ export function confirmUploadAndPersist(data: {
  * Get upload history list.
  * Uses factory-scoped Java endpoint to ensure data isolation between factories.
  */
-export async function getUploadHistory(params?: { status?: string }): Promise<{ success: boolean; data: UploadHistoryItem[] }> {
+export async function getUploadHistory(params?: { status?: string; page?: number; size?: number }): Promise<{ success: boolean; data: UploadHistoryItem[] }> {
   try {
-    return await get<UploadHistoryItem[]>(`${getSmartBIBasePath()}/uploads`, { params, _silent: true } as Record<string, unknown>);
+    const mergedParams = { page: 0, size: 200, ...params };
+    const res = await get<any>(`${getSmartBIBasePath()}/uploads`, { params: mergedParams, _silent: true } as Record<string, unknown>);
+    // Handle paginated response (Spring Page: { content: [], totalElements, ... })
+    if (res.success && res.data && Array.isArray(res.data.content)) {
+      return { success: true, data: res.data.content };
+    }
+    // Backward compat: plain array
+    if (res.success && Array.isArray(res.data)) {
+      return res;
+    }
+    return { success: res.success, data: [] };
   } catch {
     return { success: false, data: [] };
   }

@@ -1,0 +1,115 @@
+appId: com.cretas.foodtrace
+---
+# Test 68: In-depth Requisition Form Interaction
+# Toggles type, fills fields, verifies buttons
+# Safety: back without submitting
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant admin
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: ".*AI Insights.*|.*AI 智能洞察.*|.*Today.*Overview.*|.*首页.*"
+    timeout: 15000
+
+# Navigate to 领料 (Requisition) tab
+- tapOn:
+    text: ".*领料.*|.*Requisition.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-requisition-initial
+
+# === Type toggle interaction ===
+- tapOn:
+    text: ".*按配方领料.*|.*By Recipe.*|.*Production.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-type-production
+
+- tapOn:
+    text: ".*手动领料.*|.*Manual.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-type-manual
+
+- tapOn:
+    text: ".*按配方领料.*|.*By Recipe.*|.*Production.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-type-back-production
+
+# === Fill form fields (without submitting) ===
+- tapOn:
+    text: ".*选择菜品.*|.*Select Dish.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-dish-selector
+
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*领料.*|.*Requisition.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Switch to manual mode
+- tapOn:
+    text: ".*手动领料.*|.*Manual.*"
+    optional: true
+- waitForAnimationToEnd
+
+- tapOn:
+    text: ".*选择食材.*|.*Select Material.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-material-selector
+
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*领料.*|.*Requisition.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Fill quantity
+- tapOn:
+    text: ".*申请数量.*|.*Quantity.*|.*数量.*"
+    optional: true
+- inputText: "10"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-qty-filled
+
+# Fill notes
+- tapOn:
+    text: ".*备注.*|.*Notes.*"
+    optional: true
+- inputText: "E2E test"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-notes-filled
+
+# Scroll to see buttons
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-form-complete
+
+# === Back without submitting ===
+- back
+- waitForAnimationToEnd
+
+# Return to home
+- launchApp
+- waitForAnimationToEnd
+- tapOn: "首页"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-complete

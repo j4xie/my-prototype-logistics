@@ -7,6 +7,7 @@ import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
+import { formatAmount } from '@/utils/tableFormatters';
 
 const route = useRoute();
 const router = useRouter();
@@ -18,6 +19,7 @@ const canWrite = computed(() => permissionStore.canWrite('warehouse'));
 const transferId = computed(() => route.params.id as string);
 
 const loading = ref(false);
+const submitting = ref(false);
 const transfer = ref<any>(null);
 
 const statusMap: Record<string, { text: string; type: string }> = {
@@ -33,6 +35,7 @@ const statusMap: Record<string, { text: string; type: string }> = {
 
 // 状态流转步骤
 const statusSteps = ['DRAFT', 'REQUESTED', 'APPROVED', 'SHIPPED', 'RECEIVED', 'CONFIRMED'];
+const terminalStatuses = ['REJECTED', 'CANCELLED'];
 
 onMounted(() => loadTransfer());
 
@@ -48,13 +51,20 @@ async function loadTransfer() {
 
 function currentStep() {
   if (!transfer.value) return 0;
+  if (terminalStatuses.includes(transfer.value.status)) return -1;
   const idx = statusSteps.indexOf(transfer.value.status);
   return idx >= 0 ? idx : 0;
 }
 
+const stepsStatus = computed(() => {
+  if (!transfer.value) return 'process';
+  return terminalStatuses.includes(transfer.value.status) ? 'error' : 'process';
+});
+
 const isOutbound = computed(() => transfer.value?.sourceFactoryId === factoryId.value);
 
-async function handleAction(action: string, reasonRequired = false) {
+async function handleAction(action: string) {
+  if (submitting.value) return;
   const map: Record<string, { label: string; url: string }> = {
     request: { label: '提交申请', url: `/${factoryId.value}/transfers/${transferId.value}/request` },
     approve: { label: '审批通过', url: `/${factoryId.value}/transfers/${transferId.value}/approve` },
@@ -68,14 +78,14 @@ async function handleAction(action: string, reasonRequired = false) {
   if (!a) return;
   try {
     await ElMessageBox.confirm(`确认${a.label}？`, '操作确认');
+  } catch { return; }
+  submitting.value = true;
+  try {
     const res = await post(a.url);
     if (res.success) { ElMessage.success(`${a.label}成功`); loadTransfer(); }
-  } catch { /* cancelled */ }
-}
-
-function formatAmount(val: number) {
-  if (val == null) return '-';
-  return `¥${Number(val).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+    else { ElMessage.error(res.message || `${a.label}失败，请重试`); }
+  } catch { ElMessage.error(`${a.label}失败，请检查网络`); }
+  finally { submitting.value = false; }
 }
 </script>
 
@@ -87,25 +97,25 @@ function formatAmount(val: number) {
           <div class="header-left">
             <el-button :icon="ArrowLeft" @click="router.push('/transfer/list')">返回</el-button>
             <span class="page-title">{{ label('transfer') }}详情</span>
-            <el-tag v-if="transfer" :type="(statusMap[transfer.status]?.type as any) || 'info'" size="large">
+            <el-tag v-if="transfer" :type="(statusMap[transfer.status]?.type) || 'info'" size="large">
               {{ statusMap[transfer.status]?.text || transfer.status }}
             </el-tag>
           </div>
           <div class="header-right" v-if="transfer && canWrite">
-            <el-button v-if="transfer.status === 'DRAFT'" type="warning" @click="handleAction('request')">提交申请</el-button>
-            <el-button v-if="transfer.status === 'REQUESTED'" type="success" @click="handleAction('approve')">审批通过</el-button>
-            <el-button v-if="transfer.status === 'REQUESTED'" type="danger" @click="handleAction('reject')">驳回</el-button>
-            <el-button v-if="transfer.status === 'APPROVED' && isOutbound" type="primary" @click="handleAction('ship')">确认发运</el-button>
-            <el-button v-if="transfer.status === 'SHIPPED' && !isOutbound" type="primary" @click="handleAction('receive')">确认签收</el-button>
-            <el-button v-if="transfer.status === 'RECEIVED' && !isOutbound" type="success" @click="handleAction('confirm')">确认入库</el-button>
-            <el-button v-if="['DRAFT','REQUESTED'].includes(transfer.status)" @click="handleAction('cancel')">取消</el-button>
+            <el-button v-if="transfer.status === 'DRAFT'" type="warning" :loading="submitting" @click="handleAction('request')">提交申请</el-button>
+            <el-button v-if="transfer.status === 'REQUESTED'" type="success" :loading="submitting" @click="handleAction('approve')">审批通过</el-button>
+            <el-button v-if="transfer.status === 'REQUESTED'" type="danger" :loading="submitting" @click="handleAction('reject')">驳回</el-button>
+            <el-button v-if="transfer.status === 'APPROVED' && isOutbound" type="primary" :loading="submitting" @click="handleAction('ship')">确认发运</el-button>
+            <el-button v-if="transfer.status === 'SHIPPED' && !isOutbound" type="primary" :loading="submitting" @click="handleAction('receive')">确认签收</el-button>
+            <el-button v-if="transfer.status === 'RECEIVED' && !isOutbound" type="success" :loading="submitting" @click="handleAction('confirm')">确认入库</el-button>
+            <el-button v-if="['DRAFT','REQUESTED'].includes(transfer.status)" :disabled="submitting" @click="handleAction('cancel')">取消</el-button>
           </div>
         </div>
       </template>
 
       <template v-if="transfer">
         <!-- 状态流程 -->
-        <el-steps :active="currentStep()" finish-status="success" style="margin-bottom: 24px">
+        <el-steps v-if="!terminalStatuses.includes(transfer.status)" :active="currentStep()" finish-status="success" style="margin-bottom: 24px">
           <el-step title="草稿" />
           <el-step title="已申请" />
           <el-step title="已批准" />
@@ -113,6 +123,7 @@ function formatAmount(val: number) {
           <el-step title="已签收" />
           <el-step title="已确认" />
         </el-steps>
+        <el-alert v-else :title="`该调拨单已${statusMap[transfer.status]?.text}`" :type="transfer.status === 'REJECTED' ? 'error' : 'info'" show-icon :closable="false" style="margin-bottom: 24px" />
 
         <el-descriptions :column="3" border>
           <el-descriptions-item label="调拨编号">{{ transfer.transferNumber }}</el-descriptions-item>
@@ -130,7 +141,7 @@ function formatAmount(val: number) {
         </el-descriptions>
 
         <h3 style="margin: 20px 0 12px">调拨明细</h3>
-        <el-table :data="transfer.items || []" border stripe>
+        <el-table :data="transfer.items || []" border stripe empty-text="暂无明细数据">
           <el-table-column label="类型" width="100" align="center">
             <template #default="{ row }">
               <el-tag :type="row.itemType === 'RAW_MATERIAL' ? '' : 'success'" size="small">

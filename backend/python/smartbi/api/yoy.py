@@ -106,10 +106,15 @@ async def yoy_comparison(request: YoYRequest):
                 error="PostgreSQL not enabled. YoY comparison requires database access."
             )
 
-        import asyncpg
-        conn = await asyncpg.connect(settings.postgres_url)
+        from smartbi.config import get_pg_pool
+        pool = await get_pg_pool()
+        if not pool:
+            return YoYResponse(
+                success=False, current_upload_id=request.upload_id,
+                error="Database pool not available"
+            )
 
-        try:
+        async with pool.acquire() as conn:
             # 1. Load current upload metadata
             current_meta = await conn.fetchrow(
                 "SELECT id, file_name, sheet_name, created_at FROM smart_bi_pg_excel_uploads WHERE id = $1",
@@ -125,7 +130,6 @@ async def yoy_comparison(request: YoYRequest):
             # 2. Find comparison upload
             compare_id = request.compare_upload_id
             if not compare_id:
-                # Auto-find: same factory, same sheet name, different upload, ordered by date desc
                 candidates = await conn.fetch(
                     """SELECT id, created_at FROM smart_bi_pg_excel_uploads
                        WHERE factory_id = $1 AND sheet_name = $2 AND id != $3
@@ -228,7 +232,6 @@ async def yoy_comparison(request: YoYRequest):
                 summary["net_profit_previous"] = np_item.previous_value
                 summary["net_profit_yoy"] = np_item.yoy_growth
 
-            # Extract periods from column names
             current_cols = list(current_data[0].keys()) if current_data else []
             compare_cols = list(compare_data[0].keys()) if compare_data else []
 
@@ -241,9 +244,6 @@ async def yoy_comparison(request: YoYRequest):
                 comparison=comparison,
                 summary=summary
             )
-
-        finally:
-            await conn.close()
 
     except Exception as e:
         logger.error(f"YoY comparison failed: {e}", exc_info=True)

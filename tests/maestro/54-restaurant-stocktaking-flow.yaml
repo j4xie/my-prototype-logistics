@@ -1,0 +1,27 @@
+appId: com.cretas.foodtrace
+---
+# Test 54: Restaurant Stocktaking Module Navigation
+# Verifies 盘点 tab → StocktakingList screen
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant_admin1
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: "AI \u667A\u80FD\u6D1E\u5BDF"
+    timeout: 10000
+
+# Navigate to 盘点 tab
+- tapOn: "\u76D8\u70B9"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/54-stocktaking-list
+
+# Take screenshot
+- takeScreenshot: screenshots/54-stocktaking-loaded
+
+# Go back to 首页
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+- assertVisible: "AI \u667A\u80FD\u6D1E\u5BDF"

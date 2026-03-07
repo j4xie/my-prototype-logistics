@@ -3,7 +3,7 @@
  * 生产数据分析页面
  * 基于 SmartBI 组件模式，提供生产 KPI、多维度图表和 AI 洞察
  */
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { ref, shallowRef, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import echarts from '@/utils/echarts'
 import { get } from '@/api/request'
@@ -16,13 +16,14 @@ import { ElMessage } from 'element-plus'
 const authStore = useAuthStore()
 const factoryId = computed(() => authStore.factoryId)
 
+const rootRef = ref<HTMLDivElement>()
 const period = ref('month')
 const dimension = ref('date')
 const loading = ref(false)
 const kpiData = ref<Array<{ label: string; value: string; gradient: string; change?: string; changeType?: string }>>([])
 const charts = ref<Array<{ title: string; option: Record<string, unknown> }>>([])
-const chartRefs = ref<Array<HTMLDivElement | null>>([])
-const chartInstances = ref<echarts.ECharts[]>([])
+const chartRefs = shallowRef<Array<HTMLDivElement | null>>([])
+const chartInstances = shallowRef<echarts.ECharts[]>([])
 const aiAnalysis = ref('')
 const tableData = ref<Record<string, unknown>[]>([])
 const tableColumns = ref<string[]>([])
@@ -30,12 +31,15 @@ const renderedAnalysis = computed(() => aiAnalysis.value ? DOMPurify.sanitize(ma
 
 let refreshTimer: ReturnType<typeof setInterval> | null = null
 
+let loadingInProgress = false
 async function loadData() {
   if (!factoryId.value) {
     console.error('No factoryId available')
     ElMessage.error('无法获取工厂信息，请重新登录')
     return
   }
+  if (loadingInProgress) return
+  loadingInProgress = true
   loading.value = true
   try {
     const res = await get<Record<string, unknown>>(`/${factoryId.value}/smart-bi/production-analysis/dashboard`, {
@@ -57,6 +61,7 @@ async function loadData() {
     }
   } finally {
     loading.value = false
+    loadingInProgress = false
   }
 }
 
@@ -215,25 +220,37 @@ function buildCharts(data: Record<string, unknown>) {
   })
 }
 
+let resizeObserver: ResizeObserver | null = null
+let resizeRaf = 0
 function handleResize() {
-  chartInstances.value.forEach(c => c?.resize())
+  if (resizeRaf) return
+  resizeRaf = requestAnimationFrame(() => {
+    chartInstances.value.forEach(c => c?.resize())
+    resizeRaf = 0
+  })
 }
 
 onMounted(() => {
   loadData()
   refreshTimer = setInterval(loadData, 60000)
   window.addEventListener('resize', handleResize)
+  if (rootRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize)
+    resizeObserver.observe(rootRef.value)
+  }
 })
 
 onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
+  resizeObserver?.disconnect()
+  resizeObserver = null
   window.removeEventListener('resize', handleResize)
   chartInstances.value.forEach(c => c?.dispose())
 })
 </script>
 
 <template>
-  <div class="production-analysis" role="main" aria-label="生产数据分析">
+  <div ref="rootRef" class="production-analysis" role="main" aria-label="生产数据分析">
     <div class="page-header">
       <div class="header-left">
         <el-breadcrumb separator="/">
@@ -281,7 +298,7 @@ onUnmounted(() => {
     <div class="charts-grid" v-loading="loading" aria-label="图表区域" :aria-busy="loading">
       <div class="chart-card" v-for="(chart, idx) in charts" :key="idx">
         <h3 class="chart-title">{{ chart.title }}</h3>
-        <div :ref="el => chartRefs[idx] = (el as HTMLDivElement)" class="chart-container" style="height: 350px"></div>
+        <div :ref="el => chartRefs[idx] = (el as HTMLDivElement)" class="chart-container"></div>
       </div>
     </div>
 
@@ -294,7 +311,7 @@ onUnmounted(() => {
     <!-- Data Table -->
     <div class="data-section" v-if="tableData.length > 0" aria-label="详细数据">
       <h3>详细数据</h3>
-      <el-table :data="tableData" stripe border style="width: 100%" max-height="400">
+      <el-table empty-text="暂无数据" :data="tableData" stripe border style="width: 100%" max-height="400">
         <el-table-column v-for="col in tableColumns" :key="col" :prop="col" :label="col" min-width="120" />
       </el-table>
     </div>
@@ -407,6 +424,10 @@ onUnmounted(() => {
 .ai-content {
   line-height: 1.7;
   color: #333;
+}
+
+.chart-container {
+  height: 350px;
 }
 
 .data-section {

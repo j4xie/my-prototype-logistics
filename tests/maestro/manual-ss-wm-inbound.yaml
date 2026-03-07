@@ -1,0 +1,110 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: Warehouse Manager - Dashboard & Inbound
+# Captures: home dashboard, inbound list, inbound detail, create inbound
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as warehouse manager
+- runFlow: flows/login-wm.yaml
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u5165\u5E93.*|.*\u9996\u9875.*|.*Home.*|.*Inbound.*|.*\u51FA\u8D27.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Screenshot: Warehouse home dashboard
+- takeScreenshot: screenshots/manual-ss-wm-home
+
+# Scroll down to see alerts and temperature monitor
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-home-scroll
+
+# Scroll back
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# Navigate to Inbound tab (入库)
+- takeScreenshot: screenshots/manual-ss-wm-pre-inbound
+- tapOn:
+    text: "\u5165\u5E93"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u5165\u5E93.*|.*Inbound.*|.*\u65B0\u5EFA.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Screenshot: Inbound list
+- takeScreenshot: screenshots/manual-ss-wm-inbound-list
+
+# Scroll to see more
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-inbound-list-scroll
+
+# Scroll back
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+
+# Tap on first inbound record for detail
+- tapOn:
+    text: ".*\u786E\u8BA4\u5165\u5E93.*|.*\u67E5\u770B\u8BE6\u60C5.*|.*\u7EE7\u7EED\u8D28\u68C0.*|.*\u786E\u8BA4\u4E0A\u67B6.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-inbound-detail
+
+# Scroll in detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-inbound-detail-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u5165\u5E93.*|.*\u9996\u9875.*"
+    timeout: 10000
+
+# Back to inbound tab
+- tapOn:
+    text: "\u5165\u5E93"
+    optional: true
+- waitForAnimationToEnd
+
+# Create new inbound (新建入库)
+- tapOn:
+    text: ".*\u65B0\u5EFA\u5165\u5E93.*|.*New.*Inbound.*|.*\u65B0\u5EFA.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-inbound-create
+
+# Scroll in create form
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-inbound-create-scroll
+
+# Final recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-inbound-complete

@@ -65,7 +65,7 @@ const currentTemplate = ref<QueryTemplate>({
 // 分类配置
 const categoryOptions = [
   { value: '财务分析', icon: Money, color: '#67C23A' },
-  { value: '销售分析', icon: TrendCharts, color: '#409EFF' },
+  { value: '销售分析', icon: TrendCharts, color: '#1B65A8' },
   { value: '生产分析', icon: Histogram, color: '#E6A23C' },
   { value: '自定义', icon: DataAnalysis, color: '#909399' }
 ];
@@ -568,7 +568,7 @@ function formatDate(dateStr?: string): string {
       font-weight: 600;
 
       .el-icon {
-        color: #409EFF;
+        color: #1B65A8;
       }
     }
   }

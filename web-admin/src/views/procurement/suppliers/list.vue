@@ -3,7 +3,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { del } from '@/api/request';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 
 const authStore = useAuthStore();
@@ -73,6 +74,24 @@ function getStatusType(status: string) {
 function getStatusText(status: string) {
   return status === 'ACTIVE' ? '合作中' : '已停用';
 }
+
+async function handleDelete(row: any) {
+  try {
+    await ElMessageBox.confirm(`确定删除供应商「${row.name}」吗？`, '删除确认', {
+      type: 'warning',
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+    });
+    await del(`/${factoryId.value}/procurement/suppliers/${row.id}`);
+    ElMessage.success('删除成功');
+    loadData();
+  } catch (e) {
+    if (e !== 'cancel') {
+      console.error('Delete supplier failed:', e);
+      ElMessage.error('删除失败');
+    }
+  }
+}
 </script>
 
 <template>
@@ -132,10 +151,10 @@ function getStatusText(status: string) {
           </template>
         </el-table-column>
         <el-table-column label="操作" width="160" fixed="right" align="center">
-          <template #default>
+          <template #default="{ row }">
             <el-button type="primary" link size="small">查看</el-button>
             <el-button v-if="canWrite" type="primary" link size="small">编辑</el-button>
-            <el-button v-if="canWrite" type="danger" link size="small">删除</el-button>
+            <el-button v-if="canWrite" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

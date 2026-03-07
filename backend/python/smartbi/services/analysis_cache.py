@@ -43,7 +43,6 @@ import json
 import logging
 import shutil
 import time
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from pathlib import Path
@@ -51,10 +50,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
+from .shared_pool import shared_executor
+
 logger = logging.getLogger(__name__)
 
 # Thread pool for async file operations
-_executor = ThreadPoolExecutor(max_workers=4)
+_executor = shared_executor
 
 # Cache version - increment when cache structure changes
 CACHE_VERSION = "2.0"

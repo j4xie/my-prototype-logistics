@@ -19,6 +19,7 @@ if str(_smartbi_dir) not in sys.path:
     sys.path.insert(0, str(_smartbi_dir))
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -53,7 +54,8 @@ from smartbi.api import (
     ai_proxy,
     benchmark,
     finance_extract,
-    data_sync
+    data_sync,
+    restaurant_analytics,
 )
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
@@ -113,11 +115,31 @@ except ImportError as e:
     import logging as _log
     _log.getLogger(__name__).warning(f"Food KB Feedback not available: {e}")
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG if get_settings().debug else logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+# Configure logging with rotation
+_log_level = logging.DEBUG if get_settings().debug else logging.INFO
+_log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+_log_formatter = logging.Formatter(_log_format)
+
+# Root logger setup
+_root_logger = logging.getLogger()
+_root_logger.setLevel(_log_level)
+
+# Console handler (always)
+_console_handler = logging.StreamHandler()
+_console_handler.setFormatter(_log_formatter)
+_root_logger.addHandler(_console_handler)
+
+# File handler with rotation (production only)
+if os.environ.get("PYTHON_ENV", "production") == "production":
+    from logging.handlers import TimedRotatingFileHandler as _TRFH
+    _log_dir = os.path.dirname(os.path.abspath(__file__))
+    _file_handler = _TRFH(
+        os.path.join(_log_dir, "python-service.log"),
+        when="midnight", backupCount=14, encoding="utf-8"
+    )
+    _file_handler.setFormatter(_log_formatter)
+    _root_logger.addHandler(_file_handler)
+
 logger = logging.getLogger(__name__)
 
 
@@ -237,8 +259,8 @@ app = FastAPI(
     description="Unified Python services for SmartBI analytics and client requirements",
     version="2.0.0",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url="/docs" if os.environ.get("PYTHON_ENV", "production") != "production" else None,
+    redoc_url="/redoc" if os.environ.get("PYTHON_ENV", "production") != "production" else None
 )
 
 # T4.2: Gzip compression — reduces chart JSON payloads by 60-75%
@@ -282,6 +304,7 @@ app.include_router(statistical.router, prefix="/api/statistical", tags=["Statist
 app.include_router(analysis_cache.router, prefix="/api/smartbi", tags=["Analysis Cache"])
 app.include_router(benchmark.router, prefix="/api/smartbi", tags=["Industry Benchmark"])
 app.include_router(finance_extract.router, prefix="/api/finance", tags=["Finance Extract"])
+app.include_router(restaurant_analytics.router, prefix="/api/smartbi", tags=["Restaurant Analytics"])
 
 # Optional: Data sync endpoint (auto-adaptation for system tables)
 if hasattr(data_sync, 'router') and data_sync.router is not None:
@@ -345,11 +368,8 @@ app.include_router(
     prefix="/api/client-requirement",
     tags=["Client Requirement"]
 )
-app.include_router(
-    client_requirement_routes.router,
-    prefix="/api/public/client-requirement",
-    tags=["Client Requirement (Public)"]
-)
+# Note: /api/client-requirement/ is in PUBLIC_PREFIXES (auth_middleware.py)
+# Duplicate /api/public/ mount removed — was redundant
 
 # =====================================================
 # Data Completeness Calculator Routes (optional)

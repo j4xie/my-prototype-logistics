@@ -1,0 +1,268 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: Viewer - Full Coverage
+# Captures: home dashboard, sales orders, price list, purchase orders, finished goods, profile
+# Role: viewer1 (只读查看者)
+# Tabs: 首页 | 销售 | 采购 | 我的
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "viewer1"
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "login-submit-btn"
+
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Dismiss Location Accuracy dialog if it appears
+- tapOn:
+    text: "No thanks"
+    optional: true
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*Good.*|.*\u9996\u9875.*|\u52A0\u8F7D\u5931\u8D25.*|.*\u9500\u552E.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 1: 首页 (Home) - already on this tab after login
+# ============================================================
+
+# Screenshot: Viewer home dashboard (read-only stat overview)
+- takeScreenshot: screenshots/manual-ss-vw-home-top
+
+# Scroll down to see more dashboard content
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-home-scroll
+
+# Scroll back to top
+- swipe:
+    direction: UP
+    duration: 1000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 2: 销售 (Sales) - 2nd tab, 35% from left
+# ============================================================
+
+- tapOn:
+    point: "35%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Sales order list (viewer read-only view)
+- takeScreenshot: screenshots/manual-ss-vw-sales-list
+
+# Scroll down to see more sales orders
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-sales-list-scroll
+
+# Scroll back to top
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# Tap on first sales order for detail (read-only)
+- tapOn:
+    text: ".*SO-.*|.*\u9500\u552E\u5355.*|.*\u8BA2\u5355.*|\u5F85\u53D1\u8D27.*|\u5DF2\u53D1\u8D27.*|\u5F85\u5BA1\u6838.*|\u5DF2\u5B8C\u6210.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-sales-detail
+
+# Scroll in sales order detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-sales-detail-scroll
+
+# Recovery back to sales tab
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u9996\u9875.*|.*\u9500\u552E.*|.*\u91C7\u8D2D.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate back to sales tab
+- tapOn:
+    point: "35%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Tap Price List tab/section (价目/Price)
+- tapOn:
+    text: ".*\u4EF7\u76EE.*|.*Price.*|.*\u4EF7\u683C\u8868.*|.*\u62A5\u4EF7.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-price-list
+
+# Scroll in price list
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-price-list-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u9996\u9875.*|.*\u9500\u552E.*|.*\u91C7\u8D2D.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 3: 采购 (Purchase) - 3rd tab, 65% from left
+# ============================================================
+
+- tapOn:
+    point: "65%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Purchase order list (viewer read-only view)
+- takeScreenshot: screenshots/manual-ss-vw-purchase-list
+
+# Scroll down to see more purchase orders
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-purchase-list-scroll
+
+# Scroll back to top
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+
+# Tap on first purchase order for detail (read-only)
+- tapOn:
+    text: ".*PO-.*|.*\u91C7\u8D2D\u5355.*|.*\u8BA2\u5355.*|\u5F85\u5BA1\u6838.*|\u5DF2\u5BA1\u6838.*|\u5DF2\u5B8C\u6210.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-purchase-detail
+
+# Scroll in purchase detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-purchase-detail-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u9996\u9875.*|.*\u9500\u552E.*|.*\u91C7\u8D2D.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate back to purchase tab
+- tapOn:
+    point: "65%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Tap Finished Goods tab/section (成品/Finished)
+- tapOn:
+    text: ".*\u6210\u54C1.*|.*Finished.*|.*\u6210\u54C1\u5E93.*|.*\u6210\u54C1\u5217\u8868.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-finished-goods
+
+# Scroll in finished goods
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-finished-goods-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u9996\u9875.*|.*\u9500\u552E.*|.*\u91C7\u8D2D.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 4: 我的 (Profile) - 4th tab, 90% from left
+# ============================================================
+
+- tapOn:
+    point: "90%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Screenshot: Profile / My page (viewer role badge visible)
+- takeScreenshot: screenshots/manual-ss-vw-profile
+
+# Scroll down in profile
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-profile-scroll
+
+# Final completion screenshot
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u9996\u9875.*|.*\u9500\u552E.*|.*\u91C7\u8D2D.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-vw-complete

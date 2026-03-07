@@ -343,7 +343,7 @@ Page({
    */
   onShareAppMessage() {
     return {
-      title: '邀请您加入白垩纪溯源平台',
+      title: '邀请您加入溯源平台',
       path: '/pages/auth/register/index'
     }
   }

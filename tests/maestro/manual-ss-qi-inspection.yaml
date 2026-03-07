@@ -1,0 +1,317 @@
+appId: com.cretas.foodtrace
+---
+# QI Quality Inspection screenshots
+# Captures: home dashboard, inspect list, batch select, inspection form,
+#           camera inspection, inspection records, analysis overview, QI profile
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "quality_insp1"
+
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "login-submit-btn"
+
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*质检.*|.*Good.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# ============================================================
+# 1. QI Home Dashboard (首页 tab - leftmost, ~10%)
+# ============================================================
+
+- takeScreenshot: screenshots/manual-ss-qi-home
+
+# Scroll down to see stats grid and quick actions
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-home-scroll
+
+# Scroll back to top
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 2. Notifications (from home header bell icon - top right)
+# ============================================================
+
+- tapOn:
+    text: ".*Notifications.*|\u901A\u77E5.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-notifications
+
+# Back to home
+- back
+- waitForAnimationToEnd
+
+# ============================================================
+# 3. Inspect Tab (质检 tab - 2nd from left, ~30%)
+# ============================================================
+
+- tapOn:
+    point: "30%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/manual-ss-qi-inspect-list
+
+# Scroll down to see batch list
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-inspect-list-scroll
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 4. Batch Select Screen (选择批次类型)
+#    Reached via 从列表选择 or direct navigation
+# ============================================================
+
+- tapOn:
+    text: ".*\u9009\u62E9\u6279\u6B21.*|.*Select Batch.*|.*\u6279\u6B21\u7C7B\u578B.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-batch-select
+
+# Scroll to see all batch type cards
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-batch-select-scroll
+
+# Back to inspect list
+- back
+- waitForAnimationToEnd
+
+# ============================================================
+# 5. Inspection Form (质检表单)
+#    Tap on first batch item in the list (if any)
+# ============================================================
+
+- tapOn:
+    text: ".*\u5F00\u59CB\u68C0\u9A8C.*|.*Start Inspection.*|.*\u5F00\u59CB.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-form-top
+
+# Scroll down to see check items
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-form-items
+
+# Scroll further to see submit button area
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-form-bottom
+
+# Back to inspect list
+- back
+- waitForAnimationToEnd
+
+# ============================================================
+# 6. Camera Inspection (拍照质检)
+#    Navigate back to home, use quick action shortcut if visible
+# ============================================================
+
+# Go back to home tab
+- tapOn:
+    point: "10%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Tap camera/photo inspection quick action (if feature-enabled)
+- tapOn:
+    text: ".*\u62CD\u7167\u8D28\u68C0.*|.*Camera.*|.*Photo.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-camera
+
+# Back to home
+- back
+- waitForAnimationToEnd
+
+# ============================================================
+# 7. Records Tab (记录 tab - 3rd from left, ~50%)
+# ============================================================
+
+- tapOn:
+    point: "50%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/manual-ss-qi-records
+
+# Scroll down to see more records
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-records-scroll
+
+# Try tapping filter buttons (all / passed / failed / today)
+- tapOn:
+    text: ".*\u4ECA\u5929.*|.*Today.*|.*\u5C0F\u65F6.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-records-today
+
+# Tap first record for detail (if any)
+- tapOn:
+    index: 0
+    text: ".*QC-.*|.*\u8D28\u68C0.*|.*\u6279\u6B21.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-record-detail
+
+# Scroll detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-record-detail-scroll
+
+# Back to records list
+- back
+- waitForAnimationToEnd
+
+# ============================================================
+# 8. Analysis Tab (分析 tab - 4th from left, ~70%)
+# ============================================================
+
+- tapOn:
+    point: "70%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/manual-ss-qi-analysis
+
+# Scroll to see grade distribution and category scores
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-analysis-scroll
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# ============================================================
+# 9. Profile Tab (我的 tab - rightmost, ~90%)
+# ============================================================
+
+- tapOn:
+    point: "90%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/manual-ss-qi-profile
+
+# Scroll to see all menu items
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-profile-scroll
+
+# Scroll back
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+
+# Settings sub-screen
+- tapOn:
+    text: ".*Settings.*|\u8BBE\u7F6E.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-settings
+
+# Back to profile tab
+- tapOn:
+    point: "90%,97%"
+- waitForAnimationToEnd
+
+# Clock In sub-screen (考勤打卡)
+- tapOn:
+    text: ".*Clock.*|\u6253\u5361.*|\u8003\u52E4.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-qi-clockin
+
+# Recovery: back to home
+- back
+- waitForAnimationToEnd
+- tapOn:
+    point: "10%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/manual-ss-qi-complete

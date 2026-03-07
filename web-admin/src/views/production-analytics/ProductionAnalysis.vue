@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import { getProductionDashboard, type KPIItem, type ProductionDashboard } from '@/api/productionAnalytics';
 
 // ==================== 状态 ====================
@@ -90,10 +90,12 @@ let trendChart: echarts.ECharts | null = null;
 let yieldChart: echarts.ECharts | null = null;
 let productChart: echarts.ECharts | null = null;
 let processChart: echarts.ECharts | null = null;
+let renderTimer: ReturnType<typeof setTimeout> | null = null;
 
 function renderCharts() {
   if (!dashboard.value) return;
-  setTimeout(() => {
+  if (renderTimer) clearTimeout(renderTimer);
+  renderTimer = setTimeout(() => {
     renderTrendChart();
     renderYieldChart();
     renderProductChart();
@@ -198,14 +200,37 @@ const detailData = computed(() => {
 
 // ==================== 生命周期 ====================
 
-onMounted(() => {
-  loadData();
-  window.addEventListener('resize', () => {
+let resizeRaf = 0;
+function handleResize() {
+  if (resizeRaf) return;
+  resizeRaf = requestAnimationFrame(() => {
     trendChart?.resize();
     yieldChart?.resize();
     productChart?.resize();
     processChart?.resize();
+    resizeRaf = 0;
   });
+}
+
+let resizeObserver: ResizeObserver | null = null;
+
+onMounted(() => {
+  loadData();
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    document.querySelectorAll('.chart').forEach(el => resizeObserver!.observe(el));
+  }
+  window.addEventListener('resize', handleResize);
+});
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+  if (renderTimer) clearTimeout(renderTimer);
+  window.removeEventListener('resize', handleResize);
+  trendChart?.dispose();
+  yieldChart?.dispose();
+  productChart?.dispose();
+  processChart?.dispose();
 });
 </script>
 
@@ -269,7 +294,7 @@ onMounted(() => {
     <!-- 明细表格 -->
     <div class="detail-section" v-if="detailData.length">
       <h3>产品明细数据</h3>
-      <el-table :data="detailData" stripe border size="small" style="width: 100%">
+      <el-table empty-text="暂无数据" :data="detailData" stripe border size="small" style="width: 100%">
         <el-table-column prop="index" label="#" width="50" align="center" />
         <el-table-column prop="productName" label="产品名称" min-width="140" />
         <el-table-column prop="output" label="总产出" width="100" align="right" />

@@ -74,7 +74,7 @@ Page({
   async loadDefaultAddress() {
     try {
       const res = await api.userAddressPage({ current: 1, size: 10 })
-      const addressList = res.data?.records || []
+      const addressList = (res.data && res.data.records) || []
       const defaultAddress = addressList.find(a => a.isDefault) || addressList[0]
       this.setData({
         addressList: addressList,
@@ -231,7 +231,7 @@ Page({
           goodsId: g.id,
           quantity: g.quantity
         })),
-        couponId: this.data.selectedCoupon?.id,
+        couponId: this.data.selectedCoupon && this.data.selectedCoupon.id,
         remark: this.data.remark,
         paymentMethod: this.data.paymentMethod
       }

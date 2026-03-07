@@ -1,0 +1,66 @@
+appId: com.cretas.foodtrace
+---
+# Test 35: Dispatcher - AI Schedule Deep
+# Verifies AISchedule (batch mode + plan mode), CompletionProb, WorkerOptimize
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as dispatcher
+- runFlow: flows/login-dp.yaml
+- extendedWaitUntil:
+    visible: ".*\u8BA1\u5212.*"
+    timeout: 15000
+
+# Navigate to AI Schedule tab (AI调度)
+- tapOn: "AI\u8C03\u5EA6"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/35-dp-ai-schedule-tab
+
+# === Batch Mode (按批次排产) ===
+- tapOn:
+    text: ".*\u6309\u6279\u6B21\u6392\u4EA7.*|.*By Batch.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/35-dp-batch-mode
+
+# Scroll down to see batch schedule content
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/35-dp-batch-mode-scroll
+
+# Return to AI Schedule tab safely
+- tapOn: "AI\u8C03\u5EA6"
+- waitForAnimationToEnd
+
+# === Plan Mode (按计划排产) ===
+- tapOn:
+    text: ".*\u6309\u8BA1\u5212\u6392\u4EA7.*|.*By Plan.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/35-dp-plan-mode
+
+# Return to AI Schedule tab safely
+- tapOn: "AI\u8C03\u5EA6"
+- waitForAnimationToEnd
+
+# === Completion Probability (Monte Carlo) ===
+- tapOn:
+    text: ".*\u5B8C\u5DE5\u6982\u7387.*|.*Completion.*|.*Monte.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/35-dp-completion-prob
+
+# Return to AI Schedule tab safely
+- tapOn: "AI\u8C03\u5EA6"
+- waitForAnimationToEnd
+
+# === Worker Optimize (人员优化) ===
+- tapOn:
+    text: ".*\u4EBA\u5458\u4F18\u5316.*|.*Worker.*Optim.*|.*\u4EBA\u529B\u4F18\u5316.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/35-dp-worker-optimize

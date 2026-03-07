@@ -7,6 +7,7 @@ import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
+import { formatAmount } from '@/utils/tableFormatters';
 
 const route = useRoute();
 const router = useRouter();
@@ -18,6 +19,7 @@ const canWrite = computed(() => permissionStore.canWrite('procurement'));
 const orderId = computed(() => route.params.id as string);
 
 const loading = ref(false);
+const submitting = ref(false);
 const order = ref<any>(null);
 const receives = ref<any[]>([]);
 const receiveDialogVisible = ref(false);
@@ -60,6 +62,7 @@ async function loadReceives() {
 }
 
 async function handleAction(action: string) {
+  if (submitting.value) return;
   const map: Record<string, { label: string; url: string }> = {
     submit: { label: '提交', url: `/${factoryId.value}/purchase/orders/${orderId.value}/submit` },
     approve: { label: '审批通过', url: `/${factoryId.value}/purchase/orders/${orderId.value}/approve` },
@@ -69,9 +72,14 @@ async function handleAction(action: string) {
   if (!a) return;
   try {
     await ElMessageBox.confirm(`确认${a.label}？`, '操作确认');
+  } catch { return; }
+  submitting.value = true;
+  try {
     const res = await post(a.url);
     if (res.success) { ElMessage.success(`${a.label}成功`); loadOrder(); }
-  } catch { /* cancelled */ }
+    else { ElMessage.error(res.message || `${a.label}失败，请重试`); }
+  } catch { ElMessage.error(`${a.label}失败，请检查网络`); }
+  finally { submitting.value = false; }
 }
 
 function openReceiveDialog() {
@@ -87,6 +95,8 @@ function openReceiveDialog() {
 }
 
 async function handleCreateReceive() {
+  if (submitting.value) return;
+  submitting.value = true;
   try {
     const res = await post(`/${factoryId.value}/purchase/receives`, {
       purchaseOrderId: orderId.value,
@@ -96,21 +106,23 @@ async function handleCreateReceive() {
       ElMessage.success('收货单创建成功');
       receiveDialogVisible.value = false;
       loadOrder(); loadReceives();
-    }
-  } catch { ElMessage.error('创建失败'); }
+    } else { ElMessage.error(res.message || '创建失败，请重试'); }
+  } catch { ElMessage.error('创建失败，请检查网络'); }
+  finally { submitting.value = false; }
 }
 
 async function confirmReceive(receiveId: string) {
+  if (submitting.value) return;
   try {
     await ElMessageBox.confirm('确认入库？将生成物料批次', '确认');
+  } catch { return; }
+  submitting.value = true;
+  try {
     const res = await post(`/${factoryId.value}/purchase/receives/${receiveId}/confirm`);
     if (res.success) { ElMessage.success('入库确认成功'); loadReceives(); loadOrder(); }
-  } catch { /* cancelled */ }
-}
-
-function formatAmount(val: number) {
-  if (val == null) return '-';
-  return `¥${Number(val).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+    else { ElMessage.error(res.message || '入库确认失败，请重试'); }
+  } catch { ElMessage.error('入库确认失败，请检查网络'); }
+  finally { submitting.value = false; }
 }
 </script>
 
@@ -122,15 +134,15 @@ function formatAmount(val: number) {
           <div class="header-left">
             <el-button :icon="ArrowLeft" @click="router.push('/procurement/orders')">返回</el-button>
             <span class="page-title">{{ label('purchaseOrder') }}详情</span>
-            <el-tag v-if="order" :type="(statusMap[order.status]?.type as any) || 'info'" size="large">
+            <el-tag v-if="order" :type="(statusMap[order.status]?.type) || 'info'" size="large">
               {{ statusMap[order.status]?.text || order.status }}
             </el-tag>
           </div>
           <div class="header-right" v-if="order && canWrite">
-            <el-button v-if="order.status === 'DRAFT'" type="warning" @click="handleAction('submit')">提交审批</el-button>
-            <el-button v-if="order.status === 'SUBMITTED'" type="success" @click="handleAction('approve')">审批通过</el-button>
-            <el-button v-if="['APPROVED','PARTIAL_RECEIVED'].includes(order.status)" type="primary" @click="openReceiveDialog">{{ label('receive') }}</el-button>
-            <el-button v-if="['DRAFT','SUBMITTED'].includes(order.status)" type="danger" @click="handleAction('cancel')">取消</el-button>
+            <el-button v-if="order.status === 'DRAFT'" type="warning" :loading="submitting" @click="handleAction('submit')">提交审批</el-button>
+            <el-button v-if="order.status === 'SUBMITTED'" type="success" :loading="submitting" @click="handleAction('approve')">审批通过</el-button>
+            <el-button v-if="['APPROVED','PARTIAL_RECEIVED'].includes(order.status)" type="primary" :loading="submitting" @click="openReceiveDialog">{{ label('receive') }}</el-button>
+            <el-button v-if="['DRAFT','SUBMITTED'].includes(order.status)" type="danger" :disabled="submitting" @click="handleAction('cancel')">取消</el-button>
           </div>
         </div>
       </template>
@@ -170,7 +182,7 @@ function formatAmount(val: number) {
           <el-table-column prop="receiveDate" label="收货日期" width="120" />
           <el-table-column prop="status" label="状态" width="110" align="center">
             <template #default="{ row }">
-              <el-tag :type="(receiveStatusMap[row.status]?.type as any) || 'info'" size="small">
+              <el-tag :type="(receiveStatusMap[row.status]?.type) || 'info'" size="small">
                 {{ receiveStatusMap[row.status]?.text || row.status }}
               </el-tag>
             </template>
@@ -180,7 +192,7 @@ function formatAmount(val: number) {
           </el-table-column>
           <el-table-column label="操作" width="120" align="center">
             <template #default="{ row }">
-              <el-button v-if="row.status === 'DRAFT' && canWrite" type="success" link size="small" @click="confirmReceive(row.id)">确认入库</el-button>
+              <el-button v-if="['DRAFT','PENDING_QC'].includes(row.status) && canWrite" type="success" link size="small" :disabled="submitting" @click="confirmReceive(row.id)">确认入库</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -202,7 +214,7 @@ function formatAmount(val: number) {
       </el-table>
       <template #footer>
         <el-button @click="receiveDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleCreateReceive">创建收货单</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleCreateReceive">创建收货单</el-button>
       </template>
     </el-dialog>
   </div>

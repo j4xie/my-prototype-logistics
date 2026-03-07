@@ -56,10 +56,23 @@ onMounted(async () => {
   }, 60000);
 });
 
+let resizeRaf = 0;
+function handleResize() {
+  if (resizeRaf) return;
+  resizeRaf = requestAnimationFrame(() => {
+    ganttChart.value?.resize();
+    resizeRaf = 0;
+  });
+}
+
+let resizeObserver: ResizeObserver | null = null;
+
 onUnmounted(() => {
+  resizeObserver?.disconnect();
   if (refreshInterval.value) {
     clearInterval(refreshInterval.value);
   }
+  window.removeEventListener('resize', handleResize);
   if (ganttChart.value) {
     ganttChart.value.dispose();
   }
@@ -104,9 +117,11 @@ function initGanttChart() {
   ganttChart.value = echarts.init(ganttContainer.value, 'cretas');
   updateGanttChart();
 
-  window.addEventListener('resize', () => {
-    ganttChart.value?.resize();
-  });
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(ganttContainer.value);
+  }
+  window.addEventListener('resize', handleResize);
 }
 
 function updateGanttChart() {

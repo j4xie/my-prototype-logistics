@@ -450,7 +450,7 @@ class CrossSheetAggregator:
                                 "name": "正向贡献",
                                 "type": "bar",
                                 "stack": "Total",
-                                "itemStyle": {"color": "#91cc75", "borderRadius": [4, 4, 0, 0]},
+                                "itemStyle": {"color": "#36B37E", "borderRadius": [4, 4, 0, 0]},
                                 "label": {"show": True, "position": "top", "fontSize": 10},
                                 "data": wf_positive
                             },
@@ -458,7 +458,7 @@ class CrossSheetAggregator:
                                 "name": "负向贡献",
                                 "type": "bar",
                                 "stack": "Total",
-                                "itemStyle": {"color": "#ee6666", "borderRadius": [4, 4, 0, 0]},
+                                "itemStyle": {"color": "#FF5630", "borderRadius": [4, 4, 0, 0]},
                                 "label": {"show": True, "position": "top", "fontSize": 10},
                                 "data": wf_negative
                             }

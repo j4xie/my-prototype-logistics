@@ -33,6 +33,7 @@ import { KPICard, AIInsightPanel } from '@/components/smartbi';
 import echarts from '@/utils/echarts';
 
 const router = useRouter();
+const rootRef = ref<HTMLDivElement>();
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -143,10 +144,7 @@ interface ImportResult {
 }
 
 const importResult = ref<ImportResult | null>(null);
-const importing = ref(false);
-
-// 删除不再需要的变量和函数占位
-// (dataTypes, selectedDataType, fieldMappings 等将在简化版中移除)
+// TODO: handleImport — 后端导入 API 尚未实现，已移除假实现 (Round 4.5)
 
 // 目标字段选项
 const targetFieldOptions = computed(() => {
@@ -181,9 +179,10 @@ async function handleUpload(file: UploadFile) {
   uploading.value = true;
   uploadProgress.value = 0;
 
+  let progressInterval: ReturnType<typeof setInterval> | null = null;
   try {
     // 模拟上传进度
-    const progressInterval = setInterval(() => {
+    progressInterval = setInterval(() => {
       if (uploadProgress.value < 90) {
         uploadProgress.value += 10;
       }
@@ -239,6 +238,7 @@ async function handleUpload(file: UploadFile) {
     console.error('文件上传失败:', error);
     ElMessage.error('文件上传失败: ' + (error instanceof Error ? error.message : '未知错误'));
   } finally {
+    if (progressInterval) clearInterval(progressInterval);
     uploading.value = false;
   }
 
@@ -314,15 +314,26 @@ async function handleSaveAnalysis() {
   }
 }
 
-// 清理图表实例
-onUnmounted(() => {
-  chartInstances.forEach(chart => chart.dispose());
-  chartInstances.clear();
+// 窗口大小变化时调整图表
+let resizeObserver: ResizeObserver | null = null;
+function handleChartResize() {
+  chartInstances.forEach(chart => chart.resize());
+}
+onMounted(() => {
+  window.addEventListener('resize', handleChartResize);
+  if (rootRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleChartResize);
+    resizeObserver.observe(rootRef.value);
+  }
 });
 
-// 窗口大小变化时调整图表
-window.addEventListener('resize', () => {
-  chartInstances.forEach(chart => chart.resize());
+// 清理图表实例
+onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  window.removeEventListener('resize', handleChartResize);
+  chartInstances.forEach(chart => chart.dispose());
+  chartInstances.clear();
 });
 
 // 选择数据类型
@@ -374,44 +385,7 @@ function prevStep() {
   }
 }
 
-// 确认导入
-async function handleImport() {
-  try {
-    await ElMessageBox.confirm(
-      `即将导入 ${parseResult.value.validRows} 条数据，是否继续？`,
-      '确认导入',
-      { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' }
-    );
-
-    importing.value = true;
-
-    // 调用后端 API 导入数据
-    // const response = await post(`/${factoryId.value}/smart-bi/excel/import`, {
-    //   dataType: selectedDataType.value,
-    //   mappings: fieldMappings.value,
-    //   fileId: 'xxx'
-    // });
-
-    // 模拟导入过程
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    importResult.value = {
-      success: true,
-      imported: parseResult.value.validRows,
-      failed: parseResult.value.errorRows,
-      errors: parseResult.value.errors
-    };
-
-    ElMessage.success('数据导入成功');
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('导入失败:', error);
-      ElMessage.error('导入失败');
-    }
-  } finally {
-    importing.value = false;
-  }
-}
+// TODO: handleImport — 后端导入 API 尚未实现，已移除假实现 (Round 4.5)
 
 // 重新开始
 function handleReset() {
@@ -441,7 +415,7 @@ function handleDownloadTemplate() {
 </script>
 
 <template>
-  <div class="excel-upload-page">
+  <div ref="rootRef" class="excel-upload-page">
     <div class="page-header">
       <div class="header-left">
         <el-breadcrumb separator="/">
@@ -729,7 +703,7 @@ function handleDownloadTemplate() {
       margin: 0 0 8px;
 
       em {
-        color: #409EFF;
+        color: var(--color-primary);
         font-style: normal;
       }
     }
@@ -785,17 +759,17 @@ function handleDownloadTemplate() {
   transition: all 0.3s;
 
   &:hover {
-    border-color: #409EFF;
+    border-color: var(--color-primary);
   }
 
   &.selected {
-    border-color: #409EFF;
+    border-color: var(--color-primary);
     background: #ecf5ff;
   }
 
   > .el-icon {
     font-size: 32px;
-    color: #409EFF;
+    color: var(--color-primary);
   }
 
   .type-info {
@@ -879,7 +853,7 @@ function handleDownloadTemplate() {
       .stat-value {
         font-size: 28px;
         font-weight: 600;
-        color: #409EFF;
+        color: var(--color-primary);
 
         &.type-badge {
           font-size: 16px;
@@ -972,7 +946,7 @@ function handleDownloadTemplate() {
 
     .charts-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(400px, 100%), 1fr));
       gap: 16px;
     }
 
@@ -1018,7 +992,7 @@ function handleDownloadTemplate() {
 
   .table-type-info {
     margin-top: 8px;
-    color: #409EFF;
+    color: var(--color-primary);
     font-weight: 500;
   }
 }

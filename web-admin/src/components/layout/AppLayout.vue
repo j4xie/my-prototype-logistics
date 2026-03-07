@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useAppStore } from '@/store/modules/app';
 import AppSidebar from './AppSidebar.vue';
 import AppHeader from './AppHeader.vue';
@@ -9,8 +9,10 @@ const appStore = useAppStore();
 // Keep SmartBIAnalysis in cache to avoid heavy unmount side effects
 const keepAliveViews = ['SmartBIAnalysis'];
 
+onMounted(() => appStore.initResponsive());
+
 const mainStyle = computed(() => ({
-  marginLeft: `${appStore.currentSidebarWidth}px`,
+  marginLeft: appStore.isMobile ? '0px' : `${appStore.currentSidebarWidth}px`,
   transition: 'margin-left 0.3s'
 }));
 </script>
@@ -52,7 +54,7 @@ const mainStyle = computed(() => ({
 
 .app-content {
   flex: 1;
-  padding: 20px;
+  padding: var(--page-padding, 20px);
   overflow-y: auto;
   background-color: var(--bg-color-page, #F4F6F9);
 
@@ -63,5 +65,12 @@ const mainStyle = computed(() => ({
   }
 }
 
-// Transition removed — caused blank pages when navigating from heavy components (SmartBIAnalysis)
+@media (max-width: 768px) {
+  .app-main {
+    margin-left: 0 !important;
+  }
+  .app-content {
+    padding: var(--page-padding, 12px);
+  }
+}
 </style>

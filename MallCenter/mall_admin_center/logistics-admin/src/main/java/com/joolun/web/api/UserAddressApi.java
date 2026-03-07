@@ -60,6 +60,13 @@ public class UserAddressApi {
     */
     @DeleteMapping("/{id}")
     public AjaxResult removeById(@PathVariable String id){
+		UserAddress address = userAddressService.getById(id);
+		if(address == null){
+			return AjaxResult.error("地址不存在");
+		}
+		if(!address.getUserId().equals(ThirdSessionHolder.getWxUserId())){
+			return AjaxResult.error("无权删除此地址");
+		}
 		return AjaxResult.success(userAddressService.removeById(id));
     }
 

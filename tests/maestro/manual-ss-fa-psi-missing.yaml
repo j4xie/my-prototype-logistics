@@ -1,0 +1,58 @@
+appId: com.cretas.foodtrace
+---
+# Capture missing screenshots: Purchase Orders & Sales Orders
+# Assumes app is already running and logged in
+
+- waitForAnimationToEnd
+
+# Navigate to Management tab
+- tapOn:
+    text: "管理"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Management.*|.*管理.*|.*Core.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Scroll down to see PSI section
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+
+# --- Purchase Orders (采购订单) ---
+- tapOn:
+    text: "采购订单"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*采购.*|.*Purchase.*|.*PO-.*|.*暂无.*|.*No.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-purchase-list
+
+# Back
+- back
+- waitForAnimationToEnd
+
+# Need to scroll again after back
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+
+# --- Sales Orders (销售订单) ---
+- tapOn:
+    text: "销售订单"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*销售.*|.*Sale.*|.*SO-.*|.*暂无.*|.*No.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-fa-sales-list
+
+# Done
+- back
+- waitForAnimationToEnd

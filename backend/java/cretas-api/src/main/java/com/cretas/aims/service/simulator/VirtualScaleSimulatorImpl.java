@@ -48,7 +48,8 @@ public class VirtualScaleSimulatorImpl implements VirtualScaleSimulator {
     /**
      * 线程池用于异步称重模拟
      */
-    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private final ExecutorService executorService = java.util.concurrent.Executors.newFixedThreadPool(
+            4, r -> { Thread t = new Thread(r, "virtual-scale"); t.setDaemon(true); return t; });
 
     /**
      * 随机数生成器

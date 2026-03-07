@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { ArrowLeft, MagicStick, Check, Refresh } from "@element-plus/icons-vue";
 import { ElMessageBox } from "element-plus";
 import { message } from "@/utils/message";
@@ -16,6 +16,12 @@ defineOptions({
 });
 
 const router = useRouter();
+const route = useRoute();
+
+// 商户ID（从路由参数获取）
+const merchantId = computed(() =>
+  route.query.merchantId ? Number(route.query.merchantId) : undefined
+);
 
 // 用户输入
 const userPrompt = ref("");
@@ -51,7 +57,7 @@ const handleAnalyze = async () => {
   chatHistory.value.push({ role: "user", content: userPrompt.value });
 
   try {
-    const res = await analyzeDecoration(userPrompt.value);
+    const res = await analyzeDecoration(userPrompt.value, merchantId.value);
     if (res.code === 200 && res.data.success) {
       analysisResult.value = res.data;
       currentSessionId.value = res.data.sessionId || "";

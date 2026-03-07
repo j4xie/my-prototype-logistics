@@ -1,0 +1,124 @@
+appId: com.cretas.foodtrace
+---
+# Test 74: In-depth Factory Admin Dashboard Interaction
+# Exercises AI洞察, stat card drilldowns, quick actions, pull-to-refresh, scroll
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 10000
+- takeScreenshot: screenshots/74-fa-home-initial
+
+# === AI Insights card ===
+- tapOn:
+    text: ".*AI.*洞察.*|.*AI Insights.*|.*智能洞察.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/74-ai-insights
+
+# Back if navigated away
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# === Stat card drilldowns ===
+# Drilldown 1: Quality Rate
+- tapOn:
+    text: ".*Quality Rate.*|.*良品率.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/74-drilldown-quality
+
+# Back from drilldown
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Drilldown 2: Materials
+- tapOn:
+    text: ".*Materials.*|.*物料.*|.*原料.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/74-drilldown-materials
+
+# Back from drilldown
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Drilldown 3: Today's batches or production stats
+- tapOn:
+    text: ".*Today.*|.*今日.*批次.*|.*Batches.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/74-drilldown-batches
+
+# Back from drilldown
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# === Quick actions ===
+# Scroll down to quick actions section
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/74-quick-actions-visible
+
+# Tap a quick action
+- tapOn:
+    text: ".*生产报表.*|.*生产报工.*|.*Report.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/74-quick-action-report
+
+# Back from quick action
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# === Pull-to-refresh ===
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/74-after-refresh
+
+# === Full page scroll ===
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/74-scrolled-mid
+
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/74-scrolled-bottom
+
+# Scroll back to top
+- swipe:
+    direction: DOWN
+    duration: 800
+- waitForAnimationToEnd
+- swipe:
+    direction: DOWN
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/74-scrolled-top
+
+# Verify still on home
+- takeScreenshot: screenshots/74-complete

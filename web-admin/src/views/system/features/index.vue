@@ -16,6 +16,7 @@ const canWrite = computed(() => permissionStore.canWrite('system'));
 const loading = ref(false);
 const configs = ref<FeatureConfig[]>([]);
 const drawerVisible = ref(false);
+const saving = ref(false);
 const editingModule = ref<FeatureConfig | null>(null);
 const editConfig = ref<ModuleConfigDetail>({});
 
@@ -190,6 +191,7 @@ function openConfigDrawer(config: FeatureConfig) {
 
 async function saveConfig() {
   if (!factoryId.value || !editingModule.value) return;
+  saving.value = true;
   try {
     const response = await updateModuleConfig(
       factoryId.value,
@@ -207,6 +209,8 @@ async function saveConfig() {
     }
   } catch (error) {
     ElMessage.error('保存失败');
+  } finally {
+    saving.value = false;
   }
 }
 
@@ -399,7 +403,7 @@ function getModuleColor(moduleId: string): string {
         <!-- Save -->
         <div class="drawer-footer">
           <el-button @click="drawerVisible = false">取消</el-button>
-          <el-button type="primary" @click="saveConfig">保存配置</el-button>
+          <el-button type="primary" :loading="saving" @click="saveConfig">保存配置</el-button>
         </div>
       </div>
     </el-drawer>

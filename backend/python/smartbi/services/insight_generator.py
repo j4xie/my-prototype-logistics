@@ -7,6 +7,7 @@ Generates AI-powered business insights from data analysis.
 import asyncio
 import logging
 import json
+import re
 from typing import Any, Optional, List, Dict
 from enum import Enum
 
@@ -182,18 +183,21 @@ class InsightGenerator:
 
         # Analyze each numeric column, skip unnamed/meaningless columns
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        import re as _re
-        numeric_cols = [c for c in numeric_cols if not _re.match(r'^(Column_\d+|指标\d+|Unnamed|Unnamed:\s*\d+)$', str(c), _re.IGNORECASE)]
+        numeric_cols = [c for c in numeric_cols if not re.match(r'^(Column_\d+|指标\d+|Unnamed|Unnamed:\s*\d+)$', str(c), re.IGNORECASE)]
+
+        # Determine if data has time-series ordering (needed for trend analysis)
+        has_time_order = self._has_time_column(df)
 
         for col in numeric_cols:
             values = df[col].dropna()
             if len(values) < 2:
                 continue
 
-            # Trend analysis
-            trend_insight = self._analyze_trend(col, values)
-            if trend_insight:
-                insights.append(trend_insight)
+            # Trend analysis — only meaningful when rows are ordered by time
+            if has_time_order:
+                trend_insight = self._analyze_trend(col, values)
+                if trend_insight:
+                    insights.append(trend_insight)
 
             # Anomaly detection
             anomaly_insights = self._detect_anomalies(df, col, values)
@@ -259,6 +263,28 @@ class InsightGenerator:
             "importance": min(abs(growth_rate) / 10, 10)
         }
 
+    @staticmethod
+    def _has_time_column(df: pd.DataFrame) -> bool:
+        """Check if the DataFrame has a time-like column indicating row order is temporal."""
+        time_patterns = re.compile(
+            r'(日期|时间|月份|年份|季度|date|time|month|year|quarter|period|week)', re.IGNORECASE
+        )
+        for col in df.columns:
+            if time_patterns.search(str(col)):
+                return True
+            # Check if column contains datetime-like values
+            if df[col].dtype in ('datetime64[ns]', 'datetime64'):
+                return True
+            # Sample first non-null value for date-like strings
+            sample = df[col].dropna().head(1)
+            if len(sample) > 0:
+                val = str(sample.iloc[0])
+                if re.match(r'^\d{4}[-/]\d{1,2}([-/]\d{1,2})?$', val):
+                    return True
+                if re.match(r'^\d{4}年\d{1,2}月', val):
+                    return True
+        return False
+
     def _detect_anomalies(self, df: pd.DataFrame, column: str, values: pd.Series) -> List[dict]:
         """Detect anomalies using statistical methods"""
         insights = []
@@ -294,8 +320,8 @@ class InsightGenerator:
                         if label and str(label).strip():
                             date_str = self._humanize_col(str(label).strip())
                             break
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("anomaly label lookup failed for idx=%s col=%s: %s", idx, tc, e)
             if not date_str:
                 date_str = self._humanize_col(str(idx))
 
@@ -417,7 +443,9 @@ class InsightGenerator:
     def _detect_analysis_scenario(self, df: pd.DataFrame) -> str:
         """
         Detect the analysis scenario from column names and data.
-        Returns one of: 'financial', 'sales', 'production', 'supply_chain', 'general'
+        Returns one of: 'restaurant_operations', 'financial', 'sales', 'production',
+        'supply_chain', 'general'.
+        Restaurant check runs first to avoid POS data falling into generic 'sales'.
         """
         col_text = '|'.join(df.columns.tolist()).lower()
         # Add sample data labels for better detection (sample 50 rows for wider coverage)
@@ -425,6 +453,14 @@ class InsightGenerator:
         if len(text_cols) > 0:
             labels = df[text_cols[0]].dropna().astype(str).tolist()[:50]
             col_text += '|' + '|'.join(labels).lower()
+
+        # Priority check: restaurant POS / procurement data
+        restaurant_kw = ['门店名称', '商品名称', '商品分类', '点单方式', '套餐',
+                         '销售金额', '折后金额', '实收', '入库', '供应商', '原料',
+                         '餐饮商品', '单卖数量', '套餐子商品', '堂食', '外卖']
+        restaurant_score = sum(1 for kw in restaurant_kw if kw in col_text)
+        if restaurant_score >= 3:
+            return 'restaurant_operations'
 
         scores = {
             'financial': 0,
@@ -493,6 +529,14 @@ class InsightGenerator:
                 "分析侧重：库存周转天数、供应商集中度、采购成本波动、缺货风险、物流时效。"
                 "行业参考：食品行业存货周转30-90天、应收账款15-60天、原料成本占比50-70%。"
             ),
+            'restaurant_operations': (
+                "你是一位服务于餐饮连锁品牌运营总监的资深餐饮数据分析师。"
+                "精通大众点评/美团榜单评选规则和餐饮行业KPI体系。"
+                "分析侧重：菜品四象限(Menu Engineering)、门店横向对比、食品成本率、"
+                "套餐效率、客单价结构、采购成本波动。"
+                "参考大众点评必吃榜/黑珍珠/点评榜单评选标准，评估门店上榜潜力和改进方向。"
+                "写作风格：数据驱动（引用具体数字和门店/菜品名）、结论明确、建议可执行。"
+            ),
             'general': (
                 "你是一位服务于食品加工企业管理层的资深数据分析师。"
                 "你的职责是从数据中挖掘可执行的业务洞察。"
@@ -503,6 +547,17 @@ class InsightGenerator:
 
     def _get_scenario_benchmarks(self, scenario: str) -> str:
         """Get scenario-specific benchmark text for the prompt."""
+        if scenario == 'restaurant_operations':
+            return (
+                "餐饮连锁对标基准：食材成本率28-38%(火锅30-40%)、人力成本率22-32%、"
+                "翻台率2.0-4.5次/天(火锅2.5-5.0)、客单价50-120元、净利率3-12%、"
+                "套餐附加率15-40%、折扣率5-20%。\n"
+                "菜品四象限(Menu Engineering)：Star(高销量+高利润)=主推、"
+                "Plow(高销量+低利润)=提价或缩份量、Puzzle(低销量+高利润)=加推广、"
+                "Dog(低销量+低利润)=考虑下架。\n"
+                "大众点评必吃榜门槛：口味优选+稳定经营365天+日常消费水平+真实评价。"
+                "上榜评估维度：招牌菜集中度、退货率、价格定位、出品稳定性。"
+            )
         if scenario == 'production':
             return (
                 "生产对标基准：OEE 60-85%（食品加工业）、良品率 95-99.5%、废品率 1-5%、"
@@ -544,22 +599,25 @@ class InsightGenerator:
             '工时': ['工时', '人工时', '人时', 'labor_hours', 'man_hours'],
         }
 
+        # Vectorized keyword matching — avoid iterrows on full DataFrame
         found_rows = {}
-        for _, row in df.iterrows():
-            label = str(row.get(label_col, '')).strip()
-            if not label:
-                continue
-            for category, keywords in prod_kw_map.items():
-                for kw in keywords:
-                    if kw in label.lower():
-                        row_values = {}
-                        for nc in numeric_cols:
-                            val = row.get(nc)
-                            if pd.notna(val) and isinstance(val, (int, float)):
-                                row_values[nc] = val
-                        if row_values:
-                            found_rows[label] = {'values': row_values, 'category': category}
-                        break
+        labels = df[label_col].astype(str).str.strip()
+        labels_lower = labels.str.lower()
+        for category, keywords in prod_kw_map.items():
+            pattern = '|'.join(re.escape(kw) for kw in keywords)
+            mask = labels_lower.str.contains(pattern, regex=True, na=False)
+            matched_indices = mask[mask].index
+            for idx in matched_indices:
+                label = labels.iloc[idx] if hasattr(labels, 'iloc') else labels[idx]
+                if not label:
+                    continue
+                row_values = {}
+                for nc in numeric_cols:
+                    val = df[nc].iloc[idx] if hasattr(df[nc], 'iloc') else df[nc][idx]
+                    if pd.notna(val) and isinstance(val, (int, float)):
+                        row_values[nc] = val
+                if row_values and label not in found_rows:
+                    found_rows[label] = {'values': row_values, 'category': category}
 
         # Also check column names for production metrics
         col_metrics = {}
@@ -604,6 +662,218 @@ class InsightGenerator:
         parts.append("  - 废品率: 1-5%")
         parts.append("  - 能耗成本占比: 5-15%")
 
+        return "\n".join(parts)
+
+    def _compute_restaurant_context(self, df: pd.DataFrame) -> str:
+        """Pre-compute restaurant chain metrics for LLM context injection.
+
+        Covers: menu engineering quadrants, store comparison, category breakdown,
+        combo efficiency, discount analysis, and Dianping listing potential.
+        """
+        parts = []
+        cols = {c.strip(): c for c in df.columns}
+        col_lower = {c.strip().lower(): c for c in df.columns}
+
+        # --- helper: find column by partial name match ---
+        def _find_col(*candidates: str) -> Optional[str]:
+            for cand in candidates:
+                for raw in cols:
+                    if cand in raw:
+                        return cols[raw]
+            return None
+
+        store_col = _find_col("门店名称", "门店")
+        product_col = _find_col("商品名称", "商品")
+        category_col = _find_col("商品分类", "分类")
+        order_method_col = _find_col("点单方式")
+        qty_single_col = _find_col("单卖数量")
+        qty_combo_col = _find_col("套餐内销量")
+        amount_col = _find_col("销售金额")
+        actual_col = _find_col("实收")
+        discount_col = _find_col("折后金额")
+        return_col = _find_col("退货数量")
+        # Procurement columns
+        supplier_col = _find_col("供应商")
+        material_col = _find_col("原料名称", "原料分类")
+        inbound_qty_col = _find_col("入库数量")
+        inbound_amt_col = _find_col("入库金额")
+
+        # Fallback: Java upload may rename columns (e.g. 商品名称 → product_2, humanized to "product(2)")
+        if not product_col:
+            for c in df.columns:
+                c_lower = c.strip().lower()
+                if c_lower.startswith("product") and c_lower != "product":
+                    sample = df[c].dropna().head(20)
+                    if len(sample) > 0 and sample.apply(lambda x: isinstance(x, str) and any('\u4e00' <= ch <= '\u9fff' for ch in str(x))).mean() > 0.3:
+                        product_col = c
+                        logger.info(f"Restaurant context: product_col fallback → '{c}'")
+                        break
+        if not category_col:
+            for c in df.columns:
+                if c.strip().lower() == "category":
+                    category_col = c
+                    break
+        if not qty_single_col:
+            for c in df.columns:
+                c_lower = c.strip().lower()
+                if c_lower.startswith("product") and c_lower != "product" and c != product_col:
+                    try:
+                        vals = pd.to_numeric(df[c], errors='coerce').dropna()
+                        if len(vals) > 10 and vals.median() > 0 and vals.median() < 10000:
+                            if (vals == vals.astype(int)).mean() > 0.8:
+                                qty_single_col = c
+                                logger.info(f"Restaurant context: qty_single_col fallback → '{c}'")
+                                break
+                    except Exception:
+                        pass
+
+        # --- Ensure numeric columns are actually numeric (work on copy to avoid mutating caller's DataFrame) ---
+        df = df.copy()
+        for nc in [actual_col, amount_col, discount_col, qty_single_col, qty_combo_col,
+                   return_col, inbound_qty_col, inbound_amt_col]:
+            if nc and nc in df.columns:
+                df[nc] = pd.to_numeric(df[nc], errors='coerce').fillna(0)
+
+        # ===== Menu Engineering Quadrant =====
+        if product_col and actual_col:
+            # Use 单卖数量 to avoid combo double-counting; fall back to row count
+            qty_col = qty_single_col
+            if qty_col:
+                item_df = df.groupby(product_col).agg(
+                    total_revenue=pd.NamedAgg(column=actual_col, aggfunc='sum'),
+                    total_qty=pd.NamedAgg(column=qty_col, aggfunc='sum'),
+                ).reset_index()
+            else:
+                item_df = df.groupby(product_col).agg(
+                    total_revenue=pd.NamedAgg(column=actual_col, aggfunc='sum'),
+                    total_qty=pd.NamedAgg(column=actual_col, aggfunc='count'),
+                ).reset_index()
+
+            item_df = item_df[item_df['total_qty'] > 0].copy()
+            if len(item_df) > 0:
+                item_df['unit_profit'] = item_df['total_revenue'] / item_df['total_qty']
+                qty_median = item_df['total_qty'].median()
+                profit_median = item_df['unit_profit'].median()
+
+                def _quadrant(row):
+                    high_qty = row['total_qty'] >= qty_median
+                    high_profit = row['unit_profit'] >= profit_median
+                    if high_qty and high_profit:
+                        return 'Star'
+                    if high_qty and not high_profit:
+                        return 'Plow'
+                    if not high_qty and high_profit:
+                        return 'Puzzle'
+                    return 'Dog'
+
+                item_df['quadrant'] = item_df.apply(_quadrant, axis=1)
+
+                parts.append("## 菜品四象限分析 (Menu Engineering)")
+                parts.append(f"分析菜品数: {len(item_df)}, 销量中位数: {qty_median:.0f}, 单品利润中位数: {profit_median:.1f}元")
+                for q_name, q_label in [('Star', '明星菜(高销量+高利润)'),
+                                         ('Plow', '耕牛菜(高销量+低利润)'),
+                                         ('Puzzle', '谜题菜(低销量+高利润)'),
+                                         ('Dog', '瘦狗菜(低销量+低利润)')]:
+                    q_items = item_df[item_df['quadrant'] == q_name].nlargest(15, 'total_revenue')
+                    if len(q_items) > 0:
+                        items_str = ', '.join(
+                            f"{row[product_col]}(¥{row['total_revenue']:.0f}/{row['total_qty']:.0f}份)"
+                            for _, row in q_items.iterrows()
+                        )
+                        parts.append(f"- **{q_label}** ({len(item_df[item_df['quadrant'] == q_name])}个): {items_str}")
+
+        # ===== Store Comparison =====
+        if store_col and actual_col:
+            store_df = df.groupby(store_col).agg(
+                total_revenue=pd.NamedAgg(column=actual_col, aggfunc='sum'),
+                item_count=pd.NamedAgg(column=actual_col, aggfunc='count'),
+            ).reset_index().sort_values('total_revenue', ascending=False)
+
+            parts.append(f"\n## 门店对比 (共{len(store_df)}家)")
+            # Top 10 + bottom 5
+            top_stores = store_df.head(10)
+            for rank, (_, row) in enumerate(top_stores.iterrows(), 1):
+                parts.append(f"  {rank}. {row[store_col]}: ¥{row['total_revenue']:,.0f} ({row['item_count']}单)")
+
+            if len(store_df) > 10:
+                bottom = store_df.tail(5)
+                parts.append("  -- 末位门店 --")
+                for _, row in bottom.iterrows():
+                    parts.append(f"  - {row[store_col]}: ¥{row['total_revenue']:,.0f}")
+
+            # Flag outliers (revenue < 50% of median)
+            median_rev = store_df['total_revenue'].median()
+            weak_stores = store_df[store_df['total_revenue'] < median_rev * 0.5]
+            if len(weak_stores) > 0:
+                names = ', '.join(weak_stores[store_col].tolist()[:5])
+                parts.append(f"  ⚠ 营收低于中位数50%的门店: {names}")
+
+        # ===== Category Breakdown =====
+        if category_col and actual_col:
+            cat_df = df.groupby(category_col).agg(
+                revenue=pd.NamedAgg(column=actual_col, aggfunc='sum'),
+            ).reset_index().sort_values('revenue', ascending=False)
+            total_rev = cat_df['revenue'].sum()
+            if total_rev > 0:
+                parts.append("\n## 品类结构")
+                for _, row in cat_df.head(10).iterrows():
+                    pct = row['revenue'] / total_rev * 100
+                    parts.append(f"  - {row[category_col]}: ¥{row['revenue']:,.0f} ({pct:.1f}%)")
+
+        # ===== Combo Efficiency =====
+        if order_method_col and actual_col:
+            combo_df = df.groupby(order_method_col).agg(
+                revenue=pd.NamedAgg(column=actual_col, aggfunc='sum'),
+                count=pd.NamedAgg(column=actual_col, aggfunc='count'),
+            ).reset_index()
+            total_rev = combo_df['revenue'].sum()
+            if total_rev > 0:
+                parts.append("\n## 套餐效率")
+                for _, row in combo_df.iterrows():
+                    pct = row['revenue'] / total_rev * 100
+                    parts.append(f"  - {row[order_method_col]}: ¥{row['revenue']:,.0f} ({pct:.1f}%), {row['count']}笔")
+
+        # ===== Discount Analysis =====
+        if store_col and amount_col and actual_col:
+            store_disc = df.groupby(store_col).agg(
+                gross=pd.NamedAgg(column=amount_col, aggfunc='sum'),
+                net=pd.NamedAgg(column=actual_col, aggfunc='sum'),
+            ).reset_index()
+            store_disc['discount_pct'] = ((1 - store_disc['net'] / store_disc['gross'].replace(0, 1)) * 100).clip(0, 100)
+            high_disc = store_disc[store_disc['discount_pct'] > 20].sort_values('discount_pct', ascending=False)
+            if len(high_disc) > 0:
+                parts.append("\n## 折扣依赖预警 (折扣率>20%)")
+                for _, row in high_disc.head(5).iterrows():
+                    parts.append(f"  - {row[store_col]}: 折扣率 {row['discount_pct']:.1f}%")
+
+        # ===== Procurement Analysis =====
+        if supplier_col and (inbound_qty_col or inbound_amt_col):
+            val_col = inbound_amt_col or inbound_qty_col
+            sup_df = df.groupby(supplier_col).agg(
+                total=pd.NamedAgg(column=val_col, aggfunc='sum'),
+            ).reset_index().sort_values('total', ascending=False)
+            parts.append(f"\n## 供应商分析 (共{len(sup_df)}家)")
+            total = sup_df['total'].sum()
+            for _, row in sup_df.head(5).iterrows():
+                pct = row['total'] / total * 100 if total > 0 else 0
+                parts.append(f"  - {row[supplier_col]}: {row['total']:,.0f} ({pct:.1f}%)")
+            top3_pct = sup_df.head(3)['total'].sum() / total * 100 if total > 0 else 0
+            parts.append(f"  前3供应商集中度: {top3_pct:.1f}%")
+
+        # ===== Dianping Listing Potential =====
+        if product_col and actual_col and len(parts) > 0:
+            parts.append("\n## 大众点评上榜潜力评估维度")
+            parts.append("  - 招牌菜集中度: Star象限菜品收入占总收入比例")
+            if return_col:
+                total_returns = pd.to_numeric(df[return_col], errors='coerce').sum()
+                total_qty_val = pd.to_numeric(df[qty_single_col], errors='coerce').sum() if qty_single_col else len(df)
+                return_rate = total_returns / total_qty_val * 100 if total_qty_val > 0 else 0
+                parts.append(f"  - 退货/退菜率: {return_rate:.2f}%")
+            parts.append("  - 价格定位: 参考客单价与行业中位数对比")
+            parts.append("  - 出品稳定性: 各门店同菜品价格方差")
+
+        if not parts:
+            return ""
         return "\n".join(parts)
 
     # ---------------------------------------------------------------------------
@@ -842,120 +1112,6 @@ class InsightGenerator:
             f"{query_block}"
         )
 
-        if tier == "small":
-            # 2 dimensions: what_happened + recommendation only
-            output_schema = """{
-    "executive_summary": "一句话核心结论（不超过50字，包含关键数字）",
-    "insights": [
-        {
-            "dimension": "what_happened|recommendation",
-            "type": "trend|anomaly|comparison|kpi|recommendation",
-            "title": "洞察标题（不超过15字）",
-            "text": "简洁描述（40-80字，含具体数字）",
-            "metric": "相关指标名称",
-            "sentiment": "positive|negative|neutral",
-            "importance": 1-10,
-            "confidence": 0.5-1.0,
-            "action_items": ["建议1"],
-            "recommendation": "改进建议"
-        }
-    ],
-    "risk_alerts": [{"title": "风险", "description": "描述", "severity": "high|medium|low", "mitigation": "措施"}],
-    "opportunities": [{"title": "机会", "description": "描述", "potential_impact": "收益", "action_required": "步骤"}]
-}"""
-            rules = (
-                "## 写作要求\n"
-                "1. 数字驱动：每条insight含1个具体数字\n"
-                "2. insights 2-3条，覆盖 what_happened 和 recommendation\n"
-                "3. risk_alerts 和 opportunities 各1条\n"
-                "4. 使用中文，列名翻译"
-            )
-        elif tier == "medium":
-            # 3 dimensions: what_happened, why_happened, recommendation
-            output_schema = """{
-    "executive_summary": "一句话管理摘要（不超过60字，包含核心数字）",
-    "insights": [
-        {
-            "dimension": "what_happened|why_happened|recommendation",
-            "type": "trend|anomaly|comparison|kpi|recommendation",
-            "title": "洞察标题（不超过15字）",
-            "text": "详细分析（60-120字，含具体数字和归因）",
-            "metric": "相关指标名称",
-            "sentiment": "positive|negative|neutral",
-            "importance": 1-10,
-            "confidence": 0.5-1.0,
-            "action_items": ["可执行建议1", "可执行建议2"],
-            "recommendation": "改进建议（含预期效果）"
-        }
-    ],
-    "risk_alerts": [{"title": "风险名称", "description": "风险描述", "severity": "high|medium|low", "mitigation": "缓解措施"}],
-    "opportunities": [{"title": "机会名称", "description": "机会描述", "potential_impact": "预期收益", "action_required": "落地步骤"}]
-}"""
-            rules = (
-                "## 写作铁律\n"
-                "1. 数字驱动：每条insight至少1个具体数字\n"
-                "2. 对比基准：有环比/同比/行业基准参照\n"
-                "3. 因果归因：分析变化原因\n"
-                "4. insights 3-4条，覆盖 what_happened / why_happened / recommendation\n"
-                "5. risk_alerts 和 opportunities 各至少1条\n"
-                "6. 列名翻译，使用中文"
-            )
-        else:
-            # large: full 4 dimensions + sensitivity_analysis
-            output_schema = """{
-    "executive_summary": "直接回答用户问题的一句话摘要（不超过80字），必须包含具体数字",
-    "insights": [
-        {
-            "dimension": "what_happened|why_happened|forecast|recommendation",
-            "type": "trend|anomaly|comparison|kpi|recommendation",
-            "title": "洞察标题（不超过15字）",
-            "text": "详细分析（80-150字，必须包含：1个以上具体数字 + 业务归因 + 行业对标或环比变化）",
-            "metric": "相关指标名称",
-            "sentiment": "positive|negative|neutral",
-            "importance": 1-10,
-            "confidence": 0.5-1.0,
-            "action_items": ["可执行建议1（含预期效果）", "可执行建议2"],
-            "recommendation": "最优先的改进建议（含量化目标和时间框架）"
-        }
-    ],
-    "risk_alerts": [
-        {
-            "title": "风险名称",
-            "description": "风险描述（含影响金额或百分比）",
-            "severity": "high|medium|low",
-            "mitigation": "缓解措施（含预期效果）"
-        }
-    ],
-    "opportunities": [
-        {
-            "title": "机会名称",
-            "description": "机会描述",
-            "potential_impact": "量化预期收益",
-            "action_required": "落地步骤"
-        }
-    ],
-    "sensitivity_analysis": [
-        {
-            "factor": "关键驱动因素名称",
-            "current_value": "当前值（含单位）",
-            "impact_description": "若该因素变动±10%，对整体的影响描述（含量化估算）"
-        }
-    ]
-}"""
-            rules = (
-                "## 写作铁律（违反任何一条即为不合格）\n\n"
-                '1. **数字驱动**: 每条 insight 至少引用 1 个来自上方数据的具体数字。禁止「较高」「较低」「有所增长」等模糊表述。\n'
-                '   - 反面：「毛利率较高」 / 正面：「毛利率32.5%，高于行业均值28%达4.5个百分点」\n'
-                "2. **对比基准**: 每条分析必须有参照系 — 环比（上月/上期）、同比（去年同期）、行业基准、或目标值。\n"
-                '3. **因果归因**: 不仅描述「是什么」，更要分析「为什么」。例：净利下降 → 因原料采购成本上涨 + 产能利用率不足。\n'
-                "4. **建议落地**: 每条 recommendation 需含：做什么 + 预期效果 + 时间节点。\n"
-                "5. **覆盖完整**: insights 至少4条，分别覆盖 what_happened / why_happened / forecast / recommendation。\n"
-                "6. **risk_alerts** 至少1条，**opportunities** 至少1条。\n"
-                '7. **列名翻译**: 将「2025-01-01」解读为「1月」，英文字段名翻译为中文。\n'
-                "8. **精炼**: 每条 insight 的 text 控制在 80-150 字，executive_summary 不超过 80 字。\n"
-                "9. **敏感性分析**: 识别2-3个关键驱动因素，输出sensitivity_analysis数组。"
-            )
-
         return f"请分析以下数据并输出JSON：\n\n{data_block}"
 
     async def _generate_llm_insights(
@@ -985,11 +1141,18 @@ class InsightGenerator:
             scenario = self._detect_analysis_scenario(df)
             logger.info(f"Detected analysis scenario: {scenario}")
 
+            # For restaurant data, replace production context with restaurant context
+            if scenario == 'restaurant_operations':
+                try:
+                    production_metrics = self._compute_restaurant_context(df)
+                except Exception as e:
+                    logger.warning(f"_compute_restaurant_context failed (non-blocking): {e}")
+
             # 预计算关键统计摘要，减少 LLM 自行推算的不确定性
             stat_digest = self._compute_statistical_digest(df)
 
             # KB integration: detect food industry and inject domain knowledge
-            kb_context = await self._get_food_kb_context(df)
+            kb_context = await self._get_food_kb_context_with_timeout(df, timeout_secs=3.0)
 
             # Prepare context from extracted Excel notes/explanations
             excel_context = ""
@@ -1032,7 +1195,7 @@ class InsightGenerator:
             return self._parse_llm_insights(response, stat_insights)
 
         except Exception as e:
-            logger.error(f"LLM insight generation failed: {e}")
+            logger.error("LLM insight generation failed: %s", e, exc_info=True)
             return stat_insights
 
     def _compute_statistical_digest(self, df: pd.DataFrame) -> str:
@@ -1043,9 +1206,9 @@ class InsightGenerator:
         # Humanize column names for LLM-facing output
         df = self._humanize_df_columns(df)
         parts = []
-        import re as _re
+        # re imported at module level
         numeric_cols = [c for c in df.select_dtypes(include=[np.number]).columns.tolist()
-                        if not _re.match(r'^(Column_\d+|指标\d+|Unnamed|Unnamed:\s*\d+)$', str(c), _re.IGNORECASE)]
+                        if not re.match(r'^(Column_\d+|指标\d+|Unnamed|Unnamed:\s*\d+)$', str(c), re.IGNORECASE)]
         text_cols = df.select_dtypes(include=['object']).columns
 
         if not numeric_cols:
@@ -1142,7 +1305,6 @@ class InsightGenerator:
           '2025-01-01_预算数' -> '1月预算数'
           '2025-02-01_实际数' -> '2月实际数'
         """
-        import re
         if not name or not isinstance(name, str):
             return str(name)
         # Column_N -> 指标N
@@ -1163,16 +1325,22 @@ class InsightGenerator:
 
     def _humanize_df_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         """Return a copy of df with humanized column names (for LLM prompts only)."""
-        new_cols = {c: self._humanize_col(c) for c in df.columns}
+        new_cols = {}
+        seen: dict[str, int] = {}
+        for c in df.columns:
+            humanized = self._humanize_col(c)
+            count = seen.get(humanized, 0)
+            seen[humanized] = count + 1
+            new_cols[c] = f"{humanized}_{count + 1}" if count else humanized
         return df.rename(columns=new_cols)
 
     @staticmethod
     def _is_placeholder_col(name: str) -> bool:
         """Check if a column name is an auto-generated placeholder (no business meaning)."""
-        import re as _re
+        # re imported at module level
         s = str(name)
-        return bool(_re.match(
-            r'^(Column_\d+|指标\d+|数据列\d+|Unnamed|Unnamed:\s*\d+)$', s, _re.IGNORECASE
+        return bool(re.match(
+            r'^(Column_\d+|指标\d+|数据列\d+|Unnamed|Unnamed:\s*\d+)$', s, re.IGNORECASE
         ))
 
     def _prepare_data_summary(self, df: pd.DataFrame) -> str:
@@ -1256,24 +1424,26 @@ class InsightGenerator:
             '费用': ['销售费用', '管理费用', '财务费用', '研发费用'],
         }
 
+        # Vectorized keyword matching — avoid iterrows
         found_rows = {}
-        for _, row in df.iterrows():
-            label = str(row.get(label_col, '')).strip()
-            if not label:
-                continue
-            for category, keywords in kw_map.items():
-                for kw in keywords:
-                    if kw in label:
-                        row_values = {}
-                        total = 0
-                        for nc in numeric_cols:
-                            val = row.get(nc)
-                            if pd.notna(val) and isinstance(val, (int, float)):
-                                row_values[nc] = val
-                                total += val
-                        if row_values:
-                            found_rows[label] = {'values': row_values, 'total': total}
-                        break
+        labels = df[label_col].astype(str).str.strip()
+        for category, keywords in kw_map.items():
+            pattern = '|'.join(re.escape(kw) for kw in keywords)
+            mask = labels.str.contains(pattern, regex=True, na=False)
+            matched_indices = mask[mask].index
+            for idx in matched_indices:
+                label = labels.iloc[idx] if hasattr(labels, 'iloc') else labels[idx]
+                if not label or label in found_rows:
+                    continue
+                row_values = {}
+                total = 0
+                for nc in numeric_cols:
+                    val = df[nc].iloc[idx] if hasattr(df[nc], 'iloc') else df[nc][idx]
+                    if pd.notna(val) and isinstance(val, (int, float)):
+                        row_values[nc] = val
+                        total += val
+                if row_values:
+                    found_rows[label] = {'values': row_values, 'total': total}
 
         if not found_rows:
             return ""
@@ -1586,12 +1756,19 @@ class InsightGenerator:
             financial_metrics = self._compute_financial_context(df)
             production_metrics = self._compute_production_context(df)
             stat_digest = self._compute_statistical_digest(df)
-            kb_context = await self._get_food_kb_context(df)
+            kb_context = await self._get_food_kb_context_with_timeout(df, timeout_secs=3.0)
             metrics_summary = self._prepare_metrics_summary(metrics) if metrics else ""
 
             # Detect scenario for adaptive prompting
             scenario = self._detect_analysis_scenario(df)
-            benchmark_text = self._get_scenario_benchmarks(scenario)
+            benchmark_text = self._get_scenario_benchmarks(scenario)  # reused below
+
+            # For restaurant data, replace production context with restaurant context
+            if scenario == 'restaurant_operations':
+                try:
+                    production_metrics = self._compute_restaurant_context(df)
+                except Exception as e:
+                    logger.warning(f"_compute_restaurant_context failed (non-blocking): {e}")
 
             excel_context = ""
             if context_info and context_info.has_content():
@@ -1615,7 +1792,7 @@ class InsightGenerator:
             prompt = self._build_tiered_prompt(
                 tier=tier,
                 scenario=scenario,
-                benchmark_text=self._get_scenario_benchmarks(scenario),
+                benchmark_text=benchmark_text,
                 query_block=query_block,
                 data_summary=data_summary,
                 financial_metrics=financial_metrics,
@@ -1725,7 +1902,7 @@ class InsightGenerator:
                 total_prompt = usage.get("prompt_tokens", 0)
                 if cached > 0:
                     logger.info(f"[ContextCache] HIT cached={cached}/{total_prompt} tokens ({cached*100//max(total_prompt,1)}%)")
-                return result["choices"][0]["message"]["content"]
+                return result.get("choices", [{}])[0].get("message", {}).get("content", "")
             except httpx.TimeoutException:
                 logger.warning(f"LLM call timeout (attempt {attempt + 1}/{self.LLM_MAX_RETRIES}, timeout={timeout_secs}s)")
                 if attempt < self.LLM_MAX_RETRIES - 1:
@@ -1761,7 +1938,7 @@ class InsightGenerator:
             valid_insights = []
             for insight in insights:
                 if isinstance(insight, dict) and insight.get("text"):
-                    valid_insights.append({
+                    parsed = {
                         "type": insight.get("type", "summary"),
                         "text": insight.get("text"),
                         "metric": insight.get("metric"),
@@ -1769,7 +1946,17 @@ class InsightGenerator:
                         "importance": insight.get("importance", 5),
                         "recommendation": insight.get("recommendation"),
                         "source": "llm"
-                    })
+                    }
+                    # Preserve optional fields from LLM response
+                    if insight.get("action_items"):
+                        parsed["action_items"] = insight["action_items"]
+                    if insight.get("title"):
+                        parsed["title"] = insight["title"]
+                    if insight.get("dimension"):
+                        parsed["dimension"] = insight["dimension"]
+                    if insight.get("confidence"):
+                        parsed["confidence"] = insight["confidence"]
+                    valid_insights.append(parsed)
 
             # Inject _meta insight with executive_summary, risk_alerts, opportunities, sensitivity_analysis
             executive_summary = result.get("executive_summary", "")

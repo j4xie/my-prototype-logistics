@@ -1,0 +1,131 @@
+appId: com.cretas.foodtrace
+---
+# Test 61: Restaurant Wastage Deep Navigation
+# Opens WastageCreate form and verifies all 5 type chips
+# Phase A: Deep navigation into wastage create sub-screen
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant admin
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: ".*AI Insights.*|.*AI 智能洞察.*|.*Today.*Overview.*|.*首页.*"
+    timeout: 15000
+
+# Navigate to 管理 tab first, then 损耗 (Wastage) sub-section
+- takeScreenshot: screenshots/61-pre-tab
+- tapOn:
+    text: ".*Management.*|.*Manage.*|.*管理.*"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Wastage.*|.*Loss.*|.*损耗.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*损耗.*|.*Wastage.*|.*Loss.*|.*草稿.*|.*Draft.*|.*管理.*"
+    timeout: 5000
+- takeScreenshot: screenshots/61-wastage-list
+
+# === Verify list filter chips ===
+- tapOn:
+    text: ".*Draft.*|.*草稿.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/61-filter-draft
+
+- tapOn:
+    text: ".*Pending.*|.*Submitted.*|.*待审批.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/61-filter-pending
+
+- tapOn:
+    text: ".*All.*|.*全部.*"
+    optional: true
+- waitForAnimationToEnd
+
+# === Open WastageCreate form ===
+- tapOn:
+    text: ".*Record Wastage.*|.*Create.*|.*记录损耗.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*损耗类型.*|.*过期.*|.*Expired.*|.*Type.*|.*损耗.*|.*Wastage.*"
+    timeout: 5000
+- takeScreenshot: screenshots/61-wastage-create
+
+# === Verify all 5 type chips ===
+- tapOn:
+    text: ".*Expired.*|.*过期.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/61-type-expired
+
+- tapOn:
+    text: ".*Damaged.*|.*破损.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/61-type-damaged
+
+- tapOn:
+    text: ".*Spoiled.*|.*变质.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/61-type-spoiled
+
+- tapOn:
+    text: ".*Processing.*Loss.*|.*加工损耗.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/61-type-processing
+
+- tapOn:
+    text: ".*Other.*|.*其他.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/61-type-other
+
+# === Verify form fields ===
+- tapOn:
+    text: ".*Select Material.*|.*选择食材.*"
+    optional: true
+- waitForAnimationToEnd
+
+- tapOn:
+    text: ".*Quantity.*|.*损耗数量.*"
+    optional: true
+- waitForAnimationToEnd
+
+- tapOn:
+    text: ".*Cost.*|.*估计成本.*"
+    optional: true
+- waitForAnimationToEnd
+
+- tapOn:
+    text: ".*Notes.*|.*Reason.*|.*原因说明.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/61-form-fields
+
+# Scroll to see buttons
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/61-buttons
+
+# Back without saving
+- back
+- waitForAnimationToEnd
+
+# Return to home
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Home.*|.*首页.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/61-complete

@@ -1,0 +1,131 @@
+appId: com.cretas.foodtrace
+---
+# Test 68: In-depth Requisition Form Interaction
+# Toggles type, fills fields, verifies buttons
+# Safety: back without submitting
+# Phase B: Deep page interaction
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as restaurant admin
+- runFlow: flows/login-restaurant.yaml
+- extendedWaitUntil:
+    visible: ".*AI Insights.*|.*AI 智能洞察.*|.*Today.*Overview.*|.*首页.*"
+    timeout: 15000
+
+# Navigate to Management tab first, then Requisition sub-section
+- tapOn:
+    text: ".*Management.*|.*Manage.*|.*管理.*"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Requisition.*|.*领料.*"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Requisition.*|.*领料.*|.*Recipe.*|.*Manual.*|.*按配方.*|.*手动.*|.*管理.*"
+    timeout: 5000
+- takeScreenshot: screenshots/68-requisition-initial
+
+# === Type toggle interaction ===
+- tapOn:
+    text: ".*By Recipe.*|.*Production.*|.*按配方领料.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-type-production
+
+- tapOn:
+    text: ".*Manual.*|.*手动领料.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-type-manual
+
+- tapOn:
+    text: ".*By Recipe.*|.*Production.*|.*按配方领料.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-type-back-production
+
+# === Fill form fields (without submitting) ===
+- tapOn:
+    text: ".*Select Dish.*|.*选择菜品.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-dish-selector
+
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Management.*|.*Manage.*|.*管理.*"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Requisition.*|.*领料.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Switch to manual mode
+- tapOn:
+    text: ".*Manual.*|.*手动领料.*"
+    optional: true
+- waitForAnimationToEnd
+
+- tapOn:
+    text: ".*Select Material.*|.*选择食材.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-material-selector
+
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Management.*|.*Manage.*|.*管理.*"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Requisition.*|.*领料.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Fill quantity
+- tapOn:
+    text: ".*Quantity.*|.*申请数量.*|.*数量.*"
+    optional: true
+- inputText: "10"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-qty-filled
+
+# Fill notes
+- tapOn:
+    text: ".*Notes.*|.*备注.*"
+    optional: true
+- inputText: "E2E test"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-notes-filled
+
+# Scroll to see buttons
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/68-form-complete
+
+# === Back without submitting ===
+- back
+- waitForAnimationToEnd
+
+# Return to home
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*|.*AI Insights.*|.*AI 智能洞察.*"
+    timeout: 8000
+- takeScreenshot: screenshots/68-complete

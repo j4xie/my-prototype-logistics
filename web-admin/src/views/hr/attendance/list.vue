@@ -140,7 +140,30 @@ function handleSizeChange(size: number) {
 }
 
 function handleExport() {
-  ElMessage.info('导出功能开发中');
+  if (tableData.value.length === 0) {
+    ElMessage.warning('暂无数据可导出');
+    return;
+  }
+  const headers = ['员工姓名', '工号', '部门', '日期', '上班打卡', '下班打卡', '工时(h)', '状态', '备注'];
+  const rows = tableData.value.map((row: any) => [
+    getEmployeeName(row),
+    getEmployeeNumber(row),
+    getDepartmentName(row),
+    row.date || '-',
+    formatTime(row.clockIn || row.checkInTime),
+    formatTime(row.clockOut || row.checkOutTime),
+    formatWorkHours(row.totalWorkMinutes || row.workDuration),
+    getStatusText(getAttendanceStatus(row)),
+    row.notes || ''
+  ]);
+  const csvContent = '\uFEFF' + [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `考勤记录_${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  ElMessage.success('导出成功');
 }
 
 function getStatusType(status: string) {
@@ -306,7 +329,7 @@ function getAttendanceStatus(row: any) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column label="员工姓名" width="120">
           <template #default="{ row }">
             {{ getEmployeeName(row) }}

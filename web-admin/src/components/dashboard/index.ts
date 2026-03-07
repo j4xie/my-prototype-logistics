@@ -9,6 +9,7 @@ export { default as DashboardProduction } from './DashboardProduction.vue';
 export { default as DashboardWarehouse } from './DashboardWarehouse.vue';
 export { default as DashboardFinance } from './DashboardFinance.vue';
 export { default as DashboardDefault } from './DashboardDefault.vue';
+export { default as DashboardRestaurant } from './DashboardRestaurant.vue';
 
 /**
  * 角色到 Dashboard 组件的映射
@@ -42,6 +43,9 @@ export const ROLE_DASHBOARD_MAP: Record<string, string> = {
   // quality_inspector: 'BLOCKED',
   // warehouse_worker: 'BLOCKED',
 
+  // Level 20 - 餐饮经理
+  restaurant_manager: 'DashboardRestaurant',
+
   // Level 50 - 只读用户
   viewer: 'DashboardDefault',
 
@@ -50,8 +54,21 @@ export const ROLE_DASHBOARD_MAP: Record<string, string> = {
 };
 
 /**
- * 根据角色获取对应的 Dashboard 组件名称
+ * 工厂级 Dashboard 覆盖 (当同一角色对应不同业务类型时)
+ * 例: F002 是餐饮门店，factory_super_admin 应看餐饮 Dashboard 而非工厂 Dashboard
  */
-export function getDashboardComponent(role: string): string {
+const FACTORY_DASHBOARD_OVERRIDE: Record<string, string> = {
+  'F002': 'DashboardRestaurant',
+};
+
+/**
+ * 根据角色获取对应的 Dashboard 组件名称
+ * @param role - 用户角色
+ * @param factoryId - 工厂ID，用于业务类型覆盖
+ */
+export function getDashboardComponent(role: string, factoryId?: string): string {
+  if (factoryId && FACTORY_DASHBOARD_OVERRIDE[factoryId]) {
+    return FACTORY_DASHBOARD_OVERRIDE[factoryId];
+  }
   return ROLE_DASHBOARD_MAP[role] || ROLE_DASHBOARD_MAP['default'];
 }

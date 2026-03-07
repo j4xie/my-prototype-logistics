@@ -1,0 +1,43 @@
+appId: com.cretas.foodtrace
+---
+# Reusable Login Sub-flow
+# Precondition: app is on the welcome/landing screen
+
+# Wait for welcome screen to fully render (cold boot may be slow)
+- extendedWaitUntil:
+    visible: "Login"
+    timeout: 15000
+# Tap Login button on welcome page
+- tapOn: "Login"
+- waitForAnimationToEnd
+
+# Enter username
+- tapOn: "Enter username"
+- inputText: "factory_admin1"
+
+# Enter password
+- tapOn: "Enter password"
+- inputText: "123456"
+
+# Hide keyboard
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Tap the Login submit button (index 1 = button, index 0 = header)
+- tapOn:
+    text: "Login"
+    index: 1
+
+# Wait for login success dialog or home page content
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 25000
+
+# Dismiss login success dialog
+- tapOn: "OK"
+- waitForAnimationToEnd
+
+# Wait for home page to be fully visible
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 10000

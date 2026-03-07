@@ -1,0 +1,230 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: Operator - All Tabs
+# Captures: 考勤(clock-in), 报工(scan report), 工作(work types), 我的(profile)
+# Tabs: 考勤(25%,97%), 报工(42%,97%), 工作(58%,97%), 我的(90%,97%)
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Dismiss any system dialogs
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Close app"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+
+# Wait for landing page
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*"
+    timeout: 20000
+- waitForAnimationToEnd
+
+# Tap Login button on landing page
+- tapOn:
+    text: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Wait for login form
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+
+# Username
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "operator1"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Password
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Submit
+- tapOn:
+    id: "login-submit-btn"
+
+# Wait for any post-login dialog or home screen
+- extendedWaitUntil:
+    visible: ".*OK.*|.*No thanks.*|.*Turn on.*|.*Time Clock.*|.*Not Clocked.*"
+    timeout: 35000
+
+# Dismiss all possible dialogs (Location Accuracy, Location Failed, Role Selection)
+- tapOn:
+    text: "No thanks"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "No thanks"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+
+# Verify home
+- extendedWaitUntil:
+    visible: ".*Time Clock.*|.*Not Clocked.*|.*History Records.*|.*Quick Links.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 1: 考勤 (Attendance) — 25%,97%
+# ============================================================
+
+- takeScreenshot: screenshots/manual-ss-op-attendance-home
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-op-attendance-scroll
+
+# Tap History Records link
+- tapOn:
+    text: ".*History Records.*|.*History.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-op-attendance-records
+
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-op-attendance-records-scroll
+
+# Recovery: back to 考勤 tab
+- back
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+# Dismiss any dialog that appears after navigation
+- tapOn:
+    text: "No thanks"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+
+# Tap Time Statistics link
+- tapOn:
+    point: "25%,97%"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Time Statistics.*|.*Statistics.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-op-time-statistics
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: "No thanks"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 2: 报工 (Scan Report) — 42%,97%
+# ============================================================
+
+- tapOn:
+    point: "42%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/manual-ss-op-report-main
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-op-report-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: "No thanks"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 3: 工作 (Work) — 58%,97%
+# ============================================================
+
+- tapOn:
+    point: "58%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/manual-ss-op-work-list
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-op-work-list-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: "No thanks"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+
+# ============================================================
+# TAB 4: 我的 (Profile) — 90%,97%
+# ============================================================
+
+- tapOn:
+    point: "90%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/manual-ss-op-profile
+
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-op-profile-scroll
+
+# Try to tap personal info or settings
+- tapOn:
+    text: ".*Personal.*|.*My Info.*|.*Account.*|.*Settings.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-op-my-info
+
+# Final
+- back
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-op-complete

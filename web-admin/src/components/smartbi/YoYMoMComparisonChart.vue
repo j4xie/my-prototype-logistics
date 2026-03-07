@@ -11,6 +11,7 @@
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import echarts from '@/utils/echarts';
 import type { EChartsOption, ECharts } from 'echarts';
+import { defaultTooltip } from './chart-helpers';
 
 // Types
 export interface ComparisonData {
@@ -68,11 +69,13 @@ const emit = defineEmits<{
 
 const chartRef = ref<HTMLDivElement | null>(null);
 const chartInstance = ref<ECharts | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+let rafId = 0;
 const viewMode = ref<ViewMode>(props.defaultViewMode);
 
 // Color palette
 const colors = {
-  currentPeriod: '#409eff',      // Blue - current period
+  currentPeriod: '#1B65A8',      // Blue - current period
   lastYearSame: '#91cc75',       // Light green - last year same period
   yoyGrowthLine: '#ee6666',      // Red - YoY growth line
   momGrowthLine: '#fac858',      // Yellow - MoM growth line
@@ -304,18 +307,12 @@ const chartOptions = computed<EChartsOption>(() => {
 
   const options: EChartsOption = {
     tooltip: {
-      trigger: 'axis',
+      ...defaultTooltip('axis'),
       axisPointer: {
         type: 'cross',
         crossStyle: {
           color: '#999'
         }
-      },
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderColor: '#ebeef5',
-      borderWidth: 1,
-      textStyle: {
-        color: '#303133'
       },
       formatter: (params) => {
         if (!Array.isArray(params)) return '';
@@ -471,7 +468,7 @@ const chartOptions = computed<EChartsOption>(() => {
         borderColor: '#dcdfe6',
         fillerColor: 'rgba(64, 158, 255, 0.2)',
         handleStyle: {
-          color: '#409eff'
+          color: '#1B65A8'
         }
       },
       {
@@ -511,7 +508,11 @@ function updateChart() {
 }
 
 function handleResize() {
-  chartInstance.value?.resize();
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = 0;
+    chartInstance.value?.resize();
+  });
 }
 
 function onViewModeChange(mode: ViewMode) {
@@ -522,10 +523,17 @@ function onViewModeChange(mode: ViewMode) {
 // Lifecycle
 onMounted(() => {
   initChart();
+  if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartRef.value);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (rafId) cancelAnimationFrame(rafId);
   window.removeEventListener('resize', handleResize);
   chartInstance.value?.dispose();
 });
@@ -622,7 +630,7 @@ defineExpose({
     </div>
 
     <!-- Chart -->
-    <div ref="chartRef" :style="{ width: '100%', height: height + 'px' }"></div>
+    <div ref="chartRef" role="img" :aria-label="title || '同比环比对比图'" :style="{ width: '100%', height: height + 'px' }"></div>
   </div>
 </template>
 
@@ -684,7 +692,7 @@ defineExpose({
         gap: 4px;
 
         &.primary {
-          color: #409eff;
+          color: #1B65A8;
         }
 
         &.positive {

@@ -145,7 +145,12 @@ export default function MaterialReceiptScreen() {
       setLoading(true);
 
       // 自动生成批次号: MB-{工厂ID}-{时间戳}
-      const factoryId = user?.factoryId || 'F001';
+      if (!user?.factoryId) {
+        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        setLoading(false);
+        return;
+      }
+      const factoryId = user.factoryId;
       const timestamp = Date.now().toString(36).toUpperCase();
       const batchNumber = `MB-${factoryId}-${timestamp}`;
 

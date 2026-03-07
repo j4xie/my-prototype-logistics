@@ -64,14 +64,23 @@ function getDateRange(): { startDate: string; endDate: string } {
   };
 }
 
+let resizeObserver: ResizeObserver | null = null;
+
 onMounted(async () => {
   await nextTick();
   initChart();
   loadProductionData();
+  const chartEl = document.getElementById('production-bar-chart');
+  if (chartEl && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartEl);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  if (resizeRaf) cancelAnimationFrame(resizeRaf);
   window.removeEventListener('resize', handleResize);
   productionChart?.dispose();
 });
@@ -200,8 +209,13 @@ function updateChart() {
   });
 }
 
+let resizeRaf = 0;
 function handleResize() {
-  productionChart?.resize();
+  if (resizeRaf) return;
+  resizeRaf = requestAnimationFrame(() => {
+    resizeRaf = 0;
+    productionChart?.resize();
+  });
 }
 
 function handlePeriodChange() {

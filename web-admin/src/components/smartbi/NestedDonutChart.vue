@@ -72,7 +72,7 @@ const props = withDefaults(defineProps<Props>(), {
   showLabel: true,
   unit: '万元',
   colors: () => [
-    '#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
+    '#1B65A8', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
     '#00d4ff', '#ff6b9d', '#c084fc', '#fbbf24', '#34d399'
   ],
   showLegend: true,
@@ -88,6 +88,8 @@ const emit = defineEmits<{
 
 const chartRef = ref<HTMLDivElement | null>(null);
 const chartInstance = ref<ECharts | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+let rafId = 0;
 
 // Computed: Calculate totals
 const totals = computed(() => {
@@ -382,7 +384,7 @@ const chartOptions = computed<EChartsOption>(() => {
         textStyle: {
           fontSize: 12,
           fontWeight: 500,
-          color: '#409eff'
+          color: '#1B65A8'
         }
       },
       {
@@ -433,16 +435,27 @@ function updateChart() {
 
 // Handle resize
 function handleResize() {
-  chartInstance.value?.resize();
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = 0;
+    chartInstance.value?.resize();
+  });
 }
 
 // Lifecycle
 onMounted(() => {
   initChart();
+  if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartRef.value);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (rafId) cancelAnimationFrame(rafId);
   window.removeEventListener('resize', handleResize);
   chartInstance.value?.dispose();
 });
@@ -506,7 +519,7 @@ defineExpose({
     </div>
 
     <!-- Chart Container -->
-    <div ref="chartRef" :style="{ width: '100%', height: height }"></div>
+    <div ref="chartRef" role="img" :aria-label="title || '嵌套环形图'" :style="{ width: '100%', height: height }"></div>
   </div>
 </template>
 
@@ -549,8 +562,8 @@ defineExpose({
         }
 
         &.current .dot {
-          background: #409eff;
-          box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+          background: #1B65A8;
+          box-shadow: 0 0 0 2px rgba(27, 101, 168, 0.2);
         }
 
         &.previous .dot {
@@ -594,7 +607,7 @@ defineExpose({
         gap: 4px;
 
         &.primary {
-          color: #409eff;
+          color: #1B65A8;
         }
 
         &.positive {

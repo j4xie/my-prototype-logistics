@@ -22,6 +22,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from smartbi.config import coerce_numeric_columns
 
 # Services
 from services.cross_analyzer import CrossAnalyzer, DrillDownResult, DimensionHierarchy
@@ -208,7 +209,9 @@ class MultiDimensionResponse(BaseModel):
 # Data Store (In-memory cache for demo, replace with proper storage)
 # ============================================================================
 
-_sheet_data_cache: Dict[str, List[Dict[str, Any]]] = {}
+from cachetools import TTLCache
+
+_sheet_data_cache: TTLCache = TTLCache(maxsize=50, ttl=3600)
 
 
 def get_sheet_data(sheet_id: str) -> Optional[List[Dict[str, Any]]]:
@@ -275,7 +278,7 @@ async def drill_down(request: DrillDownRequest) -> DrillDownResponse:
 
         # Convert to DataFrame for analysis
         import pandas as pd
-        df = pd.DataFrame(data)
+        df = coerce_numeric_columns(pd.DataFrame(data))
 
         # Validate dimension exists
         if request.dimension not in df.columns:
@@ -295,7 +298,7 @@ async def drill_down(request: DrillDownRequest) -> DrillDownResponse:
         if not valid_measures:
             return DrillDownResponse(
                 success=False,
-                error="No numeric measures found for analysis",
+                error="未检测到数值型字段，无法进行分析",
                 processing_time_ms=int((time.time() - start_time) * 1000)
             )
 
@@ -552,7 +555,7 @@ async def root_cause(request: RootCauseRequest) -> RootCauseResponse:
             )
 
         import pandas as pd
-        df = pd.DataFrame(data)
+        df = coerce_numeric_columns(pd.DataFrame(data))
 
         # Validate KPI exists
         if request.kpi not in df.columns:
@@ -674,21 +677,17 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
         if not data:
             # Try to load data from database — prefer specific sheet_id, fallback to latest upload
             try:
-                from smartbi.config import get_settings
-                import asyncpg
+                from smartbi.config import get_pg_pool
 
-                pg_url = get_settings().postgres_url
-                if pg_url:
-                    conn = await asyncpg.connect(pg_url)
-                    try:
+                pool = await get_pg_pool()
+                if pool:
+                    async with pool.acquire() as conn:
                         upload_id = None
-                        # Use specific upload ID if provided via sheet_id
                         if request.sheet_id:
                             try:
                                 upload_id = int(request.sheet_id)
                             except (ValueError, TypeError):
                                 pass
-                        # Fallback: get the most recent upload
                         if not upload_id:
                             row = await conn.fetchrow(
                                 "SELECT id FROM smart_bi_pg_excel_uploads ORDER BY created_at DESC LIMIT 1"
@@ -704,8 +703,6 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
                                 import json
                                 data = [json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in rows]
                                 logger.info(f"[general_analysis] Loaded {len(data)} rows from upload {upload_id}")
-                    finally:
-                        await conn.close()
             except Exception as e:
                 logger.warning(f"Failed to load upload data: {e}")
 
@@ -745,7 +742,7 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
 
         import pandas as pd
         import re as _re_early
-        df = pd.DataFrame(data)
+        df = coerce_numeric_columns(pd.DataFrame(data))
 
         # Filter out index/sequence columns before ANY analysis (affects both insight text and charts)
         _idx_patterns = {'行次', '序号', '编号', '行号', '项目编号', 'index', 'no', 'no.', 'id', 'row_num', 'row_number', 'sn'}
@@ -838,19 +835,27 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
 
             # --- Filter out index/sequence columns (P1-2 fix) ---
             _INDEX_COL_PATTERNS = {'行次', '序号', '编号', '行号', '项目编号', 'index', 'no', 'no.', 'id', 'row_num', 'row_number', 'sn'}
+            _ID_NAME_FRAGMENTS = ['订单号', '单号', '编码', '工号', '货号', '票号', '凭证号',
+                                  'order_id', 'order_no', 'item_id', 'sku_id', 'batch_no']
 
             def _is_index_column(col_name: str, series) -> bool:
-                """Detect if a column is an index/sequence column (not meaningful for analysis)."""
+                """Detect if a column is an index/ID/sequence column (not meaningful for Y-axis)."""
                 lower = col_name.lower().strip()
                 if lower in _INDEX_COL_PATTERNS:
                     return True
-                # Check if values are sequential integers (1,2,3,...)
+                # Name contains ID-like fragments
+                if any(frag in lower for frag in _ID_NAME_FRAGMENTS):
+                    return True
                 try:
                     import pandas as pd
                     vals = pd.to_numeric(series.dropna().head(20), errors='coerce').dropna()
                     if len(vals) >= 3:
+                        # Sequential integers (1,2,3,...)
                         diffs = vals.diff().dropna()
                         if len(diffs) > 0 and all(d == 1 for d in diffs):
+                            return True
+                        # High-cardinality large integers (likely IDs, e.g., 20240101001)
+                        if vals.nunique() == len(vals) and vals.min() > 1000 and all(v == int(v) for v in vals):
                             return True
                 except Exception:
                     pass
@@ -1037,12 +1042,11 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
 
             if not data:
                 try:
-                    from smartbi.config import get_settings as _get_settings
-                    import asyncpg
-                    pg_url = _get_settings().postgres_url
-                    if pg_url:
-                        conn = await asyncpg.connect(pg_url)
-                        try:
+                    from smartbi.config import get_pg_pool as _get_pg_pool
+
+                    pool = await _get_pg_pool()
+                    if pool:
+                        async with pool.acquire() as conn:
                             upload_id = None
                             if request.sheet_id:
                                 try:
@@ -1063,8 +1067,6 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                 if rows:
                                     data = [_json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in rows]
                                     logger.info(f"[stream] Loaded {len(data)} rows from upload {upload_id}")
-                        finally:
-                            await conn.close()
                 except Exception as e:
                     logger.warning(f"[stream] Failed to load upload data: {e}")
 
@@ -1100,7 +1102,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 return
 
             import pandas as pd
-            df = pd.DataFrame(data)
+            df = coerce_numeric_columns(pd.DataFrame(data))
 
             # ── Filter index columns ──
             _idx_patterns = {'行次', '序号', '编号', '行号', '项目编号', 'index', 'no', 'no.', 'id', 'row_num', 'row_number', 'sn'}
@@ -1249,7 +1251,7 @@ async def drill_down_stream(request: DrillDownRequest, http_request: Request):
                 return
 
             import pandas as pd
-            df = pd.DataFrame(data)
+            df = coerce_numeric_columns(pd.DataFrame(data))
 
             if request.dimension not in df.columns:
                 available = df.columns.tolist()
@@ -1267,7 +1269,7 @@ async def drill_down_stream(request: DrillDownRequest, http_request: Request):
             if not valid_measures:
                 yield _sse_event("done", {
                     "success": False,
-                    "error": "No numeric measures found for analysis",
+                    "error": "未检测到数值型字段，无法进行分析",
                     "processingTimeMs": int((time.time() - start_time) * 1000)
                 })
                 return
@@ -1354,7 +1356,7 @@ async def root_cause_stream(request: RootCauseRequest, http_request: Request):
                 return
 
             import pandas as pd
-            df = pd.DataFrame(data)
+            df = coerce_numeric_columns(pd.DataFrame(data))
 
             if request.kpi not in df.columns:
                 yield _sse_event("done", {
@@ -1648,17 +1650,23 @@ def _build_charts_for_query(query: str, df, data: list) -> List[Dict[str, Any]]:
         return name
 
     _INDEX_COL_PATTERNS = {'行次', '序号', '编号', '行号', '项目编号', 'index', 'no', 'no.', 'id', 'row_num', 'row_number', 'sn'}
+    _ID_NAME_FRAGMENTS = ['订单号', '单号', '编码', '工号', '货号', '票号', '凭证号',
+                          'order_id', 'order_no', 'item_id', 'sku_id', 'batch_no']
 
     def _is_index_column(col_name: str, series) -> bool:
         import pandas as pd
         lower = col_name.lower().strip()
         if lower in _INDEX_COL_PATTERNS:
             return True
+        if any(frag in lower for frag in _ID_NAME_FRAGMENTS):
+            return True
         try:
             vals = pd.to_numeric(series.dropna().head(20), errors='coerce').dropna()
             if len(vals) >= 3:
                 diffs = vals.diff().dropna()
                 if len(diffs) > 0 and all(d == 1 for d in diffs):
+                    return True
+                if vals.nunique() == len(vals) and vals.min() > 1000 and all(v == int(v) for v in vals):
                     return True
         except Exception:
             pass

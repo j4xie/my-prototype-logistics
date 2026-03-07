@@ -63,4 +63,40 @@ public interface DecorationAiService {
      * @return 包含图片URL的结果 Map
      */
     java.util.Map<String, Object> generateImage(String prompt, String style, String size);
+
+    /**
+     * 装修对话式AI助手
+     * 支持多轮对话，理解用户意图后推荐/应用主题
+     *
+     * @param sessionId 会话ID（可为null，自动生成）
+     * @param message   用户消息
+     * @return 包含reply、action、themeCode等的结构化结果
+     */
+    java.util.Map<String, Object> decorationChat(String sessionId, String message, Long merchantId);
+
+    /**
+     * 获取页面模板列表
+     *
+     * @return 模板列表（每个模板包含 code, name, description, modulesConfig, themeCode）
+     */
+    java.util.List<java.util.Map<String, Object>> getPageTemplates();
+
+    /**
+     * 应用模板到商户配置
+     *
+     * @param templateCode 模板编码
+     * @param merchantId   商户ID（可为null）
+     * @return 应用结果
+     */
+    java.util.Map<String, Object> applyTemplate(String templateCode, Long merchantId);
+
+    /**
+     * 获取版本历史列表
+     */
+    java.util.List<java.util.Map<String, Object>> getVersionHistory(Long merchantId, String pageType);
+
+    /**
+     * 回滚到指定版本
+     */
+    java.util.Map<String, Object> rollbackToVersion(Long merchantId, Long versionId);
 }

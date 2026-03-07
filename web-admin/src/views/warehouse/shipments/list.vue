@@ -278,7 +278,7 @@ function getStatusText(status: string) {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="shipmentNumber" label="出货单号" width="160" :formatter="emptyCell" />
         <el-table-column prop="customerName" label="客户名称" min-width="150" show-overflow-tooltip :formatter="emptyCell" />
         <el-table-column prop="productBatchNumber" label="产品批次" width="160" :formatter="emptyCell" />
@@ -362,7 +362,7 @@ function getStatusText(status: string) {
     </el-drawer>
 
     <!-- 新建出货对话框 -->
-    <el-dialog v-model="dialogVisible" title="新建出货" width="550px">
+    <el-dialog v-model="dialogVisible" title="新建出货" width="550px" :close-on-click-modal="false">
       <el-form :model="shipmentForm" label-width="100px">
         <el-form-item label="客户" required>
           <el-select v-model="shipmentForm.customerId" placeholder="选择客户" style="width: 100%">

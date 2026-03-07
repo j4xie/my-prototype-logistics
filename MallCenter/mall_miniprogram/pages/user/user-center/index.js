@@ -90,22 +90,11 @@ Page({
       }
     })
   },
-  // 加载功能配置（静默请求，不弹窗）
+  // 从全局读取AI配置
   loadAiConfig() {
-    const config = app.globalData.config
-    wx.request({
-      url: config.basePath + '/weixin/api/ma/ai/feature-config',
-      method: 'GET',
-      success: (res) => {
-        if (res.statusCode === 200 && res.data.code === 200 && res.data.data) {
-          this.setData({
-            showAiAssistant: res.data.data.showAI === true
-          })
-        }
-      },
-      fail: (err) => {
-        console.log('加载功能配置失败:', err)
-      }
+    var self = this
+    app.onFeatureReady(function (flags) {
+      self.setData({ showAiAssistant: flags.showAI === true })
     })
   },
   //获取商城用户信息

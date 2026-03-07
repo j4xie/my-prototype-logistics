@@ -28,7 +28,7 @@ class InsightRequest(BaseModel):
     analysisContext: Optional[str] = None
     insightTypes: Optional[List[str]] = None
     maxInsights: int = 5
-    upload_id: Optional[str] = None
+    upload_id: Optional[int] = None
     sheet_index: Optional[int] = None
 
 
@@ -43,6 +43,9 @@ class Insight(BaseModel):
     importance: Optional[float] = None
     recommendation: Optional[str] = None
     action_items: Optional[List[str]] = None
+    title: Optional[str] = None
+    dimension: Optional[str] = None
+    confidence: Optional[float] = None
     source: Optional[str] = None
     # Structured fields from _meta type
     executive_summary: Optional[str] = None
@@ -93,8 +96,13 @@ async def generate_insights(request: InsightRequest):
             sheet_index=request.sheet_index
         )
 
-        # Convert insights to Pydantic models
-        insights = [Insight(**i) for i in result.get("insights", [])]
+        # Convert insights to Pydantic models (skip malformed items)
+        insights = []
+        for i in result.get("insights", []):
+            try:
+                insights.append(Insight(**i))
+            except Exception as e:
+                logger.warning("Skipping malformed insight: %s — %s", i, e)
 
         return InsightResponse(
             success=result.get("success", False),
@@ -194,26 +202,22 @@ async def analyze_metrics(metrics: List[dict]):
         return InsightResponse(success=False, error="分析生成失败，请稍后重试")
 
 
-async def _load_upload_data(upload_id: int, limit: int = 2000) -> List[Dict[str, Any]]:
+async def _load_upload_data(upload_id: int, limit: int = 50000) -> List[Dict[str, Any]]:
     """Load upload data from PostgreSQL by upload_id."""
     try:
-        from smartbi.config import get_settings
-        import asyncpg
+        from smartbi.config import get_pg_pool
         import json as _json
 
-        pg_url = get_settings().postgres_url
-        if not pg_url:
+        pool = await get_pg_pool()
+        if not pool:
             return []
-        conn = await asyncpg.connect(pg_url)
-        try:
+        async with pool.acquire() as conn:
             rows = await conn.fetch(
                 "SELECT row_data FROM smart_bi_dynamic_data WHERE upload_id = $1 LIMIT $2",
                 upload_id, limit
             )
             if rows:
                 return [_json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in rows]
-        finally:
-            await conn.close()
     except Exception as e:
         logger.warning(f"_load_upload_data({upload_id}) failed: {e}")
     return []
@@ -242,6 +246,10 @@ async def quick_summary(request: Request):
             data = body.get("data", [])
             upload_id = body.get("upload_id")
             if not data and upload_id:
+                try:
+                    upload_id = int(upload_id)
+                except (TypeError, ValueError):
+                    raise HTTPException(status_code=400, detail=f"Invalid upload_id: {upload_id}")
                 data = await _load_upload_data(upload_id)
         else:
             raise HTTPException(status_code=400, detail="Expected JSON array or object with upload_id")
@@ -251,8 +259,9 @@ async def quick_summary(request: Request):
 
         import pandas as pd
         import numpy as np
+        from smartbi.config import coerce_numeric_columns
 
-        df = pd.DataFrame(data)
+        df = coerce_numeric_columns(pd.DataFrame(data))
 
         summary = {
             "success": True,

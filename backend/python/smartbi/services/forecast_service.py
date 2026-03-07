@@ -135,8 +135,8 @@ class ForecastService:
             if n >= 8:
                 adf_result = adfuller(data, maxlag=min(n // 3, 12))
                 is_stationary = adf_result[1] < 0.05  # p-value < 5%
-        except Exception:
-            pass  # Fallback: assume stationary
+        except Exception as e:
+            logger.warning(f"ADF test failed, assuming stationary: {e}")
 
         # Check for seasonality (enhanced: lower threshold from 24 to 12)
         has_seasonality = self._detect_seasonality(data)

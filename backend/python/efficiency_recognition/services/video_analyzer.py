@@ -45,7 +45,7 @@ def load_api_key():
 # 配置
 API_KEY = load_api_key()
 BASE_URL = os.getenv("LLM_VL_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
-VL_MODEL = os.getenv("LLM_VL_MODEL", "qwen-vl-max")
+VL_MODEL = os.getenv("LLM_VL_MODEL", "qwen3-vl-plus-2025-12-19")
 
 
 @dataclass

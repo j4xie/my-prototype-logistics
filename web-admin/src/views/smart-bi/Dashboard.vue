@@ -4,6 +4,7 @@
  * 展示企业经营核心 KPI、排行榜、趋势图表和 AI 洞察
  */
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { useChartResize } from '@/composables/useChartResize';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
@@ -171,7 +172,7 @@ const departmentRanking = computed<DepartmentRank[]>(() => {
   return deptRankings.map(item => ({
     name: item.name,
     sales: item.value,
-    growth: item.completionRate > 100 ? item.completionRate - 100 : item.completionRate - 100,
+    growth: item.completionRate != null ? item.completionRate - 100 : 0,
     alertLevel: item.alertLevel
   }));
 });
@@ -258,8 +259,8 @@ const hasPartialSystemData = computed(() => {
 });
 
 function switchToBestUpload() {
-  if (dataSources.value.length > 0) {
-    const best = dataSources.value[0];
+  const best = dataSources.value.find(d => d.id != null);
+  if (best) {
     selectedDataSource.value = String(best.id);
     loadDynamicDashboardData(best.id);
   }
@@ -278,6 +279,7 @@ const quickQuestions = [
 ];
 
 // 图表 DOM refs
+const dashboardRef = ref<HTMLElement>();
 const trendChartRef = ref<HTMLDivElement | null>(null);
 const pieChartRef = ref<HTMLDivElement | null>(null);
 
@@ -342,11 +344,15 @@ async function loadDashboardData() {
 
       if (!hasRealKpi && !hasCharts && dataSources.value.length > 0) {
         // system data empty, auto-switch to uploaded data
-        const best = dataSources.value[0];
+        const best = dataSources.value.find(d => d.id != null);
+        if (!best) return;
         selectedDataSource.value = String(best.id);
         await loadDynamicDashboardData(best.id);
         return;
       }
+
+      // Async load LLM insights (non-blocking, renders after KPIs+charts)
+      loadLLMInsights();
     } else {
       throw new Error(response.message || '获取驾驶舱数据失败');
     }
@@ -358,17 +364,40 @@ async function loadDashboardData() {
     dashboardData.value = null;
 
     // On error, also try uploaded data as fallback
-    if (dataSources.value.length > 0) {
+    const fallback = dataSources.value.find(d => d.id != null);
+    if (fallback) {
       // system API failed, falling back to uploaded data
       hasError.value = false;
       errorMessage.value = '';
-      const best = dataSources.value[0];
-      selectedDataSource.value = String(best.id);
-      await loadDynamicDashboardData(best.id);
+      selectedDataSource.value = String(fallback.id);
+      await loadDynamicDashboardData(fallback.id);
       return;
     }
   } finally {
     loading.value = false;
+  }
+}
+
+async function loadLLMInsights() {
+  if (!factoryId.value || !dashboardData.value) return;
+  const sourceAtStart = selectedDataSource.value;
+  try {
+    const res = await get(`/${factoryId.value}/smart-bi/dashboard/executive/insights?period=month`);
+    // Guard: if user switched data source during await, discard stale result
+    if (selectedDataSource.value !== sourceAtStart) return;
+    if (res.success && res.data) {
+      const raw = res.data as Record<string, unknown>;
+      const insights = (raw.data && Array.isArray(raw.data)) ? raw.data : (Array.isArray(raw) ? raw : []);
+      if (insights.length > 0 && dashboardData.value) {
+        const existing = dashboardData.value.aiInsights || [];
+        dashboardData.value = {
+          ...dashboardData.value,
+          aiInsights: [...existing, ...insights]
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('LLM insights load failed (non-critical):', e);
   }
 }
 
@@ -762,10 +791,11 @@ function getPieColor(index: number): string {
   return CHART_COLORS[index % CHART_COLORS.length];
 }
 
-function handleResize() {
+// ResizeObserver-based chart resize (also handles sidebar toggle)
+useChartResize(dashboardRef, () => {
   trendChart?.resize();
   pieChart?.resize();
-}
+});
 
 // ==================== 工具函数 ====================
 
@@ -834,19 +864,13 @@ function handleRefresh() {
 
 import { onUnmounted } from 'vue';
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize);
   trendChart?.dispose();
   pieChart?.dispose();
-});
-
-// 监听窗口大小变化
-onMounted(() => {
-  window.addEventListener('resize', handleResize);
 });
 </script>
 
 <template>
-  <div class="smart-bi-dashboard" role="main" aria-label="经营驾驶舱">
+  <div ref="dashboardRef" class="smart-bi-dashboard" role="main" aria-label="经营驾驶舱">
     <div class="page-header">
       <div class="header-left">
         <h1>经营驾驶舱</h1>
@@ -874,9 +898,9 @@ onMounted(() => {
           >
             <el-option label="系统数据" value="system" />
             <el-option
-              v-for="ds in dataSources"
+              v-for="ds in dataSources.filter(d => d.id != null)"
               :key="ds.id"
-              :label="`${ds.fileName}${ds.sheetName ? ' - ' + ds.sheetName : ''}`"
+              :label="`${ds.fileName || '未命名'}${ds.sheetName ? ' - ' + ds.sheetName : ''}`"
               :value="String(ds.id)"
             >
               <div class="datasource-option">

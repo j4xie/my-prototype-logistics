@@ -380,7 +380,8 @@ def _persist_to_db(db_url: str, factory_id: str, sales, ar_rows, dept_rows):
                 """), row)
                 sales_count += 1
             except Exception as e:
-                errors.append(f"Sales insert error: {str(e)[:100]}")
+                logger.warning(f"Sales insert error: {e}")
+                errors.append("Sales insert error")
 
         # Insert AR
         for row in ar_rows:
@@ -394,7 +395,8 @@ def _persist_to_db(db_url: str, factory_id: str, sales, ar_rows, dept_rows):
                 """), row)
                 finance_count += 1
             except Exception as e:
-                errors.append(f"AR insert error: {str(e)[:100]}")
+                logger.warning(f"AR insert error: {e}")
+                errors.append("AR insert error")
 
         # Insert departments
         for row in dept_rows:
@@ -408,15 +410,16 @@ def _persist_to_db(db_url: str, factory_id: str, sales, ar_rows, dept_rows):
                 """), row)
                 dept_count += 1
             except Exception as e:
-                errors.append(f"Dept insert error: {str(e)[:100]}")
+                logger.warning(f"Dept insert error: {e}")
+                errors.append("Dept insert error")
 
         session.commit()
         logger.info(f"Sync complete: sales={sales_count}, finance={finance_count}, dept={dept_count}")
 
     except Exception as e:
         session.rollback()
-        errors.append(f"Transaction error: {str(e)[:200]}")
-        logger.error(f"Sync failed: {e}")
+        logger.error(f"Sync transaction failed: {e}")
+        errors.append("Transaction error")
     finally:
         session.close()
         engine.dispose()
@@ -441,14 +444,22 @@ async def sync_system_data(req: SyncRequest):
     if not req.file_path:
         return SyncResult(success=False, errors=["file_path is required"])
 
-    if not os.path.exists(req.file_path):
-        return SyncResult(success=False, errors=[f"File not found: {req.file_path}"])
+    # A1: Path traversal prevention — resolve symlinks and restrict to allowed directories
+    ALLOWED_DIRS = ["/www/wwwroot/cretas/", "/tmp/smartbi-uploads/"]
+    real_path = os.path.realpath(req.file_path)
+    if not any(real_path.startswith(d) for d in ALLOWED_DIRS):
+        logger.warning(f"Path traversal attempt blocked: {req.file_path} -> {real_path}")
+        return SyncResult(success=False, errors=["File path not allowed"])
+
+    if not os.path.exists(real_path):
+        return SyncResult(success=False, errors=["File not found"])
 
     try:
         import openpyxl
-        wb = openpyxl.load_workbook(req.file_path, data_only=True)
+        wb = openpyxl.load_workbook(real_path, data_only=True)
     except Exception as e:
-        return SyncResult(success=False, errors=[f"Cannot open xlsx: {str(e)[:200]}"])
+        logger.error(f"Cannot open xlsx: {e}")
+        return SyncResult(success=False, errors=["Cannot open xlsx file"])
 
     caps = _detect_sheets(wb)
     skipped = []
@@ -480,7 +491,8 @@ async def sync_system_data(req: SyncRequest):
     try:
         db_url = _get_cretas_db_url()
     except Exception as e:
-        return SyncResult(success=False, errors=[f"Cannot get DB URL: {str(e)[:200]}"])
+        logger.error(f"Cannot get DB URL: {e}")
+        return SyncResult(success=False, errors=["Database connection error"])
 
     sales_count, finance_count, dept_count, errors = _persist_to_db(
         db_url, req.factory_id, sales, ar_rows, dept_rows

@@ -33,6 +33,8 @@ def _sanitize_for_json(obj):
         return [_sanitize_for_json(item) for item in obj.tolist()]
     if isinstance(obj, (list, tuple)):
         return [_sanitize_for_json(item) for item in obj]
+    if obj is pd.NaT:
+        return None
     if isinstance(obj, pd.Timestamp):
         return obj.isoformat() if not pd.isna(obj) else None
     if isinstance(obj, np.bool_):
@@ -45,6 +47,54 @@ def _sanitize_for_json(obj):
     if isinstance(obj, np.integer):
         return int(obj)
     return obj
+
+
+_ID_NAME_PATTERNS = {'行次', '序号', '编号', '行号', '项目编号', 'index', 'no', 'no.', 'id', 'row_num', 'row_number', 'sn'}
+_ID_NAME_FRAGMENTS = ['订单号', '单号', '编码', '工号', '货号', '票号', '凭证号',
+                      'order_id', 'order_no', 'item_id', 'sku_id', 'batch_no']
+
+
+def _is_id_column(col_name: str, series) -> bool:
+    """Detect if a column is an ID/index/sequence column (not useful for chart Y-axis)."""
+    lower = col_name.lower().strip()
+    if lower in _ID_NAME_PATTERNS:
+        return True
+    if any(frag in lower for frag in _ID_NAME_FRAGMENTS):
+        return True
+    try:
+        vals = pd.to_numeric(series.dropna().head(20), errors='coerce').dropna()
+        if len(vals) >= 3:
+            diffs = vals.diff().dropna()
+            # Use approximate comparison for float safety
+            if len(diffs) > 0 and all(abs(d - 1) < 0.001 for d in diffs):
+                return True
+            # High-cardinality large integers: require ALL unique + integer + large + high cardinality ratio
+            if (vals.nunique() == len(vals) and vals.min() > 10000
+                    and all(v == int(v) for v in vals)
+                    and series.nunique() / max(len(series.dropna()), 1) > 0.9):
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def _coerce_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Try to convert object columns that look numeric to actual numeric dtype.
+
+    Fixes the issue where mixed-type columns (e.g., "123.4" as str) are
+    invisible to select_dtypes(include=[np.number]).
+    Only converts columns where >50% of non-null values are numeric.
+    Skips ID/index columns to avoid polluting Y-axis candidates.
+    """
+    df = df.copy()  # Avoid modifying the original DataFrame in batch scenarios
+    for col in df.select_dtypes(include=['object']).columns:
+        if _is_id_column(col, df[col]):
+            continue
+        coerced = pd.to_numeric(df[col], errors='coerce')
+        non_null = df[col].notna().sum()
+        if non_null > 0 and coerced.notna().sum() / non_null > 0.5:
+            df[col] = coerced
+    return df
 
 
 class ChartType(str, Enum):
@@ -86,35 +136,40 @@ class ChartBuilder:
 
     # ========== 8-Benchmark Color System ==========
     # Synthesized from: Tableau (professional palettes) + Looker (Material) + Metabase (friendly)
+    # Unified color palette — synced with frontend echarts-theme.ts CHART_COLORS
+    # Brand: Atlassian-inspired (blue/green/amber/red/slate + lighter variants)
     THEME_PALETTES = {
-        "business": {  # 商务蓝 (default) — Tableau + Power BI inspired
-            "primary": ["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe"],
-            "secondary": ["#059669", "#10b981", "#34d399", "#6ee7b7", "#a7f3d0"],
-            "accent": ["#d97706", "#f59e0b", "#fbbf24", "#fcd34d", "#fde68a"],
-            "danger": ["#dc2626", "#ef4444", "#f87171", "#fca5a5"],
+        "business": {
+            "primary": ["#1B65A8", "#2B7EC1", "#4C9AFF", "#93c5fd", "#bfdbfe"],
+            "secondary": ["#36B37E", "#57D9A3", "#34d399", "#6ee7b7", "#a7f3d0"],
+            "accent": ["#FFAB00", "#FFC400", "#fbbf24", "#fcd34d", "#fde68a"],
+            "danger": ["#FF5630", "#FF8B6A", "#f87171", "#fca5a5"],
             "charts": [
-                "#2563eb", "#059669", "#d97706", "#7c3aed", "#dc2626",
-                "#0891b2", "#c026d3", "#ea580c", "#4f46e5", "#15803d"
+                "#1B65A8", "#36B37E", "#FFAB00", "#FF5630", "#6B778C",
+                "#2B7EC1", "#57D9A3", "#FFC400", "#FF8B6A", "#4C9AFF"
             ],
             "gradients": [
-                {"start": "#2563eb", "end": "#60a5fa"},   # blue
-                {"start": "#059669", "end": "#34d399"},   # green
-                {"start": "#d97706", "end": "#fbbf24"},   # gold
-                {"start": "#7c3aed", "end": "#a78bfa"},   # purple
-                {"start": "#dc2626", "end": "#f87171"},   # red
+                {"start": "#1B65A8", "end": "#4C9AFF"},   # blue
+                {"start": "#36B37E", "end": "#57D9A3"},   # green
+                {"start": "#FFAB00", "end": "#FFC400"},   # amber
+                {"start": "#FF5630", "end": "#FF8B6A"},   # red
+                {"start": "#6B778C", "end": "#4C9AFF"},   # slate→sky
             ],
             "semantic": {
-                "success": "#059669",
-                "warning": "#d97706",
-                "danger": "#dc2626",
-                "info": "#2563eb",
-                "muted": "#9ca3af",
+                "success": "#36B37E",
+                "warning": "#FFAB00",
+                "danger": "#FF5630",
+                "info": "#1B65A8",
+                "muted": "#6B778C",
             }
         }
     }
 
     # Active theme
     _active_theme = "business"
+
+    # DataZoom auto-show threshold: show slider when x-axis has more than this many items
+    DATAZOOM_THRESHOLD = 15
 
     @classmethod
     def _get_palette(cls) -> dict:
@@ -151,6 +206,46 @@ class ChartBuilder:
             "animationEasing": "cubicOut",
         },
         "waterfall": {
+            "animationDuration": 800,
+            "animationEasing": "cubicOut",
+            "animationDelay": "__ANIM__stagger_60",
+        },
+        "heatmap": {
+            "animationDuration": 1000,
+            "animationEasing": "cubicOut",
+        },
+        "radar": {
+            "animationDuration": 800,
+            "animationEasing": "cubicOut",
+        },
+        "funnel": {
+            "animationDuration": 800,
+            "animationEasing": "cubicOut",
+            "animationDelay": "__ANIM__stagger_80",
+        },
+        "gauge": {
+            "animationDuration": 1500,
+            "animationEasing": "elasticOut",
+        },
+        "treemap": {
+            "animationDuration": 800,
+            "animationEasing": "cubicOut",
+        },
+        "sunburst": {
+            "animationDuration": 1000,
+            "animationEasing": "cubicOut",
+        },
+        "boxplot": {
+            "animationDuration": 600,
+            "animationEasing": "cubicOut",
+            "animationDelay": "__ANIM__stagger_60",
+        },
+        "combination": {
+            "animationDuration": 800,
+            "animationEasing": "cubicOut",
+            "animationDelay": "__ANIM__stagger_60",
+        },
+        "pareto": {
             "animationDuration": 800,
             "animationEasing": "cubicOut",
             "animationDelay": "__ANIM__stagger_60",
@@ -237,6 +332,8 @@ class ChartBuilder:
             "textStyle": {"color": "#374151", "fontSize": 13},
             "extraCssText": "box-shadow: 0 4px 20px rgba(0,0,0,0.12);",
             "confine": True,
+            # Thousands separator for tooltip values (resolved by frontend FMT_REGISTRY)
+            "valueFormatter": "__FMT__thousands_sep",
             **({"axisPointer": {"type": "shadow", "shadowStyle": {"color": "rgba(37,99,235,0.06)"}}} if trigger == "axis" else {})
         }
 
@@ -280,9 +377,7 @@ class ChartBuilder:
             if len(numeric_vals) < 3:
                 continue
 
-            mean_val = sum(numeric_vals) / len(numeric_vals)
-
-            # markLine: average reference line
+            # markLine: average reference line (ECharts computes avg internally)
             s["markLine"] = {
                 "silent": True,
                 "lineStyle": {"type": "dashed", "color": "#9ca3af", "width": 1},
@@ -339,6 +434,10 @@ class ChartBuilder:
             if df.empty:
                 return self._empty_chart_config(title)
 
+            # Coerce object columns that contain numeric data (e.g., "123.4" stored as str)
+            # so select_dtypes(include=[np.number]) won't miss them
+            df = _coerce_numeric_columns(df)
+
             chart_type_enum = ChartType(chart_type.lower())
 
             # Build chart based on type
@@ -391,7 +490,13 @@ class ChartBuilder:
             config = self._add_mark_annotations(config, df, y_fields, chart_type_enum.value)
 
             # Add common options
-            config = self._add_common_options(config, title, subtitle, theme, options, chart_type_enum.value)
+            config = self._add_common_options(config, title, subtitle, theme, options, chart_type_enum.value, df=df)
+
+            # Inject blur for non-focused series (emphasis/blur three-state)
+            for s in config.get("series", []):
+                if isinstance(s, dict):
+                    s.setdefault("emphasis", {}).setdefault("focus", "series")
+                    s.setdefault("blur", {}).setdefault("itemStyle", {}).setdefault("opacity", 0.15)
 
             # Anomaly detection (ThoughtSpot SpotIQ + Grafana thresholds)
             anomalies = self._detect_chart_anomalies(df, y_fields, chart_type_enum.value)
@@ -578,11 +683,12 @@ class ChartBuilder:
         if value_field is None:
             return self._empty_chart_config(None)
 
-        data = [
-            {"name": str(row[name_field]), "value": round(float(row[value_field]), 2)}
-            for _, row in df.iterrows()
-            if pd.notna(row[value_field])
-        ]
+        data = []
+        for _, row in df.iterrows():
+            if pd.notna(row[value_field]):
+                v = pd.to_numeric(row[value_field], errors='coerce')
+                if pd.notna(v):
+                    data.append({"name": str(row[name_field]), "value": round(float(v), 2)})
 
         # Top5 + 其他 合并
         data = self._aggregate_pie_top_n(data, 5)
@@ -633,12 +739,21 @@ class ChartBuilder:
         """Build area chart configuration"""
         config = self._build_line_chart(df, x_field, y_fields, series_field)
 
+        is_stacked = len(config["series"]) > 1
         # Add area style to series
         for i, s in enumerate(config["series"]):
             s["areaStyle"] = {
                 "opacity": 0.3
             }
-            s["stack"] = "total" if len(config["series"]) > 1 else None
+            s["stack"] = "total" if is_stacked else None
+
+        if is_stacked:
+            title = config.get("title", {})
+            if isinstance(title, dict):
+                existing = title.get("subtext", "")
+                title["subtext"] = ("堆叠面积图（数值为累计叠加）" +
+                                    (f" | {existing}" if existing else ""))
+                config["title"] = title
 
         return config
 
@@ -788,7 +903,7 @@ class ChartBuilder:
                     "name": "增长",
                     "type": "bar",
                     "stack": "Total",
-                    "itemStyle": {"color": "#91cc75", "borderRadius": [4, 4, 0, 0]},
+                    "itemStyle": {"color": "#36B37E", "borderRadius": [4, 4, 0, 0]},
                     "label": self._make_bar_label(scale["suffix"]),
                     "data": positive_data
                 },
@@ -796,7 +911,7 @@ class ChartBuilder:
                     "name": "下降",
                     "type": "bar",
                     "stack": "Total",
-                    "itemStyle": {"color": "#ee6666", "borderRadius": [4, 4, 0, 0]},
+                    "itemStyle": {"color": "#FF5630", "borderRadius": [4, 4, 0, 0]},
                     "label": self._make_bar_label(scale["suffix"]),
                     "data": negative_data
                 }
@@ -810,47 +925,64 @@ class ChartBuilder:
         x_field: Optional[str],
         y_fields: Optional[List[str]]
     ) -> dict:
-        """Build radar chart configuration"""
-        indicators = []
-        data_values = []
+        """Build radar chart configuration.
 
-        # Use y_fields as indicators
+        When x_field is provided (category column), each unique category
+        becomes a separate radar polygon for multi-series comparison.
+        Otherwise, aggregates all rows using mean values.
+        """
+        indicators = []
+
+        def safe_mean(series):
+            try:
+                numeric_vals = pd.to_numeric(series, errors='coerce')
+                mean_val = numeric_vals.mean()
+                return round(float(mean_val), 2) if pd.notna(mean_val) else 0
+            except Exception:
+                return 0
+
+        # Determine indicator fields
+        indicator_fields = []
         if y_fields:
-            for field in y_fields:
-                if field in df.columns:
-                    col_numeric = pd.to_numeric(df[field], errors='coerce').dropna()
-                    max_val = float(col_numeric.max()) if len(col_numeric) > 0 else 1.0
-                    if not (math.isfinite(max_val) and max_val > 0):
-                        max_val = 1.0
-                    indicators.append({"name": field, "max": max_val * 1.2})
-                    first_val = pd.to_numeric(df[field].iloc[0], errors='coerce') if len(df) > 0 else 0
-                    data_values.append(float(first_val) if pd.notna(first_val) else 0)
+            indicator_fields = [f for f in y_fields if f in df.columns]
+        if not indicator_fields:
+            indicator_fields = list(df.select_dtypes(include=[np.number]).columns[:6])
+
+        if not indicator_fields:
+            return {"series": [], "tooltip": {"trigger": "item"}}
+
+        # Build indicators with max values
+        for field in indicator_fields:
+            col_numeric = pd.to_numeric(df[field], errors='coerce').dropna()
+            max_val = float(col_numeric.max()) if len(col_numeric) > 0 else 1.0
+            if not (math.isfinite(max_val) and max_val > 0):
+                max_val = 1.0
+            indicators.append({"name": field, "max": max_val * 1.2})
+
+        # Build radar data series
+        radar_data = []
+
+        if x_field and x_field in df.columns:
+            # Multi-series: each unique x_field value becomes a radar polygon
+            groups = df.groupby(x_field)
+            for name, group in list(groups)[:8]:
+                values = [safe_mean(group[f]) for f in indicator_fields]
+                radar_data.append({"value": values, "name": str(name)})
         else:
-            # Use numeric columns
-            for col in df.select_dtypes(include=[np.number]).columns[:6]:
-                col_numeric = pd.to_numeric(df[col], errors='coerce').dropna()
-                max_val = float(col_numeric.max()) if len(col_numeric) > 0 else 1.0
-                if not (math.isfinite(max_val) and max_val > 0):
-                    max_val = 1.0
-                indicators.append({"name": col, "max": max_val * 1.2})
-                first_val = pd.to_numeric(df[col].iloc[0], errors='coerce') if len(df) > 0 else 0
-                data_values.append(float(first_val) if pd.notna(first_val) else 0)
+            # Single series: aggregate all rows using mean
+            values = [safe_mean(df[f]) for f in indicator_fields]
+            radar_data.append({"value": values, "name": "均值"})
 
         return {
             "radar": {
                 "indicator": indicators
             },
             "series": [{
-                "name": "Radar",
+                "name": "对比",
                 "type": "radar",
-                "data": [{
-                    "value": data_values,
-                    "name": "Value"
-                }]
+                "data": radar_data
             }],
-            "tooltip": {
-                "trigger": "item"
-            }
+            "tooltip": self._make_enhanced_tooltip("item")
         }
 
     def _build_funnel_chart(
@@ -885,10 +1017,7 @@ class ChartBuilder:
                 "gap": 2,
                 "data": data
             }],
-            "tooltip": {
-                "trigger": "item",
-                "formatter": "{a} <br/>{b}: {c}"
-            }
+            "tooltip": {**self._make_enhanced_tooltip("item"), "formatter": "{a} <br/>{b}: {c}"}
         }
 
     def _build_gauge_chart(
@@ -915,9 +1044,7 @@ class ChartBuilder:
                 },
                 "data": [{"value": value, "name": value_field}]
             }],
-            "tooltip": {
-                "formatter": "{a} <br/>{b}: {c}%"
-            }
+            "tooltip": {**self._make_enhanced_tooltip("item"), "formatter": "{a} <br/>{b}: {c}%"}
         }
 
     def _build_heatmap_chart(
@@ -1050,20 +1177,13 @@ class ChartBuilder:
         subtitle: Optional[str],
         theme: str,
         options: Optional[dict],
-        chart_type: str = ""
+        chart_type: str = "",
+        df: Optional[pd.DataFrame] = None
     ) -> dict:
         """Add common ECharts options with visual enhancements (8-benchmark synthesis)"""
         palette = self._get_palette()
 
-        # Title (ThoughtSpot minimal style)
-        if title:
-            config["title"] = {
-                "text": title,
-                "subtext": subtitle or "",
-                "left": "center",
-                "textStyle": {"fontSize": 14, "fontWeight": 600, "color": "#374151"},
-                "subtextStyle": {"fontSize": 12, "color": "#9ca3af"}
-            }
+        # Title: stripped by frontend (Vue card header displays it) — skip to save bandwidth
 
         # Theme colors
         config["color"] = palette["charts"]
@@ -1073,21 +1193,12 @@ class ChartBuilder:
             config["grid"] = {
                 "left": "3%",
                 "right": "4%",
+                "top": "8%",
                 "bottom": "3%",
                 "containLabel": True
             }
 
-        # Toolbox (minimal, right-aligned)
-        config["toolbox"] = {
-            "feature": {
-                "saveAsImage": {"pixelRatio": 2},
-                "dataZoom": {},
-                "restore": {}
-            },
-            "right": 16,
-            "top": 4,
-            "iconStyle": {"borderColor": "#9ca3af"}
-        }
+        # Toolbox: added by frontend (with magicType support) — skip here
 
         # Legend auto-position (Power BI style)
         if "legend" in config:
@@ -1109,14 +1220,42 @@ class ChartBuilder:
                 x_axis["axisLabel"]["rotate"] = 30
                 x_axis["axisLabel"]["overflow"] = "truncate"
                 x_axis["axisLabel"]["width"] = 80
-            if len(x_data) > 15:
+            if len(x_data) > self.DATAZOOM_THRESHOLD:
                 config["dataZoom"] = [
-                    {"type": "slider", "start": 0, "end": round(15 / len(x_data) * 100),
+                    {"type": "slider", "start": 0, "end": round(self.DATAZOOM_THRESHOLD / len(x_data) * 100),
                      "borderColor": "transparent", "backgroundColor": "#f3f4f6",
-                     "fillerColor": "rgba(37,99,235,0.12)", "handleStyle": {"color": "#2563eb"}},
+                     "fillerColor": "rgba(27,101,168,0.12)", "handleStyle": {"color": "#1B65A8"}},
                     {"type": "inside"}
                 ]
                 config["grid"]["bottom"] = "15%"
+
+        # ===== Large dataset optimization (ECharts progressive rendering) =====
+        data_len = len(df) if df is not None else 0
+        if data_len > 5000:
+            if chart_type in ("bar", "scatter"):
+                for s in config.get("series", []):
+                    s["large"] = True
+                    s["largeThreshold"] = 5000
+                    if chart_type == "scatter":
+                        s["progressive"] = 400
+                        s["progressiveThreshold"] = 3000
+                logger.info(f"Large dataset mode enabled: {data_len} rows, chart_type={chart_type}")
+            elif chart_type in ("line", "area"):
+                for s in config.get("series", []):
+                    s["sampling"] = "lttb"
+                logger.info(f"LTTB sampling enabled: {data_len} rows, chart_type={chart_type}")
+
+        # ===== ARIA accessibility (colorblind decal + screen reader description) =====
+        config["aria"] = {
+            "enabled": True,
+            "decal": {"show": True},
+        }
+
+        # ===== Tooltip confine to container (prevent overflow at edges) =====
+        tooltip = config.get("tooltip", {})
+        if isinstance(tooltip, dict):
+            tooltip["confine"] = True
+            config["tooltip"] = tooltip
 
         # ===== Type-specific animation (Tableau + Power BI Fluent Motion) =====
         config["animation"] = True
@@ -1220,8 +1359,10 @@ class ChartBuilder:
         value_field = y_fields[0] if y_fields else numeric_cols_sb[0]
 
         # Build hierarchical data
-        def build_tree(df, level_cols, value_col):
-            if not level_cols:
+        MAX_DEPTH = 10
+
+        def build_tree(df, level_cols, value_col, depth=0):
+            if not level_cols or depth >= MAX_DEPTH:
                 return []
 
             current_col = level_cols[0]
@@ -1234,7 +1375,7 @@ class ChartBuilder:
                     "value": float(group[value_col].sum())
                 }
                 if remaining_cols:
-                    node["children"] = build_tree(group, remaining_cols, value_col)
+                    node["children"] = build_tree(group, remaining_cols, value_col, depth + 1)
                 children.append(node)
             return children
 
@@ -1303,7 +1444,7 @@ class ChartBuilder:
                     "type": "bar",
                     "data": y_data,
                     "yAxisIndex": 0,
-                    "itemStyle": {"color": "#5470c6"}
+                    "itemStyle": {"color": "#1B65A8"}
                 },
                 {
                     "name": "累计百分比",
@@ -1311,7 +1452,7 @@ class ChartBuilder:
                     "data": cumulative,
                     "yAxisIndex": 1,
                     "smooth": True,
-                    "itemStyle": {"color": "#ee6666"},
+                    "itemStyle": {"color": "#FF5630"},
                     "markLine": {
                         "data": [{"yAxis": 80, "label": {"formatter": "80%"}}]
                     }
@@ -1371,7 +1512,7 @@ class ChartBuilder:
                     "type": "bar",
                     "data": actual_data,
                     "barWidth": 15,
-                    "itemStyle": {"color": "#5470c6"},
+                    "itemStyle": {"color": "#1B65A8"},
                     "z": 2
                 },
                 {
@@ -1380,7 +1521,7 @@ class ChartBuilder:
                     "data": [[t, i] for i, t in enumerate(target_data)],
                     "symbol": "rect",
                     "symbolSize": [4, 20],
-                    "itemStyle": {"color": "#ee6666"},
+                    "itemStyle": {"color": "#FF5630"},
                     "z": 3
                 }
             ],
@@ -1459,7 +1600,8 @@ class ChartBuilder:
         series_field: Optional[str]
     ) -> dict:
         """Build horizontal bar chart"""
-        y_data = df[x_field].tolist() if x_field else df.index.tolist()
+        # Category axis must be string labels — convert numeric values to strings
+        y_data = [str(v) for v in (df[x_field].tolist() if x_field else df.index.tolist())]
 
         series = []
         for y_field in (y_fields or []):
@@ -1550,7 +1692,13 @@ class ChartBuilder:
                     "name": outer_field,
                     "type": "pie",
                     "radius": ["50%", "70%"],
-                    "label": {"formatter": "{b}: {d}%"},
+                    "label": {
+                        "formatter": "{b}: {d}%",
+                        "overflow": "truncate",
+                        "width": 80,
+                    },
+                    "labelLayout": {"hideOverlap": True},
+                    "labelLine": {"length": 15, "length2": 10},
                     "data": outer_series_data
                 }
             ],
@@ -1631,7 +1779,7 @@ class ChartBuilder:
                 "name": "异常值",
                 "type": "scatter",
                 "data": outlier_data,
-                "itemStyle": {"color": palette[4] if len(palette) > 4 else "#dc2626"},
+                "itemStyle": {"color": palette[4] if len(palette) > 4 else "#FF5630"},
                 "symbolSize": 6
             })
 
@@ -1768,7 +1916,7 @@ class ChartBuilder:
                 "left": "center",
                 "bottom": "0%",
                 "inRange": {
-                    "color": ["#dc2626", "#fca5a5", "#ffffff", "#93c5fd", "#2563eb"]
+                    "color": ["#FF5630", "#FF8B6A", "#ffffff", "#4C9AFF", "#1B65A8"]
                 },
                 "text": ["正相关", "负相关"],
                 "textStyle": {"fontSize": 11}

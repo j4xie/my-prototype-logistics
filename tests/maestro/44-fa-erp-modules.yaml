@@ -1,0 +1,193 @@
+appId: com.cretas.foodtrace
+---
+# Test 44: Factory Admin - ERP & Management Modules
+# Covers: FinishedGoodsList, TransferList, ArApOverview, PriceList,
+#          MaterialTypeManagement, ConversionRate, ShipmentManagement, DisposalRecordManagement
+# Round 4.1d fix: back + launchApp + tab recovery pattern
+#   back from Management tab exits app if optional tap WARNED
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 5000
+
+# Timing stabilizer: screenshot before tab tap
+- takeScreenshot: screenshots/44-fa-pre-tab
+# Navigate to Management tab (管理)
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-management-top
+
+# === Material Types (原材料类型) — visible in first screen ===
+- tapOn:
+    text: ".*\u539F\u6750\u6599\u7C7B\u578B.*|.*\u539F\u6599\u7C7B\u578B.*|.*Material.*Type.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-material-types
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-recovery-timing
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# === Conversion Rates (转换率) ===
+- tapOn:
+    text: ".*\u8F6C\u6362\u7387.*|.*Conversion.*Rate.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-conversion-rates
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-recovery-timing
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# Scroll down to find more modules
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+
+# === Shipment Management (出货管理) ===
+- tapOn:
+    text: ".*\u51FA\u8D27\u7BA1\u7406.*|.*Shipment.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-shipment-mgmt
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-recovery-timing
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# Scroll to find Finished Goods
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+
+# === Finished Goods (成品库存) ===
+- tapOn:
+    text: ".*\u6210\u54C1\u5E93\u5B58.*|.*Finished.*Goods.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-finished-goods
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-recovery-timing
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# Scroll down more
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+
+# === Transfer Management (调拨管理) ===
+- tapOn:
+    text: ".*\u8C03\u62E8\u7BA1\u7406.*|.*\u8C03\u62E8.*|.*Transfer.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-transfer-list
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-recovery-timing
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# Scroll to find AR/AP
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+
+# === AR/AP (应收应付) ===
+- tapOn:
+    text: ".*\u5E94\u6536\u5E94\u4ED8.*|.*AR.*AP.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-ar-ap
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-recovery-timing
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# Scroll down more
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+
+# === Price List (价格表) ===
+- tapOn:
+    text: ".*\u4EF7\u683C\u8868.*|.*Price.*List.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-price-list
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-recovery-timing
+- tapOn: "\u7BA1\u7406"
+- waitForAnimationToEnd
+
+# Scroll to very bottom for Disposal Records
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+
+# === Disposal Records (报废记录) ===
+- tapOn:
+    text: ".*\u62A5\u5E9F\u8BB0\u5F55.*|.*\u62A5\u5E9F.*|.*Disposal.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/44-fa-disposal-records

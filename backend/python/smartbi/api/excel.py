@@ -31,6 +31,20 @@ from services.table_classifier import TableClassifier, TableType
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
+
+
+async def _validate_upload(file: UploadFile) -> bytes:
+    """Read and validate uploaded file size + type."""
+    filename = file.filename or ""
+    ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
+    if ext not in (".xlsx", ".xls", ".csv"):
+        raise HTTPException(status_code=400, detail="仅支持 .xlsx, .xls, .csv 文件")
+    content = await file.read()
+    if len(content) > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail=f"文件过大 ({len(content) // 1024 // 1024}MB)，限制 50MB")
+    return content
+
 # Initialize services
 excel_parser = ExcelParser()
 field_detector = FieldDetector()
@@ -194,17 +208,7 @@ async def list_sheets_detailed(file: UploadFile = File(...)):
     - **file**: Excel file (.xlsx, .xls)
     """
     try:
-        # Validate file type
-        filename = file.filename or ""
-        ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
-
-        if ext not in [".xlsx", ".xls"]:
-            raise HTTPException(
-                status_code=400,
-                detail="This endpoint only supports Excel files (.xlsx, .xls)"
-            )
-
-        content = await file.read()
+        content = await _validate_upload(file)
         sheet_names = excel_parser.get_sheet_names(content)
 
         sheets: List[SheetInfo] = []
@@ -582,6 +586,40 @@ async def auto_parse_excel(
                 raise
             except Exception as e:
                 logger.warning(f"Failed to resolve sheet name: {e}")
+
+        if effective_index is None and ext != ".csv":
+            # Smart sheet selection: pick the sheet with most data rows
+            try:
+                import pandas as pd
+                import io
+                xl = pd.ExcelFile(io.BytesIO(content))
+                if len(xl.sheet_names) > 1:
+                    best_idx, best_rows, best_cols = 0, 0, 0
+                    for idx, sname in enumerate(xl.sheet_names):
+                        try:
+                            df_peek = pd.read_excel(io.BytesIO(content), sheet_name=idx, nrows=5)
+                            # A3: Use openpyxl max_row instead of double pd.read_excel
+                            import openpyxl as _opxl
+                            _wb_tmp = _opxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+                            _ws_tmp = _wb_tmp.worksheets[idx]
+                            nrows = _ws_tmp.max_row or 0
+                            if nrows > 0:
+                                nrows -= 1  # subtract header row
+                            _wb_tmp.close()
+                            ncols = len(df_peek.columns)
+                            # Skip metadata-like sheets: <=3 columns and <50 rows
+                            if ncols <= 3 and nrows < 50:
+                                logger.info(f"Sheet '{sname}' (idx={idx}) skipped as metadata-like: {nrows} rows, {ncols} cols")
+                                continue
+                            if nrows > best_rows or (nrows == best_rows and ncols > best_cols):
+                                best_idx, best_rows, best_cols = idx, nrows, ncols
+                        except Exception:
+                            continue
+                    if best_rows > 0:
+                        effective_index = best_idx
+                        logger.info(f"Smart sheet selection: picked sheet {best_idx} '{xl.sheet_names[best_idx]}' ({best_rows} rows, {best_cols} cols)")
+            except Exception as e:
+                logger.warning(f"Smart sheet selection failed, falling back to 0: {e}")
 
         if effective_index is None:
             effective_index = 0
@@ -3019,7 +3057,7 @@ async def analyze_workbook_stream(
                 yield f"event: {evt_type}\ndata: {safe_data}\n\n"
         except Exception as e:
             logger.error(f"Workbook stream error: {e}", exc_info=True)
-            err_data = json.dumps({"error": str(e)}, ensure_ascii=False)
+            err_data = json.dumps({"error": "Internal processing error"}, ensure_ascii=False)
             yield f"event: error\ndata: {err_data}\n\n"
         finally:
             await analyzer.close()
@@ -3041,11 +3079,11 @@ async def analyze_workbook_stream(
 async def list_uploads(status: Optional[str] = Query(None)):
     """List uploaded Excel files from the SmartBI database."""
     try:
-        from smartbi.config import get_settings
-        import asyncpg
-        url = get_settings().postgres_url
-        conn = await asyncpg.connect(url)
-        try:
+        from smartbi.config import get_pg_pool
+        pool = await get_pg_pool()
+        if not pool:
+            return {"success": False, "data": [], "error": "Database not configured"}
+        async with pool.acquire() as conn:
             query = """
                 SELECT id, file_name, sheet_name, row_count, column_count, upload_status, created_at
                 FROM smart_bi_pg_excel_uploads
@@ -3068,8 +3106,6 @@ async def list_uploads(status: Optional[str] = Query(None)):
                     "createdAt": r["created_at"].isoformat() if r.get("created_at") else "",
                 })
             return {"success": True, "data": items}
-        finally:
-            await conn.close()
     except Exception as e:
         logger.error(f"List uploads failed: {e}")
-        return {"success": False, "data": [], "error": str(e)}
+        return {"success": False, "data": [], "error": "Failed to list uploads"}

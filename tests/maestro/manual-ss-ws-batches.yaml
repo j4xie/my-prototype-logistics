@@ -1,0 +1,136 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: Workshop Supervisor - Batch Management
+# Captures: batch list, detail, start, stage, complete, material consumption, drafts, my reports
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as workshop supervisor
+- runFlow: flows/login-ws.yaml
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Start Task.*|.*\u5F00\u59CB\u4EFB\u52A1.*"
+    timeout: 15000
+
+# Navigate to Batches tab (批次)
+- takeScreenshot: screenshots/manual-ss-ws-pre-batch-tab
+- tapOn:
+    text: "\u6279\u6B21"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*PB-.*|.*\u6279\u6B21.*|.*Batch.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Screenshot: Batch list
+- takeScreenshot: screenshots/manual-ss-ws-batch-list
+
+# Apply "In Progress" filter (进行中)
+- tapOn:
+    text: ".*\u8FDB\u884C\u4E2D.*|.*In Progress.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-batch-list-filtered
+
+# Tap first batch for detail
+- tapOn:
+    text: ".*PB-.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-batch-detail
+
+# Scroll down in batch detail
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-batch-detail-scroll
+
+# Try to find consumption records tab (消耗记录)
+- tapOn:
+    text: ".*\u6D88\u8017\u8BB0\u5F55.*|.*Consumption.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-material-consumption
+
+# Switch back to detail tab
+- tapOn:
+    text: ".*\u8BE6\u60C5.*|.*Detail.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+
+# Look for action buttons (start/complete)
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-batch-actions
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Start Task.*|.*\u9996\u9875.*"
+    timeout: 10000
+
+# Back to batches tab
+- takeScreenshot: screenshots/manual-ss-ws-recovery-batch
+- tapOn:
+    text: "\u6279\u6B21"
+    optional: true
+- waitForAnimationToEnd
+
+# Try to create new batch (开始生产)
+- tapOn:
+    text: ".*\u521B\u5EFA\u6279\u6B21.*|.*\u5F00\u59CB\u751F\u4EA7.*|.*Create.*|.*\u65B0\u5EFA.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-batch-start
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Start Task.*|.*\u9996\u9875.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate to draft management (草稿管理)
+- tapOn:
+    text: ".*\u8349\u7A3F\u7BA1\u7406.*|.*Draft.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-drafts
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Start Task.*|.*\u9996\u9875.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Navigate to my reports (我的报工)
+- tapOn:
+    text: ".*\u6211\u7684\u62A5\u5DE5.*|.*My.*Report.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-my-reports
+
+# Final
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-ws-batches-complete

@@ -26,4 +26,4 @@ Poster.create = (reset = false, that) => {
     }
 }
 
-export default Poster;
+module.exports = Poster;

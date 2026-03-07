@@ -1,0 +1,119 @@
+appId: com.cretas.foodtrace
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "warehouse_mgr1"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "login-submit-btn"
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Dismiss Location Accuracy dialog if it appears
+- tapOn:
+    text: "No thanks"
+    optional: true
+- waitForAnimationToEnd
+
+# Verify home screen loaded
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*Good.*|.*仓储.*|.*加载失败.*|.*首页.*"
+    timeout: 15000
+
+# ── 首页 Tab (x=10%, y=97%) ──────────────────────────────────────────────────
+- tapOn:
+    point: "10%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*Good.*|.*仓储.*|.*加载失败.*|.*首页.*"
+    timeout: 10000
+- takeScreenshot: screenshots/manual-ss-wm-home
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-home-scroll
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-home-bottom
+
+# Try tapping a quick action on the home screen
+- tapOn:
+    index: 0
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-quick-action
+- back
+- waitForAnimationToEnd
+
+# Recovery check after home interactions
+- extendedWaitUntil:
+    visible: ".*首页.*|.*入库.*|.*仓储.*"
+    timeout: 8000
+
+# ── 我的 Tab (x=90%, y=97%) ──────────────────────────────────────────────────
+- tapOn:
+    point: "90%,97%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*我的.*|.*Profile.*|.*个人.*|.*首页.*|.*入库.*|.*仓储.*"
+    timeout: 10000
+- takeScreenshot: screenshots/manual-ss-wm-profile
+- swipe:
+    direction: UP
+    duration: 800
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-profile-scroll
+
+# Try tapping My Info entry
+- tapOn:
+    text: ".*我的信息|My Info.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-my-info
+- back
+- waitForAnimationToEnd
+
+# Try tapping Settings entry
+- tapOn:
+    text: ".*设置|Settings.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-wm-settings
+- back
+- waitForAnimationToEnd
+
+# Final recovery check
+- extendedWaitUntil:
+    visible: ".*首页.*|.*入库.*|.*仓储.*"
+    timeout: 8000
+- takeScreenshot: screenshots/manual-ss-wm-done

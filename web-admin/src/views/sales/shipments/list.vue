@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Plus } from '@element-plus/icons-vue';
+import { formatDateTimeCell } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -55,7 +56,7 @@ function handlePageChange(page: number) {
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe>
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border>
         <el-table-column prop="shipmentNumber" label="出货单号" width="160" />
         <el-table-column prop="customerName" label="客户名称" />
         <el-table-column prop="productName" label="产品" />
@@ -67,7 +68,7 @@ function handlePageChange(page: number) {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="出货时间" width="180" />
+        <el-table-column prop="createdAt" label="出货时间" width="180" :formatter="formatDateTimeCell" />
         <el-table-column label="操作" width="120" fixed="right">
           <template #default>
             <el-button type="primary" link>查看</el-button>
@@ -95,7 +96,7 @@ function getStatusType(status: string) {
     DELIVERED: 'success',
     CANCELLED: 'danger'
   };
-  return map[status] || 'info';
+  return map[status?.toUpperCase()] || 'info';
 }
 
 function getStatusText(status: string) {
@@ -105,7 +106,7 @@ function getStatusText(status: string) {
     DELIVERED: '已送达',
     CANCELLED: '已取消'
   };
-  return map[status] || status;
+  return map[status?.toUpperCase()] || status;
 }
 </script>
 

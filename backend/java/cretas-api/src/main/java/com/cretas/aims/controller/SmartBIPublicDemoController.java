@@ -24,7 +24,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 @RequestMapping("/api/public/smart-bi")
 @RequiredArgsConstructor
 @Tag(name = "SmartBI 公开演示", description = "无需登录的 SmartBI API")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {"https://www.cretaceousfuture.com", "http://139.196.165.140:8086", "http://localhost:5173"})
 public class SmartBIPublicDemoController {
 
     private final SalesAnalysisService salesAnalysisService;
@@ -38,7 +38,7 @@ public class SmartBIPublicDemoController {
     @Autowired(required = false)
     private SmartBIService smartBIService;
 
-    private static final String DEMO_FACTORY_ID = "F001";
+    private static final String DEMO_FACTORY_ID = "F_DEMO";
 
     @PostMapping("/query")
     @Operation(summary = "自然语言查询")

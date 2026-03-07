@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, VideoPlay, VideoPause, CircleCheck, CircleClose, Download, Upload, ChatDotRound } from '@element-plus/icons-vue';
+import { formatDateTimeCell } from '@/utils/tableFormatters';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import {
@@ -21,6 +22,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('production'));
 
 const loading = ref(false);
+const actionLoading = ref(false);
 const tableData = ref<any[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchForm = ref({
@@ -156,8 +158,10 @@ async function submitPlan() {
 }
 
 async function handleStart(row: any) {
+  if (actionLoading.value) return;
   try {
     await ElMessageBox.confirm('确定开始此生产计划?', '提示', { type: 'warning' });
+    actionLoading.value = true;
     const response = await post(`/${factoryId.value}/production-plans/${row.id}/start`);
     if (response.success) {
       ElMessage.success('已开始生产');
@@ -169,15 +173,19 @@ async function handleStart(row: any) {
     if (error !== 'cancel') {
       ElMessage.error('操作失败');
     }
+  } finally {
+    actionLoading.value = false;
   }
 }
 
 async function handleComplete(row: any) {
+  if (actionLoading.value) return;
   try {
     const { value } = await ElMessageBox.prompt('请输入实际产量', '完成生产', {
       inputPattern: /^\d+$/,
       inputErrorMessage: '请输入有效数量'
     });
+    actionLoading.value = true;
     const response = await post(`/${factoryId.value}/production-plans/${row.id}/complete`, {
       actualQuantity: parseInt(value)
     });
@@ -191,15 +199,19 @@ async function handleComplete(row: any) {
     if (error !== 'cancel') {
       ElMessage.error('操作失败');
     }
+  } finally {
+    actionLoading.value = false;
   }
 }
 
 async function handleCancel(row: any) {
+  if (actionLoading.value) return;
   try {
     const { value } = await ElMessageBox.prompt('请输入取消原因', '取消计划', {
       inputPattern: /.+/,
       inputErrorMessage: '请输入取消原因'
     });
+    actionLoading.value = true;
     const response = await post(`/${factoryId.value}/production-plans/${row.id}/cancel`, {
       reason: value
     });
@@ -213,16 +225,20 @@ async function handleCancel(row: any) {
     if (error !== 'cancel') {
       ElMessage.error('操作失败');
     }
+  } finally {
+    actionLoading.value = false;
   }
 }
 
 async function handleCreateBatch(row: any) {
+  if (actionLoading.value) return;
   try {
     await ElMessageBox.confirm(
       `确定将计划 "${row.planNumber}" 转为生产批次？\n\n转换后将自动创建批次并开始生产流程。`,
       '转为批次',
       { type: 'warning', confirmButtonText: '确认转换', cancelButtonText: '取消' }
     );
+    actionLoading.value = true;
     const response = await post(`/${factoryId.value}/production-plans/${row.id}/create-batch`);
     if (response.success) {
       const batch = response.data;
@@ -235,6 +251,8 @@ async function handleCreateBatch(row: any) {
     if (error !== 'cancel') {
       ElMessage.error('操作失败');
     }
+  } finally {
+    actionLoading.value = false;
   }
 }
 
@@ -250,7 +268,7 @@ function getStatusType(status: string) {
     COMPLETED: 'success',
     CANCELLED: 'danger'
   };
-  return map[status] || 'info';
+  return map[status?.toUpperCase()] || 'info';
 }
 
 function getStatusText(status: string) {
@@ -261,7 +279,7 @@ function getStatusText(status: string) {
     COMPLETED: '已完成',
     CANCELLED: '已取消'
   };
-  return map[status] || status;
+  return map[status?.toUpperCase()] || status;
 }
 
 // ==================== Reference Data ====================
@@ -274,10 +292,10 @@ async function loadReferenceData() {
       getSupervisors(factoryId.value),
     ]);
     if (linesRes?.data) {
-      productionLines.value = Array.isArray(linesRes.data) ? linesRes.data : (linesRes.data as any).content || [];
+      productionLines.value = Array.isArray(linesRes.data) ? linesRes.data : (linesRes.data as Record<string, unknown>).content || [];
     }
     if (supsRes?.data) {
-      supervisors.value = Array.isArray(supsRes.data) ? supsRes.data : (supsRes.data as any).content || [];
+      supervisors.value = Array.isArray(supsRes.data) ? supsRes.data : (supsRes.data as Record<string, unknown>).content || [];
     }
   } catch (e) {
     console.warn('Failed to load reference data:', e);
@@ -517,7 +535,7 @@ function resetChat() {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="planNumber" label="计划编号" width="160" />
         <el-table-column prop="productTypeName" label="产品类型" min-width="150" show-overflow-tooltip />
         <el-table-column prop="plannedQuantity" label="计划数量" width="100" align="right" />
@@ -540,7 +558,7 @@ function resetChat() {
             <el-tag v-else size="small">手动</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="180" />
+        <el-table-column prop="createdAt" label="创建时间" width="180" :formatter="formatDateTimeCell" />
         <el-table-column label="操作" width="280" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small">查看</el-button>
@@ -549,6 +567,7 @@ function resetChat() {
               type="warning"
               link
               size="small"
+              :disabled="actionLoading"
               @click="handleCreateBatch(row)"
             >转为批次</el-button>
             <el-button
@@ -557,6 +576,7 @@ function resetChat() {
               link
               size="small"
               :icon="VideoPlay"
+              :disabled="actionLoading"
               @click="handleStart(row)"
             >开始</el-button>
             <el-button
@@ -565,6 +585,7 @@ function resetChat() {
               link
               size="small"
               :icon="CircleCheck"
+              :disabled="actionLoading"
               @click="handleComplete(row)"
             >完成</el-button>
             <el-button
@@ -573,6 +594,7 @@ function resetChat() {
               link
               size="small"
               :icon="CircleClose"
+              :disabled="actionLoading"
               @click="handleCancel(row)"
             >取消</el-button>
           </template>

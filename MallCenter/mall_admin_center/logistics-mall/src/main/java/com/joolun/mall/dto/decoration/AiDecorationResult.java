@@ -122,6 +122,16 @@ public class AiDecorationResult {
          * 是否显示新品
          */
         private boolean showNewArrivals = false;
+
+        /**
+         * 是否显示分销裂变入口
+         */
+        private boolean showReferral = false;
+
+        /**
+         * 是否显示食品资质
+         */
+        private boolean showLicense = false;
     }
 
     /**

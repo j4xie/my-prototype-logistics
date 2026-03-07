@@ -23,7 +23,7 @@ const reports = ref([
         </div>
       </template>
 
-      <el-table :data="reports" stripe>
+      <el-table empty-text="暂无数据" :data="reports" stripe border>
         <el-table-column prop="name" label="报表名称" />
         <el-table-column prop="type" label="类型">
           <template #default="{ row }">
@@ -37,7 +37,7 @@ const reports = ref([
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
-          <template #default>
+          <template #default="{ row }">
             <el-button type="primary" link :icon="Download">下载</el-button>
             <el-button type="primary" link>查看</el-button>
           </template>

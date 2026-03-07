@@ -1,0 +1,114 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: Dispatcher - Production Planning
+# Captures: plan list, create plan, plan detail, task assignment
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as dispatcher
+- runFlow: flows/login-dp.yaml
+
+# Wait for home to load
+- extendedWaitUntil:
+    visible: ".*\u8BA1\u5212.*|.*Plan.*|.*\u9996\u9875.*|.*Home.*"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Screenshot: Dispatcher home
+- takeScreenshot: screenshots/manual-ss-dp-home
+
+# Navigate to Plan tab (计划)
+- tapOn:
+    text: "\u8BA1\u5212"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u8BA1\u5212.*|.*Plan.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Screenshot: Plan list
+- takeScreenshot: screenshots/manual-ss-dp-plan-list
+
+# Scroll down to see more plans
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-plan-list-scroll
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd
+
+# Try to tap create/add button (+ or 新建)
+- tapOn:
+    text: ".*\u65B0\u5EFA.*|.*\u521B\u5EFA.*|.*Create.*|.*New.*|.*Add.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-create-plan
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-recovery-1
+
+# Back to Plan tab
+- tapOn:
+    text: "\u8BA1\u5212"
+    optional: true
+- waitForAnimationToEnd
+
+# Tap on first plan card to see detail
+- tapOn:
+    text: ".*PP-.*|.*PB-.*|.*\u751F\u4EA7\u8BA1\u5212.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-plan-detail
+
+# Scroll down in detail
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-plan-detail-scroll
+
+# Try to find assign/分配 button
+- tapOn:
+    text: ".*\u5206\u914D.*|.*Assign.*|.*\u4EFB\u52A1\u5206\u914D.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-task-assign
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Back to plan tab for Gantt chart
+- tapOn:
+    text: "\u8BA1\u5212"
+    optional: true
+- waitForAnimationToEnd
+
+# Try Gantt chart shortcut
+- tapOn:
+    text: ".*\u7518\u7279\u56FE.*|.*Gantt.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-gantt
+
+# Final recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-dp-complete

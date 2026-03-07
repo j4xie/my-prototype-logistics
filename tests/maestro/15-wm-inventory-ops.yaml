@@ -1,0 +1,66 @@
+appId: com.cretas.foodtrace
+---
+# Test 15: Warehouse Manager - Inventory Operations
+# Verifies inventory list, search, category filter, detail view, and stocktake
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as warehouse manager
+- runFlow: flows/login-wm.yaml
+- extendedWaitUntil:
+    visible: ".*Warehouse.*"
+    timeout: 15000
+
+# Navigate to Inventory tab (库存)
+- tapOn: "\u5E93\u5B58"
+- waitForAnimationToEnd
+
+# Wait for inventory list to load
+- extendedWaitUntil:
+    visible: ".*\u5E93\u5B58\u7BA1\u7406.*"
+    timeout: 10000
+- takeScreenshot: screenshots/15-wm-inventory-list
+
+# Scroll down to see inventory items
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/15-wm-inventory-scroll
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+
+# Tap frozen category filter chip (冻品)
+- tapOn:
+    text: ".*\u51BB\u54C1.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/15-wm-frozen-filter
+
+# Tap on first inventory item detail
+- tapOn:
+    text: ".*\u67E5\u770B\u8BE6\u60C5.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/15-wm-item-detail
+
+# Tap Stocktake button
+- tapOn:
+    text: ".*Stocktake.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/15-wm-stocktake
+
+# Go back to detail
+- back
+- waitForAnimationToEnd
+
+# Go back to inventory list
+- back
+- waitForAnimationToEnd

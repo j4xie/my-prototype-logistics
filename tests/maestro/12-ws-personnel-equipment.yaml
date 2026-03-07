@@ -1,0 +1,52 @@
+appId: com.cretas.foodtrace
+---
+# Test 12: Workshop Supervisor - Personnel & Equipment Management
+# Verifies worker list loads, worker detail accessible, equipment tab
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as workshop supervisor
+- runFlow: flows/login-ws.yaml
+- waitForAnimationToEnd
+
+# Navigate to Personnel tab (人员)
+- tapOn: "\u4EBA\u5458"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/12-ws-personnel-list
+
+# Tap on On Duty filter to verify interaction
+- tapOn:
+    text: ".*On Duty.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/12-ws-personnel-on-duty
+
+# Tap on first worker card (王建国 area)
+- tapOn:
+    text: ".*EMP-001.*|.*\u738B\u5EFA\u56FD.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/12-ws-worker-detail
+
+# Scroll to see more detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/12-ws-worker-detail-scroll
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Navigate to Equipment tab (设备)
+- tapOn: "\u8BBE\u5907"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/12-ws-equipment
+
+# Go back to home to complete the cycle
+- tapOn: "\u9996\u9875"
+- waitForAnimationToEnd
+- assertVisible: "Start Task"

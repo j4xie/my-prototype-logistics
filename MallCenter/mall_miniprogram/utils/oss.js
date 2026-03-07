@@ -6,7 +6,7 @@
  * 2. 多图上传: const urls = await ossUpload.uploadImages(tempFilePaths, 'product')
  */
 
-import api from './api'
+const api = require('./api')
 
 /**
  * 获取上传签名
@@ -118,15 +118,17 @@ async function chooseAndUpload(options = {}) {
   const {
     count = 9,
     type = 'product',
+    mediaType = 'image',
     onProgress = null
   } = options
 
   return new Promise((resolve, reject) => {
     wx.chooseMedia({
       count: count,
-      mediaType: ['image'],
+      mediaType: mediaType === 'video' ? ['video'] : ['image'],
       sizeType: ['compressed'],
       sourceType: ['album', 'camera'],
+      maxDuration: mediaType === 'video' ? 60 : undefined,
       success: async (res) => {
         try {
           const filePaths = res.tempFiles.map(f => f.tempFilePath)
@@ -144,10 +146,10 @@ async function chooseAndUpload(options = {}) {
           const successUrls = urls.filter(url => url !== null)
 
           if (successUrls.length === 0) {
-            reject(new Error('所有图片上传失败'))
+            reject(new Error(mediaType === 'video' ? '视频上传失败' : '所有图片上传失败'))
           } else if (successUrls.length < urls.length) {
             wx.showToast({
-              title: `${successUrls.length}张上传成功`,
+              title: `${successUrls.length}个上传成功`,
               icon: 'none'
             })
             resolve(successUrls)

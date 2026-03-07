@@ -91,6 +91,45 @@ export function FAManagementScreen() {
           </View>
         </View>
 
+        {/* 餐饮运营 (restaurant mode only) */}
+        {isRestaurantMode && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('management.restaurantOps', '餐饮运营')}</Text>
+          <View style={styles.grid}>
+            <GridItem
+              icon="food"
+              title={t('management.recipeManagement', '配方管理')}
+              color="#FF6B35"
+              onPress={() => navigation.navigate('RecipeList')}
+            />
+            <GridItem
+              icon="clipboard-arrow-down"
+              title={t('management.requisitionCreate', '新建领料')}
+              color="#1B65A8"
+              onPress={() => navigation.navigate('RequisitionCreate')}
+            />
+            <GridItem
+              icon="clipboard-check"
+              title={t('management.requisitionApproval', '领料审批')}
+              color="#388e3c"
+              onPress={() => navigation.navigate('RequisitionApproval')}
+            />
+            <GridItem
+              icon="delete-alert"
+              title={t('management.wastageRecords', '损耗记录')}
+              color="#FF5630"
+              onPress={() => navigation.navigate('WastageList')}
+            />
+            <GridItem
+              icon="clipboard-text-outline"
+              title={t('management.stocktaking', '盘点管理')}
+              color="#FFAB00"
+              onPress={() => navigation.navigate('StocktakingList')}
+            />
+          </View>
+        </View>
+        )}
+
         {/* 业务管理 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('management.businessManagement')}</Text>
@@ -149,13 +188,13 @@ export function FAManagementScreen() {
           <View style={styles.grid}>
             <GridItem
               icon="cart-arrow-down"
-              title="采购订单"
+              title={t('management.purchaseOrders', '采购订单')}
               color="#409eff"
               onPress={() => navigation.navigate('PurchaseOrderList')}
             />
             <GridItem
               icon="cart-arrow-up"
-              title="销售订单"
+              title={t('management.salesOrders', '销售订单')}
               color="#67c23a"
               onPress={() => navigation.navigate('SalesOrderList')}
             />
@@ -167,25 +206,25 @@ export function FAManagementScreen() {
             />
             <GridItem
               icon="swap-horizontal-bold"
-              title="调拨管理"
+              title={t('management.transfer', '调拨管理')}
               color="#fa8c16"
               onPress={() => navigation.navigate('TransferList')}
             />
             <GridItem
               icon="cash-multiple"
-              title="应收应付"
+              title={t('management.arAp', '应收应付')}
               color="#eb2f96"
               onPress={() => navigation.navigate('ArApOverview')}
             />
             <GridItem
               icon="tag-text"
-              title="价格表"
+              title={t('management.priceList', '价格表')}
               color="#13c2c2"
               onPress={() => navigation.navigate('PriceList')}
             />
             <GridItem
               icon="keyboard-return"
-              title="退货管理"
+              title={t('management.returns', '退货管理')}
               color="#f56c6c"
               onPress={() => navigation.navigate('ReturnOrderList')}
             />

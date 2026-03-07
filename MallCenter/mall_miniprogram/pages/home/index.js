@@ -14,8 +14,11 @@ Page({
     // ========== 动态装修配置 ==========
     pageConfig: null,           // 页面装修配置
     cssVariablesStyle: '',      // CSS变量样式字符串
-    dynamicModules: [],         // 动态模块配置
+    renderModules: [],          // 动态模块渲染列表(排序后)
+    moduleData: {},             // 各模块的数据(categoryList, swiperData等)
     configLoaded: false,        // 配置是否已加载
+    logoUrl: '',                // 店铺Logo
+    shopName: '',               // 店铺名称
     page: {
       searchCount: false,
       current: 1,
@@ -51,11 +54,15 @@ Page({
     showProducts: true,          // 是否显示首页商品列表
     showCategoryTab: true,       // 是否显示底部分类Tab
     // ========== 首页分类 ==========
-    categoryList: []             // 动态分类列表（从后端获取）
+    categoryList: [],            // 动态分类列表（从后端获取）
+    // ========== 新模块数据 ==========
+    countdownData: { hours: '00', minutes: '00', seconds: '00' }
   },
 
   // 启动广告定时器
   splashAdTimer: null,
+  // 倒计时定时器
+  countdownTimer: null,
   onLoad() {
     // 加载页面装修配置
     this.loadPageConfig()
@@ -79,22 +86,14 @@ Page({
         }, 800)
       })
   },
-  onShow(){
-    //更新tabbar购物车数量
-    wx.setTabBarBadge({
-      index: 2,
-      text: app.globalData.shoppingCartCount + ''
-    })
-    // 重新检查登录状态（用户可能在其他页面登录）
-    this.checkLoginStatus()
-  },
+  // onShow is defined below onHide with countdown resume logic
   loadData(){
     this.goodsNew()
     this.goodsHot()
     this.goodsPage()
   },
   onShareAppMessage: function () {
-    let title = '白垩纪食品溯源商城 - 源头可追溯'
+    let title = (this.data.shopName || '商城') + ' - 欢迎光临'
     let path = 'pages/home/index'
     return {
       title: title,
@@ -135,7 +134,8 @@ Page({
       .then(res => {
         let goodsListHot = util.processGoodsList(res.data.records)
         this.setData({
-          goodsListHot: goodsListHot
+          goodsListHot: goodsListHot,
+          'moduleData.goodsListHot': goodsListHot
         })
       })
   },
@@ -229,79 +229,105 @@ Page({
     app.api.goodsCategoryGet()
       .then(res => {
         if (res.data && res.data.length > 0) {
-          // 过滤出启用的分类，并限制显示数量
           let categories = res.data.filter(item => item.enable === '1' || item.enable === 1)
-          // 最多显示9个分类 + 1个"所有分类"
           if (categories.length > 9) {
             categories = categories.slice(0, 9)
           }
           this.setData({
-            categoryList: categories
+            categoryList: categories,
+            'moduleData.categoryList': categories
           })
           console.log('首页分类加载完成:', categories.length)
         }
       })
       .catch(err => {
         console.error('加载首页分类失败:', err)
-        // 失败时不做特殊处理，页面会显示空分类或使用默认
       })
   },
 
   /**
    * 加载页面装修配置
-   * 优先从页面配置API获取，如果失败则从CSS变量API获取
+   * 解析 modulesConfig 驱动动态首页渲染
    */
   async loadPageConfig() {
     try {
-      // 方案1：尝试获取完整的页面装修配置
       const res = await app.api.getDecorationConfig('home')
 
       if (res.data && res.data.theme) {
         const config = res.data
-
-        // 生成CSS变量样式字符串
         const cssVars = this.generateCssVariables(config.theme)
+
+        // 解析模块配置：后端返回 modules 数组，为空则使用默认布局
+        let modules = config.modules && config.modules.length > 0
+          ? config.modules
+          : this.getDefaultModules()
+
+        // 按 order 排序
+        modules = modules.sort((a, b) => (a.order || 0) - (b.order || 0))
+
+        // 通知栏文字：优先 modules 里的 props.texts，其次 config.noticeTexts
+        const noticeTexts = config.noticeTexts
+          ? (typeof config.noticeTexts === 'string' ? JSON.parse(config.noticeTexts) : config.noticeTexts)
+          : null
 
         this.setData({
           pageConfig: config,
           cssVariablesStyle: cssVars,
-          dynamicModules: config.modules || [],
-          configLoaded: true
+          renderModules: modules,
+          moduleData: {
+            noticeTexts: noticeTexts || ['欢迎光临', '优质好物，尽在商城'],
+            couponList: [],
+            newArrivalsList: [],
+            countdownData: { hours: '00', minutes: '00', seconds: '00' }
+          },
+          configLoaded: true,
+          logoUrl: config.logoUrl || '',
+          shopName: config.shopName || ''
         })
+
+        // 按需加载新模块数据
+        this.loadModuleData(modules)
 
         console.log('页面装修配置加载完成:', {
-          theme: config.theme ? 'loaded' : 'empty',
-          modulesCount: config.modules ? config.modules.length : 0
+          theme: 'loaded',
+          modulesCount: modules.length,
+          fromDb: config.modules && config.modules.length > 0
         })
         return
       }
     } catch (err) {
-      console.warn('页面装修配置加载失败，尝试获取CSS变量:', err)
+      console.warn('页面装修配置加载失败，使用默认:', err)
     }
 
-    // 方案2：降级获取CSS变量
-    try {
-      const cssRes = await app.api.getDecorationCssVars()
-      if (cssRes.data) {
-        // 将后端返回的CSS变量对象转为样式字符串
-        const vars = []
-        for (const [key, value] of Object.entries(cssRes.data)) {
-          vars.push(`${key}: ${value}`)
-        }
-        this.setData({
-          cssVariablesStyle: vars.join('; '),
-          configLoaded: true
-        })
-        console.log('CSS变量加载完成:', Object.keys(cssRes.data).length, '个变量')
-        return
-      }
-    } catch (err) {
-      console.warn('CSS变量加载失败:', err)
-    }
-
-    // 方案3：使用默认配置
-    this.setData({ configLoaded: true })
+    // 降级：使用默认模块布局
+    const defaultModules = this.getDefaultModules()
+    this.setData({
+      renderModules: defaultModules,
+      moduleData: {
+        noticeTexts: ['欢迎光临', '优质好物，尽在商城'],
+        couponList: [],
+        newArrivalsList: [],
+        countdownData: { hours: '00', minutes: '00', seconds: '00' }
+      },
+      configLoaded: true
+    })
     console.log('使用默认装修配置')
+  },
+
+  /**
+   * 默认模块列表 — 与当前硬编码布局完全一致
+   */
+  getDefaultModules() {
+    return [
+      { id: 'def_1', type: 'header', visible: true, order: 0, props: { showSearch: true, showLogo: true } },
+      { id: 'def_2', type: 'notice_bar', visible: true, order: 1, props: { texts: ['欢迎光临', '优质好物，尽在商城'], interval: 4000 } },
+      { id: 'def_3', type: 'banner', visible: true, order: 2, props: { autoplay: true, interval: 5000 } },
+      { id: 'def_4', type: 'category_grid', visible: true, order: 3, props: { columns: 4 } },
+      { id: 'def_5', type: 'quick_actions', visible: true, order: 4, props: {} },
+      { id: 'def_6', type: 'product_scroll', visible: true, order: 5, props: { title: '热销单品' } },
+      { id: 'def_7', type: 'product_grid', visible: true, order: 6, props: { title: '猜你喜欢', columns: 2 } },
+      { id: 'def_8', type: 'ai_float', visible: true, order: 99, props: {} }
+    ]
   },
 
   /**
@@ -345,6 +371,12 @@ Page({
     // 边框颜色
     if (theme.borderColor) {
       vars.push(`--border-color: ${theme.borderColor}`)
+      vars.push(`--border-gold: ${theme.borderColor}`)
+    }
+
+    // 强调色
+    if (theme.accentColor) {
+      vars.push(`--accent-color: ${theme.accentColor}`)
     }
 
     // 卡片背景色
@@ -352,51 +384,52 @@ Page({
       vars.push(`--card-bg: ${theme.cardBackground}`)
     }
 
-    // 圆角大小
-    if (theme.borderRadius) {
-      vars.push(`--border-radius: ${theme.borderRadius}`)
+    // 主色深色变体 (用于渐变)
+    if (theme.headerGradientEnd || theme.secondaryColor) {
+      vars.push(`--primary-dark: ${theme.headerGradientEnd || theme.secondaryColor}`)
+    }
+
+    // 通知栏颜色
+    if (theme.backgroundColor) {
+      vars.push(`--notice-bg: ${theme.backgroundColor}`)
+    }
+    if (theme.textColor) {
+      vars.push(`--notice-text: ${theme.textColor}`)
     }
 
     return vars.join('; ')
   },
 
-  // 加载功能配置（静默请求，不弹窗）
-  // 包括: AI助手、首页分类、商品列表、分类Tab
+  // 从全局读取功能配置（app.js 已在 onLaunch 加载）
   loadFeatureConfig() {
-    const config = app.globalData.config
-    wx.request({
-      url: config.basePath + '/weixin/api/ma/ai/feature-config',
-      method: 'GET',
-      success: (res) => {
-        if (res.statusCode === 200 && res.data.code === 200 && res.data.data) {
-          const featureConfig = res.data.data
-          this.setData({
-            showAiAssistant: featureConfig.showAI === true,
-            showCategories: featureConfig.showCategories !== false,
-            showProducts: featureConfig.showProducts !== false,
-            showCategoryTab: featureConfig.showCategoryTab !== false
-          })
-
-          // 更新全局配置
-          app.globalData.featureFlags = {
-            showAI: featureConfig.showAI === true,
-            showCategories: featureConfig.showCategories !== false,
-            showProducts: featureConfig.showProducts !== false,
-            showCategoryTab: featureConfig.showCategoryTab !== false
-          }
-
-          // 如果分类Tab被禁用，隐藏它
-          if (featureConfig.showCategoryTab === false) {
-            wx.hideTabBarItem({ index: 1 })
-          }
-
-          console.log('功能配置加载完成:', featureConfig)
-        }
-      },
-      fail: (err) => {
-        console.log('加载功能配置失败:', err)
+    var self = this
+    var applyFlags = function (flags) {
+      self.setData({
+        showAiAssistant: flags.showAI === true,
+        showCategories: flags.showCategories !== false,
+        showProducts: flags.showProducts !== false,
+        showCategoryTab: flags.showCategoryTab !== false
+      })
+      if (flags.showCategoryTab === false) {
+        wx.hideTabBarItem({ index: 1 })
       }
-    })
+      // 根据功能开关过滤装修模块
+      var hideTypes = []
+      if (flags.showCategories === false) {
+        hideTypes.push('category_grid')
+      }
+      if (flags.showProducts === false) {
+        hideTypes.push('product_scroll', 'product_grid', 'new_arrivals')
+      }
+      if (hideTypes.length > 0) {
+        var modules = self.data.renderModules || []
+        var filtered = modules.filter(function (m) {
+          return hideTypes.indexOf(m.type) === -1
+        })
+        self.setData({ renderModules: filtered })
+      }
+    }
+    app.onFeatureReady(applyFlags)
   },
   // 加载首页Banner
   loadBanners() {
@@ -407,7 +440,8 @@ Page({
           let swiperData = bannerList.map(item => item.imageUrl)
           this.setData({
             bannerList: bannerList,
-            swiperData: swiperData
+            swiperData: swiperData,
+            'moduleData.swiperData': swiperData
           })
           // 记录第一个banner的展示
           if (bannerList[0] && bannerList[0].id) {
@@ -418,12 +452,10 @@ Page({
       .catch(err => {
         console.log('加载Banner失败，使用本地默认图片')
         // 使用本地默认banner图片
+        const fallback = ['/public/img/banner_1.jpg', '/public/img/banner_2.jpg', '/public/img/banner_3.jpg']
         this.setData({
-          swiperData: [
-            '/public/img/banner_1.jpg',
-            '/public/img/banner_2.jpg',
-            '/public/img/banner_3.jpg'
-          ]
+          swiperData: fallback,
+          'moduleData.swiperData': fallback
         })
       })
   },
@@ -489,6 +521,14 @@ Page({
       url: '/pages/traceability/scan/index'
     })
   },
+  // 广告图片点击
+  onImageAdClick(e) {
+    const link = e.currentTarget.dataset.link
+    if (link) {
+      wx.navigateTo({ url: link })
+    }
+  },
+
   // 跳转搜索页
   goSearch() {
     wx.navigateTo({
@@ -589,6 +629,265 @@ Page({
     // 空函数，阻止点击内容区域关闭弹窗
   },
 
+  // ========== 新模块数据加载 ==========
+
+  /**
+   * 按需加载模块数据（倒计时、优惠券、新品）
+   */
+  loadModuleData(modules) {
+    if (!modules || modules.length === 0) return
+
+    const types = modules.filter(m => m.visible !== false).map(m => m.type)
+
+    // 倒计时模块
+    if (types.includes('countdown')) {
+      const cdModule = modules.find(m => m.type === 'countdown' && m.visible !== false)
+      const endTime = cdModule && cdModule.props && cdModule.props.endTime
+      if (endTime) {
+        this.startCountdown(endTime)
+      } else {
+        // 默认2小时后结束
+        const defaultEnd = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+        this.startCountdown(defaultEnd)
+      }
+    }
+
+    // 优惠券模块
+    if (types.includes('coupon')) {
+      this.loadCouponList()
+    }
+
+    // 分销裂变入口
+    if (types.includes('referral_banner')) {
+      this.loadReferralData()
+    }
+
+    // 新品推荐模块
+    if (types.includes('new_arrivals')) {
+      this.loadNewArrivals()
+    }
+  },
+
+  /**
+   * 倒计时
+   */
+  startCountdown(endTime) {
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer)
+    }
+
+    const target = new Date(endTime).getTime()
+
+    const update = () => {
+      const diff = Math.max(0, target - Date.now())
+      const hours = String(Math.floor(diff / 3600000)).padStart(2, '0')
+      const minutes = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0')
+      const seconds = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0')
+
+      this.setData({
+        'moduleData.countdownData': { hours, minutes, seconds }
+      })
+
+      if (diff <= 0 && this.countdownTimer) {
+        clearInterval(this.countdownTimer)
+        this.countdownTimer = null
+      }
+    }
+
+    update()
+    this.countdownTimer = setInterval(update, 1000)
+  },
+
+  /**
+   * 加载优惠券列表
+   */
+  loadCouponList() {
+    const config = app.globalData.config
+    // 使用公开接口，不需要登录即可展示
+    wx.request({
+      url: config.basePath + '/weixin/api/ma/coupon/public/list',
+      method: 'GET',
+      data: { limit: 10 },
+      header: {
+        'app-id': wx.getAccountInfoSync().miniProgram.appId
+      },
+      success: (res) => {
+        if (res.statusCode === 200 && res.data.code === 200 && res.data.data) {
+          const coupons = res.data.data.map(c => {
+            const item = { ...c }
+            // 过期倒计时
+            if (c.endTime || c.expireTime) {
+              const end = new Date(c.endTime || c.expireTime).getTime()
+              const diff = end - Date.now()
+              if (diff > 0 && diff < 3 * 24 * 60 * 60 * 1000) {
+                const hours = Math.floor(diff / (60 * 60 * 1000))
+                item.expiryText = hours < 24 ? `${hours}小时后过期` : `${Math.ceil(hours / 24)}天后过期`
+              }
+            }
+            // 已领取状态
+            if (c.received || c.claimed) {
+              item.claimed = true
+            }
+            // 新人券标记
+            if (c.isNewUser || c.couponType === 'NEW_USER') {
+              item.isNewUser = true
+            }
+            return item
+          })
+          this.setData({ 'moduleData.couponList': coupons })
+        } else {
+          this.setData({ 'moduleData.couponList': [] })
+        }
+      },
+      fail: () => {
+        this.setData({ 'moduleData.couponList': [] })
+      }
+    })
+  },
+
+  /**
+   * 领取优惠券
+   */
+  claimCoupon(e) {
+    const couponId = e.currentTarget.dataset.id
+    if (!couponId) return
+
+    if (!this.data.isLoggedIn) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
+
+    const config = app.globalData.config
+    wx.request({
+      url: config.basePath + '/weixin/api/ma/coupon/' + couponId + '/receive',
+      method: 'POST',
+      header: {
+        'app-id': wx.getAccountInfoSync().miniProgram.appId,
+        'third-session': app.globalData.thirdSession || ''
+      },
+      success: (res) => {
+        if (res.statusCode === 200 && res.data.code === 200) {
+          wx.showToast({ title: '领取成功', icon: 'success' })
+          // 立即标记已领取，再刷新列表
+          const list = this.data.moduleData.couponList || []
+          const idx = list.findIndex(c => c.id === couponId)
+          if (idx >= 0) {
+            this.setData({ [`moduleData.couponList[${idx}].claimed`]: true })
+          }
+          this.loadCouponList()
+        } else {
+          wx.showToast({ title: res.data.msg || '领取失败', icon: 'none' })
+        }
+      },
+      fail: () => {
+        wx.showToast({ title: '网络错误', icon: 'none' })
+      }
+    })
+  },
+
+  /**
+   * 加载分销数据
+   */
+  loadReferralData() {
+    if (!this.data.isLoggedIn) {
+      this.setData({ 'moduleData.referralData': { totalInvites: 0, totalReward: '0.00' } })
+      return
+    }
+    const config = app.globalData.config
+    wx.request({
+      url: config.basePath + '/weixin/api/ma/referral/my-stats',
+      method: 'GET',
+      header: {
+        'app-id': wx.getAccountInfoSync().miniProgram.appId,
+        'third-session': app.globalData.thirdSession || ''
+      },
+      success: (res) => {
+        if (res.statusCode === 200 && res.data.code === 200 && res.data.data) {
+          this.setData({ 'moduleData.referralData': res.data.data })
+        } else {
+          this.setData({ 'moduleData.referralData': { totalInvites: 0, totalReward: '0.00' } })
+        }
+      },
+      fail: () => {
+        this.setData({ 'moduleData.referralData': { totalInvites: 0, totalReward: '0.00' } })
+      }
+    })
+  },
+
+  /**
+   * 分享裂变
+   */
+  onShareReferral() {
+    // 触发微信分享由 open-type="share" 处理，这里可做埋点
+  },
+
+  /**
+   * 加载新品推荐
+   */
+  loadNewArrivals() {
+    const util = require('../../utils/util')
+    app.api.goodsPage({
+      searchCount: false,
+      current: 1,
+      size: 8,
+      descs: 'create_time'
+    })
+      .then(res => {
+        const list = util.processGoodsList(res.data.records)
+        this.setData({
+          'moduleData.newArrivalsList': list
+        })
+      })
+      .catch(err => {
+        console.error('加载新品失败:', err)
+        this.setData({ 'moduleData.newArrivalsList': [] })
+      })
+  },
+
+  onHide() {
+    // 暂停倒计时和广告定时器，避免后台空转
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer)
+      this._countdownPaused = true
+    }
+    if (this.splashAdTimer) {
+      clearInterval(this.splashAdTimer)
+      this._splashAdPaused = true
+    }
+  },
+
+  onShow(){
+    //更新tabbar购物车数量
+    wx.setTabBarBadge({
+      index: 2,
+      text: app.globalData.shoppingCartCount + ''
+    })
+    // 重新检查登录状态（用户可能在其他页面登录）
+    this.checkLoginStatus()
+
+    // 恢复倒计时定时器
+    if (this._countdownPaused) {
+      this._countdownPaused = false
+      const modules = this.data.renderModules || []
+      const cdModule = modules.find(m => m.type === 'countdown' && m.visible !== false)
+      const endTime = cdModule && cdModule.props && cdModule.props.endTime
+      if (endTime) {
+        this.startCountdown(endTime)
+      }
+    }
+  },
+
+  onUnload() {
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer)
+      this.countdownTimer = null
+    }
+    if (this.splashAdTimer) {
+      clearInterval(this.splashAdTimer)
+      this.splashAdTimer = null
+    }
+  },
+
   // ========== 个性化推荐相关方法 ==========
 
   /**
@@ -645,7 +944,7 @@ Page({
         const data = res.data || res
         const products = util.processGoodsList(data.recommendations || data || [])
         // 添加默认值容错：后端可能未返回 coldStartState
-        const coldStartState = data.coldStartState ?? 'cold_start'
+        const coldStartState = (data.coldStartState != null) ? data.coldStartState : 'cold_start'
 
         // 判断是否启用个性化推荐
         // 只有在明确返回非cold_start状态时才启用个性化

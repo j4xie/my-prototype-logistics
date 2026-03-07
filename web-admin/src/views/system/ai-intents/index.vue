@@ -208,7 +208,7 @@ function formatDate(dateStr?: string): string {
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe border>
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border>
         <el-table-column prop="intentCode" label="意图代码" width="200" show-overflow-tooltip />
         <el-table-column prop="intentName" label="意图名称" width="150" />
         <el-table-column prop="intentCategory" label="分类" width="120" align="center">

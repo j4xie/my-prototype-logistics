@@ -1,0 +1,60 @@
+appId: com.cretas.foodtrace
+---
+# Test 48: Warehouse Manager - Outbound Detail, Shipping & Tracking
+# Covers: WHOutboundDetail, WHShippingConfirm, WHTrackingDetail
+# Previously tested: WHOutboundList(16), WHPacking(16), WHLoading(16)
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as warehouse manager
+- runFlow: flows/login-wm.yaml
+- extendedWaitUntil:
+    visible: ".*Warehouse.*"
+    timeout: 15000
+
+# Navigate to Outbound tab (出货)
+- tapOn: "\u51FA\u8D27"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/48-wm-outbound-list
+
+# === Outbound Detail — tap first outbound order ===
+- tapOn:
+    text: ".*OUT-.*|.*\u51FA\u5E93\u5355.*|.*\u5F85\u6253\u5305.*|.*\u5DF2\u53D1\u8D27.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/48-wm-outbound-detail
+
+# Scroll down to see full detail
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/48-wm-outbound-detail-scroll
+
+# Look for Shipping/Tracking action button
+- tapOn:
+    text: ".*Shipping.*|.*\u53D1\u8D27\u786E\u8BA4.*|.*\u786E\u8BA4\u53D1\u8D27.*|.*\u7269\u6D41.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/48-wm-shipping-confirm
+
+# Return to outbound list via tab
+- tapOn: "\u51FA\u8D27"
+- waitForAnimationToEnd
+
+# Scroll down to see shipped items with tracking
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# === Tracking Detail — tap a shipped item ===
+- tapOn:
+    text: ".*\u5DF2\u53D1\u8D27.*|.*Shipped.*|.*\u8FD0\u8F93\u4E2D.*|.*In Transit.*"
+    optional: true
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/48-wm-tracking-detail

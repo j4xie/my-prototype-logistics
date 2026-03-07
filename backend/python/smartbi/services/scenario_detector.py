@@ -11,6 +11,7 @@ Features:
 3. Confidence scoring and reasoning traces
 4. Automatic dimension and measure identification
 """
+import asyncio
 import hashlib
 import json
 import logging
@@ -119,6 +120,7 @@ class ScenarioCache:
         self._cache: Dict[str, ScenarioCacheEntry] = {}
         self._ttl_seconds = ttl_seconds
         self._max_entries = max_entries
+        self._lock = asyncio.Lock()
 
     def _generate_structure_key(
         self,
@@ -179,7 +181,7 @@ class ScenarioCache:
 
         # Check TTL
         if time.time() - entry.created_at > self._ttl_seconds:
-            del self._cache[cache_key]
+            self._cache.pop(cache_key, None)
             return None
 
         # Update access stats
@@ -228,20 +230,24 @@ class ScenarioCache:
         return cache_key
 
     def _evict_old_entries(self):
-        """Remove oldest entries when cache is full"""
+        """Remove oldest entries when cache is full.
+        Safe: operates on a snapshot of keys to avoid RuntimeError during iteration.
+        """
         if len(self._cache) <= self._max_entries:
             return
 
-        # Sort by last access time
+        # Snapshot keys to avoid dict-changed-size-during-iteration
         sorted_keys = sorted(
-            self._cache.keys(),
-            key=lambda k: self._cache[k].accessed_at
+            list(self._cache.keys()),
+            key=lambda k: self._cache.get(k, ScenarioCacheEntry(
+                cache_key=k, result=None, created_at=0, accessed_at=0
+            )).accessed_at
         )
 
         # Remove oldest 10%
         to_remove = max(1, len(sorted_keys) // 10)
         for key in sorted_keys[:to_remove]:
-            del self._cache[key]
+            self._cache.pop(key, None)
 
         logger.debug(f"Evicted {to_remove} old scenario cache entries")
 
@@ -413,12 +419,13 @@ class LLMScenarioDetector:
         response = await self.client.post(
             f"{self.settings.llm_base_url}/chat/completions",
             headers=headers,
-            json=payload
+            json=payload,
+            timeout=httpx.Timeout(30.0)
         )
         response.raise_for_status()
 
         result_json = response.json()
-        content = result_json["choices"][0]["message"]["content"]
+        content = result_json.get("choices", [{}])[0].get("message", {}).get("content", "")
 
         # Parse LLM response
         return self._parse_llm_response(content)
@@ -554,33 +561,52 @@ class LLMScenarioDetector:
         scenarios = [
             {
                 "type": "profit_statement",
-                "name": "Profit Statement",
+                "name": "利润表分析",
                 "keywords": ["profit", "loss", "income statement", "revenue", "cost"],
-                "cn_keywords": ["gross margin", "net profit", "operating profit"]
+                "cn_keywords": ["利润", "收入", "成本", "毛利", "净利", "营业", "费用",
+                                "毛利率", "净利率", "利润表", "损益"]
             },
             {
                 "type": "budget_report",
-                "name": "Budget Report",
+                "name": "预算执行报告",
                 "keywords": ["budget", "actual", "variance", "plan", "achievement"],
-                "cn_keywords": ["completion rate", "execution", "target"]
+                "cn_keywords": ["预算", "实际", "达成率", "完成率", "目标", "执行",
+                                "偏差", "计划"]
             },
             {
                 "type": "sales_detail",
-                "name": "Sales Detail",
+                "name": "销售明细分析",
                 "keywords": ["sales", "order", "customer", "product", "amount", "quantity"],
-                "cn_keywords": ["sales rep", "invoice", "transaction"]
+                "cn_keywords": ["销售", "订单", "客户", "产品", "金额", "数量",
+                                "销量", "单价", "门店", "商品", "交易"]
             },
             {
                 "type": "department_performance",
-                "name": "Department Performance",
+                "name": "部门绩效分析",
                 "keywords": ["department", "team", "division", "headcount", "performance"],
-                "cn_keywords": ["sales dept", "team", "organization"]
+                "cn_keywords": ["部门", "团队", "人数", "绩效", "考核", "组织",
+                                "人效", "人员"]
             },
             {
                 "type": "cost_analysis",
-                "name": "Cost Analysis",
+                "name": "成本分析",
                 "keywords": ["cost", "expense", "material", "labor", "overhead"],
-                "cn_keywords": ["direct cost", "indirect cost", "depreciation"]
+                "cn_keywords": ["成本", "费用", "材料", "人工", "制造费用",
+                                "直接成本", "间接成本", "折旧", "原料", "采购"]
+            },
+            {
+                "type": "production_report",
+                "name": "生产报表分析",
+                "keywords": ["production", "output", "yield", "batch", "line"],
+                "cn_keywords": ["产量", "产能", "良品率", "批次", "产线", "车间",
+                                "工序", "班次", "在制品", "报废"]
+            },
+            {
+                "type": "inventory_report",
+                "name": "库存报表分析",
+                "keywords": ["inventory", "stock", "warehouse", "inbound", "outbound"],
+                "cn_keywords": ["库存", "仓库", "入库", "出库", "盘点", "周转",
+                                "安全库存", "库龄"]
             }
         ]
 
@@ -595,7 +621,7 @@ class LLMScenarioDetector:
                     score += 2
             for kw in scenario["cn_keywords"]:
                 if kw in all_text:
-                    score += 1
+                    score += 2
 
             if score > best_score:
                 best_score = score
@@ -606,9 +632,15 @@ class LLMScenarioDetector:
         measures = []
 
         dimension_keywords = ["date", "time", "month", "year", "region", "product",
-                             "customer", "department", "category", "name", "type"]
+                             "customer", "department", "category", "name", "type",
+                             "日期", "时间", "月", "年", "地区", "区域", "产品",
+                             "客户", "部门", "分类", "类别", "名称", "类型",
+                             "门店", "品牌", "渠道", "供应商"]
         measure_keywords = ["amount", "quantity", "price", "cost", "profit", "rate",
-                          "total", "sum", "count", "revenue", "budget", "actual"]
+                          "total", "sum", "count", "revenue", "budget", "actual",
+                          "金额", "数量", "单价", "价格", "成本", "利润", "率",
+                          "合计", "总计", "收入", "预算", "实际", "销量",
+                          "产量", "库存", "费用", "毛利", "净利"]
 
         for col in columns:
             col_l = col.lower()

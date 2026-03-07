@@ -1,0 +1,382 @@
+appId: com.cretas.foodtrace
+---
+# Manual Screenshots: Platform Admin — all management screens
+# Role: platform_admin (Stack navigator, no bottom tabs)
+# Dashboard → management list items (List.Item titles) → back/recovery per screen
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Wait for landing page
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*|.*Register.*"
+    timeout: 20000
+- waitForAnimationToEnd
+
+# Tap Login on landing page
+- tapOn:
+    text: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Wait for login form
+- extendedWaitUntil:
+    visible: ".*Enter username.*|.*Username.*"
+    timeout: 10000
+
+# Username
+- tapOn:
+    id: "login-username-input"
+- eraseText: 30
+- inputText: "platform_admin"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Password
+- tapOn:
+    id: "login-password-input"
+- eraseText: 30
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Submit
+- tapOn:
+    id: "login-submit-btn"
+
+# Wait for role-selection OK dialog
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 35000
+- tapOn: "OK"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Dismiss Location Accuracy dialog if it appears
+- tapOn:
+    text: "No thanks"
+    optional: true
+- waitForAnimationToEnd
+
+# Wait for Platform Dashboard to load (may be slow)
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*Good.*|.*Platform.*|.*Management.*|.*Factory.*|.*User.*|.*System.*|.*Dashboard.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# --- 1. Dashboard top ---
+- takeScreenshot: screenshots/manual-ss-pa-dashboard
+
+# Scroll down to see Management Functions card
+- swipe:
+    direction: UP
+    duration: 700
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-dashboard-scroll
+
+# Scroll back to top for first navigation tap
+- swipe:
+    direction: UP
+    duration: 700
+- waitForAnimationToEnd
+
+# =============================================================
+# 2. Factory Management (工厂管理 / Factory Management)
+# =============================================================
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Factory Management.*|.*工厂管理.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-factory-list
+
+# Scroll to see more factories
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-factory-list-scroll
+
+# Recovery: back to dashboard
+- back
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*平台.*|.*Dashboard.*|.*Management.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# =============================================================
+# 3. User Management (用户管理 / User Management)
+# =============================================================
+- tapOn:
+    text: ".*User Management.*|.*用户管理.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-user-list
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*平台.*|.*Dashboard.*|.*Management.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# =============================================================
+# 4. System Monitoring (系统监控 / System Monitoring)
+# =============================================================
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*System Monitoring.*|.*系统监控.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-system-monitor
+
+# Scroll inside system monitor
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-system-monitor-scroll
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*平台.*|.*Dashboard.*|.*Management.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# =============================================================
+# 5. AI Quota Management (AI配额管理 / AI Quota Management)
+# =============================================================
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Quota.*|.*AI配额.*|.*配额.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-ai-quota
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*平台.*|.*Dashboard.*|.*Management.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# =============================================================
+# 6. Industry Template Management (行业模板管理 / Industry Template Management)
+# =============================================================
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Industry Template.*|.*行业模板.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-industry-template
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*平台.*|.*Dashboard.*|.*Management.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# =============================================================
+# 7. Blueprint Management (蓝图管理 / Blueprint)
+# =============================================================
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Blueprint.*|.*蓝图.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-blueprint-list
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*平台.*|.*Dashboard.*|.*Management.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# =============================================================
+# 8. Announcement Management (公告管理 / Announcement)
+# =============================================================
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Announcement.*|.*公告.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-announcement
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*平台.*|.*Dashboard.*|.*Management.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# =============================================================
+# 9. AI Audit (AI审计 / AI Audit Logs)
+# =============================================================
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Audit.*|.*AI审计.*|.*审计.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-ai-audit
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*平台.*|.*Dashboard.*|.*Management.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# =============================================================
+# 10. Rule Engine (规则引擎 / Rule List)
+# =============================================================
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Rule.*|.*规则.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-rule-list
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*平台.*|.*Dashboard.*|.*Management.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# =============================================================
+# 11. Config Change Tracking (配置变更 / Config Changeset)
+# =============================================================
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Config.*|.*配置.*|.*变更.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-config-changeset
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*平台.*|.*Dashboard.*|.*Management.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# =============================================================
+# 12. Supplier Management (供应商 / Supplier Admission)
+# =============================================================
+- swipe:
+    direction: UP
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Supplier.*|.*供应商.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-supplier
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Welcome.*|.*平台.*|.*Dashboard.*|.*Management.*"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# =============================================================
+# 13. Platform Reports (平台报表 / Platform Reports)
+# =============================================================
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Platform Reports.*|.*平台报表.*|.*报表.*"
+    optional: true
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-reports
+
+# Recovery
+- back
+- waitForAnimationToEnd
+- launchApp
+- waitForAnimationToEnd
+
+# Final: dashboard overview from top
+- swipe:
+    direction: UP
+    duration: 700
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/manual-ss-pa-complete
