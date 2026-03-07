@@ -222,6 +222,10 @@ export function SmartBIDataAnalysisScreen() {
           var chart = echarts.init(document.getElementById('chart'));
           var option = ${JSON.stringify(chartConfig.options)};
 
+          // Mobile optimization: tooltip confine
+          option.tooltip = option.tooltip || {};
+          option.tooltip.confine = true;
+
           // Mobile optimization: DataZoom for large datasets
           if (option.xAxis && option.xAxis.type === 'category' && Array.isArray(option.xAxis.data) && option.xAxis.data.length > 15) {
             var dataLen = option.xAxis.data.length;

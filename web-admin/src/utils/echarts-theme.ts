@@ -48,6 +48,7 @@ const theme: Record<string, unknown> = {
     },
   },
   tooltip: {
+    confine: true,
     backgroundColor: 'rgba(255, 255, 255, 0.96)',
     borderColor: '#E2E8F0',
     borderWidth: 1,
@@ -102,6 +103,7 @@ const darkTheme: Record<string, unknown> = {
   },
   legend: { textStyle: { color: '#c0c0d0', fontSize: 12 } },
   tooltip: {
+    confine: true,
     backgroundColor: 'rgba(30, 30, 50, 0.95)',
     borderColor: '#3a3a5a',
     borderWidth: 1,
