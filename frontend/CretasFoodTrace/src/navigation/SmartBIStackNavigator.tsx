@@ -20,6 +20,7 @@ import SalesAnalysisScreen from '../screens/smartbi/SalesAnalysisScreen';
 import FinanceAnalysisScreen from '../screens/smartbi/FinanceAnalysisScreen';
 import ExcelUploadScreen from '../screens/smartbi/ExcelUploadScreen';
 import NLQueryScreen from '../screens/smartbi/NLQueryScreen';
+import AIChatScreen from '../screens/factory-admin/ai-analysis/AIChatScreen';
 import { SmartBIDataAnalysisScreen } from '../screens/smartbi/SmartBIDataAnalysisScreen';
 
 // 屏幕组件 - 生产与质量
@@ -93,10 +94,10 @@ export function SmartBIStackNavigator() {
         options={{ title: '智能数据分析' }}
       />
 
-      {/* AI 问答 */}
+      {/* AI 问答 — 统一使用 AIChatScreen */}
       <Stack.Screen
         name="NLQuery"
-        component={NLQueryScreen}
+        component={AIChatScreen as React.ComponentType<any>}
         options={{ title: 'AI问答' }}
       />
 

@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * Tool 执行器接口
  *
- * 负责执行 LLM 调用的工具，类似于 IntentHandler 的角色。
+ * 负责执行 LLM 调用的工具。
  * 每个工具实现此接口以处理特定的 Function Calling 请求。
  *
  * @author Cretas Team

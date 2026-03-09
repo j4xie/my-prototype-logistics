@@ -5,6 +5,7 @@ import com.cretas.aims.dto.MobileDTO;
 import com.cretas.aims.service.AIEnterpriseService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -26,6 +27,7 @@ import java.util.*;
 public class ReportCostQueryTool extends AbstractBusinessTool {
 
     @Autowired
+    @Lazy
     private AIEnterpriseService aiEnterpriseService;
 
     @Override

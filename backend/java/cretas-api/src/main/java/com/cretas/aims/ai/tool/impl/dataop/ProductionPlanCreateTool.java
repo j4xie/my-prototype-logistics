@@ -1,10 +1,19 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.dto.production.CreateProductionPlanRequest;
+import com.cretas.aims.dto.production.ProductionPlanDTO;
+import com.cretas.aims.entity.ProductType;
+import com.cretas.aims.repository.ProductTypeRepository;
+import com.cretas.aims.service.ProductionPlanService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 /**
@@ -20,6 +29,12 @@ import java.util.*;
 @Slf4j
 @Component
 public class ProductionPlanCreateTool extends AbstractBusinessTool {
+
+    @Autowired
+    private ProductionPlanService productionPlanService;
+
+    @Autowired
+    private ProductTypeRepository productTypeRepository;
 
     @Override
     public String getToolName() {
@@ -122,20 +137,103 @@ public class ProductionPlanCreateTool extends AbstractBusinessTool {
         String supervisorId = getString(params, "supervisorId");
         String customerName = getString(params, "customerName");
         String processName = getString(params, "processName");
+        Integer priority = getInteger(params, "priority");
 
-        // TODO: 调用 ProductionPlanService.createProductionPlan
+        // 解析产品：先尝试按ID查找，再按名称模糊匹配
+        String resolvedProductTypeId = resolveProductTypeId(factoryId, productId);
+        if (resolvedProductTypeId == null) {
+            return Map.of("success", false, "message","找不到产品: " + productId + "。请提供正确的产品名称或ID。");
+        }
+
+        // 解析数量（提取数字部分，如 "500kg" → 500）
+        BigDecimal plannedQuantity = parseQuantity(quantity);
+        if (plannedQuantity == null) {
+            return Map.of("success", false, "message","无法解析产量: " + quantity + "。请提供数字，如 500 或 500kg。");
+        }
+
+        // 解析日期
+        LocalDate plannedDate = parseDate(expectedDate);
+        if (plannedDate == null) {
+            plannedDate = LocalDate.now(); // 默认今天
+        }
+
+        // 获取操作人ID
+        Long userId = getUserId(context);
+
+        // 构建请求
+        CreateProductionPlanRequest request = new CreateProductionPlanRequest();
+        request.setProductTypeId(resolvedProductTypeId);
+        request.setPlannedQuantity(plannedQuantity);
+        request.setPlannedDate(plannedDate);
+        request.setExpectedCompletionDate(plannedDate.plusDays(1));
+        if (priority != null) request.setPriority(priority);
+        if (productionLineId != null) request.setSuggestedProductionLineId(productionLineId);
+        if (estimatedWorkers != null) request.setEstimatedWorkers(estimatedWorkers);
+        if (customerName != null) request.setSourceCustomerName(customerName);
+        if (processName != null) request.setProcessName(processName);
+
+        // 调用服务创建
+        ProductionPlanDTO created = productionPlanService.createProductionPlan(factoryId, request, userId);
+
         Map<String, Object> result = new HashMap<>();
-        result.put("message", "生产计划创建请求已提交");
-        result.put("productId", productId);
-        result.put("quantity", quantity);
-        result.put("expectedDate", expectedDate);
-        if (productionLineId != null) result.put("productionLineId", productionLineId);
-        if (estimatedWorkers != null) result.put("estimatedWorkers", estimatedWorkers);
-        if (supervisorId != null) result.put("supervisorId", supervisorId);
-        if (customerName != null) result.put("customerName", customerName);
-        if (processName != null) result.put("processName", processName);
-        result.put("notice", "请接入ProductionPlanService完成实际创建");
+        result.put("planId", created.getId());
+        result.put("planNumber", created.getPlanNumber());
+        result.put("productName", created.getProductTypeName());
+        result.put("plannedQuantity", created.getPlannedQuantity());
+        result.put("plannedDate", created.getPlannedDate());
+        result.put("status", created.getStatus());
+        result.put("message", String.format("生产计划创建成功！计划编号: %s，产品: %s，计划产量: %s",
+                created.getPlanNumber(), created.getProductTypeName(), created.getPlannedQuantity()));
 
+        log.info("生产计划创建完成 - planId={}, planNumber={}", created.getId(), created.getPlanNumber());
         return result;
+    }
+
+    /**
+     * 解析产品ID：先按ID查找，再按名称模糊匹配
+     */
+    private String resolveProductTypeId(String factoryId, String productIdOrName) {
+        // 先尝试按ID精确查找
+        Optional<ProductType> byId = productTypeRepository.findByIdAndFactoryId(productIdOrName, factoryId);
+        if (byId.isPresent()) return byId.get().getId();
+
+        // 按编码查找
+        Optional<ProductType> byCode = productTypeRepository.findByFactoryIdAndCode(factoryId, productIdOrName);
+        if (byCode.isPresent()) return byCode.get().getId();
+
+        // 按名称查找
+        Optional<ProductType> byName = productTypeRepository.findByFactoryIdAndName(factoryId, productIdOrName);
+        if (byName.isPresent()) return byName.get().getId();
+
+        return null;
+    }
+
+    /**
+     * 从字符串中提取数字部分，如 "500kg" → 500, "100箱" → 100
+     */
+    private BigDecimal parseQuantity(String quantityStr) {
+        if (quantityStr == null) return null;
+        String digits = quantityStr.replaceAll("[^0-9.]", "");
+        if (digits.isEmpty()) return null;
+        try {
+            return new BigDecimal(digits);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 解析日期字符串，支持 YYYY-MM-DD 和相对日期（明天、后天）
+     */
+    private LocalDate parseDate(String dateStr) {
+        if (dateStr == null) return null;
+        if (dateStr.contains("明天")) return LocalDate.now().plusDays(1);
+        if (dateStr.contains("后天")) return LocalDate.now().plusDays(2);
+        if (dateStr.contains("今天")) return LocalDate.now();
+        try {
+            return LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
     }
 }

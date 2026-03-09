@@ -479,6 +479,14 @@ class UnifiedAnalyzer:
             result.insights = insights
 
             # ═══════════════════════════════════════════════════════════════
+            # Phase 3.5: 规则注入 — 分部预实对比图 (department budget vs actual)
+            # ═══════════════════════════════════════════════════════════════
+            budget_chart = self._try_inject_budget_comparison_chart(df, fields, charts)
+            if budget_chart:
+                result.charts.append(budget_chart)
+                result.notes.append("Injected budget_comparison chart (rule-based)")
+
+            # ═══════════════════════════════════════════════════════════════
             # Phase 4: LLM问答增强 (可选)
             # ═══════════════════════════════════════════════════════════════
             if question and self.settings.llm_api_key:
@@ -1385,9 +1393,101 @@ class UnifiedAnalyzer:
             "funnel": "展示转化过程的阶段数据",
             "gauge": "展示单一KPI的达成情况",
             "treemap": "展示层级数据的占比关系",
-            "dual_axis": "不同量纲指标的对比分析"
+            "dual_axis": "不同量纲指标的对比分析",
+            "budget_comparison": "按分部对比预算与实际执行情况"
         }
         return descriptions.get(chart_type, "数据可视化")
+
+    # ── Column name candidates for budget comparison detection ──
+    _DEPT_KEYWORDS = [
+        "department", "dept", "division", "branch", "unit",
+        "部门", "分部", "事业部", "科室", "组", "区域", "分公司"
+    ]
+    _BUDGET_KEYWORDS = [
+        "budget", "target", "plan", "planned", "goal",
+        "预算", "目标", "计划", "指标", "预算数", "预算金额"
+    ]
+    _ACTUAL_KEYWORDS = [
+        "actual", "realized", "completed", "achieved",
+        "实际", "完成", "达成", "实际数", "实际金额", "执行"
+    ]
+
+    def _find_col_by_keywords(self, df: pd.DataFrame, keywords: list) -> Optional[str]:
+        """Find a column matching any keyword (exact then partial)."""
+        cols_lower = {c: c.lower().strip() for c in df.columns}
+        # Exact match
+        for col, cl in cols_lower.items():
+            for kw in keywords:
+                if cl == kw.lower():
+                    return col
+        # Partial match (keyword ≥ 2 chars)
+        for col, cl in cols_lower.items():
+            for kw in keywords:
+                if len(kw) >= 2 and kw.lower() in cl:
+                    return col
+        return None
+
+    def _try_inject_budget_comparison_chart(
+        self,
+        df: pd.DataFrame,
+        fields: List['FieldInfo'],
+        existing_charts: List[ChartConfig]
+    ) -> Optional[ChartConfig]:
+        """
+        Detect department + budget + actual columns and inject a budget_comparison chart.
+        Returns None if pattern not detected or chart already exists.
+        """
+        # Skip if a budget_comparison chart already exists
+        if any(c.chart_type == "budget_comparison" for c in existing_charts):
+            return None
+
+        logger.info(f"[BudgetInjection] DataFrame columns: {list(df.columns)}")
+        dept_col = self._find_col_by_keywords(df, self._DEPT_KEYWORDS)
+        budget_col = self._find_col_by_keywords(df, self._BUDGET_KEYWORDS)
+        actual_col = self._find_col_by_keywords(df, self._ACTUAL_KEYWORDS)
+        logger.info(f"[BudgetInjection] dept_col={dept_col}, budget_col={budget_col}, actual_col={actual_col}")
+
+        if not dept_col or not budget_col or not actual_col:
+            logger.info(f"[BudgetInjection] Skipped — missing column(s)")
+            return None
+
+        # Verify columns have numeric data
+        try:
+            budget_vals = pd.to_numeric(df[budget_col], errors='coerce')
+            actual_vals = pd.to_numeric(df[actual_col], errors='coerce')
+            if budget_vals.notna().sum() < 2 or actual_vals.notna().sum() < 2:
+                return None
+        except Exception:
+            return None
+
+        # Build the chart
+        try:
+            build_result = self.chart_builder.build(
+                chart_type="budget_comparison",
+                data=df.to_dict('records'),
+                x_field=dept_col,
+                y_fields=[budget_col, actual_col],
+                title="分部预实对比分析"
+            )
+
+            logger.info(f"[BudgetInjection] build_result success={build_result.get('success')}, keys={list(build_result.keys())}")
+            if build_result.get("success"):
+                return ChartConfig(
+                    chart_type="budget_comparison",
+                    title="分部预实对比分析",
+                    config=build_result.get("config", {}),
+                    description="按分部/部门对比预算与实际执行情况，叠加达成率趋势",
+                    reason="检测到部门+预算+实际列，自动生成分部预实对比图",
+                    x_axis=dept_col,
+                    y_axis=[budget_col, actual_col],
+                    recommended=True,
+                    priority=2,
+                    confidence=0.95
+                )
+        except Exception as e:
+            logger.warning(f"Budget comparison chart injection failed: {e}")
+
+        return None
 
     async def _generate_insights(
         self,

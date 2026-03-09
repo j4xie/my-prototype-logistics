@@ -69,6 +69,8 @@ import LabelScanScreen from '../screens/shared/LabelScanScreen';
 // 报工页面
 import ScanReportScreen from '../screens/processing/ScanReportScreen';
 import TeamBatchReportScreen from '../screens/processing/TeamBatchReportScreen';
+import DynamicReportScreen from '../screens/processing/DynamicReportScreen';
+import NfcCheckinScreen from '../screens/processing/NfcCheckinScreen';
 
 // 溯源功能 - Phase 3
 import {
@@ -282,6 +284,14 @@ export function ProcessingStackNavigator() {
       <Stack.Screen
         name="TeamBatchReport"
         component={TeamBatchReportScreen}
+      />
+      <Stack.Screen
+        name="DynamicReport"
+        component={DynamicReportScreen}
+      />
+      <Stack.Screen
+        name="NfcCheckin"
+        component={NfcCheckinScreen}
       />
     </Stack.Navigator>
   );

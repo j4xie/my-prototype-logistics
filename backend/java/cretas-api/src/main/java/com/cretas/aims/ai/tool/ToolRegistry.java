@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Tool 注册中心
  *
- * 管理所有可用的工具执行器，类似于 IntentExecutorServiceImpl 的 handlerMap。
+ * 管理所有可用的工具执行器。
  * 使用 Spring 依赖注入自动收集所有 ToolExecutor 实现。
  *
  * @author Cretas Team

@@ -129,6 +129,15 @@ backend/
 │   │       ├── controller/        # REST API
 │   │       ├── entity/            # JPA 实体
 │   │       ├── service/           # 业务逻辑
+│   │       │   ├── impl/          # Service 实现
+│   │       │   └── skill/         # Skill 编排层
+│   │       ├── ai/                # AI 意图系统
+│   │       │   ├── tool/          # Tool-Skill 架构 (310 tools)
+│   │       │   │   ├── ToolExecutor.java
+│   │       │   │   ├── AbstractBusinessTool.java
+│   │       │   │   ├── ToolRegistry.java
+│   │       │   │   └── impl/{domain}/  # 按领域分包
+│   │       │   └── dto/           # AI DTO
 │   │       ├── repository/        # 数据访问
 │   │       └── config/            # 配置类
 │   └── embedding-service/         # 向量嵌入服务 (gRPC, 端口 9090)
@@ -177,18 +186,19 @@ frontend/CretasFoodTrace/src/
 
 ### 代码质量原则
 详见 `.claude/rules/` 目录下的规范文件：
+- `ai-intent-tool-skill-architecture.md` - **AI Tool-Skill 架构规范（核心）**
 - `api-response-handling.md` - API 响应处理
 - `typescript-type-safety.md` - TypeScript 类型安全
 - `jwt-token-handling.md` - JWT Token 处理
 - `database-entity-sync.md` - 数据库同步
 - `field-naming-convention.md` - 字段命名
 - `server-operations.md` - 服务器运维规范
-- `backend-deployment.md` - 后端自动化部署
 
 ### 核心原则
 1. **禁止降级处理** - 不返回假数据，明确显示错误
 2. **类型安全** - 避免 `as any`，使用明确类型
 3. **统一响应格式** - `{ success, data, message }`
+4. **Tool-Skill Only** - AI 意图处理只用 Tool/Skill，禁止创建 IntentHandler（已废弃）
 
 ---
 

@@ -1,7 +1,11 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.dto.material.MaterialBatchDTO;
+import com.cretas.aims.entity.enums.MaterialBatchStatus;
+import com.cretas.aims.service.MaterialBatchService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -20,6 +24,26 @@ import java.util.*;
 @Slf4j
 @Component
 public class BatchUpdateTool extends AbstractBusinessTool {
+
+    @Autowired
+    private MaterialBatchService materialBatchService;
+
+    /**
+     * 用户输入状态名称 → MaterialBatchStatus 枚举映射
+     */
+    private static final Map<String, MaterialBatchStatus> STATUS_ALIAS_MAP = Map.ofEntries(
+            Map.entry("PENDING", MaterialBatchStatus.INSPECTING),
+            Map.entry("AVAILABLE", MaterialBatchStatus.AVAILABLE),
+            Map.entry("RESERVED", MaterialBatchStatus.RESERVED),
+            Map.entry("IN_USE", MaterialBatchStatus.AVAILABLE),
+            Map.entry("USED_UP", MaterialBatchStatus.USED_UP),
+            Map.entry("EXPIRED", MaterialBatchStatus.EXPIRED),
+            Map.entry("FROZEN", MaterialBatchStatus.FROZEN),
+            Map.entry("REJECTED", MaterialBatchStatus.SCRAPPED),
+            Map.entry("FRESH", MaterialBatchStatus.FRESH),
+            Map.entry("SCRAPPED", MaterialBatchStatus.SCRAPPED),
+            Map.entry("DEPLETED", MaterialBatchStatus.DEPLETED)
+    );
 
     @Override
     public String getToolName() {
@@ -129,37 +153,49 @@ public class BatchUpdateTool extends AbstractBusinessTool {
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
         log.info("执行批次更新 - 工厂ID: {}, 参数: {}", factoryId, params);
 
-        // 解析参数
         String batchId = getString(params, "batchId");
         String status = getString(params, "status");
         BigDecimal quantity = getBigDecimal(params, "quantity");
-        String expirationDate = getString(params, "expirationDate");
-        String remark = getString(params, "remark");
         String reason = getString(params, "reason");
 
-        // TODO: 调用实际的批次服务进行更新
-        // BatchDTO updatedBatch = batchService.updateBatch(factoryId, batchId, updateRequest);
+        // 先验证批次是否存在
+        MaterialBatchDTO existing = materialBatchService.getMaterialBatchById(factoryId, batchId);
+        if (existing == null) {
+            return Map.of("success", false, "message","批次不存在: " + batchId);
+        }
 
-        // 构建更新字段摘要
         Map<String, Object> updatedFields = new HashMap<>();
-        if (status != null) updatedFields.put("status", status);
-        if (quantity != null) updatedFields.put("quantity", quantity);
-        if (expirationDate != null) updatedFields.put("expirationDate", expirationDate);
-        if (remark != null) updatedFields.put("remark", remark);
+        MaterialBatchDTO updated = null;
+
+        // 1. 更新状态
+        if (status != null) {
+            MaterialBatchStatus targetStatus = STATUS_ALIAS_MAP.get(status.toUpperCase());
+            if (targetStatus == null) {
+                return Map.of("success", false, "message","不支持的批次状态: " + status + "。支持的状态: " + STATUS_ALIAS_MAP.keySet());
+            }
+            updated = materialBatchService.updateBatchStatus(factoryId, batchId, targetStatus);
+            updatedFields.put("status", targetStatus.getDisplayName());
+        }
+
+        // 2. 调整数量
+        if (quantity != null) {
+            String adjustReason = reason != null ? reason : "AI工具调整";
+            updated = materialBatchService.adjustBatchQuantity(factoryId, batchId, quantity, adjustReason);
+            updatedFields.put("quantity", quantity);
+        }
 
         if (updatedFields.isEmpty()) {
             return buildSimpleResult("未指定要更新的字段", Map.of("batchId", batchId));
         }
 
-        // 模拟更新成功响应
         Map<String, Object> result = new HashMap<>();
         result.put("batchId", batchId);
+        result.put("batchNumber", existing.getBatchNumber());
         result.put("updatedFields", updatedFields);
-        result.put("reason", reason);
+        if (reason != null) result.put("reason", reason);
         result.put("message", "批次更新成功");
 
         log.info("批次更新完成 - 批次ID: {}, 更新字段: {}", batchId, updatedFields.keySet());
-
         return result;
     }
 }

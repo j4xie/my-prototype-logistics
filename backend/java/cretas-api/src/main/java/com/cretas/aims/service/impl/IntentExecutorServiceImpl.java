@@ -484,6 +484,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                         IntentExecuteRequest interceptRequest = IntentExecuteRequest.builder()
                                 .userInput(userInput)
                                 .intentCode(matchedIntent)
+                                .sessionId(request.getSessionId())
                                 .build();
                         return execute(factoryId, interceptRequest, userId, userRole);
                     }

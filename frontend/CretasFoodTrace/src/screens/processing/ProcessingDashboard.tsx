@@ -271,12 +271,30 @@ export default function ProcessingDashboard() {
                 </Button>
                 <Button
                   mode="contained"
-                  icon="qrcode-scan"
-                  onPress={() => navigation.navigate('ScanReport')}
+                  icon="chart-line"
+                  onPress={() => navigation.navigate('DynamicReport', { reportType: 'PROGRESS' })}
+                  style={styles.actionButton}
+                  buttonColor="#2563EB"
+                >
+                  产量上报
+                </Button>
+                <Button
+                  mode="contained"
+                  icon="clock-outline"
+                  onPress={() => navigation.navigate('DynamicReport', { reportType: 'HOURS' })}
+                  style={styles.actionButton}
+                  buttonColor="#DC2626"
+                >
+                  工时上报
+                </Button>
+                <Button
+                  mode="contained"
+                  icon="nfc-variant"
+                  onPress={() => navigation.navigate('NfcCheckin')}
                   style={styles.actionButton}
                   buttonColor="#7C3AED"
                 >
-                  {t('dashboard.quickActions.scanReport', '扫码报工')}
+                  扫码签到
                 </Button>
                 <Button
                   mode="contained"

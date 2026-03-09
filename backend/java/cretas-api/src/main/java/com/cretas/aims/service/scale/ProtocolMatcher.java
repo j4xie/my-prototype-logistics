@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
  *
  * Centralizes all protocol matching logic from:
  * - ScaleProtocolAdapterServiceImpl.autoDetectProtocol()
- * - ScaleIntentHandler.findBestMatchingProtocol()
  *
  * Provides multiple matching strategies:
  * 1. By raw data (byte pattern analysis)

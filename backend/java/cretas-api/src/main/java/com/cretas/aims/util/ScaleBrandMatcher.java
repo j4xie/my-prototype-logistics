@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 /**
  * 秤品牌匹配工具类
  *
- * 提取 ScaleIntentHandler 中重复的品牌别名匹配逻辑
+ * 品牌别名匹配逻辑
  * - 品牌别名映射 (中文 -> 英文代码)
  * - 型号解析
  * - 智能协议匹配

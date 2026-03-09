@@ -114,6 +114,8 @@ export type ProcessingStackParamList = {
   // 报工 - Work Reporting
   ScanReport: undefined;
   TeamBatchReport: undefined;
+  DynamicReport: { reportType: 'PROGRESS' | 'HOURS' };
+  NfcCheckin: undefined;
 
   // 标签扫描 - 通用组件
   LabelScan: {

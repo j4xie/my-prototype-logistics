@@ -130,6 +130,9 @@ class ChartType(str, Enum):
     PARALLEL = "parallel"               # Parallel coordinates for multi-variable
     CORRELATION_MATRIX = "correlation_matrix"  # Correlation heatmap matrix
 
+    # Budget / target vs actual charts
+    BUDGET_COMPARISON = "budget_comparison"  # Department budget vs actual (分部预实对比)
+
 
 class ChartBuilder:
     """ECharts configuration builder"""
@@ -483,6 +486,8 @@ class ChartBuilder:
                 config = self._build_parallel_chart(df, x_field, y_fields, series_field)
             elif chart_type_enum == ChartType.CORRELATION_MATRIX:
                 config = self._build_correlation_matrix_chart(df, x_field, y_fields, series_field)
+            elif chart_type_enum == ChartType.BUDGET_COMPARISON:
+                config = self._build_budget_comparison_chart(df, x_field, y_fields, options)
             else:
                 config = self._build_line_chart(df, x_field, y_fields, series_field)
 
@@ -1860,6 +1865,193 @@ class ChartBuilder:
                 "smooth": True
             }]
         }
+
+        return config
+
+    def _build_budget_comparison_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        options: Optional[dict] = None
+    ) -> dict:
+        """Build department budget vs actual comparison chart (分部预实对比)
+
+        Grouped bar chart (budget + actual) with achievement rate line overlay.
+        Color-coded achievement: green ≥100%, yellow 80-99%, red <80%.
+        """
+        opts = options or {}
+        dept_col = x_field
+        budget_col = None
+        actual_col = None
+
+        # Resolve budget and actual columns from y_fields or options
+        if y_fields and len(y_fields) >= 2:
+            budget_col = y_fields[0]
+            actual_col = y_fields[1]
+        elif opts.get("budget_col") and opts.get("actual_col"):
+            budget_col = opts["budget_col"]
+            actual_col = opts["actual_col"]
+
+        if not dept_col or not budget_col or not actual_col:
+            return self._empty_chart_config("分部预实对比")
+
+        # Aggregate by department
+        df[budget_col] = pd.to_numeric(df[budget_col], errors='coerce').fillna(0)
+        df[actual_col] = pd.to_numeric(df[actual_col], errors='coerce').fillna(0)
+        grouped = df.groupby(dept_col).agg({
+            budget_col: 'sum',
+            actual_col: 'sum'
+        }).reset_index()
+
+        # Sort by budget descending for readability
+        grouped = grouped.sort_values(budget_col, ascending=False)
+
+        departments = [str(d) for d in grouped[dept_col].tolist()]
+        budgets = grouped[budget_col].tolist()
+        actuals = grouped[actual_col].tolist()
+
+        # Calculate achievement rates
+        rates = []
+        for b, a in zip(budgets, actuals):
+            rates.append(round(a / b * 100, 1) if b > 0 else 0)
+
+        # Detect scale for axis formatting
+        max_val = max(max(budgets, default=0), max(actuals, default=0))
+        scale_unit = ""
+        scale_divisor = 1
+        if max_val >= 1e8:
+            scale_unit = "亿"
+            scale_divisor = 1e8
+        elif max_val >= 1e4:
+            scale_unit = "万"
+            scale_divisor = 1e4
+
+        # Color each achievement rate point
+        def _rate_color(r):
+            if r >= 100:
+                return "#67c23a"
+            if r >= 80:
+                return "#e6a23c"
+            return "#f56c6c"
+
+        rate_colors = [_rate_color(r) for r in rates]
+
+        # Variance bar data (actual - budget), colored by sign
+        variances = [round(a - b, 2) for a, b in zip(actuals, budgets)]
+
+        config = {
+            "tooltip": {
+                "trigger": "axis",
+                "confine": True,
+                "axisPointer": {"type": "cross", "crossStyle": {"color": "#999"}},
+            },
+            "legend": {
+                "data": ["预算", "实际", "达成率"],
+                "bottom": 0,
+                "icon": "rect",
+                "itemWidth": 14,
+                "itemHeight": 8
+            },
+            "grid": {
+                "top": 50,
+                "right": 65,
+                "bottom": 50,
+                "left": 60,
+                "containLabel": True
+            },
+            "xAxis": {
+                "type": "category",
+                "data": departments,
+                "axisPointer": {"type": "shadow"},
+                "axisLabel": {
+                    "rotate": 30 if len(departments) > 6 or max((len(d) for d in departments), default=0) > 4 else 0,
+                    "hideOverlap": True,
+                    "fontSize": 11
+                }
+            },
+            "yAxis": [
+                {
+                    "type": "value",
+                    "name": f"金额{' (' + scale_unit + ')' if scale_unit else ''}",
+                    "splitLine": {"lineStyle": {"color": "#ebeef5", "type": "dashed"}},
+                    "axisLine": {"show": False},
+                    "axisTick": {"show": False},
+                    "axisLabel": {"fontSize": 11}
+                },
+                {
+                    "type": "value",
+                    "name": "达成率 (%)",
+                    "min": 0,
+                    "max": max(120, max(rates, default=100) + 10),
+                    "splitLine": {"show": False},
+                    "axisLine": {"show": False},
+                    "axisTick": {"show": False},
+                    "axisLabel": {"fontSize": 11}
+                }
+            ],
+            "series": [
+                {
+                    "name": "预算",
+                    "type": "bar",
+                    "data": budgets,
+                    "barGap": "0%",
+                    "itemStyle": {
+                        "color": "#1B65A8",
+                        "borderRadius": [4, 4, 0, 0]
+                    },
+                    "emphasis": {"focus": "series"}
+                },
+                {
+                    "name": "实际",
+                    "type": "bar",
+                    "data": actuals,
+                    "barGap": "0%",
+                    "itemStyle": {
+                        "color": "#67c23a",
+                        "borderRadius": [4, 4, 0, 0]
+                    },
+                    "emphasis": {"focus": "series"}
+                },
+                {
+                    "name": "达成率",
+                    "type": "line",
+                    "yAxisIndex": 1,
+                    "data": rates,
+                    "smooth": True,
+                    "symbol": "circle",
+                    "symbolSize": 8,
+                    "lineStyle": {"width": 2, "color": "#e6a23c"},
+                    "itemStyle": {
+                        "color": rate_colors
+                    },
+                    "label": {
+                        "show": len(departments) <= 12,
+                        "position": "top",
+                        "fontSize": 11,
+                        "formatter": "{c}%"
+                    },
+                    "markLine": {
+                        "silent": True,
+                        "symbol": "none",
+                        "lineStyle": {"type": "dashed"},
+                        "data": [
+                            {"yAxis": 80, "label": {"show": True, "formatter": "80%", "position": "end"}, "lineStyle": {"color": "#f56c6c"}},
+                            {"yAxis": 100, "label": {"show": True, "formatter": "100%", "position": "end"}, "lineStyle": {"color": "#67c23a"}}
+                        ]
+                    }
+                }
+            ]
+        }
+
+        # Add dataZoom for many departments
+        if len(departments) > 10:
+            end_pct = min(100, round((10 / len(departments)) * 100))
+            config["dataZoom"] = [
+                {"type": "slider", "show": True, "xAxisIndex": 0, "start": 0, "end": end_pct, "height": 20, "bottom": 8},
+                {"type": "inside", "xAxisIndex": 0, "start": 0, "end": end_pct}
+            ]
+            config["grid"]["bottom"] = 60
 
         return config
 

@@ -1384,6 +1384,33 @@ async function _doEnrichSheetAnalysis(
 
     onProgress?.({ phase: 'data', partial: { rawData: cleanedData } });
 
+    // 4.5. Rename data columns to human-readable names using POSITIONAL mapping
+    // Data keys (e.g. "2025年各部门预算完成情况_2") correspond by POSITION to fieldDefs,
+    // NOT by key name. So we build a positional keyRenameMap: dataKey → humanLabel.
+    if (fieldDefs.length > 0 && cleanedData.length > 0) {
+      const dataKeys = Object.keys(cleanedData[0]);
+      const keyRenameMap: Record<string, string> = {};
+      for (let i = 0; i < Math.min(dataKeys.length, fieldDefs.length); i++) {
+        const fd = fieldDefs[i];
+        const dataKey = dataKeys[i];
+        if (!fd || !dataKey) continue;
+        // Use displayNameMap (originalName → label) to get the label, or humanize originalName
+        const label = displayNameMap[fd.originalName] || humanizeColumnName(fd.originalName);
+        if (label && label !== dataKey) {
+          keyRenameMap[dataKey] = label;
+        }
+      }
+      if (Object.keys(keyRenameMap).length > 0) {
+        cleanedData = cleanedData.map(row => {
+          const mapped: Record<string, unknown> = {};
+          for (const [key, val] of Object.entries(row)) {
+            mapped[keyRenameMap[key] || key] = val;
+          }
+          return mapped;
+        });
+      }
+    }
+
     // 5. Parallel: smart-recommend (LLM) + summary; use allSettled to prevent cascade failure
     t0 = performance.now();
     const [smartRecSettled, summarySettled] = await Promise.allSettled([

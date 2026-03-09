@@ -4552,7 +4552,7 @@ public class IntentKnowledgeBase {
 
         // ===== v23.0: 311用例E2E修复 — B类配置缺失 =====
 
-        // H1: 成本/利润趋势 — COST_TREND_ANALYSIS存在于ReportIntentHandler但无phrase
+        // H1: 成本/利润趋势 — COST_TREND_ANALYSIS 补充 phrase 映射
         phraseToIntentMapping.put("成本分析", "COST_TREND_ANALYSIS");
         phraseToIntentMapping.put("原料成本趋势", "COST_TREND_ANALYSIS");
         phraseToIntentMapping.put("原料成本", "COST_TREND_ANALYSIS");
@@ -6064,8 +6064,65 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("搞掂了冇", "PRODUCTION_STATUS_QUERY");
         phraseToIntentMapping.put("搞掂未", "PRODUCTION_STATUS_QUERY");
         phraseToIntentMapping.put("搞掂条生产线未", "PRODUCTION_STATUS_QUERY");
-        // PURCHASE_ORDER_QUERY (1)
-        phraseToIntentMapping.put("purchase order", "PURCHASE_ORDER_QUERY");
+        // PURCHASE_ORDER_QUERY → 合并到 ORDER_LIST (采购订单也走统一订单查询)
+        phraseToIntentMapping.put("purchase order", "ORDER_LIST");
+        phraseToIntentMapping.put("采购订单", "ORDER_LIST");
+        phraseToIntentMapping.put("采购单", "ORDER_LIST");
+        phraseToIntentMapping.put("查看采购订单", "ORDER_LIST");
+        phraseToIntentMapping.put("采购订单列表", "ORDER_LIST");
+        phraseToIntentMapping.put("采购单查询", "ORDER_LIST");
+
+        // PURCHASE_ORDER_CREATE — 创建采购订单
+        phraseToIntentMapping.put("创建采购单", "PURCHASE_ORDER_CREATE");
+        phraseToIntentMapping.put("新建采购订单", "PURCHASE_ORDER_CREATE");
+        phraseToIntentMapping.put("下采购单", "PURCHASE_ORDER_CREATE");
+        phraseToIntentMapping.put("采购下单", "PURCHASE_ORDER_CREATE");
+        phraseToIntentMapping.put("新增采购", "PURCHASE_ORDER_CREATE");
+        phraseToIntentMapping.put("采购原料", "PURCHASE_ORDER_CREATE");
+        phraseToIntentMapping.put("我要采购", "PURCHASE_ORDER_CREATE");
+
+        // PURCHASE_ORDER_APPROVE — 采购订单审批
+        phraseToIntentMapping.put("审批采购单", "PURCHASE_ORDER_APPROVE");
+        phraseToIntentMapping.put("通过采购", "PURCHASE_ORDER_APPROVE");
+        phraseToIntentMapping.put("提交采购单", "PURCHASE_ORDER_APPROVE");
+        phraseToIntentMapping.put("采购审批", "PURCHASE_ORDER_APPROVE");
+        phraseToIntentMapping.put("取消采购单", "PURCHASE_ORDER_APPROVE");
+
+        // TRANSFER_CREATE — 创建调拨单
+        phraseToIntentMapping.put("创建调拨单", "TRANSFER_CREATE");
+        phraseToIntentMapping.put("新建调拨", "TRANSFER_CREATE");
+        phraseToIntentMapping.put("申请调拨", "TRANSFER_CREATE");
+        phraseToIntentMapping.put("内部调拨", "TRANSFER_CREATE");
+        phraseToIntentMapping.put("调货", "TRANSFER_CREATE");
+        phraseToIntentMapping.put("从总部调货", "TRANSFER_CREATE");
+        phraseToIntentMapping.put("分部调拨", "TRANSFER_CREATE");
+        phraseToIntentMapping.put("我要调拨", "TRANSFER_CREATE");
+
+        // TRANSFER_APPROVE — 调拨单审批
+        phraseToIntentMapping.put("审批调拨", "TRANSFER_APPROVE");
+        phraseToIntentMapping.put("调拨审批", "TRANSFER_APPROVE");
+        phraseToIntentMapping.put("提交调拨", "TRANSFER_APPROVE");
+        phraseToIntentMapping.put("确认发货", "TRANSFER_APPROVE");
+        phraseToIntentMapping.put("确认签收", "TRANSFER_APPROVE");
+        phraseToIntentMapping.put("取消调拨", "TRANSFER_APPROVE");
+
+        // RETURN_ORDER_CREATE — 创建退货单
+        phraseToIntentMapping.put("创建退货单", "RETURN_ORDER_CREATE");
+        phraseToIntentMapping.put("新建退货", "RETURN_ORDER_CREATE");
+        phraseToIntentMapping.put("退货给供应商", "RETURN_ORDER_CREATE");
+        phraseToIntentMapping.put("客户退货", "RETURN_ORDER_CREATE");
+        phraseToIntentMapping.put("退货申请", "RETURN_ORDER_CREATE");
+        phraseToIntentMapping.put("采购退货", "RETURN_ORDER_CREATE");
+        phraseToIntentMapping.put("销售退货", "RETURN_ORDER_CREATE");
+        phraseToIntentMapping.put("我要退货", "RETURN_ORDER_CREATE");
+
+        // RETURN_ORDER_APPROVE — 退货单审批
+        phraseToIntentMapping.put("审批退货", "RETURN_ORDER_APPROVE");
+        phraseToIntentMapping.put("退货审批", "RETURN_ORDER_APPROVE");
+        phraseToIntentMapping.put("提交退货", "RETURN_ORDER_APPROVE");
+        phraseToIntentMapping.put("确认退货", "RETURN_ORDER_APPROVE");
+        phraseToIntentMapping.put("退货完成", "RETURN_ORDER_APPROVE");
+
         // QUALITY_BATCH_MARK_AS_INSPECTED (5)
         phraseToIntentMapping.put("不合格品", "QUALITY_BATCH_MARK_AS_INSPECTED");
         phraseToIntentMapping.put("判定不合格", "QUALITY_BATCH_MARK_AS_INSPECTED");

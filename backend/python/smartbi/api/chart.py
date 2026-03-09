@@ -320,6 +320,70 @@ async def recommend_chart(data: List[Dict[str, Any]], fields: Optional[List[dict
         return {"success": False, "data": None, "message": "图表生成失败，请稍后重试"}
 
 
+_DEPT_KEYWORDS = [
+    "department", "dept", "division", "branch", "unit",
+    "部门", "分部", "事业部", "科室", "组", "区域", "分公司"
+]
+_BUDGET_KEYWORDS = [
+    "budget", "target", "plan", "planned", "goal",
+    "预算", "目标", "计划", "指标", "预算数", "预算金额"
+]
+_ACTUAL_KEYWORDS = [
+    "actual", "realized", "completed", "achieved",
+    "实际", "完成", "达成", "实际数", "实际金额", "执行"
+]
+
+
+def _find_col(df, keywords):
+    """Find a column matching any keyword (exact then partial)."""
+    import pandas as pd
+    cols_lower = {c: c.lower().strip() for c in df.columns}
+    for col, cl in cols_lower.items():
+        for kw in keywords:
+            if cl == kw.lower():
+                return col
+    for col, cl in cols_lower.items():
+        for kw in keywords:
+            if len(kw) >= 2 and kw.lower() in cl:
+                return col
+    return None
+
+
+def _try_budget_comparison_recommendation(df):
+    """Detect dept+budget+actual columns and return a ChartRecommendation or None."""
+    import pandas as pd
+    logger.info(f"[BudgetInjection] Checking columns: {list(df.columns)}")
+    dept_col = _find_col(df, _DEPT_KEYWORDS)
+    budget_col = _find_col(df, _BUDGET_KEYWORDS)
+    actual_col = _find_col(df, _ACTUAL_KEYWORDS)
+    logger.info(f"[BudgetInjection] dept={dept_col}, budget={budget_col}, actual={actual_col}")
+
+    if not dept_col or not budget_col or not actual_col:
+        return None
+
+    # Verify numeric data
+    try:
+        b = pd.to_numeric(df[budget_col], errors='coerce')
+        a = pd.to_numeric(df[actual_col], errors='coerce')
+        if b.notna().sum() < 2 or a.notna().sum() < 2:
+            return None
+    except Exception:
+        return None
+
+    # Create a lightweight recommendation object
+    from services.chart_recommender import ChartRecommendation
+    return ChartRecommendation(
+        chart_type="budget_comparison",
+        title="分部预实对比分析",
+        reason="检测到部门+预算+实际列，自动生成分部预实对比图",
+        x_axis=dept_col,
+        y_axis=[budget_col, actual_col],
+        priority=2,
+        category="ranking",
+        confidence=0.95,
+    )
+
+
 class SmartRecommendRequest(BaseModel):
     """Smart chart recommendation request using LLM"""
     data: List[Dict[str, Any]]
@@ -405,6 +469,13 @@ async def smart_recommend_chart(request: SmartRecommendRequest):
             max_recommendations=request.maxRecommendations,
             use_cache=True
         )
+
+        # ── Rule-based injection: budget_comparison chart ──
+        if not any(r.chart_type == "budget_comparison" for r in recommendations):
+            budget_rec = _try_budget_comparison_recommendation(df)
+            if budget_rec:
+                recommendations.append(budget_rec)
+                logger.info("[BudgetInjection] Appended budget_comparison recommendation")
 
         # Filter excluded types
         if request.excludeTypes:

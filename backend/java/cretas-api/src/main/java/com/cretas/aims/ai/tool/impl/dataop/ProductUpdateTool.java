@@ -1,7 +1,10 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.entity.ProductType;
+import com.cretas.aims.repository.ProductTypeRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -20,6 +23,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class ProductUpdateTool extends AbstractBusinessTool {
+
+    @Autowired
+    private ProductTypeRepository productTypeRepository;
 
     @Override
     public String getToolName() {
@@ -172,7 +178,6 @@ public class ProductUpdateTool extends AbstractBusinessTool {
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
         log.info("执行产品类型更新 - 工厂ID: {}, 参数: {}", factoryId, params);
 
-        // 解析参数
         String productTypeId = getString(params, "productTypeId");
         String productName = getString(params, "productName");
         String productCode = getString(params, "productCode");
@@ -186,35 +191,44 @@ public class ProductUpdateTool extends AbstractBusinessTool {
         String storageCondition = getString(params, "storageCondition");
         String reason = getString(params, "reason");
 
-        // TODO: 调用实际的产品类型服务进行更新
-        // ProductTypeDTO updatedProduct = productTypeService.updateProductType(factoryId, productTypeId, updateRequest);
+        // 查找产品（工厂隔离）
+        ProductType product = productTypeRepository.findByIdAndFactoryId(productTypeId, factoryId)
+                .orElse(null);
+        if (product == null) {
+            return Map.of("success", false, "message","产品不存在: " + productTypeId);
+        }
 
-        // 构建更新字段摘要
+        // 应用更新字段
         Map<String, Object> updatedFields = new HashMap<>();
-        if (productName != null) updatedFields.put("productName", productName);
-        if (productCode != null) updatedFields.put("productCode", productCode);
-        if (category != null) updatedFields.put("category", category);
-        if (specification != null) updatedFields.put("specification", specification);
-        if (shelfLife != null) updatedFields.put("shelfLife", shelfLife);
-        if (status != null) updatedFields.put("status", status);
-        if (unit != null) updatedFields.put("unit", unit);
-        if (price != null) updatedFields.put("price", price);
-        if (description != null) updatedFields.put("description", description);
-        if (storageCondition != null) updatedFields.put("storageCondition", storageCondition);
+        if (productName != null) { product.setName(productName); updatedFields.put("productName", productName); }
+        if (productCode != null) { product.setCode(productCode); updatedFields.put("productCode", productCode); }
+        if (category != null) { product.setCategory(category); updatedFields.put("category", category); }
+        if (specification != null) { product.setSpecification(specification); updatedFields.put("specification", specification); }
+        if (shelfLife != null) { product.setShelfLifeDays(shelfLife); updatedFields.put("shelfLife", shelfLife); }
+        if (status != null) {
+            boolean active = "ACTIVE".equalsIgnoreCase(status) || "DEVELOPING".equalsIgnoreCase(status);
+            product.setIsActive(active);
+            updatedFields.put("status", status);
+        }
+        if (unit != null) { product.setUnit(unit); updatedFields.put("unit", unit); }
+        if (price != null) { product.setUnitPrice(price); updatedFields.put("price", price); }
+        if (description != null) { product.setNotes(description); updatedFields.put("description", description); }
 
         if (updatedFields.isEmpty()) {
             return buildSimpleResult("未指定要更新的字段", Map.of("productTypeId", productTypeId));
         }
 
-        // 模拟更新成功响应
+        // 持久化
+        productTypeRepository.save(product);
+
         Map<String, Object> result = new HashMap<>();
         result.put("productTypeId", productTypeId);
+        result.put("productName", product.getName());
         result.put("updatedFields", updatedFields);
-        result.put("reason", reason);
+        if (reason != null) result.put("reason", reason);
         result.put("message", "产品类型更新成功");
 
         log.info("产品类型更新完成 - 产品ID: {}, 更新字段: {}", productTypeId, updatedFields.keySet());
-
         return result;
     }
 }

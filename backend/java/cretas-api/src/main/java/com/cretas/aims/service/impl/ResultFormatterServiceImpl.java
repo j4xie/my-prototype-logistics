@@ -47,7 +47,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
                 case "MATERIAL" -> formatMaterialResult(intentCode, resultData);
                 case "QUALITY" -> formatQualityResult(intentCode, resultData);
                 case "PRODUCTION" -> formatProductionResult(intentCode, resultData);
-                case "REPORT" -> formatReportResult(intentCode, resultData);
+                case "REPORT", "ANALYSIS" -> formatReportResult(intentCode, resultData);
                 case "HR" -> formatHRResult(intentCode, resultData);
                 case "CRM" -> formatCRMResult(intentCode, resultData);
                 case "ALERT" -> formatAlertResult(intentCode, resultData);

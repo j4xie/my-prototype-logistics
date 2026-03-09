@@ -1,10 +1,16 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.dto.production.CreateProductionPlanRequest;
+import com.cretas.aims.dto.production.ProductionPlanDTO;
+import com.cretas.aims.service.ProductionPlanService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 /**
@@ -20,6 +26,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class PlanUpdateTool extends AbstractBusinessTool {
+
+    @Autowired
+    private ProductionPlanService productionPlanService;
 
     @Override
     public String getToolName() {
@@ -153,7 +162,6 @@ public class PlanUpdateTool extends AbstractBusinessTool {
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
         log.info("执行生产计划更新 - 工厂ID: {}, 参数: {}", factoryId, params);
 
-        // 解析参数
         String planId = getString(params, "planId");
         String status = getString(params, "status");
         BigDecimal plannedQuantity = getBigDecimal(params, "plannedQuantity");
@@ -164,16 +172,43 @@ public class PlanUpdateTool extends AbstractBusinessTool {
         String remark = getString(params, "remark");
         String reason = getString(params, "reason");
 
-        // TODO: 调用实际的生产计划服务进行更新
-        // ProductionPlanDTO updatedPlan = productionPlanService.updatePlan(factoryId, planId, updateRequest);
+        // 验证计划存在
+        ProductionPlanDTO existing = productionPlanService.getProductionPlanById(factoryId, planId);
+        if (existing == null) {
+            return Map.of("success", false, "message","生产计划不存在: " + planId);
+        }
 
-        // 构建更新字段摘要
         Map<String, Object> updatedFields = new HashMap<>();
-        if (status != null) updatedFields.put("status", status);
+        ProductionPlanDTO updated = null;
+
+        // 状态变更走专用方法
+        if (status != null) {
+            updated = switch (status.toUpperCase()) {
+                case "IN_PROGRESS" -> productionPlanService.startProduction(factoryId, planId);
+                case "PAUSED" -> productionPlanService.pauseProduction(factoryId, planId);
+                case "COMPLETED" -> productionPlanService.completeProduction(factoryId, planId,
+                        plannedQuantity != null ? plannedQuantity : existing.getPlannedQuantity());
+                case "CANCELLED" -> {
+                    productionPlanService.cancelProductionPlan(factoryId, planId,
+                            reason != null ? reason : "AI工具取消");
+                    yield productionPlanService.getProductionPlanById(factoryId, planId);
+                }
+                default -> {
+                    // 通用更新：构建 CreateProductionPlanRequest 作为更新载体
+                    CreateProductionPlanRequest updateReq = buildUpdateRequest(existing, plannedQuantity, startDate, endDate, productionLineId, remark);
+                    yield productionPlanService.updateProductionPlan(factoryId, planId, updateReq);
+                }
+            };
+            updatedFields.put("status", status);
+        } else if (plannedQuantity != null || startDate != null || endDate != null || productionLineId != null || remark != null) {
+            // 非状态变更的字段更新
+            CreateProductionPlanRequest updateReq = buildUpdateRequest(existing, plannedQuantity, startDate, endDate, productionLineId, remark);
+            updated = productionPlanService.updateProductionPlan(factoryId, planId, updateReq);
+        }
+
         if (plannedQuantity != null) updatedFields.put("plannedQuantity", plannedQuantity);
         if (startDate != null) updatedFields.put("startDate", startDate);
         if (endDate != null) updatedFields.put("endDate", endDate);
-        if (priority != null) updatedFields.put("priority", priority);
         if (productionLineId != null) updatedFields.put("productionLineId", productionLineId);
         if (remark != null) updatedFields.put("remark", remark);
 
@@ -181,15 +216,34 @@ public class PlanUpdateTool extends AbstractBusinessTool {
             return buildSimpleResult("未指定要更新的字段", Map.of("planId", planId));
         }
 
-        // 模拟更新成功响应
         Map<String, Object> result = new HashMap<>();
         result.put("planId", planId);
+        result.put("planNumber", existing.getPlanNumber());
         result.put("updatedFields", updatedFields);
-        result.put("reason", reason);
+        if (reason != null) result.put("reason", reason);
         result.put("message", "生产计划更新成功");
 
         log.info("生产计划更新完成 - 计划ID: {}, 更新字段: {}", planId, updatedFields.keySet());
-
         return result;
+    }
+
+    private CreateProductionPlanRequest buildUpdateRequest(ProductionPlanDTO existing,
+                                                           BigDecimal plannedQuantity, String startDate,
+                                                           String endDate, String productionLineId, String remark) {
+        CreateProductionPlanRequest req = new CreateProductionPlanRequest();
+        req.setProductTypeId(existing.getProductTypeId());
+        req.setPlannedQuantity(plannedQuantity != null ? plannedQuantity : existing.getPlannedQuantity());
+        req.setPlannedDate(existing.getPlannedDate());
+        if (startDate != null) {
+            try { req.setPlannedDate(LocalDate.parse(startDate)); } catch (DateTimeParseException ignored) {}
+        }
+        if (endDate != null) {
+            try { req.setExpectedCompletionDate(LocalDate.parse(endDate)); } catch (DateTimeParseException ignored) {}
+        } else {
+            req.setExpectedCompletionDate(existing.getExpectedCompletionDate());
+        }
+        if (productionLineId != null) req.setSuggestedProductionLineId(productionLineId);
+        if (remark != null) req.setNotes(remark);
+        return req;
     }
 }

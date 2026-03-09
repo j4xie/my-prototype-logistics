@@ -61,7 +61,10 @@ async function loadData() {
   loading.value = true;
   try {
     const [start, end] = dateRange.value;
-    const fmt = (d: Date) => d.toISOString().split('T')[0];
+    const fmt = (d: Date | string) => {
+      if (typeof d === 'string') return d.split('T')[0];
+      return d.toISOString().split('T')[0];
+    };
     const res = await getEfficiencyDashboard({ startDate: fmt(start), endDate: fmt(end) });
     if (res.success && res.data) {
       dashboard.value = res.data;

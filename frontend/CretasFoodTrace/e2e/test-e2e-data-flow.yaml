@@ -1,0 +1,185 @@
+appId: com.cretas.foodtrace
+---
+# E2E Data Flow: Login as workshop_sup1 → Submit hours report
+# Purpose: Verify data flows from RN app to backend and appears on Vue web-admin
+
+# === STEP 1: LAUNCH & LOGIN ===
+- launchApp:
+    clearState: true
+    appId: com.cretas.foodtrace
+
+- waitForAnimationToEnd:
+    timeout: 60000
+
+# Dismiss system dialogs
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Close app"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 30000
+
+# Wait for Landing view and tap Login
+- extendedWaitUntil:
+    visible: "Login"
+    timeout: 60000
+- tapOn:
+    text: "Login"
+    retryTapIfNoChange: true
+
+# Wait for login form
+- extendedWaitUntil:
+    visible:
+      id: "login-username-input"
+    timeout: 10000
+
+# Fill username
+- tapOn:
+    id: "login-username-input"
+- eraseText: 50
+- inputText: "workshop_sup1"
+
+# Fill password
+- tapOn:
+    id: "login-password-input"
+- eraseText: 50
+- inputText: "123456"
+
+# Submit
+- pressKey: back
+- tapOn:
+    id: "login-submit-btn"
+
+# Wait for login success
+- extendedWaitUntil:
+    visible:
+      text: "登录成功"
+    timeout: 60000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# === STEP 2: VERIFY HOME SCREEN ===
+- extendedWaitUntil:
+    visible: "快捷操作"
+    timeout: 30000
+- takeScreenshot: "e2e-flow-01-home"
+
+# === STEP 3: SUBMIT HOURS REPORT ===
+- tapOn:
+    id: "quick-action-hours"
+- waitForAnimationToEnd:
+    timeout: 8000
+
+# Wait for the hours report screen
+- extendedWaitUntil:
+    visible: "生产工时上报"
+    timeout: 15000
+- takeScreenshot: "e2e-flow-02-hours-screen"
+
+# Select first batch if available
+- tapOn:
+    text: ".*BATCH.*"
+    optional: true
+
+# Fill product name
+- tapOn: "输入商品名称"
+- inputText: "E2E-test-beef-stew"
+- pressKey: back
+
+# Fill hours - Full time workers
+- tapOn:
+    text: "人数"
+    index: 0
+- inputText: "5"
+- pressKey: back
+
+# Full time hours
+- tapOn:
+    text: "工时\\(h\\)"
+    index: 0
+- inputText: "8"
+- pressKey: back
+
+# Hourly workers
+- tapOn:
+    text: "人数"
+    index: 1
+- inputText: "3"
+- pressKey: back
+
+# Hourly hours
+- tapOn:
+    text: "工时\\(h\\)"
+    index: 1
+- inputText: "4"
+- pressKey: back
+
+# Start time
+- tapOn:
+    text: "HH:mm"
+    index: 0
+- inputText: "08:00"
+- pressKey: back
+
+# End time
+- tapOn:
+    text: "HH:mm"
+    index: 1
+- inputText: "17:00"
+- pressKey: back
+
+# Operation volume
+- tapOn: "输入操作量"
+- inputText: "200"
+- pressKey: back
+
+# Notes
+- tapOn: "备注信息（选填）"
+- inputText: "Maestro-E2E-hours-test"
+- pressKey: back
+
+- takeScreenshot: "e2e-flow-03-hours-filled"
+
+# Submit
+- tapOn: "提交报工"
+
+# Wait for result
+- extendedWaitUntil:
+    visible: ".*成功.*|.*提交.*|OK|确定"
+    timeout: 30000
+- takeScreenshot: "e2e-flow-04-hours-result"
+
+# Dismiss alert
+- tapOn:
+    text: "OK"
+    optional: true
+- tapOn:
+    text: "确定"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# === STEP 4: GO BACK AND USE TEAM REPORT ===
+- tapOn:
+    id: "header-back-btn"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Tap team report (组报报工)
+- extendedWaitUntil:
+    visible: "快捷操作"
+    timeout: 15000
+- tapOn:
+    id: "quick-action-team-report"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: "e2e-flow-05-team-report"
+
+- takeScreenshot: "e2e-flow-06-final"

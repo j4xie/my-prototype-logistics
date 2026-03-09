@@ -31,7 +31,9 @@ import { aiService, detectAnalysisMode } from '../../../services/ai';
 import type { AnalysisMode } from '../../../services/ai/types';
 import { AIModeIndicator } from '../../../components/ai/AIModeIndicator';
 import { FeedbackWidget, FoodKBQueryMetadata } from '../../../components/ai/FeedbackWidget';
+import { RichContentRenderer, detectRichData, type RichData } from '../../../components/ai/RichContentRenderer';
 import { useAuthStore } from '../../../store/authStore';
+import { speechRecognitionService } from '../../../services/voice/SpeechRecognitionService';
 import { aiApiClient } from '../../../services/api/aiApiClient';
 import type { IntentSSECallbacks } from '../../../services/api/aiApiClient';
 import type { FAAIStackParamList } from '../../../types/navigation';
@@ -66,6 +68,8 @@ interface Message {
   userQuestion?: string;
   /** 食品知识库查询元数据（用于反馈组件） */
   foodKbMetadata?: FoodKBQueryMetadata;
+  /** 结构化数据（用于富组件渲染：表格/卡片/统计） */
+  richData?: RichData;
 }
 
 type AIChatRouteProp = RouteProp<FAAIStackParamList, 'AIChat'>;
@@ -89,6 +93,7 @@ export default function AIChatScreen() {
   const [inputText, setInputText] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [quotaRemaining, setQuotaRemaining] = useState<number | null>(null);
 
   // 实时检测当前输入的分析模式
@@ -120,12 +125,13 @@ export default function AIChatScreen() {
   // 从其他页面跳转过来时自动发送初始消息
   const initialMessageSentRef = useRef(false);
   useEffect(() => {
-    const params = route.params;
-    if (params?.initialMessage && !initialMessageSentRef.current) {
+    const params = route.params as Record<string, any> | undefined;
+    const initialMsg = params?.initialMessage || params?.initialQuery;
+    if (initialMsg && !initialMessageSentRef.current) {
       initialMessageSentRef.current = true;
       // 延迟发送，等待组件完全挂载
       setTimeout(() => {
-        handleSend(params.initialMessage);
+        handleSend(initialMsg);
       }, 500);
     }
   }, [route.params]);
@@ -153,6 +159,30 @@ export default function AIChatScreen() {
     );
     // 发送用户选择作为新消息
     await handleSend(action.label);
+  };
+
+  // 语音输入
+  const handleVoiceInput = async () => {
+    if (isRecording) {
+      // 停止录音，获取识别结果
+      try {
+        const result = await speechRecognitionService.stopListening();
+        setIsRecording(false);
+        if (result.text?.trim()) {
+          setInputText(result.text.trim());
+        }
+      } catch {
+        setIsRecording(false);
+      }
+    } else {
+      // 开始录音
+      try {
+        setIsRecording(true);
+        await speechRecognitionService.startListening();
+      } catch {
+        setIsRecording(false);
+      }
+    }
   };
 
   // 发送消息 — 使用真正的 SSE 流式传输
@@ -348,6 +378,9 @@ export default function AIChatScreen() {
             };
           }
 
+          // 检测结构化数据用于富组件渲染
+          const richData = detectRichData(resultInner);
+
           // 更新消息
           setMessages((prev) =>
             prev.map((msg) =>
@@ -359,6 +392,7 @@ export default function AIChatScreen() {
                     intentCategory: result.intentCategory as string | undefined,
                     suggestedActions: suggestedActions.length > 0 ? suggestedActions : undefined,
                     foodKbMetadata: foodKbMeta,
+                    richData,
                   }
                 : msg
             )
@@ -515,6 +549,10 @@ export default function AIChatScreen() {
                 <Text style={styles.streamingCursor}>|</Text>
               )}
             </Text>
+            {/* 结构化数据富组件渲染（表格/卡片/统计） */}
+            {!message.isLoading && message.richData && (
+              <RichContentRenderer data={message.richData} />
+            )}
           </View>
           {/* 显示建议操作按钮 (当需要澄清时) */}
           {!message.isLoading && message.suggestedActions && message.suggestedActions.length > 0 && (
@@ -648,8 +686,12 @@ export default function AIChatScreen() {
             </View>
           )}
           <View style={styles.inputContainer}>
-            <TouchableOpacity style={styles.addButton}>
-              <IconButton icon="plus" size={20} iconColor="#666" />
+            <TouchableOpacity
+              style={[styles.addButton, isRecording && styles.recordingButton]}
+              onPress={handleVoiceInput}
+              disabled={isLoading}
+            >
+              <IconButton icon={isRecording ? 'stop' : 'microphone'} size={20} iconColor={isRecording ? '#fff' : '#666'} />
             </TouchableOpacity>
             <View style={styles.inputWrapper}>
               <TextInput
@@ -853,6 +895,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  recordingButton: {
+    backgroundColor: '#ef4444',
   },
   inputWrapper: {
     flex: 1,

@@ -353,6 +353,17 @@ export function WSHomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="quick-action-progress"
+              style={styles.quickActionBtn}
+              onPress={() => navigation.navigate('DynamicReport', { reportType: 'PROGRESS' })}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#EFF6FF' }]}>
+                <MaterialCommunityIcons name="chart-line" size={22} color="#2563EB" />
+              </View>
+              <Text style={styles.quickActionLabel}>产量上报</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               testID="quick-action-hours"
               style={styles.quickActionBtn}
               onPress={() => navigation.navigate('DynamicReport', { reportType: 'HOURS' })}

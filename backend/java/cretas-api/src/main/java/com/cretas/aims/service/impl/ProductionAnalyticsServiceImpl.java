@@ -75,12 +75,12 @@ public class ProductionAnalyticsServiceImpl {
 
         List<KPIItem> kpis = buildEfficiencyKPIs(summary, hoursSummary, prevSummary, prevHoursSummary, workerRanking);
 
-        // 为排名数据添加人效字段
-        enrichWorkerRanking(workerRanking);
+        // 为排名数据添加人效字段 (TupleBackedMap is immutable, so enrichWorkerRanking returns new list)
+        List<Map<String, Object>> enrichedRanking = enrichWorkerRanking(workerRanking);
 
         return EfficiencyDashboardResponse.builder()
                 .kpis(kpis)
-                .workerRanking(workerRanking)
+                .workerRanking(enrichedRanking)
                 .dailyTrend(enrichDailyEfficiencyTrend(dailyTrend))
                 .hoursByProduct(hoursByProduct)
                 .workerProcessCross(workerProcessCross)
@@ -89,8 +89,7 @@ public class ProductionAnalyticsServiceImpl {
 
     public List<Map<String, Object>> getWorkerRanking(String factoryId, LocalDate startDate, LocalDate endDate) {
         List<Map<String, Object>> ranking = reportRepo.getWorkerEfficiencyRanking(factoryId, startDate, endDate);
-        enrichWorkerRanking(ranking);
-        return ranking;
+        return enrichWorkerRanking(ranking);
     }
 
     public List<Map<String, Object>> getEfficiencyTrend(String factoryId, LocalDate startDate, LocalDate endDate) {
@@ -186,20 +185,23 @@ public class ProductionAnalyticsServiceImpl {
                 .build();
     }
 
-    private void enrichWorkerRanking(List<Map<String, Object>> ranking) {
-        if (ranking == null) return;
+    private List<Map<String, Object>> enrichWorkerRanking(List<Map<String, Object>> ranking) {
+        if (ranking == null) return Collections.emptyList();
+        List<Map<String, Object>> enriched = new ArrayList<>();
         for (Map<String, Object> row : ranking) {
+            Map<String, Object> copy = new HashMap<>(row);
             double output = toDouble(row.get("total_output"));
             double minutes = toDouble(row.get("total_minutes"));
             double hours = minutes / 60.0;
             double efficiency = hours > 0 ? round(output / hours, 1) : 0;
             double good = toDouble(row.get("total_good"));
             double yieldRate = output > 0 ? round((good / output) * 100, 1) : 0;
-            // Make mutable copy if needed
-            row.put("efficiency", efficiency);
-            row.put("total_hours", round(hours, 1));
-            row.put("yield_rate", yieldRate);
+            copy.put("efficiency", efficiency);
+            copy.put("total_hours", round(hours, 1));
+            copy.put("yield_rate", yieldRate);
+            enriched.add(copy);
         }
+        return enriched;
     }
 
     private List<Map<String, Object>> enrichDailyEfficiencyTrend(List<Map<String, Object>> trend) {
