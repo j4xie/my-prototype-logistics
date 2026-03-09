@@ -348,6 +348,45 @@ public class SkillRegistryImpl implements SkillRegistry {
                 .build());
         count++;
 
+        // 排产规划Skill — 查库存 + 查产能 + 创建计划 + 分配工人
+        registerWithSource(SkillDefinition.builder()
+                .name("production-planning")
+                .displayName("排产规划")
+                .description("排产全流程：检查原料库存 → 查看产线状态 → 创建生产计划 → 分配工人")
+                .version("1.0.0")
+                .triggers(Arrays.asList("排产规划", "生产规划", "制定生产计划", "排一下生产",
+                        "明天生产什么", "安排明天生产", "帮我排产", "排产计划"))
+                .tools(Arrays.asList("material_stock_summary", "processing_batch_list",
+                        "production_plan_create", "processing_worker_assign"))
+                .contextNeeded(Arrays.asList("factoryId"))
+                .promptTemplate("为工厂${factoryId}进行排产规划。" +
+                        "步骤：1.先查原料库存确认备料充足 2.查当前产线状况 " +
+                        "3.根据库存和产能创建生产计划 4.为计划分配工人。" +
+                        "用户问题：${userQuery}")
+                .source("default")
+                .enabled(true)
+                .build());
+        count++;
+
+        // 订单发货全流程Skill（增强） — 查订单 + 创建发货 + 更新状态 + 确认 + 完成
+        registerWithSource(SkillDefinition.builder()
+                .name("shipment-lifecycle")
+                .displayName("发货全流程")
+                .description("发货全生命周期：查订单 → 创建发货单 → 更新物流状态 → 客户确认 → 完成发货")
+                .version("1.0.0")
+                .triggers(Arrays.asList("发货流程", "完整发货", "发货全流程", "从发货到签收",
+                        "发货并跟踪", "发货进度管理"))
+                .tools(Arrays.asList("order_query", "shipment_create", "shipment_status_update",
+                        "shipment_confirm", "shipment_complete"))
+                .contextNeeded(Arrays.asList("factoryId"))
+                .promptTemplate("处理工厂${factoryId}的发货全流程。" +
+                        "根据用户需求选择合适的步骤执行：查询订单、创建发货单、更新物流状态、确认收货、完成发货。" +
+                        "用户问题：${userQuery}")
+                .source("default")
+                .enabled(true)
+                .build());
+        count++;
+
         return count;
     }
 
