@@ -1,0 +1,73 @@
+appId: com.cretas.foodtrace
+---
+# Test: Workshop Supervisor Home — Login + Home Screen Verification
+
+- launchApp:
+    clearState: true
+    appId: com.cretas.foodtrace
+
+- waitForAnimationToEnd:
+    timeout: 60000
+
+- tapOn:
+    text: "Open"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 30000
+
+# === LOGIN FLOW ===
+- extendedWaitUntil:
+    visible: "Login"
+    timeout: 60000
+- tapOn:
+    text: "Login"
+    retryTapIfNoChange: true
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- tapOn: "Enter username"
+- inputText: "workshop_sup1"
+- hideKeyboard
+
+- tapOn:
+    id: "login-toggle-password"
+- tapOn:
+    id: "login-password-input"
+- inputText: "123456"
+
+- takeScreenshot: "e2e-rn-01-login-filled"
+- hideKeyboard
+
+- tapOn:
+    id: "login-submit-btn"
+
+# Wait for login response
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 60000
+- takeScreenshot: "e2e-rn-02-login-result"
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# === HOME SCREEN VERIFICATION ===
+- extendedWaitUntil:
+    visible: "快捷操作"
+    timeout: 30000
+- assertVisible: "快捷操作"
+- takeScreenshot: "e2e-rn-03-home-screen"
+
+# Verify quick action buttons via testID
+- assertVisible:
+    id: "quick-action-team-report"
+- assertVisible:
+    id: "quick-action-drafts"
+- assertVisible:
+    id: "quick-action-checkin"
+- assertVisible:
+    id: "quick-action-hours"
+- assertVisible:
+    id: "quick-action-my-reports"
+- takeScreenshot: "e2e-rn-04-quick-actions-verified"

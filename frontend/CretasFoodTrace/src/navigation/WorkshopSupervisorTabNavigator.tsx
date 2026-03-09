@@ -54,6 +54,7 @@ export function WorkshopSupervisorTabNavigator() {
         component={WSHomeStackNavigator}
         options={{
           title: "首页",
+          tabBarTestID: "tab-home",
           tabBarIcon: ({ color, size }) => (
             <Icon source="home" size={size} color={color} />
           ),
@@ -67,6 +68,7 @@ export function WorkshopSupervisorTabNavigator() {
         component={WSBatchesStackNavigator}
         options={{
           title: "批次",
+          tabBarTestID: "tab-batches",
           tabBarIcon: ({ color, size }) => (
             <Icon source="view-grid" size={size} color={color} />
           ),
@@ -81,6 +83,7 @@ export function WorkshopSupervisorTabNavigator() {
         component={WSWorkersStackNavigator}
         options={{
           title: "人员",
+          tabBarTestID: "tab-workers",
           tabBarIcon: ({ color, size }) => (
             <Icon source="account-group" size={size} color={color} />
           ),
@@ -95,6 +98,7 @@ export function WorkshopSupervisorTabNavigator() {
         component={WSEquipmentStackNavigator}
         options={{
           title: "设备",
+          tabBarTestID: "tab-equipment",
           tabBarIcon: ({ color, size }) => (
             <Icon source="tools" size={size} color={color} />
           ),
@@ -108,6 +112,7 @@ export function WorkshopSupervisorTabNavigator() {
         component={WSProfileStackNavigator}
         options={{
           title: "我的",
+          tabBarTestID: "tab-profile",
           tabBarIcon: ({ color, size }) => (
             <Icon source="account" size={size} color={color} />
           ),

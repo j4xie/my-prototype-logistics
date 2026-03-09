@@ -111,7 +111,9 @@ export class NetworkManager {
       return state.isConnected === true;
     } catch (error) {
       console.error('Error checking network connection:', error);
-      return false;
+      // Return true on error — let the actual HTTP request determine connectivity
+      // NetInfo can be unreliable in simulators and certain network configurations
+      return true;
     }
   }
 
@@ -232,16 +234,8 @@ export class NetworkManager {
 
     for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
       try {
-        // 检查网络连接
-        const isConnected = await this.isConnected();
-        if (!isConnected) {
-          // 等待网络连接，但不超过重试延迟时间
-          const delay = this.calculateDelay(attempt, opts);
-          const connected = await this.waitForConnection(Math.min(delay, 5000));
-          if (!connected) {
-            throw new Error('Network not available');
-          }
-        }
+        // Skip pre-check — let the actual HTTP request determine connectivity.
+        // NetInfo can be unreliable in simulators and certain network configurations.
 
         // 执行操作
         const result = await Promise.race([

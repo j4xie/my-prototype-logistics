@@ -165,7 +165,7 @@ export default function MyWorkReportsScreen() {
   return (
     <View style={styles.container}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
+        <Appbar.BackAction testID="header-back-btn" onPress={() => navigation.goBack()} />
         <Appbar.Content title="我的报工" />
         <Appbar.Action icon="refresh" onPress={onRefresh} />
       </Appbar.Header>

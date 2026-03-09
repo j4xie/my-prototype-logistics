@@ -193,7 +193,7 @@ const DraftReportsScreen: React.FC = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity testID="header-back-btn" onPress={() => navigation.goBack()} style={styles.backButton}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1a1a1a" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>

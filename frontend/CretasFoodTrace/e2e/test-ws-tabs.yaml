@@ -1,0 +1,81 @@
+appId: com.cretas.foodtrace
+---
+# Test: Workshop Supervisor Tab Bar Navigation
+# Cross-platform: uses tapOn with text that works on both iOS and Android
+# iOS accessibility: "首页, tab, 1 of 5"  |  Android text: "首页"
+
+- launchApp:
+    appId: com.cretas.foodtrace
+
+- waitForAnimationToEnd:
+    timeout: 60000
+
+# Login if needed
+- tapOn:
+    text: "Login"
+    optional: true
+- runFlow:
+    when:
+      visible: "Enter username"
+    commands:
+      - tapOn: "Enter username"
+      - inputText: "workshop_sup1"
+      - hideKeyboard
+      - tapOn:
+          id: "login-toggle-password"
+      - tapOn:
+          id: "login-password-input"
+      - inputText: "123456"
+      - hideKeyboard
+      - tapOn:
+          id: "login-submit-btn"
+      - extendedWaitUntil:
+          visible: "OK"
+          timeout: 60000
+      - tapOn:
+          text: "OK"
+      - waitForAnimationToEnd:
+          timeout: 10000
+
+# Home tab should be active
+- extendedWaitUntil:
+    visible: "快捷操作"
+    timeout: 30000
+- takeScreenshot: "e2e-tab-01-home"
+
+# === TAB 2: 批次 ===
+# Use regex that matches both "批次" (Android) and "批次, tab, 2 of 5" (iOS)
+- tapOn:
+    text: "批次.*"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "e2e-tab-02-batches"
+
+# === TAB 3: 人员 ===
+- tapOn:
+    text: "人员.*"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "e2e-tab-03-workers"
+
+# === TAB 4: 设备 ===
+- tapOn:
+    text: "设备.*"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "e2e-tab-04-equipment"
+
+# === TAB 5: 我的 ===
+- tapOn:
+    text: "我的.*"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "e2e-tab-05-profile"
+
+# === Back to 首页 ===
+- tapOn:
+    text: "首页.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "快捷操作"
+- takeScreenshot: "e2e-tab-06-back-to-home"

@@ -311,10 +311,11 @@ export function WSHomeScreen() {
         </View>
 
         {/* 快捷操作 */}
-        <View style={styles.quickActionsSection}>
+        <View testID="quick-actions-section" style={styles.quickActionsSection}>
           <Text style={styles.sectionTitle}>快捷操作</Text>
           <View style={styles.quickActionsGrid}>
             <TouchableOpacity
+              testID="quick-action-team-report"
               style={styles.quickActionBtn}
               onPress={() => navigation.navigate('TeamBatchReport')}
             >
@@ -325,6 +326,7 @@ export function WSHomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="quick-action-drafts"
               style={styles.quickActionBtn}
               onPress={() => navigation.navigate('DraftReports')}
             >
@@ -340,6 +342,7 @@ export function WSHomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="quick-action-checkin"
               style={styles.quickActionBtn}
               onPress={() => navigation.navigate('NfcCheckin')}
             >
@@ -350,6 +353,7 @@ export function WSHomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="quick-action-hours"
               style={styles.quickActionBtn}
               onPress={() => navigation.navigate('DynamicReport', { reportType: 'HOURS' })}
             >
@@ -360,6 +364,7 @@ export function WSHomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="quick-action-my-reports"
               style={styles.quickActionBtn}
               onPress={() => navigation.navigate('MyWorkReports')}
             >

@@ -1,0 +1,107 @@
+appId: com.cretas.foodtrace
+---
+# Test: Workshop Supervisor Navigation — Quick Actions + Back
+# Verifies navigation to sub-screens and back from each quick action
+
+- launchApp:
+    appId: com.cretas.foodtrace
+
+- waitForAnimationToEnd:
+    timeout: 60000
+
+# If not logged in, do login; if already logged in, skip
+- tapOn:
+    text: "Login"
+    optional: true
+- runFlow:
+    when:
+      visible: "Enter username"
+    commands:
+      - tapOn: "Enter username"
+      - inputText: "workshop_sup1"
+      - hideKeyboard
+      - tapOn:
+          id: "login-toggle-password"
+      - tapOn:
+          id: "login-password-input"
+      - inputText: "123456"
+      - hideKeyboard
+      - tapOn:
+          id: "login-submit-btn"
+      - extendedWaitUntil:
+          visible: "OK"
+          timeout: 60000
+      - tapOn:
+          text: "OK"
+      - waitForAnimationToEnd:
+          timeout: 10000
+
+# Should now be on home screen
+- extendedWaitUntil:
+    visible: "快捷操作"
+    timeout: 30000
+
+# === TEST 1: Navigate to Team Report ===
+- tapOn:
+    id: "quick-action-team-report"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "e2e-nav-01-team-report"
+# Go back — wait for screen to settle, then tap back with retry
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: "header-back-btn"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "快捷操作"
+    timeout: 15000
+
+# === TEST 2: Navigate to Draft Reports ===
+- tapOn:
+    id: "quick-action-drafts"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "e2e-nav-02-drafts"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: "header-back-btn"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "快捷操作"
+    timeout: 15000
+
+# === TEST 3: Navigate to Hours Report ===
+- tapOn:
+    id: "quick-action-hours"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "e2e-nav-03-hours-report"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: "header-back-btn"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "快捷操作"
+    timeout: 15000
+
+# === TEST 4: Navigate to My Work Reports ===
+- tapOn:
+    id: "quick-action-my-reports"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "e2e-nav-04-my-reports"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: "header-back-btn"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "快捷操作"
+    timeout: 15000
+
+# Back on home
+- assertVisible: "快捷操作"
+- takeScreenshot: "e2e-nav-05-back-home"

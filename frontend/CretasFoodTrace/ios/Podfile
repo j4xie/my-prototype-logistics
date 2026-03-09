@@ -16,6 +16,9 @@ prepare_react_native_project!
 target 'CretasFoodTrace' do
   use_expo_modules!
 
+  # Manually resolve EXImageLoader from nested node_modules
+  pod 'EXImageLoader', :path => File.join(__dir__, '..', 'node_modules', 'expo-image-manipulator', 'node_modules', 'expo-image-loader', 'ios')
+
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
   else

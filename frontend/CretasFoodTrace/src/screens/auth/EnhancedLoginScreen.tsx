@@ -252,6 +252,7 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
               editable={!isLoading}
             />
             <TouchableOpacity
+              testID="login-toggle-password"
               style={styles.eyeIcon}
               onPress={onTogglePassword}
             >

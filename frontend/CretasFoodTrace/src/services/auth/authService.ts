@@ -49,11 +49,7 @@ export class AuthService {
     try {
       authLogger.info('开始登录流程', { username: credentials.username });
 
-      // 检查网络连接
-      const isConnected = await NetworkManager.isConnected();
-      if (!isConnected) {
-        throw new Error('网络连接不可用，请检查网络设置');
-      }
+      // Network pre-check skipped — let HTTP request determine connectivity
 
       // 调用新的API端点 - 统一登录接口（支持工厂用户和平台管理员）
       // 注意: unified-login 会自动识别用户类型（平台管理员 or 工厂用户）
@@ -439,11 +435,7 @@ export class AuthService {
         throw new Error('密码长度必须至少6个字符');
       }
 
-      // 检查网络连接
-      const isConnected = await NetworkManager.isConnected();
-      if (!isConnected) {
-        throw new Error('网络连接不可用，请检查网络设置');
-      }
+      // Network pre-check skipped — let HTTP request determine connectivity
 
       // 调用API端点
       const rawResponse = await NetworkManager.executeWithRetry(
@@ -645,11 +637,7 @@ export class AuthService {
         throw new Error('未找到生物识别登录凭据');
       }
 
-      // 检查网络连接
-      const isConnected = await NetworkManager.isConnected();
-      if (!isConnected) {
-        throw new Error('网络连接不可用，请检查网络设置');
-      }
+      // Network pre-check skipped — let HTTP request determine connectivity
 
       // 使用统一登录接口进行生物识别登录验证
       const response = await NetworkManager.executeWithRetry(
@@ -780,11 +768,7 @@ export class AuthService {
 
       authLogger.info('开始重置密码流程');
 
-      // 检查网络连接
-      const isConnected = await NetworkManager.isConnected();
-      if (!isConnected) {
-        throw new Error('网络连接不可用，请检查网络设置');
-      }
+      // Network pre-check skipped — let HTTP request determine connectivity
 
       // 调用API
       const response = await NetworkManager.executeWithRetry(
@@ -831,11 +815,7 @@ export class AuthService {
 
       authLogger.info('开始修改密码');
 
-      // 检查网络连接
-      const isConnected = await NetworkManager.isConnected();
-      if (!isConnected) {
-        throw new Error('网络连接不可用，请检查网络设置');
-      }
+      // Network pre-check skipped — let HTTP request determine connectivity
 
       // 调用API - 注意参数在query string中
       const response = await NetworkManager.executeWithRetry(
