@@ -1,6 +1,6 @@
 {
   "name": "React-cxxreact",
-  "version": "0.79.5",
+  "version": "0.79.6",
   "summary": "-",
   "homepage": "https://reactnative.dev/",
   "license": "MIT",
@@ -10,7 +10,7 @@
   },
   "source": {
     "git": "https://github.com/facebook/react-native.git",
-    "tag": "v0.79.5"
+    "tag": "v0.79.6"
   },
   "source_files": "*.{cpp,h}",
   "exclude_files": "SampleCxxModule.*",
@@ -36,25 +36,25 @@
     "React-jsinspector": [],
     "React-jsinspectortracing": [],
     "React-callinvoker": [
-      "0.79.5"
+      "0.79.6"
     ],
     "React-runtimeexecutor": [
-      "0.79.5"
+      "0.79.6"
     ],
     "React-perflogger": [
-      "0.79.5"
+      "0.79.6"
     ],
     "React-jsi": [
-      "0.79.5"
+      "0.79.6"
     ],
     "React-logger": [
-      "0.79.5"
+      "0.79.6"
     ],
     "React-debug": [
-      "0.79.5"
+      "0.79.6"
     ],
     "React-timing": [
-      "0.79.5"
+      "0.79.6"
     ],
     "hermes-engine": []
   },

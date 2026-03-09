@@ -9,17 +9,17 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>EXAV.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>EXApplication-ExpoApplication_privacy.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
 		</dict>
 		<key>EXApplication.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
-		<key>EXBarCodeScanner.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -64,12 +64,27 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>ExpoCamera.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>ExpoClipboard.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>ExpoDevice-ExpoDevice_privacy.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
 		</dict>
 		<key>ExpoDevice.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>ExpoDocumentPicker.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -119,6 +134,16 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>ExpoLocalization-ExpoLocalization_privacy.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>ExpoLocalization.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>ExpoLocation.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -135,6 +160,11 @@
 			<false/>
 		</dict>
 		<key>ExpoSharing.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>ExpoSpeech.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -589,12 +619,32 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>react-native-get-random-values.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>react-native-netinfo.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>react-native-nfc-manager.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>react-native-safe-area-context.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>react-native-slider.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>react-native-webview.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
