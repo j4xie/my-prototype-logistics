@@ -6123,6 +6123,16 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("确认退货", "RETURN_ORDER_APPROVE");
         phraseToIntentMapping.put("退货完成", "RETURN_ORDER_APPROVE");
 
+        // PRODUCTION_PLAN_CREATE — 创建生产计划
+        phraseToIntentMapping.put("创建生产计划", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("新建生产计划", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("排产", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("安排生产", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("计划排产", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("制定生产计划", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("排一个生产计划", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("安排生产任务", "PRODUCTION_PLAN_CREATE");
+
         // QUALITY_BATCH_MARK_AS_INSPECTED (5)
         phraseToIntentMapping.put("不合格品", "QUALITY_BATCH_MARK_AS_INSPECTED");
         phraseToIntentMapping.put("判定不合格", "QUALITY_BATCH_MARK_AS_INSPECTED");
