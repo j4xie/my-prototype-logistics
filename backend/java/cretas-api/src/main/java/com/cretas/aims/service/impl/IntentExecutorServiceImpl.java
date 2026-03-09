@@ -761,7 +761,17 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             log.debug("Drools规则验证已禁用，跳过: intentCode={}", intent.getIntentCode());
         }
 
-        // 3.5. 主动参数检查 - Slot Filling 机制
+        // 3.5. Skill 优先检查 — 多Tool编排场景，trigger关键词匹配优先于单Tool和SlotFilling
+        // Skill 编排自身负责参数收集，不需要 SlotFilling 拦截
+        if (skillRouterService != null && skillRouterService.isSkillsEnabled()) {
+            IntentExecuteResponse skillResponse = trySkillRoute(request.getUserInput(), factoryId, userId);
+            if (skillResponse != null) {
+                log.info("Skill 优先匹配成功: intentCode={}, userInput={}", intent.getIntentCode(), request.getUserInput());
+                return skillResponse;
+            }
+        }
+
+        // 3.6. 主动参数检查 - Slot Filling 机制
         // 在执行前检查必需参数是否缺失，如果缺失则主动触发参数收集
         if (userId != null && !Boolean.TRUE.equals(request.getSkipSlotFilling()) && slotFillingService != null) {
             IntentExecuteResponse slotFillingResponse = slotFillingService.checkAndStartSlotFilling(
@@ -779,18 +789,9 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             }
         }
 
-        // 4. 路由到执行器 - Skill优先 → Tool → 动态选择
+        // 4. 路由到执行器 - Tool → 动态选择
         String toolName = intent.getToolName();
         IntentExecuteResponse response;
-
-        // 4a. Skill 优先检查 — 多Tool编排场景，trigger关键词匹配优先于单Tool
-        if (skillRouterService != null && skillRouterService.isSkillsEnabled()) {
-            IntentExecuteResponse skillResponse = trySkillRoute(request.getUserInput(), factoryId, userId);
-            if (skillResponse != null) {
-                log.info("Skill 优先匹配成功: intentCode={}, userInput={}", intent.getIntentCode(), request.getUserInput());
-                return skillResponse;
-            }
-        }
 
         // 4b. Tool 架构 — 有绑定工具时直接使用
         if (toolName != null && !toolName.isEmpty()) {
