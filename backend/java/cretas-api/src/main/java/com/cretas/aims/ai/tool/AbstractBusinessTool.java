@@ -45,6 +45,22 @@ public abstract class AbstractBusinessTool extends AbstractTool {
     protected abstract Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception;
 
     /**
+     * 预览业务操作（子类可覆盖）
+     *
+     * 默认实现委托到 doExecute()。WRITE 操作的子类应覆盖此方法，
+     * 返回当前值和变更预览，而不实际修改数据。
+     *
+     * @param factoryId 工厂ID
+     * @param params 已校验的参数
+     * @param context 执行上下文
+     * @return 预览结果（Map格式），应包含 status=PREVIEW
+     * @throws Exception 预览异常
+     */
+    protected Map<String, Object> doPreview(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
+        return doExecute(factoryId, params, context);
+    }
+
+    /**
      * 统一执行入口
      */
     @Override
@@ -192,6 +208,35 @@ public abstract class AbstractBusinessTool extends AbstractTool {
         );
 
         return displayNames.getOrDefault(paramName, paramName);
+    }
+
+    /**
+     * 预览入口 — 走 doPreview() 钩子
+     */
+    @Override
+    public String preview(ToolCall toolCall, Map<String, Object> context) throws Exception {
+        logExecutionStart(toolCall, context);
+        validateContext(context);
+
+        try {
+            Map<String, Object> params = parseArguments(toolCall);
+            String factoryId = getFactoryId(context);
+
+            List<String> missingParams = validateRequiredParams(params);
+            if (!missingParams.isEmpty()) {
+                return buildNeedMoreInfoResult(missingParams);
+            }
+
+            Map<String, Object> result = doPreview(factoryId, params, context);
+            return buildSuccessResult(result);
+        } catch (IllegalArgumentException e) {
+            log.warn("⚠️  预览参数验证失败: {}", e.getMessage());
+            String safeMessage = sanitizeErrorMessage(e.getMessage());
+            return buildErrorResult("参数验证失败: " + safeMessage);
+        } catch (Exception e) {
+            logExecutionFailure(toolCall, e);
+            return buildSanitizedErrorResult(e);
+        }
     }
 
     // ==================== 类型转换工具方法 ====================

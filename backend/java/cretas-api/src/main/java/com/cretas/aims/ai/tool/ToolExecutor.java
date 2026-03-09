@@ -83,4 +83,30 @@ public interface ToolExecutor {
     default boolean hasPermission(String userRole) {
         return true;
     }
+
+    /**
+     * 工具是否支持预览模式（TCC 确认流第一阶段）
+     *
+     * 支持预览的工具在 previewOnly=true 时返回操作预览而不执行，
+     * 用户确认后再通过 confirm 流程真正执行。
+     *
+     * @return true 表示支持预览
+     */
+    default boolean supportsPreview() {
+        return false;
+    }
+
+    /**
+     * 预览执行结果（不实际执行操作）
+     *
+     * 默认实现委托到 execute()，子类可覆盖以提供只读预览。
+     *
+     * @param toolCall LLM 返回的工具调用对象
+     * @param context 执行上下文（工厂ID、用户ID等）
+     * @return 预览结果（JSON 字符串），包含 status=PREVIEW
+     * @throws Exception 预览失败时抛出异常
+     */
+    default String preview(ToolCall toolCall, Map<String, Object> context) throws Exception {
+        return execute(toolCall, context);
+    }
 }

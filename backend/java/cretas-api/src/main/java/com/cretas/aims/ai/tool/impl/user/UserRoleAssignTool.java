@@ -1,32 +1,32 @@
 package com.cretas.aims.ai.tool.impl.user;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.entity.enums.FactoryUserRole;
+import com.cretas.aims.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
  * 用户角色分配工具
  *
  * 为用户分配或更新角色权限。
- * 支持设置单个角色或多个角色组合。
+ * 调用 UserService.updateUserRole 执行实际角色变更。
  *
  * Intent Code: USER_ROLE_ASSIGN
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2026-01-07
  */
 @Slf4j
 @Component
 public class UserRoleAssignTool extends AbstractBusinessTool {
 
-    // TODO: 注入实际的用户服务
-    // @Autowired
-    // private UserService userService;
+    @Autowired
+    private UserService userService;
 
     @Override
     public String getToolName() {
@@ -36,6 +36,8 @@ public class UserRoleAssignTool extends AbstractBusinessTool {
     @Override
     public String getDescription() {
         return "为用户分配或更新角色。支持设置用户的系统角色和权限级别。" +
+                "可用角色：operator(操作员), quality_inspector(质检员), workshop_supervisor(车间主任), " +
+                "dispatcher(调度), warehouse_worker(仓库员), hr_admin(HR管理员), factory_super_admin(工厂总监) 等。" +
                 "适用场景：员工岗位调整、权限提升/降级、角色变更。";
     }
 
@@ -46,46 +48,22 @@ public class UserRoleAssignTool extends AbstractBusinessTool {
 
         Map<String, Object> properties = new HashMap<>();
 
-        // userId: 用户ID（必需）
         Map<String, Object> userId = new HashMap<>();
         userId.put("type", "string");
-        userId.put("description", "要分配角色的用户ID或用户名");
+        userId.put("description", "要分配角色的用户ID（数字）");
         properties.put("userId", userId);
 
-        // role: 角色（必需）
         Map<String, Object> role = new HashMap<>();
         role.put("type", "string");
-        role.put("description", "要分配的角色");
-        role.put("enum", Arrays.asList(
-                "ADMIN",           // 管理员
-                "OPERATOR",        // 操作员
-                "QUALITY_INSPECTOR", // 质检员
-                "WAREHOUSE_KEEPER",  // 仓管员
-                "PRODUCTION_MANAGER", // 生产主管
-                "VIEWER"           // 只读用户
-        ));
+        role.put("description", "要分配的角色代码，如 operator, quality_inspector, workshop_supervisor, " +
+                "dispatcher, warehouse_worker, hr_admin, factory_super_admin, quality_manager, " +
+                "warehouse_manager, sales_manager, procurement_manager, finance_manager, equipment_admin, viewer");
         properties.put("role", role);
 
-        // additionalRoles: 附加角色（可选）
-        Map<String, Object> additionalRoles = new HashMap<>();
-        additionalRoles.put("type", "array");
-        additionalRoles.put("description", "附加角色列表，用于多角色场景");
-        Map<String, Object> roleItem = new HashMap<>();
-        roleItem.put("type", "string");
-        additionalRoles.put("items", roleItem);
-        properties.put("additionalRoles", additionalRoles);
-
-        // reason: 变更原因（可选）
         Map<String, Object> reason = new HashMap<>();
         reason.put("type", "string");
         reason.put("description", "角色变更原因");
         properties.put("reason", reason);
-
-        // effectiveDate: 生效日期（可选）
-        Map<String, Object> effectiveDate = new HashMap<>();
-        effectiveDate.put("type", "string");
-        effectiveDate.put("description", "生效日期，格式 YYYY-MM-DD，默认立即生效");
-        properties.put("effectiveDate", effectiveDate);
 
         schema.put("properties", properties);
         schema.put("required", Arrays.asList("userId", "role"));
@@ -102,112 +80,78 @@ public class UserRoleAssignTool extends AbstractBusinessTool {
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
         log.info("执行用户角色分配 - 工厂ID: {}, 参数: {}", factoryId, params);
 
-        // 获取必需参数
-        String userId = getString(params, "userId");
-        String role = getString(params, "role");
-
-        // 获取可选参数
-        List<String> additionalRoles = getList(params, "additionalRoles");
+        String userIdStr = getString(params, "userId");
+        String roleStr = getString(params, "role");
         String reason = getString(params, "reason");
-        String effectiveDate = getString(params, "effectiveDate");
 
-        // 获取当前操作者信息
-        Object contextOperatorId = context.get("userId");
-        String operatorId = contextOperatorId != null ? String.valueOf(contextOperatorId) : null;
-        Object contextOperatorName = context.get("userName");
-        String operatorName = contextOperatorName != null ? String.valueOf(contextOperatorName) : null;
-
-        // 验证角色
-        List<String> validRoles = Arrays.asList(
-                "ADMIN", "OPERATOR", "QUALITY_INSPECTOR",
-                "WAREHOUSE_KEEPER", "PRODUCTION_MANAGER", "VIEWER"
-        );
-        if (!validRoles.contains(role.toUpperCase())) {
-            throw new IllegalArgumentException("无效的用户角色: " + role);
+        // 解析用户ID
+        Long targetUserId;
+        try {
+            targetUserId = Long.valueOf(userIdStr.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("用户ID格式无效，请提供有效的数字ID。例如: userId: 123");
         }
 
-        // 验证附加角色
-        if (additionalRoles != null) {
-            for (String addRole : additionalRoles) {
-                if (!validRoles.contains(addRole.toUpperCase())) {
-                    throw new IllegalArgumentException("无效的附加角色: " + addRole);
-                }
-            }
+        // 解析角色
+        FactoryUserRole newRole = parseRole(roleStr);
+        if (newRole == null) {
+            throw new IllegalArgumentException("无效的用户角色: " + roleStr + "。可用角色: " +
+                    "operator(操作员), quality_inspector(质检员), workshop_supervisor(车间主任), " +
+                    "dispatcher(调度), warehouse_worker(仓库员), hr_admin(HR管理员), " +
+                    "factory_super_admin(工厂总监), quality_manager(质量经理), viewer(查看者)");
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        String timestamp = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        // 调用 UserService 更新角色
+        userService.updateUserRole(factoryId, targetUserId, newRole);
 
-        // TODO: 调用实际服务分配角色
-        // UserRoleResult result = userService.assignRole(factoryId, userId, role, additionalRoles, reason, effectiveDate);
-
-        // 构建角色列表
-        List<String> allRoles = new ArrayList<>();
-        allRoles.add(role.toUpperCase());
-        if (additionalRoles != null) {
-            for (String addRole : additionalRoles) {
-                if (!allRoles.contains(addRole.toUpperCase())) {
-                    allRoles.add(addRole.toUpperCase());
-                }
-            }
-        }
-
-        // 占位实现：返回模拟结果
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
-        result.put("userId", userId);
-        result.put("previousRole", "OPERATOR"); // 模拟之前的角色
-        result.put("newRole", role.toUpperCase());
-        result.put("newRoleName", getRoleName(role));
-        result.put("allRoles", allRoles);
-        result.put("allRoleNames", getRoleNames(allRoles));
-        result.put("assignedAt", timestamp);
-        result.put("assignedBy", operatorName != null ? operatorName : operatorId);
-        result.put("effectiveDate", effectiveDate != null ? effectiveDate : "立即生效");
+        result.put("userId", targetUserId);
+        result.put("newRole", newRole.name());
+        result.put("newRoleName", newRole.getDisplayName());
+        result.put("message", "用户角色已更新为: " + newRole.getDisplayName());
 
         if (reason != null) {
             result.put("reason", reason);
         }
 
-        result.put("message", "用户角色已更新为：" + getRoleName(role));
-        result.put("notice", "请接入UserService完成实际角色分配");
-
-        log.info("用户角色分配完成 - 用户ID: {}, 新角色: {}", userId, role);
+        log.info("用户角色分配完成 - 用户ID: {}, 新角色: {}", targetUserId, newRole.name());
 
         return result;
     }
 
     /**
-     * 获取角色的中文名称
+     * 解析角色字符串为枚举值
      */
-    private String getRoleName(String role) {
-        Map<String, String> roleNames = Map.of(
-            "ADMIN", "管理员",
-            "OPERATOR", "操作员",
-            "QUALITY_INSPECTOR", "质检员",
-            "WAREHOUSE_KEEPER", "仓管员",
-            "PRODUCTION_MANAGER", "生产主管",
-            "VIEWER", "只读用户"
-        );
-        return roleNames.getOrDefault(role.toUpperCase(), role);
-    }
+    private FactoryUserRole parseRole(String roleStr) {
+        if (roleStr == null) return null;
+        String normalized = roleStr.toLowerCase().trim();
 
-    /**
-     * 获取多个角色的中文名称列表
-     */
-    private List<String> getRoleNames(List<String> roles) {
-        List<String> names = new ArrayList<>();
-        for (String role : roles) {
-            names.add(getRoleName(role));
-        }
-        return names;
+        return switch (normalized) {
+            case "operator", "操作员" -> FactoryUserRole.operator;
+            case "quality_inspector", "质检员" -> FactoryUserRole.quality_inspector;
+            case "department_admin", "部门管理员" -> FactoryUserRole.department_admin;
+            case "factory_super_admin", "工厂超管", "超级管理员", "工厂总监" -> FactoryUserRole.factory_super_admin;
+            case "workshop_supervisor", "车间主管", "车间主任" -> FactoryUserRole.workshop_supervisor;
+            case "dispatcher", "调度员", "调度" -> FactoryUserRole.dispatcher;
+            case "hr_admin", "hr管理员" -> FactoryUserRole.hr_admin;
+            case "quality_manager", "质量经理" -> FactoryUserRole.quality_manager;
+            case "warehouse_worker", "仓库员" -> FactoryUserRole.warehouse_worker;
+            case "warehouse_manager", "仓储主管" -> FactoryUserRole.warehouse_manager;
+            case "sales_manager", "销售主管" -> FactoryUserRole.sales_manager;
+            case "procurement_manager", "采购主管" -> FactoryUserRole.procurement_manager;
+            case "finance_manager", "财务主管" -> FactoryUserRole.finance_manager;
+            case "equipment_admin", "设备管理员" -> FactoryUserRole.equipment_admin;
+            case "viewer", "查看者" -> FactoryUserRole.viewer;
+            default -> null;
+        };
     }
 
     @Override
     protected String getParameterQuestion(String paramName) {
         Map<String, String> questions = Map.of(
-            "userId", "请问要为哪个用户分配角色？请提供用户ID或用户名。",
-            "role", "请问要分配什么角色？（管理员/操作员/质检员/仓管员/生产主管/只读用户）"
+            "userId", "请问要为哪个用户分配角色？请提供用户ID。",
+            "role", "请问要分配什么角色？（操作员/质检员/车间主任/调度/仓库员/HR管理员/工厂总监等）"
         );
         return questions.getOrDefault(paramName, super.getParameterQuestion(paramName));
     }
@@ -217,9 +161,7 @@ public class UserRoleAssignTool extends AbstractBusinessTool {
         Map<String, String> displayNames = Map.of(
             "userId", "用户ID",
             "role", "角色",
-            "additionalRoles", "附加角色",
-            "reason", "变更原因",
-            "effectiveDate", "生效日期"
+            "reason", "变更原因"
         );
         return displayNames.getOrDefault(paramName, super.getParameterDisplayName(paramName));
     }

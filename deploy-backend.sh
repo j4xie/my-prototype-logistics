@@ -201,9 +201,14 @@ deploy_jar() {
         echo "📦 [1/4] 跳过 Maven 打包 (SKIP_BUILD=1, 使用已有 JAR)"
     else
         echo "📦 [1/4] 本地 Maven 打包..."
-        export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
         cd backend/java/cretas-api
-        ./mvnw.cmd package -Dmaven.test.skip=true -q
+        if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == "linux"* ]]; then
+            chmod +x mvnw 2>/dev/null
+            ./mvnw package -Dmaven.test.skip=true -q
+        else
+            export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
+            ./mvnw.cmd package -Dmaven.test.skip=true -q
+        fi
         cd ../../..
     fi
 

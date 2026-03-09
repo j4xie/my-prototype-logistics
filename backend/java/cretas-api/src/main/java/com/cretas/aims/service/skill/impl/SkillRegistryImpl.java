@@ -138,14 +138,14 @@ public class SkillRegistryImpl implements SkillRegistry {
     private int initializeDefaultSkills() {
         int count = 0;
 
-        // 库存分析Skill
+        // 库存分析Skill — 物料库存查询 + 低库存预警
         registerWithSource(SkillDefinition.builder()
                 .name("inventory-analysis")
                 .displayName("库存分析")
                 .description("分析库存数据，包括库存量、库存周转、预警等")
-                .version("1.0.0")
-                .triggers(Arrays.asList("库存", "剩余", "还有多少", "库存量", "存货"))
-                .tools(Arrays.asList("inventory_query", "material_batch_search"))
+                .version("2.0.0")
+                .triggers(Arrays.asList("库存分析", "库存预警", "低库存", "过期物料", "库存量", "还有多少", "存货"))
+                .tools(Arrays.asList("material_batch_query", "material_low_stock_alert", "material_expired_query"))
                 .contextNeeded(Arrays.asList("factoryId"))
                 .promptTemplate("分析工厂${factoryId}的库存情况，用户问题：${userQuery}")
                 .source("default")
@@ -153,29 +153,29 @@ public class SkillRegistryImpl implements SkillRegistry {
                 .build());
         count++;
 
-        // 生产追踪Skill
+        // 生产追踪Skill — 加工批次 + 生产计划
         registerWithSource(SkillDefinition.builder()
                 .name("production-tracking")
                 .displayName("生产追踪")
-                .description("追踪生产进度、工单状态、产能等")
-                .version("1.0.0")
-                .triggers(Arrays.asList("生产", "产量", "进度", "工单", "产能"))
-                .tools(Arrays.asList("production_plan_query", "work_order_query"))
-                .contextNeeded(Arrays.asList("factoryId", "dateRange"))
+                .description("追踪生产进度、批次状态、产能等")
+                .version("2.0.0")
+                .triggers(Arrays.asList("生产进度", "产量", "生产追踪", "工单", "批次状态", "加工进度"))
+                .tools(Arrays.asList("processing_batch_list", "processing_batch_detail", "processing_step_query"))
+                .contextNeeded(Arrays.asList("factoryId"))
                 .promptTemplate("查询工厂${factoryId}的生产状态，用户问题：${userQuery}")
                 .source("default")
                 .enabled(true)
                 .build());
         count++;
 
-        // 质量检查Skill
+        // 质量检查Skill — 质检查询 + 质检统计
         registerWithSource(SkillDefinition.builder()
                 .name("quality-inspection")
                 .displayName("质量检查")
                 .description("查询和分析质量检查记录")
-                .version("1.0.0")
-                .triggers(Arrays.asList("质检", "质量", "检验", "不合格", "合格率"))
-                .tools(Arrays.asList("quality_inspection_query", "quality_stats"))
+                .version("2.0.0")
+                .triggers(Arrays.asList("质检记录", "质检结果", "质量统计", "不合格", "合格率", "质量检查"))
+                .tools(Arrays.asList("quality_check_query", "quality_stats_query", "quality_record_query"))
                 .contextNeeded(Arrays.asList("factoryId"))
                 .promptTemplate("查询工厂${factoryId}的质检信息，用户问题：${userQuery}")
                 .source("default")
@@ -183,13 +183,13 @@ public class SkillRegistryImpl implements SkillRegistry {
                 .build());
         count++;
 
-        // 物料批次Skill
+        // 物料批次Skill — 批次查询 + 批次创建 (already correct)
         registerWithSource(SkillDefinition.builder()
                 .name("material-batch")
                 .displayName("物料批次管理")
                 .description("查询和管理物料批次信息")
-                .version("1.0.0")
-                .triggers(Arrays.asList("批次", "物料", "原料", "入库", "批号"))
+                .version("2.0.0")
+                .triggers(Arrays.asList("物料批次", "批次查询", "创建批次", "入库登记", "批号查询"))
                 .tools(Arrays.asList("material_batch_query", "material_batch_create"))
                 .contextNeeded(Arrays.asList("factoryId"))
                 .promptTemplate("处理工厂${factoryId}的物料批次请求，用户问题：${userQuery}")
@@ -198,31 +198,151 @@ public class SkillRegistryImpl implements SkillRegistry {
                 .build());
         count++;
 
-        // 人员排班Skill
+        // 人员排班Skill — 排班查询 + 考勤统计 + 在线人数
         registerWithSource(SkillDefinition.builder()
                 .name("personnel-scheduling")
                 .displayName("人员排班")
                 .description("管理人员排班、调度、出勤等")
-                .version("1.0.0")
+                .version("2.0.0")
                 .triggers(Arrays.asList("排班", "调度", "上班", "出勤", "人员", "员工"))
-                .tools(Arrays.asList("schedule_query", "worker_recommend"))
-                .contextNeeded(Arrays.asList("factoryId", "dateRange"))
+                .tools(Arrays.asList("scheduling_list", "attendance_stats", "query_online_staff_count"))
+                .contextNeeded(Arrays.asList("factoryId"))
                 .promptTemplate("处理工厂${factoryId}的人员排班请求，用户问题：${userQuery}")
                 .source("default")
                 .enabled(true)
                 .build());
         count++;
 
-        // 报表生成Skill
+        // 报表生成Skill — 仪表盘概览 + 生产报表 + KPI
         registerWithSource(SkillDefinition.builder()
                 .name("report-generation")
                 .displayName("报表生成")
                 .description("生成各类业务报表")
-                .version("1.0.0")
-                .triggers(Arrays.asList("报表", "报告", "统计", "汇总", "分析"))
-                .tools(Arrays.asList("report_generate", "data_aggregate"))
-                .contextNeeded(Arrays.asList("factoryId", "dateRange", "reportType"))
+                .version("2.0.0")
+                .triggers(Arrays.asList("报表", "报告", "仪表盘", "KPI", "汇总报表", "生产报表"))
+                .tools(Arrays.asList("report_dashboard_overview", "report_production", "report_kpi"))
+                .contextNeeded(Arrays.asList("factoryId"))
                 .promptTemplate("为工厂${factoryId}生成报表，用户问题：${userQuery}")
+                .source("default")
+                .enabled(true)
+                .build());
+        count++;
+
+        // 设备故障诊断Skill — 状态查询 + 活跃告警 + 健康诊断
+        registerWithSource(SkillDefinition.builder()
+                .name("equipment-diagnosis")
+                .displayName("设备故障诊断")
+                .description("诊断设备故障，查询设备状态、告警和健康状况")
+                .version("1.0.0")
+                .triggers(Arrays.asList("设备故障", "设备报警", "设备异常", "设备状态", "设备健康", "机器故障", "停机"))
+                .tools(Arrays.asList("equipment_status_query", "alert_active", "equipment_health_diagnosis"))
+                .contextNeeded(Arrays.asList("factoryId"))
+                .promptTemplate("诊断工厂${factoryId}的设备问题，用户问题：${userQuery}")
+                .source("default")
+                .enabled(true)
+                .build());
+        count++;
+
+        // 订单发货Skill — 订单查询 + 发货创建 + 发货统计
+        registerWithSource(SkillDefinition.builder()
+                .name("order-fulfillment")
+                .displayName("订单发货")
+                .description("处理订单发货流程，包括查询订单和创建发货单")
+                .version("1.0.0")
+                .triggers(Arrays.asList("发货", "出货", "物流", "配送", "发运", "订单发货"))
+                .tools(Arrays.asList("order_query", "shipment_create", "shipment_query"))
+                .contextNeeded(Arrays.asList("factoryId"))
+                .promptTemplate("处理工厂${factoryId}的发货请求，用户问题：${userQuery}")
+                .source("default")
+                .enabled(true)
+                .build());
+        count++;
+
+        // 产品溯源Skill — 批次溯源 + 全链路追踪 + 加工时间线
+        registerWithSource(SkillDefinition.builder()
+                .name("traceability")
+                .displayName("产品溯源")
+                .description("追溯产品全链路信息，包括批次追踪和加工时间线")
+                .version("1.0.0")
+                .triggers(Arrays.asList("溯源", "追溯", "来源", "批次追踪", "食品安全", "溯源码"))
+                .tools(Arrays.asList("trace_batch", "trace_full", "processing_batch_timeline"))
+                .contextNeeded(Arrays.asList("factoryId"))
+                .promptTemplate("追溯工厂${factoryId}的产品信息，用户问题：${userQuery}")
+                .source("default")
+                .enabled(true)
+                .build());
+        count++;
+
+        // 供应商评估Skill — 列表 + 评价 + 排名 + 采购统计
+        registerWithSource(SkillDefinition.builder()
+                .name("supplier-evaluation")
+                .displayName("供应商评估")
+                .description("评估供应商表现，包括排名和采购统计")
+                .version("1.0.0")
+                .triggers(Arrays.asList("供应商", "供货商", "供应商评价", "供应商排名", "采购评估"))
+                .tools(Arrays.asList("supplier_list", "supplier_evaluate", "supplier_ranking"))
+                .contextNeeded(Arrays.asList("factoryId"))
+                .promptTemplate("评估工厂${factoryId}的供应商，用户问题：${userQuery}")
+                .source("default")
+                .enabled(true)
+                .build());
+        count++;
+
+        // 餐饮经营分析Skill — 营业额 + 菜品排名 + 客单价 + 高峰时段
+        registerWithSource(SkillDefinition.builder()
+                .name("restaurant-operations")
+                .displayName("餐饮经营分析")
+                .description("分析餐厅经营状况，包括营业额、菜品销量、客单价等")
+                .version("1.0.0")
+                .triggers(Arrays.asList("餐厅", "门店", "营业额", "菜品销量", "翻台率", "客单价"))
+                .tools(Arrays.asList("restaurant_daily_revenue", "restaurant_dish_sales_ranking", "restaurant_avg_ticket"))
+                .contextNeeded(Arrays.asList("factoryId"))
+                .promptTemplate("分析${factoryId}的餐饮经营情况，用户问题：${userQuery}")
+                .source("default")
+                .enabled(true)
+                .build());
+        count++;
+
+        // 餐饮损耗管理Skill — 损耗汇总 + 异常检测 + 过期预警 + 低库存
+        registerWithSource(SkillDefinition.builder()
+                .name("restaurant-wastage")
+                .displayName("餐饮损耗管理")
+                .description("管理餐饮损耗，包括损耗统计、异常检测和食材预警")
+                .version("1.0.0")
+                .triggers(Arrays.asList("损耗", "浪费", "报损", "废料", "食材过期", "食材库存"))
+                .tools(Arrays.asList("restaurant_wastage_summary", "restaurant_wastage_anomaly", "restaurant_ingredient_expiry_alert"))
+                .contextNeeded(Arrays.asList("factoryId"))
+                .promptTemplate("管理${factoryId}的餐饮损耗，用户问题：${userQuery}")
+                .source("default")
+                .enabled(true)
+                .build());
+        count++;
+
+        // 成本分析Skill — BOM成本 + 成本偏差 + 成本趋势
+        registerWithSource(SkillDefinition.builder()
+                .name("cost-analysis")
+                .displayName("成本分析")
+                .description("分析生产成本，包括BOM成本、偏差分析和趋势")
+                .version("1.0.0")
+                .triggers(Arrays.asList("成本", "费用", "BOM成本", "成本偏差", "成本趋势", "利润"))
+                .tools(Arrays.asList("report_bom_cost", "report_cost_variance", "report_cost_trend_analysis"))
+                .contextNeeded(Arrays.asList("factoryId"))
+                .promptTemplate("分析工厂${factoryId}的成本，用户问题：${userQuery}")
+                .source("default")
+                .enabled(true)
+                .build());
+        count++;
+
+        // 生产人员管理Skill — 批次工人 + 工人分配 + 到岗确认
+        registerWithSource(SkillDefinition.builder()
+                .name("production-workforce")
+                .displayName("生产人员管理")
+                .description("管理生产线人员，包括工人分配、到岗确认和实时人数")
+                .version("1.0.0")
+                .triggers(Arrays.asList("工人", "派工", "工人到岗", "批次人员", "分配工人", "在岗人数"))
+                .tools(Arrays.asList("processing_batch_workers", "processing_worker_assign", "production_confirm_workers_present"))
+                .contextNeeded(Arrays.asList("factoryId"))
+                .promptTemplate("管理工厂${factoryId}的生产人员，用户问题：${userQuery}")
                 .source("default")
                 .enabled(true)
                 .build());

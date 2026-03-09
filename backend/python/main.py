@@ -56,6 +56,7 @@ from smartbi.api import (
     finance_extract,
     data_sync,
     restaurant_analytics,
+    production_ai,
 )
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
@@ -305,6 +306,7 @@ app.include_router(analysis_cache.router, prefix="/api/smartbi", tags=["Analysis
 app.include_router(benchmark.router, prefix="/api/smartbi", tags=["Industry Benchmark"])
 app.include_router(finance_extract.router, prefix="/api/finance", tags=["Finance Extract"])
 app.include_router(restaurant_analytics.router, prefix="/api/smartbi", tags=["Restaurant Analytics"])
+app.include_router(production_ai.router, prefix="/api/smartbi", tags=["Production AI"])
 
 # Optional: Data sync endpoint (auto-adaptation for system tables)
 if hasattr(data_sync, 'router') and data_sync.router is not None:

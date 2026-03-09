@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PreDestroy;
+
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
@@ -73,6 +75,19 @@ public class SkillExecutorImpl implements SkillExecutor {
      */
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([^}]+)}");
 
+    @PreDestroy
+    public void shutdown() {
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
     // ==================== Interface Implementation ====================
 
     @Override
@@ -106,21 +121,26 @@ public class SkillExecutorImpl implements SkillExecutor {
                         executedTools, System.currentTimeMillis() - startTime);
             }
 
-            // 3. Prepare Prompt (replace template variables)
+            // 3. Deterministic mode: skip LLM for single-tool skills
+            if (canExecuteDeterministically(skill, context)) {
+                return executeDeterministic(skill, context, executedTools, startTime);
+            }
+
+            // 4. LLM mode: Prepare Prompt (replace template variables)
             String prompt = preparePrompt(skill, context);
             log.debug("Prepared prompt for skill {}: length={}", skill.getName(), prompt.length());
 
-            // 4. Call LLM to get parameters and execution plan
+            // 5. Call LLM to get parameters and execution plan
             String llmResponse = callLlm(prompt, context.getUserQuery());
             log.debug("LLM response for skill {}: length={}", skill.getName(),
                     llmResponse != null ? llmResponse.length() : 0);
 
-            // 5. Parse LLM response and extract parameters
+            // 6. Parse LLM response and extract parameters
             Map<String, Object> params = extractParams(llmResponse, context);
             context.setExtractedParams(params);
             log.info("Extracted {} parameters for skill {}", params.size(), skill.getName());
 
-            // 6. Execute associated Tools
+            // 7. Execute associated Tools
             Object toolResult = executeTools(skill, params, executedTools, context);
 
             long executionTime = System.currentTimeMillis() - startTime;
@@ -143,6 +163,65 @@ public class SkillExecutorImpl implements SkillExecutor {
             return SkillResult.error(skill.getName(), e.getMessage(),
                     executedTools, executionTime);
         }
+    }
+
+    /**
+     * Check if a skill can be executed deterministically (without LLM).
+     * Conditions: single tool + all required params available in context.
+     */
+    private boolean canExecuteDeterministically(SkillDefinition skill, SkillContext context) {
+        List<String> tools = skill.getTools();
+        if (tools == null || tools.size() != 1) {
+            return false; // Multi-tool skills need LLM for orchestration
+        }
+
+        String toolName = tools.get(0);
+        if (!toolRegistry.hasExecutor(toolName)) {
+            return false;
+        }
+
+        // Single-tool skill with params available from context — skip LLM
+        log.info("Skill {} eligible for deterministic execution (single tool: {})",
+                skill.getName(), toolName);
+        return true;
+    }
+
+    /**
+     * Execute a single-tool skill deterministically without calling LLM.
+     * Extracts params directly from context instead of LLM response.
+     */
+    private SkillResult executeDeterministic(SkillDefinition skill, SkillContext context,
+                                              List<String> executedTools, long startTime) throws Exception {
+        String toolName = skill.getTools().get(0);
+        log.info("Deterministic execution: skill={}, tool={}", skill.getName(), toolName);
+
+        // Build params from context (factoryId, userId, etc.)
+        Map<String, Object> params = new HashMap<>();
+        if (context.getFactoryId() != null) params.put("factoryId", context.getFactoryId());
+        if (context.getUserId() != null) params.put("userId", context.getUserId());
+        if (context.getExtractedParams() != null) params.putAll(context.getExtractedParams());
+        context.setExtractedParams(params);
+
+        // Execute the single tool directly
+        Object result = executeSingleTool(toolName, params, context);
+        executedTools.add(toolName);
+
+        Map<String, Object> results = new LinkedHashMap<>();
+        results.put(toolName, result);
+        results.put("_executionOrder", "deterministic");
+        results.put("_toolCount", 1);
+
+        long executionTime = System.currentTimeMillis() - startTime;
+        log.info("Deterministic execution completed: skill={}, tool={}, time={}ms",
+                skill.getName(), toolName, executionTime);
+
+        return SkillResult.builder()
+                .success(true)
+                .skillName(skill.getName())
+                .data(results)
+                .executedTools(executedTools)
+                .executionTime(executionTime)
+                .build();
     }
 
     @Override

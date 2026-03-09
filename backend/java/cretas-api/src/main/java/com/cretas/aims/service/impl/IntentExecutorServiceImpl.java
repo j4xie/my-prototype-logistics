@@ -14,7 +14,6 @@ import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.dto.cache.SemanticCacheHit;
 import com.cretas.aims.dto.intent.IntentMatchResult;
-import com.cretas.aims.dto.intent.IntentSemantics;
 import com.cretas.aims.dto.intent.IntentValidationFact;
 import com.cretas.aims.dto.intent.ValidationResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
@@ -43,7 +42,6 @@ import com.cretas.aims.dto.ai.AnalysisResult;
 import com.cretas.aims.dto.ai.AnalysisTopic;
 import com.cretas.aims.dto.ai.ProcessingMode;
 import com.cretas.aims.service.PreviewTokenService;
-import com.cretas.aims.service.handler.IntentHandler;
 import com.cretas.aims.dto.ai.PreprocessedQuery;
 import com.cretas.aims.dto.conversation.ConversationContext;
 import com.cretas.aims.dto.conversation.ConversationMessage;
@@ -53,6 +51,8 @@ import com.cretas.aims.ai.dto.ToolCall;
 import com.cretas.aims.ai.tool.ToolExecutor;
 import com.cretas.aims.ai.tool.ToolRegistry;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.service.skill.SkillRouterService;
+import com.cretas.aims.dto.skill.SkillResult;
 import com.cretas.aims.service.calibration.ToolCallRedundancyService;
 import com.cretas.aims.service.calibration.BehaviorCalibrationService;
 import com.cretas.aims.service.calibration.SelfCorrectionService;
@@ -100,7 +100,6 @@ import java.util.regex.Pattern;
 public class IntentExecutorServiceImpl implements IntentExecutorService {
 
     private final AIIntentService aiIntentService;
-    private final List<IntentHandler> handlers;
     private final IntentSemanticsParser semanticsParser;
     private final SemanticCacheService semanticCacheService;
     private final RuleEngineService ruleEngineService;
@@ -117,6 +116,9 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
     // 新增：工具路由服务
     private final ToolRouterService toolRouterService;
+
+    // 新增：Skill路由服务（多Tool编排）
+    private SkillRouterService skillRouterService;
 
     // 新增：结果验证服务
     private final ResultValidatorService resultValidatorService;
@@ -170,10 +172,13 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         this.previewTokenService = previewTokenService;
     }
 
-    // 处理器映射表: category -> handler
-    private final Map<String, IntentHandler> handlerMap = new HashMap<>();
+    @Autowired(required = false)
+    public void setSkillRouterService(SkillRouterService skillRouterService) {
+        this.skillRouterService = skillRouterService;
+    }
 
-    // Tool 注册中心（新架构）
+    // Tool 注册中心
+
     private final ToolRegistry toolRegistry;
 
     // SSE 异步执行器 — bounded to prevent thread exhaustion
@@ -193,7 +198,6 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
     @Autowired
     public IntentExecutorServiceImpl(AIIntentService aiIntentService,
-                                     List<IntentHandler> handlers,
                                      IntentSemanticsParser semanticsParser,
                                      SemanticCacheService semanticCacheService,
                                      RuleEngineService ruleEngineService,
@@ -222,7 +226,6 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                                      com.cretas.aims.config.IntentSlotConfiguration intentSlotConfiguration,
                                      @org.springframework.context.annotation.Lazy com.cretas.aims.service.SlotFillingService slotFillingService) {
         this.aiIntentService = aiIntentService;
-        this.handlers = handlers;
         this.semanticsParser = semanticsParser;
         this.semanticCacheService = semanticCacheService;
         this.ruleEngineService = ruleEngineService;
@@ -254,13 +257,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
     @PostConstruct
     public void init() {
-        // 初始化处理器映射
-        for (IntentHandler handler : handlers) {
-            String category = handler.getSupportedCategory();
-            handlerMap.put(category, handler);
-            log.info("注册意图处理器: category={}, handler={}", category, handler.getClass().getSimpleName());
-        }
-        log.info("意图执行器初始化完成，共注册 {} 个处理器", handlerMap.size());
+        log.info("意图执行器初始化完成 (Tool-only 架构)");
     }
 
     @PreDestroy
@@ -781,35 +778,56 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             }
         }
 
-        // 4. 路由到执行器 - Tool 优先，动态选择，Handler 回退
+        // 4. 路由到执行器 - Tool → Skill → 动态选择
         String toolName = intent.getToolName();
         IntentExecuteResponse response;
 
-        // 4a. Tool 架构优先（新架构）- 有绑定工具时直接使用
+        // 4a. Tool 架构 — 有绑定工具时直接使用
         if (toolName != null && !toolName.isEmpty()) {
             Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
             if (toolOpt.isPresent()) {
                 log.info("使用 Tool 执行: intentCode={}, toolName={}", intent.getIntentCode(), toolName);
                 response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole, matchResult);
             } else {
-                log.warn("Tool 未找到，回退到 Handler: toolName={}", toolName);
-                response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+                log.warn("Tool 未找到: toolName={}, intentCode={}", toolName, intent.getIntentCode());
+                String errMsg = "工具未注册: " + toolName;
+                response = IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intent.getIntentCode())
+                        .intentName(intent.getIntentName())
+                        .intentCategory(intent.getIntentCategory())
+                        .status("FAILED")
+                        .message(errMsg)
+                        .formattedText(errMsg)
+                        .executedAt(LocalDateTime.now())
+                        .build();
             }
         }
-        // 4b. Handler 优先检查 — 如果 category 有对应 Handler，直接执行，跳过动态工具选择
-        else if (handlerMap.containsKey(intent.getIntentCategory())
-                || INTENT_CODE_HANDLER_OVERRIDE.containsKey(intent.getIntentCode())) {
-            log.info("使用 Handler 执行 (category={}): intentCode={}", intent.getIntentCategory(), intent.getIntentCode());
-            response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+        // 4b. Skill 编排层 — 多Tool组合场景，trigger关键词匹配
+        else if (skillRouterService != null && skillRouterService.isSkillsEnabled()) {
+            IntentExecuteResponse skillResponse = trySkillRoute(request.getUserInput(), factoryId, userId);
+            if (skillResponse != null) {
+                log.info("使用 Skill 执行: intentCode={}", intent.getIntentCode());
+                response = skillResponse;
+            }
+            else if (toolRouterService.requiresDynamicSelection(matchResult)) {
+                log.info("触发动态工具选择: intentCode={}", intent.getIntentCode());
+                response = executeWithDynamicToolSelection(factoryId, request, intent, matchResult, userId, userRole);
+            }
+            else {
+                log.warn("无 Tool/Skill 匹配: intentCode={}, category={}", intent.getIntentCode(), intent.getIntentCategory());
+                response = buildNoToolResponse(intent);
+            }
         }
-        // 4c. 动态工具选择（模块D）- 无绑定工具且无 Handler 时尝试动态选择
+        // 4c. 动态工具选择（模块D）
         else if (toolRouterService.requiresDynamicSelection(matchResult)) {
             log.info("触发动态工具选择: intentCode={}", intent.getIntentCode());
             response = executeWithDynamicToolSelection(factoryId, request, intent, matchResult, userId, userRole);
         }
-        // 4d. Handler 架构回退（旧架构）
+        // 4d. 无匹配路由
         else {
-            response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+            log.warn("无路由匹配: intentCode={}, category={}", intent.getIntentCode(), intent.getIntentCategory());
+            response = buildNoToolResponse(intent);
         }
 
         // 6.5. 检查是否需要更多信息，生成澄清问题并创建对话会话
@@ -860,29 +878,74 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     }
 
     /**
-     * 使用Handler执行意图（支持语义模式）
+     * Tool 预览执行 — 走 tool.preview() 路径
      */
-    private IntentExecuteResponse executeWithHandler(IntentHandler handler, String factoryId,
+    private IntentExecuteResponse buildNoToolResponse(AIIntentConfig intent) {
+        String msg = "暂不支持此类型的意图执行: " + intent.getIntentCategory();
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true)
+                .intentCode(intent.getIntentCode())
+                .intentName(intent.getIntentName())
+                .intentCategory(intent.getIntentCategory())
+                .status("FAILED")
+                .message(msg)
+                .formattedText(msg)
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+
+    private IntentExecuteResponse executeToolPreview(ToolExecutor tool, String factoryId,
                                                       IntentExecuteRequest request,
                                                       AIIntentConfig intent,
-                                                      Long userId, String userRole) {
-        // 检查Handler是否支持语义模式
-        if (handler.supportsSemanticsMode()) {
-            try {
-                // 解析语义
-                IntentSemantics semantics = semanticsParser.parse(request, intent, factoryId);
-                log.debug("使用语义模式执行: intent={}, semanticPath={}",
-                        intent.getIntentCode(), semantics.getSemanticPath());
-                return handler.handleWithSemantics(factoryId, semantics, intent, userId, userRole);
-            } catch (Exception e) {
-                log.warn("语义模式执行失败，回退到传统模式: intent={}, error={}",
-                        intent.getIntentCode(), e.getMessage());
-                // 回退到传统模式
+                                                      Long userId, String userRole,
+                                                      IntentMatchResult matchResult) {
+        try {
+            // 构建参数（与 executeWithTool 相同的参数构建逻辑）
+            Map<String, Object> params = new HashMap<>();
+            if (request.getContext() != null) {
+                params.putAll(request.getContext());
             }
-        }
+            params.put("userInput", request.getUserInput());
+            params.put("intentCode", intent.getIntentCode());
 
-        // 传统模式
-        return handler.handle(factoryId, request, intent, userId, userRole);
+            String argumentsJson = objectMapper.writeValueAsString(params);
+            ToolCall toolCall = ToolCall.of(
+                    java.util.UUID.randomUUID().toString(),
+                    tool.getToolName(),
+                    argumentsJson
+            );
+
+            Map<String, Object> context = new HashMap<>();
+            context.put("factoryId", factoryId);
+            context.put("userId", userId);
+            context.put("userRole", userRole);
+            context.put("intentConfig", intent);
+
+            String resultJson = tool.preview(toolCall, context);
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .intentCategory(intent.getIntentCategory())
+                    .status("PREVIEW")
+                    .message(resultJson)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Tool preview 失败: tool={}, error={}", tool.getToolName(), e.getMessage(), e);
+            String errorMsg = "预览失败: " + ErrorSanitizer.sanitize(e);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .status("FAILED")
+                    .message(errorMsg)
+                    .formattedText(errorMsg)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
     }
 
     /**
@@ -911,6 +974,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                         .formattedText(permDeniedMsg)
                         .executedAt(LocalDateTime.now())
                         .build();
+            }
+
+            // 1.5. 预览模式 — Tool 原生 preview 路径
+            if (Boolean.TRUE.equals(request.getPreviewOnly()) && tool.supportsPreview()) {
+                log.info("Tool preview 模式: tool={}, intentCode={}", tool.getToolName(), intent.getIntentCode());
+                return executeToolPreview(tool, factoryId, request, intent, userId, userRole, matchResult);
             }
 
             // 2. 构建 ToolCall
@@ -1573,112 +1642,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             "查询完成,暂无数据", "处理完成", "请求成功"
     );
 
-    /**
-     * 意图代码级别的 handler 覆盖映射：当 DB 中 intent_category 与实际 handler 不匹配时使用
-     */
-    private static final Map<String, String> INTENT_CODE_HANDLER_OVERRIDE = Map.ofEntries(
-            // 设备相关意图 → EQUIPMENT handler (DB中错误分到了DATA_OP/REPORT)
-            Map.entry("COLD_CHAIN_TEMPERATURE", "EQUIPMENT"),
-            Map.entry("ANALYZE_EQUIPMENT", "EQUIPMENT"),
-            Map.entry("QUERY_EQUIPMENT_STATUS_BY_NAME", "EQUIPMENT"),
-            Map.entry("EQUIPMENT_CAMERA_START", "EQUIPMENT"),
-            Map.entry("CCP_MONITOR_DATA_DETECTION", "EQUIPMENT"),
-            // HR相关意图 → HR handler (DB中错误分到了REPORT/DATA_OP)
-            Map.entry("WORKER_ARRIVAL_CONFIRM", "HR"),
-            Map.entry("ATTENDANCE_STATS_BY_DEPT", "HR"),
-            Map.entry("QUERY_ONLINE_STAFF_COUNT", "HR"),
-            Map.entry("WORKER_IN_SHOP_REALTIME_COUNT", "MATERIAL"),
-            Map.entry("HR_DELETE_EMPLOYEE", "HR"),
-            // 物料相关意图 → MATERIAL handler
-            Map.entry("INVENTORY_OUTBOUND", "MATERIAL"),
-            Map.entry("WAREHOUSE_OUTBOUND", "MATERIAL"),
-            Map.entry("MATERIAL_BATCH_DELETE", "MATERIAL"),
-            Map.entry("QUERY_ORDER_PENDING_MATERIAL_QUANTITY", "MATERIAL"),
-            Map.entry("QUERY_MATERIAL_REJECTION_REASON", "MATERIAL"),
-            Map.entry("PRODUCTION_LINE_START", "MATERIAL"),
-            // 运输相关意图 → SHIPMENT handler
-            Map.entry("QUERY_TRANSPORT_LINE", "SHIPMENT"),
-            Map.entry("SHIPMENT_DELETE", "SHIPMENT"),
-            // CRM相关意图 → CRM handler
-            Map.entry("CUSTOMER_DELETE", "CRM"),
-            Map.entry("SUPPLIER_CREATE", "CRM"),
-            Map.entry("SUPPLIER_DELETE", "CRM"),
-            // 报表相关意图 → REPORT handler (DB中错误分到了DATA_OP)
-            Map.entry("PAYMENT_STATUS_QUERY", "REPORT"),
-            Map.entry("SCHEDULING_LIST", "REPORT"),
-            // 新增：域外 + 上下文继续 → SYSTEM handler
-            Map.entry("OUT_OF_DOMAIN", "SYSTEM"),
-            Map.entry("CONTEXT_CONTINUE", "SYSTEM")
-    );
 
-    private static final Map<String, String> CATEGORY_ALIAS_MAP = Map.ofEntries(
-            Map.entry("PROCESSING", "MATERIAL"),    // 生产批次操作 → 物料/批次处理器
-            Map.entry("PRODUCTION", "MATERIAL"),    // 生产任务 → 物料/批次处理器
-            Map.entry("QUERY", "DATA_OP"),           // 通用查询 → 数据操作处理器
-            Map.entry("FINANCE", "REPORT"),          // 财务分析 → 报表处理器
-            Map.entry("SMARTBI", "REPORT"),          // SmartBI分析 → 报表处理器
-            Map.entry("SCHEDULING", "REPORT"),       // 排班 → 报表处理器
-            Map.entry("INVENTORY", "MATERIAL"),      // 库存 → 物料处理器
-            Map.entry("WAREHOUSE", "MATERIAL"),      // 仓库 → 物料处理器
-            Map.entry("TRACE", "SHIPMENT"),          // 溯源 → 发货处理器
-            Map.entry("ORDER", "CRM")               // 订单 → CRM处理器
-    );
-
-    private IntentExecuteResponse executeWithHandlerFallback(String factoryId,
-                                                              IntentExecuteRequest request,
-                                                              AIIntentConfig intent,
-                                                              Long userId, String userRole) {
-        String category = intent.getIntentCategory();
-        IntentHandler handler = null;
-
-        // 1. 意图代码级别的 handler 覆盖（优先级最高）
-        String overrideCategory = INTENT_CODE_HANDLER_OVERRIDE.get(intent.getIntentCode());
-        if (overrideCategory != null) {
-            handler = handlerMap.get(overrideCategory);
-            if (handler != null) {
-                log.debug("IntentCode handler override: {} → {}", intent.getIntentCode(), overrideCategory);
-            }
-        }
-
-        // 2. 按 DB 中的 category 查找
-        if (handler == null) {
-            handler = handlerMap.get(category);
-        }
-
-        // 3. 尝试 category 别名映射
-        if (handler == null) {
-            String aliasCategory = CATEGORY_ALIAS_MAP.get(category);
-            if (aliasCategory != null) {
-                handler = handlerMap.get(aliasCategory);
-                if (handler != null) {
-                    log.info("Category别名映射: {} → {}, intentCode={}", category, aliasCategory, intent.getIntentCode());
-                }
-            }
-        }
-
-        if (handler == null) {
-            log.warn("未找到处理器: category={}", category);
-            String noHandlerMsg = "暂不支持此类型的意图执行: " + category;
-            return IntentExecuteResponse.builder()
-                    .intentRecognized(true)
-                    .intentCode(intent.getIntentCode())
-                    .intentName(intent.getIntentName())
-                    .intentCategory(category)
-                    .status("FAILED")
-                    .message(noHandlerMsg)
-                    .formattedText(noHandlerMsg)
-                    .executedAt(LocalDateTime.now())
-                    .build();
-        }
-
-        // 预览模式
-        if (Boolean.TRUE.equals(request.getPreviewOnly())) {
-            return handler.preview(factoryId, request, intent, userId, userRole);
-        }
-
-        // 执行 - 优先使用语义模式
-        return executeWithHandler(handler, factoryId, request, intent, userId, userRole);
-    }
 
     /**
      * 动态工具选择执行（模块D）
@@ -1715,8 +1679,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             List<ToolRouterService.ToolCandidate> candidates = toolRouterService.retrieveCandidateTools(query, 10);
             if (candidates.isEmpty()) {
                 log.warn("动态工具选择: 未找到候选工具, query={}", query);
-                // 回退到 Handler
-                return executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+                return buildNoToolResponse(intent);
             }
 
             log.info("动态工具选择: 找到 {} 个候选工具", candidates.size());
@@ -1729,7 +1692,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             ToolRouterService.SelectedTools selectedTools = toolRouterService.selectTools(query, matchResult, candidates);
             if (selectedTools.getTools() == null || selectedTools.getTools().isEmpty()) {
                 log.warn("动态工具选择: LLM 未选中任何工具");
-                return executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+                return buildNoToolResponse(intent);
             }
 
             log.info("动态工具选择: LLM 选中 {} 个工具, 执行顺序={}",
@@ -1777,8 +1740,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
         } catch (Exception e) {
             log.error("动态工具选择执行失败: {}", e.getMessage(), e);
-            // 回退到 Handler
-            return executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+            return buildNoToolResponse(intent);
         }
     }
 
@@ -1920,20 +1882,26 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
             AIIntentConfig intentConfig = intentConfigOpt.get();
 
-            // 路由到对应 handler
-            String category = intentConfig.getIntentCategory();
-            IntentHandler handler = handlerMap.get(category);
-            if (handler == null) {
-                return IntentExecuteResponse.builder()
-                        .status("FAILED")
-                        .message("未找到处理器: " + category)
-                        .executedAt(LocalDateTime.now())
-                        .build();
+            // 路由: 先尝试 Tool，再回退 Handler
+            String toolName = intentConfig.getToolName();
+            if (toolName != null && !toolName.isEmpty()) {
+                Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
+                if (toolOpt.isPresent()) {
+                    log.info("确认执行使用 Tool: toolName={}, intentCode={}", toolName, intentCode);
+                    IntentExecuteResponse response = executeWithTool(
+                            toolOpt.get(), factoryId, execRequest, intentConfig, userId, userRole, null);
+                    log.info("确认执行完成 (Tool): intent={}, status={}", intentCode, response.getStatus());
+                    return response;
+                }
             }
 
-            IntentExecuteResponse response = handler.handle(factoryId, execRequest, intentConfig, userId, userRole);
-            log.info("确认执行完成: intent={}, status={}", intentCode, response.getStatus());
-            return response;
+            // 无 Tool 绑定
+            log.warn("确认执行无 Tool 绑定: intentCode={}", intentCode);
+            return IntentExecuteResponse.builder()
+                    .status("FAILED")
+                    .message("未找到工具: " + intentCode)
+                    .executedAt(LocalDateTime.now())
+                    .build();
 
         } catch (Exception e) {
             log.error("确认执行失败: confirmToken={}, error={}", confirmToken, e.getMessage(), e);
@@ -2209,12 +2177,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 log.info("[SSE] 使用 Tool 执行: intentCode={}, toolName={}", intent.getIntentCode(), toolName);
                 response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole, matchResult);
             } else {
-                log.warn("[SSE] Tool 未找到，回退到 Handler: toolName={}", toolName);
-                response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+                log.warn("[SSE] Tool 未找到: toolName={}", toolName);
+                response = buildNoToolResponse(intent);
             }
         } else {
-            // Handler 架构回退（旧架构）
-            response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+            log.warn("[SSE] 无 Tool 绑定: intentCode={}", intent.getIntentCode());
+            response = buildNoToolResponse(intent);
         }
 
         // 发送结果
@@ -2547,11 +2515,11 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         String category = intent.getIntentCategory();
         IntentExecuteResponse response;
 
-        // 5. 预览模式 - 仍使用 Handler（Tool 不支持预览）
-        if (Boolean.TRUE.equals(request.getPreviewOnly())) {
-            IntentHandler handler = handlerMap.get(category);
-            if (handler != null) {
-                return handler.preview(factoryId, request, intent, userId, userRole);
+        // 5. 预览模式 — Tool preview 路径
+        if (Boolean.TRUE.equals(request.getPreviewOnly()) && toolName != null && !toolName.isEmpty()) {
+            Optional<ToolExecutor> previewToolOpt = toolRegistry.getExecutor(toolName);
+            if (previewToolOpt.isPresent() && previewToolOpt.get().supportsPreview()) {
+                return executeToolPreview(previewToolOpt.get(), factoryId, request, intent, userId, userRole, null);
             }
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
@@ -2563,21 +2531,19 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .build();
         }
 
-        // 6. Tool 架构优先（新架构）
+        // 6. Tool 架构
         if (toolName != null && !toolName.isEmpty()) {
             Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
             if (toolOpt.isPresent()) {
                 log.info("[显式执行] 使用 Tool 执行: intentCode={}, toolName={}", intentCode, toolName);
-                // 显式意图执行没有 matchResult（无需预处理参数传递）
                 response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole, null);
             } else {
-                log.warn("[显式执行] Tool 未找到，回退到 Handler: toolName={}", toolName);
-                response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+                log.warn("[显式执行] Tool 未找到: toolName={}", toolName);
+                response = buildNoToolResponse(intent);
             }
         } else {
-            // Handler 架构回退（旧架构）
-            log.info("[显式执行] 使用 Handler: intentCode={}, category={}", intentCode, category);
-            response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+            log.warn("[显式执行] 无 Tool 绑定: intentCode={}, category={}", intentCode, category);
+            response = buildNoToolResponse(intent);
         }
 
         // 6.5. 检查是否需要更多信息，生成澄清问题并创建对话会话
@@ -4605,6 +4571,84 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             case UNKNOWN:
             default:
                 return false;
+        }
+    }
+
+    /**
+     * 尝试 Skill 路由 — 如果用户查询匹配某个 Skill 的触发词，
+     * 使用 SkillRouterService 执行多Tool编排。
+     *
+     * @return IntentExecuteResponse if Skill matched and executed successfully, null otherwise
+     */
+    private IntentExecuteResponse trySkillRoute(String userQuery, String factoryId, Long userId) {
+        try {
+            var matchingSkills = skillRouterService.findMatchingSkills(userQuery);
+            if (matchingSkills.isEmpty()) {
+                return null;
+            }
+
+            var bestMatch = matchingSkills.get(0);
+            double score = bestMatch.calculateMatchScore(userQuery);
+            if (score < 0.3) {
+                log.debug("Skill 匹配分数太低 ({} < 0.3)，跳过: skill={}", score, bestMatch.getName());
+                return null;
+            }
+
+            log.info("Skill 匹配成功: skill={}, score={}", bestMatch.getName(), String.format("%.2f", score));
+
+            // 直接执行 Skill，不走 processQuery 避免双重匹配 + 双重 fallback
+            com.cretas.aims.dto.skill.SkillContext skillContext = com.cretas.aims.dto.skill.SkillContext.builder()
+                    .factoryId(factoryId)
+                    .userId(userId != null ? userId.toString() : null)
+                    .userQuery(userQuery)
+                    .extractedParams(new HashMap<>())
+                    .build();
+
+            SkillResult skillResult = skillRouterService.executeSkill(bestMatch.getName(), skillContext);
+
+            if (skillResult.isSuccess()) {
+                IntentExecuteResponse response = new IntentExecuteResponse();
+                response.setStatus("SUCCESS");
+                response.setMessage("Skill 执行成功: " + skillResult.getSkillName());
+                response.setResultData(skillResult.getData());
+                response.setFormattedText(formatSkillResult(skillResult));
+                return response;
+            }
+
+            log.warn("Skill 执行失败: skill={}, message={}", skillResult.getSkillName(), skillResult.getMessage());
+            return null; // fallback 由 IntentExecutorServiceImpl 的后续分支处理
+        } catch (Exception e) {
+            log.warn("Skill 路由异常，回退到后续路由: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 格式化 Skill 执行结果为用户可读文本
+     */
+    private String formatSkillResult(SkillResult skillResult) {
+        if (skillResult.getData() == null) {
+            return skillResult.getMessage();
+        }
+        try {
+            // Attempt to extract message from result data
+            if (skillResult.getData() instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> dataMap = (Map<String, Object>) skillResult.getData();
+                // Look for message in any tool result
+                for (Map.Entry<String, Object> entry : dataMap.entrySet()) {
+                    if (entry.getKey().startsWith("_")) continue;
+                    if (entry.getValue() instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> toolResult = (Map<String, Object>) entry.getValue();
+                        Object msg = toolResult.get("message");
+                        if (msg != null) return msg.toString();
+                    }
+                }
+            }
+            return objectMapper.writeValueAsString(skillResult.getData());
+        } catch (Exception e) {
+            return skillResult.getMessage();
         }
     }
 }
