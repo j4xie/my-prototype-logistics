@@ -779,11 +779,20 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             }
         }
 
-        // 4. 路由到执行器 - Tool → Skill → 动态选择
+        // 4. 路由到执行器 - Skill优先 → Tool → 动态选择
         String toolName = intent.getToolName();
         IntentExecuteResponse response;
 
-        // 4a. Tool 架构 — 有绑定工具时直接使用
+        // 4a. Skill 优先检查 — 多Tool编排场景，trigger关键词匹配优先于单Tool
+        if (skillRouterService != null && skillRouterService.isSkillsEnabled()) {
+            IntentExecuteResponse skillResponse = trySkillRoute(request.getUserInput(), factoryId, userId);
+            if (skillResponse != null) {
+                log.info("Skill 优先匹配成功: intentCode={}, userInput={}", intent.getIntentCode(), request.getUserInput());
+                return skillResponse;
+            }
+        }
+
+        // 4b. Tool 架构 — 有绑定工具时直接使用
         if (toolName != null && !toolName.isEmpty()) {
             Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
             if (toolOpt.isPresent()) {
@@ -804,23 +813,17 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                         .build();
             }
         }
-        // 4b. Skill 编排层 — 多Tool组合场景，trigger关键词匹配
-        else if (skillRouterService != null && skillRouterService.isSkillsEnabled()) {
-            IntentExecuteResponse skillResponse = trySkillRoute(request.getUserInput(), factoryId, userId);
-            if (skillResponse != null) {
-                log.info("使用 Skill 执行: intentCode={}", intent.getIntentCode());
-                response = skillResponse;
-            }
-            else if (toolRouterService.requiresDynamicSelection(matchResult)) {
-                log.info("触发动态工具选择: intentCode={}", intent.getIntentCode());
-                response = executeWithDynamicToolSelection(factoryId, request, intent, matchResult, userId, userRole);
-            }
-            else {
-                log.warn("无 Tool/Skill 匹配: intentCode={}, category={}", intent.getIntentCode(), intent.getIntentCategory());
-                response = buildNoToolResponse(intent);
-            }
+        // 4c. 无Tool绑定 — 走动态选择 (Skill已在4a检查过)
+        else if (skillRouterService != null && skillRouterService.isSkillsEnabled()
+                && toolRouterService.requiresDynamicSelection(matchResult)) {
+            log.info("触发动态工具选择: intentCode={}", intent.getIntentCode());
+            response = executeWithDynamicToolSelection(factoryId, request, intent, matchResult, userId, userRole);
         }
-        // 4c. 动态工具选择（模块D）
+        else if (skillRouterService != null && skillRouterService.isSkillsEnabled()) {
+            log.warn("无 Tool/Skill 匹配: intentCode={}, category={}", intent.getIntentCode(), intent.getIntentCategory());
+            response = buildNoToolResponse(intent);
+        }
+        // 4d. 动态工具选择（模块D, skillRouter未启用时）
         else if (toolRouterService.requiresDynamicSelection(matchResult)) {
             log.info("触发动态工具选择: intentCode={}", intent.getIntentCode());
             response = executeWithDynamicToolSelection(factoryId, request, intent, matchResult, userId, userRole);
