@@ -534,6 +534,10 @@
                           </div>
                         </div>
                         <div :id="`chart-${sheet.sheetIndex}-${originalIndex}`" class="chart-container"></div>
+                        <div v-if="getChartMiniInsight(chart)" class="chart-mini-insight">
+                          <span class="mini-insight-icon">📊</span>
+                          <span class="mini-insight-text">{{ getChartMiniInsight(chart) }}</span>
+                        </div>
                         <div v-if="chart.totalItems" class="chart-view-more">
                           <el-button type="primary" link size="small" @click="handleViewMoreData(sheet, originalIndex, chart)">
                             查看更多 (共 {{ chart.totalItems }} 项，当前显示 {{ getDisplayedCount(chart) }} 项)
@@ -592,6 +596,10 @@
                       </div>
                     </div>
                     <div :id="`chart-${sheet.sheetIndex}-${idx}`" class="chart-container"></div>
+                    <div v-if="getChartMiniInsight(chart)" class="chart-mini-insight">
+                      <span class="mini-insight-icon">📊</span>
+                      <span class="mini-insight-text">{{ getChartMiniInsight(chart) }}</span>
+                    </div>
                     <div v-if="chart.totalItems" class="chart-view-more">
                       <el-button type="primary" link size="small" @click="handleViewMoreData(sheet, idx, chart)">
                         查看更多 (共 {{ chart.totalItems }} 项，当前显示 {{ getDisplayedCount(chart) }} 项)
@@ -2859,7 +2867,9 @@ const renderActiveCharts = () => {
   const charts = getSheetCharts(activeSheet);
   const observer = getOrCreateChartObserver();
 
-  // P0: Render first 2 charts immediately (above fold), defer rest via IntersectionObserver
+  // Render all charts eagerly — typical sheet has 5-8 charts, IntersectionObserver
+  // was causing blank charts due to timing issues with contain:paint and fast scrolling.
+  // For sheets with many charts (>12), defer later ones via observer.
   charts.forEach((chart, idx) => {
     const chartId = `chart-${activeSheet.sheetIndex}-${idx}`;
     const dom = document.getElementById(chartId);
@@ -2868,7 +2878,7 @@ const renderActiveCharts = () => {
     const config = chart.config;
     if (!config || isChartDataEmpty(config)) return;
 
-    if (idx < 2) {
+    if (idx < 12) {
       renderSingleChart(dom, chart, idx, activeSheet);
     } else {
       pendingChartConfigs.set(chartId, { chart, idx, sheet: activeSheet });
@@ -3274,6 +3284,70 @@ const buildBasicOptions = (chartType: string, data: any): any => {
   }
 
   return null;
+};
+
+// === Per-chart mini insight (data-driven, no LLM) ===
+const getChartMiniInsight = (chart: { chartType: string; title: string; config: Record<string, unknown> }): string => {
+  const config = chart.config;
+  if (!config) return '';
+
+  try {
+    const series = config.series as Array<{ data?: unknown[]; type?: string; name?: string }> | undefined;
+    if (!series?.length) return '';
+
+    const chartType = (chart.chartType || series[0]?.type || '').toLowerCase();
+
+    // Pie chart: top categories
+    if (chartType === 'pie') {
+      const data = series[0]?.data as Array<{ name: string; value: number }> | undefined;
+      if (!data?.length) return '';
+      const sorted = [...data].sort((a, b) => (b.value || 0) - (a.value || 0));
+      const total = sorted.reduce((s, d) => s + (d.value || 0), 0);
+      if (total === 0) return '';
+      const top = sorted[0];
+      const pct = ((top.value / total) * 100).toFixed(1);
+      if (sorted.length <= 3) {
+        return sorted.map(d => `${d.name}: ${((d.value / total) * 100).toFixed(1)}%`).join('，');
+      }
+      return `最大占比: ${top.name} (${pct}%)，共 ${sorted.length} 项`;
+    }
+
+    // Bar/Line/Area: extract numeric values
+    const allValues: number[] = [];
+    const xData = (config.xAxis as { data?: string[] })?.data;
+
+    for (const s of series) {
+      if (!Array.isArray(s.data)) continue;
+      for (const d of s.data) {
+        const v = typeof d === 'number' ? d : (typeof d === 'object' && d !== null ? (d as { value?: number }).value : undefined);
+        if (typeof v === 'number' && isFinite(v)) allValues.push(v);
+      }
+    }
+
+    if (allValues.length < 2) return '';
+
+    const max = Math.max(...allValues);
+    const min = Math.min(...allValues);
+    const avg = allValues.reduce((a, b) => a + b, 0) / allValues.length;
+    const fmt = (n: number) => n >= 10000 ? (n / 10000).toFixed(1) + '万' : n >= 1000 ? n.toLocaleString('zh-CN', { maximumFractionDigits: 1 }) : String(Math.round(n * 100) / 100);
+
+    // Find max label from xAxis
+    if (xData?.length && series.length === 1 && Array.isArray(series[0].data)) {
+      const data = series[0].data;
+      let maxIdx = 0;
+      for (let i = 1; i < data.length; i++) {
+        const v = typeof data[i] === 'number' ? data[i] as number : (data[i] as { value?: number })?.value || 0;
+        const mv = typeof data[maxIdx] === 'number' ? data[maxIdx] as number : (data[maxIdx] as { value?: number })?.value || 0;
+        if (v > mv) maxIdx = i;
+      }
+      const maxLabel = xData[maxIdx] || '';
+      return `最高: ${maxLabel} (${fmt(max)})，均值: ${fmt(avg)}，极差: ${fmt(max - min)}`;
+    }
+
+    return `最高: ${fmt(max)}，最低: ${fmt(min)}，均值: ${fmt(avg)}`;
+  } catch {
+    return '';
+  }
 };
 
 // 获取 AI 分析
@@ -5224,10 +5298,8 @@ onMounted(() => {
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
-            /* T5.1: CSS containment — prevents layout recalc cascade between chart cards */
-            contain: layout style paint;
-            content-visibility: auto;
-            contain-intrinsic-size: auto 440px;
+            /* T5.1: Use paint containment only — layout/content-visibility removed to fix blank chart rendering */
+            contain: paint;
             /* G3: Stagger animation — cards fade in sequentially */
             animation: chartCardFadeIn 0.4s ease-out both;
             &:nth-child(1) { animation-delay: 0s; }
@@ -5381,19 +5453,25 @@ onMounted(() => {
 
           // P2: Layout modes
           &.layout-compact {
-            gap: 12px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+
+            @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+            @media (max-width: 600px) { grid-template-columns: 1fr; }
 
             .chart-grid-item {
-              padding: 12px;
+              padding: 10px;
+              border-radius: 8px;
 
-              .chart-container { height: 320px; }
+              .chart-title { font-size: 12px; margin-bottom: 8px; }
+              .chart-container { height: 260px; }
 
               &:first-of-type .chart-container,
-              &.chart-size-wide .chart-container { height: 350px; }
+              &.chart-size-wide .chart-container { height: 280px; }
 
               &.chart-size-square .chart-container {
-                max-width: 440px;
-                max-height: 440px;
+                max-width: 320px;
+                max-height: 320px;
               }
             }
           }
@@ -5405,6 +5483,7 @@ onMounted(() => {
             .chart-grid-item {
               padding: 28px;
 
+              .chart-title { font-size: 18px; }
               .chart-container { height: 520px; }
 
               &:first-of-type .chart-container { height: 560px; }
@@ -6104,6 +6183,33 @@ onMounted(() => {
         line-height: 1.8;
       }
     }
+  }
+}
+
+// Per-chart mini insight
+.chart-mini-insight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  margin-top: 6px;
+  background: linear-gradient(135deg, #f0f5ff 0%, #e8f4f8 100%);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary, #606266);
+  line-height: 1.5;
+
+  .mini-insight-icon {
+    flex-shrink: 0;
+    font-size: 13px;
+  }
+
+  .mini-insight-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

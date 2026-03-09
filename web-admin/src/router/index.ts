@@ -84,14 +84,14 @@ const businessRoutes: RouteRecordRaw[] = [
           {
             path: 'conversions',
             name: 'ProductionConversions',
-            component: () => import('@/views/production/conversions/index.vue'),
-            meta: { requiresAuth: true, title: '转换率配置', module: 'production' }
+            redirect: '/production/bom?tab=conversion',
+            meta: { requiresAuth: true, title: '转换率配置', module: 'production', hidden: true }
           },
           {
             path: 'bom',
             name: 'BomManagement',
-            component: () => import('@/views/production/bom/index.vue'),
-            meta: { requiresAuth: true, title: 'BOM成本管理', module: 'production' }
+            component: () => import('@/views/production/bom-unified/index.vue'),
+            meta: { requiresAuth: true, title: 'BOM配方管理', module: 'production' }
           }
         ]
       },

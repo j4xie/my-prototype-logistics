@@ -764,13 +764,43 @@ function buildStackedBarChart(config: LegacyChartConfig): echarts.EChartsOption 
     itemStyle: { color: PIE_COLORS[index % PIE_COLORS.length] },
   }));
 
+  // DataZoom + label rotation for crowded x-axes
+  const dataLen = xData.length;
+  const maxLabelLen = Math.max(...xData.map(d => d.length), 0);
+  const dataZoom: unknown[] = [];
+  let gridBottom = '15%';
+  let axisRotate = 0;
+
+  if (dataLen > 15) {
+    const endPercent = Math.min(100, Math.round((15 / dataLen) * 100));
+    dataZoom.push(
+      { type: 'slider', show: true, xAxisIndex: 0, start: 0, end: endPercent, height: 20, bottom: 8 },
+      { type: 'inside', xAxisIndex: 0, start: 0, end: endPercent },
+    );
+    gridBottom = '60px';
+  }
+  if (dataLen > 50) axisRotate = 60;
+  else if (dataLen > 30) axisRotate = 50;
+  else if (dataLen > 15) axisRotate = 45;
+  else if (maxLabelLen > 4 && dataLen > 4) axisRotate = 40;
+  if (axisRotate >= 30) gridBottom = axisRotate >= 45 ? '85px' : '70px';
+
   return {
     tooltip: { ...defaultTooltip('axis'), axisPointer: { type: 'shadow' } },
     legend: { data: valueKeys, bottom: 0, type: valueKeys.length > 5 ? 'scroll' as const : 'plain' as const },
-    grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
-    xAxis: { type: 'category', data: xData },
+    grid: { left: '3%', right: '4%', bottom: gridBottom, top: '10%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: xData,
+      axisLabel: {
+        rotate: axisRotate,
+        hideOverlap: true,
+        formatter: maxLabelLen > 10 ? (v: string) => v.length > 10 ? v.substring(0, 9) + '…' : v : undefined,
+      },
+    },
     yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
     series,
+    ...(dataZoom.length > 0 ? { dataZoom } : {}),
   };
 }
 
@@ -790,12 +820,13 @@ function buildDoughnutChart(config: LegacyChartConfig): echarts.EChartsOption {
 
   return {
     tooltip: defaultTooltip('item', '{b}: {c} ({d}%)'),
-    legend: { orient: 'vertical', right: '5%', top: 'center' },
+    legend: { orient: 'vertical', right: '5%', top: 'center', type: pieData.length > 8 ? 'scroll' as const : 'plain' as const },
     series: [{
       type: 'pie',
       radius: ['45%', '70%'],
       center: ['40%', '50%'],
       avoidLabelOverlap: true,
+      labelLayout: { hideOverlap: true },
       label: { show: false },
       emphasis: {
         label: { show: true, fontSize: 14, fontWeight: 'bold' },
@@ -934,11 +965,15 @@ function buildLegacyPie(config: LegacyChartConfig): echarts.EChartsOption {
 
   return {
     tooltip: defaultTooltip('item', '{b}: {c} ({d}%)'),
-    legend: { orient: 'vertical', right: '10%', top: 'center' },
+    legend: { orient: 'vertical', right: '10%', top: 'center', type: pieData.length > 8 ? 'scroll' as const : 'plain' as const },
     series: [{
       type: 'pie',
       radius: ['40%', '70%'],
       center: ['40%', '50%'],
+      avoidLabelOverlap: true,
+      label: { show: true, formatter: '{b}: {d}%', fontSize: 11 },
+      labelLine: { show: true, length: 10, length2: 8 },
+      labelLayout: { hideOverlap: true },
       data: pieData,
       emphasis: {
         itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' },

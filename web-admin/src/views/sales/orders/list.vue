@@ -9,6 +9,16 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 
+// Quick action dialogs
+const deliveryDialogVisible = ref(false);
+const deliveryForm = ref({ orderId: '', quantity: 0, notes: '' });
+
+const invoiceDialogVisible = ref(false);
+const invoiceForm = ref({ orderId: '', amount: 0, notes: '' });
+
+const paymentDialogVisible = ref(false);
+const paymentForm = ref({ orderId: '', amount: 0, paymentMethod: 'BANK_TRANSFER', notes: '' });
+
 const router = useRouter();
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -107,6 +117,66 @@ function handlePageChange(page: number) { pagination.value.page = page; loadData
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
 function handleStatusChange() { pagination.value.page = 1; loadData(); }
 function handleRefresh() { statusFilter.value = ''; pagination.value.page = 1; loadData(); }
+
+async function handleQuickDelivery(row: any) {
+  deliveryForm.value = { orderId: row.id, quantity: row.totalQuantity || 0, notes: '' };
+  deliveryDialogVisible.value = true;
+}
+
+async function submitQuickDelivery() {
+  try {
+    const res = await post(`/${factoryId.value}/sales/deliveries`, deliveryForm.value);
+    if (res.success) {
+      ElMessage.success('出库成功');
+      deliveryDialogVisible.value = false;
+      loadData();
+    } else {
+      ElMessage.error(res.message || '出库失败');
+    }
+  } catch {
+    ElMessage.error('出库失败');
+  }
+}
+
+async function handleQuickInvoice(row: any) {
+  invoiceForm.value = { orderId: row.id, amount: row.totalAmount || 0, notes: '' };
+  invoiceDialogVisible.value = true;
+}
+
+async function submitQuickInvoice() {
+  try {
+    const res = await post(`/${factoryId.value}/finance/receivable`, invoiceForm.value);
+    if (res.success) {
+      ElMessage.success('开票成功');
+      invoiceDialogVisible.value = false;
+      loadData();
+    } else {
+      ElMessage.error(res.message || '开票失败');
+    }
+  } catch {
+    ElMessage.error('开票失败');
+  }
+}
+
+async function handleQuickPayment(row: any) {
+  paymentForm.value = { orderId: row.id, amount: row.totalAmount || 0, paymentMethod: 'BANK_TRANSFER', notes: '' };
+  paymentDialogVisible.value = true;
+}
+
+async function submitQuickPayment() {
+  try {
+    const res = await post(`/${factoryId.value}/finance/receivable/payment`, paymentForm.value);
+    if (res.success) {
+      ElMessage.success('收款成功');
+      paymentDialogVisible.value = false;
+      loadData();
+    } else {
+      ElMessage.error(res.message || '收款失败');
+    }
+  } catch {
+    ElMessage.error('收款失败');
+  }
+}
 </script>
 
 <template>
@@ -150,11 +220,32 @@ function handleRefresh() { statusFilter.value = ''; pagination.value.page = 1; l
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right" align="center">
+        <el-table-column label="操作" width="280" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="goDetail(row.id)">详情</el-button>
             <el-button v-if="row.status === 'DRAFT' && canWrite" type="success" link size="small" @click="handleAction(row.id, 'confirm')">确认</el-button>
             <el-button v-if="['DRAFT','CONFIRMED'].includes(row.status) && canWrite" type="danger" link size="small" @click="handleAction(row.id, 'cancel')">取消</el-button>
+            <el-button
+              v-if="row.status === 'CONFIRMED' || row.status === 'PROCESSING'"
+              type="warning"
+              link
+              size="small"
+              @click="handleQuickDelivery(row)"
+            >出库</el-button>
+            <el-button
+              v-if="row.status === 'CONFIRMED' || row.status === 'PROCESSING' || row.status === 'SHIPPED'"
+              type="success"
+              link
+              size="small"
+              @click="handleQuickInvoice(row)"
+            >开票</el-button>
+            <el-button
+              v-if="row.status === 'CONFIRMED' || row.status === 'PROCESSING' || row.status === 'SHIPPED'"
+              type="primary"
+              link
+              size="small"
+              @click="handleQuickPayment(row)"
+            >收款</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -166,6 +257,61 @@ function handleRefresh() { statusFilter.value = ''; pagination.value.page = 1; l
           @current-change="handlePageChange" @size-change="handleSizeChange" />
       </div>
     </el-card>
+
+    <!-- 出库对话框 -->
+    <el-dialog v-model="deliveryDialogVisible" title="快速出库" width="400px">
+      <el-form :model="deliveryForm" label-width="80px">
+        <el-form-item label="出库数量">
+          <el-input-number v-model="deliveryForm.quantity" :min="1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="deliveryForm.notes" type="textarea" :rows="2" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="deliveryDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitQuickDelivery">确认出库</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 开票对话框 -->
+    <el-dialog v-model="invoiceDialogVisible" title="快速开票" width="400px">
+      <el-form :model="invoiceForm" label-width="80px">
+        <el-form-item label="开票金额">
+          <el-input-number v-model="invoiceForm.amount" :min="0" :precision="2" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="invoiceForm.notes" type="textarea" :rows="2" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="invoiceDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitQuickInvoice">确认开票</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 收款对话框 -->
+    <el-dialog v-model="paymentDialogVisible" title="快速收款" width="400px">
+      <el-form :model="paymentForm" label-width="80px">
+        <el-form-item label="收款金额">
+          <el-input-number v-model="paymentForm.amount" :min="0" :precision="2" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="收款方式">
+          <el-select v-model="paymentForm.paymentMethod" style="width: 100%">
+            <el-option label="银行转账" value="BANK_TRANSFER" />
+            <el-option label="现金" value="CASH" />
+            <el-option label="支票" value="CHECK" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="paymentForm.notes" type="textarea" :rows="2" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="paymentDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitQuickPayment">确认收款</el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="dialogVisible" :title="`新建${label('salesOrder')}`" width="720px" destroy-on-close>
       <el-form :model="form" label-width="100px">

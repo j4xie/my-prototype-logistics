@@ -41,6 +41,9 @@ const planForm = ref({
   suggestedProductionLineId: '' as string | undefined,
   estimatedWorkers: undefined as number | undefined,
   assignedSupervisorId: '' as string | undefined,
+  sourceCustomerName: '',
+  processName: '',
+  batchDate: '',
 });
 const productTypes = ref<any[]>([]);
 
@@ -130,6 +133,9 @@ function handleCreate() {
     suggestedProductionLineId: '',
     estimatedWorkers: undefined,
     assignedSupervisorId: '',
+    sourceCustomerName: '',
+    processName: '',
+    batchDate: '',
   };
   dialogVisible.value = true;
 }
@@ -538,6 +544,9 @@ function resetChat() {
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="planNumber" label="计划编号" width="160" />
         <el-table-column prop="productTypeName" label="产品类型" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="sourceCustomerName" label="客户" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="processName" label="工序" width="120" show-overflow-tooltip />
+        <el-table-column prop="batchDate" label="批次日期" width="120" />
         <el-table-column prop="plannedQuantity" label="计划数量" width="100" align="right" />
         <el-table-column prop="actualQuantity" label="实际数量" width="100" align="right" />
         <el-table-column prop="plannedDate" label="计划日期" width="120" />
@@ -626,6 +635,21 @@ function resetChat() {
               :value="item.id"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item label="客户名称">
+          <el-input v-model="planForm.sourceCustomerName" placeholder="如: 永佑" />
+        </el-form-item>
+        <el-form-item label="工序">
+          <el-input v-model="planForm.processName" placeholder="如: 分切、包装" />
+        </el-form-item>
+        <el-form-item label="批次日期">
+          <el-date-picker
+            v-model="planForm.batchDate"
+            type="date"
+            placeholder="生产批次日期"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="计划数量" required>
           <el-input-number v-model="planForm.plannedQuantity" :min="1" style="width: 100%" />

@@ -69,7 +69,6 @@ const formData = reactive<Partial<ProductType>>({
 // 表单验证规则
 const formRules = {
   code: [
-    { required: true, message: '请输入产品编号', trigger: 'blur' },
     { max: 50, message: '产品编号不能超过50个字符', trigger: 'blur' }
   ],
   name: [
@@ -413,7 +412,8 @@ function getCategoryLabel(value?: string) {
         label-position="right"
       >
         <el-form-item label="产品编号" prop="code">
-          <el-input v-model="formData.code" placeholder="请输入产品编号" :disabled="isEditing" />
+          <el-input v-model="formData.code" placeholder="留空自动生成，如: CP-F001-001" :disabled="isEditing" />
+          <div class="form-tip">留空则系统自动生成编号（成品→CP, 原料→YL, 包辅材→BF）</div>
         </el-form-item>
         <el-form-item label="产品名称" prop="name">
           <el-input v-model="formData.name" placeholder="请输入产品名称" />
@@ -583,5 +583,12 @@ function getCategoryLabel(value?: string) {
     font-size: 12px;
     border: 1px dashed #dcdfe6;
   }
+}
+
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+  line-height: 1.4;
 }
 </style>

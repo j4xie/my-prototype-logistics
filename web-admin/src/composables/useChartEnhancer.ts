@@ -162,6 +162,71 @@ export function enhanceChartDefaults(opts: Record<string, unknown>): void {
     legend.pageTextStyle = { fontSize: 11 };
   }
 
+  // --- DataZoom for category axes with many data points ---
+  if (xAxis && xAxis.type === 'category' && Array.isArray(xAxis.data)) {
+    const dataLen = (xAxis.data as unknown[]).length;
+    if (dataLen > 15 && !opts.dataZoom) {
+      const endPercent = Math.min(100, Math.round((15 / dataLen) * 100));
+      opts.dataZoom = [
+        { type: 'slider', show: true, xAxisIndex: 0, start: 0, end: endPercent, height: 20, bottom: 8 },
+        { type: 'inside', xAxisIndex: 0, start: 0, end: endPercent },
+      ];
+      const grid = (opts.grid || {}) as Record<string, unknown>;
+      const curBottom = typeof grid.bottom === 'number' ? grid.bottom : 50;
+      grid.bottom = Math.max(curBottom as number, 60);
+      opts.grid = grid;
+    }
+    // X-axis label rotation for crowded labels
+    const maxLabelLen = Math.max(...(xAxis.data as unknown[]).map((d: unknown) => String(d).length));
+    const axisLabel = (xAxis.axisLabel || {}) as Record<string, unknown>;
+    let optRotate = 0;
+    if (dataLen > 50) optRotate = 60;
+    else if (dataLen > 30) optRotate = 50;
+    else if (dataLen > 15) optRotate = 45;
+    else if (maxLabelLen > 4 && dataLen > 4) optRotate = 40;
+    else if (maxLabelLen > 6 && dataLen > 2) optRotate = 35;
+    if (optRotate > ((axisLabel.rotate as number) || 0)) {
+      axisLabel.rotate = optRotate;
+    }
+    axisLabel.hideOverlap = true;
+    xAxis.axisLabel = axisLabel;
+    // Adjust grid bottom for rotated labels
+    if (optRotate >= 30) {
+      const grid = (opts.grid || {}) as Record<string, unknown>;
+      const curBottom = typeof grid.bottom === 'number' ? grid.bottom : 50;
+      const neededBottom = optRotate >= 45 ? 85 : 70;
+      if ((curBottom as number) < neededBottom) {
+        grid.bottom = neededBottom;
+        opts.grid = grid;
+      }
+    }
+    // Label truncation
+    if (!axisLabel.formatter && maxLabelLen > 10) {
+      axisLabel.formatter = (v: string) => v.length > 10 ? v.substring(0, 9) + '…' : v;
+    }
+  }
+
+  // --- Pie chart label overlap prevention ---
+  if (chartType === 'pie') {
+    for (const s of series) {
+      s.avoidLabelOverlap = true;
+      const pieData = s.data as Array<Record<string, unknown>> | undefined;
+      const dataCount = pieData?.length || 0;
+      if (dataCount > 8) {
+        // Too many slices — show labels only for top items, hide small ones
+        s.label = { show: true, formatter: '{b}: {d}%', fontSize: 11 };
+        s.labelLine = { show: true, length: 10, length2: 8 };
+        s.labelLayout = { hideOverlap: true };
+      } else if (dataCount > 0) {
+        // Moderate slices — ensure labels are visible
+        if (!s.label || (s.label as Record<string, unknown>).show === false) {
+          s.label = { show: true, formatter: '{b}: {d}%', fontSize: 11 };
+          s.labelLine = { show: true };
+        }
+      }
+    }
+  }
+
   // --- Outlier detection hint in tooltip ---
   if (chartType === 'bar' && stats.median > 0 && stats.max > stats.median * 10) {
     const tip = (opts.tooltip || {}) as Record<string, unknown>;
