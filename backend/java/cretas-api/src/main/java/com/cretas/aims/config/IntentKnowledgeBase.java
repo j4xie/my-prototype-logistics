@@ -8827,9 +8827,10 @@ public class IntentKnowledgeBase {
         }
 
         // 提取名词（优先最长匹配，避免"采购订单"只匹配到"订单"）
+        // 同时检查原始输入，因为预处理可能移除了关键领域名词（如"采购"）
         String detectedNoun = null;
         for (String noun : CORE_NOUNS_FOR_DISAMBIGUATION) {
-            if (normalized.contains(noun)) {
+            if (normalized.contains(noun) || originalNormalized.contains(noun)) {
                 if (detectedNoun == null || noun.length() > detectedNoun.length()) {
                     detectedNoun = noun;
                 }
