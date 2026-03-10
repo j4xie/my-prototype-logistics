@@ -1055,6 +1055,12 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("故障历史", "EQUIPMENT_MAINTENANCE");
         phraseToIntentMapping.put("维护记录", "EQUIPMENT_MAINTENANCE");
         phraseToIntentMapping.put("设备维修记录", "EQUIPMENT_MAINTENANCE");
+        phraseToIntentMapping.put("设备报修", "EQUIPMENT_MAINTENANCE");
+        phraseToIntentMapping.put("报修设备", "EQUIPMENT_MAINTENANCE");
+        phraseToIntentMapping.put("设备坏了", "EQUIPMENT_MAINTENANCE");
+        phraseToIntentMapping.put("机器坏了", "EQUIPMENT_MAINTENANCE");
+        phraseToIntentMapping.put("设备故障报修", "EQUIPMENT_MAINTENANCE");
+        phraseToIntentMapping.put("设备出故障", "EQUIPMENT_MAINTENANCE");
         phraseToIntentMapping.put("历史故障", "EQUIPMENT_MAINTENANCE");
         phraseToIntentMapping.put("设备历史故障", "EQUIPMENT_MAINTENANCE");
         phraseToIntentMapping.put("机器老是出问题", "EQUIPMENT_MAINTENANCE");
@@ -6080,6 +6086,8 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("新增采购", "PURCHASE_ORDER_CREATE");
         phraseToIntentMapping.put("采购原料", "PURCHASE_ORDER_CREATE");
         phraseToIntentMapping.put("我要采购", "PURCHASE_ORDER_CREATE");
+        phraseToIntentMapping.put("创建采购订单", "PURCHASE_ORDER_CREATE");
+        phraseToIntentMapping.put("帮我采购", "PURCHASE_ORDER_CREATE");
 
         // PURCHASE_ORDER_APPROVE — 采购订单审批
         phraseToIntentMapping.put("审批采购单", "PURCHASE_ORDER_APPROVE");
@@ -6142,6 +6150,10 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("生产饮料", "PRODUCTION_PLAN_CREATE");
         phraseToIntentMapping.put("生产酱油", "PRODUCTION_PLAN_CREATE");
         phraseToIntentMapping.put("生产豆腐", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("生产黄鱼片", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("生产带鱼段", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("生产虾仁", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("生产带鱼罐头", "PRODUCTION_PLAN_CREATE");
 
         // QUALITY_BATCH_MARK_AS_INSPECTED (5)
         phraseToIntentMapping.put("不合格品", "QUALITY_BATCH_MARK_AS_INSPECTED");
@@ -8059,7 +8071,8 @@ public class IntentKnowledgeBase {
      */
     private static final Set<String> FOOD_PRODUCT_NAMES = Set.of(
             // 水产品
-            "带鱼", "鲈鱼", "鲫鱼", "鲤鱼", "三文鱼", "金枪鱼", "鳕鱼", "黄花鱼", "墨鱼", "鱿鱼",
+            "带鱼", "鲈鱼", "鲫鱼", "鲤鱼", "三文鱼", "金枪鱼", "鳕鱼", "黄花鱼", "黄鱼", "墨鱼", "鱿鱼",
+            "黄鱼片", "带鱼段", "虾仁", "鱼片",
             // 肉类原料
             "猪肉", "牛肉", "羊肉", "鸡肉", "鸭肉", "鹅肉",
             // 蔬菜/谷物
