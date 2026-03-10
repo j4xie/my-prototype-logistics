@@ -20,7 +20,7 @@ dashboard_service = FinancialDashboardService()
 
 class FinancialDashboardRequest(BaseModel):
     upload_id: Optional[int] = None
-    raw_data: Optional[List[Dict[str, Any]]] = Field(None, max_length=50000)  # Direct data input, max 50k rows
+    raw_data: Optional[List[Dict[str, Any]]] = Field(None, max_items=50000)  # Direct data input, max 50k rows
     chart_type: str = "all"  # specific type, "all", or "auto"
     year: int = 2026
     period_type: str = "year"  # month|quarter|year|month_range
