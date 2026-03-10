@@ -15,6 +15,7 @@ import com.cretas.aims.dto.ai.PreprocessedQuery;
 import com.cretas.aims.config.TimeNormalizationRules;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -45,6 +46,14 @@ public class SlotFillingServiceImpl implements SlotFillingService {
     private final ToolRegistry toolRegistry;
     private final ConversationService conversationService;
     private final ParameterExtractionLearningService parameterExtractionLearningService;
+
+    // 产品类型仓库（缺参时提供可选项）
+    private com.cretas.aims.repository.ProductTypeRepository productTypeRepository;
+
+    @Autowired(required = false)
+    public void setProductTypeRepository(com.cretas.aims.repository.ProductTypeRepository productTypeRepository) {
+        this.productTypeRepository = productTypeRepository;
+    }
 
     @Override
     public IntentExecuteResponse checkAndStartSlotFilling(
@@ -385,6 +394,10 @@ public class SlotFillingServiceImpl implements SlotFillingService {
             metadata.put("extractedParams", extractedParams);
         }
 
+        // 6. 为缺失参数提供可选项（如产品列表）
+        List<IntentExecuteResponse.SuggestedAction> suggestedActions = buildSlotOptions(
+                missingSlots, factoryId);
+
         return IntentExecuteResponse.builder()
                 .intentRecognized(true)
                 .intentCode(intent.getIntentCode())
@@ -393,6 +406,7 @@ public class SlotFillingServiceImpl implements SlotFillingService {
                 .status("NEED_MORE_INFO")
                 .message(message)
                 .clarificationQuestions(clarificationQuestions)
+                .suggestedActions(suggestedActions.isEmpty() ? null : suggestedActions)
                 .sessionId(sessionId)
                 .conversationRound(conversationRound)
                 .maxConversationRounds(maxConversationRounds)
@@ -433,6 +447,39 @@ public class SlotFillingServiceImpl implements SlotFillingService {
             default:
                 return "请提供" + label;
         }
+    }
+
+    /**
+     * 为缺失的 slot 查询后端数据，构建可选项列表
+     */
+    private List<IntentExecuteResponse.SuggestedAction> buildSlotOptions(
+            List<RequiredSlot> missingSlots, String factoryId) {
+        List<IntentExecuteResponse.SuggestedAction> actions = new ArrayList<>();
+
+        for (RequiredSlot slot : missingSlots) {
+            String name = slot.getName().toLowerCase();
+
+            // productId → 查询产品列表
+            if (name.contains("productid") && productTypeRepository != null) {
+                try {
+                    var products = productTypeRepository.findByFactoryIdAndIsActive(factoryId, true);
+                    if (products != null && !products.isEmpty()) {
+                        int limit = Math.min(products.size(), 10);
+                        for (int i = 0; i < limit; i++) {
+                            var p = products.get(i);
+                            actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                                    .actionCode("SELECT_PARAM_productId_" + p.getId())
+                                    .actionName(p.getName())
+                                    .description(p.getCode() != null ? "编码: " + p.getCode() : null)
+                                    .build());
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("查询产品列表失败: {}", e.getMessage());
+                }
+            }
+        }
+        return actions;
     }
 
     private String buildSlotFillingMessage(String intentName, List<String> questions) {

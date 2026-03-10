@@ -177,6 +177,14 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         this.skillRouterService = skillRouterService;
     }
 
+    // 产品类型仓库（用于缺参时提供可选项）
+    private com.cretas.aims.repository.ProductTypeRepository productTypeRepository;
+
+    @Autowired(required = false)
+    public void setProductTypeRepository(com.cretas.aims.repository.ProductTypeRepository productTypeRepository) {
+        this.productTypeRepository = productTypeRepository;
+    }
+
     // Tool 注册中心
 
     private final ToolRegistry toolRegistry;
@@ -1467,11 +1475,24 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
             Boolean success = (Boolean) result.getOrDefault("success", true);
             Object data = result.get("data");
-            String message = (String) result.getOrDefault("message", success ? "执行成功" : "执行失败");
+
+            // Fix: 当 top-level 无 message 时，从 data.message 提取详细消息
+            String message = (String) result.get("message");
+            if (message == null && data instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> dataMap = (Map<String, Object>) data;
+                message = (String) dataMap.get("message");
+            }
+            if (message == null) {
+                message = success ? "执行成功" : "执行失败";
+            }
+
+            // Fix: 同时检查 "needMoreInfo" boolean 和 "status" string
             Boolean needMoreInfo = (Boolean) result.getOrDefault("needMoreInfo", false);
+            String resultStatus = (String) result.get("status");
 
             String status;
-            if (Boolean.TRUE.equals(needMoreInfo)) {
+            if (Boolean.TRUE.equals(needMoreInfo) || "NEED_MORE_INFO".equals(resultStatus)) {
                 status = "NEED_MORE_INFO";
             } else if (Boolean.TRUE.equals(success)) {
                 status = "SUCCESS";
@@ -3072,7 +3093,11 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 }
             }
 
-            // 4. 构建增强的响应（包含会话信息）
+            // 4.5 为缺失参数提供可选项（如产品列表），减少用户操作成本
+            List<IntentExecuteResponse.SuggestedAction> suggestedActions = buildParameterOptions(
+                    missingParams, factoryId, intent);
+
+            // 5. 构建增强的响应（包含会话信息 + 可选项）
             return IntentExecuteResponse.builder()
                     .intentRecognized(response.getIntentRecognized())
                     .intentCode(response.getIntentCode())
@@ -3081,6 +3106,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .status(response.getStatus())
                     .message("需要更多信息来完成此操作")
                     .clarificationQuestions(clarificationQuestions)
+                    .suggestedActions(suggestedActions.isEmpty() ? null : suggestedActions)
                     .sessionId(sessionId)
                     .conversationRound(conversationRound)
                     .maxConversationRounds(maxConversationRounds)
@@ -3293,7 +3319,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         else if (lowerParam.contains("materialtypeid")) {
             return "请问是哪种原材料？请提供原材料类型ID。";
         } else if (lowerParam.contains("productid")) {
-            return "请问是哪个产品？请提供产品ID。";
+            return "请选择要生产的产品：";
         } else if (lowerParam.contains("customerid")) {
             return "请问是哪个客户？请提供客户ID或客户名称。";
         } else if (lowerParam.contains("shipmentid")) {
@@ -3355,6 +3381,44 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         }
 
         return result.toString();
+    }
+
+    /**
+     * 为缺失参数构建可选项列表（suggestedActions）
+     *
+     * 当缺失参数有对应的后端数据时（如 productId → 产品列表），
+     * 查询数据并构建为可点击选项，减少用户输入成本。
+     */
+    private List<IntentExecuteResponse.SuggestedAction> buildParameterOptions(
+            List<String> missingParams, String factoryId, AIIntentConfig intent) {
+        List<IntentExecuteResponse.SuggestedAction> actions = new ArrayList<>();
+
+        for (String param : missingParams) {
+            String lowerParam = param.toLowerCase();
+
+            // productId → 查询产品列表，提供可选项
+            if (lowerParam.contains("productid") && productTypeRepository != null) {
+                try {
+                    var products = productTypeRepository.findByFactoryIdAndIsActive(factoryId, true);
+                    if (products != null && !products.isEmpty()) {
+                        // 限制最多显示 10 个选项
+                        int limit = Math.min(products.size(), 10);
+                        for (int i = 0; i < limit; i++) {
+                            var p = products.get(i);
+                            actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                                    .actionCode("SELECT_PARAM_productId_" + p.getId())
+                                    .actionName(p.getName())
+                                    .description(p.getCode() != null ? "编码: " + p.getCode() : null)
+                                    .build());
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("查询产品列表失败: {}", e.getMessage());
+                }
+            }
+        }
+
+        return actions;
     }
 
     /**

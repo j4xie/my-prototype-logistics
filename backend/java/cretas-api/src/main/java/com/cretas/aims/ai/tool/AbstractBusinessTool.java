@@ -128,12 +128,21 @@ public abstract class AbstractBusinessTool extends AbstractTool {
             Map<String, Object> result = new HashMap<>();
             result.put("success", false);
             result.put("status", "NEED_MORE_INFO");
+            result.put("needMoreInfo", true);
             result.put("missingParameters", missingParams);
-            result.put("message", "缺少必需参数: " + String.join(", ", missingParams));
 
             // 生成友好的提示问题
             List<String> questions = generateClarificationQuestions(missingParams);
             result.put("clarificationQuestions", questions);
+
+            // 构建友好消息（替代 "缺少必需参数: x, y"）
+            StringBuilder friendlyMsg = new StringBuilder();
+            friendlyMsg.append("为了完成操作，还需要以下信息：\n");
+            for (int i = 0; i < questions.size(); i++) {
+                friendlyMsg.append(i + 1).append(". ").append(questions.get(i)).append("\n");
+            }
+            friendlyMsg.append("\n请直接告诉我，我来帮您处理。");
+            result.put("message", friendlyMsg.toString());
 
             return objectMapper.writeValueAsString(result);
         } catch (Exception e) {

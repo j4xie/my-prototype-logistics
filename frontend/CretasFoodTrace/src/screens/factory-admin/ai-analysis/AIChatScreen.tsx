@@ -358,7 +358,7 @@ export default function AIChatScreen() {
 
           if (formattedText) {
             replyMessage = formattedText;
-          } else if (message && message !== '操作成功') {
+          } else if (message && message !== '执行成功') {
             replyMessage = message;
           }
 
@@ -379,6 +379,14 @@ export default function AIChatScreen() {
           let suggestedActions: SuggestedAction[] = [];
           const status = result.status as string | undefined;
 
+          // NEED_MORE_INFO: 优先使用 clarificationQuestions 构建友好回复
+          if (status === 'NEED_MORE_INFO' && Array.isArray(result.clarificationQuestions)
+              && (result.clarificationQuestions as string[]).length > 0) {
+            const questions = result.clarificationQuestions as string[];
+            replyMessage = `为了完成操作，还需要以下信息：\n\n${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\n请直接告诉我，或点击下方选项。`;
+            streamedContent = replyMessage;
+          }
+
           // 重定向到表单
           if (result.actionCode === 'REDIRECT_TO_PLAN_FORM' || result.redirectAction === 'REDIRECT_TO_PLAN_FORM') {
             const params = (result.collectedParams || result.params || {}) as Record<string, unknown>;
@@ -390,8 +398,8 @@ export default function AIChatScreen() {
             }];
           }
 
-          // 澄清建议
-          if ((status === 'NEED_CLARIFICATION' || status === 'CONVERSATION_CONTINUE' || status === 'ACTIVE')
+          // 澄清建议 / 缺参可选项
+          if ((status === 'NEED_CLARIFICATION' || status === 'CONVERSATION_CONTINUE' || status === 'ACTIVE' || status === 'NEED_MORE_INFO')
               && Array.isArray(result.suggestedActions)) {
             suggestedActions = (result.suggestedActions as Array<Record<string, unknown>>).map((action) => ({
               label: (action.actionName || action.label || action.name || action.description) as string,

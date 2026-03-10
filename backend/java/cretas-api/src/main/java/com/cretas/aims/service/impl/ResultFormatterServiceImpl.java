@@ -446,8 +446,29 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
 
         return switch (intentCode) {
             case "PRODUCTION_STATUS_QUERY" -> formatProductionStatus(data);
+            case "PRODUCTION_PLAN_CREATE", "PRODUCTION_PLAN_CREATE_FULL" -> formatProductionPlanCreated(data);
             default -> formatGenericList(data);
         };
+    }
+
+    private String formatProductionPlanCreated(Map<String, Object> data) {
+        StringBuilder sb = new StringBuilder("生产计划已创建\n\n");
+        String planNumber = getString(data, "planNumber");
+        String productName = getString(data, "productName");
+        Object quantity = data.get("plannedQuantity");
+        if (quantity == null) quantity = data.get("quantity");
+        String status = getString(data, "status");
+        Object plannedDate = data.get("plannedDate");
+        if (plannedDate == null) plannedDate = data.get("startDate");
+
+        if (planNumber != null) sb.append("计划编号：").append(planNumber).append("\n");
+        if (productName != null) sb.append("产品：").append(productName).append("\n");
+        if (quantity != null) sb.append("计划产量：").append(quantity).append("\n");
+        if (plannedDate != null) sb.append("计划日期：").append(plannedDate).append("\n");
+        if (status != null) sb.append("状态：").append(translateStatus(status)).append("\n");
+
+        sb.append("\n可以在「生产管理」中查看和管理此计划。");
+        return sb.toString();
     }
 
     private String formatProductionStatus(Map<String, Object> data) {
