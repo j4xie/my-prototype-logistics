@@ -103,6 +103,7 @@ function getChart(chartType: string): ChartResult | null {
 }
 
 const chartTypes = [
+  { key: 'kpi_scorecard', label: '关键指标记分卡', icon: '🏆' },
   { key: 'budget_achievement', label: '预算达成分析', icon: '📊' },
   { key: 'yoy_mom_comparison', label: '同环比分析', icon: '📈' },
   { key: 'pnl_waterfall', label: '损益表瀑布图', icon: '🌊' },
@@ -112,6 +113,7 @@ const chartTypes = [
   { key: 'category_structure_donut', label: '品类结构同比饼图', icon: '🎯' },
   { key: 'cost_flow_sankey', label: '成本流向桑基图', icon: '🔀' },
   { key: 'variance_analysis', label: '预算差异分析', icon: '📐' },
+  { key: 'cash_flow_waterfall', label: '现金流量瀑布图', icon: '💵' },
 ];
 
 const presentationSlides = computed<Slide[]>(() => {

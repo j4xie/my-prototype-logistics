@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 # Chart type display names
 CHART_DISPLAY_NAMES = {
+    "kpi_scorecard": "关键指标记分卡",
     "budget_achievement": "预算完成情况",
     "yoy_mom_comparison": "同比环比分析",
     "pnl_waterfall": "损益表分析",
@@ -18,6 +19,7 @@ CHART_DISPLAY_NAMES = {
     "category_structure_donut": "品类结构同比分析",
     "cost_flow_sankey": "成本流向桑基图",
     "variance_analysis": "预算差异分析",
+    "cash_flow_waterfall": "现金流量瀑布图",
 }
 
 
