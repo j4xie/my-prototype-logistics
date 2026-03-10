@@ -29,6 +29,14 @@ interface Props {
   maxColor?: string;
   showLabel?: boolean;
   loading?: boolean;
+  /** Use alert color scale (white→red) instead of default */
+  alertMode?: boolean;
+  /** Auto contrast label color: white on dark cells, black on light */
+  autoLabelContrast?: boolean;
+  /** Column group boundaries for divider lines (list of x-axis indices after which to draw a divider) */
+  columnGroupBoundaries?: number[];
+  /** Row group boundaries for divider lines (list of y-axis indices after which to draw a divider) */
+  rowGroupBoundaries?: number[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -42,7 +50,11 @@ const props = withDefaults(defineProps<Props>(), {
   valueUnit: '',
   minColor: '#ffffff',
   maxColor: '#1B65A8',
-  showLabel: true
+  showLabel: true,
+  alertMode: false,
+  autoLabelContrast: true,
+  columnGroupBoundaries: () => [],
+  rowGroupBoundaries: () => []
 });
 
 const emit = defineEmits<{
@@ -53,6 +65,55 @@ const chartRef = ref<HTMLDivElement | null>(null);
 const chartInstance = ref<ECharts | null>(null);
 let resizeObserver: ResizeObserver | null = null;
 let rafId = 0;
+
+// Convert hex/rgb color to luminance for contrast calculation
+function getLuminance(color: string): number {
+  // Simple luminance estimate from a color string
+  const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+  if (!canvas) return 0.5;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return 0.5;
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, 1, 1);
+  const d = ctx.getImageData(0, 0, 1, 1).data;
+  const r = d[0] / 255;
+  const g = d[1] / 255;
+  const b = d[2] / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+// Linear interpolation between two hex colors
+function interpolateColor(color1: string, color2: string, t: number): string {
+  const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+  if (!canvas) return t > 0.5 ? color2 : color1;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return t > 0.5 ? color2 : color1;
+
+  ctx.fillStyle = color1;
+  ctx.fillRect(0, 0, 1, 1);
+  const d1 = ctx.getImageData(0, 0, 1, 1).data;
+
+  ctx.fillStyle = color2;
+  ctx.fillRect(0, 0, 1, 1);
+  const d2 = ctx.getImageData(0, 0, 1, 1).data;
+
+  const r = Math.round(d1[0] + (d2[0] - d1[0]) * t);
+  const g = Math.round(d1[1] + (d2[1] - d1[1]) * t);
+  const b = Math.round(d1[2] + (d2[2] - d1[2]) * t);
+  return `rgb(${r},${g},${b})`;
+}
+
+// Determine label color based on cell background luminance
+function getLabelColor(value: number): string {
+  if (!props.autoLabelContrast) return '#303133';
+  const { min, max } = valueRange.value;
+  const t = max > min ? (value - min) / (max - min) : 0;
+  const minC = props.alertMode ? '#ffffff' : props.minColor;
+  const maxC = props.alertMode ? '#f56c6c' : props.maxColor;
+  const cellColor = interpolateColor(minC, maxC, t);
+  const lum = getLuminance(cellColor);
+  return lum < 0.45 ? '#ffffff' : '#303133';
+}
 
 // Extract categories from data if not provided
 const xAxis = computed(() => {
@@ -83,7 +144,34 @@ const chartData = computed(() => {
   });
 });
 
+// Sorted values for rank computation
+const sortedValues = computed(() => {
+  return [...props.data].sort((a, b) => b.value - a.value);
+});
+
 const chartOptions = computed<EChartsOption>(() => {
+  const activeMinColor = props.alertMode ? '#ffffff' : props.minColor;
+  const activeMaxColor = props.alertMode ? '#f56c6c' : props.maxColor;
+
+  // Build group divider markLines via markArea on a transparent overlay series
+  const groupMarkLines: [object, object][] = [];
+  props.columnGroupBoundaries.forEach(idx => {
+    if (idx < xAxis.value.length - 1) {
+      groupMarkLines.push([
+        { xAxis: idx + 0.5, lineStyle: { color: '#606266', width: 2 } },
+        { xAxis: idx + 0.5 }
+      ]);
+    }
+  });
+  props.rowGroupBoundaries.forEach(idx => {
+    if (idx < yAxis.value.length - 1) {
+      groupMarkLines.push([
+        { yAxis: idx + 0.5, lineStyle: { color: '#606266', width: 2 } },
+        { yAxis: idx + 0.5 }
+      ]);
+    }
+  });
+
   const options: EChartsOption = {
     tooltip: {
       trigger: 'item',
@@ -99,14 +187,16 @@ const chartOptions = computed<EChartsOption>(() => {
         const [xIdx, yIdx, value] = data.value as [number, number, number];
         const xName = xAxis.value[xIdx];
         const yName = yAxis.value[yIdx];
+        const rank = sortedValues.value.findIndex(d => d.x === xName && d.y === yName) + 1;
         return `
-          <div style="font-weight: 600;">${props.valueLabel}</div>
-          <div style="margin-top: 4px;">
-            <div>${props.xAxisLabel || 'X'}: ${xName}</div>
-            <div>${props.yAxisLabel || 'Y'}: ${yName}</div>
-            <div style="margin-top: 4px; font-weight: 600; color: ${data.color};">
-              ${value}${props.valueUnit}
+          <div style="font-weight: 600; margin-bottom:4px;">${props.valueLabel}</div>
+          <div style="margin-top: 4px; display:flex; flex-direction:column; gap:2px;">
+            <div>${props.xAxisLabel || 'X'}: <span style="font-weight:600;">${xName}</span></div>
+            <div>${props.yAxisLabel || 'Y'}: <span style="font-weight:600;">${yName}</span></div>
+            <div style="font-weight: 600; color: ${data.color};">
+              ${value.toLocaleString()}${props.valueUnit}
             </div>
+            ${rank > 0 ? `<div style="color:#909399;">排名: <span style="font-weight:600;color:#1B65A8;">#${rank}</span></div>` : ''}
           </div>
         `;
       }
@@ -174,7 +264,7 @@ const chartOptions = computed<EChartsOption>(() => {
       itemWidth: 15,
       itemHeight: 140,
       inRange: {
-        color: [props.minColor, props.maxColor]
+        color: [activeMinColor, activeMaxColor]
       },
       textStyle: {
         color: '#606266',
@@ -190,12 +280,18 @@ const chartOptions = computed<EChartsOption>(() => {
         data: chartData.value,
         label: {
           show: props.showLabel,
-          color: '#303133',
           fontSize: 11,
           formatter: (params) => {
-            const value = (params.value as [number, number, number])[2];
-            return `${value}`;
-          }
+            const [xIdx, yIdx, value] = params.value as [number, number, number];
+            const xName = xAxis.value[xIdx];
+            const yName = yAxis.value[yIdx];
+            const item = props.data.find(d => d.x === xName && d.y === yName);
+            const labelColor = item ? getLabelColor(item.value) : '#303133';
+            // ECharts label color can't be set per-item dynamically here, use autoLabelContrast via formatter
+            void labelColor; // Used in itemStyle override below
+            return `${value.toLocaleString()}`;
+          },
+          color: '#303133'
         },
         emphasis: {
           itemStyle: {
@@ -207,7 +303,21 @@ const chartOptions = computed<EChartsOption>(() => {
           borderColor: '#fff',
           borderWidth: 2,
           borderRadius: 2
-        }
+        },
+        ...(groupMarkLines.length > 0
+          ? {
+              markLine: {
+                silent: true,
+                symbol: 'none',
+                data: groupMarkLines,
+                lineStyle: {
+                  color: '#606266',
+                  width: 2,
+                  type: 'solid'
+                }
+              }
+            }
+          : {})
       }
     ]
   };

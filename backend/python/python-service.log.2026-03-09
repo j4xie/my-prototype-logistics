@@ -1,0 +1,180 @@
+2026-03-09 23:17:29,809 - main - WARNING - Classifier router not registered (torch/transformers not installed)
+2026-03-09 23:17:29,837 - main - WARNING - Food Knowledge Base routes not registered
+2026-03-09 23:17:29,837 - main - WARNING - Food KB Feedback routes not registered
+2026-03-09 23:17:29,841 - main - WARNING - Completeness Calculator routes not registered (asyncpg not available)
+2026-03-09 23:17:42,210 - main - WARNING - Classifier router not registered (torch/transformers not installed)
+2026-03-09 23:17:42,460 - main - WARNING - Food Knowledge Base routes not registered
+2026-03-09 23:17:42,460 - main - WARNING - Food KB Feedback routes not registered
+2026-03-09 23:17:42,475 - main - WARNING - Completeness Calculator routes not registered (asyncpg not available)
+2026-03-09 23:17:42,488 - auth_middleware - INFO - JWTAuthMiddleware initialized, enabled=True
+2026-03-09 23:17:42,489 - main - INFO - Python Services starting up...
+2026-03-09 23:17:42,489 - main - INFO - Debug mode: False
+2026-03-09 23:17:42,489 - main - INFO - LLM Model: qwen3-max-2026-01-23
+2026-03-09 23:17:42,489 - main - INFO - PostgreSQL is disabled
+2026-03-09 23:17:42,850 - common.llm_client - INFO - Shared LLM HTTP client created (pool: 20 max, 10 keepalive)
+2026-03-09 23:18:30,772 - common.llm_client - INFO - Shared LLM HTTP client closed
+2026-03-09 23:18:30,773 - main - INFO - Python Services shutting down...
+2026-03-09 23:18:35,730 - main - WARNING - Classifier router not registered (torch/transformers not installed)
+2026-03-09 23:18:35,773 - main - WARNING - Food Knowledge Base routes not registered
+2026-03-09 23:18:35,773 - main - WARNING - Food KB Feedback routes not registered
+2026-03-09 23:18:35,782 - main - WARNING - Completeness Calculator routes not registered (asyncpg not available)
+2026-03-09 23:18:35,782 - auth_middleware - INFO - JWTAuthMiddleware initialized, enabled=True
+2026-03-09 23:18:35,782 - main - INFO - Python Services starting up...
+2026-03-09 23:18:35,782 - main - INFO - Debug mode: False
+2026-03-09 23:18:35,783 - main - INFO - LLM Model: qwen3-max-2026-01-23
+2026-03-09 23:18:35,783 - main - INFO - PostgreSQL is disabled
+2026-03-09 23:18:35,814 - common.llm_client - INFO - Shared LLM HTTP client created (pool: 20 max, 10 keepalive)
+2026-03-09 23:18:47,653 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=0, budget=1, actual=1, lastYear=1, layout=long
+2026-03-09 23:19:21,032 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=0, budget=1, actual=1, lastYear=1, layout=long
+2026-03-09 23:19:44,147 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=0, budget=1, actual=1, lastYear=1, layout=long
+2026-03-09 23:20:41,740 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=0, budget=1, actual=1, lastYear=1, layout=long
+2026-03-09 23:21:51,340 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=0, budget=1, actual=1, lastYear=1, layout=long
+2026-03-09 23:23:46,889 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 401 Unauthorized"
+2026-03-09 23:23:46,897 - smartbi.api.financial_dashboard - ERROR - Analysis failed: Error code: 401 - {'error': {'message': "You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY). ", 'type': 'invalid_request_error', 'param': None, 'code': None}, 'request_id': 'a15f855c-fbc0-9ea3-bbb3-830defabe1b4'}
+Traceback (most recent call last):
+  File "/Users/jietaoxie/my-prototype-logistics/backend/python/smartbi/api/financial_dashboard.py", line 147, in analyze_chart
+    response = client.chat.completions.create(
+        model=settings.llm_insight_model,
+    ...<5 lines>...
+        temperature=0.3,
+    )
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/openai/_utils/_utils.py", line 286, in wrapper
+    return func(*args, **kwargs)
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/openai/resources/chat/completions/completions.py", line 1211, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<47 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/openai/_base_client.py", line 1297, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/openai/_base_client.py", line 1070, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.AuthenticationError: Error code: 401 - {'error': {'message': "You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY). ", 'type': 'invalid_request_error', 'param': None, 'code': None}, 'request_id': 'a15f855c-fbc0-9ea3-bbb3-830defabe1b4'}
+2026-03-09 23:28:35,733 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=0, budget=1, actual=1, lastYear=2, layout=long
+2026-03-09 23:35:38,649 - common.llm_client - INFO - Shared LLM HTTP client closed
+2026-03-09 23:35:38,649 - main - INFO - Python Services shutting down...
+2026-03-09 23:35:42,317 - main - WARNING - Classifier router not registered (torch/transformers not installed)
+2026-03-09 23:35:42,341 - main - WARNING - Food Knowledge Base routes not registered
+2026-03-09 23:35:42,341 - main - WARNING - Food KB Feedback routes not registered
+2026-03-09 23:35:42,344 - main - WARNING - Completeness Calculator routes not registered (asyncpg not available)
+2026-03-09 23:35:42,344 - auth_middleware - INFO - JWTAuthMiddleware initialized, enabled=True
+2026-03-09 23:35:42,344 - main - INFO - Python Services starting up...
+2026-03-09 23:35:42,344 - main - INFO - Debug mode: False
+2026-03-09 23:35:42,344 - main - INFO - LLM Model: qwen3-max-2026-01-23
+2026-03-09 23:35:42,345 - main - INFO - PostgreSQL is disabled
+2026-03-09 23:35:42,376 - common.llm_client - INFO - Shared LLM HTTP client created (pool: 20 max, 10 keepalive)
+2026-03-09 23:36:02,376 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=1, budget=1, actual=1, lastYear=1, layout=long
+2026-03-09 23:36:02,416 - smartbi.services.financial.registry - ERROR - Builder variance_analysis failed: '月份'
+Traceback (most recent call last):
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3641, in get_loc
+    return self._engine.get_loc(casted_key)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "pandas/_libs/index.pyx", line 168, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 197, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7668, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7676, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: '月份'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/jietaoxie/my-prototype-logistics/backend/python/smartbi/services/financial/registry.py", line 95, in _safe_build
+    result = builder.build(df, column_mapping, period, year)
+  File "/Users/jietaoxie/my-prototype-logistics/backend/python/smartbi/services/financial/variance_analysis.py", line 57, in build
+    mask = df[pc].astype(str).str.contains(str(m), na=False)
+           ~~^^^^
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/pandas/core/frame.py", line 4378, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3648, in get_loc
+    raise KeyError(key) from err
+KeyError: '月份'
+2026-03-09 23:36:11,847 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=1, budget=1, actual=1, lastYear=1, layout=long
+2026-03-09 23:36:11,866 - smartbi.services.financial.registry - ERROR - Builder variance_analysis failed: '月份'
+Traceback (most recent call last):
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3641, in get_loc
+    return self._engine.get_loc(casted_key)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "pandas/_libs/index.pyx", line 168, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 197, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7668, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7676, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: '月份'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/jietaoxie/my-prototype-logistics/backend/python/smartbi/services/financial/registry.py", line 95, in _safe_build
+    result = builder.build(df, column_mapping, period, year)
+  File "/Users/jietaoxie/my-prototype-logistics/backend/python/smartbi/services/financial/variance_analysis.py", line 57, in build
+    mask = df[pc].astype(str).str.contains(str(m), na=False)
+           ~~^^^^
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/pandas/core/frame.py", line 4378, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3648, in get_loc
+    raise KeyError(key) from err
+KeyError: '月份'
+2026-03-09 23:37:00,075 - common.llm_client - INFO - Shared LLM HTTP client closed
+2026-03-09 23:37:00,076 - main - INFO - Python Services shutting down...
+2026-03-09 23:37:03,070 - main - WARNING - Classifier router not registered (torch/transformers not installed)
+2026-03-09 23:37:03,093 - main - WARNING - Food Knowledge Base routes not registered
+2026-03-09 23:37:03,093 - main - WARNING - Food KB Feedback routes not registered
+2026-03-09 23:37:03,097 - main - WARNING - Completeness Calculator routes not registered (asyncpg not available)
+2026-03-09 23:37:03,097 - auth_middleware - INFO - JWTAuthMiddleware initialized, enabled=True
+2026-03-09 23:37:03,097 - main - INFO - Python Services starting up...
+2026-03-09 23:37:03,097 - main - INFO - Debug mode: False
+2026-03-09 23:37:03,097 - main - INFO - LLM Model: qwen3-max-2026-01-23
+2026-03-09 23:37:03,097 - main - INFO - PostgreSQL is disabled
+2026-03-09 23:37:03,137 - common.llm_client - INFO - Shared LLM HTTP client created (pool: 20 max, 10 keepalive)
+2026-03-09 23:37:03,968 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=1, budget=1, actual=1, lastYear=1, layout=long
+2026-03-09 23:39:31,198 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=1, budget=1, actual=1, lastYear=1, layout=long
+2026-03-09 23:55:30,570 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=1, budget=1, actual=1, lastYear=1, layout=long
+2026-03-09 23:55:46,846 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=1, budget=1, actual=1, lastYear=1, layout=long
+2026-03-09 23:58:47,033 - smartbi.services.financial_data_normalizer - INFO - Column mapping detected: periods=1, budget=1, actual=1, lastYear=1, layout=long
+2026-03-09 23:59:00,583 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 401 Unauthorized"
+2026-03-09 23:59:00,655 - smartbi.api.financial_dashboard - ERROR - Analysis failed: Error code: 401 - {'error': {'message': "You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY). ", 'type': 'invalid_request_error', 'param': None, 'code': None}, 'request_id': 'c0753c8e-29a0-91d7-a40b-3cf8121c563b'}
+Traceback (most recent call last):
+  File "/Users/jietaoxie/my-prototype-logistics/backend/python/smartbi/api/financial_dashboard.py", line 147, in analyze_chart
+    response = client.chat.completions.create(
+        model=settings.llm_insight_model,
+    ...<5 lines>...
+        temperature=0.3,
+    )
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/openai/_utils/_utils.py", line 286, in wrapper
+    return func(*args, **kwargs)
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/openai/resources/chat/completions/completions.py", line 1211, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<47 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/openai/_base_client.py", line 1297, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/openai/_base_client.py", line 1070, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.AuthenticationError: Error code: 401 - {'error': {'message': "You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY). ", 'type': 'invalid_request_error', 'param': None, 'code': None}, 'request_id': 'c0753c8e-29a0-91d7-a40b-3cf8121c563b'}
+2026-03-09 23:59:14,642 - smartbi.api.financial_dashboard - ERROR - PPT export failed: 'latin-1' codec can't encode characters in position 22-27: ordinal not in range(256)
+Traceback (most recent call last):
+  File "/Users/jietaoxie/my-prototype-logistics/backend/python/smartbi/api/financial_dashboard.py", line 195, in export_ppt
+    return StreamingResponse(
+        io.BytesIO(pptx_bytes),
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/starlette/responses.py", line 237, in __init__
+    self.init_headers(headers)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/private/tmp/smartbi-venv/lib/python3.13/site-packages/starlette/responses.py", line 62, in init_headers
+    raw_headers = [(k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in headers.items()]
+                                                 ~~~~~~~~^^^^^^^^^^^
+UnicodeEncodeError: 'latin-1' codec can't encode characters in position 22-27: ordinal not in range(256)

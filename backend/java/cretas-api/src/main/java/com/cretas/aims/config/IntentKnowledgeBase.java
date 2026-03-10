@@ -4031,11 +4031,11 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("鸡肉加工", "FOOD_KNOWLEDGE_QUERY");
         phraseToIntentMapping.put("水产加工", "FOOD_KNOWLEDGE_QUERY");
         phraseToIntentMapping.put("海鲜加工", "FOOD_KNOWLEDGE_QUERY");
-        phraseToIntentMapping.put("生产豆腐", "FOOD_KNOWLEDGE_QUERY");
-        phraseToIntentMapping.put("生产面条", "FOOD_KNOWLEDGE_QUERY");
-        phraseToIntentMapping.put("生产饮料", "FOOD_KNOWLEDGE_QUERY");
-        phraseToIntentMapping.put("生产罐头", "FOOD_KNOWLEDGE_QUERY");
-        phraseToIntentMapping.put("生产酱油", "FOOD_KNOWLEDGE_QUERY");
+        phraseToIntentMapping.put("生产豆腐", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("生产面条", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("生产饮料", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("生产罐头", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("生产酱油", "PRODUCTION_PLAN_CREATE");
         // v16: 补充4+字符组合短语（解决3字符短语覆盖率不足的问题）
         // 豆腐/酱油/面包等食品加工
         phraseToIntentMapping.put("豆腐制作", "FOOD_KNOWLEDGE_QUERY");
@@ -6132,6 +6132,16 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("制定生产计划", "PRODUCTION_PLAN_CREATE");
         phraseToIntentMapping.put("排一个生产计划", "PRODUCTION_PLAN_CREATE");
         phraseToIntentMapping.put("安排生产任务", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("我要生产", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("帮我生产", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("安排生产计划", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("排产规划", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("帮我排产规划", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("帮我排产", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("生产面条", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("生产饮料", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("生产酱油", "PRODUCTION_PLAN_CREATE");
+        phraseToIntentMapping.put("生产豆腐", "PRODUCTION_PLAN_CREATE");
 
         // QUALITY_BATCH_MARK_AS_INSPECTED (5)
         phraseToIntentMapping.put("不合格品", "QUALITY_BATCH_MARK_AS_INSPECTED");
@@ -6496,6 +6506,26 @@ public class IntentKnowledgeBase {
         // --- 万一/假设条件 ---
         phraseToIntentMapping.put("万一冷库断电怎么办", "FOOD_KNOWLEDGE_QUERY");
         phraseToIntentMapping.put("冷库断电怎么办", "FOOD_KNOWLEDGE_QUERY");
+
+        // ========== E2E 补充：自然语言意图短语映射 ==========
+
+        // 库存查询 — 带时间限定的变体
+        phraseToIntentMapping.put("查询库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("今天的库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("查询今天库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("查询今天的库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("当前库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("看看库存", "MATERIAL_BATCH_QUERY");
+
+        // 发货查询 — 补充变体
+        phraseToIntentMapping.put("查询发货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("查看发货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("查看发货记录", "SHIPMENT_QUERY");
+
+        // 质检查询 — 补充变体
+        phraseToIntentMapping.put("查看质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("今天质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("今天的质检", "QUALITY_CHECK_QUERY");
 
         log.debug("短语映射初始化完成，共 {} 条映射", phraseToIntentMapping.size());
 
@@ -7945,6 +7975,17 @@ public class IntentKnowledgeBase {
                 // v26: improved batch number pattern to handle "PC-2024-001" style multi-segment IDs
                 .replaceAll("[a-zA-Z]{1,3}[-]?\\d{3,}(?:[-]\\d+)*", "")
                 .replaceAll("\\s+", "");
+
+        // v34: 第二层剥离 — 移除短食品实体词（≤2字的原料/产品名），保留操作动词+类目名
+        // 例: "生产带鱼罐头" → 剥离"带鱼" → "生产罐头" → 匹配短语 "生产罐头"
+        // 例: "采购猪肉500斤" → 已剥离数量 → "采购猪肉" → 保留（"猪肉"是2字但"采购猪肉"本身就是短语）
+        // 仅剥离不在短语表中的、2字以下的食品原料词
+        String deepStrippedInput = strippedInput;
+        for (String foodWord : FOOD_PRODUCT_NAMES) {
+            deepStrippedInput = deepStrippedInput.replace(foodWord, "");
+        }
+        deepStrippedInput = deepStrippedInput.replaceAll("\\s+", "");
+
         int inputLength = normalizedInput.length();
 
         // 按短语长度倒序排列，优先匹配更长的短语
@@ -7964,9 +8005,14 @@ public class IntentKnowledgeBase {
             // v21.0: 规则4: 短输入（<=6字）放宽到 phraseLength>=2，因为短输入信息不足以支撑分类器
             boolean matchedInNormal = normalizedInput.contains(phrase);
             boolean matchedInStripped = !matchedInNormal && strippedInput.contains(phrase);
-            if (matchedInNormal || matchedInStripped) {
+            // v34: 第三层尝试 — 剥离产品名后匹配（如"生产带鱼罐头"→"生产罐头"）
+            boolean matchedInDeepStripped = !matchedInNormal && !matchedInStripped
+                    && !deepStrippedInput.equals(strippedInput) && deepStrippedInput.contains(phrase);
+            if (matchedInNormal || matchedInStripped || matchedInDeepStripped) {
                 // v26: 当匹配来自strippedInput时，用stripped长度计算覆盖率更准确
-                int effectiveLength = matchedInStripped ? strippedInput.length() : inputLength;
+                // v34: deepStripped匹配时使用deepStripped长度
+                int effectiveLength = matchedInDeepStripped ? deepStrippedInput.length()
+                        : matchedInStripped ? strippedInput.length() : inputLength;
                 boolean isExactMatch = (phraseLength == effectiveLength);
                 boolean isLongPhrase = (phraseLength >= 4);
                 boolean isShortInput = (effectiveLength <= 6 && phraseLength >= 2);
@@ -8007,6 +8053,21 @@ public class IntentKnowledgeBase {
     /**
      * 食品实体词 - 出现时不应该匹配到工厂数据类意图，应走食品知识库
      */
+    /**
+     * v34: 短食品产品/原料名 — 在短语匹配归一化时剥离，解决"生产带鱼罐头"匹配"生产罐头"的问题
+     * 仅包含常见的短产品名(≤3字)，避免误剥离操作词
+     */
+    private static final Set<String> FOOD_PRODUCT_NAMES = Set.of(
+            // 水产品
+            "带鱼", "鲈鱼", "鲫鱼", "鲤鱼", "三文鱼", "金枪鱼", "鳕鱼", "黄花鱼", "墨鱼", "鱿鱼",
+            // 肉类原料
+            "猪肉", "牛肉", "羊肉", "鸡肉", "鸭肉", "鹅肉",
+            // 蔬菜/谷物
+            "大豆", "玉米", "小麦", "大米", "高粱",
+            // 调味品原料
+            "花椒", "辣椒", "生姜", "大蒜"
+    );
+
     private static final Set<String> FOOD_ENTITY_WORDS = Set.of(
             // 肉类
             "牛肉", "猪肉", "羊肉", "鸡肉", "鸭肉", "鹅肉", "兔肉", "驴肉",
@@ -8063,7 +8124,10 @@ public class IntentKnowledgeBase {
             "入库", "出库", "批次", "库存", "采购", "到货", "不够", "缺货",
             "入库情况", "入库记录", "低库存", "检验",
             // v26c: 更多工厂操作上下文信号
-            "到了没", "到货了", "到了吗", "采购了多少", "运行效率"
+            "到了没", "到货了", "到了吗", "采购了多少", "运行效率",
+            // v34: 工厂操作动词 — 防止"生产500公斤带鱼罐头"被拦截到食品知识库
+            // "生产X"/"加工X"/"排产X" 是工厂操作指令，不是食品知识查询
+            "生产", "加工", "排产", "制作", "生产计划"
     );
 
     /**
@@ -8181,8 +8245,24 @@ public class IntentKnowledgeBase {
                 // 例: "猪肉冷库温度异常" 包含食品实体"猪肉"但也包含数据信号"异常"
                 boolean hasDataSignal = DATA_CONTEXT_SIGNALS.stream()
                         .anyMatch(normalizedInput::contains);
-                if (hasDataSignal) {
-                    log.debug("v22 食品实体+数据信号: input='{}' 含数据上下文信号, 保留工厂意图 '{}'",
+
+                // v34: 同时检查 DATA_QUERY_INDICATORS（含数量单位、操作词等）
+                // 例: "生产500公斤带鱼罐头" → "公斤"命中 DATA_QUERY_INDICATORS → 工厂操作
+                boolean hasDataIndicator = DATA_QUERY_INDICATORS.stream()
+                        .anyMatch(normalizedInput::contains);
+
+                if (hasDataSignal || hasDataIndicator) {
+                    // v34: 但如果同时包含食品知识问句模式，仍应走食品知识库
+                    // 例: "罐头生产注意事项" → 有"生产"(数据信号) + "注意事项"(知识问句) → 走食品知识
+                    boolean hasKnowledgeQuestion = FOOD_KNOWLEDGE_QUESTION_PATTERNS.stream()
+                            .anyMatch(normalizedInput::contains);
+                    if (hasKnowledgeQuestion) {
+                        log.debug("v34 食品知识问句优先: input='{}' 含数据信号但也含知识问句模式, 触发冲突走食品知识",
+                                input, matchedIntentCode);
+                        return true;
+                    }
+
+                    log.debug("v34 食品实体+操作上下文: input='{}' 含数据信号/操作指标, 保留工厂意图 '{}'",
                             input, matchedIntentCode);
                     return false;
                 }

@@ -6,18 +6,20 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Refresh } from '@element-plus/icons-vue';
+import { Plus, Refresh, ChatDotRound } from '@element-plus/icons-vue';
+import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
+import { SALES_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
 
 // Quick action dialogs
 const deliveryDialogVisible = ref(false);
-const deliveryForm = ref({ orderId: '', quantity: 0, notes: '' });
+const deliveryForm = ref<Record<string, any>>({ orderId: '', customerId: '', deliveryDate: '', items: [], notes: '' });
 
 const invoiceDialogVisible = ref(false);
-const invoiceForm = ref({ orderId: '', amount: 0, notes: '' });
+const invoiceForm = ref({ orderId: '', counterpartyId: '', amount: 0, notes: '' });
 
 const paymentDialogVisible = ref(false);
-const paymentForm = ref({ orderId: '', amount: 0, paymentMethod: 'BANK_TRANSFER', notes: '' });
+const paymentForm = ref({ counterpartyId: '', amount: 0, paymentMethod: 'BANK_TRANSFER', notes: '' });
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -118,12 +120,67 @@ function handleSizeChange(size: number) { pagination.value.size = size; paginati
 function handleStatusChange() { pagination.value.page = 1; loadData(); }
 function handleRefresh() { statusFilter.value = ''; pagination.value.page = 1; loadData(); }
 
+// ==================== AI Entry ====================
+const aiEntryVisible = ref(false);
+
+function handleAiFill(params: Record<string, unknown>) {
+  // Match customerName to customerId
+  const customerName = String(params.customerName || '');
+  const matched = customers.value.find(
+    (c: Record<string, unknown>) => String(c.name || '').includes(customerName) || customerName.includes(String(c.name || ''))
+  );
+
+  form.value.customerId = matched ? String(matched.id) : '';
+  form.value.requiredDeliveryDate = String(params.requiredDeliveryDate || '');
+  form.value.deliveryAddress = String(params.deliveryAddress || '');
+  form.value.remark = String(params.remark || '');
+
+  if (Array.isArray(params.items) && params.items.length > 0) {
+    form.value.items = (params.items as Record<string, unknown>[]).map((item) => {
+      const prodName = String(item.productName || '');
+      const prodMatch = products.value.find(
+        (p: Record<string, unknown>) => String(p.name || '').includes(prodName) || prodName.includes(String(p.name || ''))
+      );
+      return {
+        productTypeId: prodMatch ? String(prodMatch.id) : '',
+        quantity: Number(item.quantity || 0),
+        unit: String(item.unit || 'kg'),
+        unitPrice: Number(item.unitPrice || 0),
+      };
+    });
+  }
+
+  dialogVisible.value = true;
+}
+
 async function handleQuickDelivery(row: any) {
-  deliveryForm.value = { orderId: row.id, quantity: row.totalQuantity || 0, notes: '' };
+  const today = new Date().toISOString().slice(0, 10);
+  // Build items from order items (each with productTypeId, deliveredQuantity, unit)
+  let items: any[] = [];
+  if (row.items && row.items.length > 0) {
+    items = row.items.map((item: any) => ({
+      productTypeId: item.productTypeId || item.productType?.id || '',
+      deliveredQuantity: item.quantity || 0,
+      unit: item.unit || 'kg',
+    }));
+  } else {
+    // Fallback: single item placeholder
+    items = [{ productTypeId: '', deliveredQuantity: row.totalQuantity || 1, unit: 'kg' }];
+  }
+  deliveryForm.value = {
+    salesOrderId: row.id,
+    customerId: row.customerId || row.customer?.id || '',
+    deliveryDate: today,
+    deliveryAddress: row.deliveryAddress || row.customer?.shippingAddress || '',
+    items,
+    remark: `销售订单 ${row.orderNumber || ''} 快速出库`,
+  };
   deliveryDialogVisible.value = true;
 }
 
 async function submitQuickDelivery() {
+  if (!deliveryForm.value.customerId) return ElMessage.warning('缺少客户信息');
+  if (!deliveryForm.value.deliveryDate) return ElMessage.warning('请选择发货日期');
   try {
     const res = await post(`/${factoryId.value}/sales/deliveries`, deliveryForm.value);
     if (res.success) {
@@ -139,11 +196,17 @@ async function submitQuickDelivery() {
 }
 
 async function handleQuickInvoice(row: any) {
-  invoiceForm.value = { orderId: row.id, amount: row.totalAmount || 0, notes: '' };
+  invoiceForm.value = {
+    orderId: row.id,
+    counterpartyId: row.customerId || row.customer?.id || '',
+    amount: row.totalAmount || 0,
+    notes: `销售订单 ${row.orderNumber || ''} 开票`,
+  };
   invoiceDialogVisible.value = true;
 }
 
 async function submitQuickInvoice() {
+  if (!invoiceForm.value.counterpartyId) return ElMessage.warning('缺少客户信息');
   try {
     const res = await post(`/${factoryId.value}/finance/receivable`, invoiceForm.value);
     if (res.success) {
@@ -159,11 +222,17 @@ async function submitQuickInvoice() {
 }
 
 async function handleQuickPayment(row: any) {
-  paymentForm.value = { orderId: row.id, amount: row.totalAmount || 0, paymentMethod: 'BANK_TRANSFER', notes: '' };
+  paymentForm.value = {
+    counterpartyId: row.customerId || row.customer?.id || '',
+    amount: row.totalAmount || 0,
+    paymentMethod: 'BANK_TRANSFER',
+    notes: `销售订单 ${row.orderNumber || ''} 收款`,
+  };
   paymentDialogVisible.value = true;
 }
 
 async function submitQuickPayment() {
+  if (!paymentForm.value.counterpartyId) return ElMessage.warning('缺少客户信息');
   try {
     const res = await post(`/${factoryId.value}/finance/receivable/payment`, paymentForm.value);
     if (res.success) {
@@ -189,6 +258,9 @@ async function submitQuickPayment() {
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
+            <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
+              AI录入
+            </el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="dialogVisible = true">新建{{ label('salesOrder') }}</el-button>
           </div>
         </div>
@@ -259,13 +331,18 @@ async function submitQuickPayment() {
     </el-card>
 
     <!-- 出库对话框 -->
-    <el-dialog v-model="deliveryDialogVisible" title="快速出库" width="400px">
+    <el-dialog v-model="deliveryDialogVisible" title="快速出库" width="500px">
       <el-form :model="deliveryForm" label-width="80px">
-        <el-form-item label="出库数量">
-          <el-input-number v-model="deliveryForm.quantity" :min="1" style="width: 100%" />
+        <el-form-item label="发货日期">
+          <el-date-picker v-model="deliveryForm.deliveryDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="发货明细">
+          <div v-for="(item, idx) in deliveryForm.items" :key="idx" style="margin-bottom: 4px">
+            {{ idx + 1 }}. 数量: <el-input-number v-model="item.deliveredQuantity" :min="1" size="small" style="width: 120px" /> {{ item.unit }}
+          </div>
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="deliveryForm.notes" type="textarea" :rows="2" />
+          <el-input v-model="deliveryForm.remark" type="textarea" :rows="2" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -340,6 +417,13 @@ async function submitQuickPayment() {
         <el-button type="primary" @click="handleCreate">创建</el-button>
       </template>
     </el-dialog>
+
+    <!-- AI 对话录入 -->
+    <AiEntryDrawer
+      v-model="aiEntryVisible"
+      :config="SALES_ORDER_CONFIG"
+      @fill-form="handleAiFill"
+    />
   </div>
 </template>
 

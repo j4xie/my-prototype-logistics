@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -121,6 +122,20 @@ public class SkillDefinition {
      * 使用此Skill所需的权限
      */
     private String requiredPermission;
+
+    /**
+     * DAG执行图 (P0: 条件分支 + 错误恢复)
+     * 定义工具执行的依赖关系和条件分支
+     * 当非空时，覆盖 tools 列表的顺序执行模式
+     */
+    private List<ExecutionNode> executionGraph;
+
+    /**
+     * 错误处理策略
+     * 控制工具执行失败时的行为
+     */
+    @Builder.Default
+    private ErrorStrategy errorStrategy = ErrorStrategy.STOP;
 
     /**
      * Source of the skill definition
@@ -253,5 +268,100 @@ public class SkillDefinition {
      */
     public boolean isFromFile() {
         return source != null && source.startsWith("file:");
+    }
+
+    /**
+     * Check if this skill has a DAG execution graph defined
+     */
+    public boolean hasExecutionGraph() {
+        return executionGraph != null && !executionGraph.isEmpty();
+    }
+
+    /**
+     * Get execution nodes that have no dependencies (entry points)
+     */
+    public List<ExecutionNode> getRootNodes() {
+        if (!hasExecutionGraph()) return List.of();
+        return executionGraph.stream()
+                .filter(n -> n.getDependsOn() == null || n.getDependsOn().isEmpty())
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Get execution nodes that depend on a given node
+     */
+    public List<ExecutionNode> getDependentNodes(String nodeId) {
+        if (!hasExecutionGraph()) return List.of();
+        return executionGraph.stream()
+                .filter(n -> n.getDependsOn() != null && n.getDependsOn().contains(nodeId))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    // ==================== Inner Types ====================
+
+    /**
+     * 错误处理策略枚举
+     */
+    public enum ErrorStrategy {
+        /** 首个失败即停止 (默认，向后兼容) */
+        STOP,
+        /** 失败后继续执行后续工具，收集部分结果 */
+        CONTINUE_ON_ERROR,
+        /** 失败后重试 (使用 ExecutionNode.maxRetries) */
+        RETRY,
+        /** 失败后使用备选工具 (使用 ExecutionNode.fallbackTool) */
+        FALLBACK
+    }
+
+    /**
+     * DAG执行图节点 — 描述一个工具的执行条件和依赖关系
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ExecutionNode {
+        /** 节点唯一标识 */
+        private String id;
+
+        /** 要执行的工具名称 */
+        private String toolName;
+
+        /** 依赖的前置节点ID列表 */
+        private List<String> dependsOn;
+
+        /**
+         * 执行条件表达式
+         * 支持的语法:
+         * - "{nodeId}.success" — 前置节点是否成功
+         * - "{nodeId}.data.{field}" — 访问前置节点结果数据
+         * - "&&", "||", "!" — 布尔运算符
+         * - 空或null — 无条件执行(仅需依赖完成)
+         */
+        private String condition;
+
+        /** 工具执行参数 (覆盖/补充全局参数) */
+        private Map<String, Object> params;
+
+        /** 备选工具名称 (ErrorStrategy.FALLBACK 时使用) */
+        private String fallbackTool;
+
+        /** 最大重试次数 (ErrorStrategy.RETRY 时使用, 默认1) */
+        @Builder.Default
+        private int maxRetries = 1;
+
+        /**
+         * Check if this node has a condition
+         */
+        public boolean hasCondition() {
+            return condition != null && !condition.trim().isEmpty();
+        }
+
+        /**
+         * Check if this node has dependencies
+         */
+        public boolean hasDependencies() {
+            return dependsOn != null && !dependsOn.isEmpty();
+        }
     }
 }

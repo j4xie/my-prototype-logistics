@@ -112,6 +112,7 @@ class ChartType(str, Enum):
     GAUGE = "gauge"
     TREEMAP = "treemap"
     SANKEY = "sankey"
+    GANTT = "gantt"
     COMBINATION = "combination"
 
     # Advanced charts (Phase 5)
@@ -233,6 +234,15 @@ class ChartBuilder:
         "treemap": {
             "animationDuration": 800,
             "animationEasing": "cubicOut",
+        },
+        "sankey": {
+            "animationDuration": 1000,
+            "animationEasing": "elasticOut",
+        },
+        "gantt": {
+            "animationDuration": 800,
+            "animationEasing": "cubicOut",
+            "animationDelay": "__ANIM__stagger_60",
         },
         "sunburst": {
             "animationDuration": 1000,
@@ -488,6 +498,12 @@ class ChartBuilder:
                 config = self._build_correlation_matrix_chart(df, x_field, y_fields, series_field)
             elif chart_type_enum == ChartType.BUDGET_COMPARISON:
                 config = self._build_budget_comparison_chart(df, x_field, y_fields, options)
+            elif chart_type_enum == ChartType.TREEMAP:
+                config = self._build_treemap_chart(df, x_field, y_fields)
+            elif chart_type_enum == ChartType.SANKEY:
+                config = self._build_sankey_chart(df, x_field, y_fields)
+            elif chart_type_enum == ChartType.GANTT:
+                config = self._build_gantt_chart(df, x_field, y_fields)
             else:
                 config = self._build_line_chart(df, x_field, y_fields, series_field)
 
@@ -769,64 +785,168 @@ class ChartBuilder:
         y_fields: Optional[List[str]],
         series_field: Optional[str]
     ) -> dict:
-        """Build scatter chart configuration with trendline"""
-        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        """Build scatter/bubble chart configuration with trendline, quadrant lines, and visual dimensions.
+
+        Bubble mode: if 3+ numeric columns, 3rd column controls bubble size (symbolSize).
+        Color dimension: if 4th numeric column exists, adds a visualMap for color coding.
+        Quadrant lines: draws crosshair at mean values (BCG matrix style).
+        Regression line: linear trend line with slope/intercept.
+        Labels: show entity name near each bubble when <=20 data points.
+        """
+        numeric_cols = list(df.select_dtypes(include=[np.number]).columns)
         if not y_fields and len(numeric_cols) < 2:
             return self._empty_chart_config("散点图需要至少2个数值列")
         if len(numeric_cols) == 0:
             return self._empty_chart_config("散点图需要数值列")
-        x_col = x_field or numeric_cols[0]
+
+        x_col = x_field if x_field and x_field in df.columns else numeric_cols[0]
         y_col = y_fields[0] if y_fields else (numeric_cols[1] if len(numeric_cols) > 1 else numeric_cols[0])
+
+        # Determine bubble size column (3rd numeric)
+        remaining_numeric = [c for c in numeric_cols if c not in (x_col, y_col)]
+        size_col = None
+        color_col = None
+        if y_fields and len(y_fields) >= 2 and y_fields[1] in df.columns:
+            size_col = y_fields[1]
+            if len(y_fields) >= 3 and y_fields[2] in df.columns:
+                color_col = y_fields[2]
+        elif len(remaining_numeric) >= 1:
+            size_col = remaining_numeric[0]
+            if len(remaining_numeric) >= 2:
+                color_col = remaining_numeric[1]
+
+        is_bubble = size_col is not None
+
+        # Detect label column (first non-numeric column for entity names)
+        non_numeric_cols = [c for c in df.columns if c not in numeric_cols]
+        label_col = non_numeric_cols[0] if non_numeric_cols else None
+
+        # Compute size scaling range for bubble mode
+        size_min_val, size_max_val = 0, 1
+        if is_bubble:
+            size_series = pd.to_numeric(df[size_col], errors='coerce').dropna()
+            if len(size_series) > 0:
+                size_min_val = float(size_series.min())
+                size_max_val = float(size_series.max())
+                if size_max_val == size_min_val:
+                    size_max_val = size_min_val + 1
 
         all_x, all_y = [], []
         series = []
+
+        def _make_point(row):
+            """Build a single scatter/bubble data point."""
+            try:
+                xv = float(row[x_col])
+                yv = float(row[y_col])
+            except (ValueError, TypeError):
+                return None
+            if not (math.isfinite(xv) and math.isfinite(yv)):
+                return None
+
+            all_x.append(xv)
+            all_y.append(yv)
+            point = [xv, yv]
+
+            if is_bubble:
+                try:
+                    sv = float(row[size_col])
+                    point.append(sv if math.isfinite(sv) else 0)
+                except (ValueError, TypeError):
+                    point.append(0)
+
+            if color_col:
+                try:
+                    cv = float(row[color_col])
+                    point.append(cv if math.isfinite(cv) else 0)
+                except (ValueError, TypeError):
+                    point.append(0)
+
+            return point
+
+        def _symbol_size_fn_ref():
+            """Return a named function reference for ECharts symbolSize callback.
+            Frontend resolves __FMT__bubble_size to:
+              function(val) { return 8 + (val[2] - min) / (max - min) * 52; }
+            """
+            return "__FMT__bubble_size"
+
         if series_field and series_field in df.columns:
             for name, group in df.groupby(series_field):
                 data = []
                 for _, row in group.iterrows():
-                    try:
-                        xv, yv = float(row[x_col]), float(row[y_col])
-                        data.append([xv, yv])
-                        all_x.append(xv)
-                        all_y.append(yv)
-                    except (ValueError, TypeError):
-                        logger.debug(f"Scatter skip row: {x_col}={row.get(x_col)}, {y_col}={row.get(y_col)}")
-                        continue
-                series.append({
+                    pt = _make_point(row)
+                    if pt:
+                        data.append(pt)
+                s = {
                     "name": str(name),
                     "type": "scatter",
                     "data": data,
-                    "symbolSize": 10
-                })
+                }
+                if is_bubble:
+                    s["symbolSize"] = _symbol_size_fn_ref()
+                    s["_sizeRange"] = [size_min_val, size_max_val]
+                else:
+                    s["symbolSize"] = 10
+                # Labels for small datasets
+                if label_col and len(group) <= 20:
+                    s["label"] = {
+                        "show": True,
+                        "formatter": "__FMT__scatter_label",
+                        "fontSize": 10,
+                        "color": "#666",
+                        "position": "right",
+                    }
+                series.append(s)
         else:
             data = []
+            labels = []
             for _, row in df.iterrows():
-                try:
-                    xv, yv = float(row[x_col]), float(row[y_col])
-                    data.append([xv, yv])
-                    all_x.append(xv)
-                    all_y.append(yv)
-                except (ValueError, TypeError):
-                    logger.debug(f"Scatter skip row: {x_col}={row.get(x_col)}, {y_col}={row.get(y_col)}")
-                    continue
-            series.append({
+                pt = _make_point(row)
+                if pt:
+                    data.append(pt)
+                    if label_col:
+                        labels.append(str(row.get(label_col, '')))
+            s = {
                 "name": f"{x_col} vs {y_col}",
                 "type": "scatter",
                 "data": data,
-                "symbolSize": 10
-            })
+            }
+            if is_bubble:
+                s["symbolSize"] = _symbol_size_fn_ref()
+                s["_sizeRange"] = [size_min_val, size_max_val]
+            else:
+                s["symbolSize"] = 10
+            # Labels for small datasets
+            if label_col and len(df) <= 20:
+                s["label"] = {
+                    "show": True,
+                    "formatter": "__FMT__scatter_label",
+                    "fontSize": 10,
+                    "color": "#666",
+                    "position": "right",
+                }
+                s["_labels"] = labels
+            series.append(s)
 
-        # 趋势线：线性回归
+        # Regression / trend line
         if len(all_x) >= 3:
             try:
                 coeffs = np.polyfit(all_x, all_y, 1)
+                slope, intercept = coeffs[0], coeffs[1]
                 x_min, x_max = min(all_x), max(all_x)
+                # Calculate R-squared
+                y_pred = np.array(all_x) * slope + intercept
+                ss_res = np.sum((np.array(all_y) - y_pred) ** 2)
+                ss_tot = np.sum((np.array(all_y) - np.mean(all_y)) ** 2)
+                r_squared = round(1 - ss_res / ss_tot, 4) if ss_tot > 0 else 0
+
                 series.append({
-                    "name": "趋势线",
+                    "name": f"趋势线 (R²={r_squared})",
                     "type": "line",
                     "data": [
-                        [round(x_min, 2), round(coeffs[0] * x_min + coeffs[1], 2)],
-                        [round(x_max, 2), round(coeffs[0] * x_max + coeffs[1], 2)]
+                        [round(x_min, 2), round(slope * x_min + intercept, 2)],
+                        [round(x_max, 2), round(slope * x_max + intercept, 2)]
                     ],
                     "smooth": False,
                     "symbol": "none",
@@ -836,12 +956,66 @@ class ChartBuilder:
             except Exception as e:
                 logger.debug(f"Trendline polyfit failed with {len(all_x)} pts: {e}")
 
-        return {
-            "xAxis": {"type": "value", "name": x_col},
+        # Quadrant lines (BCG matrix style): crosshair at mean values
+        if len(all_x) >= 3:
+            mean_x = round(float(np.mean(all_x)), 2)
+            mean_y = round(float(np.mean(all_y)), 2)
+            # Add markLine to first scatter series
+            for s in series:
+                if s.get("type") == "scatter":
+                    s["markLine"] = {
+                        "silent": True,
+                        "symbol": ["none", "none"],
+                        "lineStyle": {"type": "dashed", "color": "#c0c4cc", "width": 1},
+                        "label": {"fontSize": 10, "color": "#909399"},
+                        "data": [
+                            {"xAxis": mean_x, "name": f"均值: {mean_x}"},
+                            {"yAxis": mean_y, "name": f"均值: {mean_y}"},
+                        ]
+                    }
+                    break
+
+        config = {
+            "xAxis": {"type": "value", "name": x_col, "nameLocation": "center", "nameGap": 30},
             "yAxis": {"type": "value", "name": y_col},
             "series": series,
-            "tooltip": self._make_enhanced_tooltip("item")
+            "tooltip": {
+                **self._make_enhanced_tooltip("item"),
+                "formatter": "__FMT__scatter_tooltip",
+            }
         }
+
+        # Color dimension via visualMap
+        if color_col:
+            color_series = pd.to_numeric(df[color_col], errors='coerce').dropna()
+            c_min = float(color_series.min()) if len(color_series) > 0 else 0
+            c_max = float(color_series.max()) if len(color_series) > 0 else 1
+            config["visualMap"] = {
+                "show": True,
+                "dimension": 3,
+                "min": c_min,
+                "max": c_max,
+                "calculable": True,
+                "orient": "vertical",
+                "right": 10,
+                "top": "center",
+                "text": [color_col, ""],
+                "inRange": {
+                    "color": ["#57D9A3", "#FFAB00", "#FF5630"]
+                },
+                "textStyle": {"fontSize": 11},
+            }
+            config["grid"] = {"right": "15%"}
+
+        # Size legend reference for bubble mode
+        if is_bubble:
+            config["_bubbleMeta"] = {
+                "sizeColumn": size_col,
+                "sizeMin": size_min_val,
+                "sizeMax": size_max_val,
+            }
+
+        return config
 
     def _build_waterfall_chart(
         self,
@@ -2129,6 +2303,893 @@ class ChartBuilder:
 
         return config
 
+    # ==================== Sankey / Treemap / Gantt ====================
+
+    def _build_sankey_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        title: Optional[str] = None,
+        theme_key: str = "business"
+    ) -> dict:
+        """Build Sankey flow diagram from source->target->value data.
+
+        Auto-detects source/target/value columns from DataFrame.
+        If not obvious flow data, creates P&L-style flow
+        (Revenue -> Gross Profit -> Operating Profit -> Net Profit).
+        """
+        palette = self._get_palette()["charts"]
+
+        # --- Detect source/target/value columns ---
+        source_col, target_col, value_col = None, None, None
+        col_lower_map = {c.lower().strip(): c for c in df.columns}
+
+        # Explicit column hints
+        for alias, target_name in [
+            (('source', '来源', 'from', '源'), 'source'),
+            (('target', '目标', 'to', '去向', '流向'), 'target'),
+            (('value', '金额', '数值', 'amount', 'weight'), 'value'),
+        ]:
+            for a in alias:
+                if a in col_lower_map:
+                    if target_name == 'source':
+                        source_col = col_lower_map[a]
+                    elif target_name == 'target':
+                        target_col = col_lower_map[a]
+                    elif target_name == 'value':
+                        value_col = col_lower_map[a]
+                    break
+
+        # Fallback: first two non-numeric cols = source/target, first numeric = value
+        if not source_col or not target_col:
+            non_num = [c for c in df.columns if c not in df.select_dtypes(include=[np.number]).columns]
+            num_cols = list(df.select_dtypes(include=[np.number]).columns)
+            if len(non_num) >= 2 and len(num_cols) >= 1:
+                source_col = source_col or non_num[0]
+                target_col = target_col or non_num[1]
+                value_col = value_col or num_cols[0]
+
+        # If still no valid flow structure, attempt P&L-style auto-flow
+        if not source_col or not target_col or not value_col:
+            return self._build_sankey_pnl_auto(df, x_field, y_fields, palette)
+
+        # --- Build nodes and links ---
+        node_set = set()
+        links = []
+        for _, row in df.iterrows():
+            src = str(row.get(source_col, '')).strip()
+            tgt = str(row.get(target_col, '')).strip()
+            try:
+                val = abs(float(pd.to_numeric(row.get(value_col), errors='coerce')))
+            except (ValueError, TypeError):
+                continue
+            if not src or not tgt or val == 0 or not math.isfinite(val):
+                continue
+            node_set.add(src)
+            node_set.add(tgt)
+            links.append({"source": src, "target": tgt, "value": round(val, 2)})
+
+        if not links:
+            return self._empty_chart_config("桑基图无有效流向数据")
+
+        # Assign colors to nodes
+        nodes = []
+        for i, name in enumerate(sorted(node_set)):
+            nodes.append({
+                "name": name,
+                "itemStyle": {"color": palette[i % len(palette)]},
+            })
+
+        total_value = sum(lk["value"] for lk in links)
+        orient = "horizontal" if len(nodes) <= 10 else "vertical"
+
+        config = {
+            "series": [{
+                "type": "sankey",
+                "layout": "none",
+                "orient": orient,
+                "nodeWidth": 20,
+                "nodeGap": 12,
+                "draggable": True,
+                "emphasis": {
+                    "focus": "adjacency",
+                    "blurScope": "global",
+                },
+                "lineStyle": {
+                    "color": "gradient",
+                    "curveness": 0.5,
+                    "opacity": 0.4,
+                },
+                "label": {
+                    "show": True,
+                    "fontSize": 11,
+                    "color": "#333",
+                    "formatter": "__FMT__sankey_node_label",
+                },
+                "data": nodes,
+                "links": links,
+                "tooltip": {
+                    "trigger": "item",
+                    "formatter": "__FMT__sankey_tooltip",
+                },
+                "levels": [
+                    {
+                        "depth": 0,
+                        "itemStyle": {"borderWidth": 1, "borderColor": "#aaa"},
+                        "lineStyle": {"opacity": 0.5},
+                    },
+                    {
+                        "depth": 1,
+                        "itemStyle": {"borderWidth": 1, "borderColor": "#aaa"},
+                        "lineStyle": {"opacity": 0.4},
+                    },
+                    {
+                        "depth": 2,
+                        "itemStyle": {"borderWidth": 1, "borderColor": "#aaa"},
+                        "lineStyle": {"opacity": 0.3},
+                    },
+                ],
+            }],
+            "tooltip": {
+                **self._make_enhanced_tooltip("item"),
+                "formatter": "__FMT__sankey_tooltip",
+            },
+            "_sankeyMeta": {
+                "totalValue": round(total_value, 2),
+                "nodeCount": len(nodes),
+                "linkCount": len(links),
+            },
+        }
+
+        return config
+
+    def _build_sankey_pnl_auto(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        palette: list
+    ) -> dict:
+        """Auto-create P&L-style Sankey when no explicit source/target columns.
+
+        Builds flow: 营业收入 -> [营业成本, 各项费用] -> 毛利润 -> 营业利润 -> 净利润
+        """
+        # Try to find item/value columns
+        item_col = x_field
+        if not item_col:
+            for c in df.columns:
+                if c.lower() in ('item', '项目', '科目', 'name', '名称'):
+                    item_col = c
+                    break
+        if not item_col:
+            non_num = [c for c in df.columns if c not in df.select_dtypes(include=[np.number]).columns]
+            item_col = non_num[0] if non_num else None
+
+        numeric_cols = list(df.select_dtypes(include=[np.number]).columns)
+        val_col = y_fields[0] if y_fields and y_fields[0] in df.columns else (numeric_cols[0] if numeric_cols else None)
+
+        if not item_col or not val_col:
+            return self._empty_chart_config("桑基图需要分类列和数值列")
+
+        # Aggregate by item
+        grouped = df.groupby(item_col)[val_col].sum()
+
+        # Classify items
+        revenue_items = {}
+        cost_items = {}
+        expense_items = {}
+        tax_items = {}
+
+        revenue_kw = ['收入', '营收', 'revenue', 'income', 'sales']
+        cost_kw = ['成本', 'cost', 'cogs']
+        expense_kw = ['费用', '管理', '销售', '研发', '财务', 'expense', 'admin', 'selling']
+        tax_kw = ['税', 'tax']
+
+        for item_name, val in grouped.items():
+            name_lower = str(item_name).lower()
+            abs_val = abs(float(val))
+            if abs_val == 0:
+                continue
+            if any(kw in name_lower for kw in revenue_kw):
+                revenue_items[str(item_name)] = abs_val
+            elif any(kw in name_lower for kw in cost_kw):
+                cost_items[str(item_name)] = abs_val
+            elif any(kw in name_lower for kw in expense_kw):
+                expense_items[str(item_name)] = abs_val
+            elif any(kw in name_lower for kw in tax_kw):
+                tax_items[str(item_name)] = abs_val
+            else:
+                expense_items[str(item_name)] = abs_val
+
+        total_revenue = sum(revenue_items.values()) or 1
+        total_cost = sum(cost_items.values())
+        total_expense = sum(expense_items.values())
+        total_tax = sum(tax_items.values())
+        gross_profit = total_revenue - total_cost
+        net_profit = gross_profit - total_expense - total_tax
+
+        # Build nodes
+        node_colors = {
+            "营业收入": "#FF5630",
+            "毛利润": "#1B65A8",
+            "净利润": "#1B65A8",
+        }
+        node_names = ["营业收入"]
+        links = []
+
+        # Revenue -> costs
+        for name, val in cost_items.items():
+            node_names.append(name)
+            node_colors[name] = "#36B37E"
+            links.append({"source": "营业收入", "target": name, "value": round(val, 2)})
+
+        # Revenue -> Gross Profit
+        if gross_profit > 0:
+            node_names.append("毛利润")
+            links.append({"source": "营业收入", "target": "毛利润", "value": round(gross_profit, 2)})
+
+            # Gross Profit -> expenses
+            for name, val in expense_items.items():
+                node_names.append(name)
+                node_colors[name] = "#57D9A3"
+                links.append({"source": "毛利润", "target": name, "value": round(val, 2)})
+
+            for name, val in tax_items.items():
+                node_names.append(name)
+                node_colors[name] = "#6B778C"
+                links.append({"source": "毛利润", "target": name, "value": round(val, 2)})
+
+            # Gross Profit -> Net Profit
+            if net_profit > 0:
+                node_names.append("净利润")
+                links.append({"source": "毛利润", "target": "净利润", "value": round(net_profit, 2)})
+
+        if not links:
+            return self._empty_chart_config("无法构建损益流向，请确保数据包含收入和成本项")
+
+        nodes = []
+        seen = set()
+        for name in node_names:
+            if name not in seen:
+                seen.add(name)
+                nodes.append({
+                    "name": name,
+                    "itemStyle": {"color": node_colors.get(name, palette[len(seen) % len(palette)])},
+                })
+
+        return {
+            "series": [{
+                "type": "sankey",
+                "layout": "none",
+                "orient": "horizontal",
+                "nodeWidth": 20,
+                "nodeGap": 14,
+                "draggable": True,
+                "emphasis": {"focus": "adjacency"},
+                "lineStyle": {"color": "gradient", "curveness": 0.5, "opacity": 0.4},
+                "label": {
+                    "show": True,
+                    "fontSize": 11,
+                    "formatter": "__FMT__sankey_node_label",
+                },
+                "data": nodes,
+                "links": links,
+                "levels": [
+                    {"depth": 0, "itemStyle": {"borderWidth": 1, "borderColor": "#aaa"}},
+                    {"depth": 1, "lineStyle": {"opacity": 0.4}},
+                    {"depth": 2, "lineStyle": {"opacity": 0.3}},
+                ],
+            }],
+            "tooltip": {
+                **self._make_enhanced_tooltip("item"),
+                "formatter": "__FMT__sankey_tooltip",
+            },
+        }
+
+    def _build_treemap_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        title: Optional[str] = None,
+        theme_key: str = "business"
+    ) -> dict:
+        """Build Treemap for hierarchical proportion visualization.
+
+        Size = absolute value, Color = growth rate or category.
+        Supports drill-down via breadcrumb navigation.
+        Auto-detects parent-child hierarchy or creates single-level treemap.
+        """
+        palette = self._get_palette()["charts"]
+        numeric_cols = list(df.select_dtypes(include=[np.number]).columns)
+        if len(numeric_cols) == 0:
+            return self._empty_chart_config("矩阵树图需要数值列")
+
+        name_col = x_field
+        if not name_col:
+            non_num = [c for c in df.columns if c not in numeric_cols]
+            name_col = non_num[0] if non_num else None
+
+        value_col = y_fields[0] if y_fields and y_fields[0] in df.columns else numeric_cols[0]
+
+        # Check for parent column (hierarchy)
+        parent_col = None
+        for c in df.columns:
+            cl = c.lower().strip()
+            if cl in ('parent', '父级', '上级', '大类', 'category', '分类', 'group', '组'):
+                if c != name_col and c != value_col:
+                    parent_col = c
+                    break
+
+        # Growth/color column (secondary numeric)
+        color_col = None
+        if y_fields and len(y_fields) >= 2 and y_fields[1] in df.columns:
+            color_col = y_fields[1]
+        elif len(numeric_cols) >= 2:
+            remaining = [c for c in numeric_cols if c != value_col]
+            color_col = remaining[0] if remaining else None
+
+        total_value = 0
+
+        if parent_col and name_col:
+            # --- Hierarchical treemap ---
+            parent_map = {}  # parent_name -> {children: [...], value: 0}
+            for _, row in df.iterrows():
+                parent_name = str(row.get(parent_col, '其他')).strip() or '其他'
+                child_name = str(row.get(name_col, '')).strip()
+                try:
+                    val = abs(float(pd.to_numeric(row.get(value_col), errors='coerce')))
+                except (ValueError, TypeError):
+                    val = 0
+                if not child_name or val == 0 or not math.isfinite(val):
+                    continue
+
+                if parent_name not in parent_map:
+                    parent_map[parent_name] = {"children": [], "value": 0}
+                child_entry = {"name": child_name, "value": round(val, 2)}
+                if color_col:
+                    try:
+                        cv = float(pd.to_numeric(row.get(color_col), errors='coerce'))
+                        if math.isfinite(cv):
+                            child_entry["colorValue"] = round(cv, 2)
+                    except (ValueError, TypeError):
+                        pass
+                parent_map[parent_name]["children"].append(child_entry)
+                parent_map[parent_name]["value"] += val
+                total_value += val
+
+            tree_data = []
+            for i, (pname, pdata) in enumerate(sorted(parent_map.items(), key=lambda x: -x["value"])):
+                node = {
+                    "name": pname,
+                    "value": round(pdata["value"], 2),
+                    "children": sorted(pdata["children"], key=lambda c: -c["value"]),
+                    "itemStyle": {"borderColor": palette[i % len(palette)], "borderWidth": 2},
+                }
+                tree_data.append(node)
+        else:
+            # --- Single-level treemap ---
+            if name_col:
+                grouped = df.groupby(name_col)[value_col].sum()
+            else:
+                grouped = df[value_col]
+
+            tree_data = []
+            color_values = []
+            for i, (name, val) in enumerate(
+                sorted(
+                    ((str(k), abs(float(v))) for k, v in grouped.items() if pd.notna(v) and float(v) != 0),
+                    key=lambda x: -x[1]
+                )
+            ):
+                if not math.isfinite(val):
+                    continue
+                entry = {"name": name, "value": round(val, 2)}
+                total_value += val
+
+                if color_col and name_col:
+                    # Get mean color value for this group
+                    mask = df[name_col].astype(str) == name
+                    cv_series = pd.to_numeric(df.loc[mask, color_col], errors='coerce').dropna()
+                    if len(cv_series) > 0:
+                        cv = float(cv_series.mean())
+                        if math.isfinite(cv):
+                            entry["colorValue"] = round(cv, 2)
+                            color_values.append(cv)
+
+                tree_data.append(entry)
+
+        if not tree_data:
+            return self._empty_chart_config("矩阵树图无有效数据")
+
+        # Build ECharts treemap config
+        series_config = {
+            "type": "treemap",
+            "data": tree_data,
+            "roam": True,
+            "width": "92%",
+            "height": "85%",
+            "top": "5%",
+            "left": "center",
+            "breadcrumb": {
+                "show": True,
+                "bottom": 5,
+                "left": "center",
+                "itemStyle": {
+                    "color": "#f5f5f5",
+                    "borderColor": "#ddd",
+                    "borderWidth": 1,
+                    "shadowBlur": 2,
+                    "shadowColor": "rgba(0,0,0,0.05)",
+                    "textStyle": {"color": "#333", "fontSize": 12},
+                },
+                "emphasis": {
+                    "itemStyle": {"color": "#e0e0e0"},
+                },
+            },
+            "label": {
+                "show": True,
+                "formatter": "__FMT__treemap_label",
+                "fontSize": 12,
+                "color": "#fff",
+                "fontWeight": "bold",
+                "textShadowBlur": 2,
+                "textShadowColor": "rgba(0,0,0,0.3)",
+            },
+            "upperLabel": {
+                "show": True,
+                "height": 24,
+                "color": "#fff",
+                "fontSize": 12,
+                "fontWeight": "bold",
+                "backgroundColor": "transparent",
+            },
+            "itemStyle": {
+                "borderColor": "#fff",
+                "borderWidth": 2,
+                "gapWidth": 2,
+            },
+            "levels": [
+                {
+                    "itemStyle": {
+                        "borderColor": "#999",
+                        "borderWidth": 3,
+                        "gapWidth": 3,
+                    },
+                    "upperLabel": {"show": True},
+                },
+                {
+                    "itemStyle": {
+                        "borderColor": "#ccc",
+                        "borderWidth": 2,
+                        "gapWidth": 2,
+                    },
+                    "label": {"show": True},
+                    "upperLabel": {"show": False},
+                },
+                {
+                    "itemStyle": {
+                        "borderColor": "#ddd",
+                        "borderWidth": 1,
+                        "gapWidth": 1,
+                    },
+                    "label": {"show": True, "fontSize": 10},
+                },
+            ],
+            "emphasis": {
+                "itemStyle": {
+                    "shadowBlur": 10,
+                    "shadowColor": "rgba(0,0,0,0.2)",
+                },
+            },
+        }
+
+        config = {
+            "series": [series_config],
+            "tooltip": {
+                **self._make_enhanced_tooltip("item"),
+                "formatter": "__FMT__treemap_tooltip",
+            },
+            "_treemapMeta": {
+                "totalValue": round(total_value, 2),
+                "nodeCount": len(tree_data),
+                "hasHierarchy": parent_col is not None,
+            },
+        }
+
+        # Add visualMap for color dimension
+        if color_col:
+            # Collect all color values from tree_data (leaf level)
+            all_cv = []
+            def _collect_cv(nodes):
+                for n in nodes:
+                    if "colorValue" in n:
+                        all_cv.append(n["colorValue"])
+                    if "children" in n:
+                        _collect_cv(n["children"])
+            _collect_cv(tree_data)
+
+            if all_cv:
+                config["visualMap"] = {
+                    "show": True,
+                    "type": "continuous",
+                    "min": min(all_cv),
+                    "max": max(all_cv),
+                    "calculable": True,
+                    "orient": "horizontal",
+                    "left": "center",
+                    "bottom": 30,
+                    "text": [f"高 ({color_col})", f"低"],
+                    "inRange": {
+                        "color": ["#57D9A3", "#FFAB00", "#FF5630"]
+                    },
+                    "textStyle": {"fontSize": 11},
+                    "dimension": "colorValue",
+                    "seriesIndex": 0,
+                }
+
+        return config
+
+    def _build_gantt_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        title: Optional[str] = None,
+        theme_key: str = "business"
+    ) -> dict:
+        """Build Gantt chart using stacked bar trick on a time axis.
+
+        Uses horizontal bars: transparent base + colored bar for each task.
+        Y-axis = task names (category, inverse), X-axis = time axis.
+        Color by status: completed=#36B37E, in-progress=#1B65A8, delayed=#FF5630, planned=#6B778C.
+        Progress fill: darker shade for completed portion.
+        Today line: red dashed markLine at current date.
+        """
+        palette = self._get_palette()
+
+        # --- Detect columns ---
+        col_lower = {c.lower().strip(): c for c in df.columns}
+
+        task_col = x_field
+        if not task_col:
+            for alias in ('task', '任务', 'name', '名称', '项目', 'activity', '活动'):
+                if alias in col_lower:
+                    task_col = col_lower[alias]
+                    break
+        if not task_col:
+            non_num = [c for c in df.columns if c not in df.select_dtypes(include=[np.number]).columns]
+            task_col = non_num[0] if non_num else df.columns[0]
+
+        start_col, end_col = None, None
+        for alias in ('start', '开始', 'start_date', '开始日期', '起始'):
+            if alias in col_lower:
+                start_col = col_lower[alias]
+                break
+        for alias in ('end', '结束', 'end_date', '结束日期', '截止', 'finish', '完成日期'):
+            if alias in col_lower:
+                end_col = col_lower[alias]
+                break
+
+        # Try y_fields for start/end
+        if not start_col and y_fields and len(y_fields) >= 1:
+            start_col = y_fields[0] if y_fields[0] in df.columns else None
+        if not end_col and y_fields and len(y_fields) >= 2:
+            end_col = y_fields[1] if y_fields[1] in df.columns else None
+
+        if not start_col or not end_col:
+            # Fallback: look for date-like columns
+            date_cols = []
+            for c in df.columns:
+                if c == task_col:
+                    continue
+                try:
+                    parsed = pd.to_datetime(df[c], errors='coerce')
+                    if parsed.notna().sum() > len(df) * 0.5:
+                        date_cols.append(c)
+                except Exception:
+                    continue
+            if len(date_cols) >= 2:
+                start_col = start_col or date_cols[0]
+                end_col = end_col or date_cols[1]
+
+        if not start_col or not end_col:
+            return self._empty_chart_config("甘特图需要开始日期和结束日期列")
+
+        # Detect status and progress columns
+        status_col = None
+        progress_col = None
+        category_col = None
+        for alias in ('status', '状态'):
+            if alias in col_lower:
+                status_col = col_lower[alias]
+                break
+        for alias in ('progress', '进度', 'completion', '完成率', 'percent'):
+            if alias in col_lower:
+                progress_col = col_lower[alias]
+                break
+        for alias in ('category', '分类', 'group', '组', '阶段', 'phase'):
+            if alias in col_lower and col_lower[alias] not in (task_col, start_col, end_col, status_col, progress_col):
+                category_col = col_lower[alias]
+                break
+
+        # Parse dates and build task data
+        status_colors = {
+            'completed': '#36B37E',
+            'complete': '#36B37E',
+            '已完成': '#36B37E',
+            'in-progress': '#1B65A8',
+            'in_progress': '#1B65A8',
+            '进行中': '#1B65A8',
+            'delayed': '#FF5630',
+            '延迟': '#FF5630',
+            '超期': '#FF5630',
+            'planned': '#6B778C',
+            '计划中': '#6B778C',
+            '未开始': '#6B778C',
+        }
+        status_colors_dark = {
+            '#36B37E': '#2D9D6C',
+            '#1B65A8': '#155290',
+            '#FF5630': '#E04A2A',
+            '#6B778C': '#596475',
+        }
+
+        tasks = []
+        all_dates = []
+        for _, row in df.iterrows():
+            task_name = str(row.get(task_col, '')).strip()
+            if not task_name:
+                continue
+            try:
+                start_dt = pd.to_datetime(row.get(start_col), errors='coerce')
+                end_dt = pd.to_datetime(row.get(end_col), errors='coerce')
+            except Exception:
+                continue
+            if pd.isna(start_dt) or pd.isna(end_dt):
+                continue
+            if end_dt < start_dt:
+                start_dt, end_dt = end_dt, start_dt
+
+            all_dates.extend([start_dt, end_dt])
+            duration = (end_dt - start_dt).days or 1
+
+            # Status
+            status_raw = str(row.get(status_col, 'planned')).strip().lower() if status_col else 'planned'
+            color = status_colors.get(status_raw, '#6B778C')
+
+            # Progress
+            progress = 0
+            if progress_col:
+                try:
+                    pv = float(pd.to_numeric(row.get(progress_col), errors='coerce'))
+                    if math.isfinite(pv):
+                        progress = min(max(pv, 0), 100)
+                        if progress > 1 and progress <= 100:
+                            pass  # Already percentage
+                        elif 0 < progress <= 1:
+                            progress = progress * 100
+                except (ValueError, TypeError):
+                    pass
+
+            cat = str(row.get(category_col, '')).strip() if category_col else ''
+
+            tasks.append({
+                "name": task_name,
+                "start": start_dt.strftime("%Y-%m-%d"),
+                "end": end_dt.strftime("%Y-%m-%d"),
+                "start_ts": int(start_dt.timestamp() * 1000),
+                "end_ts": int(end_dt.timestamp() * 1000),
+                "duration": duration,
+                "color": color,
+                "colorDark": status_colors_dark.get(color, color),
+                "status": status_raw,
+                "progress": round(progress, 1),
+                "category": cat,
+            })
+
+        if not tasks:
+            return self._empty_chart_config("甘特图无有效任务数据")
+
+        # Sort tasks: by category then start date
+        if category_col:
+            tasks.sort(key=lambda t: (t["category"], t["start"]))
+        else:
+            tasks.sort(key=lambda t: t["start"])
+
+        # Reverse for ECharts (first task on top)
+        tasks = list(reversed(tasks))
+        task_names = [t["name"] for t in tasks]
+
+        # Compute time range
+        min_date = min(all_dates)
+        max_date = max(all_dates)
+        # Add 5% padding on each side
+        date_range = (max_date - min_date).days or 1
+        pad_days = max(int(date_range * 0.05), 1)
+        axis_min = (min_date - pd.Timedelta(days=pad_days)).strftime("%Y-%m-%d")
+        axis_max = (max_date + pd.Timedelta(days=pad_days)).strftime("%Y-%m-%d")
+
+        # Build stacked bar data: transparent_base + task_bar
+        # Using renderItem approach via custom series for precise control
+        # However for compatibility we use the stacked bar trick:
+        # base (transparent) = start_timestamp, bar = duration in ms
+
+        base_data = []  # Transparent placeholder (start offset)
+        bar_data = []   # Colored task bar
+
+        # Use day-based values relative to min_date for stacked bar
+        ref_date = min_date - pd.Timedelta(days=pad_days)
+
+        for t in tasks:
+            start_offset = (pd.to_datetime(t["start"]) - ref_date).days
+            duration = t["duration"]
+            base_data.append(start_offset)
+
+            # Bar with individual color and progress overlay
+            progress_width = duration * t["progress"] / 100 if t["progress"] > 0 else 0
+
+            bar_data.append({
+                "value": duration,
+                "itemStyle": {
+                    "color": t["color"],
+                    "borderRadius": [3, 3, 3, 3],
+                    "opacity": 0.85,
+                },
+                "_task": t,
+            })
+
+        # Today line (days from ref_date)
+        today = pd.Timestamp.now()
+        today_offset = (today - ref_date).days
+
+        # Generate date labels for x-axis
+        total_days = (max_date - min_date).days + pad_days * 2
+        label_interval = max(total_days // 10, 1)
+        x_labels = []
+        for i in range(0, total_days + 1, label_interval):
+            dt = ref_date + pd.Timedelta(days=i)
+            x_labels.append(dt.strftime("%m/%d"))
+
+        # Category separator lines
+        separator_lines = []
+        if category_col:
+            prev_cat = None
+            for i, t in enumerate(tasks):
+                if prev_cat is not None and t["category"] != prev_cat:
+                    separator_lines.append({
+                        "yAxis": i - 0.5,
+                        "lineStyle": {"type": "dashed", "color": "#ddd", "width": 1},
+                        "label": {"show": False},
+                        "symbol": ["none", "none"],
+                    })
+                prev_cat = t["category"]
+
+        config = {
+            "grid": {
+                "left": "3%",
+                "right": "5%",
+                "top": "5%",
+                "bottom": "12%",
+                "containLabel": True,
+            },
+            "xAxis": {
+                "type": "value",
+                "name": "日期",
+                "min": 0,
+                "max": total_days,
+                "axisLabel": {
+                    "formatter": "__FMT__gantt_date_label",
+                    "fontSize": 10,
+                },
+                "splitLine": {"lineStyle": {"type": "dashed", "color": "#f0f0f0"}},
+            },
+            "yAxis": {
+                "type": "category",
+                "data": task_names,
+                "inverse": False,  # Already reversed
+                "axisLabel": {
+                    "fontSize": 11,
+                    "width": 100,
+                    "overflow": "truncate",
+                },
+                "axisTick": {"show": False},
+                "splitLine": {"show": False},
+            },
+            "series": [
+                {
+                    "name": "基准",
+                    "type": "bar",
+                    "stack": "gantt",
+                    "data": base_data,
+                    "itemStyle": {"color": "transparent", "borderColor": "transparent"},
+                    "emphasis": {"itemStyle": {"color": "transparent"}},
+                    "tooltip": {"show": False},
+                    "barMaxWidth": 22,
+                    "barMinWidth": 12,
+                },
+                {
+                    "name": "任务",
+                    "type": "bar",
+                    "stack": "gantt",
+                    "data": bar_data,
+                    "barMaxWidth": 22,
+                    "barMinWidth": 12,
+                    "label": {
+                        "show": True,
+                        "position": "inside",
+                        "fontSize": 10,
+                        "color": "#fff",
+                        "formatter": "__FMT__gantt_bar_label",
+                    },
+                    "emphasis": {
+                        "itemStyle": {"shadowBlur": 8, "shadowColor": "rgba(0,0,0,0.2)"},
+                    },
+                    "markLine": {
+                        "silent": True,
+                        "symbol": ["none", "none"],
+                        "lineStyle": {"type": "dashed", "color": "#FF5630", "width": 2},
+                        "label": {
+                            "show": True,
+                            "position": "start",
+                            "formatter": "今天",
+                            "color": "#FF5630",
+                            "fontSize": 10,
+                        },
+                        "data": [{"xAxis": today_offset}],
+                    },
+                },
+            ],
+            "tooltip": {
+                **self._make_enhanced_tooltip("item"),
+                "formatter": "__FMT__gantt_tooltip",
+            },
+            "_ganttMeta": {
+                "refDate": ref_date.strftime("%Y-%m-%d"),
+                "totalDays": total_days,
+                "taskCount": len(tasks),
+                "todayOffset": today_offset,
+                "tasks": [{
+                    "name": t["name"],
+                    "start": t["start"],
+                    "end": t["end"],
+                    "duration": t["duration"],
+                    "status": t["status"],
+                    "progress": t["progress"],
+                    "category": t["category"],
+                } for t in tasks],
+            },
+        }
+
+        # Y-axis dataZoom for many tasks
+        if len(tasks) > 15:
+            config["dataZoom"] = [
+                {
+                    "type": "slider",
+                    "yAxisIndex": 0,
+                    "right": 5,
+                    "start": 0,
+                    "end": round(15 / len(tasks) * 100),
+                    "width": 15,
+                    "borderColor": "transparent",
+                    "backgroundColor": "#f3f4f6",
+                    "fillerColor": "rgba(27,101,168,0.12)",
+                    "handleStyle": {"color": "#1B65A8"},
+                },
+                {"type": "inside", "yAxisIndex": 0},
+            ]
+
+        # Category separator markLines
+        if separator_lines:
+            config["series"][0]["markLine"] = {
+                "silent": True,
+                "symbol": ["none", "none"],
+                "data": separator_lines,
+            }
+
+        return config
+
     def get_available_chart_types(self) -> List[dict]:
         """Get list of available chart types"""
         return [
@@ -2155,4 +3216,7 @@ class ChartBuilder:
             {"id": "boxplot", "name": "箱线图", "description": "数据分布分析（四分位、异常值）"},
             {"id": "parallel", "name": "平行坐标图", "description": "多变量同时对比分析"},
             {"id": "correlation_matrix", "name": "相关性矩阵", "description": "变量间相关性热力图"},
+            {"id": "sankey", "name": "桑基图", "description": "流向分析"},
+            {"id": "treemap", "name": "矩阵树图", "description": "层级占比分析"},
+            {"id": "gantt", "name": "甘特图", "description": "项目进度时间轴"},
         ]

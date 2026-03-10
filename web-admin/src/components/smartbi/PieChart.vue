@@ -32,6 +32,14 @@ interface Props {
   valueUnit?: string;
   colors?: string[];
   loading?: boolean;
+  /** Chart mode: 'pie' | 'rose' | 'donut'. rose uses roseType:'area'. donut uses innerRadius>0 */
+  mode?: 'pie' | 'rose' | 'donut';
+  /** Auto-group items beyond this count into '其他' */
+  maxItems?: number;
+  /** Show center total value and title for donut mode */
+  showCenterStats?: boolean;
+  /** Title shown below total in donut center */
+  centerTitle?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -46,7 +54,11 @@ const props = withDefaults(defineProps<Props>(), {
   centerText: '',
   centerSubText: '',
   valueUnit: '',
-  colors: () => [...CHART_COLORS]
+  colors: () => [...CHART_COLORS],
+  mode: 'donut',
+  maxItems: 8,
+  showCenterStats: false,
+  centerTitle: '合计'
 });
 
 const emit = defineEmits<{
@@ -61,8 +73,28 @@ let rafId = 0;
 // Calculate total
 const total = computed(() => props.data.reduce((sum, d) => sum + d.value, 0));
 
+// Processed data with Top N + 其他 grouping
+const processedData = computed<PieDataItem[]>(() => {
+  if (props.data.length <= props.maxItems) return props.data;
+  const sorted = [...props.data].sort((a, b) => b.value - a.value);
+  const top = sorted.slice(0, props.maxItems);
+  const others = sorted.slice(props.maxItems);
+  const othersValue = others.reduce((sum, d) => sum + d.value, 0);
+  return [
+    ...top,
+    { name: '其他', value: othersValue, color: '#c0c4cc' }
+  ];
+});
+
+// Format large numbers
+function formatNumber(n: number): string {
+  if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+  return n.toLocaleString();
+}
+
 const chartOptions = computed<EChartsOption>(() => {
-  const isDonut = props.innerRadius > 0;
+  const isDonut = props.mode === 'donut' || (props.mode !== 'pie' && props.mode !== 'rose' && props.innerRadius > 0);
+  const isRose = props.mode === 'rose';
 
   const options: EChartsOption = {
     tooltip: {
@@ -81,7 +113,7 @@ const chartOptions = computed<EChartsOption>(() => {
           <div style="font-weight: 600;">${data.name}</div>
           <div style="margin-top: 4px;">
             <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${data.color}; margin-right: 8px;"></span>
-            ${data.value}${props.valueUnit} (${percent}%)
+            ${(data.value as number).toLocaleString()}${props.valueUnit} (${percent}%)
           </div>
         `;
       }
@@ -111,11 +143,12 @@ const chartOptions = computed<EChartsOption>(() => {
     series: [
       {
         type: 'pie',
-        radius: [`${props.innerRadius}%`, `${props.outerRadius}%`],
+        roseType: isRose ? 'area' : undefined,
+        radius: isDonut ? [`${props.innerRadius}%`, `${props.outerRadius}%`] : (isRose ? ['10%', `${props.outerRadius}%`] : ['0%', `${props.outerRadius}%`]),
         center: props.legendPosition === 'right' ? ['40%', '50%'] : ['50%', '45%'],
         avoidLabelOverlap: true,
         itemStyle: {
-          borderRadius: 4,
+          borderRadius: isRose ? 6 : 4,
           borderColor: '#fff',
           borderWidth: 2
         },
@@ -127,7 +160,19 @@ const chartOptions = computed<EChartsOption>(() => {
             if (props.labelPosition === 'inside') {
               return `${percent}%`;
             }
-            return `${params.name}\n${params.value}${props.valueUnit}`;
+            return `{name|${params.name}}\n{value|${(params.value as number).toLocaleString()}${props.valueUnit}}`;
+          },
+          rich: {
+            name: {
+              fontSize: 12,
+              color: '#606266',
+              lineHeight: 16
+            },
+            value: {
+              fontSize: 11,
+              color: '#909399',
+              lineHeight: 14
+            }
           },
           color: props.labelPosition === 'inside' ? '#fff' : '#606266',
           fontSize: 12
@@ -136,27 +181,31 @@ const chartOptions = computed<EChartsOption>(() => {
         },
         labelLine: props.showLabel && props.labelPosition === 'outside' ? {
           show: true,
-          length: 15,
-          length2: 10,
+          smooth: true,
+          length: 18,
+          length2: 12,
           lineStyle: {
-            color: '#dcdfe6'
+            color: '#c0c4cc',
+            width: 1.5
           }
         } : {
           show: false
         },
         emphasis: {
+          scale: true,
+          scaleSize: 8,
           label: {
             show: true,
             fontSize: 14,
             fontWeight: 'bold'
           },
           itemStyle: {
-            shadowBlur: 10,
+            shadowBlur: 20,
             shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.2)'
+            shadowColor: 'rgba(0, 0, 0, 0.25)'
           }
         },
-        data: props.data.map((d, i) => ({
+        data: processedData.value.map((d, i) => ({
           value: d.value,
           name: d.name,
           itemStyle: {
@@ -168,33 +217,41 @@ const chartOptions = computed<EChartsOption>(() => {
   };
 
   // Add center text for donut chart
-  if (isDonut && (props.centerText || props.centerSubText)) {
+  const showCenter = isDonut && (props.centerText || props.centerSubText || props.showCenterStats);
+  if (showCenter) {
+    const displayText = props.showCenterStats
+      ? formatNumber(total.value) + props.valueUnit
+      : (props.centerText || '');
+    const displaySub = props.showCenterStats
+      ? props.centerTitle
+      : (props.centerSubText || '');
+
     options.graphic = [
       {
         type: 'group',
         left: props.legendPosition === 'right' ? '40%' : 'center',
         top: props.legendPosition === 'right' ? 'middle' : '45%',
         children: [
-          props.centerText ? {
+          displayText ? {
             type: 'text',
             z: 100,
             left: 'center',
-            top: props.centerSubText ? -15 : 'middle',
+            top: displaySub ? -15 : 'middle',
             style: {
               fill: '#303133',
-              text: props.centerText,
+              text: displayText,
               font: 'bold 24px sans-serif',
               textAlign: 'center'
             }
           } : null,
-          props.centerSubText ? {
+          displaySub ? {
             type: 'text',
             z: 100,
             left: 'center',
-            top: props.centerText ? 10 : 'middle',
+            top: displayText ? 10 : 'middle',
             style: {
               fill: '#909399',
-              text: props.centerSubText,
+              text: displaySub,
               font: '14px sans-serif',
               textAlign: 'center'
             }
@@ -216,7 +273,7 @@ function initChart() {
   // Click event
   chartInstance.value.on('click', (params) => {
     if (params.componentType === 'series' && params.dataIndex !== undefined) {
-      const item = props.data[params.dataIndex as number];
+      const item = processedData.value[params.dataIndex as number];
       if (item) {
         emit('itemClick', item);
       }

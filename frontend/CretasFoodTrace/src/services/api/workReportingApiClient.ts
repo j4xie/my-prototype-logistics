@@ -119,6 +119,32 @@ class WorkReportingApiClient {
     return await apiClient.get(`${this.getPath(factoryId)}/schemas/${entityType}`);
   }
 
+  async getLastReport(
+    reportType: string = 'PROGRESS',
+    factoryId?: string
+  ): Promise<ApiResponse<WorkReportResponse | null>> {
+    return await apiClient.get(
+      `${this.getPath(factoryId)}/reports/last`,
+      { params: { reportType } }
+    );
+  }
+
+  async getHistoricalAverage(
+    processCategory: string,
+    days: number = 30,
+    factoryId?: string
+  ): Promise<ApiResponse<{
+    avgOutput: number;
+    stddevOutput: number;
+    avgDefect: number;
+    sampleCount: number;
+  }>> {
+    return await apiClient.get(
+      `${this.getPath(factoryId)}/reports/historical-average`,
+      { params: { processCategory, days } }
+    );
+  }
+
   async getSummary(params?: {
     factoryId?: string;
     startDate?: string;

@@ -17,8 +17,8 @@ export interface CombinedDataPoint {
 export interface CombinedSeries {
   name: string;
   field: string;
-  type: 'bar' | 'line';
-  yAxisIndex?: 0 | 1;
+  type: 'bar' | 'line' | 'scatter' | 'area';
+  yAxisIndex?: 0 | 1 | 2;
   color?: string;
   stack?: string;
   /** Apply markArea to this series (default: first bar series) */
@@ -63,8 +63,12 @@ interface Props {
   xAxisLabel?: string;
   yAxisLeftLabel?: string;
   yAxisRightLabel?: string;
+  /** Label for far-right (third) Y-axis */
+  yAxisFarRightLabel?: string;
   yAxisLeftUnit?: string;
   yAxisRightUnit?: string;
+  /** Unit for far-right (third) Y-axis */
+  yAxisFarRightUnit?: string;
   showDataZoom?: boolean;
   barWidth?: string;
   /** Background regions for highlighting (e.g., quarters) */
@@ -82,8 +86,10 @@ const props = withDefaults(defineProps<Props>(), {
   xAxisLabel: '',
   yAxisLeftLabel: '',
   yAxisRightLabel: '',
+  yAxisFarRightLabel: '',
   yAxisLeftUnit: '',
   yAxisRightUnit: '',
+  yAxisFarRightUnit: '',
   showDataZoom: false,
   barWidth: '40%',
   markAreas: () => [],
@@ -110,6 +116,17 @@ const colorPalette = [
 const hasDualYAxis = computed(() => {
   return props.series.some(s => s.yAxisIndex === 1);
 });
+
+// Check if we need triple Y-axis
+const hasTripleYAxis = computed(() => {
+  return props.series.some(s => s.yAxisIndex === 2);
+});
+
+// Unit auto-detection helper
+function formatAxisValue(value: number, unit: string): string {
+  if (unit === '万' && value >= 10000) return `${(value / 10000).toFixed(1)}万`;
+  return `${value}${unit}`;
+}
 
 // Build markArea data from props
 const buildMarkAreaData = () => {
@@ -184,19 +201,12 @@ const chartOptions = computed<EChartsOption>(() => {
       (markPointSeriesIndex === -1 && index === 0)
     );
 
-    const baseSeries: echarts.BarSeriesOption | echarts.LineSeriesOption = {
-      name: s.name,
-      type: s.type,
-      yAxisIndex: s.yAxisIndex || 0,
-      data: values,
-      itemStyle: {
-        color: color
-      }
-    };
-
     if (s.type === 'bar') {
       return {
-        ...baseSeries,
+        name: s.name,
+        type: 'bar',
+        yAxisIndex: s.yAxisIndex || 0,
+        data: values,
         barWidth: props.grouped ? undefined : props.barWidth,
         barGap: props.grouped ? '0%' : undefined,
         stack: s.stack,
@@ -205,6 +215,7 @@ const chartOptions = computed<EChartsOption>(() => {
           borderRadius: s.stack ? 0 : [4, 4, 0, 0]
         },
         emphasis: {
+          focus: 'series',
           itemStyle: {
             shadowBlur: 10,
             shadowColor: 'rgba(0, 0, 0, 0.2)'
@@ -215,17 +226,32 @@ const chartOptions = computed<EChartsOption>(() => {
       } as echarts.BarSeriesOption;
     }
 
+    if (s.type === 'scatter') {
+      return {
+        name: s.name,
+        type: 'scatter',
+        yAxisIndex: s.yAxisIndex || 0,
+        data: values,
+        itemStyle: { color },
+        symbolSize: 10,
+        emphasis: { focus: 'series', scale: true }
+      } as echarts.ScatterSeriesOption;
+    }
+
+    // line or area
+    const isArea = s.type === 'area';
     return {
-      ...baseSeries,
+      name: s.name,
+      type: 'line',
+      yAxisIndex: s.yAxisIndex || 0,
+      data: values,
       smooth: true,
       symbol: 'circle',
       symbolSize: 6,
-      lineStyle: {
-        width: 2
-      },
-      emphasis: {
-        focus: 'series'
-      },
+      lineStyle: { width: 2, color },
+      itemStyle: { color },
+      areaStyle: isArea ? { color, opacity: 0.15 } : undefined,
+      emphasis: { focus: 'series' },
       ...(shouldHaveMarkArea ? { markArea: markAreaConfig } : {}),
       ...(shouldHaveMarkPoint ? { markPoint: markPointConfig } : {})
     } as echarts.LineSeriesOption;
@@ -254,12 +280,17 @@ const chartOptions = computed<EChartsOption>(() => {
 
         params.forEach((param) => {
           const series = props.series.find(s => s.name === param.seriesName);
-          const unit = series?.yAxisIndex === 1 ? props.yAxisRightUnit : props.yAxisLeftUnit;
+          const unit = series?.yAxisIndex === 2
+            ? props.yAxisFarRightUnit
+            : series?.yAxisIndex === 1
+              ? props.yAxisRightUnit
+              : props.yAxisLeftUnit;
+          const isLine = series?.type === 'line' || series?.type === 'area';
           html += `
             <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-              <span style="display: inline-block; width: 10px; height: 10px; border-radius: ${series?.type === 'line' ? '50%' : '2px'}; background: ${param.color};"></span>
+              <span style="display: inline-block; width: 10px; height: 10px; border-radius: ${isLine ? '50%' : '2px'}; background: ${param.color};"></span>
               <span>${param.seriesName}: </span>
-              <span style="font-weight: 600;">${param.value}${unit}</span>
+              <span style="font-weight: 600;">${typeof param.value === 'number' ? (param.value as number).toLocaleString() : param.value}${unit}</span>
             </div>
           `;
         });
@@ -275,11 +306,12 @@ const chartOptions = computed<EChartsOption>(() => {
       textStyle: {
         color: '#606266',
         fontSize: 12
-      }
+      },
+      selectedMode: true
     },
     grid: {
       top: 30,
-      right: hasDualYAxis.value ? 60 : 20,
+      right: hasTripleYAxis.value ? 110 : (hasDualYAxis.value ? 60 : 20),
       bottom: props.showDataZoom ? 80 : 50,
       left: 60,
       containLabel: true
@@ -325,15 +357,12 @@ const chartOptions = computed<EChartsOption>(() => {
             type: 'dashed'
           }
         },
-        axisLine: {
-          show: false
-        },
-        axisTick: {
-          show: false
-        },
+        axisLine: { show: false },
+        axisTick: { show: false },
         axisLabel: {
           color: '#909399',
-          fontSize: 11
+          fontSize: 11,
+          formatter: (value: number) => formatAxisValue(value, props.yAxisLeftUnit)
         }
       },
       ...(hasDualYAxis.value
@@ -345,21 +374,37 @@ const chartOptions = computed<EChartsOption>(() => {
                 : '',
               nameLocation: 'middle' as const,
               nameGap: 45,
-              nameTextStyle: {
-                color: '#909399'
-              },
-              splitLine: {
-                show: false
-              },
-              axisLine: {
-                show: false
-              },
-              axisTick: {
-                show: false
-              },
+              nameTextStyle: { color: '#909399' },
+              splitLine: { show: false },
+              axisLine: { show: false },
+              axisTick: { show: false },
               axisLabel: {
                 color: '#909399',
-                fontSize: 11
+                fontSize: 11,
+                formatter: (value: number) => formatAxisValue(value, props.yAxisRightUnit)
+              }
+            }
+          ]
+        : []),
+      ...(hasTripleYAxis.value
+        ? [
+            {
+              type: 'value' as const,
+              name: props.yAxisFarRightLabel
+                ? `${props.yAxisFarRightLabel}${props.yAxisFarRightUnit ? ` (${props.yAxisFarRightUnit})` : ''}`
+                : '',
+              nameLocation: 'middle' as const,
+              nameGap: 45,
+              nameTextStyle: { color: '#909399' },
+              position: 'right' as const,
+              offset: 60,
+              splitLine: { show: false },
+              axisLine: { show: false },
+              axisTick: { show: false },
+              axisLabel: {
+                color: '#909399',
+                fontSize: 11,
+                formatter: (value: number) => formatAxisValue(value, props.yAxisFarRightUnit)
               }
             }
           ]

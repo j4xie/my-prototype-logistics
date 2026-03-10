@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, VideoPlay, VideoPause, CircleCheck, CircleClose, Download, Upload, ChatDotRound } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
-import { marked } from 'marked';
-import DOMPurify from 'dompurify';
 import {
   downloadImportTemplate,
   importProductionPlans,
@@ -15,6 +13,8 @@ import {
   getProductionLines,
   getSupervisors,
 } from '@/api/productionPlan';
+import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
+import { PRODUCTION_PLAN_CONFIG } from '@/components/ai-entry/types';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -51,13 +51,8 @@ const productTypes = ref<any[]>([]);
 const productionLines = ref<any[]>([]);
 const supervisors = ref<any[]>([]);
 
-// AI Chat state
-const aiChatVisible = ref(false);
-const chatMessages = ref<Array<{ role: string; content: string; suggestedActions?: any[] }>>([]);
-const chatInput = ref('');
-const chatLoading = ref(false);
-const chatContainer = ref<HTMLElement | null>(null);
-const conversationId = ref<string | null>(null);
+// AI Entry Drawer
+const aiEntryVisible = ref(false);
 
 onMounted(() => {
   loadData();
@@ -384,104 +379,28 @@ async function handleExport() {
   }
 }
 
-// ==================== AI Chat ====================
+// ==================== AI Entry ====================
 
-function renderMarkdown(content: string): string {
-  try {
-    return DOMPurify.sanitize(marked.parse(content) as string);
-  } catch {
-    return content;
-  }
-}
+function handleAiFill(params: Record<string, unknown>) {
+  // Match productTypeName to productTypeId
+  const name = String(params.productTypeName || '');
+  const matched = productTypes.value.find(
+    (pt: Record<string, unknown>) => String(pt.name || '').includes(name) || name.includes(String(pt.name || ''))
+  );
 
-function scrollChatToBottom() {
-  if (chatContainer.value) {
-    chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-  }
-}
-
-async function sendChatMessage() {
-  const msg = chatInput.value.trim();
-  if (!msg || chatLoading.value || !factoryId.value) return;
-
-  chatMessages.value.push({ role: 'user', content: msg });
-  chatInput.value = '';
-  chatLoading.value = true;
-
-  await nextTick();
-  scrollChatToBottom();
-
-  try {
-    let res: any;
-
-    if (!conversationId.value) {
-      // Start a new conversation
-      res = await post(`/${factoryId.value}/conversation/start`, {
-        message: msg,
-        context: { entityType: 'PRODUCTION_PLAN' },
-      });
-    } else {
-      // Continue conversation
-      res = await post(`/${factoryId.value}/conversation/reply`, {
-        conversationId: conversationId.value,
-        message: msg,
-      });
-    }
-
-    if (res?.data) {
-      if (res.data.conversationId) conversationId.value = res.data.conversationId;
-      chatMessages.value.push({
-        role: 'assistant',
-        content: res.data.message || res.data.reply || '处理中...',
-        suggestedActions: res.data.suggestedActions || [],
-      });
-    }
-  } catch {
-    chatMessages.value.push({
-      role: 'assistant',
-      content: '抱歉，发生错误。请重试。',
-    });
-  } finally {
-    chatLoading.value = false;
-    await nextTick();
-    scrollChatToBottom();
-  }
-}
-
-async function handleChatAction(action: any) {
-  if (action.actionCode === 'REDIRECT_TO_PLAN_FORM') {
-    aiChatVisible.value = false;
-    // Pre-fill form with collected params from the AI conversation
-    const params = action.params || {};
-    planForm.value = {
-      productTypeId: params.productTypeId || '',
-      plannedQuantity: params.plannedQuantity || 0,
-      plannedDate: params.plannedDate || '',
-      notes: params.notes || '',
-      suggestedProductionLineId: params.suggestedProductionLineId || '',
-      estimatedWorkers: params.estimatedWorkers || undefined,
-      assignedSupervisorId: params.assignedSupervisorId || '',
-    };
-    dialogVisible.value = true;
-    return;
-  }
-
-  if (action.actionCode === 'CONFIRM_CREATE' || action.label === '确认创建') {
-    chatInput.value = '确认';
-    await sendChatMessage();
-    return;
-  }
-
-  // Default: send action label as message
-  chatInput.value = action.label;
-  await sendChatMessage();
-}
-
-function resetChat() {
-  chatMessages.value = [];
-  chatInput.value = '';
-  conversationId.value = null;
-  chatLoading.value = false;
+  planForm.value = {
+    productTypeId: matched ? String(matched.id) : '',
+    plannedQuantity: Number(params.plannedQuantity || 0),
+    plannedDate: String(params.plannedDate || ''),
+    notes: String(params.notes || ''),
+    suggestedProductionLineId: '',
+    estimatedWorkers: undefined,
+    assignedSupervisorId: '',
+    sourceCustomerName: String(params.sourceCustomerName || ''),
+    processName: String(params.processName || ''),
+    batchDate: String(params.batchDate || ''),
+  };
+  dialogVisible.value = true;
 }
 </script>
 
@@ -512,7 +431,7 @@ function resetChat() {
             <el-button type="info" :icon="Download" @click="handleExport" style="margin-left: 8px;">
               导出Excel
             </el-button>
-            <el-button type="success" :icon="ChatDotRound" @click="aiChatVisible = true; resetChat();" style="margin-left: 8px;">
+            <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true" style="margin-left: 8px;">
               AI对话创建
             </el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate" style="margin-left: 8px;">
@@ -686,50 +605,12 @@ function resetChat() {
       </template>
     </el-dialog>
 
-    <!-- AI对话创建生产计划 -->
-    <el-drawer v-model="aiChatVisible" title="AI 智能创建生产计划" size="50%" direction="rtl">
-      <div class="ai-chat-container">
-        <!-- Messages area -->
-        <div class="chat-messages" ref="chatContainer">
-          <div v-if="chatMessages.length === 0" class="chat-placeholder">
-            <p>你好！我可以帮你创建生产计划。</p>
-            <p>试试说："帮我创建一个明天生产500kg豆腐的计划"</p>
-          </div>
-          <div v-for="(msg, index) in chatMessages" :key="index" :class="['chat-message', msg.role]">
-            <div class="chat-bubble" v-html="renderMarkdown(msg.content)" />
-            <div v-if="msg.suggestedActions && msg.suggestedActions.length" class="chat-actions">
-              <el-button
-                v-for="action in msg.suggestedActions"
-                :key="action.actionCode || action.label"
-                size="small"
-                @click="handleChatAction(action)"
-              >{{ action.label }}</el-button>
-            </div>
-          </div>
-          <div v-if="chatLoading" class="chat-message assistant">
-            <div class="chat-bubble loading-bubble">思考中...</div>
-          </div>
-        </div>
-        <!-- Input area -->
-        <div class="chat-input-area">
-          <el-input
-            v-model="chatInput"
-            type="textarea"
-            :rows="2"
-            placeholder="描述你的生产计划需求..."
-            @keydown.enter.exact.prevent="sendChatMessage"
-          />
-          <el-button
-            type="primary"
-            @click="sendChatMessage"
-            :disabled="!chatInput.trim() || chatLoading"
-            style="margin-top: 8px; width: 100%;"
-          >
-            发送
-          </el-button>
-        </div>
-      </div>
-    </el-drawer>
+    <!-- AI 对话创建 -->
+    <AiEntryDrawer
+      v-model="aiEntryVisible"
+      :config="PRODUCTION_PLAN_CONFIG"
+      @fill-form="handleAiFill"
+    />
   </div>
 </template>
 
@@ -810,90 +691,4 @@ function resetChat() {
   margin-top: 16px;
 }
 
-// AI Chat styles
-.ai-chat-container {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 100px);
-}
-
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-}
-
-.chat-placeholder {
-  text-align: center;
-  color: var(--text-color-secondary, #909399);
-  padding: 40px 20px;
-
-  p {
-    margin: 8px 0;
-    font-size: 14px;
-  }
-}
-
-.chat-message {
-  margin-bottom: 16px;
-}
-
-.chat-message.user {
-  text-align: right;
-}
-
-.chat-message.user .chat-bubble {
-  background: #409eff;
-  color: white;
-  display: inline-block;
-  text-align: left;
-}
-
-.chat-message.assistant .chat-bubble {
-  background: #f4f4f5;
-  color: var(--text-color-primary, #303133);
-  display: inline-block;
-}
-
-.chat-bubble {
-  padding: 10px 14px;
-  border-radius: 8px;
-  max-width: 80%;
-  word-break: break-word;
-  line-height: 1.6;
-  font-size: 14px;
-
-  :deep(p) {
-    margin: 4px 0;
-  }
-
-  :deep(ul), :deep(ol) {
-    padding-left: 20px;
-    margin: 4px 0;
-  }
-
-  :deep(code) {
-    background: rgba(0, 0, 0, 0.06);
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-size: 13px;
-  }
-}
-
-.loading-bubble {
-  color: var(--text-color-secondary, #909399);
-  font-style: italic;
-}
-
-.chat-actions {
-  margin-top: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.chat-input-area {
-  padding: 16px;
-  border-top: 1px solid var(--border-color-lighter, #ebeef5);
-}
 </style>

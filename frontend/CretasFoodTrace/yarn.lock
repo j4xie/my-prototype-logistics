@@ -7160,6 +7160,11 @@ react-native-is-edge-to-edge@1.1.7:
   resolved "https://registry.npmmirror.com/react-native-is-edge-to-edge/-/react-native-is-edge-to-edge-1.1.7.tgz"
   integrity sha512-EH6i7E8epJGIcu7KpfXYXiV2JFIYITtq+rVS8uEb+92naMRBdxhTuS8Wn2Q7j9sqyO0B+Xbaaf9VdipIAmGW4w==
 
+react-native-localize@^3.7.0:
+  version "3.7.0"
+  resolved "https://registry.npmjs.org/react-native-localize/-/react-native-localize-3.7.0.tgz"
+  integrity sha512-6Ohx+zZzycC6zhNVBGM/u1U+O6Ww29YIFseeyXqsKcO/pTfjLcdE40IUJF4SVVwrdh00IMJwy90HjLGUaeqK7Q==
+
 react-native-markdown-display@^7.0.2:
   version "7.0.2"
   resolved "https://registry.npmjs.org/react-native-markdown-display/-/react-native-markdown-display-7.0.2.tgz"

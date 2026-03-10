@@ -6,7 +6,9 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Search, Refresh } from '@element-plus/icons-vue';
+import { Plus, Search, Refresh, ChatDotRound } from '@element-plus/icons-vue';
+import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
+import { PURCHASE_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
 
 const router = useRouter();
@@ -138,6 +140,40 @@ function handlePageChange(page: number) { pagination.value.page = page; loadData
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
 function handleStatusChange() { pagination.value.page = 1; loadData(); }
 function handleRefresh() { statusFilter.value = ''; pagination.value.page = 1; loadData(); }
+
+// ==================== AI Entry ====================
+const aiEntryVisible = ref(false);
+
+function handleAiFill(params: Record<string, unknown>) {
+  // Match supplierName to supplierId
+  const supplierName = String(params.supplierName || '');
+  const matched = suppliers.value.find(
+    (s: Record<string, unknown>) => String(s.name || '').includes(supplierName) || supplierName.includes(String(s.name || ''))
+  );
+
+  form.value.supplierId = matched ? String(matched.id) : '';
+  form.value.purchaseType = String(params.purchaseType || 'DIRECT');
+  form.value.expectedDeliveryDate = String(params.expectedDeliveryDate || '');
+  form.value.remark = String(params.remark || '');
+
+  if (Array.isArray(params.items) && params.items.length > 0) {
+    form.value.items = (params.items as Record<string, unknown>[]).map((item) => {
+      // Try to match materialName to materialTypeId
+      const matName = String(item.materialName || '');
+      const matMatch = materials.value.find(
+        (m: Record<string, unknown>) => String(m.name || '').includes(matName) || matName.includes(String(m.name || ''))
+      );
+      return {
+        materialTypeId: matMatch ? String(matMatch.id) : '',
+        quantity: Number(item.quantity || 0),
+        unit: String(item.unit || 'kg'),
+        unitPrice: Number(item.unitPrice || 0),
+      };
+    });
+  }
+
+  dialogVisible.value = true;
+}
 </script>
 
 <template>
@@ -150,6 +186,9 @@ function handleRefresh() { statusFilter.value = ''; pagination.value.page = 1; l
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
+            <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
+              AI录入
+            </el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="dialogVisible = true">
               新建{{ label('purchaseOrder') }}
             </el-button>
@@ -242,6 +281,13 @@ function handleRefresh() { statusFilter.value = ''; pagination.value.page = 1; l
         <el-button type="primary" @click="handleCreate">创建</el-button>
       </template>
     </el-dialog>
+
+    <!-- AI 对话录入 -->
+    <AiEntryDrawer
+      v-model="aiEntryVisible"
+      :config="PURCHASE_ORDER_CONFIG"
+      @fill-form="handleAiFill"
+    />
   </div>
 </template>
 

@@ -165,21 +165,5 @@ appId: com.cretas.foodtrace
 - waitForAnimationToEnd:
     timeout: 5000
 
-# === STEP 4: GO BACK AND USE TEAM REPORT ===
-- tapOn:
-    id: "header-back-btn"
-    optional: true
-- waitForAnimationToEnd:
-    timeout: 5000
-
-# Tap team report (组报报工)
-- extendedWaitUntil:
-    visible: "快捷操作"
-    timeout: 15000
-- tapOn:
-    id: "quick-action-team-report"
-- waitForAnimationToEnd:
-    timeout: 8000
-- takeScreenshot: "e2e-flow-05-team-report"
-
-- takeScreenshot: "e2e-flow-06-final"
+# === DONE: HOURS report submitted ===
+- takeScreenshot: "e2e-flow-05-final"

@@ -3,6 +3,7 @@ import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 import type { IntentRecognizeResponse, IntentExecuteResponse } from '../../types/intent';
 import { API_BASE_URL } from '../../constants/config';
 import EventSource from 'react-native-sse';
+import { StorageService } from '../storage/storageService';
 
 /**
  * AI API客户端
@@ -597,10 +598,9 @@ class AIApiClient {
    * 获取认证 token
    */
   private async getAuthToken(): Promise<string> {
-    // 从 SecureStore 获取 token（使用与 apiClient.ts 一致的 key）
+    // 使用 StorageService 获取 token（跨平台兼容，web 用 AsyncStorage）
     try {
-      const SecureStore = await import('expo-secure-store');
-      const token = await SecureStore.getItemAsync('secure_access_token');
+      const token = await StorageService.getSecureItem('secure_access_token');
       return token || '';
     } catch {
       console.warn('无法获取 token');
@@ -993,7 +993,8 @@ class AIApiClient {
   async executeIntentStream(
     userInput: string,
     callbacks: IntentSSECallbacks,
-    factoryId?: string
+    factoryId?: string,
+    entityType?: string
   ): Promise<void> {
     const url = `${this.getIntentBasePath(factoryId)}/execute/stream`;
 
@@ -1022,7 +1023,7 @@ class AIApiClient {
           'Authorization': `Bearer ${token}`,
         },
         method: 'POST',
-        body: JSON.stringify({ userInput }),
+        body: JSON.stringify({ userInput, ...(entityType && { entityType }) }),
         pollingInterval: 0,
       });
 

@@ -19,3 +19,13 @@ export {
   type LinkageEventListener,
   type ChartLinkageState
 } from './ChartLinkageService';
+
+// Conditional Formatting Service
+export {
+  ConditionalFormattingService,
+  getConditionalFormattingService,
+  type FormatRule,
+  type ThresholdCondition,
+  type GradientStop,
+  type CellStyle,
+} from './ConditionalFormattingService';

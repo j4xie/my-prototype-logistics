@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Skill执行结果DTO
@@ -63,6 +64,24 @@ public class SkillResult {
      * 从开始到完成的总耗时
      */
     private long executionTime;
+
+    /**
+     * 部分结果 (CONTINUE_ON_ERROR 策略时使用)
+     * key: 节点ID或工具名, value: 该节点的执行结果
+     * 允许部分工具失败时仍返回已成功的结果
+     */
+    private Map<String, Object> partialResults;
+
+    /**
+     * 跳过的节点列表 (条件分支时使用)
+     * 记录因条件不满足而被跳过的执行节点
+     */
+    private List<String> skippedNodes;
+
+    /**
+     * 使用的错误策略
+     */
+    private String errorStrategy;
 
     /**
      * 创建成功结果

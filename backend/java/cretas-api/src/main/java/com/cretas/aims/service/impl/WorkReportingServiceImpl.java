@@ -267,6 +267,41 @@ public class WorkReportingServiceImpl {
         return summary;
     }
 
+    /**
+     * 获取最近一次报工记录（傻瓜化预填）
+     */
+    public WorkReportResponse getLastReport(String factoryId, Long workerId, String reportType) {
+        ProductionReport report = reportRepository
+                .findTopByFactoryIdAndWorkerIdAndReportTypeAndDeletedAtIsNullOrderByCreatedAtDesc(
+                        factoryId, workerId, reportType);
+        return report != null ? toResponse(report) : null;
+    }
+
+    /**
+     * 获取历史均值（异常检测用）
+     */
+    public Map<String, Object> getHistoricalAverage(String factoryId, String processCategory, int days) {
+        LocalDate sinceDate = LocalDate.now().minusDays(days);
+        Map<String, Object> raw = reportRepository.getHistoricalAverageByProcess(
+                factoryId, processCategory, sinceDate);
+        if (raw == null) return null;
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("avgOutput", toDouble(raw.get("avg_output")));
+        result.put("stddevOutput", toDouble(raw.get("stddev_output")));
+        result.put("avgDefect", toDouble(raw.get("avg_defect")));
+        result.put("sampleCount", toLong(raw.get("sample_count")));
+        return result;
+    }
+
+    private double toDouble(Object obj) {
+        return obj != null ? Double.parseDouble(obj.toString()) : 0.0;
+    }
+
+    private long toLong(Object obj) {
+        return obj != null ? Long.parseLong(obj.toString()) : 0L;
+    }
+
     // --- private helpers ---
 
     private void updateBatchActualQuantity(Long batchId, BigDecimal outputQuantity) {

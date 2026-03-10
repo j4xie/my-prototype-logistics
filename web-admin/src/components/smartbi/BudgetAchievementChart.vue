@@ -121,7 +121,7 @@ const kpiData = computed(() => {
 
 // Computed: Quarterly data grouping
 const quarterlyData = computed(() => {
-  const quarters: { name: string; achievementRate: number; months: BudgetData[] }[] = [];
+  const quarters: { name: string; achievementRate: number; budget: number; actual: number; months: BudgetData[] }[] = [];
   const monthsPerQuarter = Math.ceil(props.data.length / 4);
 
   for (let i = 0; i < 4; i++) {
@@ -137,12 +137,26 @@ const quarterlyData = computed(() => {
       quarters.push({
         name: `Q${i + 1}`,
         achievementRate: rate,
+        budget: totalBudget,
+        actual: totalActual,
         months: monthsInQuarter
       });
     }
   }
 
   return quarters;
+});
+
+// Computed: Cumulative YTD achievement timeline data
+const cumulativeTimeline = computed(() => {
+  let cumulativeBudget = 0;
+  let cumulativeActual = 0;
+  return props.data.map(item => {
+    cumulativeBudget += item.budget;
+    cumulativeActual += item.actual;
+    const rate = cumulativeBudget > 0 ? Math.round((cumulativeActual / cumulativeBudget) * 100) : 0;
+    return { period: item.period, rate };
+  });
 });
 
 // Get status color based on achievement rate
@@ -182,6 +196,12 @@ const chartOptions = computed<EChartsOption>(() => {
     }
     startIdx = endIdx + 1;
   });
+
+  // Build cumulative YTD series data (colored dots by status)
+  const cumulativeData = cumulativeTimeline.value.map(c => ({
+    value: c.rate,
+    itemStyle: { color: getStatusColor(c.rate) }
+  }));
 
   const options: EChartsOption = {
     tooltip: {
@@ -236,7 +256,7 @@ const chartOptions = computed<EChartsOption>(() => {
     },
     legend: {
       bottom: 0,
-      data: ['预算', '实际', '达成率'],
+      data: ['预算', '实际', '达成率', '累计达成率'],
       icon: 'rect',
       itemWidth: 14,
       itemHeight: 8,
@@ -343,6 +363,25 @@ const chartOptions = computed<EChartsOption>(() => {
             { yAxis: 80, label: { show: true, formatter: '80%', position: 'end' } },
             { yAxis: 100, label: { show: true, formatter: '100%', position: 'end' }, lineStyle: { color: '#67c23a' } }
           ]
+        }
+      },
+      // Cumulative YTD achievement rate series
+      {
+        name: '累计达成率',
+        type: 'line',
+        yAxisIndex: 1,
+        data: cumulativeData,
+        smooth: false,
+        symbol: 'circle',
+        symbolSize: 12,
+        lineStyle: { width: 2, color: '#1B65A8', type: 'dashed' },
+        label: {
+          show: true,
+          position: 'top',
+          formatter: (params) => `${(params.value as number)}%`,
+          fontSize: 10,
+          fontWeight: 600,
+          color: '#1B65A8'
         }
       }
     ]
@@ -457,6 +496,43 @@ defineExpose({
       />
     </div>
 
+    <!-- Quarterly Progress Bars -->
+    <div v-if="quarterlyData.length > 0" class="quarter-progress-row">
+      <div
+        v-for="quarter in quarterlyData"
+        :key="quarter.name"
+        class="quarter-progress-item"
+      >
+        <div class="qp-header">
+          <span class="qp-name">{{ quarter.name }}</span>
+          <span class="qp-rate" :style="{ color: getStatusColor(quarter.achievementRate) }">
+            {{ quarter.achievementRate }}%
+          </span>
+        </div>
+        <div class="qp-track">
+          <div
+            class="qp-fill"
+            :style="{
+              width: Math.min(quarter.achievementRate, 100) + '%',
+              background: getStatusColor(quarter.achievementRate)
+            }"
+          ></div>
+          <div
+            v-if="quarter.achievementRate > 100"
+            class="qp-overflow"
+            :style="{
+              width: Math.min(quarter.achievementRate - 100, 20) + '%',
+              background: '#36B37E'
+            }"
+          ></div>
+        </div>
+        <div class="qp-meta">
+          <span>实{{ quarter.actual }}</span>
+          <span style="color: #909399;">/ {{ quarter.budget }}</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Quarterly Timeline -->
     <div v-if="showTimeline && quarterlyData.length > 0" class="quarterly-timeline">
       <div
@@ -539,6 +615,71 @@ defineExpose({
 
     @media (max-width: 600px) {
       grid-template-columns: 1fr;
+    }
+  }
+
+  .quarter-progress-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .quarter-progress-item {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 10px 14px;
+      border: 1px solid #ebeef5;
+
+      .qp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+
+        .qp-name {
+          font-size: 13px;
+          font-weight: 600;
+          color: #606266;
+        }
+
+        .qp-rate {
+          font-size: 14px;
+          font-weight: 700;
+        }
+      }
+
+      .qp-track {
+        position: relative;
+        height: 6px;
+        background: #e4e7ed;
+        border-radius: 3px;
+        overflow: hidden;
+        display: flex;
+
+        .qp-fill {
+          height: 100%;
+          border-radius: 3px;
+          transition: width 0.6s ease;
+        }
+
+        .qp-overflow {
+          height: 100%;
+          border-radius: 3px;
+          opacity: 0.6;
+        }
+      }
+
+      .qp-meta {
+        display: flex;
+        gap: 4px;
+        margin-top: 5px;
+        font-size: 11px;
+        color: #303133;
+      }
     }
   }
 

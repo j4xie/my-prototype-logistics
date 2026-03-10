@@ -137,6 +137,32 @@ const getTrendColor = (value: number): string => {
   }
 };
 
+// Computed: quarterly summary for star markPoints
+const quarterSummaries = computed(() => {
+  const result: { period: string; current: number; lastYear: number; yoyGrowth: number }[] = [];
+  const quarters: Record<string, { current: number; lastYear: number; count: number; lastPeriod: string }> = {};
+
+  props.data.forEach(item => {
+    if (!item.quarter) return;
+    if (!quarters[item.quarter]) {
+      quarters[item.quarter] = { current: 0, lastYear: 0, count: 0, lastPeriod: item.period };
+    }
+    quarters[item.quarter].current += item.current;
+    quarters[item.quarter].lastYear += item.lastYearSame;
+    quarters[item.quarter].count++;
+    quarters[item.quarter].lastPeriod = item.period;
+  });
+
+  Object.entries(quarters).forEach(([, data]) => {
+    const yoy = data.lastYear !== 0
+      ? ((data.current - data.lastYear) / data.lastYear) * 100
+      : 0;
+    result.push({ period: data.lastPeriod, current: data.current, lastYear: data.lastYear, yoyGrowth: yoy });
+  });
+
+  return result;
+});
+
 // Build quarter mark areas
 const buildQuarterMarkAreas = () => {
   const quarters: { start: number; end: number; label: string }[] = [];
@@ -223,6 +249,50 @@ const chartOptions = computed<EChartsOption>(() => {
   // Build series based on view mode
   const series: echarts.SeriesOption[] = [];
 
+  // Build quarter red-border markArea config
+  const quarterRedMarkAreas = props.data.some(d => d.quarter) ? (() => {
+    const groups: { start: string; end: string; label: string }[] = [];
+    let curQ: string | null = null;
+    let startPeriod = '';
+
+    props.data.forEach((item, idx) => {
+      if (item.quarter && item.quarter !== curQ) {
+        if (curQ !== null) {
+          groups.push({ start: startPeriod, end: props.data[idx - 1].period, label: curQ });
+        }
+        curQ = item.quarter;
+        startPeriod = item.period;
+      }
+    });
+    if (curQ !== null) {
+      groups.push({ start: startPeriod, end: props.data[props.data.length - 1].period, label: curQ });
+    }
+
+    return {
+      silent: true,
+      data: groups.map((g, idx) => [
+        {
+          xAxis: g.start,
+          itemStyle: {
+            color: idx % 2 === 0 ? 'rgba(255,86,48,0.04)' : 'rgba(27,101,168,0.04)',
+            borderColor: '#FF5630',
+            borderWidth: 1,
+            borderType: 'solid'
+          },
+          label: {
+            show: true,
+            position: 'insideTopRight',
+            formatter: g.label,
+            color: '#FF5630',
+            fontSize: 10,
+            fontWeight: 'bold'
+          }
+        },
+        { xAxis: g.end }
+      ])
+    };
+  })() : undefined;
+
   // Always show bar chart for current vs last year
   series.push({
     name: `本期${props.metric}`,
@@ -240,7 +310,7 @@ const chartOptions = computed<EChartsOption>(() => {
         shadowColor: 'rgba(0, 0, 0, 0.2)'
       }
     },
-    ...(markAreaConfig ? { markArea: markAreaConfig } : {}),
+    ...(quarterRedMarkAreas ? { markArea: quarterRedMarkAreas } : markAreaConfig ? { markArea: markAreaConfig } : {}),
     ...(viewMode.value === 'yoy' && markPointConfig ? { markPoint: markPointConfig } : {})
   } as echarts.BarSeriesOption);
 
@@ -263,6 +333,25 @@ const chartOptions = computed<EChartsOption>(() => {
 
   // Add growth rate lines based on view mode
   if (viewMode.value === 'yoy' || viewMode.value === 'both') {
+    // Build quarter star markPoints
+    const quarterStarMarkPoints = quarterSummaries.value.length > 0 ? {
+      symbol: 'star',
+      symbolSize: 18,
+      label: {
+        show: true,
+        position: 'top',
+        formatter: (p: { data: { value: string } }) => p.data.value,
+        fontSize: 9,
+        fontWeight: 'bold',
+        color: '#fff'
+      },
+      data: quarterSummaries.value.map(q => ({
+        value: (q.yoyGrowth > 0 ? '+' : '') + q.yoyGrowth.toFixed(0) + '%',
+        coord: [q.period, q.yoyGrowth],
+        itemStyle: { color: getTrendColor(q.yoyGrowth) }
+      }))
+    } : undefined;
+
     series.push({
       name: '同比增长率',
       type: 'line',
@@ -277,9 +366,40 @@ const chartOptions = computed<EChartsOption>(() => {
       lineStyle: {
         width: 2
       },
+      label: {
+        show: true,
+        position: 'top',
+        formatter: (params) => {
+          const val = params.value as number;
+          if (val === null || val === undefined) return '';
+          const sign = val >= 0 ? '+' : '';
+          // Use pos/neg rich keys for different background colors
+          const key = val >= 0 ? 'bubblePos' : 'bubbleNeg';
+          return `{${key}|${sign}${val.toFixed(1)}%}`;
+        },
+        rich: {
+          bubblePos: {
+            backgroundColor: 'rgba(103,194,58,0.85)',
+            borderRadius: 8,
+            padding: [2, 5],
+            color: '#fff',
+            fontSize: 9,
+            fontWeight: 'bold'
+          },
+          bubbleNeg: {
+            backgroundColor: 'rgba(245,108,108,0.85)',
+            borderRadius: 8,
+            padding: [2, 5],
+            color: '#fff',
+            fontSize: 9,
+            fontWeight: 'bold'
+          }
+        }
+      },
       emphasis: {
         focus: 'series'
-      }
+      },
+      ...(quarterStarMarkPoints ? { markPoint: quarterStarMarkPoints } : {})
     } as echarts.LineSeriesOption);
   }
 
@@ -303,6 +423,41 @@ const chartOptions = computed<EChartsOption>(() => {
         focus: 'series'
       }
     } as echarts.LineSeriesOption);
+  }
+
+  // Build quarter graphic red-border rect annotations
+  const quarterRects: echarts.GraphicComponentOption[] = [];
+  if (props.data.some(d => d.quarter)) {
+    const quarterGroups: Record<string, { startIdx: number; endIdx: number }> = {};
+    props.data.forEach((item, idx) => {
+      if (!item.quarter) return;
+      if (!quarterGroups[item.quarter]) {
+        quarterGroups[item.quarter] = { startIdx: idx, endIdx: idx };
+      }
+      quarterGroups[item.quarter].endIdx = idx;
+    });
+
+    Object.entries(quarterGroups).forEach(([qName, { startIdx, endIdx }]) => {
+      const centerIdx = Math.floor((startIdx + endIdx) / 2);
+      quarterRects.push({
+        type: 'group',
+        children: [
+          {
+            type: 'text',
+            z: 10,
+            style: {
+              text: qName,
+              fill: '#FF5630',
+              font: 'bold 11px sans-serif',
+              textAlign: 'center'
+            },
+            // position set dynamically in rendered chart via markArea label instead
+            left: `${((centerIdx + 0.5) / props.data.length) * 100}%`,
+            top: 2
+          }
+        ]
+      } as echarts.GraphicComponentOption);
+    });
   }
 
   const options: EChartsOption = {
@@ -631,6 +786,61 @@ defineExpose({
 
     <!-- Chart -->
     <div ref="chartRef" role="img" :aria-label="title || '同比环比对比图'" :style="{ width: '100%', height: height + 'px' }"></div>
+
+    <!-- Monthly Data Compact Table -->
+    <div v-if="data && data.length > 0" class="monthly-data-table">
+      <div class="mdt-scroll">
+        <table class="mdt-table">
+          <thead>
+            <tr>
+              <td class="mdt-row-label"></td>
+              <th v-for="item in data" :key="item.period" class="mdt-col-header">{{ item.period }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="mdt-row-lastyear">
+              <td class="mdt-row-label">上年值</td>
+              <td v-for="item in data" :key="item.period" class="mdt-cell">
+                {{ formatNumber(item.lastYearSame, 0) }}
+              </td>
+            </tr>
+            <tr class="mdt-row-current">
+              <td class="mdt-row-label">本年值</td>
+              <td v-for="item in data" :key="item.period" class="mdt-cell">
+                <span style="font-weight: 600; color: #1B65A8;">{{ formatNumber(item.current, 0) }}</span>
+              </td>
+            </tr>
+            <tr class="mdt-row-yoy">
+              <td class="mdt-row-label">同比率</td>
+              <td v-for="item in data" :key="item.period" class="mdt-cell">
+                <span
+                  :style="{
+                    color: item.yoyGrowth > 0 ? '#67c23a' : item.yoyGrowth < 0 ? '#f56c6c' : '#909399',
+                    fontWeight: '600'
+                  }"
+                >
+                  {{ item.yoyGrowth > 0 ? '+' : '' }}{{ item.yoyGrowth.toFixed(1) }}%
+                </span>
+              </td>
+            </tr>
+            <tr v-if="data.some(d => d.momGrowth !== undefined)" class="mdt-row-mom">
+              <td class="mdt-row-label">环比率</td>
+              <td v-for="item in data" :key="item.period" class="mdt-cell">
+                <span
+                  v-if="item.momGrowth !== undefined"
+                  :style="{
+                    color: item.momGrowth > 0 ? '#67c23a' : item.momGrowth < 0 ? '#f56c6c' : '#909399'
+                  }"
+                >
+                  {{ item.momGrowth > 0 ? '+' : '' }}{{ item.momGrowth.toFixed(1) }}%
+                </span>
+                <span v-else style="color: #c0c4cc;">-</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -715,6 +925,61 @@ defineExpose({
           color: #909399;
           margin-left: 2px;
         }
+      }
+    }
+  }
+}
+
+.yoy-mom-chart {
+  .monthly-data-table {
+    margin-top: 16px;
+    padding: 12px 0;
+    border-top: 1px solid #ebeef5;
+
+    .mdt-scroll {
+      overflow-x: auto;
+    }
+
+    .mdt-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      min-width: 480px;
+
+      th, td {
+        padding: 5px 8px;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .mdt-col-header {
+        color: #606266;
+        font-weight: 600;
+        background: #f8f9fa;
+        border-bottom: 1px solid #ebeef5;
+      }
+
+      .mdt-row-label {
+        color: #909399;
+        font-weight: 500;
+        text-align: left;
+        white-space: nowrap;
+        padding-left: 0;
+        min-width: 52px;
+      }
+
+      .mdt-cell {
+        color: #303133;
+        border-bottom: 1px solid #f2f3f5;
+      }
+
+      .mdt-row-current .mdt-cell {
+        background: rgba(27, 101, 168, 0.03);
+      }
+
+      .mdt-row-yoy .mdt-cell,
+      .mdt-row-mom .mdt-cell {
+        background: rgba(230, 162, 60, 0.03);
       }
     }
   }

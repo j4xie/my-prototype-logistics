@@ -112,6 +112,30 @@ public class WorkReportingController {
         return ApiResponse.success(result);
     }
 
+    // ==================== 傻瓜化: 上次报工 + 历史均值 ====================
+
+    @GetMapping("/reports/last")
+    @Operation(summary = "最近一次报工", description = "获取当前用户最近一次指定类型的报工记录（用于预填表单）")
+    @RequirePermission("work_report:read")
+    public ApiResponse<WorkReportResponse> getLastReport(
+            @PathVariable String factoryId,
+            @RequestAttribute("userId") Long workerId,
+            @RequestParam(defaultValue = "PROGRESS") String reportType) {
+        WorkReportResponse result = workReportingService.getLastReport(factoryId, workerId, reportType);
+        return result != null ? ApiResponse.success(result) : ApiResponse.success(null);
+    }
+
+    @GetMapping("/reports/historical-average")
+    @Operation(summary = "历史均值", description = "获取指定工序近N天的产量均值和标准差（用于异常检测）")
+    @RequirePermission("work_report:read")
+    public ApiResponse<Map<String, Object>> getHistoricalAverage(
+            @PathVariable String factoryId,
+            @RequestParam String processCategory,
+            @RequestParam(defaultValue = "30") int days) {
+        Map<String, Object> result = workReportingService.getHistoricalAverage(factoryId, processCategory, days);
+        return ApiResponse.success(result);
+    }
+
     // ==================== 批次完成 + 待审批 ====================
 
     @PostMapping("/batches/{batchId}/complete")

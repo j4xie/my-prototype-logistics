@@ -137,30 +137,46 @@ const getGrowthColor = (value: number): string => {
   return '#909399';
 };
 
+// Convert hex color to rgba with opacity
+function hexToRgba(hex: string, opacity: number): string {
+  // Handle named/non-hex colors by returning with CSS opacity workaround
+  if (!hex.startsWith('#')) return hex;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${opacity})`;
+}
+
 // Build chart options
 const chartOptions = computed<EChartsOption>(() => {
-  // Prepare data for outer ring (current year)
-  const outerRingData = props.data.map((item, index) => ({
-    name: item.category,
-    value: item.currentValue,
-    itemStyle: {
-      color: getColor(index, item)
-    },
-    _originalData: item
-  }));
+  // Prepare data for outer ring (current year) - full colors
+  const outerRingData = props.data.map((item, index) => {
+    const baseColor = getColor(index, item);
+    return {
+      name: item.category,
+      value: item.currentValue,
+      itemStyle: {
+        color: baseColor
+      },
+      _originalData: item
+    };
+  });
 
-  // Prepare data for inner ring (previous year) with slightly dimmer colors
-  const innerRingData = props.data.map((item, index) => ({
-    name: item.category,
-    value: item.previousValue,
-    itemStyle: {
-      color: getColor(index, item),
-      opacity: 0.7
-    },
-    _originalData: item
-  }));
+  // Prepare data for inner ring (previous year) with 65% opacity versions of outer colors
+  const innerRingData = props.data.map((item, index) => {
+    const baseColor = getColor(index, item);
+    const dimColor = hexToRgba(baseColor, 0.62);
+    return {
+      name: item.category,
+      value: item.previousValue,
+      itemStyle: {
+        color: dimColor
+      },
+      _originalData: item
+    };
+  });
 
-  // Build graphic elements for center text
+  // Build graphic elements for center text + ring year labels
   const graphicElements: echarts.GraphicComponentOption[] = [];
 
   if (props.showCenterTotal || props.centerText) {
@@ -176,11 +192,11 @@ const chartOptions = computed<EChartsOption>(() => {
           type: 'text',
           z: 100,
           left: 'center',
-          top: -20,
+          top: -28,
           style: {
             fill: '#303133',
             text: centerTextDisplay,
-            font: 'bold 24px sans-serif',
+            font: 'bold 26px sans-serif',
             textAlign: 'center'
           }
         },
@@ -188,7 +204,7 @@ const chartOptions = computed<EChartsOption>(() => {
           type: 'text',
           z: 100,
           left: 'center',
-          top: 10,
+          top: 4,
           style: {
             fill: props.unit ? '#909399' : getGrowthColor(totals.value.yoyChange),
             text: props.centerSubText ? subTextDisplay : `${props.unit}`,
@@ -200,17 +216,50 @@ const chartOptions = computed<EChartsOption>(() => {
           type: 'text',
           z: 100,
           left: 'center',
-          top: 28,
+          top: 22,
           style: {
             fill: getGrowthColor(totals.value.yoyChange),
             text: props.centerSubText ? '' : subTextDisplay,
-            font: '12px sans-serif',
+            font: 'bold 12px sans-serif',
             textAlign: 'center'
           }
         }
       ]
     });
   }
+
+  // Year badge labels: outer ring (current year) and inner ring (previous year)
+  graphicElements.push({
+    type: 'text',
+    z: 10,
+    style: {
+      text: `◉ ${props.currentYear}年 (外环)`,
+      fill: '#1B65A8',
+      font: 'bold 11px sans-serif',
+      textAlign: 'left',
+      backgroundColor: 'rgba(27,101,168,0.1)',
+      borderRadius: 4,
+      padding: [3, 6, 3, 6]
+    },
+    right: 8,
+    top: '30%'
+  } as echarts.GraphicComponentOption);
+
+  graphicElements.push({
+    type: 'text',
+    z: 10,
+    style: {
+      text: `◎ ${props.previousYear}年 (内环)`,
+      fill: '#909399',
+      font: 'bold 11px sans-serif',
+      textAlign: 'left',
+      backgroundColor: 'rgba(144,147,153,0.1)',
+      borderRadius: 4,
+      padding: [3, 6, 3, 6]
+    },
+    right: 8,
+    top: '42%'
+  } as echarts.GraphicComponentOption);
 
   const options: EChartsOption = {
     tooltip: {
@@ -305,12 +354,15 @@ const chartOptions = computed<EChartsOption>(() => {
         label: props.showLabel ? {
           show: true,
           position: 'outside',
-          formatter: (params: { name: string; percent: number }) => {
-            return `${params.name}\n${params.percent.toFixed(1)}%`;
+          formatter: (params: { name: string; percent: number; value: number }) => {
+            const amtStr = formatNumber(params.value);
+            return `{name|${params.name}}\n{amt|¥${amtStr}${props.unit ? props.unit : ''}}\n{pct|${params.percent.toFixed(1)}%}`;
           },
-          color: '#606266',
-          fontSize: 11,
-          lineHeight: 16
+          rich: {
+            name: { color: '#303133', fontSize: 11, fontWeight: 600, lineHeight: 16 },
+            amt: { color: '#606266', fontSize: 10, lineHeight: 14 },
+            pct: { color: '#1B65A8', fontSize: 10, fontWeight: 'bold', lineHeight: 14 }
+          }
         } : { show: false },
         labelLine: props.showLabel ? {
           show: true,
@@ -375,31 +427,7 @@ const chartOptions = computed<EChartsOption>(() => {
     graphic: graphicElements.length > 0 ? graphicElements : undefined
   };
 
-  // Add year labels as annotations
-  if (props.showLabel) {
-    (options as { title?: echarts.TitleComponentOption[] }).title = [
-      {
-        text: `${props.currentYear}年`,
-        left: '82%',
-        top: '35%',
-        textStyle: {
-          fontSize: 12,
-          fontWeight: 500,
-          color: '#1B65A8'
-        }
-      },
-      {
-        text: `${props.previousYear}年`,
-        left: '82%',
-        top: '50%',
-        textStyle: {
-          fontSize: 12,
-          fontWeight: 500,
-          color: '#909399'
-        }
-      }
-    ];
-  }
+  // Year labels are now handled by graphic elements above (ring badges)
 
   return options;
 });

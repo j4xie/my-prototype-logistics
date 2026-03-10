@@ -58,6 +58,7 @@ PUBLIC_PREFIXES = (
     "/api/analysis/",  # Analysis endpoints
     "/api/forecast/",  # Forecast endpoints
     "/api/efficiency/",  # Efficiency recognition — called by Java backend internally
+    "/api/smartbi/financial-dashboard/",  # Financial dashboard — browser direct calls
 )
 
 

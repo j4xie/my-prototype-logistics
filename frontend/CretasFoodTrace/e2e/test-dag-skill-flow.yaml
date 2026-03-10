@@ -1,0 +1,187 @@
+appId: host.exp.exponent
+---
+# E2E DAG Skill Flow — Android 模拟器
+# 排产规划 DAG 条件分支 + Slot Filling 参数补全
+
+# === STEP 1: FRESH LAUNCH ===
+- launchApp:
+    clearState: true
+    appId: host.exp.exponent
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- openLink: "exp://100.110.227.82:8085"
+
+- waitForAnimationToEnd:
+    timeout: 30000
+
+# Dismiss "System UI isn't responding" if present
+- tapOn:
+    text: "Wait"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# Dismiss Expo Dev Menu by pressing Android Back key
+- pressKey: back
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# Handle any remaining dialogs
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- pressKey: back
+- waitForAnimationToEnd:
+    timeout: 15000
+
+# === STEP 2: LOGIN ===
+- extendedWaitUntil:
+    visible:
+      id: "landing-login-btn"
+    timeout: 120000
+
+- tapOn:
+    id: "landing-login-btn"
+    retryTapIfNoChange: true
+
+- waitForAnimationToEnd:
+    timeout: 10000
+
+- extendedWaitUntil:
+    visible:
+      id: "login-username-input"
+    timeout: 20000
+
+- tapOn:
+    id: "login-username-input"
+- eraseText: 50
+- inputText: "factory_admin1"
+
+- tapOn:
+    id: "login-password-input"
+- eraseText: 50
+- inputText: "123456"
+
+- pressKey: back
+- tapOn:
+    id: "login-submit-btn"
+
+# Wait for login success
+- extendedWaitUntil:
+    visible:
+      text: ".*登录成功.*|.*OK.*|.*factory_admin.*"
+    timeout: 60000
+
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# === STEP 3: NAVIGATE TO AI CHAT ===
+- takeScreenshot: "dag-01-home"
+
+- tapOn:
+    text: "AI分析"
+    retryTapIfNoChange: true
+- waitForAnimationToEnd:
+    timeout: 10000
+
+- extendedWaitUntil:
+    visible: "AI 对话"
+    timeout: 15000
+- takeScreenshot: "dag-02-ai-center"
+
+- tapOn:
+    text: "AI 对话"
+    retryTapIfNoChange: true
+- waitForAnimationToEnd:
+    timeout: 10000
+
+- extendedWaitUntil:
+    visible: "快捷问题"
+    timeout: 15000
+- takeScreenshot: "dag-03-ai-chat-welcome"
+
+# === STEP 4: 排产规划 DAG Skill ===
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "帮我排产规划"
+- takeScreenshot: "dag-04-input-typed"
+
+- tapOn:
+    id: "ai-chat-send-btn"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*库存.*|.*批次.*|.*排产.*|.*Skill.*|.*缺少.*参数.*"
+    timeout: 90000
+- takeScreenshot: "dag-05-dag-result"
+
+- swipe:
+    direction: UP
+    duration: 400
+- takeScreenshot: "dag-06-dag-result-scrolled"
+
+# === STEP 5: Slot Filling 补全参数 ===
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "生产500公斤带鱼罐头"
+- tapOn:
+    id: "ai-chat-send-btn"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*成功.*|.*计划.*|.*生产.*|.*带鱼.*|.*缺少.*|.*参数.*"
+    timeout: 90000
+- takeScreenshot: "dag-07-param-filled-result"
+
+- swipe:
+    direction: UP
+    duration: 400
+- takeScreenshot: "dag-08-param-filled-scrolled"
+
+# === STEP 6: 普通查询验证 ===
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "查询今天的库存"
+- tapOn:
+    id: "ai-chat-send-btn"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*库存.*|.*批次.*|.*材料.*|.*stock.*"
+    timeout: 60000
+- takeScreenshot: "dag-09-simple-query-result"
+
+# === STEP 7: 发货全流程 DAG Skill ===
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "发货全流程"
+- tapOn:
+    id: "ai-chat-send-btn"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*发货.*|.*Skill.*|.*订单.*|.*shipment.*"
+    timeout: 90000
+- takeScreenshot: "dag-10-shipment-lifecycle"
+
+- swipe:
+    direction: UP
+    duration: 400
+- takeScreenshot: "dag-11-shipment-scrolled"
+
+# === FINAL ===
+- swipe:
+    direction: DOWN
+    duration: 800
+- swipe:
+    direction: DOWN
+    duration: 800
+- takeScreenshot: "dag-12-final-chat-history"

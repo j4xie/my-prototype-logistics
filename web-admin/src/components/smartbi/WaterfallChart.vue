@@ -32,13 +32,23 @@ interface Props {
   loading?: boolean;
 }
 
+// P&L semantic color palette
+const plColors = {
+  revenue: '#FF5630',           // Revenue items - red (income)
+  revenueSub: '#FF8F73',        // Sub revenue - lighter red
+  cost: '#36B37E',              // Cost/expense items - green (outflow)
+  costSub: '#79F2C0',           // Sub cost - lighter green
+  profit: '#1B65A8',            // Profit/total items - blue
+  profitSub: '#4C9AFF'          // Sub profit - lighter blue
+};
+
 const props = withDefaults(defineProps<Props>(), {
   title: '',
   height: 400,
   colors: () => ({
-    increase: '#ee6666',  // Red for income/increase
-    decrease: '#91cc75',  // Green for cost/decrease
-    total: '#5470c6'      // Blue for totals
+    increase: '#FF5630',  // Red for revenue/increase (P&L semantic)
+    decrease: '#36B37E',  // Green for cost/decrease (P&L semantic)
+    total: '#1B65A8'      // Blue for totals/profit
   }),
   showDataLabels: true,
   valueUnit: '',
@@ -56,44 +66,62 @@ let rafId = 0;
 
 /**
  * Calculate waterfall chart data
- * Returns helper series (transparent base) and data series (actual bars)
+ * Returns helper series (transparent base), data series (actual bars), running totals, and connection lines
  */
 const waterfallData = computed(() => {
   const helperData: (number | string)[] = [];
   const valueData: number[] = [];
   const colorData: string[] = [];
+  const runningTotals: number[] = [];     // cumulative running total after each bar
+  const barTops: number[] = [];           // top of each visible bar (for connection lines)
 
   let cumulative = 0;
+  const lastIdx = props.data.length - 1;
 
   props.data.forEach((item, index) => {
+    const isFirst = index === 0;
+    const isLast = index === lastIdx;
+
     if (item.type === 'total') {
-      // Total bar starts from 0
       helperData.push(0);
       valueData.push(item.value);
-      colorData.push(props.colors.total);
+      // First/last total use a slightly different shade for prominence
+      colorData.push(isFirst || isLast ? plColors.profit : props.colors.total);
       cumulative = item.value;
+      barTops.push(item.value);
     } else if (item.type === 'increase') {
-      // Increase: bar starts from current cumulative
       helperData.push(cumulative);
       valueData.push(item.value);
-      colorData.push(props.colors.increase);
+      colorData.push(isFirst ? plColors.revenue : props.colors.increase);
       cumulative += item.value;
+      barTops.push(cumulative);
     } else {
-      // Decrease: bar starts from (cumulative - absolute value)
       const absValue = Math.abs(item.value);
       cumulative -= absValue;
       helperData.push(cumulative);
       valueData.push(absValue);
-      colorData.push(props.colors.decrease);
+      colorData.push(isLast ? plColors.profit : props.colors.decrease);
+      barTops.push(cumulative);
     }
+
+    runningTotals.push(cumulative);
   });
 
-  return { helperData, valueData, colorData };
+  return { helperData, valueData, colorData, runningTotals, barTops };
 });
 
 const chartOptions = computed<EChartsOption>(() => {
   const categories = props.data.map(d => d.category);
-  const { helperData, valueData, colorData } = waterfallData.value;
+  const { helperData, valueData, colorData, runningTotals, barTops } = waterfallData.value;
+
+  // Build connection markLine data connecting tops of adjacent bars
+  const connectionLineData: Array<[{ coord: [string, number] }, { coord: [string, number] }]> = [];
+  for (let i = 0; i < categories.length - 1; i++) {
+    connectionLineData.push([
+      { coord: [categories[i], barTops[i]] },
+      { coord: [categories[i + 1], barTops[i]] }
+    ]);
+  }
 
   const options: EChartsOption = {
     tooltip: {
@@ -220,17 +248,35 @@ const chartOptions = computed<EChartsOption>(() => {
             const dataPoint = props.data[dataIndex];
             if (!dataPoint) return '';
 
-            if (dataPoint.type === 'decrease') {
-              return `-${Math.abs(dataPoint.value)}`;
+            // Show value label on bar top
+            const displayVal = dataPoint.type === 'decrease'
+              ? `-${Math.abs(dataPoint.value)}`
+              : String(dataPoint.value);
+
+            // Show running total below for non-total items
+            const runningVal = runningTotals[dataIndex];
+            if (dataPoint.type !== 'total') {
+              return `{val|${displayVal}${props.valueUnit}}\n{run|累计: ${runningVal}}`;
             }
-            return String(dataPoint.value);
+            return `{val|${displayVal}${props.valueUnit}}`;
           },
-          color: '#606266',
-          fontSize: 11,
-          fontWeight: 500
+          rich: {
+            val: {
+              color: '#303133',
+              fontSize: 11,
+              fontWeight: 600,
+              lineHeight: 18
+            },
+            run: {
+              color: '#909399',
+              fontSize: 10,
+              lineHeight: 16
+            }
+          }
         } : { show: false },
         itemStyle: {
           color: (params) => {
+            // First/last bars rendered with darker shade via colorData
             return colorData[params.dataIndex as number];
           },
           borderRadius: [4, 4, 0, 0]
@@ -240,6 +286,18 @@ const chartOptions = computed<EChartsOption>(() => {
             shadowBlur: 10,
             shadowColor: 'rgba(0, 0, 0, 0.2)'
           }
+        },
+        // Connection lines between bar tops (waterfall bridge)
+        markLine: {
+          silent: true,
+          symbol: 'none',
+          lineStyle: {
+            type: 'dashed',
+            color: '#c0c4cc',
+            width: 1.5
+          },
+          label: { show: false },
+          data: connectionLineData as echarts.MarkLineComponentOption['data']
         },
         data: valueData
       }

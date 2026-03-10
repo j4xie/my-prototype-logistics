@@ -72,6 +72,12 @@ const smartBIRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/calibration/CalibrationListView.vue'),
         meta: { requiresAuth: true, title: '行为校准监控', icon: 'Aim', module: 'analytics' },
       },
+      {
+        path: 'financial-dashboard',
+        name: 'FinancialDashboardPBI',
+        component: () => import('@/views/smart-bi/FinancialDashboardPBI.vue'),
+        meta: { requiresAuth: true, title: '财务分析看板', icon: 'TrendCharts', module: 'analytics' },
+      },
     ],
   },
 ];

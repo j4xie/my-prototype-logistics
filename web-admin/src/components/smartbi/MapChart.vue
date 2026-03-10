@@ -28,6 +28,12 @@ interface Props {
   zoom?: number;
   roam?: boolean | 'scale' | 'move';
   geoJson?: object;
+  /** Scatter bubble data to overlay on map */
+  scatterData?: MapScatterItem[];
+  /** Show zoom in/out control buttons */
+  showZoomControls?: boolean;
+  /** Show province name + value labels when zoomed in */
+  showDetailLabel?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -40,8 +46,18 @@ const props = withDefaults(defineProps<Props>(), {
   showLabel: true,
   zoom: 1.2,
   roam: true,
-  geoJson: undefined
+  geoJson: undefined,
+  scatterData: () => [],
+  showZoomControls: true,
+  showDetailLabel: false
 });
+
+export interface MapScatterItem {
+  name: string;
+  value: [number, number, number]; // [longitude, latitude, size/value]
+  label?: string;
+  color?: string;
+}
 
 const emit = defineEmits<{
   (e: 'regionClick', data: MapDataItem): void;
@@ -54,6 +70,27 @@ let rafId = 0;
 const isMapRegistered = ref(false);
 const mapLoading = ref(true);
 const mapError = ref<string | null>(null);
+const currentZoom = ref(props.zoom);
+
+function zoomIn() {
+  currentZoom.value = Math.min(currentZoom.value * 1.3, 10);
+  if (chartInstance.value) {
+    chartInstance.value.dispatchAction({
+      type: 'geoRoam',
+      zoom: 1.3
+    });
+  }
+}
+
+function zoomOut() {
+  currentZoom.value = Math.max(currentZoom.value / 1.3, 0.5);
+  if (chartInstance.value) {
+    chartInstance.value.dispatchAction({
+      type: 'geoRoam',
+      zoom: 1 / 1.3
+    });
+  }
+}
 
 // Calculate value range
 const valueRange = computed(() => {
@@ -63,6 +100,13 @@ const valueRange = computed(() => {
     max: Math.max(...values, 1)
   };
 });
+
+// Calculate sorted data for rank display
+const sortedData = computed(() => {
+  return [...props.data].sort((a, b) => b.value - a.value);
+});
+
+const totalValue = computed(() => props.data.reduce((sum, d) => sum + d.value, 0));
 
 const chartOptions = computed<EChartsOption>(() => {
   if (!isMapRegistered.value) {
@@ -74,11 +118,18 @@ const chartOptions = computed<EChartsOption>(() => {
       ...defaultTooltip('item'),
       formatter: (params) => {
         const data = params as echarts.DefaultLabelFormatterCallbackParams;
-        const value = data.value ?? 0;
+        if (data.componentSubType === 'effectScatter' || data.componentSubType === 'scatter') {
+          return `<div style="font-weight:600;">${data.name}</div>`;
+        }
+        const value = (data.value as number) ?? 0;
+        const rank = sortedData.value.findIndex(d => d.name === data.name) + 1;
+        const pct = totalValue.value > 0 ? ((value / totalValue.value) * 100).toFixed(1) : '0.0';
         return `
-          <div style="font-weight: 600;">${data.name}</div>
-          <div style="margin-top: 4px;">
-            ${props.valueLabel}: <span style="font-weight: 600;">${value}${props.valueUnit}</span>
+          <div style="font-weight: 600; margin-bottom: 4px;">${data.name}</div>
+          <div style="margin-top: 4px; display:flex; flex-direction:column; gap:2px;">
+            <div>${props.valueLabel}: <span style="font-weight: 600;">${value.toLocaleString()}${props.valueUnit}</span></div>
+            ${rank > 0 ? `<div style="color:#909399;">全国排名: <span style="font-weight:600; color:#1B65A8;">#${rank}</span></div>` : ''}
+            <div style="color:#909399;">占比: <span style="font-weight:600; color:#e6a23c;">${pct}%</span></div>
           </div>
         `;
       }
@@ -111,7 +162,14 @@ const chartOptions = computed<EChartsOption>(() => {
         label: {
           show: props.showLabel,
           color: '#606266',
-          fontSize: 10
+          fontSize: 10,
+          formatter: props.showDetailLabel
+            ? (params) => {
+                const item = props.data.find(d => d.name === (params as { name: string }).name);
+                if (item) return `${item.name}\n${item.value.toLocaleString()}`;
+                return (params as { name: string }).name;
+              }
+            : undefined
         },
         emphasis: {
           label: {
@@ -144,7 +202,36 @@ const chartOptions = computed<EChartsOption>(() => {
           name: d.name,
           value: d.value
         }))
-      }
+      },
+      // Scatter overlay if scatterData provided
+      ...(props.scatterData && props.scatterData.length > 0
+        ? [{
+            type: 'effectScatter' as const,
+            coordinateSystem: 'geo' as const,
+            data: props.scatterData.map(s => ({
+              name: s.name,
+              value: s.value,
+              itemStyle: { color: s.color || '#f56c6c' }
+            })),
+            symbolSize: (val: number[]) => Math.max(8, Math.min(val[2] / 2, 30)),
+            showEffectOn: 'render' as const,
+            rippleEffect: {
+              brushType: 'stroke' as const,
+              scale: 3,
+              period: 4
+            },
+            label: {
+              show: false
+            },
+            emphasis: {
+              label: {
+                show: true,
+                position: 'right' as const,
+                formatter: '{b}'
+              }
+            }
+          }]
+        : [])
     ]
   };
 
@@ -296,13 +383,19 @@ defineExpose({
     </div>
 
     <!-- Chart -->
-    <div
-      v-else
-      ref="chartRef"
-      role="img"
-      :aria-label="title || '地图图表'"
-      :style="{ width: '100%', height: height + 'px' }"
-    ></div>
+    <div v-else class="chart-container" :style="{ position: 'relative', width: '100%', height: height + 'px' }">
+      <div
+        ref="chartRef"
+        role="img"
+        :aria-label="title || '地图图表'"
+        style="width: 100%; height: 100%"
+      ></div>
+      <!-- Zoom controls -->
+      <div v-if="showZoomControls" class="zoom-controls">
+        <button class="zoom-btn" title="放大" @click="zoomIn">+</button>
+        <button class="zoom-btn" title="缩小" @click="zoomOut">−</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -351,6 +444,43 @@ defineExpose({
     }
     100% {
       transform: rotate(360deg);
+    }
+  }
+
+  .chart-container {
+    position: relative;
+  }
+
+  .zoom-controls {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 10;
+
+    .zoom-btn {
+      width: 28px;
+      height: 28px;
+      border: 1px solid #dcdfe6;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.92);
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      color: #606266;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      line-height: 1;
+
+      &:hover {
+        background: #1B65A8;
+        color: #fff;
+        border-color: #1B65A8;
+      }
     }
   }
 }

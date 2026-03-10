@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -156,6 +157,117 @@ public interface ToolRouterService {
                     .errorMessage(errorMessage)
                     .build();
         }
+    }
+
+    // ==================== Progressive Discovery ====================
+
+    /**
+     * 渐进式工具发现 (Progressive Tool Discovery)
+     *
+     * 两阶段筛选流程:
+     * 1. 向量嵌入预过滤: 从 315+ 工具中检索 top-preFilterTopK 候选
+     * 2. LLM 精选: 将候选工具发送给 LLM，最终选出 top-finalTopK 个工具
+     *
+     * 优势: 减少 LLM token 消耗，提升选择精度。
+     *
+     * @param query          用户查询文本
+     * @param preFilterTopK  向量预过滤返回的候选数量 (建议 10~20)
+     * @param finalTopK      LLM 最终选择的工具数量 (建议 1~5)
+     * @return 经过两阶段筛选的候选工具列表 (按置信度降序)
+     */
+    default List<ToolCandidate> progressiveDiscovery(String query, int preFilterTopK, int finalTopK) {
+        // 默认实现: 仅执行第一阶段向量预过滤
+        List<ToolCandidate> candidates = retrieveCandidateTools(query, preFilterTopK);
+        if (candidates == null || candidates.isEmpty()) {
+            return Collections.emptyList();
+        }
+        // 截断到 finalTopK
+        if (candidates.size() > finalTopK) {
+            return candidates.subList(0, finalTopK);
+        }
+        return candidates;
+    }
+
+    // ==================== P3: Auto-Planner ====================
+
+    /**
+     * 判断查询是否需要多工具执行计划
+     *
+     * 当用户查询涉及多个数据源或需要跨领域聚合时返回true。
+     * 例如: "查看今天的质检报告和生产进度" 需要同时调用质检和生产工具。
+     *
+     * @param query 用户查询
+     * @param candidates 候选工具列表 (从向量检索获得)
+     * @return true 表示需要多工具执行计划
+     */
+    default boolean requiresMultiToolPlan(String query, List<ToolCandidate> candidates) {
+        return false;
+    }
+
+    /**
+     * 自动生成多工具执行计划 (P3: Auto-Planner)
+     *
+     * 当用户查询需要多个工具但不匹配任何预定义Skill时，
+     * 使用LLM根据候选工具自动生成执行计划。
+     *
+     * @param query 用户查询
+     * @param candidates 候选工具列表 (从向量检索获得)
+     * @param context 执行上下文
+     * @return 自动生成的执行计划，如果不需要多工具则返回null
+     */
+    default AutoPlan generateExecutionPlan(String query, List<ToolCandidate> candidates, Map<String, Object> context) {
+        return null; // default: disabled
+    }
+
+    /**
+     * 自动生成的多工具执行计划
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    class AutoPlan {
+        /** 生成的执行计划描述 */
+        private String planDescription;
+
+        /** 计划中的步骤 */
+        private List<PlanStep> steps;
+
+        /** 执行顺序 */
+        private SelectedTools.ExecutionOrder executionOrder;
+
+        /** LLM生成的推理说明 */
+        private String reasoning;
+
+        /** 置信度 (0.0-1.0) */
+        private double confidence;
+    }
+
+    /**
+     * 执行计划中的单个步骤
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    class PlanStep {
+        /** 步骤ID */
+        private String stepId;
+
+        /** 工具名称 */
+        private String toolName;
+
+        /** 执行此步骤的原因 */
+        private String reason;
+
+        /** 依赖的前置步骤ID列表 */
+        private List<String> dependsOn;
+
+        /** 需要提取的参数 */
+        private Map<String, Object> params;
+
+        /** 步骤执行顺序 */
+        private int order;
     }
 
     // ==================== 内部数据类 ====================

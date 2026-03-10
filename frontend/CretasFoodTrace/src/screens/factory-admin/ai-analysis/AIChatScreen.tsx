@@ -74,6 +74,48 @@ interface Message {
 
 type AIChatRouteProp = RouteProp<FAAIStackParamList, 'AIChat'>;
 
+// 场景专属快捷问题和允许的操作 actionCode
+const SCENE_CONFIG: Record<string, {
+  quickQuestions: string[];
+  allowedActionCodes: string[];
+}> = {
+  PRODUCTION_PLAN: {
+    quickQuestions: ['创建生产计划', '查询生产批次', '查看排产进度', '生产效率分析'],
+    allowedActionCodes: [
+      'PRODUCTION_PLAN_CREATE', 'PROCESSING_BATCH_LIST', 'PRODUCTION_PLAN_QUERY',
+      'PRODUCTION_TRACKING', 'REPHRASE', 'SHOW_INTENTS',
+    ],
+  },
+  WORK_REPORT: {
+    quickQuestions: ['今日生产汇报', '查询生产批次', '工人出勤情况', '产量统计'],
+    allowedActionCodes: [
+      'WORK_REPORT_CREATE', 'WORK_REPORT_QUERY', 'PROCESSING_BATCH_LIST',
+      'PERSONNEL_QUERY', 'REPHRASE', 'SHOW_INTENTS',
+    ],
+  },
+  QUALITY_CHECK: {
+    quickQuestions: ['查看质检任务', '质检数据分析', '不合格批次', '质检标准查询'],
+    allowedActionCodes: [
+      'QUALITY_CHECK_LIST', 'QUALITY_CHECK_CREATE', 'QUALITY_ANALYSIS',
+      'PROCESSING_BATCH_LIST', 'REPHRASE', 'SHOW_INTENTS',
+    ],
+  },
+  SHIPMENT: {
+    quickQuestions: ['查询发货记录', '创建发货单', '物流跟踪', '发货统计'],
+    allowedActionCodes: [
+      'SHIPMENT_QUERY', 'SHIPMENT_CREATE', 'SHIPMENT_LIFECYCLE',
+      'REPHRASE', 'SHOW_INTENTS',
+    ],
+  },
+  MATERIAL: {
+    quickQuestions: ['查询原料库存', '原料入库记录', '库存预警', '供应商查询'],
+    allowedActionCodes: [
+      'MATERIAL_BATCH_QUERY', 'MATERIAL_INBOUND_QUERY', 'INVENTORY_ANALYSIS',
+      'SUPPLIER_QUERY', 'REPHRASE', 'SHOW_INTENTS',
+    ],
+  },
+};
+
 export default function AIChatScreen() {
   const navigation = useNavigation();
   const route = useRoute<AIChatRouteProp>();
@@ -81,8 +123,13 @@ export default function AIChatScreen() {
   const { t, i18n } = useTranslation('home');
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // 快捷问题列表
-  const QUICK_QUESTIONS = [
+  // 从路由参数获取场景类型
+  const params = route.params as Record<string, any> | undefined;
+  const entityType = params?.entityType as string | undefined;
+  const sceneConfig = entityType ? SCENE_CONFIG[entityType] : undefined;
+
+  // 快捷问题列表：场景专属 > 通用
+  const QUICK_QUESTIONS = sceneConfig?.quickQuestions || [
     t('aiChat.question1'),
     t('aiChat.question2'),
     t('aiChat.question3'),
@@ -381,6 +428,13 @@ export default function AIChatScreen() {
           // 检测结构化数据用于富组件渲染
           const richData = detectRichData(resultInner);
 
+          // 场景过滤：只保留当前场景允许的建议操作
+          if (sceneConfig && suggestedActions.length > 0) {
+            suggestedActions = suggestedActions.filter(
+              (a) => sceneConfig.allowedActionCodes.includes(a.value)
+            );
+          }
+
           // 更新消息
           setMessages((prev) =>
             prev.map((msg) =>
@@ -444,7 +498,7 @@ export default function AIChatScreen() {
         },
       };
 
-      await aiApiClient.executeIntentStream(messageText, callbacks, factoryId);
+      await aiApiClient.executeIntentStream(messageText, callbacks, factoryId, entityType);
 
     } catch (error) {
       console.error('AI 对话失败:', error);
@@ -560,6 +614,7 @@ export default function AIChatScreen() {
               {message.suggestedActions.map((action, index) => (
                 <TouchableOpacity
                   key={index}
+                  testID={`suggested-action-${index}`}
                   style={styles.suggestedActionButton}
                   onPress={() => handleSuggestedActionClick(action, message.id)}
                   disabled={isLoading}
@@ -695,6 +750,7 @@ export default function AIChatScreen() {
             </TouchableOpacity>
             <View style={styles.inputWrapper}>
               <TextInput
+                testID="ai-chat-input"
                 style={styles.input}
                 value={inputText}
                 onChangeText={setInputText}
@@ -706,6 +762,7 @@ export default function AIChatScreen() {
               />
             </View>
             <TouchableOpacity
+              testID="ai-chat-send-btn"
               style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
               onPress={() => handleSend()}
               disabled={isLoading || !inputText.trim()}

@@ -201,12 +201,118 @@ public class ToolRegistry {
     }
 
     /**
+     * 根据工具名称提取所属领域分类
+     *
+     * 工具命名规则: {domain}_{action}，例如 "material_batch_query" → "material"
+     *
+     * @param toolName 工具名称
+     * @return 领域分类 (工具名称的第一个下划线前缀)；若无下划线则返回原名称
+     */
+    public String getToolCategory(String toolName) {
+        if (toolName == null || toolName.isEmpty()) {
+            return "unknown";
+        }
+        int underscoreIndex = toolName.indexOf('_');
+        if (underscoreIndex > 0) {
+            return toolName.substring(0, underscoreIndex);
+        }
+        return toolName;
+    }
+
+    /**
+     * 按领域分类分组所有已注册的工具
+     *
+     * 返回 Map: domain → [toolName1, toolName2, ...]
+     * 领域通过工具名称的第一个下划线前缀提取。
+     *
+     * @return 领域分类 → 工具名称列表 的映射
+     */
+    public Map<String, List<String>> getToolsByCategory() {
+        Map<String, List<String>> categoryMap = new LinkedHashMap<>();
+        for (String toolName : toolMap.keySet()) {
+            String category = getToolCategory(toolName);
+            categoryMap.computeIfAbsent(category, k -> new ArrayList<>()).add(toolName);
+        }
+        return categoryMap;
+    }
+
+    /**
+     * 获取有限数量的工具定义 (用于 Progressive Discovery)
+     *
+     * 当工具总数超过 maxTools 时，只返回前 maxTools 个工具定义，
+     * 避免向 LLM 发送过多工具导致 token 超限或响应变慢。
+     *
+     * @param maxTools 最大返回数量
+     * @return 不超过 maxTools 个的 Tool Definition 列表
+     */
+    public List<Tool> getToolDefinitionsLimited(int maxTools) {
+        if (maxTools <= 0) {
+            return Collections.emptyList();
+        }
+        List<Tool> tools = new ArrayList<>();
+        int count = 0;
+        for (ToolExecutor executor : toolMap.values()) {
+            if (count >= maxTools) {
+                break;
+            }
+            tools.add(Tool.of(
+                    executor.getToolName(),
+                    executor.getDescription(),
+                    executor.getParametersSchema()
+            ));
+            count++;
+        }
+        return tools;
+    }
+
+    /**
      * 获取工具数量统计
      *
      * @return 工具数量
      */
     public int getToolCount() {
         return toolMap.size();
+    }
+
+    /**
+     * 注册外部工具（如 MCP 代理工具）
+     *
+     * <p>用于运行时动态注册非 Spring 管理的 ToolExecutor 实例，
+     * 例如通过 MCP Client 发现的外部工具。
+     *
+     * @param name 工具名称
+     * @param executor 工具执行器实例
+     * @return true 表示注册成功，false 表示名称已被占用
+     */
+    public boolean registerExternal(String name, ToolExecutor executor) {
+        if (name == null || name.isEmpty() || executor == null) {
+            log.warn("⚠️  registerExternal: 无效参数 name={}, executor={}", name, executor);
+            return false;
+        }
+
+        if (toolMap.containsKey(name)) {
+            log.warn("⚠️  registerExternal: 工具名称已存在 — {}", name);
+            return false;
+        }
+
+        toolMap.put(name, executor);
+        log.info("✅ 注册外部工具: name={}, class={}", name, executor.getClass().getSimpleName());
+        return true;
+    }
+
+    /**
+     * 注销外部工具
+     *
+     * @param name 工具名称
+     * @return true 表示注销成功
+     */
+    public boolean unregisterExternal(String name) {
+        ToolExecutor removed = toolMap.remove(name);
+        if (removed != null) {
+            log.info("🗑️  注销外部工具: name={}", name);
+            return true;
+        }
+        return false;
     }
 
     /**

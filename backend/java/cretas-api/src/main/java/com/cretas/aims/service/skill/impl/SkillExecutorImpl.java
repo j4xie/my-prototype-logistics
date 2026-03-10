@@ -121,12 +121,17 @@ public class SkillExecutorImpl implements SkillExecutor {
                         executedTools, System.currentTimeMillis() - startTime);
             }
 
-            // 3. Deterministic mode: skip LLM for single-tool skills
+            // 3. DAG mode: execute conditional branching graph
+            if (skill.hasExecutionGraph()) {
+                return executeDAG(skill, context, executedTools, startTime);
+            }
+
+            // 4. Deterministic mode: skip LLM for single-tool skills
             if (canExecuteDeterministically(skill, context)) {
                 return executeDeterministic(skill, context, executedTools, startTime);
             }
 
-            // 4. LLM mode: Prepare Prompt (replace template variables)
+            // 5. LLM mode: Prepare Prompt (replace template variables)
             String prompt = preparePrompt(skill, context);
             log.debug("Prepared prompt for skill {}: length={}", skill.getName(), prompt.length());
 
@@ -769,6 +774,409 @@ public class SkillExecutorImpl implements SkillExecutor {
             return "";
         }
         return query.length() > 50 ? query.substring(0, 50) + "..." : query;
+    }
+
+    // ==================== P0: DAG Execution Engine ====================
+
+    /**
+     * Execute a skill using its DAG execution graph with conditional branching and error recovery.
+     *
+     * Algorithm:
+     * 1. Build adjacency map from executionGraph
+     * 2. Topological sort by dependencies
+     * 3. Execute nodes in order, evaluating conditions against previous results
+     * 4. Handle errors per errorStrategy (STOP / CONTINUE_ON_ERROR / RETRY / FALLBACK)
+     */
+    private SkillResult executeDAG(SkillDefinition skill, SkillContext context,
+                                    List<String> executedTools, long startTime) {
+        List<SkillDefinition.ExecutionNode> nodes = skill.getExecutionGraph();
+        SkillDefinition.ErrorStrategy strategy = skill.getErrorStrategy();
+        if (strategy == null) strategy = SkillDefinition.ErrorStrategy.STOP;
+
+        log.info("DAG execution: skill={}, nodes={}, errorStrategy={}",
+                skill.getName(), nodes.size(), strategy);
+
+        // Build node lookup map
+        Map<String, SkillDefinition.ExecutionNode> nodeMap = new LinkedHashMap<>();
+        for (SkillDefinition.ExecutionNode node : nodes) {
+            nodeMap.put(node.getId(), node);
+        }
+
+        // Topological sort
+        List<String> sortedIds = topologicalSort(nodes);
+        if (sortedIds == null) {
+            return SkillResult.error(skill.getName(), "Circular dependency detected in execution graph",
+                    executedTools, System.currentTimeMillis() - startTime);
+        }
+
+        // Execution state: nodeId -> result
+        Map<String, NodeExecutionResult> nodeResults = new LinkedHashMap<>();
+        Map<String, Object> partialResults = new LinkedHashMap<>();
+        List<String> skippedNodes = new ArrayList<>();
+        boolean hasError = false;
+
+        // Build global params from context
+        Map<String, Object> globalParams = new HashMap<>();
+        if (context.getFactoryId() != null) globalParams.put("factoryId", context.getFactoryId());
+        if (context.getUserId() != null) globalParams.put("userId", context.getUserId());
+        if (context.getExtractedParams() != null) globalParams.putAll(context.getExtractedParams());
+
+        for (String nodeId : sortedIds) {
+            SkillDefinition.ExecutionNode node = nodeMap.get(nodeId);
+            if (node == null) continue;
+
+            // Check if all dependencies succeeded (or handle per strategy)
+            if (node.hasDependencies()) {
+                boolean depsMet = checkDependencies(node, nodeResults, strategy);
+                if (!depsMet) {
+                    log.info("DAG: skipping node {} — dependencies not met", nodeId);
+                    skippedNodes.add(nodeId);
+                    nodeResults.put(nodeId, NodeExecutionResult.skipped(nodeId));
+                    continue;
+                }
+            }
+
+            // Evaluate condition
+            if (node.hasCondition()) {
+                boolean conditionMet = evaluateCondition(node.getCondition(), nodeResults);
+                if (!conditionMet) {
+                    log.info("DAG: skipping node {} — condition not met: {}", nodeId, node.getCondition());
+                    skippedNodes.add(nodeId);
+                    nodeResults.put(nodeId, NodeExecutionResult.skipped(nodeId));
+                    continue;
+                }
+            }
+
+            // Execute the tool
+            NodeExecutionResult result = executeNodeWithStrategy(
+                    node, globalParams, nodeResults, context, strategy);
+            nodeResults.put(nodeId, result);
+
+            if (result.success) {
+                executedTools.add(node.getToolName());
+                partialResults.put(nodeId, result.data);
+            } else {
+                hasError = true;
+                executedTools.add(node.getToolName() + " (failed)");
+                partialResults.put(nodeId, Map.of("error", result.errorMessage, "success", false));
+
+                if (strategy == SkillDefinition.ErrorStrategy.STOP) {
+                    log.warn("DAG: stopping execution at node {} due to STOP strategy", nodeId);
+                    break;
+                }
+            }
+        }
+
+        long executionTime = System.currentTimeMillis() - startTime;
+
+        // Determine overall success: for CONTINUE_ON_ERROR, partial success is OK
+        boolean overallSuccess = !hasError ||
+                (strategy == SkillDefinition.ErrorStrategy.CONTINUE_ON_ERROR && !partialResults.isEmpty());
+
+        log.info("DAG execution completed: skill={}, executed={}, skipped={}, hasError={}, time={}ms",
+                skill.getName(), executedTools.size(), skippedNodes.size(), hasError, executionTime);
+
+        return SkillResult.builder()
+                .success(overallSuccess)
+                .skillName(skill.getName())
+                .data(partialResults)
+                .executedTools(executedTools)
+                .executionTime(executionTime)
+                .partialResults(partialResults)
+                .skippedNodes(skippedNodes)
+                .errorStrategy(strategy.name())
+                .message(overallSuccess ? "DAG execution completed" :
+                        "DAG execution failed at one or more nodes")
+                .build();
+    }
+
+    /**
+     * Topological sort of execution nodes by dependencies.
+     * Returns null if circular dependency detected.
+     */
+    private List<String> topologicalSort(List<SkillDefinition.ExecutionNode> nodes) {
+        Map<String, List<String>> deps = new LinkedHashMap<>();
+        Map<String, Integer> inDegree = new LinkedHashMap<>();
+
+        for (SkillDefinition.ExecutionNode node : nodes) {
+            deps.putIfAbsent(node.getId(), new ArrayList<>());
+            inDegree.putIfAbsent(node.getId(), 0);
+
+            if (node.getDependsOn() != null) {
+                for (String dep : node.getDependsOn()) {
+                    deps.computeIfAbsent(dep, k -> new ArrayList<>()).add(node.getId());
+                    inDegree.merge(node.getId(), 1, Integer::sum);
+                }
+            }
+        }
+
+        Queue<String> queue = new LinkedList<>();
+        for (Map.Entry<String, Integer> entry : inDegree.entrySet()) {
+            if (entry.getValue() == 0) queue.add(entry.getKey());
+        }
+
+        List<String> sorted = new ArrayList<>();
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            sorted.add(current);
+            for (String dependent : deps.getOrDefault(current, List.of())) {
+                int newDegree = inDegree.merge(dependent, -1, Integer::sum);
+                if (newDegree == 0) queue.add(dependent);
+            }
+        }
+
+        if (sorted.size() != nodes.size()) {
+            log.error("Circular dependency detected: sorted {} out of {} nodes", sorted.size(), nodes.size());
+            return null;
+        }
+        return sorted;
+    }
+
+    /**
+     * Check if a node's dependencies are satisfied based on the error strategy.
+     */
+    private boolean checkDependencies(SkillDefinition.ExecutionNode node,
+                                       Map<String, NodeExecutionResult> nodeResults,
+                                       SkillDefinition.ErrorStrategy strategy) {
+        for (String depId : node.getDependsOn()) {
+            NodeExecutionResult depResult = nodeResults.get(depId);
+            if (depResult == null) return false; // dependency not yet executed
+            if (depResult.skipped) continue; // skipped deps don't block
+
+            if (!depResult.success && strategy == SkillDefinition.ErrorStrategy.STOP) {
+                return false; // failed dep blocks under STOP
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Execute a single node with error handling per strategy (RETRY, FALLBACK, etc.)
+     */
+    private NodeExecutionResult executeNodeWithStrategy(
+            SkillDefinition.ExecutionNode node,
+            Map<String, Object> globalParams,
+            Map<String, NodeExecutionResult> nodeResults,
+            SkillContext context,
+            SkillDefinition.ErrorStrategy strategy) {
+
+        // Merge params: global + node-specific + chain context from previous nodes
+        Map<String, Object> mergedParams = new HashMap<>(globalParams);
+        if (node.getParams() != null) mergedParams.putAll(node.getParams());
+
+        // Add previous node results to context
+        for (Map.Entry<String, NodeExecutionResult> entry : nodeResults.entrySet()) {
+            if (entry.getValue().success && entry.getValue().data != null) {
+                mergedParams.put("previous_" + entry.getKey(), entry.getValue().data);
+            }
+        }
+
+        // Determine max attempts
+        int maxAttempts = (strategy == SkillDefinition.ErrorStrategy.RETRY)
+                ? Math.max(1, node.getMaxRetries()) : 1;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                Object result = executeSingleTool(node.getToolName(), mergedParams, context);
+                return NodeExecutionResult.success(node.getId(), result);
+            } catch (Exception e) {
+                log.warn("DAG: node {} attempt {}/{} failed: {}",
+                        node.getId(), attempt, maxAttempts, e.getMessage());
+
+                if (attempt == maxAttempts) {
+                    // Try fallback if available
+                    if (strategy == SkillDefinition.ErrorStrategy.FALLBACK
+                            && node.getFallbackTool() != null) {
+                        return executeFallback(node, mergedParams, context, e.getMessage());
+                    }
+                    return NodeExecutionResult.error(node.getId(), e.getMessage());
+                }
+            }
+        }
+        return NodeExecutionResult.error(node.getId(), "Max retries exceeded");
+    }
+
+    /**
+     * Execute a fallback tool when the primary tool fails.
+     */
+    private NodeExecutionResult executeFallback(SkillDefinition.ExecutionNode node,
+                                                 Map<String, Object> params,
+                                                 SkillContext context,
+                                                 String originalError) {
+        String fallback = node.getFallbackTool();
+        log.info("DAG: executing fallback tool {} for node {} (original error: {})",
+                fallback, node.getId(), originalError);
+        try {
+            Object result = executeSingleTool(fallback, params, context);
+            return NodeExecutionResult.success(node.getId(), result);
+        } catch (Exception e) {
+            log.error("DAG: fallback tool {} also failed: {}", fallback, e.getMessage());
+            return NodeExecutionResult.error(node.getId(),
+                    "Primary (" + originalError + ") and fallback (" + e.getMessage() + ") both failed");
+        }
+    }
+
+    /**
+     * Evaluate a condition expression against node execution results.
+     *
+     * Supported syntax:
+     * - "{nodeId}.success" → boolean
+     * - "{nodeId}.data.{field}" → checks field existence and truthiness
+     * - "&&", "||", "!" → boolean operators
+     * - "true", "false" → literals
+     */
+    private boolean evaluateCondition(String condition, Map<String, NodeExecutionResult> nodeResults) {
+        if (condition == null || condition.trim().isEmpty()) return true;
+
+        try {
+            return evaluateExpression(condition.trim(), nodeResults);
+        } catch (Exception e) {
+            log.warn("Condition evaluation failed for '{}': {}", condition, e.getMessage());
+            return false; // fail-closed: skip node if condition can't be evaluated
+        }
+    }
+
+    private boolean evaluateExpression(String expr, Map<String, NodeExecutionResult> nodeResults) {
+        expr = expr.trim();
+
+        // Handle parentheses
+        if (expr.startsWith("(") && findMatchingParen(expr, 0) == expr.length() - 1) {
+            return evaluateExpression(expr.substring(1, expr.length() - 1), nodeResults);
+        }
+
+        // Handle OR (lowest precedence, split on || not inside parens)
+        int orIndex = findOperatorOutsideParens(expr, "||");
+        if (orIndex >= 0) {
+            return evaluateExpression(expr.substring(0, orIndex), nodeResults)
+                    || evaluateExpression(expr.substring(orIndex + 2), nodeResults);
+        }
+
+        // Handle AND
+        int andIndex = findOperatorOutsideParens(expr, "&&");
+        if (andIndex >= 0) {
+            return evaluateExpression(expr.substring(0, andIndex), nodeResults)
+                    && evaluateExpression(expr.substring(andIndex + 2), nodeResults);
+        }
+
+        // Handle NOT
+        if (expr.startsWith("!")) {
+            return !evaluateExpression(expr.substring(1), nodeResults);
+        }
+
+        // Literals
+        if ("true".equalsIgnoreCase(expr)) return true;
+        if ("false".equalsIgnoreCase(expr)) return false;
+
+        // Evaluate dotted reference: nodeId.success or nodeId.data.fieldName
+        return evaluateDottedRef(expr, nodeResults);
+    }
+
+    private boolean evaluateDottedRef(String ref, Map<String, NodeExecutionResult> nodeResults) {
+        String[] parts = ref.split("\\.", 3);
+        if (parts.length < 2) return false;
+
+        String nodeId = parts[0].trim();
+        String field = parts[1].trim();
+
+        NodeExecutionResult result = nodeResults.get(nodeId);
+        if (result == null) return false;
+
+        if ("success".equals(field)) {
+            return result.success;
+        }
+
+        if ("data".equals(field) && parts.length >= 3) {
+            String dataField = parts[2].trim();
+            return evaluateDataField(result.data, dataField);
+        }
+
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean evaluateDataField(Object data, String fieldName) {
+        if (data == null) return false;
+
+        // Try JsonNode
+        if (data instanceof com.fasterxml.jackson.databind.JsonNode) {
+            com.fasterxml.jackson.databind.JsonNode node = (com.fasterxml.jackson.databind.JsonNode) data;
+            if (!node.has(fieldName)) return false;
+            com.fasterxml.jackson.databind.JsonNode fieldNode = node.get(fieldName);
+            if (fieldNode.isBoolean()) return fieldNode.asBoolean();
+            if (fieldNode.isNumber()) return fieldNode.asDouble() > 0;
+            if (fieldNode.isTextual()) return !fieldNode.asText().isEmpty();
+            return !fieldNode.isNull();
+        }
+
+        // Try Map
+        if (data instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) data;
+            Object value = map.get(fieldName);
+            if (value == null) return false;
+            if (value instanceof Boolean) return (Boolean) value;
+            if (value instanceof Number) return ((Number) value).doubleValue() > 0;
+            if (value instanceof String) return !((String) value).isEmpty();
+            return true;
+        }
+
+        return false;
+    }
+
+    private int findOperatorOutsideParens(String expr, String operator) {
+        int depth = 0;
+        for (int i = 0; i < expr.length() - operator.length() + 1; i++) {
+            char c = expr.charAt(i);
+            if (c == '(') depth++;
+            else if (c == ')') depth--;
+            else if (depth == 0 && expr.startsWith(operator, i)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int findMatchingParen(String expr, int openIndex) {
+        int depth = 0;
+        for (int i = openIndex; i < expr.length(); i++) {
+            if (expr.charAt(i) == '(') depth++;
+            else if (expr.charAt(i) == ')') {
+                depth--;
+                if (depth == 0) return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Internal result holder for DAG node execution
+     */
+    private static class NodeExecutionResult {
+        final String nodeId;
+        final boolean success;
+        final boolean skipped;
+        final Object data;
+        final String errorMessage;
+
+        private NodeExecutionResult(String nodeId, boolean success, boolean skipped,
+                                     Object data, String errorMessage) {
+            this.nodeId = nodeId;
+            this.success = success;
+            this.skipped = skipped;
+            this.data = data;
+            this.errorMessage = errorMessage;
+        }
+
+        static NodeExecutionResult success(String nodeId, Object data) {
+            return new NodeExecutionResult(nodeId, true, false, data, null);
+        }
+
+        static NodeExecutionResult error(String nodeId, String errorMessage) {
+            return new NodeExecutionResult(nodeId, false, false, null, errorMessage);
+        }
+
+        static NodeExecutionResult skipped(String nodeId) {
+            return new NodeExecutionResult(nodeId, false, true, null, "Skipped");
+        }
     }
 
     // ==================== Inner Classes ====================

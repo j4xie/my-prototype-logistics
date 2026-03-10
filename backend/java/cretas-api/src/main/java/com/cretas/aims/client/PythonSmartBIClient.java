@@ -1480,6 +1480,37 @@ public class PythonSmartBIClient {
         }
     }
 
+    // ==================== 财务看板 ====================
+
+    /**
+     * 调用财务看板 Python 服务
+     *
+     * @param endpoint 端点路径，如 "/generate" 或 "/export-ppt"
+     * @param request  请求体
+     * @return 响应结果 Map，服务不可用时返回 null
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> callFinancialDashboard(String endpoint, Map<String, Object> request) {
+        if (!config.isEnabled()) {
+            log.debug("Python SmartBI 服务未启用，跳过财务看板调用");
+            return null;
+        }
+
+        String url = config.getFullUrl("/api/smartbi/financial-dashboard" + endpoint);
+        log.info("调用财务看板: url={}, keys={}", url, request.keySet());
+
+        try {
+            Request httpRequest = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(JSON, objectMapper.writeValueAsString(request)))
+                    .build();
+            return executeWithRetry(httpRequest, Map.class);
+        } catch (IOException e) {
+            log.error("财务看板调用失败: endpoint={}, error={}", endpoint, e.getMessage());
+            return null;
+        }
+    }
+
     // ==================== 辅助转换方法 ====================
 
     /**

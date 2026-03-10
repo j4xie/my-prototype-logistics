@@ -28,6 +28,12 @@ export interface PredictionDataPoint {
   confidence?: number;
 }
 
+export interface ConfidenceBandPoint {
+  date: string;
+  upper: number;
+  lower: number;
+}
+
 interface TableRowData {
   period: string;
   value: number;
@@ -58,6 +64,14 @@ interface Props {
   anomalyThreshold?: number;
   showDataTable?: boolean;
   loading?: boolean;
+  /** Confidence interval band for the first series */
+  confidenceBand?: ConfidenceBandPoint[];
+  /** Show moving average overlay (window size) */
+  movingAverageWindow?: number;
+  /** Show moving average line */
+  showMovingAverage?: boolean;
+  /** Show auto-detected trend annotation label */
+  showTrendAnnotation?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -78,7 +92,11 @@ const props = withDefaults(defineProps<Props>(), {
   predictionData: () => [],
   showAnomalies: false,
   anomalyThreshold: 2,
-  showDataTable: false
+  showDataTable: false,
+  confidenceBand: () => [],
+  movingAverageWindow: 3,
+  showMovingAverage: false,
+  showTrendAnnotation: false
 });
 
 const emit = defineEmits<{
@@ -155,30 +173,67 @@ const tableData = computed<TableRowData[]>(() => {
   });
 });
 
+// Moving average computation
+const movingAverageData = computed(() => {
+  if (!props.showMovingAverage || !props.series.length) return [];
+  const mainSeries = props.series[0];
+  const values = mainSeries.data.map(d => d.value);
+  const w = props.movingAverageWindow;
+  return values.map((_, i) => {
+    if (i < w - 1) return null;
+    const slice = values.slice(i - w + 1, i + 1);
+    return slice.reduce((a, b) => a + b, 0) / w;
+  });
+});
+
+// Linear regression slope for trend detection
+const trendInfo = computed(() => {
+  if (!props.showTrendAnnotation || !props.series.length) return null;
+  const mainSeries = props.series[0];
+  const values = mainSeries.data.map(d => d.value);
+  const n = values.length;
+  if (n < 2) return null;
+  const xMean = (n - 1) / 2;
+  const yMean = values.reduce((a, b) => a + b, 0) / n;
+  let num = 0;
+  let den = 0;
+  for (let i = 0; i < n; i++) {
+    num += (i - xMean) * (values[i] - yMean);
+    den += Math.pow(i - xMean, 2);
+  }
+  const slope = den === 0 ? 0 : num / den;
+  const relSlope = yMean !== 0 ? slope / yMean : 0;
+  if (relSlope > 0.02) return { label: '上升趋势 ↑', color: '#67c23a' };
+  if (relSlope < -0.02) return { label: '下降趋势 ↓', color: '#f56c6c' };
+  return { label: '平稳 →', color: '#e6a23c' };
+});
+
 const chartOptions = computed<EChartsOption>(() => {
-  // Extract all unique dates from series and prediction data
+  // Extract all unique dates from series, prediction data, and confidence band
   const seriesDates = props.series.flatMap(s => s.data.map(d => d.date));
   const predictionDates = props.showPrediction && props.predictionData
     ? props.predictionData.map(d => d.date)
     : [];
-  const allDates = [...new Set([...seriesDates, ...predictionDates])].sort();
+  const confidenceDates = props.confidenceBand
+    ? props.confidenceBand.map(d => d.date)
+    : [];
+  const allDates = [...new Set([...seriesDates, ...predictionDates, ...confidenceDates])].sort();
 
-  // Build anomaly markPoints for main series
+  // Build anomaly markPoints for main series — red circles with z-score info
   const anomalyMarkPoints = props.showAnomalies && anomalyPoints.value.length > 0
     ? anomalyPoints.value.map(a => ({
-        name: 'Anomaly',
+        name: '异常',
         coord: [a.date, a.value],
         value: a.value,
-        symbol: 'pin',
-        symbolSize: 40,
+        symbol: 'circle',
+        symbolSize: 18,
         itemStyle: {
-          color: '#f56c6c'
+          color: 'transparent',
+          borderColor: '#f56c6c',
+          borderWidth: 2.5
         },
         label: {
-          show: true,
-          formatter: '!',
-          color: '#fff',
-          fontWeight: 'bold'
+          show: false
         }
       }))
     : [];
@@ -254,13 +309,13 @@ const chartOptions = computed<EChartsOption>(() => {
     return baseConfig;
   });
 
-  // Add prediction line if enabled
+  // Add prediction dashed line if enabled
   if (props.showPrediction && props.predictionData && props.predictionData.length > 0) {
     const predictionMap = new Map(props.predictionData.map(d => [d.date, d.value]));
     const predictionValues = allDates.map(date => predictionMap.get(date) ?? null);
 
     seriesData.push({
-      name: 'Prediction',
+      name: '预测',
       type: 'line',
       data: predictionValues,
       smooth: props.smooth,
@@ -283,7 +338,102 @@ const chartOptions = computed<EChartsOption>(() => {
     } as echarts.LineSeriesOption);
   }
 
+  // Confidence band: lower line (base) + upper areaStyle stacked on lower
+  if (props.confidenceBand && props.confidenceBand.length > 0) {
+    const bandMap = new Map(props.confidenceBand.map(d => [d.date, d]));
+    const lowerValues = allDates.map(date => {
+      const p = bandMap.get(date);
+      return p ? p.lower : null;
+    });
+    const upperValues = allDates.map(date => {
+      const p = bandMap.get(date);
+      return p ? p.upper - p.lower : null; // stacked difference
+    });
+
+    seriesData.push({
+      name: '下界',
+      type: 'line',
+      data: lowerValues,
+      smooth: props.smooth,
+      lineStyle: { opacity: 0 },
+      itemStyle: { opacity: 0 },
+      symbol: 'none',
+      stack: 'confidence',
+      areaStyle: { color: 'transparent' }
+    } as echarts.LineSeriesOption);
+
+    seriesData.push({
+      name: '置信区间',
+      type: 'line',
+      data: upperValues,
+      smooth: props.smooth,
+      lineStyle: { opacity: 0 },
+      itemStyle: { opacity: 0 },
+      symbol: 'none',
+      stack: 'confidence',
+      areaStyle: {
+        color: props.series[0]?.color || '#1B65A8',
+        opacity: 0.12
+      }
+    } as echarts.LineSeriesOption);
+  }
+
+  // Moving average overlay
+  if (props.showMovingAverage && movingAverageData.value.length > 0) {
+    const maColor = '#ff9f40';
+    const mainDates = props.series[0]?.data.map(d => d.date) || [];
+    const maValues = allDates.map(date => {
+      const idx = mainDates.indexOf(date);
+      return idx >= 0 ? (movingAverageData.value[idx] ?? null) : null;
+    });
+
+    seriesData.push({
+      name: `MA${props.movingAverageWindow}`,
+      type: 'line',
+      data: maValues,
+      smooth: true,
+      lineStyle: {
+        width: 2,
+        color: maColor,
+        type: 'dotted'
+      },
+      itemStyle: { color: maColor },
+      symbol: 'none',
+      emphasis: { focus: 'series' }
+    } as echarts.LineSeriesOption);
+  }
+
   const options: EChartsOption = {
+    graphic: props.showTrendAnnotation && trendInfo.value
+      ? [
+          {
+            type: 'group',
+            right: 20,
+            top: 10,
+            children: [
+              {
+                type: 'rect',
+                z: 100,
+                shape: { width: 100, height: 24, r: 4 },
+                style: { fill: trendInfo.value.color, opacity: 0.15 }
+              },
+              {
+                type: 'text',
+                z: 101,
+                style: {
+                  text: trendInfo.value.label,
+                  font: 'bold 12px sans-serif',
+                  fill: trendInfo.value.color,
+                  x: 50,
+                  y: 12,
+                  textAlign: 'center',
+                  textVerticalAlign: 'middle'
+                }
+              }
+            ]
+          }
+        ]
+      : undefined,
     tooltip: {
       trigger: 'axis',
       confine: true,
@@ -297,7 +447,7 @@ const chartOptions = computed<EChartsOption>(() => {
         if (!Array.isArray(params)) return '';
         const date = params[0]?.axisValue || '';
         const isAnomaly = anomalyPoints.value.some(a => a.date === date);
-        let html = `<div style="font-weight: 600; margin-bottom: 8px;">${date}${isAnomaly ? ' <span style="color:#f56c6c;">(Anomaly)</span>' : ''}</div>`;
+        let html = `<div style="font-weight: 600; margin-bottom: 8px;">${date}${isAnomaly ? ' <span style="color:#f56c6c;">(异常)</span>' : ''}</div>`;
         params.forEach((param) => {
           if (param.value !== null && param.value !== undefined) {
             html += `
@@ -320,7 +470,11 @@ const chartOptions = computed<EChartsOption>(() => {
       textStyle: {
         color: '#606266',
         fontSize: 12
-      }
+      },
+      // Hide internal confidence band series from legend
+      data: seriesData
+        .map(s => (s as echarts.LineSeriesOption).name as string)
+        .filter(n => n !== '下界')
     },
     grid: {
       top: 20,

@@ -1,0 +1,137 @@
+appId: com.cretas.foodtrace
+---
+# E2E Data Flow: Login as workshop_sup1 → Submit PROGRESS report (production output)
+# Purpose: Verify PROGRESS data flows from RN app to backend
+
+# === STEP 1: LAUNCH & LOGIN ===
+- launchApp:
+    clearState: true
+    appId: com.cretas.foodtrace
+
+- waitForAnimationToEnd:
+    timeout: 60000
+
+# Dismiss system dialogs
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Close app"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 30000
+
+# Wait for Landing view and tap Login
+- extendedWaitUntil:
+    visible: "Login"
+    timeout: 60000
+- tapOn:
+    text: "Login"
+    retryTapIfNoChange: true
+
+# Wait for login form
+- extendedWaitUntil:
+    visible:
+      id: "login-username-input"
+    timeout: 10000
+
+# Fill username
+- tapOn:
+    id: "login-username-input"
+- eraseText: 50
+- inputText: "workshop_sup1"
+
+# Fill password
+- tapOn:
+    id: "login-password-input"
+- eraseText: 50
+- inputText: "123456"
+
+# Submit
+- pressKey: back
+- tapOn:
+    id: "login-submit-btn"
+
+# Wait for login success
+- extendedWaitUntil:
+    visible:
+      text: "登录成功"
+    timeout: 60000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# === STEP 2: VERIFY HOME SCREEN ===
+- extendedWaitUntil:
+    visible: "快捷操作"
+    timeout: 30000
+- takeScreenshot: "e2e-progress-01-home"
+
+# === STEP 3: TAP PROGRESS QUICK ACTION ===
+- tapOn:
+    id: "quick-action-progress"
+- waitForAnimationToEnd:
+    timeout: 8000
+
+# Wait for the progress report screen (actual title: 实时生产进度上报)
+- extendedWaitUntil:
+    visible: "实时生产进度上报"
+    timeout: 15000
+- takeScreenshot: "e2e-progress-02-screen"
+
+# Select first batch
+- tapOn:
+    text: ".*PB2026.*"
+    optional: true
+
+# Fill production category/process (required)
+- tapOn: "输入生产类目或工序"
+- inputText: "cutting"
+- pressKey: back
+
+# Fill product quantity
+- tapOn: "输入数量"
+- inputText: "500"
+- pressKey: back
+
+# Fill good products
+- tapOn: "良品"
+- inputText: "480"
+- pressKey: back
+
+# Fill defective products
+- tapOn: "不良"
+- inputText: "20"
+- pressKey: back
+
+# Notes (Chinese parentheses in placeholder)
+- tapOn: "备注信息（选填）"
+- inputText: "Maestro-E2E-progress-test"
+- pressKey: back
+
+- takeScreenshot: "e2e-progress-03-filled"
+
+# Submit
+- tapOn: "提交报工"
+
+# Wait for result
+- extendedWaitUntil:
+    visible: ".*成功.*|.*提交.*|OK|确定"
+    timeout: 30000
+- takeScreenshot: "e2e-progress-04-result"
+
+# Dismiss alert
+- tapOn:
+    text: "OK"
+    optional: true
+- tapOn:
+    text: "确定"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# === DONE: PROGRESS report submitted ===
+- takeScreenshot: "e2e-progress-05-final"

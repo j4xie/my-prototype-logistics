@@ -245,4 +245,28 @@ public interface ProductionReportRepository extends JpaRepository<ProductionRepo
             @Param("factoryId") String factoryId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    // ==================== 报工傻瓜化: 上次报工 + 历史均值 ====================
+
+    ProductionReport findTopByFactoryIdAndWorkerIdAndReportTypeAndDeletedAtIsNullOrderByCreatedAtDesc(
+            String factoryId, Long workerId, String reportType);
+
+    @Query(value = """
+        SELECT
+            COALESCE(AVG(CAST(output_quantity AS DOUBLE PRECISION)), 0) as avg_output,
+            COALESCE(STDDEV(CAST(output_quantity AS DOUBLE PRECISION)), 0) as stddev_output,
+            COALESCE(AVG(CAST(defect_quantity AS DOUBLE PRECISION)), 0) as avg_defect,
+            COUNT(*) as sample_count
+        FROM production_reports
+        WHERE factory_id = :factoryId
+          AND process_category = :processCategory
+          AND report_type = 'PROGRESS'
+          AND report_date >= :sinceDate
+          AND deleted_at IS NULL
+          AND output_quantity IS NOT NULL
+        """, nativeQuery = true)
+    Map<String, Object> getHistoricalAverageByProcess(
+            @Param("factoryId") String factoryId,
+            @Param("processCategory") String processCategory,
+            @Param("sinceDate") LocalDate sinceDate);
 }

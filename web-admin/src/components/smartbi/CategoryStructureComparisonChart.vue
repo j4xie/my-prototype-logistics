@@ -44,7 +44,7 @@ export interface CategorySummary {
   totalYoyGrowthRate: number;
 }
 
-export type ChartViewMode = 'bar' | 'pie';
+export type ChartViewMode = 'bar' | 'pie' | 'sidebyside';
 
 interface Props {
   /** Chart title */
@@ -164,6 +164,132 @@ const getGrowthClass = (value: number): string => {
   if (value > 0.5) return 'positive';
   if (value < -0.5) return 'negative';
   return 'neutral';
+};
+
+// Build side-by-side stacked chart options
+const buildSideBySideChartOptions = (): EChartsOption => {
+  const categories = props.data.map(d => d.category);
+  const currentValues = props.data.map(d => d.currentAmount);
+  const compareValues = props.data.map(d => d.compareAmount);
+  const growthRates = props.data.map(d => d.yoyGrowthRate);
+
+  // Category YoY arrow graphic elements
+  const arrowGraphics: echarts.GraphicComponentOption[] = categories.map((_, idx) => {
+    const yoy = growthRates[idx];
+    const arrow = yoy > 0 ? '▲' : yoy < 0 ? '▼' : '─';
+    const color = getGrowthColor(yoy);
+    return {
+      type: 'text',
+      z: 10,
+      style: {
+        text: `${arrow} ${yoy > 0 ? '+' : ''}${yoy.toFixed(1)}%`,
+        fill: color,
+        font: 'bold 10px sans-serif',
+        textAlign: 'center'
+      },
+      left: `${((idx + 0.5) / categories.length) * 100}%`,
+      top: 5
+    } as echarts.GraphicComponentOption;
+  });
+
+  return {
+    graphic: arrowGraphics,
+    tooltip: {
+      trigger: 'axis',
+      confine: true,
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#ebeef5',
+      borderWidth: 1,
+      textStyle: { color: '#303133' },
+      formatter: (params) => {
+        if (!Array.isArray(params) || params.length === 0) return '';
+        const dataIndex = params[0].dataIndex as number;
+        const item = props.data[dataIndex];
+        if (!item) return '';
+        const growthColor = getGrowthColor(item.yoyGrowthRate);
+        return `
+          <div style="font-weight: 600; margin-bottom: 8px;">${item.category}</div>
+          <div style="margin: 4px 0;">${years.value.compare}年: <b>${formatCurrency(item.compareAmount)} ${props.unit}</b> (${item.compareRatio.toFixed(1)}%)</div>
+          <div style="margin: 4px 0;">${years.value.current}年: <b>${formatCurrency(item.currentAmount)} ${props.unit}</b> (${item.currentRatio.toFixed(1)}%)</div>
+          <div style="margin-top: 6px; color: ${growthColor}; font-weight: 600;">同比: ${item.yoyGrowthRate > 0 ? '+' : ''}${item.yoyGrowthRate.toFixed(1)}%</div>
+        `;
+      }
+    },
+    legend: {
+      bottom: 0,
+      data: [`${years.value.current}年`, `${years.value.compare}年`],
+      icon: 'rect',
+      itemWidth: 14,
+      itemHeight: 8,
+      textStyle: { color: '#606266', fontSize: 12 }
+    },
+    grid: {
+      top: 50,
+      right: 40,
+      bottom: 50,
+      left: 60,
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: categories,
+      axisPointer: { type: 'shadow' },
+      axisLine: { lineStyle: { color: '#dcdfe6' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#909399', fontSize: 11, rotate: categories.length > 8 ? 30 : 0 }
+    },
+    yAxis: {
+      type: 'value',
+      name: `金额 (${props.unit})`,
+      nameLocation: 'middle',
+      nameGap: 50,
+      nameTextStyle: { color: '#909399' },
+      splitLine: { lineStyle: { color: '#ebeef5', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { color: '#909399', fontSize: 11, formatter: (value: number) => formatNumber(value, 0) }
+    },
+    series: [
+      {
+        name: `${years.value.compare}年`,
+        type: 'bar',
+        barWidth: '35%',
+        barGap: '5%',
+        data: compareValues,
+        itemStyle: { color: '#91cc75', borderRadius: [4, 4, 0, 0] },
+        emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } },
+        label: {
+          show: true,
+          position: 'top',
+          formatter: (p) => formatNumber(p.value as number, 0),
+          fontSize: 10,
+          color: '#606266'
+        }
+      },
+      {
+        name: `${years.value.current}年`,
+        type: 'bar',
+        barWidth: '35%',
+        data: currentValues,
+        itemStyle: { color: '#1B65A8', borderRadius: [4, 4, 0, 0] },
+        emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } },
+        label: {
+          show: true,
+          position: 'top',
+          formatter: (p) => {
+            const idx = p.dataIndex as number;
+            const yoy = growthRates[idx];
+            const sign = yoy > 0 ? '+' : '';
+            return `{val|${formatNumber(p.value as number, 0)}}\n{yoy|${sign}${yoy.toFixed(1)}%}`;
+          },
+          rich: {
+            val: { color: '#303133', fontSize: 10, fontWeight: 600, lineHeight: 16 },
+            yoy: { color: '#1B65A8', fontSize: 9, lineHeight: 14, fontWeight: 'bold' }
+          }
+        }
+      }
+    ]
+  };
 };
 
 // Build bar chart options
@@ -294,6 +420,28 @@ const buildBarChartOptions = (): EChartsOption => {
           itemStyle: {
             shadowBlur: 10,
             shadowColor: 'rgba(0, 0, 0, 0.2)'
+          }
+        },
+        label: {
+          show: true,
+          position: 'top',
+          formatter: (params) => {
+            const idx = params.dataIndex as number;
+            const yoy = growthRates[idx];
+            const sign = yoy > 0 ? '+' : '';
+            return `{yoyTag|${sign}${yoy.toFixed(1)}%}`;
+          },
+          rich: {
+            yoyTag: {
+              color: '#1B65A8',
+              fontSize: 9,
+              fontWeight: 'bold',
+              padding: [2, 4],
+              borderRadius: 3,
+              borderWidth: 1,
+              borderColor: '#b3d8ff',
+              backgroundColor: 'rgba(27,101,168,0.08)'
+            }
           }
         }
       },
@@ -480,6 +628,9 @@ const chartOptions = computed<EChartsOption>(() => {
   if (viewMode.value === 'pie') {
     return buildPieChartOptions();
   }
+  if (viewMode.value === 'sidebyside') {
+    return buildSideBySideChartOptions();
+  }
   return buildBarChartOptions();
 });
 
@@ -565,7 +716,13 @@ defineExpose({
           @click="onViewModeChange('bar')"
         >
           <el-icon><i class="el-icon-data-analysis" /></el-icon>
-          柱状图
+          叠加
+        </el-button>
+        <el-button
+          :type="viewMode === 'sidebyside' ? 'primary' : 'default'"
+          @click="onViewModeChange('sidebyside')"
+        >
+          并排
         </el-button>
         <el-button
           :type="viewMode === 'pie' ? 'primary' : 'default'"

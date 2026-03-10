@@ -38,6 +38,7 @@ import {
   ToolboxComponent,
   MarkLineComponent,
   MarkPointComponent,
+  MarkAreaComponent,
   VisualMapComponent,
   GeoComponent,
   GraphicComponent,
@@ -56,7 +57,7 @@ echarts.use([
   SunburstChart, FunnelChart, TreemapChart, SankeyChart, TreeChart,
   // components
   GridComponent, TooltipComponent, LegendComponent, TitleComponent,
-  DataZoomComponent, ToolboxComponent, MarkLineComponent, MarkPointComponent,
+  DataZoomComponent, ToolboxComponent, MarkLineComponent, MarkPointComponent, MarkAreaComponent,
   VisualMapComponent, GeoComponent, GraphicComponent, DatasetComponent,
   TransformComponent, ParallelComponent,
   // renderer

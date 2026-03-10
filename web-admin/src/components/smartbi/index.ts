@@ -21,6 +21,15 @@ export { default as CategoryStructureComparisonChart } from './CategoryStructure
 export { default as RadarChart } from './RadarChart.vue';
 export { default as NestedDonutChart } from './NestedDonutChart.vue';
 
+// SmartBI Extended Components
+export { default as SmallMultiplesChart } from './SmallMultiplesChart.vue';
+export { default as ConditionalFormatPanel } from './ConditionalFormatPanel.vue';
+export { default as BookmarkPanel } from './BookmarkPanel.vue';
+export { default as VarianceAnalysisChart } from './VarianceAnalysisChart.vue';
+export { default as SankeyChart } from './SankeyChart.vue';
+export { default as TreemapChart } from './TreemapChart.vue';
+export { default as GanttChart } from './GanttChart.vue';
+
 // Layout Components
 export { default as DashboardBuilder } from './DashboardBuilder.vue';
 
@@ -40,6 +49,7 @@ export type { ComparisonData, ViewMode } from './YoYMoMComparisonChart.vue';
 export type { CategoryComparisonData, CategorySummary, ChartViewMode } from './CategoryStructureComparisonChart.vue';
 export type { RadarIndicator, RadarSeries } from './RadarChart.vue';
 export type { NestedDonutDataItem } from './NestedDonutChart.vue';
+export type { SmallMultiplesConfig } from './SmallMultiplesChart.vue';
 export type { DashboardLayout, DashboardCard, ChartDefinition } from './DashboardBuilder.vue';
 
 // Utility types for common chart configurations

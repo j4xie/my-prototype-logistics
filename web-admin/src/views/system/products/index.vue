@@ -4,7 +4,9 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Search, Refresh, Download, Upload, Picture } from '@element-plus/icons-vue';
+import { Plus, Search, Refresh, Download, Upload, Picture, ChatDotRound } from '@element-plus/icons-vue';
+import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
+import { PRODUCT_CONFIG } from '@/components/ai-entry/types';
 
 // 产品分类定义
 const PRODUCT_CATEGORIES = [
@@ -271,6 +273,24 @@ function getCategoryLabel(value?: string) {
   const category = PRODUCT_CATEGORIES.find(c => c.value === value);
   return category?.label || value || '-';
 }
+
+// ==================== AI Entry ====================
+const aiEntryVisible = ref(false);
+
+function handleAiFill(params: Record<string, unknown>) {
+  formData.name = String(params.name || '');
+  formData.productCategory = (String(params.productCategory || activeTab.value)) as ProductCategory;
+  formData.unit = String(params.unit || '');
+  formData.specification = String(params.specification || '');
+  formData.relatedCustomer = String(params.relatedCustomer || '');
+  formData.notes = String(params.notes || '');
+  formData.id = '';
+  formData.code = '';
+  formData.imageUrl = '';
+  dialogTitle.value = '新增产品 (AI 填充)';
+  isEditing.value = false;
+  dialogVisible.value = true;
+}
 </script>
 
 <template>
@@ -286,6 +306,9 @@ function getCategoryLabel(value?: string) {
           <div class="header-right">
             <el-button :icon="Download" @click="handleExport">导出</el-button>
             <el-button :icon="Upload" @click="handleImport">导入</el-button>
+            <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
+              AI录入
+            </el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleAdd">
               新增产品
             </el-button>
@@ -467,6 +490,13 @@ function getCategoryLabel(value?: string) {
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- AI 对话录入 -->
+    <AiEntryDrawer
+      v-model="aiEntryVisible"
+      :config="PRODUCT_CONFIG"
+      @fill-form="handleAiFill"
+    />
   </div>
 </template>
 

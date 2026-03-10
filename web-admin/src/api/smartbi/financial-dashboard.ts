@@ -1,0 +1,203 @@
+/**
+ * SmartBI Financial Dashboard API
+ * Calls Python /api/smartbi/financial-dashboard/* endpoints
+ */
+import { pythonFetch, PYTHON_LLM_TIMEOUT_MS } from './common';
+
+export interface FinancialDashboardRequest {
+  upload_id?: number;
+  raw_data?: Record<string, unknown>[];
+  chart_type?: string;
+  year?: number;
+  period_type?: string;
+  start_month?: number;
+  end_month?: number;
+  factory_id?: string;
+}
+
+export interface ChartKPI {
+  label: string;
+  value: number | string;
+  unit: string;
+  trend?: 'up' | 'down' | 'flat';
+}
+
+export interface ChartResult {
+  chartType: string;
+  title: string;
+  kpis: ChartKPI[];
+  echartsOption: Record<string, unknown>;
+  tableData?: Record<string, unknown>;
+  analysisContext: string;
+  metadata: {
+    period: string | Record<string, unknown>;
+    dataQuality: string;
+  };
+  success: boolean;
+  error?: string;
+}
+
+export interface AvailableChartType {
+  chartType: string;
+  displayName: string;
+  description: string;
+}
+
+export interface PeriodInfo {
+  year: number;
+  period_type: string;
+  start_month: number;
+  end_month: number;
+  label: string;
+}
+
+export interface DashboardResponse {
+  success: boolean;
+  charts: ChartResult[];
+  availableTypes: AvailableChartType[];
+  period: PeriodInfo;
+  totalCharts: number;
+  successCount: number;
+}
+
+export interface PPTExportRequest {
+  upload_id?: number;
+  year?: number;
+  period_type?: string;
+  start_month?: number;
+  end_month?: number;
+  chart_images: Record<string, string>;
+  analysis_results: Record<string, string>;
+  template?: string;
+  company_name?: string;
+  kpi_summary?: Record<string, unknown>;
+}
+
+export interface AnalyzeChartRequest {
+  chart_type: string;
+  analysis_context: string;
+}
+
+export interface AnalyzeChartResponse {
+  success: boolean;
+  chartType?: string;
+  analysis: string;
+  error?: string;
+}
+
+export interface TemplateItem {
+  id: string;
+  name: string;
+  description: string;
+  chartTypes: string[];
+  thumbnail?: string;
+}
+
+export interface TemplatesResponse {
+  success: boolean;
+  templates: TemplateItem[];
+}
+
+/**
+ * Generate a single chart by type
+ */
+export async function generateChart(data: FinancialDashboardRequest): Promise<ChartResult> {
+  try {
+    return await pythonFetch('/api/smartbi/financial-dashboard/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      timeoutMs: PYTHON_LLM_TIMEOUT_MS,
+    }) as ChartResult;
+  } catch (error) {
+    console.error('generateChart 失败:', error);
+    return {
+      chartType: data.chart_type || '',
+      title: '图表生成失败',
+      kpis: [],
+      echartsOption: {},
+      analysisContext: '',
+      metadata: { period: '', dataQuality: '' },
+      success: false,
+      error: error instanceof Error ? error.message : '图表生成请求失败',
+    };
+  }
+}
+
+/**
+ * Batch generate all dashboard charts
+ */
+export async function batchGenerate(data: FinancialDashboardRequest): Promise<DashboardResponse> {
+  try {
+    return await pythonFetch('/api/smartbi/financial-dashboard/batch', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      timeoutMs: PYTHON_LLM_TIMEOUT_MS,
+    }) as DashboardResponse;
+  } catch (error) {
+    console.error('batchGenerate 失败:', error);
+    return {
+      success: false,
+      charts: [],
+      availableTypes: [],
+      period: { year: data.year ?? new Date().getFullYear(), period_type: 'year', start_month: 1, end_month: 12, label: '' },
+      totalCharts: 0,
+      successCount: 0,
+    };
+  }
+}
+
+/**
+ * Request AI analysis text for a chart
+ */
+export async function analyzeChart(data: AnalyzeChartRequest): Promise<AnalyzeChartResponse> {
+  try {
+    return await pythonFetch('/api/smartbi/financial-dashboard/analyze', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      timeoutMs: PYTHON_LLM_TIMEOUT_MS,
+    }) as AnalyzeChartResponse;
+  } catch (error) {
+    console.error('analyzeChart 失败:', error);
+    return {
+      success: false,
+      analysis: '',
+      error: error instanceof Error ? error.message : 'AI分析请求失败',
+    };
+  }
+}
+
+/**
+ * List available PPT templates
+ */
+export async function listTemplates(): Promise<TemplatesResponse> {
+  try {
+    return await pythonFetch('/api/smartbi/financial-dashboard/templates') as TemplatesResponse;
+  } catch (error) {
+    console.error('listTemplates 失败:', error);
+    return { success: false, templates: [] };
+  }
+}
+
+/**
+ * Export dashboard as PPT — returns a Blob via raw fetch (binary response)
+ */
+export async function exportPPT(data: PPTExportRequest): Promise<Blob | null> {
+  try {
+    const { PYTHON_SMARTBI_URL, getPythonAuthHeaders } = await import('./common');
+    const response = await fetch(`${PYTHON_SMARTBI_URL}/api/smartbi/financial-dashboard/export-ppt`, {
+      method: 'POST',
+      headers: {
+        ...getPythonAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      throw new Error(`PPT导出失败: HTTP ${response.status}`);
+    }
+    return await response.blob();
+  } catch (error) {
+    console.error('exportPPT 失败:', error);
+    return null;
+  }
+}

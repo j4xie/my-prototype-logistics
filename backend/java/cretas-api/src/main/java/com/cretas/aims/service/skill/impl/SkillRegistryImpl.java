@@ -348,40 +348,106 @@ public class SkillRegistryImpl implements SkillRegistry {
                 .build());
         count++;
 
-        // 排产规划Skill — 查库存 + 查产能 + 创建计划 + 分配工人
+        // 排产规划Skill — DAG条件分支版: 库存充足→排产, 库存不足→采购建议
         registerWithSource(SkillDefinition.builder()
                 .name("production-planning")
                 .displayName("排产规划")
-                .description("排产全流程：检查原料库存 → 查看产线状态 → 创建生产计划 → 分配工人")
-                .version("1.0.0")
+                .description("排产全流程：检查原料库存 → 库存充足则创建生产计划并分配工人，库存不足则建议采购")
+                .version("2.0.0")
                 .triggers(Arrays.asList("排产规划", "生产规划", "制定生产计划", "排一下生产",
                         "明天生产什么", "安排明天生产", "帮我排产", "排产计划"))
                 .tools(Arrays.asList("material_stock_summary", "processing_batch_list",
-                        "production_plan_create", "processing_worker_assign"))
+                        "production_plan_create", "processing_worker_assign", "purchase_order_create"))
                 .contextNeeded(Arrays.asList("factoryId"))
                 .promptTemplate("为工厂${factoryId}进行排产规划。" +
-                        "步骤：1.先查原料库存确认备料充足 2.查当前产线状况 " +
-                        "3.根据库存和产能创建生产计划 4.为计划分配工人。" +
+                        "DAG执行：先查库存，根据结果决定排产或采购建议。" +
                         "用户问题：${userQuery}")
+                .executionGraph(Arrays.asList(
+                        // Step 1: 查库存 (无依赖，入口节点)
+                        SkillDefinition.ExecutionNode.builder()
+                                .id("check_stock")
+                                .toolName("material_stock_summary")
+                                .build(),
+                        // Step 2a: 库存充足 → 查产线状态
+                        SkillDefinition.ExecutionNode.builder()
+                                .id("check_lines")
+                                .toolName("processing_batch_list")
+                                .dependsOn(Arrays.asList("check_stock"))
+                                .condition("check_stock.success")
+                                .build(),
+                        // Step 3a: 产线查询成功 → 创建生产计划
+                        SkillDefinition.ExecutionNode.builder()
+                                .id("create_plan")
+                                .toolName("production_plan_create")
+                                .dependsOn(Arrays.asList("check_stock", "check_lines"))
+                                .condition("check_stock.success && check_lines.success")
+                                .build(),
+                        // Step 4a: 计划创建成功 → 分配工人
+                        SkillDefinition.ExecutionNode.builder()
+                                .id("assign_workers")
+                                .toolName("processing_worker_assign")
+                                .dependsOn(Arrays.asList("create_plan"))
+                                .condition("create_plan.success")
+                                .build(),
+                        // Step 2b: 库存不足 → 建议采购 (条件分支)
+                        SkillDefinition.ExecutionNode.builder()
+                                .id("suggest_purchase")
+                                .toolName("purchase_order_create")
+                                .dependsOn(Arrays.asList("check_stock"))
+                                .condition("check_stock.success && !check_stock.data.hasStock")
+                                .build()
+                ))
+                .errorStrategy(SkillDefinition.ErrorStrategy.CONTINUE_ON_ERROR)
                 .source("default")
                 .enabled(true)
                 .build());
         count++;
 
-        // 订单发货全流程Skill（增强） — 查订单 + 创建发货 + 更新状态 + 确认 + 完成
+        // 订单发货全流程Skill（DAG版） — 查订单 → 创建发货 → 更新状态 → 确认 → 完成
         registerWithSource(SkillDefinition.builder()
                 .name("shipment-lifecycle")
                 .displayName("发货全流程")
                 .description("发货全生命周期：查订单 → 创建发货单 → 更新物流状态 → 客户确认 → 完成发货")
-                .version("1.0.0")
+                .version("2.0.0")
                 .triggers(Arrays.asList("发货流程", "完整发货", "发货全流程", "从发货到签收",
                         "发货并跟踪", "发货进度管理"))
                 .tools(Arrays.asList("order_query", "shipment_create", "shipment_status_update",
                         "shipment_confirm", "shipment_complete"))
                 .contextNeeded(Arrays.asList("factoryId"))
                 .promptTemplate("处理工厂${factoryId}的发货全流程。" +
-                        "根据用户需求选择合适的步骤执行：查询订单、创建发货单、更新物流状态、确认收货、完成发货。" +
+                        "DAG执行：依次执行发货步骤，每步依赖前一步成功。" +
                         "用户问题：${userQuery}")
+                .executionGraph(Arrays.asList(
+                        SkillDefinition.ExecutionNode.builder()
+                                .id("query_order")
+                                .toolName("order_query")
+                                .build(),
+                        SkillDefinition.ExecutionNode.builder()
+                                .id("create_shipment")
+                                .toolName("shipment_create")
+                                .dependsOn(Arrays.asList("query_order"))
+                                .condition("query_order.success")
+                                .build(),
+                        SkillDefinition.ExecutionNode.builder()
+                                .id("update_status")
+                                .toolName("shipment_status_update")
+                                .dependsOn(Arrays.asList("create_shipment"))
+                                .condition("create_shipment.success")
+                                .build(),
+                        SkillDefinition.ExecutionNode.builder()
+                                .id("confirm")
+                                .toolName("shipment_confirm")
+                                .dependsOn(Arrays.asList("update_status"))
+                                .condition("update_status.success")
+                                .build(),
+                        SkillDefinition.ExecutionNode.builder()
+                                .id("complete")
+                                .toolName("shipment_complete")
+                                .dependsOn(Arrays.asList("confirm"))
+                                .condition("confirm.success")
+                                .build()
+                ))
+                .errorStrategy(SkillDefinition.ErrorStrategy.STOP)
                 .source("default")
                 .enabled(true)
                 .build());
@@ -584,6 +650,28 @@ public class SkillRegistryImpl implements SkillRegistry {
                 }
             }
 
+            // Parse errorStrategy (P0)
+            if (yaml.containsKey("errorStrategy")) {
+                String strategyStr = yaml.get("errorStrategy").toString().toUpperCase();
+                try {
+                    builder.errorStrategy(SkillDefinition.ErrorStrategy.valueOf(strategyStr));
+                } catch (IllegalArgumentException e) {
+                    log.warn("Invalid errorStrategy '{}' in {}, defaulting to STOP",
+                            strategyStr, resource.getFilename());
+                }
+            }
+
+            // Parse executionGraph (P0: DAG conditional branching)
+            // Use dedicated parser since the execution block has nested list-of-maps
+            List<Map<String, Object>> executionMaps = parseExecutionBlock(frontmatter.toString());
+            if (!executionMaps.isEmpty()) {
+                List<SkillDefinition.ExecutionNode> executionGraph =
+                        parseExecutionGraph(executionMaps);
+                if (!executionGraph.isEmpty()) {
+                    builder.executionGraph(executionGraph);
+                }
+            }
+
             return builder.build();
 
         } catch (IOException e) {
@@ -661,6 +749,162 @@ public class SkillRegistryImpl implements SkillRegistry {
         }
 
         return result;
+    }
+
+    /**
+     * Parse execution graph from a list of node definitions.
+     * Each node is represented as a Map with keys: id, tool, dependsOn, condition, fallbackTool, maxRetries
+     *
+     * This supports the SKILL.md execution format where nodes are defined under "execution:" key.
+     * Since our simple YAML parser returns list items as strings, this method also accepts
+     * the raw YAML frontmatter for parsing the execution block with a dedicated sub-parser.
+     */
+    @SuppressWarnings("unchecked")
+    private List<SkillDefinition.ExecutionNode> parseExecutionGraph(List<?> executionList) {
+        List<SkillDefinition.ExecutionNode> nodes = new ArrayList<>();
+
+        for (Object item : executionList) {
+            if (item instanceof Map) {
+                Map<String, Object> map = (Map<String, Object>) item;
+                SkillDefinition.ExecutionNode.ExecutionNodeBuilder nodeBuilder =
+                        SkillDefinition.ExecutionNode.builder()
+                                .id((String) map.get("id"))
+                                .toolName((String) map.get("tool"));
+
+                if (map.containsKey("dependsOn")) {
+                    Object deps = map.get("dependsOn");
+                    if (deps instanceof List) {
+                        nodeBuilder.dependsOn(((List<?>) deps).stream()
+                                .map(Object::toString).collect(Collectors.toList()));
+                    } else if (deps instanceof String) {
+                        nodeBuilder.dependsOn(List.of((String) deps));
+                    }
+                }
+
+                if (map.containsKey("condition")) {
+                    nodeBuilder.condition((String) map.get("condition"));
+                }
+                if (map.containsKey("fallbackTool")) {
+                    nodeBuilder.fallbackTool((String) map.get("fallbackTool"));
+                }
+                if (map.containsKey("maxRetries")) {
+                    Object retries = map.get("maxRetries");
+                    if (retries instanceof Number) {
+                        nodeBuilder.maxRetries(((Number) retries).intValue());
+                    } else if (retries instanceof String) {
+                        try {
+                            nodeBuilder.maxRetries(Integer.parseInt((String) retries));
+                        } catch (NumberFormatException ignored) {}
+                    }
+                }
+                if (map.containsKey("params")) {
+                    Object params = map.get("params");
+                    if (params instanceof Map) {
+                        nodeBuilder.params((Map<String, Object>) params);
+                    }
+                }
+
+                SkillDefinition.ExecutionNode node = nodeBuilder.build();
+                if (node.getId() != null && node.getToolName() != null) {
+                    nodes.add(node);
+                } else {
+                    log.warn("Skipping execution node with missing id or tool: {}", map);
+                }
+            }
+        }
+
+        return nodes;
+    }
+
+    /**
+     * Parse the execution block from raw YAML frontmatter.
+     * This dedicated parser handles nested list-of-maps that the simple parseYaml() cannot.
+     *
+     * Expected format:
+     * execution:
+     *   - id: check_stock
+     *     tool: material_stock_summary
+     *   - id: create_plan
+     *     tool: production_plan_create
+     *     dependsOn: [check_stock]
+     *     condition: "check_stock.success && check_stock.data.hasStock"
+     */
+    private List<Map<String, Object>> parseExecutionBlock(String yaml) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        String[] lines = yaml.split("\n");
+        boolean inExecution = false;
+        Map<String, Object> currentNode = null;
+
+        for (String line : lines) {
+            String trimmed = line.trim();
+
+            // Detect start of execution block
+            if (trimmed.equals("execution:")) {
+                inExecution = true;
+                continue;
+            }
+
+            if (!inExecution) continue;
+
+            // Detect end of execution block (next top-level key)
+            if (!line.startsWith(" ") && !line.startsWith("\t") && trimmed.contains(":") && !trimmed.startsWith("-")) {
+                break;
+            }
+
+            // New list item
+            if (trimmed.startsWith("- ")) {
+                if (currentNode != null) result.add(currentNode);
+                currentNode = new LinkedHashMap<>();
+                // Parse inline key-value from the "- key: value" line
+                String rest = trimmed.substring(2).trim();
+                parseKeyValue(rest, currentNode);
+                continue;
+            }
+
+            // Continuation of current node's properties
+            if (currentNode != null && trimmed.contains(":")) {
+                parseKeyValue(trimmed, currentNode);
+            }
+        }
+
+        if (currentNode != null) result.add(currentNode);
+        return result;
+    }
+
+    /**
+     * Parse a "key: value" string into a map entry.
+     * Handles inline arrays like [a, b, c] for dependsOn.
+     */
+    private void parseKeyValue(String kv, Map<String, Object> target) {
+        int colonIdx = kv.indexOf(':');
+        if (colonIdx <= 0) return;
+
+        String key = kv.substring(0, colonIdx).trim();
+        String value = kv.substring(colonIdx + 1).trim();
+
+        // Remove quotes
+        if ((value.startsWith("\"") && value.endsWith("\"")) ||
+            (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.substring(1, value.length() - 1);
+        }
+
+        // Parse inline array [a, b, c]
+        if (value.startsWith("[") && value.endsWith("]")) {
+            String inner = value.substring(1, value.length() - 1);
+            List<String> list = new ArrayList<>();
+            for (String item : inner.split(",")) {
+                String trimItem = item.trim();
+                if ((trimItem.startsWith("\"") && trimItem.endsWith("\"")) ||
+                    (trimItem.startsWith("'") && trimItem.endsWith("'"))) {
+                    trimItem = trimItem.substring(1, trimItem.length() - 1);
+                }
+                if (!trimItem.isEmpty()) list.add(trimItem);
+            }
+            target.put(key, list);
+        } else {
+            target.put(key, value);
+        }
     }
 
     /**

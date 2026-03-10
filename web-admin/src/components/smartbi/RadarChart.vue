@@ -41,6 +41,10 @@ interface Props {
   colors?: string[];
   areaOpacity?: number;
   nameGap?: number;
+  /** Use elastic spring animation on data load */
+  elasticAnimation?: boolean;
+  /** Use radial gradient area fill from center outward */
+  gradientArea?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -56,7 +60,9 @@ const props = withDefaults(defineProps<Props>(), {
     '#00d4ff', '#ff6b9d', '#c084fc', '#fbbf24', '#34d399'
   ],
   areaOpacity: 0.25,
-  nameGap: 15
+  nameGap: 15,
+  elasticAnimation: true,
+  gradientArea: false
 });
 
 const emit = defineEmits<{
@@ -69,6 +75,9 @@ const chartInstance = ref<ECharts | null>(null);
 let resizeObserver: ResizeObserver | null = null;
 let rafId = 0;
 
+// Track highlighted series index for interactive hover dimming
+const hoveredSeriesIndex = ref<number | null>(null);
+
 const chartOptions = computed<EChartsOption>(() => {
   const radarIndicators = props.indicators.map(ind => ({
     name: ind.name,
@@ -79,35 +88,64 @@ const chartOptions = computed<EChartsOption>(() => {
 
   const seriesData = props.series.map((s, index) => {
     const seriesColor = s.color || props.colors[index % props.colors.length];
+    const isHovered = hoveredSeriesIndex.value !== null;
+    const isDimmed = isHovered && hoveredSeriesIndex.value !== index;
+    const opacity = isDimmed ? 0.15 : props.areaOpacity;
+    const lineOpacity = isDimmed ? 0.2 : 1;
+
+    // Build area style: gradient or solid
+    let areaStyleConfig: { color: echarts.LinearGradientObject | string; opacity: number } | undefined;
+    if (props.areaStyle) {
+      if (props.gradientArea) {
+        areaStyleConfig = {
+          color: new (echarts as unknown as { graphic: { RadialGradient: new (x: number, y: number, r: number, colorStops: { offset: number; color: string }[]) => echarts.LinearGradientObject } }).graphic.RadialGradient(0.5, 0.5, 1, [
+            { offset: 0, color: `${seriesColor}00` },
+            { offset: 1, color: `${seriesColor}` }
+          ]),
+          opacity
+        };
+      } else {
+        areaStyleConfig = {
+          color: s.areaColor || seriesColor,
+          opacity
+        };
+      }
+    }
 
     return {
       name: s.name,
       value: s.data,
       itemStyle: {
-        color: seriesColor
+        color: seriesColor,
+        opacity: isDimmed ? 0.2 : 1
       },
       lineStyle: {
         color: seriesColor,
-        width: 2
+        width: isHovered && !isDimmed ? 3 : 2,
+        opacity: lineOpacity
       },
-      areaStyle: props.areaStyle ? {
-        color: s.areaColor || seriesColor,
-        opacity: props.areaOpacity
-      } : undefined,
+      areaStyle: areaStyleConfig,
       symbol: 'circle',
-      symbolSize: 6
+      symbolSize: isHovered && !isDimmed ? 8 : 6
     };
   });
 
   const options: EChartsOption = {
+    animation: true,
+    animationDuration: props.elasticAnimation ? 1000 : 400,
+    animationEasing: props.elasticAnimation ? 'elasticOut' : 'cubicOut',
     tooltip: {
       ...defaultTooltip('item'),
       formatter: (params) => {
         const data = params as echarts.DefaultLabelFormatterCallbackParams;
         const values = data.value as number[];
         const seriesName = data.name;
+        const seriesIndex = props.series.findIndex(s => s.name === seriesName);
+        const color = seriesIndex >= 0
+          ? (props.series[seriesIndex].color || props.colors[seriesIndex % props.colors.length])
+          : '#1B65A8';
 
-        let html = `<div style="font-weight: 600; margin-bottom: 8px;">${seriesName}</div>`;
+        let html = `<div style="font-weight: 600; margin-bottom: 8px; color:${color};">${seriesName}</div>`;
 
         props.indicators.forEach((ind, i) => {
           const value = values[i];
@@ -142,7 +180,19 @@ const chartOptions = computed<EChartsOption>(() => {
       axisName: {
         color: '#606266',
         fontSize: 12,
-        padding: [0, 0]
+        padding: [0, 0],
+        rich: {
+          dim: {
+            fontSize: 12,
+            color: '#606266',
+            lineHeight: 16
+          },
+          val: {
+            fontSize: 11,
+            color: '#909399',
+            lineHeight: 14
+          }
+        }
       },
       nameGap: props.nameGap,
       indicator: radarIndicators,
@@ -188,6 +238,22 @@ function initChart() {
 
   chartInstance.value = echarts.init(chartRef.value, 'cretas');
   chartInstance.value.setOption(chartOptions.value);
+
+  // Hover highlight: dim other series
+  chartInstance.value.on('mouseover', { componentType: 'series' }, (params) => {
+    const idx = props.series.findIndex(s => s.name === params.seriesName);
+    if (idx !== -1 && hoveredSeriesIndex.value !== idx) {
+      hoveredSeriesIndex.value = idx;
+      updateChart();
+    }
+  });
+
+  chartInstance.value.on('mouseout', { componentType: 'series' }, () => {
+    if (hoveredSeriesIndex.value !== null) {
+      hoveredSeriesIndex.value = null;
+      updateChart();
+    }
+  });
 
   // Click event for series data points
   chartInstance.value.on('click', (params) => {

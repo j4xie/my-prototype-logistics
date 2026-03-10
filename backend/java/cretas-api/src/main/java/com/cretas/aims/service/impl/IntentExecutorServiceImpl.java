@@ -1693,6 +1693,30 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                         String.format("%.2f", c.getSimilarity()));
             }
 
+            // 2.5. P3: Auto-Planner — 检查是否需要多工具执行计划
+            if (toolRouterService.requiresMultiToolPlan(query, candidates)) {
+                log.info("Auto-Planner: 检测到多工具需求, query={}", query);
+
+                // 构建执行上下文
+                Map<String, Object> planContext = new HashMap<>();
+                planContext.put("factoryId", factoryId);
+                planContext.put("userId", userId);
+                planContext.put("userRole", userRole);
+                planContext.put("userInput", query);
+                planContext.put("intentCode", intent.getIntentCode());
+                if (request.getContext() != null) {
+                    planContext.putAll(request.getContext());
+                }
+
+                ToolRouterService.AutoPlan plan = toolRouterService.generateExecutionPlan(query, candidates, planContext);
+                if (plan != null && plan.getSteps() != null && !plan.getSteps().isEmpty()) {
+                    log.info("Auto-Planner: 生成执行计划, steps={}, confidence={}, reasoning={}",
+                            plan.getSteps().size(), plan.getConfidence(), plan.getReasoning());
+                    return executeAutoPlan(plan, planContext, factoryId, intent);
+                }
+                log.info("Auto-Planner: 未生成有效计划, 回退到单工具选择");
+            }
+
             // 3. LLM 精选工具
             ToolRouterService.SelectedTools selectedTools = toolRouterService.selectTools(query, matchResult, candidates);
             if (selectedTools.getTools() == null || selectedTools.getTools().isEmpty()) {
@@ -1747,6 +1771,125 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             log.error("动态工具选择执行失败: {}", e.getMessage(), e);
             return buildNoToolResponse(intent);
         }
+    }
+
+    /**
+     * P3: Auto-Planner — 执行自动生成的多工具计划
+     *
+     * 按照计划中的步骤顺序执行工具，支持步骤间依赖传递。
+     * 前一步骤的结果会作为后续步骤的上下文参数传入。
+     */
+    private IntentExecuteResponse executeAutoPlan(ToolRouterService.AutoPlan plan,
+                                                   Map<String, Object> context,
+                                                   String factoryId,
+                                                   AIIntentConfig intent) {
+        Map<String, Object> allResults = new HashMap<>();
+        Map<String, Object> stepOutputs = new HashMap<>();  // stepId -> result, 用于依赖传递
+        List<String> executedTools = new ArrayList<>();
+        boolean hasError = false;
+        StringBuilder errorMessages = new StringBuilder();
+
+        // 按 order 排序步骤
+        List<ToolRouterService.PlanStep> sortedSteps = plan.getSteps().stream()
+                .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
+                .collect(Collectors.toList());
+
+        for (ToolRouterService.PlanStep step : sortedSteps) {
+            String toolName = step.getToolName();
+            String stepId = step.getStepId();
+
+            log.info("Auto-Planner 执行步骤: stepId={}, tool={}, order={}, reason={}",
+                    stepId, toolName, step.getOrder(), step.getReason());
+
+            Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
+            if (!toolOpt.isPresent()) {
+                log.warn("Auto-Planner: 工具未找到, tool={}, 跳过此步骤", toolName);
+                hasError = true;
+                errorMessages.append(toolName).append(": 工具未找到; ");
+                continue;
+            }
+
+            try {
+                ToolExecutor tool = toolOpt.get();
+
+                // 构建此步骤的参数: 基础上下文 + 步骤特定参数 + 依赖步骤的输出
+                Map<String, Object> stepParams = new HashMap<>(context);
+                if (step.getParams() != null) {
+                    stepParams.putAll(step.getParams());
+                }
+
+                // 注入依赖步骤的输出结果
+                if (step.getDependsOn() != null) {
+                    for (String depStepId : step.getDependsOn()) {
+                        Object depOutput = stepOutputs.get(depStepId);
+                        if (depOutput != null) {
+                            stepParams.put("_dep_" + depStepId, depOutput);
+                        }
+                    }
+                }
+
+                // 构建 ToolCall 对象
+                String argsJson;
+                try {
+                    argsJson = objectMapper.writeValueAsString(stepParams);
+                } catch (JsonProcessingException jpe) {
+                    argsJson = "{}";
+                }
+                ToolCall toolCall = ToolCall.of(
+                        "auto-plan-" + stepId,
+                        toolName,
+                        argsJson
+                );
+
+                // 执行工具
+                String toolResultStr = tool.execute(toolCall, stepParams);
+
+                // 解析结果
+                Map<String, Object> toolResult;
+                try {
+                    toolResult = objectMapper.readValue(toolResultStr, Map.class);
+                } catch (Exception parseEx) {
+                    toolResult = Map.of("result", toolResultStr);
+                }
+
+                allResults.put(toolName, toolResult);
+                stepOutputs.put(stepId, toolResult);
+                executedTools.add(toolName);
+
+                log.info("Auto-Planner 步骤完成: stepId={}, tool={}", stepId, toolName);
+
+            } catch (Exception e) {
+                log.error("Auto-Planner 步骤执行失败: stepId={}, tool={}, error={}",
+                        stepId, toolName, e.getMessage(), e);
+                hasError = true;
+                errorMessages.append(toolName).append(": ").append(e.getMessage()).append("; ");
+                allResults.put(toolName, Map.of("error", e.getMessage()));
+            }
+        }
+
+        // 构建响应
+        String status = executedTools.isEmpty() ? "FAILED"
+                : hasError ? "PARTIAL_SUCCESS"
+                : "SUCCESS";
+
+        String message = hasError
+                ? "Auto-Planner 部分步骤失败: " + errorMessages.toString()
+                : plan.getPlanDescription() != null
+                    ? plan.getPlanDescription()
+                    : "自动执行计划完成 (" + executedTools.size() + " 个工具)";
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true)
+                .intentCode(intent.getIntentCode())
+                .intentName(intent.getIntentName())
+                .intentCategory(intent.getIntentCategory())
+                .status(status)
+                .message(message)
+                .resultData(allResults.size() == 1
+                        ? allResults.values().iterator().next()
+                        : allResults)
+                .executedAt(LocalDateTime.now())
+                .build();
     }
 
     /**
