@@ -45,6 +45,8 @@ import {
   DatasetComponent,
   TransformComponent,
   ParallelComponent,
+  AxisPointerComponent,
+  PolarComponent,
 } from 'echarts/components'
 
 // ---- Renderer ----
@@ -59,7 +61,7 @@ echarts.use([
   GridComponent, TooltipComponent, LegendComponent, TitleComponent,
   DataZoomComponent, ToolboxComponent, MarkLineComponent, MarkPointComponent, MarkAreaComponent,
   VisualMapComponent, GeoComponent, GraphicComponent, DatasetComponent,
-  TransformComponent, ParallelComponent,
+  TransformComponent, ParallelComponent, AxisPointerComponent, PolarComponent,
   // renderer
   CanvasRenderer,
 ])
