@@ -50,10 +50,9 @@ public class SlotFillingServiceImpl implements SlotFillingService {
     // 产品类型仓库（缺参时提供可选项）
     private com.cretas.aims.repository.ProductTypeRepository productTypeRepository;
 
-    @Autowired
+    @Autowired(required = false)
     public void setProductTypeRepository(com.cretas.aims.repository.ProductTypeRepository productTypeRepository) {
         this.productTypeRepository = productTypeRepository;
-        log.info("✅ ProductTypeRepository injected into SlotFillingServiceImpl: {}", productTypeRepository != null);
     }
 
     @Override
@@ -461,11 +460,9 @@ public class SlotFillingServiceImpl implements SlotFillingService {
             String name = slot.getName().toLowerCase();
 
             // productId → 查询产品列表
-            log.info("buildSlotOptions: checking slot name='{}', productTypeRepo={}", name, productTypeRepository != null);
             if (name.contains("productid") && productTypeRepository != null) {
                 try {
-                    var products = productTypeRepository.findByFactoryIdAndIsActive(factoryId, true);
-                    log.info("buildSlotOptions: found {} products for factoryId={}", products != null ? products.size() : 0, factoryId);
+                    var products = productTypeRepository.findByFactoryId(factoryId);
                     if (products != null && !products.isEmpty()) {
                         int limit = Math.min(products.size(), 10);
                         for (int i = 0; i < limit; i++) {

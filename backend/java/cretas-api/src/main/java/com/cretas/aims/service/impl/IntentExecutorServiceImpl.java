@@ -3399,7 +3399,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             // productId → 查询产品列表，提供可选项
             if (lowerParam.contains("productid") && productTypeRepository != null) {
                 try {
-                    var products = productTypeRepository.findByFactoryIdAndIsActive(factoryId, true);
+                    var products = productTypeRepository.findByFactoryId(factoryId);
                     if (products != null && !products.isEmpty()) {
                         // 限制最多显示 10 个选项
                         int limit = Math.min(products.size(), 10);
