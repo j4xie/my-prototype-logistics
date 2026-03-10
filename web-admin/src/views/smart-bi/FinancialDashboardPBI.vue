@@ -73,6 +73,8 @@ const smallMultiplesDimension = ref('category');
 // Chart instance refs for getDataURL
 const chartRefExpenseYoY = ref<InstanceType<typeof ExpenseYoYBudgetChart> | null>(null);
 const chartRefGrossMargin = ref<InstanceType<typeof GrossMarginTrendChart> | null>(null);
+const chartRefVariance = ref<InstanceType<typeof VarianceAnalysisChart> | null>(null);
+const chartRefSankey = ref<InstanceType<typeof SankeyChart> | null>(null);
 // Generic chart DOM refs for existing chart components
 const chartDomRefs = ref<Map<string, HTMLElement>>(new Map());
 
@@ -108,6 +110,8 @@ const chartTypes = [
   { key: 'category_yoy_comparison', label: '品类同期对比', icon: '📊' },
   { key: 'gross_margin_trend', label: '毛利率同比趋势', icon: '📉' },
   { key: 'category_structure_donut', label: '品类结构同比饼图', icon: '🎯' },
+  { key: 'cost_flow_sankey', label: '成本流向桑基图', icon: '🔀' },
+  { key: 'variance_analysis', label: '预算差异分析', icon: '📐' },
 ];
 
 const presentationSlides = computed<Slide[]>(() => {
@@ -279,6 +283,24 @@ function collectChartImages(): Record<string, string> {
         type: 'png', pixelRatio: 2, backgroundColor: '#fff',
       });
     } catch (e) { console.warn('Failed to get GrossMargin image:', e); }
+  }
+
+  // Collect from VarianceAnalysisChart
+  if (chartRefVariance.value?.chartInstance) {
+    try {
+      images['variance_analysis'] = chartRefVariance.value.chartInstance.getDataURL({
+        type: 'png', pixelRatio: 2, backgroundColor: '#fff',
+      });
+    } catch (e) { console.warn('Failed to get VarianceAnalysis image:', e); }
+  }
+
+  // Collect from SankeyChart
+  if (chartRefSankey.value?.chartInstance) {
+    try {
+      images['cost_flow_sankey'] = chartRefSankey.value.chartInstance.getDataURL({
+        type: 'png', pixelRatio: 2, backgroundColor: '#fff',
+      });
+    } catch (e) { console.warn('Failed to get Sankey image:', e); }
   }
 
   // Collect from generic DOM refs
@@ -684,6 +706,7 @@ function onFormattingRulesChange(_rules: unknown[]) {
           </div>
         </template>
         <VarianceAnalysisChart
+          ref="chartRefVariance"
           :data="[]"
           :echarts-option="getChart('variance_analysis')!.echartsOption ?? {}"
           height="480px"
@@ -717,6 +740,7 @@ function onFormattingRulesChange(_rules: unknown[]) {
           </div>
         </template>
         <SankeyChart
+          ref="chartRefSankey"
           :nodes="[]"
           :links="[]"
           :echarts-option="getChart('cost_flow_sankey')!.echartsOption ?? {}"
