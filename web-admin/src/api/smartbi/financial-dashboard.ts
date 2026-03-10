@@ -161,3 +161,72 @@ export async function exportPPT(data: PPTExportRequest): Promise<Blob | null> {
     return null;
   }
 }
+
+export interface ExcelExportRequest {
+  charts: Record<string, unknown>[];
+  analysis_results: Record<string, string>;
+  company_name?: string;
+  year?: number;
+  period_type?: string;
+  start_month?: number;
+  end_month?: number;
+}
+
+export interface PDFExportRequest {
+  chart_images: Record<string, string>;
+  analysis_results: Record<string, string>;
+  company_name?: string;
+  year?: number;
+  period_type?: string;
+  start_month?: number;
+  end_month?: number;
+  kpi_summary?: Record<string, unknown>;
+}
+
+/**
+ * Export dashboard as Excel — returns a Blob via raw fetch (binary response)
+ */
+export async function exportExcel(data: ExcelExportRequest): Promise<Blob | null> {
+  try {
+    const { PYTHON_SMARTBI_URL, getPythonAuthHeaders } = await import('./common');
+    const response = await fetch(`${PYTHON_SMARTBI_URL}/api/smartbi/financial-dashboard/export-excel`, {
+      method: 'POST',
+      headers: {
+        ...getPythonAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      throw new Error(`Excel导出失败: HTTP ${response.status}`);
+    }
+    return await response.blob();
+  } catch (error) {
+    console.error('exportExcel 失败:', error);
+    return null;
+  }
+}
+
+/**
+ * Export dashboard as PDF — returns a Blob via raw fetch (binary response)
+ */
+export async function exportPDF(data: PDFExportRequest): Promise<Blob | null> {
+  try {
+    const { PYTHON_SMARTBI_URL, getPythonAuthHeaders } = await import('./common');
+    const response = await fetch(`${PYTHON_SMARTBI_URL}/api/smartbi/financial-dashboard/export-pdf`, {
+      method: 'POST',
+      headers: {
+        ...getPythonAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      throw new Error(`PDF导出失败: HTTP ${response.status}`);
+    }
+    return await response.blob();
+  } catch (error) {
+    console.error('exportPDF 失败:', error);
+    return null;
+  }
+}

@@ -1,4 +1,4 @@
-"""Financial Dashboard API — Chart generation, batch, analysis, PPT export."""
+"""Financial Dashboard API — Chart generation, batch, analysis, PPT/PDF/Excel export."""
 import logging
 import asyncio
 from typing import Optional, Dict, List, Any
@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 import pandas as pd
 import io
+import json
 
 from smartbi.services.financial_dashboard import FinancialDashboardService
 from smartbi.services.financial.base import _sanitize_for_json
@@ -208,3 +209,170 @@ async def export_ppt(request: PPTExportRequest):
     except Exception as e:
         logger.error(f"PPT export failed: {e}", exc_info=True)
         return {"success": False, "error": "PPT 导出失败，请稍后重试"}
+
+
+class ExcelExportRequest(BaseModel):
+    charts: List[Dict[str, Any]] = Field(default_factory=list)  # Chart results from batch
+    analysis_results: Dict[str, str] = Field(default_factory=dict)
+    company_name: str = "白垩纪食品"
+    year: int = 2026
+    period_type: str = "year"
+    start_month: int = 1
+    end_month: int = 12
+
+
+@router.post("/export-excel")
+async def export_excel(request: ExcelExportRequest):
+    """Export financial dashboard data to Excel with multiple sheets."""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+        wb = openpyxl.Workbook()
+
+        # Header styles
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        header_fill = PatternFill(start_color="1B65A8", end_color="1B65A8", fill_type="solid")
+        header_align = Alignment(horizontal="center", vertical="center")
+        thin_border = Border(
+            left=Side(style="thin", color="D9D9D9"),
+            right=Side(style="thin", color="D9D9D9"),
+            top=Side(style="thin", color="D9D9D9"),
+            bottom=Side(style="thin", color="D9D9D9"),
+        )
+
+        # Sheet 1: KPI Summary
+        ws_summary = wb.active
+        ws_summary.title = "KPI汇总"
+        ws_summary.append(["图表类型", "指标", "数值", "单位", "趋势"])
+        for cell in ws_summary[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_align
+
+        for chart in request.charts:
+            chart_type = chart.get("chartType", "")
+            title = chart.get("title", chart_type)
+            for kpi in chart.get("kpis", []):
+                ws_summary.append([
+                    title,
+                    kpi.get("label", ""),
+                    kpi.get("value", ""),
+                    kpi.get("unit", ""),
+                    {"up": "↑", "down": "↓", "flat": "→"}.get(kpi.get("trend", ""), ""),
+                ])
+
+        # Auto-width for summary
+        for col in ws_summary.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col) + 2
+            ws_summary.column_dimensions[col[0].column_letter].width = min(max_len, 30)
+
+        # Sheet per chart with tableData
+        from smartbi.services.ppt_generator import CHART_DISPLAY_NAMES
+        for chart in request.charts:
+            chart_type = chart.get("chartType", "")
+            table_data = chart.get("tableData")
+            if not table_data:
+                continue
+
+            display_name = CHART_DISPLAY_NAMES.get(chart_type, chart_type)
+            # Sheet name max 31 chars
+            sheet_name = display_name[:31]
+            ws = wb.create_sheet(title=sheet_name)
+
+            headers = table_data.get("headers", [])
+            ws.append(headers)
+            for cell in ws[1]:
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = header_align
+
+            for row in table_data.get("rows", []):
+                label = row.get("label", "")
+                values = row.get("values", [])
+                ws.append([label] + values)
+
+            for col in ws.columns:
+                max_len = max(len(str(cell.value or "")) for cell in col) + 2
+                ws.column_dimensions[col[0].column_letter].width = min(max_len, 25)
+
+        # Sheet: AI Analysis
+        if request.analysis_results:
+            ws_ai = wb.create_sheet(title="AI分析")
+            ws_ai.append(["图表", "分析内容"])
+            for cell in ws_ai[1]:
+                cell.font = header_font
+                cell.fill = header_fill
+            for chart_type, analysis in request.analysis_results.items():
+                display_name = CHART_DISPLAY_NAMES.get(chart_type, chart_type)
+                ws_ai.append([display_name, analysis[:5000]])
+            ws_ai.column_dimensions["A"].width = 20
+            ws_ai.column_dimensions["B"].width = 80
+
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        from urllib.parse import quote
+        filename = f"财务分析数据_{request.year}年{request.start_month}-{request.end_month}月.xlsx"
+        filename_ascii = f"financial_data_{request.year}_{request.start_month}-{request.end_month}.xlsx"
+
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename=\"{filename_ascii}\"; filename*=UTF-8''{quote(filename)}",
+            },
+        )
+    except ImportError:
+        return {"success": False, "error": "服务器未安装 openpyxl，请联系管理员"}
+    except Exception as e:
+        logger.error(f"Excel export failed: {e}", exc_info=True)
+        return {"success": False, "error": "Excel 导出失败，请稍后重试"}
+
+
+class PDFExportRequest(BaseModel):
+    chart_images: Dict[str, str] = Field(default_factory=dict)  # {chartType: base64PNG}
+    analysis_results: Dict[str, str] = Field(default_factory=dict)
+    company_name: str = "白垩纪食品"
+    year: int = 2026
+    period_type: str = "year"
+    start_month: int = 1
+    end_month: int = 12
+    kpi_summary: Optional[Dict] = None
+
+
+@router.post("/export-pdf")
+async def export_pdf(request: PDFExportRequest):
+    """Export financial dashboard to PDF with chart images and analysis."""
+    try:
+        from smartbi.services.pdf_generator import FinancialPDFGenerator
+        generator = FinancialPDFGenerator()
+        pdf_bytes = generator.generate(
+            chart_images=request.chart_images,
+            analysis_results=request.analysis_results,
+            company_name=request.company_name,
+            year=request.year,
+            period_type=request.period_type,
+            start_month=request.start_month,
+            end_month=request.end_month,
+            kpi_summary=request.kpi_summary,
+        )
+
+        from urllib.parse import quote
+        filename = f"财务分析报告_{request.year}年{request.start_month}-{request.end_month}月.pdf"
+        filename_ascii = f"report_{request.year}_{request.start_month}-{request.end_month}.pdf"
+
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=\"{filename_ascii}\"; filename*=UTF-8''{quote(filename)}",
+            },
+        )
+    except ImportError as e:
+        logger.error(f"PDF export import failed: {e}")
+        return {"success": False, "error": "PDF 导出依赖未安装，请联系管理员"}
+    except Exception as e:
+        logger.error(f"PDF export failed: {e}", exc_info=True)
+        return {"success": False, "error": "PDF 导出失败，请稍后重试"}

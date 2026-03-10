@@ -33,7 +33,7 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
   quadrant_scatter_tooltip: (p: any) =>
     `${p.data[2]}<br/>收入: ${Number(p.data[0]).toLocaleString()}<br/>利润率: ${p.data[1]}%`,
   quadrant_scatter_label: (p: any) => p.data[2],
-  // Sankey financial chart formatters
+  // Sankey financial chart formatters (unscaled values — auto-detect scale)
   sankey_financial_label: (p: any) => {
     const name = p.name || '';
     const val = p.value;
@@ -68,6 +68,42 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
         ? (val / 1e4).toFixed(2) + '万'
         : Number(val).toLocaleString('zh-CN');
     return `<b>${name}</b><br/>金额: ${formatted}元`;
+  },
+  // Sankey formatters for pre-scaled values (万)
+  'sankey_financial_label_万': (p: any) => {
+    const name = p.name || '';
+    const val = p.value;
+    if (typeof val !== 'number' || isNaN(val)) return name;
+    return `${name}\n${val.toFixed(1)}万`;
+  },
+  'sankey_financial_tooltip_万': (p: any) => {
+    if (p.dataType === 'edge') {
+      const src = p.data?.source || '';
+      const tgt = p.data?.target || '';
+      const val = p.data?.value ?? 0;
+      return `<b>${src} → ${tgt}</b><br/>金额: ${Number(val).toFixed(2)}万元`;
+    }
+    const name = p.name || '';
+    const val = p.value ?? 0;
+    return `<b>${name}</b><br/>金额: ${Number(val).toFixed(2)}万元`;
+  },
+  // Sankey formatters for pre-scaled values (亿)
+  'sankey_financial_label_亿': (p: any) => {
+    const name = p.name || '';
+    const val = p.value;
+    if (typeof val !== 'number' || isNaN(val)) return name;
+    return `${name}\n${val.toFixed(2)}亿`;
+  },
+  'sankey_financial_tooltip_亿': (p: any) => {
+    if (p.dataType === 'edge') {
+      const src = p.data?.source || '';
+      const tgt = p.data?.target || '';
+      const val = p.data?.value ?? 0;
+      return `<b>${src} → ${tgt}</b><br/>金额: ${Number(val).toFixed(2)}亿元`;
+    }
+    const name = p.name || '';
+    const val = p.value ?? 0;
+    return `<b>${name}</b><br/>金额: ${Number(val).toFixed(2)}亿元`;
   },
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */

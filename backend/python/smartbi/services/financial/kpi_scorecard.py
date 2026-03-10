@@ -192,7 +192,7 @@ class KpiScorecardBuilder(AbstractFinancialChartBuilder):
                     "fontWeight": "bold",
                     "color": COLORS['primary'],
                     "offsetCenter": [0, "30%"],
-                    "formatter": f"{{value}}{card['unit']}",
+                    "formatter": f"{{value}}{scale['suffix']}{card['unit']}" if card['unit'] == '元' else f"{{value}}{card['unit']}",
                 },
                 "data": [{"value": round(val, 1), "name": card['label']}],
             })

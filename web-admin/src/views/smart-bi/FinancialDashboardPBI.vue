@@ -5,7 +5,7 @@
  */
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
-import { DataAnalysis, VideoPlay, Download, Collection, SetUp } from '@element-plus/icons-vue';
+import { DataAnalysis, VideoPlay, Download, Collection, SetUp, ArrowDown } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
 import { processEChartsOptions } from '@/utils/echarts-fmt';
 
@@ -29,6 +29,8 @@ import {
   batchGenerate,
   analyzeChart,
   exportPPT,
+  exportPDF,
+  exportExcel,
   type ChartResult,
   type DashboardResponse,
   type FinancialDashboardRequest,
@@ -57,6 +59,8 @@ const analysisExpandedByType = ref<Record<string, boolean>>({});
 
 // PPT export
 const isExportingPPT = ref(false);
+const isExportingPDF = ref(false);
+const isExportingExcel = ref(false);
 
 // Presentation mode
 const isPresentationVisible = ref(false);
@@ -114,6 +118,13 @@ const chartTypes = [
   { key: 'cost_flow_sankey', label: '成本流向桑基图', icon: '🔀' },
   { key: 'variance_analysis', label: '预算差异分析', icon: '📐' },
   { key: 'cash_flow_waterfall', label: '现金流量瀑布图', icon: '💵' },
+  { key: 'channel_analysis', label: '渠道分析', icon: '🏪' },
+  { key: 'product_ranking', label: '重点产品排名', icon: '🏅' },
+  { key: 'ar_aging', label: '应收账款账龄', icon: '⏳' },
+  { key: 'cashflow_trend', label: '现金流趋势', icon: '💹' },
+  { key: 'hr_cost_analysis', label: '人力成本分析', icon: '👥' },
+  { key: 'bullet_chart', label: '目标达成进度', icon: '🎯' },
+  { key: 'small_multiples', label: '多维度对比矩阵', icon: '📋' },
 ];
 
 const presentationSlides = computed<Slide[]>(() => {
@@ -320,6 +331,12 @@ function collectChartImages(): Record<string, string> {
   return images;
 }
 
+function handleExportCommand(command: string) {
+  if (command === 'ppt') handleExportPPT();
+  else if (command === 'pdf') handleExportPDF();
+  else if (command === 'excel') handleExportExcel();
+}
+
 async function handleExportPPT() {
   if (!dashboardResponse.value) {
     ElMessage.warning('请先生成图表后再导出PPT');
@@ -359,6 +376,86 @@ async function handleExportPPT() {
     ElMessage.error('PPT导出失败');
   } finally {
     isExportingPPT.value = false;
+  }
+}
+
+async function handleExportPDF() {
+  if (!dashboardResponse.value) {
+    ElMessage.warning('请先生成图表后再导出PDF');
+    return;
+  }
+  isExportingPDF.value = true;
+  try {
+    await nextTick();
+    const chartImages = collectChartImages();
+    const analysisResults: Record<string, string> = { ...analysisByType.value };
+    const blob = await exportPDF({
+      chart_images: chartImages,
+      analysis_results: analysisResults,
+      company_name: '白垩纪食品',
+      year: currentYear.value,
+      period_type: periodType.value,
+      start_month: startMonth.value,
+      end_month: endMonth.value,
+    });
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `财务分析报告_${currentYear.value}.pdf`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      ElMessage.success('PDF导出成功');
+    } else {
+      ElMessage.error('PDF导出失败，请检查服务状态');
+    }
+  } catch (err) {
+    console.error('exportPDF failed:', err);
+    ElMessage.error('PDF导出失败');
+  } finally {
+    isExportingPDF.value = false;
+  }
+}
+
+async function handleExportExcel() {
+  if (!dashboardResponse.value) {
+    ElMessage.warning('请先生成图表后再导出Excel');
+    return;
+  }
+  isExportingExcel.value = true;
+  try {
+    const charts = dashboardResponse.value.charts.map(c => ({
+      chartType: c.chartType,
+      title: c.title,
+      kpis: c.kpis,
+      tableData: c.tableData,
+    }));
+    const analysisResults: Record<string, string> = { ...analysisByType.value };
+    const blob = await exportExcel({
+      charts,
+      analysis_results: analysisResults,
+      company_name: '白垩纪食品',
+      year: currentYear.value,
+      period_type: periodType.value,
+      start_month: startMonth.value,
+      end_month: endMonth.value,
+    });
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `财务分析数据_${currentYear.value}.xlsx`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      ElMessage.success('Excel导出成功');
+    } else {
+      ElMessage.error('Excel导出失败，请检查服务状态');
+    }
+  } catch (err) {
+    console.error('exportExcel failed:', err);
+    ElMessage.error('Excel导出失败');
+  } finally {
+    isExportingExcel.value = false;
   }
 }
 
@@ -545,15 +642,25 @@ function onFormattingRulesChange(_rules: unknown[]) {
             <el-icon><VideoPlay /></el-icon>
             演示模式
           </el-button>
-          <el-button
-            size="small"
-            :loading="isExportingPPT"
-            :disabled="!dashboardResponse"
-            @click="handleExportPPT"
-          >
-            <el-icon><Download /></el-icon>
-            导出PPT
-          </el-button>
+          <el-dropdown :disabled="!dashboardResponse" trigger="click" @command="handleExportCommand">
+            <el-button size="small" :disabled="!dashboardResponse" :loading="isExportingPPT || isExportingPDF || isExportingExcel">
+              <el-icon><Download /></el-icon>
+              导出报告 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="ppt" :disabled="isExportingPPT">
+                  📊 导出PPT演示文稿
+                </el-dropdown-item>
+                <el-dropdown-item command="pdf" :disabled="isExportingPDF">
+                  📄 导出PDF报告
+                </el-dropdown-item>
+                <el-dropdown-item command="excel" :disabled="isExportingExcel">
+                  📈 导出Excel数据
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </div>
     </el-card>

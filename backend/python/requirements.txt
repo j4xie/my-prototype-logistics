@@ -40,5 +40,8 @@ asyncpg>=0.27.0,<1.0.0
 # PPT generation
 python-pptx>=0.6.23
 
+# PDF generation
+reportlab>=4.0
+
 # Pydantic settings (for environment variable loading)
 pydantic-settings>=2.0.0 ; python_version >= "3.9"

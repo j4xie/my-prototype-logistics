@@ -146,6 +146,12 @@ class CostFlowSankeyBuilder(AbstractFinancialChartBuilder):
         # Scale
         scale = _detect_value_scale([revenue_total, cost_total, expense_total, abs(net_profit)])
 
+        # Pre-scale link values so labels display consistently (e.g. "0.35万" not "3,515")
+        divisor = scale['divisor']
+        if divisor > 1:
+            for lk in links:
+                lk['value'] = round(lk['value'] / divisor, 2)
+
         # KPIs
         expense_ratio = round((cost_total + expense_total + tax_total) / revenue_total * 100, 1) if revenue_total else 0
         net_margin = round(net_profit / revenue_total * 100, 1) if revenue_total else 0
@@ -182,7 +188,7 @@ class CostFlowSankeyBuilder(AbstractFinancialChartBuilder):
                     "fontSize": 11,
                     "color": "#333",
                     "fontWeight": "bold",
-                    "formatter": "__FMT__sankey_financial_label",
+                    "formatter": f"__FMT__sankey_financial_label_{scale['suffix']}" if scale['suffix'] else "__FMT__sankey_financial_label",
                 },
                 "data": nodes,
                 "links": links,
@@ -219,7 +225,7 @@ class CostFlowSankeyBuilder(AbstractFinancialChartBuilder):
                 "padding": [12, 16],
                 "textStyle": {"color": "#374151", "fontSize": 13},
                 "extraCssText": "box-shadow: 0 4px 20px rgba(0,0,0,0.12);",
-                "formatter": "__FMT__sankey_financial_tooltip",
+                "formatter": f"__FMT__sankey_financial_tooltip_{scale['suffix']}" if scale['suffix'] else "__FMT__sankey_financial_tooltip",
             },
         })
 
@@ -254,8 +260,8 @@ class CostFlowSankeyBuilder(AbstractFinancialChartBuilder):
             "tableData": {
                 "headers": ["流向", "金额", "占收入比"],
                 "rows": [{"label": lk["source"] + " → " + lk["target"], "values": [
-                    round(lk["value"] / scale["divisor"], 2),
-                    f"{round(lk['value'] / revenue_total * 100, 1)}%"
+                    round(lk["value"], 2),
+                    f"{round(lk['value'] / (revenue_total / divisor) * 100, 1)}%"
                 ]} for lk in links],
             },
             "analysisContext": " ".join(analysis_parts),

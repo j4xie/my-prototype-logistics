@@ -20,6 +20,13 @@ CHART_DISPLAY_NAMES = {
     "cost_flow_sankey": "成本流向桑基图",
     "variance_analysis": "预算差异分析",
     "cash_flow_waterfall": "现金流量瀑布图",
+    "channel_analysis": "渠道分析",
+    "product_ranking": "重点产品排名",
+    "ar_aging": "应收账款账龄分析",
+    "cashflow_trend": "现金流趋势分析",
+    "hr_cost_analysis": "人力成本分析",
+    "bullet_chart": "目标达成进度",
+    "small_multiples": "多维度对比矩阵",
 }
 
 
