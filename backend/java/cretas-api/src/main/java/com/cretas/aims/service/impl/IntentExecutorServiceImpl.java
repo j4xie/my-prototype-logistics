@@ -2266,7 +2266,53 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 return;
             }
 
-            // 7. 执行意图
+            // 7a. Skill 路由（SSE 也支持 Skill 编排）
+            if (skillRouterService != null && skillRouterService.isSkillsEnabled()) {
+                try {
+                    IntentExecuteResponse skillResponse = trySkillRoute(request.getUserInput(), factoryId, userId);
+                    if (skillResponse != null) {
+                        sendSseEvent(emitter, "result", skillResponse);
+                        sendSseEvent(emitter, "complete", Map.of(
+                                "status", skillResponse.getStatus(),
+                                "cacheHit", false,
+                                "totalLatencyMs", System.currentTimeMillis() - startTime
+                        ));
+                        emitter.complete();
+                        return;
+                    }
+                } catch (Exception e) {
+                    log.warn("[SSE] Skill 路由异常，回退到 Tool: {}", e.getMessage());
+                }
+            }
+
+            // 7b. Slot Filling（SSE 也支持参数收集）
+            if (userId != null && !Boolean.TRUE.equals(request.getSkipSlotFilling())
+                    && slotFillingService != null) {
+                try {
+                    IntentExecuteResponse slotFillingResponse = slotFillingService.checkAndStartSlotFilling(
+                            factoryId, userId, intent, request, matchResult);
+                    if (slotFillingResponse != null) {
+                        log.info("[SSE] 触发 Slot Filling: intentCode={}", intent.getIntentCode());
+                        if (slotFillingResponse.getFormattedText() == null
+                                && slotFillingResponse.getMessage() != null
+                                && slotFillingResponse.getMessage().length() >= 5) {
+                            slotFillingResponse.setFormattedText(slotFillingResponse.getMessage());
+                        }
+                        sendSseEvent(emitter, "result", slotFillingResponse);
+                        sendSseEvent(emitter, "complete", Map.of(
+                                "status", "NEED_MORE_INFO",
+                                "cacheHit", false,
+                                "totalLatencyMs", System.currentTimeMillis() - startTime
+                        ));
+                        emitter.complete();
+                        return;
+                    }
+                } catch (Exception e) {
+                    log.warn("[SSE] Slot Filling 异常，直接执行 Tool: {}", e.getMessage());
+                }
+            }
+
+            // 7c. 执行意图 (Tool)
             executeAndStreamResult(emitter, factoryId, request, intent, userId, userRole, startTime, matchResult);
 
         } catch (Exception e) {
@@ -2354,11 +2400,26 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             response = buildNoToolResponse(intent);
         }
 
+        // 格式化结果（与非 SSE 路径保持一致）
+        boolean isSuccessStatus = "SUCCESS".equals(response.getStatus()) || "COMPLETED".equals(response.getStatus());
+        if (resultFormatterService != null && isSuccessStatus && response.getResultData() != null) {
+            try {
+                resultFormatterService.formatAndSet(response);
+            } catch (Exception e) {
+                log.warn("[SSE] 结果格式化异常: {}", e.getMessage());
+            }
+        }
+        // formattedText 兜底
+        if (response.getFormattedText() == null && response.getMessage() != null
+                && response.getMessage().length() >= 5) {
+            response.setFormattedText(response.getMessage());
+        }
+
         // 发送结果
         sendSseEvent(emitter, "result", response);
 
         // 缓存结果 (仅成功执行的结果)
-        if ("COMPLETED".equals(response.getStatus())) {
+        if ("COMPLETED".equals(response.getStatus()) || "SUCCESS".equals(response.getStatus())) {
             try {
                 semanticCacheService.cacheResult(factoryId, request.getUserInput(), matchResult, response);
                 log.debug("已缓存意图执行结果: factoryId={}, userInput={}", factoryId, request.getUserInput());
@@ -4821,9 +4882,20 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             if (skillResult.isSuccess()) {
                 IntentExecuteResponse response = new IntentExecuteResponse();
                 response.setStatus("SUCCESS");
-                response.setMessage("Skill 执行成功: " + skillResult.getSkillName());
+                // 优先从 Skill 结果中提取有意义的消息，避免通用 "Skill 执行成功"
+                String skillFormattedText = formatSkillResult(skillResult);
+                String skillMessage = skillResult.getMessage();
+                if (skillMessage == null || skillMessage.isEmpty()
+                        || skillMessage.startsWith("DAG execution")) {
+                    // 从 formatSkillResult 提取的内容作为 message
+                    skillMessage = skillFormattedText;
+                }
+                if (skillMessage == null || skillMessage.isEmpty()) {
+                    skillMessage = "Skill 执行成功: " + skillResult.getSkillName();
+                }
+                response.setMessage(skillMessage);
                 response.setResultData(skillResult.getData());
-                response.setFormattedText(formatSkillResult(skillResult));
+                response.setFormattedText(skillFormattedText);
                 return response;
             }
 

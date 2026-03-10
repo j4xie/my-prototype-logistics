@@ -8489,6 +8489,7 @@ public class IntentKnowledgeBase {
             // 排班/调度领域
             "排班", "排班表",
             // 通用名词
+            "采购订单", "采购单", "销售订单",
             "订单", "记录", "数据", "报表", "统计", "状态", "信息", "列表", "详情",
             // 维护/计划领域
             "维护", "计划", "审批"
@@ -8551,6 +8552,9 @@ public class IntentKnowledgeBase {
         VERB_NOUN_INTENT_MAPPINGS.put("安排+发货", "SHIPMENT_CREATE");
 
         // v22.0: 订单操作verb+noun mappings
+        VERB_NOUN_INTENT_MAPPINGS.put("创建+采购订单", "PURCHASE_ORDER_CREATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("新建+采购订单", "PURCHASE_ORDER_CREATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("创建+采购单", "PURCHASE_ORDER_CREATE");
         VERB_NOUN_INTENT_MAPPINGS.put("创建+订单", "ORDER_NEW");
         VERB_NOUN_INTENT_MAPPINGS.put("新建+订单", "ORDER_NEW");
         VERB_NOUN_INTENT_MAPPINGS.put("添加+订单", "ORDER_NEW");
@@ -8822,12 +8826,13 @@ public class IntentKnowledgeBase {
             }
         }
 
-        // 提取名词（从后向前找，通常核心对象在句尾）
+        // 提取名词（优先最长匹配，避免"采购订单"只匹配到"订单"）
         String detectedNoun = null;
         for (String noun : CORE_NOUNS_FOR_DISAMBIGUATION) {
             if (normalized.contains(noun)) {
-                detectedNoun = noun;
-                // 不 break，继续找更靠后的名词
+                if (detectedNoun == null || noun.length() > detectedNoun.length()) {
+                    detectedNoun = noun;
+                }
             }
         }
 
