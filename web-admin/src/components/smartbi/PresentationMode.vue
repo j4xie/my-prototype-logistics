@@ -5,6 +5,7 @@
  */
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import echarts from '@/utils/echarts';
+import { processEChartsOptions } from '@/utils/echarts-fmt';
 import type { ChartResult } from '@/api/smartbi/financial-dashboard';
 
 export interface Slide {
@@ -96,8 +97,6 @@ function handleFullscreenChange() {
 }
 
 async function renderChart() {
-  // Double nextTick to ensure Teleport DOM is fully painted
-  await nextTick();
   await nextTick();
   if (!chartContainerRef.value) return;
   if (chartInstance) {
@@ -106,10 +105,19 @@ async function renderChart() {
   }
   const result = currentChartResult();
   if (!result || !result.echartsOption || Object.keys(result.echartsOption).length === 0) return;
+  // Process __FMT__ placeholders into real JS functions
+  const processedOption = processEChartsOptions(result.echartsOption);
   chartInstance = echarts.init(chartContainerRef.value, isDark.value ? 'dark' : undefined);
-  chartInstance.setOption(result.echartsOption);
+  chartInstance.setOption(processedOption);
   // Force resize after layout stabilizes
-  setTimeout(() => chartInstance?.resize(), 100);
+  setTimeout(() => chartInstance?.resize(), 50);
+}
+
+// Called after slide transition completes — safe to render chart
+async function onSlideEntered() {
+  if (currentSlide.value?.type === 'chart') {
+    await renderChart();
+  }
 }
 
 watch(() => props.visible, async (visible) => {
@@ -131,13 +139,11 @@ watch(() => props.visible, async (visible) => {
   }
 });
 
-watch(currentIndex, async () => {
+watch(currentIndex, () => {
+  // Dispose previous chart — new one will render in @after-enter callback
   if (chartInstance) {
     chartInstance.dispose();
     chartInstance = null;
-  }
-  if (currentSlide.value?.type === 'chart') {
-    await renderChart();
   }
 });
 
@@ -224,7 +230,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
       <!-- Slide content -->
       <div class="pres-content">
         <!-- COVER SLIDE -->
-        <transition name="slide-fade" mode="out-in">
+        <transition name="slide-fade" mode="out-in" @after-enter="onSlideEntered">
           <div v-if="currentSlide?.type === 'cover'" :key="'cover'" class="slide slide-cover">
             <div class="cover-inner">
               <div class="cover-badge">财务分析报告</div>

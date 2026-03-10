@@ -27,7 +27,7 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
 
         # Get unique categories
         categories = df['category'].dropna().unique().tolist()
-        categories = [c for c in categories if c and str(c).strip()][:8]  # Limit to 8
+        categories = [c for c in categories if c and str(c).strip() and str(c).lower() != 'nan'][:8]
 
         if not categories:
             return {

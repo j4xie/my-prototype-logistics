@@ -7,6 +7,7 @@
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import echarts from '@/utils/echarts';
 import type { EChartsOption, ECharts } from 'echarts';
+import { processEChartsOptions } from '@/utils/echarts-fmt';
 
 // Types
 export interface VarianceData {
@@ -121,7 +122,7 @@ const quarterMarkAreas = computed(() => {
 
 const chartOptions = computed<EChartsOption>(() => {
   if (props.echartsOption && Object.keys(props.echartsOption).length > 0) {
-    return props.echartsOption as EChartsOption;
+    return processEChartsOptions(props.echartsOption) as EChartsOption;
   }
 
   const periods = props.data.map((d) => d.period);
@@ -419,7 +420,7 @@ defineExpose({
         :aria-label="title || '差异分析图'"
         style="width: 100%; height: 100%"
       ></div>
-      <div v-if="!loading && data.length === 0" class="chart-empty">
+      <div v-if="!loading && data.length === 0 && !(echartsOption && Object.keys(echartsOption).length > 0)" class="chart-empty">
         <el-empty description="暂无数据" :image-size="80" />
       </div>
     </div>

@@ -115,6 +115,24 @@ class FinancialDataNormalizer:
         else:
             mapping.data_layout = "long"  # month values in rows
 
+        # Wide-format row-role detection: if layout is wide and we have a label column,
+        # scan row values to detect budget/actual/last_year rows — this makes can_build()
+        # aware that these roles exist even though they're in rows, not columns.
+        if mapping.data_layout == "wide" and sample_data is not None:
+            label_col = mapping.label_col or mapping.item_col or mapping.category_col
+            if label_col and label_col in sample_data.columns:
+                for label_val in sample_data[label_col].dropna().astype(str):
+                    ll = label_val.lower()
+                    if any(kw in ll for kw in ['预算', '目标', 'budget', 'target', '计划']):
+                        if not mapping.budget_cols:
+                            mapping.budget_cols.append(f'__row_role__:{label_val}')
+                    elif any(kw in ll for kw in ['上年', '去年', '同期', 'last year', '上期']):
+                        if not mapping.last_year_cols:
+                            mapping.last_year_cols.append(f'__row_role__:{label_val}')
+                    elif any(kw in ll for kw in ['实际', '完成', 'actual', '达成', '本年']):
+                        if not mapping.actual_cols:
+                            mapping.actual_cols.append(f'__row_role__:{label_val}')
+
         # Detect year from column names
         for col in columns:
             m = re.search(r'(20\d{2})', str(col))
@@ -229,6 +247,26 @@ class FinancialDataNormalizer:
         rows = []
         label_col = mapping.label_col or mapping.item_col or mapping.category_col
 
+        # Fallback: if no role columns detected, use first numeric column as actual
+        actual_col = mapping.actual_cols[0] if mapping.actual_cols else None
+        budget_col = mapping.budget_cols[0] if mapping.budget_cols else None
+        last_year_col = mapping.last_year_cols[0] if mapping.last_year_cols else None
+        ly_budget_col = mapping.last_year_budget_cols[0] if mapping.last_year_budget_cols else None
+
+        if not actual_col and not budget_col and not last_year_col:
+            # No role columns found — pick first numeric column as actual
+            known_cols = set(mapping.period_cols)
+            if mapping.category_col:
+                known_cols.add(mapping.category_col)
+            if mapping.item_col:
+                known_cols.add(mapping.item_col)
+            if mapping.label_col:
+                known_cols.add(mapping.label_col)
+            for c in raw_data.columns:
+                if c not in known_cols and raw_data[c].dtype in ('int64', 'float64'):
+                    actual_col = c
+                    break
+
         for _, row in raw_data.iterrows():
             label = str(row.get(label_col, '')) if label_col else ''
             category = str(row.get(mapping.category_col, '')) if mapping.category_col else label
@@ -240,10 +278,10 @@ class FinancialDataNormalizer:
                 period_val = str(row.get(mapping.period_cols[0], ''))
                 month_num = self._extract_month(period_val)
 
-            budget = self._safe_float(row.get(mapping.budget_cols[0])) if mapping.budget_cols else None
-            actual = self._safe_float(row.get(mapping.actual_cols[0])) if mapping.actual_cols else None
-            last_year = self._safe_float(row.get(mapping.last_year_cols[0])) if mapping.last_year_cols else None
-            ly_budget = self._safe_float(row.get(mapping.last_year_budget_cols[0])) if mapping.last_year_budget_cols else None
+            budget = self._safe_float(row.get(budget_col)) if budget_col else None
+            actual = self._safe_float(row.get(actual_col)) if actual_col else None
+            last_year = self._safe_float(row.get(last_year_col)) if last_year_col else None
+            ly_budget = self._safe_float(row.get(ly_budget_col)) if ly_budget_col else None
 
             rows.append({
                 'month': month_num or 0,
