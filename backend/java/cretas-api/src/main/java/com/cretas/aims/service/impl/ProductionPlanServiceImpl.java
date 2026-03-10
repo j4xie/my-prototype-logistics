@@ -96,6 +96,16 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             throw new ResourceNotFoundException("产品类型不存在");
         }
 
+        // P1-4: 客户订单来源必须填写工序名称和批次日期
+        if (request.getSourceType() == PlanSourceType.CUSTOMER_ORDER) {
+            if (request.getProcessName() == null || request.getProcessName().isBlank()) {
+                throw new BusinessException("客户订单来源的生产计划必须填写工序名称");
+            }
+            if (request.getBatchDate() == null) {
+                throw new BusinessException("客户订单来源的生产计划必须填写批次日期");
+            }
+        }
+
         // 创建生产计划
         ProductionPlan plan = productionPlanMapper.toEntity(request, factoryId, userId.longValue());
         plan = productionPlanRepository.save(plan);

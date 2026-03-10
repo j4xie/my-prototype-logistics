@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
@@ -33,6 +34,7 @@ public class WorkReportSubmitRequest {
     private String processCategory;
     private String productName;
 
+    @DecimalMin(value = "0.01", message = "产量必须大于0")
     private BigDecimal outputQuantity;
     private BigDecimal goodQuantity;
     private BigDecimal defectQuantity;

@@ -126,8 +126,20 @@ public class ArApServiceImpl implements ArApService {
             throw new BusinessException("收款金额必须大于0");
         }
 
+        // 幂等检查：同一 paymentReference 不能重复收款
+        if (paymentReference != null && !paymentReference.isBlank()
+                && transactionRepository.existsByFactoryIdAndPaymentReference(factoryId, paymentReference)) {
+            throw new BusinessException("收款单号已存在，请勿重复提交: " + paymentReference);
+        }
+
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("客户不存在"));
+
+        // 超额防护：收款金额不能超过客户应收余额
+        BigDecimal currentBalance = customer.getCurrentBalance() != null ? customer.getCurrentBalance() : BigDecimal.ZERO;
+        if (currentBalance.compareTo(BigDecimal.ZERO) > 0 && amount.compareTo(currentBalance) > 0) {
+            throw new BusinessException("收款金额(" + amount + ")超过客户应收余额(" + currentBalance + ")");
+        }
 
         // 付款冲减余额（amount为正数，存为负数表示减少应收）
         BigDecimal negAmount = amount.negate();
@@ -155,6 +167,12 @@ public class ArApServiceImpl implements ArApService {
                                             String paymentReference, Long operatedBy, String remark) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("付款金额必须大于0");
+        }
+
+        // 幂等检查：同一 paymentReference 不能重复付款
+        if (paymentReference != null && !paymentReference.isBlank()
+                && transactionRepository.existsByFactoryIdAndPaymentReference(factoryId, paymentReference)) {
+            throw new BusinessException("付款单号已存在，请勿重复提交: " + paymentReference);
         }
 
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)

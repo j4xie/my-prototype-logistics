@@ -116,6 +116,12 @@ watch(() => props.visible, async (visible) => {
   if (visible) {
     currentIndex.value = 0;
     await nextTick();
+    // Focus the overlay for keyboard navigation
+    const overlay = document.getElementById('presentation-overlay');
+    if (overlay) {
+      overlay.setAttribute('tabindex', '-1');
+      overlay.focus();
+    }
     if (currentSlide.value?.type === 'chart') {
       await renderChart();
     }
@@ -195,6 +201,9 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
       id="presentation-overlay"
       class="presentation-overlay"
       :class="bgClass"
+      role="dialog"
+      aria-modal="true"
+      aria-label="财务分析演示模式"
     >
       <!-- Top toolbar -->
       <div class="pres-toolbar">

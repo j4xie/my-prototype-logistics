@@ -127,6 +127,10 @@ class CostFlowSankeyBuilder(AbstractFinancialChartBuilder):
                 elif net_profit < 0:
                     _add_node("净亏损", 'revenue')
                     links.append({"source": "营业利润", "target": "净亏损", "value": round(abs(net_profit), 2)})
+                else:
+                    # net_profit == 0: add a zero-value node to avoid dangling edge
+                    _add_node("净利润", 'profit')
+                    links.append({"source": "营业利润", "target": "净利润", "value": 0.01})
 
         if not links:
             return {

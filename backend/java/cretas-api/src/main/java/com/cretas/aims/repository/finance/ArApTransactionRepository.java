@@ -95,6 +95,9 @@ public interface ArApTransactionRepository extends JpaRepository<ArApTransaction
     boolean existsByFactoryIdAndPurchaseOrderIdAndTransactionType(
             String factoryId, String purchaseOrderId, ArApTransactionType transactionType);
 
+    /** 收款幂等检查：同一 paymentReference 不能重复 */
+    boolean existsByFactoryIdAndPaymentReference(String factoryId, String paymentReference);
+
     /** 按交易类型统计 */
     @Query("SELECT t.transactionType, COUNT(t), COALESCE(SUM(t.amount), 0) " +
             "FROM ArApTransaction t WHERE t.factoryId = :factoryId " +

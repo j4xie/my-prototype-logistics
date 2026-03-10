@@ -261,7 +261,7 @@ class VarianceAnalysisBuilder(AbstractFinancialChartBuilder):
             f"{year}年预实差异分析:",
             f"总预算{self._format_value(total_budget, scale)}元",
             f"总实际{self._format_value(total_actual, scale)}元",
-            f"达成率{achievement_rate}%",
+            f"达成率{achievement_rate if achievement_rate is not None else 'N/A'}%",
         ]
         if len(months) > 1:
             analysis_parts.extend([

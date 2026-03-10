@@ -315,6 +315,8 @@ public class WorkReportingServiceImpl {
 
                 // 自动完成：累计产量达到计划量 → 完成批次 → 发布事件
                 checkAndCompleteBatch(batch);
+            } else {
+                log.warn("⚠️ 报工关联的批次不存在: batchId={}, outputQuantity={}，产量未累计到批次", batchId, outputQuantity);
             }
         } catch (Exception e) {
             log.warn("更新批次实际产量失败: batchId={}, error={}", batchId, e.getMessage());

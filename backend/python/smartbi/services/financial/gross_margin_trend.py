@@ -101,8 +101,12 @@ class GrossMarginTrendBuilder(AbstractFinancialChartBuilder):
         avg_current = round(sum(current_margins) / len(current_margins), 2) if current_margins else 0
         avg_ly = round(sum(ly_margins) / len(ly_margins), 2) if ly_margins else 0
         avg_diff = round(avg_current - avg_ly, 2)
-        best_month_idx = max(range(len(current_margins)), key=lambda i: current_margins[i]) if current_margins else 0
-        best_month_label = labels[best_month_idx] if best_month_idx < len(labels) else '-'
+        if current_margins:
+            best_month_idx = max(range(len(current_margins)), key=lambda i: current_margins[i])
+            best_month_label = labels[best_month_idx] if best_month_idx < len(labels) else '-'
+            best_month_value = f"{best_month_label} ({current_margins[best_month_idx]:.1f}%)"
+        else:
+            best_month_value = '-'
 
         kpis = [
             {"label": "本年累计毛利率", "value": f"{avg_current:.1f}", "unit": "%",
@@ -110,7 +114,7 @@ class GrossMarginTrendBuilder(AbstractFinancialChartBuilder):
             {"label": "上年累计毛利率", "value": f"{avg_ly:.1f}", "unit": "%", "trend": "flat"},
             {"label": "差异", "value": f"{avg_diff:+.1f}", "unit": "pp",
              "trend": self._trend_from_value(avg_diff)},
-            {"label": "最佳月份", "value": f"{best_month_label} ({current_margins[best_month_idx]:.1f}%)",
+            {"label": "最佳月份", "value": best_month_value,
              "unit": "", "trend": "up"},
         ]
 

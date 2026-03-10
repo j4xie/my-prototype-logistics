@@ -16,6 +16,8 @@ CHART_DISPLAY_NAMES = {
     "category_yoy_comparison": "各品类同期对比",
     "gross_margin_trend": "毛利率趋势分析",
     "category_structure_donut": "品类结构同比分析",
+    "cost_flow_sankey": "成本流向桑基图",
+    "variance_analysis": "预算差异分析",
 }
 
 
@@ -110,9 +112,14 @@ class FinancialPPTGenerator:
                                              Inches(8.5), Inches(5.5))
                 except Exception as e:
                     logger.warning(f"Failed to embed chart image for {chart_type}: {e}")
-                    self._add_text(slide, f"[图表加载失败: {chart_type}]",
+                    self._add_text(slide, f"[图表加载失败: {display_name}]",
                                    Inches(0.3), Inches(3), Inches(8.5), Inches(1),
                                    font_size=Pt(16), color=GRAY)
+            else:
+                # No image provided — show placeholder
+                self._add_text(slide, f"[{display_name} — 图表截图未提供]",
+                               Inches(0.3), Inches(3), Inches(8.5), Inches(1),
+                               font_size=Pt(16), color=GRAY)
 
             # Analysis panel (right 35%)
             if analysis:

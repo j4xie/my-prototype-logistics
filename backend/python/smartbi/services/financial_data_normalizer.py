@@ -75,20 +75,23 @@ class FinancialDataNormalizer:
                 continue
             # Then by column NAME keyword (e.g. "月份", "月", "month", "期间")
             # This column contains period values in its cells, not in the header
-            if cl in self.PERIOD_COL_KEYWORDS:
+            if any(kw in cl for kw in self.PERIOD_COL_KEYWORDS):
                 mapping.period_cols.append(col)
                 continue
 
-            # Check role keywords
-            if any(kw in cl for kw in self.BUDGET_KEYWORDS):
-                if any(kw in cl for kw in self.LAST_YEAR_KEYWORDS):
-                    mapping.last_year_budget_cols.append(col)
-                else:
-                    mapping.budget_cols.append(col)
-            elif any(kw in cl for kw in self.ACTUAL_KEYWORDS):
-                mapping.actual_cols.append(col)
-            elif any(kw in cl for kw in self.LAST_YEAR_KEYWORDS):
+            # Check role keywords — check last_year FIRST to avoid "去年实际" matching actual
+            is_last_year = any(kw in cl for kw in self.LAST_YEAR_KEYWORDS)
+            is_budget = any(kw in cl for kw in self.BUDGET_KEYWORDS)
+            is_actual = any(kw in cl for kw in self.ACTUAL_KEYWORDS)
+
+            if is_last_year and is_budget:
+                mapping.last_year_budget_cols.append(col)
+            elif is_last_year:
                 mapping.last_year_cols.append(col)
+            elif is_budget:
+                mapping.budget_cols.append(col)
+            elif is_actual:
+                mapping.actual_cols.append(col)
             elif any(kw in cl for kw in self.CATEGORY_KEYWORDS):
                 mapping.category_col = col
             elif any(kw in cl for kw in self.ITEM_KEYWORDS):
@@ -106,8 +109,8 @@ class FinancialDataNormalizer:
                     mapping.label_col = col
                     break
 
-        # Detect data layout
-        if len(mapping.period_cols) >= 3:
+        # Detect data layout (>=2 period columns = wide, e.g. "1月", "2月")
+        if len(mapping.period_cols) >= 2:
             mapping.data_layout = "wide"  # months as columns
         else:
             mapping.data_layout = "long"  # month values in rows

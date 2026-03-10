@@ -158,14 +158,16 @@ async function handleQuickDelivery(row: any) {
   // Build items from order items (each with productTypeId, deliveredQuantity, unit)
   let items: any[] = [];
   if (row.items && row.items.length > 0) {
-    items = row.items.map((item: any) => ({
-      productTypeId: item.productTypeId || item.productType?.id || '',
-      deliveredQuantity: item.quantity || 0,
-      unit: item.unit || 'kg',
-    }));
-  } else {
-    // Fallback: single item placeholder
-    items = [{ productTypeId: '', deliveredQuantity: row.totalQuantity || 1, unit: 'kg' }];
+    items = row.items
+      .filter((item: any) => item.productTypeId || item.productType?.id)
+      .map((item: any) => ({
+        productTypeId: item.productTypeId || item.productType?.id,
+        deliveredQuantity: item.quantity || 0,
+        unit: item.unit || 'kg',
+      }));
+  }
+  if (items.length === 0) {
+    return ElMessage.warning('订单缺少产品信息，无法快速出库');
   }
   deliveryForm.value = {
     salesOrderId: row.id,

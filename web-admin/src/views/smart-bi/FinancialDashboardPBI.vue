@@ -3,10 +3,11 @@
  * FinancialDashboardPBI - 财务分析看板 (Power BI Style)
  * Orchestrates all 7 financial chart types with AI analysis and PPT export
  */
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
 import { DataAnalysis, VideoPlay, Download, Collection, SetUp } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
+import { processEChartsOptions } from '@/utils/echarts-fmt';
 
 // Components
 import PeriodSelector from '@/components/smartbi/PeriodSelector.vue';
@@ -227,6 +228,9 @@ async function requestAnalysis(chartType: string) {
     return;
   }
 
+  // Prevent duplicate requests while loading
+  if (analysisLoadingByType.value[chartType]) return;
+
   analysisLoadingByType.value[chartType] = true;
   analysisExpandedByType.value[chartType] = true;
 
@@ -321,7 +325,7 @@ async function handleExportPPT() {
       link.href = url;
       link.download = `财务分析看板_${currentYear.value}.pptx`;
       link.click();
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       ElMessage.success('PPT导出成功');
     } else {
       ElMessage.error('PPT导出失败，请检查服务状态');
@@ -335,12 +339,7 @@ async function handleExportPPT() {
 }
 
 // Get echartsOption from API response for direct pass-through rendering
-function getExpenseEchartsOption(chart: ChartResult | null): Record<string, unknown> | null {
-  if (!chart?.echartsOption || Object.keys(chart.echartsOption).length === 0) return null;
-  return chart.echartsOption;
-}
-
-function getMarginEchartsOption(chart: ChartResult | null): Record<string, unknown> | null {
+function getChartEchartsOption(chart: ChartResult | null): Record<string, unknown> | null {
   if (!chart?.echartsOption || Object.keys(chart.echartsOption).length === 0) return null;
   return chart.echartsOption;
 }
@@ -363,10 +362,11 @@ function renderGenericChart(chartType: string, domEl: Element | null, retries = 
   if (!instance) {
     instance = echarts.init(domEl);
   }
-  instance.setOption(chart.echartsOption, { notMerge: true });
+  const processed = processEChartsOptions(JSON.parse(JSON.stringify(chart.echartsOption)) as Record<string, unknown>);
+  instance.setOption(processed, { notMerge: true });
 }
 
-watch(charts, async () => {
+watch(() => charts.value.length, async () => {
   await nextTick();
   // Double rAF: first rAF schedules after v-if DOM insertion, second after layout
   requestAnimationFrame(() => {
@@ -376,7 +376,16 @@ watch(charts, async () => {
       }
     });
   });
-}, { deep: true });
+});
+
+// Cleanup ECharts instances on unmount to prevent memory leaks
+onBeforeUnmount(() => {
+  for (const [, domEl] of chartDomRefs.value.entries()) {
+    const instance = echarts.getInstanceByDom(domEl);
+    instance?.dispose();
+  }
+  chartDomRefs.value.clear();
+});
 
 const periodLabel = computed(() => dashboardResponse.value?.period?.label || '');
 
@@ -566,7 +575,7 @@ function onFormattingRulesChange(_rules: unknown[]) {
             </el-button>
           </div>
         </template>
-        <template v-if="getExpenseEchartsOption(getChart('expense_yoy_budget'))">
+        <template v-if="getChartEchartsOption(getChart('expense_yoy_budget'))">
           <!-- KPI row from API -->
           <div v-if="getChart('expense_yoy_budget')!.kpis?.length" class="generic-kpi-row">
             <div
@@ -620,7 +629,7 @@ function onFormattingRulesChange(_rules: unknown[]) {
             </el-button>
           </div>
         </template>
-        <template v-if="getMarginEchartsOption(getChart('gross_margin_trend'))">
+        <template v-if="getChartEchartsOption(getChart('gross_margin_trend'))">
           <!-- KPI row from API -->
           <div v-if="getChart('gross_margin_trend')!.kpis?.length" class="generic-kpi-row">
             <div

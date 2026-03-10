@@ -102,80 +102,40 @@ export interface TemplatesResponse {
  * Generate a single chart by type
  */
 export async function generateChart(data: FinancialDashboardRequest): Promise<ChartResult> {
-  try {
-    return await pythonFetch('/api/smartbi/financial-dashboard/generate', {
-      method: 'POST',
-      body: JSON.stringify(data),
-      timeoutMs: PYTHON_LLM_TIMEOUT_MS,
-    }) as ChartResult;
-  } catch (error) {
-    console.error('generateChart 失败:', error);
-    return {
-      chartType: data.chart_type || '',
-      title: '图表生成失败',
-      kpis: [],
-      echartsOption: {},
-      analysisContext: '',
-      metadata: { period: '', dataQuality: '' },
-      success: false,
-      error: error instanceof Error ? error.message : '图表生成请求失败',
-    };
-  }
+  return await pythonFetch('/api/smartbi/financial-dashboard/generate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    timeoutMs: PYTHON_LLM_TIMEOUT_MS,
+  }) as ChartResult;
 }
 
 /**
  * Batch generate all dashboard charts
  */
 export async function batchGenerate(data: FinancialDashboardRequest): Promise<DashboardResponse> {
-  try {
-    return await pythonFetch('/api/smartbi/financial-dashboard/batch', {
-      method: 'POST',
-      body: JSON.stringify(data),
-      timeoutMs: PYTHON_LLM_TIMEOUT_MS,
-    }) as DashboardResponse;
-  } catch (error) {
-    console.error('batchGenerate 失败:', error);
-    return {
-      success: false,
-      charts: [],
-      availableTypes: [],
-      period: { year: data.year ?? new Date().getFullYear(), period_type: 'year', start_month: 1, end_month: 12, label: '' },
-      totalCharts: 0,
-      successCount: 0,
-    };
-  }
+  return await pythonFetch('/api/smartbi/financial-dashboard/batch', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    timeoutMs: PYTHON_LLM_TIMEOUT_MS,
+  }) as DashboardResponse;
 }
 
 /**
  * Request AI analysis text for a chart
  */
 export async function analyzeChart(data: AnalyzeChartRequest): Promise<AnalyzeChartResponse> {
-  try {
-    return await pythonFetch('/api/smartbi/financial-dashboard/analyze', {
-      method: 'POST',
-      body: JSON.stringify(data),
-      timeoutMs: PYTHON_LLM_TIMEOUT_MS,
-    }) as AnalyzeChartResponse;
-  } catch (error) {
-    console.error('analyzeChart 失败:', error);
-    return {
-      success: false,
-      analysis: '',
-      error: error instanceof Error ? error.message : 'AI分析请求失败',
-    };
-  }
+  return await pythonFetch('/api/smartbi/financial-dashboard/analyze', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    timeoutMs: PYTHON_LLM_TIMEOUT_MS,
+  }) as AnalyzeChartResponse;
 }
 
 /**
  * List available PPT templates
  */
 export async function listTemplates(): Promise<TemplatesResponse> {
-  try {
-    return await pythonFetch('/api/smartbi/financial-dashboard/templates') as TemplatesResponse;
-  } catch (error) {
-    console.error('listTemplates 失败:', error);
-    return { success: false, templates: [] };
-  }
+  return await pythonFetch('/api/smartbi/financial-dashboard/templates') as TemplatesResponse;
 }
 
 /**

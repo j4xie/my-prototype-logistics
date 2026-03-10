@@ -197,6 +197,11 @@ function buildOption() {
 
 function initChart() {
   if (!chartRef.value) return;
+  // Defer if container has zero dimensions (not yet laid out)
+  if (chartRef.value.clientWidth === 0 || chartRef.value.clientHeight === 0) {
+    requestAnimationFrame(() => initChart());
+    return;
+  }
   if (chartInstance.value) chartInstance.value.dispose();
   chartInstance.value = echarts.init(chartRef.value);
   chartInstance.value.setOption(buildOption());

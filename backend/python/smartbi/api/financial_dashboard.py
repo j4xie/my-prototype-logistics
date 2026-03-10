@@ -20,12 +20,12 @@ dashboard_service = FinancialDashboardService()
 
 class FinancialDashboardRequest(BaseModel):
     upload_id: Optional[int] = None
-    raw_data: Optional[List[Dict[str, Any]]] = None  # Direct data input
+    raw_data: Optional[List[Dict[str, Any]]] = Field(None, max_length=50000)  # Direct data input, max 50k rows
     chart_type: str = "all"  # specific type, "all", or "auto"
     year: int = 2026
     period_type: str = "year"  # month|quarter|year|month_range
-    start_month: int = 1
-    end_month: int = 12
+    start_month: int = Field(1, ge=1, le=12)
+    end_month: int = Field(12, ge=1, le=12)
     factory_id: str = "F001"
 
 
@@ -54,7 +54,7 @@ async def _load_data(request: FinancialDashboardRequest) -> pd.DataFrame:
         return pd.DataFrame(request.raw_data)
 
     if request.upload_id:
-        # Load from smart_bi_dynamic_data table
+        # Load from smart_bi_dynamic_data table (with factory_id isolation)
         try:
             from smartbi.config import get_settings
             from sqlalchemy import create_engine, text
@@ -62,8 +62,8 @@ async def _load_data(request: FinancialDashboardRequest) -> pd.DataFrame:
             engine = create_engine(settings.postgres_url)
             with engine.connect() as conn:
                 row = conn.execute(
-                    text("SELECT parsed_data FROM smart_bi_dynamic_data WHERE id = :id"),
-                    {"id": request.upload_id}
+                    text("SELECT parsed_data FROM smart_bi_dynamic_data WHERE id = :id AND factory_id = :factory_id"),
+                    {"id": request.upload_id, "factory_id": request.factory_id}
                 ).fetchone()
                 if row and row[0]:
                     import json
@@ -71,13 +71,16 @@ async def _load_data(request: FinancialDashboardRequest) -> pd.DataFrame:
                     if isinstance(data, list):
                         return pd.DataFrame(data)
                     elif isinstance(data, dict):
-                        # Could be {sheetName: [rows]} format
+                        # {sheetName: [rows]} format — merge all sheets
+                        all_rows = []
                         for key, val in data.items():
                             if isinstance(val, list) and len(val) > 0:
-                                return pd.DataFrame(val)
+                                all_rows.extend(val)
+                        if all_rows:
+                            return pd.DataFrame(all_rows)
         except Exception as e:
             logger.error(f"Failed to load upload {request.upload_id}: {e}")
-            raise HTTPException(status_code=400, detail=f"Failed to load data: {e}")
+            raise HTTPException(status_code=400, detail="数据加载失败，请确认上传ID正确")
 
     raise HTTPException(status_code=400, detail="Either upload_id or raw_data is required")
 
@@ -100,7 +103,7 @@ async def generate_chart(request: FinancialDashboardRequest):
         raise
     except Exception as e:
         logger.error(f"Chart generation failed: {e}", exc_info=True)
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": "图表生成失败，请检查数据格式后重试"}
 
 
 @router.post("/batch")
@@ -121,7 +124,7 @@ async def batch_generate(request: FinancialDashboardRequest):
         raise
     except Exception as e:
         logger.error(f"Batch generation failed: {e}", exc_info=True)
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": "批量生成失败，请检查数据格式后重试"}
 
 
 @router.post("/analyze")
@@ -162,7 +165,7 @@ async def analyze_chart(request: AnalyzeRequest):
         }
     except Exception as e:
         logger.error(f"Analysis failed: {e}", exc_info=True)
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": "AI 分析暂时不可用，请稍后重试"}
 
 
 @router.get("/templates")
@@ -204,4 +207,4 @@ async def export_ppt(request: PPTExportRequest):
         )
     except Exception as e:
         logger.error(f"PPT export failed: {e}", exc_info=True)
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": "PPT 导出失败，请稍后重试"}

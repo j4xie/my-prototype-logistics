@@ -21,7 +21,18 @@ async function loadBudgetVsActual() {
   try {
     const res = await get(`/${factoryId.value}/production-analytics/budget-vs-actual`);
     if (res.success && res.data) {
-      budgetData.value = Array.isArray(res.data) ? res.data : res.data.content || [];
+      const raw = Array.isArray(res.data) ? res.data : res.data.content || [];
+      // 映射后端字段到前端表格列
+      budgetData.value = raw.map((item: any) => ({
+        ...item,
+        period: item.planNumber || '-',
+        budgetCost: item.estimatedLaborCost != null && item.estimatedMaterialCost != null
+          ? Number(item.estimatedLaborCost) + Number(item.estimatedMaterialCost) + Number(item.estimatedEquipmentCost || 0) + Number(item.estimatedOtherCost || 0)
+          : item.estimatedLaborCost,
+        actualCost: item.actualLaborCost != null && item.actualMaterialCost != null
+          ? Number(item.actualLaborCost) + Number(item.actualMaterialCost) + Number(item.actualEquipmentCost || 0) + Number(item.actualOtherCost || 0)
+          : item.actualLaborCost,
+      }));
     } else {
       ElMessage.warning(res.message || '加载预算数据失败');
     }
