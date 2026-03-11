@@ -771,7 +771,10 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
         // 3.5. Skill 优先检查 — 多Tool编排场景，trigger关键词匹配优先于单Tool和SlotFilling
         // Skill 编排自身负责参数收集，不需要 SlotFilling 拦截
-        if (skillRouterService != null && skillRouterService.isSkillsEnabled()) {
+        // v36: 当意图已绑定 tool_name 时，跳过 Skill 路由器（避免 Skill 关键词误匹配覆盖精确 Tool 绑定）
+        String boundToolName = intent.getToolName();
+        if (skillRouterService != null && skillRouterService.isSkillsEnabled()
+                && (boundToolName == null || boundToolName.isBlank())) {
             IntentExecuteResponse skillResponse = trySkillRoute(request.getUserInput(), factoryId, userId);
             if (skillResponse != null) {
                 log.info("Skill 优先匹配成功: intentCode={}, userInput={}", intent.getIntentCode(), request.getUserInput());
