@@ -3,6 +3,7 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.dto.WorkReportSubmitRequest;
 import com.cretas.aims.dto.WorkReportResponse;
 import com.cretas.aims.entity.BatchWorkSession;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.entity.ProductionReport;
 import com.cretas.aims.entity.User;
@@ -55,7 +56,7 @@ public class WorkReportingServiceImpl {
                         factoryId, workerId, request.getReportType(), request.getReportDate());
             }
             if (duplicate) {
-                throw new RuntimeException("您今天已对该批次提交过报工，如需修改请编辑已有记录");
+                throw new BusinessException("您今天已对该批次提交过报工，如需修改请编辑已有记录");
             }
         }
 
