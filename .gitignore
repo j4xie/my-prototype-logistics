@@ -48,6 +48,7 @@ Pods/
 # 临时文件
 tmp/
 temp/
+temp*
 .tmp/
 *.tmp
 *.temp
@@ -90,8 +91,10 @@ _archived/
 frontend/CretasFoodTrace/android/C:/
 frontend/CretasFoodTrace/android/.cxx/
 
-# 截图和PNG文件
+# 截图和图片文件
 *.png
+*.jpeg
+*.jpg
 screenshots/
 audit-screenshots/
 
