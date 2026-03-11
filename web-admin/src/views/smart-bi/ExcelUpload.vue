@@ -671,6 +671,10 @@ function handleDownloadTemplate() {
 .content-card {
   border-radius: 8px;
   min-height: 500px;
+  transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
 }
 
 .step-content {
@@ -688,18 +692,23 @@ function handleDownloadTemplate() {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    &:hover {
+      border-color: var(--el-color-primary, #1B65A8);
+      background-color: var(--el-color-primary-light-9, #ecf5ff);
+    }
   }
 
   .upload-icon {
     font-size: 48px;
-    color: #909399;
+    color: var(--el-text-color-secondary, #909399);
     margin-bottom: 16px;
   }
 
   .upload-text {
     .main-text {
       font-size: 16px;
-      color: #606266;
+      color: var(--el-text-color-regular, #606266);
       margin: 0 0 8px;
 
       em {
@@ -710,7 +719,7 @@ function handleDownloadTemplate() {
 
     .sub-text {
       font-size: 13px;
-      color: #909399;
+      color: var(--el-text-color-secondary, #909399);
       margin: 0;
     }
   }
@@ -719,13 +728,13 @@ function handleDownloadTemplate() {
 .upload-tips {
   margin-top: 24px;
   padding: 16px;
-  background: #f5f7fa;
+  background: var(--el-fill-color-light, #f5f7fa);
   border-radius: 8px;
 
   h4 {
     margin: 0 0 12px;
     font-size: 14px;
-    color: #303133;
+    color: var(--el-text-color-primary, #303133);
   }
 
   ul {
@@ -734,7 +743,7 @@ function handleDownloadTemplate() {
 
     li {
       font-size: 13px;
-      color: #606266;
+      color: var(--el-text-color-regular, #606266);
       line-height: 2;
     }
   }
@@ -753,7 +762,7 @@ function handleDownloadTemplate() {
   align-items: center;
   gap: 16px;
   padding: 20px;
-  border: 2px solid #ebeef5;
+  border: 2px solid var(--el-border-color-light, #ebeef5);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
@@ -764,7 +773,7 @@ function handleDownloadTemplate() {
 
   &.selected {
     border-color: var(--color-primary);
-    background: #ecf5ff;
+    background: var(--el-color-primary-light-9, #ecf5ff);
   }
 
   > .el-icon {
@@ -778,32 +787,32 @@ function handleDownloadTemplate() {
     .type-label {
       font-size: 16px;
       font-weight: 500;
-      color: #303133;
+      color: var(--el-text-color-primary, #303133);
       margin-bottom: 4px;
     }
 
     .type-desc {
       font-size: 13px;
-      color: #909399;
+      color: var(--el-text-color-secondary, #909399);
     }
   }
 
   .check-icon {
     font-size: 24px;
-    color: #67C23A;
+    color: var(--el-color-success, #67C23A);
   }
 }
 
 .required-fields {
   padding: 16px;
-  background: #f5f7fa;
+  background: var(--el-fill-color-light, #f5f7fa);
   border-radius: 8px;
   margin-bottom: 24px;
 
   h4 {
     margin: 0 0 12px;
     font-size: 14px;
-    color: #303133;
+    color: var(--el-text-color-primary, #303133);
   }
 
   .field-tags {
@@ -822,17 +831,17 @@ function handleDownloadTemplate() {
 
   .mapping-info {
     font-size: 14px;
-    color: #606266;
+    color: var(--el-text-color-regular, #606266);
 
     .matched {
-      color: #67C23A;
+      color: var(--el-color-success, #67C23A);
       margin-left: 16px;
     }
   }
 }
 
 .sample-data {
-  color: #909399;
+  color: var(--el-text-color-secondary, #909399);
   font-size: 13px;
 }
 
@@ -847,25 +856,31 @@ function handleDownloadTemplate() {
       flex: 1;
       text-align: center;
       padding: 20px;
-      background: #f5f7fa;
+      background: var(--el-fill-color-light, #f5f7fa);
       border-radius: 8px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
 
       .stat-value {
         font-size: 28px;
         font-weight: 600;
+        font-variant-numeric: tabular-nums;
         color: var(--color-primary);
 
         &.type-badge {
           font-size: 16px;
           padding: 4px 12px;
-          background: #ecf5ff;
+          background: var(--el-color-primary-light-9, #ecf5ff);
           border-radius: 4px;
         }
       }
 
       .stat-label {
         font-size: 14px;
-        color: #909399;
+        color: var(--el-text-color-secondary, #909399);
         margin-top: 8px;
       }
     }
@@ -877,7 +892,7 @@ function handleDownloadTemplate() {
     h4 {
       margin: 0 0 12px;
       font-size: 14px;
-      color: #303133;
+      color: var(--el-text-color-primary, #303133);
     }
   }
 
@@ -891,7 +906,7 @@ function handleDownloadTemplate() {
     h4 {
       margin: 0 0 12px;
       font-size: 14px;
-      color: #303133;
+      color: var(--el-text-color-primary, #303133);
     }
   }
 }
@@ -912,7 +927,7 @@ function handleDownloadTemplate() {
   .answer-section {
     margin-bottom: 24px;
     padding: 16px;
-    background: #f5f7fa;
+    background: var(--el-fill-color-light, #f5f7fa);
     border-radius: 8px;
 
     h4 {
@@ -921,13 +936,13 @@ function handleDownloadTemplate() {
       gap: 8px;
       margin: 0 0 12px;
       font-size: 14px;
-      color: #303133;
+      color: var(--el-text-color-primary, #303133);
     }
 
     .answer-content {
       font-size: 14px;
       line-height: 1.8;
-      color: #606266;
+      color: var(--el-text-color-regular, #606266);
       white-space: pre-wrap;
     }
   }
@@ -941,7 +956,7 @@ function handleDownloadTemplate() {
       gap: 8px;
       margin: 0 0 16px;
       font-size: 14px;
-      color: #303133;
+      color: var(--el-text-color-primary, #303133);
     }
 
     .charts-grid {
@@ -951,15 +966,15 @@ function handleDownloadTemplate() {
     }
 
     .chart-item {
-      background: #fff;
-      border: 1px solid #ebeef5;
+      background: var(--el-bg-color, #fff);
+      border: 1px solid var(--el-border-color-light, #ebeef5);
       border-radius: 8px;
       padding: 16px;
 
       .chart-title {
         font-size: 14px;
         font-weight: 500;
-        color: #303133;
+        color: var(--el-text-color-primary, #303133);
         margin-bottom: 12px;
       }
 
@@ -972,7 +987,7 @@ function handleDownloadTemplate() {
   .no-analysis {
     text-align: center;
     padding: 60px 20px;
-    color: #909399;
+    color: var(--el-text-color-secondary, #909399);
 
     p {
       margin: 16px 0 0;
@@ -1008,27 +1023,33 @@ function handleDownloadTemplate() {
       flex: 1;
       text-align: center;
       padding: 20px;
-      background: #f5f7fa;
+      background: var(--el-fill-color-light, #f5f7fa);
       border-radius: 8px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
 
       .stat-value {
         font-size: 32px;
         font-weight: 600;
-        color: #303133;
+        font-variant-numeric: tabular-nums;
+        color: var(--el-text-color-primary, #303133);
       }
 
       .stat-label {
         font-size: 14px;
-        color: #909399;
+        color: var(--el-text-color-secondary, #909399);
         margin-top: 8px;
       }
 
       &.success .stat-value {
-        color: #67C23A;
+        color: var(--el-color-success, #67C23A);
       }
 
       &.error .stat-value {
-        color: #F56C6C;
+        color: var(--el-color-danger, #F56C6C);
       }
     }
   }
@@ -1036,7 +1057,7 @@ function handleDownloadTemplate() {
   .error-list {
     margin-bottom: 24px;
     padding: 16px;
-    background: #fef0f0;
+    background: var(--el-color-danger-light-9, #fef0f0);
     border-radius: 8px;
 
     h4 {
@@ -1045,7 +1066,7 @@ function handleDownloadTemplate() {
       gap: 8px;
       margin: 0 0 12px;
       font-size: 14px;
-      color: #F56C6C;
+      color: var(--el-color-danger, #F56C6C);
     }
 
     ul {
@@ -1054,7 +1075,7 @@ function handleDownloadTemplate() {
 
       li {
         font-size: 13px;
-        color: #606266;
+        color: var(--el-text-color-regular, #606266);
         line-height: 1.8;
       }
     }
@@ -1066,7 +1087,7 @@ function handleDownloadTemplate() {
     h4 {
       margin: 0 0 12px;
       font-size: 14px;
-      color: #303133;
+      color: var(--el-text-color-primary, #303133);
     }
   }
 }
@@ -1082,7 +1103,7 @@ function handleDownloadTemplate() {
   gap: 16px;
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-light, #ebeef5);
 }
 
 // 响应式

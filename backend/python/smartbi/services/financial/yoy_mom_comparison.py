@@ -291,6 +291,10 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
             ],
         }
 
+        # Fix 69: CAGR annotation (Think-Cell / McKinsey style)
+        if len(actual_vals) >= 2 and actual_vals[0] > 0 and actual_vals[-1] > 0:
+            self._add_cagr_annotation(option, actual_vals[0], actual_vals[-1], len(actual_vals) - 1)
+
         result = {
             "chartType": self.chart_type,
             "title": f"{year}年{self.display_name}",

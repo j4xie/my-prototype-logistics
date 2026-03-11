@@ -227,11 +227,61 @@ export function enhanceChartDefaults(opts: Record<string, unknown>): void {
     }
   }
 
-  // --- Smooth entrance animation ---
+  // --- Emphasis blur for multi-series (Power BI style: hover dims others) ---
+  if (series.length > 1 && chartType !== 'pie') {
+    for (const s of series) {
+      if (!s.emphasis) {
+        s.emphasis = { focus: 'series', blurScope: 'coordinateSystem' } as Record<string, unknown>;
+      }
+    }
+  }
+  // Pie: hover enlarges slice + dims others
+  if (chartType === 'pie') {
+    for (const s of series) {
+      if (!s.emphasis) {
+        s.emphasis = {
+          focus: 'self',
+          itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.2)' },
+          scaleSize: 8,
+        } as Record<string, unknown>;
+      }
+    }
+  }
+
+  // --- Grid breathing room (Power BI style: generous padding) ---
+  if (chartType !== 'pie' && chartType !== 'radar' && chartType !== 'gauge') {
+    const grid = (opts.grid || {}) as Record<string, unknown>;
+    if (!grid.left) grid.left = '3%';
+    if (!grid.right) grid.right = '4%';
+    if (!grid.containLabel) grid.containLabel = true;
+    opts.grid = grid;
+  }
+
+  // --- Smooth entrance animation + update transition (Fix 63: Power BI style) ---
   if (opts.animationDuration === undefined) {
     opts.animationDuration = 800;
     opts.animationEasing = 'cubicOut';
     opts.animationDelay = (idx: number) => idx * 50;
+  }
+  // Update transitions: smooth morph when switching periods (notMerge=false path)
+  if (opts.animationDurationUpdate === undefined) {
+    opts.animationDurationUpdate = 750;
+    opts.animationEasingUpdate = 'cubicInOut';
+  }
+
+  // --- Fix 65: Auto-annotate peaks/valleys/trends (Think-Cell / McKinsey) ---
+  if ((chartType === 'line' || chartType === 'bar') && stats.count >= 4) {
+    autoAnnotate(series, opts);
+  }
+
+  // --- Fix 66: Reference lines & confidence bands (Tableau) ---
+  if ((chartType === 'line' || chartType === 'bar') && stats.count >= 6) {
+    addReferenceLines(series);
+  }
+
+  // --- Fix 67: Traffic light indicators (Zebra BI) ---
+  if (chartType === 'bar') {
+    applyTrafficLights(series);
   }
 
   // --- Outlier detection hint in tooltip ---
@@ -250,5 +300,165 @@ export function enhanceChartDefaults(opts: Record<string, unknown>): void {
       };
       opts.tooltip = tip;
     }
+  }
+}
+
+// ---- Fix 65: Auto-annotate peaks/valleys/consecutive trends (Think-Cell / McKinsey) ----
+
+function extractNumericData(s: Record<string, unknown>): number[] {
+  const data = s.data;
+  if (!Array.isArray(data)) return [];
+  return data.map((d: unknown) => {
+    if (typeof d === 'number') return d;
+    if (Array.isArray(d)) return Number(d[1]) || 0;
+    return Number((d as Record<string, unknown>)?.value) || 0;
+  });
+}
+
+function autoAnnotate(series: Array<Record<string, unknown>>, opts: Record<string, unknown>): void {
+  for (const s of series) {
+    const data = extractNumericData(s);
+    if (data.length < 4) continue;
+    // Skip series that already have markPoint
+    if (s.markPoint) continue;
+
+    const annotations: Array<Record<string, unknown>> = [];
+
+    // Find max and min
+    let maxIdx = 0, minIdx = 0;
+    for (let i = 1; i < data.length; i++) {
+      if (data[i] > data[maxIdx]) maxIdx = i;
+      if (data[i] < data[minIdx]) minIdx = i;
+    }
+
+    // Only annotate if there's meaningful variance
+    const range = data[maxIdx] - data[minIdx];
+    if (range === 0) continue;
+
+    // Max point
+    annotations.push({
+      coord: [maxIdx, data[maxIdx]],
+      value: compactTooltipFormatter(data[maxIdx]),
+      symbol: 'pin', symbolSize: 36,
+      itemStyle: { color: '#52c41a' },
+      label: { fontSize: 9, color: '#fff' },
+    });
+    // Min point
+    if (maxIdx !== minIdx) {
+      annotations.push({
+        coord: [minIdx, data[minIdx]],
+        value: compactTooltipFormatter(data[minIdx]),
+        symbol: 'pin', symbolSize: 36,
+        itemStyle: { color: '#ff4d4f' },
+        label: { fontSize: 9, color: '#fff' },
+      });
+    }
+
+    // Consecutive trend detection (3+ periods)
+    let streakStart = 0;
+    let streakDir = 0; // 1=up, -1=down
+    for (let i = 1; i <= data.length; i++) {
+      const dir = i < data.length ? Math.sign(data[i] - data[i - 1]) : 0;
+      if (dir === streakDir && dir !== 0) continue;
+      const streakLen = i - streakStart;
+      if (streakLen >= 3 && streakDir !== 0 && annotations.length < 3) {
+        const midIdx = Math.floor((streakStart + i - 1) / 2);
+        const arrow = streakDir > 0 ? '↑' : '↓';
+        annotations.push({
+          coord: [midIdx, data[midIdx]],
+          value: `连续${streakLen}期${arrow}`,
+          symbol: 'roundRect', symbolSize: [70, 22],
+          itemStyle: { color: streakDir > 0 ? 'rgba(82,196,26,0.85)' : 'rgba(255,77,79,0.85)' },
+          label: { fontSize: 9, color: '#fff', offset: [0, 0] },
+        });
+      }
+      streakStart = i - 1;
+      streakDir = dir;
+    }
+
+    // Cap at 3 annotations per chart
+    if (annotations.length > 0) {
+      s.markPoint = {
+        data: annotations.slice(0, 3),
+        animation: true,
+      };
+    }
+  }
+}
+
+// ---- Fix 66: Reference lines & confidence bands (Tableau) ----
+
+function addReferenceLines(series: Array<Record<string, unknown>>): void {
+  for (const s of series) {
+    if (s.markLine || s.type === 'pie') continue;
+    const data = extractNumericData(s);
+    if (data.length < 6) continue;
+
+    const mean = data.reduce((a, b) => a + b, 0) / data.length;
+    const std = Math.sqrt(data.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / data.length);
+    if (std === 0) continue;
+
+    // Mean reference line
+    s.markLine = {
+      silent: true,
+      symbol: ['none', 'none'],
+      data: [{
+        yAxis: mean,
+        label: {
+          formatter: `均值: ${compactTooltipFormatter(mean)}`,
+          fontSize: 10, color: '#909399', position: 'insideEndTop',
+        },
+        lineStyle: { type: 'dashed', color: '#909399', width: 1.5 },
+      }],
+    };
+
+    // ±1σ confidence band
+    if (!s.markArea) {
+      s.markArea = {
+        silent: true,
+        data: [[
+          {
+            yAxis: mean + std,
+            itemStyle: { color: 'rgba(144,147,153,0.08)' },
+          },
+          { yAxis: mean - std },
+        ]],
+      };
+    }
+  }
+}
+
+// ---- Fix 67: Traffic light indicators (Zebra BI / IBCS) ----
+
+function applyTrafficLights(series: Array<Record<string, unknown>>): void {
+  for (const s of series) {
+    const name = String(s.name || '');
+    if (!/达成|差异|achievement|variance/i.test(name)) continue;
+    const data = s.data;
+    if (!Array.isArray(data)) continue;
+
+    // Check if data items look like percentage values (0-200 range)
+    const numVals = data.map((d: unknown) => {
+      if (typeof d === 'number') return d;
+      return Number((d as Record<string, unknown>)?.value) || 0;
+    });
+    const maxV = Math.max(...numVals.map(Math.abs));
+    if (maxV === 0 || maxV > 300) continue; // Not percentage-like
+
+    // Apply traffic light colors to each data item
+    s.data = data.map((d: unknown, i: number) => {
+      const val = numVals[i];
+      const color = val >= 95 ? '#52c41a' : val >= 80 ? '#faad14' : '#ff4d4f';
+      if (typeof d === 'object' && d !== null && !Array.isArray(d)) {
+        const item = d as Record<string, unknown>;
+        if (!item.itemStyle) item.itemStyle = {};
+        (item.itemStyle as Record<string, unknown>).color = color;
+        return item;
+      }
+      return {
+        value: typeof d === 'number' ? d : val,
+        itemStyle: { color },
+      };
+    });
   }
 }

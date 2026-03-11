@@ -187,4 +187,31 @@ withDefaults(defineProps<Props>(), {
 .skeleton__ai-gap {
   height: 16px;
 }
+
+/* ==================== Dark Mode ==================== */
+:global([data-theme="dark"]) .shimmer {
+  background: linear-gradient(
+    90deg,
+    #2a2a4a 25%,
+    #3a3a5a 37%,
+    #2a2a4a 63%
+  );
+  background-size: 800px 100%;
+}
+
+:global([data-theme="dark"]) .skeleton--chart {
+  background: var(--bg-color-overlay, #1a2332);
+  border-color: var(--border-color, #2d3748);
+}
+
+:global([data-theme="dark"]) .skeleton__kpi-card {
+  background: var(--bg-color-overlay, #1a2332);
+  border-color: var(--border-color, #2d3748);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+:global([data-theme="dark"]) .skeleton--ai {
+  background: var(--color-bg-hover, #243044);
+  border-color: var(--border-color, #2d3748);
+}
 </style>

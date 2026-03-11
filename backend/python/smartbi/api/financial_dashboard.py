@@ -28,6 +28,7 @@ class FinancialDashboardRequest(BaseModel):
     start_month: int = Field(1, ge=1, le=12)
     end_month: int = Field(12, ge=1, le=12)
     factory_id: str = "F001"
+    filters: Optional[Dict[str, List[str]]] = None  # Fix 72: Global slicer filters {col: [values]}
 
 
 class AnalyzeRequest(BaseModel):
@@ -86,11 +87,33 @@ async def _load_data(request: FinancialDashboardRequest) -> pd.DataFrame:
     raise HTTPException(status_code=400, detail="Either upload_id or raw_data is required")
 
 
+def _apply_filters(df: pd.DataFrame, filters: Optional[Dict[str, List[str]]]) -> pd.DataFrame:
+    """Fix 72: Apply global slicer filters to DataFrame."""
+    if not filters:
+        return df
+    for col, values in filters.items():
+        if col in df.columns and values:
+            df = df[df[col].isin(values)]
+    return df
+
+
+def _extract_dimensions(df: pd.DataFrame) -> List[Dict[str, Any]]:
+    """Fix 72: Extract available filter dimensions from DataFrame."""
+    dims = []
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            unique_vals = df[col].dropna().unique().tolist()
+            if 2 <= len(unique_vals) <= 20:
+                dims.append({"name": col, "values": sorted(unique_vals)})
+    return dims
+
+
 @router.post("/generate")
 async def generate_chart(request: FinancialDashboardRequest):
     """Generate a single financial chart or all charts."""
     try:
         df = await _load_data(request)
+        df = _apply_filters(df, request.filters)  # Fix 72
         result = dashboard_service.generate_chart(
             chart_type=request.chart_type,
             raw_data=df,
@@ -113,6 +136,10 @@ async def batch_generate(request: FinancialDashboardRequest):
     try:
         request.chart_type = "all"
         df = await _load_data(request)
+        # Fix 72: Extract dimensions before filtering
+        dimensions = _extract_dimensions(df)
+        # Fix 72: Apply slicer filters
+        df = _apply_filters(df, request.filters)
         result = dashboard_service.generate_dashboard(
             raw_data=df,
             year=request.year,
@@ -120,6 +147,9 @@ async def batch_generate(request: FinancialDashboardRequest):
             start_month=request.start_month,
             end_month=request.end_month,
         )
+        # Fix 72: Attach available dimensions to response
+        if isinstance(result, dict):
+            result["availableDimensions"] = dimensions
         return _sanitize_for_json(result)
     except HTTPException:
         raise

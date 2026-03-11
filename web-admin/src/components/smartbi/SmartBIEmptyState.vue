@@ -280,14 +280,14 @@ const handleAction = () => {
 .empty-title {
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary, #303133);
   margin: 0 0 12px 0;
   line-height: 1.4;
 }
 
 .empty-description {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary, #909399);
   margin: 0 0 24px 0;
   line-height: 1.6;
   max-width: 400px;
@@ -305,5 +305,12 @@ const handleAction = () => {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   }
+}
+
+/* ==================== Dark Mode ==================== */
+:global([data-theme="dark"]) .smartbi-empty-state {
+  background: linear-gradient(135deg,
+    rgba(102, 126, 234, 0.06) 0%,
+    rgba(118, 75, 162, 0.06) 100%);
 }
 </style>

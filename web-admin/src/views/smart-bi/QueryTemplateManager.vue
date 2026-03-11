@@ -64,10 +64,10 @@ const currentTemplate = ref<QueryTemplate>({
 
 // 分类配置
 const categoryOptions = [
-  { value: '财务分析', icon: Money, color: '#67C23A' },
-  { value: '销售分析', icon: TrendCharts, color: '#1B65A8' },
-  { value: '生产分析', icon: Histogram, color: '#E6A23C' },
-  { value: '自定义', icon: DataAnalysis, color: '#909399' }
+  { value: '财务分析', icon: Money, color: '#67C23A', tagType: 'success' as const },
+  { value: '销售分析', icon: TrendCharts, color: '#1B65A8', tagType: 'primary' as const },
+  { value: '生产分析', icon: Histogram, color: '#E6A23C', tagType: 'warning' as const },
+  { value: '自定义', icon: DataAnalysis, color: '#909399', tagType: 'info' as const }
 ];
 
 const paramTypeOptions = [
@@ -293,6 +293,11 @@ function getCategoryColor(category: string) {
   return config ? config.color : '#909399';
 }
 
+function getCategoryTagType(category: string): '' | 'success' | 'warning' | 'info' | 'danger' {
+  const config = categoryOptions.find(c => c.value === category);
+  return config ? config.tagType : 'info';
+}
+
 // 格式化时间
 function formatDate(dateStr?: string): string {
   if (!dateStr) return '';
@@ -370,7 +375,7 @@ function formatDate(dateStr?: string): string {
             >
               <div class="card-header">
                 <div class="card-title">
-                  <el-tag :color="getCategoryColor(tpl.category)" effect="light" size="small">
+                  <el-tag :type="getCategoryTagType(tpl.category)" effect="light" size="small">
                     {{ tpl.category }}
                   </el-tag>
                   <span class="template-name">{{ tpl.name }}</span>
@@ -568,7 +573,7 @@ function formatDate(dateStr?: string): string {
       font-weight: 600;
 
       .el-icon {
-        color: #1B65A8;
+        color: var(--el-color-primary, #1B65A8);
       }
     }
   }
@@ -601,11 +606,11 @@ function formatDate(dateStr?: string): string {
     margin-bottom: 16px;
     font-size: 16px;
     font-weight: 600;
-    color: #303133;
+    color: var(--el-text-color-primary, #303133);
 
     .count {
       font-size: 14px;
-      color: #909399;
+      color: var(--el-text-color-secondary, #909399);
       font-weight: 400;
     }
   }
@@ -618,6 +623,12 @@ function formatDate(dateStr?: string): string {
 }
 
 .template-card {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-3px);
+  }
+
   .card-header {
     display: flex;
     justify-content: space-between;
@@ -633,7 +644,7 @@ function formatDate(dateStr?: string): string {
       .template-name {
         font-size: 16px;
         font-weight: 600;
-        color: #303133;
+        color: var(--el-text-color-primary, #303133);
       }
     }
 
@@ -647,7 +658,7 @@ function formatDate(dateStr?: string): string {
     .description {
       margin: 0 0 12px;
       font-size: 13px;
-      color: #606266;
+      color: var(--el-text-color-regular, #606266);
       line-height: 1.6;
     }
 
@@ -659,14 +670,14 @@ function formatDate(dateStr?: string): string {
 
       .label {
         font-size: 12px;
-        color: #909399;
+        color: var(--el-text-color-secondary, #909399);
         display: block;
         margin-bottom: 4px;
       }
 
       .query-text {
         font-size: 13px;
-        color: #303133;
+        color: var(--el-text-color-primary, #303133);
         line-height: 1.5;
         font-family: 'Consolas', 'Monaco', monospace;
       }
@@ -680,7 +691,7 @@ function formatDate(dateStr?: string): string {
 
       .label {
         font-size: 12px;
-        color: #909399;
+        color: var(--el-text-color-secondary, #909399);
       }
     }
   }
@@ -695,7 +706,7 @@ function formatDate(dateStr?: string): string {
 
     .meta {
       font-size: 12px;
-      color: #909399;
+      color: var(--el-text-color-secondary, #909399);
     }
   }
 }
@@ -704,7 +715,7 @@ function formatDate(dateStr?: string): string {
 .form-tip {
   margin-top: 4px;
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary, #909399);
   line-height: 1.5;
 }
 

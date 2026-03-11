@@ -292,5 +292,124 @@ class AbstractFinancialChartBuilder(ABC):
             },
         }
 
+    def _compute_stats(self, values: list) -> dict:
+        """Compute mean and std for reference lines (Fix 66: Tableau-style)."""
+        nums = [v for v in values if isinstance(v, (int, float)) and not (isinstance(v, float) and math.isnan(v))]
+        if len(nums) < 2:
+            return {"mean": None, "std": None}
+        mean = sum(nums) / len(nums)
+        std = math.sqrt(sum((v - mean) ** 2 for v in nums) / len(nums))
+        return {"mean": round(mean, 4), "std": round(std, 4)}
+
+    def _linear_regression(self, values: list) -> dict:
+        """Simple linear regression via numpy polyfit (Fix 70: Tableau-style trend line).
+
+        Returns:
+            {"slope": float, "intercept": float, "r_squared": float, "trend_data": list}
+        """
+        try:
+            y = np.array([v for v in values if isinstance(v, (int, float))], dtype=float)
+            if len(y) < 3:
+                return {}
+            x = np.arange(len(y), dtype=float)
+            coeffs = np.polyfit(x, y, 1)
+            slope, intercept = float(coeffs[0]), float(coeffs[1])
+            trend_data = [round(slope * i + intercept, 2) for i in range(len(y))]
+            # R² calculation
+            y_mean = float(np.mean(y))
+            ss_res = float(np.sum((y - np.array(trend_data)) ** 2))
+            ss_tot = float(np.sum((y - y_mean) ** 2))
+            r_squared = round(1 - ss_res / ss_tot, 4) if ss_tot > 0 else 0
+            return {
+                "slope": round(slope, 4),
+                "intercept": round(intercept, 4),
+                "r_squared": r_squared,
+                "trend_data": trend_data,
+            }
+        except Exception:
+            return {}
+
+    def _calc_cagr(self, start_val, end_val, periods: int) -> Optional[float]:
+        """Calculate Compound Annual Growth Rate (Fix 69: Think-Cell / McKinsey).
+
+        Returns CAGR as percentage, or None if not calculable.
+        """
+        if start_val is None or end_val is None or periods <= 0:
+            return None
+        if start_val <= 0 or end_val <= 0:
+            return None
+        try:
+            cagr = (pow(end_val / start_val, 1.0 / periods) - 1) * 100
+            return round(cagr, 2)
+        except (ValueError, ZeroDivisionError):
+            return None
+
+    def _add_trend_series(self, option: dict, values: list, series_name: str = "趋势线") -> None:
+        """Add a dashed trend line series to an existing ECharts option (Fix 70)."""
+        reg = self._linear_regression(values)
+        if not reg or 'trend_data' not in reg:
+            return
+        trend_series = {
+            "name": series_name,
+            "type": "line",
+            "data": reg['trend_data'],
+            "showSymbol": False,
+            "lineStyle": {"type": "dashed", "width": 2, "color": "#909399"},
+            "itemStyle": {"color": "#909399"},
+            "smooth": False,
+            "z": 0,
+            "silent": True,
+            "markPoint": {
+                "data": [{
+                    "coord": [len(reg['trend_data']) - 1, reg['trend_data'][-1]],
+                    "value": f"R²={reg['r_squared']:.2f}",
+                    "symbol": "roundRect",
+                    "symbolSize": [60, 20],
+                    "itemStyle": {"color": "rgba(144,147,153,0.85)"},
+                    "label": {"fontSize": 9, "color": "#fff"},
+                }],
+            },
+        }
+        if "series" in option and isinstance(option["series"], list):
+            option["series"].append(trend_series)
+        # Add to legend
+        if "legend" in option and "data" in option["legend"]:
+            option["legend"]["data"].append(series_name)
+
+    def _add_cagr_annotation(self, option: dict, start_val, end_val, periods: int) -> None:
+        """Add CAGR annotation as a graphic element (Fix 69: Think-Cell style)."""
+        cagr = self._calc_cagr(start_val, end_val, periods)
+        if cagr is None:
+            return
+        sign = '+' if cagr >= 0 else ''
+        color = '#52c41a' if cagr >= 0 else '#ff4d4f'
+        graphic = option.get("graphic", [])
+        if not isinstance(graphic, list):
+            graphic = [graphic]
+        # CAGR annotation line at top-right
+        graphic.extend([
+            {
+                "type": "text",
+                "right": "12%",
+                "top": "5%",
+                "style": {
+                    "text": f"CAGR {sign}{cagr:.1f}%",
+                    "fontSize": 13,
+                    "fill": color,
+                    "fontWeight": "bold",
+                    "backgroundColor": "rgba(255,255,255,0.9)",
+                    "padding": [4, 10],
+                    "borderRadius": 4,
+                    "borderColor": color,
+                    "borderWidth": 1,
+                    "shadowColor": "rgba(0,0,0,0.08)",
+                    "shadowBlur": 4,
+                },
+                "silent": True,
+                "z": 100,
+            },
+        ])
+        option["graphic"] = graphic
+
     def sanitize(self, obj):
         return _sanitize_for_json(obj)

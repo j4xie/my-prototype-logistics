@@ -262,6 +262,14 @@ class CashflowTrendBuilder(AbstractFinancialChartBuilder):
         # Add zero reference line
         option["yAxis"][0]["axisLine"] = {"show": True}
 
+        # Fix 69: CAGR annotation for cumulative net cashflow
+        if len(net_cf) >= 2 and net_cf[0] > 0 and net_cf[-1] > 0:
+            self._add_cagr_annotation(option, net_cf[0], net_cf[-1], len(net_cf) - 1)
+
+        # Fix 70: Trend line + R² for operating cashflow
+        if len(scaled_operating) >= 3:
+            self._add_trend_series(option, scaled_operating, "经营CF趋势线")
+
         # --- Table data ---
         table_data = {
             "headers": [

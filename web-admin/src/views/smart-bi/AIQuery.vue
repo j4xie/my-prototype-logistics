@@ -281,6 +281,26 @@ async function handleSendMessage() {
   // Helper to find the assistant message
   const getMessageIndex = () => chatHistory.value.findIndex(m => m.id === assistantId);
 
+  // SSE degradation watchdog: if no chunk arrives within 5s of status, show switching notice
+  let sseWatchdog: ReturnType<typeof setTimeout> | null = null;
+  let firstChunkReceived = false;
+  const startSseWatchdog = () => {
+    if (sseWatchdog) clearTimeout(sseWatchdog);
+    sseWatchdog = setTimeout(() => {
+      if (!firstChunkReceived) {
+        const idx = getMessageIndex();
+        if (idx !== -1) {
+          const msg = chatHistory.value[idx];
+          msg.content = '正在切换备用通道，请稍候...';
+          msg.loading = true;
+        }
+      }
+    }, 5000);
+  };
+  const clearSseWatchdog = () => {
+    if (sseWatchdog) { clearTimeout(sseWatchdog); sseWatchdog = null; }
+  };
+
   // Try streaming first, fall back to non-streaming
   activeStreamController = chatAnalysisStream(requestParams, {
     onStatus(status: string) {
@@ -291,9 +311,16 @@ async function handleSendMessage() {
         msg.loading = true;
       }
       scrollToBottom();
+      // Start watchdog after first status — expect chunks within 5s
+      if (!firstChunkReceived) startSseWatchdog();
     },
 
     onChunk(text: string) {
+      // First chunk arrived — cancel watchdog
+      if (!firstChunkReceived) {
+        firstChunkReceived = true;
+        clearSseWatchdog();
+      }
       // Buffer chunks for 16ms before flushing to reduce Vue reactivity triggers
       chunkTargetId = assistantId;
       chunkBuffer += text;
@@ -312,6 +339,7 @@ async function handleSendMessage() {
     },
 
     async onDone(result: AnalysisResult) {
+      clearSseWatchdog();
       // Flush any remaining buffered chunks
       if (chunkFlushTimer) { clearTimeout(chunkFlushTimer); chunkFlushTimer = null; }
       flushChunkBuffer();
@@ -356,6 +384,7 @@ async function handleSendMessage() {
     },
 
     async onError(error: string) {
+      clearSseWatchdog();
       // Clear chunk buffer on error
       if (chunkFlushTimer) { clearTimeout(chunkFlushTimer); chunkFlushTimer = null; }
       chunkBuffer = '';
@@ -677,7 +706,11 @@ function handleKeydown(event: KeyboardEvent) {
             :key="ds.id"
             :label="formatDataSourceLabel(ds)"
             :value="ds.id"
-          />
+          >
+            <el-tooltip :content="formatDataSourceLabel(ds)" placement="left" :show-after="500">
+              <span style="display:block;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ formatDataSourceLabel(ds) }}</span>
+            </el-tooltip>
+          </el-option>
         </el-select>
         <el-button :icon="Delete" @click="handleClearHistory">清空对话</el-button>
       </div>
@@ -866,7 +899,7 @@ function handleKeydown(event: KeyboardEvent) {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--el-bg-color, #fff);
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   overflow: hidden;
@@ -909,7 +942,7 @@ function handleKeydown(event: KeyboardEvent) {
 
   &.assistant {
     .message-body {
-      background: #f5f7fa;
+      background: var(--el-fill-color-light, #f5f7fa);
       border-radius: 0 12px 12px 12px;
     }
   }
@@ -931,7 +964,7 @@ function handleKeydown(event: KeyboardEvent) {
   }
 
   &.assistant .message-avatar {
-    background: #67C23A;
+    background: var(--el-color-success, #67C23A);
   }
 
   .message-content {
@@ -949,12 +982,12 @@ function handleKeydown(event: KeyboardEvent) {
     .role-name {
       font-size: 13px;
       font-weight: 500;
-      color: #303133;
+      color: var(--el-text-color-primary, #303133);
     }
 
     .message-time {
       font-size: 12px;
-      color: #909399;
+      color: var(--el-text-color-secondary, #909399);
     }
   }
 
@@ -965,7 +998,7 @@ function handleKeydown(event: KeyboardEvent) {
   .message-text {
     font-size: 14px;
     line-height: 1.8;
-    color: #303133;
+    color: var(--el-text-color-primary, #303133);
     white-space: pre-wrap;
 
     // Markdown body styles for assistant messages
@@ -980,23 +1013,39 @@ function handleKeydown(event: KeyboardEvent) {
       :deep(strong) { font-weight: 600; }
       :deep(code) { background: rgba(0,0,0,0.06); padding: 2px 4px; border-radius: 3px; font-size: 13px; }
       :deep(pre) { background: rgba(0,0,0,0.04); padding: 8px 12px; border-radius: 6px; overflow-x: auto; }
-      :deep(blockquote) { border-left: 3px solid var(--color-primary); padding-left: 12px; margin: 0.4em 0; color: #606266; }
+      :deep(blockquote) { border-left: 3px solid var(--color-primary); padding-left: 12px; margin: 0.4em 0; color: var(--el-text-color-regular, #606266); }
       :deep(table) { border-collapse: collapse; margin: 0.5em 0; }
-      :deep(th), :deep(td) { border: 1px solid #dcdfe6; padding: 4px 8px; font-size: 13px; }
-      :deep(th) { background: #f5f7fa; }
+      :deep(th), :deep(td) { border: 1px solid var(--el-border-color, #dcdfe6); padding: 4px 8px; font-size: 13px; }
+      :deep(th) { background: var(--el-fill-color-light, #f5f7fa); }
     }
 
     // Streaming plain text — pre-wrap preserves newlines, no markdown overhead
+    // Blinking cursor gives "AI is typing" perception (like Power BI Copilot)
     &.streaming-text {
       white-space: pre-wrap;
+
+      &::after {
+        content: '▍';
+        display: inline;
+        animation: cursor-blink 0.6s steps(2) infinite;
+        color: var(--el-color-primary, #1B65A8);
+        font-weight: 300;
+        margin-left: 1px;
+      }
     }
+  }
+
+  @keyframes cursor-blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
   }
 
   .loading-indicator {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #909399;
+    color: var(--el-text-color-secondary, #909399);
 
     .el-icon {
       font-size: 16px;
@@ -1027,12 +1076,12 @@ function handleKeydown(event: KeyboardEvent) {
 // 快捷问题
 .quick-questions {
   padding: 12px 20px;
-  border-top: 1px solid #ebeef5;
-  background: #fafafa;
+  border-top: 1px solid var(--el-border-color-light, #ebeef5);
+  background: var(--el-fill-color-lighter, #fafafa);
 
   .label {
     font-size: 13px;
-    color: #909399;
+    color: var(--el-text-color-secondary, #909399);
     margin-right: 12px;
   }
 
@@ -1048,8 +1097,8 @@ function handleKeydown(event: KeyboardEvent) {
   display: flex;
   gap: 12px;
   padding: 16px 20px;
-  border-top: 1px solid #ebeef5;
-  background: #fff;
+  border-top: 1px solid var(--el-border-color-lighter, #ebeef5);
+  background: var(--el-bg-color, #fff);
 
   :deep(.el-textarea) {
     flex: 1;
@@ -1100,14 +1149,14 @@ function handleKeydown(event: KeyboardEvent) {
 
 .template-card {
   padding: 16px;
-  background: white;
-  border: 1px solid #e4e7ed;
+  background: var(--el-bg-color, #fff);
+  border: 1px solid var(--el-border-color-light, #e4e7ed);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    border-color: var(--color-primary);
+    border-color: var(--el-color-primary, #1B65A8);
     box-shadow: 0 4px 12px rgba(27, 101, 168, 0.15);
     transform: translateY(-2px);
   }
@@ -1118,7 +1167,7 @@ function handleKeydown(event: KeyboardEvent) {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-  color: #303133;
+  color: var(--el-text-color-primary, #303133);
   font-weight: 600;
 }
 
@@ -1129,7 +1178,7 @@ function handleKeydown(event: KeyboardEvent) {
 .template-desc {
   margin: 0;
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary, #909399);
   line-height: 1.5;
 }
 

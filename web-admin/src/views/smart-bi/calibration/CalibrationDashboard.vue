@@ -557,13 +557,13 @@ watch(selectedFactoryId, () => {
       margin: 0;
       font-size: 24px;
       font-weight: 600;
-      color: #303133;
+      color: var(--el-text-color-primary, #303133);
     }
 
     .subtitle {
       display: block;
       font-size: 13px;
-      color: #909399;
+      color: var(--el-text-color-secondary, #909399);
       margin-top: 4px;
     }
   }
@@ -577,7 +577,7 @@ watch(selectedFactoryId, () => {
 
 .last-updated {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary, #909399);
   margin-bottom: 16px;
 }
 
@@ -615,10 +615,10 @@ watch(selectedFactoryId, () => {
       gap: 8px;
       font-size: 16px;
       font-weight: 600;
-      color: #303133;
+      color: var(--el-text-color-primary, #303133);
 
       .el-icon {
-        color: #1B65A8;
+        color: var(--el-color-primary, #1B65A8);
       }
     }
   }

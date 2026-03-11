@@ -8,6 +8,21 @@ import { ElMessage } from 'element-plus';
 import { DataAnalysis, VideoPlay, Download, Collection, SetUp, ArrowDown, Delete } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
 import { processEChartsOptions } from '@/utils/echarts-fmt';
+import { sparklinePath, sparklineSVG } from '@/utils/sparkline';
+
+/** Deep clone that handles ECharts options with functions (structuredClone can't clone functions) */
+function safeClone<T>(obj: T): T {
+  try {
+    return structuredClone(obj);
+  } catch {
+    // Fallback: JSON round-trip (drops functions, but processEChartsOptions re-adds formatters)
+    try {
+      return JSON.parse(JSON.stringify(obj));
+    } catch {
+      return obj;
+    }
+  }
+}
 
 // Components
 import PeriodSelector from '@/components/smartbi/PeriodSelector.vue';
@@ -21,6 +36,7 @@ import SankeyChart from '@/components/smartbi/SankeyChart.vue';
 import SmallMultiplesChart from '@/components/smartbi/SmallMultiplesChart.vue';
 import BookmarkPanel from '@/components/smartbi/BookmarkPanel.vue';
 import ConditionalFormatPanel from '@/components/smartbi/ConditionalFormatPanel.vue';
+import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 import type { BookmarkState } from '@/views/smart-bi/composables/useBookmarks';
 import type { SmallMultiplesConfig } from '@/components/smartbi/SmallMultiplesChart.vue';
 
@@ -43,8 +59,13 @@ import type { PeriodSelection } from '@/components/smartbi/PeriodSelector.vue';
 const isDarkMode = ref(false);
 const activeFilter = ref<{ dimension: string; value: string } | null>(null);
 const autoRefreshInterval = ref<number>(0); // 0=off, 60000=1m, 300000=5m, 900000=15m
+
+// Fix 72: Global slicer filters (Power BI / Looker style)
+const slicerFilters = ref<Record<string, string[]>>({});
+const availableDimensions = ref<{ name: string; values: string[] }[]>([]);
 let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
 const useSvgRenderer = ref(false); // D4: SVG renderer toggle
+const isInDemoMode = ref(false); // Track demo mode for slicer re-generation
 
 // D2: User annotations (persisted in localStorage)
 interface Annotation { text: string; x: number; y: number; chartType: string; color: string; id: number }
@@ -112,6 +133,7 @@ const analysisExpandedByType = ref<Record<string, boolean>>({});
 const isExportingPPT = ref(false);
 const isExportingPDF = ref(false);
 const isExportingExcel = ref(false);
+const exportStageText = ref('');
 
 // Presentation mode
 const isPresentationVisible = ref(false);
@@ -292,7 +314,10 @@ const DEMO_RAW_DATA: Record<string, unknown>[] = [
 ];
 
 // ---- Methods ----
-async function generate(useDemo = false) {
+async function generate(useDemo?: boolean) {
+  // If not explicitly passed, use tracked demo mode
+  if (useDemo === undefined) useDemo = isInDemoMode.value;
+  if (useDemo) isInDemoMode.value = true;
   const id = uploadId.value ?? (uploadIdInput.value ? parseInt(uploadIdInput.value, 10) : null);
   if (!useDemo && !id) {
     ElMessage.warning('请先输入数据源ID或选择已上传的数据');
@@ -319,11 +344,34 @@ async function generate(useDemo = false) {
   } else if (id) {
     payload.upload_id = id;
   }
+  // Fix 72: Pass slicer filters
+  const activeSlicers = Object.entries(slicerFilters.value).filter(([, vals]) => vals.length > 0);
+  if (activeSlicers.length > 0) {
+    (payload as Record<string, unknown>).filters = Object.fromEntries(activeSlicers);
+  }
 
   try {
     const resp = await batchGenerate(payload);
     if (resp.success) {
       dashboardResponse.value = resp;
+      // Fix 72: Extract available filter dimensions from response
+      if (resp.availableDimensions) {
+        availableDimensions.value = resp.availableDimensions;
+      } else if (useDemo) {
+        // Extract dimensions from demo data
+        const dims = new Map<string, Set<string>>();
+        for (const row of DEMO_RAW_DATA) {
+          for (const [k, v] of Object.entries(row)) {
+            if (typeof v === 'string' && !['月份'].includes(k)) {
+              if (!dims.has(k)) dims.set(k, new Set());
+              dims.get(k)!.add(v);
+            }
+          }
+        }
+        availableDimensions.value = Array.from(dims.entries())
+          .filter(([, vals]) => vals.size >= 2 && vals.size <= 20)
+          .map(([name, vals]) => ({ name, values: Array.from(vals) }));
+      }
       // Reveal all chart cards with staggered fade-in
       nextTick(() => revealAllCharts());
       ElMessage.success(`成功生成 ${resp.successCount} 个图表`);
@@ -448,10 +496,12 @@ async function handleExportPPT() {
 
   isExportingPPT.value = true;
   try {
+    exportStageText.value = '正在收集图表数据...';
     await nextTick();
     const chartImages = collectChartImages();
     const analysisResults: Record<string, string> = { ...analysisByType.value };
 
+    exportStageText.value = '正在生成PPT文件...';
     const blob = await exportPPT({
       upload_id: uploadId.value ?? undefined,
       year: currentYear.value,
@@ -464,6 +514,7 @@ async function handleExportPPT() {
     });
 
     if (blob) {
+      exportStageText.value = '正在下载文件...';
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -479,6 +530,7 @@ async function handleExportPPT() {
     ElMessage.error('PPT导出失败');
   } finally {
     isExportingPPT.value = false;
+    exportStageText.value = '';
   }
 }
 
@@ -489,9 +541,11 @@ async function handleExportPDF() {
   }
   isExportingPDF.value = true;
   try {
+    exportStageText.value = '正在收集图表数据...';
     await nextTick();
     const chartImages = collectChartImages();
     const analysisResults: Record<string, string> = { ...analysisByType.value };
+    exportStageText.value = '正在生成PDF报告...';
     const blob = await exportPDF({
       chart_images: chartImages,
       analysis_results: analysisResults,
@@ -502,6 +556,7 @@ async function handleExportPDF() {
       end_month: endMonth.value,
     });
     if (blob) {
+      exportStageText.value = '正在下载文件...';
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -517,6 +572,7 @@ async function handleExportPDF() {
     ElMessage.error('PDF导出失败');
   } finally {
     isExportingPDF.value = false;
+    exportStageText.value = '';
   }
 }
 
@@ -527,6 +583,7 @@ async function handleExportExcel() {
   }
   isExportingExcel.value = true;
   try {
+    exportStageText.value = '正在整理数据...';
     const charts = dashboardResponse.value.charts.map(c => ({
       chartType: c.chartType,
       title: c.title,
@@ -534,6 +591,7 @@ async function handleExportExcel() {
       tableData: c.tableData,
     }));
     const analysisResults: Record<string, string> = { ...analysisByType.value };
+    exportStageText.value = '正在生成Excel文件...';
     const blob = await exportExcel({
       charts,
       analysis_results: analysisResults,
@@ -544,6 +602,7 @@ async function handleExportExcel() {
       end_month: endMonth.value,
     });
     if (blob) {
+      exportStageText.value = '正在下载文件...';
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -559,6 +618,7 @@ async function handleExportExcel() {
     ElMessage.error('Excel导出失败');
   } finally {
     isExportingExcel.value = false;
+    exportStageText.value = '';
   }
 }
 
@@ -588,7 +648,7 @@ function renderGenericChart(chartType: string, domEl: Element | null, retries = 
     const renderer = useSvgRenderer.value ? 'svg' : 'canvas';
     instance = echarts.init(domEl, isDarkMode.value ? 'cretas-dark' : undefined, { renderer });
   }
-  const processed = processEChartsOptions(structuredClone(chart.echartsOption) as Record<string, unknown>);
+  const processed = processEChartsOptions(safeClone(chart.echartsOption) as Record<string, unknown>);
 
   // D2: Merge user annotations as ECharts graphic elements
   const chartAnnotations = annotations.value[chartType] || [];
@@ -759,7 +819,7 @@ function toggleDarkMode() {
       const newInstance = echarts.init(domEl, theme);
       const chart = getChart(chartType);
       if (chart?.echartsOption) {
-        const processed = processEChartsOptions(structuredClone(chart.echartsOption) as Record<string, unknown>);
+        const processed = processEChartsOptions(safeClone(chart.echartsOption) as Record<string, unknown>);
         newInstance.setOption(processed, { notMerge: true });
       }
     }
@@ -778,7 +838,7 @@ function toggleDarkMode() {
             : 'cost_flow_sankey';
           const chart = getChart(chartType);
           if (chart?.echartsOption) {
-            const processed = processEChartsOptions(structuredClone(chart.echartsOption) as Record<string, unknown>);
+            const processed = processEChartsOptions(safeClone(chart.echartsOption) as Record<string, unknown>);
             newInst.setOption(processed, { notMerge: true });
           }
         }
@@ -854,7 +914,7 @@ function applyCrossFilter() {
 
     if (!activeFilter.value) {
       // Clear filter — re-render original chart
-      const processed = processEChartsOptions(structuredClone(chart.echartsOption) as Record<string, unknown>);
+      const processed = processEChartsOptions(safeClone(chart.echartsOption) as Record<string, unknown>);
       instance.setOption(processed, { notMerge: true });
       continue;
     }
@@ -936,20 +996,6 @@ function handleCardKeydown(event: KeyboardEvent, cardIndex: number) {
   (cards[nextIdx] as HTMLElement)?.focus();
 }
 
-// ---- A3: KPI sparkline path generator ----
-function sparklinePath(values: number[], width = 60, height = 20): string {
-  if (!values || values.length < 2) return '';
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const step = width / (values.length - 1);
-  return values.map((v, i) => {
-    const x = i * step;
-    const y = height - ((v - min) / range) * height;
-    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
-}
-
 // ---- E1: Synchronized crosshair (tooltip linkage) ----
 // Time-series chart types that share the same x-axis (months)
 const timeSeriesChartTypes = [
@@ -991,6 +1037,7 @@ function connectCharts() {
 }
 
 // ---- E2: Animated KPI counter ----
+const kpiRafIds: number[] = [];
 const animatedKpiValues = ref<Record<string, string>>({});
 
 function animateKpiValue(key: string, targetStr: string, duration = 800) {
@@ -1021,9 +1068,11 @@ function animateKpiValue(key: string, targetStr: string, duration = 800) {
     const current = target * eased;
     const formatted = decimals > 0 ? current.toFixed(decimals) : Math.round(current).toLocaleString('zh-CN');
     animatedKpiValues.value[key] = `${sign}${formatted}${suffix}`;
-    if (progress < 1) requestAnimationFrame(tick);
+    if (progress < 1) {
+      kpiRafIds.push(requestAnimationFrame(tick));
+    }
   }
-  requestAnimationFrame(tick);
+  kpiRafIds.push(requestAnimationFrame(tick));
 }
 
 function startKpiAnimations() {
@@ -1040,6 +1089,42 @@ function startKpiAnimations() {
 function getAnimatedKpi(chartType: string, label: string, original: string | number): string {
   const key = `${chartType}_${label}`;
   return animatedKpiValues.value[key] ?? (typeof original === 'number' ? original.toFixed(1) : String(original));
+}
+
+// ---- Fix 64: Spotlight / Focus mode (Power BI) ----
+const spotlightChart = ref<string | null>(null);
+
+function enterSpotlight(chartType: string) {
+  spotlightChart.value = chartType;
+  // After overlay mounts, render chart in the spotlight container
+  nextTick(() => {
+    nextTick(() => {
+      const domEl = chartDomRefs.value.get(chartType);
+      if (domEl) renderGenericChart(chartType, domEl);
+      // Auto-focus overlay so Escape key works
+      const overlay = document.querySelector('.spotlight-overlay') as HTMLElement;
+      if (overlay) overlay.focus();
+    });
+  });
+}
+
+function exitSpotlight() {
+  const ct = spotlightChart.value;
+  spotlightChart.value = null;
+  // Re-render chart back in original container after teleport unmounts
+  if (ct) {
+    nextTick(() => {
+      nextTick(() => {
+        const domEl = chartDomRefs.value.get(ct);
+        if (domEl) renderGenericChart(ct, domEl);
+      });
+    });
+  }
+}
+
+// Handle Escape key for spotlight
+function handleSpotlightKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && spotlightChart.value) exitSpotlight();
 }
 
 // ---- E4: Data table drawer per chart ----
@@ -1074,6 +1159,8 @@ watch(() => charts.value.length, () => {
 onBeforeUnmount(() => {
   if (autoRefreshTimer) clearInterval(autoRefreshTimer);
   if (resizeRafId) cancelAnimationFrame(resizeRafId);
+  kpiRafIds.forEach((id) => cancelAnimationFrame(id));
+  kpiRafIds.length = 0;
   resizeObserver?.disconnect();
   resizeObserver = null;
   teardownLazyObserver();
@@ -1183,7 +1270,7 @@ onBeforeUnmount(() => {
           <el-dropdown :disabled="!dashboardResponse" trigger="click" @command="handleExportCommand">
             <el-button size="small" :disabled="!dashboardResponse" :loading="isExportingPPT || isExportingPDF || isExportingExcel">
               <el-icon><Download /></el-icon>
-              导出报告 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              {{ exportStageText || '导出报告' }} <el-icon v-if="!exportStageText" class="el-icon--right"><ArrowDown /></el-icon>
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
@@ -1208,6 +1295,36 @@ onBeforeUnmount(() => {
       <span>💡 <b>单击</b>交叉过滤 | <b>双击</b>添加标注 | <b>方向键</b>卡片导航 | <b>Shift+滚轮</b>缩放 | 图表间<b>Tooltip联动</b></span>
     </div>
 
+    <!-- Fix 72: Global Slicer / Filter bar (Power BI style) -->
+    <div v-if="availableDimensions.length > 0 && dashboardResponse && !isGenerating" class="slicer-bar">
+      <span class="slicer-label">筛选器</span>
+      <div v-for="dim in availableDimensions" :key="dim.name" class="slicer-group">
+        <span class="slicer-dim-name">{{ dim.name }}:</span>
+        <el-check-tag
+          v-for="val in dim.values"
+          :key="val"
+          :checked="slicerFilters[dim.name]?.includes(val)"
+          @change="(checked: boolean) => {
+            if (!slicerFilters[dim.name]) slicerFilters[dim.name] = [];
+            if (checked) { slicerFilters[dim.name].push(val); }
+            else { slicerFilters[dim.name] = slicerFilters[dim.name].filter((v: string) => v !== val); }
+            generate();
+          }"
+        >
+          {{ val }}
+        </el-check-tag>
+      </div>
+      <el-button
+        v-if="Object.values(slicerFilters).some((v: string[]) => v.length > 0)"
+        size="small"
+        text
+        type="primary"
+        @click="slicerFilters = {}; generate()"
+      >
+        清除全部
+      </el-button>
+    </div>
+
     <!-- B2: Drill-down breadcrumb -->
     <div v-if="drillDownVisible" class="cross-filter-bar" style="background: rgba(54,179,126,0.08); color: #1B7A4A">
       <div style="display: flex; align-items: center; gap: 4px">
@@ -1225,7 +1342,7 @@ onBeforeUnmount(() => {
 
     <!-- Empty state -->
     <div v-if="!dashboardResponse && !isGenerating" class="empty-state">
-      <el-empty description="请选择数据源和时间范围，点击「生成看板」开始分析" />
+      <SmartBIEmptyState type="no-data" title="请选择数据源和时间范围" description="点击「生成看板」开始分析" :show-action="false" />
     </div>
 
     <!-- Loading skeleton -->
@@ -1283,7 +1400,7 @@ onBeforeUnmount(() => {
           <!-- ECharts canvas rendered via DOM ref -->
           <div
             :ref="(el) => setChartDomRef('expense_yoy_budget', el as Element | null)"
-            style="height: 360px; width: 100%"
+            class="generic-chart-canvas"
           />
         </template>
         <ExpenseYoYBudgetChart
@@ -1340,7 +1457,7 @@ onBeforeUnmount(() => {
           <!-- ECharts canvas rendered via DOM ref -->
           <div
             :ref="(el) => setChartDomRef('gross_margin_trend', el as Element | null)"
-            style="height: 320px; width: 100%"
+            class="generic-chart-canvas"
           />
         </template>
         <GrossMarginTrendChart
@@ -1463,6 +1580,15 @@ onBeforeUnmount(() => {
               </el-tag>
             </div>
             <div style="display: flex; align-items: center; gap: 4px">
+              <!-- Fix 64: Spotlight button -->
+              <el-button
+                size="small"
+                text
+                title="聚焦放大"
+                @click="enterSpotlight(ct.key)"
+              >
+                🔍
+              </el-button>
               <el-button
                 v-if="annotations[ct.key]?.length"
                 size="small"
@@ -1544,7 +1670,6 @@ onBeforeUnmount(() => {
         <div
           :ref="(el) => setChartDomRef(ct.key, el as Element | null)"
           class="generic-chart-canvas"
-          style="height: 340px; width: 100%"
           role="img"
           :aria-label="`${ct.label}图表`"
           title="单击: 交叉过滤 | 双击: 添加标注"
@@ -1581,17 +1706,29 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- E4: Data table drawer -->
+        <!-- E4: Data table drawer (Fix 71: with inline sparklines) -->
         <div v-if="tableVisibleByType[ct.key] && getChart(ct.key)?.tableData" class="chart-data-table">
           <table>
             <thead>
               <tr>
-                <th v-for="col in (getChart(ct.key)!.tableData as Record<string, unknown>)?.columns as string[] ?? []" :key="col">{{ col }}</th>
+                <th v-for="col in (getChart(ct.key)!.tableData as Record<string, unknown>)?.headers as string[] ?? []" :key="col">{{ col }}</th>
+                <th style="min-width:80px">趋势</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, rIdx) in (getChart(ct.key)!.tableData as Record<string, unknown>)?.rows as unknown[][] ?? []" :key="rIdx">
-                <td v-for="(cell, cIdx) in row" :key="cIdx">{{ cell }}</td>
+              <tr v-for="(row, rIdx) in (getChart(ct.key)!.tableData as Record<string, unknown>)?.rows as Record<string, unknown>[] ?? []" :key="rIdx">
+                <td>{{ (row as Record<string, unknown>).label }}</td>
+                <td v-for="(val, vIdx) in ((row as Record<string, unknown>).values as unknown[] ?? [])" :key="vIdx">{{ val }}</td>
+                <!-- Fix 71: Inline sparkline for each row -->
+                <td>
+                  <span
+                    v-if="Array.isArray((row as Record<string, unknown>).values)"
+                    v-html="sparklineSVG(
+                      ((row as Record<string, unknown>).values as unknown[]).map((c: unknown) => parseFloat(String(c)) || 0),
+                      -1, 80, 22, '#1B65A8'
+                    )"
+                  />
+                </td>
               </tr>
             </tbody>
           </table>
@@ -1691,6 +1828,28 @@ onBeforeUnmount(() => {
       :period="periodLabel"
       @close="isPresentationVisible = false"
     />
+
+    <!-- Fix 64: Spotlight overlay -->
+    <Teleport to="body">
+      <div
+        v-if="spotlightChart"
+        class="spotlight-overlay"
+        @click.self="exitSpotlight"
+        @keydown="handleSpotlightKeydown"
+        tabindex="0"
+      >
+        <div class="spotlight-container">
+          <div class="spotlight-header">
+            <span>{{ chartTypes.find(c => c.key === spotlightChart)?.icon }} {{ chartTypes.find(c => c.key === spotlightChart)?.label }}</span>
+            <el-button size="small" text @click="exitSpotlight">✕ 退出聚焦</el-button>
+          </div>
+          <div
+            :ref="(el) => { if (spotlightChart) setChartDomRef(spotlightChart, el as Element | null) }"
+            class="spotlight-chart-canvas"
+          />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -1773,7 +1932,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   font-weight: 600;
   font-size: 14px;
-  color: #303133;
+  color: var(--el-text-color-primary, #303133);
 }
 
 /* Generic KPI row */
@@ -1807,7 +1966,7 @@ onBeforeUnmount(() => {
 .kpi-val {
   font-size: 28px;
   font-weight: 700;
-  color: #1B65A8;
+  color: var(--el-color-primary, #1B65A8);
   font-feature-settings: "tnum";
   letter-spacing: -0.5px;
   line-height: 1.2;
@@ -1815,7 +1974,7 @@ onBeforeUnmount(() => {
 
 .kpi-lbl {
   font-size: 11px;
-  color: #909399;
+  color: var(--el-text-color-secondary, #909399);
   margin-top: 4px;
 }
 
@@ -1828,15 +1987,21 @@ onBeforeUnmount(() => {
 
 /* A6: Trend border accent */
 .generic-kpi-chip.kpi-up {
-  border-left: 3px solid #36B37E;
+  border-left: 3px solid var(--el-color-success, #36B37E);
 }
 
 .generic-kpi-chip.kpi-down {
-  border-left: 3px solid #FF5630;
+  border-left: 3px solid var(--el-color-danger, #FF5630);
 }
 
 .generic-kpi-chip {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.generic-kpi-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Quarterly progress bars (budget_achievement) */
@@ -1857,7 +2022,7 @@ onBeforeUnmount(() => {
 .q-label {
   font-size: 12px;
   font-weight: 600;
-  color: #606266;
+  color: var(--el-text-color-regular, #606266);
   white-space: nowrap;
 }
 
@@ -1892,7 +2057,7 @@ onBeforeUnmount(() => {
 .data-row-label {
   font-size: 11px;
   font-weight: 600;
-  color: #909399;
+  color: var(--el-text-color-secondary, #909399);
   width: 36px;
   flex-shrink: 0;
 }
@@ -1901,7 +2066,7 @@ onBeforeUnmount(() => {
   flex: 1;
   text-align: center;
   font-size: 11px;
-  color: #606266;
+  color: var(--el-text-color-regular, #606266);
 }
 
 /* Chart card title group */
@@ -1909,6 +2074,14 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chart-card-title-group .chart-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* D3: Anomaly badge */
@@ -1920,13 +2093,13 @@ onBeforeUnmount(() => {
 /* Interaction tips */
 .interaction-tips {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary, #909399);
   text-align: center;
   margin-bottom: 8px;
 }
 
 .interaction-tips b {
-  color: #606266;
+  color: var(--el-text-color-regular, #606266);
 }
 
 /* B1: Cross-filter bar */
@@ -1939,19 +2112,19 @@ onBeforeUnmount(() => {
   padding: 8px 16px;
   margin-bottom: 12px;
   font-size: 13px;
-  color: #1B65A8;
+  color: var(--el-color-primary, #1B65A8);
 }
 
 /* Analysis panel */
 .analysis-panel {
   margin-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--el-border-color-lighter, #f0f0f0);
   padding-top: 12px;
 }
 
 .analysis-text {
   font-size: 13px;
-  color: #606266;
+  color: var(--el-text-color-regular, #606266);
   line-height: 1.7;
   white-space: pre-wrap;
   background: rgba(27, 101, 168, 0.04);
@@ -1961,29 +2134,29 @@ onBeforeUnmount(() => {
 
 /* ---- B3: Dark mode ---- */
 .financial-dashboard-pbi[data-theme="dark"] {
-  background: #1a1a2e;
-  color: #e0e0e0;
+  background: var(--bg-color-page);
+  color: var(--text-color-primary);
 }
 
 .financial-dashboard-pbi[data-theme="dark"] .toolbar-card,
 .financial-dashboard-pbi[data-theme="dark"] .chart-card,
 .financial-dashboard-pbi[data-theme="dark"] .dashboard-card {
-  background: #16213e;
-  border-color: #2a2a4a;
+  background: var(--bg-color-overlay);
+  border-color: var(--border-color);
 }
 
 .financial-dashboard-pbi[data-theme="dark"] :deep(.el-card) {
-  background: #16213e;
-  border-color: #2a2a4a;
-  color: #e0e0e0;
+  background: var(--bg-color-overlay);
+  border-color: var(--border-color);
+  color: var(--text-color-primary);
 }
 
 .financial-dashboard-pbi[data-theme="dark"] :deep(.el-card__header) {
-  border-bottom-color: #2a2a4a;
+  border-bottom-color: var(--border-color);
 }
 
 .financial-dashboard-pbi[data-theme="dark"] .chart-card-header {
-  color: #e0e0e0;
+  color: var(--text-color-primary);
 }
 
 .financial-dashboard-pbi[data-theme="dark"] .generic-kpi-chip {
@@ -1991,16 +2164,16 @@ onBeforeUnmount(() => {
 }
 
 .financial-dashboard-pbi[data-theme="dark"] .kpi-val {
-  color: #4C9AFF;
+  color: var(--color-primary-light);
 }
 
 .financial-dashboard-pbi[data-theme="dark"] .kpi-lbl {
-  color: #a0a0b0;
+  color: var(--text-color-secondary);
 }
 
 .financial-dashboard-pbi[data-theme="dark"] .analysis-text {
   background: rgba(255, 255, 255, 0.04);
-  color: #c0c0d0;
+  color: var(--text-color-regular);
 }
 
 .financial-dashboard-pbi[data-theme="dark"] .monthly-data-rows {
@@ -2009,12 +2182,18 @@ onBeforeUnmount(() => {
 
 .financial-dashboard-pbi[data-theme="dark"] .data-row-cell,
 .financial-dashboard-pbi[data-theme="dark"] .data-row-label {
-  color: #a0a0b0;
+  color: var(--text-color-secondary);
 }
 
 .financial-dashboard-pbi[data-theme="dark"] .cross-filter-bar {
   background: rgba(76, 154, 255, 0.12);
-  color: #4C9AFF;
+  color: var(--color-primary-light);
+}
+
+/* ---- Chart canvas base height (overridden by responsive breakpoints) ---- */
+.generic-chart-canvas {
+  height: 360px;
+  width: 100%;
 }
 
 /* ---- C2: Responsive breakpoints ---- */
@@ -2141,16 +2320,16 @@ onBeforeUnmount(() => {
   padding: 6px 10px;
   text-align: left;
   font-weight: 600;
-  color: #303133;
-  border-bottom: 2px solid #e8e8e8;
+  color: var(--el-text-color-primary, #303133);
+  border-bottom: 2px solid var(--el-border-color, #e8e8e8);
   position: sticky;
   top: 0;
   white-space: nowrap;
 }
 .chart-data-table td {
   padding: 5px 10px;
-  border-bottom: 1px solid #f0f0f0;
-  color: #606266;
+  border-bottom: 1px solid var(--el-border-color-lighter, #f0f0f0);
+  color: var(--el-text-color-regular, #606266);
   white-space: nowrap;
 }
 .chart-data-table tr:hover td {
@@ -2200,12 +2379,12 @@ onBeforeUnmount(() => {
 }
 .financial-dashboard-pbi[data-theme="dark"] .chart-data-table th {
   background: rgba(76, 154, 255, 0.1);
-  color: #e0e0e0;
-  border-bottom-color: #2a2a4a;
+  color: var(--text-color-primary);
+  border-bottom-color: var(--border-color);
 }
 .financial-dashboard-pbi[data-theme="dark"] .chart-data-table td {
-  color: #a0a0b0;
-  border-bottom-color: #2a2a4a;
+  color: var(--text-color-secondary);
+  border-bottom-color: var(--border-color);
 }
 .financial-dashboard-pbi[data-theme="dark"] .chart-data-table tr:hover td {
   background: rgba(76, 154, 255, 0.06);
@@ -2251,5 +2430,82 @@ onBeforeUnmount(() => {
     min-width: 120px;
     flex: 1 1 45%;
   }
+}
+
+/* ---- Fix 72: Slicer / filter bar ---- */
+.slicer-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: rgba(27, 101, 168, 0.04);
+  border: 1px solid rgba(27, 101, 168, 0.1);
+  border-radius: 8px;
+  padding: 8px 16px;
+  margin-bottom: 12px;
+}
+.slicer-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #909399;
+  white-space: nowrap;
+}
+.slicer-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.slicer-dim-name {
+  font-size: 12px;
+  color: #606266;
+  white-space: nowrap;
+  margin-right: 2px;
+}
+.slicer-bar :deep(.el-check-tag) {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+/* ---- Fix 64: Spotlight overlay ---- */
+.spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.spotlight-container {
+  position: relative;
+  width: 90vw;
+  height: 85vh;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.spotlight-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  flex-shrink: 0;
+}
+.spotlight-chart-canvas {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
 }
 </style>

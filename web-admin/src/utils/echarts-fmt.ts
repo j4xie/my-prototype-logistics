@@ -8,6 +8,8 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { sparklineSVG } from './sparkline';
+
 // ---- Animation registry ----
 const ANIM_REGISTRY: Record<string, (idx: number) => number> = {
   stagger_80: (idx) => idx * 80,
@@ -220,6 +222,33 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
       html += `</div>`;
     }
 
+    // Fix 68: Sparkline mini-chart in tooltip (Power BI Tooltip Pages)
+    // Show sparkline for the first series that has enough data points
+    if (params.length > 0) {
+      const firstP = params[0];
+      const seriesData = firstP.data;
+      // Try to get full series data from encode or series context
+      const dataIdx = firstP.dataIndex as number | undefined;
+      // If series has the full data array available via seriesData
+      if (Array.isArray((firstP as any).dimensionNames) || typeof dataIdx === 'number') {
+        // Get all values from the series to build sparkline
+        const fullData: number[] = [];
+        const componentIndex = firstP.seriesIndex ?? 0;
+        // Access params' series data if available
+        if ((firstP as any).series?.data) {
+          const sd = (firstP as any).series.data;
+          for (const d of sd) {
+            const v = typeof d === 'number' ? d : (Array.isArray(d) ? d[1] : d?.value);
+            fullData.push(typeof v === 'number' ? v : parseFloat(v) || 0);
+          }
+        }
+        if (fullData.length >= 3) {
+          const color = firstP.color && typeof firstP.color === 'string' ? firstP.color : '#1B65A8';
+          html += sparklineSVG(fullData, typeof dataIdx === 'number' ? dataIdx : -1, 140, 28, color);
+        }
+      }
+    }
+
     return html;
   },
   stack_total: (p: any) => {
@@ -229,6 +258,19 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
     if (abs >= 1e8) return (v / 1e8).toFixed(1) + '亿';
     if (abs >= 1e4) return (v / 1e4).toFixed(1) + '万';
     return v.toLocaleString('zh-CN');
+  },
+  // Fix 69: CAGR annotation label formatter
+  cagr_annotation: (p: any) => {
+    const val = p.value ?? p.data?.value;
+    if (typeof val === 'string') return val;
+    if (typeof val === 'number') return `CAGR ${val >= 0 ? '+' : ''}${val.toFixed(1)}%`;
+    return '';
+  },
+  // Fix 70: R² label formatter
+  r_squared_label: (p: any) => {
+    const val = p.value ?? p.data?.value;
+    if (typeof val === 'number') return `R²=${val.toFixed(2)}`;
+    return String(val ?? '');
   },
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */

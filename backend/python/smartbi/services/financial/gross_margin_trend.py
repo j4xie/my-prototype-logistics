@@ -209,6 +209,10 @@ class GrossMarginTrendBuilder(AbstractFinancialChartBuilder):
         })
         self._apply_datazoom(option)
 
+        # Fix 70: Trend line + R² for current year margin
+        if len(current_margins) >= 3:
+            self._add_trend_series(option, current_margins, "毛利率趋势线")
+
         # Quarter markArea
         mark_areas = self._quarter_mark_areas(start_month, end_month)
         if mark_areas:

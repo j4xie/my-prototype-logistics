@@ -31,6 +31,7 @@ const chartRef = ref<HTMLDivElement | null>(null);
 let chartInstance: echarts.ECharts | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let rafId = 0;
+let prevChartType: string | null = null; // Fix 63: track chart type for transition
 
 const PIE_COLORS = CHART_COLORS;
 
@@ -148,7 +149,11 @@ function updateChart() {
         iconStyle: { borderColor: '#9ca3af' },
         emphasis: { iconStyle: { borderColor: '#1B65A8' } },
       };
-      chartInstance.setOption(option, { notMerge: true, lazyUpdate: true });
+      // Fix 63: Use notMerge=false when same chart type for smooth data transitions
+      const curChartType = (props.config as Record<string, unknown>).chartType as string | undefined;
+      const sameType = prevChartType != null && curChartType === prevChartType;
+      prevChartType = curChartType || null;
+      chartInstance.setOption(option, { notMerge: !sameType, lazyUpdate: true });
     }
   } catch (err) {
     console.error('[DynamicChartRenderer] setOption failed:', err);

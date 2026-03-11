@@ -37,13 +37,13 @@
 
     <!-- Distribution Charts -->
     <el-row :gutter="16" class="chart-row">
-      <el-col :span="12">
+      <el-col :span="12" :xs="24">
         <el-card shadow="hover">
           <template #header>评分分布</template>
           <div ref="ratingChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
-      <el-col :span="12">
+      <el-col :span="12" :xs="24">
         <el-card shadow="hover">
           <template #header>反馈类型分布</template>
           <div ref="typeChartRef" class="chart-container"></div>
@@ -351,12 +351,13 @@ onUnmounted(() => {
   resizeObserver?.disconnect()
   resizeObserver = null
   window.removeEventListener('resize', handleResize)
+  if (resizeRaf) { cancelAnimationFrame(resizeRaf); resizeRaf = 0 }
   ratingChart?.dispose()
   typeChart?.dispose()
 })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .food-kb-feedback {
   padding: 20px;
 }
@@ -374,7 +375,7 @@ onUnmounted(() => {
 }
 .subtitle {
   margin: 4px 0 0;
-  color: #909399;
+  color: var(--el-text-color-secondary, #909399);
   font-size: 13px;
 }
 .stats-grid {
@@ -385,19 +386,31 @@ onUnmounted(() => {
 }
 .stat-card {
   text-align: center;
+  border-top: 3px solid var(--el-color-primary, #1B65A8);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: default;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+  &:nth-child(1) { border-top-color: #1B65A8; }
+  &:nth-child(2) { border-top-color: #FFAB00; }
+  &:nth-child(3) { border-top-color: #36B37E; }
+  &:nth-child(4) { border-top-color: #FF5630; }
 }
 .stat-value {
   font-size: 32px;
   font-weight: 700;
-  color: #303133;
+  font-variant-numeric: tabular-nums;
+  color: var(--el-text-color-primary, #303133);
   line-height: 1.2;
 }
-.stat-value.positive { color: #67C23A; }
-.stat-value.neutral { color: #E6A23C; }
-.stat-value.negative { color: #F56C6C; }
+.stat-value.positive { color: var(--el-color-success, #67C23A); }
+.stat-value.neutral { color: var(--el-color-warning, #E6A23C); }
+.stat-value.negative { color: var(--el-color-danger, #F56C6C); }
 .stat-label {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary, #909399);
   margin-top: 4px;
 }
 .chart-row {
@@ -405,6 +418,15 @@ onUnmounted(() => {
 }
 .chart-container {
   height: 280px;
+}
+.chart-row :deep(.el-card),
+.table-card,
+.export-card {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
 }
 .table-card {
   margin-bottom: 16px;
@@ -418,10 +440,22 @@ onUnmounted(() => {
   margin-right: 6px;
 }
 .comment-text {
-  color: #606266;
+  color: var(--el-text-color-regular, #606266);
   font-size: 13px;
 }
 .export-card {
   margin-bottom: 16px;
+}
+
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

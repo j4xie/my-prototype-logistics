@@ -115,10 +115,12 @@ function getScoreClass(score: number): string {
   return 'score-low'
 }
 
+// Centralized score color mapping — used by progress bars, score text, and module card borders
+const SCORE_COLORS = { good: 'var(--el-color-success, #10b981)', medium: 'var(--el-color-warning, #f59e0b)', low: 'var(--el-color-danger, #ef4444)' } as const
 function getScoreColor(score: number): string {
-  if (score >= 75) return '#10b981'
-  if (score >= 50) return '#f59e0b'
-  return '#ef4444'
+  if (score >= 75) return SCORE_COLORS.good
+  if (score >= 50) return SCORE_COLORS.medium
+  return SCORE_COLORS.low
 }
 
 function selectModule(item: CompletenessItem) {
@@ -285,7 +287,7 @@ onMounted(loadData)
     <!-- Field Detail Table -->
     <div class="detail-section" v-if="selectedModule">
       <h3>{{ entityLabel(selectedModule.entityType) }} - 字段完整度</h3>
-      <el-table :data="fieldTableData" stripe>
+      <el-table :data="fieldTableData" stripe :max-height="480">
         <el-table-column prop="field" label="字段" min-width="140" />
         <el-table-column prop="completeness" label="完整度" width="120">
           <template #default="{ row }">
@@ -334,7 +336,7 @@ onMounted(loadData)
     h2 {
       margin: 12px 0 0;
       font-size: 20px;
-      color: #303133;
+      color: var(--el-text-color-primary, #303133);
     }
   }
 }
@@ -359,20 +361,20 @@ onMounted(loadData)
   margin: 0 auto;
 
   .notice-icon {
-    color: #1B65A8;
+    color: var(--el-color-primary, #1B65A8);
     margin-bottom: 16px;
   }
 
   h3 {
     font-size: 18px;
     font-weight: 600;
-    color: #303133;
+    color: var(--el-text-color-primary, #303133);
     margin: 0 0 12px;
   }
 
   .notice-desc {
     font-size: 14px;
-    color: #606266;
+    color: var(--el-text-color-regular, #606266);
     line-height: 1.6;
     margin: 0 0 20px;
   }
@@ -388,7 +390,7 @@ onMounted(loadData)
     gap: 8px;
     padding: 6px 0;
     font-size: 13px;
-    color: #606266;
+    color: var(--el-text-color-regular, #606266);
 
     .feature-dot {
       width: 8px;
@@ -397,7 +399,7 @@ onMounted(loadData)
       flex-shrink: 0;
 
       &.good {
-        background: #10b981;
+        background: var(--el-color-success, #10b981);
       }
     }
   }
@@ -419,13 +421,13 @@ onMounted(loadData)
 
     .summary-label {
       font-size: 13px;
-      color: #909399;
+      color: var(--el-text-color-secondary, #909399);
     }
 
     .summary-value {
       font-size: 18px;
       font-weight: 600;
-      color: #303133;
+      color: var(--el-text-color-primary, #303133);
       font-variant-numeric: tabular-nums;
     }
   }
@@ -453,19 +455,19 @@ onMounted(loadData)
   }
 
   &.selected {
-    border-color: #1B65A8;
+    border-color: var(--el-color-primary, #1B65A8);
   }
 
   &.score-good {
-    border-left: 4px solid #10b981;
+    border-left: 4px solid var(--el-color-success, #10b981);
   }
 
   &.score-medium {
-    border-left: 4px solid #f59e0b;
+    border-left: 4px solid var(--el-color-warning, #f59e0b);
   }
 
   &.score-low {
-    border-left: 4px solid #ef4444;
+    border-left: 4px solid var(--el-color-danger, #ef4444);
   }
 }
 
@@ -479,12 +481,12 @@ onMounted(loadData)
   font-size: 15px;
   font-weight: 600;
   margin: 4px 0;
-  color: #303133;
+  color: var(--el-text-color-primary, #303133);
 }
 
 .module-records {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary, #909399);
   margin-bottom: 8px;
 }
 
@@ -496,7 +498,7 @@ onMounted(loadData)
 
   h3 {
     margin: 0 0 12px 0;
-    color: #303133;
+    color: var(--el-text-color-primary, #303133);
   }
 }
 </style>

@@ -32,6 +32,9 @@ import {
   CreditCard,
   Document,
   Warning,
+  WarningFilled,
+  SuccessFilled,
+  InfoFilled,
   Calendar,
   View,
   Close
@@ -108,6 +111,9 @@ const loading = ref(false);
 const loadError = ref('');
 const noSystemData = ref(false);
 
+// AbortController: cancel in-flight requests when filters change
+let financeAbortController: AbortController | null = null;
+
 // Data quality check: flag extreme values or all-zero tabs
 const dataQualityWarning = computed(() => {
   if (selectedDataSource.value !== 'system') return '';
@@ -160,6 +166,14 @@ const selectedDataSource = ref<string>('');
 
 // AI 洞察
 const aiInsights = ref<string[]>([]);
+
+// Infer insight severity from content keywords for visual differentiation
+function getInsightType(text: string): { icon: typeof WarningFilled; tagType: '' | 'success' | 'warning' | 'danger' | 'info' } {
+  if (/增长|上升|改善|提升|超额|达标/.test(text)) return { icon: SuccessFilled, tagType: 'success' };
+  if (/下降|亏损|减少|低于|恶化|不足|严重/.test(text)) return { icon: WarningFilled, tagType: 'danger' };
+  if (/注意|关注|波动|风险|异常/.test(text)) return { icon: Warning, tagType: 'warning' };
+  return { icon: InfoFilled, tagType: 'info' };
+}
 
 // 数据预览对话框
 const showDataPreview = ref(false);
@@ -880,6 +894,11 @@ function formatDate(date: Date): string {
 async function loadFinanceData() {
   if (!factoryId.value || !dateRange.value) return;
 
+  // Cancel previous in-flight request
+  if (financeAbortController) financeAbortController.abort();
+  financeAbortController = new AbortController();
+  const signal = financeAbortController.signal;
+
   loading.value = true;
   loadError.value = '';
   // Reset previous chart/warnings to avoid stale data when switching analysis types
@@ -898,7 +917,8 @@ async function loadFinanceData() {
           startDate,
           endDate,
           analysisType: analysisType.value
-        }
+        },
+        signal,
       }
     );
 
@@ -1095,6 +1115,9 @@ async function loadFinanceData() {
       resetData();
     }
   } catch (error) {
+    // Ignore aborted requests (user changed filters quickly)
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    if (signal?.aborted) return;
     console.warn('加载系统财务数据失败:', error);
     resetData();
     // 如果有上传数据，自动切换而非显示错误横幅
@@ -1107,8 +1130,10 @@ async function loadFinanceData() {
     // 无上传数据时才显示友好提示（info 而非 error）
     loadError.value = '系统财务数据暂不可用，请上传 Excel 数据进行分析';
   } finally {
-    loading.value = false;
-    generateSmartWarnings();
+    if (!signal?.aborted) {
+      loading.value = false;
+      generateSmartWarnings();
+    }
   }
 }
 
@@ -1771,14 +1796,14 @@ onUnmounted(() => {
       <!-- 利润分析 KPI -->
       <template v-if="analysisType === 'profit'">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
+          <el-card class="kpi-card kpi-accent-0">
             <div class="kpi-label">毛利润</div>
             <div class="kpi-value" :style="{ color: kpiData.grossProfit < 0 ? '#dc2626' : undefined }">{{ formatMoney(kpiData.grossProfit) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">毛利率 {{ formatPercent(kpiData.grossProfitMargin) }}</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
+          <el-card class="kpi-card kpi-accent-1">
             <div class="kpi-label">净利润</div>
             <div class="kpi-value" :style="{ color: kpiData.netProfit < 0 ? '#dc2626' : undefined }">{{ formatMoney(kpiData.netProfit) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">净利率 {{ formatPercent(kpiData.netProfitMargin) }}</div>
@@ -1789,7 +1814,7 @@ onUnmounted(() => {
       <!-- 成本分析 KPI -->
       <template v-if="analysisType === 'cost'">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
+          <el-card class="kpi-card kpi-accent-0">
             <div class="kpi-label">总成本</div>
             <div class="kpi-value">{{ formatMoney(kpiData.totalCost) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub" :class="kpiData.costGrowth >= 0 ? 'growth-down' : 'growth-up'">
@@ -1798,21 +1823,21 @@ onUnmounted(() => {
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
+          <el-card class="kpi-card kpi-accent-1">
             <div class="kpi-label">原材料成本</div>
             <div class="kpi-value">{{ formatMoney(kpiData.materialCost) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">占比 {{ kpiData.totalCost > 0 ? ((kpiData.materialCost / kpiData.totalCost) * 100).toFixed(0) : 0 }}%</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
+          <el-card class="kpi-card kpi-accent-2">
             <div class="kpi-label">人工成本</div>
             <div class="kpi-value">{{ formatMoney(kpiData.laborCost) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">占比 {{ kpiData.totalCost > 0 ? ((kpiData.laborCost / kpiData.totalCost) * 100).toFixed(0) : 0 }}%</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
+          <el-card class="kpi-card kpi-accent-3">
             <div class="kpi-label">间接成本</div>
             <div class="kpi-value">{{ formatMoney(kpiData.overheadCost) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">占比 {{ kpiData.totalCost > 0 ? ((kpiData.overheadCost / kpiData.totalCost) * 100).toFixed(0) : 0 }}%</div>
@@ -1823,27 +1848,27 @@ onUnmounted(() => {
       <!-- 应收分析 KPI -->
       <template v-if="analysisType === 'receivable'">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
+          <el-card class="kpi-card kpi-accent-0">
             <div class="kpi-label">应收总额</div>
             <div class="kpi-value">{{ formatMoney(kpiData.totalReceivable) }}<small class="kpi-unit">元</small></div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card success">
+          <el-card class="kpi-card success kpi-accent-1">
             <div class="kpi-label">30天内</div>
             <div class="kpi-value">{{ formatMoney(kpiData.receivableAge30) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">正常账期</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card warning">
+          <el-card class="kpi-card warning kpi-accent-2">
             <div class="kpi-label">逾期30-60天</div>
             <div class="kpi-value">{{ formatMoney(kpiData.receivableAge60) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">需关注</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card danger">
+          <el-card class="kpi-card danger kpi-accent-4">
             <div class="kpi-label">逾期90天+</div>
             <div class="kpi-value">{{ formatMoney(kpiData.receivableAge90Plus) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">高风险</div>
@@ -1854,27 +1879,27 @@ onUnmounted(() => {
       <!-- 应付分析 KPI -->
       <template v-if="analysisType === 'payable'">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
+          <el-card class="kpi-card kpi-accent-0">
             <div class="kpi-label">应付总额</div>
             <div class="kpi-value">{{ formatMoney(kpiData.totalPayable) }}<small class="kpi-unit">元</small></div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card success">
+          <el-card class="kpi-card success kpi-accent-1">
             <div class="kpi-label">30天内</div>
             <div class="kpi-value">{{ formatMoney(kpiData.payableAge30) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">正常账期</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card warning">
+          <el-card class="kpi-card warning kpi-accent-2">
             <div class="kpi-label">30-60天</div>
             <div class="kpi-value">{{ formatMoney(kpiData.payableAge60) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">即将到期</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card danger">
+          <el-card class="kpi-card danger kpi-accent-4">
             <div class="kpi-label">逾期90天+</div>
             <div class="kpi-value">{{ formatMoney(kpiData.payableAge90Plus) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">需立即处理</div>
@@ -1885,26 +1910,26 @@ onUnmounted(() => {
       <!-- 预算分析 KPI -->
       <template v-if="analysisType === 'budget'">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
+          <el-card class="kpi-card kpi-accent-0">
             <div class="kpi-label">年度预算</div>
             <div class="kpi-value">{{ formatMoney(kpiData.budgetTotal) }}<small class="kpi-unit">元</small></div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
+          <el-card class="kpi-card kpi-accent-3">
             <div class="kpi-label">已使用</div>
             <div class="kpi-value">{{ formatMoney(kpiData.budgetUsed) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">使用率 {{ formatPercent(kpiData.budgetUsageRate) }}</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card success">
+          <el-card class="kpi-card success kpi-accent-1">
             <div class="kpi-label">剩余预算</div>
             <div class="kpi-value">{{ formatMoney(kpiData.budgetRemaining) }}<small class="kpi-unit">元</small></div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
+          <el-card class="kpi-card kpi-accent-2">
             <div class="kpi-label">预算进度</div>
             <el-progress
               :percentage="kpiData.budgetUsageRate"
@@ -1996,13 +2021,16 @@ onUnmounted(() => {
           <el-tag type="success" size="small" style="margin-left: 8px">来自上传数据</el-tag>
         </div>
       </template>
-      <div class="insight-list">
+      <div class="insight-list" role="list">
         <div
           v-for="(insight, index) in aiInsights"
           :key="index"
           class="insight-item"
+          role="listitem"
         >
-          <el-icon class="insight-icon"><TrendCharts /></el-icon>
+          <el-tag :type="getInsightType(insight).tagType" size="small" style="flex-shrink:0">
+            <el-icon><component :is="getInsightType(insight).icon" /></el-icon>
+          </el-tag>
           <span>{{ insight }}</span>
         </div>
       </div>
@@ -2146,7 +2174,7 @@ onUnmounted(() => {
       align-items: center;
       gap: 4px;
       font-size: 13px;
-      color: #606266;
+      color: var(--el-text-color-regular, #606266);
       white-space: nowrap;
     }
   }
@@ -2173,31 +2201,31 @@ onUnmounted(() => {
     gap: 8px;
     padding: 10px 20px;
     border-radius: 8px;
-    background: #f5f7fa;
+    background: var(--el-fill-color-light, #f5f7fa);
     cursor: pointer;
     transition: all 0.3s;
     white-space: nowrap;
 
     .el-icon {
       font-size: 18px;
-      color: #909399;
+      color: var(--el-text-color-secondary, #909399);
     }
 
     span {
       font-size: 14px;
-      color: #606266;
+      color: var(--el-text-color-regular, #606266);
     }
 
     &:hover {
-      background: #ecf5ff;
+      background: var(--el-color-primary-light-9, #ecf5ff);
 
       .el-icon, span {
-        color: #1B65A8;
+        color: var(--el-color-primary, #1B65A8);
       }
     }
 
     &.active {
-      background: #1B65A8;
+      background: var(--el-color-primary, #1B65A8);
 
       .el-icon, span {
         color: #fff;
@@ -2219,50 +2247,65 @@ onUnmounted(() => {
   border-radius: 8px;
   text-align: center;
   padding: 8px 0;
-  border-left: 4px solid #1B65A8;
+  border-top: 3px solid var(--el-color-primary, #1B65A8);
+  border-left: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: default;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
 
   &.success {
-    border-left-color: #67C23A;
+    border-top-color: var(--el-color-success, #67C23A);
   }
 
   &.warning {
-    border-left-color: #E6A23C;
+    border-top-color: var(--el-color-warning, #E6A23C);
   }
 
   &.danger {
-    border-left-color: #F56C6C;
+    border-top-color: var(--el-color-danger, #F56C6C);
   }
+
+  &.kpi-accent-0 { border-top-color: #1B65A8; }
+  &.kpi-accent-1 { border-top-color: #36B37E; }
+  &.kpi-accent-2 { border-top-color: #FFAB00; }
+  &.kpi-accent-3 { border-top-color: #6554C0; }
+  &.kpi-accent-4 { border-top-color: #FF5630; }
 
   .kpi-label {
     font-size: 13px;
-    color: #909399;
+    color: var(--el-text-color-secondary, #909399);
     margin-bottom: 8px;
   }
 
   .kpi-value {
     font-size: 26px;
     font-weight: 600;
-    color: #303133;
+    white-space: nowrap;
+    color: var(--el-text-color-primary, #303133);
     margin-bottom: 4px;
 
     .kpi-unit {
       font-size: 14px;
       font-weight: 400;
-      color: #909399;
+      color: var(--el-text-color-secondary, #909399);
       margin-left: 2px;
     }
   }
 
   .kpi-sub {
     font-size: 12px;
-    color: #909399;
+    color: var(--el-text-color-secondary, #909399);
 
     &.growth-up {
-      color: #67C23A;
+      color: var(--el-color-success, #67C23A);
     }
 
     &.growth-down {
-      color: #F56C6C;
+      color: var(--el-color-danger, #F56C6C);
     }
   }
 }
@@ -2277,6 +2320,12 @@ onUnmounted(() => {
 .chart-card, .warning-card {
   border-radius: 8px;
   height: 100%;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
 
   .card-header {
     display: flex;
@@ -2285,7 +2334,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #1B65A8;
+      color: var(--el-color-primary, #1B65A8);
     }
   }
 }
@@ -2308,7 +2357,7 @@ onUnmounted(() => {
     display: flex;
     gap: 12px;
     padding: 14px 0;
-    border-bottom: 1px solid #f0f2f5;
+    border-bottom: 1px solid var(--el-border-color-lighter, #f0f2f5);
 
     &:last-child {
       border-bottom: none;
@@ -2323,19 +2372,19 @@ onUnmounted(() => {
 
       .warning-title {
         font-weight: 500;
-        color: #303133;
+        color: var(--el-text-color-primary, #303133);
         margin-bottom: 4px;
       }
 
       .warning-desc {
         font-size: 13px;
-        color: #909399;
+        color: var(--el-text-color-secondary, #909399);
         margin-bottom: 4px;
       }
 
       .warning-amount {
         font-size: 12px;
-        color: #606266;
+        color: var(--el-text-color-regular, #606266);
       }
     }
   }
@@ -2345,7 +2394,7 @@ onUnmounted(() => {
 .exploration-card {
   margin-top: 16px;
   border-radius: 8px;
-  border-left: 4px solid #1B65A8;
+  border-left: 4px solid var(--el-color-primary, #1B65A8);
 
   .card-header {
     display: flex;
@@ -2354,7 +2403,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #1B65A8;
+      color: var(--el-color-primary, #1B65A8);
     }
   }
 }
@@ -2367,10 +2416,10 @@ onUnmounted(() => {
 }
 
 .exploration-chart-item {
-  background: #fafbfc;
+  background: var(--el-fill-color-lighter, #fafbfc);
   border-radius: 8px;
   padding: 12px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-light, #ebeef5);
   transition: box-shadow 0.3s;
 
   &:hover {
@@ -2388,7 +2437,7 @@ onUnmounted(() => {
 .exploration-chart-title {
   font-size: 13px;
   font-weight: 500;
-  color: #303133;
+  color: var(--el-text-color-primary, #303133);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2404,7 +2453,7 @@ onUnmounted(() => {
 
   .datasource-meta {
     font-size: 12px;
-    color: #909399;
+    color: var(--el-text-color-secondary, #909399);
   }
 }
 
@@ -2412,7 +2461,7 @@ onUnmounted(() => {
 .insight-card {
   margin-top: 16px;
   border-radius: 8px;
-  border-left: 4px solid #67C23A;
+  border-left: 4px solid var(--el-color-success, #67C23A);
 
   .card-header {
     display: flex;
@@ -2421,7 +2470,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #67C23A;
+      color: var(--el-color-success, #67C23A);
     }
   }
 }
@@ -2431,19 +2480,18 @@ onUnmounted(() => {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    padding: 12px 0;
-    border-bottom: 1px solid #f0f2f5;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--el-border-color-lighter, #f0f2f5);
     line-height: 1.6;
-    color: #303133;
+    color: var(--el-text-color-primary, #303133);
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--el-fill-color-lighter, #fafafa);
+    }
 
     &:last-child {
       border-bottom: none;
-    }
-
-    .insight-icon {
-      flex-shrink: 0;
-      margin-top: 2px;
-      color: #67C23A;
     }
   }
 }
@@ -2456,10 +2504,10 @@ onUnmounted(() => {
     align-items: center;
     margin-bottom: 16px;
     padding: 8px 12px;
-    background: #f5f7fa;
+    background: var(--el-fill-color-light, #f5f7fa);
     border-radius: 4px;
     font-size: 13px;
-    color: #606266;
+    color: var(--el-text-color-regular, #606266);
   }
 
   .preview-pagination {

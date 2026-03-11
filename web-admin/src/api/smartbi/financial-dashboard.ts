@@ -13,6 +13,7 @@ export interface FinancialDashboardRequest {
   start_month?: number;
   end_month?: number;
   factory_id?: string;
+  filters?: Record<string, string[]>; // Fix 72: Global slicer filters
 }
 
 export interface ChartKPI {
@@ -62,6 +63,7 @@ export interface DashboardResponse {
   period: PeriodInfo;
   totalCharts: number;
   successCount: number;
+  availableDimensions?: { name: string; values: string[] }[]; // Fix 72: Slicer dimensions
 }
 
 export interface PPTExportRequest {

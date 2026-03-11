@@ -28,12 +28,16 @@ import {
   Location,
   Goods,
   Upload,
-  Document
+  Document,
+  InfoFilled,
+  User
 } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
 import { formatNumber, formatCount, formatAxisValue } from '@/utils/format-number';
 import { CHART_COLORS } from '@/constants/chart-colors';
+import { sparklinePath } from '@/utils/sparkline';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
+import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 import { enhanceChartDefaults } from '@/composables/useChartEnhancer';
 
 const router = useRouter();
@@ -299,28 +303,14 @@ const kpiSparklines = computed(() => {
   return { revenue, profit, orders, customers };
 });
 
-/** Generate SVG path for a sparkline from data array */
-function _sparklinePath(data: number[]): string {
-  if (!data || data.length < 2) return '';
-  const width = 60, height = 22, pad = 2;
-  const min = Math.min(...data), max = Math.max(...data);
-  const range = max - min || 1;
-  const points = data.map((v, i) => {
-    const x = pad + (i / (data.length - 1)) * (width - pad * 2);
-    const y = height - pad - ((v - min) / range) * (height - pad * 2);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  return `M ${points.join(' L ')}`;
-}
-
 /** Cached sparkline SVG paths and colors — avoid re-computation on each render */
 const kpiSparklinePaths = computed(() => {
   const s = kpiSparklines.value;
   return {
-    revenue: { path: _sparklinePath(s.revenue), color: s.revenue.length >= 2 ? (s.revenue[s.revenue.length - 1] >= s.revenue[0] ? '#36B37E' : '#FF5630') : '#909399' },
-    profit: { path: _sparklinePath(s.profit), color: s.profit.length >= 2 ? (s.profit[s.profit.length - 1] >= s.profit[0] ? '#36B37E' : '#FF5630') : '#909399' },
-    orders: { path: _sparklinePath(s.orders), color: s.orders.length >= 2 ? (s.orders[s.orders.length - 1] >= s.orders[0] ? '#36B37E' : '#FF5630') : '#909399' },
-    customers: { path: _sparklinePath(s.customers), color: s.customers.length >= 2 ? (s.customers[s.customers.length - 1] >= s.customers[0] ? '#36B37E' : '#FF5630') : '#909399' },
+    revenue: { path: sparklinePath(s.revenue), color: s.revenue.length >= 2 ? (s.revenue[s.revenue.length - 1] >= s.revenue[0] ? '#36B37E' : '#FF5630') : '#909399' },
+    profit: { path: sparklinePath(s.profit), color: s.profit.length >= 2 ? (s.profit[s.profit.length - 1] >= s.profit[0] ? '#36B37E' : '#FF5630') : '#909399' },
+    orders: { path: sparklinePath(s.orders), color: s.orders.length >= 2 ? (s.orders[s.orders.length - 1] >= s.orders[0] ? '#36B37E' : '#FF5630') : '#909399' },
+    customers: { path: sparklinePath(s.customers), color: s.customers.length >= 2 ? (s.customers[s.customers.length - 1] >= s.customers[0] ? '#36B37E' : '#FF5630') : '#909399' },
   };
 });
 
@@ -363,10 +353,10 @@ function goToUpload() {
 
 // 快捷问答
 const quickQuestions = [
-  '本月销售额如何?',
-  '哪个部门业绩最好?',
-  '利润率变化趋势如何?',
-  '客户增长情况怎样?'
+  { text: '本月销售额如何?', icon: TrendCharts },
+  { text: '哪个部门业绩最好?', icon: Histogram },
+  { text: '利润率变化趋势如何?', icon: DataLine },
+  { text: '客户增长情况怎样?', icon: User }
 ];
 
 // 图表 DOM refs
@@ -377,6 +367,18 @@ const pieChartRef = ref<HTMLDivElement | null>(null);
 // 图表实例
 let trendChart: echarts.ECharts | null = null;
 let pieChart: echarts.ECharts | null = null;
+const hasTrendData = ref(false);
+const hasPieData = ref(false);
+
+// Cross-filter state
+const crossFilterValue = ref<string | null>(null);
+
+// AI insight generation timestamp
+const insightTimestamp = ref<Date | null>(null);
+const insightsExpanded = ref(false);
+const INSIGHT_COLLAPSE_LIMIT = 3;
+
+// Stagger reveal for KPI cards
 
 // ==================== 生命周期 ====================
 
@@ -485,6 +487,7 @@ async function loadLLMInsights() {
           ...dashboardData.value,
           aiInsights: [...existing, ...insights]
         };
+        insightTimestamp.value = new Date();
       }
     }
   } catch (e) {
@@ -734,7 +737,8 @@ function initTrendChart(chartConfig?: ChartConfig) {
   trendChart = echarts.init(trendChartRef.value, isDarkMode.value ? 'cretas-dark' : 'cretas');
 
   // 如果有后端数据，使用后端数据
-  if (chartConfig && chartConfig.series && chartConfig.series.length > 0) {
+  hasTrendData.value = !!(chartConfig && chartConfig.series && chartConfig.series.length > 0);
+  if (hasTrendData.value) {
     const option: echarts.EChartsOption = {
       tooltip: {
         trigger: 'axis',
@@ -796,21 +800,6 @@ function initTrendChart(chartConfig?: ChartConfig) {
     };
     enhanceChartDefaults(option as Record<string, unknown>);
     trendChart.setOption(option);
-  } else {
-    // 没有数据时显示空状态
-    const emptyOption: echarts.EChartsOption = {
-      title: {
-        text: '暂无趋势数据',
-        left: 'center',
-        top: 'center',
-        textStyle: {
-          color: '#7A8599',
-          fontSize: 14,
-          fontWeight: 'normal'
-        }
-      }
-    };
-    trendChart.setOption(emptyOption);
   }
 }
 
@@ -823,8 +812,9 @@ function initPieChart(chartConfig?: ChartConfig) {
   pieChart = echarts.init(pieChartRef.value, isDarkMode.value ? 'cretas-dark' : 'cretas');
 
   // 如果有后端数据，使用后端数据
-  if (chartConfig && chartConfig.series && chartConfig.series.length > 0) {
-    const seriesData = chartConfig.series[0];
+  hasPieData.value = !!(chartConfig && chartConfig.series && chartConfig.series.length > 0);
+  if (hasPieData.value) {
+    const seriesData = chartConfig!.series[0];
     // 假设后端返回的数据格式是 { name, data } 或 { data: [{name, value}] }
     const pieData = Array.isArray(seriesData.data)
       ? seriesData.data.map((value, index) => {
@@ -866,7 +856,13 @@ function initPieChart(chartConfig?: ChartConfig) {
               show: true,
               fontSize: 16,
               fontWeight: 'bold'
-            }
+            },
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.2)'
+            },
+            scaleSize: 8,
           },
           labelLine: { show: false },
           data: pieData
@@ -875,26 +871,69 @@ function initPieChart(chartConfig?: ChartConfig) {
     };
     enhanceChartDefaults(option as Record<string, unknown>);
     pieChart.setOption(option);
-  } else {
-    // 没有数据时显示空状态
-    const emptyOption: echarts.EChartsOption = {
-      title: {
-        text: '暂无类别数据',
-        left: 'center',
-        top: 'center',
-        textStyle: {
-          color: '#7A8599',
-          fontSize: 14,
-          fontWeight: 'normal'
-        }
-      }
-    };
-    pieChart.setOption(emptyOption);
+
+    // Cross-filter: click pie slice → highlight in trend chart
+    pieChart.on('click', handlePieClick);
   }
 }
 
 function getPieColor(index: number): string {
   return CHART_COLORS[index % CHART_COLORS.length];
+}
+
+// Cross-filter: click pie slice → highlight matching xAxis index in trend chart
+function handlePieClick(params: { name?: string }) {
+  if (!params.name) return;
+  // Toggle: click same → clear
+  if (crossFilterValue.value === params.name) {
+    crossFilterValue.value = null;
+    clearCrossFilter();
+  } else {
+    crossFilterValue.value = params.name;
+    applyCrossFilter(params.name);
+  }
+}
+
+function applyCrossFilter(categoryName: string) {
+  if (!trendChart) return;
+  // Try to match category name in trend xAxis data
+  const option = trendChart.getOption() as Record<string, unknown>;
+  const xAxis = option.xAxis;
+  const xData = Array.isArray(xAxis) ? (xAxis[0] as Record<string, unknown>)?.data : (xAxis as Record<string, unknown>)?.data;
+  if (!Array.isArray(xData)) return;
+
+  // For pie → trend, we highlight the series whose name matches the category
+  // Since trend uses time-series xAxis, highlight all data points of matching series
+  trendChart.dispatchAction({ type: 'downplay' });
+  const seriesOpt = option.series;
+  if (Array.isArray(seriesOpt)) {
+    const matchIdx = seriesOpt.findIndex((s: Record<string, unknown>) =>
+      typeof s.name === 'string' && s.name.includes(categoryName)
+    );
+    if (matchIdx >= 0) {
+      trendChart.dispatchAction({ type: 'highlight', seriesIndex: matchIdx });
+    }
+  }
+
+  // Also highlight the clicked pie slice
+  if (pieChart) {
+    pieChart.dispatchAction({ type: 'downplay' });
+    const pieSeries = (pieChart.getOption() as Record<string, unknown>).series;
+    if (Array.isArray(pieSeries) && pieSeries[0]) {
+      const pieData = (pieSeries[0] as Record<string, unknown>).data as Array<Record<string, unknown>>;
+      if (Array.isArray(pieData)) {
+        const pieIdx = pieData.findIndex(d => d.name === categoryName);
+        if (pieIdx >= 0) {
+          pieChart.dispatchAction({ type: 'highlight', dataIndex: pieIdx });
+        }
+      }
+    }
+  }
+}
+
+function clearCrossFilter() {
+  trendChart?.dispatchAction({ type: 'downplay' });
+  pieChart?.dispatchAction({ type: 'downplay' });
 }
 
 // ECharts connect — tooltip linkage between trend and pie charts
@@ -945,6 +984,15 @@ function formatKpiValue(value: number | null | undefined): string {
   return formatMoney(value);
 }
 
+/** Sparkline tooltip: shows latest / min / max */
+function sparklineTooltip(data: number[]): string {
+  if (!data || data.length < 2) return '';
+  const latest = data[data.length - 1];
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  return `最新: ${formatMoney(latest)}<br>最低: ${formatMoney(min)}<br>最高: ${formatMoney(max)}`;
+}
+
 function formatPercent(value: number): string {
   return (value >= 0 ? '+' : '') + value.toFixed(1) + '%';
 }
@@ -990,7 +1038,7 @@ onUnmounted(() => {
         <span class="subtitle">智能数据分析 · 业务经营一站式洞察</span>
       </div>
       <div class="header-right">
-        <el-button size="small" @click="toggleDarkMode" :title="isDarkMode ? '切换亮色' : '切换暗色'">{{ isDarkMode ? '☀️' : '🌙' }}</el-button>
+        <el-button size="small" @click="toggleDarkMode" :title="isDarkMode ? '切换亮色' : '切换暗色'" :aria-label="isDarkMode ? '切换亮色模式' : '切换暗色模式'">{{ isDarkMode ? '☀️' : '🌙' }}</el-button>
         <el-button type="primary" :icon="Refresh" @click="handleRefresh" :loading="loading">刷新数据</el-button>
         <el-button type="success" :icon="ChatDotRound" @click="goToAIQuery()">AI 问答</el-button>
       </div>
@@ -1075,10 +1123,10 @@ onUnmounted(() => {
     <!-- KPI 卡片区 -->
     <el-row v-if="loading && !kpiData.totalRevenue" :gutter="16" class="kpi-section" aria-label="KPI指标加载中">
       <el-col :xs="24" :sm="12" :md="6" v-for="i in 4" :key="i">
-        <el-card class="kpi-card"><el-skeleton :rows="2" animated /></el-card>
+        <el-card class="kpi-card"><ChartSkeleton type="kpi" /></el-card>
       </el-col>
     </el-row>
-    <el-row v-else :gutter="16" class="kpi-section" aria-label="KPI指标" aria-live="polite" :aria-busy="loading">
+    <el-row v-else :gutter="16" class="kpi-section kpi-fade-in" aria-label="KPI指标" aria-live="polite" :aria-busy="loading">
       <el-col :xs="24" :sm="12" :md="6">
         <el-card class="kpi-card revenue">
           <div class="kpi-icon">
@@ -1088,9 +1136,11 @@ onUnmounted(() => {
             <div class="kpi-label">本月销售额</div>
             <div class="kpi-value-row">
               <div class="kpi-value">{{ formatKpiValue(kpiData.totalRevenue) }}</div>
-              <svg v-if="kpiSparklines.revenue.length >= 2" class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
-                <path :d="kpiSparklinePaths.revenue.path" fill="none" :stroke="kpiSparklinePaths.revenue.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+              <el-tooltip v-if="kpiSparklines.revenue.length >= 2" :content="sparklineTooltip(kpiSparklines.revenue)" placement="top" :show-after="300" raw-content>
+                <svg class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
+                  <path :d="kpiSparklinePaths.revenue.path" fill="none" :stroke="kpiSparklinePaths.revenue.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </el-tooltip>
             </div>
             <div class="kpi-trend" :class="getGrowthClass(kpiData.revenueGrowth!)" v-if="kpiData.totalRevenue !== null && kpiData.revenueGrowth != null && kpiData.revenueGrowth !== 0">
               <el-icon v-if="kpiData.revenueGrowth >= 0"><ArrowUp /></el-icon>
@@ -1113,9 +1163,11 @@ onUnmounted(() => {
             <div class="kpi-label">{{ kpiData.profitLabel || '本月利润' }}</div>
             <div class="kpi-value-row">
               <div class="kpi-value">{{ kpiData.profitUnit === '%' ? (kpiData.totalProfit != null ? kpiData.totalProfit.toFixed(1) + '%' : '--') : formatKpiValue(kpiData.totalProfit) }}</div>
-              <svg v-if="kpiSparklines.profit.length >= 2" class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
-                <path :d="kpiSparklinePaths.profit.path" fill="none" :stroke="kpiSparklinePaths.profit.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+              <el-tooltip v-if="kpiSparklines.profit.length >= 2" :content="sparklineTooltip(kpiSparklines.profit)" placement="top" :show-after="300" raw-content>
+                <svg class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
+                  <path :d="kpiSparklinePaths.profit.path" fill="none" :stroke="kpiSparklinePaths.profit.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </el-tooltip>
             </div>
             <div class="kpi-trend" :class="getGrowthClass(kpiData.profitGrowth!)" v-if="kpiData.totalProfit !== null && kpiData.profitGrowth != null && kpiData.profitGrowth !== 0">
               <el-icon v-if="kpiData.profitGrowth >= 0"><ArrowUp /></el-icon>
@@ -1138,9 +1190,11 @@ onUnmounted(() => {
             <div class="kpi-label">订单数量</div>
             <div class="kpi-value-row">
               <div class="kpi-value">{{ kpiData.orderCount != null ? formatCount(kpiData.orderCount) : '--' }}</div>
-              <svg v-if="kpiSparklines.orders.length >= 2" class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
-                <path :d="kpiSparklinePaths.orders.path" fill="none" :stroke="kpiSparklinePaths.orders.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+              <el-tooltip v-if="kpiSparklines.orders.length >= 2" :content="sparklineTooltip(kpiSparklines.orders)" placement="top" :show-after="300" raw-content>
+                <svg class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
+                  <path :d="kpiSparklinePaths.orders.path" fill="none" :stroke="kpiSparklinePaths.orders.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </el-tooltip>
             </div>
             <div class="kpi-trend" :class="getGrowthClass(kpiData.orderGrowth!)" v-if="kpiData.orderCount !== null && kpiData.orderGrowth != null && kpiData.orderGrowth !== 0">
               <el-icon v-if="kpiData.orderGrowth >= 0"><ArrowUp /></el-icon>
@@ -1163,9 +1217,11 @@ onUnmounted(() => {
             <div class="kpi-label">{{ kpiData.customerLabel || '活跃客户' }}</div>
             <div class="kpi-value-row">
               <div class="kpi-value" :class="kpiData.customerUnit === '%' && kpiData.customerCount != null ? getGrowthClass(kpiData.customerCount) : ''">{{ kpiData.customerUnit === '%' ? (kpiData.customerCount != null ? (kpiData.customerCount >= 0 ? '+' : '') + kpiData.customerCount.toFixed(1) + '%' : '--') : (kpiData.customerCount != null ? formatCount(kpiData.customerCount) : '--') }}</div>
-              <svg v-if="kpiSparklines.customers.length >= 2" class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
-                <path :d="kpiSparklinePaths.customers.path" fill="none" :stroke="kpiSparklinePaths.customers.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+              <el-tooltip v-if="kpiSparklines.customers.length >= 2" :content="sparklineTooltip(kpiSparklines.customers)" placement="top" :show-after="300" raw-content>
+                <svg class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
+                  <path :d="kpiSparklinePaths.customers.path" fill="none" :stroke="kpiSparklinePaths.customers.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </el-tooltip>
             </div>
             <div class="kpi-trend" :class="getGrowthClass(kpiData.customerGrowth!)" v-if="kpiData.customerCount !== null && kpiData.customerGrowth != null && kpiData.customerGrowth !== 0">
               <el-icon v-if="kpiData.customerGrowth >= 0"><ArrowUp /></el-icon>
@@ -1227,7 +1283,7 @@ onUnmounted(() => {
             >
               <div class="region-name">{{ item.name }}</div>
               <div class="region-bar-wrapper">
-                <div class="region-bar" :style="{ width: item.percentage + '%' }"></div>
+                <div class="region-bar" :class="'rank-bar-' + Math.min(regionRanking.indexOf(item), 3)" :style="{ width: item.percentage + '%' }"></div>
               </div>
               <div class="region-value">
                 <span class="value">{{ formatMoney(item.sales) }}</span>
@@ -1243,6 +1299,12 @@ onUnmounted(() => {
       </el-col>
     </el-row>
 
+    <!-- Cross-filter indicator -->
+    <div v-if="crossFilterValue" class="cross-filter-bar">
+      <span>已筛选: <strong>{{ crossFilterValue }}</strong></span>
+      <el-button size="small" text type="primary" @click="crossFilterValue = null; clearCrossFilter()">清除过滤</el-button>
+    </div>
+
     <!-- 图表区 -->
     <el-row :gutter="16" class="chart-section" aria-label="图表区域">
       <el-col :xs="24" :lg="14">
@@ -1253,7 +1315,9 @@ onUnmounted(() => {
               <span>销售趋势</span>
             </div>
           </template>
-          <div ref="trendChartRef" class="chart-container"></div>
+          <ChartSkeleton v-if="loading && !hasTrendData" type="chart" />
+          <div ref="trendChartRef" class="chart-container" v-show="hasTrendData"></div>
+          <SmartBIEmptyState v-if="!loading && !hasTrendData" type="no-charts" :show-action="false" />
         </el-card>
       </el-col>
       <el-col :xs="24" :lg="10">
@@ -1264,7 +1328,9 @@ onUnmounted(() => {
               <span>产品类别占比</span>
             </div>
           </template>
-          <div ref="pieChartRef" class="chart-container"></div>
+          <ChartSkeleton v-if="loading && !hasPieData" type="chart" />
+          <div ref="pieChartRef" class="chart-container" v-show="hasPieData"></div>
+          <SmartBIEmptyState v-if="!loading && !hasPieData" type="no-charts" :show-action="false" />
         </el-card>
       </el-col>
     </el-row>
@@ -1277,22 +1343,32 @@ onUnmounted(() => {
             <div class="card-header">
               <el-icon><ChatDotRound /></el-icon>
               <span>AI 智能洞察</span>
+              <span v-if="insightTimestamp" class="insight-timestamp">
+                生成于 {{ insightTimestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }}
+              </span>
             </div>
           </template>
-          <div class="insight-list" v-if="aiInsights.length > 0">
+          <div class="insight-list" role="list" v-if="aiInsights.length > 0">
             <div
-              v-for="(insight, index) in aiInsights"
+              v-for="(insight, index) in (insightsExpanded ? aiInsights : aiInsights.slice(0, INSIGHT_COLLAPSE_LIMIT))"
               :key="index"
               class="insight-item"
               :class="'insight-' + insight.type"
+              role="listitem"
             >
               <el-tag :type="getInsightTagType(insight.type)" size="small">
                 {{ insight.title }}
               </el-tag>
               <span class="insight-content">{{ insight.content }}</span>
               <span v-if="insight.suggestion" class="insight-suggestion">
-                💡 {{ insight.suggestion }}
+                <el-icon aria-label="建议" role="img"><InfoFilled /></el-icon> {{ insight.suggestion }}
               </span>
+            </div>
+            <div v-if="aiInsights.length > INSIGHT_COLLAPSE_LIMIT" class="insight-toggle">
+              <el-button text type="primary" size="small" @click="insightsExpanded = !insightsExpanded">
+                {{ insightsExpanded ? '收起' : `展开更多 (${aiInsights.length - INSIGHT_COLLAPSE_LIMIT} 条)` }}
+                <el-icon class="toggle-icon" :class="{ expanded: insightsExpanded }"><ArrowDown /></el-icon>
+              </el-button>
             </div>
           </div>
           <SmartBIEmptyState v-else type="no-analysis" :show-action="false" />
@@ -1315,9 +1391,10 @@ onUnmounted(() => {
               v-for="(q, index) in quickQuestions"
               :key="index"
               round
-              @click="goToAIQuery(q)"
+              @click="goToAIQuery(q.text)"
             >
-              {{ q }}
+              <el-icon><component :is="q.icon" /></el-icon>
+              {{ q.text }}
             </el-button>
           </div>
         </el-card>
@@ -1342,7 +1419,7 @@ onUnmounted(() => {
       margin: 0;
       font-size: 24px;
       font-weight: 600;
-      color: #1A2332;
+      color: var(--el-text-color-primary, #1A2332);
     }
 
     .subtitle {
@@ -1382,7 +1459,7 @@ onUnmounted(() => {
       align-items: center;
       gap: 4px;
       font-size: 13px;
-      color: #4A5568;
+      color: var(--el-text-color-regular, #4A5568);
       white-space: nowrap;
     }
   }
@@ -1427,6 +1504,13 @@ onUnmounted(() => {
   display: flex;
   padding: 20px;
   gap: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: default;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
 
   :deep(.el-card__body) {
     padding: 0;
@@ -1490,10 +1574,11 @@ onUnmounted(() => {
       font-size: var(--font-size-2xl);
       font-weight: 600;
       font-variant-numeric: tabular-nums;
-      color: #1A2332;
+      white-space: nowrap;
+      color: var(--el-text-color-primary, #1A2332);
 
-      &.growth-up { color: #36B37E; }
-      &.growth-down { color: #FF5630; }
+      &.growth-up { color: var(--el-color-success, #36B37E); }
+      &.growth-down { color: var(--el-color-danger, #FF5630); }
     }
 
     .kpi-trend {
@@ -1503,15 +1588,15 @@ onUnmounted(() => {
       font-size: 13px;
 
       &.growth-up {
-        color: #36B37E;
+        color: var(--el-color-success, #36B37E);
       }
 
       &.growth-down {
-        color: #FF5630;
+        color: var(--el-color-danger, #FF5630);
       }
 
       .vs-label {
-        color: #A0AEC0;
+        color: var(--el-text-color-placeholder, #A0AEC0);
         margin-left: 4px;
       }
     }
@@ -1597,7 +1682,7 @@ onUnmounted(() => {
 
       .rank-name {
         font-size: 14px;
-        color: #1A2332;
+        color: var(--el-text-color-primary, #1A2332);
         font-weight: 500;
       }
 
@@ -1612,19 +1697,32 @@ onUnmounted(() => {
       font-weight: 500;
 
       &.growth-up {
-        color: #36B37E;
+        color: var(--el-color-success, #36B37E);
       }
 
       &.growth-down {
-        color: #FF5630;
+        color: var(--el-color-danger, #FF5630);
       }
     }
 
     .region-item {
+      border-radius: 6px;
+      padding: 12px 8px;
+      margin: 0 -8px;
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: var(--el-fill-color-light, #F4F6F9);
+
+        .region-bar {
+          filter: brightness(1.1);
+        }
+      }
+
       .region-name {
         width: 80px;
         font-size: 14px;
-        color: #1A2332;
+        color: var(--el-text-color-primary, #1A2332);
       }
 
       .region-bar-wrapper {
@@ -1639,7 +1737,12 @@ onUnmounted(() => {
           height: 100%;
           background: linear-gradient(90deg, #1B65A8, #4C9AFF);
           border-radius: 4px;
-          transition: width 0.3s ease;
+          transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s ease;
+
+          &.rank-bar-0 { background: linear-gradient(90deg, #1B65A8, #4C9AFF); }
+          &.rank-bar-1 { background: linear-gradient(90deg, #36B37E, #57D9A3); }
+          &.rank-bar-2 { background: linear-gradient(90deg, #FFAB00, #FFC400); }
+          &.rank-bar-3 { background: linear-gradient(90deg, #A0AEC0, #CBD5E0); }
         }
       }
 
@@ -1649,7 +1752,7 @@ onUnmounted(() => {
 
         .value {
           font-size: 14px;
-          color: #1A2332;
+          color: var(--el-text-color-primary, #1A2332);
           font-weight: 500;
         }
 
@@ -1661,6 +1764,38 @@ onUnmounted(() => {
       }
     }
   }
+}
+
+// Stagger reveal animation
+// Simple fade-in for KPI cards (replaces stagger-item which had timing issues with v-if/v-else)
+.kpi-fade-in {
+  animation: kpiFadeIn 0.5s ease-out both;
+}
+
+@keyframes kpiFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// Cross-filter indicator bar
+.cross-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  margin-bottom: 12px;
+  background: var(--el-color-primary-light-9, #ecf5ff);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--el-text-color-regular, #606266);
+}
+
+// AI insight timestamp
+.insight-timestamp {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--el-text-color-secondary, #909399);
+  font-weight: 400;
 }
 
 // 图表区
@@ -1732,10 +1867,10 @@ onUnmounted(() => {
         margin-bottom: 0;
       }
 
-      &.insight-success { border-left-color: #36B37E; background: #f6ffed; }
-      &.insight-warning { border-left-color: #FFAB00; background: #fffbe6; }
-      &.insight-danger  { border-left-color: #FF5630; background: #fff2f0; }
-      &.insight-info    { border-left-color: #1B65A8; background: #e6f7ff; }
+      &.insight-success { border-left-color: var(--el-color-success, #36B37E); background: var(--el-color-success-light-9, #f6ffed); }
+      &.insight-warning { border-left-color: var(--el-color-warning, #E6A23C); background: var(--el-color-warning-light-9, #fffbe6); }
+      &.insight-danger  { border-left-color: var(--el-color-danger, #FF5630); background: var(--el-color-danger-light-9, #fff2f0); }
+      &.insight-info    { border-left-color: var(--el-color-primary, #1B65A8); background: var(--el-color-primary-light-9, #e6f7ff); }
 
       .el-tag {
         flex-shrink: 0;
@@ -1743,7 +1878,7 @@ onUnmounted(() => {
 
       .insight-content {
         font-size: 14px;
-        color: #4A5568;
+        color: var(--el-text-color-regular, #4A5568);
         line-height: 1.6;
         flex: 1;
         min-width: 200px;
@@ -1755,6 +1890,20 @@ onUnmounted(() => {
         font-style: italic;
         width: 100%;
         padding-left: 60px;
+      }
+    }
+
+    .insight-toggle {
+      text-align: center;
+      padding-top: 8px;
+
+      .toggle-icon {
+        transition: transform 0.3s ease;
+        margin-left: 4px;
+
+        &.expanded {
+          transform: rotate(180deg);
+        }
       }
     }
   }
@@ -1779,6 +1928,17 @@ onUnmounted(() => {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
+
+    .el-button {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(27, 101, 168, 0.15);
+        color: var(--el-color-primary, #1B65A8);
+        border-color: var(--el-color-primary, #1B65A8);
+      }
+    }
   }
 }
 
@@ -1787,7 +1947,7 @@ onUnmounted(() => {
 .chart-card,
 .insight-card,
 .quick-qa-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
     transform: translateY(-2px);
@@ -1799,6 +1959,12 @@ onUnmounted(() => {
 @media (max-width: 1200px) {
   .charts-section .el-col[class*="md-12"] {
     margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 1366px) {
+  .chart-container {
+    height: 280px;
   }
 }
 
@@ -1840,22 +2006,22 @@ onUnmounted(() => {
 // ==================== 暗色模式 ====================
 
 .smart-bi-dashboard[data-theme="dark"] {
-  background: #1a1a2e;
-  color: #e0e0e0;
+  background: var(--bg-color-page);
+  color: var(--text-color-primary);
 
   .page-header {
-    h1 { color: #e0e0e0; }
-    .subtitle { color: #a0a0b0; }
+    h1 { color: var(--text-color-primary); }
+    .subtitle { color: var(--text-color-secondary); }
   }
 
   :deep(.el-card) {
-    background: #16213e;
-    border-color: #2a2a4a;
-    color: #e0e0e0;
+    background: var(--bg-color-overlay);
+    border-color: var(--border-color);
+    color: var(--text-color-primary);
   }
 
   :deep(.el-card__header) {
-    border-bottom-color: #2a2a4a;
+    border-bottom-color: var(--border-color);
   }
 
   .kpi-card {
@@ -1863,11 +2029,11 @@ onUnmounted(() => {
       opacity: 0.85;
     }
     .kpi-content {
-      .kpi-label { color: #a0a0b0; }
-      .kpi-value { color: #4C9AFF; }
+      .kpi-label { color: var(--text-color-secondary); }
+      .kpi-value { color: var(--color-primary-light); }
       .kpi-trend {
-        &.growth-up { color: #57D9A3; }
-        &.growth-down { color: #FF8B6A; }
+        &.growth-up { color: var(--color-success); }
+        &.growth-down { color: var(--color-danger); }
       }
     }
     &.revenue .kpi-icon { background: rgba(54, 179, 126, 0.2); }
@@ -1877,33 +2043,33 @@ onUnmounted(() => {
   }
 
   .ranking-card {
-    .card-header span { color: #e0e0e0; }
+    .card-header span { color: var(--text-color-primary); }
   }
 
   .ranking-row {
-    border-bottom-color: #2a2a4a;
-    .region-name, .dept-name { color: #c0c0d0; }
+    border-bottom-color: var(--border-color);
+    .region-name, .dept-name { color: var(--text-color-regular); }
     .region-bar-bg { background: rgba(255, 255, 255, 0.08); }
   }
 
   .chart-card {
-    .card-header span { color: #e0e0e0; }
+    .card-header span { color: var(--text-color-primary); }
   }
 
   .insight-card {
     background: rgba(255, 255, 255, 0.04) !important;
-    border-left-color: #2a2a4a;
-    .insight-title { color: #c0c0d0; }
-    .insight-content { color: #a0a0b0; }
-    &.insight-success { border-left-color: #57D9A3; background: rgba(87, 217, 163, 0.08) !important; }
-    &.insight-warning { border-left-color: #FFAB00; background: rgba(255, 171, 0, 0.08) !important; }
-    &.insight-danger { border-left-color: #FF8B6A; background: rgba(255, 139, 106, 0.08) !important; }
-    &.insight-info { border-left-color: #4C9AFF; background: rgba(76, 154, 255, 0.08) !important; }
+    border-left-color: var(--border-color);
+    .insight-title { color: var(--text-color-regular); }
+    .insight-content { color: var(--text-color-secondary); }
+    &.insight-success { border-left-color: var(--color-success); background: rgba(87, 217, 163, 0.08) !important; }
+    &.insight-warning { border-left-color: var(--color-warning); background: rgba(255, 171, 0, 0.08) !important; }
+    &.insight-danger { border-left-color: var(--color-danger); background: rgba(255, 139, 106, 0.08) !important; }
+    &.insight-info { border-left-color: var(--color-primary-light); background: rgba(76, 154, 255, 0.08) !important; }
   }
 
   .quick-question-section {
-    :deep(.el-card) { background: #16213e; }
-    .quick-btn { background: rgba(255, 255, 255, 0.06); color: #c0c0d0; border-color: #2a2a4a; }
+    :deep(.el-card) { background: var(--bg-color-overlay); }
+    .quick-btn { background: rgba(255, 255, 255, 0.06); color: var(--text-color-regular); border-color: var(--border-color); }
   }
 }
 </style>

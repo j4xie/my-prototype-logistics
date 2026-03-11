@@ -23,6 +23,7 @@ import echarts from '@/utils/echarts';
 import DynamicChartRenderer from '@/components/smartbi/DynamicChartRenderer.vue';
 import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
+import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 import type { ChartConfig as SmartBIChartConfig } from '@/types/smartbi';
 import {
   getUploadHistory,
@@ -41,6 +42,8 @@ import {
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
 const rootRef = ref<HTMLDivElement>();
+const trendChartRef = ref<HTMLDivElement | null>(null);
+const pieChartRef = ref<HTMLDivElement | null>(null);
 
 // ==================== 筛选条件 (localStorage 记忆) ====================
 
@@ -76,6 +79,9 @@ const kpiLoading = ref(false);
 const rankingLoading = ref(false);
 const trendLoading = ref(false);
 const pieLoading = ref(false);
+
+// AbortController: cancel in-flight requests when filters change
+let salesAbortController: AbortController | null = null;
 
 // 日期快捷选项
 const shortcuts = [
@@ -155,6 +161,13 @@ const salesPersonRanking = ref<SalesPersonRank[]>([]);
 const hasRankingOrderData = computed(() => salesPersonRanking.value.some(r => r.orderCount > 0));
 const hasRankingGrowthData = computed(() => salesPersonRanking.value.some(r => r.growth !== 0));
 
+function salesBarWidth(sales: number): number {
+  const max = salesPersonRanking.value.length > 0
+    ? Math.max(...salesPersonRanking.value.map(r => r.sales))
+    : 1;
+  return max > 0 ? Math.round((sales / max) * 100) : 0;
+}
+
 // 图表数据 (来自 API 的 ChartConfig 结构)
 interface ChartConfig {
   chartType: string;
@@ -207,6 +220,15 @@ function sparklinePath(data: number[]): string {
 function sparklineColor(data: number[]): string {
   if (!data || data.length < 2) return '#909399';
   return data[data.length - 1] >= data[0] ? '#36B37E' : '#FF5630';
+}
+
+/** Sparkline tooltip: latest / min / max */
+function sparklineTooltip(data: number[]): string {
+  if (!data || data.length < 2) return '';
+  const latest = data[data.length - 1];
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  return `最新: ${formatNumber(latest)}<br>最低: ${formatNumber(min)}<br>最高: ${formatNumber(max)}`;
 }
 
 // 产品类别
@@ -596,6 +618,11 @@ watch([dateRange, dimensionType, categoryFilter], () => {
 });
 
 async function loadSalesData() {
+  // Cancel previous in-flight request
+  if (salesAbortController) salesAbortController.abort();
+  salesAbortController = new AbortController();
+  const signal = salesAbortController.signal;
+
   loading.value = true;
   loadError.value = '';
   kpiLoading.value = true;
@@ -615,7 +642,7 @@ async function loadSalesData() {
 
   try {
     // Load overview data first (contains KPIs, charts, rankings in unified response)
-    await loadOverviewData();
+    await loadOverviewData(signal);
 
     // Load dimension-specific data in parallel (only if overview didn't populate them)
     const tasks: Promise<void>[] = [];
@@ -646,13 +673,18 @@ async function loadSalesData() {
       return;
     }
   } catch (error) {
+    // Ignore aborted requests (user changed filters quickly)
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    if (signal?.aborted) return;
     loadError.value = '加载销售数据失败，请检查网络连接后重试';
   } finally {
-    loading.value = false;
-    kpiLoading.value = false;
-    rankingLoading.value = false;
-    trendLoading.value = false;
-    pieLoading.value = false;
+    if (!signal?.aborted) {
+      loading.value = false;
+      kpiLoading.value = false;
+      rankingLoading.value = false;
+      trendLoading.value = false;
+      pieLoading.value = false;
+    }
   }
 }
 
@@ -736,7 +768,7 @@ function parseUnifiedResponse(data: Record<string, unknown>) {
  * The backend may return a comprehensive response that includes KPIs, rankings,
  * and charts all at once.
  */
-async function loadOverviewData() {
+async function loadOverviewData(signal?: AbortSignal) {
   if (!factoryId.value || !dateRange.value) return;
   try {
     const params: Record<string, string> = {
@@ -744,7 +776,7 @@ async function loadOverviewData() {
       endDate: formatDate(dateRange.value[1]),
       groupBy: dimensionType.value, // daily/weekly/monthly
     };
-    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params, _silent: true } as never);
+    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params, signal, _silent: true } as never);
     if (response.success && response.data) {
       // Handle double-wrapped response: interceptor wraps {code,data:{...}} into {success,data:{code,data:{...}}}
       const raw = response.data as Record<string, unknown>;
@@ -886,14 +918,14 @@ function initCharts() {
 }
 
 function initTrendChart() {
-  const chartDom = document.getElementById('sales-trend-chart');
+  const chartDom = trendChartRef.value;
   if (!chartDom) return;
 
   trendChart = echarts.init(chartDom, 'cretas');
 }
 
 function initPieChart() {
-  const chartDom = document.getElementById('sales-pie-chart');
+  const chartDom = pieChartRef.value;
   if (!chartDom) return;
 
   pieChart = echarts.init(chartDom, 'cretas');
@@ -1151,7 +1183,13 @@ function updatePieChart() {
             show: true,
             fontSize: 18,
             fontWeight: 'bold'
-          }
+          },
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.2)'
+          },
+          scaleSize: 8,
         },
         labelLine: { show: false },
         data: pieData
@@ -1288,6 +1326,14 @@ function handleRefresh() {
   loadSalesData();
 }
 
+function resetFilters() {
+  dateRange.value = null;
+  dimensionType.value = 'daily';
+  categoryFilter.value = 'all';
+  localStorage.removeItem(FILTER_STORAGE_KEY);
+  loadSalesData();
+}
+
 onUnmounted(() => {
   resizeObserver?.disconnect();
   resizeObserver = null;
@@ -1387,6 +1433,11 @@ onUnmounted(() => {
             查看原始数据
           </el-button>
         </div>
+        <div class="filter-item" v-if="selectedDataSource === 'system' && (dateRange || dimensionType !== 'daily' || categoryFilter !== 'all')">
+          <el-button text type="info" size="small" @click="resetFilters">
+            重置筛选
+          </el-button>
+        </div>
       </div>
     </el-card>
 
@@ -1417,7 +1468,7 @@ onUnmounted(() => {
     <!-- KPI 卡片 -->
     <el-row v-if="kpiLoading && kpiCards.length === 0" :gutter="16" class="kpi-section">
       <el-col :xs="12" :sm="8" class="kpi-col-5" v-for="i in 5" :key="'skel-'+i">
-        <el-card class="kpi-card"><el-skeleton :rows="2" animated /></el-card>
+        <el-card class="kpi-card"><ChartSkeleton type="kpi" /></el-card>
       </el-col>
     </el-row>
     <el-row v-else :gutter="16" class="kpi-section">
@@ -1428,13 +1479,15 @@ onUnmounted(() => {
         :sm="8"
         class="kpi-col-5"
       >
-        <el-card class="kpi-card" :class="{ 'kpi-no-data': card.rawValue == null }">
+        <el-card class="kpi-card" :class="['kpi-accent-' + (kpiCards.indexOf(card) % 5), { 'kpi-no-data': card.rawValue == null }]" role="group" :aria-label="card.title + ': ' + formatKpiValue(card)">
           <div class="kpi-label">{{ card.title }}</div>
           <div class="kpi-value-row">
             <div class="kpi-value">{{ formatKpiValue(card) }}</div>
-            <svg v-if="kpiSparklineMap[kpiCards.indexOf(card)]?.length >= 2" class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
-              <path :d="sparklinePath(kpiSparklineMap[kpiCards.indexOf(card)])" fill="none" :stroke="sparklineColor(kpiSparklineMap[kpiCards.indexOf(card)])" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+            <el-tooltip v-if="kpiSparklineMap[kpiCards.indexOf(card)]?.length >= 2" :content="sparklineTooltip(kpiSparklineMap[kpiCards.indexOf(card)])" placement="top" :show-after="300" raw-content>
+              <svg class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
+                <path :d="sparklinePath(kpiSparklineMap[kpiCards.indexOf(card)])" fill="none" :stroke="sparklineColor(kpiSparklineMap[kpiCards.indexOf(card)])" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </el-tooltip>
           </div>
           <div
             class="kpi-trend"
@@ -1466,7 +1519,7 @@ onUnmounted(() => {
             </div>
           </template>
           <template v-if="salesPersonRanking.length > 0">
-            <el-table :data="salesPersonRanking" stripe :show-header="true" size="small">
+            <el-table :data="salesPersonRanking" stripe :show-header="true" size="small" :max-height="400">
               <el-table-column label="排名" width="60" align="center">
                 <template #default="{ $index }">
                   <div
@@ -1478,9 +1531,14 @@ onUnmounted(() => {
                 </template>
               </el-table-column>
               <el-table-column label="销售员" prop="name" width="100" />
-              <el-table-column label="销售额" prop="sales" align="right">
+              <el-table-column label="销售额" prop="sales" min-width="140">
                 <template #default="{ row }">
-                  {{ formatMoney(row.sales) }}
+                  <div class="sales-bar-cell">
+                    <div class="sales-bar-bg">
+                      <div class="sales-bar-fill" :style="{ width: salesBarWidth(row.sales) + '%' }"></div>
+                    </div>
+                    <span class="sales-bar-value">{{ formatMoney(row.sales) }}</span>
+                  </div>
                 </template>
               </el-table-column>
               <el-table-column v-if="hasRankingOrderData" label="订单数" prop="orderCount" width="80" align="center">
@@ -1499,7 +1557,7 @@ onUnmounted(() => {
             </el-table>
           </template>
           <div v-else-if="!rankingLoading" class="empty-ranking">
-            <el-empty description="暂无销售员排行数据" :image-size="80" />
+            <SmartBIEmptyState type="no-data" :show-action="false" />
           </div>
         </el-card>
       </el-col>
@@ -1526,7 +1584,7 @@ onUnmounted(() => {
             :image-size="80"
           />
           <!-- Legacy ECharts for system data mode -->
-          <div v-else id="sales-trend-chart" class="chart-container"></div>
+          <div v-else id="sales-trend-chart" ref="trendChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
@@ -1563,7 +1621,7 @@ onUnmounted(() => {
             :image-size="80"
           />
           <!-- Legacy ECharts for system data mode -->
-          <div v-else id="sales-pie-chart" class="pie-chart-container"></div>
+          <div v-else id="sales-pie-chart" ref="pieChartRef" class="pie-chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
@@ -1726,7 +1784,7 @@ onUnmounted(() => {
       align-items: center;
       gap: 4px;
       font-size: 13px;
-      color: #606266;
+      color: var(--el-text-color-regular, #606266);
       white-space: nowrap;
     }
   }
@@ -1753,18 +1811,31 @@ onUnmounted(() => {
   border-radius: 8px;
   text-align: center;
   padding: 8px 0;
+  border-top: 3px solid transparent;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.kpi-accent-0 { border-top-color: #1B65A8; }
+  &.kpi-accent-1 { border-top-color: #36B37E; }
+  &.kpi-accent-2 { border-top-color: #FFAB00; }
+  &.kpi-accent-3 { border-top-color: #6554C0; }
+  &.kpi-accent-4 { border-top-color: #FF5630; }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
 
   &.kpi-no-data {
     opacity: 0.7;
 
     .kpi-value {
-      color: #909399;
+      color: var(--el-text-color-secondary, #909399);
     }
   }
 
   .kpi-label {
     font-size: 13px;
-    color: #909399;
+    color: var(--el-text-color-secondary, #909399);
     margin-bottom: 8px;
   }
 
@@ -1784,7 +1855,7 @@ onUnmounted(() => {
   .kpi-value {
     font-size: 28px;
     font-weight: 600;
-    color: #303133;
+    color: var(--el-text-color-primary, #303133);
   }
 
   .kpi-trend {
@@ -1792,25 +1863,57 @@ onUnmounted(() => {
     font-weight: 500;
 
     &.growth-up {
-      color: #36B37E;
+      color: var(--el-color-success, #36B37E);
     }
 
     &.growth-down {
-      color: #FF5630;
+      color: var(--el-color-danger, #FF5630);
     }
 
     .compare-text {
       margin-left: 4px;
       font-size: 12px;
-      color: #909399;
+      color: var(--el-text-color-secondary, #909399);
       font-weight: normal;
     }
 
     .no-data-text {
-      color: #C0C4CC;
+      color: var(--el-text-color-placeholder, #C0C4CC);
       font-size: 12px;
       font-weight: normal;
     }
+  }
+}
+
+// Sales ranking inline progress bar
+.sales-bar-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .sales-bar-bg {
+    flex: 1;
+    height: 6px;
+    background: var(--el-fill-color-light, #f0f2f5);
+    border-radius: 3px;
+    overflow: hidden;
+
+    .sales-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--el-color-primary, #1B65A8), var(--el-color-primary-light-3, #79bbff));
+      border-radius: 3px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
+  .sales-bar-value {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--el-text-color-primary, #303133);
+    font-variant-numeric: tabular-nums;
+    min-width: 50px;
+    text-align: right;
   }
 }
 
@@ -1841,7 +1944,28 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #1B65A8;
+      color: var(--el-color-primary, #1B65A8);
+    }
+  }
+}
+
+.ranking-card {
+  :deep(.el-table) {
+    .el-table__row {
+      transition: background-color 0.15s ease;
+      cursor: default;
+
+      &:hover > td {
+        background-color: var(--el-color-primary-light-9, #ecf5ff) !important;
+      }
+
+      .sales-bar-fill {
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s ease;
+      }
+
+      &:hover .sales-bar-fill {
+        filter: brightness(1.1);
+      }
     }
   }
 }
@@ -1850,8 +1974,8 @@ onUnmounted(() => {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #f0f2f5;
-  color: #909399;
+  background: var(--el-fill-color, #f0f2f5);
+  color: var(--el-text-color-secondary, #909399);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1865,11 +1989,11 @@ onUnmounted(() => {
 }
 
 .growth-up {
-  color: #36B37E;
+  color: var(--el-color-success, #36B37E);
 }
 
 .growth-down {
-  color: #FF5630;
+  color: var(--el-color-danger, #FF5630);
 }
 
 .chart-container {
@@ -1901,20 +2025,20 @@ onUnmounted(() => {
   .stat-label {
     font-size: 16px;
     font-weight: 600;
-    color: #303133;
+    color: var(--el-text-color-primary, #303133);
     margin-bottom: 4px;
   }
 
   .stat-value {
     font-size: 32px;
     font-weight: 700;
-    color: #1B65A8;
+    color: var(--el-color-primary, #1B65A8);
     margin-bottom: 4px;
   }
 
   .stat-hint {
     font-size: 12px;
-    color: #909399;
+    color: var(--el-text-color-secondary, #909399);
   }
 }
 
@@ -1927,7 +2051,7 @@ onUnmounted(() => {
 
   .datasource-meta {
     font-size: 12px;
-    color: #909399;
+    color: var(--el-text-color-secondary, #909399);
   }
 }
 
@@ -1935,7 +2059,7 @@ onUnmounted(() => {
 .insight-card {
   margin-top: 16px;
   border-radius: 8px;
-  border-left: 4px solid #36B37E;
+  border-left: 4px solid var(--el-color-success, #36B37E);
 
   .card-header {
     display: flex;
@@ -1944,7 +2068,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #36B37E;
+      color: var(--el-color-success, #36B37E);
     }
   }
 }
@@ -1955,9 +2079,9 @@ onUnmounted(() => {
     align-items: flex-start;
     gap: 10px;
     padding: 12px 0;
-    border-bottom: 1px solid #f0f2f5;
+    border-bottom: 1px solid var(--el-border-color-lighter, #f0f2f5);
     line-height: 1.6;
-    color: #303133;
+    color: var(--el-text-color-primary, #303133);
 
     &:last-child {
       border-bottom: none;
@@ -1966,7 +2090,7 @@ onUnmounted(() => {
     .insight-icon {
       flex-shrink: 0;
       margin-top: 2px;
-      color: #36B37E;
+      color: var(--el-color-success, #36B37E);
     }
   }
 }
@@ -1975,7 +2099,7 @@ onUnmounted(() => {
 .exploration-card {
   margin-top: 16px;
   border-radius: 8px;
-  border-left: 4px solid #1B65A8;
+  border-left: 4px solid var(--el-color-primary, #1B65A8);
 
   .card-header {
     display: flex;
@@ -1984,7 +2108,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #1B65A8;
+      color: var(--el-color-primary, #1B65A8);
     }
   }
 }
@@ -1997,10 +2121,10 @@ onUnmounted(() => {
 }
 
 .exploration-chart-item {
-  background: #fafbfc;
+  background: var(--el-fill-color-lighter, #fafbfc);
   border-radius: 8px;
   padding: 12px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-light, #ebeef5);
   transition: box-shadow 0.3s;
 
   &:hover {
@@ -2018,7 +2142,7 @@ onUnmounted(() => {
 .exploration-chart-title {
   font-size: 13px;
   font-weight: 500;
-  color: #303133;
+  color: var(--el-text-color-primary, #303133);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2033,10 +2157,10 @@ onUnmounted(() => {
     align-items: center;
     margin-bottom: 16px;
     padding: 8px 12px;
-    background: #f5f7fa;
+    background: var(--el-fill-color-light, #f5f7fa);
     border-radius: 4px;
     font-size: 13px;
-    color: #606266;
+    color: var(--el-text-color-regular, #606266);
   }
 
   .preview-pagination {
