@@ -8,7 +8,9 @@
     "cancel": "取消",
     "confirm": "确定",
     "save": "保存",
-    "delete": "删除"
+    "delete": "删除",
+    "edit": "编辑",
+    "close": "关闭"
   },
   "layout": {
     "editTitle": "编辑布局",
@@ -491,6 +493,8 @@
     "title": "编码规则配置",
     "subtitle": "管理批次号生成规则",
     "infoText": "编码规则用于自动生成各类业务单据的编号。支持日期、序列号、工厂代码等占位符。",
+    "noRules": "暂无编码规则",
+    "createFirst": "点击右下角 + 按钮创建第一个规则",
     "empty": "暂无编码规则",
     "emptySubText": "点击右下角按钮创建第一个规则",
     "createRule": "创建编码规则",
@@ -541,6 +545,9 @@
     "resetFailed": "重置序列号失败",
     "operationFailed": "操作失败",
     "previewTitle": "编码预览",
+    "supportedPlaceholders": "支持的占位符",
+    "codePreview": "编码预览",
+    "example": "示例",
     "previewFailed": "预览失败",
     "nextCodeWillBe": "下一个编码将是：",
     "placeholders": {

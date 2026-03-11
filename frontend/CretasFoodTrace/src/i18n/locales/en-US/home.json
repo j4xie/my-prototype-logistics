@@ -8,7 +8,9 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "save": "Save",
-    "delete": "Delete"
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close"
   },
   "greeting": "Hello",
   "greetings": {
@@ -503,6 +505,8 @@
     "title": "Encoding Rule Config",
     "subtitle": "Manage batch number generation rules",
     "infoText": "Encoding rules are used to automatically generate document numbers. Supports date, sequence number, factory code placeholders.",
+    "noRules": "No encoding rules",
+    "createFirst": "Click the + button below to create your first rule",
     "empty": "No encoding rules",
     "emptySubText": "Click the button below to create your first rule",
     "createRule": "Create Encoding Rule",
@@ -553,6 +557,9 @@
     "resetFailed": "Failed to reset sequence",
     "operationFailed": "Operation failed",
     "previewTitle": "Code Preview",
+    "supportedPlaceholders": "Supported Placeholders",
+    "codePreview": "Code Preview",
+    "example": "Example",
     "previewFailed": "Preview failed",
     "nextCodeWillBe": "Next code will be:",
     "placeholders": {
