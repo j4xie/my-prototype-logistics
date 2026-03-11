@@ -3652,6 +3652,24 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("员工绩效排名", "ATTENDANCE_RANKING");
 
         // ---- COMPARISON (对比/比较) ----
+        // Fix-3: 效率对比 — 路由到 efficiency_comparison Tool
+        phraseToIntentMapping.put("效率对比", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("效率比较", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("产能对比", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("产能比较", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("人效对比", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("工人效率排名", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("工人排名", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("绩效排名", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("产出对比", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("效率排名", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("对比效率", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("比较效率", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("对比生产效率", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("比较生产效率", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("对比一下生产效率", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("对比一下效率", "EFFICIENCY_COMPARISON");
+        phraseToIntentMapping.put("比较一下效率", "EFFICIENCY_COMPARISON");
         phraseToIntentMapping.put("销售对比", "ORDER_COMPARISON");
         phraseToIntentMapping.put("订单对比", "ORDER_COMPARISON");
         phraseToIntentMapping.put("产品销量对比", "ORDER_COMPARISON");
