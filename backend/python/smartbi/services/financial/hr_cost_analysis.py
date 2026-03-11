@@ -115,6 +115,7 @@ class HRCostAnalysisBuilder(AbstractFinancialChartBuilder):
                 "value": self._format_value(total_hr_cost, scale),
                 "unit": "元",
                 "trend": "flat",
+                "sparkline": [round(v / divisor, 2) if v else 0 for v in actual_vals],
             },
             {
                 "label": "人力成本占比",
@@ -127,6 +128,7 @@ class HRCostAnalysisBuilder(AbstractFinancialChartBuilder):
                 "value": self._format_value(avg_efficiency, {"divisor": 1, "suffix": "", "name_suffix": ""}),
                 "unit": "元/人",
                 "trend": self._trend_from_value(avg_efficiency),
+                "sparkline": [round(v, 2) for v in efficiency_vals],
             },
             {
                 "label": "同比变化",
@@ -193,7 +195,7 @@ class HRCostAnalysisBuilder(AbstractFinancialChartBuilder):
                     "type": "bar",
                     "stack": "hr_cost",
                     "data": salary_scaled,
-                    "itemStyle": {"color": HR_COLORS['salary'], "borderRadius": [0, 0, 0, 0]},
+                    "itemStyle": {"color": self._gradient_color(HR_COLORS['salary']), "borderRadius": [0, 0, 0, 0]},
                     "barMaxWidth": 32,
                     "emphasis": {"itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.2)"}},
                 },
@@ -202,7 +204,7 @@ class HRCostAnalysisBuilder(AbstractFinancialChartBuilder):
                     "type": "bar",
                     "stack": "hr_cost",
                     "data": benefits_scaled,
-                    "itemStyle": {"color": HR_COLORS['benefits']},
+                    "itemStyle": {"color": self._gradient_color(HR_COLORS['benefits'])},
                     "barMaxWidth": 32,
                 },
                 {
@@ -210,7 +212,7 @@ class HRCostAnalysisBuilder(AbstractFinancialChartBuilder):
                     "type": "bar",
                     "stack": "hr_cost",
                     "data": training_scaled,
-                    "itemStyle": {"color": HR_COLORS['training']},
+                    "itemStyle": {"color": self._gradient_color(HR_COLORS['training'])},
                     "barMaxWidth": 32,
                 },
                 {
@@ -218,7 +220,7 @@ class HRCostAnalysisBuilder(AbstractFinancialChartBuilder):
                     "type": "bar",
                     "stack": "hr_cost",
                     "data": other_scaled,
-                    "itemStyle": {"color": HR_COLORS['other'], "borderRadius": [2, 2, 0, 0]},
+                    "itemStyle": {"color": self._gradient_color(HR_COLORS['other']), "borderRadius": [2, 2, 0, 0]},
                     "barMaxWidth": 32,
                 },
                 {
@@ -241,6 +243,7 @@ class HRCostAnalysisBuilder(AbstractFinancialChartBuilder):
                 },
             ],
         })
+        self._apply_datazoom(option)
 
         # --- YoY dashed overlay lines ---
         if has_last_year and ly_salary_vals:

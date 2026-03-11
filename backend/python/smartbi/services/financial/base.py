@@ -63,6 +63,10 @@ COLORS = {
     "muted": "#6B778C",
     "success": "#36B37E",
     "warning": "#FFAB00",
+    # WCAG AA text-safe variants (contrast ≥ 4.5:1 on white)
+    "text_accent": "#B37700",
+    "text_success": "#1B7A4A",
+    "text_warning": "#B37700",
     "charts": ["#1B65A8", "#36B37E", "#FFAB00", "#FF5630", "#6B778C",
                "#2B7EC1", "#57D9A3", "#FFC400", "#FF8B6A", "#4C9AFF"],
     # P&L waterfall colors
@@ -189,14 +193,103 @@ class AbstractFinancialChartBuilder(ABC):
             return 'flat'
         return 'up' if val > 0 else ('down' if val < 0 else 'flat')
 
+    def _gradient_color(self, hex_color: str, direction: str = 'vertical') -> Dict:
+        """Convert flat color to ECharts linear gradient (top=lighter, bottom=full).
+
+        Args:
+            hex_color: CSS hex color like '#1B65A8'
+            direction: 'vertical' (top→bottom) or 'horizontal' (left→right)
+        """
+        hex_color = hex_color.lstrip('#')
+        r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+        lighter = f"rgba({min(r + 40, 255)},{min(g + 40, 255)},{min(b + 40, 255)},0.85)"
+        full = f"#{hex_color}"
+        x2 = 1 if direction == 'horizontal' else 0
+        y2 = 0 if direction == 'horizontal' else 1
+        return {
+            "type": "linear", "x": 0, "y": 0, "x2": x2, "y2": y2,
+            "colorStops": [
+                {"offset": 0, "color": lighter},
+                {"offset": 1, "color": full},
+            ],
+        }
+
+    def _apply_datazoom(self, option: Dict) -> None:
+        """Add dataZoom to a time-series chart option. Opt-in only.
+
+        Note: toolbox.feature.dataZoom is intentionally NOT added — the slider
+        dataZoom already provides zoom functionality, and the toolbox feature
+        causes 'grid.master' TypeError on some chart configurations.
+        """
+        option["dataZoom"] = self._datazoom_config()
+
+    def _datazoom_config(self) -> list:
+        """Return standard dataZoom config for time-series charts. Opt-in only."""
+        return [
+            {
+                "type": "slider",
+                "show": True,
+                "xAxisIndex": [0],
+                "start": 0,
+                "end": 100,
+                "height": 18,
+                "bottom": 0,
+                "borderColor": "transparent",
+                "backgroundColor": "rgba(27,101,168,0.05)",
+                "fillerColor": "rgba(27,101,168,0.12)",
+                "handleStyle": {"color": "#1B65A8", "borderColor": "#1B65A8"},
+                "textStyle": {"fontSize": 10, "color": "#909399"},
+                "brushSelect": False,
+            },
+            {
+                "type": "inside",
+                "xAxisIndex": [0],
+                "start": 0,
+                "end": 100,
+                "zoomOnMouseWheel": "shift",
+            },
+        ]
+
     def _base_echarts_option(self) -> Dict:
         """Return base ECharts option with common settings."""
         return {
             "animation": True,
-            "animationDuration": 800,
+            "animationDuration": 600,
             "animationEasing": "cubicOut",
-            "tooltip": {"trigger": "axis", "confine": True},
-            "grid": {"left": "3%", "right": "4%", "bottom": "3%", "top": "15%", "containLabel": True},
+            "animationDelay": "__ANIM__stagger_80",
+            "tooltip": {
+                "trigger": "axis",
+                "confine": True,
+                "backgroundColor": "rgba(255,255,255,0.96)",
+                "borderColor": "#e8e8e8",
+                "extraCssText": "box-shadow:0 4px 20px rgba(0,0,0,0.12);border-radius:8px;padding:12px 16px;",
+                "textStyle": {"fontSize": 12, "color": "#333"},
+                "formatter": "__FMT__financial_rich_tooltip",
+            },
+            "grid": {"left": "3%", "right": "4%", "bottom": "12%", "top": "15%", "containLabel": True},
+            "toolbox": {
+                "show": True,
+                "right": "3%",
+                "top": "0%",
+                "feature": {
+                    "restore": {"title": "还原"},
+                    "saveAsImage": {"title": "保存图片", "pixelRatio": 2},
+                },
+                "iconStyle": {"borderColor": "#909399"},
+                "emphasis": {"iconStyle": {"borderColor": "#1B65A8"}},
+            },
+            # A4: Default emphasis style — builders merge this into per-series emphasis
+            # Note: ECharts ignores top-level emphasis; this serves as a template
+            # that _base_echarts_option callers can extract via option.pop("_emphasis_template")
+            "_emphasis_template": {
+                "itemStyle": {
+                    "shadowBlur": 12,
+                    "shadowColor": "rgba(0,0,0,0.15)",
+                    "shadowOffsetY": 4,
+                    "borderWidth": 1,
+                    "borderColor": "rgba(255,255,255,0.8)",
+                },
+            },
         }
 
     def sanitize(self, obj):

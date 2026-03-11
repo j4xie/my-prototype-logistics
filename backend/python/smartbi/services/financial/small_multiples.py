@@ -136,6 +136,12 @@ class SmallMultiplesBuilder(AbstractFinancialChartBuilder):
             sum(g for _, g in growths) / len(growths) if growths else 0
         )
 
+        # Monthly totals across all categories for sparkline
+        monthly_totals = [
+            sum(c['values'][m] for c in cat_data)
+            for m in range(len(month_range))
+        ]
+
         # --- KPIs ---
         kpis = [
             {
@@ -149,18 +155,27 @@ class SmallMultiplesBuilder(AbstractFinancialChartBuilder):
                 "value": f"{best_cat[0]} ({best_cat[1]:+.1f}%)" if best_cat[0] else "-",
                 "unit": "",
                 "trend": "up",
+                "sparkline": next(
+                    ([round(v / divisor, 2) for v in c['values']] for c in cat_data if c['name'] == best_cat[0]),
+                    None,
+                ) if best_cat[0] else None,
             },
             {
                 "label": "下降最快品类",
                 "value": f"{worst_cat[0]} ({worst_cat[1]:+.1f}%)" if worst_cat[0] else "-",
                 "unit": "",
                 "trend": "down",
+                "sparkline": next(
+                    ([round(v / divisor, 2) for v in c['values']] for c in cat_data if c['name'] == worst_cat[0]),
+                    None,
+                ) if worst_cat[0] else None,
             },
             {
                 "label": "平均增长率",
                 "value": f"{avg_growth:+.1f}",
                 "unit": "%",
                 "trend": self._trend_from_value(avg_growth),
+                "sparkline": [round(v / divisor, 2) for v in monthly_totals],
             },
         ]
 

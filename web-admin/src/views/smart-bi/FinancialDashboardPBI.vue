@@ -3,9 +3,9 @@
  * FinancialDashboardPBI - 财务分析看板 (Power BI Style)
  * Orchestrates all 7 financial chart types with AI analysis and PPT export
  */
-import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
+import { ref, reactive, computed, watch, nextTick, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
-import { DataAnalysis, VideoPlay, Download, Collection, SetUp, ArrowDown } from '@element-plus/icons-vue';
+import { DataAnalysis, VideoPlay, Download, Collection, SetUp, ArrowDown, Delete } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
 import { processEChartsOptions } from '@/utils/echarts-fmt';
 
@@ -40,6 +40,57 @@ import {
 import type { PeriodSelection } from '@/components/smartbi/PeriodSelector.vue';
 
 // ---- State ----
+const isDarkMode = ref(false);
+const activeFilter = ref<{ dimension: string; value: string } | null>(null);
+const autoRefreshInterval = ref<number>(0); // 0=off, 60000=1m, 300000=5m, 900000=15m
+let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
+const useSvgRenderer = ref(false); // D4: SVG renderer toggle
+
+// D2: User annotations (persisted in localStorage)
+interface Annotation { text: string; x: number; y: number; chartType: string; color: string; id: number }
+const annotations = ref<Record<string, Annotation[]>>(
+  JSON.parse(localStorage.getItem('financial-dashboard-annotations') || '{}')
+);
+const annotationDialogVisible = ref(false);
+const annotationForm = ref({ text: '', color: '#e6a23c', chartType: '', x: 0, y: 0 });
+let annotationIdCounter = Date.now();
+
+function saveAnnotations() {
+  localStorage.setItem('financial-dashboard-annotations', JSON.stringify(annotations.value));
+}
+
+function openAnnotationDialog(chartType: string, x: number, y: number) {
+  annotationForm.value = { text: '', color: '#e6a23c', chartType, x, y };
+  annotationDialogVisible.value = true;
+}
+
+function confirmAnnotation() {
+  const { text, color, chartType, x, y } = annotationForm.value;
+  if (!text.trim()) return;
+  if (!annotations.value[chartType]) annotations.value[chartType] = [];
+  annotations.value[chartType].push({ text: text.trim(), x, y, chartType, color, id: annotationIdCounter++ });
+  saveAnnotations();
+  annotationDialogVisible.value = false;
+  // Re-render chart to show annotation
+  const domEl = chartDomRefs.value.get(chartType);
+  if (domEl) renderGenericChart(chartType, domEl);
+}
+
+function removeAnnotation(chartType: string, annotationId: number) {
+  if (!annotations.value[chartType]) return;
+  annotations.value[chartType] = annotations.value[chartType].filter(a => a.id !== annotationId);
+  saveAnnotations();
+  const domEl = chartDomRefs.value.get(chartType);
+  if (domEl) renderGenericChart(chartType, domEl);
+}
+
+function clearAllAnnotations(chartType: string) {
+  annotations.value[chartType] = [];
+  saveAnnotations();
+  const domEl = chartDomRefs.value.get(chartType);
+  if (domEl) renderGenericChart(chartType, domEl);
+}
+
 const uploadId = ref<number | null>(null);
 const uploadIdInput = ref<string>('');
 const periodSelection = ref<PeriodSelection>({
@@ -81,6 +132,56 @@ const chartRefVariance = ref<InstanceType<typeof VarianceAnalysisChart> | null>(
 const chartRefSankey = ref<InstanceType<typeof SankeyChart> | null>(null);
 // Generic chart DOM refs for existing chart components
 const chartDomRefs = ref<Map<string, HTMLElement>>(new Map());
+
+// Lazy rendering: track which chart cards are visible in the viewport
+const visibleCharts = reactive(new Set<string>());
+let lazyObserver: IntersectionObserver | null = null;
+const observedElements = new WeakSet<Element>();
+
+function setupLazyObserver(): void {
+  if (lazyObserver) return;
+  lazyObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const chartType = (entry.target as HTMLElement).dataset.chartType;
+        if (!chartType) continue;
+        if (entry.isIntersecting) {
+          visibleCharts.add(chartType);
+          // Once visible, render immediately if data exists
+          const domEl = chartDomRefs.value.get(chartType);
+          if (domEl && getChart(chartType)) {
+            requestAnimationFrame(() => renderGenericChart(chartType, domEl));
+          }
+        }
+      }
+    },
+    { rootMargin: '200px' },
+  );
+}
+
+/** Mark all charts visible with staggered fade-in delay (initial load). */
+function revealAllCharts(): void {
+  const allTypes = charts.value.map((c) => c.chartType);
+  allTypes.forEach((t, i) => {
+    setTimeout(() => visibleCharts.add(t), i * 60);
+  });
+}
+
+function observeChartCard(el: HTMLElement, chartType: string): void {
+  setupLazyObserver();
+  if (!lazyObserver || observedElements.has(el)) return;
+  el.dataset.chartType = chartType;
+  lazyObserver.observe(el);
+  observedElements.add(el);
+}
+
+function teardownLazyObserver(): void {
+  if (lazyObserver) {
+    lazyObserver.disconnect();
+    lazyObserver = null;
+  }
+  visibleCharts.clear();
+}
 
 // ---- Computed ----
 const currentYear = computed(() => periodSelection.value.year);
@@ -223,6 +324,8 @@ async function generate(useDemo = false) {
     const resp = await batchGenerate(payload);
     if (resp.success) {
       dashboardResponse.value = resp;
+      // Reveal all chart cards with staggered fade-in
+      nextTick(() => revealAllCharts());
       ElMessage.success(`成功生成 ${resp.successCount} 个图表`);
     } else {
       ElMessage.error('图表生成失败，请检查数据源');
@@ -481,32 +584,115 @@ function renderGenericChart(chartType: string, domEl: Element | null, retries = 
 
   let instance = echarts.getInstanceByDom(domEl);
   if (!instance) {
-    instance = echarts.init(domEl);
+    // D4: SVG renderer option
+    const renderer = useSvgRenderer.value ? 'svg' : 'canvas';
+    instance = echarts.init(domEl, isDarkMode.value ? 'cretas-dark' : undefined, { renderer });
   }
-  const processed = processEChartsOptions(JSON.parse(JSON.stringify(chart.echartsOption)) as Record<string, unknown>);
-  instance.setOption(processed, { notMerge: true });
+  const processed = processEChartsOptions(structuredClone(chart.echartsOption) as Record<string, unknown>);
+
+  // D2: Merge user annotations as ECharts graphic elements
+  const chartAnnotations = annotations.value[chartType] || [];
+  if (chartAnnotations.length > 0) {
+    const graphicItems = chartAnnotations.flatMap((ann) => [
+      // Pin icon background
+      {
+        type: 'circle' as const,
+        shape: { r: 4, cx: 0, cy: 0 },
+        left: `${ann.x}%`,
+        top: `${ann.y}%`,
+        style: { fill: ann.color || '#e6a23c', stroke: '#fff', lineWidth: 1.5 },
+        silent: true,
+        z: 100,
+      },
+      // Annotation text label
+      {
+        type: 'text' as const,
+        left: `${ann.x + 1}%`,
+        top: `${ann.y - 1}%`,
+        style: {
+          text: ann.text,
+          fontSize: 11,
+          fill: ann.color || '#e6a23c',
+          fontWeight: 'bold' as const,
+          backgroundColor: 'rgba(255,255,255,0.92)',
+          padding: [3, 8],
+          borderRadius: 4,
+          borderColor: ann.color || '#e6a23c',
+          borderWidth: 1,
+          shadowColor: 'rgba(0,0,0,0.1)',
+          shadowBlur: 4,
+        },
+        silent: true,
+        z: 100,
+      },
+    ]);
+    const existing = (processed.graphic as unknown[]) || [];
+    processed.graphic = [...(Array.isArray(existing) ? existing : [existing]), ...graphicItems];
+  }
+
+  try {
+    instance.setOption(processed, { notMerge: true });
+  } catch {
+    // ECharts dataZoom may throw 'grid.master' TypeError during initial render
+    // when grid model isn't fully initialized — retry once after a frame
+    requestAnimationFrame(() => {
+      try { instance.setOption(processed, { notMerge: true }); } catch { /* ignore */ }
+    });
+  }
+
+  // B1: Wire cross-chart click handler
+  instance.off('click');
+  instance.on('click', (params: Record<string, unknown>) => {
+    handleChartClick(chartType, params as { name?: string; seriesName?: string; componentType?: string });
+  });
+
+  // D2: Double-click to add annotation (opens dialog)
+  instance.off('dblclick');
+  instance.on('dblclick', (params: Record<string, unknown>) => {
+    const event = params.event as { offsetX?: number; offsetY?: number } | undefined;
+    if (!event?.offsetX) return;
+    const xPct = Math.round((event.offsetX / domEl.clientWidth) * 100);
+    const yPct = Math.round((event.offsetY / domEl.clientHeight) * 100);
+    openAnnotationDialog(chartType, xPct, yPct);
+  });
 }
 
 watch(() => charts.value.length, async () => {
   await nextTick();
+  setupLazyObserver();
   // Double rAF: first rAF schedules after v-if DOM insertion, second after layout
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      for (const [chartType, domEl] of chartDomRefs.value.entries()) {
-        renderGenericChart(chartType, domEl);
+      // Observe all chart card containers for lazy rendering
+      const cardEls = document.querySelectorAll<HTMLElement>('.chart-card[data-chart-type]');
+      for (const cardEl of cardEls) {
+        const chartType = cardEl.dataset.chartType;
+        if (chartType) observeChartCard(cardEl, chartType);
       }
+      // Render all charts that are visible or have DOM refs ready
+      for (const [chartType, domEl] of chartDomRefs.value.entries()) {
+        if (visibleCharts.has(chartType)) {
+          renderGenericChart(chartType, domEl);
+        }
+      }
+      // Fallback: render any charts whose cards are in DOM but observer hasn't fired yet
+      setTimeout(() => {
+        for (const [chartType, domEl] of chartDomRefs.value.entries()) {
+          if (!visibleCharts.has(chartType) && domEl.clientHeight > 0) {
+            visibleCharts.add(chartType);
+            renderGenericChart(chartType, domEl);
+          }
+        }
+      }, 500);
+      // E1: Connect charts for synchronized crosshair
+      connectCharts();
+      // E2: Start KPI counter animations
+      startKpiAnimations();
     });
   });
 });
 
-// Cleanup ECharts instances on unmount to prevent memory leaks
-onBeforeUnmount(() => {
-  for (const [, domEl] of chartDomRefs.value.entries()) {
-    const instance = echarts.getInstanceByDom(domEl);
-    instance?.dispose();
-  }
-  chartDomRefs.value.clear();
-});
+// Note: cleanup is handled in the onBeforeUnmount at bottom of script
 
 const periodLabel = computed(() => dashboardResponse.value?.period?.label || '');
 
@@ -560,10 +746,347 @@ function applyBookmark(state: BookmarkState) {
 function onFormattingRulesChange(_rules: unknown[]) {
   // Rules are managed by the ConditionalFormattingService singleton; no extra action needed
 }
+
+// ---- B3: Dark mode toggle ----
+function toggleDarkMode() {
+  isDarkMode.value = !isDarkMode.value;
+  const theme = isDarkMode.value ? 'cretas-dark' : undefined;
+  // Re-render all generic charts with theme change
+  nextTick(() => {
+    for (const [chartType, domEl] of chartDomRefs.value.entries()) {
+      const oldInstance = echarts.getInstanceByDom(domEl);
+      if (oldInstance) oldInstance.dispose();
+      const newInstance = echarts.init(domEl, theme);
+      const chart = getChart(chartType);
+      if (chart?.echartsOption) {
+        const processed = processEChartsOptions(structuredClone(chart.echartsOption) as Record<string, unknown>);
+        newInstance.setOption(processed, { notMerge: true });
+      }
+    }
+    // Re-render custom component charts (ExpenseYoY, GrossMargin, Variance, Sankey)
+    for (const compRef of [chartRefExpenseYoY, chartRefGrossMargin, chartRefVariance, chartRefSankey]) {
+      const inst = compRef.value?.chartInstance;
+      if (inst) {
+        const domEl = inst.getDom();
+        inst.dispose();
+        if (domEl) {
+          const newInst = echarts.init(domEl, theme);
+          // Re-fetch chart data and setOption
+          const chartType = compRef === chartRefExpenseYoY ? 'expense_yoy_budget'
+            : compRef === chartRefGrossMargin ? 'gross_margin_trend'
+            : compRef === chartRefVariance ? 'variance_analysis'
+            : 'cost_flow_sankey';
+          const chart = getChart(chartType);
+          if (chart?.echartsOption) {
+            const processed = processEChartsOptions(structuredClone(chart.echartsOption) as Record<string, unknown>);
+            newInst.setOption(processed, { notMerge: true });
+          }
+        }
+      }
+    }
+  });
+}
+
+// ---- B2: Simple drill-down for financial dashboard ----
+const drillDownVisible = ref(false);
+const drillDownContext = ref({ chartType: '', dimension: '', value: '' });
+const drillBreadcrumb = ref<Array<{ dimension: string; value: string }>>([]);
+
+function handleChartDrillDown(chartType: string, params: { name?: string; seriesName?: string }) {
+  if (!params.name) return;
+  // For financial charts, "drill down" means filtering the period to a specific month/quarter
+  const monthMatch = params.name.match(/^(\d{1,2})月$/);
+  if (monthMatch) {
+    const month = parseInt(monthMatch[1], 10);
+    drillDownContext.value = { chartType, dimension: '月份', value: params.name };
+    drillBreadcrumb.value.push({ dimension: '月份', value: params.name });
+    // Re-generate with narrowed period
+    const savedStart = startMonth.value;
+    const savedEnd = endMonth.value;
+    periodSelection.value = {
+      ...periodSelection.value,
+      type: 'month_range',
+      value: [`${currentYear.value}-${String(month).padStart(2, '0')}`, `${currentYear.value}-${String(month).padStart(2, '0')}`],
+    };
+    ElMessage.info(`下钻至 ${params.name}`);
+    generate();
+    drillDownVisible.value = true;
+    return;
+  }
+  // For category names, use cross-filter instead
+  handleChartClick(chartType, params);
+}
+
+function drillUp() {
+  drillBreadcrumb.value.pop();
+  if (drillBreadcrumb.value.length === 0) {
+    // Restore full year view
+    periodSelection.value = {
+      ...periodSelection.value,
+      type: 'year',
+      value: String(currentYear.value),
+    };
+    drillDownVisible.value = false;
+    generate();
+  }
+}
+
+// ---- B1: Cross-chart filtering ----
+function handleChartClick(chartType: string, params: { name?: string; seriesName?: string; componentType?: string }) {
+  if (!params.name || params.componentType === 'markLine' || params.componentType === 'markArea') return;
+
+  // Toggle filter: click same → clear, click different → set
+  if (activeFilter.value?.value === params.name && activeFilter.value?.dimension === chartType) {
+    activeFilter.value = null;
+  } else {
+    activeFilter.value = { dimension: chartType, value: params.name };
+  }
+  applyCrossFilter();
+}
+
+function applyCrossFilter() {
+  for (const [chartType, domEl] of chartDomRefs.value.entries()) {
+    const instance = echarts.getInstanceByDom(domEl);
+    if (!instance) continue;
+
+    const chart = getChart(chartType);
+    if (!chart?.echartsOption) continue;
+
+    if (!activeFilter.value) {
+      // Clear filter — re-render original chart
+      const processed = processEChartsOptions(structuredClone(chart.echartsOption) as Record<string, unknown>);
+      instance.setOption(processed, { notMerge: true });
+      continue;
+    }
+
+    // Find matching data index in xAxis
+    const filterVal = activeFilter.value.value;
+    const rawOpt = chart.echartsOption as Record<string, unknown>;
+    const xData = rawOpt.xAxis;
+    const xAxisData = Array.isArray(xData) ? (xData[0] as Record<string, unknown>)?.data : (xData as Record<string, unknown>)?.data;
+
+    if (Array.isArray(xAxisData)) {
+      const matchIdx = xAxisData.indexOf(filterVal);
+      // Apply opacity dimming via series-level emphasis/downplay
+      instance.dispatchAction({ type: 'downplay' });
+      if (matchIdx >= 0) {
+        // Highlight matched index across all series
+        const seriesArr = rawOpt.series;
+        if (Array.isArray(seriesArr)) {
+          for (let si = 0; si < seriesArr.length; si++) {
+            instance.dispatchAction({ type: 'highlight', seriesIndex: si, dataIndex: matchIdx });
+          }
+        } else {
+          instance.dispatchAction({ type: 'highlight', dataIndex: matchIdx });
+        }
+      }
+    }
+  }
+}
+
+// ---- D1: Auto-refresh ----
+function setAutoRefresh(interval: number) {
+  autoRefreshInterval.value = interval;
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+  }
+  if (interval > 0 && dashboardResponse.value) {
+    autoRefreshTimer = setInterval(() => {
+      if (!isGenerating.value) generate();
+    }, interval);
+  }
+}
+
+watch(() => autoRefreshInterval.value, (val) => setAutoRefresh(val));
+
+// ---- D3: Anomaly detection (2σ) ----
+function detectAnomalies(kpis: Array<{ label: string; value: string | number; unit?: string; trend?: string }>): string[] {
+  const numericValues = kpis
+    .map(k => typeof k.value === 'number' ? k.value : parseFloat(String(k.value)))
+    .filter(v => !isNaN(v));
+  if (numericValues.length < 3) return [];
+
+  const mean = numericValues.reduce((a, b) => a + b, 0) / numericValues.length;
+  const std = Math.sqrt(numericValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / numericValues.length);
+  if (std === 0) return [];
+
+  const alerts: string[] = [];
+  for (const kpi of kpis) {
+    const v = typeof kpi.value === 'number' ? kpi.value : parseFloat(String(kpi.value));
+    if (!isNaN(v) && Math.abs(v - mean) > 2 * std) {
+      alerts.push(`${kpi.label}: ${kpi.value}${kpi.unit || ''} (偏差显著)`);
+    }
+  }
+  return alerts;
+}
+
+// ---- C4: Keyboard navigation between chart cards ----
+function handleCardKeydown(event: KeyboardEvent, cardIndex: number) {
+  const cards = document.querySelectorAll('.chart-card[tabindex]');
+  let nextIdx = -1;
+  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+    nextIdx = Math.min(cardIndex + 1, cards.length - 1);
+  } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    nextIdx = Math.max(cardIndex - 1, 0);
+  } else {
+    return;
+  }
+  event.preventDefault();
+  (cards[nextIdx] as HTMLElement)?.focus();
+}
+
+// ---- A3: KPI sparkline path generator ----
+function sparklinePath(values: number[], width = 60, height = 20): string {
+  if (!values || values.length < 2) return '';
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const step = width / (values.length - 1);
+  return values.map((v, i) => {
+    const x = i * step;
+    const y = height - ((v - min) / range) * height;
+    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+}
+
+// ---- E1: Synchronized crosshair (tooltip linkage) ----
+// Time-series chart types that share the same x-axis (months)
+const timeSeriesChartTypes = [
+  'budget_achievement', 'yoy_mom_comparison', 'expense_yoy_budget',
+  'category_yoy_comparison', 'gross_margin_trend', 'cashflow_trend',
+  'hr_cost_analysis',
+];
+
+function connectCharts() {
+  // Wire up mousemove → showTip on sibling charts
+  for (const chartType of timeSeriesChartTypes) {
+    const domEl = chartDomRefs.value.get(chartType);
+    if (!domEl) continue;
+    const instance = echarts.getInstanceByDom(domEl);
+    if (!instance) continue;
+
+    instance.on('mousemove', (params: Record<string, unknown>) => {
+      const dataIndex = params.dataIndex as number | undefined;
+      if (dataIndex == null) return;
+      for (const sibType of timeSeriesChartTypes) {
+        if (sibType === chartType) continue;
+        const sibDom = chartDomRefs.value.get(sibType);
+        if (!sibDom) continue;
+        const sibInst = echarts.getInstanceByDom(sibDom);
+        if (!sibInst) continue;
+        try { sibInst.dispatchAction({ type: 'showTip', seriesIndex: 0, dataIndex }); } catch { /* grid not ready */ }
+      }
+    });
+    instance.on('mouseout', () => {
+      for (const sibType of timeSeriesChartTypes) {
+        if (sibType === chartType) continue;
+        const sibDom = chartDomRefs.value.get(sibType);
+        if (!sibDom) continue;
+        const sibInst = echarts.getInstanceByDom(sibDom);
+        try { sibInst?.dispatchAction({ type: 'hideTip' }); } catch { /* grid not ready */ }
+      }
+    });
+  }
+}
+
+// ---- E2: Animated KPI counter ----
+const animatedKpiValues = ref<Record<string, string>>({});
+
+function animateKpiValue(key: string, targetStr: string, duration = 800) {
+  // Parse numeric portion
+  const match = targetStr.match(/^([+-]?)([0-9,.]+)(.*)/);
+  if (!match) {
+    animatedKpiValues.value[key] = targetStr;
+    return;
+  }
+  const sign = match[1];
+  const numStr = match[2].replace(/,/g, '');
+  const suffix = match[3];
+  const target = parseFloat(numStr);
+  if (isNaN(target)) {
+    animatedKpiValues.value[key] = targetStr;
+    return;
+  }
+
+  const decimals = numStr.includes('.') ? numStr.split('.')[1].length : 0;
+  const startTime = performance.now();
+  animatedKpiValues.value[key] = `${sign}0${suffix}`;
+
+  function tick(now: number) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out cubic
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = target * eased;
+    const formatted = decimals > 0 ? current.toFixed(decimals) : Math.round(current).toLocaleString('zh-CN');
+    animatedKpiValues.value[key] = `${sign}${formatted}${suffix}`;
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function startKpiAnimations() {
+  for (const chart of charts.value) {
+    if (!chart.kpis?.length) continue;
+    for (const kpi of chart.kpis) {
+      const key = `${chart.chartType}_${kpi.label}`;
+      const val = typeof kpi.value === 'number' ? kpi.value.toFixed(1) : String(kpi.value);
+      animateKpiValue(key, val);
+    }
+  }
+}
+
+function getAnimatedKpi(chartType: string, label: string, original: string | number): string {
+  const key = `${chartType}_${label}`;
+  return animatedKpiValues.value[key] ?? (typeof original === 'number' ? original.toFixed(1) : String(original));
+}
+
+// ---- E4: Data table drawer per chart ----
+const tableVisibleByType = ref<Record<string, boolean>>({});
+
+// ---- Resize all charts when container changes (sidebar toggle) ----
+let resizeObserver: ResizeObserver | null = null;
+let resizeRafId = 0;
+
+function setupResizeObserver() {
+  const container = document.querySelector('.financial-dashboard-pbi');
+  if (!container || resizeObserver) return;
+  resizeObserver = new ResizeObserver(() => {
+    if (resizeRafId) return;
+    resizeRafId = requestAnimationFrame(() => {
+      resizeRafId = 0;
+      for (const [, domEl] of chartDomRefs.value.entries()) {
+        const inst = echarts.getInstanceByDom(domEl);
+        inst?.resize();
+      }
+    });
+  });
+  resizeObserver.observe(container);
+}
+
+// Setup after first render
+watch(() => charts.value.length, () => {
+  nextTick(() => setupResizeObserver());
+}, { once: true });
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  if (resizeRafId) cancelAnimationFrame(resizeRafId);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  teardownLazyObserver();
+  for (const [, domEl] of chartDomRefs.value.entries()) {
+    const instance = echarts.getInstanceByDom(domEl);
+    instance?.dispose();
+  }
+  chartDomRefs.value.clear();
+});
 </script>
 
 <template>
-  <div class="financial-dashboard-pbi">
+  <div class="financial-dashboard-pbi" :data-theme="isDarkMode ? 'dark' : 'light'" role="main" aria-label="财务分析看板">
     <!-- Top Toolbar -->
     <el-card class="toolbar-card" shadow="never">
       <div class="toolbar-inner">
@@ -607,6 +1130,21 @@ function onFormattingRulesChange(_rules: unknown[]) {
           <el-tag v-if="periodLabel" type="info" size="small" style="margin-right: 8px">
             {{ periodLabel }}
           </el-tag>
+          <el-button size="small" @click="toggleDarkMode" :title="isDarkMode ? '切换亮色' : '切换暗色'">
+            {{ isDarkMode ? '☀️' : '🌙' }}
+          </el-button>
+          <el-select
+            v-model="autoRefreshInterval"
+            size="small"
+            placeholder="自动刷新"
+            style="width: 100px"
+            :disabled="!dashboardResponse"
+          >
+            <el-option :value="0" label="刷新: 关" />
+            <el-option :value="60000" label="1分钟" />
+            <el-option :value="300000" label="5分钟" />
+            <el-option :value="900000" label="15分钟" />
+          </el-select>
           <el-switch
             v-model="smallMultiplesVisible"
             size="small"
@@ -665,6 +1203,26 @@ function onFormattingRulesChange(_rules: unknown[]) {
       </div>
     </el-card>
 
+    <!-- Interaction tips -->
+    <div v-if="dashboardResponse && !isGenerating" class="interaction-tips">
+      <span>💡 <b>单击</b>交叉过滤 | <b>双击</b>添加标注 | <b>方向键</b>卡片导航 | <b>Shift+滚轮</b>缩放 | 图表间<b>Tooltip联动</b></span>
+    </div>
+
+    <!-- B2: Drill-down breadcrumb -->
+    <div v-if="drillDownVisible" class="cross-filter-bar" style="background: rgba(54,179,126,0.08); color: #1B7A4A">
+      <div style="display: flex; align-items: center; gap: 4px">
+        <span style="cursor: pointer; text-decoration: underline" @click="drillUp">全年</span>
+        <span v-for="(bc, idx) in drillBreadcrumb" :key="idx"> &gt; <b>{{ bc.value }}</b></span>
+      </div>
+      <el-button size="small" text type="success" @click="drillUp">返回上级</el-button>
+    </div>
+
+    <!-- B1: Active cross-filter indicator -->
+    <div v-if="activeFilter" class="cross-filter-bar">
+      <span>过滤中: <b>{{ activeFilter.value }}</b></span>
+      <el-button size="small" text type="primary" @click="activeFilter = null; applyCrossFilter()">清除过滤</el-button>
+    </div>
+
     <!-- Empty state -->
     <div v-if="!dashboardResponse && !isGenerating" class="empty-state">
       <el-empty description="请选择数据源和时间范围，点击「生成看板」开始分析" />
@@ -672,7 +1230,7 @@ function onFormattingRulesChange(_rules: unknown[]) {
 
     <!-- Loading skeleton -->
     <div v-if="isGenerating" class="charts-grid">
-      <el-card v-for="ct in chartTypes" :key="ct.key" class="chart-card" shadow="hover">
+      <el-card v-for="ct in chartTypes" :key="ct.key" class="chart-card chart-card--visible" shadow="hover">
         <template #header>
           <div class="chart-card-header">
             <span>{{ ct.icon }} {{ ct.label }}</span>
@@ -689,7 +1247,10 @@ function onFormattingRulesChange(_rules: unknown[]) {
       <!-- Chart 4: Expense YoY Budget (custom component) -->
       <el-card
         v-if="getChart('expense_yoy_budget')"
+        :ref="(el: any) => { if (el?.$el) observeChartCard(el.$el, 'expense_yoy_budget') }"
         class="chart-card chart-card--wide"
+        :class="{ 'chart-card--visible': visibleCharts.has('expense_yoy_budget') }"
+        data-chart-type="expense_yoy_budget"
         shadow="hover"
       >
         <template #header>
@@ -743,7 +1304,10 @@ function onFormattingRulesChange(_rules: unknown[]) {
       <!-- Chart 6: Gross Margin Trend (custom component) -->
       <el-card
         v-if="getChart('gross_margin_trend')"
+        :ref="(el: any) => { if (el?.$el) observeChartCard(el.$el, 'gross_margin_trend') }"
         class="chart-card chart-card--wide"
+        :class="{ 'chart-card--visible': visibleCharts.has('gross_margin_trend') }"
+        data-chart-type="gross_margin_trend"
         shadow="hover"
       >
         <template #header>
@@ -797,7 +1361,10 @@ function onFormattingRulesChange(_rules: unknown[]) {
       <!-- Chart: Variance Analysis -->
       <el-card
         v-if="getChart('variance_analysis')"
+        :ref="(el: any) => { if (el?.$el) observeChartCard(el.$el, 'variance_analysis') }"
         class="chart-card chart-card--wide"
+        :class="{ 'chart-card--visible': visibleCharts.has('variance_analysis') }"
+        data-chart-type="variance_analysis"
         shadow="hover"
       >
         <template #header>
@@ -831,7 +1398,10 @@ function onFormattingRulesChange(_rules: unknown[]) {
       <!-- Chart: Cost Flow Sankey -->
       <el-card
         v-if="getChart('cost_flow_sankey')"
+        :ref="(el: any) => { if (el?.$el) observeChartCard(el.$el, 'cost_flow_sankey') }"
         class="chart-card chart-card--wide"
+        :class="{ 'chart-card--visible': visibleCharts.has('cost_flow_sankey') }"
+        data-chart-type="cost_flow_sankey"
         shadow="hover"
       >
         <template #header>
@@ -867,22 +1437,63 @@ function onFormattingRulesChange(_rules: unknown[]) {
       <template v-for="ct in chartTypes.filter(c => !['expense_yoy_budget', 'gross_margin_trend'].includes(c.key))" :key="ct.key">
       <el-card
         v-if="getChart(ct.key)"
+        :ref="(el: any) => { if (el?.$el) observeChartCard(el.$el, ct.key) }"
         class="chart-card"
+        :class="{ 'chart-card--wide chart-card--scorecard': ct.key === 'kpi_scorecard', 'chart-card--visible': visibleCharts.has(ct.key) }"
+        :data-chart-type="ct.key"
         shadow="hover"
+        role="region"
+        :aria-label="ct.label"
+        tabindex="0"
+        @keydown="(e: KeyboardEvent) => handleCardKeydown(e, chartTypes.filter(c => !['expense_yoy_budget', 'gross_margin_trend'].includes(c.key)).indexOf(ct))"
       >
         <template #header>
           <div class="chart-card-header">
-            <span>{{ ct.icon }} {{ ct.label }}</span>
-            <el-button
-              size="small"
-              text
-              type="primary"
-              :loading="analysisLoadingByType[ct.key]"
-              :disabled="!getChart(ct.key)"
-              @click="requestAnalysis(ct.key)"
-            >
-              {{ analysisExpandedByType[ct.key] && analysisByType[ct.key] ? '收起分析' : 'AI分析' }}
-            </el-button>
+            <div class="chart-card-title-group">
+              <span>{{ ct.icon }} {{ ct.label }}</span>
+              <el-tag
+                v-if="getChart(ct.key)?.kpis?.length && detectAnomalies(getChart(ct.key)!.kpis).length > 0"
+                type="warning"
+                size="small"
+                effect="dark"
+                class="anomaly-badge"
+                :title="detectAnomalies(getChart(ct.key)!.kpis).join('\n')"
+              >
+                ⚠ {{ detectAnomalies(getChart(ct.key)!.kpis).length }}
+              </el-tag>
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px">
+              <el-button
+                v-if="annotations[ct.key]?.length"
+                size="small"
+                text
+                type="warning"
+                :title="`${annotations[ct.key].length} 个标注 (双击图表添加)`"
+                @click="clearAllAnnotations(ct.key)"
+              >
+                <el-icon><Delete /></el-icon>
+                {{ annotations[ct.key].length }}
+              </el-button>
+              <el-button
+                v-if="getChart(ct.key)?.tableData"
+                size="small"
+                text
+                type="info"
+                @click="tableVisibleByType[ct.key] = !tableVisibleByType[ct.key]"
+              >
+                {{ tableVisibleByType[ct.key] ? '隐藏表格' : '数据表' }}
+              </el-button>
+              <el-button
+                size="small"
+                text
+                type="primary"
+                :loading="analysisLoadingByType[ct.key]"
+                :disabled="!getChart(ct.key)"
+                @click="requestAnalysis(ct.key)"
+              >
+                {{ analysisExpandedByType[ct.key] && analysisByType[ct.key] ? '收起分析' : 'AI分析' }}
+              </el-button>
+            </div>
           </div>
         </template>
 
@@ -896,9 +1507,36 @@ function onFormattingRulesChange(_rules: unknown[]) {
               'kpi-up': kpi.trend === 'up',
               'kpi-down': kpi.trend === 'down',
             }"
+            tabindex="0"
+            :aria-label="`${kpi.label}: ${kpi.value}${kpi.unit || ''}`"
           >
-            <span class="kpi-val">{{ typeof kpi.value === 'number' ? kpi.value.toFixed(1) : kpi.value }}{{ kpi.unit }}</span>
+            <span class="kpi-val">{{ getAnimatedKpi(ct.key, kpi.label, kpi.value) }}{{ kpi.unit }}</span>
             <span class="kpi-lbl">{{ kpi.label }}</span>
+            <!-- A3: KPI sparkline -->
+            <svg v-if="kpi.sparkline?.length >= 2" class="kpi-sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
+              <path :d="sparklinePath(kpi.sparkline)" fill="none" :stroke="kpi.trend === 'down' ? '#FF5630' : '#36B37E'" stroke-width="1.5" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Quarterly progress bars (budget_achievement) -->
+        <div
+          v-if="ct.key === 'budget_achievement' && getChart(ct.key)?.quarterlyProgress?.length"
+          class="quarterly-progress-row"
+        >
+          <div
+            v-for="qp in getChart(ct.key)!.quarterlyProgress"
+            :key="qp.quarter"
+            class="q-progress-item"
+          >
+            <span class="q-label">{{ qp.quarter }}</span>
+            <el-progress
+              :percentage="Math.min(qp.rate, 100)"
+              :color="qp.rate >= 100 ? '#36B37E' : qp.rate >= 80 ? '#FFAB00' : '#FF5630'"
+              :stroke-width="10"
+              :text-inside="true"
+            />
+            <span class="q-rate" :style="{ color: qp.rate >= 100 ? '#36B37E' : qp.rate >= 80 ? '#FFAB00' : '#FF5630' }">{{ qp.rate }}%</span>
           </div>
         </div>
 
@@ -907,7 +1545,33 @@ function onFormattingRulesChange(_rules: unknown[]) {
           :ref="(el) => setChartDomRef(ct.key, el as Element | null)"
           class="generic-chart-canvas"
           style="height: 340px; width: 100%"
+          role="img"
+          :aria-label="`${ct.label}图表`"
+          title="单击: 交叉过滤 | 双击: 添加标注"
         />
+
+        <!-- Monthly data rows (yoy_mom_comparison) -->
+        <div
+          v-if="ct.key === 'yoy_mom_comparison' && getChart(ct.key)?.monthlyDataRows"
+          class="monthly-data-rows"
+        >
+          <div class="data-row">
+            <span class="data-row-label">本年</span>
+            <span
+              v-for="(v, idx) in getChart(ct.key)!.monthlyDataRows.currentYear"
+              :key="'cy-' + idx"
+              class="data-row-cell"
+            >{{ v }}</span>
+          </div>
+          <div class="data-row">
+            <span class="data-row-label">上年</span>
+            <span
+              v-for="(v, idx) in getChart(ct.key)!.monthlyDataRows.lastYear"
+              :key="'ly-' + idx"
+              class="data-row-cell"
+            >{{ v }}</span>
+          </div>
+        </div>
 
         <!-- AI Analysis panel -->
         <div v-if="analysisExpandedByType[ct.key]" class="analysis-panel">
@@ -915,6 +1579,22 @@ function onFormattingRulesChange(_rules: unknown[]) {
           <div v-else-if="analysisByType[ct.key]" class="analysis-text">
             {{ analysisByType[ct.key] }}
           </div>
+        </div>
+
+        <!-- E4: Data table drawer -->
+        <div v-if="tableVisibleByType[ct.key] && getChart(ct.key)?.tableData" class="chart-data-table">
+          <table>
+            <thead>
+              <tr>
+                <th v-for="col in (getChart(ct.key)!.tableData as Record<string, unknown>)?.columns as string[] ?? []" :key="col">{{ col }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, rIdx) in (getChart(ct.key)!.tableData as Record<string, unknown>)?.rows as unknown[][] ?? []" :key="rIdx">
+                <td v-for="(cell, cIdx) in row" :key="cIdx">{{ cell }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </el-card>
       </template>
@@ -966,6 +1646,41 @@ function onFormattingRulesChange(_rules: unknown[]) {
         @close="showBookmarkPanel = false"
       />
     </el-drawer>
+
+    <!-- D2: Annotation Dialog -->
+    <el-dialog
+      v-model="annotationDialogVisible"
+      title="添加数据标注"
+      width="400px"
+      :close-on-click-modal="true"
+    >
+      <el-form label-position="top">
+        <el-form-item label="标注内容">
+          <el-input
+            v-model="annotationForm.text"
+            placeholder="输入标注文字"
+            maxlength="50"
+            show-word-limit
+            @keyup.enter="confirmAnnotation"
+          />
+        </el-form-item>
+        <el-form-item label="标注颜色">
+          <div style="display: flex; gap: 8px">
+            <span
+              v-for="c in ['#e6a23c', '#FF5630', '#36B37E', '#1B65A8', '#6B778C']"
+              :key="c"
+              style="width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s"
+              :style="{ background: c, borderColor: annotationForm.color === c ? '#333' : 'transparent' }"
+              @click="annotationForm.color = c"
+            />
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="annotationDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmAnnotation" :disabled="!annotationForm.text.trim()">添加标注</el-button>
+      </template>
+    </el-dialog>
 
     <!-- Presentation Mode -->
     <PresentationMode
@@ -1039,8 +1754,17 @@ function onFormattingRulesChange(_rules: unknown[]) {
 }
 
 /* Chart card */
-.chart-card {
-  overflow: hidden;
+
+/* C4: Focus ring for keyboard navigation */
+.chart-card:focus {
+  outline: 2px solid #1B65A8;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(27, 101, 168, 0.15);
+}
+
+.chart-card:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
 }
 
 .chart-card-header {
@@ -1079,16 +1803,143 @@ function onFormattingRulesChange(_rules: unknown[]) {
   background: rgba(255, 86, 48, 0.08);
 }
 
+/* A6: KPI typography upgrade — Power BI scale */
 .kpi-val {
-  font-size: 18px;
+  font-size: 28px;
   font-weight: 700;
   color: #1B65A8;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.5px;
+  line-height: 1.2;
 }
 
 .kpi-lbl {
   font-size: 11px;
   color: #909399;
-  margin-top: 2px;
+  margin-top: 4px;
+}
+
+/* A3: Sparkline */
+.kpi-sparkline {
+  width: 60px;
+  height: 20px;
+  margin-top: 4px;
+}
+
+/* A6: Trend border accent */
+.generic-kpi-chip.kpi-up {
+  border-left: 3px solid #36B37E;
+}
+
+.generic-kpi-chip.kpi-down {
+  border-left: 3px solid #FF5630;
+}
+
+.generic-kpi-chip {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Quarterly progress bars (budget_achievement) */
+.quarterly-progress-row {
+  display: flex;
+  gap: 12px;
+  padding: 4px 16px 8px;
+}
+
+.q-progress-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.q-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #606266;
+  white-space: nowrap;
+}
+
+.q-progress-item :deep(.el-progress) {
+  flex: 1;
+  min-width: 0;
+}
+
+.q-rate {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Monthly data rows (yoy_mom_comparison) */
+.monthly-data-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 16px;
+  background: rgba(27, 101, 168, 0.03);
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.data-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.data-row-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #909399;
+  width: 36px;
+  flex-shrink: 0;
+}
+
+.data-row-cell {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  color: #606266;
+}
+
+/* Chart card title group */
+.chart-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* D3: Anomaly badge */
+.anomaly-badge {
+  font-size: 11px;
+  cursor: help;
+}
+
+/* Interaction tips */
+.interaction-tips {
+  font-size: 12px;
+  color: #909399;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.interaction-tips b {
+  color: #606266;
+}
+
+/* B1: Cross-filter bar */
+.cross-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(27, 101, 168, 0.08);
+  border-radius: 8px;
+  padding: 8px 16px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #1B65A8;
 }
 
 /* Analysis panel */
@@ -1106,5 +1957,299 @@ function onFormattingRulesChange(_rules: unknown[]) {
   background: rgba(27, 101, 168, 0.04);
   border-radius: 6px;
   padding: 12px;
+}
+
+/* ---- B3: Dark mode ---- */
+.financial-dashboard-pbi[data-theme="dark"] {
+  background: #1a1a2e;
+  color: #e0e0e0;
+}
+
+.financial-dashboard-pbi[data-theme="dark"] .toolbar-card,
+.financial-dashboard-pbi[data-theme="dark"] .chart-card,
+.financial-dashboard-pbi[data-theme="dark"] .dashboard-card {
+  background: #16213e;
+  border-color: #2a2a4a;
+}
+
+.financial-dashboard-pbi[data-theme="dark"] :deep(.el-card) {
+  background: #16213e;
+  border-color: #2a2a4a;
+  color: #e0e0e0;
+}
+
+.financial-dashboard-pbi[data-theme="dark"] :deep(.el-card__header) {
+  border-bottom-color: #2a2a4a;
+}
+
+.financial-dashboard-pbi[data-theme="dark"] .chart-card-header {
+  color: #e0e0e0;
+}
+
+.financial-dashboard-pbi[data-theme="dark"] .generic-kpi-chip {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.financial-dashboard-pbi[data-theme="dark"] .kpi-val {
+  color: #4C9AFF;
+}
+
+.financial-dashboard-pbi[data-theme="dark"] .kpi-lbl {
+  color: #a0a0b0;
+}
+
+.financial-dashboard-pbi[data-theme="dark"] .analysis-text {
+  background: rgba(255, 255, 255, 0.04);
+  color: #c0c0d0;
+}
+
+.financial-dashboard-pbi[data-theme="dark"] .monthly-data-rows {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.financial-dashboard-pbi[data-theme="dark"] .data-row-cell,
+.financial-dashboard-pbi[data-theme="dark"] .data-row-label {
+  color: #a0a0b0;
+}
+
+.financial-dashboard-pbi[data-theme="dark"] .cross-filter-bar {
+  background: rgba(76, 154, 255, 0.12);
+  color: #4C9AFF;
+}
+
+/* ---- C2: Responsive breakpoints ---- */
+@media (max-width: 768px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .chart-card--wide {
+    grid-column: 1;
+  }
+  .toolbar-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .toolbar-left,
+  .toolbar-right {
+    justify-content: center;
+  }
+  .generic-kpi-row {
+    gap: 6px;
+  }
+  .generic-kpi-chip {
+    min-width: 80px;
+    padding: 8px 8px;
+  }
+  .kpi-val {
+    font-size: 20px;
+  }
+  .quarterly-progress-row {
+    flex-wrap: wrap;
+  }
+  .generic-chart-canvas {
+    height: 260px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .financial-dashboard-pbi {
+    padding: 8px;
+  }
+  .generic-kpi-row {
+    flex-direction: column;
+  }
+  .generic-kpi-chip {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .kpi-val {
+    font-size: 18px;
+  }
+  .kpi-lbl {
+    font-size: 10px;
+  }
+  .generic-chart-canvas {
+    height: 220px !important;
+  }
+  .toolbar-right {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
+/* ---- Lazy load fade-in ---- */
+.chart-card {
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.4s ease, box-shadow 0.25s ease;
+}
+.chart-card--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---- E5: Card hover micro-interactions ---- */
+.chart-card--visible:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(27, 101, 168, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* ---- E7: KPI Scorecard full-width header ---- */
+.chart-card--scorecard {
+  order: -1; /* always first in grid */
+}
+.chart-card--scorecard .generic-kpi-row {
+  gap: 16px;
+}
+.chart-card--scorecard .generic-kpi-chip {
+  padding: 16px 20px;
+  border-radius: 12px;
+  min-width: 140px;
+}
+.chart-card--scorecard .kpi-val {
+  font-size: 32px;
+  letter-spacing: -1px;
+}
+.chart-card--scorecard .kpi-lbl {
+  font-size: 12px;
+  font-weight: 500;
+}
+.chart-card--scorecard .kpi-sparkline {
+  width: 80px;
+  height: 24px;
+}
+
+/* ---- E4: Data table ---- */
+.chart-data-table {
+  margin-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+  overflow-x: auto;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.chart-data-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.chart-data-table th {
+  background: rgba(27, 101, 168, 0.06);
+  padding: 6px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: #303133;
+  border-bottom: 2px solid #e8e8e8;
+  position: sticky;
+  top: 0;
+  white-space: nowrap;
+}
+.chart-data-table td {
+  padding: 5px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #606266;
+  white-space: nowrap;
+}
+.chart-data-table tr:hover td {
+  background: rgba(27, 101, 168, 0.03);
+}
+
+/* ---- E6: Print stylesheet ---- */
+@media print {
+  .financial-dashboard-pbi {
+    background: #fff !important;
+    padding: 0 !important;
+  }
+  .toolbar-card,
+  .interaction-tips,
+  .cross-filter-bar,
+  .analysis-panel,
+  .chart-data-table {
+    display: none !important;
+  }
+  .charts-grid {
+    display: block !important;
+  }
+  .chart-card {
+    opacity: 1 !important;
+    transform: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 16px;
+    box-shadow: none !important;
+    border: 1px solid #e0e0e0 !important;
+  }
+  .chart-card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  .generic-chart-canvas {
+    height: 280px !important;
+  }
+  .kpi-val {
+    color: #000 !important;
+  }
+}
+
+/* Dark mode additions for E4/E5 */
+.financial-dashboard-pbi[data-theme="dark"] .chart-card--visible:hover {
+  box-shadow: 0 8px 28px rgba(76, 154, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.financial-dashboard-pbi[data-theme="dark"] .chart-data-table th {
+  background: rgba(76, 154, 255, 0.1);
+  color: #e0e0e0;
+  border-bottom-color: #2a2a4a;
+}
+.financial-dashboard-pbi[data-theme="dark"] .chart-data-table td {
+  color: #a0a0b0;
+  border-bottom-color: #2a2a4a;
+}
+.financial-dashboard-pbi[data-theme="dark"] .chart-data-table tr:hover td {
+  background: rgba(76, 154, 255, 0.06);
+}
+
+/* ---- Glassmorphism chart cards ---- */
+.chart-card :deep(.el-card__body) {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* ---- Dark mode glassmorphism variant ---- */
+.financial-dashboard-pbi[data-theme="dark"] .chart-card :deep(.el-card__body) {
+  background: rgba(30, 30, 46, 0.72);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ---- Additional responsive: tablet toolbar row ---- */
+@media (max-width: 1200px) {
+  .toolbar-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-card-header h3 {
+    font-size: 14px !important;
+  }
+  .toolbar-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .generic-kpi-row {
+    flex-wrap: wrap;
+  }
+  .generic-kpi-chip {
+    min-width: 120px;
+    flex: 1 1 45%;
+  }
 }
 </style>

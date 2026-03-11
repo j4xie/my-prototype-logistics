@@ -423,6 +423,7 @@ export default function QualityReportScreen() {
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('quality.managementTitle')} />
+        <Appbar.Action icon="robot-outline" onPress={() => navigation.navigate('FAAITab' as any, { screen: 'AIChat', params: { entityType: 'QUALITY_CHECK' } })} />
         <Appbar.Action icon="refresh" onPress={activeTab === 'anomaly' ? loadAnomalyData : loadQualityData} />
       </Appbar.Header>
 

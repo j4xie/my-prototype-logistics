@@ -281,6 +281,7 @@ export default function ShipmentManagementScreen() {
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="出货管理" />
+        <Appbar.Action icon="robot-outline" onPress={() => navigation.navigate('FAAITab' as any, { screen: 'AIChat', params: { entityType: 'SHIPMENT', initialMessage: '我要创建发货单' } })} />
         <Appbar.Action icon="refresh" onPress={loadData} />
       </Appbar.Header>
 

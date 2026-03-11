@@ -74,7 +74,7 @@ class VarianceAnalysisBuilder(AbstractFinancialChartBuilder):
             var_bar_data.append({
                 "value": var_val,
                 "itemStyle": {
-                    "color": COLORS['secondary'] if var_val >= 0 else COLORS['danger'],
+                    "color": self._gradient_color(COLORS['secondary'] if var_val >= 0 else COLORS['danger']),
                     "borderRadius": [3, 3, 0, 0] if var_val >= 0 else [0, 0, 3, 3],
                 },
                 "label": {
@@ -99,24 +99,28 @@ class VarianceAnalysisBuilder(AbstractFinancialChartBuilder):
                 "value": self._format_value(total_budget, scale),
                 "unit": "元",
                 "trend": "flat",
+                "sparkline": [round(v / divisor, 2) for v in budget_values],
             },
             {
                 "label": "总实际",
                 "value": self._format_value(total_actual, scale),
                 "unit": "元",
                 "trend": self._trend_from_value(total_variance),
+                "sparkline": [round(v / divisor, 2) for v in actual_values],
             },
             {
                 "label": "总差异",
                 "value": self._format_value(total_variance, scale),
                 "unit": "元",
                 "trend": self._trend_from_value(total_variance),
+                "sparkline": [round(v / divisor, 2) for v in abs_variances],
             },
             {
                 "label": "达成率",
                 "value": f"{achievement_rate}%" if achievement_rate is not None else "-",
                 "unit": "",
                 "trend": self._trend_from_value((achievement_rate or 0) - 100),
+                "sparkline": [round(v, 1) for v in rel_variances],
             },
         ]
 
@@ -159,7 +163,7 @@ class VarianceAnalysisBuilder(AbstractFinancialChartBuilder):
                     "data": budget_scaled,
                     "barMaxWidth": 28,
                     "itemStyle": {
-                        "color": COLORS['budget'],
+                        "color": self._gradient_color(COLORS['budget']),
                         "opacity": 0.35,
                         "borderColor": COLORS['budget'],
                         "borderWidth": 1,
@@ -175,7 +179,7 @@ class VarianceAnalysisBuilder(AbstractFinancialChartBuilder):
                     "data": actual_scaled,
                     "barMaxWidth": 28,
                     "itemStyle": {
-                        "color": COLORS['actual'],
+                        "color": self._gradient_color(COLORS['actual']),
                         "borderRadius": [3, 3, 0, 0],
                     },
                     "z": 2,
@@ -225,6 +229,7 @@ class VarianceAnalysisBuilder(AbstractFinancialChartBuilder):
                 },
             ],
         })
+        self._apply_datazoom(option)
 
         # Quarter background markAreas
         mark_areas = self._quarter_mark_areas(start_month, end_month)

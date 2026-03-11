@@ -227,6 +227,13 @@ export function enhanceChartDefaults(opts: Record<string, unknown>): void {
     }
   }
 
+  // --- Smooth entrance animation ---
+  if (opts.animationDuration === undefined) {
+    opts.animationDuration = 800;
+    opts.animationEasing = 'cubicOut';
+    opts.animationDelay = (idx: number) => idx * 50;
+  }
+
   // --- Outlier detection hint in tooltip ---
   if (chartType === 'bar' && stats.median > 0 && stats.max > stats.median * 10) {
     const tip = (opts.tooltip || {}) as Record<string, unknown>;

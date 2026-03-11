@@ -114,12 +114,14 @@ class ProductRankingParetoBuilder(AbstractFinancialChartBuilder):
 
         # --- ECharts Pareto option ---
         option = self._base_echarts_option()
+        option.pop("dataZoom", None)
+        option.pop("toolbox", None)
 
         bar_data = []
         for i, val in enumerate(scaled_revenues):
             bar_data.append({
                 "value": val,
-                "itemStyle": {"color": bar_colors[i]},
+                "itemStyle": {"color": self._gradient_color(bar_colors[i])},
             })
 
         option.update({

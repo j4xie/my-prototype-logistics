@@ -192,6 +192,9 @@ export default function AttendanceManageScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t('attendance.manage.title')}</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('FAAITab' as any, { screen: 'AIChat', params: { entityType: 'ATTENDANCE' } })}>
+          <MaterialCommunityIcons name="robot-outline" size={24} color={HR_THEME.primary} />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.filterContainer}>
@@ -250,6 +253,9 @@ const styles = StyleSheet.create({
     backgroundColor: HR_THEME.background,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
     backgroundColor: HR_THEME.primary,

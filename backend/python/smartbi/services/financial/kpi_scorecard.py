@@ -88,6 +88,30 @@ class KpiScorecardBuilder(AbstractFinancialChartBuilder):
 
         scale = _detect_value_scale([revenue, total_actual, total_ly])
 
+        # Monthly actual sparkline (scaled)
+        monthly_actual_sparkline = []
+        if 'month' in df.columns and 'actual' in df.columns:
+            monthly_all = df.groupby('month')['actual'].sum().reindex(
+                range(start_month, end_month + 1)
+            ).fillna(0)
+            monthly_actual_sparkline = [round(v / scale['divisor'], 2) for v in monthly_all.tolist()]
+
+        # Monthly budget sparkline (scaled)
+        monthly_budget_sparkline = []
+        if has_budget and 'month' in df.columns:
+            monthly_bgt = df.groupby('month')['budget'].sum().reindex(
+                range(start_month, end_month + 1)
+            ).fillna(0)
+            monthly_budget_sparkline = [round(v / scale['divisor'], 2) for v in monthly_bgt.tolist()]
+
+        # Monthly last_year sparkline (scaled)
+        monthly_ly_sparkline = []
+        if has_ly and 'month' in df.columns:
+            monthly_ly = df.groupby('month')['last_year'].sum().reindex(
+                range(start_month, end_month + 1)
+            ).fillna(0)
+            monthly_ly_sparkline = [round(v / scale['divisor'], 2) for v in monthly_ly.tolist()]
+
         # Build KPI cards
         cards = []
 
@@ -123,12 +147,20 @@ class KpiScorecardBuilder(AbstractFinancialChartBuilder):
 
         # 4. Budget Achievement
         if has_budget and total_budget > 0:
+            # Monthly achievement rates for sparkline
+            monthly_ach_sparkline = []
+            if monthly_budget_sparkline and monthly_actual_sparkline:
+                monthly_ach_sparkline = [
+                    round(a / b * 100, 1) if b > 0 else 0
+                    for a, b in zip(monthly_actual_sparkline, monthly_budget_sparkline)
+                ]
             cards.append({
                 "label": "预算达成率",
                 "value": f"{budget_achievement:.1f}" if budget_achievement is not None else "-",
                 "unit": "%",
                 "trend": "up" if (budget_achievement or 0) >= 100 else "down",
                 "subtitle": f"预算 {self._format_value(total_budget, scale)}元",
+                "sparkline": monthly_ach_sparkline if monthly_ach_sparkline else None,
             })
 
         # 5. YoY Growth
@@ -139,6 +171,7 @@ class KpiScorecardBuilder(AbstractFinancialChartBuilder):
                 "unit": "%",
                 "trend": self._trend_from_value(yoy_growth),
                 "subtitle": f"上年 {self._format_value(total_ly, scale)}元",
+                "sparkline": monthly_ly_sparkline if monthly_ly_sparkline else None,
             })
 
         # 6. Cost ratio
@@ -154,6 +187,8 @@ class KpiScorecardBuilder(AbstractFinancialChartBuilder):
 
         # Build a simple gauge/indicator ECharts option for visual representation
         option = self._base_echarts_option()
+        option.pop("dataZoom", None)
+        option.pop("toolbox", None)
         option["tooltip"] = {"show": False}
 
         # Use a series of gauge charts arranged horizontally
@@ -202,7 +237,8 @@ class KpiScorecardBuilder(AbstractFinancialChartBuilder):
         # KPIs for the standard card display
         kpis = [
             {"label": c['label'], "value": c['value'], "unit": c['unit'],
-             "trend": c['trend'], "subtitle": c.get('subtitle')}
+             "trend": c['trend'], "subtitle": c.get('subtitle'),
+             **({"sparkline": c['sparkline']} if c.get('sparkline') else {})}
             for c in cards
         ]
 

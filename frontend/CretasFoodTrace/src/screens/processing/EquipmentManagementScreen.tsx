@@ -285,6 +285,7 @@ export default function EquipmentManagementScreen() {
       <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('equipmentManagement.title')} titleStyle={{ fontWeight: '600' }} />
+        <Appbar.Action icon="robot-outline" onPress={() => navigation.navigate('FAAITab' as any, { screen: 'AIChat', params: { entityType: 'EQUIPMENT' } })} />
         <Appbar.Action icon="monitor-dashboard" onPress={() => navigation.navigate('EquipmentMonitoring')} />
       </Appbar.Header>
 

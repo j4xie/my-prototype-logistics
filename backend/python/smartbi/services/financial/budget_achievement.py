@@ -66,11 +66,14 @@ class BudgetAchievementBuilder(AbstractFinancialChartBuilder):
         best_month_rate = achievement_rates[best_month_idx] if best_month_idx < len(achievement_rates) else 0
 
         kpis = [
-            {"label": "年度目标", "value": self._format_value(total_budget, scale), "unit": "元", "trend": "flat"},
+            {"label": "年度目标", "value": self._format_value(total_budget, scale), "unit": "元", "trend": "flat",
+             "sparkline": [round(v / scale['divisor'], 2) if v else 0 for v in budget_vals]},
             {"label": "年度实际", "value": self._format_value(total_actual, scale), "unit": "元",
-             "trend": self._trend_from_value((total_actual or 0) - (total_budget or 0))},
+             "trend": self._trend_from_value((total_actual or 0) - (total_budget or 0)),
+             "sparkline": [round(v / scale['divisor'], 2) if v else 0 for v in actual_vals]},
             {"label": "年度达成率", "value": f"{total_rate:.1f}" if total_rate else '-', "unit": "%",
-             "trend": 'up' if total_rate and total_rate >= 100 else 'down'},
+             "trend": 'up' if total_rate and total_rate >= 100 else 'down',
+             "sparkline": [round(r, 1) for r in achievement_rates]},
             {"label": "最佳月份", "value": f"{best_month_label} ({best_month_rate:.1f}%)", "unit": "", "trend": "up"},
         ]
 
@@ -84,6 +87,7 @@ class BudgetAchievementBuilder(AbstractFinancialChartBuilder):
         # ECharts option
         option = self._base_echarts_option()
         option.update({
+            "grid": {"left": "3%", "right": "5%", "bottom": "10%", "top": "18%", "containLabel": True},
             "legend": {
                 "data": [f"预算{scale['name_suffix']}", f"实际{scale['name_suffix']}", "达成率", "累计达成率"],
                 "top": "2%",
@@ -117,7 +121,7 @@ class BudgetAchievementBuilder(AbstractFinancialChartBuilder):
                     "name": f"预算{scale['name_suffix']}",
                     "type": "bar",
                     "data": budget_scaled,
-                    "itemStyle": {"color": COLORS['budget'], "borderRadius": [2, 2, 0, 0]},
+                    "itemStyle": {"color": self._gradient_color(COLORS['budget']), "borderRadius": [2, 2, 0, 0]},
                     "barGap": "10%",
                     "barMaxWidth": 28,
                     "emphasis": {"itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.2)"}},
@@ -126,7 +130,7 @@ class BudgetAchievementBuilder(AbstractFinancialChartBuilder):
                     "name": f"实际{scale['name_suffix']}",
                     "type": "bar",
                     "data": actual_scaled,
-                    "itemStyle": {"color": COLORS['actual'], "borderRadius": [2, 2, 0, 0]},
+                    "itemStyle": {"color": self._gradient_color(COLORS['actual']), "borderRadius": [2, 2, 0, 0]},
                     "barMaxWidth": 28,
                     "label": {
                         "show": True,
@@ -172,11 +176,74 @@ class BudgetAchievementBuilder(AbstractFinancialChartBuilder):
                 },
             ],
         })
+        self._apply_datazoom(option)
 
         # Quarter markArea on first series
         mark_areas = self._quarter_mark_areas(start_month, end_month)
         if mark_areas:
             option["series"][0]["markArea"] = {"silent": True, "data": mark_areas}
+
+        # === Monthly achievement timeline (colored dots + rate%) ===
+        num_months = len(labels)
+        timeline_graphics = []
+        for i, rate in enumerate(achievement_rates):
+            x_pct = 8 + i * (84 / max(num_months - 1, 1)) if num_months > 1 else 50
+            if rate >= 100:
+                dot_color = COLORS['success']
+            elif rate >= 80:
+                dot_color = COLORS.get('warning', '#FFAB00')
+            else:
+                dot_color = COLORS['danger']
+            # Colored dot
+            timeline_graphics.append({
+                "type": "circle",
+                "shape": {"r": 5, "cx": 0, "cy": 0},
+                "style": {"fill": dot_color, "stroke": "#fff", "lineWidth": 1},
+                "left": f"{x_pct}%",
+                "top": "8.5%",
+                "silent": True,
+            })
+            # Rate text below dot
+            timeline_graphics.append({
+                "type": "text",
+                "style": {
+                    "text": f"{rate:.0f}%",
+                    "fontSize": 8,
+                    "fill": dot_color,
+                    "textAlign": "center",
+                    "fontWeight": "bold",
+                },
+                "left": f"{x_pct}%",
+                "top": "11.5%",
+                "silent": True,
+            })
+        if timeline_graphics:
+            option["graphic"] = timeline_graphics
+
+        # === Quarterly progress data (for Vue rendering) ===
+        quarterly_progress = []
+        for q in range(4):
+            q_start_m = q * 3 + 1
+            q_end_m = q * 3 + 3
+            if q_start_m < start_month or q_end_m > end_month:
+                continue
+            q_budget = sum(
+                budget_vals[m - start_month]
+                for m in range(q_start_m, q_end_m + 1)
+                if start_month <= m <= end_month
+            )
+            q_actual = sum(
+                actual_vals[m - start_month]
+                for m in range(q_start_m, q_end_m + 1)
+                if start_month <= m <= end_month
+            )
+            q_rate = self._calc_achievement_rate(q_actual, q_budget) or 0
+            quarterly_progress.append({
+                "quarter": f"Q{q + 1}",
+                "budget": round(q_budget / divisor, 2),
+                "actual": round(q_actual / divisor, 2),
+                "rate": round(q_rate, 1),
+            })
 
         # Table data
         table_data = {
@@ -198,6 +265,7 @@ class BudgetAchievementBuilder(AbstractFinancialChartBuilder):
             "echartsOption": option,
             "tableData": table_data,
             "analysisContext": self.get_analysis_context({"title": f"{year}年{self.display_name}", "kpis": kpis}),
+            "quarterlyProgress": quarterly_progress,
             "metadata": {"period": period, "scale": scale, "dataQuality": "good"},
         }
         return _sanitize_for_json(result)

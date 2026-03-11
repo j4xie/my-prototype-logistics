@@ -114,6 +114,27 @@ const SCENE_CONFIG: Record<string, {
       'SUPPLIER_QUERY', 'REPHRASE', 'SHOW_INTENTS',
     ],
   },
+  PURCHASE: {
+    quickQuestions: ['创建采购订单', '查询采购记录', '供应商报价', '采购统计'],
+    allowedActionCodes: [
+      'PURCHASE_ORDER_CREATE', 'PURCHASE_ORDER_QUERY', 'SUPPLIER_QUERY',
+      'REPHRASE', 'SHOW_INTENTS',
+    ],
+  },
+  EQUIPMENT: {
+    quickQuestions: ['设备报修', '查询设备状态', '设备维护记录', '设备运行统计'],
+    allowedActionCodes: [
+      'EQUIPMENT_MAINTENANCE', 'EQUIPMENT_STATUS_QUERY', 'EQUIPMENT_DIAGNOSIS',
+      'REPHRASE', 'SHOW_INTENTS',
+    ],
+  },
+  ATTENDANCE: {
+    quickQuestions: ['今日考勤情况', '员工出勤统计', '请假审批', '排班查询'],
+    allowedActionCodes: [
+      'ATTENDANCE_QUERY', 'PERSONNEL_QUERY', 'SCHEDULING_LIST',
+      'REPHRASE', 'SHOW_INTENTS',
+    ],
+  },
 };
 
 export default function AIChatScreen() {

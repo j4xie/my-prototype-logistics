@@ -172,6 +172,8 @@ class PnlWaterfallBuilder(AbstractFinancialChartBuilder):
 
         # ECharts option
         option = self._base_echarts_option()
+        option.pop("dataZoom", None)
+        option.pop("toolbox", None)
         option["grid"] = {"left": "5%", "right": "5%", "bottom": "8%", "top": "12%", "containLabel": True}
         option.update({
             "xAxis": {
@@ -206,7 +208,7 @@ class PnlWaterfallBuilder(AbstractFinancialChartBuilder):
                         {
                             "value": value_scaled[i],
                             "itemStyle": {
-                                "color": colors[i],
+                                "color": self._gradient_color(colors[i]),
                                 "borderRadius": [3, 3, 0, 0] if waterfall_items[i]['value'] >= 0 else [0, 0, 3, 3],
                             },
                         }

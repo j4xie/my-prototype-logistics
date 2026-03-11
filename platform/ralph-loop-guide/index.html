@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Ralph Loop 操作手册 | 白垩纪 AI 开发方法论</title>
+    <meta name="description" content="Ralph Loop 操作手册 — 基于 Claude Code 的迭代式 AI 开发循环方法论，5 大模块 Prompt 配置指南">
+    <link rel="canonical" href="https://cretaceousfuture.com/ralph-loop-guide/">
+    <style>
+        /* ===== Reset & Variables ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0a0e17;
+            --bg-card: #111827;
+            --bg-card-hover: #1a2236;
+            --bg-code: #0d1117;
+            --border: #1e293b;
+            --border-accent: #334155;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --accent: #60a5fa;
+            --accent-glow: rgba(96, 165, 250, 0.15);
+            --green: #34d399;
+            --green-glow: rgba(52, 211, 153, 0.15);
+            --amber: #fbbf24;
+            --amber-glow: rgba(251, 191, 36, 0.12);
+            --red: #f87171;
+            --purple: #a78bfa;
+            --purple-glow: rgba(167, 139, 250, 0.12);
+            --cyan: #22d3ee;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+        }
+
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+
+        /* ===== Scrollbar ===== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 3px; }
+
+        /* ===== Layout ===== */
+        .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+        /* ===== Hero ===== */
+        .hero {
+            padding: 80px 0 48px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -120px; left: 50%; transform: translateX(-50%);
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--accent-glow);
+            border: 1px solid rgba(96, 165, 250, 0.25);
+            padding: 6px 16px; border-radius: 20px;
+            font-size: 13px; color: var(--accent);
+            margin-bottom: 24px;
+        }
+        .hero-badge::before { content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .hero h1 {
+            font-size: clamp(32px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p {
+            font-size: 17px; color: var(--text-muted);
+            max-width: 640px; margin: 0 auto 32px;
+        }
+        .hero-stats {
+            display: flex; justify-content: center; gap: 40px;
+            flex-wrap: wrap;
+        }
+        .hero-stat { text-align: center; }
+        .hero-stat .num { font-size: 28px; font-weight: 700; color: var(--accent); font-family: var(--font-mono); }
+        .hero-stat .label { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+
+        /* ===== TOC ===== */
+        .toc {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px 32px;
+            margin: 0 0 48px;
+        }
+        .toc h3 { font-size: 14px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+        .toc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+        .toc a {
+            display: flex; align-items: center; gap: 8px;
+            color: var(--text-muted); text-decoration: none;
+            padding: 6px 12px; border-radius: var(--radius-sm);
+            font-size: 14px; transition: all 0.2s;
+        }
+        .toc a:hover { color: var(--accent); background: var(--accent-glow); }
+        .toc a .toc-num {
+            font-family: var(--font-mono); font-size: 12px;
+            color: var(--text-dim); min-width: 20px;
+        }
+
+        /* ===== Section ===== */
+        section { margin-bottom: 56px; }
+        .section-header {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .section-icon {
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: var(--radius-sm);
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .section-header h2 {
+            font-size: 22px; font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        /* ===== Card ===== */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 16px;
+            transition: border-color 0.25s, box-shadow 0.25s;
+        }
+        .card:hover {
+            border-color: var(--border-accent);
+            box-shadow: var(--shadow);
+        }
+        .card h3 { font-size: 17px; font-weight: 600; margin-bottom: 12px; }
+        .card p, .card li { font-size: 15px; color: var(--text-muted); }
+        .card ul, .card ol { padding-left: 20px; }
+        .card li { margin-bottom: 6px; }
+        .card li::marker { color: var(--text-dim); }
+
+        /* ===== Code ===== */
+        pre {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px 20px;
+            overflow-x: auto;
+            margin: 12px 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        code {
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+        }
+        :not(pre) > code {
+            background: rgba(96, 165, 250, 0.1);
+            color: var(--accent);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .code-title {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: -8px;
+            padding: 4px 0;
+        }
+        .comment { color: var(--text-dim); }
+        .keyword { color: var(--purple); }
+        .string { color: var(--green); }
+        .flag { color: var(--amber); }
+
+        /* ===== Flow Diagram ===== */
+        .flow {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+        .flow-step {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            text-align: center;
+            position: relative;
+        }
+        .flow-step::after {
+            content: '';
+            position: absolute; right: -9px; top: 50%; transform: translateY(-50%);
+            width: 0; height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 6px solid var(--border-accent);
+        }
+        .flow-step:last-child::after { display: none; }
+        .flow-num {
+            font-family: var(--font-mono); font-size: 11px;
+            color: var(--text-dim); margin-bottom: 6px;
+        }
+        .flow-label { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .flow-desc { font-size: 12px; color: var(--text-dim); }
+
+        /* ===== Module Cards ===== */
+        .module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        .module-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            transition: all 0.3s;
+            cursor: default;
+        }
+        .module-card:hover {
+            border-color: var(--border-accent);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        .module-tag {
+            display: inline-block;
+            font-family: var(--font-mono); font-size: 11px;
+            padding: 3px 10px; border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        .module-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .module-card p { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; }
+        .module-meta {
+            display: flex; gap: 12px;
+            font-size: 12px; color: var(--text-dim);
+            font-family: var(--font-mono);
+        }
+
+        /* Color variants */
+        .c-blue .module-tag { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(96,165,250,0.2); }
+        .c-green .module-tag { background: var(--green-glow); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+        .c-amber .module-tag { background: var(--amber-glow); color: var(--amber); border: 1px solid rgba(251,191,36,0.2); }
+        .c-purple .module-tag { background: var(--purple-glow); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+        .c-cyan .module-tag { background: rgba(34,211,238,0.1); color: var(--cyan); border: 1px solid rgba(34,211,238,0.2); }
+
+        /* ===== Table ===== */
+        .table-wrap { overflow-x: auto; margin: 12px 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 10px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            font-size: 12px; color: var(--text-dim);
+            text-transform: uppercase; letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+        td { color: var(--text-muted); }
+        td code { font-size: 12px; }
+        tr:hover td { color: var(--text); }
+
+        /* ===== Callout ===== */
+        .callout {
+            border-left: 3px solid;
+            padding: 16px 20px;
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            margin: 16px 0;
+            font-size: 14px;
+        }
+        .callout-info { border-color: var(--accent); background: var(--accent-glow); }
+        .callout-warn { border-color: var(--amber); background: var(--amber-glow); }
+        .callout-danger { border-color: var(--red); background: rgba(248,113,113,0.08); }
+        .callout-success { border-color: var(--green); background: var(--green-glow); }
+        .callout strong { color: var(--text); }
+
+        /* ===== Tag List ===== */
+        .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+        .tag {
+            font-family: var(--font-mono); font-size: 12px;
+            padding: 4px 12px; border-radius: 16px;
+            background: var(--accent-glow);
+            color: var(--accent);
+            border: 1px solid rgba(96,165,250,0.15);
+        }
+
+        /* ===== Comparison ===== */
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
+        .compare-bad, .compare-good {
+            padding: 16px; border-radius: var(--radius-sm);
+            font-size: 14px;
+        }
+        .compare-bad {
+            background: rgba(248,113,113,0.06);
+            border: 1px solid rgba(248,113,113,0.15);
+        }
+        .compare-good {
+            background: var(--green-glow);
+            border: 1px solid rgba(52,211,153,0.15);
+        }
+        .compare-label {
+            font-size: 12px; font-weight: 600;
+            margin-bottom: 8px;
+            font-family: var(--font-mono);
+        }
+        .compare-bad .compare-label { color: var(--red); }
+        .compare-good .compare-label { color: var(--green); }
+
+        /* ===== Footer ===== */
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+        footer p { font-size: 13px; color: var(--text-dim); }
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .hero { padding: 48px 0 32px; }
+            .hero-stats { gap: 24px; }
+            .flow { grid-template-columns: 1fr 1fr; }
+            .flow-step:nth-child(2)::after { display: none; }
+            .compare { grid-template-columns: 1fr; }
+            .toc-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+            .flow { grid-template-columns: 1fr; }
+            .flow-step::after { display: none; }
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ===== Hero ===== -->
+<header class="hero">
+    <div class="container">
+        <div class="hero-badge">Claude Code Plugin</div>
+        <h1>Ralph Loop 操作手册</h1>
+        <p>基于 Claude Code 的迭代式 AI 开发循环方法论。同一个 Prompt 反复执行，AI 通过读取自己上一轮的产出，持续迭代改进，直到达成目标。</p>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <div class="num">5</div>
+                <div class="label">Prompt 模块</div>
+            </div>
+            <div class="hero-stat">
+                <div class="num">4</div>
+                <div class="label">阶段 / 轮</div>
+            </div>
+            <div class="hero-stat">
+                <div class="num">&infin;</div>
+                <div class="label">迭代次数</div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+
+<!-- ===== TOC ===== -->
+<nav class="toc">
+    <h3>目录</h3>
+    <div class="toc-grid">
+        <a href="#what-is"><span class="toc-num">01</span> 什么是 Ralph Loop</a>
+        <a href="#modules"><span class="toc-num">02</span> 5 个 Prompt 模块</a>
+        <a href="#four-phases"><span class="toc-num">03</span> 每轮 4 阶段流程</a>
+        <a href="#commands"><span class="toc-num">04</span> 启动命令</a>
+        <a href="#parallel"><span class="toc-num">05</span> 并行策略</a>
+        <a href="#prerequisites"><span class="toc-num">06</span> 前置条件</a>
+        <a href="#customize"><span class="toc-num">07</span> 自定义 Prompt</a>
+        <a href="#best-practices"><span class="toc-num">08</span> 最佳实践</a>
+        <a href="#notes"><span class="toc-num">09</span> 注意事项</a>
+    </div>
+</nav>
+
+<!-- ===== 1. What is Ralph Loop ===== -->
+<section id="what-is">
+    <div class="section-header">
+        <div class="section-icon" style="background: var(--accent-glow); color: var(--accent);">&#8635;</div>
+        <h2>什么是 Ralph Loop</h2>
+    </div>
+
+    <div class="card">
+        <h3>核心概念</h3>
+        <p>Ralph Loop 是一种基于 <strong>Claude Code Stop Hook</strong> 的迭代开发方法论，由 Geoffrey Huntley 首创。其本质是一个 <code>while true</code> 循环 — 反复将同一个 Prompt 喂给 AI，让它通过读取文件中的上一轮产出来持续改进工作。</p>
+
+        <pre><code><span class="comment"># 传统 bash 实现</span>
+<span class="keyword">while</span> :; <span class="keyword">do</span>
+  cat PROMPT.md | claude-code --continue
+<span class="keyword">done</span>
+
+<span class="comment"># Claude Code Plugin 实现 (Stop Hook 自动循环)</span>
+/ralph-loop <span class="string">"你的任务描述"</span> <span class="flag">--completion-promise</span> <span class="string">"DONE"</span></code></pre>
+    </div>
+
+    <div class="card">
+        <h3>工作原理</h3>
+        <div class="flow">
+            <div class="flow-step">
+                <div class="flow-num">01</div>
+                <div class="flow-label">接收 Prompt</div>
+                <div class="flow-desc">Claude 收到同一份 Prompt</div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-num">02</div>
+                <div class="flow-label">执行任务</div>
+                <div class="flow-desc">修改文件、运行测试</div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-num">03</div>
+                <div class="flow-label">Stop Hook 拦截</div>
+                <div class="flow-desc">退出被拦截并重启</div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-num">04</div>
+                <div class="flow-label">迭代改进</div>
+                <div class="flow-desc">读取上轮产出继续优化</div>
+            </div>
+        </div>
+        <div class="callout callout-info">
+            <strong>自引用机制：</strong>Prompt 永远不变，但每一轮 Claude 都能看到上一轮写入文件的修改和 git 历史，从而实现增量改进。循环持续到输出 <code>&lt;promise&gt;DONE&lt;/promise&gt;</code> 或达到最大迭代次数。
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>适用场景</h3>
+        <div class="compare">
+            <div class="compare-good">
+                <div class="compare-label">适合</div>
+                <ul>
+                    <li>有明确成功标准的任务</li>
+                    <li>需要迭代和自我纠错的开发</li>
+                    <li>可自动验证的任务（测试、编译、E2E）</li>
+                    <li>绿地项目 — 可以挂机运行</li>
+                </ul>
+            </div>
+            <div class="compare-bad">
+                <div class="compare-label">不适合</div>
+                <ul>
+                    <li>需要人工判断的设计决策</li>
+                    <li>一次性操作（部署、数据迁移）</li>
+                    <li>成功标准模糊的任务</li>
+                    <li>生产环境调试</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== 2. Modules ===== -->
+<section id="modules">
+    <div class="section-header">
+        <div class="section-icon" style="background: var(--green-glow); color: var(--green);">&#9881;</div>
+        <h2>5 个 Prompt 模块</h2>
+    </div>
+
+    <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 20px;">
+        每个模块是一个独立的 Prompt 文件 (<code>.claude/ralph-prompts/*.md</code>)，定义了该领域的 4 阶段循环指令。
+    </p>
+
+    <div class="module-grid">
+        <div class="module-card c-blue">
+            <span class="module-tag">financial-dashboard</span>
+            <h3>SmartBI 全模块</h3>
+            <p>Playwright E2E 测试全部 11 个 SmartBI 页面：经营驾驶舱、财务/销售/生产分析、AI 问答、Excel 上传、数据完整度、知识库反馈、财务看板等。</p>
+            <div class="module-meta">
+                <span>Vue + ECharts</span>
+                <span>11 个页面</span>
+            </div>
+        </div>
+        <div class="module-card c-green">
+            <span class="module-tag">rn-app</span>
+            <h3>React Native 移动端</h3>
+            <p>Expo Web E2E 测试 → UI 截图审查 → 组件修复 → 竞品调研。覆盖全部角色页面、AI 聊天、工作报告。</p>
+            <div class="module-meta">
+                <span>Expo 53+</span>
+                <span>TypeScript</span>
+            </div>
+        </div>
+        <div class="module-card c-amber">
+            <span class="module-tag">ai-intent</span>
+            <h3>AI 意图系统</h3>
+            <p>编译验证 → Tool 架构审查 → Bean 冲突修复 → 架构调研。覆盖 310+ Tools、路由逻辑、规范合规性。</p>
+            <div class="module-meta">
+                <span>Java Spring Boot</span>
+                <span>310 Tools</span>
+            </div>
+        </div>
+        <div class="module-card c-purple">
+            <span class="module-tag">python-services</span>
+            <h3>Python 服务</h3>
+            <p>语法检查 + API 测试 → 代码审查 → 模块修复 → 架构调研。覆盖 SmartBI、人效识别、食品知识库。</p>
+            <div class="module-meta">
+                <span>FastAPI</span>
+                <span>端口 8083</span>
+            </div>
+        </div>
+        <div class="module-card c-cyan">
+            <span class="module-tag">web-admin</span>
+            <h3>Web Admin 管理后台</h3>
+            <p>全页面 Playwright 测试 → UI 一致性分析 → 组件修复 → 竞品调研。覆盖侧边栏菜单、表格、表单。</p>
+            <div class="module-meta">
+                <span>Vue + Element Plus</span>
+                <span>端口 8086</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== 3. Four Phases ===== -->
+<section id="four-phases">
+    <div class="section-header">
+        <div class="section-icon" style="background: var(--purple-glow); color: var(--purple);">&#9733;</div>
+        <h2>每轮 4 阶段流程</h2>
+    </div>
+
+    <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 20px;">
+        所有 5 个模块共享相同的 4 阶段结构，每一轮迭代都按顺序执行这 4 个阶段：
+    </p>
+
+    <div class="card">
+        <h3>Phase 1 — 测试 / 检查</h3>
+        <p>使用自动化工具执行检查，收集原始数据。</p>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>模块</th><th>Phase 1 内容</th><th>工具</th></tr></thead>
+                <tbody>
+                    <tr><td>SmartBI 全模块</td><td>Playwright E2E 遍历 11 个页面 + 交互测试 + 截图</td><td>Playwright MCP</td></tr>
+                    <tr><td>RN 移动端</td><td>Expo Web 登录 → 全 Tab 遍历 → 交互测试</td><td>Playwright MCP</td></tr>
+                    <tr><td>AI 意图</td><td><code>mvn compile</code> + Tool 架构审查</td><td>Maven + 代码审查</td></tr>
+                    <tr><td>Python 服务</td><td>语法检查 + API <code>curl</code> 测试</td><td>py_compile + curl</td></tr>
+                    <tr><td>Web Admin</td><td>全页面菜单遍历 + 表格/表单测试</td><td>Playwright MCP</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Phase 2 — 分析</h3>
+        <p>使用 <code>/agent-team</code> 多角色深度评估测试结果，输出按优先级排序的问题清单。</p>
+        <div class="tag-list">
+            <span class="tag">P0 功能阻断</span>
+            <span class="tag">P1 体验问题</span>
+            <span class="tag">P2 美化空间</span>
+        </div>
+        <p>评估维度包括：截图对比、上轮回归检查、代码规范合规、竞品差距分析。</p>
+    </div>
+
+    <div class="card">
+        <h3>Phase 3 — 修复</h3>
+        <p>按 P0 → P1 → P2 优先级修复问题。<strong>每轮最多修 3-5 个文件</strong>，避免改动过大引入新 bug。修复后必须运行验证命令。</p>
+        <pre><code><span class="comment"># 修复后验证命令</span>
+cd backend/java/cretas-api && mvn compile -q       <span class="comment"># AI 意图</span>
+cd frontend/CretasFoodTrace && npx tsc --noEmit     <span class="comment"># RN 移动端</span>
+cd web-admin && npx vite build                       <span class="comment"># Web Admin / 财务看板</span>
+cd backend/python && python -m py_compile main.py    <span class="comment"># Python 服务</span></code></pre>
+    </div>
+
+    <div class="card">
+        <h3>Phase 4 — 调研 + 下轮计划</h3>
+        <p>使用 <code>/agent-team</code> 进行竞品调研和行业最佳实践研究，输出下一轮的测试重点和优化方向。</p>
+        <div class="callout callout-success">
+            <strong>完成条件：</strong>当连续一轮全部测试通过且无新问题时，输出 <code>&lt;promise&gt;MODULE PERFECT&lt;/promise&gt;</code>，循环自动停止。
+        </div>
+    </div>
+</section>
+
+<!-- ===== 4. Commands ===== -->
+<section id="commands">
+    <div class="section-header">
+        <div class="section-icon" style="background: var(--green-glow); color: var(--green);">&#9654;</div>
+        <h2>启动命令</h2>
+    </div>
+
+    <div class="card">
+        <h3>启动 Ralph Loop</h3>
+        <p>在 Claude Code 中运行以下命令，将 Prompt 文件喂入循环：</p>
+        <pre><code><span class="comment"># 基本语法</span>
+/ralph-loop <span class="string">"$(cat .claude/ralph-prompts/MODULE.md)"</span> \
+  <span class="flag">--completion-promise</span> <span class="string">"PROMISE_TEXT"</span> \
+  <span class="flag">--max-iterations</span> 30</code></pre>
+
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>模块</th><th>启动命令</th><th>完成 Promise</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td>SmartBI 全模块</td>
+                        <td><code>/ralph-loop "$(cat .claude/ralph-prompts/financial-dashboard.md)" --completion-promise "SMARTBI PERFECT"</code></td>
+                        <td><code>SMARTBI PERFECT</code></td>
+                    </tr>
+                    <tr>
+                        <td>RN 移动端</td>
+                        <td><code>/ralph-loop "$(cat .claude/ralph-prompts/rn-app.md)" --completion-promise "RN APP PERFECT"</code></td>
+                        <td><code>RN APP PERFECT</code></td>
+                    </tr>
+                    <tr>
+                        <td>AI 意图</td>
+                        <td><code>/ralph-loop "$(cat .claude/ralph-prompts/ai-intent.md)" --completion-promise "INTENT CLEAN"</code></td>
+                        <td><code>INTENT CLEAN</code></td>
+                    </tr>
+                    <tr>
+                        <td>Python 服务</td>
+                        <td><code>/ralph-loop "$(cat .claude/ralph-prompts/python-services.md)" --completion-promise "PYTHON CLEAN"</code></td>
+                        <td><code>PYTHON CLEAN</code></td>
+                    </tr>
+                    <tr>
+                        <td>Web Admin</td>
+                        <td><code>/ralph-loop "$(cat .claude/ralph-prompts/web-admin.md)" --completion-promise "WEB ADMIN PERFECT"</code></td>
+                        <td><code>WEB ADMIN PERFECT</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>取消循环</h3>
+        <pre><code><span class="comment"># 取消当前运行的 Ralph Loop</span>
+/cancel-ralph</code></pre>
+        <p>也可以直接按 <code>Ctrl+C</code> 终止进程，但推荐使用 <code>/cancel-ralph</code> 来清理状态文件。</p>
+    </div>
+
+    <div class="card">
+        <h3>参数说明</h3>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>参数</th><th>说明</th><th>默认值</th></tr></thead>
+                <tbody>
+                    <tr><td><code>--max-iterations &lt;n&gt;</code></td><td>最大迭代次数，超过自动停止</td><td>无限制</td></tr>
+                    <tr><td><code>--completion-promise &lt;text&gt;</code></td><td>完成信号文本，精确匹配</td><td>无</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="callout callout-warn">
+            <strong>安全提示：</strong>始终设置 <code>--max-iterations</code> 作为安全网，防止在不可能完成的任务上无限循环消耗 API 额度。
+        </div>
+    </div>
+</section>
+
+<!-- ===== 5. Parallel ===== -->
+<section id="parallel">
+    <div class="section-header">
+        <div class="section-icon" style="background: var(--amber-glow); color: var(--amber);">&#8644;</div>
+        <h2>并行策略</h2>
+    </div>
+
+    <div class="card">
+        <h3>多 Chat 窗口并行</h3>
+        <p>5 个模块涉及不同的代码区域，可以在多个 Claude Code 终端窗口中同时运行：</p>
+
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>组合</th><th>可并行?</th><th>原因</th></tr></thead>
+                <tbody>
+                    <tr><td>SmartBI 全模块 + AI 意图</td><td style="color: var(--green);">可以</td><td>前端 Vue vs 后端 Java，无文件冲突</td></tr>
+                    <tr><td>RN 移动端 + Web Admin</td><td style="color: var(--green);">可以</td><td>不同前端框架，不同目录</td></tr>
+                    <tr><td>Python 服务 + AI 意图</td><td style="color: var(--green);">可以</td><td>Python vs Java，独立代码库</td></tr>
+                    <tr><td>SmartBI 全模块 + Web Admin</td><td style="color: var(--amber);">谨慎</td><td>共享 <code>web-admin/src/</code>，存在文件冲突风险</td></tr>
+                    <tr><td>AI 意图 + Python 服务 (API 联调)</td><td style="color: var(--red);">不建议</td><td>可能同时修改 API 契约</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="callout callout-info">
+            <strong>推荐组合：</strong>开 3 个终端窗口同时运行 <code>RN 移动端</code> + <code>AI 意图</code> + <code>Python 服务</code>，互不干扰。
+        </div>
+    </div>
+</section>
+
+<!-- ===== 6. Prerequisites ===== -->
+<section id="prerequisites">
+    <div class="section-header">
+        <div class="section-icon" style="background: rgba(34,211,238,0.1); color: var(--cyan);">&#9745;</div>
+        <h2>前置条件</h2>
+    </div>
+
+    <div class="card">
+        <h3>环境要求</h3>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>项目</th><th>要求</th><th>验证命令</th></tr></thead>
+                <tbody>
+                    <tr><td>Claude Code</td><td>最新版本，已安装 Ralph Loop 插件</td><td><code>claude --version</code></td></tr>
+                    <tr><td>Ralph Loop 插件</td><td>在 <code>.claude/settings.json</code> 中启用</td><td><code>/ralph-loop:help</code></td></tr>
+                    <tr><td>Playwright MCP</td><td>已配置（E2E 测试模块需要）</td><td>检查 <code>.claude/settings.json</code></td></tr>
+                    <tr><td>Java 11 + Maven</td><td>AI 意图模块需要</td><td><code>java -version && mvn -version</code></td></tr>
+                    <tr><td>Node.js 18+</td><td>前端模块需要</td><td><code>node -v</code></td></tr>
+                    <tr><td>Python 3.8+</td><td>Python 服务模块需要</td><td><code>python3 --version</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Prompt 文件位置</h3>
+        <pre><code>.claude/ralph-prompts/
+├── financial-dashboard.md   <span class="comment"># SmartBI 财务看板</span>
+├── rn-app.md                <span class="comment"># React Native 移动端</span>
+├── ai-intent.md             <span class="comment"># AI 意图系统</span>
+├── python-services.md       <span class="comment"># Python 服务</span>
+└── web-admin.md             <span class="comment"># Web Admin 管理后台</span></code></pre>
+    </div>
+
+    <div class="card">
+        <h3>模块启动前检查清单</h3>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>模块</th><th>启动前需要</th></tr></thead>
+                <tbody>
+                    <tr><td>SmartBI 全模块</td><td>确认 <code>http://139.196.165.140:8086/#/smart-bi/dashboard</code> 可访问 (11 个页面)</td></tr>
+                    <tr><td>RN 移动端</td><td>启动 Expo Web: <code>cd frontend/CretasFoodTrace && npm start</code>，确认 <code>localhost:3010</code></td></tr>
+                    <tr><td>AI 意图</td><td>确认 Maven 可用: <code>mvn compile -q</code></td></tr>
+                    <tr><td>Python 服务</td><td>确认生产服务在线: <code>curl http://47.100.235.168:8083/health</code></td></tr>
+                    <tr><td>Web Admin</td><td>确认 <code>http://139.196.165.140:8086</code> 可访问</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- ===== 7. Customize ===== -->
+<section id="customize">
+    <div class="section-header">
+        <div class="section-icon" style="background: var(--purple-glow); color: var(--purple);">&#9998;</div>
+        <h2>自定义 Prompt</h2>
+    </div>
+
+    <div class="card">
+        <h3>Prompt 编写规范</h3>
+        <p>创建新的 Ralph Loop Prompt 时，遵循统一的 4 阶段结构：</p>
+        <pre><code><span class="comment"># [模块名] — Ralph Loop [测试类型]循环指令</span>
+
+你是 [角色描述]。按照以下 4 阶段执行本轮迭代。
+
+---
+
+<span class="keyword">## Phase 1: 测试 / 检查</span>
+<span class="comment"># 使用工具执行自动化检测，收集数据</span>
+
+<span class="keyword">## Phase 2: 分析</span>
+<span class="comment"># 使用 /agent-team 多角色评估</span>
+<span class="comment"># 输出 P0/P1/P2 问题清单</span>
+
+<span class="keyword">## Phase 3: 修复</span>
+<span class="comment"># 按优先级修复，每轮限制修改文件数</span>
+<span class="comment"># 修复后运行验证命令</span>
+
+<span class="keyword">## Phase 4: 调研 + 下轮计划</span>
+<span class="comment"># 使用 /agent-team 进行竞品调研</span>
+<span class="comment"># 输出下轮测试重点</span>
+
+---
+
+<span class="keyword">## 完成条件</span>
+当 [条件] 时输出: &lt;promise&gt;PROMISE_TEXT&lt;/promise&gt;</code></pre>
+    </div>
+
+    <div class="card">
+        <h3>Prompt 最佳实践</h3>
+        <div class="compare">
+            <div class="compare-bad">
+                <div class="compare-label">BAD</div>
+                <p>"把代码写好，修所有 bug。"</p>
+                <ul style="margin-top: 8px;">
+                    <li>没有明确的完成条件</li>
+                    <li>没有阶段划分</li>
+                    <li>没有修复数量限制</li>
+                </ul>
+            </div>
+            <div class="compare-good">
+                <div class="compare-label">GOOD</div>
+                <p>"E2E 测试所有页面 → 按 P0-P2 分析 → 每轮最多修 5 个文件 → 输出下轮计划。全部通过时输出 <code>&lt;promise&gt;</code>"</p>
+                <ul style="margin-top: 8px;">
+                    <li>明确的成功标准</li>
+                    <li>增量式阶段</li>
+                    <li>自我纠错机制</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>临时运行（不创建文件）</h3>
+        <p>如果只是临时测试，可以直接在命令中写 Prompt，不需要创建 <code>.md</code> 文件：</p>
+        <pre><code>/ralph-loop <span class="string">"修复 auth.ts 中的 token 刷新逻辑。
+运行 npx tsc --noEmit 确认编译通过。
+全部修复后输出: &lt;promise&gt;FIXED&lt;/promise&gt;"</span> \
+  <span class="flag">--completion-promise</span> <span class="string">"FIXED"</span> \
+  <span class="flag">--max-iterations</span> 10</code></pre>
+    </div>
+</section>
+
+<!-- ===== 8. Best Practices ===== -->
+<section id="best-practices">
+    <div class="section-header">
+        <div class="section-icon" style="background: var(--green-glow); color: var(--green);">&#10003;</div>
+        <h2>最佳实践</h2>
+    </div>
+
+    <div class="card">
+        <h3>4 大原则</h3>
+        <ol>
+            <li><strong>迭代 &gt; 完美</strong> — 不要追求首轮完美，让循环自然迭代改进</li>
+            <li><strong>失败是数据</strong> — "确定性地坏"意味着失败是可预测的、有信息量的，用失败来调优 Prompt</li>
+            <li><strong>Operator Skill 很关键</strong> — 成功取决于写好 Prompt，而不只是模型能力</li>
+            <li><strong>坚持就是胜利</strong> — 循环自动处理重试逻辑，只要 Prompt 对了就能收敛</li>
+        </ol>
+    </div>
+
+    <div class="card">
+        <h3>实战技巧</h3>
+        <ul>
+            <li>每轮限制修改文件数（3-5 个），避免改动过大引入回归</li>
+            <li>Phase 2 分析时使用 <code>/agent-team</code> 多角色评估，不要只用单一视角</li>
+            <li>Phase 4 调研时开启 <code>BROWSER_RESEARCH=true</code>，让 agent 实际浏览竞品页面</li>
+            <li>为编译型项目（Java/TypeScript），每轮修复后必须运行编译验证</li>
+            <li>首次运行建议设 <code>--max-iterations 10</code>，观察收敛情况后再调整</li>
+        </ul>
+    </div>
+</section>
+
+<!-- ===== 9. Notes ===== -->
+<section id="notes">
+    <div class="section-header">
+        <div class="section-icon" style="background: rgba(248,113,113,0.1); color: var(--red);">&#9888;</div>
+        <h2>注意事项</h2>
+    </div>
+
+    <div class="callout callout-danger">
+        <strong>API 成本：</strong>Ralph Loop 会持续消耗 Claude API 额度。30 轮迭代约消耗 $15-50（取决于任务复杂度和上下文长度）。务必设置 <code>--max-iterations</code> 上限。
+    </div>
+
+    <div class="callout callout-warn">
+        <strong>Completion Promise 是精确匹配：</strong>Claude 只能通过输出 <strong>完全匹配</strong> 的 <code>&lt;promise&gt;</code> 标签来退出循环。不要设置多个退出条件（如 "SUCCESS" vs "BLOCKED"），始终依赖 <code>--max-iterations</code> 作为安全机制。
+    </div>
+
+    <div class="callout callout-info">
+        <strong>状态文件：</strong>Ralph Loop 在运行时创建 <code>.claude/.ralph-loop.local.md</code> 状态文件。如果 Claude Code 异常退出，手动删除此文件即可清理残留状态。
+    </div>
+
+    <div class="card">
+        <h3>常见问题</h3>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>问题</th><th>解决方案</th></tr></thead>
+                <tbody>
+                    <tr><td>循环不停止</td><td>检查 Promise 文本是否精确匹配，或使用 <code>/cancel-ralph</code> 手动停止</td></tr>
+                    <tr><td>每轮重复相同操作</td><td>Prompt 中缺少"检查上轮修复"步骤，添加 Phase 2 回归检查</td></tr>
+                    <tr><td>修改引入更多 bug</td><td>减少每轮修改文件数，增加验证步骤</td></tr>
+                    <tr><td>E2E 测试连不上目标</td><td>确认目标服务已启动，检查端口和 URL</td></tr>
+                    <tr><td>异常退出后残留状态</td><td>手动删除 <code>.claude/.ralph-loop.local.md</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>参考资源</h3>
+        <ul>
+            <li><a href="https://ghuntley.com/ralph/" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none;">Geoffrey Huntley — Ralph Wiggum Technique</a></li>
+            <li><a href="https://github.com/mikeyobrien/ralph-orchestrator" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none;">Ralph Orchestrator (GitHub)</a></li>
+        </ul>
+    </div>
+</section>
+
+</main>
+
+<footer>
+    <p>Ralph Loop 操作手册 &mdash; <a href="https://cretaceousfuture.com">白垩纪 AI</a></p>
+    <p style="margin-top: 8px;">Powered by Claude Code &middot; 2026</p>
+</footer>
+
+</body>
+</html>

@@ -110,10 +110,13 @@ class GrossMarginTrendBuilder(AbstractFinancialChartBuilder):
 
         kpis = [
             {"label": "本年累计毛利率", "value": f"{avg_current:.1f}", "unit": "%",
-             "trend": self._trend_from_value(avg_diff)},
-            {"label": "上年累计毛利率", "value": f"{avg_ly:.1f}", "unit": "%", "trend": "flat"},
+             "trend": self._trend_from_value(avg_diff),
+             "sparkline": [round(v, 1) for v in current_margins]},
+            {"label": "上年累计毛利率", "value": f"{avg_ly:.1f}", "unit": "%", "trend": "flat",
+             "sparkline": [round(v, 1) for v in ly_margins]},
             {"label": "差异", "value": f"{avg_diff:+.1f}", "unit": "pp",
-             "trend": self._trend_from_value(avg_diff)},
+             "trend": self._trend_from_value(avg_diff),
+             "sparkline": [round(d, 2) for d in margin_diff]},
             {"label": "最佳月份", "value": best_month_value,
              "unit": "", "trend": "up"},
         ]
@@ -186,7 +189,7 @@ class GrossMarginTrendBuilder(AbstractFinancialChartBuilder):
                         {
                             "value": round(d, 2),
                             "itemStyle": {
-                                "color": COLORS['yoy_up'] if d > 0 else COLORS['yoy_down'],
+                                "color": self._gradient_color(COLORS['yoy_up'] if d > 0 else COLORS['yoy_down']),
                                 "borderRadius": [2, 2, 0, 0] if d >= 0 else [0, 0, 2, 2],
                                 "opacity": 0.6,
                             },
@@ -204,6 +207,7 @@ class GrossMarginTrendBuilder(AbstractFinancialChartBuilder):
                 },
             ],
         })
+        self._apply_datazoom(option)
 
         # Quarter markArea
         mark_areas = self._quarter_mark_areas(start_month, end_month)

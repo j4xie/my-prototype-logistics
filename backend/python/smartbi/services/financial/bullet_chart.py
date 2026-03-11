@@ -147,6 +147,8 @@ class BulletChartBuilder(AbstractFinancialChartBuilder):
         axis_max = round(max_budget * 1.2 / divisor, 2)
 
         option = self._base_echarts_option()
+        option.pop("dataZoom", None)
+        option.pop("toolbox", None)
         option["grid"] = {"left": "5%", "right": "8%", "bottom": "5%", "top": "10%", "containLabel": True}
         option["tooltip"] = {
             "trigger": "axis",
@@ -186,7 +188,7 @@ class BulletChartBuilder(AbstractFinancialChartBuilder):
                 "stack": "bands",
                 "data": band_data,
                 "itemStyle": {
-                    "color": BAND_COLORS[band_idx],
+                    "color": self._gradient_color(BAND_COLORS[band_idx]),
                     "borderColor": "#fff",
                     "borderWidth": 0,
                 },
@@ -205,7 +207,7 @@ class BulletChartBuilder(AbstractFinancialChartBuilder):
                 {
                     "value": v,
                     "itemStyle": {
-                        "color": ACTUAL_COLOR if metrics[i]['rate'] >= 60 else COLORS['danger'],
+                        "color": self._gradient_color(ACTUAL_COLOR if metrics[i]['rate'] >= 60 else COLORS['danger']),
                     },
                 }
                 for i, v in enumerate(actual_data)
@@ -295,7 +297,7 @@ class BulletChartBuilder(AbstractFinancialChartBuilder):
                     "color": ACTUAL_COLOR if metrics[i]['rate'] >= 80 else COLORS['danger'],
                 },
                 "itemStyle": {
-                    "color": ACTUAL_COLOR if metrics[i]['rate'] >= 60 else COLORS['danger'],
+                    "color": self._gradient_color(ACTUAL_COLOR if metrics[i]['rate'] >= 60 else COLORS['danger']),
                 },
             }
             for i in range(len(metrics))

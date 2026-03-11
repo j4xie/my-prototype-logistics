@@ -34,6 +34,7 @@ import echarts from '@/utils/echarts';
 import { formatNumber, formatCount, formatAxisValue } from '@/utils/format-number';
 import { CHART_COLORS } from '@/constants/chart-colors';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
+import { enhanceChartDefaults } from '@/composables/useChartEnhancer';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -75,6 +76,21 @@ interface AIInsight {
 }
 
 // ==================== 状态 ====================
+
+// 暗色模式
+const isDarkMode = ref(false);
+
+function toggleDarkMode() {
+  isDarkMode.value = !isDarkMode.value;
+  // Re-init charts with correct theme
+  if (dashboardData.value?.charts) {
+    nextTick(() => {
+      if (trendChart) { trendChart.dispose(); trendChart = null; }
+      if (pieChart) { pieChart.dispose(); pieChart = null; }
+      initCharts(dashboardData.value!.charts as Record<string, ChartConfig>);
+    });
+  }
+}
 
 // 加载状态
 const loading = ref(false);
@@ -233,6 +249,81 @@ const aiInsights = computed<AIInsight[]>(() => {
     }));
 });
 
+// ==================== KPI Sparkline 数据 ====================
+
+/**
+ * Extract sparkline data arrays from the sales_trend chart series.
+ * Returns up to 4 sparkline arrays for each KPI card position.
+ * If no trend chart data, falls back to empty arrays.
+ */
+const kpiSparklines = computed(() => {
+  const empty = { revenue: [] as number[], profit: [] as number[], orders: [] as number[], customers: [] as number[] };
+  if (!dashboardData.value?.charts) return empty;
+
+  const charts = dashboardData.value.charts;
+  const trendChart = charts['sales_trend'] || charts['销售趋势'];
+  if (!trendChart) return empty;
+
+  // Normalize legacy format
+  const normalized = normalizeLegacyChart(trendChart as ChartConfig);
+  const series = ('series' in normalized && Array.isArray(normalized.series)) ? normalized.series : [];
+
+  if (series.length === 0) return empty;
+
+  // Try to match series by name to KPI slots
+  const findSeries = (keywords: string[]) => {
+    for (const kw of keywords) {
+      const s = series.find((ser: Record<string, unknown>) =>
+        typeof ser.name === 'string' && ser.name.toLowerCase().includes(kw)
+      );
+      if (s && Array.isArray(s.data)) return s.data.map(Number).filter(Number.isFinite);
+    }
+    return [];
+  };
+
+  const revenue = findSeries(['销售', '收入', '营收', 'revenue', 'sales']);
+  const profit = findSeries(['利润', '净利', 'profit']);
+  const orders = findSeries(['订单', 'order']);
+  const customers = findSeries(['客户', 'customer']);
+
+  // Fallback: if only 1 series, use it for revenue sparkline; if 2+ assign by position
+  if (!revenue.length && series.length >= 1 && Array.isArray(series[0].data)) {
+    return {
+      revenue: series[0].data.map(Number).filter(Number.isFinite),
+      profit: series.length >= 2 && Array.isArray(series[1].data) ? series[1].data.map(Number).filter(Number.isFinite) : [],
+      orders: [],
+      customers: [],
+    };
+  }
+
+  return { revenue, profit, orders, customers };
+});
+
+/** Generate SVG path for a sparkline from data array */
+function _sparklinePath(data: number[]): string {
+  if (!data || data.length < 2) return '';
+  const width = 60, height = 22, pad = 2;
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data.map((v, i) => {
+    const x = pad + (i / (data.length - 1)) * (width - pad * 2);
+    const y = height - pad - ((v - min) / range) * (height - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  return `M ${points.join(' L ')}`;
+}
+
+/** Cached sparkline SVG paths and colors — avoid re-computation on each render */
+const kpiSparklinePaths = computed(() => {
+  const s = kpiSparklines.value;
+  return {
+    revenue: { path: _sparklinePath(s.revenue), color: s.revenue.length >= 2 ? (s.revenue[s.revenue.length - 1] >= s.revenue[0] ? '#36B37E' : '#FF5630') : '#909399' },
+    profit: { path: _sparklinePath(s.profit), color: s.profit.length >= 2 ? (s.profit[s.profit.length - 1] >= s.profit[0] ? '#36B37E' : '#FF5630') : '#909399' },
+    orders: { path: _sparklinePath(s.orders), color: s.orders.length >= 2 ? (s.orders[s.orders.length - 1] >= s.orders[0] ? '#36B37E' : '#FF5630') : '#909399' },
+    customers: { path: _sparklinePath(s.customers), color: s.customers.length >= 2 ? (s.customers[s.customers.length - 1] >= s.customers[0] ? '#36B37E' : '#FF5630') : '#909399' },
+  };
+});
+
 // Detect if dashboard has any meaningful data (from system or dynamic source)
 const hasData = computed(() => {
   const kd = kpiData.value;
@@ -382,7 +473,7 @@ async function loadLLMInsights() {
   if (!factoryId.value || !dashboardData.value) return;
   const sourceAtStart = selectedDataSource.value;
   try {
-    const res = await get(`/${factoryId.value}/smart-bi/dashboard/executive/insights?period=month`);
+    const res = await get(`/${factoryId.value}/smart-bi/dashboard/executive/insights?period=month`, { timeout: 120000 });
     // Guard: if user switched data source during await, discard stale result
     if (selectedDataSource.value !== sourceAtStart) return;
     if (res.success && res.data) {
@@ -617,10 +708,21 @@ function normalizeLegacyChart(config: ChartConfig): ChartConfig {
 
 function initCharts(charts?: Record<string, ChartConfig>) {
   const trend = charts?.['sales_trend'] || charts?.['销售趋势'];
-  const pie = charts?.['category_distribution'] || charts?.['产品占比']
+  let pie = charts?.['category_distribution'] || charts?.['产品占比']
     || charts?.['类别分布'] || charts?.['产品销售占比'];
+  // Fallback: find first pie-type chart by scanning all entries
+  if (!pie && charts) {
+    for (const [, cfg] of Object.entries(charts)) {
+      const c = cfg as Record<string, unknown>;
+      if (c.chartType === 'pie' || (Array.isArray(c.series) && (c.series as Record<string, unknown>[])[0]?.type === 'pie')) {
+        pie = cfg;
+        break;
+      }
+    }
+  }
   initTrendChart(trend ? normalizeLegacyChart(trend) : undefined);
   initPieChart(pie ? normalizeLegacyChart(pie) : undefined);
+  connectCharts();
 }
 
 function initTrendChart(chartConfig?: ChartConfig) {
@@ -629,7 +731,7 @@ function initTrendChart(chartConfig?: ChartConfig) {
   if (trendChart) {
     trendChart.dispose();
   }
-  trendChart = echarts.init(trendChartRef.value, 'cretas');
+  trendChart = echarts.init(trendChartRef.value, isDarkMode.value ? 'cretas-dark' : 'cretas');
 
   // 如果有后端数据，使用后端数据
   if (chartConfig && chartConfig.series && chartConfig.series.length > 0) {
@@ -655,7 +757,7 @@ function initTrendChart(chartConfig?: ChartConfig) {
         boundaryGap: false,
         data: chartConfig.xAxis?.data || []
       },
-      yAxis: chartConfig.series.length > 1 ? [
+      yAxis: (chartConfig.series.length > 1 && chartConfig.series.some(s => s.yAxisIndex != null)) ? [
         {
           type: 'value',
           name: chartConfig.series[0]?.name || '销售额',
@@ -680,7 +782,7 @@ function initTrendChart(chartConfig?: ChartConfig) {
         name: s.name,
         type: 'line',
         smooth: true,
-        yAxisIndex: s.yAxisIndex || (index > 0 ? 1 : 0),
+        yAxisIndex: s.yAxisIndex ?? 0,
         data: s.data,
         areaStyle: index === 0 ? {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -692,6 +794,7 @@ function initTrendChart(chartConfig?: ChartConfig) {
         itemStyle: { color: index === 0 ? '#1B65A8' : '#36B37E' }
       }))
     };
+    enhanceChartDefaults(option as Record<string, unknown>);
     trendChart.setOption(option);
   } else {
     // 没有数据时显示空状态
@@ -717,7 +820,7 @@ function initPieChart(chartConfig?: ChartConfig) {
   if (pieChart) {
     pieChart.dispose();
   }
-  pieChart = echarts.init(pieChartRef.value, 'cretas');
+  pieChart = echarts.init(pieChartRef.value, isDarkMode.value ? 'cretas-dark' : 'cretas');
 
   // 如果有后端数据，使用后端数据
   if (chartConfig && chartConfig.series && chartConfig.series.length > 0) {
@@ -770,6 +873,7 @@ function initPieChart(chartConfig?: ChartConfig) {
         }
       ]
     };
+    enhanceChartDefaults(option as Record<string, unknown>);
     pieChart.setOption(option);
   } else {
     // 没有数据时显示空状态
@@ -791,6 +895,13 @@ function initPieChart(chartConfig?: ChartConfig) {
 
 function getPieColor(index: number): string {
   return CHART_COLORS[index % CHART_COLORS.length];
+}
+
+// ECharts connect — tooltip linkage between trend and pie charts
+function connectCharts() {
+  if (trendChart && pieChart) {
+    echarts.connect([trendChart, pieChart]);
+  }
 }
 
 // ResizeObserver-based chart resize (also handles sidebar toggle)
@@ -872,13 +983,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="dashboardRef" class="smart-bi-dashboard" role="main" aria-label="经营驾驶舱">
+  <div ref="dashboardRef" class="smart-bi-dashboard" :data-theme="isDarkMode ? 'dark' : 'light'" role="main" aria-label="经营驾驶舱">
     <div class="page-header">
       <div class="header-left">
         <h1>经营驾驶舱</h1>
         <span class="subtitle">智能数据分析 · 业务经营一站式洞察</span>
       </div>
       <div class="header-right">
+        <el-button size="small" @click="toggleDarkMode" :title="isDarkMode ? '切换亮色' : '切换暗色'">{{ isDarkMode ? '☀️' : '🌙' }}</el-button>
         <el-button type="primary" :icon="Refresh" @click="handleRefresh" :loading="loading">刷新数据</el-button>
         <el-button type="success" :icon="ChatDotRound" @click="goToAIQuery()">AI 问答</el-button>
       </div>
@@ -961,7 +1073,12 @@ onUnmounted(() => {
     />
 
     <!-- KPI 卡片区 -->
-    <el-row :gutter="16" class="kpi-section" v-loading="loading" aria-label="KPI指标" aria-live="polite" :aria-busy="loading">
+    <el-row v-if="loading && !kpiData.totalRevenue" :gutter="16" class="kpi-section" aria-label="KPI指标加载中">
+      <el-col :xs="24" :sm="12" :md="6" v-for="i in 4" :key="i">
+        <el-card class="kpi-card"><el-skeleton :rows="2" animated /></el-card>
+      </el-col>
+    </el-row>
+    <el-row v-else :gutter="16" class="kpi-section" aria-label="KPI指标" aria-live="polite" :aria-busy="loading">
       <el-col :xs="24" :sm="12" :md="6">
         <el-card class="kpi-card revenue">
           <div class="kpi-icon">
@@ -969,7 +1086,12 @@ onUnmounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">本月销售额</div>
-            <div class="kpi-value">{{ formatKpiValue(kpiData.totalRevenue) }}</div>
+            <div class="kpi-value-row">
+              <div class="kpi-value">{{ formatKpiValue(kpiData.totalRevenue) }}</div>
+              <svg v-if="kpiSparklines.revenue.length >= 2" class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
+                <path :d="kpiSparklinePaths.revenue.path" fill="none" :stroke="kpiSparklinePaths.revenue.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
             <div class="kpi-trend" :class="getGrowthClass(kpiData.revenueGrowth!)" v-if="kpiData.totalRevenue !== null && kpiData.revenueGrowth != null && kpiData.revenueGrowth !== 0">
               <el-icon v-if="kpiData.revenueGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
@@ -989,7 +1111,12 @@ onUnmounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">{{ kpiData.profitLabel || '本月利润' }}</div>
-            <div class="kpi-value">{{ kpiData.profitUnit === '%' ? (kpiData.totalProfit != null ? kpiData.totalProfit.toFixed(1) + '%' : '--') : formatKpiValue(kpiData.totalProfit) }}</div>
+            <div class="kpi-value-row">
+              <div class="kpi-value">{{ kpiData.profitUnit === '%' ? (kpiData.totalProfit != null ? kpiData.totalProfit.toFixed(1) + '%' : '--') : formatKpiValue(kpiData.totalProfit) }}</div>
+              <svg v-if="kpiSparklines.profit.length >= 2" class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
+                <path :d="kpiSparklinePaths.profit.path" fill="none" :stroke="kpiSparklinePaths.profit.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
             <div class="kpi-trend" :class="getGrowthClass(kpiData.profitGrowth!)" v-if="kpiData.totalProfit !== null && kpiData.profitGrowth != null && kpiData.profitGrowth !== 0">
               <el-icon v-if="kpiData.profitGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
@@ -1009,7 +1136,12 @@ onUnmounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">订单数量</div>
-            <div class="kpi-value">{{ kpiData.orderCount != null ? formatCount(kpiData.orderCount) : '--' }}</div>
+            <div class="kpi-value-row">
+              <div class="kpi-value">{{ kpiData.orderCount != null ? formatCount(kpiData.orderCount) : '--' }}</div>
+              <svg v-if="kpiSparklines.orders.length >= 2" class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
+                <path :d="kpiSparklinePaths.orders.path" fill="none" :stroke="kpiSparklinePaths.orders.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
             <div class="kpi-trend" :class="getGrowthClass(kpiData.orderGrowth!)" v-if="kpiData.orderCount !== null && kpiData.orderGrowth != null && kpiData.orderGrowth !== 0">
               <el-icon v-if="kpiData.orderGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
@@ -1029,7 +1161,12 @@ onUnmounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">{{ kpiData.customerLabel || '活跃客户' }}</div>
-            <div class="kpi-value" :class="kpiData.customerUnit === '%' && kpiData.customerCount != null ? getGrowthClass(kpiData.customerCount) : ''">{{ kpiData.customerUnit === '%' ? (kpiData.customerCount != null ? (kpiData.customerCount >= 0 ? '+' : '') + kpiData.customerCount.toFixed(1) + '%' : '--') : (kpiData.customerCount != null ? formatCount(kpiData.customerCount) : '--') }}</div>
+            <div class="kpi-value-row">
+              <div class="kpi-value" :class="kpiData.customerUnit === '%' && kpiData.customerCount != null ? getGrowthClass(kpiData.customerCount) : ''">{{ kpiData.customerUnit === '%' ? (kpiData.customerCount != null ? (kpiData.customerCount >= 0 ? '+' : '') + kpiData.customerCount.toFixed(1) + '%' : '--') : (kpiData.customerCount != null ? formatCount(kpiData.customerCount) : '--') }}</div>
+              <svg v-if="kpiSparklines.customers.length >= 2" class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
+                <path :d="kpiSparklinePaths.customers.path" fill="none" :stroke="kpiSparklinePaths.customers.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
             <div class="kpi-trend" :class="getGrowthClass(kpiData.customerGrowth!)" v-if="kpiData.customerCount !== null && kpiData.customerGrowth != null && kpiData.customerGrowth !== 0">
               <el-icon v-if="kpiData.customerGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
@@ -1147,13 +1284,14 @@ onUnmounted(() => {
               v-for="(insight, index) in aiInsights"
               :key="index"
               class="insight-item"
+              :class="'insight-' + insight.type"
             >
               <el-tag :type="getInsightTagType(insight.type)" size="small">
                 {{ insight.title }}
               </el-tag>
               <span class="insight-content">{{ insight.content }}</span>
               <span v-if="insight.suggestion" class="insight-suggestion">
-                建议: {{ insight.suggestion }}
+                💡 {{ insight.suggestion }}
               </span>
             </div>
           </div>
@@ -1336,12 +1474,23 @@ onUnmounted(() => {
       margin-bottom: 4px;
     }
 
+    .kpi-value-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .kpi-sparkline {
+      flex-shrink: 0;
+      opacity: 0.85;
+    }
+
     .kpi-value {
       font-size: var(--font-size-2xl);
       font-weight: 600;
       font-variant-numeric: tabular-nums;
       color: #1A2332;
-      margin-bottom: 4px;
 
       &.growth-up { color: #36B37E; }
       &.growth-down { color: #FF5630; }
@@ -1568,12 +1717,25 @@ onUnmounted(() => {
       align-items: flex-start;
       flex-wrap: wrap;
       gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid #F4F6F9;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      border-left: 4px solid #909399;
+      background: #fafbfc;
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: #f0f2f5;
+      }
 
       &:last-child {
-        border-bottom: none;
+        margin-bottom: 0;
       }
+
+      &.insight-success { border-left-color: #36B37E; background: #f6ffed; }
+      &.insight-warning { border-left-color: #FFAB00; background: #fffbe6; }
+      &.insight-danger  { border-left-color: #FF5630; background: #fff2f0; }
+      &.insight-info    { border-left-color: #1B65A8; background: #e6f7ff; }
 
       .el-tag {
         flex-shrink: 0;
@@ -1620,7 +1782,26 @@ onUnmounted(() => {
   }
 }
 
+// 图表卡片悬浮效果
+.ranking-card,
+.chart-card,
+.insight-card,
+.quick-qa-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+}
+
 // 响应式适配
+@media (max-width: 1200px) {
+  .charts-section .el-col[class*="md-12"] {
+    margin-bottom: 16px;
+  }
+}
+
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;
@@ -1632,6 +1813,97 @@ onUnmounted(() => {
     .kpi-content .kpi-value {
       font-size: var(--font-size-xl);
     }
+  }
+
+  .ranking-section {
+    .el-col { margin-bottom: 12px; }
+  }
+
+  .chart-container {
+    height: 240px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-card {
+    .kpi-icon {
+      width: 40px;
+      height: 40px;
+      .el-icon { font-size: 20px; }
+    }
+    .kpi-content .kpi-value {
+      font-size: var(--font-size-lg);
+    }
+  }
+}
+
+// ==================== 暗色模式 ====================
+
+.smart-bi-dashboard[data-theme="dark"] {
+  background: #1a1a2e;
+  color: #e0e0e0;
+
+  .page-header {
+    h1 { color: #e0e0e0; }
+    .subtitle { color: #a0a0b0; }
+  }
+
+  :deep(.el-card) {
+    background: #16213e;
+    border-color: #2a2a4a;
+    color: #e0e0e0;
+  }
+
+  :deep(.el-card__header) {
+    border-bottom-color: #2a2a4a;
+  }
+
+  .kpi-card {
+    .kpi-icon {
+      opacity: 0.85;
+    }
+    .kpi-content {
+      .kpi-label { color: #a0a0b0; }
+      .kpi-value { color: #4C9AFF; }
+      .kpi-trend {
+        &.growth-up { color: #57D9A3; }
+        &.growth-down { color: #FF8B6A; }
+      }
+    }
+    &.revenue .kpi-icon { background: rgba(54, 179, 126, 0.2); }
+    &.profit .kpi-icon { background: rgba(27, 101, 168, 0.2); }
+    &.orders .kpi-icon { background: rgba(255, 171, 0, 0.2); }
+    &.customers .kpi-icon { background: rgba(114, 46, 209, 0.2); }
+  }
+
+  .ranking-card {
+    .card-header span { color: #e0e0e0; }
+  }
+
+  .ranking-row {
+    border-bottom-color: #2a2a4a;
+    .region-name, .dept-name { color: #c0c0d0; }
+    .region-bar-bg { background: rgba(255, 255, 255, 0.08); }
+  }
+
+  .chart-card {
+    .card-header span { color: #e0e0e0; }
+  }
+
+  .insight-card {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-left-color: #2a2a4a;
+    .insight-title { color: #c0c0d0; }
+    .insight-content { color: #a0a0b0; }
+    &.insight-success { border-left-color: #57D9A3; background: rgba(87, 217, 163, 0.08) !important; }
+    &.insight-warning { border-left-color: #FFAB00; background: rgba(255, 171, 0, 0.08) !important; }
+    &.insight-danger { border-left-color: #FF8B6A; background: rgba(255, 139, 106, 0.08) !important; }
+    &.insight-info { border-left-color: #4C9AFF; background: rgba(76, 154, 255, 0.08) !important; }
+  }
+
+  .quick-question-section {
+    :deep(.el-card) { background: #16213e; }
+    .quick-btn { background: rgba(255, 255, 255, 0.06); color: #c0c0d0; border-color: #2a2a4a; }
   }
 }
 </style>

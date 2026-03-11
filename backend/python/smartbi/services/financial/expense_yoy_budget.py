@@ -64,12 +64,16 @@ class ExpenseYoyBudgetBuilder(AbstractFinancialChartBuilder):
 
         kpis = [
             {"label": "本年费用合计", "value": self._format_value(total_actual, scale), "unit": "元",
-             "trend": self._trend_from_value(total_yoy_change)},
-            {"label": "上年费用合计", "value": self._format_value(total_last_year, scale), "unit": "元", "trend": "flat"},
+             "trend": self._trend_from_value(total_yoy_change),
+             "sparkline": [round(v / scale['divisor'], 2) if v else 0 for v in actual_vals]},
+            {"label": "上年费用合计", "value": self._format_value(total_last_year, scale), "unit": "元", "trend": "flat",
+             "sparkline": [round(v / scale['divisor'], 2) if v else 0 for v in last_year_vals]},
             {"label": "同比变化", "value": f"{total_yoy_rate:.1f}" if total_yoy_rate is not None else '-',
-             "unit": "%", "trend": self._trend_from_value(total_yoy_rate)},
+             "unit": "%", "trend": self._trend_from_value(total_yoy_rate),
+             "sparkline": [round(r, 1) for r in yoy_rates]},
             {"label": "预算达成率", "value": f"{total_achievement:.1f}" if total_achievement is not None else '-',
-             "unit": "%", "trend": 'up' if total_achievement and total_achievement <= 100 else 'down'},
+             "unit": "%", "trend": 'up' if total_achievement and total_achievement <= 100 else 'down',
+             "sparkline": [round(r, 1) for r in achievement_rates]},
         ]
 
         # Scale values
@@ -119,7 +123,7 @@ class ExpenseYoyBudgetBuilder(AbstractFinancialChartBuilder):
                     "name": f"上年费用{scale['name_suffix']}",
                     "type": "bar",
                     "data": ly_scaled,
-                    "itemStyle": {"color": COLORS['last_year'], "borderRadius": [2, 2, 0, 0]},
+                    "itemStyle": {"color": self._gradient_color(COLORS['last_year']), "borderRadius": [2, 2, 0, 0]},
                     "barGap": "5%",
                     "barMaxWidth": 24,
                     "emphasis": {"itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.2)"}},
@@ -131,7 +135,7 @@ class ExpenseYoyBudgetBuilder(AbstractFinancialChartBuilder):
                         {
                             "value": v,
                             "itemStyle": {
-                                "color": COLORS['accent'] if v > ly_scaled[i] else COLORS['success'],
+                                "color": self._gradient_color(COLORS['accent'] if v > ly_scaled[i] else COLORS['success']),
                                 "borderRadius": [2, 2, 0, 0],
                             },
                         }
@@ -154,18 +158,24 @@ class ExpenseYoyBudgetBuilder(AbstractFinancialChartBuilder):
                     "name": "预算达成率",
                     "type": "line",
                     "yAxisIndex": 1,
-                    "data": [round(r, 1) for r in achievement_rates],
+                    "data": [
+                        {
+                            "value": round(r, 1),
+                            "symbol": "roundRect" if r <= 100 and r > 0 else "circle",
+                            "symbolSize": 8 if r <= 100 and r > 0 else 7,
+                            "itemStyle": {"color": COLORS['success'] if r <= 100 and r > 0 else COLORS['achievement']},
+                            "label": {
+                                "show": True,
+                                "position": "top",
+                                "formatter": f"\u2713{round(r, 1)}%" if r <= 100 and r > 0 else f"{round(r, 1)}%",
+                                "fontSize": 9,
+                                "color": COLORS['success'] if r <= 100 and r > 0 else COLORS['achievement'],
+                            },
+                        }
+                        for r in achievement_rates
+                    ],
                     "itemStyle": {"color": COLORS['achievement']},
                     "lineStyle": {"width": 2.5},
-                    "symbol": "circle",
-                    "symbolSize": 7,
-                    "label": {
-                        "show": True,
-                        "position": "top",
-                        "fontSize": 9,
-                        "formatter": "{c}%",
-                        "color": COLORS['achievement'],
-                    },
                     "markLine": {
                         "silent": True,
                         "data": [{"yAxis": 100, "label": {"formatter": "100%", "fontSize": 9}}],
@@ -174,6 +184,7 @@ class ExpenseYoyBudgetBuilder(AbstractFinancialChartBuilder):
                 },
             ],
         })
+        self._apply_datazoom(option)
 
         # Quarter markArea
         mark_areas = self._quarter_mark_areas(start_month, end_month)
@@ -203,17 +214,6 @@ class ExpenseYoyBudgetBuilder(AbstractFinancialChartBuilder):
                 })
         if graphic_elements:
             option["graphic"] = graphic_elements
-
-        # Achievement checkmarks
-        for i, rate in enumerate(achievement_rates):
-            if rate <= 100 and rate > 0:
-                # Under budget is good for expenses
-                option["series"][3]["data"][i] = {
-                    "value": round(rate, 1),
-                    "symbol": "roundRect",
-                    "symbolSize": 8,
-                    "itemStyle": {"color": COLORS['success']},
-                }
 
         # Table data
         table_data = {

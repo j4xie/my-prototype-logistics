@@ -42,10 +42,32 @@ const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
 const rootRef = ref<HTMLDivElement>();
 
-// 筛选条件
+// ==================== 筛选条件 (localStorage 记忆) ====================
+
+const FILTER_STORAGE_KEY = 'smartbi-sales-filters';
+
+function loadSavedFilters() {
+  try {
+    const saved = localStorage.getItem(FILTER_STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveFilters() {
+  try {
+    localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({
+      dimensionType: dimensionType.value,
+      categoryFilter: categoryFilter.value,
+      dataSource: selectedDataSource.value,
+    }));
+  } catch { /* ignore */ }
+}
+
+const savedFilters = loadSavedFilters();
 const dateRange = ref<[Date, Date] | null>(null);
-const dimensionType = ref<'daily' | 'weekly' | 'monthly'>('daily');
-const categoryFilter = ref<string>('all');
+const dimensionType = ref<'daily' | 'weekly' | 'monthly'>(savedFilters?.dimensionType || 'daily');
+const categoryFilter = ref<string>(savedFilters?.categoryFilter || 'all');
 
 // 加载状态
 const loading = ref(false);
@@ -146,6 +168,47 @@ interface ChartConfig {
 const trendChartConfig = ref<ChartConfig | null>(null);
 const pieChartConfig = ref<ChartConfig | null>(null);
 
+// ==================== KPI Sparkline ====================
+
+/** Extract sparkline data from trendChartConfig for each KPI card */
+const kpiSparklineMap = computed<Record<number, number[]>>(() => {
+  const config = trendChartConfig.value;
+  if (!config || !config.data || config.data.length < 2) return {};
+
+  const xAxisField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'date';
+  const yAxisField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+
+  // Primary series: y-axis values from trend chart → assign to first KPI card
+  const salesData = config.data.map(item => Number(item[yAxisField]) || 0);
+  if (salesData.length < 2) return {};
+
+  // Also try extracting order count series if present
+  const orderData = config.data.map(item => Number(item['orderCount'] || item['count']) || 0);
+  const hasOrders = orderData.some(v => v > 0);
+
+  const result: Record<number, number[]> = { 0: salesData };
+  if (hasOrders) result[2] = orderData; // 3rd KPI card (typically orders)
+  return result;
+});
+
+function sparklinePath(data: number[]): string {
+  if (!data || data.length < 2) return '';
+  const width = 60, height = 22, pad = 2;
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data.map((v, i) => {
+    const x = pad + (i / (data.length - 1)) * (width - pad * 2);
+    const y = height - pad - ((v - min) / range) * (height - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  return `M ${points.join(' L ')}`;
+}
+
+function sparklineColor(data: number[]): string {
+  if (!data || data.length < 2) return '#909399';
+  return data[data.length - 1] >= data[0] ? '#36B37E' : '#FF5630';
+}
+
 // 产品类别
 const categories = ref([
   { value: 'all', label: '全部类别' },
@@ -232,6 +295,7 @@ async function loadDataSources() {
 }
 
 async function onDataSourceChange(sourceId: string) {
+  saveFilters();
   if (sourceId === 'system') {
     aiInsights.value = [];
     explorationCharts.value = [];
@@ -513,12 +577,21 @@ onMounted(async () => {
   // 加载数据源列表
   await loadDataSources();
 
+  // Restore saved data source if available
+  if (savedFilters?.dataSource && savedFilters.dataSource !== 'system') {
+    const exists = dataSources.value.some(d => String(d.id) === savedFilters.dataSource);
+    if (exists) {
+      selectedDataSource.value = savedFilters.dataSource;
+    }
+  }
+
   loadSalesData();
   initCharts();
 });
 
-// 监听筛选条件变化
+// 监听筛选条件变化 + 持久化
 watch([dateRange, dimensionType, categoryFilter], () => {
+  saveFilters();
   loadSalesData();
 });
 
@@ -938,7 +1011,7 @@ function updateTrendChart() {
           data: [
             { type: 'min', name: '最低值', symbol: 'pin', symbolSize: 40, label: { formatter: '{c}', fontSize: 10 } }
           ],
-          itemStyle: { color: '#F56C6C' }
+          itemStyle: { color: '#FF5630' }
         } : undefined,
         markLine: salesData.some(v => v < 0) ? {
           silent: true,
@@ -954,7 +1027,7 @@ function updateTrendChart() {
         barWidth: '40%',
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#67C23A' },
+            { offset: 0, color: '#36B37E' },
             { offset: 1, color: '#95d475' }
           ]),
           borderRadius: [4, 4, 0, 0]
@@ -978,7 +1051,7 @@ function updateTrendChart() {
           data: [
             { type: 'min', name: '最低值', symbol: 'pin', symbolSize: 40, label: { formatter: '{c}', fontSize: 10 } }
           ],
-          itemStyle: { color: '#F56C6C' }
+          itemStyle: { color: '#FF5630' }
         } : undefined,
         markLine: salesData.some(v => v < 0) ? {
           silent: true,
@@ -1014,12 +1087,27 @@ function updatePieChart() {
     return;
   }
 
-  // Phase 6: Set DynamicChartRenderer config (LegacyChartConfig format)
+  // Phase 6: Auto-detect field names if xAxisField/yAxisField don't match data
+  const sample = config.data[0] as Record<string, unknown> | undefined;
+  let xField = config.xAxisField || 'name';
+  let yField = config.yAxisField || 'value';
+  if (sample) {
+    // If declared fields don't exist in data, auto-detect
+    if (!(xField in sample)) {
+      const stringFields = Object.keys(sample).filter(k => typeof sample[k] === 'string');
+      if (stringFields.length > 0) xField = stringFields[0];
+    }
+    if (!(yField in sample)) {
+      const numFields = Object.keys(sample).filter(k => typeof sample[k] === 'number' && k !== xField);
+      if (numFields.length > 0) yField = numFields[0];
+    }
+  }
+
   pieDynamicConfig.value = {
     chartType: 'pie',
     title: '产品类别销售占比',
-    xAxisField: config.xAxisField || 'name',
-    yAxisField: config.yAxisField || 'value',
+    xAxisField: xField,
+    yAxisField: yField,
     data: config.data,
   } as SmartBIChartConfig;
   useDynamicPie.value = true;
@@ -1028,12 +1116,12 @@ function updatePieChart() {
   if (!pieChart) return;
 
   // 预定义颜色
-  const colors = ['#1B65A8', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#00CED1', '#FF69B4', '#8A2BE2'];
+  const colors = ['#1B65A8', '#36B37E', '#E6A23C', '#FF5630', '#909399', '#00CED1', '#FF69B4', '#8A2BE2'];
 
   // 从 API 数据中提取饼图数据
   const pieData = config.data.map((item, index) => ({
-    value: Number(item[config.yAxisField || 'value']) || 0,
-    name: String(item[config.xAxisField || 'name'] || `类别${index + 1}`),
+    value: Number(item[yField]) || 0,
+    name: String(item[xField] || `类别${index + 1}`),
     itemStyle: { color: colors[index % colors.length] }
   }));
 
@@ -1327,7 +1415,12 @@ onUnmounted(() => {
     />
 
     <!-- KPI 卡片 -->
-    <el-row :gutter="16" class="kpi-section" v-loading="kpiLoading">
+    <el-row v-if="kpiLoading && kpiCards.length === 0" :gutter="16" class="kpi-section">
+      <el-col :xs="12" :sm="8" class="kpi-col-5" v-for="i in 5" :key="'skel-'+i">
+        <el-card class="kpi-card"><el-skeleton :rows="2" animated /></el-card>
+      </el-col>
+    </el-row>
+    <el-row v-else :gutter="16" class="kpi-section">
       <el-col
         v-for="card in kpiCards"
         :key="card.key"
@@ -1337,7 +1430,12 @@ onUnmounted(() => {
       >
         <el-card class="kpi-card" :class="{ 'kpi-no-data': card.rawValue == null }">
           <div class="kpi-label">{{ card.title }}</div>
-          <div class="kpi-value">{{ formatKpiValue(card) }}</div>
+          <div class="kpi-value-row">
+            <div class="kpi-value">{{ formatKpiValue(card) }}</div>
+            <svg v-if="kpiSparklineMap[kpiCards.indexOf(card)]?.length >= 2" class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
+              <path :d="sparklinePath(kpiSparklineMap[kpiCards.indexOf(card)])" fill="none" :stroke="sparklineColor(kpiSparklineMap[kpiCards.indexOf(card)])" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
           <div
             class="kpi-trend"
             :class="card.trend === 'up' ? 'growth-up' : card.trend === 'down' ? 'growth-down' : ''"
@@ -1670,11 +1768,23 @@ onUnmounted(() => {
     margin-bottom: 8px;
   }
 
+  .kpi-value-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .kpi-sparkline {
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+
   .kpi-value {
     font-size: 28px;
     font-weight: 600;
     color: #303133;
-    margin-bottom: 8px;
   }
 
   .kpi-trend {
@@ -1682,11 +1792,11 @@ onUnmounted(() => {
     font-weight: 500;
 
     &.growth-up {
-      color: #67C23A;
+      color: #36B37E;
     }
 
     &.growth-down {
-      color: #F56C6C;
+      color: #FF5630;
     }
 
     .compare-text {
@@ -1755,11 +1865,11 @@ onUnmounted(() => {
 }
 
 .growth-up {
-  color: #67C23A;
+  color: #36B37E;
 }
 
 .growth-down {
-  color: #F56C6C;
+  color: #FF5630;
 }
 
 .chart-container {
@@ -1825,7 +1935,7 @@ onUnmounted(() => {
 .insight-card {
   margin-top: 16px;
   border-radius: 8px;
-  border-left: 4px solid #67C23A;
+  border-left: 4px solid #36B37E;
 
   .card-header {
     display: flex;
@@ -1834,7 +1944,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #67C23A;
+      color: #36B37E;
     }
   }
 }
@@ -1856,7 +1966,7 @@ onUnmounted(() => {
     .insight-icon {
       flex-shrink: 0;
       margin-top: 2px;
-      color: #67C23A;
+      color: #36B37E;
     }
   }
 }
@@ -1971,6 +2081,17 @@ onUnmounted(() => {
 
   .exploration-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+// 图表卡片悬浮效果
+.ranking-card,
+.chart-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   }
 }
 </style>

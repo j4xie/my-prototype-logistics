@@ -101,12 +101,14 @@ class CashflowTrendBuilder(AbstractFinancialChartBuilder):
                 "value": self._format_value(total_operating, scale),
                 "unit": "元",
                 "trend": self._trend_from_value(total_operating),
+                "sparkline": [round(v / scale['divisor'], 2) for v in operating_cf],
             },
             {
                 "label": "累计净现金流",
                 "value": self._format_value(total_net, scale),
                 "unit": "元",
                 "trend": self._trend_from_value(total_net),
+                "sparkline": [round(v / scale['divisor'], 2) for v in cumulative_net],
             },
             {
                 "label": "现金流最高月",
@@ -255,6 +257,7 @@ class CashflowTrendBuilder(AbstractFinancialChartBuilder):
             ],
             "series": series,
         })
+        self._apply_datazoom(option)
 
         # Add zero reference line
         option["yAxis"][0]["axisLine"] = {"show": True}
@@ -406,7 +409,7 @@ class CashflowTrendBuilder(AbstractFinancialChartBuilder):
             color = COLORS['secondary'] if val >= 0 else COLORS['danger']
             data.append({
                 "value": val,
-                "itemStyle": {"color": color},
+                "itemStyle": {"color": self._gradient_color(color)},
             })
         return data
 

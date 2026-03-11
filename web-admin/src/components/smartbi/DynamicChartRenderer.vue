@@ -954,8 +954,21 @@ function buildMapChart(config: LegacyChartConfig): echarts.EChartsOption {
 
 function buildLegacyPie(config: LegacyChartConfig): echarts.EChartsOption {
   // Support both camelCase (xAxisField) and lowercase (xaxisField) from API
-  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
-  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
+  let xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  let yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
+
+  // Auto-detect fields if declared fields don't exist in data
+  const sample = config.data?.[0] as Record<string, unknown> | undefined;
+  if (sample) {
+    if (!(xField in sample)) {
+      const stringFields = Object.keys(sample).filter(k => typeof sample[k] === 'string');
+      if (stringFields.length > 0) xField = stringFields[0];
+    }
+    if (!(yField in sample)) {
+      const numFields = Object.keys(sample).filter(k => typeof sample[k] === 'number' && k !== xField);
+      if (numFields.length > 0) yField = numFields[0];
+    }
+  }
 
   const pieData = config.data?.map((item, index) => ({
     name: String(item[xField] || ''),

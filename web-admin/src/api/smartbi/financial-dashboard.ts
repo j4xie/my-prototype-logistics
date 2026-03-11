@@ -20,6 +20,8 @@ export interface ChartKPI {
   value: number | string;
   unit: string;
   trend?: 'up' | 'down' | 'flat';
+  subtitle?: string;
+  sparkline?: number[];
 }
 
 export interface ChartResult {
@@ -35,6 +37,8 @@ export interface ChartResult {
   };
   success: boolean;
   error?: string;
+  quarterlyProgress?: { quarter: string; budget: number; actual: number; rate: number }[];
+  monthlyDataRows?: { currentYear: number[]; lastYear: number[]; labels: string[] };
 }
 
 export interface AvailableChartType {

@@ -126,6 +126,7 @@ class ArAgingAnalysisBuilder(AbstractFinancialChartBuilder):
 
         # --- ECharts stacked bar ---
         option = self._base_echarts_option()
+        option.pop("dataZoom", None)
 
         # Build individual series per bucket for stacked coloring
         series_list = []
@@ -136,7 +137,7 @@ class ArAgingAnalysisBuilder(AbstractFinancialChartBuilder):
                 "stack": "aging",
                 "data": [scaled_values[i]],
                 "itemStyle": {
-                    "color": AGING_COLORS[i],
+                    "color": self._gradient_color(AGING_COLORS[i]),
                     "borderRadius": [4, 4, 0, 0] if i == len(AGING_BUCKETS) - 1 else [0, 0, 0, 0],
                 },
                 "label": {
@@ -206,7 +207,7 @@ class ArAgingAnalysisBuilder(AbstractFinancialChartBuilder):
         for i, (val, pct) in enumerate(zip(scaled_values, bucket_pcts)):
             h_series_data.append({
                 "value": val,
-                "itemStyle": {"color": AGING_COLORS[i]},
+                "itemStyle": {"color": self._gradient_color(AGING_COLORS[i])},
                 "label": {
                     "formatter": f"{val:,.2f}{scale['suffix']}  ({pct}%)",
                 },

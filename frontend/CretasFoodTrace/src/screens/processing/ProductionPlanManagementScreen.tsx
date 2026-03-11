@@ -437,9 +437,9 @@ export default function ProductionPlanManagementScreen() {
 
   // AI对话创建生产计划
   const handleAIChatCreate = () => {
-    navigation.navigate('AIChat' as any, {
-      entityType: 'PRODUCTION_PLAN',
-      initialMessage: '我要创建生产计划',
+    navigation.navigate('FAAITab' as any, {
+      screen: 'AIChat',
+      params: { entityType: 'PRODUCTION_PLAN', initialMessage: '我要创建生产计划' },
     });
   };
 

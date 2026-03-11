@@ -74,19 +74,31 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
         # Find biggest growth category
         max_growth_cat = max(cat_totals.items(), key=lambda x: x[1].get('yoy_rate', 0) or 0)
 
+        # Scale values
+        divisor = scale['divisor']
+
+        # Monthly totals for sparkline
+        monthly_total_actual_raw = [
+            sum(cat_monthly_actual[cat][m] or 0 for cat in categories)
+            for m in range(end_month - start_month + 1)
+        ]
+        monthly_total_ly_raw = [
+            sum(cat_monthly_ly[cat][m] or 0 for cat in categories)
+            for m in range(end_month - start_month + 1)
+        ]
+
         kpis = [
             {"label": "本年总额", "value": self._format_value(total_actual, scale), "unit": "元",
-             "trend": self._trend_from_value(total_actual - total_ly)},
-            {"label": "上年总额", "value": self._format_value(total_ly, scale), "unit": "元", "trend": "flat"},
+             "trend": self._trend_from_value(total_actual - total_ly),
+             "sparkline": [round(v / divisor, 2) if v else 0 for v in monthly_total_actual_raw]},
+            {"label": "上年总额", "value": self._format_value(total_ly, scale), "unit": "元", "trend": "flat",
+             "sparkline": [round(v / divisor, 2) if v else 0 for v in monthly_total_ly_raw]},
             {"label": "同比增长", "value": f"{total_yoy:.1f}" if total_yoy is not None else '-',
              "unit": "%", "trend": self._trend_from_value(total_yoy)},
             {"label": "最大增长品类", "value": f"{max_growth_cat[0]} ({max_growth_cat[1]['yoy_rate']:.1f}%)"
              if max_growth_cat[1].get('yoy_rate') is not None else max_growth_cat[0],
              "unit": "", "trend": "up"},
         ]
-
-        # Scale values
-        divisor = scale['divisor']
         chart_colors = COLORS['charts']
 
         # Build series: for each category, two bars (current year stacked, last year stacked)
@@ -94,20 +106,42 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
         # Simpler: use sub-categories per month
         series_list = []
 
+        # Pre-calculate monthly totals for top-of-stack labels
+        monthly_total_scaled = [
+            round(sum(cat_monthly_actual[cat][m] or 0 for cat in categories) / divisor, 1)
+            for m in range(end_month - start_month + 1)
+        ]
+
         # Current year stacked bars
         for ci, cat in enumerate(categories):
             color = chart_colors[ci % len(chart_colors)]
             actual_scaled = [round(v / divisor, 2) if v else 0 for v in cat_monthly_actual[cat]]
-            series_list.append({
+            series_item = {
                 "name": f"{cat}(本年)",
                 "type": "bar",
                 "stack": "current",
                 "data": actual_scaled,
-                "itemStyle": {"color": color, "borderRadius": [1, 1, 0, 0] if ci == len(categories) - 1 else [0, 0, 0, 0]},
+                "itemStyle": {"color": self._gradient_color(color), "borderRadius": [1, 1, 0, 0] if ci == len(categories) - 1 else [0, 0, 0, 0]},
                 "barMaxWidth": 24,
                 "barGap": "20%",
                 "emphasis": {"itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.2)"}},
-            })
+            }
+            # Last category gets monthly total label on top of stack
+            if ci == len(categories) - 1:
+                series_item["data"] = [
+                    {
+                        "value": actual_scaled[m],
+                        "label": {
+                            "show": True,
+                            "position": "top",
+                            "formatter": f"{monthly_total_scaled[m]}",
+                            "fontSize": 9,
+                            "color": "#666",
+                        },
+                    }
+                    for m in range(len(actual_scaled))
+                ]
+            series_list.append(series_item)
 
         # Last year stacked bars
         for ci, cat in enumerate(categories):
@@ -119,7 +153,7 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
                 "stack": "lastyear",
                 "data": ly_scaled,
                 "itemStyle": {
-                    "color": color,
+                    "color": self._gradient_color(color),
                     "opacity": 0.45,
                     "borderRadius": [1, 1, 0, 0] if ci == len(categories) - 1 else [0, 0, 0, 0],
                 },
@@ -165,6 +199,7 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
             },
             "series": series_list,
         })
+        self._apply_datazoom(option)
 
         # Quarter markArea on first series
         mark_areas = self._quarter_mark_areas(start_month, end_month)

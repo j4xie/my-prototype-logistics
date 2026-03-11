@@ -138,10 +138,11 @@ class ChannelAnalysisBuilder(AbstractFinancialChartBuilder):
         for i, (ch, val, pct) in enumerate(zip(channels, scaled_revenues, percentages)):
             series_data.append({
                 "value": val,
-                "itemStyle": {"color": colors[i % len(colors)]},
+                "itemStyle": {"color": self._gradient_color(colors[i % len(colors)])},
             })
 
         option = self._base_echarts_option()
+        option.pop("dataZoom", None)
         option.update({
             "title": {
                 "text": f"{year}年渠道收入分析",

@@ -18,11 +18,11 @@
     <!-- Stats Overview -->
     <div v-loading="loading" class="stats-grid" v-if="stats || loading">
       <el-card shadow="hover" class="stat-card">
-        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-value">{{ stats?.total ?? '-' }}</div>
         <div class="stat-label">反馈总数</div>
       </el-card>
       <el-card shadow="hover" class="stat-card">
-        <div class="stat-value" :class="avgRatingClass">{{ stats.avg_rating.toFixed(2) }}</div>
+        <div class="stat-value" :class="avgRatingClass">{{ stats?.avg_rating != null ? stats.avg_rating.toFixed(2) : '-' }}</div>
         <div class="stat-label">平均评分</div>
       </el-card>
       <el-card shadow="hover" class="stat-card">

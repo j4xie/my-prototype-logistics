@@ -115,6 +115,8 @@ class CategoryStructureDonutBuilder(AbstractFinancialChartBuilder):
 
         # ECharts option
         option = self._base_echarts_option()
+        option.pop("dataZoom", None)
+        option.pop("toolbox", None)
         option["tooltip"] = {
             "trigger": "item",
             "formatter": "{a} <br/>{b}: {c} ({d}%)",

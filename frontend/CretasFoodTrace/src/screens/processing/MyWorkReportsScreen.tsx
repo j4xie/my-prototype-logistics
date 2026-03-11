@@ -167,6 +167,7 @@ export default function MyWorkReportsScreen() {
       <Appbar.Header>
         <Appbar.BackAction testID="header-back-btn" onPress={() => navigation.goBack()} />
         <Appbar.Content title="我的报工" />
+        <Appbar.Action icon="robot-outline" onPress={() => navigation.navigate('FAAITab' as any, { screen: 'AIChat', params: { entityType: 'WORK_REPORT' } })} />
         <Appbar.Action icon="refresh" onPress={onRefresh} />
       </Appbar.Header>
 

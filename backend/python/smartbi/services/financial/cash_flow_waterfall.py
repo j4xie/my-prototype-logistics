@@ -234,6 +234,8 @@ class CashFlowWaterfallBuilder(AbstractFinancialChartBuilder):
         value_scaled = [round(v / divisor, 2) for v in value_data]
 
         option = self._base_echarts_option()
+        option.pop("dataZoom", None)
+        option.pop("toolbox", None)
         option["grid"] = {"left": "5%", "right": "5%", "bottom": "8%", "top": "12%", "containLabel": True}
         option.update({
             "xAxis": {
@@ -268,7 +270,7 @@ class CashFlowWaterfallBuilder(AbstractFinancialChartBuilder):
                         {
                             "value": value_scaled[i],
                             "itemStyle": {
-                                "color": colors[i],
+                                "color": self._gradient_color(colors[i]),
                                 "borderRadius": [4, 4, 0, 0] if items[i]['value'] >= 0 else [0, 0, 4, 4],
                             },
                         }

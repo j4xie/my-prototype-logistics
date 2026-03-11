@@ -429,6 +429,7 @@ export default function MaterialBatchManagementScreen() {
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="原材料批次管理" />
+        <Appbar.Action icon="robot-outline" onPress={() => navigation.navigate('FAAITab' as any, { screen: 'AIChat', params: { entityType: 'MATERIAL' } })} />
         <Appbar.Action icon="download" onPress={handleExportInventory} />
         <Appbar.Action icon="refresh" onPress={loadBatches} />
       </Appbar.Header>

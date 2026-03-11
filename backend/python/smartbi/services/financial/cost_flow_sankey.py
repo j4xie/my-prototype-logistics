@@ -164,6 +164,8 @@ class CostFlowSankeyBuilder(AbstractFinancialChartBuilder):
 
         # ECharts option
         option = self._base_echarts_option()
+        option.pop("dataZoom", None)
+        option.pop("toolbox", None)
         option["animationEasing"] = "elasticOut"
         option["animationDuration"] = 1000
         option.update({
