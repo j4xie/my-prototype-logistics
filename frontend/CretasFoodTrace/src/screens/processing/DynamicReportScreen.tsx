@@ -370,6 +370,7 @@ export default function DynamicReportScreen() {
     const data: WorkReportSubmitRequest = {
       reportType,
       reportDate: today,
+      batchId: selectedBatch?.id,
       processCategory: isProgress ? processCategory : undefined,
       productName: !isProgress ? productName : undefined,
       outputQuantity: outputQuantity ? parseFloat(outputQuantity) : undefined,
@@ -398,7 +399,7 @@ export default function DynamicReportScreen() {
       ]);
     }
   }, [reportType, processCategory, productName, outputQuantity, goodQuantity,
-      defectQuantity, operationVolume, startTime, endTime, hourEntry, totalWorkers, submitReport, navigation, factoryId, workerId]);
+      defectQuantity, operationVolume, startTime, endTime, hourEntry, totalWorkers, selectedBatch, submitReport, navigation, factoryId, workerId]);
 
   const handleSaveDraft = useCallback(() => {
     const { addDraft } = useDraftReportStore.getState();

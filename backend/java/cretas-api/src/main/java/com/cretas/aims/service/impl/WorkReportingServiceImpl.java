@@ -44,10 +44,16 @@ public class WorkReportingServiceImpl {
     public WorkReportResponse submitReport(String factoryId, Long workerId, WorkReportSubmitRequest request) {
         log.info("提交报工: factoryId={}, workerId={}, type={}", factoryId, workerId, request.getReportType());
 
-        // P1-2: 防重提交 — 同一工人+同一批次+同一日期只能提交一次
-        if (request.getBatchId() != null && request.getReportDate() != null) {
-            boolean duplicate = reportRepository.existsByFactoryIdAndWorkerIdAndBatchIdAndReportDateAndDeletedAtIsNull(
-                    factoryId, workerId, request.getBatchId(), request.getReportDate());
+        // P1-2: 防重提交 — 同一工人+同一批次+同一报工类型+同一日期只能提交一次
+        if (request.getReportDate() != null) {
+            boolean duplicate;
+            if (request.getBatchId() != null) {
+                duplicate = reportRepository.existsByFactoryIdAndWorkerIdAndBatchIdAndReportTypeAndReportDateAndDeletedAtIsNull(
+                        factoryId, workerId, request.getBatchId(), request.getReportType(), request.getReportDate());
+            } else {
+                duplicate = reportRepository.existsByFactoryIdAndWorkerIdAndReportTypeAndReportDateAndBatchIdIsNullAndDeletedAtIsNull(
+                        factoryId, workerId, request.getReportType(), request.getReportDate());
+            }
             if (duplicate) {
                 throw new RuntimeException("您今天已对该批次提交过报工，如需修改请编辑已有记录");
             }

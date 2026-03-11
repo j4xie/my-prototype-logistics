@@ -251,6 +251,12 @@ public interface ProductionReportRepository extends JpaRepository<ProductionRepo
     boolean existsByFactoryIdAndWorkerIdAndBatchIdAndReportDateAndDeletedAtIsNull(
             String factoryId, Long workerId, Long batchId, LocalDate reportDate);
 
+    boolean existsByFactoryIdAndWorkerIdAndBatchIdAndReportTypeAndReportDateAndDeletedAtIsNull(
+            String factoryId, Long workerId, Long batchId, String reportType, LocalDate reportDate);
+
+    boolean existsByFactoryIdAndWorkerIdAndReportTypeAndReportDateAndBatchIdIsNullAndDeletedAtIsNull(
+            String factoryId, Long workerId, String reportType, LocalDate reportDate);
+
     // ==================== 报工傻瓜化: 上次报工 + 历史均值 ====================
 
     ProductionReport findTopByFactoryIdAndWorkerIdAndReportTypeAndDeletedAtIsNullOrderByCreatedAtDesc(

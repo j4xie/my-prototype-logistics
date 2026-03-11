@@ -1,5 +1,6 @@
 package com.cretas.aims.config;
 
+import com.cretas.aims.entity.config.AIIntentConfig;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -113,6 +114,37 @@ public class IntentKnowledgeBase {
      * SYSTEM_*、OUT_OF_DOMAIN、CONTEXT_CONTINUE、FOOD_KNOWLEDGE_QUERY 等
      */
     private Map<String, String> commonPhraseMapping = new LinkedHashMap<>();
+
+    /**
+     * v36: 意图代码到Tool名称的回退映射
+     * 当短语匹配到的意图代码在数据库中不存在时，使用此映射构建合成AIIntentConfig，
+     * 避免短语匹配成功后因DB缺失而降级到分类器（导致误路由）。
+     */
+    private static final Map<String, String[]> INTENT_TOOL_FALLBACK = Map.ofEntries(
+            // [intentCode] -> { toolName, intentName, intentCategory }
+            Map.entry("EFFICIENCY_COMPARISON", new String[]{"efficiency_comparison", "效率对比分析", "ANALYSIS"}),
+            Map.entry("EFFICIENCY_COMPARE_ALIAS", new String[]{"efficiency_comparison", "效率对比(别名)", "ANALYSIS"})
+    );
+
+    /**
+     * v36: 根据意图代码构建合成 AIIntentConfig（当DB中无对应记录时使用）
+     */
+    public AIIntentConfig buildSyntheticIntentConfig(String intentCode) {
+        String[] meta = INTENT_TOOL_FALLBACK.get(intentCode);
+        if (meta == null) {
+            return null;
+        }
+        return AIIntentConfig.builder()
+                .id("synthetic-" + intentCode.toLowerCase())
+                .intentCode(intentCode)
+                .toolName(meta[0])
+                .intentName(meta[1])
+                .intentCategory(meta[2])
+                .isActive(true)
+                .sensitivityLevel("LOW")
+                .priority(85)
+                .build();
+    }
 
     // ==================== 阶段三：领域优先级 ====================
 

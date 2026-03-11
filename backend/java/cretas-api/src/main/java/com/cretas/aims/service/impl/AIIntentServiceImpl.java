@@ -854,8 +854,31 @@ public class AIIntentServiceImpl implements AIIntentService {
                             saveIntentMatchRecord(phraseResult, factoryId, userId, sessionId, false);
                             return attachTiming(applyNegationConversion(phraseResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
                         } else {
-                            // v21.0: 短语匹配到的意图代码在DB中不存在，记录警告以便排查
-                            log.warn("v21.0 短语匹配意图不在DB中: input='{}', phrase_intent='{}', 将继续走分类器", userInput, matchedIntentCode);
+                            // v36: 短语匹配意图不在DB中 → 尝试使用合成AIIntentConfig回退
+                            AIIntentConfig syntheticIntent = knowledgeBase.buildSyntheticIntentConfig(effectiveIntentCode);
+                            if (syntheticIntent != null) {
+                                log.info("v36 短语匹配合成回退: input='{}', intent={}, tool={}",
+                                        userInput, effectiveIntentCode, syntheticIntent.getToolName());
+                                ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
+                                IntentMatchResult syntheticResult = IntentMatchResult.builder()
+                                        .bestMatch(syntheticIntent)
+                                        .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                                syntheticIntent, 0.95, 95, Collections.emptyList(), MatchMethod.PHRASE_MATCH)))
+                                        .confidence(0.95)
+                                        .matchMethod(MatchMethod.PHRASE_MATCH)
+                                        .matchedKeywords(Collections.emptyList())
+                                        .isStrongSignal(true)
+                                        .requiresConfirmation(false)
+                                        .userInput(userInput)
+                                        .actionType(detectedActionType)
+                                        .build();
+                                if (preprocessedQuery != null) {
+                                    syntheticResult.setPreprocessedQuery(preprocessedQuery);
+                                }
+                                saveIntentMatchRecord(syntheticResult, factoryId, userId, sessionId, false);
+                                return attachTiming(applyNegationConversion(syntheticResult, enhancedResult, factoryId), startTimeMs, preprocessEndMs);
+                            }
+                            log.warn("v21.0 短语匹配意图不在DB中且无回退: input='{}', phrase_intent='{}', 将继续走分类器", userInput, matchedIntentCode);
                         }
                     }
                 }
@@ -1345,6 +1368,28 @@ public class AIIntentServiceImpl implements AIIntentService {
 
                 saveIntentMatchRecord(result, factoryId, null, null, false);
                 return result;
+            } else {
+                // v36: DB中不存在 → 尝试合成回退
+                AIIntentConfig syntheticIntent = knowledgeBase.buildSyntheticIntentConfig(matchedIntent);
+                if (syntheticIntent != null) {
+                    log.info("v36 语义层短语合成回退: original='{}', intent={}, tool={}",
+                            originalInput, matchedIntent, syntheticIntent.getToolName());
+                    ActionType detectedActionType = knowledgeBase.detectActionType(originalInput.toLowerCase().trim());
+                    IntentMatchResult synResult = IntentMatchResult.builder()
+                            .bestMatch(syntheticIntent)
+                            .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                    syntheticIntent, 0.93, 93, Collections.emptyList(), MatchMethod.PHRASE_MATCH)))
+                            .confidence(0.93)
+                            .matchMethod(MatchMethod.PHRASE_MATCH)
+                            .matchedKeywords(Collections.emptyList())
+                            .isStrongSignal(true)
+                            .requiresConfirmation(false)
+                            .userInput(originalInput)
+                            .actionType(detectedActionType)
+                            .build();
+                    saveIntentMatchRecord(synResult, factoryId, null, null, false);
+                    return synResult;
+                }
             }
             } // end v17 else block
         }
@@ -3643,6 +3688,8 @@ public class AIIntentServiceImpl implements AIIntentService {
             "报表", "季度", "年度", "月份",
             // 考勤操作
             "打卡", "签到", "签退",
+            // v36: 排名/效率/工人 相关
+            "排名", "工人", "效率", "对比",
             // 口语化业务表达
             "到齐", "正常", "合格", "靠谱", "跑起来", "完成",
             "够不够", "发了没", "过了吗", "联系",
