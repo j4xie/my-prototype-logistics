@@ -2,9 +2,14 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.ProcessCheckinRecord;
+import com.cretas.aims.entity.ProductionBatch;
+import com.cretas.aims.entity.ProductionReport;
 import com.cretas.aims.repository.ProcessCheckinRecordRepository;
+import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.ProductionPlanRepository;
+import com.cretas.aims.repository.ProductionReportRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -15,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/process-checkin")
 @RequiredArgsConstructor
@@ -22,6 +28,8 @@ public class ProcessCheckinController {
 
     private final ProcessCheckinRecordRepository checkinRepository;
     private final ProductionPlanRepository planRepository;
+    private final ProductionBatchRepository batchRepository;
+    private final ProductionReportRepository reportRepository;
 
     @PostMapping
     public ApiResponse<ProcessCheckinRecord> checkIn(
@@ -44,7 +52,7 @@ public class ProcessCheckinController {
     }
 
     @PostMapping("/checkout/{id}")
-    public ApiResponse<ProcessCheckinRecord> checkOut(
+    public ApiResponse<Map<String, Object>> checkOut(
             @PathVariable String factoryId,
             @PathVariable Long id) {
         ProcessCheckinRecord record = checkinRepository.findByIdAndFactoryId(id, factoryId)
@@ -61,7 +69,62 @@ public class ProcessCheckinController {
         record.setWorkMinutes((int) minutes);
 
         record = checkinRepository.save(record);
-        return ApiResponse.success(record);
+
+        // Fix-4: 签退后自动创建报工草稿（仅当关联了批次时）
+        Long draftReportId = null;
+        if (record.getBatchId() != null) {
+            try {
+                draftReportId = createReportDraft(record);
+                log.info("签退自动创建报工草稿: checkinId={}, draftReportId={}", id, draftReportId);
+            } catch (Exception e) {
+                log.warn("报工草稿创建失败(不影响签退): checkinId={}, error={}", id, e.getMessage());
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("checkinRecord", record);
+        result.put("draftReportId", draftReportId);
+        result.put("message", draftReportId != null
+                ? "签退成功！已自动创建报工草稿，请补充产量信息"
+                : "签退成功");
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * Fix-4: 签退→报工草稿联动
+     * 自动创建 DRAFT 状态报工记录，预填工时和批次信息
+     */
+    private Long createReportDraft(ProcessCheckinRecord checkin) {
+        // 防重：同一工人+批次+日期已有报工则跳过
+        if (reportRepository.existsByFactoryIdAndWorkerIdAndBatchIdAndReportDateAndDeletedAtIsNull(
+                checkin.getFactoryId(), checkin.getEmployeeId(), checkin.getBatchId(), LocalDate.now())) {
+            log.info("已存在报工记录，跳过草稿创建: employeeId={}, batchId={}", checkin.getEmployeeId(), checkin.getBatchId());
+            return null;
+        }
+
+        // 从批次获取产品信息
+        String productName = null;
+        if (checkin.getBatchId() != null) {
+            productName = batchRepository.findById(checkin.getBatchId())
+                    .map(ProductionBatch::getProductName)
+                    .orElse(null);
+        }
+
+        ProductionReport draft = ProductionReport.builder()
+                .factoryId(checkin.getFactoryId())
+                .workerId(checkin.getEmployeeId())
+                .batchId(checkin.getBatchId())
+                .reportType("PROGRESS")
+                .reportDate(LocalDate.now())
+                .processCategory(checkin.getProcessCategory())
+                .productName(productName)
+                .totalWorkMinutes(checkin.getWorkMinutes())
+                .totalWorkers(1)
+                .status(ProductionReport.Status.DRAFT)
+                .build();
+
+        draft = reportRepository.save(draft);
+        return draft.getId();
     }
 
     @GetMapping("/active")

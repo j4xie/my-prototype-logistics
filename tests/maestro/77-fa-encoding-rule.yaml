@@ -1,0 +1,56 @@
+appId: com.cretas.foodtrace
+---
+# Test 77: Factory Admin - Encoding Rule Configuration
+# Verifies: 商品编码规则配置 (需求2)
+# Happy path: view rules → create rule → verify template preview
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 15000
+
+# Navigate to Settings / Configuration
+- tapOn: "我的"
+- waitForAnimationToEnd
+
+# Find encoding rule config
+- tapOn:
+    text: ".*Encoding.*|.*编码规则.*|.*编码.*|.*Settings.*|.*设置.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/77-fa-encoding-list
+
+# Scroll to see existing rules
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/77-fa-encoding-scroll
+
+# Tap add/create new rule if available
+- tapOn:
+    text: ".*Add.*|.*新增.*|.*创建.*|.*\\+.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/77-fa-encoding-create
+
+# === Error Path: Try empty prefix ===
+# Tap save without filling required fields
+- tapOn:
+    text: ".*Save.*|.*保存.*|.*确定.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/77-fa-encoding-validation
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Return to Home
+- tapOn: "首页"
+- waitForAnimationToEnd

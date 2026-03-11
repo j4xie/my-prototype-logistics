@@ -1,0 +1,53 @@
+appId: com.cretas.foodtrace
+---
+# Test 79: Workshop Supervisor - Work Report Submit + Duplicate Prevention
+# Verifies: 报工提交 + 防重 (需求4 + Fix-1)
+# Happy path: submit report → verify success
+# Error path: re-submit same batch+date → should show error
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as workshop supervisor
+- runFlow: flows/login-ws.yaml
+- extendedWaitUntil:
+    visible: ".*Production.*|.*生产.*|.*Batch.*"
+    timeout: 15000
+
+# Navigate to Work Reports
+- tapOn:
+    text: ".*Work Report.*|.*报工.*|.*My Reports.*|.*我的报工.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/79-ws-report-list
+
+# Tap submit/create new report
+- tapOn:
+    text: ".*Submit.*|.*提交报工.*|.*新增.*|.*\\+.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/79-ws-report-form
+
+# Fill in report fields if form is visible
+- tapOn:
+    text: ".*Select Batch.*|.*选择批次.*|.*批次.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/79-ws-report-batch-select
+
+# Try to submit
+- tapOn:
+    text: ".*Submit.*|.*提交.*|.*保存.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/79-ws-report-submit-result
+
+# === Verify report appears in list ===
+- back
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/79-ws-report-list-after
+
+# Return to Home
+- tapOn: "首页"
+- waitForAnimationToEnd

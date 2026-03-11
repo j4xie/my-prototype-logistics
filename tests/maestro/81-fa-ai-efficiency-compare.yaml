@@ -1,0 +1,66 @@
+appId: com.cretas.foodtrace
+---
+# Test 81: Factory Admin - AI Efficiency Comparison
+# Verifies: BI效率对比通过AI对话 (需求6 + Fix-3)
+# Happy path: open AI chat → ask efficiency question → verify response
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 15000
+
+# Navigate to AI Chat
+- tapOn:
+    text: ".*AI.*|.*智能.*|.*Chat.*|.*助手.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/81-fa-ai-chat-home
+
+# Type efficiency comparison query
+- tapOn:
+    text: ".*输入.*|.*Type.*|.*Ask.*|.*请输入.*"
+    optional: true
+- inputText: "对比一下本周生产效率"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Send message
+- tapOn:
+    text: ".*Send.*|.*发送.*|.*➤.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Wait for AI response
+- extendedWaitUntil:
+    visible: ".*效率.*|.*产出.*|.*对比.*|.*排名.*|.*Efficiency.*"
+    timeout: 30000
+- takeScreenshot: screenshots/81-fa-ai-efficiency-response
+
+# Scroll to see full response
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/81-fa-ai-efficiency-scroll
+
+# === Error Path: vague query ===
+- tapOn:
+    text: ".*输入.*|.*Type.*|.*Ask.*|.*请输入.*"
+    optional: true
+- inputText: "效率"
+- hideKeyboard
+
+- tapOn:
+    text: ".*Send.*|.*发送.*|.*➤.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/81-fa-ai-efficiency-vague
+
+# Return to Home
+- tapOn: "首页"
+- waitForAnimationToEnd

@@ -8,6 +8,7 @@ import com.cretas.aims.event.*;
 import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.repository.inventory.FinishedGoodsBatchRepository;
+import com.cretas.aims.service.QualityInspectionService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ public class SupplyChainOrchestrator {
     private final ProductionBatchRepository productionBatchRepository;
     private final FinishedGoodsBatchRepository finishedGoodsBatchRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final QualityInspectionService qualityInspectionService;
 
     // ═══════════ 正向链：SO → 库存 → 生产 → 采购 ═══════════
 
@@ -155,6 +157,9 @@ public class SupplyChainOrchestrator {
             if (batch.getProductionPlanId() != null) {
                 updateProductionPlanProgress(batch);
             }
+
+            // ⑦c Fix-6: 自动创建质检任务（PENDING状态）
+            createQualityInspectionFromBatch(batch);
         } catch (Exception e) {
             log.error("批次完成联动失败(不影响报工): batchId={}", batch.getId(), e);
         }
@@ -329,5 +334,41 @@ public class SupplyChainOrchestrator {
     private String generateFGBatchNumber(ProductionBatch batch) {
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         return String.format("FG-AUTO-%s-%s", dateStr, batch.getId());
+    }
+
+    /**
+     * Fix-6: 批次完成 → 自动创建 PENDING 状态质检任务
+     *
+     * <p>所有完成的批次都应进行质检，确保出厂品质。质检记录为 PENDING 状态，
+     * 等待质检员登录后查看并完成实际检验。
+     *
+     * @param batch 已完成的生产批次
+     */
+    private void createQualityInspectionFromBatch(ProductionBatch batch) {
+        try {
+            BigDecimal totalQty = batch.getActualQuantity() != null ? batch.getActualQuantity() : BigDecimal.ZERO;
+            if (totalQty.compareTo(BigDecimal.ZERO) <= 0) {
+                return; // 无产出，不需要质检
+            }
+
+            QualityInspection inspection = QualityInspection.builder()
+                    .factoryId(batch.getFactoryId())
+                    .productionBatchId(batch.getId())
+                    .inspectorId(0L) // 待分配，质检员认领
+                    .inspectionDate(LocalDate.now())
+                    .sampleSize(totalQty)
+                    .passCount(BigDecimal.ZERO)
+                    .failCount(BigDecimal.ZERO)
+                    .result("PENDING")
+                    .notes("批次完成自动创建质检任务，产品: " +
+                            (batch.getProductName() != null ? batch.getProductName() : "未知") +
+                            "，产量: " + totalQty)
+                    .build();
+
+            qualityInspectionService.createInspection(batch.getFactoryId(), inspection);
+            log.info("自动创建质检任务: batchId={}, qty={}", batch.getId(), totalQty);
+        } catch (Exception e) {
+            log.warn("自动创建质检任务失败(不影响批次完成): batchId={}, error={}", batch.getId(), e.getMessage());
+        }
     }
 }

@@ -44,6 +44,15 @@ public class WorkReportingServiceImpl {
     public WorkReportResponse submitReport(String factoryId, Long workerId, WorkReportSubmitRequest request) {
         log.info("提交报工: factoryId={}, workerId={}, type={}", factoryId, workerId, request.getReportType());
 
+        // P1-2: 防重提交 — 同一工人+同一批次+同一日期只能提交一次
+        if (request.getBatchId() != null && request.getReportDate() != null) {
+            boolean duplicate = reportRepository.existsByFactoryIdAndWorkerIdAndBatchIdAndReportDateAndDeletedAtIsNull(
+                    factoryId, workerId, request.getBatchId(), request.getReportDate());
+            if (duplicate) {
+                throw new RuntimeException("您今天已对该批次提交过报工，如需修改请编辑已有记录");
+            }
+        }
+
         // 自动填充报告人姓名
         String reporterName = request.getReporterName();
         if (reporterName == null || reporterName.isBlank()) {

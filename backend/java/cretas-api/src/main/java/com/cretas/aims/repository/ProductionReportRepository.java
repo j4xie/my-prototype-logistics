@@ -246,6 +246,11 @@ public interface ProductionReportRepository extends JpaRepository<ProductionRepo
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
 
+    // ==================== 报工防重提交 ====================
+
+    boolean existsByFactoryIdAndWorkerIdAndBatchIdAndReportDateAndDeletedAtIsNull(
+            String factoryId, Long workerId, Long batchId, LocalDate reportDate);
+
     // ==================== 报工傻瓜化: 上次报工 + 历史均值 ====================
 
     ProductionReport findTopByFactoryIdAndWorkerIdAndReportTypeAndDeletedAtIsNullOrderByCreatedAtDesc(

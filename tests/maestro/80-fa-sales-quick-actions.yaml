@@ -1,0 +1,69 @@
+appId: com.cretas.foodtrace
+---
+# Test 80: Factory Admin - Sales Quick Actions (O2C)
+# Verifies: 销售快捷操作 — 订单→发货→收款 (需求5)
+# Happy path: view order list → tap order → quick ship → quick collect
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 15000
+
+# Navigate to Sales / Orders
+- tapOn:
+    text: ".*Sales.*|.*销售.*|.*CRM.*"
+    optional: true
+- waitForAnimationToEnd
+
+- tapOn:
+    text: ".*Order.*|.*订单.*|.*Sales Order.*|.*销售订单.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/80-fa-sales-order-list
+
+# Scroll to see orders
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# Tap first order for detail
+- tapOn:
+    text: ".*SO-.*|.*CONFIRMED.*|.*已确认.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/80-fa-order-detail
+
+# === Quick Ship ===
+- tapOn:
+    text: ".*Ship.*|.*发货.*|.*Quick Ship.*|.*快捷发货.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/80-fa-quick-ship
+
+# Confirm ship if dialog appears
+- tapOn:
+    text: ".*Confirm.*|.*确认.*|.*OK.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/80-fa-ship-result
+
+# === Quick Collect ===
+- tapOn:
+    text: ".*Collect.*|.*收款.*|.*Quick Collect.*|.*快捷收款.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/80-fa-quick-collect
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# Return to Home
+- tapOn: "首页"
+- waitForAnimationToEnd

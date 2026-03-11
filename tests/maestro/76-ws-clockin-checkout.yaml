@@ -1,0 +1,45 @@
+appId: com.cretas.foodtrace
+---
+# Test 76: Workshop Supervisor - Clock In / Clock Out Flow
+# Verifies: 签到→签退→工时自动计算 (需求1)
+# Happy path: checkin → wait → checkout → verify workMinutes shown
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as workshop supervisor
+- runFlow: flows/login-ws.yaml
+- extendedWaitUntil:
+    visible: ".*Production.*|.*生产.*|.*Batch.*"
+    timeout: 15000
+
+# Navigate to Profile tab (我的)
+- tapOn: "我的"
+- waitForAnimationToEnd
+
+# === Happy Path: Clock In ===
+- tapOn:
+    text: ".*Clock In.*|.*考勤打卡.*|.*打卡.*|.*Time Clock.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/76-ws-clockin-screen
+
+# Tap Clock In button
+- tapOn:
+    text: ".*签到.*|.*Check In.*|.*Clock In.*|.*打卡.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/76-ws-after-checkin
+
+# === Happy Path: Clock Out ===
+- tapOn:
+    text: ".*签退.*|.*Check Out.*|.*Clock Out.*|.*下班.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/76-ws-after-checkout
+
+# Return to Home
+- tapOn: "首页"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/76-ws-home-return

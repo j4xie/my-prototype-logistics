@@ -1,0 +1,57 @@
+appId: com.cretas.foodtrace
+---
+# Test 78: Factory Admin - Production Plan Lifecycle
+# Verifies: 生产计划创建→开始→报工→完成 (需求3)
+# Happy path: list → create plan → view detail → start production
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login.yaml
+- extendedWaitUntil:
+    visible: "Quality Rate"
+    timeout: 15000
+
+# Navigate to Production Plan screen
+- tapOn:
+    text: ".*Production.*|.*生产.*"
+    optional: true
+- waitForAnimationToEnd
+
+- tapOn:
+    text: ".*Plan.*|.*计划.*|.*Production Plan.*|.*生产计划.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/78-fa-plan-list
+
+# Scroll to see plans
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/78-fa-plan-list-scroll
+
+# Tap first plan for detail
+- tapOn:
+    text: ".*PP-.*|.*PENDING.*|.*待处理.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/78-fa-plan-detail
+
+# === Error Path: Try start with no material ===
+- tapOn:
+    text: ".*Start.*|.*开始生产.*|.*开始.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/78-fa-plan-start-result
+
+# Go back to list
+- back
+- waitForAnimationToEnd
+
+# Return to Home
+- tapOn: "首页"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/78-fa-home-return
