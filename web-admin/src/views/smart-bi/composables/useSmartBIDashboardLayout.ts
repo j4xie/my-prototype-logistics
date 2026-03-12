@@ -37,6 +37,11 @@ export function useSmartBIDashboardLayout() {
     { type: 'sankey', name: '桑基图', category: '关系与层级', description: '展示流量和能量的流向转化', defaultWidth: 8, defaultHeight: 4, minWidth: 6, minHeight: 3 },
     { type: 'sunburst', name: '旭日图', category: '关系与层级', description: '展示多层级占比关系', defaultWidth: 5, defaultHeight: 4, minWidth: 4, minHeight: 3 },
 
+    // ---- 流向与多维 (Flow & Multi-dim) ----
+    { type: 'parallel', name: '平行坐标图', category: '流向与多维', description: '多维度数据对比分析', defaultWidth: 8, defaultHeight: 4, minWidth: 6, minHeight: 3 },
+    { type: 'themeRiver', name: '河流图', category: '流向与多维', description: '展示分类数据随时间的流量变化', defaultWidth: 8, defaultHeight: 4, minWidth: 6, minHeight: 3 },
+    { type: 'pictorialBar', name: '象形柱图', category: '流向与多维', description: '用图形符号增强柱状图表达', defaultWidth: 6, defaultHeight: 3, minWidth: 4, minHeight: 2 },
+
     // ---- 其他 (Other) ----
     { type: 'wordCloud', name: '词云', category: '其他', description: '展示关键词频率和重要性', defaultWidth: 6, defaultHeight: 3, minWidth: 4, minHeight: 2 },
     { type: 'table', name: '数据表格', category: '其他', description: '以表格形式展示明细数据', defaultWidth: 12, defaultHeight: 3, minWidth: 6, minHeight: 2 },

@@ -24,6 +24,12 @@ const props = withDefaults(defineProps<Props>(), {
   title: undefined,
 });
 
+const emit = defineEmits<{
+  (e: 'chart-click', params: Record<string, unknown>): void;
+  (e: 'chart-hover', params: Record<string, unknown>): void;
+  (e: 'chart-ready', instance: echarts.ECharts): void;
+}>();
+
 const appStore = useAppStore();
 const echartsThemeName = computed(() => appStore.theme === 'dark' ? 'cretas-dark' : 'cretas');
 
@@ -76,11 +82,26 @@ function initChart() {
   if (!chartRef.value) return;
   try {
     chartInstance = echarts.init(chartRef.value, echartsThemeName.value);
+    // Expose click/hover events for cross-filtering
+    chartInstance.on('click', (params: unknown) => {
+      emit('chart-click', params as Record<string, unknown>);
+    });
+    chartInstance.on('mouseover', (params: unknown) => {
+      emit('chart-hover', params as Record<string, unknown>);
+    });
     updateChart();
+    emit('chart-ready', chartInstance);
   } catch (err) {
     console.error('[DynamicChartRenderer] initChart failed:', err);
   }
 }
+
+/** Expose chart instance for parent to call echarts.connect() or dispatchAction() */
+function getChartInstance(): echarts.ECharts | null {
+  return chartInstance;
+}
+
+defineExpose({ getChartInstance });
 
 function updateChart() {
   if (!chartInstance) return;
@@ -285,6 +306,13 @@ function buildDashboardPie(config: DashboardChartConfig): echarts.EChartsOption 
 
 /** Build from DynamicChartConfig (finance analysis format) */
 function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOption {
+  // Passthrough: if series contains specialized chart types that manage their own layout,
+  // return the config as-is (Python builder sends complete ECharts options for these)
+  const NON_AXIS_TYPES = ['sankey', 'sunburst', 'wordCloud', 'wordcloud', 'themeRiver', 'parallel', 'heatmap'];
+  if (config.series?.length > 0 && NON_AXIS_TYPES.includes(config.series[0].type as string)) {
+    return config as unknown as echarts.EChartsOption;
+  }
+
   const option: echarts.EChartsOption = {
     tooltip: {
       ...defaultTooltip((config.tooltip?.trigger as 'axis' | 'item') || 'axis'),
@@ -437,6 +465,56 @@ function buildFromLegacyConfig(config: LegacyChartConfig): echarts.EChartsOption
     return buildMapChart(config);
   }
 
+  // Special handling for HEATMAP chart
+  if (chartType === 'heatmap' || chartType === 'matrix_heatmap') {
+    return buildHeatmapChart(config);
+  }
+
+  // Special handling for BOXPLOT chart
+  if (chartType === 'boxplot') {
+    return buildBoxplotChart(config);
+  }
+
+  // Special handling for CANDLESTICK chart
+  if (chartType === 'candlestick') {
+    return buildCandlestickChart(config);
+  }
+
+  // Special handling for SANKEY chart
+  if (chartType === 'sankey') {
+    return buildSankeyChart(config);
+  }
+
+  // Special handling for SUNBURST chart
+  if (chartType === 'sunburst') {
+    return buildSunburstChart(config);
+  }
+
+  // Special handling for WORDCLOUD chart
+  if (chartType === 'wordcloud') {
+    return buildWordCloudChart(config);
+  }
+
+  // Special handling for SLOPE chart
+  if (chartType === 'slope') {
+    return buildSlopeChart(config);
+  }
+
+  // Special handling for PARALLEL chart
+  if (chartType === 'parallel') {
+    return buildParallelChart(config);
+  }
+
+  // Special handling for THEME_RIVER chart
+  if (chartType === 'themeriver') {
+    return buildThemeRiverChart(config);
+  }
+
+  // Special handling for PICTORIAL_BAR chart
+  if (chartType === 'pictorialbar') {
+    return buildPictorialBarChart(config);
+  }
+
   // Support both camelCase (xAxisField) and lowercase (xaxisField) from API
   const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
   const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
@@ -452,6 +530,7 @@ function buildFromLegacyConfig(config: LegacyChartConfig): echarts.EChartsOption
     xAxis: { type: 'category', data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
     yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
     series: [{
+      name: config.title || yField,
       type: chartType as 'bar' | 'line',
       data: yData,
       smooth: chartType === 'line',
@@ -998,6 +1077,262 @@ function buildLegacyPie(config: LegacyChartConfig): echarts.EChartsOption {
       },
     }],
   };
+}
+
+/** Build heatmap / matrix_heatmap chart */
+function buildHeatmapChart(config: LegacyChartConfig): echarts.EChartsOption {
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
+  // Try to find a third field for the value dimension
+  const allKeys = config.data.length > 0 ? Object.keys(config.data[0]) : [];
+  const valueField = allKeys.find(k => k !== xField && k !== yField && typeof config.data[0][k] === 'number') || yField;
+
+  const xCategories = [...new Set(config.data.map(d => String(d[xField] || '')))];
+  const yCategories = [...new Set(config.data.map(d => String(d[yField] || '')))];
+  const heatData: [number, number, number][] = [];
+  let maxVal = 0;
+
+  config.data.forEach(d => {
+    const xi = xCategories.indexOf(String(d[xField] || ''));
+    const yi = yCategories.indexOf(String(d[yField] || ''));
+    const val = Number(d[valueField] || 0);
+    if (xi >= 0 && yi >= 0) {
+      heatData.push([xi, yi, val]);
+      maxVal = Math.max(maxVal, val);
+    }
+  });
+
+  return {
+    tooltip: { ...defaultTooltip('item'), formatter: (p: { value: [number, number, number] }) => `${xCategories[p.value[0]]} × ${yCategories[p.value[1]]}: ${formatAxisValue(p.value[2])}` },
+    grid: { left: '12%', right: '8%', bottom: '15%', top: '5%', containLabel: true },
+    xAxis: { type: 'category', data: xCategories, axisLabel: { rotate: 30, hideOverlap: true } },
+    yAxis: { type: 'category', data: yCategories },
+    visualMap: { min: 0, max: maxVal || 1, calculable: true, orient: 'horizontal', left: 'center', bottom: 0, inRange: { color: ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'] } },
+    series: [{ type: 'heatmap', data: heatData, label: { show: heatData.length <= 100, formatter: (p: { value: [number, number, number] }) => String(p.value[2]) }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } } }],
+  };
+}
+
+/** Build boxplot chart for statistical distribution */
+function buildBoxplotChart(config: LegacyChartConfig): echarts.EChartsOption {
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const numericKeys = config.data.length > 0 ? Object.keys(config.data[0]).filter(k => k !== xField && typeof config.data[0][k] === 'number') : [];
+
+  const categories = [...new Set(config.data.map(d => String(d[xField] || '')))];
+  const boxData: number[][] = categories.map(cat => {
+    const values = config.data.filter(d => String(d[xField]) === cat).flatMap(d => numericKeys.map(k => Number(d[k] || 0))).sort((a, b) => a - b);
+    if (values.length < 5) return [0, 0, 0, 0, 0];
+    const q1 = values[Math.floor(values.length * 0.25)];
+    const q2 = values[Math.floor(values.length * 0.5)];
+    const q3 = values[Math.floor(values.length * 0.75)];
+    return [values[0], q1, q2, q3, values[values.length - 1]];
+  });
+
+  return {
+    tooltip: { ...defaultTooltip('item') },
+    grid: { left: '10%', right: '5%', bottom: '15%', top: '10%', containLabel: true },
+    xAxis: { type: 'category', data: categories, axisLabel: { rotate: 30, hideOverlap: true } },
+    yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
+    series: [{ type: 'boxplot', data: boxData, itemStyle: { color: '#c4e3f3', borderColor: '#4575b4' } }],
+  };
+}
+
+/** Build candlestick (K-line) chart */
+function buildCandlestickChart(config: LegacyChartConfig): echarts.EChartsOption {
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const allKeys = config.data.length > 0 ? Object.keys(config.data[0]).filter(k => k !== xField && typeof config.data[0][k] === 'number') : [];
+  const xData = config.data.map(d => String(d[xField] || ''));
+  // Candlestick: [open, close, low, high]
+  const candleData = config.data.map(d => {
+    const vals = allKeys.slice(0, 4).map(k => Number(d[k] || 0));
+    while (vals.length < 4) vals.push(0);
+    return vals;
+  });
+
+  return {
+    tooltip: { ...defaultTooltip('axis'), axisPointer: { type: 'cross' } },
+    grid: { left: '10%', right: '5%', bottom: '15%', top: '10%', containLabel: true },
+    xAxis: { type: 'category', data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
+    yAxis: { type: 'value', scale: true, axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
+    series: [{ type: 'candlestick', data: candleData, itemStyle: { color: '#ec0000', color0: '#00da3c', borderColor: '#ec0000', borderColor0: '#00da3c' } }],
+  };
+}
+
+/** Build sankey diagram for flow/conversion visualization */
+function buildSankeyChart(config: LegacyChartConfig): echarts.EChartsOption {
+  const allKeys = config.data.length > 0 ? Object.keys(config.data[0]) : [];
+  const sourceField = allKeys[0] || 'source';
+  const targetField = allKeys[1] || 'target';
+  const valueField = allKeys.find(k => typeof config.data[0]?.[k] === 'number') || allKeys[2] || 'value';
+
+  const nodesSet = new Set<string>();
+  const links = config.data.map(d => {
+    const src = String(d[sourceField] || '');
+    const tgt = String(d[targetField] || '');
+    nodesSet.add(src);
+    nodesSet.add(tgt);
+    return { source: src, target: tgt, value: Number(d[valueField] || 0) };
+  });
+
+  return {
+    tooltip: { ...defaultTooltip('item') },
+    series: [{
+      type: 'sankey',
+      layout: 'none',
+      emphasis: { focus: 'adjacency' },
+      data: [...nodesSet].map(name => ({ name })),
+      links,
+      lineStyle: { color: 'gradient', curveness: 0.5 },
+      label: { fontSize: 12 },
+    }],
+  };
+}
+
+/** Build sunburst chart for hierarchical data */
+function buildSunburstChart(config: LegacyChartConfig): echarts.EChartsOption {
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
+
+  const sunburstData = config.data.map((item, i) => ({
+    name: String(item[xField] || ''),
+    value: Number(item[yField] || 0),
+    itemStyle: { color: PIE_COLORS[i % PIE_COLORS.length] },
+  }));
+
+  return {
+    tooltip: { ...defaultTooltip('item') },
+    series: [{
+      type: 'sunburst',
+      data: sunburstData,
+      radius: ['15%', '90%'],
+      label: { rotate: 'radial', fontSize: 11 },
+      emphasis: { focus: 'ancestor' },
+      levels: [{}, { r0: '15%', r: '45%', label: { fontSize: 12 } }, { r0: '45%', r: '90%', label: { fontSize: 10 } }],
+    }],
+  };
+}
+
+/** Build word cloud chart */
+function buildWordCloudChart(config: LegacyChartConfig): echarts.EChartsOption {
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
+
+  const wordData = config.data.map(item => ({
+    name: String(item[xField] || ''),
+    value: Number(item[yField] || 0),
+  })).sort((a, b) => b.value - a.value).slice(0, 100);
+
+  return {
+    tooltip: { ...defaultTooltip('item') },
+    series: [{
+      type: 'wordCloud',
+      shape: 'circle',
+      sizeRange: [14, 60],
+      rotationRange: [-45, 45],
+      rotationStep: 15,
+      gridSize: 8,
+      textStyle: { fontFamily: 'sans-serif', color: () => PIE_COLORS[Math.floor(Math.random() * PIE_COLORS.length)] },
+      emphasis: { textStyle: { fontWeight: 'bold' } },
+      data: wordData,
+    }],
+  } as echarts.EChartsOption;
+}
+
+/** Build slope chart for two-period comparison */
+function buildSlopeChart(config: LegacyChartConfig): echarts.EChartsOption {
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const numericKeys = config.data.length > 0 ? Object.keys(config.data[0]).filter(k => k !== xField && typeof config.data[0][k] === 'number') : [];
+  const period1 = numericKeys[0] || 'value1';
+  const period2 = numericKeys[1] || 'value2';
+
+  const categories = config.data.map(d => String(d[xField] || ''));
+  const series: echarts.SeriesOption[] = config.data.map((d, i) => ({
+    type: 'line' as const,
+    name: String(d[xField] || ''),
+    data: [Number(d[period1] || 0), Number(d[period2] || 0)],
+    lineStyle: { width: 2, color: PIE_COLORS[i % PIE_COLORS.length] },
+    itemStyle: { color: PIE_COLORS[i % PIE_COLORS.length] },
+    symbol: 'circle',
+    symbolSize: 8,
+    label: { show: true, formatter: '{c}', fontSize: 10 },
+  }));
+
+  return {
+    tooltip: { ...defaultTooltip('item') },
+    legend: { data: categories, bottom: 0, type: categories.length > 5 ? 'scroll' : 'plain' },
+    grid: { left: '10%', right: '10%', top: '10%', bottom: '15%', containLabel: true },
+    xAxis: { type: 'category', data: [period1, period2], axisTick: { alignWithLabel: true } },
+    yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
+    series,
+  };
+}
+
+/** Build parallel coordinates chart for multi-dimensional comparison */
+function buildParallelChart(config: LegacyChartConfig): echarts.EChartsOption {
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const numericKeys = config.data.length > 0 ? Object.keys(config.data[0]).filter(k => k !== xField && typeof config.data[0][k] === 'number') : [];
+
+  const parallelAxis = numericKeys.map((key, i) => ({
+    dim: i,
+    name: key,
+    type: 'value' as const,
+  }));
+
+  const seriesData = config.data.map((d, i) => ({
+    value: numericKeys.map(k => Number(d[k] || 0)),
+    name: String(d[xField] || ''),
+    lineStyle: { color: PIE_COLORS[i % PIE_COLORS.length], opacity: 0.6 },
+  }));
+
+  return {
+    tooltip: { ...defaultTooltip('item') },
+    parallelAxis,
+    parallel: { left: '5%', right: '13%', bottom: '15%', top: '10%' },
+    series: [{ type: 'parallel', lineStyle: { width: 2 }, data: seriesData, smooth: true }],
+  } as echarts.EChartsOption;
+}
+
+/** Build theme river chart for time-based categorical flow */
+function buildThemeRiverChart(config: LegacyChartConfig): echarts.EChartsOption {
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
+  const allKeys = config.data.length > 0 ? Object.keys(config.data[0]) : [];
+  const categoryField = allKeys.find(k => k !== xField && k !== yField && typeof config.data[0][k] === 'string') || xField;
+
+  const riverData = config.data.map(d => [
+    String(d[xField] || ''),
+    Number(d[yField] || 0),
+    String(d[categoryField] || ''),
+  ]);
+
+  return {
+    tooltip: { ...defaultTooltip('axis'), axisPointer: { type: 'line' } },
+    singleAxis: { type: 'time', bottom: '10%', top: '10%' },
+    series: [{ type: 'themeRiver', data: riverData, label: { show: false }, emphasis: { itemStyle: { shadowBlur: 20, shadowColor: 'rgba(0,0,0,0.3)' } } }],
+  } as echarts.EChartsOption;
+}
+
+/** Build pictorial bar chart with visual symbols */
+function buildPictorialBarChart(config: LegacyChartConfig): echarts.EChartsOption {
+  const xField = extractField(config as Record<string, unknown>, 'xAxisField', 'xaxisField', 'name');
+  const yField = extractField(config as Record<string, unknown>, 'yAxisField', 'yaxisField', 'value');
+  const xData = config.data.map(d => String(d[xField] || ''));
+  const yData = config.data.map(d => Number(d[yField] || 0));
+
+  return {
+    tooltip: { ...defaultTooltip('axis') },
+    grid: { left: '10%', right: '5%', bottom: '15%', top: '10%', containLabel: true },
+    xAxis: { type: 'category', data: xData, axisLabel: { rotate: 30, hideOverlap: true } },
+    yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
+    series: [{
+      type: 'pictorialBar',
+      symbol: 'roundRect',
+      symbolRepeat: true,
+      symbolSize: ['80%', 10],
+      symbolMargin: 2,
+      data: yData.map((v, i) => ({ value: v, itemStyle: { color: PIE_COLORS[i % PIE_COLORS.length] } })),
+      label: { show: true, position: 'top', formatter: (p: { value: number }) => formatAxisValue(p.value) },
+    }],
+  } as echarts.EChartsOption;
 }
 
 function formatAxisValue(value: number): string {
