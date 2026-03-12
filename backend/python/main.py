@@ -58,6 +58,9 @@ from smartbi.api import (
     restaurant_analytics,
     production_ai,
     financial_dashboard,
+    layout,
+    nl_to_sql,
+    whatif,
 )
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
@@ -102,6 +105,7 @@ except ImportError as e:
 # Import Food Knowledge Base API router (optional - requires asyncpg)
 try:
     from food_kb.api import knowledge as food_kb_api
+    from food_kb.api import industry_report as food_kb_industry_report_api
     _food_kb_available = True
 except ImportError as e:
     _food_kb_available = False
@@ -309,6 +313,9 @@ app.include_router(finance_extract.router, prefix="/api/finance", tags=["Finance
 app.include_router(restaurant_analytics.router, prefix="/api/smartbi", tags=["Restaurant Analytics"])
 app.include_router(production_ai.router, prefix="/api/smartbi", tags=["Production AI"])
 app.include_router(financial_dashboard.router, prefix="/api/smartbi/financial-dashboard", tags=["Financial Dashboard"])
+app.include_router(layout.router, prefix="/api/smartbi", tags=["Dashboard Layout"])
+app.include_router(nl_to_sql.router, prefix="/api/smartbi", tags=["NL2SQL"])
+app.include_router(whatif.router, prefix="/api/smartbi/whatif", tags=["WhatIf Simulator"])
 
 # Optional: Data sync endpoint (auto-adaptation for system tables)
 if hasattr(data_sync, 'router') and data_sync.router is not None:
@@ -356,6 +363,7 @@ else:
 # =====================================================
 if _food_kb_available:
     app.include_router(food_kb_api.router, prefix="/api/food-kb", tags=["Food Knowledge Base"])
+    app.include_router(food_kb_industry_report_api.router, prefix="/api/food-kb/industry-report", tags=["Industry Report RAG"])
 else:
     logger.warning("Food Knowledge Base routes not registered")
 

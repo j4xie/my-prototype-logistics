@@ -2016,11 +2016,93 @@ class InsightGenerator:
             except Exception as e:
                 logger.debug(f"Entity enrichment skipped: {e}")
 
+            # Step 3: Industry report RAG retrieval (non-blocking)
+            try:
+                report_context = await self._get_industry_report_context(df, ctx)
+                if report_context:
+                    parts.append(report_context)
+            except Exception as e:
+                logger.debug(f"Industry report retrieval skipped: {e}")
+
             if parts:
                 return "\n## 食品行业知识库参考\n" + "\n".join(parts)
             return ""
         except Exception as e:
             logger.debug(f"Food KB context unavailable: {e}")
+            return ""
+
+    async def _get_industry_report_context(
+        self, df: pd.DataFrame, food_ctx: dict
+    ) -> str:
+        """
+        Query industry_report category in food knowledge base for relevant passages.
+
+        Uses detected sub_sector and scenario to build targeted queries.
+        Returns formatted context string with source citations, or empty string.
+        Non-blocking: failures are silently ignored.
+        """
+        try:
+            from food_kb.services.knowledge_retriever import get_knowledge_retriever
+            retriever = get_knowledge_retriever()
+            if not retriever.is_ready():
+                return ""
+
+            # Build query from sub_sector + key data characteristics
+            sub_sector = food_ctx.get("sub_sector", "")
+            restaurant_info = food_ctx.get("restaurant_info", {})
+
+            query_parts = ["行业报告"]
+            if restaurant_info.get("is_restaurant_chain"):
+                chain_type = restaurant_info.get("chain_type", "餐饮")
+                query_parts.append(f"餐饮 {chain_type}")
+                data_type = restaurant_info.get("data_type", "")
+                if data_type:
+                    query_parts.append(data_type)
+            elif sub_sector:
+                query_parts.append(f"食品 {sub_sector}")
+            else:
+                query_parts.append("食品加工")
+
+            # Add key metric keywords from column names for better retrieval
+            col_text = " ".join(df.columns.tolist()[:15])
+            metric_keywords = []
+            for kw in ["成本", "利润", "毛利", "翻台", "客单价", "食材",
+                        "人力", "营收", "同比", "环比", "趋势", "市场"]:
+                if kw in col_text:
+                    metric_keywords.append(kw)
+            if metric_keywords:
+                query_parts.extend(metric_keywords[:3])
+
+            query = " ".join(query_parts)
+
+            # Retrieve from industry_report category only
+            results = await retriever.retrieve(
+                query=query,
+                categories=["industry_report"],
+                top_k=3,
+                similarity_threshold=0.50,
+            )
+
+            if not results:
+                return ""
+
+            # Format as context with source citations
+            report_parts = ["行业报告参考:"]
+            for doc in results:
+                source = doc.source or "未知来源"
+                content = doc.content
+                # Truncate long passages to keep prompt manageable
+                if len(content) > 500:
+                    content = content[:500] + "..."
+                report_parts.append(f"  [{source}] {content}")
+
+            return "\n".join(report_parts)
+
+        except ImportError:
+            logger.debug("food_kb module not available for industry report retrieval")
+            return ""
+        except Exception as e:
+            logger.debug(f"Industry report retrieval failed: {e}")
             return ""
 
     async def close(self):

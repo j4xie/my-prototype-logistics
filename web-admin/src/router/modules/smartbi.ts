@@ -78,6 +78,12 @@ const smartBIRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/smart-bi/FinancialDashboardPBI.vue'),
         meta: { requiresAuth: true, title: '财务分析看板', icon: 'TrendCharts', module: 'analytics' },
       },
+      {
+        path: 'whatif',
+        name: 'SmartBIWhatIf',
+        component: () => import('@/views/smart-bi/WhatIfSimulator.vue'),
+        meta: { requiresAuth: true, title: 'What-If模拟', icon: 'TrendCharts', module: 'analytics' },
+      },
     ],
   },
 ];

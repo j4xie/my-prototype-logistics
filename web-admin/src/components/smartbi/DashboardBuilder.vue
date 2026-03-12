@@ -14,7 +14,8 @@ import {
   DocumentCopy,
   Plus,
   Rank,
-  Grid
+  Grid,
+  ArrowDown
 } from '@element-plus/icons-vue';
 
 // Types
@@ -40,6 +41,7 @@ export interface ChartDefinition {
   name: string;
   icon?: string;
   description?: string;
+  category?: string;
   defaultWidth?: number;
   defaultHeight?: number;
   minWidth?: number;
@@ -112,6 +114,33 @@ const chartTypeMap = computed(() => {
   });
   return map;
 });
+
+// Group charts by category for sidebar display
+interface ChartGroup {
+  category: string;
+  charts: ChartDefinition[];
+}
+const groupedCharts = computed((): ChartGroup[] => {
+  const groups = new Map<string, ChartDefinition[]>();
+  props.availableCharts.forEach(chart => {
+    const cat = chart.category || '其他';
+    if (!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat)!.push(chart);
+  });
+  return Array.from(groups.entries()).map(([category, charts]) => ({ category, charts }));
+});
+
+// Track collapsed state per category
+const collapsedCategories = ref<Set<string>>(new Set());
+function toggleCategory(category: string) {
+  if (collapsedCategories.value.has(category)) {
+    collapsedCategories.value.delete(category);
+  } else {
+    collapsedCategories.value.add(category);
+  }
+  // Trigger reactivity
+  collapsedCategories.value = new Set(collapsedCategories.value);
+}
 
 // Get chart type display name
 function getChartTypeName(type: string): string {
@@ -641,28 +670,75 @@ defineExpose({
       </div>
 
       <div v-if="!sidebarCollapsed" class="chart-list">
-        <div
-          v-for="chart in availableCharts"
-          :key="chart.type"
-          class="chart-item"
-          draggable="true"
-          @dragstart="handleSidebarDragStart($event, chart)"
-          @dragend="handleSidebarDragEnd"
-          @click="addChartToLayout(chart)"
-          :title="chart.description || chart.name"
-        >
-          <div class="chart-item-icon">
-            <el-icon v-if="chart.icon"><component :is="chart.icon" /></el-icon>
-            <el-icon v-else><Rank /></el-icon>
+        <template v-if="groupedCharts.length > 1">
+          <div
+            v-for="group in groupedCharts"
+            :key="group.category"
+            class="chart-group"
+          >
+            <div
+              class="chart-group-header"
+              @click="toggleCategory(group.category)"
+            >
+              <span class="chart-group-title">{{ group.category }}</span>
+              <span class="chart-group-count">{{ group.charts.length }}</span>
+              <el-icon class="chart-group-arrow" :class="{ collapsed: collapsedCategories.has(group.category) }">
+                <ArrowDown />
+              </el-icon>
+            </div>
+            <div
+              v-show="!collapsedCategories.has(group.category)"
+              class="chart-group-items"
+            >
+              <div
+                v-for="chart in group.charts"
+                :key="chart.type"
+                class="chart-item"
+                draggable="true"
+                @dragstart="handleSidebarDragStart($event, chart)"
+                @dragend="handleSidebarDragEnd"
+                @click="addChartToLayout(chart)"
+                :title="chart.description || chart.name"
+              >
+                <div class="chart-item-icon">
+                  <el-icon v-if="chart.icon"><component :is="chart.icon" /></el-icon>
+                  <el-icon v-else><Rank /></el-icon>
+                </div>
+                <div class="chart-item-info">
+                  <span class="chart-item-name">{{ chart.name }}</span>
+                  <span v-if="chart.description" class="chart-item-desc">
+                    {{ chart.description }}
+                  </span>
+                </div>
+                <el-icon class="drag-handle"><Plus /></el-icon>
+              </div>
+            </div>
           </div>
-          <div class="chart-item-info">
-            <span class="chart-item-name">{{ chart.name }}</span>
-            <span v-if="chart.description" class="chart-item-desc">
-              {{ chart.description }}
-            </span>
+        </template>
+        <template v-else>
+          <div
+            v-for="chart in availableCharts"
+            :key="chart.type"
+            class="chart-item"
+            draggable="true"
+            @dragstart="handleSidebarDragStart($event, chart)"
+            @dragend="handleSidebarDragEnd"
+            @click="addChartToLayout(chart)"
+            :title="chart.description || chart.name"
+          >
+            <div class="chart-item-icon">
+              <el-icon v-if="chart.icon"><component :is="chart.icon" /></el-icon>
+              <el-icon v-else><Rank /></el-icon>
+            </div>
+            <div class="chart-item-info">
+              <span class="chart-item-name">{{ chart.name }}</span>
+              <span v-if="chart.description" class="chart-item-desc">
+                {{ chart.description }}
+              </span>
+            </div>
+            <el-icon class="drag-handle"><Plus /></el-icon>
           </div>
-          <el-icon class="drag-handle"><Plus /></el-icon>
-        </div>
+        </template>
       </div>
     </aside>
 
@@ -981,6 +1057,63 @@ defineExpose({
   opacity: 0;
   color: #409eff;
   transition: opacity 0.2s ease;
+}
+
+// Chart group categories
+.chart-group {
+  margin-bottom: 4px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.chart-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: #f0f2f5;
+  }
+
+  .chart-group-title {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 600;
+    color: #606266;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .chart-group-count {
+    font-size: 11px;
+    color: #909399;
+    background: #f0f2f5;
+    padding: 1px 6px;
+    border-radius: 8px;
+    min-width: 18px;
+    text-align: center;
+  }
+
+  .chart-group-arrow {
+    font-size: 12px;
+    color: #909399;
+    transition: transform 0.2s ease;
+
+    &.collapsed {
+      transform: rotate(-90deg);
+    }
+  }
+}
+
+.chart-group-items {
+  padding: 0 0 4px 0;
 }
 
 // Main Content

@@ -1,0 +1,118 @@
+# 预制菜行业基准
+#
+# 数据来源：
+#   - 味知香2024年报 (毛利率约25%, 净利率约10%)
+#   - 安井食品2024年报 (预制菜板块毛利约22%, 增速30%+)
+#   - 千味央厨2024年报 (B端预制菜毛利约24%)
+#   - 中国烹饪协会《2024预制菜产业发展报告》(市场规模5165亿)
+#   - 艾媒咨询《2024-2025中国预制菜行业发展趋势研究报告》
+#   - GB/T 40893-2021 预制菜术语和分类
+
+source: "味知香/安井食品/千味央厨年报 / 中国烹饪协会 / 艾媒咨询"
+year: 2024
+
+sub_sector_info:
+  market_size_billion: 5165  # 亿元
+  growth_rate: 18.0  # %
+  b2b_ratio: 80  # % B端占比
+  b2c_ratio: 20  # % C端占比
+  category_share: "即热类42%, 即烹类28%, 即配类18%, 即食类12%"
+  regulation: "2024年预制菜新国标出台，禁止添加防腐剂"
+
+metrics:
+  gross_margin:
+    name: "毛利率"
+    range: [20.0, 35.0]
+    median: 25.0
+    unit: "%"
+    source: "味知香约25% + 安井约22%(B端) + 千味央厨约24%"
+    note: "B端毛利低(20-25%)但量大稳定，C端毛利高(30-40%)但获客成本高"
+
+  net_margin:
+    name: "净利率"
+    range: [3.0, 12.0]
+    median: 7.0
+    unit: "%"
+    source: "味知香约10%(行业标杆) + 安井约6% + 千味央厨约5%"
+    note: "头部企业通过规模效应可达10%+，中小企业多在3-5%"
+
+  raw_material_cost_ratio:
+    name: "原料成本占比"
+    range: [55.0, 75.0]
+    median: 65.0
+    unit: "%"
+    source: "安井食品原料占比约68% + 味知香约62%"
+    note: "预制菜原料成本占比高于一般食品加工，肉类预制菜尤甚"
+    higher_is_worse: true
+
+  waste_rate:
+    name: "废品率"
+    range: [2.0, 5.0]
+    median: 3.0
+    unit: "%"
+    description: "生产过程废品/次品率"
+    higher_is_worse: true
+    note: "2024年新国标后质控更严格，良品率要求更高"
+
+  reheat_pass_rate:
+    name: "复热合格率"
+    range: [92.0, 99.0]
+    median: 96.0
+    unit: "%"
+    description: "预制菜复热后口感/外观/温度达标率"
+    source: "行业质检标准 + 餐饮B端验收数据"
+    note: "复热合格率是预制菜核心品质指标，B端客户验收红线通常为95%"
+
+  delivery_compliance_rate:
+    name: "配送达标率"
+    range: [95.0, 99.5]
+    median: 98.0
+    unit: "%"
+    description: "按时按量按温度送达率"
+    source: "B端供应链管理数据"
+    note: "冷链断链是最大风险，温控±2°C偏差即判不达标"
+
+  oee:
+    name: "设备综合效率(OEE)"
+    range: [55.0, 78.0]
+    median: 65.0
+    unit: "%"
+    note: "预制菜品种多(SKU动辄200+)，换线频繁严重拖累OEE"
+
+  cold_chain_loss_rate:
+    name: "冷链损耗率"
+    range: [1.0, 5.0]
+    median: 2.5
+    unit: "%"
+    description: "冷链运输+仓储环节损耗率"
+    higher_is_worse: true
+    note: "预制菜对冷链依赖度高，即配类产品保质期短(1-3天)"
+
+  inventory_turnover_days:
+    name: "存货周转天数"
+    range: [15, 60]
+    median: 35
+    unit: "天"
+    description: "存货周转天数"
+    higher_is_worse: true
+    note: "即配类周转快(7-15天)，即热类较慢(30-60天)"
+
+  energy_cost_ratio:
+    name: "能耗成本占比"
+    range: [6.0, 15.0]
+    median: 10.0
+    unit: "%"
+    note: "速冻类预制菜能耗高(制冷成本)，常温即食类能耗低"
+
+  capacity_utilization:
+    name: "产能利用率"
+    range: [60.0, 85.0]
+    median: 72.0
+    unit: "%"
+    note: "SKU多导致换线频繁，实际产能利用率偏低"
+
+food_safety_standards:
+  GB_T_40893_2021: "预制菜术语和分类"
+  GB_31654_2021: "食品安全国家标准 餐饮服务通用卫生规范"
+  SB_T_10379_2012: "速冻调制食品"
+  note: "2024年预制菜新国标明确禁止添加防腐剂"

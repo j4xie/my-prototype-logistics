@@ -26,6 +26,9 @@ import {
   TreemapChart,
   SankeyChart,
   TreeChart,
+  ThemeRiverChart,
+  PictorialBarChart,
+  CandlestickChart,
 } from 'echarts/charts'
 
 // ---- Components ----
@@ -52,11 +55,15 @@ import {
 // ---- Renderers ----
 import { CanvasRenderer, SVGRenderer } from 'echarts/renderers'
 
+// ---- Word Cloud Plugin (auto-registers wordCloud series type) ----
+import 'echarts-wordcloud'
+
 echarts.use([
   // charts
   BarChart, LineChart, PieChart, ScatterChart, RadarChart,
   GaugeChart, HeatmapChart, MapChart, CustomChart, BoxplotChart,
   SunburstChart, FunnelChart, TreemapChart, SankeyChart, TreeChart,
+  ThemeRiverChart, PictorialBarChart, CandlestickChart,
   // components
   GridComponent, TooltipComponent, LegendComponent, TitleComponent,
   DataZoomComponent, ToolboxComponent, MarkLineComponent, MarkPointComponent, MarkAreaComponent,

@@ -37,6 +37,7 @@ FOOD_PROCESSING_BENCHMARKS = {
                 "速冻食品": {"range": [22.0, 32.0], "median": 27.0},
                 "烘焙食品": {"range": [30.0, 45.0], "median": 38.0},
                 "饮料": {"range": [35.0, 50.0], "median": 43.0},
+                "预制菜": {"range": [20.0, 35.0], "median": 25.0},
             },
         },
         "net_margin": {
@@ -52,6 +53,7 @@ FOOD_PROCESSING_BENCHMARKS = {
                 "速冻食品": {"range": [3.0, 7.0], "median": 5.0},
                 "烘焙食品": {"range": [4.0, 10.0], "median": 7.0},
                 "饮料": {"range": [5.0, 12.0], "median": 8.5},
+                "预制菜": {"range": [3.0, 12.0], "median": 7.0},
             },
         },
         "selling_expense_ratio": {
@@ -130,6 +132,7 @@ FOOD_PROCESSING_BENCHMARKS = {
                 "速冻食品": {"range": [58.0, 80.0], "median": 68.0},
                 "烘焙食品": {"range": [62.0, 85.0], "median": 73.0},
                 "饮料": {"range": [70.0, 92.0], "median": 82.0},
+                "预制菜": {"range": [55.0, 78.0], "median": 65.0},
             },
         },
         "waste_rate": {
@@ -142,6 +145,7 @@ FOOD_PROCESSING_BENCHMARKS = {
                 "肉制品": {"range": [1.5, 6.0], "median": 3.5},
                 "乳制品": {"range": [0.5, 3.0], "median": 1.5},
                 "烘焙食品": {"range": [2.0, 7.0], "median": 4.0},
+                "预制菜": {"range": [2.0, 5.0], "median": 3.0},
             },
         },
         "energy_cost_ratio": {
@@ -219,6 +223,8 @@ RESTAURANT_DINING_BENCHMARKS = {
                 "日料": {"range": [35.0, 45.0], "median": 40.0, "_source": "御九井 POS 实测 + 行业报告"},
                 "牛肉面": {"range": [30.0, 38.0], "median": 34.0, "_source": "唏嘛香 POS 实测 + 面食行业数据"},
                 "中式海鲜": {"range": [38.0, 48.0], "median": 43.0, "_source": "馨厨香 7 店 POS 实测"},
+                "奶茶": {"range": [25.0, 35.0], "median": 30.0, "_source": "蜜雪冰城/奈雪/茶百道年报"},
+                "咖啡": {"range": [20.0, 35.0], "median": 28.0, "_source": "瑞幸/星巴克年报 + 行业报告"},
             },
         },
         "labor_cost_ratio": {
@@ -244,6 +250,7 @@ RESTAURANT_DINING_BENCHMARKS = {
                 "日料": {"range": [1.5, 3.0], "median": 2.2, "_source": "御九井运营数据"},
                 "牛肉面": {"range": [5.0, 10.0], "median": 7.0, "_source": "唏嘛香运营数据"},
                 "中式海鲜": {"range": [2.0, 3.5], "median": 2.5, "_source": "馨厨香运营数据"},
+                "咖啡": {"range": [3.0, 8.0], "median": 5.0, "_source": "瑞幸/星巴克运营数据"},
             },
         },
         "average_ticket": {
@@ -263,6 +270,8 @@ RESTAURANT_DINING_BENCHMARKS = {
                 "日料": {"range": [80.0, 250.0], "median": 120.0, "_source": "御九井 POS 实测"},
                 "牛肉面": {"range": [20.0, 45.0], "median": 30.0, "_source": "唏嘛香 POS 实测"},
                 "中式海鲜": {"range": [80.0, 180.0], "median": 120.0, "_source": "馨厨香 POS 实测"},
+                "奶茶": {"range": [8.0, 30.0], "median": 16.0, "_source": "蜜雪冰城/奈雪/茶百道年报"},
+                "咖啡": {"range": [10.0, 45.0], "median": 20.0, "_source": "瑞幸/星巴克年报"},
             },
         },
         "restaurant_net_margin": {

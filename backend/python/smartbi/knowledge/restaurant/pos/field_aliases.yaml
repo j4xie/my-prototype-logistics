@@ -1,0 +1,194 @@
+# POS 系统字段别名映射表
+#
+# 各主流餐饮 POS 系统导出数据的字段名差异较大，
+# 本文件按品牌整理常见字段名与标准字段的映射关系。
+# llm_mapper.py 的 _rule_based_mapping() 使用这些别名进行字段匹配。
+#
+# 标准字段 (target) 来自 STANDARD_FIELDS 定义，映射时不修改其定义。
+#
+# 最后更新: 2026-03-12
+
+# ============================================================
+# 通用 POS 字段别名（跨品牌通用名称）
+# ============================================================
+common:
+  revenue:
+    aliases: ["实收金额", "实付金额", "到手金额", "实际收入", "实收", "实付", "净收入"]
+    target_category: measures
+    description: "顾客实际支付的金额（扣除优惠后）"
+
+  discounted_amount:
+    aliases: ["折后金额", "优惠后金额", "折扣后", "折后价", "优惠后价格"]
+    target_category: measures
+    description: "应用折扣/优惠券后的金额"
+
+  unit_price:
+    aliases: ["原价", "标价", "零售价", "门市价", "菜品原价", "标准价", "挂牌价"]
+    target_category: measures
+    description: "商品/菜品的原始标价"
+
+  quantity_sold:
+    aliases: ["单卖数量", "售出份数", "销售数量", "点单数", "销售份数", "出品数", "售出数量", "点单份数"]
+    target_category: measures
+    description: "售出的份/个数"
+
+  refund_amount:
+    aliases: ["退款金额", "退单金额", "退款额", "退货金额"]
+    target_category: measures
+    description: "退款总金额"
+
+  refund_count:
+    aliases: ["退款笔数", "退单数", "退款单数", "退货笔数"]
+    target_category: measures
+    description: "退款/退单笔数"
+
+  table_number:
+    aliases: ["桌号", "台号", "餐台", "桌台号", "餐桌号", "台位号"]
+    target_category: category_dimensions
+    description: "就餐桌台编号"
+
+  diner_count:
+    aliases: ["就餐人数", "用餐人数", "客人数", "人数", "就餐人次"]
+    target_category: measures
+    description: "就餐/用餐人数"
+
+  delivery_order_id:
+    aliases: ["外卖单号", "外卖订单", "外卖订单号", "配送单号"]
+    target_category: category_dimensions
+    description: "外卖/配送订单编号"
+
+  payment_method:
+    aliases: ["支付方式", "付款方式", "收款方式", "支付渠道", "付款渠道", "结算方式"]
+    target_category: category_dimensions
+    description: "支付方式（微信/支付宝/现金/刷卡等）"
+
+  member_id:
+    aliases: ["会员卡号", "会员编号", "会员ID", "会员号", "卡号"]
+    target_category: category_dimensions
+    description: "会员卡号或会员编号"
+
+  order_time:
+    aliases: ["下单时间", "点单时间", "开单时间", "点餐时间"]
+    target_category: time_dimensions
+    description: "顾客下单/点餐的时间"
+
+  serve_time:
+    aliases: ["出餐时间", "制作完成时间", "上菜时间", "完成时间"]
+    target_category: time_dimensions
+    description: "菜品出餐/上桌的时间"
+
+# ============================================================
+# 客如云 (Keruyun)
+# ============================================================
+keruyun:
+  brand_name: "客如云"
+  field_mappings:
+    revenue: ["实收金额", "应收金额"]
+    sales_amount: ["营业额", "营业收入", "总营业额"]
+    order_count: ["订单笔数", "交易笔数"]
+    quantity_sold: ["销售数量", "售出数量"]
+    unit_price: ["单价", "菜品单价"]
+    discounted_amount: ["优惠金额", "折扣金额"]
+    refund_amount: ["退款金额"]
+    refund_count: ["退款笔数"]
+    payment_method: ["支付方式"]
+    table_number: ["桌号"]
+    diner_count: ["就餐人数"]
+    order_time: ["下单时间"]
+    serve_time: ["出餐时间"]
+    member_id: ["会员卡号"]
+    product: ["菜品名称", "商品名称"]
+    category: ["菜品分类", "品类"]
+
+# ============================================================
+# 哗啦啦 (Hualala)
+# ============================================================
+hualala:
+  brand_name: "哗啦啦"
+  field_mappings:
+    revenue: ["实收", "实收合计"]
+    sales_amount: ["营业额", "账单金额"]
+    order_count: ["单量", "开单数"]
+    quantity_sold: ["售出份数", "点单数"]
+    unit_price: ["原价", "标价"]
+    discounted_amount: ["折后金额", "优惠后金额"]
+    refund_amount: ["退菜金额", "退单金额"]
+    refund_count: ["退菜笔数", "退单数"]
+    payment_method: ["付款方式", "收款方式"]
+    table_number: ["台号", "餐台"]
+    diner_count: ["用餐人数", "人数"]
+    order_time: ["点单时间", "开单时间"]
+    serve_time: ["出餐时间"]
+    member_id: ["会员编号", "会员卡号"]
+    product: ["菜品", "菜名"]
+    category: ["分类", "菜品大类"]
+
+# ============================================================
+# 银豹 (Pospal)
+# ============================================================
+pospal:
+  brand_name: "银豹"
+  field_mappings:
+    revenue: ["实付金额", "实收金额"]
+    sales_amount: ["销售金额", "交易金额"]
+    order_count: ["交易笔数", "订单数"]
+    quantity_sold: ["销售数量", "数量"]
+    unit_price: ["零售价", "单价"]
+    discounted_amount: ["优惠后金额", "折后金额"]
+    refund_amount: ["退款金额"]
+    refund_count: ["退款笔数"]
+    payment_method: ["支付方式", "结算方式"]
+    table_number: ["桌号"]
+    diner_count: ["就餐人数"]
+    order_time: ["下单时间"]
+    serve_time: ["完成时间"]
+    member_id: ["会员号", "会员卡号"]
+    product: ["商品名称", "商品"]
+    category: ["商品分类", "品类"]
+
+# ============================================================
+# 美团收银 (Meituan Cashier)
+# ============================================================
+meituan:
+  brand_name: "美团收银"
+  field_mappings:
+    revenue: ["到手金额", "实收金额"]
+    sales_amount: ["营业额", "流水金额"]
+    order_count: ["订单量", "订单笔数"]
+    quantity_sold: ["售出份数", "销量"]
+    unit_price: ["门市价", "原价"]
+    discounted_amount: ["折后金额", "平台优惠后"]
+    refund_amount: ["退款金额", "退单金额"]
+    refund_count: ["退款笔数", "退单笔数"]
+    payment_method: ["收款方式", "支付渠道"]
+    table_number: ["桌台号", "桌号"]
+    diner_count: ["用餐人数", "就餐人数"]
+    delivery_order_id: ["外卖单号", "配送单号"]
+    order_time: ["下单时间"]
+    serve_time: ["出餐时间", "制作完成时间"]
+    member_id: ["会员ID"]
+    product: ["菜品名", "商品名"]
+    category: ["菜品分类", "商品分类"]
+
+# ============================================================
+# 二维火 (2Dfire)
+# ============================================================
+2dfire:
+  brand_name: "二维火"
+  field_mappings:
+    revenue: ["实收金额", "实收"]
+    sales_amount: ["营业额", "总金额"]
+    order_count: ["单数", "订单笔数"]
+    quantity_sold: ["销售份数", "点单数"]
+    unit_price: ["标价", "原价"]
+    discounted_amount: ["折扣后", "优惠后金额"]
+    refund_amount: ["退款金额", "退菜金额"]
+    refund_count: ["退单数", "退菜数"]
+    payment_method: ["付款方式"]
+    table_number: ["桌号", "台号"]
+    diner_count: ["客人数", "人数"]
+    order_time: ["点餐时间", "下单时间"]
+    serve_time: ["上菜时间", "出品时间"]
+    member_id: ["会员卡号"]
+    product: ["菜品名称", "菜品"]
+    category: ["分类", "菜品类别"]

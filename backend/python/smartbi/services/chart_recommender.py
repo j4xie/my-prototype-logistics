@@ -22,6 +22,7 @@ from enum import Enum
 import httpx
 
 from config import get_settings
+from common.utils.json_parser import robust_json_parse
 
 logger = logging.getLogger(__name__)
 
@@ -363,7 +364,12 @@ class ChartRecommender:
             "best_for": ["KPI展示", "目标达成", "进度监控"],
             "requires": {"y_axis": True}
         },
-        # treemap: removed from recommendations — no builder implementation in v1 (falls back to line silently)
+        "treemap": {
+            "name": "矩阵树图",
+            "description": "展示层级数据的面积占比",
+            "best_for": ["层级占比", "分类面积对比", "部门预算分布"],
+            "requires": {"x_axis": True, "y_axis": True}
+        },
         "sunburst": {
             "name": "旭日图",
             "description": "展示层级数据的嵌套结构",
@@ -388,7 +394,32 @@ class ChartRecommender:
             "best_for": ["目标达成", "KPI对比", "进度条"],
             "requires": {"x_axis": True, "y_axis": True}
         },
-        # sankey: removed from recommendations — no builder implementation (falls back to line silently)
+        "sankey": {
+            "name": "桑基图",
+            "description": "展示数据的流向和转化关系",
+            "best_for": ["流向分析", "转化路径", "资金流向", "成本分解"],
+            "requires": {"x_axis": True, "y_axis": True}
+        },
+        "wordcloud": {
+            "name": "词云图",
+            "description": "展示文本关键词的频率分布",
+            "best_for": ["关键词分析", "文本频率", "标签云", "热门词汇"],
+            "requires": {"x_axis": True, "y_axis": True},
+            "constraints": "需要文本列和频率/权重列"
+        },
+        "slope": {
+            "name": "斜率图",
+            "description": "对比两个时间点之间的变化",
+            "best_for": ["前后对比", "两期对比", "排名变化"],
+            "requires": {"x_axis": True, "y_axis": True},
+            "constraints": "适合两列数值的对比"
+        },
+        "matrix_heatmap": {
+            "name": "矩阵热力图",
+            "description": "展示交叉分析的密度和强度",
+            "best_for": ["交叉分析", "二维分布", "关联矩阵"],
+            "requires": {"x_axis": True, "y_axis": True, "series": True}
+        },
         "combination": {
             "name": "组合图",
             "description": "柱状图和折线图的组合",
@@ -1119,6 +1150,50 @@ class ChartRecommender:
                 x_axis=cat_col,
                 y_axis=[data_summary.measures[0]],
                 priority=9,
+                category="comparison"
+            ))
+
+        # 10. Treemap — hierarchical or categorical data with values
+        if has_categories and has_measures and 3 <= row_count <= 50:
+            recommendations.append(ChartRecommendation(
+                chart_type="treemap",
+                title="面积占比分析",
+                reason="分类数据适合矩阵树图展示面积占比",
+                x_axis=cat_col,
+                y_axis=[data_summary.measures[0]],
+                priority=10,
+                category="hierarchy"
+            ))
+
+        # 11. Wordcloud — text column with frequency/count data
+        if has_categories and has_measures:
+            # Detect text-heavy columns (many unique values, short text)
+            col_names_lower = ' '.join([
+                c.get('columnName', c.get('column_name', ''))
+                for c in data_summary.columns
+            ]).lower()
+            text_keywords = ['关键词', '标签', 'keyword', 'tag', 'word', '词',
+                             '名称', 'name', '品类', '类型', '品牌', 'brand']
+            if any(kw in col_names_lower for kw in text_keywords):
+                recommendations.append(ChartRecommendation(
+                    chart_type="wordcloud",
+                    title="关键词云",
+                    reason="检测到文本标签列，适合词云展示频率分布",
+                    x_axis=cat_col,
+                    y_axis=[data_summary.measures[0]],
+                    priority=11,
+                    category="distribution"
+                ))
+
+        # 12. Slope — two numeric columns for before/after comparison
+        if num_measures >= 2 and has_categories and row_count <= 20:
+            recommendations.append(ChartRecommendation(
+                chart_type="slope",
+                title="前后对比",
+                reason="两个度量指标适合斜率图展示变化",
+                x_axis=cat_col,
+                y_axis=data_summary.measures[:2],
+                priority=12,
                 category="comparison"
             ))
 

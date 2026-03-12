@@ -772,7 +772,7 @@ class RestaurantAnalyzer:
             {
                 "key": "daily_consumption",
                 "label": "日常消费水平",
-                "pass": actual_price <= benchmark_median * 0.3 if actual_price > 0 else None,
+                "pass": actual_price <= benchmark_median * 1.3 if actual_price > 0 else None,
                 "detail": "品均价 ¥%d（客单价约 ¥%d 参考）" % (int(actual_price), int(benchmark_median)),
                 "source": "data",
             },
@@ -814,10 +814,10 @@ class RestaurantAnalyzer:
             {
                 "key": "price_competitiveness",
                 "label": "价格竞争力",
-                "pass": actual_price <= benchmark_median * 0.3 if actual_price > 0 else None,
+                "pass": actual_price <= benchmark_median * 1.3 if actual_price > 0 else None,
                 "detail": "品均价 ¥%d，客单价参考 ¥%d，%s" % (
                     int(actual_price), int(benchmark_median),
-                    "定价合理" if actual_price <= benchmark_median * 0.3 else "品均价偏高",
+                    "定价合理" if actual_price <= benchmark_median * 1.3 else "品均价偏高",
                 ) if actual_price > 0 else "暂无价格数据",
                 "source": "data" if actual_price > 0 else "manual",
             },
@@ -1060,7 +1060,158 @@ class RestaurantAnalyzer:
             {"field": "食安证照状态", "impact": "必吃榜一票否决项", "priority": "high"},
         ]
 
-        # ── 4. Overall assessment ──
+        # ── 4. Black Pearl (黑珍珠) readiness assessment ──
+        bp_standards = dianping_std.get("黑珍珠", {})
+        bp_dimensions = bp_standards.get("dimensions", {})
+
+        # Entry criteria: avg spend >= 150, rating >= 4.5, cuisine innovation
+        bp_avg_spend_threshold = 150
+        bp_rating_threshold = 4.5
+
+        bp_checks: List[Dict[str, Any]] = []
+
+        # Check 1: Average spend level (品均价门槛)
+        spend_pass = actual_price >= bp_avg_spend_threshold if actual_price > 0 else None
+        bp_checks.append({
+            "key": "avg_spend",
+            "label": "客单价门槛 (>= ¥%d)" % bp_avg_spend_threshold,
+            "pass": spend_pass,
+            "detail": "品均价 ¥%d，%s" % (
+                int(actual_price),
+                "达到黑珍珠消费门槛" if spend_pass else "未达到黑珍珠消费水平，需提升菜品档次与定价",
+            ) if actual_price > 0 else "暂无价格数据",
+            "source": "data" if actual_price > 0 else "manual",
+        })
+
+        # Check 2: Rating level (评分门槛)
+        bp_checks.append({
+            "key": "rating",
+            "label": "平台评分 (>= %.1f)" % bp_rating_threshold,
+            "pass": None,
+            "detail": "需人工确认: 大众点评星级 >= %.1f" % bp_rating_threshold,
+            "source": "manual",
+        })
+
+        # Check 3: Cooking & food quality (烹饪出品 — maps to bp_dimensions "cooking")
+        cooking_pass = consistency > 70 and sig_conc > 25
+        bp_checks.append({
+            "key": "cooking_quality",
+            "label": "烹饪出品水平",
+            "pass": cooking_pass,
+            "detail": "稳定性 %d/100，招牌菜集中度 %.1f%%，%s" % (
+                int(consistency), sig_conc,
+                "出品稳定且有明确招牌" if cooking_pass else "需提升出品稳定性和招牌菜辨识度",
+            ),
+            "source": "data",
+        })
+
+        # Check 4: Service & environment (服务环境)
+        bp_checks.append({
+            "key": "service_environment",
+            "label": "服务与环境品质",
+            "pass": None,
+            "detail": "需人工确认: 服务专业度、空间设计、氛围营造是否达到精致餐饮标准",
+            "source": "manual",
+        })
+
+        # Check 5: Heritage & innovation (传承创新)
+        bp_checks.append({
+            "key": "heritage_innovation",
+            "label": "饮食文化传承与创新",
+            "pass": None,
+            "detail": "需人工确认: 是否有独特饮食文化故事或创新烹饪表达",
+            "source": "manual",
+        })
+
+        # Check 6: Menu quality over quantity (精品菜单)
+        menu_refined = 0 < menu_count <= 80 if menu_count > 0 else None
+        bp_checks.append({
+            "key": "menu_refinement",
+            "label": "菜单精品化",
+            "pass": menu_refined,
+            "detail": "菜品数 %d，%s" % (
+                menu_count,
+                "菜品精炼，符合精致餐饮定位" if menu_refined else "菜品数量偏多，黑珍珠更青睐精品化菜单",
+            ) if menu_count > 0 else "暂无菜品数据",
+            "source": "data" if menu_count > 0 else "manual",
+        })
+
+        # Check 7: Food safety compliance (食品安全 — 一票否决)
+        bp_checks.append({
+            "key": "food_safety",
+            "label": "食品安全合规 (一票否决)",
+            "pass": None,
+            "detail": "需人工确认: 证照齐全、无食安投诉、后厨管理规范",
+            "source": "manual",
+        })
+
+        # Compute Black Pearl score
+        bp_data_checks = [c for c in bp_checks if c["source"] == "data" and c["pass"] is not None]
+        bp_pass_count = sum(1 for c in bp_data_checks if c["pass"])
+        bp_total_data = len(bp_data_checks)
+
+        bp_weight_map = {
+            "avg_spend": 20, "rating": 20, "cooking_quality": 25,
+            "service_environment": 15, "heritage_innovation": 10,
+            "menu_refinement": 5, "food_safety": 5,
+        }
+        bp_weighted_total = 0
+        bp_weighted_pass = 0
+        for c in bp_checks:
+            w = bp_weight_map.get(c["key"], 5)
+            if c["pass"] is not None:
+                bp_weighted_total += w
+                if c["pass"]:
+                    bp_weighted_pass += w
+        bp_score = round(bp_weighted_pass / max(bp_weighted_total, 1) * 100)
+
+        # Level assessment
+        if bp_score >= 85 and spend_pass:
+            bp_level_hint = "二钻潜力 (纪念日必吃)"
+        elif bp_score >= 65 and spend_pass:
+            bp_level_hint = "一钻潜力 (聚会必吃)"
+        else:
+            bp_level_hint = "暂未达到黑珍珠入选门槛"
+
+        # Improvement suggestions
+        bp_roadmap = []
+        bp_improvement_map = {
+            "avg_spend": ("high", "1-3个月", "通过食材升级、菜品精品化提升客单价至 ¥%d 以上" % bp_avg_spend_threshold),
+            "cooking_quality": ("high", "2-4周", "标准化出品流程，打造2-3道具有辨识度的招牌菜"),
+            "menu_refinement": ("medium", "1-2个月", "精简菜单至80道以内，聚焦核心品类，提升每道菜的品质"),
+        }
+        for c in bp_checks:
+            if c["source"] == "data" and c["pass"] is False:
+                p, timeline, action = bp_improvement_map.get(c["key"], ("low", "按需", "请参考具体检查项改进"))
+                bp_roadmap.append({
+                    "checkKey": c["key"],
+                    "label": c["label"],
+                    "priority": p,
+                    "timeline": timeline,
+                    "action": action,
+                })
+
+        black_pearl = {
+            "checks": bp_checks,
+            "score": bp_score,
+            "passCount": bp_pass_count,
+            "totalChecks": len(bp_checks),
+            "dataChecks": bp_total_data,
+            "levelHint": bp_level_hint,
+            "levels": bp_standards.get("levels", [
+                "一钻(聚会必吃)", "二钻(纪念日必吃)", "三钻(一生必吃一次)",
+            ]),
+            "improvementRoadmap": bp_roadmap,
+            "entryCriteria": {
+                "avgSpend": bp_avg_spend_threshold,
+                "rating": bp_rating_threshold,
+                "dimensions": list(bp_dimensions.keys()) if bp_dimensions else [
+                    "cooking", "service", "heritage",
+                ],
+            },
+        }
+
+        # ── 5. Overall assessment ──
         assessable = [le for le in list_eligibility if le["score"] is not None]
         avg_score = round(sum(le["score"] for le in assessable) / max(len(assessable), 1))
         best_list = max(assessable, key=lambda x: x["score"]) if assessable else None
@@ -1074,6 +1225,7 @@ class RestaurantAnalyzer:
             "summary": "最有希望: %s (评分 %d)，建议优先补充平台数据后申请" % (
                 best_list["list"], best_list["score"]
             ) if best_list else "数据不足，无法评估",
+            "blackPearl": black_pearl,
         }
 
     # ── Price Band Analysis ──────────────────────────────────────

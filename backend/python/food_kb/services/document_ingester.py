@@ -42,6 +42,7 @@ CHUNK_CONFIG = {
     "sop": {"max_chars": 600, "overlap": 80, "split_pattern": r"\n(?=\d+[\.\s]|步骤)"},  # 按步骤
     "additive": {"max_chars": 500, "overlap": 50, "split_pattern": r"\n\n"},
     "microbe": {"max_chars": 500, "overlap": 50, "split_pattern": r"\n\n"},
+    "industry_report": {"max_chars": 1500, "overlap": 200, "split_pattern": r"\n\n"},
 }
 
 

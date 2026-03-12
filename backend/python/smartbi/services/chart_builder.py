@@ -131,6 +131,9 @@ class ChartType(str, Enum):
     PARALLEL = "parallel"               # Parallel coordinates for multi-variable
     CORRELATION_MATRIX = "correlation_matrix"  # Correlation heatmap matrix
 
+    # Text visualization
+    WORDCLOUD = "wordcloud"                 # Word cloud (词云图)
+
     # Budget / target vs actual charts
     BUDGET_COMPARISON = "budget_comparison"  # Department budget vs actual (分部预实对比)
 
@@ -262,6 +265,18 @@ class ChartBuilder:
             "animationDuration": 800,
             "animationEasing": "cubicOut",
             "animationDelay": "__ANIM__stagger_60",
+        },
+        "slope": {
+            "animationDuration": 1000,
+            "animationEasing": "cubicOut",
+        },
+        "matrix_heatmap": {
+            "animationDuration": 800,
+            "animationEasing": "cubicOut",
+        },
+        "wordcloud": {
+            "animationDuration": 600,
+            "animationEasing": "cubicOut",
         },
     }
 
@@ -504,6 +519,12 @@ class ChartBuilder:
                 config = self._build_sankey_chart(df, x_field, y_fields)
             elif chart_type_enum == ChartType.GANTT:
                 config = self._build_gantt_chart(df, x_field, y_fields)
+            elif chart_type_enum == ChartType.SLOPE:
+                config = self._build_slope_chart(df, x_field, y_fields)
+            elif chart_type_enum == ChartType.MATRIX_HEATMAP:
+                config = self._build_matrix_heatmap_chart(df, x_field, y_fields, series_field)
+            elif chart_type_enum == ChartType.WORDCLOUD:
+                config = self._build_wordcloud_chart(df, x_field, y_fields)
             else:
                 config = self._build_line_chart(df, x_field, y_fields, series_field)
 
@@ -2831,6 +2852,297 @@ class ChartBuilder:
 
         return config
 
+    def _build_slope_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        title: Optional[str] = None,
+        theme_key: str = "business"
+    ) -> dict:
+        """Build Slope chart for comparing two time points or two measures.
+
+        Draws lines connecting left-axis values to right-axis values for each category,
+        showing rank changes and magnitude shifts between two periods.
+        Uses dual-category x-axis with only two positions (left/right).
+        """
+        palette = self._get_palette()["charts"]
+        numeric_cols = list(df.select_dtypes(include=[np.number]).columns)
+
+        if len(numeric_cols) < 2:
+            return self._empty_chart_config("斜率图需要至少两列数值数据")
+
+        # Determine category column (label for each line)
+        cat_col = x_field
+        if not cat_col:
+            non_num = [c for c in df.columns if c not in numeric_cols]
+            cat_col = non_num[0] if non_num else None
+
+        # Determine two value columns (left period vs right period)
+        if y_fields and len(y_fields) >= 2:
+            left_col = y_fields[0] if y_fields[0] in df.columns else numeric_cols[0]
+            right_col = y_fields[1] if y_fields[1] in df.columns else numeric_cols[1]
+        else:
+            left_col = numeric_cols[0]
+            right_col = numeric_cols[1]
+
+        categories = df[cat_col].astype(str).tolist() if cat_col else [f"项目{i+1}" for i in range(len(df))]
+        left_values = pd.to_numeric(df[left_col], errors='coerce').fillna(0).tolist()
+        right_values = pd.to_numeric(df[right_col], errors='coerce').fillna(0).tolist()
+
+        # Build series: one line per category connecting left to right
+        series = []
+        for i, (cat, lv, rv) in enumerate(zip(categories, left_values, right_values)):
+            color = palette[i % len(palette)]
+            change = rv - lv
+            change_pct = (change / lv * 100) if lv != 0 else 0
+            series.append({
+                "type": "line",
+                "name": str(cat),
+                "data": [round(lv, 2), round(rv, 2)],
+                "lineStyle": {"width": 2, "color": color},
+                "itemStyle": {"color": color},
+                "symbolSize": 8,
+                "label": {
+                    "show": True,
+                    "formatter": f"{cat}",
+                    "fontSize": 11,
+                },
+                "emphasis": {
+                    "lineStyle": {"width": 4},
+                    "label": {"fontSize": 13, "fontWeight": "bold"},
+                },
+            })
+
+        config = {
+            "tooltip": {
+                **self._make_enhanced_tooltip("item"),
+                "formatter": "__FMT__slope_tooltip",
+            },
+            "legend": {
+                "show": len(series) <= 15,
+                "type": "scroll",
+                "bottom": 0,
+            },
+            "grid": {"left": "15%", "right": "15%", "top": "8%", "bottom": "15%"},
+            "xAxis": {
+                "type": "category",
+                "data": [str(left_col), str(right_col)],
+                "axisLabel": {"fontSize": 13, "fontWeight": "bold"},
+                "axisTick": {"show": False},
+                "axisLine": {"show": False},
+            },
+            "yAxis": {
+                "type": "value",
+                "axisLabel": {"formatter": "__FMT__thousands_sep"},
+                "splitLine": {"lineStyle": {"type": "dashed", "color": "#f0f2f5"}},
+            },
+            "series": series,
+        }
+
+        return config
+
+    def _build_matrix_heatmap_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        series_field: Optional[str] = None,
+        title: Optional[str] = None,
+        theme_key: str = "business"
+    ) -> dict:
+        """Build cross-tabulation matrix heatmap.
+
+        Creates a heatmap from a cross-tab of two categorical columns and a value column.
+        If no explicit series_field, uses the first two categorical columns for axes
+        and the first numeric column for cell values.
+        """
+        numeric_cols = list(df.select_dtypes(include=[np.number]).columns)
+        non_num_cols = [c for c in df.columns if c not in numeric_cols]
+
+        if len(numeric_cols) == 0:
+            return self._empty_chart_config("矩阵热力图需要数值列")
+
+        # Determine row and column dimensions
+        row_col = x_field
+        col_col = series_field
+
+        if not row_col and len(non_num_cols) >= 1:
+            row_col = non_num_cols[0]
+        if not col_col and len(non_num_cols) >= 2:
+            col_col = non_num_cols[1]
+        elif not col_col and y_fields and len(y_fields) >= 2:
+            col_col = y_fields[1] if y_fields[1] in non_num_cols else None
+
+        value_col = y_fields[0] if y_fields and y_fields[0] in numeric_cols else numeric_cols[0]
+
+        if not row_col or not col_col:
+            # Fallback: build correlation-style heatmap from numeric columns only
+            return self._build_heatmap_chart(df, x_field, y_fields, series_field)
+
+        # Build pivot table
+        try:
+            pivot = df.pivot_table(
+                index=row_col, columns=col_col, values=value_col,
+                aggfunc='sum', fill_value=0
+            )
+        except Exception:
+            pivot = df.pivot_table(
+                index=row_col, columns=col_col, values=value_col,
+                aggfunc='mean', fill_value=0
+            )
+
+        row_labels = [str(r) for r in pivot.index.tolist()]
+        col_labels = [str(c) for c in pivot.columns.tolist()]
+
+        # Build heatmap data: [col_index, row_index, value]
+        heatmap_data = []
+        all_values = []
+        for ri, row_name in enumerate(row_labels):
+            for ci, col_name in enumerate(col_labels):
+                val = float(pivot.iloc[ri, ci])
+                if not (math.isnan(val) or math.isinf(val)):
+                    heatmap_data.append([ci, ri, round(val, 2)])
+                    all_values.append(val)
+                else:
+                    heatmap_data.append([ci, ri, None])
+
+        min_val = min(all_values) if all_values else 0
+        max_val = max(all_values) if all_values else 1
+
+        config = {
+            "tooltip": {
+                **self._make_enhanced_tooltip("item"),
+                "formatter": "__FMT__matrix_heatmap_tooltip",
+            },
+            "grid": {
+                "left": "15%",
+                "right": "12%",
+                "top": "8%",
+                "bottom": "20%",
+            },
+            "xAxis": {
+                "type": "category",
+                "data": col_labels,
+                "splitArea": {"show": True},
+                "axisLabel": {"rotate": 30, "fontSize": 11, "hideOverlap": True},
+            },
+            "yAxis": {
+                "type": "category",
+                "data": row_labels,
+                "splitArea": {"show": True},
+                "axisLabel": {"fontSize": 11},
+            },
+            "visualMap": {
+                "min": round(min_val, 2),
+                "max": round(max_val, 2),
+                "calculable": True,
+                "orient": "horizontal",
+                "left": "center",
+                "bottom": 0,
+                "inRange": {
+                    "color": ["#f0f9ff", "#bae6fd", "#38bdf8", "#0284c7", "#1B65A8"],
+                },
+                "textStyle": {"fontSize": 11},
+            },
+            "series": [{
+                "type": "heatmap",
+                "data": heatmap_data,
+                "label": {
+                    "show": len(row_labels) * len(col_labels) <= 100,
+                    "fontSize": 10,
+                },
+                "emphasis": {
+                    "itemStyle": {"borderColor": "#333", "borderWidth": 2},
+                },
+            }],
+        }
+
+        return config
+
+    def _build_wordcloud_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        title: Optional[str] = None,
+        theme_key: str = "business"
+    ) -> dict:
+        """Build word cloud chart data.
+
+        Returns a special chart_type='wordcloud' config that the frontend
+        renders using echarts-wordcloud plugin. The data format is:
+        [{name: "word", value: weight}, ...]
+
+        Falls back to horizontal bar chart if the frontend does not support wordcloud.
+        """
+        numeric_cols = list(df.select_dtypes(include=[np.number]).columns)
+        non_num_cols = [c for c in df.columns if c not in numeric_cols]
+
+        if len(numeric_cols) == 0 or len(non_num_cols) == 0:
+            return self._empty_chart_config("词云图需要文本列和数值列")
+
+        # Determine text and value columns
+        text_col = x_field
+        if not text_col:
+            text_col = non_num_cols[0]
+
+        value_col = y_fields[0] if y_fields and y_fields[0] in numeric_cols else numeric_cols[0]
+
+        # Aggregate if duplicates exist
+        grouped = df.groupby(text_col, dropna=True)[value_col].sum().reset_index()
+        grouped = grouped.sort_values(value_col, ascending=False).head(100)  # Top 100 words
+
+        palette = self._get_palette()["charts"]
+        word_data = []
+        for i, (_, row) in enumerate(grouped.iterrows()):
+            word = str(row[text_col]).strip()
+            val = float(row[value_col])
+            if word and not (math.isnan(val) or math.isinf(val)) and val > 0:
+                word_data.append({
+                    "name": word,
+                    "value": round(val, 2),
+                    "textStyle": {"color": palette[i % len(palette)]},
+                })
+
+        if not word_data:
+            return self._empty_chart_config("词云图无有效数据")
+
+        # Return wordcloud-specific config
+        # Frontend should check series[0].type === 'wordCloud' and use echarts-wordcloud
+        config = {
+            "tooltip": {
+                "show": True,
+                "trigger": "item",
+                "formatter": "{b}: {c}",
+            },
+            "series": [{
+                "type": "wordCloud",
+                "shape": "circle",
+                "gridSize": 8,
+                "sizeRange": [14, 60],
+                "rotationRange": [-45, 45],
+                "rotationStep": 15,
+                "left": "center",
+                "top": "center",
+                "width": "90%",
+                "height": "85%",
+                "textStyle": {
+                    "fontFamily": "sans-serif",
+                    "fontWeight": "bold",
+                },
+                "emphasis": {
+                    "textStyle": {
+                        "shadowBlur": 10,
+                        "shadowColor": "rgba(0,0,0,0.3)",
+                    }
+                },
+                "data": word_data,
+            }],
+        }
+
+        return config
+
     def _build_gantt_chart(
         self,
         df: pd.DataFrame,
@@ -3219,4 +3531,8 @@ class ChartBuilder:
             {"id": "sankey", "name": "桑基图", "description": "流向分析"},
             {"id": "treemap", "name": "矩阵树图", "description": "层级占比分析"},
             {"id": "gantt", "name": "甘特图", "description": "项目进度时间轴"},
+            # New chart types (Phase 5 - Expansion)
+            {"id": "slope", "name": "斜率图", "description": "两期对比变化"},
+            {"id": "matrix_heatmap", "name": "矩阵热力图", "description": "交叉分析热力图"},
+            {"id": "wordcloud", "name": "词云图", "description": "关键词频率可视化"},
         ]

@@ -797,3 +797,97 @@ export function mapColumnsToTemplate(
 
   return plans.length > 0 ? plans : null;
 }
+
+// ==================== What-If Simulator ====================
+
+export interface WhatIfScenario {
+  name: string;
+  priceChangePct: number;
+  costChangePct: number;
+  trafficChangePct: number;
+}
+
+export interface WhatIfCostStructure {
+  totalRevenue: number;
+  totalCost: number;
+  ingredientRatio: number;
+  laborRatio: number;
+  rentRatio: number;
+  otherRatio: number;
+  grossMargin: number;
+}
+
+export interface WhatIfScenarioResult {
+  name: string;
+  priceChangePct: number;
+  costChangePct: number;
+  trafficChangePct: number;
+  currentRevenue: number;
+  currentCost: number;
+  currentGrossProfit: number;
+  currentGrossMargin: number;
+  projectedRevenue: number;
+  projectedCost: number;
+  projectedGrossProfit: number;
+  projectedGrossMargin: number;
+  revenueImpact: number;
+  revenueImpactPct: number;
+  grossProfitImpact: number;
+  grossProfitImpactPct: number;
+  breakevenPriceChangePct: number | null;
+}
+
+export interface WhatIfSensitivityCell {
+  priceChangePct: number;
+  costChangePct: number;
+  grossProfit: number;
+  grossMargin: number;
+}
+
+export interface WhatIfComparisonChart {
+  labels: string[];
+  revenues: number[];
+  costs: number[];
+  profits: number[];
+}
+
+export interface WhatIfResponse {
+  success: boolean;
+  costStructure?: WhatIfCostStructure;
+  scenarios?: WhatIfScenarioResult[];
+  sensitivityMatrix?: WhatIfSensitivityCell[];
+  comparisonChart?: WhatIfComparisonChart;
+  error?: string;
+}
+
+/**
+ * What-If pricing simulation.
+ * Calculates revenue/profit impacts when price, cost, or traffic change.
+ */
+export async function simulateWhatIf(params: {
+  uploadId?: number;
+  rawData?: Record<string, unknown>[];
+  factoryId?: string;
+  scenarios: WhatIfScenario[];
+  elasticity?: number;
+}): Promise<WhatIfResponse> {
+  try {
+    return await pythonFetch('/api/smartbi/whatif/simulate', {
+      method: 'POST',
+      timeoutMs: PYTHON_LLM_TIMEOUT_MS,
+      body: JSON.stringify({
+        uploadId: params.uploadId,
+        rawData: params.rawData,
+        factoryId: params.factoryId || 'F001',
+        scenarios: params.scenarios,
+        elasticity: params.elasticity,
+      }),
+    }) as WhatIfResponse;
+  } catch (error) {
+    console.error('simulateWhatIf failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'What-If 模拟请求失败',
+    };
+  }
+}

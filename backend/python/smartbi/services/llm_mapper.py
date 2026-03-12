@@ -504,72 +504,228 @@ class LLMMapper:
             logger.error(f"Failed to parse chart response: {e}")
             return self._rule_based_chart_recommendation(detected_fields)
 
+    # POS field alias mapping table
+    # Maps Chinese POS field names (from various POS systems like 客如云, 哗啦啦,
+    # 银豹, 美团收银, 二维火) to standard field IDs.
+    # Organized as: { "alias_keyword": ("target_field", "target_category") }
+    POS_FIELD_ALIASES = {
+        # revenue — 实收/实付/到手金额
+        "实收金额": ("revenue", "measures"),
+        "实付金额": ("revenue", "measures"),
+        "到手金额": ("revenue", "measures"),
+        "实际收入": ("revenue", "measures"),
+        "实收": ("revenue", "measures"),
+        "实付": ("revenue", "measures"),
+        "净收入": ("revenue", "measures"),
+        "实收合计": ("revenue", "measures"),
+        # discounted_amount — 折后/优惠后金额
+        "折后金额": ("discounted_amount", "measures"),
+        "优惠后金额": ("discounted_amount", "measures"),
+        "折扣后": ("discounted_amount", "measures"),
+        "折后价": ("discounted_amount", "measures"),
+        "优惠后价格": ("discounted_amount", "measures"),
+        "平台优惠后": ("discounted_amount", "measures"),
+        # unit_price — 原价/标价/零售价/门市价
+        "原价": ("unit_price", "measures"),
+        "标价": ("unit_price", "measures"),
+        "零售价": ("unit_price", "measures"),
+        "门市价": ("unit_price", "measures"),
+        "菜品原价": ("unit_price", "measures"),
+        "标准价": ("unit_price", "measures"),
+        "挂牌价": ("unit_price", "measures"),
+        "菜品单价": ("unit_price", "measures"),
+        # quantity_sold — 销售数量/售出份数/点单数
+        "单卖数量": ("quantity_sold", "measures"),
+        "售出份数": ("quantity_sold", "measures"),
+        "销售数量": ("quantity_sold", "measures"),
+        "点单数": ("quantity_sold", "measures"),
+        "销售份数": ("quantity_sold", "measures"),
+        "出品数": ("quantity_sold", "measures"),
+        "售出数量": ("quantity_sold", "measures"),
+        "点单份数": ("quantity_sold", "measures"),
+        "销量": ("quantity_sold", "measures"),
+        # refund_amount — 退款/退单金额
+        "退款金额": ("refund_amount", "measures"),
+        "退单金额": ("refund_amount", "measures"),
+        "退款额": ("refund_amount", "measures"),
+        "退货金额": ("refund_amount", "measures"),
+        "退菜金额": ("refund_amount", "measures"),
+        # refund_count — 退款/退单笔数
+        "退款笔数": ("refund_count", "measures"),
+        "退单数": ("refund_count", "measures"),
+        "退款单数": ("refund_count", "measures"),
+        "退货笔数": ("refund_count", "measures"),
+        "退菜笔数": ("refund_count", "measures"),
+        "退菜数": ("refund_count", "measures"),
+        # table_number — 桌号/台号/餐台
+        "桌号": ("table_number", "category_dimensions"),
+        "台号": ("table_number", "category_dimensions"),
+        "餐台": ("table_number", "category_dimensions"),
+        "桌台号": ("table_number", "category_dimensions"),
+        "餐桌号": ("table_number", "category_dimensions"),
+        "台位号": ("table_number", "category_dimensions"),
+        # diner_count — 就餐/用餐人数
+        "就餐人数": ("diner_count", "measures"),
+        "用餐人数": ("diner_count", "measures"),
+        "客人数": ("diner_count", "measures"),
+        "就餐人次": ("diner_count", "measures"),
+        # delivery_order_id — 外卖单号
+        "外卖单号": ("delivery_order_id", "category_dimensions"),
+        "外卖订单": ("delivery_order_id", "category_dimensions"),
+        "外卖订单号": ("delivery_order_id", "category_dimensions"),
+        "配送单号": ("delivery_order_id", "category_dimensions"),
+        # payment_method — 支付/付款/收款方式
+        "支付方式": ("payment_method", "category_dimensions"),
+        "付款方式": ("payment_method", "category_dimensions"),
+        "收款方式": ("payment_method", "category_dimensions"),
+        "支付渠道": ("payment_method", "category_dimensions"),
+        "付款渠道": ("payment_method", "category_dimensions"),
+        "结算方式": ("payment_method", "category_dimensions"),
+        # member_id — 会员卡号/会员编号
+        "会员卡号": ("member_id", "category_dimensions"),
+        "会员编号": ("member_id", "category_dimensions"),
+        "会员号": ("member_id", "category_dimensions"),
+        # order_time — 下单/点单时间
+        "下单时间": ("order_time", "time_dimensions"),
+        "点单时间": ("order_time", "time_dimensions"),
+        "开单时间": ("order_time", "time_dimensions"),
+        "点餐时间": ("order_time", "time_dimensions"),
+        # serve_time — 出餐/制作完成时间
+        "出餐时间": ("serve_time", "time_dimensions"),
+        "制作完成时间": ("serve_time", "time_dimensions"),
+        "上菜时间": ("serve_time", "time_dimensions"),
+        "完成时间": ("serve_time", "time_dimensions"),
+        "出品时间": ("serve_time", "time_dimensions"),
+        # POS-specific sales/order fields
+        "营业额": ("sales_amount", "measures"),
+        "营业收入": ("sales_amount", "measures"),
+        "总营业额": ("sales_amount", "measures"),
+        "账单金额": ("sales_amount", "measures"),
+        "销售金额": ("sales_amount", "measures"),
+        "交易金额": ("sales_amount", "measures"),
+        "流水金额": ("sales_amount", "measures"),
+        "总金额": ("sales_amount", "measures"),
+        "订单笔数": ("order_count", "measures"),
+        "交易笔数": ("order_count", "measures"),
+        "订单量": ("order_count", "measures"),
+        "单量": ("order_count", "measures"),
+        "开单数": ("order_count", "measures"),
+        "单数": ("order_count", "measures"),
+        "优惠金额": ("discount_amount", "measures"),
+        "折扣金额": ("discount_amount", "measures"),
+        # POS product/category fields
+        "菜品名称": ("product", "category_dimensions"),
+        "商品名称": ("product", "category_dimensions"),
+        "菜品": ("product", "category_dimensions"),
+        "菜名": ("product", "category_dimensions"),
+        "菜品名": ("product", "category_dimensions"),
+        "商品名": ("product", "category_dimensions"),
+        "商品": ("product", "category_dimensions"),
+        "菜品分类": ("category", "category_dimensions"),
+        "商品分类": ("category", "category_dimensions"),
+        "菜品大类": ("category", "category_dimensions"),
+        "菜品类别": ("category", "category_dimensions"),
+        "品类": ("category", "category_dimensions"),
+    }
+
     def _rule_based_mapping(self, detected_fields: List[dict]) -> dict:
-        """Fallback rule-based field mapping"""
+        """Fallback rule-based field mapping with POS field alias support"""
         mappings = []
         unmapped = []
 
         for field in detected_fields:
             mapped = False
-            field_name = field["fieldName"].lower()
+            field_name = field["fieldName"]
+            field_name_lower = field_name.lower()
             semantic_type = field.get("semanticType", "unknown")
 
-            # Map based on semantic type
-            if semantic_type == "date":
+            # --- Phase 1: Exact POS alias match (highest priority) ---
+            # Check the raw field name against known POS field aliases.
+            # Strip whitespace for fuzzy matching but try exact first.
+            stripped_name = field_name.strip()
+            if stripped_name in self.POS_FIELD_ALIASES:
+                target, category = self.POS_FIELD_ALIASES[stripped_name]
                 mappings.append({
-                    "sourceField": field["fieldName"],
-                    "targetField": "date",
-                    "targetCategory": "time_dimensions",
-                    "confidence": 0.8,
-                    "reason": "Detected as date field"
-                })
-                mapped = True
-            elif semantic_type == "amount":
-                target = "sales_amount"
-                if "cost" in field_name or "成本" in field_name:
-                    target = "cost"
-                elif "profit" in field_name or "利润" in field_name:
-                    target = "profit"
-                elif "target" in field_name or "目标" in field_name:
-                    target = "target"
-                elif "budget" in field_name or "预算" in field_name:
-                    target = "budget"
-
-                mappings.append({
-                    "sourceField": field["fieldName"],
+                    "sourceField": field_name,
                     "targetField": target,
-                    "targetCategory": "measures",
-                    "confidence": 0.7,
-                    "reason": f"Detected as amount field, mapped to {target}"
+                    "targetCategory": category,
+                    "confidence": 0.85,
+                    "reason": f"POS field alias exact match: {stripped_name} → {target}"
                 })
                 mapped = True
-            elif semantic_type == "quantity":
-                mappings.append({
-                    "sourceField": field["fieldName"],
-                    "targetField": "quantity",
-                    "targetCategory": "measures",
-                    "confidence": 0.7,
-                    "reason": "Detected as quantity field"
-                })
-                mapped = True
-            elif semantic_type in ["category", "product", "geography"]:
-                target = "category"
-                if semantic_type == "product":
-                    target = "product"
-                elif semantic_type == "geography":
-                    target = "region"
 
-                mappings.append({
-                    "sourceField": field["fieldName"],
-                    "targetField": target,
-                    "targetCategory": "category_dimensions",
-                    "confidence": 0.7,
-                    "reason": f"Detected as {semantic_type} field"
-                })
-                mapped = True
+            # --- Phase 2: Semantic type based mapping (original logic) ---
+            if not mapped:
+                if semantic_type == "date":
+                    mappings.append({
+                        "sourceField": field_name,
+                        "targetField": "date",
+                        "targetCategory": "time_dimensions",
+                        "confidence": 0.8,
+                        "reason": "Detected as date field"
+                    })
+                    mapped = True
+                elif semantic_type == "amount":
+                    target = "sales_amount"
+                    if "cost" in field_name_lower or "成本" in field_name_lower:
+                        target = "cost"
+                    elif "profit" in field_name_lower or "利润" in field_name_lower:
+                        target = "profit"
+                    elif "target" in field_name_lower or "目标" in field_name_lower:
+                        target = "target"
+                    elif "budget" in field_name_lower or "预算" in field_name_lower:
+                        target = "budget"
+
+                    mappings.append({
+                        "sourceField": field_name,
+                        "targetField": target,
+                        "targetCategory": "measures",
+                        "confidence": 0.7,
+                        "reason": f"Detected as amount field, mapped to {target}"
+                    })
+                    mapped = True
+                elif semantic_type == "quantity":
+                    mappings.append({
+                        "sourceField": field_name,
+                        "targetField": "quantity",
+                        "targetCategory": "measures",
+                        "confidence": 0.7,
+                        "reason": "Detected as quantity field"
+                    })
+                    mapped = True
+                elif semantic_type in ["category", "product", "geography"]:
+                    target = "category"
+                    if semantic_type == "product":
+                        target = "product"
+                    elif semantic_type == "geography":
+                        target = "region"
+
+                    mappings.append({
+                        "sourceField": field_name,
+                        "targetField": target,
+                        "targetCategory": "category_dimensions",
+                        "confidence": 0.7,
+                        "reason": f"Detected as {semantic_type} field"
+                    })
+                    mapped = True
+
+            # --- Phase 3: Substring POS alias match (lower priority) ---
+            # If not yet mapped, check if field name contains a known alias.
+            if not mapped:
+                for alias, (target, category) in self.POS_FIELD_ALIASES.items():
+                    if alias in stripped_name and len(alias) >= 2:
+                        mappings.append({
+                            "sourceField": field_name,
+                            "targetField": target,
+                            "targetCategory": category,
+                            "confidence": 0.65,
+                            "reason": f"POS field alias substring match: contains '{alias}' → {target}"
+                        })
+                        mapped = True
+                        break
 
             if not mapped:
-                unmapped.append(field["fieldName"])
+                unmapped.append(field_name)
 
         return {
             "success": True,
