@@ -7,6 +7,8 @@ import { Text, Surface, Button, Divider } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 import { useTranslation } from 'react-i18next';
 import { RRequisitionStackParamList } from '../../../types/navigation';
 import { restaurantApiClient } from '../../../services/api/restaurantApiClient';
@@ -16,7 +18,7 @@ import { formatShortDateTime } from '../../../utils/formatters';
 
 type Route = RouteProp<RRequisitionStackParamList, 'RequisitionDetail'>;
 
-const STATUS_CONFIG: Record<RequisitionStatus, { color: string; bg: string; icon: string }> = {
+const STATUS_CONFIG: Record<RequisitionStatus, { color: string; bg: string; icon: MCIconName }> = {
   DRAFT: { color: '#757575', bg: '#f5f5f5', icon: 'file-edit-outline' },
   SUBMITTED: { color: '#f57c00', bg: '#fff3e0', icon: 'clock-outline' },
   APPROVED: { color: '#388e3c', bg: '#e8f5e9', icon: 'check-circle-outline' },
@@ -93,7 +95,7 @@ export function RequisitionDetailScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Status banner */}
         <Surface style={[styles.statusBanner, { backgroundColor: sc.bg }]} elevation={0}>
-          <MaterialCommunityIcons name={sc.icon as any} size={28} color={sc.color} />
+          <MaterialCommunityIcons name={sc.icon} size={28} color={sc.color} />
           <Text style={[styles.statusText, { color: sc.color }]}>{t(`requisition.status.${record.status}`)}</Text>
         </Surface>
 

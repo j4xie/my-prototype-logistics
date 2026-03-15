@@ -121,6 +121,15 @@ except ImportError as e:
     import logging as _log
     _log.getLogger(__name__).warning(f"Food KB Feedback not available: {e}")
 
+# Import Foreign Object Detection API router (optional - requires Pillow, onnxruntime)
+try:
+    from foreign_object_detection.api import router as fod_router
+    _fod_available = True
+except ImportError as e:
+    _fod_available = False
+    import logging as _log
+    _log.getLogger(__name__).warning(f"Foreign Object Detection not available: {e}")
+
 # Configure logging with rotation
 _log_level = logging.DEBUG if get_settings().debug else logging.INFO
 _log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -373,6 +382,14 @@ else:
     logger.warning("Food KB Feedback routes not registered")
 
 # =====================================================
+# Foreign Object Detection API Routes (optional)
+# =====================================================
+if _fod_available:
+    app.include_router(fod_router, prefix="/api/fod", tags=["异物检测"])
+else:
+    logger.warning("Foreign Object Detection routes not registered")
+
+# =====================================================
 # Client Requirement API Routes
 # =====================================================
 app.include_router(
@@ -425,6 +442,7 @@ async def health_check():
                 *( ["scene_intelligence"] if _scene_available else []),
                 *( ["food_knowledge_base"] if _food_kb_available else []),
                 *( ["food_kb_feedback"] if _food_kb_feedback_available else []),
+                *( ["foreign_object_detection"] if _fod_available else []),
             ],
             "postgres": postgres_status
         }
@@ -461,6 +479,7 @@ async def root():
             **({"scene_intelligence": "/api/scene"} if _scene_available else {}),
             **({"food_knowledge_base": "/api/food-kb"} if _food_kb_available else {}),
             **({"food_kb_feedback": "/api/food-kb/feedback"} if _food_kb_feedback_available else {}),
+            **({"foreign_object_detection": "/api/fod"} if _fod_available else {}),
         },
         "endpoints": {
             "health": "/health",

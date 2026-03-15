@@ -36,6 +36,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -67,12 +69,16 @@ function handleSizeChange(size: number) {
   loadData();
 }
 
-function getStatusType(status: string) {
-  return status === 'ACTIVE' ? 'success' : 'info';
+function isActive(row: any) {
+  return row.status === 'ACTIVE' || row.isActive === true;
 }
 
-function getStatusText(status: string) {
-  return status === 'ACTIVE' ? '合作中' : '已停用';
+function getStatusType(row: any) {
+  return isActive(row) ? 'success' : 'info';
+}
+
+function getStatusText(row: any) {
+  return isActive(row) ? '合作中' : '已停用';
 }
 
 async function handleDelete(row: any) {
@@ -82,7 +88,11 @@ async function handleDelete(row: any) {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
     });
-    await del(`/${factoryId.value}/procurement/suppliers/${row.id}`);
+    const delRes = await del(`/${factoryId.value}/suppliers/${row.id}`);
+    if (delRes && delRes.success === false) {
+      ElMessage.error(delRes.message || '删除失败');
+      return;
+    }
     ElMessage.success('删除成功');
     loadData();
   } catch (e) {
@@ -141,12 +151,14 @@ async function handleDelete(row: any) {
         <el-table-column prop="supplierCode" label="供应商编号" width="140" />
         <el-table-column prop="name" label="供应商名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="contactPerson" label="联系人" width="120" />
-        <el-table-column prop="phone" label="联系电话" width="140" />
+        <el-table-column label="联系电话" width="140">
+          <template #default="{ row }">{{ row.phone || row.contactPhone || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="address" label="地址" min-width="200" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)" size="small">
-              {{ getStatusText(row.status) }}
+            <el-tag :type="getStatusType(row)" size="small">
+              {{ getStatusText(row) }}
             </el-tag>
           </template>
         </el-table-column>

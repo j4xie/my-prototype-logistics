@@ -37,6 +37,8 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // Types
 type DateRangeType = 'today' | 'week' | 'month' | 'custom';
 
+type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
 interface KPIMetric {
   id: string;
   label: string;
@@ -46,7 +48,7 @@ interface KPIMetric {
   change: number;
   changeType: 'up' | 'down';
   color: string;
-  icon: string;
+  icon: IconName;
 }
 
 interface ProductionStats {
@@ -378,7 +380,7 @@ export default function DSStatisticsScreen() {
           <View key={kpi.id} style={styles.kpiCard}>
             <View style={[styles.kpiIconContainer, { backgroundColor: `${kpi.color}15` }]}>
               <MaterialCommunityIcons
-                name={kpi.icon as any}
+                name={kpi.icon}
                 size={24}
                 color={kpi.color}
               />
@@ -599,17 +601,17 @@ export default function DSStatisticsScreen() {
       <Text style={styles.sectionTitle}>异常统计</Text>
       <View style={styles.anomalyCard}>
         <View style={styles.anomalyGrid}>
-          {[
-            { key: 'late', label: '迟到', value: anomalies.late, icon: 'run', color: '#fa8c16' },
-            { key: 'earlyLeave', label: '早退', value: anomalies.earlyLeave, icon: 'exit-run', color: '#fa8c16' },
-            { key: 'absent', label: '缺勤', value: anomalies.absent, icon: 'account-off', color: '#ff4d4f' },
-            { key: 'equipment', label: '设备故障', value: anomalies.equipmentIssues, icon: 'wrench-outline', color: '#ff4d4f' },
-            { key: 'quality', label: '质量问题', value: anomalies.qualityIssues, icon: 'alert-circle-outline', color: '#faad14' },
-          ].map((item) => (
+          {([
+            { key: 'late', label: '迟到', value: anomalies.late, icon: 'run' as IconName, color: '#fa8c16' },
+            { key: 'earlyLeave', label: '早退', value: anomalies.earlyLeave, icon: 'exit-run' as IconName, color: '#fa8c16' },
+            { key: 'absent', label: '缺勤', value: anomalies.absent, icon: 'account-off' as IconName, color: '#ff4d4f' },
+            { key: 'equipment', label: '设备故障', value: anomalies.equipmentIssues, icon: 'wrench-outline' as IconName, color: '#ff4d4f' },
+            { key: 'quality', label: '质量问题', value: anomalies.qualityIssues, icon: 'alert-circle-outline' as IconName, color: '#faad14' },
+          ]).map((item) => (
             <View key={item.key} style={styles.anomalyItem}>
               <View style={[styles.anomalyIcon, { backgroundColor: `${item.color}15` }]}>
                 <MaterialCommunityIcons
-                  name={item.icon as any}
+                  name={item.icon}
                   size={20}
                   color={item.color}
                 />

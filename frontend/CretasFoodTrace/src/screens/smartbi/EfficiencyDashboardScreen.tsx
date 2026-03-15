@@ -23,6 +23,8 @@ import {
 } from 'react-native';
 import { Text, ActivityIndicator, Surface, SegmentedButtons } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -71,7 +73,7 @@ interface SummaryKPIProps {
   title: string;
   value: string | number;
   unit?: string;
-  icon: string;
+  icon: MCIconName;
   color: string;
   change?: number;
 }
@@ -82,7 +84,7 @@ function SummaryKPI({ title, value, unit, icon, color, change }: SummaryKPIProps
   return (
     <Surface style={[styles.kpiCard, { width: cardWidth }]} elevation={2}>
       <View style={[styles.kpiIconContainer, { backgroundColor: color + '20' }]}>
-        <MaterialCommunityIcons name={icon as any} size={24} color={color} />
+        <MaterialCommunityIcons name={icon} size={24} color={color} />
       </View>
       <View style={styles.kpiContent}>
         <Text style={styles.kpiTitle}>{title}</Text>

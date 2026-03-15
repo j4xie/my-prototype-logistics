@@ -47,6 +47,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载告警数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -84,6 +86,8 @@ async function handleAcknowledge(alert: SchedulingAlert) {
     if (response.success) {
       ElMessage.success('已确认');
       loadData();
+    } else {
+      ElMessage.error(response.message || '确认失败');
     }
   } catch (error) {
     console.error('确认失败:', error);
@@ -111,6 +115,8 @@ async function handleResolve(alert: SchedulingAlert) {
     if (response.success) {
       ElMessage.success('已解决');
       loadData();
+    } else {
+      ElMessage.error(response.message || '解决失败');
     }
   } catch (error) {
     if (error !== 'cancel') {

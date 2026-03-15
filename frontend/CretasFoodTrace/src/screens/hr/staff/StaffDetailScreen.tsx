@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import { Text, Card, Avatar, Button, ActivityIndicator, Chip, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect, RouteProp, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -106,7 +106,7 @@ export default function StaffDetailScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('staff.detail.title')}</Text>
         <TouchableOpacity
-          onPress={() => navigation.navigate('StaffAIAnalysis' as any, { staffId })}
+          onPress={() => navigation.dispatch(CommonActions.navigate('StaffAIAnalysis', { staffId }))}
           style={styles.aiBtn}
         >
           <MaterialCommunityIcons name="robot" size={24} color="#fff" />
@@ -217,12 +217,12 @@ export default function StaffDetailScreen() {
                 </View>
                 <View style={styles.workDivider} />
                 <View style={styles.workItem}>
-                  <Text style={styles.workValue}>{staff.workTimeSummary.totalHours.toFixed(1)}h</Text>
+                  <Text style={styles.workValue}>{Number(staff.workTimeSummary.totalHours ?? 0).toFixed(1)}h</Text>
                   <Text style={styles.workLabel}>{t('staff.detail.work.totalHours')}</Text>
                 </View>
                 <View style={styles.workDivider} />
                 <View style={styles.workItem}>
-                  <Text style={styles.workValue}>¥{staff.workTimeSummary.totalEarnings.toFixed(0)}</Text>
+                  <Text style={styles.workValue}>¥{Number(staff.workTimeSummary.totalEarnings ?? 0).toFixed(0)}</Text>
                   <Text style={styles.workLabel}>{t('staff.detail.work.earnings')}</Text>
                 </View>
               </View>
@@ -244,7 +244,7 @@ export default function StaffDetailScreen() {
                     </Text>
                   </View>
                   <View style={styles.batchStats}>
-                    <Text style={styles.batchHours}>{batch.workHours.toFixed(1)}h</Text>
+                    <Text style={styles.batchHours}>{Number(batch.workHours ?? 0).toFixed(1)}h</Text>
                     <Text style={styles.batchDate}>{batch.workDate}</Text>
                   </View>
                 </View>
@@ -258,7 +258,7 @@ export default function StaffDetailScreen() {
           <Button
             mode="contained"
             icon="robot"
-            onPress={() => navigation.navigate('StaffAIAnalysis' as any, { staffId })}
+            onPress={() => navigation.dispatch(CommonActions.navigate('StaffAIAnalysis', { staffId }))}
             style={styles.aiButton}
             buttonColor={HR_THEME.primary}
           >

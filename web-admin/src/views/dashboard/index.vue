@@ -19,7 +19,7 @@ const authStore = useAuthStore();
 
 // 获取当前角色对应的 Dashboard 组件名称（含工厂类型覆盖）
 const dashboardComponentName = computed(() => {
-  return getDashboardComponent(authStore.currentRole, authStore.factoryId);
+  return getDashboardComponent(authStore.currentRole, authStore.factoryType);
 });
 
 const asyncOpts = (loader: () => Promise<any>) => defineAsyncComponent({

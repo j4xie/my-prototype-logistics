@@ -2,10 +2,10 @@
 import { ref, computed, reactive, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
-import { get } from '@/api/request';
+import { get, post, put } from '@/api/request';
 import { createUser, activateUser, deactivateUser } from '@/api/factory';
-import { ElMessage } from 'element-plus';
-import { Plus, Search, Refresh } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { Plus, Search, Refresh, View, Edit, Key } from '@element-plus/icons-vue';
 import type { FormInstance, FormRules } from 'element-plus';
 
 const authStore = useAuthStore();
@@ -71,6 +71,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -101,7 +103,8 @@ const roleOptions = [
   { value: 'hr_admin', label: 'HR管理员' },
   { value: 'procurement_manager', label: '采购主管' },
   { value: 'sales_manager', label: '销售主管' },
-  { value: 'dispatcher', label: '调度' },
+  { value: 'dispatcher', label: '调度员' },
+  { value: 'production_manager', label: '生产主管' },
   { value: 'warehouse_manager', label: '仓储主管' },
   { value: 'equipment_admin', label: '设备管理员' },
   { value: 'quality_manager', label: '质量经理' },
@@ -110,7 +113,10 @@ const roleOptions = [
   { value: 'quality_inspector', label: '质检员' },
   { value: 'operator', label: '操作员' },
   { value: 'warehouse_worker', label: '仓库员' },
-  { value: 'viewer', label: '查看者' }
+  { value: 'permission_admin', label: '权限管理员' },
+  { value: 'department_admin', label: '部门管理员' },
+  { value: 'viewer', label: '查看者' },
+  { value: 'unactivated', label: '未激活' }
 ];
 
 function getRoleText(role: string) {
@@ -147,6 +153,8 @@ async function handleCreateUser() {
       ElMessage.success('用户创建成功');
       createDialogVisible.value = false;
       loadData();
+    } else {
+      ElMessage.error(response.message || '创建用户失败');
     }
   } catch (error) {
     ElMessage.error('创建用户失败');
@@ -155,18 +163,116 @@ async function handleCreateUser() {
   }
 }
 
+// View/Edit/Reset handlers
+const viewDialogVisible = ref(false);
+const viewUser = ref<any>({});
+
+function handleViewUser(row: any) {
+  viewUser.value = row;
+  viewDialogVisible.value = true;
+}
+
+const editDialogVisible = ref(false);
+const editLoading = ref(false);
+const editFormRef = ref<FormInstance>();
+const editForm = reactive({
+  id: 0,
+  username: '',
+  email: '',
+  fullName: '',
+  phone: '',
+  roleCode: ''
+});
+
+function handleEditUser(row: any) {
+  editForm.id = row.id;
+  editForm.username = row.username;
+  editForm.email = row.email || '';
+  editForm.fullName = row.fullName || '';
+  editForm.phone = row.phone || '';
+  editForm.roleCode = row.roleCode || '';
+  editDialogVisible.value = true;
+}
+
+async function handleSaveEdit() {
+  if (!factoryId.value) return;
+  const valid = await editFormRef.value?.validate().catch(() => false);
+  if (!valid) return;
+
+  editLoading.value = true;
+  try {
+    const response = await put(`/${factoryId.value}/users/${editForm.id}`, {
+      email: editForm.email,
+      fullName: editForm.fullName,
+      phone: editForm.phone,
+      roleCode: editForm.roleCode
+    });
+    if (response.success) {
+      ElMessage.success('用户信息已更新');
+      editDialogVisible.value = false;
+      loadData();
+    } else {
+      ElMessage.error(response.message || '更新失败');
+    }
+  } catch (error) {
+    ElMessage.error('更新失败');
+  } finally {
+    editLoading.value = false;
+  }
+}
+
+async function handleResetPassword(row: any) {
+  if (!factoryId.value) return;
+  try {
+    const { value: newPassword } = await ElMessageBox.prompt(
+      `确定要重置用户 "${row.username}" 的密码吗？`,
+      '重置密码',
+      {
+        inputPattern: /^.{6,20}$/,
+        inputErrorMessage: '密码长度为 6-20 个字符',
+        inputType: 'password',
+        inputPlaceholder: '请输入新密码',
+        confirmButtonText: '确认重置',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    );
+    const response = await post('/auth/reset-password', {
+      factoryId: factoryId.value, username: row.username, newPassword
+    });
+    if (response.success) {
+      ElMessage.success('密码已重置');
+    } else {
+      ElMessage.error(response.message || '重置失败');
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('重置密码失败');
+    }
+  }
+}
+
 async function handleToggleActive(row: any) {
   if (!factoryId.value) return;
   try {
+    await ElMessageBox.confirm(
+      row.isActive ? `确定停用用户「${row.username}」？停用后该用户将无法登录。` : `确定激活用户「${row.username}」？`,
+      '确认操作',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    );
     const response = row.isActive
       ? await deactivateUser(factoryId.value, row.id)
       : await activateUser(factoryId.value, row.id);
     if (response.success) {
       ElMessage.success(row.isActive ? '已停用' : '已激活');
       loadData();
+    } else {
+      ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    ElMessage.error('操作失败');
+    if (error !== 'cancel') {
+      ElMessage.error('操作失败');
+    }
   }
 }
 </script>
@@ -176,7 +282,7 @@ async function handleToggleActive(row: any) {
     <el-card class="search-card">
       <el-form :model="searchForm" inline>
         <el-form-item label="用户名">
-          <el-input v-model="searchForm.username" placeholder="请输入用户名" clearable />
+          <el-input v-model="searchForm.username" placeholder="请输入用户名" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="角色">
           <el-select v-model="searchForm.roleCode" placeholder="全部角色" clearable>
@@ -227,12 +333,16 @@ async function handleToggleActive(row: any) {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="180" fixed="right">
-          <template #default>
-            <el-button type="primary" link>查看</el-button>
-            <el-button v-if="canWrite" type="primary" link>编辑</el-button>
-            <el-button v-if="canWrite" type="danger" link>重置密码</el-button>
+        <el-table-column label="创建时间" width="180">
+          <template #default="{ row }">
+            {{ row.createdAt ? row.createdAt.replace('T', ' ').substring(0, 19) : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" link :icon="View" @click="handleViewUser(row)">查看</el-button>
+            <el-button v-if="canWrite" type="primary" link :icon="Edit" @click="handleEditUser(row)">编辑</el-button>
+            <el-button v-if="canWrite" type="danger" link :icon="Key" @click="handleResetPassword(row)">重置密码</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -289,6 +399,54 @@ async function handleToggleActive(row: any) {
       <template #footer>
         <el-button @click="createDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="createLoading" @click="handleCreateUser">确认创建</el-button>
+      </template>
+    </el-dialog>
+    <!-- View User Dialog -->
+    <el-dialog v-model="viewDialogVisible" title="用户详情" width="480px">
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="用户名">{{ viewUser.username || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="姓名">{{ viewUser.fullName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="邮箱">{{ viewUser.email || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="手机号">{{ viewUser.phone || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="角色">
+          <el-tag>{{ getRoleText(viewUser.roleCode) }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="部门">{{ viewUser.departmentDisplayName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="viewUser.isActive ? 'success' : 'danger'" size="small">
+            {{ viewUser.isActive ? '启用' : '禁用' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="创建时间">
+          {{ viewUser.createdAt ? viewUser.createdAt.replace('T', ' ').substring(0, 19) : '-' }}
+        </el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
+
+    <!-- Edit User Dialog -->
+    <el-dialog v-model="editDialogVisible" title="编辑用户" width="500px" :close-on-click-modal="false">
+      <el-form ref="editFormRef" :model="editForm" label-width="80px">
+        <el-form-item label="用户名">
+          <el-input :model-value="editForm.username" disabled />
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email" :rules="[{ type: 'email', message: '邮箱格式不正确', trigger: 'blur' }]">
+          <el-input v-model="editForm.email" placeholder="请输入邮箱" />
+        </el-form-item>
+        <el-form-item label="姓名" prop="fullName" :rules="[{ required: true, message: '请输入姓名', trigger: 'blur' }]">
+          <el-input v-model="editForm.fullName" placeholder="请输入姓名" />
+        </el-form-item>
+        <el-form-item label="手机号">
+          <el-input v-model="editForm.phone" placeholder="请输入手机号" />
+        </el-form-item>
+        <el-form-item label="角色" prop="roleCode" :rules="[{ required: true, message: '请选择角色', trigger: 'change' }]">
+          <el-select v-model="editForm.roleCode" placeholder="请选择角色" style="width: 100%">
+            <el-option v-for="option in roleOptions" :key="option.value" :label="option.label" :value="option.value" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="editLoading" @click="handleSaveEdit">保存</el-button>
       </template>
     </el-dialog>
   </div>

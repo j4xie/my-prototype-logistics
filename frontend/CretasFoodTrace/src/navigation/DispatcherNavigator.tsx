@@ -62,7 +62,7 @@ export type DispatcherStackParamList = {
   AIReschedule: undefined;
   AIProbabilityDetail: { scheduleId?: string; planId?: string } | undefined;
   // Personnel 模块
-  PersonnelDetail: { employeeId: string };
+  PersonnelDetail: { personnelId: string };
   PersonnelSchedule: undefined;
   PersonnelTransfer: undefined;
   // Alert 模块

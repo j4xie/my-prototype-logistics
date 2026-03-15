@@ -147,7 +147,18 @@
       "medium": "中",
       "low": "低"
     },
+    "type": {
+      "equipment": "设备",
+      "maintenance": "维保",
+      "quality": "质量",
+      "qualityFail": "质检不合格",
+      "inventory": "库存",
+      "production": "生产",
+      "lowStock": "低库存",
+      "expiring": "即将过期"
+    },
     "time": {
+      "unknown": "未知时间",
       "minutesAgo": "{{count}}分钟前",
       "hoursAgo": "{{count}}小时前"
     },

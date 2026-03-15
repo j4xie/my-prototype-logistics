@@ -583,7 +583,7 @@ export default function AttendanceHistoryScreen() {
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
                 <Text variant="headlineSmall" style={styles.statValue}>
-                  {stats.totalWorkHours.toFixed(1)}
+                  {Number(stats.totalWorkHours ?? 0).toFixed(1)}
                 </Text>
                 <Text variant="bodySmall" style={styles.statLabel}>
                   {t('attendance.history.totalWorkHours')}
@@ -592,7 +592,7 @@ export default function AttendanceHistoryScreen() {
 
               <View style={styles.statItem}>
                 <Text variant="headlineSmall" style={[styles.statValue, { color: '#FF9800' }]}>
-                  {stats.totalOvertimeHours.toFixed(1)}
+                  {Number(stats.totalOvertimeHours ?? 0).toFixed(1)}
                 </Text>
                 <Text variant="bodySmall" style={styles.statLabel}>
                   {t('attendance.history.overtimeHours')}
@@ -676,7 +676,7 @@ export default function AttendanceHistoryScreen() {
                       : '-'}
                   </DataTable.Cell>
                   <DataTable.Cell numeric>
-                    {record.workHours > 0 ? record.workHours.toFixed(1) : '-'}
+                    {Number(record.workHours) > 0 ? Number(record.workHours).toFixed(1) : '-'}
                   </DataTable.Cell>
                   <DataTable.Cell>{getStatusChip(record.status)}</DataTable.Cell>
                   <DataTable.Cell>

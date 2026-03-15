@@ -119,7 +119,7 @@ export default function PersonnelReportScreen() {
         personnelReportLogger.info('人员统计数据加载成功', {
           totalEmployees: statsResponse.data.totalEmployees,
           totalPresent: statsResponse.data.totalPresent,
-          avgAttendanceRate: statsResponse.data.avgAttendanceRate.toFixed(1) + '%',
+          avgAttendanceRate: Number(statsResponse.data.avgAttendanceRate ?? 0).toFixed(1) + '%',
         });
       } else {
         setPersonnelStats(null);
@@ -157,11 +157,11 @@ export default function PersonnelReportScreen() {
         ]);
 
         // 处理嵌套的响应格式 {code, message, data}
-        const rankingData = Array.isArray(rankingRes) ? rankingRes : (rankingRes as any)?.data || [];
-        const costData = (costRes as any)?.data ?? costRes;
+        const rankingData = Array.isArray(rankingRes) ? rankingRes : (rankingRes && typeof rankingRes === 'object' && 'data' in rankingRes) ? (rankingRes as { data: unknown[] }).data || [] : [];
+        const costData = (costRes && typeof costRes === 'object' && 'data' in costRes) ? (costRes as { data: LaborCostAnalysis | null }).data : costRes;
 
-        setEfficiencyRanking(rankingData);
-        setLaborCostAnalysis(costData);
+        setEfficiencyRanking(rankingData as WorkerDailyEfficiency[]);
+        setLaborCostAnalysis(costData as LaborCostAnalysis | null);
 
         personnelReportLogger.info('计件人效数据加载完成', {
           efficiencyCount: rankingData.length,
@@ -174,7 +174,7 @@ export default function PersonnelReportScreen() {
       }
 
     } catch (error) {
-      personnelReportLogger.error('加载人员报表失败', error, {
+      personnelReportLogger.error('加载人员报表失败', error instanceof Error ? error : new Error(String(error)), {
         factoryId: getFactoryId(user),
         timeRange,
       });
@@ -279,7 +279,7 @@ export default function PersonnelReportScreen() {
               <View style={styles.attendanceRateContainer}>
                 <Text style={styles.attendanceRateLabel}>{t('personnel.avgAttendanceRate')}</Text>
                 <Text style={styles.attendanceRateValue}>
-                  {(personnelStats.avgAttendanceRate ?? 0).toFixed(1)}%
+                  {Number(personnelStats.avgAttendanceRate ?? 0).toFixed(1)}%
                 </Text>
               </View>
             </>
@@ -340,17 +340,17 @@ export default function PersonnelReportScreen() {
                   </DataTable.Cell>
                   <DataTable.Cell numeric>
                     <Text variant="bodySmall" style={{ color: '#2196F3', fontWeight: '600' }}>
-                      {(item.totalWorkHours ?? 0).toFixed(1)}h
+                      {Number(item.totalWorkHours ?? 0).toFixed(1)}h
                     </Text>
                   </DataTable.Cell>
                   <DataTable.Cell numeric>
                     <Text
                       variant="bodySmall"
                       style={{
-                        color: (item.attendanceRate ?? 0) >= 95 ? '#4CAF50' : '#FF9800',
+                        color: Number(item.attendanceRate ?? 0) >= 95 ? '#4CAF50' : '#FF9800',
                       }}
                     >
-                      {(item.attendanceRate ?? 0).toFixed(0)}%
+                      {Number(item.attendanceRate ?? 0).toFixed(0)}%
                     </Text>
                   </DataTable.Cell>
                 </DataTable.Row>

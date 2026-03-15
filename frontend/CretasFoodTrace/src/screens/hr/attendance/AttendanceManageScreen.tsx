@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import { Text, Card, Searchbar, Chip, Avatar, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -192,7 +192,7 @@ export default function AttendanceManageScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t('attendance.manage.title')}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('FAAITab' as any, { screen: 'AIChat', params: { entityType: 'ATTENDANCE' } })}>
+        <TouchableOpacity onPress={() => navigation.dispatch(CommonActions.navigate('FAAITab', { screen: 'AIChat', params: { entityType: 'ATTENDANCE' } }))}>
           <MaterialCommunityIcons name="robot-outline" size={24} color={HR_THEME.primary} />
         </TouchableOpacity>
       </View>

@@ -77,10 +77,11 @@ public interface ShipmentRecordRepository extends JpaRepository<ShipmentRecord, 
 
     /**
      * 根据生产批次号查询出货记录（用于溯源）
-     * 通过产品名称匹配关联的出货记录
+     * 优先通过 batch_number 精确匹配，fallback 到 product_name LIKE 匹配
      */
     @Query("SELECT s FROM ShipmentRecord s WHERE s.factoryId = :factoryId " +
-           "AND s.productName LIKE %:batchNumber% ORDER BY s.shipmentDate DESC")
+           "AND (s.batchNumber = :batchNumber OR (s.batchNumber IS NULL AND s.productName LIKE %:batchNumber%)) " +
+           "ORDER BY s.shipmentDate DESC")
     List<ShipmentRecord> findByFactoryIdAndBatchNumber(@Param("factoryId") String factoryId,
                                                         @Param("batchNumber") String batchNumber);
 

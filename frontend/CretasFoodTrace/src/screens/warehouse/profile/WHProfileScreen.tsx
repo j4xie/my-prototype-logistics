@@ -23,7 +23,7 @@ import {
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTranslation } from 'react-i18next';
 import { WHProfileStackParamList } from "../../../types/navigation";
@@ -34,10 +34,12 @@ import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHProfileStackParamList>;
 
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
 interface MenuItem {
   key: string;
   label: string;
-  icon: string;
+  icon: MCIconName;
   screen?: keyof WHProfileStackParamList;
   badge?: number;
   description?: string;
@@ -79,7 +81,7 @@ export function WHProfileScreen() {
   const userInfo = {
     name: user?.username || "陈仓管",
     role: t('profile.role'),
-    factory: user?.factoryId || "白垩纪食品加工厂",
+    factory: user?.factoryId || "白垩纪加工厂",
     avatar: user?.username?.charAt(0).toUpperCase() || "U",
   };
 
@@ -185,7 +187,7 @@ export function WHProfileScreen() {
         {
           key: "recall",
           label: t('profile.menu.recall'),
-          icon: "package-variant-closed-remove",
+          icon: "package-variant-closed",
           screen: "WHRecallManage",
         },
       ],
@@ -239,7 +241,7 @@ export function WHProfileScreen() {
     if (item.onPress) {
       item.onPress();
     } else if (item.screen) {
-      navigation.navigate(item.screen as any);
+      navigation.dispatch(CommonActions.navigate(item.screen));
     }
   };
 
@@ -323,7 +325,7 @@ export function WHProfileScreen() {
                     activeOpacity={0.7}
                   >
                     <MaterialCommunityIcons
-                      name={item.icon as any}
+                      name={item.icon}
                       size={22}
                       color="#666"
                       style={styles.menuIcon}

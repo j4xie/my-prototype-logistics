@@ -25,7 +25,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
@@ -188,14 +188,24 @@ export default function PersonnelDetailScreen() {
         else if (hireType === 'dispatch') contractType = 'dispatch';
         else if (hireType === 'part_time') contractType = 'part_time';
 
-        // Transform skills
-        const skills: Skill[] = empData.skillLevels
-          ? Object.entries(empData.skillLevels).map(([name, level]) => ({
+        // Transform skills — handle both Record<string,number> and array formats
+        let skills: Skill[] = [];
+        if (empData.skillLevels) {
+          if (Array.isArray(empData.skillLevels)) {
+            // API returns array of { skillName, level } or similar
+            skills = (empData.skillLevels as any[]).map((s: any) => ({
+              name: s.skillName || s.name || '未知技能',
+              level: typeof s.level === 'number' ? s.level : 1,
+              maxLevel: 5,
+            }));
+          } else {
+            skills = Object.entries(empData.skillLevels).map(([name, level]) => ({
               name,
               level: typeof level === 'number' ? level : 1,
               maxLevel: 5,
-            }))
-          : [];
+            }));
+          }
+        }
 
         // Load performance data from HR API
         let performance: PerformanceMetric[] = [
@@ -283,11 +293,13 @@ export default function PersonnelDetailScreen() {
   };
 
   const handleTransfer = () => {
-    (navigation as any).navigate('PersonnelTransfer', {
-      employeeId: employee.id,
-      employeeName: employee.name,
-      currentWorkshop: employee.workshop,
-    });
+    navigation.dispatch(
+      CommonActions.navigate('PersonnelTransfer', {
+        employeeId: employee.id,
+        employeeName: employee.name,
+        currentWorkshop: employee.workshop,
+      })
+    );
   };
 
   const handleEdit = () => {

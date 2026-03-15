@@ -39,7 +39,9 @@
     "list": {
       "title": "Staff List",
       "searchPlaceholder": "Search staff...",
+      "empty": "No staff data",
       "filter": {
+        "title": "Filter",
         "all": "All"
       }
     },
@@ -92,6 +94,27 @@
       "analyzing": "Analyzing",
       "result": "Analysis Result",
       "noData": "No analysis data available"
+    },
+    "ai": {
+      "title": "AI Staff Analysis",
+      "loading": "Analyzing...",
+      "noData": "No analysis data",
+      "startHint": "Click the button below to start AI analysis",
+      "startAnalysis": "Start Analysis",
+      "overallScore": "Overall Score",
+      "analysisDate": "Analysis Date",
+      "sections": {
+        "ability": "Capability Assessment",
+        "strengths": "Strengths",
+        "improvements": "Areas for Improvement",
+        "suggestions": "Development Suggestions"
+      },
+      "scores": {
+        "efficiency": "Efficiency",
+        "quality": "Quality",
+        "attendance": "Attendance",
+        "teamwork": "Teamwork"
+      }
     },
     "search": {
       "placeholder": "Search staff..."
@@ -401,7 +424,19 @@
     "title": "Department Management",
     "list": {
       "title": "Department List",
-      "empty": "No department data"
+      "empty": "No department data",
+      "searchPlaceholder": "Search departments...",
+      "totalPrefix": "Total",
+      "totalSuffix": "departments",
+      "noManager": "No Manager",
+      "memberCount": "{{count}} members",
+      "deleteConfirm": "Confirm Delete",
+      "deleteMessage": "Delete department '{{name}}'?",
+      "deleteFailed": "Failed to delete",
+      "status": {
+        "active": "Active",
+        "disabled": "Disabled"
+      }
     },
     "add": {
       "title": "Add Department",
@@ -426,11 +461,28 @@
       "members": "Department Members",
       "manager": "Manager",
       "memberCount": "Member Count",
+      "memberCountValue": "{{count}} members",
       "createdAt": "Created At",
       "statusActive": "Active",
       "statusInactive": "Inactive",
       "noMembers": "No members",
-      "employee": "Employee"
+      "noManager": "No Manager",
+      "notFound": "Department not found",
+      "loadFailed": "Failed to load department details",
+      "employee": "Employee",
+      "status": {
+        "active": "Active",
+        "disabled": "Disabled"
+      },
+      "sections": {
+        "basicInfo": "Basic Information",
+        "members": "Department Members"
+      },
+      "fields": {
+        "manager": "Manager",
+        "memberCount": "Member Count",
+        "createdAt": "Created At"
+      }
     }
   },
   "whitelist": {
@@ -445,7 +497,8 @@
       "deleteSuccess": "Deleted successfully",
       "deleteFailed": "Delete failed",
       "unsetRole": "No role set",
-      "addedAt": "Added"
+      "addedAt": "Added",
+      "noRole": "No role set"
     },
     "add": {
       "title": "Add to Whitelist",
@@ -466,6 +519,21 @@
       "failed": "Failed to add",
       "tipTitle": "Tip",
       "errorTitle": "Error"
+    }
+  },
+  "schedule": {
+    "title": "Work Schedule",
+    "dateFormat": "{{month}}/{{day}} {{weekday}}",
+    "noSchedule": "No schedule for this day",
+    "addHint": "Tap button below to add schedule",
+    "weekdays": {
+      "sunday": "Sun",
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat"
     }
   },
   "scheduling": {
@@ -661,6 +729,7 @@
     "tip": "Tip"
   },
   "common": {
+    "user": "User",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "save": "Save",

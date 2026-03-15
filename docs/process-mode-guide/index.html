@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工序生产操作手册 — 白垩纪AI Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a365d 0%, #2563eb 100%); color: white; padding: 40px 20px; text-align: center; }
+  .header h1 { font-size: 32px; margin-bottom: 8px; }
+  .header p { font-size: 16px; opacity: 0.8; }
+  .header .badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 16px; border-radius: 20px; font-size: 13px; margin-top: 12px; }
+  .nav { background: white; border-bottom: 1px solid #e2e8f0; padding: 0 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .nav-inner { max-width: 1200px; margin: 0 auto; display: flex; gap: 0; overflow-x: auto; }
+  .nav a { display: block; padding: 14px 16px; text-decoration: none; color: #64748b; font-size: 13px; font-weight: 500; white-space: nowrap; border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .nav a:hover { color: #2563eb; border-bottom-color: #2563eb; }
+  .nav .vue-tag { color: #42b883; } .nav .rn-tag { color: #61dafb; }
+  .content { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+  .section { margin-bottom: 60px; scroll-margin-top: 60px; }
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .section-number { width: 48px; height: 48px; border-radius: 50%; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; flex-shrink: 0; }
+  .section-number.rn { background: #0891b2; }
+  .section-title { font-size: 24px; font-weight: 700; color: #1e293b; }
+  .section-subtitle { font-size: 14px; color: #64748b; }
+  .step { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid #2563eb; transition: transform 0.2s; animation: slideIn 0.4s ease-out; }
+  .step:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .step.rn-step { border-left-color: #0891b2; }
+  .step h3 { font-size: 18px; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .step h3 .badge { background: #eff6ff; color: #2563eb; font-size: 11px; padding: 2px 10px; border-radius: 12px; font-weight: 600; }
+  .step h3 .badge.rn { background: #ecfeff; color: #0891b2; }
+  .step p, .step li { margin-bottom: 8px; color: #475569; font-size: 15px; }
+  .step ul, .step ol { margin: 8px 0 8px 20px; }
+  .tip { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 14px; color: #166534; }
+  .tip::before { content: '💡 '; }
+  .warning { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 14px; color: #92400e; }
+  .warning::before { content: '⚠️ '; }
+  .action { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 14px; color: #1e40af; }
+  .action::before { content: '👆 操作：'; font-weight: 700; }
+  .img-row { display: flex; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
+  .img-row .screenshot { flex: 1; min-width: 280px; }
+  .screenshot { margin: 16px 0; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; cursor: pointer; transition: transform 0.3s; }
+  .screenshot:hover { transform: scale(1.02); }
+  .screenshot img { width: 100%; display: block; }
+  .screenshot .caption { background: #f8fafc; padding: 8px 16px; font-size: 13px; color: #64748b; text-align: center; border-top: 1px solid #e2e8f0; }
+  .screenshot.phone { max-width: 320px; margin: 16px auto; }
+  .screenshot.phone img { border-radius: 16px; }
+  .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; cursor: pointer; }
+  .lightbox.active { display: flex; }
+  .lightbox img { max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; }
+  .flow { background: white; border-radius: 12px; padding: 30px; margin: 30px 0; text-align: center; }
+  .flow-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+  .flow-steps { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
+  .flow-item { background: #eff6ff; border: 2px solid #2563eb; border-radius: 8px; padding: 10px 20px; font-weight: 600; color: #1e40af; font-size: 14px; }
+  .flow-item.rn { background: #ecfeff; border-color: #0891b2; color: #155e75; }
+  .flow-arrow { font-size: 24px; color: #94a3b8; }
+  .faq { background: white; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  .faq-q { padding: 16px 20px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+  .faq-q:hover { background: #f8fafc; }
+  .faq-q .arrow { transition: transform 0.3s; font-size: 18px; color: #94a3b8; }
+  .faq-q.open .arrow { transform: rotate(180deg); }
+  .faq-a { padding: 0 20px 16px; color: #475569; display: none; }
+  .faq-a.open { display: block; animation: fadeIn 0.3s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+  @media (max-width: 768px) { .header h1 { font-size: 24px; } .content { padding: 16px; } .step { padding: 16px; } .flow-steps { flex-direction: column; } .flow-arrow { transform: rotate(90deg); } .img-row { flex-direction: column; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>工序生产操作手册</h1>
+  <p>白垩纪AI Agent v3.1 — 62张截图逐步教学</p>
+  <div class="badge">Vue Web管理端 (42张) + RN 移动端App iPhone14 (20张)</div>
+</div>
+<div class="nav"><div class="nav-inner">
+  <a href="#overview">流程总览</a>
+  <a href="#login" class="vue-tag">1.登录</a>
+  <a href="#process-def" class="vue-tag">2.工序定义</a>
+  <a href="#product-config" class="vue-tag">3.产品配置</a>
+  <a href="#generate" class="vue-tag">4.生成任务</a>
+  <a href="#approval" class="vue-tag">5.审批</a>
+  <a href="#workflow" class="vue-tag">6.工作流画布</a>
+  <a href="#rn-home" class="rn-tag">7.App首页</a>
+  <a href="#rn-task" class="rn-tag">8.工序任务</a>
+  <a href="#rn-report" class="rn-tag">9.报工</a>
+  <a href="#rn-detail" class="rn-tag">10.进度查看</a>
+  <a href="#rn-approval" class="rn-tag">11.App审批</a>
+  <a href="#proxy-report" class="vue-tag">12.代报工</a>
+  <a href="#faq">常见问题</a>
+</div></div>
+<div class="content">
+
+<!-- 流程总览 -->
+<div class="section" id="overview">
+  <div class="flow">
+    <div class="flow-title">完整操作流程</div>
+    <div class="flow-steps">
+      <div class="flow-item">1.创建工序</div><div class="flow-arrow">→</div>
+      <div class="flow-item">2.产品关联</div><div class="flow-arrow">→</div>
+      <div class="flow-item">3.生成任务</div><div class="flow-arrow">→</div>
+      <div class="flow-item rn">4.App看任务</div><div class="flow-arrow">→</div>
+      <div class="flow-item rn">5.签到+报工</div><div class="flow-arrow">→</div>
+      <div class="flow-item">6.审批</div><div class="flow-arrow">→</div>
+      <div class="flow-item rn">7.看进度</div>
+    </div>
+    <p style="margin-top:16px;color:#64748b;font-size:14px">蓝色 = 电脑端管理员 &nbsp;|&nbsp; 青色 = 手机端工人</p>
+  </div>
+</div>
+
+<!-- ===== 1. 登录 ===== -->
+<div class="section" id="login">
+  <div class="section-header"><div class="section-number">1</div><div><div class="section-title">登录管理系统</div><div class="section-subtitle">电脑端 Web-Admin</div></div></div>
+  <div class="step"><h3>打开登录页 <span class="badge">Web</span></h3>
+    <p>浏览器输入管理系统地址，看到登录界面。</p>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/01-login-empty.png"><div class="caption">图1.1 登录页 — 输入用户名和密码</div></div>
+  </div>
+  <div class="step"><h3>填入账号密码 <span class="badge">Web</span></h3>
+    <div class="action">输入用户名和密码，或点击下方「工厂总监」快捷登录</div>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/02-login-filled.png"><div class="caption">图1.2 已填入账号密码</div></div>
+    <div class="tip">测试环境点击「工厂总监」一键填入，密码统一 123456。</div>
+  </div>
+  <div class="step"><h3>登录成功 <span class="badge">Web</span></h3>
+    <p>点击「登 录」进入首页仪表板。</p>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/03-dashboard.png"><div class="caption">图1.3 首页仪表板 — 今日产量、快捷操作</div></div>
+  </div>
+</div>
+
+<!-- ===== 2. 工序定义 ===== -->
+<div class="section" id="process-def">
+  <div class="section-header"><div class="section-number">2</div><div><div class="section-title">创建工序（第一次使用）</div><div class="section-subtitle">工序 = 生产步骤，如 拆箱→卤制→包装</div></div></div>
+  <div class="step"><h3>找到入口 <span class="badge">Web</span></h3>
+    <div class="action">左侧菜单 → 「系统管理」展开 → 「工序管理」</div>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/04-sidebar-system-menu.png"><div class="caption">图2.1 展开系统管理 — 找到「工序管理」和「产品-工序配置」</div></div>
+  </div>
+  <div class="step"><h3>工序列表 <span class="badge">Web</span></h3>
+    <p>已有工序：拆箱分拣(箱)、卤制加工(kg)、真空包装(袋)。</p>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/05-work-process-list.png"><div class="caption">图2.2 工序列表 — 每道工序可以有不同单位</div></div>
+    <div class="tip">每道工序的<strong>单位可以不同</strong>！拆箱按「箱」，卤制按「kg」，包装按「袋」。</div>
+  </div>
+  <div class="step"><h3>新增工序 <span class="badge">Web</span></h3>
+    <div class="action">点击右上角「+ 新增工序」按钮</div>
+    <div class="img-row">
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/06-add-process-dialog-empty.png"><div class="caption">图2.3 新增弹窗（空表单）</div></div>
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/07-add-process-name-filled.png"><div class="caption">图2.4 填写工序名称</div></div>
+    </div>
+    <div class="img-row">
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/08-add-process-category-dropdown.png"><div class="caption">图2.5 类别下拉（8种可选）</div></div>
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/09-add-process-all-filled.png"><div class="caption">图2.6 全部填完 → 点「确定」</div></div>
+    </div>
+    <p>填写：<strong>工序名称</strong>(必填) → <strong>类别</strong>(下拉选) → <strong>产出单位</strong>(必填) → 预估工时 → 排序 → 确定</p>
+  </div>
+  <div class="step"><h3>编辑/禁用/删除 <span class="badge">Web</span></h3>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/10-edit-process-dialog.png"><div class="caption">图2.7 编辑工序弹窗</div></div>
+    <p>每行右侧：<strong style="color:#1890ff">编辑</strong> | <strong style="color:#e6a23c">禁用</strong> | <strong style="color:#f56c6c">删除</strong></p>
+  </div>
+</div>
+
+<!-- ===== 3. 产品配置 ===== -->
+<div class="section" id="product-config">
+  <div class="section-header"><div class="section-number">3</div><div><div class="section-title">给产品关联工序</div><div class="section-subtitle">设置每个产品需要哪些工序、什么顺序</div></div></div>
+  <div class="step"><h3>进入配置页 <span class="badge">Web</span></h3>
+    <div class="action">系统管理 → 「产品-工序配置」</div>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/12-product-process-initial.png"><div class="caption">图3.1 左侧选产品，右侧管理工序</div></div>
+  </div>
+  <div class="step"><h3>选择产品 <span class="badge">Web</span></h3>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/13-product-dropdown-open.png"><div class="caption">图3.2 产品下拉列表</div></div>
+  </div>
+  <div class="step"><h3>查看已关联工序 <span class="badge">Web</span></h3>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/14-product-selected-with-processes.png"><div class="caption">图3.3 带鱼段已关联3道工序（可上移/下移/移除）</div></div>
+    <div class="tip"><strong>添加</strong>：下方「可添加的工序」点「+ 添加」<br><strong>排序</strong>：「上移」「下移」调整顺序<br><strong>移除</strong>：红色「移除」按钮</div>
+  </div>
+</div>
+
+<!-- ===== 4. 生成任务 ===== -->
+<div class="section" id="generate">
+  <div class="section-header"><div class="section-number">4</div><div><div class="section-title">生成工序任务</div><div class="section-subtitle">每天排计划时使用 — 把产品拆成工序任务</div></div></div>
+  <div class="step"><h3>点击生成 <span class="badge">Web</span></h3>
+    <div class="action">选好产品后 → 点击右上角绿色「生成工序任务」按钮</div>
+    <div class="img-row">
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/16-generate-task-confirm-dialog.png"><div class="caption">图4.1 确认弹窗</div></div>
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/17-generate-task-success.png"><div class="caption">图4.2 生成成功提示</div></div>
+    </div>
+    <div class="warning">这一步<strong>每天都要做</strong> — 排明天计划时为每个产品生成工序任务。生成后工人在App上就能看到。</div>
+  </div>
+</div>
+
+<!-- ===== 5. 审批 ===== -->
+<div class="section" id="approval">
+  <div class="section-header"><div class="section-number">5</div><div><div class="section-title">审批报工</div><div class="section-subtitle">工人每次报工都需要管理员审批</div></div></div>
+  <div class="step"><h3>审批列表 <span class="badge">Web</span></h3>
+    <div class="action">生产管理 → 「报工审批」</div>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/18-approval-list.png"><div class="caption">图5.1 审批列表 — 待审批数量+每条报工详情</div></div>
+  </div>
+  <div class="step"><h3>通过 / 驳回 <span class="badge">Web</span></h3>
+    <p><strong style="color:#67c23a">✓ 通过</strong> → 数量计入完成量 &nbsp;|&nbsp; <strong style="color:#f56c6c">✕ 驳回</strong> → 填写原因，工人可重报</p>
+    <div class="img-row">
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/21-reject-dialog.png"><div class="caption">图5.2 驳回弹窗</div></div>
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/22-reject-reason-filled.png"><div class="caption">图5.3 填写驳回原因</div></div>
+    </div>
+  </div>
+  <div class="step"><h3>批量审批 <span class="badge">Web</span></h3>
+    <div class="action">勾选多条 → 点「批量通过」</div>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/23-batch-select.png"><div class="caption">图5.4 勾选多条后出现「批量通过」按钮</div></div>
+  </div>
+</div>
+
+<!-- ===== 6. 工作流画布 ===== -->
+<div class="section" id="workflow">
+  <div class="section-header"><div class="section-number">6</div><div><div class="section-title">工作流画布（高级功能）</div><div class="section-subtitle">可视化设计生产流程的状态流转规则</div></div></div>
+  <div class="step"><h3>画布概览 <span class="badge">Web</span></h3>
+    <div class="action">系统管理 → 「工作流设计器」（或通过侧边栏其他入口）</div>
+    <p>三栏布局：左侧节点面板 | 中间画布 | 右侧属性配置</p>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/25-workflow-designer.png"><div class="caption">图6.1 工作流设计器全貌 — 空画布+6种节点类型</div></div>
+  </div>
+  <div class="step"><h3>节点类型 <span class="badge">Web</span></h3>
+    <p>左侧面板提供6种节点，按类别分组：</p>
+    <ul>
+      <li><strong style="color:#2563eb">● 计划创建</strong> — 生产计划的起点</li>
+      <li><strong style="color:#67c23a">● 报工审批</strong> — 审批节点</li>
+      <li><strong style="color:#e6a23c">● 累加报工</strong> — 支持每小时累计报工</li>
+      <li><strong style="color:#67c23a">● 签到签退</strong> — NFC/QR签到</li>
+      <li><strong style="color:#f56c6c">● 质检</strong> — 质量检查节点</li>
+      <li><strong style="color:#909399">● 完工标记</strong> — 任务完成的终点</li>
+    </ul>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/26-workflow-node-panel.png" style="max-width:200px"><div class="caption">图6.2 节点面板放大</div></div>
+  </div>
+  <div class="step"><h3>拖拽节点到画布 <span class="badge">Web</span></h3>
+    <div class="action">从左侧面板拖拽节点到中间画布区域</div>
+    <div class="img-row">
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/27-workflow-before-drag.png"><div class="caption">图6.3 拖拽前 — 空画布</div></div>
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/28-workflow-node-dropped.png"><div class="caption">图6.4 拖入「计划创建」（蓝色）</div></div>
+    </div>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/29-workflow-two-nodes.png"><div class="caption">图6.5 拖入第二个「累加报工」（橙色）— 颜色按类别区分</div></div>
+  </div>
+  <div class="step"><h3>编辑节点属性 <span class="badge">Web</span></h3>
+    <div class="action">点击画布上的节点 → 右侧展开属性配置面板</div>
+    <div class="img-row">
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/30-workflow-node-properties.png"><div class="caption">图6.6 点击节点后三栏完整展示</div></div>
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/31-workflow-property-panel.png" style="max-width:250px"><div class="caption">图6.7 属性面板放大</div></div>
+    </div>
+    <p>可编辑：<strong>状态名称</strong> / <strong>状态代码</strong> / <strong>状态类型</strong>(初始/普通/终止) / <strong>颜色</strong> / <strong>描述</strong></p>
+    <p>底部有红色「删除节点」按钮。</p>
+  </div>
+  <div class="step"><h3>保存与发布 <span class="badge">Web</span></h3>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/32-workflow-save-button.png"><div class="caption">图6.8 右上角「保存草稿」和「发布」按钮</div></div>
+    <p><strong>保存草稿</strong>：保存当前设计，可继续编辑<br><strong>发布</strong>：正式启用，新创建的工序任务将使用此工作流版本</p>
+    <div class="tip">发布后旧版本自动归档。已创建的任务保留创建时的工作流版本，不受新发布影响。</div>
+  </div>
+</div>
+
+<!-- ===== 7. RN 首页 ===== -->
+<div class="section" id="rn-home">
+  <div class="section-header"><div class="section-number rn">7</div><div><div class="section-title">打开 App 看首页</div><div class="section-subtitle">手机端 — 工人操作从这里开始</div></div></div>
+  <div class="step rn-step"><h3>首页概览 <span class="badge rn">App</span></h3>
+    <div class="img-row">
+      <div class="screenshot phone" onclick="openLightbox(this)"><img src="screenshots/rn/04-home-overview.png"><div class="caption">图7.1 首页 — 待审批报工(12)+工序任务(0)</div></div>
+      <div class="screenshot phone" onclick="openLightbox(this)"><img src="screenshots/rn/05-home-full.png"><div class="caption">图7.2 首页全貌（含快捷操作）</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 8. RN 工序任务 ===== -->
+<div class="section" id="rn-task">
+  <div class="section-header"><div class="section-number rn">8</div><div><div class="section-title">进入工序任务</div><div class="section-subtitle">手机端 — 查看今天需要做的工序</div></div></div>
+  <div class="step rn-step"><h3>找到入口 <span class="badge rn">App</span></h3>
+    <div class="action">底部「管理」Tab → 核心管理区「工序任务」图标</div>
+    <div class="screenshot phone" onclick="openLightbox(this)"><img src="screenshots/rn/06-management-tab.png"><div class="caption">图8.1 管理页 — 「工序任务」在核心管理区</div></div>
+  </div>
+  <div class="step rn-step"><h3>任务列表 <span class="badge rn">App</span></h3>
+    <div class="screenshot phone" onclick="openLightbox(this)"><img src="screenshots/rn/08-task-list-active.png"><div class="caption">图8.2 工序任务列表 — 卡片+状态+报工按钮</div></div>
+    <p>顶部筛选：「进行中」「已完成」「全部」</p>
+    <div class="img-row">
+      <div class="screenshot phone" onclick="openLightbox(this)"><img src="screenshots/rn/09-task-list-completed.png"><div class="caption">图8.3 已完成筛选</div></div>
+      <div class="screenshot phone" onclick="openLightbox(this)"><img src="screenshots/rn/10-task-list-all-cards.png"><div class="caption">图8.4 全部任务（含各状态）</div></div>
+    </div>
+    <div class="tip">第一次进入会弹出操作指引：「1.选卡片 2.点报工 3.输数量 4.提交等审批」</div>
+  </div>
+</div>
+
+<!-- ===== 9. RN 报工 ===== -->
+<div class="section" id="rn-report">
+  <div class="section-header"><div class="section-number rn">9</div><div><div class="section-title">提交报工</div><div class="section-subtitle">手机端 — 每天最重要的操作！每小时报一次</div></div></div>
+  <div class="step rn-step"><h3>正常报工 <span class="badge rn">App</span></h3>
+    <div class="action">点卡片右下角蓝色「报工」按钮 → 输入数量 → 提交</div>
+    <div class="img-row">
+      <div class="screenshot phone" onclick="openLightbox(this)"><img src="screenshots/rn/13-report-form-normal.png"><div class="caption">图9.1 正常报工表单（快捷填入500/250）</div></div>
+      <div class="screenshot phone" onclick="openLightbox(this)"><img src="screenshots/rn/16-report-quickfill.png"><div class="caption">图9.2 点快捷填入后数量自动填入</div></div>
+    </div>
+    <ol>
+      <li>输入<strong>产出数量</strong>（或点快捷填入）</li>
+      <li>备注可选填</li>
+      <li>点蓝色「提交报工」按钮</li>
+      <li>看到「报工已提交，等待审批」= 成功</li>
+    </ol>
+  </div>
+  <div class="step rn-step"><h3>补报模式 <span class="badge rn">App</span></h3>
+    <p>对已完成/已关闭的任务也可以补报，会有黄色提示。</p>
+    <div class="screenshot phone" onclick="openLightbox(this)"><img src="screenshots/rn/14-report-form-supplement.png"><div class="caption">图9.3 补报模式 — 黄色「补报模式」提示</div></div>
+    <div class="tip"><strong>超量报工</strong>：超过150%会弹确认框，点「仍然提交」可继续。<br><strong>防重复</strong>：30秒内相同数量自动去重。</div>
+  </div>
+</div>
+
+<!-- ===== 10. RN 进度 ===== -->
+<div class="section" id="rn-detail">
+  <div class="section-header"><div class="section-number rn">10</div><div><div class="section-title">查看进度与历史</div><div class="section-subtitle">手机端 — 报工后实时看到进度更新</div></div></div>
+  <div class="step rn-step"><h3>任务详情 <span class="badge rn">App</span></h3>
+    <div class="action">点击任务卡片进入详情页</div>
+    <div class="screenshot phone" onclick="openLightbox(this)"><img src="screenshots/rn/19-task-detail.png"><div class="caption">图10.1 任务详情 — 计划量/已完成/待审批+报工按钮</div></div>
+    <div class="tip">详情页<strong>每30秒自动刷新</strong>。主管审批后会弹出「有报工已审批完成」提示。</div>
+  </div>
+  <div class="step rn-step"><h3>历史记录 <span class="badge rn">App</span></h3>
+    <div class="action">任务列表右上角「时钟图标」→ 历史页面</div>
+    <div class="screenshot phone" onclick="openLightbox(this)"><img src="screenshots/rn/23-history.png"><div class="caption">图10.2 历史记录 — 支持全部/已完成/已关闭筛选</div></div>
+  </div>
+</div>
+
+<!-- ===== 11. App端审批 ===== -->
+<div class="section" id="rn-approval">
+  <div class="section-header"><div class="section-number rn">11</div><div><div class="section-title">App端报工审批</div><div class="section-subtitle">主管在手机上直接审批工人的报工</div></div></div>
+
+  <div class="step rn-step">
+    <h3>进入审批页面</h3>
+    <p>在工序任务列表页，点击顶部的 <strong>「审批图标」</strong>（剪贴板打勾图标）进入报工审批页面。</p>
+    <div class="tip">页面显示所有待审批的报工记录，包含报工人、数量、工序类别、提交时间。补报会标有黄色「补报」标签。</div>
+  </div>
+
+  <div class="step rn-step">
+    <h3>审批操作</h3>
+    <ul>
+      <li><strong>单条通过</strong>：点击「通过」按钮</li>
+      <li><strong>驳回</strong>：点击「驳回」→ 输入驳回原因 → 确定</li>
+      <li><strong>批量通过</strong>：勾选多条记录 → 顶部出现「批量通过」按钮</li>
+    </ul>
+    <div class="tip">审批后记录从列表中消失，工人端的30秒轮询会自动检测到审批结果并弹出提示。</div>
+  </div>
+</div>
+
+<!-- ===== 12. 代报工 ===== -->
+<div class="section" id="proxy-report">
+  <div class="section-header"><div class="section-number">12</div><div><div class="section-title">主管代报工</div><div class="section-subtitle">帮不会用手机的工人提交报工</div></div></div>
+
+  <div class="step">
+    <h3>什么时候需要代报工？</h3>
+    <p>水产加工车间里年纪大的工人可能不会操作手机App。主管可以代替他们提交报工。</p>
+  </div>
+
+  <div class="step">
+    <h3>操作方式（Web管理端）</h3>
+    <ol>
+      <li>在Web管理端调用报工接口时，传入 <code>targetWorkerId</code> 参数指定实际工人</li>
+      <li>报工记录的 workerId 会记录为该工人，而非主管自己</li>
+      <li>后续审批流程不变</li>
+    </ol>
+    <div class="tip">代报工功能通过API参数实现，后续会增加专用的代报工界面。</div>
+  </div>
+</div>
+
+<!-- ===== 新增功能截图 ===== -->
+<div class="section" id="new-features">
+  <div class="section-header"><div class="section-number" style="background:#8b5cf6">+</div><div><div class="section-title">新增功能展示</div><div class="section-subtitle">v3.1 更新：驳回原因、工作流入口、自动刷新</div></div></div>
+
+  <div class="step">
+    <h3>工作流设计器菜单入口 <span class="badge">新增</span></h3>
+    <p>系统管理菜单新增「工作流设计器」入口，无需手动输入URL即可访问。</p>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/30-sidebar-workflow-entry.png"><div class="caption">系统管理菜单 — 新增工作流设计器入口</div></div>
+  </div>
+
+  <div class="step">
+    <h3>审批驳回原因 <span class="badge">修复</span></h3>
+    <p>驳回报工时输入的原因现在会正确传递到后端记录，工人可以看到驳回原因。</p>
+    <div class="img-row">
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/34-reject-dialog-with-reason.png"><div class="caption">驳回弹窗 — 输入驳回原因</div></div>
+      <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/35-reject-reason-filled.png"><div class="caption">驳回原因已填写</div></div>
+    </div>
+  </div>
+
+  <div class="step">
+    <h3>审批页面30秒自动刷新 <span class="badge">优化</span></h3>
+    <p>报工审批页面每30秒自动刷新数据，无需手动点击刷新按钮。</p>
+    <div class="screenshot" onclick="openLightbox(this)"><img src="screenshots/vue/32-approval-list-auto-refresh.png"><div class="caption">审批页面 — 每30秒自动刷新</div></div>
+  </div>
+
+  <div class="step">
+    <h3>报工备注 <span class="badge">新增</span></h3>
+    <p>工人报工时可以填写备注信息（如「本批含碎片」「设备故障暂停1小时」），备注会随报工记录保存并在审批时可见。</p>
+  </div>
+
+  <div class="step">
+    <h3>超期任务标记 <span class="badge">新增</span></h3>
+    <p>超过预计完成日期但仍未完成的任务，在列表中会显示红色「超期」标签，帮助主管及时发现延迟。</p>
+  </div>
+
+  <div class="step">
+    <h3>冲销防重保护 <span class="badge">安全</span></h3>
+    <p>同一条报工记录只能冲销一次，防止误操作导致数据异常。</p>
+  </div>
+</div>
+
+<!-- ===== FAQ ===== -->
+<div class="section" id="faq">
+  <div class="section-header"><div class="section-number" style="background:#64748b">?</div><div><div class="section-title">常见问题</div></div></div>
+  <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">看不到「工序任务」按钮？<span class="arrow">▼</span></div><div class="faq-a">需要管理员开启「工序生产模式」（系统管理 → 功能模块配置 → 生产管理 → mode 设为 PROCESS）。</div></div>
+  <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">任务列表是空的？<span class="arrow">▼</span></div><div class="faq-a">管理员还没生成当天的任务。请联系管理员在「产品-工序配置」页点「生成工序任务」。</div></div>
+  <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">报工提交后一直「待审批」？<span class="arrow">▼</span></div><div class="faq-a">所有报工都需要主管在Web端审批。请联系主管打开「生产管理 → 报工审批」。</div></div>
+  <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">报工被驳回了怎么办？<span class="arrow">▼</span></div><div class="faq-a">查看驳回原因（现在主管驳回时必须填写原因），修正后重新报工即可。</div></div>
+  <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">工人不会用手机怎么办？<span class="arrow">▼</span></div><div class="faq-a">主管可以使用「代报工」功能，通过传入 targetWorkerId 参数代替工人提交报工。报工记录会正确关联到该工人。</div></div>
+  <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">主管不在电脑前能审批吗？<span class="arrow">▼</span></div><div class="faq-a">可以！App新增了「报工审批」页面，在工序任务列表顶部的审批图标进入，支持单条通过、驳回和批量通过。</div></div>
+  <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">超过计划量了还能报吗？<span class="arrow">▼</span></div><div class="faq-a">可以。超过150%弹确认框，点「仍然提交」继续。</div></div>
+  <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">网络不好提交失败会重复吗？<span class="arrow">▼</span></div><div class="faq-a">不会。30秒内相同数量自动去重。</div></div>
+  <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">签到提示「该员工已签到」？<span class="arrow">▼</span></div><div class="faq-a">先签退再重新签到。</div></div>
+  <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">跨天数据会丢吗？<span class="arrow">▼</span></div><div class="faq-a">不会。完成量累加，有每小时自动校准。</div></div>
+  <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">怎么改工序顺序？<span class="arrow">▼</span></div><div class="faq-a">Web端「产品-工序配置」页用「上移」「下移」按钮。</div></div>
+  <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">工作流画布怎么连线？<span class="arrow">▼</span></div><div class="faq-a">从一个节点的输出端口拖拽到另一个节点的输入端口即可创建连线。点击连线可编辑转换事件、守卫条件和允许角色。</div></div>
+</div>
+
+<div style="text-align:center;padding:40px;color:#94a3b8;font-size:13px">
+  <p>白垩纪AI Agent v3.1 — 工序生产操作手册</p>
+  <p>62张截图 | Vue 42张(桌面) + RN 20张(iPhone14)</p>
+  <p>最后更新：2026-03-15 | 21项P0+P1+P2修复已部署</p>
+</div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()"><img id="lightbox-img" src="" alt=""></div>
+<script>
+function openLightbox(el){const img=el.querySelector('img');document.getElementById('lightbox-img').src=img.src;document.getElementById('lightbox').classList.add('active');}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('active');}
+function toggleFaq(el){el.classList.toggle('open');el.nextElementSibling.classList.toggle('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox();});
+</script>
+</body>
+</html>

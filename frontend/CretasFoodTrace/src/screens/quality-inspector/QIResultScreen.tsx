@@ -34,11 +34,11 @@ export default function QIResultScreen() {
   };
 
   const handleContinue = () => {
-    navigation.navigate('QIInspectList');
+    navigation.navigate('QIInspectTab', { screen: 'QIInspectList' });
   };
 
   const handleGoHome = () => {
-    navigation.navigate('QIHome');
+    navigation.navigate('QIHomeTab', { screen: 'QIHome' });
   };
 
   return (

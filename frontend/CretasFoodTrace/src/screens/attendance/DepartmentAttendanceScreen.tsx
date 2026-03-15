@@ -101,7 +101,7 @@ export default function DepartmentAttendanceScreen() {
         setAttendanceData(response.data);
 
         // 提取员工记录列表
-        const records = response.data.records || (response.data as any).employees || [];
+        const records = response.data.records || [];
         setAttendanceRecords(Array.isArray(records) ? records : []);
 
         deptAttendanceLogger.info('部门考勤数据加载成功', {
@@ -327,7 +327,7 @@ export default function DepartmentAttendanceScreen() {
             <View style={styles.attendanceRateContainer}>
               <Text style={styles.attendanceRateLabel}>{t('attendance.department.attendanceRate')}</Text>
               <Text style={styles.attendanceRateValue}>
-                {stats.attendanceRate.toFixed(1)}%
+                {Number(stats.attendanceRate ?? 0).toFixed(1)}%
               </Text>
             </View>
           )}
@@ -379,9 +379,9 @@ export default function DepartmentAttendanceScreen() {
                   </DataTable.Cell>
                   <DataTable.Cell numeric>
                     {record.workDuration
-                      ? (record.workDuration / 60).toFixed(1)
+                      ? (Number(record.workDuration) / 60).toFixed(1)
                       : record.workHours
-                      ? record.workHours.toFixed(1)
+                      ? Number(record.workHours).toFixed(1)
                       : '-'}
                   </DataTable.Cell>
                   <DataTable.Cell>

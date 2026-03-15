@@ -30,6 +30,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载员工数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -46,20 +48,24 @@ function handlePageChange(page: number) {
 
 function getRoleText(role: string) {
   const roleMap: Record<string, string> = {
-    factory_super_admin: '工厂超管',
-    production_manager: '生产经理',
-    workshop_supervisor: '车间主任',
-    quality_manager: '质检主管',
-    quality_inspector: '质检员',
-    warehouse_manager: '仓库主管',
-    warehouse_operator: '仓库操作员',
+    factory_super_admin: '工厂总监',
+    hr_admin: 'HR管理员',
     procurement_manager: '采购主管',
-    procurement_staff: '采购员',
     sales_manager: '销售主管',
-    sales_staff: '销售员',
-    hr_manager: '人事主管',
-    equipment_manager: '设备主管',
-    finance_manager: '财务主管'
+    dispatcher: '调度',
+    production_manager: '调度',
+    warehouse_manager: '仓储主管',
+    equipment_admin: '设备管理员',
+    quality_manager: '质量经理',
+    finance_manager: '财务主管',
+    workshop_supervisor: '车间主任',
+    quality_inspector: '质检员',
+    operator: '操作员',
+    warehouse_worker: '仓库员',
+    permission_admin: '权限管理员',
+    department_admin: '部门管理员',
+    viewer: '查看者',
+    unactivated: '未激活'
   };
   return roleMap[role] || role;
 }
@@ -79,16 +85,18 @@ function getRoleText(role: string) {
         <el-table-column prop="username" label="用户名" width="120" />
         <el-table-column prop="fullName" label="姓名" />
         <el-table-column prop="phone" label="手机号" width="130" />
-        <el-table-column prop="role" label="角色">
+        <el-table-column label="角色">
           <template #default="{ row }">
-            <el-tag>{{ getRoleText(row.role) }}</el-tag>
+            <el-tag>{{ getRoleText(row.roleCode || row.role) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="departmentName" label="部门" />
-        <el-table-column prop="status" label="状态">
+        <el-table-column label="部门">
+          <template #default="{ row }">{{ row.departmentDisplayName || row.departmentName || row.department || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="状态">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'danger'">
-              {{ row.status === 'ACTIVE' ? '在职' : '离职' }}
+            <el-tag :type="(row.isActive === true || row.status === 'ACTIVE') ? 'success' : 'danger'">
+              {{ (row.isActive === true || row.status === 'ACTIVE') ? '在职' : '离职' }}
             </el-tag>
           </template>
         </el-table-column>

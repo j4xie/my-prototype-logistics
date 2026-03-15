@@ -199,19 +199,18 @@ export default function AICompletionProbScreen() {
         return;
       }
 
-      // 2. 获取所有计划的批次概率
+      // 2. 获取所有计划的批次概率（并行请求）
+      const probResults = await Promise.allSettled(
+        plans.map(plan => schedulingApiClient.calculateBatchProbabilities(plan.id))
+      );
       const allProbabilities: CompletionProbabilityResponse[] = [];
-
-      for (const plan of plans) {
-        try {
-          const probResponse = await schedulingApiClient.calculateBatchProbabilities(plan.id);
-          if (probResponse.success && probResponse.data) {
-            allProbabilities.push(...probResponse.data);
-          }
-        } catch (e) {
-          console.warn(`获取计划 ${plan.id} 的概率失败:`, e);
+      probResults.forEach((result, i) => {
+        if (result.status === 'fulfilled' && result.value.success && result.value.data) {
+          allProbabilities.push(...result.value.data);
+        } else if (result.status === 'rejected') {
+          console.warn(`获取计划 ${plans[i]?.id} 的概率失败:`, result.reason);
         }
-      }
+      });
 
       if (allProbabilities.length === 0) {
         setOverallProbability(0);

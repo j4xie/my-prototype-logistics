@@ -68,7 +68,7 @@ public class FinancePptExportTool extends AbstractBusinessTool {
         Map<String, String> chartImages = (Map<String, String>) params.get("chart_images");
         Map<String, String> analysisResults = (Map<String, String>) params.getOrDefault("analysis_results", new HashMap<>());
         Integer year = getInteger(params, "year", 2026);
-        String companyName = getString(params, "company_name", "白垩纪食品");
+        String companyName = getString(params, "company_name", "白垩纪科技");
 
         log.info("Exporting financial PPT: {} charts, company={}", chartImages.size(), companyName);
 

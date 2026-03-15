@@ -116,7 +116,7 @@ export function WHTrackingDetailScreen() {
       id: "3",
       time: "2025-12-26 08:30",
       status: "已揽收",
-      location: "已从白垩纪食品加工厂发出",
+      location: "已从白垩纪加工厂发出",
     },
     {
       id: "4",

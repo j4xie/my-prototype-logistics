@@ -1,0 +1,110 @@
+# OEE偏低 — 操作建议手册
+#
+# 触发条件: oee < benchmark.range[0]
+# 严重程度: 低于下限5个百分点以内=中等, 超过5+=严重
+# OEE = 可用率 × 性能率 × 良品率
+
+diagnosis_code: oee_low
+trigger_metric: oee
+trigger_condition: "actual < range_low"
+display_name: "OEE偏低(设备综合效率)"
+
+severity_levels:
+  moderate:
+    condition: "range_low - actual <= 5"
+    label: "轻度偏低"
+    urgency: "建议优化"
+  severe:
+    condition: "range_low - actual > 5"
+    label: "严重偏低"
+    urgency: "立即改善"
+
+diagnosis_checklist:
+  - question: "OEE三因子(可用率/性能率/良品率)哪个最低？"
+    if_availability: "聚焦设备故障和换线时间"
+    if_performance: "聚焦设备降速和空转"
+    if_quality: "参考yield_rate_low手册"
+  - question: "设备是否有计划外停机记录？"
+    if_yes: "分析MTBF(平均无故障时间)和MTTR(平均修复时间)"
+  - question: "换线/换品频次是多少？"
+    if_high: "换线时间优化是最大提升空间"
+
+action_plans:
+  - id: 1
+    name: "可用率提升(减少停机)"
+    priority: "P0"
+    actions:
+      - "统计设备停机原因TOP5(故障/换线/等料/清洁/调试)"
+      - "推行TPM(全员生产维护)——自主维护+计划维护"
+      - "建立备件安全库存，减少等件停机时间"
+      - "SMED快速换线：将换线时间缩短50%(内部→外部作业转化)"
+    expected_impact: "可用率提升5-10个百分点"
+
+  - id: 2
+    name: "性能率提升(减少降速)"
+    priority: "P0"
+    actions:
+      - "对比设备实际运行速度 vs 设计速度，找出降速原因"
+      - "分析小停机(micro-stops)的频率和原因"
+      - "检查上下游工序节拍是否匹配(瓶颈工序)"
+      - "优化排产计划减少空转等待时间"
+    expected_impact: "性能率提升3-8个百分点"
+
+  - id: 3
+    name: "换线时间优化(SMED)"
+    priority: "P1"
+    actions:
+      - "录像分析当前换线过程，区分内部/外部作业"
+      - "将可并行的外部作业移到设备运行期间完成"
+      - "标准化换线工具和操作步骤"
+      - "目标：30分钟换线→10分钟(单分换模)"
+    expected_impact: "换线时间缩短50-70%"
+
+  - id: 4
+    name: "数据采集与可视化"
+    priority: "P1"
+    actions:
+      - "在关键设备安装OEE自动采集系统(PLC/MES对接)"
+      - "建立OEE实时看板(按设备/产线/班组)"
+      - "每周OEE复盘会议，分析三因子变化趋势"
+      - "设定OEE改善目标：每季度提升2-3个百分点"
+    expected_impact: "数据驱动持续改善，OEE年提升5-10%"
+
+sub_sector_notes:
+  肉制品:
+    - "切割/灌肠/包装三段式产线——关注灌肠机清洗换线时间"
+    - "CIP清洗耗时长(1-2小时/次)是可用率的主要损失"
+    - "低温车间人员效率受环境影响——需优化作业编排"
+  乳制品:
+    - "灌装线OEE应达85%+——低于此值检查灌装头故障频率"
+    - "CIP频率高(每4-8小时)——优化CIP流程可提升可用率"
+    - "酸奶发酵罐利用率受发酵时间限制——考虑增加罐位"
+  速冻食品:
+    - "成型机换模频繁(多品种小批量)——SMED是关键改善点"
+    - "速冻隧道产能固定——前端成型速度需匹配"
+    - "淡季产能过剩时可安排设备大修"
+  烘焙食品:
+    - "烤箱升温/降温时间长——合理排产减少温度切换"
+    - "品种切换频繁(面包/蛋糕/饼干)——模具快速更换是关键"
+    - "醒发箱/烤箱的节拍匹配影响整线OEE"
+  饮料:
+    - "饮料灌装线OEE行业领先(85-92%)——低于85%需重点排查"
+    - "瓶型切换(PET/玻璃/易拉罐)是最大的换线时间损失"
+    - "高速线(>30000瓶/小时)的micro-stops需专门统计"
+  调味品:
+    - "酿造类设备(发酵罐)OEE计算需考虑发酵等待时间"
+    - "灌装线OEE参考饮料行业标准(85%+)"
+    - "固态调味品(鸡精/味精)包装线的称量精度影响良品率"
+
+decision_tree:
+  root: "OEE是否低于子行业下限？"
+  yes:
+    question: "OEE三因子中哪个最低？"
+    availability:
+      action: "优先执行：可用率提升(P0) + SMED换线(P1)"
+    performance:
+      action: "优先执行：性能率提升(P0) + 数据采集(P1)"
+    quality:
+      action: "参考yield_rate_low手册"
+  no:
+    action: "OEE达标，追求世界级水平(>85%)——聚焦数据驱动持续改善"

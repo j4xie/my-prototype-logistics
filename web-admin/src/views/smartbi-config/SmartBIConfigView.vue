@@ -24,7 +24,7 @@ const activeTab = ref('overview');
 // 阈值配置数据
 const thresholdLoading = ref(false);
 const thresholdList = ref<ThresholdConfig[]>([]);
-const thresholdSaving = ref(false);
+const thresholdSavingIds = ref(new Set<number>());
 
 // 根据路由参数设置初始 Tab
 onMounted(() => {
@@ -50,7 +50,14 @@ async function loadThresholds() {
   try {
     const response = await getThresholds();
     if (response.success && response.data) {
-      thresholdList.value = response.data;
+      const data = response.data;
+      thresholdList.value = Array.isArray(data)
+        ? data
+        : (data && typeof data === 'object' && 'content' in data)
+          ? (data as { content: ThresholdConfig[] }).content
+          : [];
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载阈值配置失败');
     }
   } catch (error) {
     console.error('加载阈值配置失败:', error);
@@ -62,7 +69,7 @@ async function loadThresholds() {
 
 // 保存单个阈值
 async function saveThreshold(row: ThresholdConfig) {
-  thresholdSaving.value = true;
+  thresholdSavingIds.value.add(row.id);
   try {
     const response = await updateThreshold(row.id, {
       warningThreshold: row.warningThreshold,
@@ -71,12 +78,14 @@ async function saveThreshold(row: ThresholdConfig) {
     });
     if (response.success) {
       ElMessage.success('阈值已更新');
+    } else {
+      ElMessage.error(response.message || '保存失败');
     }
   } catch (error) {
     console.error('保存阈值失败:', error);
     ElMessage.error('保存失败');
   } finally {
-    thresholdSaving.value = false;
+    thresholdSavingIds.value.delete(row.id);
   }
 }
 
@@ -282,7 +291,7 @@ function getDirectionType(direction: string) {
                   <el-button
                     type="primary"
                     link
-                    :loading="thresholdSaving"
+                    :loading="thresholdSavingIds.has(row.id)"
                     :disabled="!canWrite"
                     @click="saveThreshold(row)"
                   >

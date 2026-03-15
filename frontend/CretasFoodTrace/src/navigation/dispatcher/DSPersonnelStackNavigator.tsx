@@ -23,7 +23,7 @@ import PersonnelAttendanceScreen from '../../screens/dispatcher/personnel/Person
 
 type DSPersonnelStackParamList = {
   PersonnelList: undefined;
-  PersonnelDetail: { employeeId: string };
+  PersonnelDetail: { personnelId: string };
   PersonnelTransfer: undefined;
   PersonnelSchedule: undefined;
   PersonnelAttendance: undefined;

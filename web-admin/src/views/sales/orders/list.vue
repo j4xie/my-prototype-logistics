@@ -68,6 +68,8 @@ async function loadData() {
     if (res.success && res.data) {
       tableData.value = res.data.content || [];
       pagination.value.total = res.data.totalElements || 0;
+    } else if (res.success === false) {
+      ElMessage.error(res.message || '加载订单失败');
     }
   } catch { ElMessage.error('加载失败'); }
   finally { loading.value = false; }
@@ -78,15 +80,17 @@ async function loadCustomers() {
   try {
     const res = await get(`/${factoryId.value}/customers`, { params: { page: 1, size: 100 } });
     if (res.success && res.data) customers.value = res.data.content || [];
-  } catch { /* ignore */ }
+    else if (res.success === false) ElMessage.error(res.message || '加载客户列表失败');
+  } catch { ElMessage.error('加载客户列表失败'); }
 }
 
 async function loadProducts() {
   if (!factoryId.value) return;
   try {
-    const res = await get(`/${factoryId.value}/products/types`);
+    const res = await get(`/${factoryId.value}/product-types/active`);
     if (res.success && res.data) products.value = Array.isArray(res.data) ? res.data : res.data.content || [];
-  } catch { /* ignore */ }
+    else if (res.success === false) ElMessage.error(res.message || '加载产品列表失败');
+  } catch { ElMessage.error('加载产品列表失败'); }
 }
 
 function addItem() { form.value.items.push({ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }); }
@@ -97,6 +101,7 @@ async function handleCreate() {
   try {
     const res = await post(`/${factoryId.value}/sales/orders`, form.value);
     if (res.success) { ElMessage.success('创建成功'); dialogVisible.value = false; loadData(); }
+    else { ElMessage.error(res.message || '创建失败'); }
   } catch { ElMessage.error('创建失败'); }
 }
 
@@ -111,7 +116,8 @@ async function handleAction(orderId: string, action: string) {
     await ElMessageBox.confirm(`确认${a.label}此${label('salesOrder')}？`, '操作确认');
     const res = await post(a.url);
     if (res.success) { ElMessage.success(`${a.label}成功`); loadData(); }
-  } catch { /* cancelled */ }
+    else { ElMessage.error(res.message || `${a.label}失败`); }
+  } catch (error) { if (error !== 'cancel') ElMessage.error(`${a.label}失败`); }
 }
 
 function goDetail(id: string) { router.push(`/sales/orders/${id}`); }
@@ -278,7 +284,7 @@ async function submitQuickPayment() {
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="orderNumber" label="订单编号" width="170" />
         <el-table-column label="客户" min-width="150" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.customer?.name || row.customerId || '-' }}</template>
+          <template #default="{ row }">{{ row.customer?.name || customers.find((c: any) => c.id === row.customerId)?.name || row.customerId || '-' }}</template>
         </el-table-column>
         <el-table-column prop="orderDate" label="下单日期" width="120" />
         <el-table-column prop="totalAmount" label="总金额" width="130" align="right">
@@ -300,21 +306,21 @@ async function submitQuickPayment() {
             <el-button v-if="row.status === 'DRAFT' && canWrite" type="success" link size="small" @click="handleAction(row.id, 'confirm')">确认</el-button>
             <el-button v-if="['DRAFT','CONFIRMED'].includes(row.status) && canWrite" type="danger" link size="small" @click="handleAction(row.id, 'cancel')">取消</el-button>
             <el-button
-              v-if="row.status === 'CONFIRMED' || row.status === 'PROCESSING'"
+              v-if="(row.status === 'CONFIRMED' || row.status === 'PROCESSING') && canWrite"
               type="warning"
               link
               size="small"
               @click="handleQuickDelivery(row)"
             >出库</el-button>
             <el-button
-              v-if="row.status === 'CONFIRMED' || row.status === 'PROCESSING' || row.status === 'SHIPPED'"
+              v-if="(row.status === 'CONFIRMED' || row.status === 'PROCESSING' || row.status === 'SHIPPED') && canWrite"
               type="success"
               link
               size="small"
               @click="handleQuickInvoice(row)"
             >开票</el-button>
             <el-button
-              v-if="row.status === 'CONFIRMED' || row.status === 'PROCESSING' || row.status === 'SHIPPED'"
+              v-if="(row.status === 'CONFIRMED' || row.status === 'PROCESSING' || row.status === 'SHIPPED') && canWrite"
               type="primary"
               link
               size="small"

@@ -35,6 +35,7 @@ import {
   isPassed,
 } from '../../types/qualityInspector';
 import { qualityInspectorApi } from '../../services/api/qualityInspectorApi';
+import { useAuthStore } from '../../store/authStore';
 
 type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 type RouteProps = RouteProp<QualityInspectorStackParamList, 'QIForm'>;
@@ -52,6 +53,7 @@ export default function QIFormScreen() {
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation('quality');
+  const { user } = useAuthStore();
   const { batchId, batchNumber } = route.params;
 
   const CHECK_ITEMS: CheckItem[] = [
@@ -160,6 +162,9 @@ export default function QIFormScreen() {
 
   const grade = calculateGrade(totalScore);
   const passed = isPassed(grade);
+  const sampleSizeNum = parseInt(sampleSize, 10) || 10;
+  const computedPassCount = passed ? sampleSizeNum : Math.round(sampleSizeNum * totalScore / 100);
+  const computedPassRate = sampleSizeNum > 0 ? Math.round((computedPassCount / sampleSizeNum) * 100) : 0;
 
   const handleVoicePress = () => {
     navigation.navigate('QIVoice', { batchId, batchNumber });
@@ -176,9 +181,15 @@ export default function QIFormScreen() {
       setSubmitting(true);
 
       const defaultScore: ScoreItem = { score: 0, notes: [] };
+      // Backend expects passCount/failCount — derive from HACCP score
+      const failCount = sampleSizeNum - computedPassCount;
       const formData = {
         batchId: batch.id,
-        sampleSize: parseInt(sampleSize, 10) || 10,
+        sampleSize: sampleSizeNum,
+        passCount: computedPassCount,
+        failCount,
+        result: passed ? 'PASS' : 'FAIL',
+        notes: remarks || '',
         appearance: scores.appearance ?? defaultScore,
         smell: scores.smell ?? defaultScore,
         specification: scores.specification ?? defaultScore,
@@ -188,9 +199,8 @@ export default function QIFormScreen() {
         grade,
         passed,
         photos,
-        inspectorId: 0, // 由后端从 token 获取
+        inspectorId: user?.id ?? 0,
         inspectedAt: new Date().toISOString(),
-        remarks: remarks || undefined,
       };
 
       const record = await qualityInspectorApi.submitInspection(batch.id, formData);
@@ -345,13 +355,13 @@ export default function QIFormScreen() {
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>{t('form.passedCount')}</Text>
               <Text style={[styles.summaryValue, { color: QI_COLORS.success }]}>
-                {parseInt(sampleSize, 10) - 1}/{sampleSize}件
+                {computedPassCount}/{sampleSize}{t('form.sampleUnit')}
               </Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>{t('form.passRate')}</Text>
               <Text style={[styles.summaryValue, { color: QI_COLORS.success }]}>
-                {Math.round(((parseInt(sampleSize, 10) - 1) / parseInt(sampleSize, 10)) * 100)}%
+                {computedPassRate}%
               </Text>
             </View>
             <View style={styles.summaryItem}>

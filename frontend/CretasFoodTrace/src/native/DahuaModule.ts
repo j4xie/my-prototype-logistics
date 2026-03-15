@@ -76,6 +76,7 @@ export interface DahuaInitResult {
   serialNumber?: string;
   ipAddress?: string;
   deviceId?: string;
+  autoImported?: boolean;
 }
 
 /**

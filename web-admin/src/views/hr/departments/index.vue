@@ -53,6 +53,8 @@ async function loadData() {
       pagination.value.total = response.data.totalElements || 0;
       // 用于父部门选择
       parentDepartments.value = response.data.content || [];
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -73,6 +75,7 @@ async function loadUsers() {
     }
   } catch (error) {
     console.error('加载用户列表失败:', error);
+    ElMessage.error('加载用户列表失败');
   }
 }
 

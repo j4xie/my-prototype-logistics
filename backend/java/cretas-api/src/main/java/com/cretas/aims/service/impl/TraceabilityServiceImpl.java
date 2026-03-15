@@ -2,6 +2,7 @@ package com.cretas.aims.service.impl;
 
 import com.cretas.aims.dto.traceability.TraceabilityDTO;
 import com.cretas.aims.entity.*;
+import com.cretas.aims.entity.enums.ProcessingStageType;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.service.EncodingRuleService;
 import com.cretas.aims.service.TraceabilityService;
@@ -32,6 +33,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
     private final MaterialBatchRepository materialBatchRepository;
     private final QualityInspectionRepository qualityInspectionRepository;
     private final ShipmentRecordRepository shipmentRecordRepository;
+    private final ProcessingStageRecordRepository processingStageRecordRepository;
     private final UserRepository userRepository;
     private final FactoryRepository factoryRepository;
     private final SupplierRepository supplierRepository;
@@ -103,23 +105,29 @@ public class TraceabilityServiceImpl implements TraceabilityService {
                 .findByProductionBatchId(batch.getId());
         List<TraceabilityDTO.MaterialInfo> materials = buildMaterialInfoList(consumptions);
 
-        // 4. 获取质检记录
+        // 4. 获取加工环节记录
+        List<ProcessingStageRecord> stageRecords = processingStageRecordRepository
+                .findByProductionBatchIdOrderByStageOrderAsc(batch.getId());
+        List<TraceabilityDTO.ProcessingStageInfo> processingStages = buildProcessingStageInfoList(stageRecords);
+
+        // 5. 获取质检记录
         List<QualityInspection> inspections = qualityInspectionRepository
                 .findByProductionBatchId(batch.getId());
         List<TraceabilityDTO.QualityInfo> qualityInfos = buildQualityInfoList(inspections);
 
-        // 5. 获取出货记录
+        // 6. 获取出货记录
         List<ShipmentRecord> shipmentRecords = shipmentRecordRepository
                 .findByFactoryIdAndBatchNumber(factoryId, batchNumber);
         List<TraceabilityDTO.ShipmentInfo> shipments = buildShipmentInfoList(shipmentRecords);
 
-        // 6. 生成溯源码（使用工厂ID以支持配置化规则）
+        // 7. 生成溯源码（使用工厂ID以支持配置化规则）
         String traceCode = generateTraceCode(factoryId, batchNumber);
 
-        // 7. 构建完整响应
+        // 8. 构建完整响应
         return TraceabilityDTO.FullTraceResponse.builder()
                 .production(productionInfo)
                 .materials(materials)
+                .processingStages(processingStages)
                 .qualityInspections(qualityInfos)
                 .shipments(shipments)
                 .traceCode(traceCode)
@@ -290,6 +298,31 @@ public class TraceabilityServiceImpl implements TraceabilityService {
         }
 
         return materials;
+    }
+
+    /**
+     * 构建加工环节信息列表
+     */
+    private List<TraceabilityDTO.ProcessingStageInfo> buildProcessingStageInfoList(List<ProcessingStageRecord> records) {
+        if (records.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return records.stream().map(record -> TraceabilityDTO.ProcessingStageInfo.builder()
+                .stageType(record.getStageType() != null ? record.getStageType().name() : null)
+                .stageName(record.getStageName())
+                .stageOrder(record.getStageOrder())
+                .startTime(record.getStartTime())
+                .endTime(record.getEndTime())
+                .durationMinutes(record.getDurationMinutes())
+                .inputWeight(record.getInputWeight() != null ? record.getInputWeight().doubleValue() : null)
+                .outputWeight(record.getOutputWeight() != null ? record.getOutputWeight().doubleValue() : null)
+                .lossRate(record.getLossRate() != null ? record.getLossRate().doubleValue() : null)
+                .passRate(record.getPassRate() != null ? record.getPassRate().doubleValue() : null)
+                .temperature(record.getProductTemperature() != null ? record.getProductTemperature().doubleValue() : null)
+                .equipmentName(record.getEquipmentName())
+                .operatorName(record.getOperatorName())
+                .build()).collect(Collectors.toList());
     }
 
     /**

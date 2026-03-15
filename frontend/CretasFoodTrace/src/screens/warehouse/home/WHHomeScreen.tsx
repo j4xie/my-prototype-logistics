@@ -186,9 +186,8 @@ export default function WHHomeScreen() {
       // 处理库存预警
       const alertItems: AlertItem[] = [];
       if (lowStockResult.status === 'fulfilled') {
-        const lowStockData = lowStockResult.value as { data?: MaterialBatch[] } | MaterialBatch[] | undefined;
-        const lowStockBatches = Array.isArray(lowStockData) ? lowStockData : (lowStockData as { data?: MaterialBatch[] })?.data ?? [];
-        (Array.isArray(lowStockBatches) ? lowStockBatches : []).forEach((b: MaterialBatch) => {
+        const lowStockBatches = lowStockResult.value?.data ?? [];
+        lowStockBatches.forEach((b: MaterialBatch) => {
           alertItems.push({
             id: b.id,
             materialName: b.materialName || b.batchNumber || t('messages.unknownMaterial'),
@@ -201,9 +200,8 @@ export default function WHHomeScreen() {
         });
       }
       if (expiringResult.status === 'fulfilled') {
-        const expiringData = expiringResult.value as { data?: MaterialBatch[] } | MaterialBatch[] | undefined;
-        const expiringBatches = Array.isArray(expiringData) ? expiringData : (expiringData as { data?: MaterialBatch[] })?.data ?? [];
-        (Array.isArray(expiringBatches) ? expiringBatches : []).forEach((b: MaterialBatch) => {
+        const expiringBatches = expiringResult.value?.data ?? [];
+        expiringBatches.forEach((b: MaterialBatch) => {
           alertItems.push({
             id: b.id,
             materialName: b.materialName || b.batchNumber || t('messages.unknownMaterial'),
@@ -238,11 +236,8 @@ export default function WHHomeScreen() {
         });
       }
 
-      // 温控监控 - 暂时使用模拟数据 (后端暂无温控API)
-      setTempZones([
-        { id: '1', name: '冷藏区 A区', currentTemp: 2.5, unit: '°C', status: 'normal' },
-        { id: '2', name: '冷冻区 B区', currentTemp: -18, unit: '°C', status: 'normal' },
-      ]);
+      // 温控监控 - 后端暂无温控API，显示空状态
+      setTempZones([]);
 
     } catch (err) {
       logger.error('[WHHomeScreen] 加载数据失败:', err);
@@ -652,6 +647,11 @@ export default function WHHomeScreen() {
             </View>
 
             <View style={styles.tempZones}>
+              {tempZones.length === 0 && (
+                <Text style={{ color: '#999', fontSize: 13, textAlign: 'center', paddingVertical: 16 }}>
+                  {t('home.tempMonitor.noData', { defaultValue: '暂无温控设备数据' })}
+                </Text>
+              )}
               {tempZones.map((zone) => (
                 <Surface key={zone.id} style={styles.tempZoneCard}>
                   <View style={styles.tempZoneHeader}>

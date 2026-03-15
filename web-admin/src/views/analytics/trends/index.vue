@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
+import { ElMessage } from 'element-plus';
 import echarts from '@/utils/echarts';
 
 const authStore = useAuthStore();
@@ -9,7 +10,6 @@ const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
 const selectedPeriod = ref('week');
-const selectedModule = ref('all');
 
 // 趋势数据
 const trendData = ref({
@@ -32,13 +32,6 @@ const periodOptions = [
   { label: '近90天', value: 'quarter' }
 ];
 
-const moduleOptions = [
-  { label: '全部模块', value: 'all' },
-  { label: '生产', value: 'production' },
-  { label: '质量', value: 'quality' },
-  { label: '成本', value: 'cost' }
-];
-
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(() => {
@@ -51,7 +44,7 @@ onMounted(() => {
   window.addEventListener('resize', handleResize);
 });
 
-watch([selectedPeriod, selectedModule], () => {
+watch(selectedPeriod, () => {
   loadTrendData();
 });
 
@@ -65,9 +58,12 @@ async function loadTrendData() {
     if (response.success && response.data) {
       trendData.value = response.data;
       updateCharts();
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载趋势数据失败');
     }
   } catch (error) {
     console.error('加载趋势数据失败:', error);
+    ElMessage.error('加载趋势数据失败，请重试');
   } finally {
     loading.value = false;
   }

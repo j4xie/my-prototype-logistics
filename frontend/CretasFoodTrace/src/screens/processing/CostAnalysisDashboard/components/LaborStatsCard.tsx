@@ -48,7 +48,7 @@ export const LaborStatsCard = React.memo<LaborStatsCardProps>(({ laborStats }) =
         <View style={styles.detailRow}>
           <Text variant="bodyMedium">{t('costAnalysisDashboard.laborStats.laborCost')}</Text>
           <Text variant="titleMedium" style={[styles.detailValue, { color: '#1976D2' }]}>
-            ¥{laborStats.totalLaborCost.toFixed(2)}
+            ¥{Number(laborStats.totalLaborCost ?? 0).toFixed(2)}
           </Text>
         </View>
 
@@ -62,7 +62,7 @@ export const LaborStatsCard = React.memo<LaborStatsCardProps>(({ laborStats }) =
               <View key={index} style={styles.detailRow}>
                 <Text variant="bodySmall">{detail.workerName}{detail.workType ? ` (${detail.workType})` : ''}</Text>
                 <Text variant="bodySmall" style={styles.detailValue}>
-                  {detail.totalMinutes ? `${Math.floor(detail.totalMinutes / 60)}h` : '-'} • ¥{detail.laborCost?.toFixed(2) || '0.00'}
+                  {detail.totalMinutes ? `${Math.floor(detail.totalMinutes / 60)}h` : '-'} • ¥{Number(detail.laborCost ?? 0).toFixed(2)}
                 </Text>
               </View>
             ))}

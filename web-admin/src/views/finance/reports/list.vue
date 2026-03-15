@@ -11,6 +11,16 @@ const reports = ref([
   { id: 2, name: '成本分析报告', type: 'COST', lastGenerated: '2025-12-15', status: 'AVAILABLE' },
   { id: 3, name: '季度预算报告', type: 'QUARTERLY', lastGenerated: '2025-10-01', status: 'AVAILABLE' }
 ]);
+
+function getTypeText(type: string) {
+  const map: Record<string, string> = {
+    MONTHLY: '月报',
+    QUARTERLY: '季报',
+    COST: '成本分析',
+    ANNUAL: '年报'
+  };
+  return map[type] || type;
+}
 </script>
 
 <template>
@@ -46,18 +56,6 @@ const reports = ref([
     </el-card>
   </div>
 </template>
-
-<script lang="ts">
-function getTypeText(type: string) {
-  const map: Record<string, string> = {
-    MONTHLY: '月报',
-    QUARTERLY: '季报',
-    COST: '成本分析',
-    ANNUAL: '年报'
-  };
-  return map[type] || type;
-}
-</script>
 
 <style lang="scss" scoped>
 .page-container {

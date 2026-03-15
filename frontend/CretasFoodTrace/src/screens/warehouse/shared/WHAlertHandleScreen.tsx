@@ -21,10 +21,11 @@ import { WHInventoryStackParamList } from "../../../types/navigation";
 import { formatNumberWithCommas } from "../../../utils/formatters";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 interface Solution {
   id: string;
-  icon: string;
+  icon: MCIconName;
   title: string;
   recommended?: boolean;
   description: string[];
@@ -140,7 +141,7 @@ export function WHAlertHandleScreen() {
               ]}
             >
               <MaterialCommunityIcons
-                name={solution.icon as any}
+                name={solution.icon}
                 size={20}
                 color={isSelected ? "#fff" : "#666"}
               />

@@ -204,15 +204,15 @@ export default function FeedbackScreen() {
 
       const response = await feedbackApiClient.submitFeedback(feedbackData, factoryId);
 
-      if (response.success) {
+      if (response.feedbackId) {
         feedbackLogger.info('反馈提交成功', {
-          feedbackId: response.data.feedbackId,
+          feedbackId: response.feedbackId,
           type: feedbackData.type,
           factoryId,
         });
         Alert.alert(
           '提交成功',
-          response.message || '感谢您的反馈！我们会尽快处理。',
+          '感谢您的反馈！我们会尽快处理。',
           [
             {
               text: '确定',

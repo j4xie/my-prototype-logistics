@@ -1,0 +1,26 @@
+# 鱼类餐饮行业基准数据 (酸菜鱼/烤鱼/砂锅鱼)
+#
+# 数据来源：
+#   - 青花椒 60+店 POS 实测
+#   - 九毛九(太二酸菜鱼) 财报: 食材35-38%
+
+source: "青花椒POS实测 + 九毛九财报"
+year: 2024
+
+metrics:
+  food_cost_ratio:
+    name: "食材成本率"
+    range: [33.0, 42.0]
+    median: 37.0
+    source: "青花椒60+店POS实测 + 九毛九财报35-38%"
+
+  table_turnover:
+    name: "翻台率"
+    range: [2.0, 4.0]
+    median: 3.0
+
+  average_ticket:
+    name: "客单价"
+    range: [50.0, 100.0]
+    median: 70.0
+    source: "青花椒POS实测"

@@ -43,7 +43,7 @@ export const SupervisorSelector: React.FC<SupervisorSelectorProps> = ({
       // 适配后端字段名: fullName -> realName
       const adaptedUsers = (result.content || []).map(user => ({
         ...user,
-        realName: (user as any).fullName || user.realName || user.username,
+        realName: user.fullName || user.realName || user.username,
       }));
       console.log('✅ Users loaded:', adaptedUsers.length);
       setEmployees(adaptedUsers);

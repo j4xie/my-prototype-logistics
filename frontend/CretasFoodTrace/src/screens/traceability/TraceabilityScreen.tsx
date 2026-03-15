@@ -118,7 +118,7 @@ const TraceabilityScreen: React.FC = () => {
         {/* 搜索区域 */}
         <Surface style={styles.searchCard} elevation={2}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            <MaterialCommunityIcons name="shield-check" size={20} color="#1976D2" /> 保罗溯源查询
+            <MaterialCommunityIcons name="shield-check" size={20} color="#1976D2" /> 产品溯源查询
           </Text>
           <TextInput
             mode="outlined"

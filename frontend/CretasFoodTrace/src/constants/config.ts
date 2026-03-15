@@ -51,7 +51,7 @@ export const LLM_CONFIG = {
 
 // 应用配置
 export const APP_CONFIG = {
-  NAME: '白垩纪食品溯源',
+  NAME: '白垩纪AI Agent',
   VERSION: '1.0.0',
   COMPANY_CODE: 'CRETAS',
   SUPPORTED_LANGUAGES: ['zh-CN'],

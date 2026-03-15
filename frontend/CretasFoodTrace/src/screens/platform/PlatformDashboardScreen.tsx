@@ -308,7 +308,7 @@ export default function PlatformDashboardScreen() {
             <View style={styles.productionGrid}>
               <View style={styles.productionMainStat}>
                 <Text variant="displaySmall" style={[styles.productionValue, { color: '#FF6B35' }]}>
-                  {stats.totalProductionToday.toFixed(1)}
+                  {Number(stats.totalProductionToday ?? 0).toFixed(1)}
                 </Text>
                 <Text variant="bodyMedium" style={styles.productionLabel}>
                   {t('production.todayOutput')}

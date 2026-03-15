@@ -46,7 +46,7 @@ function goToLogin() {
         </p>
         <p class="description">
           您的角色被设置为<strong>移动端专属</strong>，<br />
-          请使用 <strong>白垩纪食品溯源 App</strong> 进行操作。
+          请使用 <strong>白垩纪AI Agent App</strong> 进行操作。
         </p>
       </div>
 

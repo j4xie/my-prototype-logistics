@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList, Alert, RefreshControl } from 'react-native';
 import { Text, Appbar, Card, Chip, FAB, Portal, Modal, TextInput, Button, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FAManagementStackParamList } from '../../../types/navigation';
 import { purchaseApiClient, PurchaseOrder } from '../../../services/api/purchaseApiClient';
@@ -30,9 +30,16 @@ export default function PurchaseOrderListScreen() {
 
   const loadOrders = useCallback(async () => {
     try {
-      const params: any = { page: 1, size: 50 };
-      if (statusFilter !== 'all') params.status = statusFilter;
-      const res = await purchaseApiClient.getOrders(params);
+      const params = { page: 1, size: 50 };
+      let res;
+      if (statusFilter !== 'all') {
+        res = await purchaseApiClient.getOrdersByStatus(
+          statusFilter as PurchaseOrder['status'],
+          params
+        );
+      } else {
+        res = await purchaseApiClient.getOrders(params);
+      }
       if (res.success && res.data) {
         setOrders(res.data.content || []);
       }
@@ -107,7 +114,7 @@ export default function PurchaseOrderListScreen() {
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="采购订单" />
-        <Appbar.Action icon="robot-outline" onPress={() => navigation.navigate('FAAITab' as any, { screen: 'AIChat', params: { entityType: 'PURCHASE', initialMessage: '我要创建采购订单' } })} />
+        <Appbar.Action icon="robot-outline" onPress={() => navigation.dispatch(CommonActions.navigate('FAAITab', { screen: 'AIChat', params: { entityType: 'PURCHASE', initialMessage: '我要创建采购订单' } }))} />
         <Appbar.Action icon="refresh" onPress={onRefresh} />
       </Appbar.Header>
 

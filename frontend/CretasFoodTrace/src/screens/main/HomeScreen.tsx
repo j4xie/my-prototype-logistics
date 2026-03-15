@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { Text, Avatar, Icon } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
@@ -12,6 +12,7 @@ import { MainTabParamList } from '../../types/navigation';
 import { UserPermissions } from '../../types/auth';
 import { ScreenWrapper } from '../../components/ui';
 import { theme } from '../../theme';
+import { hasProductionCapability } from '../../utils/factoryType';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<MainTabParamList, 'HomeTab'>;
 
@@ -83,8 +84,8 @@ export default function HomeScreen() {
       },
     ];
 
-    // Filter modules based on permissions
     return allModules.filter(module => {
+      if (module.id === 'processing' && !hasProductionCapability(user)) return false;
       if (module.requiredPermissions.length === 0) return true;
       return module.requiredPermissions.some(perm => {
         if (Array.isArray(userPermissions)) {
@@ -118,8 +119,7 @@ export default function HomeScreen() {
     }
 
     if (module.route) {
-      // @ts-ignore - Dynamic routing
-      navigation.navigate(module.route as keyof MainTabParamList);
+      navigation.dispatch(CommonActions.navigate(module.route));
     } else if (module.id === 'settings') {
       Alert.alert(t('alerts.settingsInProgress.title'), t('alerts.settingsInProgress.message'));
     }

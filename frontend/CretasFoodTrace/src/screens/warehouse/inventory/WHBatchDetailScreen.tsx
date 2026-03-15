@@ -14,7 +14,7 @@ import {
 import { Text, Surface, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTranslation } from 'react-i18next';
 import { WHInventoryStackParamList } from "../../../types/navigation";
@@ -488,7 +488,7 @@ export function WHBatchDetailScreen() {
           </Button>
           <Button
             mode="outlined"
-            onPress={() => navigation.navigate("WHExpireHandle" as any)}
+            onPress={() => navigation.dispatch(CommonActions.navigate("WHExpireHandle"))}
             style={[styles.actionBtn, styles.warningActionBtn]}
             labelStyle={{ color: "#f57c00" }}
           >

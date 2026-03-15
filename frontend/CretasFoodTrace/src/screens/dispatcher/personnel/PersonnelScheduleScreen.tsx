@@ -80,11 +80,11 @@ interface ScheduleStats {
 }
 
 // Transform API schedule stats to local interface
-const transformScheduleStats = (apiData: any): ScheduleStats => ({
-  total: apiData.total || apiData.totalShifts || 0,
-  confirmed: apiData.confirmed || apiData.confirmedShifts || 0,
-  pending: apiData.pending || apiData.pendingShifts || 0,
-  conflicts: apiData.conflicts || apiData.conflictCount || 0,
+const transformScheduleStats = (apiData: Record<string, unknown>): ScheduleStats => ({
+  total: Number(apiData.total || apiData.totalShifts || 0),
+  confirmed: Number(apiData.confirmed || apiData.confirmedShifts || 0),
+  pending: Number(apiData.pending || apiData.pendingShifts || 0),
+  conflicts: Number(apiData.conflicts || apiData.conflictCount || 0),
 });
 
 // Transform API weekly shifts to local interface
@@ -126,19 +126,23 @@ const getDefaultShiftTime = (type: ShiftType): string => {
 };
 
 // Transform API today shifts to local interface
-const transformTodayShifts = (apiData: any[]): ShiftDetail[] => {
+const transformTodayShifts = (apiData: Record<string, unknown>[]): ShiftDetail[] => {
   if (!apiData || !Array.isArray(apiData)) return [];
   return apiData.map((shift) => {
-    const workers = (shift.workers || shift.assignedWorkers || []).map((w: any) => ({
-      id: String(w.id || w.workerId || w.userId),
-      name: w.name || w.workerName || w.realName || '',
-      avatar: (w.name || w.realName || '员').charAt(0),
-    }));
+    const workerList = (shift.workers || shift.assignedWorkers || []) as Record<string, unknown>[];
+    const workers = workerList.map((w) => {
+      const name = String(w.name || w.workerName || w.realName || '');
+      return {
+        id: String(w.id || w.workerId || w.userId),
+        name,
+        avatar: (name || '员').charAt(0),
+      };
+    });
 
     return {
-      type: (shift.type || shift.shiftType || 'morning').toLowerCase() as ShiftType,
-      name: shift.name || shift.shiftName || shift.type || 'morning',
-      timeRange: shift.timeRange || shift.time || '08:00-12:00',
+      type: String(shift.type || shift.shiftType || 'morning').toLowerCase() as ShiftType,
+      name: String(shift.name || shift.shiftName || shift.type || 'morning'),
+      timeRange: String(shift.timeRange || shift.time || '08:00-12:00'),
       workers,
     };
   });
@@ -148,7 +152,7 @@ const workshopFilterKeys = ['all', 'slicing', 'packaging', 'freezing', 'storage'
 
 export default function PersonnelScheduleScreen() {
   const { t } = useTranslation('dispatcher');
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
 
   // Loading and data state
   const [loading, setLoading] = useState(true);
@@ -291,7 +295,7 @@ export default function PersonnelScheduleScreen() {
 
   // AI智能排班
   const handleAISchedule = () => {
-    navigation.navigate('AIWorkerOptimize');
+    navigation.navigate('AIWorkerOptimize' as never);
   };
 
   // Loading state

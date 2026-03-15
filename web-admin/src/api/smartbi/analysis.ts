@@ -247,6 +247,48 @@ function _dispatchSSEEvent(event: string, data: string, callbacks: ChatStreamCal
   }
 }
 
+// ==================== NL2SQL ====================
+
+export interface NL2SQLResponse {
+  success: boolean;
+  sql?: string;
+  explanation?: string;
+  intent?: string;
+  confidence?: number;
+  fields?: Array<Record<string, unknown>>;
+  result?: Array<Record<string, unknown>>;
+  rowCount?: number;
+  executionTimeMs?: number;
+  warnings?: string[];
+  message?: string;
+}
+
+export async function nl2sql(params: {
+  query: string;
+  uploadId: number | string;
+  factoryId: string;
+  execute?: boolean;
+  limit?: number;
+}): Promise<NL2SQLResponse> {
+  try {
+    const res = await pythonFetch('/api/smartbi/nl-to-sql', {
+      method: 'POST',
+      body: JSON.stringify({
+        query: params.query,
+        upload_id: Number(params.uploadId),
+        factory_id: params.factoryId,
+        execute: params.execute ?? false,
+        limit: params.limit ?? 100,
+      }),
+      timeoutMs: PYTHON_LLM_TIMEOUT_MS,
+    }) as NL2SQLResponse;
+    return res;
+  } catch (error) {
+    console.error('NL2SQL failed:', error);
+    return { success: false, message: String(error) };
+  }
+}
+
 /**
  * Drill-down analysis
  */

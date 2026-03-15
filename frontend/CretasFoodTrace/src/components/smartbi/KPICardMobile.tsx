@@ -39,11 +39,11 @@ export interface KPICardMobileProps {
 
 // Gradient color presets (matching web KPICard.vue)
 const GRADIENT_PRESETS = {
-  purple: ['#667eea', '#764ba2'],
-  pink: ['#f093fb', '#f5576c'],
-  blue: ['#4facfe', '#00f2fe'],
-  green: ['#43e97b', '#38f9d7'],
-  orange: ['#fa709a', '#fee140'],
+  purple: ['#667eea', '#764ba2'] as const,
+  pink: ['#f093fb', '#f5576c'] as const,
+  blue: ['#4facfe', '#00f2fe'] as const,
+  green: ['#43e97b', '#38f9d7'] as const,
+  orange: ['#fa709a', '#fee140'] as const,
 };
 
 // Trend icons
@@ -76,7 +76,7 @@ export default function KPICardMobile({
   onPress,
   subtitle,
 }: KPICardMobileProps): React.ReactElement {
-  const gradientColors = GRADIENT_PRESETS[colorPreset];
+  const gradientColors = GRADIENT_PRESETS[colorPreset] as readonly [string, string];
   const trendIcon = TREND_ICONS[trend];
   const trendColor = trend === 'up' ? '#4ade80' : trend === 'down' ? '#f87171' : '#9ca3af';
 

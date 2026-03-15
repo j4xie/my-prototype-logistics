@@ -23,7 +23,7 @@ export const ProfitAnalysisCard = React.memo<ProfitAnalysisCardProps>(({ profitA
         <View style={styles.detailRow}>
           <Text variant="bodyMedium">{t('costAnalysisDashboard.profitAnalysis.expectedRevenue')}</Text>
           <Text variant="bodyMedium" style={styles.detailValue}>
-            ¥{profitAnalysis.expectedRevenue?.toFixed(2) || '0.00'}
+            ¥{Number(profitAnalysis.expectedRevenue ?? 0).toFixed(2)}
           </Text>
         </View>
         <Divider />
@@ -31,7 +31,7 @@ export const ProfitAnalysisCard = React.memo<ProfitAnalysisCardProps>(({ profitA
         <View style={styles.detailRow}>
           <Text variant="bodyMedium">{t('costAnalysisDashboard.profitAnalysis.totalCost')}</Text>
           <Text variant="bodyMedium" style={styles.detailValue}>
-            ¥{profitAnalysis.totalCost.toFixed(2)}
+            ¥{Number(profitAnalysis.totalCost ?? 0).toFixed(2)}
           </Text>
         </View>
         <Divider />
@@ -47,7 +47,7 @@ export const ProfitAnalysisCard = React.memo<ProfitAnalysisCardProps>(({ profitA
                   { color: profitAnalysis.profitMargin >= 0 ? '#388E3C' : '#D32F2F' },
                 ]}
               >
-                ¥{profitAnalysis.profitMargin.toFixed(2)}
+                ¥{Number(profitAnalysis.profitMargin ?? 0).toFixed(2)}
               </Text>
             </View>
             <Divider />
@@ -65,7 +65,7 @@ export const ProfitAnalysisCard = React.memo<ProfitAnalysisCardProps>(({ profitA
                   { color: profitAnalysis.profitRate >= 0 ? '#388E3C' : '#D32F2F' },
                 ]}
               >
-                {profitAnalysis.profitRate.toFixed(2)}%
+                {Number(profitAnalysis.profitRate ?? 0).toFixed(2)}%
               </Text>
             </View>
             <Divider />

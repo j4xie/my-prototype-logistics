@@ -437,8 +437,8 @@ const TeamBatchReportScreen: React.FC = () => {
                               <Text style={styles.positionText}>{worker.position}</Text>
                             </View>
                           )}
-                          <View style={[styles.hireTypeBadge, { backgroundColor: htStyle.bg }]}>
-                            <Text style={[styles.hireTypeText, { color: htStyle.text }]}>
+                          <View style={[styles.hireTypeBadge, { backgroundColor: htStyle?.bg }]}>
+                            <Text style={[styles.hireTypeText, { color: htStyle?.text }]}>
                               {worker.hireTypeLabel || '正式工'}
                             </Text>
                           </View>

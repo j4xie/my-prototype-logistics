@@ -55,6 +55,12 @@ export const useAuthStore = defineStore('auth', () => {
     return '';
   });
 
+  const factoryType = computed(() => {
+    if (!user.value) return '';
+    if (isFactoryUser(user.value)) return user.value.factoryUser?.factoryType || 'FACTORY';
+    return '';
+  });
+
   const roleMetadata = computed(() => {
     const role = currentRole.value;
     return ROLE_METADATA[role] || ROLE_METADATA['viewer'];
@@ -119,6 +125,7 @@ export const useAuthStore = defineStore('auth', () => {
           factoryUser: {
             role: data.role,
             factoryId: data.factoryId,
+            factoryType: data.factoryType || 'FACTORY',
             permissions: data.permissions || [],
           }
         } as User;
@@ -187,6 +194,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     currentRole,
     factoryId,
+    factoryType,
     roleMetadata,
     isPlatform,
     isFactory,

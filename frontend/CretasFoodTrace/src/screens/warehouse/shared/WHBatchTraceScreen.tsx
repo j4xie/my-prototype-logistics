@@ -15,7 +15,7 @@ import {
 import { Text, Surface, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
@@ -58,9 +58,9 @@ export function WHBatchTraceScreen() {
       setLoading(true);
 
       const [batchResult, fullTraceResult, usageResult] = await Promise.allSettled([
-        materialBatchApiClient.getBatchById(batchId),
-        traceabilityApiClient.getFullTrace(batchNumber),
-        materialBatchApiClient.getBatchUsageHistory(batchId),
+        materialBatchApiClient.getBatchById(batchId ?? ''),
+        traceabilityApiClient.getFullTrace(batchNumber ?? ''),
+        materialBatchApiClient.getBatchUsageHistory(batchId ?? ''),
       ]);
 
       // Extract batch info
@@ -239,7 +239,7 @@ export function WHBatchTraceScreen() {
       {
         text: "确定",
         style: "destructive",
-        onPress: () => navigation.navigate("WHRecallManage" as any),
+        onPress: () => navigation.dispatch(CommonActions.navigate("WHRecallManage")),
       },
     ]);
   };

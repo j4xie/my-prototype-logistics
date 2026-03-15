@@ -110,7 +110,7 @@ export function WHInventoryCheckScreen() {
     );
 
   const updateActualQty = (id: string, value: string) => {
-    const qty = parseInt(value) || null;
+    const qty = value ? parseFloat(value) || null : null;
     setCheckItems((prev) =>
       prev.map((item) => {
         if (item.id === id) {

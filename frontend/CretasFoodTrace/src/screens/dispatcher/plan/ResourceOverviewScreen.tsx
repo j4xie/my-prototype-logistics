@@ -121,9 +121,9 @@ export default function ResourceOverviewScreen() {
       setLoading(true);
 
       // 并行获取多个数据源
-      const linesPromise = schedulingApiClient.getProductionLines().catch(() => ({ success: false, data: [] as any[] }));
-      const alertsPromise = schedulingApiClient.getUnresolvedAlerts().catch(() => ({ success: false, data: [] as any[] }));
-      const equipmentsPromise = equipmentApiClient.getEquipments().catch(() => ({ content: [] as any[], totalElements: 0, totalPages: 0 }));
+      const linesPromise = schedulingApiClient.getProductionLines().catch(() => ({ success: false, data: [] }));
+      const alertsPromise = schedulingApiClient.getUnresolvedAlerts().catch(() => ({ success: false, data: [] }));
+      const equipmentsPromise = equipmentApiClient.getEquipments().catch(() => ({ content: [], totalElements: 0, totalPages: 0 }));
 
       const [linesResponse, alertsResponse, equipmentsResponse] = await Promise.all([
         linesPromise,
@@ -242,15 +242,15 @@ export default function ResourceOverviewScreen() {
   const getLineStatusInfo = (status: string) => {
     switch (status) {
       case 'running':
-        return { label: '运行中', color: '#52c41a', bgColor: '#f6ffed', icon: 'play-circle' };
+        return { label: '运行中', color: '#52c41a', bgColor: '#f6ffed', icon: 'play-circle' as const };
       case 'idle':
-        return { label: '空闲', color: '#8c8c8c', bgColor: '#f5f5f5', icon: 'pause-circle' };
+        return { label: '空闲', color: '#8c8c8c', bgColor: '#f5f5f5', icon: 'pause-circle' as const };
       case 'maintenance':
-        return { label: '维护中', color: '#fa8c16', bgColor: '#fff7e6', icon: 'wrench' };
+        return { label: '维护中', color: '#fa8c16', bgColor: '#fff7e6', icon: 'wrench' as const };
       case 'error':
-        return { label: '故障', color: '#ff4d4f', bgColor: '#fff1f0', icon: 'alert-circle' };
+        return { label: '故障', color: '#ff4d4f', bgColor: '#fff1f0', icon: 'alert-circle' as const };
       default:
-        return { label: '未知', color: '#666', bgColor: '#f5f5f5', icon: 'help-circle' };
+        return { label: '未知', color: '#666', bgColor: '#f5f5f5', icon: 'help-circle' as const };
     }
   };
 
@@ -274,13 +274,13 @@ export default function ResourceOverviewScreen() {
   const getAlertLevelInfo = (level: string) => {
     switch (level) {
       case 'critical':
-        return { label: '紧急', color: '#ff4d4f', bgColor: '#fff1f0', icon: 'alert-octagon' };
+        return { label: '紧急', color: '#ff4d4f', bgColor: '#fff1f0', icon: 'alert-octagon' as const };
       case 'warning':
-        return { label: '警告', color: '#fa8c16', bgColor: '#fff7e6', icon: 'alert' };
+        return { label: '警告', color: '#fa8c16', bgColor: '#fff7e6', icon: 'alert' as const };
       case 'info':
-        return { label: '提示', color: '#1890ff', bgColor: '#e6f7ff', icon: 'information' };
+        return { label: '提示', color: '#1890ff', bgColor: '#e6f7ff', icon: 'information' as const };
       default:
-        return { label: '未知', color: '#666', bgColor: '#f5f5f5', icon: 'help-circle' };
+        return { label: '未知', color: '#666', bgColor: '#f5f5f5', icon: 'help-circle' as const };
     }
   };
 
@@ -288,15 +288,15 @@ export default function ResourceOverviewScreen() {
   const getAlertTypeInfo = (type: string) => {
     switch (type) {
       case 'capacity':
-        return { label: '产能', icon: 'chart-line' };
+        return { label: '产能', icon: 'chart-line' as const };
       case 'worker':
-        return { label: '人员', icon: 'account-group' };
+        return { label: '人员', icon: 'account-group' as const };
       case 'equipment':
-        return { label: '设备', icon: 'cog' };
+        return { label: '设备', icon: 'cog' as const };
       case 'material':
-        return { label: '物料', icon: 'package-variant' };
+        return { label: '物料', icon: 'package-variant' as const };
       default:
-        return { label: '其他', icon: 'dots-horizontal' };
+        return { label: '其他', icon: 'dots-horizontal' as const };
     }
   };
 
@@ -312,9 +312,9 @@ export default function ResourceOverviewScreen() {
     normalEquipments: equipments.filter(e => e.status === 'normal').length,
     alertEquipments: equipments.filter(e => e.status === 'warning' || e.status === 'error').length,
     criticalAlerts: alerts.filter(a => a.level === 'critical').length,
-    avgUtilization: Math.round(
+    avgUtilization: workshops.length > 0 ? Math.round(
       workshops.reduce((sum, w) => sum + w.utilization, 0) / workshops.length
-    ),
+    ) : 0,
   };
 
   // 渲染车间卡片
@@ -351,7 +351,7 @@ export default function ResourceOverviewScreen() {
                 <View style={styles.lineHeader}>
                   <View style={styles.lineNameContainer}>
                     <MaterialCommunityIcons
-                      name={statusInfo.icon as any}
+                      name={statusInfo.icon}
                       size={16}
                       color={statusInfo.color}
                     />
@@ -467,7 +467,7 @@ export default function ResourceOverviewScreen() {
         <View style={styles.alertHeader}>
           <View style={styles.alertTitleContainer}>
             <MaterialCommunityIcons
-              name={levelInfo.icon as any}
+              name={levelInfo.icon}
               size={20}
               color={levelInfo.color}
             />
@@ -482,7 +482,7 @@ export default function ResourceOverviewScreen() {
 
         <View style={styles.alertFooter}>
           <View style={styles.alertResource}>
-            <MaterialCommunityIcons name={typeInfo.icon as any} size={14} color="#999" />
+            <MaterialCommunityIcons name={typeInfo.icon} size={14} color="#999" />
             <Text style={styles.resourceText}>{alert.resourceName}</Text>
           </View>
           <Text style={styles.alertTime}>{alert.timestamp}</Text>

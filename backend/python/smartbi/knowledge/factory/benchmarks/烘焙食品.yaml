@@ -1,0 +1,50 @@
+# 烘焙食品行业基准
+# 数据来源: 桃李面包/达利食品年报 + 中国焙烤食品糖制品工业协会
+
+source: "桃李面包/达利食品年报 / 中国焙烤食品糖制品工业协会"
+year: 2024
+
+metrics:
+  gross_margin:
+    name: "毛利率"
+    range: [30.0, 45.0]
+    median: 38.0
+    unit: "%"
+    source: "桃李面包毛利率约26%(短保), 达利食品约38%(长保)"
+    note: "短保面包毛利低但周转快, 长保烘焙毛利高但竞争激烈"
+
+  net_margin:
+    name: "净利率"
+    range: [4.0, 10.0]
+    median: 7.0
+    unit: "%"
+
+  oee:
+    name: "设备综合效率(OEE)"
+    range: [62.0, 85.0]
+    median: 73.0
+    unit: "%"
+    note: "烘焙线自动化程度高, 但品种切换频繁降低OEE"
+
+  waste_rate:
+    name: "废品率"
+    range: [2.0, 7.0]
+    median: 4.0
+    unit: "%"
+    note: "短保面包退货率高(3-7天保质期), 是主要损耗来源"
+
+  raw_material_cost_ratio:
+    name: "原料成本占比"
+    range: [45.0, 60.0]
+    median: 52.0
+    unit: "%"
+    note: "面粉/油脂/糖等原料成本相对可控"
+
+  return_rate:
+    name: "退货率"
+    range: [3.0, 12.0]
+    median: 7.0
+    unit: "%"
+    description: "短保烘焙产品退货率(临期+过期)"
+    higher_is_worse: true
+    note: "桃李面包退货率约10%, 是行业核心痛点"

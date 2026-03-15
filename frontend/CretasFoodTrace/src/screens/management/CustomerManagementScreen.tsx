@@ -21,7 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { customerApiClient, Customer, CreateCustomerRequest } from '../../services/api/customerApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建CustomerManagement专用logger
@@ -118,7 +118,7 @@ export default function CustomerManagementScreen() {
       customerLogger.error('加载客户列表失败', error as Error, {
         factoryId: user?.factoryId,
       });
-      Alert.alert(t('common.error'), (error as any).response?.data?.message || t('common.error'));
+      Alert.alert(t('common.error'), getErrorMsg(error) || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -194,9 +194,13 @@ export default function CustomerManagementScreen() {
   };
 
   const handleSave = async () => {
-    // 验证必填项
-    if (!formData.name || !formData.phone) {
-      Alert.alert(t('common.hint'), t('customerManagement.validation.namePhoneRequired'));
+    // 验证必填项 — backend requires name, contactPerson, phone, shippingAddress (@NotBlank)
+    if (!formData.name?.trim() || !formData.phone?.trim()) {
+      Alert.alert(t('common.hint'), t('customerManagement.messages.requiredFields'));
+      return;
+    }
+    if (!formData.contactPerson?.trim() || !formData.shippingAddress?.trim()) {
+      Alert.alert(t('common.hint'), t('customerManagement.messages.requiredFields'));
       return;
     }
 
@@ -210,13 +214,10 @@ export default function CustomerManagementScreen() {
         );
         Alert.alert(t('common.success'), t('customerManagement.messages.updateSuccess'));
       } else {
-        // 创建客户
-        /* if (!formData.customerCode) {
-          Alert.alert('提示', '客户编码不能为空');
-          return;
-        } */
+        // 创建客户 — omit customerCode (backend auto-generates), map customerType→type
+        const { customerCode: _code, customerType, ...createFields } = formData;
         await customerApiClient.createCustomer(
-          formData as CreateCustomerRequest,
+          { ...createFields, customerType } as unknown as CreateCustomerRequest,
           user?.factoryId
         );
         Alert.alert(t('common.success'), t('customerManagement.messages.createSuccess'));
@@ -233,7 +234,7 @@ export default function CustomerManagementScreen() {
         isEdit: !!editingCustomer,
         customerCode: formData.customerCode,
       });
-      Alert.alert(t('common.error'), (error as any).response?.data?.message || t('common.operationFailed'));
+      Alert.alert(t('common.error'), getErrorMsg(error) || t('common.operationFailed'));
     }
   };
 
@@ -260,7 +261,7 @@ export default function CustomerManagementScreen() {
                 customerId,
                 customerName,
               });
-              Alert.alert(t('common.error'), (error as any).response?.data?.message || t('common.deleteFailed'));
+              Alert.alert(t('common.error'), getErrorMsg(error) || t('common.deleteFailed'));
             }
           },
         },
@@ -287,15 +288,17 @@ export default function CustomerManagementScreen() {
         customerId,
         currentStatus,
       });
-      Alert.alert(t('common.error'), (error as any).response?.data?.message || t('common.operationFailed'));
+      Alert.alert(t('common.error'), getErrorMsg(error) || t('common.operationFailed'));
     }
   };
 
   const getCustomerTypeName = (type?: string) => {
-    switch (type) {
+    switch (type?.toLowerCase()) {
       case 'distributor': return t('customerManagement.customerTypes.distributor');
-      case 'retailer': return t('customerManagement.customerTypes.retailer');
+      case 'retailer':
+      case 'retail': return t('customerManagement.customerTypes.retailer');
       case 'direct': return t('customerManagement.customerTypes.direct');
+      case 'enterprise': return t('customerManagement.customerTypes.distributor');
       case 'other': return t('customerManagement.customerTypes.other');
       default: return type || t('common.uncategorized');
     }

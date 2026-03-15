@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -33,7 +35,7 @@ import { qualityInspectorApi } from '../../services/api/qualityInspectorApi';
 type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 type RouteProps = RouteProp<QualityInspectorStackParamList, 'QIRecordDetail'>;
 
-const SCORE_ITEMS = [
+const SCORE_ITEMS: { key: string; label: string; icon: IoniconsName }[] = [
   { key: 'appearance', label: '外观', icon: 'eye-outline' },
   { key: 'smell', label: '气味', icon: 'flower-outline' },
   { key: 'specification', label: '规格', icon: 'resize-outline' },
@@ -61,8 +63,8 @@ export default function QIRecordDetailScreen() {
       const data = await qualityInspectorApi.getRecordDetail(recordId);
       setRecord(data);
     } catch (error) {
-      console.error('加载记录失败:', error);
-      Alert.alert('错误', '无法加载记录详情');
+      console.error('Load record failed:', error);
+      Alert.alert(t('recordDetail.loadError'), t('recordDetail.loadErrorMessage'));
     } finally {
       setLoading(false);
     }
@@ -72,7 +74,7 @@ export default function QIRecordDetailScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={QI_COLORS.primary} />
-        <Text style={styles.loadingText}>加载中...</Text>
+        <Text style={styles.loadingText}>{t('recordDetail.loading')}</Text>
       </View>
     );
   }
@@ -81,7 +83,7 @@ export default function QIRecordDetailScreen() {
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={64} color={QI_COLORS.disabled} />
-        <Text style={styles.errorText}>记录不存在</Text>
+        <Text style={styles.errorText}>{t('recordDetail.notFound')}</Text>
       </View>
     );
   }
@@ -106,32 +108,32 @@ export default function QIRecordDetailScreen() {
             size={16}
             color="#fff"
           />
-          <Text style={styles.statusTagText}>{record.passed ? '合格' : '不合格'}</Text>
+          <Text style={styles.statusTagText}>{record.passed ? t('recordDetail.qualified') : t('recordDetail.unqualified')}</Text>
         </View>
       </View>
 
       {/* 批次信息 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>批次信息</Text>
+        <Text style={styles.sectionTitle}>{t('recordDetail.batchInfo')}</Text>
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>批次编号</Text>
+            <Text style={styles.infoLabel}>{t('recordDetail.batchNumber')}</Text>
             <Text style={styles.infoValue}>{record.batchNumber}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>产品名称</Text>
+            <Text style={styles.infoLabel}>{t('recordDetail.productName')}</Text>
             <Text style={styles.infoValue}>{record.productName}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>抽样数量</Text>
-            <Text style={styles.infoValue}>{record.sampleSize} 件</Text>
+            <Text style={styles.infoLabel}>{t('recordDetail.sampleSize')}</Text>
+            <Text style={styles.infoValue}>{record.sampleSize} {t('recordDetail.sampleUnit')}</Text>
           </View>
         </View>
       </View>
 
       {/* 评分详情 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>评分详情</Text>
+        <Text style={styles.sectionTitle}>{t('recordDetail.scoreDetails')}</Text>
         <View style={styles.scoreGrid}>
           {SCORE_ITEMS.map((item) => {
             const scoreData = record[item.key as keyof QualityRecord] as { score: number; notes: string[] } | undefined;
@@ -141,8 +143,8 @@ export default function QIRecordDetailScreen() {
             return (
               <View key={item.key} style={styles.scoreCard}>
                 <View style={styles.scoreHeader}>
-                  <Ionicons name={item.icon as any} size={20} color={QI_COLORS.primary} />
-                  <Text style={styles.scoreLabel}>{item.label}</Text>
+                  <Ionicons name={item.icon} size={20} color={QI_COLORS.primary} />
+                  <Text style={styles.scoreLabel}>{t(`inspection.haccpItems.${item.key}`)}</Text>
                 </View>
                 <Text style={styles.scoreValue}>{score}<Text style={styles.scoreMax}>/20</Text></Text>
                 {notes.length > 0 && (
@@ -161,7 +163,7 @@ export default function QIRecordDetailScreen() {
       {/* 照片证据 */}
       {record.photos && record.photos.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>照片证据</Text>
+          <Text style={styles.sectionTitle}>{t('recordDetail.photoEvidence')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {record.photos.map((photo, index) => (
               <TouchableOpacity key={index} style={styles.photoItem}>
@@ -174,24 +176,24 @@ export default function QIRecordDetailScreen() {
 
       {/* 检验信息 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>检验信息</Text>
+        <Text style={styles.sectionTitle}>{t('recordDetail.inspectionInfo')}</Text>
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>检验员</Text>
+            <Text style={styles.infoLabel}>{t('recordDetail.inspector')}</Text>
             <Text style={styles.infoValue}>{record.inspector.name}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>检验时间</Text>
+            <Text style={styles.infoLabel}>{t('recordDetail.inspectionTime')}</Text>
             <Text style={styles.infoValue}>{formatDateTime(record.inspectedAt)}</Text>
           </View>
           {record.reviewedBy && (
             <>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>审核人</Text>
+                <Text style={styles.infoLabel}>{t('recordDetail.reviewer')}</Text>
                 <Text style={styles.infoValue}>{record.reviewedBy.name}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>审核时间</Text>
+                <Text style={styles.infoLabel}>{t('recordDetail.reviewTime')}</Text>
                 <Text style={styles.infoValue}>
                   {record.reviewedAt ? formatDateTime(record.reviewedAt) : '-'}
                 </Text>
@@ -204,7 +206,7 @@ export default function QIRecordDetailScreen() {
       {/* 备注 */}
       {record.remarks && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>检验备注</Text>
+          <Text style={styles.sectionTitle}>{t('recordDetail.inspectionRemarks')}</Text>
           <View style={styles.remarksCard}>
             <Text style={styles.remarksText}>{record.remarks}</Text>
           </View>

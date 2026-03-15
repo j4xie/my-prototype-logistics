@@ -1,0 +1,97 @@
+# 餐饮行业通用基准数据
+# 所有子行业共享的基础指标，子行业 YAML 可覆盖
+#
+# 数据来源：
+#   - 中国饭店协会《2024中国餐饮业年度报告》
+#   - 毕马威《2024年餐饮企业发展报告》(原材料40-50%, 人力25%, 租金18-22%)
+#   - 2025中国餐饮连锁化发展白皮书 (美团/CCFA)
+#   - 美团餐饮数据观
+#   - 品牌POS实测数据
+
+source: "中国饭店协会 / 毕马威 / 美团餐饮数据观 / 2025餐饮连锁化白皮书"
+year: 2024
+
+industry_overview:
+  chain_rate: 23  # 连锁化率 %
+  total_revenue_trillion: 5.57  # 万亿元
+  revenue_growth: 5.3  # %
+  avg_ticket_decline: -10.2  # 堂食平均单价同比
+  new_store_exit_1yr: 46.4  # 新开店1年内退出率 %
+  old_store_exit_10yr_plus: 10  # 10年以上老店退出率 <10%
+
+metrics:
+  food_cost_ratio:
+    name: "食材成本率"
+    range: [35.0, 45.0]
+    median: 40.0
+    unit: "%"
+    description: "食材成本占营收比例 (2024年行业均值约42.1%)"
+    source: "中国饭店协会《2024中国餐饮业年度报告》"
+    higher_is_worse: true
+
+  labor_cost_ratio:
+    name: "人力成本率"
+    range: [20.0, 30.0]
+    median: 24.0
+    unit: "%"
+    description: "人力成本占营收比例 (2024年行业均值22.2%)"
+    source: "中国饭店协会《2024中国餐饮业年度报告》; 毕马威: 约25%"
+    higher_is_worse: true
+
+  rent_ratio:
+    name: "租金占比"
+    range: [8.0, 22.0]
+    median: 14.0
+    unit: "%"
+    description: "租金成本占营收比例"
+    source: "毕马威《2024年餐饮企业发展报告》: 18-22%（含物业费）"
+    higher_is_worse: true
+
+  table_turnover:
+    name: "翻台率"
+    range: [2.0, 4.5]
+    median: 3.0
+    unit: "次/天"
+    description: "日均翻台次数"
+    source: "美团餐饮数据观 + 品牌POS实测"
+
+  average_ticket:
+    name: "客单价"
+    range: [50.0, 120.0]
+    median: 75.0
+    unit: "元"
+    description: "人均消费金额 (2024年大盘均价39.8元，同比-6.6%)"
+    source: "美团/大众点评公开数据 + 红餐白皮书2025"
+
+  restaurant_net_margin:
+    name: "餐饮净利率"
+    range: [1.0, 10.0]
+    median: 4.0
+    unit: "%"
+    description: "扣除食材+人力+租金后净利润率 (毕马威2024调研均值0.3%, 62%企业下降)"
+    source: "中国饭店协会; 毕马威《2024年餐饮企业发展报告》"
+
+  combo_attachment_rate:
+    name: "套餐附加率"
+    range: [15.0, 40.0]
+    median: 25.0
+    unit: "%"
+    description: "套餐订单占总订单比例"
+    source: "美团外卖商家版公开数据; 品牌POS实测"
+
+  discount_rate:
+    name: "折扣率"
+    range: [5.0, 20.0]
+    median: 12.0
+    unit: "%"
+    description: "平均折扣力度(1-实收/原价)"
+    source: "品牌POS实测(东门口/青花椒/唏嘛香/馨厨香)"
+
+  waste_loss_rate:
+    name: "食材损耗率"
+    range: [8.0, 25.0]
+    median: 15.0
+    unit: "%"
+    description: "食材从采购到出品的总损耗率 (行业均值18-25%, 标杆<5%)"
+    source: "红餐《中国餐饮供应链指南2024·食材篇》"
+    higher_is_worse: true

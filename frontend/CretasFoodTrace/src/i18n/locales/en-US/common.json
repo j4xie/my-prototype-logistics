@@ -501,6 +501,35 @@
   "enable": "Enable",
   "disable": "Disable",
   "enabled": "Enabled",
-  "disabled": "Disabled"
+  "disabled": "Disabled",
+  "loading": "Loading...",
+  "user": "User",
+  "tip": "Tip",
+  "comingSoon": "Coming soon",
+  "viewAll": "View All",
+  "askAI": "Ask AI",
+  "periods": {
+    "today": "Today",
+    "week": "This Week",
+    "month": "This Month",
+    "quarter": "This Quarter",
+    "year": "This Year"
+  },
+  "kpi": {
+    "sales": "Sales",
+    "orders": "Orders",
+    "completionRate": "Completion Rate",
+    "profit": "Profit"
+  },
+  "ranking": {
+    "department": "Department Ranking",
+    "region": "Region Ranking"
+  },
+  "insights": {
+    "title": "AI Insights"
+  },
+  "executiveDashboard": {
+    "title": "Executive Dashboard"
+  }
 }
 

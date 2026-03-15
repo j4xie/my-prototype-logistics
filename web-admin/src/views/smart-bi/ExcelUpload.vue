@@ -27,7 +27,9 @@ import {
   ArrowRight,
   ChatDotRound,
   DataAnalysis,
-  TrendCharts
+  TrendCharts,
+  CircleCheck,
+  Warning
 } from '@element-plus/icons-vue';
 import { KPICard, AIInsightPanel } from '@/components/smartbi';
 import echarts from '@/utils/echarts';
@@ -156,6 +158,112 @@ const targetFieldOptions = computed(() => {
   }));
 });
 
+// ==================== 字段类型检测与确认 ====================
+
+type FieldTypeName = '文本' | '数字' | '日期' | '百分比' | '金额';
+
+interface FieldTypeConfirmation {
+  fieldName: string;
+  detectedType: FieldTypeName;
+  confirmedType: FieldTypeName;
+  sampleValues: string[];
+  confirmed: boolean;
+}
+
+const fieldTypeOptions: FieldTypeName[] = ['文本', '数字', '日期', '百分比', '金额'];
+const fieldTypeConfirmations = ref<FieldTypeConfirmation[]>([]);
+
+/** Auto-detect field type from sample values */
+function detectFieldType(values: string[]): FieldTypeName {
+  const nonEmpty = values.filter(v => v !== null && v !== undefined && String(v).trim() !== '');
+  if (nonEmpty.length === 0) return '文本';
+
+  const stringValues = nonEmpty.map(v => String(v).trim());
+
+  // Check percentage — contains %
+  const percentCount = stringValues.filter(v => /[\d.]+\s*%/.test(v)).length;
+  if (percentCount >= Math.ceil(stringValues.length * 0.6)) return '百分比';
+
+  // Check currency — contains currency symbols or patterns like ¥123, $123, 123.00元
+  const currencyCount = stringValues.filter(v =>
+    /^[¥$€£][\s]?[\d,]+(\.\d+)?$/.test(v) ||
+    /^[\d,]+(\.\d{2})\s*(元|万元|千元)$/.test(v)
+  ).length;
+  if (currencyCount >= Math.ceil(stringValues.length * 0.6)) return '金额';
+
+  // Check date patterns — YYYY-MM-DD, YYYY/MM/DD, DD/MM/YYYY, etc.
+  const dateCount = stringValues.filter(v =>
+    /^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(v) ||
+    /^\d{1,2}[-/]\d{1,2}[-/]\d{4}/.test(v) ||
+    /^\d{4}年\d{1,2}月\d{1,2}日/.test(v) ||
+    /^\d{4}[-/]\d{1,2}$/.test(v) // YYYY-MM
+  ).length;
+  if (dateCount >= Math.ceil(stringValues.length * 0.6)) return '日期';
+
+  // Check numeric — all values are numbers (allow commas as thousand separators)
+  const numericCount = stringValues.filter(v => {
+    const cleaned = v.replace(/,/g, '');
+    return /^-?[\d]+(\.\d+)?$/.test(cleaned);
+  }).length;
+  if (numericCount >= Math.ceil(stringValues.length * 0.6)) return '数字';
+
+  return '文本';
+}
+
+/** Build field type confirmations from parsed data */
+function buildFieldTypeConfirmations() {
+  const data = parseResult.value.sampleData;
+  const headers = parseResult.value.headers;
+
+  fieldTypeConfirmations.value = headers.map(header => {
+    // Collect non-empty sample values from all preview data
+    const allValues = data
+      .map(row => row[header])
+      .filter(v => v !== null && v !== undefined && String(v).trim() !== '')
+      .map(v => String(v));
+    const sampleValues = allValues.slice(0, 3);
+    const detected = detectFieldType(allValues);
+
+    return {
+      fieldName: header,
+      detectedType: detected,
+      confirmedType: detected,
+      sampleValues,
+      confirmed: false
+    };
+  });
+}
+
+/** Confirm all fields at once */
+function confirmAllFields() {
+  fieldTypeConfirmations.value.forEach(f => {
+    f.confirmed = true;
+  });
+  ElMessage.success('已确认全部字段类型');
+}
+
+/** Re-run auto-detection */
+function redetectFieldTypes() {
+  buildFieldTypeConfirmations();
+  ElMessage.info('已重新检测字段类型');
+}
+
+/** Handle user changing a field type via dropdown */
+function handleFieldTypeChange(index: number) {
+  const field = fieldTypeConfirmations.value[index];
+  if (field) {
+    field.confirmed = true;
+  }
+}
+
+/** Are all fields confirmed? */
+const allFieldsConfirmed = computed(() => {
+  if (fieldTypeConfirmations.value.length === 0) return false;
+  return fieldTypeConfirmations.value.every(f => f.confirmed);
+});
+
+// ==================== End field type detection ====================
+
 // 处理文件上传
 async function handleUpload(file: UploadFile) {
   if (!file.raw) return;
@@ -200,14 +308,14 @@ async function handleUpload(file: UploadFile) {
       return false;
     }
 
-    // 保存解析结果
+    // 保存解析结果 — show ALL preview rows, not just 5
     const pr = result.parseResult;
     parseResult.value = {
       totalRows: pr.row_count || 0,
       validRows: pr.row_count || 0,
       errorRows: 0,
       headers: pr.headers || [],
-      sampleData: (pr.preview_data || []).slice(0, 5) as Record<string, string>[],
+      sampleData: (pr.preview_data || []) as Record<string, string>[],
       errors: []
     };
 
@@ -224,6 +332,9 @@ async function handleUpload(file: UploadFile) {
 
     // 保存图表配置
     chartConfigs.value = result.chartRecommendations || [];
+
+    // Build field type confirmations from parsed data
+    buildFieldTypeConfirmations();
 
     currentStep.value = 1;
     ElMessage.success('文件解析成功');
@@ -282,7 +393,7 @@ async function handleSaveAnalysis() {
 
   try {
     // 使用现有的 /upload/confirm 端点持久化
-    await confirmUploadAndPersist({
+    const saveResponse = await confirmUploadAndPersist({
       parseResponse: {
         fileName: fileList.value[0].name || 'unknown.xlsx',
         sheetName: 'Sheet1',
@@ -299,6 +410,11 @@ async function handleSaveAnalysis() {
       saveRawData: true,
       generateChart: chartConfigs.value.length > 0
     });
+
+    if (saveResponse && saveResponse.success === false) {
+      ElMessage.error(saveResponse.message || '保存失败');
+      return;
+    }
 
     ElMessage.success('分析结果已保存');
     importResult.value = {
@@ -393,6 +509,7 @@ function handleReset() {
   fileList.value = [];
   selectedDataType.value = '';
   fieldMappings.value = [];
+  fieldTypeConfirmations.value = [];
   parseResult.value = {
     totalRows: 0,
     validRows: 0,
@@ -411,6 +528,20 @@ function handleDownloadTemplate() {
     return;
   }
   ElMessage.info('模板下载功能开发中...');
+}
+
+/** Column type label mapping for preview table header badges */
+function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'success' | 'warning' | 'danger' | '' } {
+  const conf = fieldTypeConfirmations.value.find(f => f.fieldName === header);
+  if (!conf) return { label: '', type: 'info' };
+  const typeMap: Record<FieldTypeName, { label: string; type: 'info' | 'success' | 'warning' | 'danger' | '' }> = {
+    '文本': { label: 'Aa', type: 'info' },
+    '数字': { label: '#', type: 'success' },
+    '日期': { label: 'D', type: 'warning' },
+    '百分比': { label: '%', type: '' },
+    '金额': { label: '¥', type: 'danger' }
+  };
+  return typeMap[conf.confirmedType] || { label: '', type: 'info' };
 }
 </script>
 
@@ -512,23 +643,140 @@ function handleDownloadTemplate() {
             </div>
           </div>
 
+          <!-- 字段类型确认区域 -->
+          <div v-if="fieldTypeConfirmations.length > 0" class="field-confirmation">
+            <div class="field-confirmation-header">
+              <h4>字段类型确认</h4>
+              <div class="field-confirmation-actions">
+                <el-button size="small" @click="redetectFieldTypes">
+                  <el-icon><Refresh /></el-icon>
+                  重新检测
+                </el-button>
+                <el-button size="small" type="primary" @click="confirmAllFields">
+                  <el-icon><Check /></el-icon>
+                  全部确认
+                </el-button>
+              </div>
+            </div>
+            <el-table :data="fieldTypeConfirmations" stripe border size="small" class="field-type-table">
+              <el-table-column label="字段名" prop="fieldName" min-width="120">
+                <template #default="{ row }">
+                  <span class="field-name-cell">{{ row.fieldName }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="检测类型" min-width="100">
+                <template #default="{ row }">
+                  <el-tag size="small" :type="row.detectedType === '数字' ? 'success' : row.detectedType === '日期' ? 'warning' : row.detectedType === '金额' ? 'danger' : 'info'">
+                    {{ row.detectedType }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="确认类型" min-width="140">
+                <template #default="{ row, $index }">
+                  <el-select
+                    v-model="row.confirmedType"
+                    size="small"
+                    @change="handleFieldTypeChange($index)"
+                    style="width: 100%"
+                  >
+                    <el-option
+                      v-for="opt in fieldTypeOptions"
+                      :key="opt"
+                      :label="opt"
+                      :value="opt"
+                    />
+                  </el-select>
+                </template>
+              </el-table-column>
+              <el-table-column label="样本值" min-width="200">
+                <template #default="{ row }">
+                  <div class="sample-values-cell">
+                    <el-tag
+                      v-for="(val, i) in row.sampleValues"
+                      :key="i"
+                      size="small"
+                      type="info"
+                      effect="plain"
+                      class="sample-tag"
+                    >
+                      {{ val }}
+                    </el-tag>
+                    <span v-if="row.sampleValues.length === 0" class="no-sample">--</span>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="状态" width="80" align="center">
+                <template #default="{ row }">
+                  <el-icon v-if="row.confirmed && row.confirmedType === row.detectedType" class="type-status-icon confirmed">
+                    <CircleCheck />
+                  </el-icon>
+                  <el-icon v-else-if="row.confirmed && row.confirmedType !== row.detectedType" class="type-status-icon changed">
+                    <Warning />
+                  </el-icon>
+                  <span v-else class="type-status-icon pending">--</span>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div class="field-confirmation-hint">
+              <span v-if="allFieldsConfirmed" class="hint-success">
+                <el-icon><CircleCheck /></el-icon>
+                全部字段已确认
+              </span>
+              <span v-else class="hint-pending">
+                请确认或调整各字段的数据类型，确认后可继续查看分析结果
+              </span>
+            </div>
+          </div>
+
+          <!-- 数据预览表格 -->
           <div class="preview-table">
-            <h4>数据预览 (前 5 条)</h4>
-            <el-table :data="parseResult.sampleData" stripe border size="small" max-height="250">
+            <h4>
+              数据预览
+              <el-tag size="small" type="info" class="row-count-badge">
+                {{ parseResult.sampleData.length }} 行
+              </el-tag>
+            </h4>
+            <el-table
+              :data="parseResult.sampleData"
+              stripe
+              border
+              size="small"
+              max-height="400"
+              class="enhanced-preview-table"
+            >
               <el-table-column
                 v-for="header in parseResult.headers"
                 :key="header"
-                :label="header"
                 :prop="header"
-                min-width="100"
-              />
+                min-width="120"
+                sortable
+              >
+                <template #header>
+                  <div class="column-header-cell">
+                    <span class="column-header-text">{{ header }}</span>
+                    <el-tag
+                      v-if="getColumnTypeBadge(header).label"
+                      size="small"
+                      :type="getColumnTypeBadge(header).type"
+                      effect="plain"
+                      class="column-type-badge"
+                    >
+                      {{ getColumnTypeBadge(header).label }}
+                    </el-tag>
+                  </div>
+                </template>
+              </el-table-column>
             </el-table>
           </div>
         </div>
 
         <div class="step-actions">
           <el-button @click="handleReset">重新上传</el-button>
-          <el-button type="primary" @click="currentStep = 2">
+          <el-button
+            type="primary"
+            :disabled="!allFieldsConfirmed"
+            @click="currentStep = 2"
+          >
             查看分析结果
             <el-icon><ArrowRight /></el-icon>
           </el-button>
@@ -904,9 +1152,122 @@ function handleDownloadTemplate() {
 
   .preview-table {
     h4 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       margin: 0 0 12px;
       font-size: 14px;
       color: var(--el-text-color-primary, #303133);
+    }
+
+    .row-count-badge {
+      font-weight: 400;
+    }
+  }
+}
+
+// 字段类型确认
+.field-confirmation {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--el-fill-color-lighter, #fafafa);
+  border: 1px solid var(--el-border-color-lighter, #f0f0f0);
+  border-radius: 8px;
+
+  .field-confirmation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
+    h4 {
+      margin: 0;
+      font-size: 14px;
+      color: var(--el-text-color-primary, #303133);
+    }
+
+    .field-confirmation-actions {
+      display: flex;
+      gap: 8px;
+    }
+  }
+
+  .field-type-table {
+    margin-bottom: 12px;
+  }
+
+  .field-name-cell {
+    font-weight: 500;
+  }
+
+  .sample-values-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+
+    .sample-tag {
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .no-sample {
+      color: var(--el-text-color-placeholder, #c0c4cc);
+      font-size: 13px;
+    }
+  }
+
+  .type-status-icon {
+    font-size: 18px;
+
+    &.confirmed {
+      color: var(--el-color-success, #67C23A);
+    }
+
+    &.changed {
+      color: var(--el-color-warning, #E6A23C);
+    }
+
+    &.pending {
+      color: var(--el-text-color-placeholder, #c0c4cc);
+      font-size: 13px;
+    }
+  }
+
+  .field-confirmation-hint {
+    font-size: 13px;
+    padding-top: 4px;
+
+    .hint-success {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--el-color-success, #67C23A);
+    }
+
+    .hint-pending {
+      color: var(--el-text-color-secondary, #909399);
+    }
+  }
+}
+
+// Enhanced preview table
+.enhanced-preview-table {
+  .column-header-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    .column-header-text {
+      font-weight: 500;
+    }
+
+    .column-type-badge {
+      font-size: 11px;
+      padding: 0 4px;
+      height: 18px;
+      line-height: 16px;
+      border-radius: 3px;
     }
   }
 }
@@ -1114,6 +1475,12 @@ function handleDownloadTemplate() {
 
   .preview-stats {
     flex-direction: column;
+  }
+
+  .field-confirmation-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start !important;
   }
 }
 </style>

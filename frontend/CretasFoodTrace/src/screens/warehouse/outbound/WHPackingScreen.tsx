@@ -88,7 +88,7 @@ export function WHPackingScreen() {
         try {
           const goodsResp = await salesApiClient.getFinishedGoods({ page: 1, size: 50 });
           if (goodsResp?.success && goodsResp.data?.content) {
-            const productName = (shipment as any).productName || '';
+            const productName = shipment.productName || '';
             let batches = goodsResp.data.content.filter(
               (b: FinishedGoodsBatch) => b.availableQuantity > 0
             );

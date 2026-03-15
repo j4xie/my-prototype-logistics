@@ -377,7 +377,8 @@ class TimeStatsApiClient {
     });
 
     // 映射后端响应到前端期望的格式
-    const departments = response.data?.departmentStats || [];
+    const rawDepts = response.data?.departmentStats;
+    const departments = Array.isArray(rawDepts) ? rawDepts : [];
     const totalCost = departments.reduce((sum: number, d: { totalCost?: number }) => sum + (d.totalCost || 0), 0);
 
     return departments.map((dept: { department?: string; totalCost?: number }, index: number) => ({
@@ -414,7 +415,7 @@ class TimeStatsApiClient {
     });
 
     // 映射后端响应到前端期望的格式，按工时排序
-    const workers = response.data || [];
+    const workers = Array.isArray(response.data) ? response.data : [];
     return workers
       .sort((a: { totalMinutes?: number }, b: { totalMinutes?: number }) =>
         (b.totalMinutes || 0) - (a.totalMinutes || 0))

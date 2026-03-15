@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -107,6 +109,7 @@ export default function QIAnalysisScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [data, setData] = useState<AnalysisData | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<'week' | 'month' | 'quarter'>('week');
 
   useEffect(() => {
@@ -114,8 +117,7 @@ export default function QIAnalysisScreen() {
       qualityInspectorApi.setFactoryId(factoryId);
       loadData();
     } else {
-      // No factoryId available - use fallback data instead of loading forever
-      setData(FALLBACK_DATA);
+      setError(t('analysis.noFactory', '未设置工厂ID，无法加载数据'));
       setLoading(false);
     }
   }, [factoryId, period]);
@@ -123,16 +125,19 @@ export default function QIAnalysisScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const result = await qualityInspectorApi.getAnalysisData(period);
       if (isValidAnalysisData(result)) {
         setData(result);
       } else {
-        console.warn('API returned unexpected data format, using fallback');
-        setData(FALLBACK_DATA);
+        console.warn('API returned unexpected data format');
+        setError(t('analysis.dataFormatError', '数据格式异常，请稍后重试'));
+        setData(null);
       }
-    } catch (error) {
-      console.error('加载分析数据失败:', error);
-      setData(FALLBACK_DATA);
+    } catch (err) {
+      console.error('加载分析数据失败:', err);
+      setError(t('analysis.loadError', '加载分析数据失败，请下拉刷新重试'));
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -186,7 +191,7 @@ export default function QIAnalysisScreen() {
 
   const renderCategoryScore = (
     category: string,
-    icon: string,
+    icon: IoniconsName,
     score: number,
     maxScore: number = 20
   ) => {
@@ -194,7 +199,7 @@ export default function QIAnalysisScreen() {
     return (
       <View style={styles.categoryItem}>
         <View style={styles.categoryHeader}>
-          <Ionicons name={icon as any} size={18} color={QI_COLORS.primary} />
+          <Ionicons name={icon} size={18} color={QI_COLORS.primary} />
           <Text style={styles.categoryName}>{category}</Text>
           <Text style={styles.categoryScore}>
             {score.toFixed(1)}<Text style={styles.categoryMax}>/{maxScore}</Text>
@@ -213,6 +218,27 @@ export default function QIAnalysisScreen() {
         <ActivityIndicator size="large" color={QI_COLORS.primary} />
         <Text style={styles.loadingText}>{t('analysis.loading')}</Text>
       </View>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 20, alignItems: 'center', justifyContent: 'center', flex: 1 }]}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[QI_COLORS.primary]} />
+        }
+      >
+        <Ionicons name="alert-circle-outline" size={48} color="#999" />
+        <Text style={{ fontSize: 16, color: '#666', marginTop: 12, textAlign: 'center' }}>{error}</Text>
+        <TouchableOpacity
+          style={{ marginTop: 16, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: QI_COLORS.primary, borderRadius: 8 }}
+          onPress={loadData}
+        >
+          <Text style={{ color: '#fff', fontSize: 14 }}>{t('analysis.retry', '重试')}</Text>
+        </TouchableOpacity>
+      </ScrollView>
     );
   }
 

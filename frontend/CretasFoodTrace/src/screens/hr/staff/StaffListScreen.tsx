@@ -23,6 +23,8 @@ import {
 import { Text, Card, Searchbar, Chip, Avatar, FAB, ActivityIndicator, Menu } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { HRStaffStackParamList } from '../../../types/hrNavigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -30,7 +32,7 @@ import { userApiClient } from '../../../services/api/userApiClient';
 import { HR_THEME, STAFF_STATUS_CONFIG, type StaffListItem, type StaffStatus } from '../../../types/hrNavigation';
 
 export default function StaffListScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<HRStaffStackParamList>>();
   const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -106,7 +108,7 @@ export default function StaffListScreen() {
   };
 
   const handleItemPress = useCallback((item: StaffListItem) => {
-    navigation.navigate('StaffDetail' as any, { staffId: item.id });
+    navigation.navigate('StaffDetail', { staffId: item.id });
   }, [navigation]);
 
   const renderItem = useCallback(({ item }: { item: StaffListItem }) => {
@@ -135,9 +137,9 @@ export default function StaffListScreen() {
               <Text style={styles.meta}>
                 {item.department || t('staff.card.noDepartment')} · {item.position || item.roleName || t('staff.card.defaultPosition')}
               </Text>
-              {item.phone && (
+              {item.phone ? (
                 <Text style={styles.phone}>{item.phone}</Text>
-              )}
+              ) : null}
             </View>
             <MaterialCommunityIcons
               name="chevron-right"
@@ -246,7 +248,7 @@ export default function StaffListScreen() {
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => navigation.navigate('StaffAdd' as any)}
+        onPress={() => navigation.navigate('StaffAdd')}
         color="#fff"
       />
     </SafeAreaView>

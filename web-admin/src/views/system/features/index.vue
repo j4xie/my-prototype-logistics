@@ -135,9 +135,12 @@ async function loadData() {
     const response = await getFeatureConfigs(factoryId.value);
     if (response.success && response.data) {
       configs.value = response.data;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载功能配置失败');
     }
   } catch (error) {
     console.error('加载功能配置失败:', error);
+    ElMessage.error('加载功能配置失败');
   } finally {
     loading.value = false;
   }
@@ -156,6 +159,8 @@ async function handleInitDefaults() {
     if (response.success && response.data) {
       configs.value = response.data;
       ElMessage.success('默认配置初始化成功');
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '初始化失败');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -169,8 +174,13 @@ async function handleInitDefaults() {
 async function handleToggle(config: FeatureConfig) {
   if (!factoryId.value || !canWrite.value) return;
   try {
-    await toggleModule(factoryId.value, config.moduleId, config.enabled);
-    ElMessage.success(`${config.moduleName} 已${config.enabled ? '启用' : '禁用'}`);
+    const response = await toggleModule(factoryId.value, config.moduleId, config.enabled);
+    if (response.success) {
+      ElMessage.success(`${config.moduleName} 已${config.enabled ? '启用' : '禁用'}`);
+    } else {
+      config.enabled = !config.enabled;
+      ElMessage.error(response.message || '操作失败');
+    }
   } catch (error) {
     // Revert on failure
     config.enabled = !config.enabled;
@@ -206,6 +216,8 @@ async function saveConfig() {
       }
       ElMessage.success('配置已保存');
       drawerVisible.value = false;
+    } else {
+      ElMessage.error(response.message || '保存失败');
     }
   } catch (error) {
     ElMessage.error('保存失败');
@@ -386,6 +398,59 @@ function getModuleColor(moduleId: string): string {
           </el-checkbox-group>
         </div>
 
+        <!-- Production Mode (only for 'production' module) -->
+        <div
+          v-if="editingModule.moduleId === 'production'"
+          class="config-section"
+        >
+          <h4>生产模式</h4>
+          <p class="section-hint">选择工厂的生产组织模式，影响签到/报工/任务的绑定维度</p>
+          <el-radio-group v-model="editConfig.mode" class="mode-radio-group">
+            <el-radio value="BATCH">
+              <div class="mode-option">
+                <strong>批次模式 (BATCH)</strong>
+                <span class="mode-desc">默认 — 按批次组织签到和报工</span>
+              </div>
+            </el-radio>
+            <el-radio value="PROCESS">
+              <div class="mode-option">
+                <strong>工序模式 (PROCESS)</strong>
+                <span class="mode-desc">按工序任务组织，支持累计报工和审批</span>
+              </div>
+            </el-radio>
+            <el-radio value="ORDER" disabled>
+              <div class="mode-option">
+                <strong>订单模式 (ORDER)</strong>
+                <span class="mode-desc">按客户订单排产（暂未开放）</span>
+              </div>
+            </el-radio>
+          </el-radio-group>
+
+          <template v-if="editConfig.mode === 'PROCESS'">
+            <el-divider />
+            <h4>工序模式配置</h4>
+            <el-form label-width="120px" size="small">
+              <el-form-item label="累计报工">
+                <el-switch v-model="editConfig.cumulativeReporting" />
+              </el-form-item>
+              <el-form-item label="完成规则">
+                <el-select v-model="editConfig.completionRule" style="width: 100%">
+                  <el-option value="manual_with_prompt" label="达标后手动确认" />
+                  <el-option value="auto" label="自动完成" />
+                  <el-option value="manual" label="手动完成" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="报工间隔">
+                <el-select v-model="editConfig.reportingInterval" style="width: 100%">
+                  <el-option value="hourly" label="每小时" />
+                  <el-option value="shift" label="每班次" />
+                  <el-option value="daily" label="每日" />
+                </el-select>
+              </el-form-item>
+            </el-form>
+          </template>
+        </div>
+
         <!-- Priority -->
         <div class="config-section">
           <h4>模块优先级</h4>
@@ -548,5 +613,28 @@ function getModuleColor(moduleId: string): string {
   gap: 8px;
   padding-top: 20px;
   border-top: 1px solid #ebeef5;
+}
+
+.mode-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .el-radio {
+    height: auto;
+    margin-right: 0;
+  }
+}
+
+.mode-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mode-desc {
+  font-size: 12px;
+  color: #909399;
+  font-weight: normal;
 }
 </style>

@@ -4,12 +4,17 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.ProcessCheckinRecord;
 import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.entity.ProductionReport;
+import com.cretas.aims.entity.User;
 import com.cretas.aims.repository.ProcessCheckinRecordRepository;
 import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.repository.ProductionReportRepository;
+import com.cretas.aims.repository.UserRepository;
+import com.cretas.aims.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -30,16 +35,32 @@ public class ProcessCheckinController {
     private final ProductionPlanRepository planRepository;
     private final ProductionBatchRepository batchRepository;
     private final ProductionReportRepository reportRepository;
+    private final UserRepository userRepository;
 
     @PostMapping
-    public ApiResponse<ProcessCheckinRecord> checkIn(
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ApiResponse<Map<String, Object>> checkIn(
             @PathVariable String factoryId,
-            @RequestBody Map<String, Object> body) {
+            @RequestBody Map<String, Object> body,
+            @RequestAttribute(value = "userId", required = false) Long operatorId) {
+        Long employeeId = Long.valueOf(body.get("employeeId").toString());
+
+        // P2-7: 重复签到防护 — 同一员工已 CHECKED_IN 时拒绝
+        List<ProcessCheckinRecord> existing = checkinRepository
+                .findByFactoryIdAndEmployeeIdAndStatus(factoryId, employeeId, "CHECKED_IN");
+        if (!existing.isEmpty()) {
+            return ApiResponse.error("该员工已签到（ID: " + existing.get(0).getId() + "），请先签退后再签到");
+        }
+
         ProcessCheckinRecord record = new ProcessCheckinRecord();
         record.setFactoryId(factoryId);
-        record.setEmployeeId(Long.valueOf(body.get("employeeId").toString()));
+        record.setEmployeeId(employeeId);
         record.setProcessName((String) body.get("processName"));
         record.setProcessCategory((String) body.get("processCategory"));
+        // P2-8: 关联 processTaskId
+        if (body.get("processTaskId") != null) {
+            record.setProcessTaskId((String) body.get("processTaskId"));
+        }
         if (body.get("batchId") != null) {
             record.setBatchId(Long.valueOf(body.get("batchId").toString()));
         }
@@ -48,15 +69,30 @@ public class ProcessCheckinController {
         record.setStatus("CHECKED_IN");
 
         record = checkinRepository.save(record);
-        return ApiResponse.success(record);
+
+        // 查员工姓名
+        String employeeName = userRepository.findById(employeeId)
+                .map(User::getFullName)
+                .orElse("工号" + employeeId);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("id", record.getId());
+        result.put("employeeId", employeeId);
+        result.put("employeeName", employeeName);
+        result.put("processName", record.getProcessName());
+        result.put("checkInTime", record.getCheckInTime());
+        result.put("status", record.getStatus());
+        return ApiResponse.success(result);
     }
 
     @PostMapping("/checkout/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @Transactional
     public ApiResponse<Map<String, Object>> checkOut(
             @PathVariable String factoryId,
             @PathVariable Long id) {
         ProcessCheckinRecord record = checkinRepository.findByIdAndFactoryId(id, factoryId)
-                .orElseThrow(() -> new RuntimeException("签到记录不存在"));
+                .orElseThrow(() -> new ResourceNotFoundException("ProcessCheckinRecord", "id", id.toString()));
 
         if (!"CHECKED_IN".equals(record.getStatus())) {
             return ApiResponse.error("当前状态无法签退");
@@ -130,9 +166,13 @@ public class ProcessCheckinController {
     @GetMapping("/active")
     public ApiResponse<List<ProcessCheckinRecord>> getActiveCheckins(
             @PathVariable String factoryId,
-            @RequestParam Long employeeId) {
-        List<ProcessCheckinRecord> records = checkinRepository
-                .findByFactoryIdAndEmployeeIdAndStatus(factoryId, employeeId, "CHECKED_IN");
+            @RequestParam(required = false) Long employeeId) {
+        List<ProcessCheckinRecord> records;
+        if (employeeId != null) {
+            records = checkinRepository.findByFactoryIdAndEmployeeIdAndStatus(factoryId, employeeId, "CHECKED_IN");
+        } else {
+            records = checkinRepository.findByFactoryIdAndStatus(factoryId, "CHECKED_IN");
+        }
         return ApiResponse.success(records);
     }
 

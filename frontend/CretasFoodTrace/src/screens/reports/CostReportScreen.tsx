@@ -84,8 +84,8 @@ export default function CostReportScreen() {
 
         costReportLogger.info('成本报表数据加载成功', {
           batchCount: batches.length,
-          totalCost: stats.totalCost.toFixed(2),
-          avgCostPerBatch: stats.avgCostPerBatch.toFixed(2),
+          totalCost: Number(stats.totalCost ?? 0).toFixed(2),
+          avgCostPerBatch: Number(stats.avgCostPerBatch ?? 0).toFixed(2),
           factoryId,
         });
       } else {
@@ -185,7 +185,7 @@ export default function CostReportScreen() {
         endDate: formatDate(endDate),
       });
       // 解包嵌套的响应格式 {code, message, data}
-      const actualData = (response as any)?.data ?? response;
+      const actualData = (response && typeof response === 'object' && 'data' in response) ? (response as { data: typeof response }).data : response;
       if (actualData) {
         setCostVarianceData(actualData);
         costReportLogger.info('成本差异数据加载成功', {
@@ -318,7 +318,7 @@ export default function CostReportScreen() {
                     {formatCurrency(costStats.totalMaterialCost)}
                   </Text>
                   <Text style={styles.statLabel}>
-                    {t('cost.materialCost')} ({(costStats.materialCostRatio ?? 0).toFixed(1)}%)
+                    {t('cost.materialCost')} ({Number(costStats.materialCostRatio ?? 0).toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={styles.statBox}>
@@ -326,7 +326,7 @@ export default function CostReportScreen() {
                     {formatCurrency(costStats.totalLaborCost)}
                   </Text>
                   <Text style={styles.statLabel}>
-                    {t('cost.laborCost')} ({(costStats.laborCostRatio ?? 0).toFixed(1)}%)
+                    {t('cost.laborCost')} ({Number(costStats.laborCostRatio ?? 0).toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={styles.statBox}>
@@ -334,7 +334,7 @@ export default function CostReportScreen() {
                     {formatCurrency(costStats.totalOverheadCost)}
                   </Text>
                   <Text style={styles.statLabel}>
-                    {t('cost.overheadCost')} ({(costStats.overheadCostRatio ?? 0).toFixed(1)}%)
+                    {t('cost.overheadCost')} ({Number(costStats.overheadCostRatio ?? 0).toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={styles.statBox}>

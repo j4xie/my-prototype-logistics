@@ -13,6 +13,8 @@ import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
 import type { AlternativeDimension } from '../../types/smartbi';
 
 /**
@@ -38,7 +40,7 @@ export interface ChartDimensionSwitcherProps {
 /**
  * Get icon for semantic type
  */
-function getSemanticIcon(type: AlternativeDimension['semanticType']): string {
+function getSemanticIcon(type: AlternativeDimension['semanticType']): MCIconName {
   switch (type) {
     case 'dimension':
       return 'shape-outline';
@@ -105,7 +107,7 @@ export default function ChartDimensionSwitcher({
                 showIcon
                   ? () => (
                       <MaterialCommunityIcons
-                        name={getSemanticIcon(option.semanticType) as any}
+                        name={getSemanticIcon(option.semanticType)}
                         size={compact ? 14 : 16}
                         color={isSelected ? '#FFFFFF' : '#6B7280'}
                       />

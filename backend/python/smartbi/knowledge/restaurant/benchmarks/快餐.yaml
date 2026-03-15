@@ -1,0 +1,47 @@
+# 快餐/小吃行业基准数据
+#
+# 数据来源：
+#   - 红餐《中国餐饮品类发展报告2025》(连锁化率27%, 326.7万家)
+#   - 永和豆浆 POS 实测
+#   - 雀巢+欧睿《中式餐饮白皮书2025》(均价39.8元)
+
+source: "红餐品类报告 + POS实测 + 中式餐饮白皮书"
+year: 2024
+
+sub_sector_info:
+  store_count: 3267000  # 门店数
+  chain_rate: 27  # % (高于大盘22%)
+  avg_ticket_market: 39.8  # 大盘均价（元）
+  avg_ticket_decline: -3.4  # 快餐客单价同比 %
+
+metrics:
+  food_cost_ratio:
+    name: "食材成本率"
+    range: [35.0, 45.0]
+    median: 40.0
+    source: "永和豆浆POS实测 + 中国快餐产业发展报告"
+
+  labor_cost_ratio:
+    name: "人力成本率"
+    range: [18.0, 28.0]
+    median: 22.0
+    note: "快餐标准化程度高，人力占比低于正餐"
+
+  table_turnover:
+    name: "翻台率"
+    range: [4.0, 8.0]
+    median: 5.5
+    source: "永和豆浆运营数据"
+    note: "快餐翻台远高于正餐，高峰期可达10次+"
+
+  average_ticket:
+    name: "客单价"
+    range: [18.0, 45.0]
+    median: 30.0
+    source: "永和豆浆POS实测 + 大盘均价39.8元"
+
+  restaurant_net_margin:
+    name: "餐饮净利率"
+    range: [2.0, 8.0]
+    median: 5.0
+    note: "低客单但高周转，头部品牌可达8%+"

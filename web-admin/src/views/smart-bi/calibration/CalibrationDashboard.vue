@@ -111,56 +111,12 @@ async function loadMetrics() {
     const response = await getCalibrationDashboard(currentFactoryId.value);
     if (response.success && response.data) {
       metrics.value = response.data.metrics;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载指标数据失败');
     }
   } catch (error) {
     console.error('加载指标数据失败:', error);
-    // 使用示例数据
-    metrics.value = [
-      {
-        key: 'conciseness',
-        label: '简洁性',
-        value: 92.3,
-        unit: '%',
-        change: 2.1,
-        changeLabel: '较上周',
-        trend: 'up',
-        status: 'success',
-        description: '输出内容的简洁程度评分'
-      },
-      {
-        key: 'successRate',
-        label: '成功率',
-        value: 97.1,
-        unit: '%',
-        change: 0.5,
-        changeLabel: '较上周',
-        trend: 'up',
-        status: 'success',
-        description: '工具调用成功率'
-      },
-      {
-        key: 'efficiency',
-        label: '推理效率',
-        value: 85.6,
-        unit: '',
-        change: -1.2,
-        changeLabel: '较上周',
-        trend: 'down',
-        status: 'warning',
-        description: '推理效率评分 (0-100)'
-      },
-      {
-        key: 'compositeScore',
-        label: '综合得分',
-        value: 91.2,
-        unit: '',
-        change: 1.8,
-        changeLabel: '较上周',
-        trend: 'up',
-        status: 'success',
-        description: '综合行为校准得分'
-      }
-    ];
+    ElMessage.error('加载指标数据失败');
   } finally {
     metricsLoading.value = false;
   }
@@ -183,23 +139,12 @@ async function loadTrendData() {
 
     if (response.success && response.data) {
       trendData.value = response.data;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载趋势数据失败');
     }
   } catch (error) {
     console.error('加载趋势数据失败:', error);
-    // 使用示例数据
-    const dates = [];
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      dates.push(d.toISOString().split('T')[0]);
-    }
-    trendData.value = dates.map((date, index) => ({
-      date,
-      conciseness: 88 + Math.random() * 8,
-      successRate: 94 + Math.random() * 5,
-      efficiency: 82 + Math.random() * 10,
-      compositeScore: 87 + Math.random() * 8
-    }));
+    ElMessage.error('加载趋势数据失败');
   } finally {
     trendLoading.value = false;
   }
@@ -211,67 +156,12 @@ async function loadToolReliability() {
     const response = await getToolReliabilityRanking(currentFactoryId.value, 10);
     if (response.success && response.data) {
       toolReliability.value = response.data;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载工具可靠性排名失败');
     }
   } catch (error) {
     console.error('加载工具可靠性数据失败:', error);
-    // 使用示例数据
-    toolReliability.value = [
-      {
-        rank: 1,
-        toolName: '物料批次查询',
-        toolCode: 'material_batch_query',
-        successRate: 99.2,
-        avgDuration: 156,
-        totalCalls: 1523,
-        failureCount: 12,
-        trend: 'up',
-        lastUsed: new Date().toISOString()
-      },
-      {
-        rank: 2,
-        toolName: '库存查询',
-        toolCode: 'inventory_query',
-        successRate: 98.5,
-        avgDuration: 203,
-        totalCalls: 1287,
-        failureCount: 19,
-        trend: 'flat',
-        lastUsed: new Date(Date.now() - 300000).toISOString()
-      },
-      {
-        rank: 3,
-        toolName: '生产计划查询',
-        toolCode: 'production_plan_query',
-        successRate: 97.8,
-        avgDuration: 289,
-        totalCalls: 956,
-        failureCount: 21,
-        trend: 'up',
-        lastUsed: new Date(Date.now() - 600000).toISOString()
-      },
-      {
-        rank: 4,
-        toolName: '人员排班查询',
-        toolCode: 'worker_schedule_query',
-        successRate: 96.5,
-        avgDuration: 178,
-        totalCalls: 743,
-        failureCount: 26,
-        trend: 'down',
-        lastUsed: new Date(Date.now() - 1200000).toISOString()
-      },
-      {
-        rank: 5,
-        toolName: '质检记录查询',
-        toolCode: 'quality_inspection_query',
-        successRate: 95.2,
-        avgDuration: 234,
-        totalCalls: 621,
-        failureCount: 30,
-        trend: 'flat',
-        lastUsed: new Date(Date.now() - 1800000).toISOString()
-      }
-    ];
+    ElMessage.error('加载工具可靠性排名失败');
   } finally {
     reliabilityLoading.value = false;
   }
@@ -290,34 +180,12 @@ async function loadToolCalls() {
     if (response.success && response.data) {
       toolCalls.value = response.data.content;
       toolCallsTotal.value = response.data.totalElements;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载工具调用记录失败');
     }
   } catch (error) {
     console.error('加载工具调用记录失败:', error);
-    // 使用示例数据
-    const statuses: Array<'success' | 'failed' | 'timeout' | 'cancelled'> = ['success', 'success', 'success', 'success', 'failed', 'timeout'];
-    const tools = [
-      { name: '物料批次查询', code: 'material_batch_query' },
-      { name: '库存查询', code: 'inventory_query' },
-      { name: '生产计划查询', code: 'production_plan_query' },
-      { name: '人员排班查询', code: 'worker_schedule_query' }
-    ];
-
-    toolCalls.value = Array.from({ length: 10 }, (_, i) => {
-      const tool = tools[Math.floor(Math.random() * tools.length)];
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-      return {
-        id: `call-${i + 1}`,
-        toolName: tool.name,
-        toolCode: tool.code,
-        status,
-        duration: Math.floor(100 + Math.random() * 500),
-        timestamp: new Date(Date.now() - i * 300000).toISOString(),
-        userName: ['张三', '李四', '王五', undefined][Math.floor(Math.random() * 4)],
-        intentName: ['查询物料', '获取库存', '排班查询', undefined][Math.floor(Math.random() * 4)],
-        errorMessage: status === 'failed' ? '连接超时' : undefined
-      };
-    });
-    toolCallsTotal.value = 156;
+    ElMessage.error('加载工具调用记录失败');
   } finally {
     callsLoading.value = false;
   }
@@ -330,15 +198,12 @@ async function loadFactoryOptions() {
     const response = await getFactoryOptions();
     if (response.success && response.data) {
       factoryOptions.value = response.data;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载工厂列表失败');
     }
   } catch (error) {
     console.error('加载工厂列表失败:', error);
-    // 使用示例数据
-    factoryOptions.value = [
-      { id: '1', factoryId: 'F001', name: '上海食品加工厂' },
-      { id: '2', factoryId: 'F002', name: '北京冷链物流中心' },
-      { id: '3', factoryId: 'F003', name: '广州生鲜配送站' }
-    ];
+    ElMessage.error('加载工厂列表失败');
   }
 }
 

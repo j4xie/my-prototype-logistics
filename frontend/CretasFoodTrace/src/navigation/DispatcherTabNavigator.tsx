@@ -32,14 +32,11 @@ const Tab = createBottomTabNavigator<DispatcherTabParamList>();
 export function DispatcherTabNavigator() {
   const { isScreenEnabled, loaded } = useFactoryFeatureStore();
 
-  // Force navigator re-mount when feature config changes
   const schedulingOn = isScreenEnabled('ProductionPlanning');
   const smartbiOn = isScreenEnabled('SmartBI');
-  const navKey = `ds-${loaded}-${schedulingOn}-${smartbiOn}`;
 
   return (
     <Tab.Navigator
-      key={navKey}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: DISPATCHER_THEME.primary,

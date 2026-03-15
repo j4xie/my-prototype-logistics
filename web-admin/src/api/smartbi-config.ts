@@ -2,7 +2,7 @@
  * SmartBI 配置管理 API
  * 提供数据源、图表模板、公式、阈值等配置管理
  */
-import { get, post, put, del } from './request';
+import { adminGet as get, adminPost as post, adminPut as put, adminDel as del } from './request';
 import type { ApiResponse } from '@/types/api';
 
 // ==================== 类型定义 ====================

@@ -28,6 +28,13 @@ import DraftReportsScreen from "../../screens/processing/DraftReportsScreen";
 import LabelScanScreen from "../../screens/shared/LabelScanScreen";
 import AIAnalysisScreen from "../../screens/processing/AIAnalysisScreen";
 
+// 工序制生产页面
+import ProcessTaskListScreen from "../../screens/processing/ProcessTaskListScreen";
+import ProcessTaskDetailScreen from "../../screens/processing/ProcessTaskDetailScreen";
+import ProcessTaskReportScreen from "../../screens/processing/ProcessTaskReportScreen";
+import ProcessTaskHistoryScreen from "../../screens/processing/ProcessTaskHistoryScreen";
+import ProcessRunOverviewScreen from "../../screens/processing/ProcessRunOverviewScreen";
+
 // 质检相关 - 已迁移至 QualityInspectorNavigator
 // import CreateQualityRecordScreen from "../../screens/processing/CreateQualityRecordScreen";
 // import QualityInspectionDetailScreen from "../../screens/processing/QualityInspectionDetailScreen";
@@ -109,6 +116,33 @@ export function WSBatchesStackNavigator() {
         name="AIAnalysis"
         component={AIAnalysisScreen}
         options={{ title: "AI效率分析" }}
+      />
+
+      {/* 工序制生产 */}
+      <Stack.Screen
+        name="ProcessTaskList"
+        component={ProcessTaskListScreen}
+        options={{ title: "工序任务" }}
+      />
+      <Stack.Screen
+        name="ProcessTaskDetail"
+        component={ProcessTaskDetailScreen}
+        options={{ title: "任务详情" }}
+      />
+      <Stack.Screen
+        name="ProcessTaskReport"
+        component={ProcessTaskReportScreen}
+        options={{ title: "工序报工" }}
+      />
+      <Stack.Screen
+        name="ProcessTaskHistory"
+        component={ProcessTaskHistoryScreen}
+        options={{ title: "任务历史" }}
+      />
+      <Stack.Screen
+        name="ProcessRunOverview"
+        component={ProcessRunOverviewScreen}
+        options={{ title: "生产运行概览" }}
       />
 
       {/* 质检已迁移至 QualityInspectorNavigator */}

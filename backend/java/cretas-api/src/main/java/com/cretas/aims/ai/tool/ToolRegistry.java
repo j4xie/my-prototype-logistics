@@ -1,6 +1,7 @@
 package com.cretas.aims.ai.tool;
 
 import com.cretas.aims.ai.dto.Tool;
+import com.cretas.aims.service.governance.ToolSimilarityService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Tool 注册中心
@@ -30,12 +32,25 @@ public class ToolRegistry {
      */
     private final Map<String, ToolExecutor> toolMap = new ConcurrentHashMap<>();
 
+    /** Governance index: ActionType -> toolNames */
+    private final Map<ToolExecutor.ActionType, Set<String>> actionTypeIndex = new ConcurrentHashMap<>();
+
+    /** Governance index: RiskLevel -> toolNames */
+    private final Map<ToolExecutor.RiskLevel, Set<String>> riskLevelIndex = new ConcurrentHashMap<>();
+
+    /** Governance index: domainTag -> toolNames */
+    private final Map<String, Set<String>> domainTagIndex = new ConcurrentHashMap<>();
+
     /**
      * Spring 自动注入所有 ToolExecutor 实现
      */
     @Autowired(required = false)
     @Lazy
     private List<ToolExecutor> toolExecutors;
+
+    @Autowired
+    @Lazy
+    private ToolSimilarityService toolSimilarityService;
 
     /**
      * 初始化时注册所有工具
@@ -68,13 +83,20 @@ public class ToolRegistry {
             }
 
             toolMap.put(toolName, executor);
-            log.info("✅ 注册工具: name={}, class={}, requiresPermission={}",
+
+            // Build governance indexes
+            indexTool(toolName, executor);
+
+            log.info("✅ 注册工具: name={}, class={}, action={}, risk={}",
                     toolName,
                     executor.getClass().getSimpleName(),
-                    executor.requiresPermission());
+                    executor.getActionType(),
+                    executor.getRiskLevel());
         }
 
         log.info("🔧 Tool Registry 初始化完成，共注册 {} 个工具", toolMap.size());
+        logGovernanceSummary();
+        runSimilarityGateCheck();
     }
 
     /**
@@ -266,6 +288,15 @@ public class ToolRegistry {
     }
 
     /**
+     * 获取所有工具执行器
+     *
+     * @return ToolExecutor 集合
+     */
+    public Collection<ToolExecutor> getAllExecutors() {
+        return Collections.unmodifiableCollection(toolMap.values());
+    }
+
+    /**
      * 获取工具数量统计
      *
      * @return 工具数量
@@ -296,7 +327,12 @@ public class ToolRegistry {
         }
 
         toolMap.put(name, executor);
+        indexTool(name, executor);
         log.info("✅ 注册外部工具: name={}, class={}", name, executor.getClass().getSimpleName());
+
+        // Gate-keeping: check similarity with existing tools
+        checkSimilarityForNewTool(name);
+
         return true;
     }
 
@@ -315,11 +351,182 @@ public class ToolRegistry {
         return false;
     }
 
+    // ==================== Gate-Keeping ====================
+
+    /**
+     * Startup similarity scan — runs after all tools are registered.
+     * Logs warnings for any highly similar tool pairs.
+     */
+    private void runSimilarityGateCheck() {
+        try {
+            List<ToolSimilarityService.SimilarToolPair> pairs = toolSimilarityService.detectSimilarTools();
+            if (!pairs.isEmpty()) {
+                log.warn("🔍 Similarity gate-check found {} similar tool pairs:", pairs.size());
+                for (ToolSimilarityService.SimilarToolPair pair : pairs) {
+                    log.warn("   ⚠ {} ↔ {} (combined={}, desc={}, params={}) — {}",
+                            pair.getToolA(), pair.getToolB(),
+                            pair.getCombinedSimilarity(),
+                            pair.getDescriptionSimilarity(),
+                            pair.getParamOverlap(),
+                            pair.getMergeRecommendation());
+                }
+            } else {
+                log.info("🔍 Similarity gate-check: no highly similar tool pairs found");
+            }
+        } catch (Exception e) {
+            log.warn("Similarity gate-check skipped due to error: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Check a single newly registered tool against existing tools.
+     */
+    private void checkSimilarityForNewTool(String toolName) {
+        try {
+            List<ToolSimilarityService.SimilarToolPair> pairs =
+                    toolSimilarityService.checkSimilarityForTool(toolName);
+            for (ToolSimilarityService.SimilarToolPair pair : pairs) {
+                log.warn("⚠ 新注册 Tool [{}] 与现有 Tool [{}] 高度相似（similarity={}），建议合并",
+                        pair.getToolA(), pair.getToolB(), pair.getCombinedSimilarity());
+            }
+        } catch (Exception e) {
+            // Non-blocking — gate-keeping is advisory only
+        }
+    }
+
+    // ==================== Governance Index Methods ====================
+
+    private void indexTool(String toolName, ToolExecutor executor) {
+        actionTypeIndex.computeIfAbsent(executor.getActionType(), k -> ConcurrentHashMap.newKeySet())
+                .add(toolName);
+        riskLevelIndex.computeIfAbsent(executor.getRiskLevel(), k -> ConcurrentHashMap.newKeySet())
+                .add(toolName);
+        for (String tag : executor.getDomainTags()) {
+            domainTagIndex.computeIfAbsent(tag, k -> ConcurrentHashMap.newKeySet())
+                    .add(toolName);
+        }
+    }
+
+    private void logGovernanceSummary() {
+        Map<String, Object> report = getGovernanceReport();
+        log.info("📊 Governance Summary: total={}, actionTypes={}, riskLevels={}, deprecated={}, untagged={}",
+                report.get("totalTools"),
+                report.get("actionTypeDistribution"),
+                report.get("riskLevelDistribution"),
+                report.get("deprecatedCount"),
+                report.get("untaggedCount"));
+    }
+
+    /**
+     * 按 ActionType 获取工具名称列表
+     */
+    public Set<String> getToolNamesByActionType(ToolExecutor.ActionType actionType) {
+        return Collections.unmodifiableSet(
+                actionTypeIndex.getOrDefault(actionType, Collections.emptySet()));
+    }
+
+    /**
+     * 按 RiskLevel 获取工具名称列表
+     */
+    public Set<String> getToolNamesByRiskLevel(ToolExecutor.RiskLevel riskLevel) {
+        return Collections.unmodifiableSet(
+                riskLevelIndex.getOrDefault(riskLevel, Collections.emptySet()));
+    }
+
+    /**
+     * 按 ActionType 获取 Tool Definition 列表
+     */
+    public List<Tool> getToolDefinitionsByActionType(ToolExecutor.ActionType actionType) {
+        return getToolNamesByActionType(actionType).stream()
+                .map(toolMap::get)
+                .filter(Objects::nonNull)
+                .map(e -> Tool.of(e.getToolName(), e.getDescription(), e.getParametersSchema()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 按 RiskLevel 获取 Tool Definition 列表
+     */
+    public List<Tool> getToolDefinitionsByRiskLevel(ToolExecutor.RiskLevel riskLevel) {
+        return getToolNamesByRiskLevel(riskLevel).stream()
+                .map(toolMap::get)
+                .filter(Objects::nonNull)
+                .map(e -> Tool.of(e.getToolName(), e.getDescription(), e.getParametersSchema()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 多维过滤查询：按 domainTag + ActionType
+     */
+    public List<Tool> getToolDefinitionsFiltered(String domainTag, ToolExecutor.ActionType actionType) {
+        Set<String> byDomain = domainTag != null
+                ? domainTagIndex.getOrDefault(domainTag, Collections.emptySet())
+                : toolMap.keySet();
+        Set<String> byAction = actionType != null
+                ? actionTypeIndex.getOrDefault(actionType, Collections.emptySet())
+                : toolMap.keySet();
+
+        Set<String> intersection = new HashSet<>(byDomain);
+        intersection.retainAll(byAction);
+
+        return intersection.stream()
+                .map(toolMap::get)
+                .filter(Objects::nonNull)
+                .map(e -> Tool.of(e.getToolName(), e.getDescription(), e.getParametersSchema()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 生成治理报告：总数、ActionType 分布、RiskLevel 分布、deprecated 数、未标注 domainTag 数
+     */
+    public Map<String, Object> getGovernanceReport() {
+        Map<String, Object> report = new LinkedHashMap<>();
+        report.put("totalTools", toolMap.size());
+
+        // ActionType distribution
+        Map<String, Integer> actionDist = new LinkedHashMap<>();
+        for (ToolExecutor.ActionType at : ToolExecutor.ActionType.values()) {
+            actionDist.put(at.name(), actionTypeIndex.getOrDefault(at, Collections.emptySet()).size());
+        }
+        report.put("actionTypeDistribution", actionDist);
+
+        // RiskLevel distribution
+        Map<String, Integer> riskDist = new LinkedHashMap<>();
+        for (ToolExecutor.RiskLevel rl : ToolExecutor.RiskLevel.values()) {
+            riskDist.put(rl.name(), riskLevelIndex.getOrDefault(rl, Collections.emptySet()).size());
+        }
+        report.put("riskLevelDistribution", riskDist);
+
+        // Deprecated count
+        long deprecatedCount = toolMap.values().stream()
+                .filter(e -> e.getDeprecationNotice() != null)
+                .count();
+        report.put("deprecatedCount", deprecatedCount);
+
+        // Untagged count (no domain tags)
+        long untaggedCount = toolMap.values().stream()
+                .filter(e -> e.getDomainTags().isEmpty())
+                .count();
+        report.put("untaggedCount", untaggedCount);
+
+        // Deprecated tool names
+        List<String> deprecatedTools = toolMap.entrySet().stream()
+                .filter(e -> e.getValue().getDeprecationNotice() != null)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        report.put("deprecatedTools", deprecatedTools);
+
+        return report;
+    }
+
     /**
      * 清空注册表（仅用于测试）
      */
     public void clear() {
         toolMap.clear();
+        actionTypeIndex.clear();
+        riskLevelIndex.clear();
+        domainTagIndex.clear();
         log.warn("⚠️  Tool Registry 已清空");
     }
 }

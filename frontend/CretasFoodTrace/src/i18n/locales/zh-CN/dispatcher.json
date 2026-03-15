@@ -1142,5 +1142,35 @@
   "error": {
     "loadFailed": "加载失败，请检查网络",
     "retry": "重试"
+  },
+  "personnelScheduleScreen": {
+    "title": "人员排班",
+    "viewModes": {
+      "week": "周视图",
+      "month": "月视图",
+      "list": "列表"
+    },
+    "weekTitle": "{{year}}年{{month}}月 第{{week}}周",
+    "weekRange": "{{startMonth}}.{{startDay}} - {{endMonth}}.{{endDay}}",
+    "stats": {
+      "thisWeek": "本周排班",
+      "confirmed": "已确认",
+      "pending": "待确认",
+      "conflicts": "冲突"
+    },
+    "workshops": {
+      "all": "全部",
+      "slicing": "切片",
+      "packaging": "包装",
+      "freezing": "冷冻"
+    },
+    "shifts": {
+      "morning": "早班",
+      "afternoon": "中班",
+      "evening": "晚班"
+    },
+    "copyLastWeekTitle": "复制上周排班",
+    "copyLastWeekMessage": "确定要将上周的排班复制到本周吗？",
+    "copyLastWeekSuccess": "已成功复制上周排班"
   }
 }

@@ -34,9 +34,12 @@ async function loadReports() {
       const data = response.data;
       reports.value = Array.isArray(data?.content) ? data.content
         : Array.isArray(data) ? data : [];
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载AI报告失败');
     }
   } catch (error) {
     console.error('加载AI报告失败:', error);
+    ElMessage.error('加载AI报告失败');
   } finally {
     loading.value = false;
   }
@@ -52,6 +55,8 @@ async function loadAnomalies() {
     const response = await get(`/${factoryId.value}/reports/anomalies`);
     if (response.success && response.data) {
       anomalies.value = Array.isArray(response.data?.anomalies) ? response.data.anomalies : [];
+    } else if (response.success === false) {
+      anomalyError.value = response.message || '异常检测加载失败';
     }
   } catch {
     anomalyError.value = '异常检测服务暂不可用';
@@ -66,6 +71,8 @@ async function viewReport(report: any) {
     if (response.success && response.data) {
       selectedReport.value = response.data;
       detailDialogVisible.value = true;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载报告详情失败');
     }
   } catch (error) {
     ElMessage.error('加载报告详情失败');
@@ -83,6 +90,8 @@ async function generateNewReport() {
     if (response.success) {
       ElMessage.success('报告生成成功');
       loadReports();
+    } else {
+      ElMessage.error(response.message || '生成报告失败');
     }
   } catch (error) {
     ElMessage.error('生成报告失败');

@@ -50,7 +50,7 @@ public class NavigateOutOfDomainTool extends AbstractBusinessTool {
         log.info("域外操作请求 - 工厂ID: {}", factoryId);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("message", "抱歉，该功能不在系统服务范围内。我是白垩纪食品溯源AI助手，可以帮您查询库存、生产、质检、设备、发货等业务数据。");
+        result.put("message", "抱歉，该功能不在系统服务范围内。我是白垩纪AI Agent助手，可以帮您查询库存、生产、质检、设备、发货等业务数据。");
 
         return result;
     }

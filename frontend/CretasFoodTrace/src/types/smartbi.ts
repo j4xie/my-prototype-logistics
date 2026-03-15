@@ -39,6 +39,9 @@ export type SmartBIStackParamList = {
   // 财务深度分析
   CashFlow: { period?: string };
   FinancialRatios: { ratioType?: string };
+
+  // 人效分析
+  EfficiencyDashboard: { period?: string };
 };
 
 /**
@@ -95,12 +98,30 @@ export interface RankingItem {
   status?: string;
 }
 
+/**
+ * 指标结果
+ */
+export interface MetricResult {
+  metricCode: string;
+  metricName: string;
+  formattedValue: string;
+  unit?: string;
+  changePercent?: number;
+  changeDirection?: 'UP' | 'DOWN' | 'STABLE';
+}
+
 // ==================== 图表配置 ====================
 
 /**
  * 图表类型
  */
-export type ChartType = 'line' | 'bar' | 'pie' | 'area';
+export type ChartType =
+  | 'line' | 'bar' | 'pie' | 'area'
+  | 'LINE' | 'BAR' | 'BAR_HORIZONTAL' | 'PIE' | 'DONUT' | 'AREA'
+  | 'GAUGE' | 'RADAR' | 'FUNNEL' | 'WATERFALL'
+  | 'COMBINATION' | 'DUAL_AXIS'
+  | 'SCATTER' | 'HEATMAP' | 'MATRIX_HEATMAP' | 'TREEMAP'
+  | 'SANKEY' | 'SUNBURST' | 'PARETO' | 'BULLET' | 'SLOPE' | 'NESTED_DONUT';
 
 /**
  * 图表配置
@@ -949,6 +970,32 @@ export interface FinancialRatioDetail {
   description?: string;
 }
 
+// ==================== 人效分析 ====================
+
+/**
+ * 工人效率数据
+ */
+export interface WorkerEfficiencyData {
+  workerId: string;
+  workerName: string;
+  department: string;
+  efficiencyScore: number;
+  qualityRate: number;
+  totalOutput: number;
+}
+
+/**
+ * 效率汇总数据
+ */
+export interface EfficiencySummary {
+  totalWorkers: number;
+  avgEfficiency: number;
+  avgQualityRate: number;
+  totalOutput: number;
+  topPerformers: WorkerEfficiencyData[];
+  bottomPerformers: WorkerEfficiencyData[];
+}
+
 // ==================== 多Sheet分析 ====================
 
 /**
@@ -988,18 +1035,59 @@ export interface IndexMetadata {
 }
 
 /**
+ * 可选维度/度量
+ */
+export interface AlternativeDimension {
+  fieldName: string;
+  displayName: string;
+  selected: boolean;
+  semanticType?: 'dimension' | 'measure' | 'time';
+}
+
+/**
+ * 图表系列数据项
+ */
+export interface ChartSeriesDataItem {
+  name: string;
+  value: number;
+}
+
+/**
+ * 图表系列
+ */
+export interface ChartSeries {
+  name?: string;
+  data: ChartSeriesDataItem[];
+}
+
+/**
+ * 图表轴配置
+ */
+export interface ChartAxisConfig {
+  field: string;
+  label?: string;
+}
+
+/**
  * 动态图表配置
  */
 export interface DynamicChartConfig {
   id: string;
-  chartType: string;
+  chartType: ChartType;
   title: string;
+  subTitle?: string;
   config: Record<string, unknown>;
   dimensions: string[];
   measures: string[];
   currentDimension?: string;
   currentMeasure?: string;
   data?: Array<Record<string, unknown>>;
+  series?: ChartSeries[];
+  rawData?: Array<Record<string, unknown>>;
+  xAxis?: ChartAxisConfig;
+  yAxis?: ChartAxisConfig[];
+  alternativeXAxis: AlternativeDimension[];
+  alternativeMeasures: AlternativeDimension[];
 }
 
 /**

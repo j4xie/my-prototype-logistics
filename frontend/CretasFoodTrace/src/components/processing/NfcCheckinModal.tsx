@@ -20,7 +20,7 @@ import {
   Easing,
   Platform,
 } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   isNfcModuleInstalled,
   checkNfcAvailability,
@@ -293,7 +293,7 @@ const NfcCheckinModal: React.FC<NfcCheckinModalProps> = ({
             {scanState === 'unsupported' && (
               <View style={styles.stateContainer}>
                 <View style={[styles.resultIcon, styles.warningIcon]}>
-                  <MaterialCommunityIcons name="nfc-off" size={64} color="#F59E0B" />
+                  <MaterialCommunityIcons name="nfc-variant-off" size={64} color="#F59E0B" />
                 </View>
                 <Text style={styles.warningTitle}>NFC 不可用</Text>
                 <Text style={styles.warningMessage}>{errorMessage}</Text>

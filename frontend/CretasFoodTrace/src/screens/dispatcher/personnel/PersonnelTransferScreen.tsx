@@ -91,31 +91,34 @@ interface TransferImpact {
 /**
  * Transform API workshop data to local Workshop interface
  */
-const transformWorkshop = (apiWorkshop: any): Workshop => ({
-  id: apiWorkshop.id || apiWorkshop.workshopId || '',
-  name: apiWorkshop.name || apiWorkshop.workshopName || '',
-  type: apiWorkshop.type || apiWorkshop.workshopType || 'general',
-  currentWorkers: apiWorkshop.currentWorkers || apiWorkshop.workerCount || 0,
-  maxCapacity: apiWorkshop.maxCapacity || apiWorkshop.capacity || 10,
-  capacityPercent: apiWorkshop.capacityPercent ||
-    Math.round(((apiWorkshop.currentWorkers || 0) / (apiWorkshop.maxCapacity || 10)) * 100),
+const transformWorkshop = (apiWorkshop: Record<string, unknown>): Workshop => ({
+  id: String(apiWorkshop.id || apiWorkshop.workshopId || ''),
+  name: String(apiWorkshop.name || apiWorkshop.workshopName || ''),
+  type: String(apiWorkshop.type || apiWorkshop.workshopType || 'general'),
+  currentWorkers: Number(apiWorkshop.currentWorkers || apiWorkshop.workerCount || 0),
+  maxCapacity: Number(apiWorkshop.maxCapacity || apiWorkshop.capacity || 10),
+  capacityPercent: Number(apiWorkshop.capacityPercent) ||
+    Math.round((Number(apiWorkshop.currentWorkers || 0) / Number(apiWorkshop.maxCapacity || 10)) * 100),
 });
 
 /**
  * Transform API worker data to local TransferableWorker interface
  */
-const transformWorker = (apiWorker: any): TransferableWorker => ({
-  id: apiWorker.id || apiWorker.workerId || apiWorker.userId || '',
-  name: apiWorker.name || apiWorker.workerName || apiWorker.realName || '',
-  avatar: (apiWorker.name || apiWorker.realName || '员').charAt(0),
-  employeeCode: apiWorker.employeeCode || apiWorker.code || apiWorker.employeeId || '',
-  status: (apiWorker.status || 'idle').toLowerCase() === 'working' ||
-    (apiWorker.status || '').toLowerCase() === 'busy' ? 'working' : 'idle',
-  currentTask: apiWorker.currentTask || apiWorker.currentBatchNumber || undefined,
-  skill: apiWorker.skill || apiWorker.skillName || apiWorker.primarySkill || '',
-  efficiency: apiWorker.efficiency || apiWorker.efficiencyRate || 85,
-  isTemporary: apiWorker.isTemporary || apiWorker.employeeType === 'temporary' || false,
-});
+const transformWorker = (apiWorker: Record<string, unknown>): TransferableWorker => {
+  const name = String(apiWorker.name || apiWorker.workerName || apiWorker.realName || '');
+  const status = String(apiWorker.status || 'idle').toLowerCase();
+  return {
+    id: String(apiWorker.id || apiWorker.workerId || apiWorker.userId || ''),
+    name,
+    avatar: (name || '员').charAt(0),
+    employeeCode: String(apiWorker.employeeCode || apiWorker.code || apiWorker.employeeId || ''),
+    status: status === 'working' || status === 'busy' ? 'working' : 'idle',
+    currentTask: apiWorker.currentTask ? String(apiWorker.currentTask) : apiWorker.currentBatchNumber ? String(apiWorker.currentBatchNumber) : undefined,
+    skill: String(apiWorker.skill || apiWorker.skillName || apiWorker.primarySkill || ''),
+    efficiency: Number(apiWorker.efficiency || apiWorker.efficiencyRate || 85),
+    isTemporary: Boolean(apiWorker.isTemporary) || apiWorker.employeeType === 'temporary' || false,
+  };
+};
 
 const transferReasonKeys = [
   'urgentStaffing',
@@ -167,7 +170,7 @@ export default function PersonnelTransferScreen() {
           const wrappedData = responseData as Record<string, unknown>;
           workshopList = (wrappedData.workshops || wrappedData.content || []) as unknown[];
         }
-        setWorkshops(workshopList.map(transformWorkshop));
+        setWorkshops(workshopList.map(w => transformWorkshop(w as Record<string, unknown>)));
       }
 
       // Load available workers
@@ -182,7 +185,7 @@ export default function PersonnelTransferScreen() {
           const wrappedData = responseData as Record<string, unknown>;
           workerList = (wrappedData.workers || wrappedData.content || []) as unknown[];
         }
-        setWorkers(workerList.map(transformWorker));
+        setWorkers(workerList.map(w => transformWorker(w as Record<string, unknown>)));
       }
     } catch (error) {
       if (isAxiosError(error)) {
@@ -303,9 +306,28 @@ export default function PersonnelTransferScreen() {
         { text: t('common.cancel'), style: 'cancel' },
         {
           text: t('common.confirm'),
-          onPress: () => {
-            Alert.alert(t('common.success'), t('personnelTransferScreen.submitSuccess'));
-            navigation.goBack();
+          onPress: async () => {
+            try {
+              const reason = transferReasonKey === 'other'
+                ? customReason.trim()
+                : t(`personnelTransferScreen.reasons.${transferReasonKey}`);
+              const response = await schedulingApiClient.submitPersonnelTransfer({
+                sourceWorkshopId: sourceWorkshop!.id,
+                targetWorkshopId: targetWorkshop!.id,
+                workerIds: Array.from(selectedWorkers),
+                reason,
+                startTime,
+                endTime,
+              });
+              if (response.success) {
+                Alert.alert(t('common.success'), t('personnelTransferScreen.submitSuccess'),
+                  [{ text: t('common.confirm'), onPress: () => navigation.goBack() }]);
+              } else {
+                Alert.alert(t('common.error'), response.message || '提交调动申请失败');
+              }
+            } catch (err) {
+              Alert.alert(t('common.error'), '提交调动申请失败，请检查网络后重试');
+            }
           },
         },
       ]

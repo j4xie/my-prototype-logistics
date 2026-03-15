@@ -146,27 +146,23 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
 export type ModuleName = keyof ModulePermissions;
 
 /**
- * 工厂类型权限覆盖
- * 当 factory_super_admin 登录不同类型工厂时，限制可见模块
- * 例: F002 是餐饮门店，不需要看生产管理、质量管理等工厂模块
+ * 工厂类型模块过滤
+ * 按 factoryType 控制哪些模块对该类型工厂不可见
+ * '-' 表示该模块在此类型工厂下被屏蔽（覆盖角色权限）
+ * undefined/未列出的模块保留角色原始权限
  */
-const FACTORY_PERMISSION_OVERRIDE: Record<string, ModulePermissions> = {
-  // F002 - 餐饮门店: 只显示餐饮相关模块
-  'F002': {
-    dashboard: 'rw',
+const FACTORY_TYPE_MODULE_FILTER: Record<string, Partial<ModulePermissions>> = {
+  FACTORY: {
+    restaurant: '-',
+  },
+  RESTAURANT: {
     production: '-',
     warehouse: '-',
     quality: '-',
-    procurement: 'rw',
-    sales: '-',
-    hr: '-',
     equipment: '-',
-    finance: 'rw',
-    system: 'rw',
-    analytics: 'rw',
     scheduling: '-',
-    restaurant: 'rw'
-  }
+  },
+  // HEADQUARTERS / CENTRAL_KITCHEN / BRANCH: 不做限制，保留角色原始权限
 };
 
 export const usePermissionStore = defineStore('permission', () => {
@@ -174,19 +170,25 @@ export const usePermissionStore = defineStore('permission', () => {
   const loadedRoutes = ref<string[]>([]);
   const currentRole = ref<string>('unactivated');
   const currentFactoryId = ref<string>('');
+  const currentFactoryType = ref<string>('');
 
-  // 设置当前角色和工厂ID
-  function setRole(role: string, factoryId?: string) {
+  function setRole(role: string, factoryId?: string, factoryType?: string) {
     currentRole.value = role || 'unactivated';
     currentFactoryId.value = factoryId || '';
+    currentFactoryType.value = factoryType || '';
   }
 
   // Getters
   const currentPermissions = computed((): ModulePermissions => {
-    const rolePerms = PERMISSION_MATRIX[currentRole.value] || PERMISSION_MATRIX['unactivated'];
-    // 工厂类型覆盖: 当特定工厂有覆盖配置时，使用覆盖权限
-    const factoryOverride = currentFactoryId.value ? FACTORY_PERMISSION_OVERRIDE[currentFactoryId.value] : undefined;
-    if (factoryOverride) return factoryOverride;
+    const rolePerms = { ...(PERMISSION_MATRIX[currentRole.value] || PERMISSION_MATRIX['unactivated']) };
+    const typeFilter = currentFactoryType.value ? FACTORY_TYPE_MODULE_FILTER[currentFactoryType.value] : undefined;
+    if (typeFilter) {
+      for (const [mod, level] of Object.entries(typeFilter)) {
+        if (level === '-') {
+          (rolePerms as Record<string, PermissionLevel>)[mod] = '-';
+        }
+      }
+    }
     return rolePerms;
   });
 

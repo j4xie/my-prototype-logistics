@@ -1,0 +1,49 @@
+# 乳制品加工行业基准
+# 数据来源: 伊利/蒙牛/光明年报 + 中国乳制品工业协会
+
+source: "伊利/蒙牛年报 / 中国乳制品工业协会"
+year: 2024
+
+metrics:
+  gross_margin:
+    name: "毛利率"
+    range: [28.0, 38.0]
+    median: 33.0
+    unit: "%"
+    source: "伊利2024年报毛利率约32%, 蒙牛约36%"
+    note: "液态奶毛利约30%, 奶粉/冰品毛利更高"
+
+  net_margin:
+    name: "净利率"
+    range: [3.0, 8.0]
+    median: 5.5
+    unit: "%"
+    source: "伊利净利率约8%, 蒙牛约4%"
+
+  oee:
+    name: "设备综合效率(OEE)"
+    range: [65.0, 88.0]
+    median: 76.0
+    unit: "%"
+    note: "灌装线自动化程度高, OEE领先食品行业"
+
+  waste_rate:
+    name: "废品率"
+    range: [0.5, 3.0]
+    median: 1.5
+    unit: "%"
+    note: "UHT灌装线废品率极低, 酸奶/冰品稍高"
+
+  raw_material_cost_ratio:
+    name: "原料成本占比"
+    range: [55.0, 68.0]
+    median: 62.0
+    unit: "%"
+    note: "原奶成本受牧场价格波动影响大"
+
+  shelf_life_compliance:
+    name: "保质期合格率"
+    range: [98.0, 99.9]
+    median: 99.5
+    unit: "%"
+    description: "出厂到保质期内的质量稳定率"

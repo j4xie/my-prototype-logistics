@@ -15,6 +15,8 @@ import { Text, Switch, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHProfileStackParamList } from "../../../types/navigation";
 
@@ -95,7 +97,7 @@ export function WHSettingsScreen() {
   };
 
   const renderSettingToggle = (
-    icon: string,
+    icon: MCIconName,
     title: string,
     description: string,
     value: boolean,
@@ -104,7 +106,7 @@ export function WHSettingsScreen() {
     <View style={styles.settingItem}>
       <View style={styles.settingInfo}>
         <View style={styles.settingIconContainer}>
-          <MaterialCommunityIcons name={icon as any} size={20} color="#666" />
+          <MaterialCommunityIcons name={icon} size={20} color="#666" />
         </View>
         <View style={styles.settingText}>
           <Text style={styles.settingTitle}>{title}</Text>
@@ -116,7 +118,7 @@ export function WHSettingsScreen() {
   );
 
   const renderSettingLink = (
-    icon: string,
+    icon: MCIconName,
     title: string,
     description: string,
     onPress: () => void
@@ -124,7 +126,7 @@ export function WHSettingsScreen() {
     <TouchableOpacity style={styles.settingItem} onPress={onPress}>
       <View style={styles.settingInfo}>
         <View style={styles.settingIconContainer}>
-          <MaterialCommunityIcons name={icon as any} size={20} color="#666" />
+          <MaterialCommunityIcons name={icon} size={20} color="#666" />
         </View>
         <View style={styles.settingText}>
           <Text style={styles.settingTitle}>{title}</Text>

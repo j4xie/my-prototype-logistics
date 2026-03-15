@@ -35,9 +35,9 @@ public class OpenApiConfig {
         return new OpenAPI()
                 // API 基本信息
                 .info(new Info()
-                        .title("白垩纪食品溯源系统 API")
+                        .title("白垩纪AI Agent API")
                         .description("""
-                                ## 白垩纪食品溯源系统 (Cretas Food Traceability System)
+                                ## 白垩纪AI Agent (Cretas AI Agent)
 
                                 ### 功能模块
                                 - **认证模块**: 用户登录、Token刷新

@@ -127,7 +127,7 @@ interface AIInsight {
 export function FAHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
-  const { isScreenEnabled } = useFactoryFeatureStore();
+  const { isScreenEnabled, isProcessMode } = useFactoryFeatureStore();
   const { t } = useTranslation('home');
   const isRestaurantMode = isRestaurant(user);
 
@@ -244,9 +244,9 @@ export function FAHomeScreen() {
             workReportingApiClient.getSummary(),
           ];
       const results = await Promise.allSettled(fetchPromises);
-      const overviewResult = results[0];
-      const alertsResult = results[1];
-      const workReportResult = results[2]; // undefined for restaurant
+      const overviewResult = results[0] as PromiseSettledResult<{ success: boolean; data: any }>;
+      const alertsResult = results[1] as PromiseSettledResult<{ success: boolean; data: any }>;
+      const workReportResult = results[2] as PromiseSettledResult<{ success: boolean; data: any }> | undefined; // undefined for restaurant
 
       // 处理 overview / restaurant summary 数据
       if (overviewResult.status === 'fulfilled' && overviewResult.value.success && overviewResult.value.data) {
@@ -280,11 +280,12 @@ export function FAHomeScreen() {
       const resolvedOverview = (!isRestaurantMode && overviewResult.status === 'fulfilled') ? overviewResult.value.data : null;
       if (resolvedOverview) {
         const kpi = resolvedOverview.kpi;
-        const qualityRate = kpi?.qualityPassRate ?? 98.5;
-        const efficiency = kpi?.productionEfficiency ?? 92;
+        const toNum = (v: any, fallback: number = 0): number => { const n = Number(v); return isNaN(n) ? fallback : n; };
+        const qualityRate = toNum(kpi?.qualityPassRate, 98.5);
+        const efficiency = toNum(kpi?.productionEfficiency, 92);
         // 使用后端计算的真实数据
-        const unitCost = kpi?.unitCost ?? 0;
-        const avgCycle = kpi?.avgCycleHours ?? 0;
+        const unitCost = toNum(kpi?.unitCost);
+        const avgCycle = toNum(kpi?.avgCycleHours);
 
         // 尝试获取最新AI报告摘要作为洞察文字
         let insightMessage: string = t('ai.normalProduction');
@@ -461,7 +462,7 @@ export function FAHomeScreen() {
     return [
       {
         id: 'todayProduction',
-        value: todayStats?.todayOutputKg?.toFixed(0) ?? '--',
+        value: todayStats?.todayOutputKg != null ? Number(todayStats.todayOutputKg).toFixed(0) : '--',
         label: t('stats.todayOutput'),
         icon: 'scale',
         color: '#667eea',
@@ -506,6 +507,19 @@ export function FAHomeScreen() {
           }
         },
       },
+      ...(isProcessMode() ? [{
+        id: 'processTasks',
+        value: 0,
+        label: '工序任务',
+        icon: 'format-list-checks',
+        color: '#0891B2',
+        onPress: () => {
+          const parent = navigation.getParent();
+          if (parent) {
+            parent.navigate('FAManagementTab', { screen: 'ProcessTaskList' });
+          }
+        },
+      }] : []),
     ].filter(card => {
       const screenName = statCardScreenGuard[card.id];
       return !screenName || isScreenEnabled(screenName);
@@ -661,7 +675,7 @@ export function FAHomeScreen() {
               <>
                 <View style={styles.aiMetricItem}>
                   <Text style={styles.aiMetricValue}>
-                    {aiInsight.metrics.qualityRate.toFixed(1)}%
+                    {Number(aiInsight.metrics.qualityRate ?? 0).toFixed(1)}%
                   </Text>
                   <Text style={styles.aiMetricLabel}>{t('ai.metrics.qualityRate')}</Text>
                 </View>
@@ -672,7 +686,7 @@ export function FAHomeScreen() {
               <>
                 <View style={styles.aiMetricItem}>
                   <Text style={styles.aiMetricValue}>
-                    ¥{aiInsight.metrics.unitCost.toFixed(1)}
+                    ¥{Number(aiInsight.metrics.unitCost ?? 0).toFixed(1)}
                   </Text>
                   <Text style={styles.aiMetricLabel}>{t('ai.metrics.unitCost')}</Text>
                 </View>
@@ -682,7 +696,7 @@ export function FAHomeScreen() {
             {(!module.config?.metricsToShow || module.config.metricsToShow.includes('avgCycle')) && (
               <View style={styles.aiMetricItem}>
                 <Text style={styles.aiMetricValue}>
-                  {aiInsight.metrics.avgCycle.toFixed(1)}h
+                  {Number(aiInsight.metrics.avgCycle ?? 0).toFixed(1)}h
                 </Text>
                 <Text style={styles.aiMetricLabel}>{t('ai.metrics.avgCycle')}</Text>
               </View>

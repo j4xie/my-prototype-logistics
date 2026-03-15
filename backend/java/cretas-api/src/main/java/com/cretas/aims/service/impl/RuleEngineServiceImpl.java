@@ -773,8 +773,19 @@ public class RuleEngineServiceImpl implements RuleEngineService {
     private List<RuleDefinition> loadRulesFromDatabase(String factoryId) {
         List<RuleDefinition> rules = new ArrayList<>();
 
-        // 从数据库加载启用的规则
+        // 从数据库加载启用的规则 (工厂级 + SYSTEM 全局规则 fallback)
         List<DroolsRule> dbRules = droolsRuleRepository.findAllEnabledByFactoryIdOrderByPriority(factoryId);
+        if (!"SYSTEM".equals(factoryId)) {
+            List<DroolsRule> systemRules = droolsRuleRepository.findAllEnabledByFactoryIdOrderByPriority("SYSTEM");
+            Set<String> factoryRuleKeys = dbRules.stream()
+                .map(r -> r.getRuleGroup() + ":" + r.getRuleName())
+                .collect(java.util.stream.Collectors.toSet());
+            for (DroolsRule sysRule : systemRules) {
+                if (!factoryRuleKeys.contains(sysRule.getRuleGroup() + ":" + sysRule.getRuleName())) {
+                    dbRules.add(sysRule);
+                }
+            }
+        }
         for (DroolsRule dbRule : dbRules) {
             String drlContent = dbRule.getRuleContent();
 
@@ -823,9 +834,21 @@ public class RuleEngineServiceImpl implements RuleEngineService {
     private List<RuleDefinition> loadRulesFromDatabase(String factoryId, String ruleGroup) {
         List<RuleDefinition> rules = new ArrayList<>();
 
-        // 从数据库加载
-        List<DroolsRule> dbRules = droolsRuleRepository
-            .findByFactoryIdAndRuleGroupAndEnabledTrueOrderByPriorityDesc(factoryId, ruleGroup);
+        // 从数据库加载 (工厂级 + SYSTEM 全局 fallback)
+        List<DroolsRule> dbRules = new ArrayList<>(droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndEnabledTrueOrderByPriorityDesc(factoryId, ruleGroup));
+        if (!"SYSTEM".equals(factoryId)) {
+            List<DroolsRule> systemRules = droolsRuleRepository
+                .findByFactoryIdAndRuleGroupAndEnabledTrueOrderByPriorityDesc("SYSTEM", ruleGroup);
+            Set<String> factoryRuleNames = dbRules.stream()
+                .map(DroolsRule::getRuleName)
+                .collect(java.util.stream.Collectors.toSet());
+            for (DroolsRule sysRule : systemRules) {
+                if (!factoryRuleNames.contains(sysRule.getRuleName())) {
+                    dbRules.add(sysRule);
+                }
+            }
+        }
 
         for (DroolsRule dbRule : dbRules) {
             String drlContent = dbRule.getRuleContent();

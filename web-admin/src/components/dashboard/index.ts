@@ -54,21 +54,21 @@ export const ROLE_DASHBOARD_MAP: Record<string, string> = {
 };
 
 /**
- * 工厂级 Dashboard 覆盖 (当同一角色对应不同业务类型时)
- * 例: F002 是餐饮门店，factory_super_admin 应看餐饮 Dashboard 而非工厂 Dashboard
+ * 工厂类型 Dashboard 覆盖 (按 factoryType 而非 factoryId)
+ * 餐饮类型工厂的 factory_super_admin 应看餐饮 Dashboard 而非工厂 Dashboard
  */
-const FACTORY_DASHBOARD_OVERRIDE: Record<string, string> = {
-  'F002': 'DashboardRestaurant',
+const FACTORY_TYPE_DASHBOARD_OVERRIDE: Record<string, string> = {
+  'RESTAURANT': 'DashboardRestaurant',
 };
 
 /**
  * 根据角色获取对应的 Dashboard 组件名称
  * @param role - 用户角色
- * @param factoryId - 工厂ID，用于业务类型覆盖
+ * @param factoryType - 工厂类型，用于业务类型覆盖
  */
-export function getDashboardComponent(role: string, factoryId?: string): string {
-  if (factoryId && FACTORY_DASHBOARD_OVERRIDE[factoryId]) {
-    return FACTORY_DASHBOARD_OVERRIDE[factoryId];
+export function getDashboardComponent(role: string, factoryType?: string): string {
+  if (factoryType && FACTORY_TYPE_DASHBOARD_OVERRIDE[factoryType]) {
+    return FACTORY_TYPE_DASHBOARD_OVERRIDE[factoryType];
   }
   return ROLE_DASHBOARD_MAP[role] || ROLE_DASHBOARD_MAP['default'];
 }

@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { disposalRecordApiClient, DisposalRecord, CreateDisposalRequest } from '../../services/api/disposalRecordApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 const disposalLogger = logger.createContextLogger('DisposalManagement');
@@ -163,7 +164,7 @@ export default function DisposalRecordManagementScreen() {
       loadData();
     } catch (error) {
       disposalLogger.error('保存报废记录失败', error as Error);
-      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
+      Alert.alert('错误', getErrorMsg(error) || '操作失败');
     }
   };
 
@@ -194,8 +195,8 @@ export default function DisposalRecordManagementScreen() {
 
   const handleApprove = async (id: number) => {
     try {
-      const userId = (user as any)?.id || 0;
-      const userName = (user as any)?.realName || user?.username || '管理员';
+      const userId = user?.id || 0;
+      const userName = user?.username || '管理员';
       await disposalRecordApiClient.approveDisposalRecord(
         id,
         userId,
@@ -292,7 +293,7 @@ export default function DisposalRecordManagementScreen() {
                 <Text style={styles.statLabel}>已审批</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: '#C62828' }]}>¥{stats.totalLoss.toFixed(0)}</Text>
+                <Text style={[styles.statValue, { color: '#C62828' }]}>¥{Number(stats.totalLoss ?? 0).toFixed(0)}</Text>
                 <Text style={styles.statLabel}>估计损失</Text>
               </View>
             </View>
@@ -350,7 +351,7 @@ export default function DisposalRecordManagementScreen() {
                     <View style={styles.infoRow}>
                       <List.Icon icon="currency-cny" style={styles.infoIcon} />
                       <Text style={styles.infoText}>
-                        估计损失: ¥{disposal.estimatedLoss.toFixed(2)}
+                        估计损失: ¥{Number(disposal.estimatedLoss ?? 0).toFixed(2)}
                       </Text>
                     </View>
                   )}
@@ -443,7 +444,7 @@ export default function DisposalRecordManagementScreen() {
                   <Menu.Item
                     key={opt.value}
                     onPress={() => {
-                      setFormData({ ...formData, disposalType: opt.value as any });
+                      setFormData({ ...formData, disposalType: opt.value as CreateDisposalRequest['disposalType'] });
                       setTypeMenuVisible(false);
                     }}
                     title={opt.label}

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Text, Card, Avatar, Divider, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -19,9 +19,11 @@ import { useAuthStore } from '../../../store/authStore';
 import { HR_THEME } from '../../../types/hrNavigation';
 import { useLanguageStore, LANGUAGE_NAMES, type SupportedLanguage } from '../../../store/languageStore';
 
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
 interface MenuItem {
   id: string;
-  icon: string;
+  icon: MCIconName;
   label: string;
   route?: string;
   badge?: number;
@@ -99,7 +101,7 @@ export default function HRProfileScreen() {
 
   const handleMenuPress = (item: MenuItem) => {
     if (item.route) {
-      navigation.navigate(item.route as any);
+      navigation.dispatch(CommonActions.navigate(item.route));
     } else if (item.onPress) {
       item.onPress();
     } else {
@@ -114,7 +116,7 @@ export default function HRProfileScreen() {
       onPress={() => handleMenuPress(item)}
     >
       <View style={styles.menuIcon}>
-        <MaterialCommunityIcons name={item.icon as any} size={22} color={HR_THEME.primary} />
+        <MaterialCommunityIcons name={item.icon} size={22} color={HR_THEME.primary} />
       </View>
       <Text style={styles.menuLabel}>{item.label}</Text>
       <View style={styles.menuRight}>
@@ -151,12 +153,12 @@ export default function HRProfileScreen() {
               <Text style={styles.userRole}>{t('profile.role')}</Text>
               <View style={styles.userMeta}>
                 <MaterialCommunityIcons name="factory" size={14} color={HR_THEME.textMuted} />
-                <Text style={styles.metaText}>{(user as any)?.factoryName || user?.factoryId || t('profile.noFactory')}</Text>
+                <Text style={styles.metaText}>{user?.factoryId || t('profile.noFactory')}</Text>
               </View>
             </View>
             <TouchableOpacity
               style={styles.editBtn}
-              onPress={() => navigation.navigate('MyInfo' as any)}
+              onPress={() => navigation.dispatch(CommonActions.navigate('MyInfo'))}
             >
               <MaterialCommunityIcons name="pencil" size={20} color={HR_THEME.primary} />
             </TouchableOpacity>

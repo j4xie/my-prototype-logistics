@@ -58,6 +58,23 @@ public interface StateMachineService {
      */
     List<StateMachineConfig> getAllStateMachines(String factoryId);
 
+    // ==================== 版本管理 ====================
+
+    /**
+     * 发布草稿版本（事务化：归档旧版本 + 发布新版本）
+     */
+    StateMachineConfig publishDraft(String factoryId, String entityType, String draftId, Long userId);
+
+    /**
+     * 获取已发布的状态机
+     */
+    Optional<StateMachineConfig> getPublishedStateMachine(String factoryId, String entityType);
+
+    /**
+     * 获取所有版本（含草稿、已发布、归档）
+     */
+    List<StateMachineConfig> getVersionHistory(String factoryId, String entityType);
+
     // ==================== 状态转换 ====================
 
     /**
@@ -227,6 +244,8 @@ public interface StateMachineService {
         private String guard;      // 守卫条件表达式
         private String action;     // 动作名称
         private String description;
+        private java.util.List<String> roles;        // 允许触发此转换的角色
+        private java.util.List<String> notifyRoles;  // 转换触发后通知的角色
 
         public TransitionDef() {}
 
@@ -248,6 +267,10 @@ public interface StateMachineService {
         public void setAction(String action) { this.action = action; }
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }
+        public java.util.List<String> getRoles() { return roles; }
+        public void setRoles(java.util.List<String> roles) { this.roles = roles; }
+        public java.util.List<String> getNotifyRoles() { return notifyRoles; }
+        public void setNotifyRoles(java.util.List<String> notifyRoles) { this.notifyRoles = notifyRoles; }
     }
 
     /**

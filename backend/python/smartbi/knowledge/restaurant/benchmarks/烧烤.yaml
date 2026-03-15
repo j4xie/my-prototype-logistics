@@ -1,0 +1,47 @@
+# 烧烤行业基准数据
+#
+# 数据来源：
+#   - 红餐《烤串品类发展报告2025》(免费PDF, 市场1540亿, 门店30.5万)
+#   - 中国烹饪协会行业数据
+
+source: "红餐《烤串品类发展报告2025》+ 中国烹饪协会"
+year: 2024
+
+sub_sector_info:
+  market_size_billion: 1540
+  store_count: 305000
+  growth_rate: 9.2  # %
+  chain_rate: 20  # % (低于大盘)
+  category_share: "烤串品类市占59.9%"
+
+metrics:
+  food_cost_ratio:
+    name: "食材成本率"
+    range: [28.0, 38.0]
+    median: 33.0
+    source: "中国烹饪协会 + 红餐报告: 35-50%(含高端烤肉)"
+    note: "烧烤食材成本低于火锅，但炭/调料成本需单独核算"
+
+  labor_cost_ratio:
+    name: "人力成本率"
+    range: [20.0, 30.0]
+    median: 25.0
+    note: "烤串需烤工技术，人力成本中等"
+
+  table_turnover:
+    name: "翻台率"
+    range: [1.5, 3.5]
+    median: 2.5
+    note: "烧烤用餐时间长(社交属性)，翻台率偏低"
+
+  average_ticket:
+    name: "客单价"
+    range: [50.0, 100.0]
+    median: 70.0
+    note: "烧烤+酒水客单偏高"
+
+  restaurant_net_margin:
+    name: "餐饮净利率"
+    range: [5.0, 15.0]
+    median: 8.0
+    note: "烧烤毛利高(食材成本低)，但翻台率低制约总利润"

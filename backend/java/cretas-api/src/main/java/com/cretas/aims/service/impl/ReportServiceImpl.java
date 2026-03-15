@@ -938,7 +938,7 @@ public class ReportServiceImpl implements ReportService {
             Paragraph footer = new Paragraph();
             footer.setFont(smallFont);
             footer.add("\n\n---\n");
-            footer.add("白垩纪食品溯源系统 - 自动生成报表");
+            footer.add("白垩纪AI Agent - 自动生成报表");
             footer.setAlignment(Element.ALIGN_CENTER);
             document.add(footer);
 

@@ -50,12 +50,20 @@ public interface SystemLogRepository extends JpaRepository<SystemLog, Long> {
     int deleteFactoryLogsBeforeDate(@Param("factoryId") String factoryId,
                                     @Param("beforeDate") LocalDateTime beforeDate);
 
-    @Query("SELECT s FROM SystemLog s WHERE s.factoryId = :factoryId " +
-           "AND (:logType IS NULL OR s.logType = :logType) " +
-           "AND (:logLevel IS NULL OR s.logLevel = :logLevel) " +
-           "AND (:keyword IS NULL OR s.message LIKE CONCAT('%', :keyword, '%')) " +
-           "AND (:start IS NULL OR s.createdAt >= :start) " +
-           "AND (:end IS NULL OR s.createdAt <= :end)")
+    @Query(value = "SELECT * FROM system_logs s WHERE s.factory_id = :factoryId " +
+           "AND (CAST(:logType AS text) IS NULL OR s.log_type = CAST(:logType AS text)) " +
+           "AND (CAST(:logLevel AS text) IS NULL OR s.log_level = CAST(:logLevel AS text)) " +
+           "AND (CAST(:keyword AS text) IS NULL OR s.message LIKE '%' || CAST(:keyword AS text) || '%') " +
+           "AND (CAST(:start AS timestamp) IS NULL OR s.created_at >= CAST(:start AS timestamp)) " +
+           "AND (CAST(:end AS timestamp) IS NULL OR s.created_at <= CAST(:end AS timestamp)) " +
+           "ORDER BY s.created_at DESC",
+           countQuery = "SELECT COUNT(*) FROM system_logs s WHERE s.factory_id = :factoryId " +
+           "AND (CAST(:logType AS text) IS NULL OR s.log_type = CAST(:logType AS text)) " +
+           "AND (CAST(:logLevel AS text) IS NULL OR s.log_level = CAST(:logLevel AS text)) " +
+           "AND (CAST(:keyword AS text) IS NULL OR s.message LIKE '%' || CAST(:keyword AS text) || '%') " +
+           "AND (CAST(:start AS timestamp) IS NULL OR s.created_at >= CAST(:start AS timestamp)) " +
+           "AND (CAST(:end AS timestamp) IS NULL OR s.created_at <= CAST(:end AS timestamp))",
+           nativeQuery = true)
     Page<SystemLog> searchLogs(@Param("factoryId") String factoryId,
                                @Param("logType") String logType,
                                @Param("logLevel") String logLevel,

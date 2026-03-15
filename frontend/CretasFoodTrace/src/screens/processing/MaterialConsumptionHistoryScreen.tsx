@@ -50,7 +50,7 @@ export default function MaterialConsumptionHistoryScreen() {
   // Get user context
   const { user } = useAuthStore();
   // Get factoryId from user object
-  const factoryId = (user as any)?.factoryId || (user as any)?.factoryUser?.factoryId;
+  const factoryId = user?.factoryId || user?.factoryUser?.factoryId;
 
   // Data state
   const [consumptions, setConsumptions] = useState<MaterialConsumption[]>([]);
@@ -119,7 +119,7 @@ export default function MaterialConsumptionHistoryScreen() {
         // Backend returns paginated response with content array
         const records = Array.isArray(response.data)
           ? response.data
-          : (response.data as any).content ?? [];
+          : (response.data && typeof response.data === 'object' && 'content' in response.data) ? (response.data as { content: MaterialConsumption[] }).content : [];
         setConsumptions(records);
         consumptionLogger.info('消耗记录列表加载成功', {
           factoryId,

@@ -22,7 +22,7 @@ import {
   Card,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ReportStackParamList } from '../../types/navigation';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -80,7 +80,8 @@ function MetricItem({ label, value, unit = '%', format = 'percent', inverted = f
 
     switch (format) {
       case 'percent':
-        return `${(value * 100).toFixed(1)}${unit}`;
+        // Backend returns values in 0-100 range (e.g., 85 = 85%), no need to multiply
+        return `${value.toFixed(1)}${unit}`;
       case 'number':
         return `${value.toFixed(2)}${unit}`;
       case 'time':
@@ -95,16 +96,16 @@ function MetricItem({ label, value, unit = '%', format = 'percent', inverted = f
   const getColor = () => {
     if (value === undefined || value === null) return '#757575';
     if (format === 'percent') {
-      const percentage = value * 100;
+      // Backend returns 0-100 range values
       if (inverted) {
         // Lower is better (like scrap rate)
-        if (percentage <= 5) return '#4CAF50';
-        if (percentage <= 10) return '#FF9800';
+        if (value <= 5) return '#4CAF50';
+        if (value <= 10) return '#FF9800';
         return '#F44336';
       }
       // Higher is better
-      if (percentage >= 80) return '#4CAF50';
-      if (percentage >= 60) return '#FF9800';
+      if (value >= 80) return '#4CAF50';
+      if (value >= 60) return '#FF9800';
       return '#F44336';
     }
     return '#212121';
@@ -164,6 +165,15 @@ export default function KPIReportScreen() {
         factoryId,
       });
 
+      // Clamp percentage metrics to 0-100 range
+      // Backend availability calculation can exceed 100% when actual run time > planned time
+      if (data.capacityUtilization != null && data.capacityUtilization > 100) {
+        data.capacityUtilization = 100;
+      }
+      if (data.oee != null && data.oee > 100) {
+        data.oee = 100;
+      }
+
       setKpiData(data);
       log.info('KPI metrics loaded successfully', {
         overallScore: data.overallScore,
@@ -220,7 +230,7 @@ export default function KPIReportScreen() {
     const grade = kpiData?.scoreGrade || 'N/A';
     const gradeColor = GRADE_COLORS[grade] || '#757575';
     const periodChange = kpiData?.periodChange || 0;
-    const changeText = periodChange >= 0 ? `+${(periodChange * 100).toFixed(1)}%` : `${(periodChange * 100).toFixed(1)}%`;
+    const changeText = periodChange >= 0 ? `+${periodChange.toFixed(1)}%` : `${periodChange.toFixed(1)}%`;
     const changeColor = periodChange >= 0 ? '#4CAF50' : '#F44336';
 
     return (
@@ -260,25 +270,25 @@ export default function KPIReportScreen() {
       {
         key: 'oee',
         title: 'OEE',
-        value: (kpiData?.oee ?? 0) * 100,
+        value: kpiData?.oee ?? 0,
         thresholds: { warning: 60, danger: 85 }
       },
       {
         key: 'fpy',
         title: 'FPY',
-        value: (kpiData?.fpy ?? 0) * 100,
+        value: kpiData?.fpy ?? 0,
         thresholds: { warning: 80, danger: 95 }
       },
       {
         key: 'otif',
         title: 'OTIF',
-        value: (kpiData?.otif ?? 0) * 100,
+        value: kpiData?.otif ?? 0,
         thresholds: { warning: 85, danger: 95 }
       },
       {
         key: 'capacityUtilization',
         title: '产能利用率',
-        value: (kpiData?.capacityUtilization ?? 0) * 100,
+        value: kpiData?.capacityUtilization ?? 0,
         thresholds: { warning: 60, danger: 85 }
       },
     ];
@@ -473,7 +483,7 @@ export default function KPIReportScreen() {
   const renderNavCard = (card: InsightNavCard) => (
     <TouchableOpacity
       key={card.key}
-      onPress={() => navigation.navigate(card.screen as any)}
+      onPress={() => navigation.dispatch(CommonActions.navigate(card.screen))}
       activeOpacity={0.7}
     >
       <Card style={styles.navCard}>
@@ -517,7 +527,7 @@ export default function KPIReportScreen() {
           </View>
           <Button
             mode="contained"
-            onPress={() => navigation.navigate(card.screen as any)}
+            onPress={() => navigation.dispatch(CommonActions.navigate(card.screen))}
             style={styles.insightButton}
             icon="arrow-right"
             contentStyle={styles.insightButtonContent}

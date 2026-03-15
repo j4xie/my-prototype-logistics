@@ -38,18 +38,19 @@ async function loadData() {
 
   loading.value = true;
   try {
-    const response = await get(`/${factoryId.value}/equipment-alerts`, {
-      params: {
-        page: pagination.value.page,
-        size: pagination.value.size,
-        keyword: searchForm.value.keyword || undefined,
-        severity: searchForm.value.severity || undefined,
-        status: searchForm.value.status || undefined
-      }
-    });
+    const params: Record<string, string | number> = {
+      page: pagination.value.page,
+      size: pagination.value.size
+    };
+    if (searchForm.value.keyword) params.keyword = searchForm.value.keyword;
+    if (searchForm.value.severity) params.severity = searchForm.value.severity;
+    if (searchForm.value.status) params.status = searchForm.value.status;
+    const response = await get(`/${factoryId.value}/equipment-alerts`, { params });
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -65,15 +66,19 @@ async function loadStatistics() {
     const response = await get(`/${factoryId.value}/equipment-alerts/stats`);
     if (response.success && response.data) {
       statistics.value = response.data;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载统计失败');
     }
   } catch (error) {
     console.error('加载统计失败:', error);
+    ElMessage.error('加载统计失败');
   }
 }
 
 function handleSearch() {
   pagination.value.page = 1;
   loadData();
+  loadStatistics();
 }
 
 function handleRefresh() {
@@ -124,6 +129,7 @@ async function handleAcknowledge(row: any) {
     if (response.success) {
       ElMessage.success('已确认');
       loadData();
+      loadStatistics();
     } else {
       ElMessage.error(response.message || '操作失败');
     }
@@ -182,6 +188,15 @@ function getAlertTypeText(type: string) {
     OTHER: '其他'
   };
   return map[type] || type;
+}
+
+// 告警详情弹窗
+const detailVisible = ref(false);
+const detailRow = ref<any>({});
+
+function handleDetail(row: any) {
+  detailRow.value = row;
+  detailVisible.value = true;
 }
 </script>
 
@@ -271,7 +286,11 @@ function getAlertTypeText(type: string) {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="发生时间" width="180" />
+        <el-table-column label="发生时间" width="180">
+          <template #default="{ row }">
+            {{ row.createdAt ? row.createdAt.replace('T', ' ').substring(0, 19) : '-' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="resolvedAt" label="处理时间" width="180">
           <template #default="{ row }">
             {{ row.resolvedAt || '-' }}
@@ -279,7 +298,7 @@ function getAlertTypeText(type: string) {
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link size="small">详情</el-button>
+            <el-button type="primary" link size="small" @click="handleDetail(row)">详情</el-button>
             <el-button
               v-if="canWrite && row.status === 'ACTIVE'"
               type="warning"
@@ -312,6 +331,27 @@ function getAlertTypeText(type: string) {
         />
       </div>
     </el-card>
+
+    <el-dialog v-model="detailVisible" title="告警详情" width="520px">
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="设备名称">{{ detailRow.equipmentName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="告警类型">{{ getAlertTypeText(detailRow.alertType) }}</el-descriptions-item>
+        <el-descriptions-item label="严重程度">
+          <el-tag :type="getSeverityType(detailRow.severity)" size="small">
+            {{ getSeverityText(detailRow.severity) }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="告警信息">{{ detailRow.message || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="getStatusType(detailRow.status)" size="small">
+            {{ getStatusText(detailRow.status) }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="发生时间">{{ detailRow.createdAt ? detailRow.createdAt.replace('T', ' ').substring(0, 19) : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="处理时间">{{ detailRow.resolvedAt || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="处理说明">{{ detailRow.resolution || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
   </div>
 </template>
 

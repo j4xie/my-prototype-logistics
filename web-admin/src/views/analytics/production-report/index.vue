@@ -3,7 +3,8 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import echarts from '@/utils/echarts';
-import { FullScreen } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import { FullScreen, Refresh } from '@element-plus/icons-vue';
 
 interface ProductionData {
   productTypeId: string;
@@ -38,8 +39,6 @@ function onFullscreenChange() {
   }
 }
 
-document.addEventListener('fullscreenchange', onFullscreenChange);
-
 const selectedPeriod = ref('today');
 const customDateRange = ref<[Date, Date] | null>(null);
 const productionData = ref<ProductionData[]>([]);
@@ -57,7 +56,8 @@ const periodOptions = [
 // 计算日期范围
 function getDateRange(): { startDate: string; endDate: string } {
   const now = new Date();
-  const formatDate = (d: Date) => d.toISOString().split('T')[0];
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const formatDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
   if (selectedPeriod.value === 'custom' && customDateRange.value) {
     return {
@@ -101,6 +101,7 @@ onMounted(async () => {
     resizeObserver.observe(chartEl);
   }
   window.addEventListener('resize', handleResize);
+  document.addEventListener('fullscreenchange', onFullscreenChange);
 });
 
 onUnmounted(() => {
@@ -126,9 +127,12 @@ async function loadProductionData() {
         (a, b) => b.totalQuantity - a.totalQuantity
       );
       updateChart();
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载生产数据失败');
     }
   } catch (error) {
     console.error('加载生产数据失败:', error);
+    ElMessage.error('加载生产数据失败，请重试');
   } finally {
     loading.value = false;
   }

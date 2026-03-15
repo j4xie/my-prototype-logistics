@@ -11,7 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SmartBIStackParamList } from '../../types/smartbi';
 import { useFactoryFeatureStore } from '../../store/factoryFeatureStore';
-import KPICardMobile from '../../components/smartbi/KPICardMobile';
+// KPICardMobile removed — KPI section now links to ExecutiveDashboard for real data
 
 type NavigationProp = NativeStackNavigationProp<SmartBIStackParamList>;
 
@@ -146,18 +146,21 @@ export function SmartBIHomeScreen() {
           </Card.Content>
         </Card>
 
-        {/* 核心指标概览 */}
-        <View style={styles.kpiContainer}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            核心指标
-          </Text>
-          <View style={styles.kpiGrid}>
-            <KPICardMobile title="总收入" value="¥862.5万" change={5.2} trend="up" colorPreset="purple" />
-            <KPICardMobile title="净利率" value="6.8%" change={1.2} trend="up" colorPreset="blue" />
-            <KPICardMobile title="销售费用率" value="12.3%" change={-0.8} trend="down" colorPreset="pink" />
-            <KPICardMobile title="产量达标率" value="96.5%" change={2.1} trend="up" colorPreset="green" />
-          </View>
-        </View>
+        {/* 核心指标入口 */}
+        <TouchableOpacity
+          style={styles.kpiEntryCard}
+          onPress={() => navigation.navigate('ExecutiveDashboard')}
+          activeOpacity={0.8}
+        >
+          <Surface style={styles.kpiEntrySurface} elevation={2}>
+            <Icon source="chart-box" size={36} color="#9C27B0" />
+            <View style={styles.kpiEntryText}>
+              <Text variant="titleMedium" style={{ fontWeight: '600' }}>核心指标</Text>
+              <Text variant="bodySmall" style={{ color: '#666' }}>进入经营驾驶舱查看实时数据</Text>
+            </View>
+            <Icon source="chevron-right" size={24} color="#9E9E9E" />
+          </Surface>
+        </TouchableOpacity>
 
         {/* 快捷操作卡片 */}
         <View style={styles.quickActionsContainer}>
@@ -251,15 +254,21 @@ const styles = StyleSheet.create({
     color: '#757575',
     marginTop: 4,
   },
-  kpiContainer: {
+  kpiEntryCard: {
     paddingHorizontal: 16,
     paddingTop: 8,
     marginBottom: 8,
   },
-  kpiGrid: {
+  kpiEntrySurface: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  kpiEntryText: {
+    flex: 1,
+    marginLeft: 12,
   },
   quickActionsContainer: {
     paddingHorizontal: 16,

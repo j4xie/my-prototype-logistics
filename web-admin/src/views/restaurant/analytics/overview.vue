@@ -330,7 +330,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
@@ -752,6 +752,19 @@ function renderSupplierPie() {
 }
 
 // composable handles onMounted + auto-select
+
+const chartIds = [
+  'chart-quadrant-mini', 'chart-store-top5', 'chart-category-pie',
+  'chart-ops-radar-mini', 'chart-trend-line', 'chart-weekly-bar',
+  'chart-hourly-bar', 'chart-meal-pie', 'chart-price-band',
+  'chart-hhi-gauge', 'chart-store-efficiency', 'chart-supplier-pie',
+]
+onUnmounted(() => {
+  chartIds.forEach(id => {
+    const el = document.getElementById(id)
+    if (el) echarts.getInstanceByDom(el)?.dispose()
+  })
+})
 </script>
 
 <style scoped>

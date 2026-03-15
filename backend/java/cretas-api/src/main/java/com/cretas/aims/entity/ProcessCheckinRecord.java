@@ -49,4 +49,7 @@ public class ProcessCheckinRecord extends BaseEntity {
 
     @Column(name = "status", length = 20)
     private String status = "CHECKED_IN";
+
+    @Column(name = "process_task_id", length = 50)
+    private String processTaskId;
 }

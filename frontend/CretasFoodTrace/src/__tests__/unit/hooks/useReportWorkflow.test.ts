@@ -116,7 +116,7 @@ describe('useReportWorkflow', () => {
         success: false,
         code: 404,
         message: '模板不存在',
-        data: null as unknown as any,
+        data: null!,
       });
 
       const { result } = renderHook(() => useReportWorkflow('PROGRESS'));
@@ -199,7 +199,7 @@ describe('useReportWorkflow', () => {
         success: false,
         code: 400,
         message: '数据验证失败',
-        data: null as unknown as any,
+        data: null!,
       });
 
       const { result } = renderHook(() => useReportWorkflow('PROGRESS'));

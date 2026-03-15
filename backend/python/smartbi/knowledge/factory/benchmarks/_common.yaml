@@ -1,0 +1,145 @@
+# 食品加工业通用基准数据
+# 所有子行业共享的基础指标，子行业 YAML 可覆盖
+#
+# 数据来源：
+#   - 中国食品工业协会行业年报
+#   - 国家统计局食品制造业统计数据
+#   - GB 14881-2013 食品生产通用卫生规范
+#   - HACCP/ISO 22000 管理体系标准
+
+source: "中国食品工业协会 / 国家统计局行业年报"
+year: 2024
+
+metrics:
+  gross_margin:
+    name: "毛利率"
+    range: [25.0, 35.0]
+    median: 30.0
+    unit: "%"
+    description: "食品加工行业毛利率参考区间"
+    source: "国家统计局食品制造业年报"
+
+  net_margin:
+    name: "净利率"
+    range: [3.0, 8.0]
+    median: 5.5
+    unit: "%"
+    description: "食品加工行业净利率参考区间"
+    source: "国家统计局食品制造业年报"
+
+  selling_expense_ratio:
+    name: "销售费用率"
+    range: [8.0, 15.0]
+    median: 11.0
+    unit: "%"
+    description: "销售费用占营业收入比例"
+    higher_is_worse: true
+
+  admin_expense_ratio:
+    name: "管理费用率"
+    range: [5.0, 10.0]
+    median: 7.0
+    unit: "%"
+    description: "管理费用占营业收入比例"
+    higher_is_worse: true
+
+  rd_expense_ratio:
+    name: "研发费用率"
+    range: [2.0, 8.0]
+    median: 3.5
+    unit: "%"
+    description: "研发费用占营业收入比例"
+
+  financial_expense_ratio:
+    name: "财务费用率"
+    range: [1.0, 5.0]
+    median: 2.5
+    unit: "%"
+    description: "财务费用占营业收入比例"
+    higher_is_worse: true
+
+  total_expense_ratio:
+    name: "总费用率"
+    range: [15.0, 25.0]
+    median: 20.0
+    unit: "%"
+    description: "三项费用(销售+管理+财务)合计占营业收入比例"
+    higher_is_worse: true
+
+  inventory_turnover_days:
+    name: "存货周转天数"
+    range: [30, 90]
+    median: 55
+    unit: "天"
+    description: "存货周转天数参考区间"
+    higher_is_worse: true
+
+  receivable_turnover_days:
+    name: "应收账款周转天数"
+    range: [15, 60]
+    median: 35
+    unit: "天"
+    description: "应收账款周转天数参考区间"
+    higher_is_worse: true
+
+  yield_rate:
+    name: "良品率"
+    range: [95.0, 99.5]
+    median: 97.5
+    unit: "%"
+    description: "食品生产良品率参考区间"
+
+  raw_material_cost_ratio:
+    name: "原料成本占比"
+    range: [50.0, 70.0]
+    median: 60.0
+    unit: "%"
+    description: "原料成本占营业成本比例"
+    higher_is_worse: true
+
+  oee:
+    name: "设备综合效率(OEE)"
+    range: [60.0, 85.0]
+    median: 72.0
+    unit: "%"
+    description: "OEE = 可用率 × 性能率 × 良品率"
+    source: "行业OEE对标数据"
+
+  waste_rate:
+    name: "废品率"
+    range: [1.0, 5.0]
+    median: 2.5
+    unit: "%"
+    description: "食品生产废品/次品率参考区间"
+    higher_is_worse: true
+
+  energy_cost_ratio:
+    name: "能耗成本占比"
+    range: [5.0, 15.0]
+    median: 9.0
+    unit: "%"
+    description: "能耗成本(电+水+气)占总生产成本比例"
+    higher_is_worse: true
+
+  labor_productivity:
+    name: "人均产出"
+    range: [80.0, 200.0]
+    median: 130.0
+    unit: "万元/人·年"
+    description: "年人均产值(营收/员工数)"
+
+  capacity_utilization:
+    name: "产能利用率"
+    range: [70.0, 95.0]
+    median: 82.0
+    unit: "%"
+    description: "实际产量占设计产能比例"
+
+food_safety_standards:
+  GB_2760_2014: "食品安全国家标准 食品添加剂使用标准"
+  GB_14881_2013: "食品安全国家标准 食品生产通用卫生规范"
+  GB_7718_2011: "食品安全国家标准 预包装食品标签通则"
+  GB_29921_2021: "食品安全国家标准 预包装食品中致病菌限量"
+  GB_31654_2021: "食品安全国家标准 餐饮服务通用卫生规范"
+  HACCP: "危害分析与关键控制点体系"
+  ISO_22000: "食品安全管理体系"

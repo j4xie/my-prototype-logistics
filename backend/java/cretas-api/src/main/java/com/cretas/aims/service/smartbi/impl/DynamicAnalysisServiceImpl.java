@@ -310,10 +310,10 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
         List<String> insights = new ArrayList<>();
 
         // Basic insights from data
-        insights.add(String.format("Data contains %d records", dataRows.size()));
+        insights.add(String.format("数据包含 %d 条记录", dataRows.size()));
 
         if (measures.isEmpty()) {
-            insights.add("No numeric measures detected");
+            insights.add("未检测到数值型指标字段，请检查数据源是否包含数值列");
             return insights;
         }
 
@@ -336,8 +336,8 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
                 String dimName = primaryDim.getStandardName() != null ?
                         primaryDim.getStandardName() : primaryDim.getOriginalName();
 
-                insights.add(String.format("Top %s by %s: %s (%.2f)",
-                        dimName, measureName, topName, topValue));
+                insights.add(String.format("%s 最高的%s: %s (%.2f)",
+                        measureName, dimName, topName, topValue));
             }
         }
 
@@ -347,7 +347,7 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
             if (sum != null && sum > 0) {
                 String name = measure.getStandardName() != null ?
                         measure.getStandardName() : measure.getOriginalName();
-                insights.add(String.format("Total %s: %s", name,
+                insights.add(String.format("%s 合计: %s", name,
                         formatNumber(sum, measure.getFormatPattern())));
             }
         }
@@ -587,9 +587,17 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
         String lower = standardName.toLowerCase();
         return lower.contains("revenue") || lower.contains("cost") || lower.contains("profit") ||
                lower.contains("amount") || lower.contains("price") || lower.contains("quantity") ||
-               lower.contains("total") || lower.contains("sum") || lower.contains("收入") ||
-               lower.contains("成本") || lower.contains("利润") || lower.contains("金额") ||
-               lower.contains("数量") || lower.contains("合计");
+               lower.contains("total") || lower.contains("sum") || lower.contains("rate") ||
+               lower.contains("count") || lower.contains("ratio") ||
+               lower.contains("收入") || lower.contains("成本") || lower.contains("利润") ||
+               lower.contains("金额") || lower.contains("数量") || lower.contains("合计") ||
+               lower.contains("销售额") || lower.contains("营业额") || lower.contains("销量") ||
+               lower.contains("实收") || lower.contains("实付") || lower.contains("折后") ||
+               lower.contains("优惠") || lower.contains("单价") || lower.contains("原价") ||
+               lower.contains("折扣") || lower.contains("退款") || lower.contains("费用") ||
+               lower.contains("人数") || lower.contains("笔数") || lower.contains("单数") ||
+               lower.contains("份数") || lower.contains("产量") || lower.contains("库存") ||
+               lower.contains("周转");
     }
 
     private boolean isTimeField(String fieldName) {

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
+import { ElMessage } from 'element-plus';
 import { Refresh, TrendCharts, Histogram, Timer, Check } from '@element-plus/icons-vue';
 
 const authStore = useAuthStore();
@@ -56,15 +57,19 @@ async function loadKPIData() {
     const response = await get(`/${factoryId.value}/reports/kpi`);
     if (response.success && response.data) {
       kpiData.value = { ...kpiData.value, ...response.data };
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载KPI数据失败');
     }
   } catch (error) {
     console.error('加载KPI数据失败:', error);
+    ElMessage.error('加载KPI数据失败，请刷新重试');
   } finally {
     loading.value = false;
   }
 }
 
 function getProgressStatus(value: number, target: number) {
+  if (target === 0) return 'exception';
   const ratio = value / target;
   if (ratio >= 1) return 'success';
   if (ratio >= 0.8) return 'warning';

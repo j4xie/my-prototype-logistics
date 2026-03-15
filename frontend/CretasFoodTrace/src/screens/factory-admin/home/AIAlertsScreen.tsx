@@ -40,20 +40,34 @@ export function AIAlertsScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
       setError(null);
       const response = await dashboardAPI.getAlertsDashboard('week');
+      clearTimeout(timeoutId);
       if (response.success && response.data) {
-        setAlertsData(response.data);
+        const adapted = {
+          ...response.data,
+          recent: (response.data.recent || []).map((item: Record<string, unknown>, idx: number) => ({
+            id: String(item.id ?? `alert-${idx}`),
+            type: String(item.type ?? ''),
+            message: String(item.message ?? ''),
+            severity: String(item.severity ?? item.level ?? '').toLowerCase(),
+            timestamp: String(item.timestamp ?? item.createdAt ?? ''),
+          })),
+        };
+        setAlertsData(adapted as AlertsDashboardData);
       }
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error('加载告警数据失败:', err);
       setError(t('alerts.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadData();
@@ -87,22 +101,44 @@ export function AIAlertsScreen() {
   const getTypeIcon = (type: string): string => {
     const icons: Record<string, string> = {
       equipment: 'cog-outline',
+      maintenance: 'wrench-outline',
       quality: 'alert-circle-outline',
       inventory: 'package-variant',
       production: 'factory',
     };
-    return icons[type] || 'alert';
+    return icons[type?.toLowerCase()] || 'alert';
+  };
+
+  const getTypeLabel = (type: string): string => {
+    const labels: Record<string, string> = {
+      equipment: t('alerts.type.equipment', { defaultValue: '设备' }),
+      maintenance: t('alerts.type.maintenance', { defaultValue: '维保' }),
+      quality: t('alerts.type.quality', { defaultValue: '质量' }),
+      quality_fail: t('alerts.type.qualityFail', { defaultValue: '质检不合格' }),
+      inventory: t('alerts.type.inventory', { defaultValue: '库存' }),
+      production: t('alerts.type.production', { defaultValue: '生产' }),
+      low_stock: t('alerts.type.lowStock', { defaultValue: '低库存' }),
+      expiring: t('alerts.type.expiring', { defaultValue: '即将过期' }),
+    };
+    return labels[type?.toLowerCase()] || type;
   };
 
   const formatTime = (timestamp: string): string => {
-    const date = new Date(timestamp);
+    if (!timestamp) return t('alerts.time.unknown', { defaultValue: '未知时间' });
+    // Handle Java LocalDateTime format "2026-03-12 10:30:00" (space instead of T)
+    const normalized = timestamp.includes(' ') && !timestamp.includes('T')
+      ? timestamp.replace(' ', 'T')
+      : timestamp;
+    const date = new Date(normalized);
+    if (isNaN(date.getTime())) return timestamp;
+
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
 
     if (minutes < 60) {
-      return t('alerts.time.minutesAgo', { count: minutes });
+      return t('alerts.time.minutesAgo', { count: Math.max(0, minutes) });
     } else if (hours < 24) {
       return t('alerts.time.hoursAgo', { count: hours });
     } else {
@@ -117,7 +153,7 @@ export function AIAlertsScreen() {
         <View style={styles.alertHeader}>
           <View style={styles.alertTypeRow}>
             <Icon source={getTypeIcon(item.type)} size={18} color="#666" />
-            <Text style={styles.alertType}>{item.type}</Text>
+            <Text style={styles.alertType}>{getTypeLabel(item.type)}</Text>
           </View>
           <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(item.severity) + '20' }]}>
             <Text style={[styles.severityText, { color: getSeverityColor(item.severity) }]}>
@@ -166,7 +202,7 @@ export function AIAlertsScreen() {
 
       <FlatList
         data={recentAlerts}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={renderAlertItem}
         contentContainerStyle={styles.listContent}
         refreshControl={

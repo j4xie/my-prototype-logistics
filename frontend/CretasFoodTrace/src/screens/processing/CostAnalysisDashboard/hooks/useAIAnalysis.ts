@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
+import { isAxiosError } from 'axios';
 import { aiApiClient } from '../../../../services/api/aiApiClient';
 import { AIQuota } from '../../../../types/processing';
 import { CACHE_CONFIG } from '../constants';
 import { useAISession } from './useAISession';
-import { handleError } from '../../../../utils/errorHandler';  // ✅ 修复: 正确的相对路径 (2025-11-20)
 import { logger } from '../../../../utils/logger';
 
 // 创建AIAnalysis专用logger
@@ -217,21 +217,23 @@ export const useAIAnalysis = (batchId: string | number): UseAIAnalysisReturn => 
         }
       } catch (err: unknown) {
         // ✅ 修复: 使用unknown类型代替any (2025-11-20)
-        const error = err as any;
-        aiAnalysisLogger.error('AI分析失败', error as Error, {
+        const error = err instanceof Error ? err : new Error(String(err));
+        const status = isAxiosError(err) ? err.response?.status : undefined;
+        aiAnalysisLogger.error('AI分析失败', error, {
           batchId,
           question: question || '默认',
-          statusCode: error.response?.status,
+          statusCode: status,
         });
 
         // 清除乐观UI的占位文本
         setAnalysis('');
 
         // 错误处理
-        if (error.response?.status === 403) {
+        const responseMsg = isAxiosError(err) ? (err.response?.data as { message?: string })?.message : undefined;
+        if (status === 403) {
           Alert.alert(
             '配额不足',
-            error.response.data?.message || '本周AI分析次数已用完，请等待下周重置',
+            responseMsg || '本周AI分析次数已用完，请等待下周重置',
             [
               {
                 text: '知道了',
@@ -241,10 +243,10 @@ export const useAIAnalysis = (batchId: string | number): UseAIAnalysisReturn => 
               },
             ]
           );
-        } else if (error.response?.status === 404) {
+        } else if (status === 404) {
           Alert.alert('错误', '批次不存在');
           setShowSection(false);
-        } else if (error.response?.status === 500) {
+        } else if (status === 500) {
           Alert.alert(
             'AI服务暂时不可用',
             '抱歉，AI分析服务暂时不可用，请稍后再试',
@@ -260,7 +262,7 @@ export const useAIAnalysis = (batchId: string | number): UseAIAnalysisReturn => 
         } else {
           Alert.alert(
             'AI分析失败',
-            error.response?.data?.message || error.message || '请检查网络连接后重试',
+            responseMsg || error.message || '请检查网络连接后重试',
             [
               {
                 text: '确定',

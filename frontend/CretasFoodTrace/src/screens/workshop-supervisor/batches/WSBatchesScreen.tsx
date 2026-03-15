@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
+import { useFactoryFeatureStore } from '../../../store/factoryFeatureStore';
 import { WSBatchesStackParamList } from '../../../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<WSBatchesStackParamList, 'WSBatches'>;
@@ -155,12 +156,23 @@ export function WSBatchesScreen() {
       {/* 头部 */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Text style={styles.headerTitle}>{t('batches.title')}</Text>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => navigation.navigate('BatchStart', {})}
-        >
-          <Icon source="plus" size={24} color="#fff" />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {useFactoryFeatureStore.getState().isProcessMode() && (
+            <TouchableOpacity
+              testID="ws-process-task-btn"
+              style={[styles.addBtn, { backgroundColor: '#0891B2' }]}
+              onPress={() => navigation.navigate('ProcessTaskList' as never)}
+            >
+              <Icon source="format-list-checks" size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => navigation.navigate('BatchStart', {})}
+          >
+            <Icon source="plus" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* 搜索栏 */}

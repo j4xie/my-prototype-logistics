@@ -12,7 +12,7 @@ import {
   Searchbar,
   FAB,
 } from 'react-native-paper';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { alertApiClient, AlertDTO } from '../../services/api/alertApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
@@ -26,7 +26,8 @@ type AlertType =
   | 'cost_overrun'       // 成本超支
   | 'conversion_abnormal' // 转换率异常
   | 'equipment_fault'    // 设备故障
-  | 'employee_late';     // 员工迟到
+  | 'employee_late'      // 员工迟到
+  | 'quality_fail';      // 质检不合格
 
 type AlertLevel = 'critical' | 'warning' | 'info';
 type AlertStatus = 'active' | 'resolved';
@@ -99,6 +100,11 @@ export default function ExceptionAlertScreen() {
       icon: 'account-clock',
       color: '#2196F3',
     },
+    quality_fail: {
+      label: '质检不合格',
+      icon: 'alert-circle-check-outline',
+      color: '#D32F2F',
+    },
   };
 
   /**
@@ -120,6 +126,7 @@ export default function ExceptionAlertScreen() {
     if (backendType.includes('conversion')) return 'conversion_abnormal';
     if (backendType.includes('equipment')) return 'equipment_fault';
     if (backendType.includes('employee') || backendType.includes('late')) return 'employee_late';
+    if (backendType.includes('quality') || backendType.includes('QUALITY_FAIL')) return 'quality_fail';
     return 'equipment_fault'; // 默认类型
   };
 
@@ -495,17 +502,19 @@ export default function ExceptionAlertScreen() {
                   onPress={() => {
                     // ✅ 点击alert跳转到相关页面 (2025-11-20)
                     if (alert.type === 'material_expiry' && alert.relatedId) {
-                      // 跳转到物料批次管理
-                      (navigation as any).navigate('Processing', {
-                        screen: 'MaterialBatchManagement',
-                        params: { highlightId: alert.relatedId },
-                      });
+                      navigation.dispatch(
+                        CommonActions.navigate('Processing', {
+                          screen: 'MaterialBatchManagement',
+                          params: { highlightId: alert.relatedId },
+                        })
+                      );
                     } else if (alert.type === 'equipment_fault' && alert.relatedId) {
-                      // 跳转到设备详情
-                      (navigation as any).navigate('Processing', {
-                        screen: 'EquipmentDetail',
-                        params: { equipmentId: alert.relatedId },
-                      });
+                      navigation.dispatch(
+                        CommonActions.navigate('Processing', {
+                          screen: 'EquipmentDetail',
+                          params: { equipmentId: alert.relatedId },
+                        })
+                      );
                     } else {
                       // 其他类型alert暂无详情页
                       Alert.alert('提示', `${alert.title}\n\n${alert.message}`);

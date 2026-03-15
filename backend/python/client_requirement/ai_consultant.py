@@ -2,7 +2,7 @@
 AI Consultant for Factory Onboarding Wizard
 
 Multi-turn conversational AI that acts as a senior implementation consultant,
-guiding factories through requirement gathering for the Cretas Food Traceability System.
+guiding factories through requirement gathering for the Cretas AI Agent.
 """
 import json
 import logging
@@ -223,7 +223,7 @@ class AIConsultant:
                 mname = MODULE_TOPICS.get(mid, {}).get("name", mid)
                 prior_context += f"- {mname}: {summary}\n"
 
-        return f"""你是白垩纪食品溯源系统的资深实施顾问。你正在通过对话了解一家工厂对"{module_info['name']}"模块的具体需求。
+        return f"""你是白垩纪AI Agent的资深实施顾问。你正在通过对话了解一家工厂对"{module_info['name']}"模块的具体需求。
 
 工厂基本信息：
 - 名称：{basic_info.get('factoryName', '未知')}
@@ -351,7 +351,7 @@ class AIConsultant:
                 role = "AI" if msg["role"] == "assistant" else "工厂"
                 conv_text += f"{role}: {msg['content']}\n"
 
-        system_prompt = """你是白垩纪食品溯源系统的AI配置专家。基于与工厂的对话记录，你需要生成完整的工厂配置方案。
+        system_prompt = """你是白垩纪AI Agent的AI配置专家。基于与工厂的对话记录，你需要生成完整的工厂配置方案。
 
 你必须返回严格的 JSON 格式（不要包含其他内容），包含以下字段：
 

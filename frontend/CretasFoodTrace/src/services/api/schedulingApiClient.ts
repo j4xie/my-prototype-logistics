@@ -1218,6 +1218,23 @@ class SchedulingApiClient {
     }
     return { content: [], totalElements: 0, totalPages: 0 };
   }
+
+  /**
+   * 提交人员调动申请
+   */
+  async submitPersonnelTransfer(
+    data: {
+      sourceWorkshopId: string;
+      targetWorkshopId: string;
+      workerIds: string[];
+      reason: string;
+      startTime?: string;
+      endTime?: string;
+    },
+    factoryId?: string
+  ): Promise<ApiResponse<{ transferId: string }>> {
+    return await apiClient.post(`${this.getPath(factoryId)}/personnel-transfers`, data);
+  }
 }
 
 export const schedulingApiClient = new SchedulingApiClient();

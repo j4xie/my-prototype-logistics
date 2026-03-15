@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Text, Card, Avatar, Button, ActivityIndicator, Chip, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect, RouteProp, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -200,7 +200,7 @@ export default function DepartmentDetailScreen() {
                       <Text style={styles.memberPosition}>{member.position || t('department.detail.employee')}</Text>
                     </View>
                     <TouchableOpacity
-                      onPress={() => navigation.navigate('StaffDetail' as any, { staffId: member.id })}
+                      onPress={() => navigation.dispatch(CommonActions.navigate('StaffDetail', { staffId: member.id }))}
                     >
                       <MaterialCommunityIcons name="chevron-right" size={24} color={HR_THEME.textMuted} />
                     </TouchableOpacity>

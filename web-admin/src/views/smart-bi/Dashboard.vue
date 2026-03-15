@@ -30,7 +30,8 @@ import {
   Upload,
   Document,
   InfoFilled,
-  User
+  User,
+  Clock
 } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
 import { formatNumber, formatCount, formatAxisValue } from '@/utils/format-number';
@@ -110,6 +111,14 @@ const dynamicInsights = ref<string[]>([]);
 
 // Dashboard 数据
 const dashboardData = ref<DashboardResponse | null>(null);
+
+// P1 PERF fix: AbortController to cancel pending requests on data source switch / unmount
+let abortController: AbortController | null = null;
+function getSignal(): AbortSignal {
+  if (abortController) abortController.abort();
+  abortController = new AbortController();
+  return abortController.signal;
+}
 
 // KPI 数据 (从 kpiCards 提取)
 const kpiData = computed(() => {
@@ -261,18 +270,24 @@ const aiInsights = computed<AIInsight[]>(() => {
  * If no trend chart data, falls back to empty arrays.
  */
 const kpiSparklines = computed(() => {
-  const empty = { revenue: [] as number[], profit: [] as number[], orders: [] as number[], customers: [] as number[] };
+  const empty = { revenue: [] as number[], profit: [] as number[], orders: [] as number[], customers: [] as number[], labels: [] as string[] };
   if (!dashboardData.value?.charts) return empty;
 
   const charts = dashboardData.value.charts;
-  const trendChart = charts['sales_trend'] || charts['销售趋势'];
-  if (!trendChart) return empty;
+  const trendChartCfg = charts['sales_trend'] || charts['销售趋势'];
+  if (!trendChartCfg) return empty;
 
   // Normalize legacy format
-  const normalized = normalizeLegacyChart(trendChart as ChartConfig);
+  const normalized = normalizeLegacyChart(trendChartCfg as ChartConfig);
   const series = ('series' in normalized && Array.isArray(normalized.series)) ? normalized.series : [];
 
   if (series.length === 0) return empty;
+
+  // Extract xAxis labels (dates) for sparkline tooltips
+  const xAxisData = (normalized as Record<string, unknown>).xAxis;
+  const labels: string[] = Array.isArray(xAxisData)
+    ? ((xAxisData[0] as Record<string, unknown>)?.data as string[] || [])
+    : ((xAxisData as Record<string, unknown>)?.data as string[] || []);
 
   // Try to match series by name to KPI slots
   const findSeries = (keywords: string[]) => {
@@ -297,10 +312,11 @@ const kpiSparklines = computed(() => {
       profit: series.length >= 2 && Array.isArray(series[1].data) ? series[1].data.map(Number).filter(Number.isFinite) : [],
       orders: [],
       customers: [],
+      labels,
     };
   }
 
-  return { revenue, profit, orders, customers };
+  return { revenue, profit, orders, customers, labels };
 });
 
 /** Cached sparkline SVG paths and colors — avoid re-computation on each render */
@@ -378,6 +394,59 @@ const insightTimestamp = ref<Date | null>(null);
 const insightsExpanded = ref(false);
 const INSIGHT_COLLAPSE_LIMIT = 3;
 
+// Chart titles for citation references
+const chartTitles = ['销售趋势', '产品类别占比'];
+
+function formatInsightTime(date: Date | string) {
+  const d = new Date(date);
+  return `分析生成于 ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/**
+ * Parse insight content and return segments with citation references.
+ * Matches keywords related to chart titles (e.g., "销售", "趋势" → chart 0, "占比", "类别" → chart 1).
+ */
+function parseInsightCitations(content: string): Array<{ text: string; chartIndex?: number; chartTitle?: string }> {
+  // Keyword → chart index mapping
+  const keywordMap: Array<{ keywords: RegExp; chartIndex: number }> = [
+    { keywords: /销售趋势|营收趋势|收入趋势|同比|环比|增长趋势|月度.*趋势|趋势.*变化/, chartIndex: 0 },
+    { keywords: /类别占比|产品.*占比|品类.*分布|分类.*比例|占比.*分布|产品结构/, chartIndex: 1 },
+  ];
+
+  // Split by sentences (Chinese period, semicolon, or newline)
+  const sentences = content.split(/(?<=[。；;！!？?\n])/);
+  const result: Array<{ text: string; chartIndex?: number; chartTitle?: string }> = [];
+  const usedCharts = new Set<number>();
+
+  for (const sentence of sentences) {
+    if (!sentence.trim()) continue;
+    let matched = false;
+    for (const mapping of keywordMap) {
+      if (mapping.keywords.test(sentence) && !usedCharts.has(mapping.chartIndex)) {
+        usedCharts.add(mapping.chartIndex);
+        result.push({
+          text: sentence,
+          chartIndex: mapping.chartIndex,
+          chartTitle: chartTitles[mapping.chartIndex]
+        });
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      result.push({ text: sentence });
+    }
+  }
+  return result;
+}
+
+function scrollToChart(chartIndex: number) {
+  const ref = chartIndex === 0 ? trendChartRef.value : pieChartRef.value;
+  if (ref) {
+    ref.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
 // Stagger reveal for KPI cards
 
 // ==================== 生命周期 ====================
@@ -391,14 +460,15 @@ onMounted(async () => {
   await loadDashboardData();
 });
 
-// 监听 dashboardData 变化，更新图表 (use nextTick to ensure DOM refs are ready)
-watch(dashboardData, (newData) => {
-  if (newData) {
+// P1 PERF fix: Watch only the charts sub-object, not the entire dashboardData deeply.
+// deep:true on dashboardData caused full chart re-init when aiInsights arrived from LLM.
+watch(() => dashboardData.value?.charts, (newCharts) => {
+  if (newCharts) {
     nextTick(() => {
-      initCharts(newData.charts);
+      initCharts(newCharts);
     });
   }
-}, { deep: true });
+});
 
 // ==================== API 调用 ====================
 
@@ -408,6 +478,8 @@ async function loadDashboardData() {
     return;
   }
 
+  // Ensure AbortController exists so loadLLMInsights() can read the signal
+  getSignal();
   loading.value = true;
   hasError.value = false;
   errorMessage.value = '';
@@ -474,8 +546,9 @@ async function loadDashboardData() {
 async function loadLLMInsights() {
   if (!factoryId.value || !dashboardData.value) return;
   const sourceAtStart = selectedDataSource.value;
+  const signal = abortController?.signal;
   try {
-    const res = await get(`/${factoryId.value}/smart-bi/dashboard/executive/insights?period=month`, { timeout: 120000 });
+    const res = await get(`/${factoryId.value}/smart-bi/dashboard/executive/insights?period=month`, { timeout: 120000, signal });
     // Guard: if user switched data source during await, discard stale result
     if (selectedDataSource.value !== sourceAtStart) return;
     if (res.success && res.data) {
@@ -491,6 +564,8 @@ async function loadLLMInsights() {
       }
     }
   } catch (e) {
+    // Silently ignore aborted requests (user switched data source or navigated away)
+    if (e instanceof DOMException && e.name === 'AbortError') return;
     console.warn('LLM insights load failed (non-critical):', e);
   }
 }
@@ -519,6 +594,8 @@ async function loadDataSources() {
 }
 
 async function onDataSourceChange(sourceId: string) {
+  // Cancel any pending requests from previous data source
+  getSignal();
   if (sourceId === 'system') {
     dynamicInsights.value = [];
     await loadDashboardData();
@@ -539,7 +616,7 @@ async function loadDynamicDashboardData(uploadId: number) {
   dynamicInsights.value = [];
 
   try {
-    const res = await getDynamicAnalysis(uploadId, 'finance');
+    const res = await getDynamicAnalysis(uploadId, 'auto');
 
     if (res.success && res.data) {
       const data = res.data as DynamicAnalysisResponse;
@@ -690,9 +767,9 @@ function normalizeLegacyChart(config: ChartConfig): ChartConfig {
   if ('series' in config && Array.isArray(config.series)) return config; // already in new format
   if (!('data' in config) || !Array.isArray(config.data) || config.data.length === 0) return config;
 
-  const legacy = config as { chartType: string; title?: string; xAxisField?: string; yAxisField?: string; data: Array<Record<string, unknown>> };
-  const xField = legacy.xAxisField || 'date';
-  const yField = legacy.yAxisField || 'amount';
+  const legacy = config as { chartType: string; title?: string; xAxisField?: string; xaxisField?: string; yAxisField?: string; yaxisField?: string; data: Array<Record<string, unknown>> };
+  const xField = legacy.xAxisField || legacy.xaxisField || 'date';
+  const yField = legacy.yAxisField || legacy.yaxisField || 'amount';
 
   const xData = legacy.data.map(d => String(d[xField] || ''));
   const yData = legacy.data.map(d => Number(d[yField]) || 0);
@@ -712,12 +789,12 @@ function normalizeLegacyChart(config: ChartConfig): ChartConfig {
 function initCharts(charts?: Record<string, ChartConfig>) {
   const trend = charts?.['sales_trend'] || charts?.['销售趋势'];
   let pie = charts?.['category_distribution'] || charts?.['产品占比']
-    || charts?.['类别分布'] || charts?.['产品销售占比'];
+    || charts?.['类别分布'] || charts?.['产品销售占比'] || charts?.['产品分布'];
   // Fallback: find first pie-type chart by scanning all entries
   if (!pie && charts) {
     for (const [, cfg] of Object.entries(charts)) {
       const c = cfg as Record<string, unknown>;
-      if (c.chartType === 'pie' || (Array.isArray(c.series) && (c.series as Record<string, unknown>[])[0]?.type === 'pie')) {
+      if (String(c.chartType).toLowerCase() === 'pie' || (Array.isArray(c.series) && String((c.series as Record<string, unknown>[])[0]?.type).toLowerCase() === 'pie')) {
         pie = cfg;
         break;
       }
@@ -984,13 +1061,29 @@ function formatKpiValue(value: number | null | undefined): string {
   return formatMoney(value);
 }
 
-/** Sparkline tooltip: shows latest / min / max */
-function sparklineTooltip(data: number[]): string {
+/** Sparkline tooltip: shows per-point values with date labels, plus summary */
+function sparklineTooltip(data: number[], labels?: string[]): string {
   if (!data || data.length < 2) return '';
   const latest = data[data.length - 1];
   const min = Math.min(...data);
   const max = Math.max(...data);
-  return `最新: ${formatMoney(latest)}<br>最低: ${formatMoney(min)}<br>最高: ${formatMoney(max)}`;
+
+  // Build per-point detail rows (show last N points to keep tooltip compact)
+  const maxPoints = 8;
+  const startIdx = Math.max(0, data.length - maxPoints);
+  const pointRows: string[] = [];
+  for (let i = startIdx; i < data.length; i++) {
+    const label = labels && labels[i] ? labels[i] : `#${i + 1}`;
+    const marker = i === data.length - 1 ? ' <b>(最新)</b>' : '';
+    pointRows.push(`${label}: ${formatMoney(data[i])}${marker}`);
+  }
+  if (startIdx > 0) {
+    pointRows.unshift(`<span style="color:#999">...前${startIdx}项已省略</span>`);
+  }
+
+  return pointRows.join('<br>')
+    + `<br><hr style="margin:4px 0;border:none;border-top:1px solid rgba(255,255,255,0.15)">`
+    + `最高: ${formatMoney(max)} / 最低: ${formatMoney(min)}`;
 }
 
 function formatPercent(value: number): string {
@@ -1025,6 +1118,8 @@ function handleRefresh() {
 
 import { onUnmounted } from 'vue';
 onUnmounted(() => {
+  // Cancel any pending API requests (prevents console errors after navigation)
+  if (abortController) abortController.abort();
   trendChart?.dispose();
   pieChart?.dispose();
 });
@@ -1136,7 +1231,7 @@ onUnmounted(() => {
             <div class="kpi-label">本月销售额</div>
             <div class="kpi-value-row">
               <div class="kpi-value">{{ formatKpiValue(kpiData.totalRevenue) }}</div>
-              <el-tooltip v-if="kpiSparklines.revenue.length >= 2" :content="sparklineTooltip(kpiSparklines.revenue)" placement="top" :show-after="300" raw-content>
+              <el-tooltip v-if="kpiSparklines.revenue.length >= 2" :content="sparklineTooltip(kpiSparklines.revenue, kpiSparklines.labels)" placement="top" :show-after="300" raw-content>
                 <svg class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
                   <path :d="kpiSparklinePaths.revenue.path" fill="none" :stroke="kpiSparklinePaths.revenue.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
@@ -1163,7 +1258,7 @@ onUnmounted(() => {
             <div class="kpi-label">{{ kpiData.profitLabel || '本月利润' }}</div>
             <div class="kpi-value-row">
               <div class="kpi-value">{{ kpiData.profitUnit === '%' ? (kpiData.totalProfit != null ? kpiData.totalProfit.toFixed(1) + '%' : '--') : formatKpiValue(kpiData.totalProfit) }}</div>
-              <el-tooltip v-if="kpiSparklines.profit.length >= 2" :content="sparklineTooltip(kpiSparklines.profit)" placement="top" :show-after="300" raw-content>
+              <el-tooltip v-if="kpiSparklines.profit.length >= 2" :content="sparklineTooltip(kpiSparklines.profit, kpiSparklines.labels)" placement="top" :show-after="300" raw-content>
                 <svg class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
                   <path :d="kpiSparklinePaths.profit.path" fill="none" :stroke="kpiSparklinePaths.profit.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
@@ -1190,7 +1285,7 @@ onUnmounted(() => {
             <div class="kpi-label">订单数量</div>
             <div class="kpi-value-row">
               <div class="kpi-value">{{ kpiData.orderCount != null ? formatCount(kpiData.orderCount) : '--' }}</div>
-              <el-tooltip v-if="kpiSparklines.orders.length >= 2" :content="sparklineTooltip(kpiSparklines.orders)" placement="top" :show-after="300" raw-content>
+              <el-tooltip v-if="kpiSparklines.orders.length >= 2" :content="sparklineTooltip(kpiSparklines.orders, kpiSparklines.labels)" placement="top" :show-after="300" raw-content>
                 <svg class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
                   <path :d="kpiSparklinePaths.orders.path" fill="none" :stroke="kpiSparklinePaths.orders.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
@@ -1217,7 +1312,7 @@ onUnmounted(() => {
             <div class="kpi-label">{{ kpiData.customerLabel || '活跃客户' }}</div>
             <div class="kpi-value-row">
               <div class="kpi-value" :class="kpiData.customerUnit === '%' && kpiData.customerCount != null ? getGrowthClass(kpiData.customerCount) : ''">{{ kpiData.customerUnit === '%' ? (kpiData.customerCount != null ? (kpiData.customerCount >= 0 ? '+' : '') + kpiData.customerCount.toFixed(1) + '%' : '--') : (kpiData.customerCount != null ? formatCount(kpiData.customerCount) : '--') }}</div>
-              <el-tooltip v-if="kpiSparklines.customers.length >= 2" :content="sparklineTooltip(kpiSparklines.customers)" placement="top" :show-after="300" raw-content>
+              <el-tooltip v-if="kpiSparklines.customers.length >= 2" :content="sparklineTooltip(kpiSparklines.customers, kpiSparklines.labels)" placement="top" :show-after="300" raw-content>
                 <svg class="kpi-sparkline" width="60" height="22" viewBox="0 0 60 22">
                   <path :d="kpiSparklinePaths.customers.path" fill="none" :stroke="kpiSparklinePaths.customers.color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
@@ -1343,7 +1438,7 @@ onUnmounted(() => {
             <div class="card-header">
               <el-icon><ChatDotRound /></el-icon>
               <span>AI 智能洞察</span>
-              <span v-if="insightTimestamp" class="insight-timestamp">
+              <span v-if="insightTimestamp" class="insight-header-timestamp">
                 生成于 {{ insightTimestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }}
               </span>
             </div>
@@ -1359,9 +1454,28 @@ onUnmounted(() => {
               <el-tag :type="getInsightTagType(insight.type)" size="small">
                 {{ insight.title }}
               </el-tag>
-              <span class="insight-content">{{ insight.content }}</span>
+              <span class="insight-content">
+                <template v-for="(seg, si) in parseInsightCitations(insight.content)" :key="si">
+                  <span
+                    v-if="seg.chartIndex != null"
+                    class="insight-citation"
+                    :title="'来源: ' + seg.chartTitle"
+                    @click="scrollToChart(seg.chartIndex)"
+                  >{{ seg.text }}<sup>[{{ seg.chartIndex + 1 }}]</sup></span>
+                  <span v-else>{{ seg.text }}</span>
+                </template>
+              </span>
               <span v-if="insight.suggestion" class="insight-suggestion">
                 <el-icon aria-label="建议" role="img"><InfoFilled /></el-icon> {{ insight.suggestion }}
+              </span>
+            </div>
+            <div class="insight-meta" v-if="insightTimestamp">
+              <el-icon><Clock /></el-icon>
+              <span class="insight-timestamp">{{ formatInsightTime(insightTimestamp) }}</span>
+              <span class="insight-citation-legend" v-if="chartTitles.length > 0">
+                <span v-for="(title, ci) in chartTitles" :key="ci" class="citation-ref" @click="scrollToChart(ci)">
+                  [{{ ci + 1 }}] {{ title }}
+                </span>
               </span>
             </div>
             <div v-if="aiInsights.length > INSIGHT_COLLAPSE_LIMIT" class="insight-toggle">
@@ -1790,12 +1904,62 @@ onUnmounted(() => {
   color: var(--el-text-color-regular, #606266);
 }
 
-// AI insight timestamp
-.insight-timestamp {
+// AI insight header timestamp
+.insight-header-timestamp {
   margin-left: auto;
   font-size: 12px;
   color: var(--el-text-color-secondary, #909399);
   font-weight: 400;
+}
+
+// AI insight meta (timestamp + citation legend below insights)
+.insight-meta {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--el-border-color-lighter, #f0f2f5);
+  font-size: 12px;
+  color: var(--el-text-color-secondary, #909399);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+
+  .insight-timestamp {
+    margin-right: 12px;
+  }
+
+  .insight-citation-legend {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+
+    .citation-ref {
+      cursor: pointer;
+      color: var(--el-color-primary, #1B65A8);
+      transition: opacity 0.2s;
+
+      &:hover {
+        opacity: 0.7;
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+.insight-citation {
+  cursor: pointer;
+  color: var(--el-color-primary, #1B65A8);
+  transition: color 0.2s;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  sup {
+    font-size: 10px;
+    margin-left: 1px;
+    font-weight: 600;
+  }
 }
 
 // 图表区

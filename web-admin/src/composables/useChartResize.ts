@@ -64,6 +64,20 @@ export function useChartResize(
     ro = null
     window.removeEventListener('resize', resizeAllCharts)
     if (rafId) cancelAnimationFrame(rafId)
+
+    // Dispose all ECharts instances within the container to prevent memory leaks
+    const root = containerRef.value
+    if (root) {
+      const candidates = root.querySelectorAll<HTMLElement>(
+        '[_echarts_instance_], [id^="chart-"]',
+      )
+      candidates.forEach((el) => {
+        const instance = echarts.getInstanceByDom(el)
+        if (instance && !instance.isDisposed?.()) {
+          instance.dispose()
+        }
+      })
+    }
   })
 
   return { resizeAllCharts }

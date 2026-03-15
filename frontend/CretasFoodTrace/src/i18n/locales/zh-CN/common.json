@@ -518,6 +518,35 @@
   "enable": "启用",
   "disable": "停用",
   "enabled": "启用",
-  "disabled": "停用"
+  "disabled": "停用",
+  "loading": "加载中...",
+  "user": "用户",
+  "tip": "提示",
+  "comingSoon": "功能开发中",
+  "viewAll": "查看全部",
+  "askAI": "向 AI 提问",
+  "periods": {
+    "today": "今日",
+    "week": "本周",
+    "month": "本月",
+    "quarter": "本季",
+    "year": "本年"
+  },
+  "kpi": {
+    "sales": "销售额",
+    "orders": "订单数",
+    "completionRate": "完成率",
+    "profit": "利润"
+  },
+  "ranking": {
+    "department": "部门排行",
+    "region": "区域排行"
+  },
+  "insights": {
+    "title": "AI 洞察"
+  },
+  "executiveDashboard": {
+    "title": "经营驾驶舱"
+  }
 }
 

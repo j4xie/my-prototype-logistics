@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
 
@@ -34,7 +36,7 @@ interface Notification {
 
 type FilterType = 'all' | 'unread' | 'urgent';
 
-const NOTIFICATION_ICONS: Record<Notification['type'], { icon: string; color: string; bg: string }> = {
+const NOTIFICATION_ICONS: Record<Notification['type'], { icon: IoniconsName; color: string; bg: string }> = {
   urgent: { icon: 'warning', color: '#D32F2F', bg: '#FFEBEE' },
   info: { icon: 'information-circle', color: '#1976D2', bg: '#E3F2FD' },
   success: { icon: 'checkmark-circle', color: '#388E3C', bg: '#E8F5E9' },
@@ -214,7 +216,7 @@ export default function QINotificationsScreen() {
         activeOpacity={0.7}
       >
         <View style={[styles.iconContainer, { backgroundColor: iconConfig.bg }]}>
-          <Ionicons name={iconConfig.icon as any} size={22} color={iconConfig.color} />
+          <Ionicons name={iconConfig.icon} size={22} color={iconConfig.color} />
         </View>
         <View style={styles.notificationContent}>
           <View style={styles.notificationHeader}>

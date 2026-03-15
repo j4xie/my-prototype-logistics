@@ -28,6 +28,7 @@ public class TraceabilityDTO {
     public static class FullTraceResponse {
         private ProductionInfo production;
         private List<MaterialInfo> materials;
+        private List<ProcessingStageInfo> processingStages;
         private List<QualityInfo> qualityInspections;
         private List<ShipmentInfo> shipments;
         private String traceCode;
@@ -75,6 +76,29 @@ public class TraceabilityDTO {
         private String unit;
         private String storageLocation;
         private String status;
+    }
+
+    /**
+     * 加工环节溯源信息
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ProcessingStageInfo {
+        private String stageType;
+        private String stageName;
+        private Integer stageOrder;
+        private LocalDateTime startTime;
+        private LocalDateTime endTime;
+        private Integer durationMinutes;
+        private Double inputWeight;
+        private Double outputWeight;
+        private Double lossRate;
+        private Double passRate;
+        private Double temperature;
+        private String equipmentName;
+        private String operatorName;
     }
 
     /**

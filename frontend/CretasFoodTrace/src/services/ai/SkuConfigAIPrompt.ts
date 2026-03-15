@@ -169,9 +169,9 @@ export function parseAIResponse(responseText: string): SkuConfigAIResponse {
 
     // 验证 processingSteps 中的 stageType 是否合法
     if (parsed.skuConfig?.processingSteps) {
-      const validTypes = Object.values(ProcessingStageType);
+      const validTypes: string[] = Object.values(ProcessingStageType);
       parsed.skuConfig.processingSteps = parsed.skuConfig.processingSteps.filter(
-        (step) => validTypes.includes(step.stageType as any)
+        (step) => validTypes.includes(step.stageType)
       );
     }
 

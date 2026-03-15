@@ -30,6 +30,7 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { ProductTypeSelector } from '../../components/common/ProductTypeSelector';
 import { CustomerSelector } from '../../components/common/CustomerSelector';
 import { MaterialBatchSelector, SelectedBatch, AvailableBatch } from '../../components/common/MaterialBatchSelector';
+import { MaterialBatch } from '../../services/api/materialBatchApiClient';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
@@ -208,9 +209,10 @@ export default function ProductionPlanManagementScreen() {
         ...(filterStatus !== 'all' && { status: filterStatus }),
       });
 
-      if ((response as any).success && (response as any).data) {
+      if (response.success && response.data) {
         // 后端返回分页格式: { content: [...], totalElements, ... }
-        const plansData = (response as any).data.content || (response as any).data || [];
+        const pageData = response.data as { content?: ProductionPlan[] };
+        const plansData = pageData.content || [];
         setPlans(Array.isArray(plansData) ? plansData : []);
       } else {
         setPlans([]);
@@ -245,10 +247,10 @@ export default function ProductionPlanManagementScreen() {
       }
 
       // StockSummary response
-      if ((stockRes as any).success && (stockRes as any).data) {
-        const stockData = (stockRes as any).data as any;
+      if (stockRes.success && stockRes.data) {
+        const stockData = stockRes.data as { summary?: Array<{ materialTypeName?: string; category?: string; totalQuantity?: number; totalAvailable?: number; batchCount?: number }> };
         if (stockData.summary && Array.isArray(stockData.summary)) {
-          const summaryData = stockData.summary.map((item: any) => ({
+          const summaryData = stockData.summary.map((item) => ({
             category: item.materialTypeName || item.category,
             available: item.totalQuantity || item.totalAvailable || 0,
             batchCount: item.batchCount || 0,
@@ -270,8 +272,8 @@ export default function ProductionPlanManagementScreen() {
 
       const stockRes = await productionPlanApiClient.getAvailableStock({ productTypeId });
 
-      if ((stockRes as any).success && (stockRes as any).data) {
-        const stockData = (stockRes as any).data as StockWithConversion;
+      if (stockRes.success && stockRes.data) {
+        const stockData = stockRes.data as StockWithConversion;
         const { materialType, batches, totalAvailable, conversionRate, wastageRate } = stockData;
 
         if (materialType) {
@@ -281,18 +283,18 @@ export default function ProductionPlanManagementScreen() {
           setWastageRate(wastageRate);
 
           // 转换为AvailableBatch格式
-          const formattedBatches: AvailableBatch[] = batches.map((b: any) => ({
-            id: b.id,
-            batchNumber: b.batchNumber,
-            materialType: b.materialType,
-            supplier: b.supplier,
-            remainingQuantity: b.remainingQuantity,
-            reservedQuantity: b.reservedQuantity,
-            unitPrice: b.unitPrice,
-            inboundDate: b.inboundDate,
-            expiryDate: b.expiryDate,
-            qualityGrade: b.qualityGrade,
-          }));
+          const formattedBatches = (batches as unknown as Array<Record<string, unknown>>).map((b) => ({
+            id: String(b.id ?? ''),
+            batchNumber: String(b.batchNumber ?? ''),
+            materialType: b.materialType as AvailableBatch['materialType'],
+            supplier: b.supplier as AvailableBatch['supplier'],
+            remainingQuantity: Number(b.remainingQuantity ?? 0),
+            reservedQuantity: Number(b.reservedQuantity ?? 0),
+            unitPrice: Number(b.unitPrice ?? 0),
+            inboundDate: String(b.inboundDate ?? ''),
+            expiryDate: b.expiryDate ? String(b.expiryDate) : undefined,
+            qualityGrade: b.qualityGrade ? String(b.qualityGrade) : undefined,
+          })) as AvailableBatch[];
 
           setAvailableBatches(formattedBatches);
 
@@ -342,16 +344,17 @@ export default function ProductionPlanManagementScreen() {
         plannedQuantity: parseFloat(formData.plannedQuantity),
       });
 
-      if ((result as any).success && (result as any).data) {
-        setEstimatedUsage((result as any).data.estimatedUsage);
-        setConversionRate((result as any).data.conversionRate);
-        setWastageRate((result as any).data.wastageRate);
+      const estimateResult = result as { success?: boolean; data?: { plannedQuantity?: number; estimatedUsage?: number; conversionRate?: number; wastageRate?: number } };
+      if (estimateResult.success && estimateResult.data) {
+        setEstimatedUsage(estimateResult.data.estimatedUsage ?? null);
+        setConversionRate(estimateResult.data.conversionRate ?? null);
+        setWastageRate(estimateResult.data.wastageRate ?? null);
 
         productionPlanLogger.info('预估计算完成', {
-          plannedQuantity: (result as any).data.plannedQuantity,
-          conversionRate: `${(result as any).data.conversionRate}%`,
-          wastageRate: `${(result as any).data.wastageRate}%`,
-          estimatedUsage: `${(result as any).data.estimatedUsage}kg`,
+          plannedQuantity: estimateResult.data.plannedQuantity,
+          conversionRate: `${estimateResult.data.conversionRate}%`,
+          wastageRate: `${estimateResult.data.wastageRate}%`,
+          estimatedUsage: `${estimateResult.data.estimatedUsage}kg`,
         });
       }
     } catch (error) {
@@ -407,25 +410,26 @@ export default function ProductionPlanManagementScreen() {
       const file = result.assets[0];
       if (!file) return;
       const formDataUpload = new FormData();
+      // @ts-expect-error - React Native FormData accepts {uri, name, type} objects, not Blob
       formDataUpload.append('file', {
         uri: file.uri,
         type: file.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         name: file.name || 'import.xlsx',
-      } as any);
+      });
 
       setImportLoading(true);
       const factoryId = user?.factoryUser?.factoryId || user?.factoryId || '';
       const response = await productionPlanApiClient.importFromExcel(factoryId, formDataUpload);
 
-      if ((response as any).success) {
-        const importResult = (response as any).data;
+      if (response.success) {
+        const importResult = response.data;
         Alert.alert(
           '导入完成',
           `总计: ${importResult.totalCount} 条\n成功: ${importResult.successCount} 条\n失败: ${importResult.failureCount} 条`,
           [{ text: '确定', onPress: () => loadPlans() }]
         );
       } else {
-        Alert.alert('导入失败', (response as any).message || '请检查文件格式');
+        Alert.alert('导入失败', response.message || '请检查文件格式');
       }
     } catch (error) {
       productionPlanLogger.error('Excel导入失败', error);
@@ -437,10 +441,10 @@ export default function ProductionPlanManagementScreen() {
 
   // AI对话创建生产计划
   const handleAIChatCreate = () => {
-    navigation.navigate('FAAITab' as any, {
+    navigation.dispatch(CommonActions.navigate('FAAITab', {
       screen: 'AIChat',
       params: { entityType: 'PRODUCTION_PLAN', initialMessage: '我要创建生产计划' },
-    });
+    }));
   };
 
   const handleSave = async () => {
@@ -481,9 +485,9 @@ export default function ProductionPlanManagementScreen() {
         suggestedProductionLineId: formData.suggestedProductionLineId || undefined,
         estimatedWorkers: formData.estimatedWorkers ? parseInt(formData.estimatedWorkers, 10) : undefined,
         assignedSupervisorId: formData.assignedSupervisorId ? parseInt(formData.assignedSupervisorId, 10) : undefined,
-      } as any);
+      });
 
-      if ((response as any).success) {
+      if (response.success) {
         Alert.alert('成功', `生产计划创建成功${selectedBatches.length > 0 ? `\n已预留${selectedBatches.length}个批次的库存` : ''}`);
         setModalVisible(false);
         loadPlans();
@@ -510,7 +514,7 @@ export default function ProductionPlanManagementScreen() {
           onPress: async () => {
             try {
               const response = await productionPlanApiClient.startProduction(planId);
-              if ((response as any).success) {
+              if (response.success) {
                 Alert.alert('成功', '生产已开始');
                 loadPlans();
               }
@@ -548,7 +552,7 @@ export default function ProductionPlanManagementScreen() {
         actualQty
       );
 
-      if ((response as any).success) {
+      if (response.success) {
         Alert.alert('成功', `生产已完成，实际产量: ${actualQty} kg`);
         setShowCompleteDialog(false);
         setCompletingPlan(null);

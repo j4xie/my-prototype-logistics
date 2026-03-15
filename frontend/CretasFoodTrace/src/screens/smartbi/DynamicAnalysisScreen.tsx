@@ -525,7 +525,7 @@ export default function DynamicAnalysisScreen(): React.ReactElement {
 
                   {/* Metrics */}
                   {currentSheetResult.metrics.length > 0 && (
-                    <MetricCardGrid metrics={currentSheetResult.metrics} columns={2} />
+                    <MetricCardGrid metrics={currentSheetResult.metrics as unknown as import('../../types/smartbi').MetricResult[]} columns={2} />
                   )}
 
                   {/* Charts */}

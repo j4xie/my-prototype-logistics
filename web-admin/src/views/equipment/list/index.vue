@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
+
+const router = useRouter();
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -35,6 +38,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -101,6 +106,37 @@ function getStatusText(status: string) {
   };
   return map[status?.toUpperCase()] || status;
 }
+
+const detailVisible = ref(false);
+const detailData = ref<Record<string, unknown>>({});
+
+async function handleView(row: Record<string, unknown>) {
+  if (!factoryId.value) return;
+  try {
+    const response = await get(`/${factoryId.value}/equipment/${row.id}`);
+    if (response.success && response.data) {
+      detailData.value = response.data;
+      detailVisible.value = true;
+    } else {
+      ElMessage.error(response.message || '获取设备详情失败');
+    }
+  } catch (error) {
+    console.error('获取设备详情失败:', error);
+    ElMessage.error('获取设备详情失败');
+  }
+}
+
+function handleMaintenance(row: Record<string, unknown>) {
+  router.push({ path: '/equipment/maintenance', query: { equipmentId: row.id as string } });
+}
+
+function handleEdit(row: Record<string, unknown>) {
+  ElMessage.info('编辑功能开发中');
+}
+
+function handleAdd() {
+  ElMessage.info('添加设备功能开发中');
+}
 </script>
 
 <template>
@@ -113,7 +149,7 @@ function getStatusText(status: string) {
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
-            <el-button v-if="canWrite" type="primary" :icon="Plus">添加设备</el-button>
+            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleAdd">添加设备</el-button>
           </div>
         </div>
       </template>
@@ -146,9 +182,9 @@ function getStatusText(status: string) {
         <el-table-column prop="lastMaintenanceDate" label="上次维护" width="120" />
         <el-table-column label="操作" width="200" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link size="small">查看</el-button>
-            <el-button v-if="canWrite" type="primary" link size="small">维护</el-button>
-            <el-button v-if="canWrite" type="primary" link size="small">编辑</el-button>
+            <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
+            <el-button v-if="canWrite" type="primary" link size="small" @click="handleMaintenance(row)">维护</el-button>
+            <el-button v-if="canWrite" type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -165,6 +201,21 @@ function getStatusText(status: string) {
         />
       </div>
     </el-card>
+
+    <el-dialog v-model="detailVisible" title="设备详情" width="500px">
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="设备编号">{{ detailData.equipmentCode || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="设备名称">{{ detailData.name || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="型号">{{ detailData.model || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="位置">{{ detailData.location || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="getStatusType(detailData.status as string)" size="small">
+            {{ getStatusText(detailData.status as string) }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="上次维护">{{ detailData.lastMaintenanceDate || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
   </div>
 </template>
 

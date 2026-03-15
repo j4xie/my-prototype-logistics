@@ -19,11 +19,11 @@ export function RecipeEditScreen() {
   const { t } = useTranslation('restaurant');
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const isEdit = !!route.params?.productTypeId;
+  const isEdit = !!route.params?.recipeId;
 
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
-    productTypeId: route.params?.productTypeId || '',
+    productTypeId: route.params?.recipeId || '',
     rawMaterialTypeId: '',
     standardQuantity: '',
     unit: 'kg',
@@ -36,7 +36,7 @@ export function RecipeEditScreen() {
 
   async function handleSave() {
     if (!form.productTypeId || !form.rawMaterialTypeId || !form.standardQuantity) {
-      const missing = [];
+      const missing: string[] = [];
       if (!form.productTypeId) missing.push(t('recipe.edit.selectDish'));
       if (!form.rawMaterialTypeId) missing.push(t('recipe.edit.selectMaterial'));
       if (!form.standardQuantity) missing.push(t('recipe.edit.quantity'));

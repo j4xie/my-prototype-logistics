@@ -193,6 +193,7 @@ async function loadSelectOptions() {
     }
   } catch (e) {
     console.error('Failed to load select options:', e);
+    ElMessage.error('加载选项数据失败');
   }
 }
 
@@ -212,7 +213,10 @@ async function loadStatistics() {
       };
       statsLoaded.value = true;
     }
-  } catch (e) { console.error('Failed to load recipe summary:', e); }
+  } catch (e) {
+    console.error('Failed to load recipe summary:', e);
+    ElMessage.error('加载配方统计失败');
+  }
 }
 
 const loading = ref(false);
@@ -319,9 +323,13 @@ async function showDetail(row: RecipeItem) {
 async function handleDelete(row: RecipeItem) {
   try {
     await ElMessageBox.confirm('确认删除该配方？', '提示', { type: 'warning' });
-    await deleteRecipe(factoryId.value, row.id);
-    ElMessage.success('已删除');
-    loadData();
+    const res = await deleteRecipe(factoryId.value, row.id);
+    if (res.success) {
+      ElMessage.success('已删除');
+      loadData();
+    } else {
+      ElMessage.error(res.message || '删除失败');
+    }
   } catch (e) {
     if (e !== 'cancel') {
       console.error('Delete recipe failed:', e);
@@ -337,11 +345,21 @@ async function submitForm() {
   submitting.value = true;
   try {
     if (dialogForm.value.id) {
-      await updateRecipe(factoryId.value, dialogForm.value.id, dialogForm.value);
-      ElMessage.success('更新成功');
+      const res = await updateRecipe(factoryId.value, dialogForm.value.id, dialogForm.value);
+      if (res.success) {
+        ElMessage.success('更新成功');
+      } else {
+        ElMessage.error(res.message || '更新失败');
+        return;
+      }
     } else {
-      await createRecipe(factoryId.value, dialogForm.value);
-      ElMessage.success('创建成功');
+      const res = await createRecipe(factoryId.value, dialogForm.value);
+      if (res.success) {
+        ElMessage.success('创建成功');
+      } else {
+        ElMessage.error(res.message || '创建失败');
+        return;
+      }
     }
     dialogVisible.value = false;
     loadData();

@@ -106,7 +106,7 @@ export default function WhitelistManagementScreen() {
       whitelistLogger.error('加载白名单失败', error as Error, {
         factoryId: user?.factoryId,
       });
-      Alert.alert('错误', (error as any).response?.data?.message || '加载白名单失败');
+      Alert.alert('错误', getErrorMsg(error) || '加载白名单失败');
     } finally {
       setLoading(false);
     }

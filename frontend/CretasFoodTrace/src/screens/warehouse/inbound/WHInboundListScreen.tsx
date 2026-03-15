@@ -155,6 +155,10 @@ export function WHInboundListScreen() {
     inspecting: inboundList.filter((i) => i.status === "inspecting").length,
     completed: inboundList.filter((i) => i.status === "completed").length,
     todayWeight: inboundList.reduce((sum, i) => sum + i.quantity, 0),
+    supplierCount: new Set(inboundList.map((i) => i.supplier)).size,
+    passRate: inboundList.length > 0
+      ? Math.round((inboundList.filter((i) => i.status === "completed").length / inboundList.length) * 100)
+      : 0,
   };
 
   const getActionText = (status: InboundStatus): string => {
@@ -385,11 +389,11 @@ export function WHInboundListScreen() {
               <Text style={styles.statsLabel}>{t('inbound.list.stats.inboundWeight')}</Text>
             </View>
             <View style={styles.statsItem}>
-              <Text style={styles.statsValue}>5</Text>
+              <Text style={styles.statsValue}>{stats.supplierCount}</Text>
               <Text style={styles.statsLabel}>{t('inbound.list.stats.supplierCount')}</Text>
             </View>
             <View style={styles.statsItem}>
-              <Text style={styles.statsValue}>100%</Text>
+              <Text style={styles.statsValue}>{stats.passRate}%</Text>
               <Text style={styles.statsLabel}>{t('inbound.list.stats.passRate')}</Text>
             </View>
           </View>

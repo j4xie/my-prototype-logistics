@@ -112,6 +112,9 @@
     "inactive": "Inactive",
     "enabled": "Enabled",
     "disabled": "Disabled",
+    "all": "All",
+    "enable": "Enable",
+    "disable": "Disable",
     "activate": "Activate",
     "deactivate": "Deactivate"
   },

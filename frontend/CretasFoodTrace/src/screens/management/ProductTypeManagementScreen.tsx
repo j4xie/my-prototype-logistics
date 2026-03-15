@@ -223,10 +223,8 @@ export default function ProductTypeManagementScreen() {
       ]);
 
       if (equipmentRes.status === 'fulfilled') {
-        // getEquipments() returns { content, totalElements, totalPages } directly (unwrapped)
-        const eqResult = equipmentRes.value as any;
-        const eqData = eqResult?.content || eqResult || [];
-        setEquipmentList(Array.isArray(eqData) ? eqData : []);
+        const eqResult = equipmentRes.value;
+        setEquipmentList(eqResult?.content ?? []);
       } else {
         productTypeLogger.warn('加载设备列表失败', { reason: equipmentRes.reason });
       }

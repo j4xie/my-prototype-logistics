@@ -99,6 +99,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -125,17 +127,13 @@ function handlePageChange(page: number) {
 }
 
 // ============ 新增/编辑 ============
+function resetEditForm() {
+  editForm.value = { name: '', code: '', type: 'DATABASE', description: '', connectionConfig: '', refreshInterval: 60, isActive: true };
+}
+
 function handleAdd() {
   dialogTitle.value = '新建数据源';
-  editForm.value = {
-    name: '',
-    code: '',
-    type: 'DATABASE',
-    description: '',
-    connectionConfig: '',
-    refreshInterval: 60,
-    isActive: true
-  };
+  resetEditForm();
   dialogVisible.value = true;
 }
 
@@ -166,7 +164,10 @@ async function handleSubmit() {
     if (response.success) {
       ElMessage.success(editForm.value.id ? '更新成功' : '创建成功');
       dialogVisible.value = false;
+      resetEditForm();
       loadData();
+    } else {
+      ElMessage.error(response.message || '保存失败');
     }
   } catch (error) {
     console.error('保存失败:', error);
@@ -193,6 +194,8 @@ async function handleDelete(row: DataSource) {
     if (response.success) {
       ElMessage.success('删除成功');
       loadData();
+    } else {
+      ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -437,7 +440,7 @@ function goBack() {
       </el-form>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button @click="dialogVisible = false; resetEditForm()">取消</el-button>
         <el-button type="primary" :loading="dialogLoading" @click="handleSubmit">
           确定
         </el-button>

@@ -116,13 +116,13 @@
   "about": {
     "title": "关于",
     "version": "版本",
-    "appName": "白垩纪食品溯源",
+    "appName": "白垩纪AI Agent",
     "copyright": "版权所有",
     "privacyPolicy": "隐私政策",
     "termsOfService": "服务条款",
     "checkUpdate": "检查更新",
     "productIntro": "产品介绍",
-    "productDescription": "白垩纪食品溯源系统是一款专注于食品行业的全链路溯源管理平台，助力企业实现从原材料到成品的全流程追踪。",
+    "productDescription": "白垩纪AI Agent系统是一款专注于食品行业的全链路溯源管理平台，助力企业实现从原材料到成品的全流程追踪。",
     "userAgreement": "用户协议",
     "latestVersion": "已是最新版本"
   },

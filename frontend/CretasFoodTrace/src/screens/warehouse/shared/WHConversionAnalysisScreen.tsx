@@ -15,6 +15,8 @@ import { Text, Button, ProgressBar, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 import { useTranslation } from "react-i18next";
 
 const screenWidth = Dimensions.get("window").width;
@@ -47,13 +49,13 @@ interface SupplierImpact {
   sharePercent: number;
   status: "good" | "warning" | "normal";
   insight: string;
-  insightIcon: string;
+  insightIcon: MCIconName;
 }
 
 interface AIInsight {
   id: string;
   type: "warning" | "info" | "success" | "tip";
-  icon: string;
+  icon: MCIconName;
   content: string;
 }
 
@@ -313,7 +315,7 @@ export function WHConversionAnalysisScreen() {
       </View>
       <View style={styles.supplierInsight}>
         <MaterialCommunityIcons
-          name={item.insightIcon as any}
+          name={item.insightIcon}
           size={14}
           color={item.status === "warning" ? "#f57c00" : "#4CAF50"}
         />
@@ -528,7 +530,7 @@ export function WHConversionAnalysisScreen() {
                   ]}
                 >
                   <MaterialCommunityIcons
-                    name={insight.icon as any}
+                    name={insight.icon}
                     size={16}
                     color={style.icon}
                   />

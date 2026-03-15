@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { workSessionApiClient, WorkSession, StartSessionRequest } from '../../services/api/workSessionApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 const sessionLogger = logger.createContextLogger('WorkSessionManagement');
@@ -117,7 +118,7 @@ export default function WorkSessionManagementScreen() {
       loadData();
     } catch (error) {
       sessionLogger.error('开始工作会话失败', error as Error);
-      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
+      Alert.alert('错误', getErrorMsg(error) || '操作失败');
     }
   };
 
@@ -143,7 +144,7 @@ export default function WorkSessionManagementScreen() {
       loadData();
     } catch (error) {
       sessionLogger.error('结束工作会话失败', error as Error);
-      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
+      Alert.alert('错误', getErrorMsg(error) || '操作失败');
     }
   };
 

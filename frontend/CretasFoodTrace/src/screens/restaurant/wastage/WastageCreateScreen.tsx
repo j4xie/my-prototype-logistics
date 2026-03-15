@@ -30,7 +30,7 @@ export function WastageCreateScreen() {
 
   async function handleSubmit(asDraft: boolean) {
     if (!form.rawMaterialTypeId || !form.quantity) {
-      const missing = [];
+      const missing: string[] = [];
       if (!form.rawMaterialTypeId) missing.push(t('wastage.create.selectMaterial'));
       if (!form.quantity) missing.push(t('wastage.create.quantity'));
       Alert.alert('', missing.join(', '));

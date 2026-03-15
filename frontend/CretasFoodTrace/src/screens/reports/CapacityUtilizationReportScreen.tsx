@@ -296,7 +296,7 @@ export default function CapacityUtilizationReportScreen() {
                       { color: getUtilizationColor(reportData.averageUtilization ?? 0) },
                     ]}
                   >
-                    {(reportData.averageUtilization ?? 0).toFixed(1)}%
+                    {Number(reportData.averageUtilization ?? 0).toFixed(1)}%
                   </Text>
                   <Text style={styles.statLabel}>平均利用率</Text>
                 </View>
@@ -328,7 +328,7 @@ export default function CapacityUtilizationReportScreen() {
                   </Chip>
                 </View>
                 <ProgressBar
-                  progress={(reportData.averageUtilization ?? 0) / 100}
+                  progress={Number(reportData.averageUtilization ?? 0) / 100}
                   color={getUtilizationColor(reportData.averageUtilization ?? 0)}
                   style={styles.mainProgressBar}
                 />
@@ -347,8 +347,8 @@ export default function CapacityUtilizationReportScreen() {
                   <Text style={styles.achievementText}>
                     已达成目标 (+
                     {(
-                      (reportData.averageUtilization ?? 0) -
-                      (reportData.utilizationTarget || TARGET_UTILIZATION)
+                      Number(reportData.averageUtilization ?? 0) -
+                      Number(reportData.utilizationTarget || TARGET_UTILIZATION)
                     ).toFixed(1)}
                     %)
                   </Text>
@@ -358,8 +358,8 @@ export default function CapacityUtilizationReportScreen() {
                   <Text style={styles.gapText}>
                     距目标差{' '}
                     {(
-                      (reportData.utilizationTarget || TARGET_UTILIZATION) -
-                      (reportData.averageUtilization ?? 0)
+                      Number(reportData.utilizationTarget || TARGET_UTILIZATION) -
+                      Number(reportData.averageUtilization ?? 0)
                     ).toFixed(1)}
                     %
                   </Text>
@@ -395,7 +395,7 @@ export default function CapacityUtilizationReportScreen() {
                       </View>
                       <View style={styles.equipmentProgressRow}>
                         <ProgressBar
-                          progress={(equipment.utilization ?? 0) / 100}
+                          progress={Number(equipment.utilization ?? 0) / 100}
                           color={getUtilizationColor(equipment.utilization ?? 0)}
                           style={styles.equipmentProgressBar}
                         />
@@ -405,7 +405,7 @@ export default function CapacityUtilizationReportScreen() {
                             { color: getUtilizationColor(equipment.utilization ?? 0) },
                           ]}
                         >
-                          {(equipment.utilization ?? 0).toFixed(1)}%
+                          {Number(equipment.utilization ?? 0).toFixed(1)}%
                         </Text>
                       </View>
                     </View>
@@ -444,7 +444,7 @@ export default function CapacityUtilizationReportScreen() {
                           { color: getUtilizationColor(day.utilization ?? 0) },
                         ]}
                       >
-                        {(day.utilization ?? 0).toFixed(1)}%
+                        {Number(day.utilization ?? 0).toFixed(1)}%
                       </Text>
                       <Text style={styles.dailyOutput}>产出: {day.output}</Text>
                     </View>

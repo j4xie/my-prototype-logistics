@@ -269,7 +269,7 @@ export default function BatchDetailScreen() {
              </View>
              <View style={styles.infoItem}>
                 <Text style={styles.label}>负责人</Text>
-                <Text style={styles.value}>{typeof batch.supervisor === 'object' ? ((batch.supervisor as any)?.fullName || (batch.supervisor as any)?.username) : batch.supervisor || '未指定'}</Text>
+                <Text style={styles.value}>{typeof batch.supervisor === 'object' ? ((batch.supervisor as { fullName?: string; username?: string })?.fullName || (batch.supervisor as { username?: string })?.username) : batch.supervisor || '未指定'}</Text>
              </View>
              <View style={styles.infoItem}>
                 <Text style={styles.label}>目标产量</Text>

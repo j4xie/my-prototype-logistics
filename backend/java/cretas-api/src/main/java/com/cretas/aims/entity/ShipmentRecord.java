@@ -22,7 +22,8 @@ import java.time.LocalDate;
        indexes = {
            @Index(name = "idx_shipment_factory", columnList = "factory_id"),
            @Index(name = "idx_shipment_customer", columnList = "customer_id"),
-           @Index(name = "idx_shipment_date", columnList = "shipment_date")
+           @Index(name = "idx_shipment_date", columnList = "shipment_date"),
+           @Index(name = "idx_shipment_batch", columnList = "batch_number")
        }
 )
 public class ShipmentRecord extends BaseEntity {
@@ -37,6 +38,8 @@ public class ShipmentRecord extends BaseEntity {
     private String customerId;
     @Column(name = "order_number", length = 100)
     private String orderNumber;
+    @Column(name = "batch_number", length = 100)
+    private String batchNumber;
     @Column(name = "product_name", nullable = false)
     private String productName;
     @Column(name = "quantity", nullable = false, precision = 10, scale = 2)

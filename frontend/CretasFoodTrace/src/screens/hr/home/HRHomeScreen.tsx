@@ -23,7 +23,7 @@ import {
 } from 'react-native';
 import { Text, Card, Surface, ActivityIndicator, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -42,10 +42,12 @@ import {
 
 type NavigationProp = NativeStackNavigationProp<HRHomeStackParamList>;
 
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
 interface StatCardProps {
   title: string;
   value: number | string;
-  icon: string;
+  icon: MCIconName;
   color: string;
   subtext?: string;
   onPress?: () => void;
@@ -66,7 +68,7 @@ const StatCard: React.FC<StatCardProps> = ({
   >
     <Surface style={styles.statCard} elevation={2}>
       <View style={[styles.statIconContainer, { backgroundColor: color + '20' }]}>
-        <MaterialCommunityIcons name={icon as any} size={24} color={color} />
+        <MaterialCommunityIcons name={icon} size={24} color={color} />
       </View>
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statTitle}>{title}</Text>
@@ -130,7 +132,7 @@ export default function HRHomeScreen() {
   }, [loadData]);
 
   const handleQuickAction = (route: string) => {
-    navigation.navigate(route as any);
+    navigation.dispatch(CommonActions.navigate(route));
   };
 
   if (loading) {
@@ -202,7 +204,7 @@ export default function HRHomeScreen() {
             value={stats?.lateCount ?? 0}
             icon="clock-alert"
             color={HR_THEME.warning}
-            onPress={() => navigation.navigate('AttendanceAnomaly' as any)}
+            onPress={() => navigation.dispatch(CommonActions.navigate('AttendanceAnomaly'))}
           />
           )}
           {isScreenEnabled('WhitelistManagement') && (
@@ -211,7 +213,7 @@ export default function HRHomeScreen() {
             value={stats?.whitelistPending ?? 0}
             icon="shield-check"
             color={HR_THEME.primary}
-            onPress={() => navigation.navigate('WhitelistList' as any)}
+            onPress={() => navigation.dispatch(CommonActions.navigate('WhitelistList'))}
           />
           )}
           {isScreenEnabled('NewHireTracking') && (
@@ -235,14 +237,14 @@ export default function HRHomeScreen() {
             <View style={styles.attendanceHeader}>
               <Text style={styles.sectionTitle}>{t('home.attendance.title')}</Text>
               <Text style={styles.attendanceRate}>
-                {((stats?.attendanceRate ?? 0) * 100).toFixed(1)}%
+                {Number(stats?.attendanceRate ?? 0).toFixed(1)}%
               </Text>
             </View>
             <View style={styles.progressBar}>
               <View
                 style={[
                   styles.progressFill,
-                  { width: `${(stats?.attendanceRate ?? 0) * 100}%` },
+                  { width: `${stats?.attendanceRate ?? 0}%` },
                 ]}
               />
             </View>
@@ -257,7 +259,7 @@ export default function HRHomeScreen() {
               const QUICK_ACTION_GUARD: Record<string, string> = {
                 'new-hires': 'NewHireTracking',
               };
-              if (QUICK_ACTION_GUARD[action.id] && !isScreenEnabled(QUICK_ACTION_GUARD[action.id])) {
+              if (QUICK_ACTION_GUARD[action.id] && !isScreenEnabled(QUICK_ACTION_GUARD[action.id]!)) {
                 return false;
               }
               const enabledQA = getEnabledQuickActions();
@@ -278,7 +280,7 @@ export default function HRHomeScreen() {
                   ]}
                 >
                   <MaterialCommunityIcons
-                    name={action.icon as any}
+                    name={action.icon as MCIconName}
                     size={24}
                     color={action.color}
                   />
@@ -295,7 +297,7 @@ export default function HRHomeScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t('home.anomaly.title')}</Text>
             <TouchableOpacity
-              onPress={() => navigation.navigate('AttendanceAnomaly' as any)}
+              onPress={() => navigation.dispatch(CommonActions.navigate('AttendanceAnomaly'))}
             >
               <Text style={styles.viewAll}>{t('home.anomaly.viewAll')}</Text>
             </TouchableOpacity>
@@ -325,7 +327,7 @@ export default function HRHomeScreen() {
                       ]}
                     >
                       <MaterialCommunityIcons
-                        name={config.icon as any}
+                        name={config.icon as MCIconName}
                         size={20}
                         color={config.color}
                       />

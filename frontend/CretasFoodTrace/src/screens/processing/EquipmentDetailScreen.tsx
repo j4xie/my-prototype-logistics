@@ -106,9 +106,9 @@ export default function EquipmentDetailScreen() {
   const [activeAlertsCount, setActiveAlertsCount] = useState(0);
 
   // Performance metrics
-  const [oeeData, setOeeData] = useState<any>(null);
+  const [oeeData, setOeeData] = useState<{ oee: number; availability: number; performance: number; quality: number } | null>(null);
   const [depreciatedValue, setDepreciatedValue] = useState<number | null>(null);
-  const [usageStats, setUsageStats] = useState<any>(null);
+  const [usageStats, setUsageStats] = useState<{ utilizationRate?: number; totalRuntime?: number; downtime?: number; mtbf?: number; mttr?: number } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -204,14 +204,14 @@ export default function EquipmentDetailScreen() {
 
       // Set performance metrics
       if (oeeResult) {
-        setOeeData(oeeResult);
+        setOeeData(oeeResult as unknown as { oee: number; availability: number; performance: number; quality: number });
         equipmentDetailLogger.info('OEE data loaded successfully', {
           oee: typeof oeeResult === 'number' ? oeeResult.toFixed(1) + '%' : 'N/A',
         });
       }
 
       if (depreciatedValueResult != null) {
-        setDepreciatedValue(typeof depreciatedValueResult === 'number' ? depreciatedValueResult : (depreciatedValueResult as any)?.depreciatedValue || depreciatedValueResult);
+        setDepreciatedValue(typeof depreciatedValueResult === 'number' ? depreciatedValueResult : (depreciatedValueResult as { depreciatedValue?: number })?.depreciatedValue ?? 0);
         equipmentDetailLogger.info('Depreciated value loaded successfully', {
           value: depreciatedValueResult,
         });
@@ -220,15 +220,17 @@ export default function EquipmentDetailScreen() {
       if (usageStatsResult) {
         setUsageStats(usageStatsResult);
         equipmentDetailLogger.info('Usage statistics loaded successfully', {
-          utilizationRate: (usageStatsResult as any).utilizationRate,
+          utilizationRate: (usageStatsResult as { utilizationRate?: number }).utilizationRate,
         });
       }
 
       // Calculate uptime from efficiency report or OEE data
-      if ((usageStatsResult as any)?.utilizationRate !== undefined) {
-        setUptime((usageStatsResult as any).utilizationRate);
-      } else if ((oeeResult as any)?.availability !== undefined) {
-        setUptime((oeeResult as any).availability * 100);
+      const usageRaw = usageStatsResult as { utilizationRate?: number } | null;
+      const oeeRaw = oeeResult as { availability?: number } | null;
+      if (usageRaw?.utilizationRate !== undefined) {
+        setUptime(usageRaw.utilizationRate);
+      } else if (oeeRaw?.availability !== undefined) {
+        setUptime(oeeRaw.availability * 100);
       } else {
         setUptime(eq.status === 'active' ? 95 : 0);
       }

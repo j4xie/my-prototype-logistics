@@ -47,24 +47,23 @@ export default function CreateBatchScreen() {
   const loadBatchData = async (id: string) => {
     try {
       setInitialLoading(true);
-      const response = await materialBatchApiClient.getBatchById(id) as any;
-      const batch = response?.data || response;
+      const response = await materialBatchApiClient.getBatchById(id);
+      const batch = response?.data ?? response;
 
       // 加载原材料批次数据
-      setMaterialType(batch.materialTypeName ?? batch.materialType?.name ?? '');
+      setMaterialType(batch.materialName ?? '');
       setMaterialTypeId(batch.materialTypeId ?? '');
-      setMaterialQuantity(batch.receiptQuantity?.toString() ?? '');
-      const totalCost = (batch.unitPrice ?? 0) * (batch.receiptQuantity ?? 0);
+      setMaterialQuantity(batch.inboundQuantity?.toString() ?? '');
+      const totalCost = (batch.unitPrice ?? 0) * (batch.inboundQuantity ?? 0);
       setMaterialCost(totalCost.toString());
 
       if (batch.supplierId) {
         setSupplierId(batch.supplierId);
-        setSupplierName(batch.supplierName ?? batch.supplier?.name ?? '');
+        setSupplierName(batch.supplierName ?? '');
       }
 
-      if (batch.createdBy) {
-        setSupervisorId(batch.createdBy);
-        setSupervisorName(batch.createdByName ?? '');
+      if (batch.createdByName) {
+        setSupervisorName(batch.createdByName);
       }
 
       setNotes(batch.notes ?? '');

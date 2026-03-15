@@ -41,11 +41,11 @@
         <el-card shadow="hover" style="margin-top: 16px">
           <div class="filter-bar">
             <el-radio-group v-model="filterQuadrant">
-              <el-radio-button label="">全部</el-radio-button>
-              <el-radio-button label="Star">明星</el-radio-button>
-              <el-radio-button label="Plow">耕牛</el-radio-button>
-              <el-radio-button label="Puzzle">谜题</el-radio-button>
-              <el-radio-button label="Dog">瘦狗</el-radio-button>
+              <el-radio-button value="">全部</el-radio-button>
+              <el-radio-button value="Star">明星</el-radio-button>
+              <el-radio-button value="Plow">耕牛</el-radio-button>
+              <el-radio-button value="Puzzle">谜题</el-radio-button>
+              <el-radio-button value="Dog">瘦狗</el-radio-button>
             </el-radio-group>
             <el-input v-model="searchKeyword" placeholder="搜索菜品名" clearable style="width: 200px" />
           </div>
@@ -99,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
@@ -269,6 +269,11 @@ function renderChart() {
 
 // Reset pagination when filter changes
 watch([filterQuadrant, searchKeyword], () => { currentPage.value = 1 })
+
+onUnmounted(() => {
+  const el = document.getElementById('chart-quadrant-full')
+  if (el) echarts.getInstanceByDom(el)?.dispose()
+})
 </script>
 
 <style scoped>

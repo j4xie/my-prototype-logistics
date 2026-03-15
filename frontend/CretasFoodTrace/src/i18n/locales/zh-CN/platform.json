@@ -1,5 +1,10 @@
 {
   "title": "平台管理中心",
+  "home": {
+    "greetings": {
+      "defaultUser": "管理员"
+    }
+  },
   "dashboard": {
     "title": "平台管理中心",
     "welcomeBack": "欢迎回来，{{name}}",
@@ -424,7 +429,7 @@
     "trendAnalysis": "📈 趋势分析",
     "factoryRanking": "🏆 工厂排行榜",
     "factory": "工厂",
-    "production": "产量(t)",
+    "productionTons": "产量(t)",
     "efficiency": "效率(%)",
     "exportHint": "导出报表",
     "exportHintText": "点击右上角下载图标，可导出Excel或PDF格式报表"
@@ -624,5 +629,23 @@
     "confirmAction": "确认",
     "times": "次",
     "utilization": "利用率"
+  },
+  "common": {
+    "loading": "加载中...",
+    "confirm": "确定",
+    "cancel": "取消",
+    "save": "保存",
+    "close": "关闭",
+    "edit": "编辑",
+    "delete": "删除",
+    "success": "成功",
+    "error": "错误",
+    "sessionExpired": "登录已过期，请重新登录",
+    "buttons": {
+      "ok": "确定",
+      "cancel": "取消",
+      "edit": "编辑",
+      "quota": "配额"
+    }
   }
 }

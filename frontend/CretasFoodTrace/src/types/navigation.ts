@@ -130,6 +130,13 @@ export type ProcessingStackParamList = {
     scaleDeviceId?: string;
     productionBatchId?: string;
   };
+
+  // 工序制生产 - Process Mode
+  ProcessTaskList: { status?: string };
+  ProcessTaskDetail: { taskId: string };
+  ProcessTaskReport: { taskId: string; processName?: string; unit?: string };
+  ProcessTaskHistory: undefined;
+  ProcessRunOverview: { productionRunId: string };
 };
 
 // ==================== 考勤模块导航参数 ====================
@@ -387,6 +394,12 @@ export type FAManagementStackParamList = {
   ReturnOrderDetail: { returnId: string };
   // 报工审批
   WorkReportApproval: undefined;
+  // 工序制生产页面
+  ProcessTaskList: { status?: string };
+  ProcessTaskDetail: { taskId: string };
+  ProcessTaskReport: { taskId: string; processName?: string; unit?: string };
+  ProcessTaskHistory: undefined;
+  ProcessRunOverview: { productionRunId: string };
   // 餐饮模块 (restaurant mode)
   RecipeList: undefined;
   RecipeDetail: { productTypeId: string; dishName: string };
@@ -494,6 +507,12 @@ export type WSBatchesStackParamList = {
   };
   // AI效率分析 (from BatchDetail context)
   AIAnalysis: { batchId: string };
+  // 工序制生产页面
+  ProcessTaskList: { status?: string };
+  ProcessTaskDetail: { taskId: string };
+  ProcessTaskReport: { taskId: string; processName?: string; unit?: string };
+  ProcessTaskHistory: undefined;
+  ProcessRunOverview: { productionRunId: string };
 };
 
 export type WSWorkersStackParamList = {

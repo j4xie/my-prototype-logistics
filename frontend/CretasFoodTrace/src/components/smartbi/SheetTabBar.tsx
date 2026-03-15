@@ -67,7 +67,7 @@ function TabItem({ sheet, index, isActive, onPress }: TabItemProps): React.React
   }, [isActive, scaleAnim]);
 
   // Determine icon and color based on state
-  const getIconName = (): string => {
+  const getIconName = (): React.ComponentProps<typeof MaterialCommunityIcons>['name'] => {
     if (sheet.hasError) return 'alert-circle';
     if (sheet.isIndex) return 'format-list-bulleted';
     return 'file-document-outline';

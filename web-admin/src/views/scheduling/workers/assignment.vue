@@ -67,9 +67,12 @@ async function loadPlans() {
     });
     if (response.success && response.data) {
       plans.value = response.data.content || [];
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载计划失败');
     }
   } catch (error) {
     console.error('加载计划失败:', error);
+    ElMessage.error('加载计划列表失败');
   }
 }
 
@@ -87,9 +90,12 @@ async function loadWorkers() {
     });
     if (response.success && response.data) {
       availableWorkers.value = response.data.content || [];
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载工人列表失败');
     }
   } catch (error) {
     console.error('加载工人失败:', error);
+    ElMessage.error('加载工人列表失败');
   }
 }
 
@@ -135,6 +141,8 @@ async function handleAssign() {
       ElMessage.success('分配成功');
       assignDialogVisible.value = false;
       handlePlanChange();
+    } else {
+      ElMessage.error(response.message || '分配失败');
     }
   } catch (error) {
     console.error('分配失败:', error);
@@ -157,6 +165,8 @@ async function handleRemoveAssignment(assignment: WorkerAssignment) {
     if (response.success) {
       ElMessage.success('已移除');
       handlePlanChange();
+    } else {
+      ElMessage.error(response.message || '移除失败');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -175,6 +185,8 @@ async function handleCheckIn(assignment: WorkerAssignment) {
     if (response.success) {
       ElMessage.success('签到成功');
       handlePlanChange();
+    } else {
+      ElMessage.error(response.message || '签到失败');
     }
   } catch (error) {
     console.error('签到失败:', error);
@@ -203,6 +215,8 @@ async function handleCheckOut(assignment: WorkerAssignment) {
     if (response.success) {
       ElMessage.success('签退成功');
       handlePlanChange();
+    } else {
+      ElMessage.error(response.message || '签退失败');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -243,6 +257,8 @@ async function handleOptimize() {
       ElMessage.success('AI优化完成');
       optimizeDialogVisible.value = false;
       handlePlanChange();
+    } else {
+      ElMessage.error(response.message || '优化失败');
     }
   } catch (error) {
     console.error('优化失败:', error);

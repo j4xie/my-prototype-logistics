@@ -67,11 +67,12 @@ export const PhotoEvidenceCapture: React.FC<PhotoEvidenceCaptureProps> = ({
 
     try {
       const formData = new FormData();
+      // @ts-expect-error - React Native FormData accepts {uri, name, type} objects, not Blob
       formData.append('file', {
         uri,
         name: `batch_${batchId}_${stage}_${Date.now()}.jpg`,
         type: 'image/jpeg',
-      } as any);
+      });
       formData.append('stage', stage);
 
       const res: any = await apiClient.post(

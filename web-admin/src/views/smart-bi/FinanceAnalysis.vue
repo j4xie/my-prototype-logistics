@@ -37,7 +37,8 @@ import {
   InfoFilled,
   Calendar,
   View,
-  Close
+  Close,
+  Clock
 } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
 import { formatNumber, formatAxisValue } from '@/utils/format-number';
@@ -166,6 +167,7 @@ const selectedDataSource = ref<string>('');
 
 // AI 洞察
 const aiInsights = ref<string[]>([]);
+const insightTimestamp = ref<Date | null>(null);
 
 // Infer insight severity from content keywords for visual differentiation
 function getInsightType(text: string): { icon: typeof WarningFilled; tagType: '' | 'success' | 'warning' | 'danger' | 'info' } {
@@ -173,6 +175,58 @@ function getInsightType(text: string): { icon: typeof WarningFilled; tagType: ''
   if (/下降|亏损|减少|低于|恶化|不足|严重/.test(text)) return { icon: WarningFilled, tagType: 'danger' };
   if (/注意|关注|波动|风险|异常/.test(text)) return { icon: Warning, tagType: 'warning' };
   return { icon: InfoFilled, tagType: 'info' };
+}
+
+function formatInsightTime(date: Date | string) {
+  const d = new Date(date);
+  return `分析生成于 ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/**
+ * Parse insight text and add citation references linking to exploration charts.
+ * Matches chart titles found in explorationCharts against insight sentences.
+ */
+function parseInsightCitations(content: string): Array<{ text: string; chartIndex?: number; chartTitle?: string }> {
+  if (!explorationCharts.value.length) return [{ text: content }];
+
+  // Build keyword patterns from actual chart titles
+  const patterns = explorationCharts.value.map((chart, idx) => ({
+    // Match if the insight contains 2+ chars from the chart title
+    keywords: chart.title.replace(/[()（）\[\]【】]/g, ''),
+    chartIndex: idx,
+    title: chart.title
+  }));
+
+  const sentences = content.split(/(?<=[。；;！!？?\n])/);
+  const result: Array<{ text: string; chartIndex?: number; chartTitle?: string }> = [];
+  const usedCharts = new Set<number>();
+
+  for (const sentence of sentences) {
+    if (!sentence.trim()) continue;
+    let matched = false;
+    for (const p of patterns) {
+      // Check if the insight sentence contains significant keywords from the chart title
+      const titleWords = p.keywords.split(/[\s,，、/]+/).filter(w => w.length >= 2);
+      const matchCount = titleWords.filter(w => sentence.includes(w)).length;
+      if (matchCount >= 1 && !usedCharts.has(p.chartIndex)) {
+        usedCharts.add(p.chartIndex);
+        result.push({ text: sentence, chartIndex: p.chartIndex, chartTitle: p.title });
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      result.push({ text: sentence });
+    }
+  }
+  return result;
+}
+
+function scrollToChart(chartIndex: number) {
+  const chartElements = document.querySelectorAll('.exploration-chart-item');
+  if (chartElements[chartIndex]) {
+    chartElements[chartIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 // 数据预览对话框
@@ -367,10 +421,13 @@ async function buildExplorationCharts(data: Record<string, unknown>[]) {
       }
 
       // Step 2: Build charts for top 4 recommendations
+      // P2 PERF fix: Sample data for chart building to avoid sending full dataset 4x
+      // Charts render identically with 1000 rows; avoids ~4x payload duplication
+      const chartData = data.length > 1000 ? data.slice(0, 1000) : data;
       const topRecs = recResult.recommendations.slice(0, 4);
       const plans = topRecs.map(rec => ({
         chartType: rec.chartType,
-        data: data,
+        data: chartData,
         xField: rec.xField || dataInfo.value.categoricalColumns[0] || '',
         yFields: rec.yFields || dataInfo.value.numericColumns.slice(0, 2),
         title: rec.reason || `${rec.chartType} 图表`,
@@ -554,6 +611,7 @@ async function loadDynamicData(uploadId: number) {
       // 更新 AI 洞察
       if (data.insights) {
         aiInsights.value = data.insights;
+        insightTimestamp.value = new Date();
       }
 
       // 更新 KPI 数据 (从 kpiCards 提取)
@@ -1385,7 +1443,21 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
     tooltip: {
       trigger: config.tooltip?.trigger || 'axis',
       confine: true,
-      axisPointer: config.tooltip?.axisPointer || { type: 'shadow' }
+      axisPointer: config.tooltip?.axisPointer || { type: 'shadow' },
+      formatter: (params: unknown) => {
+        const items = Array.isArray(params) ? params : [params];
+        if (items.length === 0) return '';
+        const title = (items[0] as Record<string, unknown>).axisValueLabel || (items[0] as Record<string, unknown>).name || '';
+        const lines = items.map((p: Record<string, unknown>) => {
+          const val = Number(p.value ?? 0);
+          const name = String(p.seriesName || '');
+          const color = String((p.color as string) || '#333');
+          const isRate = name.includes('率') || name.includes('rate') || name.includes('Rate');
+          const formatted = isRate ? val.toFixed(1) + '%' : formatAxisValue(val);
+          return `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px;"></span>${name}: <b>${formatted}</b>`;
+        });
+        return `<div style="font-weight:600;margin-bottom:4px">${title}</div>${lines.join('<br/>')}`;
+      }
     },
     grid: {
       left: '3%',
@@ -1414,11 +1486,26 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
 
   // 设置 X 轴
   if (config.xAxis) {
+    const xData = config.xAxis.data || [];
+    const needsRotation = xData.length > 6 || xData.some((s: string) => String(s).length > 8);
     option.xAxis = {
       type: config.xAxis.type as 'category' | 'value' || 'category',
       name: config.xAxis.name,
-      data: config.xAxis.data
+      data: xData,
+      axisLabel: {
+        rotate: needsRotation ? 30 : 0,
+        fontSize: 11,
+        interval: 0
+      }
     };
+    // Add dataZoom for dense data
+    if (xData.length > 12) {
+      option.dataZoom = [
+        { type: 'inside', start: 0, end: Math.min(100, Math.round(12 / xData.length * 100)) },
+        { type: 'slider', start: 0, end: Math.min(100, Math.round(12 / xData.length * 100)), bottom: 5 }
+      ];
+      (option.grid as Record<string, unknown>).bottom = '20%';
+    }
   }
 
   // 设置 Y 轴
@@ -1664,6 +1751,8 @@ function closeDataPreview() {
 }
 
 onUnmounted(() => {
+  if (financeAbortController) financeAbortController.abort();
+  if (financeWatchTimer) clearTimeout(financeWatchTimer);
   mainChart?.dispose();
 });
 </script>
@@ -2019,6 +2108,9 @@ onUnmounted(() => {
           <el-icon><TrendCharts /></el-icon>
           <span>AI 智能洞察</span>
           <el-tag type="success" size="small" style="margin-left: 8px">来自上传数据</el-tag>
+          <span v-if="insightTimestamp" class="insight-header-timestamp">
+            生成于 {{ insightTimestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }}
+          </span>
         </div>
       </template>
       <div class="insight-list" role="list">
@@ -2031,7 +2123,26 @@ onUnmounted(() => {
           <el-tag :type="getInsightType(insight).tagType" size="small" style="flex-shrink:0">
             <el-icon><component :is="getInsightType(insight).icon" /></el-icon>
           </el-tag>
-          <span>{{ insight }}</span>
+          <span class="insight-content">
+            <template v-for="(seg, si) in parseInsightCitations(insight)" :key="si">
+              <span
+                v-if="seg.chartIndex != null"
+                class="insight-citation"
+                :title="'来源: ' + seg.chartTitle"
+                @click="scrollToChart(seg.chartIndex)"
+              >{{ seg.text }}<sup>[{{ seg.chartIndex + 1 }}]</sup></span>
+              <span v-else>{{ seg.text }}</span>
+            </template>
+          </span>
+        </div>
+        <div class="insight-meta" v-if="insightTimestamp">
+          <el-icon><Clock /></el-icon>
+          <span class="insight-timestamp">{{ formatInsightTime(insightTimestamp) }}</span>
+          <span class="insight-citation-legend" v-if="explorationCharts.length > 0">
+            <span v-for="(chart, ci) in explorationCharts" :key="ci" class="citation-ref" @click="scrollToChart(ci)">
+              [{{ ci + 1 }}] {{ chart.title }}
+            </span>
+          </span>
         </div>
       </div>
     </el-card>
@@ -2475,6 +2586,13 @@ onUnmounted(() => {
   }
 }
 
+.insight-header-timestamp {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--el-text-color-secondary, #909399);
+  font-weight: 400;
+}
+
 .insight-list {
   .insight-item {
     display: flex;
@@ -2493,6 +2611,61 @@ onUnmounted(() => {
     &:last-child {
       border-bottom: none;
     }
+
+    .insight-content {
+      flex: 1;
+      min-width: 200px;
+    }
+  }
+}
+
+.insight-meta {
+  margin-top: 12px;
+  padding: 10px 16px 0;
+  border-top: 1px solid var(--el-border-color-lighter, #f0f2f5);
+  font-size: 12px;
+  color: var(--el-text-color-secondary, #909399);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+
+  .insight-timestamp {
+    margin-right: 12px;
+  }
+
+  .insight-citation-legend {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+    flex-wrap: wrap;
+
+    .citation-ref {
+      cursor: pointer;
+      color: var(--el-color-primary, #409EFF);
+      transition: opacity 0.2s;
+
+      &:hover {
+        opacity: 0.7;
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+.insight-citation {
+  cursor: pointer;
+  color: var(--el-color-primary, #409EFF);
+  transition: color 0.2s;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  sup {
+    font-size: 10px;
+    margin-left: 1px;
+    font-weight: 600;
   }
 }
 

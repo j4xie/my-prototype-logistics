@@ -1,0 +1,93 @@
+# 能耗成本占比偏高 — 操作建议手册
+#
+# 触发条件: energy_cost_ratio > benchmark.range[1]
+# 严重程度: 超过上限3个百分点以内=中等, 超过3+=严重
+
+diagnosis_code: energy_cost_ratio_high
+trigger_metric: energy_cost_ratio
+trigger_condition: "actual > range_high"
+display_name: "能耗成本占比偏高"
+
+severity_levels:
+  moderate:
+    condition: "actual - range_high <= 3"
+    label: "中等偏高"
+    urgency: "建议优化"
+  severe:
+    condition: "actual - range_high > 3"
+    label: "严重偏高"
+    urgency: "立即排查"
+
+diagnosis_checklist:
+  - question: "能耗成本是电费为主还是水/气/蒸汽为主？"
+    if_electricity: "聚焦电机、制冷、空压机等高耗电设备"
+    if_steam: "聚焦锅炉效率和管道保温"
+  - question: "是否有能耗分项计量(按设备/产线/工序)？"
+    if_no: "先安装分项计量表，无法改善你无法测量的东西"
+  - question: "设备是否有节能型号可替代？"
+    if_yes: "核算投资回收期(通常2-3年回本)"
+
+action_plans:
+  - id: 1
+    name: "能耗分项计量与监测"
+    priority: "P0"
+    actions:
+      - "安装关键设备的分项电表/水表/气表"
+      - "建立能耗基线(单位产品能耗 kWh/吨)"
+      - "建立能耗实时监控看板，异常自动报警"
+      - "月度能耗帕累托分析，找出TOP5高耗能设备"
+    expected_impact: "透明化后自然减少5-10%浪费"
+
+  - id: 2
+    name: "高耗能设备优化"
+    priority: "P0"
+    actions:
+      - "制冷系统：检查冷凝器清洁度、制冷剂充注量、蒸发温度设定"
+      - "空压机：排查泄漏(典型泄漏损失20-30%)、优化压力设定"
+      - "电机：评估变频驱动(VFD)改造的经济性"
+      - "照明：LED替换(车间照明能耗可降60-70%)"
+    expected_impact: "单项设备能耗降低15-30%"
+
+  - id: 3
+    name: "生产排程节能"
+    priority: "P1"
+    actions:
+      - "避开电价高峰时段生产(峰谷电价差可达3倍)"
+      - "批量生产减少设备启停频次(启动瞬间能耗高)"
+      - "连续生产产品规格相近的批次(减少温度变化)"
+      - "合理安排周末/夜间生产(部分地区谷电更便宜)"
+    expected_impact: "电费成本降低10-20%(不降能耗只降费用)"
+
+sub_sector_notes:
+  速冻食品:
+    - "制冷系统是最大能耗项(50-70%电费)——冷凝器每月清洗一次"
+    - "速冻隧道 vs 螺旋速冻机——后者能效比高20-30%"
+    - "冷库门帘/自动门改造可减少冷量损失15%"
+    - "能耗基线参考：速冻食品约120-180 kWh/吨"
+  饮料:
+    - "吹瓶机+灌装机+贴标机三大耗电环节"
+    - "热灌装 vs 无菌冷灌装——冷灌装能耗低40%但设备投资高"
+    - "纯水/RO系统的水回收率影响水费(目标>75%回收)"
+  乳制品:
+    - "UHT灭菌+冷链存储是两大能耗点"
+    - "热回收系统可回收UHT灭菌50-60%的热量"
+    - "冷库温度精细管理：2-6°C(鲜奶) vs -18°C(冰品)分区管理"
+  肉制品:
+    - "冷链(冷库+冷藏车)是最大能耗——占总能耗40-60%"
+    - "蒸煮/烟熏环节的热能回收可降低蒸汽消耗"
+    - "速冻 vs 冷鲜的能耗差异：速冻高3-5倍"
+
+decision_tree:
+  root: "能耗成本占比是否超过子行业上限？"
+  yes:
+    question: "是否有分项计量数据？"
+    no:
+      action: "首先安装：能耗分项计量与监测(P0)"
+    yes:
+      question: "TOP1耗能设备是否可优化？"
+      yes:
+        action: "高耗能设备优化(P0) + 排程节能(P1)"
+      no:
+        action: "排程节能(P1) + 评估节能改造投资"
+  no:
+    action: "能耗达标，持续监控并寻找节能改造机会"

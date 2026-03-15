@@ -108,15 +108,15 @@ export function RecipeListScreen() {
             {Object.entries(grouped).map(([dishName, items]) => (
               <TouchableOpacity
                 key={dishName}
-                onPress={() => navigation.navigate('RecipeDetail', { productTypeId: items[0].productTypeId, dishName })}
+                onPress={() => navigation.navigate('RecipeDetail', { productTypeId: items[0]?.productTypeId ?? '', dishName })}
               >
                 <Surface style={styles.card} elevation={1}>
                   <View style={styles.cardHeader}>
                     <MaterialCommunityIcons name="food" size={20} color={theme.colors.primary} />
                     <Text style={styles.dishName}>{dishName}</Text>
-                    <View style={[styles.badge, { backgroundColor: items[0].isActive ? '#e8f5e9' : '#fafafa' }]}>
-                      <Text style={{ color: items[0].isActive ? '#388e3c' : '#999', fontSize: 12 }}>
-                        {items[0].isActive ? t('recipe.list.active') : t('recipe.list.inactive')}
+                    <View style={[styles.badge, { backgroundColor: items[0]?.isActive ? '#e8f5e9' : '#fafafa' }]}>
+                      <Text style={{ color: items[0]?.isActive ? '#388e3c' : '#999', fontSize: 12 }}>
+                        {items[0]?.isActive ? t('recipe.list.active') : t('recipe.list.inactive')}
                       </Text>
                     </View>
                   </View>

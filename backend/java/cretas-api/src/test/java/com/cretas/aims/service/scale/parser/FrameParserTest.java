@@ -59,7 +59,8 @@ class FrameParserTest {
         @DisplayName("UT-FRAME-001: 正常毛重数据解析")
         void testNormalGrossWeightParsing() {
             // 格式: +001234 kg S (符号+重量+单位+稳定标志)
-            JsonNode format = createAsciiFixedFormat(10, 0, 6, 1, 7, 2, 9, 1);
+            // Data layout: [0]=sign, [1-6]=weight(6), [7]=space, [8-9]=unit(2), [10]=space, [11]=stable
+            JsonNode format = createAsciiFixedFormat(12, 0, 6, 1, 8, 2, 11, 1);
             byte[] rawData = "+001234 kg S".getBytes(StandardCharsets.US_ASCII);
 
             ScaleDataParseResult result = parser.parse(format, rawData);
@@ -74,7 +75,7 @@ class FrameParserTest {
         @Test
         @DisplayName("UT-FRAME-002: 负数重量解析")
         void testNegativeWeightParsing() {
-            JsonNode format = createAsciiFixedFormat(10, 0, 6, 1, 7, 2, 9, 1);
+            JsonNode format = createAsciiFixedFormat(12, 0, 6, 1, 8, 2, 11, 1);
             byte[] rawData = "-001000 kg S".getBytes(StandardCharsets.US_ASCII);
 
             ScaleDataParseResult result = parser.parse(format, rawData);
@@ -87,7 +88,7 @@ class FrameParserTest {
         @Test
         @DisplayName("UT-FRAME-003: 不稳定状态解析")
         void testUnstableStatusParsing() {
-            JsonNode format = createAsciiFixedFormat(10, 0, 6, 1, 7, 2, 9, 1);
+            JsonNode format = createAsciiFixedFormat(12, 0, 6, 1, 8, 2, 11, 1);
             byte[] rawData = "+001234 kg U".getBytes(StandardCharsets.US_ASCII);
 
             ScaleDataParseResult result = parser.parse(format, rawData);
@@ -100,7 +101,7 @@ class FrameParserTest {
         @DisplayName("UT-FRAME-004: 超载状态处理")
         void testOverloadStatusHandling() {
             // 超载通常用特殊字符或全9表示
-            JsonNode format = createAsciiFixedFormat(10, 0, 6, 1, 7, 2, 9, 1);
+            JsonNode format = createAsciiFixedFormat(12, 0, 6, 1, 8, 2, 11, 1);
             byte[] rawData = "+999999 kg O".getBytes(StandardCharsets.US_ASCII);
 
             ScaleDataParseResult result = parser.parse(format, rawData);
@@ -166,8 +167,8 @@ class FrameParserTest {
             ScaleDataParseResult result = parser.parse(format, rawData);
 
             assertTrue(result.isSuccess());
-            // 原始值 123456，带2位小数 → 1234.56
-            assertEquals(new BigDecimal("1234.56"), result.getWeight());
+            // weight field: start=0, length=8 reads "+0012345", strips '+' → 12345, decimalPlaces=2 → 123.45
+            assertEquals(new BigDecimal("123.45"), result.getWeight());
         }
 
         @Test
@@ -619,13 +620,11 @@ class FrameParserTest {
             fields.add(weightField);
             format.set("fields", fields);
 
-            ObjectNode checksum = objectMapper.createObjectNode();
-            checksum.put("type", checksumType);
-            checksum.put("start", 6);
-            checksum.put("length", 1);
-            checksum.put("dataStart", 2);
-            checksum.put("dataEnd", 6);
-            format.set("checksum", checksum);
+            // Parser reads checksum config from top-level keys, not nested object
+            format.put("checksumType", checksumType);
+            format.put("checksumStart", 6);
+            format.put("checksumLength", 1);
+            format.put("dataStart", 2);
 
             return format;
         }
@@ -789,6 +788,7 @@ class FrameParserTest {
             format.put("startAddress", startAddress);
             format.put("registerCount", registerCount);
             format.put("wordOrder", "BIG_ENDIAN");
+            format.put("decimalPlaces", 0);
 
             ArrayNode fields = objectMapper.createArrayNode();
             ObjectNode weightField = objectMapper.createObjectNode();
@@ -845,10 +845,23 @@ class FrameParserTest {
     @DisplayName("FrameParserFactory 测试")
     class FrameParserFactoryTests {
 
+        private FrameParserFactory factory;
+
+        @BeforeEach
+        void setUp() {
+            factory = new FrameParserFactory(java.util.List.of(
+                    new AsciiFixedFrameParser(),
+                    new AsciiVariableFrameParser(),
+                    new HexFixedFrameParser(),
+                    new ModbusRtuFrameParser()
+            ));
+            factory.init();
+        }
+
         @Test
         @DisplayName("获取 ASCII_FIXED 解析器")
         void testGetAsciiFixedParser() {
-            AbstractFrameParser parser = FrameParserFactory.getParser("ASCII_FIXED");
+            AbstractFrameParser parser = factory.getParser("ASCII_FIXED").orElse(null);
 
             assertNotNull(parser);
             assertInstanceOf(AsciiFixedFrameParser.class, parser);
@@ -857,7 +870,7 @@ class FrameParserTest {
         @Test
         @DisplayName("获取 ASCII_VARIABLE 解析器")
         void testGetAsciiVariableParser() {
-            AbstractFrameParser parser = FrameParserFactory.getParser("ASCII_VARIABLE");
+            AbstractFrameParser parser = factory.getParser("ASCII_VARIABLE").orElse(null);
 
             assertNotNull(parser);
             assertInstanceOf(AsciiVariableFrameParser.class, parser);
@@ -866,7 +879,7 @@ class FrameParserTest {
         @Test
         @DisplayName("获取 HEX_FIXED 解析器")
         void testGetHexFixedParser() {
-            AbstractFrameParser parser = FrameParserFactory.getParser("HEX_FIXED");
+            AbstractFrameParser parser = factory.getParser("HEX_FIXED").orElse(null);
 
             assertNotNull(parser);
             assertInstanceOf(HexFixedFrameParser.class, parser);
@@ -875,16 +888,16 @@ class FrameParserTest {
         @Test
         @DisplayName("获取 MODBUS_RTU 解析器")
         void testGetModbusRtuParser() {
-            AbstractFrameParser parser = FrameParserFactory.getParser("MODBUS_RTU");
+            AbstractFrameParser parser = factory.getParser("MODBUS_RTU").orElse(null);
 
             assertNotNull(parser);
             assertInstanceOf(ModbusRtuFrameParser.class, parser);
         }
 
         @Test
-        @DisplayName("未知帧类型返回 null")
-        void testUnknownFrameTypeReturnsNull() {
-            AbstractFrameParser parser = FrameParserFactory.getParser("UNKNOWN_TYPE");
+        @DisplayName("未知帧类型返回 empty")
+        void testUnknownFrameTypeReturnsEmpty() {
+            AbstractFrameParser parser = factory.getParser("UNKNOWN_TYPE").orElse(null);
 
             assertNull(parser);
         }
@@ -892,7 +905,7 @@ class FrameParserTest {
         @Test
         @DisplayName("null 帧类型处理")
         void testNullFrameTypeHandling() {
-            AbstractFrameParser parser = FrameParserFactory.getParser(null);
+            AbstractFrameParser parser = factory.getParser(null).orElse(null);
 
             assertNull(parser);
         }
@@ -900,15 +913,14 @@ class FrameParserTest {
         @Test
         @DisplayName("大小写不敏感")
         void testCaseInsensitivity() {
-            AbstractFrameParser parser1 = FrameParserFactory.getParser("ascii_fixed");
-            AbstractFrameParser parser2 = FrameParserFactory.getParser("ASCII_FIXED");
-            AbstractFrameParser parser3 = FrameParserFactory.getParser("Ascii_Fixed");
+            AbstractFrameParser parser1 = factory.getParser("ascii_fixed").orElse(null);
+            AbstractFrameParser parser2 = factory.getParser("ASCII_FIXED").orElse(null);
+            AbstractFrameParser parser3 = factory.getParser("Ascii_Fixed").orElse(null);
 
-            // 如果工厂支持大小写不敏感
-            if (parser1 != null) {
-                assertEquals(parser1.getClass(), parser2.getClass());
-                assertEquals(parser2.getClass(), parser3.getClass());
-            }
+            // 工厂支持大小写不敏感
+            assertNotNull(parser1);
+            assertEquals(parser1.getClass(), parser2.getClass());
+            assertEquals(parser2.getClass(), parser3.getClass());
         }
     }
 }

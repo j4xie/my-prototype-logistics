@@ -26,6 +26,8 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
 const { width: screenWidth } = Dimensions.get('window');
 
 // Types
@@ -136,7 +138,7 @@ const StateMachineDesignerScreen: React.FC = () => {
     }
   };
 
-  const getTriggerIcon = (type: TriggerAction['type']) => {
+  const getTriggerIcon = (type: TriggerAction['type']): MCIconName => {
     switch (type) {
       case 'function': return 'function';
       case 'notification': return 'bell-outline';
@@ -202,19 +204,19 @@ const StateMachineDesignerScreen: React.FC = () => {
   const renderTabs = () => (
     <View style={styles.tabContainer}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {[
-          { key: 'diagram', label: '状态流图', icon: 'graph-outline' },
-          { key: 'states', label: '状态列表', icon: 'format-list-bulleted' },
-          { key: 'transitions', label: '转换规则', icon: 'swap-horizontal' },
-          { key: 'triggers', label: '触发动作', icon: 'lightning-bolt' },
-        ].map((tab) => (
+        {([
+          { key: 'diagram', label: '状态流图', icon: 'graph-outline' as const },
+          { key: 'states', label: '状态列表', icon: 'format-list-bulleted' as const },
+          { key: 'transitions', label: '转换规则', icon: 'swap-horizontal' as const },
+          { key: 'triggers', label: '触发动作', icon: 'lightning-bolt' as const },
+        ] as const).map((tab) => (
           <TouchableOpacity
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.activeTab]}
             onPress={() => setActiveTab(tab.key as TabType)}
           >
             <MaterialCommunityIcons
-              name={tab.icon as any}
+              name={tab.icon}
               size={18}
               color={activeTab === tab.key ? '#1890ff' : '#8c8c8c'}
             />
@@ -350,7 +352,7 @@ const StateMachineDesignerScreen: React.FC = () => {
               <View style={styles.triggerInfo}>
                 <View style={styles.triggerIconContainer}>
                   <MaterialCommunityIcons
-                    name={getTriggerIcon(trigger.type) as any}
+                    name={getTriggerIcon(trigger.type)}
                     size={20}
                     color="#1890ff"
                   />

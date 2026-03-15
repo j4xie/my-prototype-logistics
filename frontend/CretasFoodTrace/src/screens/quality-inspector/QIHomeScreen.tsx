@@ -88,12 +88,17 @@ export default function QIHomeScreen() {
 
   const handleStartInspection = () => {
     if (nextBatch) {
-      navigation.navigate('QIForm', {
-        batchId: nextBatch.id,
-        batchNumber: nextBatch.batchNumber,
+      navigation.navigate('QIInspectTab', {
+        screen: 'QIForm',
+        params: {
+          batchId: nextBatch.id,
+          batchNumber: nextBatch.batchNumber,
+        },
       });
     } else {
-      navigation.navigate('QIInspectList');
+      navigation.navigate('QIInspectTab', {
+        screen: 'QIInspectList',
+      });
     }
   };
 
@@ -111,12 +116,12 @@ export default function QIHomeScreen() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: QI_COLORS.background }}>
         <MaterialCommunityIcons name="cloud-off-outline" size={48} color="#C0C4CC" />
-        <Text style={{ color: '#606266', marginTop: 12, fontSize: 14 }}>加载失败，请检查网络</Text>
+        <Text style={{ color: '#606266', marginTop: 12, fontSize: 14 }}>{t('analysis.loadFailed')}</Text>
         <TouchableOpacity
           style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: '#EF4444', borderRadius: 6 }}
           onPress={() => loadData()}
         >
-          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>重试</Text>
+          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>{t('common:retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -190,7 +195,7 @@ export default function QIHomeScreen() {
         </View>
         <View style={[styles.statCard, { backgroundColor: '#E3F2FD' }]}>
           <Text style={[styles.statValue, { color: '#1565C0' }]}>
-            {loading ? '-' : '1'}
+            {statistics?.today?.inspecting ?? '-'}
           </Text>
           <Text style={styles.statLabel}>{t('home.inProgress')}</Text>
         </View>
@@ -227,10 +232,14 @@ export default function QIHomeScreen() {
           <Text style={styles.metricTitle}>{t('home.avgInspectionTime')}</Text>
           <View style={styles.timeDisplay}>
             <Ionicons name="time-outline" size={24} color={QI_COLORS.secondary} />
-            <Text style={styles.timeValue}>8.5</Text>
+            <Text style={styles.timeValue}>
+              {statistics?.today?.avgInspectionMinutes ?? '-'}
+            </Text>
             <Text style={styles.timeUnit}>{t('home.minutesPerBatch')}</Text>
           </View>
-          <Text style={styles.metricSubText}>{t('home.improvedFromYesterday', { percent: 12 })}</Text>
+          <Text style={styles.metricSubText}>
+            {t('home.inspectedCount', { count: statistics?.today?.total ?? 0 })}
+          </Text>
         </View>
       </View>
 
@@ -241,7 +250,7 @@ export default function QIHomeScreen() {
           {isScreenEnabled('QualityInspection') && (
           <TouchableOpacity
             style={styles.actionItem}
-            onPress={() => navigation.navigate('QIScan')}
+            onPress={() => navigation.navigate('QIInspectTab', { screen: 'QIScan' })}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#E8F5E9' }]}>
               <Ionicons name="scan" size={24} color={QI_COLORS.primary} />
@@ -253,7 +262,7 @@ export default function QIHomeScreen() {
           {isScreenEnabled('QualityInspection') && (
           <TouchableOpacity
             style={styles.actionItem}
-            onPress={() => navigation.navigate('QIVoice', { batchId: '', batchNumber: '' })}
+            onPress={() => navigation.navigate('QIInspectTab', { screen: 'QIVoice', params: { batchId: '', batchNumber: '' } })}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#E3F2FD' }]}>
               <Ionicons name="mic" size={24} color={QI_COLORS.secondary} />
@@ -264,7 +273,7 @@ export default function QIHomeScreen() {
 
           <TouchableOpacity
             style={styles.actionItem}
-            onPress={() => navigation.navigate('QIRecords')}
+            onPress={() => navigation.navigate('QIRecordsTab', { screen: 'QIRecords' })}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#FFF3E0' }]}>
               <Ionicons name="document-text" size={24} color="#E65100" />
@@ -275,7 +284,7 @@ export default function QIHomeScreen() {
           {isScreenEnabled('QualityAnalysis') && (
           <TouchableOpacity
             style={styles.actionItem}
-            onPress={() => navigation.navigate('QIAnalysis')}
+            onPress={() => navigation.navigate('QIAnalysisTab', { screen: 'QIAnalysis' })}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#F3E5F5' }]}>
               <Ionicons name="bar-chart" size={24} color="#7B1FA2" />

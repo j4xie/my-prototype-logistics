@@ -58,9 +58,13 @@ async function loadData(silent = false) {
 
     if (dashboardRes.success && dashboardRes.data) {
       dashboard.value = dashboardRes.data;
+    } else if (!dashboardRes.success) {
+      if (!silent) ElMessage.error(dashboardRes.message || '加载仪表盘失败');
     }
     if (alertsRes.success && alertsRes.data) {
       alerts.value = alertsRes.data;
+    } else if (!alertsRes.success) {
+      if (!silent) ElMessage.error(alertsRes.message || '加载告警失败');
     }
     lastUpdated.value = new Date();
   } catch (error) {

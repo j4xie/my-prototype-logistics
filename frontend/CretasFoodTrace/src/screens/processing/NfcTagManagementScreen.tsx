@@ -25,7 +25,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import {
   isNfcModuleInstalled,
@@ -295,7 +295,7 @@ export default function NfcTagManagementScreen() {
       {/* NFC Status Banner */}
       <View style={[styles.statusBanner, nfcAvailable ? styles.bannerOk : styles.bannerWarn]}>
         <MaterialCommunityIcons
-          name={nfcAvailable ? 'nfc' : 'nfc-off'}
+          name={nfcAvailable ? 'nfc' : ('nfc-off' as 'nfc')}
           size={20}
           color={nfcAvailable ? '#10B981' : '#F59E0B'}
         />

@@ -50,6 +50,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载质检记录失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -148,10 +150,14 @@ function showDetail(row: any) {
       </div>
 
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
-        <el-table-column prop="inspectionNumber" label="质检编号" width="160" />
-        <el-table-column prop="batchNumber" label="批次号" width="160" />
-        <el-table-column prop="productTypeName" label="产品类型" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="inspectorName" label="质检员" width="100" />
+        <el-table-column label="质检编号" width="160">
+          <template #default="{ row }">
+            {{ row.id ? row.id.substring(0, 8).toUpperCase() : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="notes" label="批次/备注" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="sampleSize" label="抽样数" width="90" align="center" />
+        <el-table-column prop="inspectorId" label="质检员ID" width="100" align="center" />
         <el-table-column prop="result" label="检测结果" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.result === 'PASSED' ? 'success' : 'danger'" size="small">
@@ -159,8 +165,13 @@ function showDetail(row: any) {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="score" label="评分" width="80" align="center" />
-        <el-table-column prop="createdAt" label="检测时间" width="180" />
+        <el-table-column prop="qualityGrade" label="等级" width="70" align="center" />
+        <el-table-column label="合格率" width="90" align="center">
+          <template #default="{ row }">
+            {{ row.passRate != null ? row.passRate.toFixed(1) + '%' : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="inspectionDate" label="检测日期" width="130" />
         <el-table-column label="操作" width="120" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="showDetail(row)">查看详情</el-button>
@@ -203,18 +214,18 @@ function showDetail(row: any) {
     <!-- 详情抽屉 -->
     <el-drawer v-model="detailVisible" title="质检记录详情" size="420px">
       <el-descriptions :column="1" border v-if="detailData">
-        <el-descriptions-item label="质检编号">{{ detailData.inspectionNumber || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="批次号">{{ detailData.batchNumber || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="产品类型">{{ detailData.productTypeName || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="质检员">{{ detailData.inspectorName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="质检编号">{{ detailData.id ? detailData.id.substring(0, 8).toUpperCase() : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="批次/备注">{{ detailData.notes || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="抽样数">{{ detailData.sampleSize ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="质检员ID">{{ detailData.inspectorId ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="检测结果">
           <el-tag :type="detailData.result === 'PASSED' ? 'success' : 'danger'" size="small">
             {{ detailData.result === 'PASSED' ? '合格' : '不合格' }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="评分">{{ detailData.score ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="检测时间">{{ detailData.createdAt || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="备注">{{ detailData.notes || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="等级">{{ detailData.qualityGrade || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="合格率">{{ detailData.passRate != null ? detailData.passRate.toFixed(1) + '%' : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="检测日期">{{ detailData.inspectionDate || '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-drawer>
   </div>

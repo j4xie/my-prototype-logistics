@@ -135,6 +135,36 @@ const isExportingPDF = ref(false);
 const isExportingExcel = ref(false);
 const exportStageText = ref('');
 
+// Export progress feedback
+const exportProgress = ref({
+  visible: false,
+  currentStep: 0,
+  steps: [] as string[],
+  percentage: 0,
+});
+const EXPORT_STEPS: Record<string, string[]> = {
+  ppt: ['准备图表数据', '渲染图表截图', '生成幻灯片', '打包下载'],
+  pdf: ['准备页面内容', '渲染图表', '生成PDF', '下载文件'],
+  excel: ['整理数据表', '格式化单元格', '生成文件', '下载'],
+};
+function startExportProgress(type: string) {
+  exportProgress.value.steps = EXPORT_STEPS[type] || [];
+  exportProgress.value.currentStep = 0;
+  exportProgress.value.percentage = 0;
+  exportProgress.value.visible = true;
+}
+async function advanceExportStep() {
+  const ep = exportProgress.value;
+  ep.currentStep++;
+  ep.percentage = Math.round((ep.currentStep / ep.steps.length) * 100);
+  await new Promise(r => setTimeout(r, 300));
+}
+function finishExportProgress() {
+  exportProgress.value.percentage = 100;
+  exportProgress.value.currentStep = exportProgress.value.steps.length;
+  setTimeout(() => { exportProgress.value.visible = false; }, 600);
+}
+
 // Presentation mode
 const isPresentationVisible = ref(false);
 
@@ -225,8 +255,30 @@ const endMonth = computed(() => {
 
 const charts = computed(() => dashboardResponse.value?.charts ?? []);
 
+// P1 PERF fix: Pre-index charts by type to avoid O(n) find() per template access (~36+ calls per render)
+const chartMap = computed(() => {
+  const map = new Map<string, ChartResult>();
+  for (const c of charts.value) map.set(c.chartType, c);
+  return map;
+});
+
 function getChart(chartType: string): ChartResult | null {
-  return charts.value.find(c => c.chartType === chartType) ?? null;
+  return chartMap.value.get(chartType) ?? null;
+}
+
+// P1 PERF fix: Pre-compute anomaly detection results to avoid recalculation in template
+const anomalyMap = computed(() => {
+  const map = new Map<string, string[]>();
+  for (const [type, chart] of chartMap.value) {
+    if (chart.kpis?.length) {
+      map.set(type, detectAnomalies(chart.kpis));
+    }
+  }
+  return map;
+});
+
+function getAnomalies(chartType: string): string[] {
+  return anomalyMap.value.get(chartType) ?? [];
 }
 
 const chartTypes = [
@@ -375,6 +427,8 @@ async function generate(useDemo?: boolean) {
       // Reveal all chart cards with staggered fade-in
       nextTick(() => revealAllCharts());
       ElMessage.success(`成功生成 ${resp.successCount} 个图表`);
+      // Auto-trigger AI analysis for all charts
+      nextTick(() => autoAnalyzeAllCharts());
     } else {
       ElMessage.error('图表生成失败，请检查数据源');
     }
@@ -386,21 +440,46 @@ async function generate(useDemo?: boolean) {
   }
 }
 
+/**
+ * Auto-analyze all charts after dashboard generation.
+ * Requests run with concurrency limit of 3 to avoid API overload.
+ */
+async function autoAnalyzeAllCharts() {
+  const allChartTypes = charts.value.map(c => c.chartType);
+  if (!allChartTypes.length) return;
+
+  const CONCURRENCY = 3;
+  let idx = 0;
+
+  async function next(): Promise<void> {
+    while (idx < allChartTypes.length) {
+      const ct = allChartTypes[idx++];
+      if (analysisByType.value[ct]) continue; // already loaded
+      await requestAnalysis(ct);
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(CONCURRENCY, allChartTypes.length) }, () => next());
+  await Promise.allSettled(workers);
+}
+
+function forceRequestAnalysis(chartType: string) {
+  // Clear existing result to force re-fetch
+  delete analysisByType.value[chartType];
+  requestAnalysis(chartType);
+}
+
 async function requestAnalysis(chartType: string) {
   const chart = getChart(chartType);
   if (!chart) return;
 
-  // Toggle if already loaded
-  if (analysisByType.value[chartType]) {
-    analysisExpandedByType.value[chartType] = !analysisExpandedByType.value[chartType];
-    return;
-  }
+  // Skip if already loaded
+  if (analysisByType.value[chartType]) return;
 
   // Prevent duplicate requests while loading
   if (analysisLoadingByType.value[chartType]) return;
 
   analysisLoadingByType.value[chartType] = true;
-  analysisExpandedByType.value[chartType] = true;
 
   try {
     const resp = await analyzeChart({
@@ -495,12 +574,15 @@ async function handleExportPPT() {
   }
 
   isExportingPPT.value = true;
+  startExportProgress('ppt');
   try {
     exportStageText.value = '正在收集图表数据...';
+    await advanceExportStep();
     await nextTick();
     const chartImages = collectChartImages();
     const analysisResults: Record<string, string> = { ...analysisByType.value };
 
+    await advanceExportStep();
     exportStageText.value = '正在生成PPT文件...';
     const blob = await exportPPT({
       upload_id: uploadId.value ?? undefined,
@@ -510,9 +592,10 @@ async function handleExportPPT() {
       end_month: endMonth.value,
       chart_images: chartImages,
       analysis_results: analysisResults,
-      company_name: '白垩纪食品',
+      company_name: '白垩纪科技',
     });
 
+    await advanceExportStep();
     if (blob) {
       exportStageText.value = '正在下载文件...';
       const url = URL.createObjectURL(blob);
@@ -521,6 +604,7 @@ async function handleExportPPT() {
       link.download = `财务分析看板_${currentYear.value}.pptx`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      await advanceExportStep();
       ElMessage.success('PPT导出成功');
     } else {
       ElMessage.error('PPT导出失败，请检查服务状态');
@@ -531,6 +615,7 @@ async function handleExportPPT() {
   } finally {
     isExportingPPT.value = false;
     exportStageText.value = '';
+    finishExportProgress();
   }
 }
 
@@ -540,21 +625,25 @@ async function handleExportPDF() {
     return;
   }
   isExportingPDF.value = true;
+  startExportProgress('pdf');
   try {
     exportStageText.value = '正在收集图表数据...';
+    await advanceExportStep();
     await nextTick();
     const chartImages = collectChartImages();
     const analysisResults: Record<string, string> = { ...analysisByType.value };
+    await advanceExportStep();
     exportStageText.value = '正在生成PDF报告...';
     const blob = await exportPDF({
       chart_images: chartImages,
       analysis_results: analysisResults,
-      company_name: '白垩纪食品',
+      company_name: '白垩纪科技',
       year: currentYear.value,
       period_type: periodType.value,
       start_month: startMonth.value,
       end_month: endMonth.value,
     });
+    await advanceExportStep();
     if (blob) {
       exportStageText.value = '正在下载文件...';
       const url = URL.createObjectURL(blob);
@@ -563,6 +652,7 @@ async function handleExportPDF() {
       link.download = `财务分析报告_${currentYear.value}.pdf`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      await advanceExportStep();
       ElMessage.success('PDF导出成功');
     } else {
       ElMessage.error('PDF导出失败，请检查服务状态');
@@ -573,6 +663,7 @@ async function handleExportPDF() {
   } finally {
     isExportingPDF.value = false;
     exportStageText.value = '';
+    finishExportProgress();
   }
 }
 
@@ -582,8 +673,10 @@ async function handleExportExcel() {
     return;
   }
   isExportingExcel.value = true;
+  startExportProgress('excel');
   try {
     exportStageText.value = '正在整理数据...';
+    await advanceExportStep();
     const charts = dashboardResponse.value.charts.map(c => ({
       chartType: c.chartType,
       title: c.title,
@@ -591,16 +684,18 @@ async function handleExportExcel() {
       tableData: c.tableData,
     }));
     const analysisResults: Record<string, string> = { ...analysisByType.value };
+    await advanceExportStep();
     exportStageText.value = '正在生成Excel文件...';
     const blob = await exportExcel({
       charts,
       analysis_results: analysisResults,
-      company_name: '白垩纪食品',
+      company_name: '白垩纪科技',
       year: currentYear.value,
       period_type: periodType.value,
       start_month: startMonth.value,
       end_month: endMonth.value,
     });
+    await advanceExportStep();
     if (blob) {
       exportStageText.value = '正在下载文件...';
       const url = URL.createObjectURL(blob);
@@ -609,6 +704,7 @@ async function handleExportExcel() {
       link.download = `财务分析数据_${currentYear.value}.xlsx`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      await advanceExportStep();
       ElMessage.success('Excel导出成功');
     } else {
       ElMessage.error('Excel导出失败，请检查服务状态');
@@ -619,6 +715,7 @@ async function handleExportExcel() {
   } finally {
     isExportingExcel.value = false;
     exportStageText.value = '';
+    finishExportProgress();
   }
 }
 
@@ -1005,26 +1102,36 @@ const timeSeriesChartTypes = [
 ];
 
 function connectCharts() {
-  // Wire up mousemove → showTip on sibling charts
+  // Wire up mousemove → showTip on sibling charts (throttled to avoid per-frame dispatch to all charts)
   for (const chartType of timeSeriesChartTypes) {
     const domEl = chartDomRefs.value.get(chartType);
     if (!domEl) continue;
     const instance = echarts.getInstanceByDom(domEl);
     if (!instance) continue;
 
+    let lastDispatchedIndex = -1;
+    let throttleTimer: ReturnType<typeof setTimeout> | null = null;
+
     instance.on('mousemove', (params: Record<string, unknown>) => {
       const dataIndex = params.dataIndex as number | undefined;
-      if (dataIndex == null) return;
-      for (const sibType of timeSeriesChartTypes) {
-        if (sibType === chartType) continue;
-        const sibDom = chartDomRefs.value.get(sibType);
-        if (!sibDom) continue;
-        const sibInst = echarts.getInstanceByDom(sibDom);
-        if (!sibInst) continue;
-        try { sibInst.dispatchAction({ type: 'showTip', seriesIndex: 0, dataIndex }); } catch { /* grid not ready */ }
-      }
+      if (dataIndex == null || dataIndex === lastDispatchedIndex) return;
+      lastDispatchedIndex = dataIndex;
+      if (throttleTimer) return; // Skip if throttle pending
+      throttleTimer = setTimeout(() => {
+        throttleTimer = null;
+        for (const sibType of timeSeriesChartTypes) {
+          if (sibType === chartType) continue;
+          const sibDom = chartDomRefs.value.get(sibType);
+          if (!sibDom) continue;
+          const sibInst = echarts.getInstanceByDom(sibDom);
+          if (!sibInst) continue;
+          try { sibInst.dispatchAction({ type: 'showTip', seriesIndex: 0, dataIndex: lastDispatchedIndex }); } catch { /* grid not ready */ }
+        }
+      }, 32); // ~30fps throttle
     });
     instance.on('mouseout', () => {
+      lastDispatchedIndex = -1;
+      if (throttleTimer) { clearTimeout(throttleTimer); throttleTimer = null; }
       for (const sibType of timeSeriesChartTypes) {
         if (sibType === chartType) continue;
         const sibDom = chartDomRefs.value.get(sibType);
@@ -1378,9 +1485,9 @@ onBeforeUnmount(() => {
               text
               type="primary"
               :loading="analysisLoadingByType['expense_yoy_budget']"
-              @click="requestAnalysis('expense_yoy_budget')"
+              @click="forceRequestAnalysis('expense_yoy_budget')"
             >
-              {{ analysisExpandedByType['expense_yoy_budget'] && analysisByType['expense_yoy_budget'] ? '收起分析' : 'AI分析' }}
+              {{ analysisByType['expense_yoy_budget'] ? '重新分析' : 'AI分析' }}
             </el-button>
           </div>
         </template>
@@ -1410,9 +1517,9 @@ onBeforeUnmount(() => {
           :loading="false"
           :height="360"
         />
-        <div v-if="analysisExpandedByType['expense_yoy_budget']" class="analysis-panel">
+        <div v-if="analysisLoadingByType['expense_yoy_budget'] || analysisByType['expense_yoy_budget']" class="analysis-panel">
           <ChartSkeleton v-if="analysisLoadingByType['expense_yoy_budget']" type="ai" />
-          <div v-else-if="analysisByType['expense_yoy_budget']" class="analysis-text">
+          <div v-else class="analysis-text">
             {{ analysisByType['expense_yoy_budget'] }}
           </div>
         </div>
@@ -1435,9 +1542,9 @@ onBeforeUnmount(() => {
               text
               type="primary"
               :loading="analysisLoadingByType['gross_margin_trend']"
-              @click="requestAnalysis('gross_margin_trend')"
+              @click="forceRequestAnalysis('gross_margin_trend')"
             >
-              {{ analysisExpandedByType['gross_margin_trend'] && analysisByType['gross_margin_trend'] ? '收起分析' : 'AI分析' }}
+              {{ analysisByType['gross_margin_trend'] ? '重新分析' : 'AI分析' }}
             </el-button>
           </div>
         </template>
@@ -1467,9 +1574,9 @@ onBeforeUnmount(() => {
           :loading="false"
           :height="320"
         />
-        <div v-if="analysisExpandedByType['gross_margin_trend']" class="analysis-panel">
+        <div v-if="analysisLoadingByType['gross_margin_trend'] || analysisByType['gross_margin_trend']" class="analysis-panel">
           <ChartSkeleton v-if="analysisLoadingByType['gross_margin_trend']" type="ai" />
-          <div v-else-if="analysisByType['gross_margin_trend']" class="analysis-text">
+          <div v-else class="analysis-text">
             {{ analysisByType['gross_margin_trend'] }}
           </div>
         </div>
@@ -1492,9 +1599,9 @@ onBeforeUnmount(() => {
               text
               type="primary"
               :loading="analysisLoadingByType['variance_analysis']"
-              @click="requestAnalysis('variance_analysis')"
+              @click="forceRequestAnalysis('variance_analysis')"
             >
-              {{ analysisExpandedByType['variance_analysis'] && analysisByType['variance_analysis'] ? '收起分析' : 'AI分析' }}
+              {{ analysisByType['variance_analysis'] ? '重新分析' : 'AI分析' }}
             </el-button>
           </div>
         </template>
@@ -1504,9 +1611,9 @@ onBeforeUnmount(() => {
           :echarts-option="getChart('variance_analysis')!.echartsOption ?? {}"
           height="480px"
         />
-        <div v-if="analysisExpandedByType['variance_analysis']" class="analysis-panel">
+        <div v-if="analysisLoadingByType['variance_analysis'] || analysisByType['variance_analysis']" class="analysis-panel">
           <ChartSkeleton v-if="analysisLoadingByType['variance_analysis']" type="ai" />
-          <div v-else-if="analysisByType['variance_analysis']" class="analysis-text">
+          <div v-else class="analysis-text">
             {{ analysisByType['variance_analysis'] }}
           </div>
         </div>
@@ -1529,9 +1636,9 @@ onBeforeUnmount(() => {
               text
               type="primary"
               :loading="analysisLoadingByType['cost_flow_sankey']"
-              @click="requestAnalysis('cost_flow_sankey')"
+              @click="forceRequestAnalysis('cost_flow_sankey')"
             >
-              {{ analysisExpandedByType['cost_flow_sankey'] && analysisByType['cost_flow_sankey'] ? '收起分析' : 'AI分析' }}
+              {{ analysisByType['cost_flow_sankey'] ? '重新分析' : 'AI分析' }}
             </el-button>
           </div>
         </template>
@@ -1542,9 +1649,9 @@ onBeforeUnmount(() => {
           :echarts-option="getChart('cost_flow_sankey')!.echartsOption ?? {}"
           height="460px"
         />
-        <div v-if="analysisExpandedByType['cost_flow_sankey']" class="analysis-panel">
+        <div v-if="analysisLoadingByType['cost_flow_sankey'] || analysisByType['cost_flow_sankey']" class="analysis-panel">
           <ChartSkeleton v-if="analysisLoadingByType['cost_flow_sankey']" type="ai" />
-          <div v-else-if="analysisByType['cost_flow_sankey']" class="analysis-text">
+          <div v-else class="analysis-text">
             {{ analysisByType['cost_flow_sankey'] }}
           </div>
         </div>
@@ -1569,14 +1676,14 @@ onBeforeUnmount(() => {
             <div class="chart-card-title-group">
               <span>{{ ct.icon }} {{ ct.label }}</span>
               <el-tag
-                v-if="getChart(ct.key)?.kpis?.length && detectAnomalies(getChart(ct.key)!.kpis).length > 0"
+                v-if="getAnomalies(ct.key).length > 0"
                 type="warning"
                 size="small"
                 effect="dark"
                 class="anomaly-badge"
-                :title="detectAnomalies(getChart(ct.key)!.kpis).join('\n')"
+                :title="getAnomalies(ct.key).join('\n')"
               >
-                ⚠ {{ detectAnomalies(getChart(ct.key)!.kpis).length }}
+                ⚠ {{ getAnomalies(ct.key).length }}
               </el-tag>
             </div>
             <div style="display: flex; align-items: center; gap: 4px">
@@ -1615,9 +1722,9 @@ onBeforeUnmount(() => {
                 type="primary"
                 :loading="analysisLoadingByType[ct.key]"
                 :disabled="!getChart(ct.key)"
-                @click="requestAnalysis(ct.key)"
+                @click="forceRequestAnalysis(ct.key)"
               >
-                {{ analysisExpandedByType[ct.key] && analysisByType[ct.key] ? '收起分析' : 'AI分析' }}
+                {{ analysisByType[ct.key] ? '重新分析' : 'AI分析' }}
               </el-button>
             </div>
           </div>
@@ -1698,10 +1805,10 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- AI Analysis panel -->
-        <div v-if="analysisExpandedByType[ct.key]" class="analysis-panel">
+        <!-- AI Analysis panel — always visible after auto-analysis -->
+        <div v-if="analysisLoadingByType[ct.key] || analysisByType[ct.key]" class="analysis-panel">
           <ChartSkeleton v-if="analysisLoadingByType[ct.key]" type="ai" />
-          <div v-else-if="analysisByType[ct.key]" class="analysis-text">
+          <div v-else class="analysis-text">
             {{ analysisByType[ct.key] }}
           </div>
         </div>
@@ -1824,7 +1931,7 @@ onBeforeUnmount(() => {
       :visible="isPresentationVisible"
       :slides="presentationSlides"
       :chart-results="charts"
-      company-name="白垩纪食品"
+      company-name="白垩纪科技"
       :period="periodLabel"
       @close="isPresentationVisible = false"
     />
@@ -1850,6 +1957,14 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </Teleport>
+
+    <!-- Export progress dialog -->
+    <el-dialog v-model="exportProgress.visible" title="导出进度" width="400px" :close-on-click-modal="false" :show-close="false">
+      <el-steps :active="exportProgress.currentStep" finish-status="success" simple style="margin-bottom: 20px">
+        <el-step v-for="step in exportProgress.steps" :key="step" :title="step" />
+      </el-steps>
+      <el-progress :percentage="exportProgress.percentage" :stroke-width="8" />
+    </el-dialog>
   </div>
 </template>
 

@@ -84,9 +84,12 @@ async function loadPlans() {
         selectedPlanId.value = inProgressPlan.id;
         await loadData();
       }
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载计划失败');
     }
   } catch (error) {
     console.error('加载计划失败:', error);
+    ElMessage.error('加载计划列表失败');
   }
 }
 

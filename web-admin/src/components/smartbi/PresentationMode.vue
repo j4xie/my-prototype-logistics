@@ -23,7 +23,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  companyName: '白垩纪食品',
+  companyName: '白垩纪科技',
   period: '',
 });
 

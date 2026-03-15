@@ -22,7 +22,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { IconButton } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
@@ -43,6 +43,8 @@ interface SuggestedAction {
   label: string;
   value: string;
   description?: string;
+  params?: Record<string, unknown>;
+  data?: Record<string, unknown>;
 }
 
 // 消息类型
@@ -211,11 +213,13 @@ export default function AIChatScreen() {
   const handleSuggestedActionClick = async (action: SuggestedAction, messageId: string) => {
     // 处理跳转到生产计划创建表单的特殊action
     if (action.value === 'REDIRECT_TO_PLAN_FORM') {
-      const extractedParams = (action as any).params || (action as any).data || {};
-      navigation.navigate('ProductionPlanManagement' as any, {
-        mode: 'create',
-        initialValues: extractedParams,
-      });
+      const extractedParams = action.params || action.data || {};
+      navigation.dispatch(
+        CommonActions.navigate('ProductionPlanManagement', {
+          mode: 'create',
+          initialValues: extractedParams,
+        })
+      );
       return;
     }
 
@@ -415,7 +419,7 @@ export default function AIChatScreen() {
               label: '前往创建生产计划',
               value: 'REDIRECT_TO_PLAN_FORM',
               description: '使用AI收集的参数预填表单',
-              ...({ params } as any),
+              params,
             }];
           }
 

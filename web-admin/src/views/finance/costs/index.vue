@@ -41,6 +41,7 @@ async function loadOverview() {
     }
   } catch (error) {
     console.error('加载概览失败:', error);
+    ElMessage.error('加载财务概览失败');
   } finally {
     loading.value = false;
   }
@@ -145,8 +146,8 @@ function getTransactionTypeTag(type: string) {
       <div class="kpi-card net">
         <div class="kpi-label">净额 (应收-应付)</div>
         <div class="kpi-value" :class="{
-          'positive': (overview.totalReceivable - overview.totalPayable) >= 0,
-          'negative': (overview.totalReceivable - overview.totalPayable) < 0
+          'positive': ((overview.totalReceivable || 0) - (overview.totalPayable || 0)) >= 0,
+          'negative': ((overview.totalReceivable || 0) - (overview.totalPayable || 0)) < 0
         }">
           {{ formatMoney((overview.totalReceivable || 0) - (overview.totalPayable || 0)) }}
         </div>

@@ -231,7 +231,7 @@ export default function UserManagementScreen() {
         isEdit: !!editingUser,
         username: formData.username,
       });
-      Alert.alert(t('common.error'), (error as any).response?.data?.message || t('userManagement.messages.saveFailed'));
+      Alert.alert(t('common.error'), getErrorMsg(error) || t('userManagement.messages.saveFailed'));
     }
   };
 
@@ -258,7 +258,7 @@ export default function UserManagementScreen() {
                 userId,
                 userName,
               });
-              Alert.alert(t('common.error'), (error as any).response?.data?.message || t('userManagement.messages.deleteFailed'));
+              Alert.alert(t('common.error'), getErrorMsg(error) || t('userManagement.messages.deleteFailed'));
             }
           },
         },
@@ -344,7 +344,7 @@ export default function UserManagementScreen() {
     return true;
   });
 
-  if (!canManageUsers) {
+  if (!canManage) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>

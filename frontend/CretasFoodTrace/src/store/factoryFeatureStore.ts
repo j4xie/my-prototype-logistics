@@ -90,6 +90,8 @@ interface FactoryFeatureState {
   getBenchmarks: () => Record<string, any>;
   getModulePriority: (moduleId: string) => number;
   getSortedModules: () => Array<{ moduleId: string; priority: number; moduleName: string }>;
+  getProductionMode: () => string;
+  isProcessMode: () => boolean;
   reset: () => void;
 }
 
@@ -136,7 +138,7 @@ export const useFactoryFeatureStore = create<FactoryFeatureState>((set, get) => 
         }
       }
       set({ modules, loaded: true });
-    } catch (error: any) {
+    } catch {
       set({ loaded: true });
     } finally {
       set({ loading: false });
@@ -249,6 +251,16 @@ export const useFactoryFeatureStore = create<FactoryFeatureState>((set, get) => 
         moduleName: m.moduleName,
       }))
       .sort((a, b) => b.priority - a.priority);
+  },
+
+  getProductionMode: () => {
+    const { modules } = get();
+    const prod = modules['production'];
+    return (prod?.config as any)?.mode ?? 'BATCH';
+  },
+
+  isProcessMode: () => {
+    return get().getProductionMode() === 'PROCESS';
   },
 
   reset: () => set({ modules: {}, loaded: false, loading: false }),

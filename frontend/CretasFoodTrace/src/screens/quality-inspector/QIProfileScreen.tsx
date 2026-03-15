@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -28,7 +30,7 @@ type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 
 interface MenuItem {
   id: string;
-  icon: string;
+  icon: IoniconsName;
   label: string;
   value?: string;
   badge?: number;
@@ -85,13 +87,13 @@ export default function QIProfileScreen() {
         icon: 'notifications-outline',
         label: t('profile.menu.notifications'),
         badge: 3,
-        onPress: () => navigation.navigate('QINotifications'),
+        onPress: () => navigation.navigate('QIHomeTab', { screen: 'QINotifications' }),
       },
       {
         id: 'records',
         icon: 'document-text-outline',
         label: t('profile.menu.myRecords'),
-        onPress: () => navigation.navigate('QIRecords'),
+        onPress: () => navigation.navigate('QIRecordsTab', { screen: 'QIRecords' }),
       },
     ],
     [
@@ -132,7 +134,7 @@ export default function QIProfileScreen() {
       activeOpacity={0.7}
     >
       <View style={styles.menuLeft}>
-        <Ionicons name={item.icon as any} size={22} color={QI_COLORS.textSecondary} />
+        <Ionicons name={item.icon} size={22} color={QI_COLORS.textSecondary} />
         <Text style={styles.menuLabel}>{item.label}</Text>
       </View>
       <View style={styles.menuRight}>
@@ -206,7 +208,7 @@ export default function QIProfileScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.quickActionItem}
-          onPress={() => navigation.navigate('QIInspectList')}
+          onPress={() => navigation.navigate('QIInspectTab', { screen: 'QIInspectList' })}
         >
           <View style={[styles.quickActionIcon, { backgroundColor: '#E8F5E9' }]}>
             <Ionicons name="clipboard-outline" size={24} color={QI_COLORS.primary} />
@@ -215,7 +217,7 @@ export default function QIProfileScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.quickActionItem}
-          onPress={() => navigation.navigate('QIRecords')}
+          onPress={() => navigation.navigate('QIRecordsTab', { screen: 'QIRecords' })}
         >
           <View style={[styles.quickActionIcon, { backgroundColor: '#FFF3E0' }]}>
             <Ionicons name="file-tray-full-outline" size={24} color="#FF9800" />
@@ -224,7 +226,7 @@ export default function QIProfileScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.quickActionItem}
-          onPress={() => navigation.navigate('QIAnalysis')}
+          onPress={() => navigation.navigate('QIAnalysisTab', { screen: 'QIAnalysis' })}
         >
           <View style={[styles.quickActionIcon, { backgroundColor: '#F3E5F5' }]}>
             <Ionicons name="stats-chart-outline" size={24} color="#9C27B0" />

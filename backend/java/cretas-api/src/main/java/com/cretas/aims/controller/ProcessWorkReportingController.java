@@ -1,0 +1,134 @@
+package com.cretas.aims.controller;
+
+import com.cretas.aims.dto.ProcessTaskDTO;
+import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.dto.common.PageResponse;
+import com.cretas.aims.service.ProcessWorkReportingService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+
+@Slf4j
+@RestController
+@RequestMapping("/api/mobile/{factoryId}/process-work-reporting")
+@Tag(name = "工序报工审批", description = "PROCESS模式下的报工审批、补报、冲销管理")
+@RequiredArgsConstructor
+public class ProcessWorkReportingController {
+
+    private final ProcessWorkReportingService service;
+
+    @GetMapping("/pending-approval")
+    @Operation(summary = "待审核报工列表")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ApiResponse<PageResponse<Map<String, Object>>> getPendingApprovals(
+            @PathVariable String factoryId,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) {
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, Sort.by(Sort.Direction.ASC, "createdAt"));
+        return ApiResponse.success(service.getPendingApprovals(factoryId, pageable));
+    }
+
+    @PutMapping("/{id}/approve")
+    @Operation(summary = "审批通过(幂等)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ApiResponse<Map<String, Object>> approve(
+            @PathVariable String factoryId,
+            @PathVariable Long id,
+            @RequestAttribute("userId") Long approvedBy) {
+        return ApiResponse.success(service.approveReport(factoryId, id, approvedBy));
+    }
+
+    @PutMapping("/{id}/reject")
+    @Operation(summary = "审批拒绝")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ApiResponse<Map<String, Object>> reject(
+            @PathVariable String factoryId,
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            @RequestAttribute("userId") Long rejectedBy) {
+        String reason = body.getOrDefault("reason", "");
+        return ApiResponse.success(service.rejectReport(factoryId, id, reason, rejectedBy));
+    }
+
+    @PutMapping("/batch-approve")
+    @Operation(summary = "批量审批(全部成功或全部回滚)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ApiResponse<Map<String, Object>> batchApprove(
+            @PathVariable String factoryId,
+            @RequestBody List<Long> reportIds,
+            @RequestAttribute("userId") Long approvedBy) {
+        return ApiResponse.success(service.batchApprove(factoryId, reportIds, approvedBy));
+    }
+
+    @PostMapping("/normal")
+    @Operation(summary = "正常报工(IN_PROGRESS任务，需审批)")
+    public ApiResponse<Map<String, Object>> submitNormalReport(
+            @PathVariable String factoryId,
+            @RequestBody Map<String, Object> body,
+            @RequestAttribute("userId") Long workerId) {
+        String processTaskId = (String) body.get("processTaskId");
+        String reporterName = (String) body.getOrDefault("reporterName", "");
+        BigDecimal outputQuantity = new BigDecimal(body.get("outputQuantity").toString());
+        String notes = (String) body.getOrDefault("notes", null);
+        // P1-7: 支持代报工 — 主管为不会用手机的工人提交报工
+        Long effectiveWorkerId = workerId;
+        if (body.get("targetWorkerId") != null) {
+            effectiveWorkerId = Long.valueOf(body.get("targetWorkerId").toString());
+        }
+        return ApiResponse.success(service.submitNormalReport(
+                factoryId, processTaskId, effectiveWorkerId, reporterName, outputQuantity, notes));
+    }
+
+    @PostMapping("/supplement")
+    @Operation(summary = "补报(COMPLETED/CLOSED任务，需审批)")
+    public ApiResponse<Map<String, Object>> submitSupplement(
+            @PathVariable String factoryId,
+            @RequestBody Map<String, Object> body,
+            @RequestAttribute("userId") Long workerId) {
+        String processTaskId = (String) body.get("processTaskId");
+        String reporterName = (String) body.getOrDefault("reporterName", "");
+        BigDecimal outputQuantity = new BigDecimal(body.get("outputQuantity").toString());
+        String processCategory = (String) body.getOrDefault("processCategory", null);
+        String notes = (String) body.getOrDefault("notes", null);
+        return ApiResponse.success(service.submitSupplement(
+                factoryId, processTaskId, workerId, reporterName, outputQuantity, processCategory, notes));
+    }
+
+    @PostMapping("/{id}/reversal")
+    @Operation(summary = "冲销(已审批记录的数量修正)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ApiResponse<Map<String, Object>> createReversal(
+            @PathVariable String factoryId,
+            @PathVariable Long id,
+            @RequestAttribute("userId") Long createdBy,
+            @RequestParam(required = false) String reason) {
+        return ApiResponse.success(service.createReversal(factoryId, id, createdBy, reason));
+    }
+
+    @GetMapping("/by-task/{taskId}")
+    @Operation(summary = "某任务的报工记录")
+    public ApiResponse<List<Map<String, Object>>> getReportsByTask(
+            @PathVariable String factoryId,
+            @PathVariable String taskId) {
+        return ApiResponse.success(service.getReportsByTask(factoryId, taskId));
+    }
+
+    @GetMapping("/by-task/{taskId}/workers")
+    @Operation(summary = "某任务的员工汇总")
+    public ApiResponse<List<ProcessTaskDTO.WorkerSummary>> getWorkerSummary(
+            @PathVariable String factoryId,
+            @PathVariable String taskId) {
+        return ApiResponse.success(service.getWorkerSummaryByTask(factoryId, taskId));
+    }
+}

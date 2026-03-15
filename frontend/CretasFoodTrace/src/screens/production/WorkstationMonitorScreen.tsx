@@ -188,7 +188,7 @@ export function WorkstationMonitorScreen() {
   const handleStopSession = () => {
     Alert.alert(
       '结束会话',
-      `确定要结束当前工位会话吗？\n\n已计数: ${workstation.count}\n累计重量: ${workstation.totalWeight.toFixed(1)} kg`,
+      `确定要结束当前工位会话吗？\n\n已计数: ${workstation.count}\n累计重量: ${Number(workstation.totalWeight ?? 0).toFixed(1)} kg`,
       [
         { text: '取消', style: 'cancel' },
         {
@@ -199,7 +199,7 @@ export function WorkstationMonitorScreen() {
             if (result) {
               Alert.alert(
                 '会话已结束',
-                `最终计数: ${result.finalCount}\n最终重量: ${result.finalWeight.toFixed(1)} kg`,
+                `最终计数: ${result.finalCount}\n最终重量: ${Number(result.finalWeight ?? 0).toFixed(1)} kg`,
                 [{ text: '确定', onPress: () => navigation.goBack() }]
               );
             }
@@ -487,7 +487,7 @@ export function WorkstationMonitorScreen() {
           <Text style={styles.statLabel}>已计数</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>{workstation.totalWeight.toFixed(1)}</Text>
+          <Text style={styles.statValue}>{Number(workstation.totalWeight ?? 0).toFixed(1)}</Text>
           <Text style={styles.statLabel}>累计重量(kg)</Text>
         </View>
       </View>

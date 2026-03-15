@@ -180,19 +180,19 @@ export default function MyInfoScreen() {
 
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>{t('profile.myInfo.factory')}</Text>
-              <Text style={styles.infoValue}>{(user as any)?.factoryName || user?.factoryId || '-'}</Text>
+              <Text style={styles.infoValue}>{user?.factoryId || '-'}</Text>
             </View>
             <Divider style={styles.divider} />
 
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>{t('profile.myInfo.hireDate')}</Text>
-              <Text style={styles.infoValue}>{(user as any)?.hireDate?.split('T')[0] || '-'}</Text>
+              <Text style={styles.infoValue}>{'-'}</Text>
             </View>
             <Divider style={styles.divider} />
 
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>{t('profile.myInfo.employeeCode')}</Text>
-              <Text style={styles.infoValue}>{(user as any)?.employeeCode || '-'}</Text>
+              <Text style={styles.infoValue}>{user?.username || '-'}</Text>
             </View>
           </View>
 

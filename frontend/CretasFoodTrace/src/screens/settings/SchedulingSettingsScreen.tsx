@@ -53,8 +53,8 @@ export interface SchedulingSettings {
 // 默认设置
 const DEFAULT_SETTINGS: SchedulingSettings = {
   automationMode: 'human_confirm',
-  lowRiskThreshold: 0.3,
-  mediumRiskThreshold: 0.6,
+  lowRiskThreshold: 0.7,
+  mediumRiskThreshold: 0.4,
   notificationsEnabled: true,
 };
 

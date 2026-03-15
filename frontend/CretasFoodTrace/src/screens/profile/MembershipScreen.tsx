@@ -7,6 +7,8 @@ import { ScreenWrapper, NeoCard } from '../../components/ui';
 import { theme } from '../../theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
 const { width } = Dimensions.get('window');
 
 export default function MembershipScreen() {
@@ -17,14 +19,14 @@ export default function MembershipScreen() {
     const points = 0;
     const nextTierProgress = 0.3; // 30%
 
-    const benefits = [
+    const benefits: { id: number; title: string; icon: MCIconName; color: string }[] = [
         { id: 1, title: 'Merchant\nCoupons', icon: 'gift-outline', color: '#FF6B6B' },
         { id: 2, title: 'Platform\nCoupons', icon: 'ticket-percent-outline', color: '#FF8E53' },
         { id: 3, title: 'Points\nMall', icon: 'storefront-outline', color: '#FF9F43' },
         { id: 4, title: 'Group\nBuy', icon: 'account-group-outline', color: '#FECA57' },
     ];
 
-    const services = [
+    const services: { id: number; title: string; subtitle: string; icon: MCIconName; color: string; route: string; badge?: number }[] = [
         { id: 1, title: 'Points Mall', subtitle: 'Redeem', icon: 'store', color: '#FFB900', route: 'PointsMall' },
         { id: 2, title: 'Points Balance', subtitle: '0 Points', icon: 'wallet', color: '#00A8E8', route: 'PointsHistory' },
         { id: 3, title: 'My Coupons', subtitle: '2 Available', icon: 'ticket-account', color: '#FF5252', route: 'MyCoupons', badge: 2 },
@@ -87,7 +89,7 @@ export default function MembershipScreen() {
                             {benefits.map((item) => (
                                 <TouchableOpacity key={item.id} style={styles.benefitItem} activeOpacity={0.7}>
                                     <View style={[styles.benefitIconContainer, { backgroundColor: `${item.color}15` }]}>
-                                        <MaterialCommunityIcons name={item.icon as any} size={28} color={item.color} />
+                                        <MaterialCommunityIcons name={item.icon} size={28} color={item.color} />
                                     </View>
                                     <Text style={styles.benefitTitle}>{item.title}</Text>
                                 </TouchableOpacity>
@@ -104,7 +106,7 @@ export default function MembershipScreen() {
                             <TouchableOpacity key={item.id} style={styles.serviceCardWrapper} activeOpacity={0.8}>
                                 <NeoCard style={styles.serviceCard} padding="m">
                                     <View style={[styles.serviceIconBox, { backgroundColor: `${item.color}20` }]}>
-                                        <MaterialCommunityIcons name={item.icon as any} size={24} color={item.color} />
+                                        <MaterialCommunityIcons name={item.icon} size={24} color={item.color} />
                                     </View>
                                     <View style={styles.serviceInfo}>
                                         <Text style={styles.serviceTitle}>{item.title}</Text>

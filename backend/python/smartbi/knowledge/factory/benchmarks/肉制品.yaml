@@ -1,0 +1,51 @@
+# 肉制品加工行业基准
+# 数据来源: 双汇/金锣/雨润年报 + 中国肉类协会行业数据
+
+source: "双汇发展年报 / 中国肉类协会 / 国家统计局"
+year: 2024
+
+metrics:
+  gross_margin:
+    name: "毛利率"
+    range: [18.0, 28.0]
+    median: 23.0
+    unit: "%"
+    source: "双汇发展2024年报: 肉制品毛利27.8%, 屠宰业务毛利4.8%"
+    note: "高温肉制品毛利显著高于低温和鲜肉"
+
+  net_margin:
+    name: "净利率"
+    range: [2.0, 6.0]
+    median: 4.0
+    unit: "%"
+    source: "双汇发展净利率约7.5%(含屠宰), 纯肉制品约5%"
+
+  oee:
+    name: "设备综合效率(OEE)"
+    range: [55.0, 78.0]
+    median: 66.0
+    unit: "%"
+    note: "屠宰线OEE较低(频繁清洗), 深加工线较高"
+
+  waste_rate:
+    name: "废品率"
+    range: [1.5, 6.0]
+    median: 3.5
+    unit: "%"
+    note: "生鲜肉损耗高(冷链断裂), 深加工废品率可控在2%以内"
+
+  raw_material_cost_ratio:
+    name: "原料成本占比"
+    range: [65.0, 80.0]
+    median: 72.0
+    unit: "%"
+    note: "猪肉/牛肉原料成本波动大, 占比远高于行业均值"
+
+  cold_chain_loss_rate:
+    name: "冷链损耗率"
+    range: [1.0, 5.0]
+    median: 2.5
+    unit: "%"
+    description: "冷链物流过程中的损耗率"
+    source: "中国冷链物流协会数据"
+    higher_is_worse: true

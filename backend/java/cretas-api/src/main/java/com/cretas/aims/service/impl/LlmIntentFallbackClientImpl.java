@@ -210,14 +210,14 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         m.put(IntentKnowledgeBase.Domain.CUSTOMER, Set.of("customer_", "supplier_"));
         m.put(IntentKnowledgeBase.Domain.USER, Set.of("user_"));
         m.put(IntentKnowledgeBase.Domain.SYSTEM, Set.of("scheduling_", "factory_"));
-        m.put(IntentKnowledgeBase.Domain.FINANCE, Set.of("report_finance", "report_cost", "report_bom", "conversion_"));
+        m.put(IntentKnowledgeBase.Domain.FINANCE, Set.of("report_finance", "report_cost", "report_bom", "conversion_", "finance_", "financial_"));
         m.put(IntentKnowledgeBase.Domain.RESTAURANT, Set.of("restaurant_", "menu_", "dish_", "order_"));
         DOMAIN_TOOL_PREFIXES = Collections.unmodifiableMap(m);
     }
 
     /** 元工具前缀：始终包含（仅意图创建和系统查询工具，保持精简） */
     private static final Set<String> META_TOOL_PREFIXES = Set.of(
-            "create_new_intent", "generate_handler", "query_entity"
+            "create_new_intent", "generate_handler", "query_entity", "governance_"
     );
 
     @Value("${cretas.ai.conversation.threshold:0.3}")

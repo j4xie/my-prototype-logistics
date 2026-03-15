@@ -342,7 +342,8 @@ export default function EntityDataExportScreen() {
         name: file.name,
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       };
-      formData.append('file', fileData as any as Blob);
+      // @ts-expect-error - React Native FormData accepts {uri, name, type} objects, not Blob
+      formData.append('file', fileData);
 
       const apiUrl = `${API_BASE_URL}/api/mobile/${factoryId}/${currentEntity.endpoint}/import`;
       entityExportLogger.info('上传导入文件', { entityType, endpoint: currentEntity.endpoint });

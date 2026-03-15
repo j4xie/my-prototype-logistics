@@ -19,6 +19,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 import { traceabilityApiClient, PublicTraceResponse } from '../../services/api/traceabilityApiClient';
 
 /**
@@ -87,7 +89,7 @@ const PublicTraceScreen: React.FC = () => {
     }
   }, []);
 
-  const getQualityStatusInfo = (status: string) => {
+  const getQualityStatusInfo = (status: string): { text: string; color: string; icon: MCIconName } => {
     switch (status?.toUpperCase()) {
       case 'PASSED':
         return { text: '质检合格', color: '#4CAF50', icon: 'check-circle' };
@@ -222,7 +224,7 @@ const PublicTraceScreen: React.FC = () => {
                           { backgroundColor: getQualityStatusInfo(traceData.qualityStatus).color + '15' }
                         ]}>
                           <MaterialCommunityIcons
-                            name={getQualityStatusInfo(traceData.qualityStatus).icon as any}
+                            name={getQualityStatusInfo(traceData.qualityStatus).icon}
                             size={40}
                             color={getQualityStatusInfo(traceData.qualityStatus).color}
                           />

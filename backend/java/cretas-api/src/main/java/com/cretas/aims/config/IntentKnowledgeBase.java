@@ -4945,6 +4945,26 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("销售额统计", "SALES_STATS");
         phraseToIntentMapping.put("销售统计", "SALES_STATS");
 
+        // 工序制生产任务
+        phraseToIntentMapping.put("工序任务", "PROCESS_TASK_QUERY");
+        phraseToIntentMapping.put("工序列表", "PROCESS_TASK_QUERY");
+        phraseToIntentMapping.put("工序进度", "PROCESS_TASK_QUERY");
+        phraseToIntentMapping.put("查看工序", "PROCESS_TASK_QUERY");
+        phraseToIntentMapping.put("工序状态", "PROCESS_TASK_QUERY");
+        phraseToIntentMapping.put("进行中任务", "PROCESS_TASK_QUERY");
+        phraseToIntentMapping.put("待完成任务", "PROCESS_TASK_QUERY");
+        phraseToIntentMapping.put("创建工序", "PROCESS_TASK_CREATE");
+        phraseToIntentMapping.put("新建工序任务", "PROCESS_TASK_CREATE");
+        phraseToIntentMapping.put("安排工序", "PROCESS_TASK_CREATE");
+        phraseToIntentMapping.put("工序分析", "PROCESS_TASK_ANALYSIS");
+        phraseToIntentMapping.put("工序瓶颈", "PROCESS_TASK_ANALYSIS");
+        phraseToIntentMapping.put("任务完成率", "PROCESS_TASK_ANALYSIS");
+        phraseToIntentMapping.put("任务摘要", "PROCESS_TASK_SUMMARY");
+        phraseToIntentMapping.put("报工详情", "PROCESS_TASK_SUMMARY");
+        phraseToIntentMapping.put("配置工厂", "FACTORY_CONFIG_AGENT");
+        phraseToIntentMapping.put("配置生产流程", "FACTORY_CONFIG_AGENT");
+        phraseToIntentMapping.put("工厂设置向导", "FACTORY_CONFIG_AGENT");
+
         // v30d: 操作型短语 — 防止 FOOD_KNOWLEDGE_QUERY 截获包含食品词的操作查询
         // 工序/进度/人员查询
         phraseToIntentMapping.put("加工进度", "QUERY_PROCESSING_STEP");
@@ -7091,6 +7111,31 @@ public class IntentKnowledgeBase {
         commonPhraseMapping.put("意见反馈", "SYSTEM_FEEDBACK");
         commonPhraseMapping.put("提建议", "SYSTEM_FEEDBACK");
         commonPhraseMapping.put("反馈问题", "SYSTEM_FEEDBACK");
+
+        // GOVERNANCE: Tool/Skill 治理（不分业态）
+        commonPhraseMapping.put("列出所有skill", "GOVERNANCE_SKILL_MANAGE");
+        commonPhraseMapping.put("skill列表", "GOVERNANCE_SKILL_MANAGE");
+        commonPhraseMapping.put("查看技能", "GOVERNANCE_SKILL_MANAGE");
+        commonPhraseMapping.put("查看skill", "GOVERNANCE_SKILL_MANAGE");
+        commonPhraseMapping.put("有多少工具", "GOVERNANCE_SKILL_MANAGE");
+        commonPhraseMapping.put("工具列表", "GOVERNANCE_SKILL_MANAGE");
+        commonPhraseMapping.put("所有技能", "GOVERNANCE_SKILL_MANAGE");
+        commonPhraseMapping.put("查看工具", "GOVERNANCE_SKILL_MANAGE");
+        commonPhraseMapping.put("搜索skill", "GOVERNANCE_SKILL_MANAGE");
+        commonPhraseMapping.put("禁用skill", "GOVERNANCE_SKILL_MANAGE");
+        commonPhraseMapping.put("启用skill", "GOVERNANCE_SKILL_MANAGE");
+        commonPhraseMapping.put("工具使用模式", "GOVERNANCE_PATTERN_DISCOVERY");
+        commonPhraseMapping.put("工具共现分析", "GOVERNANCE_PATTERN_DISCOVERY");
+        commonPhraseMapping.put("哪些工具经常一起使用", "GOVERNANCE_PATTERN_DISCOVERY");
+        commonPhraseMapping.put("推荐skill组合", "GOVERNANCE_PATTERN_DISCOVERY");
+        commonPhraseMapping.put("工具组合推荐", "GOVERNANCE_PATTERN_DISCOVERY");
+        commonPhraseMapping.put("skill推荐", "GOVERNANCE_PATTERN_DISCOVERY");
+        commonPhraseMapping.put("共现分析", "GOVERNANCE_PATTERN_DISCOVERY");
+        commonPhraseMapping.put("创建skill", "GOVERNANCE_SKILL_COMPOSE");
+        commonPhraseMapping.put("组合工具", "GOVERNANCE_SKILL_COMPOSE");
+        commonPhraseMapping.put("新建技能", "GOVERNANCE_SKILL_COMPOSE");
+        commonPhraseMapping.put("创建技能", "GOVERNANCE_SKILL_COMPOSE");
+        commonPhraseMapping.put("组合成skill", "GOVERNANCE_SKILL_COMPOSE");
 
         log.debug("v32 公共短语映射初始化完成，共 {} 条映射", commonPhraseMapping.size());
     }

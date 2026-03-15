@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import { Text, Card, Searchbar, Chip, Avatar, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -54,8 +54,8 @@ export default function NewHiresScreen() {
       if (res?.content) {
         const startDateStr = startOfMonth.toISOString().split('T')[0] ?? '';
         const filtered = res.content.filter((u) => {
-          const hireDate = (u as unknown as { hireDate?: string }).hireDate;
-          return hireDate && hireDate >= startDateStr;
+          const joinDate = u.hireDate || u.createdAt?.split('T')[0];
+          return joinDate && joinDate >= startDateStr;
         });
         // Map UserDTO to StaffListItem, add status field
         const mappedHires: StaffListItem[] = filtered.map((u) => ({
@@ -67,7 +67,7 @@ export default function NewHiresScreen() {
           phone: u.phone || '',
           avatarUrl: undefined, // UserDTO doesn't have avatar
           status: 'active' as const, // Default to active for new hires
-          hireDate: (u as any).hireDate,
+          hireDate: u.hireDate || u.createdAt?.split('T')[0],
           roleCode: u.roleCode,
           roleName: u.roleDisplayName,
         }));
@@ -100,7 +100,7 @@ export default function NewHiresScreen() {
   );
 
   const handleItemPress = (item: StaffListItem) => {
-    navigation.navigate('StaffDetail' as any, { staffId: item.id });
+    navigation.dispatch(CommonActions.navigate('StaffDetail', { staffId: item.id }));
   };
 
   const renderItem = ({ item }: { item: StaffListItem }) => {

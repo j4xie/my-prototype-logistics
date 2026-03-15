@@ -29,7 +29,7 @@ export const CostOverviewCard = React.memo<CostOverviewCardProps>(({ costBreakdo
               {t('costAnalysisDashboard.costOverview.rawMaterialCost')}
             </Text>
             <Text variant="titleMedium" style={[styles.costValue, { color: colors.rawMaterial.text }]}>
-              ¥{costBreakdown.rawMaterialCost.toFixed(2)}
+              ¥{Number(costBreakdown.rawMaterialCost ?? 0).toFixed(2)}
             </Text>
             <Text variant="bodySmall" style={styles.costPercentage}>
               {costBreakdown.rawMaterialPercentage}
@@ -42,7 +42,7 @@ export const CostOverviewCard = React.memo<CostOverviewCardProps>(({ costBreakdo
               {t('costAnalysisDashboard.costOverview.laborCost')}
             </Text>
             <Text variant="titleMedium" style={[styles.costValue, { color: colors.labor.text }]}>
-              ¥{costBreakdown.laborCost.toFixed(2)}
+              ¥{Number(costBreakdown.laborCost ?? 0).toFixed(2)}
             </Text>
             <Text variant="bodySmall" style={styles.costPercentage}>
               {costBreakdown.laborPercentage}
@@ -55,7 +55,7 @@ export const CostOverviewCard = React.memo<CostOverviewCardProps>(({ costBreakdo
               {t('costAnalysisDashboard.costOverview.equipmentCost')}
             </Text>
             <Text variant="titleMedium" style={[styles.costValue, { color: colors.equipment.text }]}>
-              ¥{costBreakdown.equipmentCost.toFixed(2)}
+              ¥{Number(costBreakdown.equipmentCost ?? 0).toFixed(2)}
             </Text>
             <Text variant="bodySmall" style={styles.costPercentage}>
               {costBreakdown.equipmentPercentage}
@@ -68,7 +68,7 @@ export const CostOverviewCard = React.memo<CostOverviewCardProps>(({ costBreakdo
               {t('costAnalysisDashboard.costOverview.totalCost')}
             </Text>
             <Text variant="titleLarge" style={[styles.costValue, { color: colors.total.text }]}>
-              ¥{costBreakdown.totalCost.toFixed(2)}
+              ¥{Number(costBreakdown.totalCost ?? 0).toFixed(2)}
             </Text>
             <Text variant="bodySmall" style={styles.costPercentage}>
               100%

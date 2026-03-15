@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import { apiClient } from '../api/apiClient';
 import { StorageService } from '../storage/storageService';
 import { TokenManager } from '../tokenManager';
@@ -989,16 +990,15 @@ export class AuthService {
    * @returns 用户友好的错误消息
    */
   private static handleAuthError(error: unknown): Error {
-    const apiError = error as any;
-    
     // 1. 优先处理后端返回的错误消息（有 HTTP 响应的情况）
-    if (apiError.response?.data?.message) {
-      return new Error(apiError.response.data.message);
-    }
-    
-    // 2. 处理 HTTP 状态码错误
-    if (apiError.response?.status) {
-      const status = apiError.response.status;
+    if (isAxiosError(error)) {
+      if (error.response?.data?.message) {
+        return new Error(error.response.data.message as string);
+      }
+
+      // 2. 处理 HTTP 状态码错误
+      const status = error.response?.status;
+      if (status) {
       switch (status) {
         case 401:
           return new Error('用户名或密码错误');
@@ -1015,34 +1015,33 @@ export class AuthService {
       }
     }
     
-    // 3. 处理网络错误（没有 HTTP 响应的情况）
-    if (!apiError.response) {
-      const errorMessage = apiError.message || '';
-      const errorCode = apiError.code || '';
-      
+      // 3. 处理网络错误（没有 HTTP 响应的情况）
+      const errorMessage = error.message || '';
+      const errorCode = error.code || '';
+
       // 连接被拒绝（服务器未启动、端口错误或防火墙阻止）
-      if (errorCode === 'ECONNREFUSED' || 
+      if (errorCode === 'ECONNREFUSED' ||
           errorMessage.includes('ECONNREFUSED') ||
           errorMessage.includes('Connection refused')) {
         return new Error('无法连接到服务器，请检查：\n1. 服务器是否正在运行\n2. API地址和端口是否正确\n3. 网络连接是否正常');
       }
-      
+
       // 域名解析失败（DNS 错误或地址错误）
-      if (errorCode === 'ENOTFOUND' || 
+      if (errorCode === 'ENOTFOUND' ||
           errorMessage.includes('ENOTFOUND') ||
           errorMessage.includes('getaddrinfo failed') ||
           errorMessage.includes('Network request failed')) {
         return new Error('无法解析服务器地址，请检查：\n1. API地址配置是否正确\n2. 网络连接是否正常\n3. DNS设置是否正确');
       }
-      
+
       // 请求超时
       if (errorCode === 'ETIMEDOUT' ||
-          errorMessage.includes('timeout') || 
+          errorMessage.includes('timeout') ||
           errorMessage.includes('timed out') ||
           errorMessage.includes('ETIMEDOUT')) {
         return new Error('请求超时，请检查：\n1. 网络连接是否稳定\n2. 服务器响应是否正常\n3. 防火墙是否阻止连接');
       }
-      
+
       // Android 9+ HTTP 流量被禁止（Cleartext HTTP traffic not permitted）
       if (errorMessage.includes('Cleartext HTTP traffic') ||
           errorMessage.includes('cleartext') ||
@@ -1050,7 +1049,7 @@ export class AuthService {
           (errorMessage.includes('Network') && errorMessage.includes('HTTP'))) {
         return new Error('Android 9+ 禁止 HTTP 流量，请检查：\n1. app.json 中是否设置了 "usesCleartextTraffic": true\n2. AndroidManifest.xml 中是否设置了 android:usesCleartextTraffic="true"\n3. 或使用 HTTPS 协议');
       }
-      
+
       // 通用网络错误
       if (errorMessage.includes('Network Error') ||
           errorMessage.includes('Network request failed') ||
@@ -1058,16 +1057,17 @@ export class AuthService {
           errorMessage.includes('Network')) {
         return new Error('网络连接失败，请检查：\n1. 网络连接是否正常\n2. API服务器是否可访问\n3. 防火墙或代理设置是否正确');
       }
-    }
-    
-    // 4. 如果有错误消息，尝试返回（可能是业务错误）
-    if (apiError.message) {
-      // 过滤掉技术性的错误消息，转换为用户友好的提示
-      const message = apiError.message;
-      if (message.includes('timeout') || message.includes('ECONN') || message.includes('ENOTFOUND')) {
+
+      // 4. 如果有错误消息，尝试返回（可能是业务错误）
+      if (errorMessage.includes('timeout') || errorMessage.includes('ECONN') || errorMessage.includes('ENOTFOUND')) {
         return new Error('网络连接失败，请检查网络设置');
       }
-      return new Error(message);
+      return new Error(errorMessage);
+    }
+
+    // 4. 非 Axios 错误
+    if (error instanceof Error) {
+      return new Error(error.message);
     }
     
     // 5. 未知错误

@@ -13,6 +13,7 @@ import {
   isFactoryUser,
   getDepartment,
 } from '../types/auth';
+import { hasProductionCapability } from '../utils/factoryType';
 
 // 导入页面和导航器
 import HomeScreen from '../screens/main/HomeScreen';
@@ -188,8 +189,8 @@ export function MainNavigator() {
         />
       )}
 
-      {/* 生产模块 - 有生产权限的用户可见 */}
-      {hasPermission('processing_access') && (
+      {/* 生产模块 - 有生产权限且非餐饮场景 */}
+      {hasPermission('processing_access') && hasProductionCapability(user) && (
         <Tab.Screen
           name="ProcessingTab"
           component={ProcessingStackNavigator}

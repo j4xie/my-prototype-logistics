@@ -54,6 +54,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -74,6 +76,7 @@ async function loadBatches() {
     }
   } catch (error) {
     console.error('加载批次列表失败:', error);
+    ElMessage.error('加载批次列表失败');
   }
 }
 

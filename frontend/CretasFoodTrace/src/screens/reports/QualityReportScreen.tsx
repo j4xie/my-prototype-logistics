@@ -14,7 +14,7 @@ import {
   IconButton,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
@@ -87,12 +87,12 @@ export default function QualityReportScreen() {
         setRecentInspections(Array.isArray(inspections) ? inspections : []);
 
         // 计算统计数据
-        const stats = calculateQualityStats(inspections);
+        const stats = calculateQualityStats(inspections as unknown as Record<string, unknown>[]);
         setQualityStats(stats);
 
         qualityReportLogger.info('质量报表数据加载成功', {
           inspectionCount: inspections.length,
-          passRate: stats.passRate.toFixed(1) + '%',
+          passRate: Number(stats.passRate ?? 0).toFixed(1) + '%',
           factoryId,
         });
       } else {
@@ -122,19 +122,17 @@ export default function QualityReportScreen() {
   /**
    * 计算质检统计
    */
-  const calculateQualityStats = (inspections: any[]) => {
+  const calculateQualityStats = (inspections: Record<string, unknown>[]) => {
     const totalInspections = inspections.length;
+    const resultUpper = (i: Record<string, unknown>) => String(i.result || i.inspectionResult || '').toUpperCase();
     const passedInspections = inspections.filter(
-      (i) => i.result === 'PASSED' || i.result === 'passed' || i.inspectionResult === 'PASSED'
+      (i) => resultUpper(i) === 'PASS' || resultUpper(i) === 'PASSED'
     ).length;
     const failedInspections = inspections.filter(
-      (i) => i.result === 'FAILED' || i.result === 'failed' || i.inspectionResult === 'FAILED'
+      (i) => resultUpper(i) === 'FAIL' || resultUpper(i) === 'FAILED'
     ).length;
     const conditionalInspections = inspections.filter(
-      (i) =>
-        i.result === 'CONDITIONAL' ||
-        i.result === 'conditional' ||
-        i.inspectionResult === 'CONDITIONAL'
+      (i) => resultUpper(i) === 'CONDITIONAL'
     ).length;
 
     const passRate = totalInspections > 0 ? (passedInspections / totalInspections) * 100 : 0;
@@ -143,8 +141,8 @@ export default function QualityReportScreen() {
     const issueCategories: Record<string, number> = {};
     inspections.forEach((inspection) => {
       if (inspection.issues && Array.isArray(inspection.issues)) {
-        inspection.issues.forEach((issue: any) => {
-          const category = issue.category || '其他问题';
+        (inspection.issues as Record<string, unknown>[]).forEach((issue) => {
+          const category = String(issue.category || '其他问题');
           issueCategories[category] = (issueCategories[category] || 0) + 1;
         });
       }
@@ -198,7 +196,7 @@ export default function QualityReportScreen() {
         endDate: formatDate(endDate),
       });
       // 解包嵌套的响应格式 {code, message, data}
-      const actualData = (response as any)?.data ?? response;
+      const actualData = (response && typeof response === 'object' && 'data' in response) ? (response as { data: typeof response }).data : response;
       setAnomalyData(actualData);
       qualityReportLogger.info('异常检测数据加载成功', {
         totalAnomalies: actualData.totalAnomalies ?? 0,
@@ -246,16 +244,16 @@ export default function QualityReportScreen() {
    * 获取结果标签
    */
   const getResultChip = (result: string) => {
+    const pass = { label: t('quality.passed'), color: '#4CAF50', bgColor: '#E8F5E9' };
+    const fail = { label: t('quality.failed'), color: '#F44336', bgColor: '#FFEBEE' };
+    const cond = { label: t('quality.conditional'), color: '#FF9800', bgColor: '#FFF3E0' };
     const resultMap: Record<string, { label: string; color: string; bgColor: string }> = {
-      PASSED: { label: t('quality.passed'), color: '#4CAF50', bgColor: '#E8F5E9' },
-      passed: { label: t('quality.passed'), color: '#4CAF50', bgColor: '#E8F5E9' },
-      FAILED: { label: t('quality.failed'), color: '#F44336', bgColor: '#FFEBEE' },
-      failed: { label: t('quality.failed'), color: '#F44336', bgColor: '#FFEBEE' },
-      CONDITIONAL: { label: t('quality.conditional'), color: '#FF9800', bgColor: '#FFF3E0' },
-      conditional: { label: t('quality.conditional'), color: '#FF9800', bgColor: '#FFF3E0' },
+      PASS: pass, PASSED: pass, passed: pass,
+      FAIL: fail, FAILED: fail, failed: fail,
+      CONDITIONAL: cond, conditional: cond,
     };
 
-    const config = resultMap[result] ?? resultMap['CONDITIONAL'];
+    const config = resultMap[result] ?? cond;
 
     return (
       <Chip
@@ -423,7 +421,7 @@ export default function QualityReportScreen() {
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('quality.managementTitle')} />
-        <Appbar.Action icon="robot-outline" onPress={() => navigation.navigate('FAAITab' as any, { screen: 'AIChat', params: { entityType: 'QUALITY_CHECK' } })} />
+        <Appbar.Action icon="robot-outline" onPress={() => navigation.dispatch(CommonActions.navigate('FAAITab', { screen: 'AIChat', params: { entityType: 'QUALITY_CHECK' } }))} />
         <Appbar.Action icon="refresh" onPress={activeTab === 'anomaly' ? loadAnomalyData : loadQualityData} />
       </Appbar.Header>
 
@@ -508,11 +506,11 @@ export default function QualityReportScreen() {
                   <View style={styles.passRateContainer}>
                     <View style={styles.passRateHeader}>
                       <Text style={styles.passRateLabel}>{t('quality.passRate')}</Text>
-                      <Text style={styles.passRateValue}>{(qualityStats.passRate ?? 0).toFixed(1)}%</Text>
+                      <Text style={styles.passRateValue}>{Number(qualityStats.passRate ?? 0).toFixed(1)}%</Text>
                     </View>
                     <ProgressBar
-                      progress={(qualityStats.passRate ?? 0) / 100}
-                      color={(qualityStats.passRate ?? 0) >= 95 ? '#4CAF50' : '#FF9800'}
+                      progress={Number(qualityStats.passRate ?? 0) / 100}
+                      color={Number(qualityStats.passRate ?? 0) >= 95 ? '#4CAF50' : '#FF9800'}
                       style={styles.progressBar}
                     />
                   </View>
@@ -549,12 +547,12 @@ export default function QualityReportScreen() {
                     <DataTable.Row key={inspection.id || index}>
                       <DataTable.Cell>
                         <Text variant="bodySmall">
-                          {inspection.batchNumber || `批次${inspection.batchId}`}
+                          {inspection.batchNumber || (inspection.productionBatchId ? `批次#${inspection.productionBatchId}` : '--')}
                         </Text>
                       </DataTable.Cell>
                       <DataTable.Cell>
                         <Text variant="bodySmall">
-                          {inspection.inspectorName || `质检员${inspection.inspectorId}`}
+                          {inspection.inspectorName || (inspection.inspectorId ? `质检员#${inspection.inspectorId}` : '--')}
                         </Text>
                       </DataTable.Cell>
                       <DataTable.Cell>

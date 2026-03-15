@@ -384,7 +384,7 @@ export default function AIScheduleAnalysisScreen() {
                   '公平性评分',
                   Math.round(overview.fairnessStats?.fairnessScore || 0),
                   overview.fairnessStats?.giniCoefficient
-                    ? `基尼系数: ${overview.fairnessStats.giniCoefficient.toFixed(3)}`
+                    ? `基尼系数: ${Number(overview.fairnessStats.giniCoefficient ?? 0).toFixed(3)}`
                     : undefined,
                   (overview.fairnessStats?.fairnessScore || 0) >= 80 ? DISPATCHER_THEME.success : '#fa8c16'
                 )}

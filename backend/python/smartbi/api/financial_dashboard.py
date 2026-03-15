@@ -46,7 +46,7 @@ class PPTExportRequest(BaseModel):
     chart_images: Dict[str, str] = Field(default_factory=dict)  # {chartType: base64PNG}
     analysis_results: Dict[str, str] = Field(default_factory=dict)
     template: str = "default"
-    company_name: str = "白垩纪食品"
+    company_name: str = "白垩纪科技"
     kpi_summary: Optional[Dict] = None
 
 
@@ -244,7 +244,7 @@ async def export_ppt(request: PPTExportRequest):
 class ExcelExportRequest(BaseModel):
     charts: List[Dict[str, Any]] = Field(default_factory=list)  # Chart results from batch
     analysis_results: Dict[str, str] = Field(default_factory=dict)
-    company_name: str = "白垩纪食品"
+    company_name: str = "白垩纪科技"
     year: int = 2026
     period_type: str = "year"
     start_month: int = 1
@@ -364,7 +364,7 @@ async def export_excel(request: ExcelExportRequest):
 class PDFExportRequest(BaseModel):
     chart_images: Dict[str, str] = Field(default_factory=dict)  # {chartType: base64PNG}
     analysis_results: Dict[str, str] = Field(default_factory=dict)
-    company_name: str = "白垩纪食品"
+    company_name: str = "白垩纪科技"
     year: int = 2026
     period_type: str = "year"
     start_month: int = 1

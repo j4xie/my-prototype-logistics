@@ -254,7 +254,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
 import { ArrowLeft, CircleCheck, CircleClose, QuestionFilled } from '@element-plus/icons-vue'
 import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
@@ -396,6 +396,11 @@ function renderOpsRadar() {
 }
 
 // composable handles onMounted + auto-select
+
+onUnmounted(() => {
+  const el = document.getElementById('chart-ops-radar')
+  if (el) echarts.getInstanceByDom(el)?.dispose()
+})
 </script>
 
 <style scoped>

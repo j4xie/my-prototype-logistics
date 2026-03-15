@@ -94,7 +94,7 @@ export default function WorkTypeManagementScreen() {
       workTypeLogger.error('加载工种类型失败', error as Error, {
         factoryId: factoryId,
       });
-      Alert.alert('错误', (error as any).response?.data?.message || '加载工种类型失败');
+      Alert.alert('错误', getErrorMsg(error) || '加载工种类型失败');
     } finally {
       setLoading(false);
     }
@@ -117,8 +117,9 @@ export default function WorkTypeManagementScreen() {
       let workTypeList: WorkType[] = [];
       if (Array.isArray(results)) {
         workTypeList = results;
-      } else if ((results as any)?.data) {
-        workTypeList = Array.isArray((results as any).data) ? (results as any).data : [];
+      } else if (results && typeof results === 'object' && 'data' in results) {
+        const wrappedData = (results as { data?: WorkType[] }).data;
+        workTypeList = Array.isArray(wrappedData) ? wrappedData : [];
       }
 
       workTypeLogger.info('工种搜索完成', {
@@ -199,7 +200,7 @@ export default function WorkTypeManagementScreen() {
         isEdit: !!editingItem,
         workTypeCode: formData.code,
       });
-      Alert.alert('错误', (error as any).response?.data?.message || (editingItem ? '更新失败' : '创建失败'));
+      Alert.alert('错误', getErrorMsg(error) || (editingItem ? '更新失败' : '创建失败'));
     }
   };
 
@@ -226,7 +227,7 @@ export default function WorkTypeManagementScreen() {
                 workTypeId: item.id,
                 workTypeName: item.name,
               });
-              Alert.alert('错误', (error as any).response?.data?.message || '删除失败');
+              Alert.alert('错误', getErrorMsg(error) || '删除失败');
             }
           },
         },
@@ -253,7 +254,7 @@ export default function WorkTypeManagementScreen() {
         workTypeId: item.id,
         workTypeName: item.name,
       });
-      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
+      Alert.alert('错误', getErrorMsg(error) || '操作失败');
     }
   };
 

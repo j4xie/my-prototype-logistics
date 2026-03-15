@@ -11,6 +11,7 @@ import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { FAManagementStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
+import { useFactoryFeatureStore } from '../../../store/factoryFeatureStore';
 import { isRestaurant } from '../../../utils/factoryType';
 
 type NavigationProp = NativeStackNavigationProp<FAManagementStackParamList, 'FAManagement'>;
@@ -20,11 +21,12 @@ interface GridItemProps {
   title: string;
   color: string;
   onPress: () => void;
+  testID?: string;
 }
 
-function GridItem({ icon, title, color, onPress }: GridItemProps) {
+function GridItem({ icon, title, color, onPress, testID }: GridItemProps) {
   return (
-    <TouchableOpacity style={styles.gridItem} onPress={onPress}>
+    <TouchableOpacity testID={testID} style={styles.gridItem} onPress={onPress}>
       <View style={[styles.gridIcon, { backgroundColor: color + '15' }]}>
         <Icon source={icon} size={28} color={color} />
       </View>
@@ -80,6 +82,15 @@ export function FAManagementScreen() {
               title={t('management.workReport', '生产报工')}
               color="#ff7043"
               onPress={() => navigation.navigate('WorkReportApproval')}
+            />
+            )}
+            {!isRestaurantMode && useFactoryFeatureStore.getState().isProcessMode() && (
+            <GridItem
+              icon="format-list-checks"
+              title="工序任务"
+              color="#0891B2"
+              testID="fa-process-task-btn"
+              onPress={() => navigation.navigate('ProcessTaskList' as never)}
             />
             )}
             <GridItem

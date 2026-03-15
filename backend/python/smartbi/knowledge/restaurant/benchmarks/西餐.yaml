@@ -1,0 +1,32 @@
+# 西餐行业基准数据
+#
+# 数据来源：
+#   - IL TEATRO POS 实测
+#   - 连锁化白皮书 (西餐连锁化率22%)
+
+source: "IL TEATRO POS实测 + 行业报告"
+year: 2024
+
+sub_sector_info:
+  chain_rate: 22
+
+metrics:
+  food_cost_ratio:
+    name: "食材成本率"
+    range: [33.0, 43.0]
+    median: 38.0
+    source: "IL TEATRO POS实测 + 行业报告"
+
+  table_turnover:
+    name: "翻台率"
+    range: [1.5, 3.0]
+    median: 2.0
+    source: "IL TEATRO运营数据"
+    note: "正餐西餐翻台低，高端西餐可能低至1.0"
+
+  average_ticket:
+    name: "客单价"
+    range: [100.0, 350.0]
+    median: 180.0
+    source: "IL TEATRO POS实测"
+    note: "高端西餐客单价远高于中餐均值"

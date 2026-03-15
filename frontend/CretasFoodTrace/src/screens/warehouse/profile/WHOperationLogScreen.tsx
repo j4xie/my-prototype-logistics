@@ -15,6 +15,8 @@ import { Text, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHProfileStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
@@ -238,7 +240,7 @@ export function WHOperationLogScreen() {
     }
   };
 
-  const getLogIcon = (type: LogItem["type"]) => {
+  const getLogIcon = (type: LogItem["type"]): { icon: MCIconName; bg: string; color: string } => {
     switch (type) {
       case "inbound":
         return { icon: "package-down", bg: "#e8f5e9", color: "#4CAF50" };
@@ -290,7 +292,7 @@ export function WHOperationLogScreen() {
       <View key={item.id} style={styles.logItem}>
         <View style={[styles.logIcon, { backgroundColor: iconStyle.bg }]}>
           <MaterialCommunityIcons
-            name={iconStyle.icon as any}
+            name={iconStyle.icon}
             size={18}
             color={iconStyle.color}
           />

@@ -209,7 +209,7 @@ public class AnalysisRouterServiceImpl implements AnalysisRouterService {
      */
     private String buildSystemPrompt(AnalysisTopic topic) {
         return String.format("""
-                你是白垩纪食品溯源系统的智能分析助手。
+                你是白垩纪AI Agent的智能分析助手。
 
                 当前分析主题: %s (%s)
 

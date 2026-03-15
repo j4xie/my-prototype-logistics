@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl,
   ActivityIndicator, Alert,
@@ -37,25 +37,24 @@ const AlertDashboardScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [summary, setSummary] = useState<AlertSummary>({ activeCount: 0, criticalCount: 0, warningCount: 0, resolvedToday: 0 });
   const [alerts, setAlerts] = useState<ProductionAlert[]>([]);
-  const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const pageRef = useRef(0);
 
   const loadData = useCallback(async (refresh = false) => {
     try {
-      if (refresh) setPage(0);
-      const currentPage = refresh ? 0 : page;
+      if (refresh) pageRef.current = 0;
 
       const [summaryRes, alertsRes]: [any, any] = await Promise.all([
         apiClient.get(`/api/mobile/${factoryId}/alerts/summary`),
         apiClient.get(`/api/mobile/${factoryId}/alerts`, {
-          params: { page: currentPage, size: 20 },
+          params: { page: pageRef.current, size: 20 },
         }),
       ]);
 
       if (summaryRes?.success) setSummary(summaryRes.data);
       if (alertsRes?.success) {
         const content = alertsRes.data?.content || [];
-        setAlerts(refresh ? content : [...alerts, ...content]);
+        setAlerts(prev => refresh ? content : [...prev, ...content]);
         setHasMore(content.length === 20);
       }
     } catch (error) {
@@ -64,12 +63,17 @@ const AlertDashboardScreen: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [factoryId, page, alerts]);
+  }, [factoryId]);
 
-  useEffect(() => { loadData(true); }, [factoryId]);
+  useEffect(() => { loadData(true); }, [factoryId, loadData]);
 
   const handleRefresh = () => { setRefreshing(true); loadData(true); };
-  const handleLoadMore = () => { if (hasMore && !loading) { setPage(p => p + 1); loadData(); } };
+  const handleLoadMore = () => {
+    if (hasMore && !loading) {
+      pageRef.current += 1;
+      loadData();
+    }
+  };
 
   const acknowledgeAlert = async (alertId: number) => {
     try {

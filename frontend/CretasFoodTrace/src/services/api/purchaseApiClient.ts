@@ -164,6 +164,11 @@ class PurchaseApiClient {
     return apiClient.post(this.getPath(factoryId) + `/orders/${orderId}/approve`);
   }
 
+  /** 驳回 */
+  async rejectOrder(orderId: string, factoryId?: string): Promise<{ success: boolean; data: PurchaseOrder }> {
+    return apiClient.post(this.getPath(factoryId) + `/orders/${orderId}/reject`);
+  }
+
   /** 取消 */
   async cancelOrder(orderId: string, factoryId?: string): Promise<{ success: boolean; data: PurchaseOrder }> {
     return apiClient.post(this.getPath(factoryId) + `/orders/${orderId}/cancel`);

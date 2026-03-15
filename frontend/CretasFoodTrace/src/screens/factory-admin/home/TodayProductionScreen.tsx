@@ -150,10 +150,13 @@ export function TodayProductionScreen() {
               </View>
               <View style={styles.statusRight}>
                 <Text style={styles.statusCount}>{item.count} {t('todayProduction.batchUnit')}</Text>
-                <Text style={styles.statusQty}>{item.totalQuantity?.toFixed(0) ?? 0} kg</Text>
+                <Text style={styles.statusQty}>{Number(item.totalQuantity ?? 0).toFixed(0)} kg</Text>
               </View>
             </View>
           ))}
+          {(!data?.batchStatusDistribution || data.batchStatusDistribution.length === 0) && (
+            <Text style={styles.emptyText}>{t('todayProduction.noStatusData', { defaultValue: '暂无批次状态数据' })}</Text>
+          )}
         </View>
 
         {/* 产品类型统计 */}
@@ -166,12 +169,12 @@ export function TodayProductionScreen() {
                   <Icon source="cube-outline" size={16} color="#fff" />
                 </View>
                 <Text style={styles.productName} numberOfLines={1}>
-                  {(item as any).productTypeName || item.productType || (item as any).productTypeId || t('todayProduction.unknownProduct')}
+                  {item.productType || t('todayProduction.unknownProduct')}
                 </Text>
               </View>
               <View style={styles.productStats}>
                 <Text style={styles.productCount}>{item.count} {t('todayProduction.batchUnit')}</Text>
-                <Text style={styles.productQty}>{item.totalQuantity?.toFixed(0) ?? 0} kg</Text>
+                <Text style={styles.productQty}>{Number(item.totalQuantity ?? 0).toFixed(0)} kg</Text>
               </View>
             </View>
           ))}

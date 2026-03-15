@@ -159,6 +159,10 @@ export function WHOutboundListScreen() {
     shipped: shipmentStats?.shipped ?? outboundList.filter((i) => i.status === "shipped").length,
     todayWeight: outboundList.reduce((sum, i) => sum + i.quantity, 0),
     delivered: shipmentStats?.delivered ?? outboundList.filter((i) => i.status === "delivered").length,
+    customerCount: new Set(outboundList.map((i) => i.customer)).size,
+    onTimeRate: outboundList.length > 0
+      ? Math.round(((shipmentStats?.delivered ?? outboundList.filter((i) => i.status === "delivered").length) / outboundList.length) * 100)
+      : 0,
   };
 
   const getActionText = (status: OutboundStatus): string => {
@@ -431,11 +435,11 @@ export function WHOutboundListScreen() {
               <Text style={styles.statsLabel}>出货重量(kg)</Text>
             </View>
             <View style={styles.statsItem}>
-              <Text style={styles.statsValue}>8</Text>
+              <Text style={styles.statsValue}>{stats.customerCount}</Text>
               <Text style={styles.statsLabel}>客户数</Text>
             </View>
             <View style={styles.statsItem}>
-              <Text style={styles.statsValue}>98%</Text>
+              <Text style={styles.statsValue}>{stats.onTimeRate}%</Text>
               <Text style={styles.statsLabel}>准时发货率</Text>
             </View>
           </View>

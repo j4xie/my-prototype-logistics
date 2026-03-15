@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
@@ -165,8 +166,8 @@ class WorkSessionApiClient {
         `${this.getPath(factoryId)}/active/${userId}`
       );
       return response.data || null;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 404) {
         return null;
       }
       throw error;

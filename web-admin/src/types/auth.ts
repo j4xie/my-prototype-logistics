@@ -134,12 +134,16 @@ export interface PlatformUser extends BaseUser {
   factoryUser?: undefined;
 }
 
+// 工厂类型
+export type FactoryType = 'FACTORY' | 'RESTAURANT' | 'HEADQUARTERS' | 'BRANCH' | 'CENTRAL_KITCHEN';
+
 // 工厂用户接口
 export interface FactoryUser extends BaseUser {
   userType: 'factory';
   factoryUser: {
     role: FactoryRole;
     factoryId: string;
+    factoryType?: FactoryType;
     department?: Department;
     position?: string;
     permissions: string[];

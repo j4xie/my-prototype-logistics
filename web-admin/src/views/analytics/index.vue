@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
-import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { TrendCharts, DataAnalysis, Histogram, PieChart, Timer, Sunny } from '@element-plus/icons-vue';
 import { formatNumber } from '@/utils/format-number';
 
 const authStore = useAuthStore();
-const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
-const canWrite = computed(() => permissionStore.canWrite('analytics'));
 
 const loading = ref(false);
 
@@ -87,6 +84,8 @@ async function loadTrendData() {
     });
     if (response.success && response.data) {
       trendData.value = response.data;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载趋势数据失败');
     }
   } catch (error) {
     console.error('加载趋势数据失败:', error);

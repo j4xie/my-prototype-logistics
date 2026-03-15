@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Text, Card, Searchbar, Chip, FAB, ActivityIndicator, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -112,7 +112,7 @@ export default function WhitelistListScreen() {
       <FlatList data={filteredData} keyExtractor={item => item.id} renderItem={renderItem}
         contentContainerStyle={styles.list} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={<View style={styles.empty}><MaterialCommunityIcons name="shield-check-outline" size={64} color={HR_THEME.textMuted} /><Text style={styles.emptyText}>{t('whitelist.list.empty')}</Text></View>} />
-      <FAB icon="plus" style={styles.fab} onPress={() => navigation.navigate('WhitelistAdd' as any)} color="#fff" />
+      <FAB icon="plus" style={styles.fab} onPress={() => navigation.dispatch(CommonActions.navigate('WhitelistAdd'))} color="#fff" />
     </SafeAreaView>
   );
 }

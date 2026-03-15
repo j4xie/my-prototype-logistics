@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
@@ -40,16 +40,32 @@ const paymentMethodMap: Record<string, string> = {
 
 onMounted(() => {
   loadOverview();
-  loadTransactions();
-  loadAging();
 });
+
+watch(activeTab, (tab) => {
+  if (tab === 'receivable') {
+    txTypeFilter.value = 'CUSTOMER';
+    txPagination.value.page = 1;
+    loadTransactions();
+  } else if (tab === 'payable') {
+    txTypeFilter.value = 'SUPPLIER';
+    txPagination.value.page = 1;
+    loadTransactions();
+  } else if (tab === 'aging') {
+    loadAging();
+  }
+}, { immediate: false });
 
 async function loadOverview() {
   if (!factoryId.value) return;
   try {
     const res = await get(`/${factoryId.value}/finance/overview`);
     if (res.success) overview.value = res.data;
-  } catch { /* ignore */ }
+    else if (res.success === false) ElMessage.error(res.message || '加载财务概览失败');
+  } catch (error) {
+    console.error('加载财务概览失败:', error);
+    ElMessage.error('加载财务概览失败');
+  }
 }
 
 async function loadTransactions() {
@@ -62,6 +78,8 @@ async function loadTransactions() {
     if (res.success && res.data) {
       transactions.value = res.data.content || [];
       txPagination.value.total = res.data.totalElements || 0;
+    } else if (res.success === false) {
+      ElMessage.error(res.message || '加载交易记录失败');
     }
   } catch { ElMessage.error('加载交易记录失败'); }
   finally { loading.value = false; }
@@ -72,7 +90,11 @@ async function loadAging() {
   try {
     const res = await get(`/${factoryId.value}/finance/aging`, { params: { counterpartyType: agingType.value } });
     if (res.success) agingData.value = Array.isArray(res.data) ? res.data : [];
-  } catch { /* ignore */ }
+    else if (res.success === false) ElMessage.error(res.message || '加载账龄数据失败');
+  } catch (error) {
+    console.error('加载账龄数据失败:', error);
+    ElMessage.error('加载账龄数据失败');
+  }
 }
 
 function handleTxPageChange(page: number) { txPagination.value.page = page; loadTransactions(); }
@@ -124,7 +146,7 @@ function handleAgingTypeChange() { loadAging(); }
           <div class="tab-toolbar">
             <el-button :icon="Refresh" @click="txTypeFilter = 'CUSTOMER'; loadTransactions()">刷新</el-button>
           </div>
-          <el-table empty-text="暂无数据" :data="transactions.filter(t => ['AR_INVOICE','AR_PAYMENT','AR_ADJUSTMENT'].includes(t.transactionType))" border stripe v-loading="loading">
+          <el-table empty-text="暂无数据" :data="transactions" border stripe v-loading="loading">
             <el-table-column prop="transactionNumber" label="交易编号" width="150" />
             <el-table-column prop="counterpartyName" label="客户" min-width="140" show-overflow-tooltip />
             <el-table-column prop="transactionType" label="类型" width="120" align="center">
@@ -151,7 +173,7 @@ function handleAgingTypeChange() { loadAging(); }
 
         <!-- 应付 Tab -->
         <el-tab-pane label="应付账款" name="payable">
-          <el-table :data="transactions.filter(t => ['AP_INVOICE','AP_PAYMENT','AP_ADJUSTMENT'].includes(t.transactionType))" border stripe v-loading="loading">
+          <el-table :data="transactions" border stripe v-loading="loading">
             <el-table-column prop="transactionNumber" label="交易编号" width="150" />
             <el-table-column prop="counterpartyName" label="供应商" min-width="140" show-overflow-tooltip />
             <el-table-column prop="transactionType" label="类型" width="120" align="center">

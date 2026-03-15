@@ -111,6 +111,7 @@ async function loadProductTypes() {
     }
   } catch (error) {
     console.error('Failed to load product types:', error);
+    ElMessage.error('加载产品类型失败');
   }
 }
 
@@ -123,6 +124,7 @@ async function loadMaterialTypes() {
     }
   } catch (error) {
     console.error('Failed to load material types:', error);
+    ElMessage.error('加载原料类型失败');
   }
 }
 
@@ -197,6 +199,8 @@ async function submitBomForm() {
       bomDialogVisible.value = false;
       await loadBomItems();
       await loadCostSummary();
+    } else {
+      ElMessage.error(response.message || 'Operation failed');
     }
   } catch (error) {
     ElMessage.error('Operation failed');
@@ -213,6 +217,8 @@ async function handleDeleteBomItem(row: any) {
       ElMessage.success('Deleted successfully');
       await loadBomItems();
       await loadCostSummary();
+    } else {
+      ElMessage.error(response.message || 'Delete failed');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -233,6 +239,7 @@ async function loadLaborCosts() {
     }
   } catch (error) {
     console.error('Failed to load labor costs:', error);
+    ElMessage.error('加载人工费用失败');
   }
 }
 
@@ -245,6 +252,7 @@ async function loadAllLaborCosts() {
     }
   } catch (error) {
     console.error('Failed to load all labor costs:', error);
+    ElMessage.error('加载人工费用汇总失败');
   }
 }
 
@@ -298,6 +306,8 @@ async function submitLaborForm() {
       laborDialogVisible.value = false;
       await loadLaborCosts();
       await loadCostSummary();
+    } else {
+      ElMessage.error(response.message || 'Operation failed');
     }
   } catch (error) {
     ElMessage.error('Operation failed');
@@ -314,6 +324,8 @@ async function handleDeleteLaborCost(row: any) {
       ElMessage.success('Deleted successfully');
       await loadLaborCosts();
       await loadCostSummary();
+    } else {
+      ElMessage.error(response.message || 'Delete failed');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -332,6 +344,7 @@ async function loadOverheadCosts() {
     }
   } catch (error) {
     console.error('Failed to load overhead costs:', error);
+    ElMessage.error('加载均摊费用失败');
   }
 }
 
@@ -383,6 +396,8 @@ async function submitOverheadForm() {
       overheadDialogVisible.value = false;
       await loadOverheadCosts();
       await loadCostSummary();
+    } else {
+      ElMessage.error(response.message || 'Operation failed');
     }
   } catch (error) {
     ElMessage.error('Operation failed');
@@ -399,6 +414,8 @@ async function handleDeleteOverheadCost(row: any) {
       ElMessage.success('Deleted successfully');
       await loadOverheadCosts();
       await loadCostSummary();
+    } else {
+      ElMessage.error(response.message || 'Delete failed');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -417,6 +434,7 @@ async function loadCostSummary() {
     }
   } catch (error) {
     console.error('Failed to load cost summary:', error);
+    ElMessage.error('加载成本汇总失败');
   }
 }
 

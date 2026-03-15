@@ -187,7 +187,10 @@ async function loadMaterialTypes() {
       const d = res.data as { content?: { id: string; name: string }[] } | { id: string; name: string }[];
       materialTypes.value = Array.isArray(d) ? d : d.content || [];
     }
-  } catch (e) { console.error('Failed to load material types:', e); }
+  } catch (e) {
+    console.error('Failed to load material types:', e);
+    ElMessage.error('加载食材类型失败');
+  }
 }
 
 const statsLoaded = ref(false);
@@ -211,6 +214,7 @@ async function loadStatistics() {
     }
   } catch (e) {
     console.error('Failed to load wastage statistics:', e);
+    ElMessage.error('加载损耗统计失败');
   }
 }
 
@@ -293,10 +297,14 @@ async function submitCreateForm() {
   }
   submitting.value = true;
   try {
-    await createWastageRecord(factoryId.value, dialogForm.value);
-    ElMessage.success('损耗记录已创建');
-    dialogVisible.value = false;
-    loadData();
+    const res = await createWastageRecord(factoryId.value, dialogForm.value);
+    if (res.success) {
+      ElMessage.success('损耗记录已创建');
+      dialogVisible.value = false;
+      loadData();
+    } else {
+      ElMessage.error(res.message || '创建失败');
+    }
   } catch {
     ElMessage.error('创建失败，请检查网络连接');
   } finally { submitting.value = false; }
@@ -309,9 +317,13 @@ async function handleSubmit(row: WastageRecord) {
   } catch { return; }
   submitting.value = true;
   try {
-    await submitWastage(factoryId.value, row.id);
-    ElMessage.success('已提交');
-    loadData();
+    const res = await submitWastage(factoryId.value, row.id);
+    if (res.success) {
+      ElMessage.success('已提交');
+      loadData();
+    } else {
+      ElMessage.error(res.message || '提交失败');
+    }
   } catch { ElMessage.error('提交失败，请检查网络'); }
   finally { submitting.value = false; }
 }
@@ -323,9 +335,13 @@ async function handleApprove(row: WastageRecord) {
   } catch { return; }
   submitting.value = true;
   try {
-    await approveWastage(factoryId.value, row.id);
-    ElMessage.success('已审批');
-    loadData();
+    const res = await approveWastage(factoryId.value, row.id);
+    if (res.success) {
+      ElMessage.success('已审批');
+      loadData();
+    } else {
+      ElMessage.error(res.message || '审批失败');
+    }
   } catch { ElMessage.error('审批失败，请检查网络'); }
   finally { submitting.value = false; }
 }
@@ -339,9 +355,13 @@ async function handleReject(row: WastageRecord) {
   } catch { return; }
   submitting.value = true;
   try {
-    await rejectWastage(factoryId.value, row.id, { reason });
-    ElMessage.success('已驳回');
-    loadData();
+    const res = await rejectWastage(factoryId.value, row.id, { reason });
+    if (res.success) {
+      ElMessage.success('已驳回');
+      loadData();
+    } else {
+      ElMessage.error(res.message || '驳回失败');
+    }
   } catch { ElMessage.error('驳回失败，请检查网络'); }
   finally { submitting.value = false; }
 }

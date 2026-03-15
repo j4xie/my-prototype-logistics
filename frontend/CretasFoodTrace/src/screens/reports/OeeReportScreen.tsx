@@ -280,13 +280,13 @@ export default function OeeReportScreen() {
               {(oeeData.overallOee ?? 0) >= (oeeData.targetOee || TARGET_OEE) ? (
                 <View style={styles.achievementBadge}>
                   <Text style={styles.achievementText}>
-                    已达成目标 (+{((oeeData.overallOee ?? 0) - (oeeData.targetOee || TARGET_OEE)).toFixed(1)}%)
+                    已达成目标 (+{(Number(oeeData.overallOee ?? 0) - Number(oeeData.targetOee || TARGET_OEE)).toFixed(1)}%)
                   </Text>
                 </View>
               ) : (
                 <View style={styles.gapBadge}>
                   <Text style={styles.gapText}>
-                    距目标差 {((oeeData.targetOee || TARGET_OEE) - (oeeData.overallOee ?? 0)).toFixed(1)}%
+                    距目标差 {(Number(oeeData.targetOee || TARGET_OEE) - Number(oeeData.overallOee ?? 0)).toFixed(1)}%
                   </Text>
                 </View>
               )}
@@ -351,8 +351,8 @@ export default function OeeReportScreen() {
                   OEE = 可用性 x 表现性 x 质量率
                 </Text>
                 <Text style={styles.formulaCalc}>
-                  {(oeeData.overallOee ?? 0).toFixed(1)}% = {(oeeData.availability ?? 0).toFixed(1)}% x{' '}
-                  {(oeeData.performance ?? 0).toFixed(1)}% x {(oeeData.quality ?? 0).toFixed(1)}%
+                  {Number(oeeData.overallOee ?? 0).toFixed(1)}% = {Number(oeeData.availability ?? 0).toFixed(1)}% x{' '}
+                  {Number(oeeData.performance ?? 0).toFixed(1)}% x {Number(oeeData.quality ?? 0).toFixed(1)}%
                 </Text>
               </View>
             </Surface>
@@ -382,17 +382,17 @@ export default function OeeReportScreen() {
                           variant="bodySmall"
                           style={{ color: getOeeStatusColor(equipment.oee ?? 0), fontWeight: '600' }}
                         >
-                          {(equipment.oee ?? 0).toFixed(1)}%
+                          {Number(equipment.oee ?? 0).toFixed(1)}%
                         </Text>
                       </DataTable.Cell>
                       <DataTable.Cell numeric>
-                        <Text variant="bodySmall">{(equipment.availability ?? 0).toFixed(1)}%</Text>
+                        <Text variant="bodySmall">{Number(equipment.availability ?? 0).toFixed(1)}%</Text>
                       </DataTable.Cell>
                       <DataTable.Cell numeric>
-                        <Text variant="bodySmall">{(equipment.performance ?? 0).toFixed(1)}%</Text>
+                        <Text variant="bodySmall">{Number(equipment.performance ?? 0).toFixed(1)}%</Text>
                       </DataTable.Cell>
                       <DataTable.Cell numeric>
-                        <Text variant="bodySmall">{(equipment.quality ?? 0).toFixed(1)}%</Text>
+                        <Text variant="bodySmall">{Number(equipment.quality ?? 0).toFixed(1)}%</Text>
                       </DataTable.Cell>
                     </DataTable.Row>
                   ))}
@@ -460,11 +460,11 @@ export default function OeeReportScreen() {
                       </View>
                       <View style={styles.lossBarContainer}>
                         <ProgressBar
-                          progress={(loss.percentage ?? 0) / 100}
+                          progress={Number(loss.percentage ?? 0) / 100}
                           color={barColor}
                           style={styles.lossBar}
                         />
-                        <Text style={styles.lossPercentage}>{(loss.percentage ?? 0).toFixed(1)}%</Text>
+                        <Text style={styles.lossPercentage}>{Number(loss.percentage ?? 0).toFixed(1)}%</Text>
                       </View>
                       <Text style={styles.lossCategory}>{loss.category}</Text>
                     </View>

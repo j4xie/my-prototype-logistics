@@ -77,7 +77,7 @@ export function useLogin(options?: UseLoginOptions): UseLoginReturn {
       const deviceInfo = {
         deviceId: userIdentification.deviceId,
         deviceModel: 'Unknown',
-        platform: Platform.OS as 'ios' | 'android' | 'web',
+        platform: Platform.OS === 'web' ? 'android' : Platform.OS as 'ios' | 'android',
         osVersion: Platform.Version ? Platform.Version.toString() : 'web',
         appVersion: '1.0.0',
       };
@@ -138,20 +138,10 @@ export function useLogin(options?: UseLoginOptions): UseLoginReturn {
   };
 
   /**
-   * 自动登录
-   * @throws {NotImplementedError} 功能尚未实现
+   * 自动登录 — Phase 4 待实现，当前返回 false 避免每次 mount 抛异常
    */
   const autoLogin = async (): Promise<boolean> => {
-    throw new NotImplementedError(
-      '自动登录',
-      'Phase 4',
-      '自动登录功能尚未实现，敬请期待',
-      {
-        trackingIssue: 'backend/URGENT_API_REQUIREMENTS.md',
-        priority: 'P2',
-        estimatedTime: '1周',
-      }
-    );
+    return false;
   };
 
   /**

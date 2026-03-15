@@ -350,7 +350,7 @@ export default function ProfileScreen() {
               onPress={() => {
                 profileLogger.info('查看关于应用');
                 Alert.alert(
-                  '白垩纪食品溯源系统',
+                  '白垩纪AI Agent',
                   '版本: 1.0.0\n\n© 2025 白垩纪科技\n\n为食品安全保驾护航',
                   [{ text: '确定' }]
                 );
@@ -369,7 +369,7 @@ export default function ProfileScreen() {
               style={styles.settingItem}
               onPress={() => {
                 profileLogger.info('打开服务器连接测试');
-                (navigation as any).navigate('ServerConnectivityTest');
+                navigation.dispatch(CommonActions.navigate('ServerConnectivityTest'));
               }}
             >
                 <View style={styles.settingLeft}>
@@ -384,7 +384,7 @@ export default function ProfileScreen() {
               style={styles.settingItem}
               onPress={() => {
                 profileLogger.info('打开意图执行测试');
-                (navigation as any).navigate('IntentExecutionTest');
+                navigation.dispatch(CommonActions.navigate('IntentExecutionTest'));
               }}
             >
                 <View style={styles.settingLeft}>

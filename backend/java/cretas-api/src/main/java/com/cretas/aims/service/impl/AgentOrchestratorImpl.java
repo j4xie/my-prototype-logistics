@@ -187,7 +187,7 @@ public class AgentOrchestratorImpl implements AgentOrchestrator {
 
             // 构建分析 Prompt
             String systemPrompt = String.format("""
-                    你是白垩纪食品溯源系统的智能分析助手。
+                    你是白垩纪AI Agent的智能分析助手。
                     当前分析主题: %s
 
                     请根据以下原则进行分析：

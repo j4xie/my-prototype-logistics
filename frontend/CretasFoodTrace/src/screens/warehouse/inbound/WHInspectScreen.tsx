@@ -82,10 +82,8 @@ export function WHInspectScreen() {
     }
 
     try {
-      const response = await materialBatchApiClient.getBatchById(batchId) as
-        { data?: MaterialBatch } | MaterialBatch | undefined;
-
-      const batch = (response as { data?: MaterialBatch })?.data ?? (response as MaterialBatch);
+      const response = await materialBatchApiClient.getBatchById(batchId);
+      const batch = response?.data;
 
       if (batch) {
         setBatchInfo({

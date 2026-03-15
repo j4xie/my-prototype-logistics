@@ -95,8 +95,8 @@ export function SmartBIDataAnalysisScreen() {
         const file = result.assets[0];
         await uploadFile(file);
       }
-    } catch (error: any) {
-      Alert.alert('错误', `选择文件失败: ${error.message}`);
+    } catch (error) {
+      Alert.alert('错误', `选择文件失败: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -108,11 +108,12 @@ export function SmartBIDataAnalysisScreen() {
     try {
       // 1. 预览 Sheets
       const previewFormData = new FormData();
+      // @ts-expect-error - React Native FormData accepts {uri, name, type} objects, not Blob
       previewFormData.append('file', {
         uri: file.uri,
         name: file.name,
         type: file.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      } as any);
+      });
 
       const previewResponse = await apiClient.post<{ success: boolean; data: any[]; message?: string }>(
         `/api/mobile/${factoryId}/smart-bi/sheets`,
@@ -142,11 +143,12 @@ export function SmartBIDataAnalysisScreen() {
 
       // 3. 批量上传
       const uploadFormData = new FormData();
+      // @ts-expect-error - React Native FormData accepts {uri, name, type} objects, not Blob
       uploadFormData.append('file', {
         uri: file.uri,
         name: file.name,
         type: file.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      } as any);
+      });
       uploadFormData.append('sheetConfigs', JSON.stringify(sheetConfigs));
 
       setUploadProgress('正在处理和生成图表...');
@@ -169,9 +171,9 @@ export function SmartBIDataAnalysisScreen() {
       } else {
         throw new Error(uploadResponse.message || '上传失败');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Upload error:', error);
-      Alert.alert('上传失败', error.message || '未知错误');
+      Alert.alert('上传失败', error instanceof Error ? error.message : '未知错误');
     } finally {
       setUploading(false);
       setUploadProgress('');
@@ -410,7 +412,7 @@ export function SmartBIDataAnalysisScreen() {
                       key={idx}
                       title={metric.label}
                       value={formatCompactNumber(metric.value)}
-                      colorPreset={['purple', 'pink', 'blue', 'green'][idx % 4] as any}
+                      colorPreset={(['purple', 'pink', 'blue', 'green'] as const)[idx % 4]}
                     />
                   ))}
                 </View>

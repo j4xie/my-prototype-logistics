@@ -21,6 +21,7 @@ import { useAuthStore } from '../../store/authStore';
 import type { AISettings, AISettingsResponse, AIUsageStats } from '../../types/processing';
 import { AI_TONE_OPTIONS, AI_GOAL_OPTIONS, AI_DETAIL_OPTIONS } from '../../types/processing';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
+import { isAxiosError } from 'axios';
 import { logger } from '../../utils/logger';
 
 // 创建AISettings专用logger
@@ -94,8 +95,7 @@ export default function AISettingsScreen() {
     } catch (error) {
       aiSettingsLogger.error('加载AI设置失败', error as Error, { factoryId });
       // 如果API不存在，使用默认设置，不显示错误提示
-      const apiError = error as any;
-      if (apiError.response?.status !== 404) {
+      if (!(isAxiosError(error) && error.response?.status === 404)) {
         Alert.alert(t('common.error'), getErrorMsg(error) || t('aiSettings.messages.loadFailed'));
       }
     } finally {
@@ -155,7 +155,7 @@ export default function AISettingsScreen() {
       }
     } catch (error) {
       aiSettingsLogger.error('保存AI设置失败', error as Error, { factoryId });
-      Alert.alert(t('common.error'), (error as any).response?.data?.message || t('aiSettings.messages.saveFailed'));
+      Alert.alert(t('common.error'), getErrorMsg(error) || t('aiSettings.messages.saveFailed'));
     } finally {
       setSaving(false);
     }

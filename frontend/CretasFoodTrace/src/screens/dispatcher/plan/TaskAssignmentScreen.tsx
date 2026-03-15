@@ -26,7 +26,7 @@ import { isAxiosError } from 'axios';
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 // 调度员主题色
@@ -107,7 +107,7 @@ export default function TaskAssignmentScreen() {
         // 从仪表盘数据中提取统计信息
         // SchedulingDashboard type has overview.totalPlans, activePlans, etc.
         setStats({
-          pending: dashboard.overview?.totalPlans - dashboard.overview?.activePlans - dashboard.overview?.completedPlans || 0,
+          pending: (dashboard.overview?.totalPlans ?? 0) - (dashboard.overview?.activePlans ?? 0) - (dashboard.overview?.completedPlans ?? 0),
           inProgress: dashboard.overview?.activePlans || 0,
           assigned: 0, // Dashboard doesn't provide assigned count separately
           completed: dashboard.overview?.completedPlans || 0,
@@ -221,11 +221,11 @@ export default function TaskAssignmentScreen() {
           text: '开始分配',
           onPress: () => {
             // 导航到 BatchWorkersScreen
-            (navigation as any).navigate('BatchWorkers', {
+            navigation.dispatch(CommonActions.navigate('BatchWorkers', {
               taskId: task.id,
               taskName: task.name,
               requiredWorkers: task.requiredWorkers,
-            });
+            }));
           }
         },
       ]
@@ -241,12 +241,12 @@ export default function TaskAssignmentScreen() {
         {
           text: '追加',
           onPress: () => {
-            (navigation as any).navigate('BatchWorkers', {
+            navigation.dispatch(CommonActions.navigate('BatchWorkers', {
               taskId: task.id,
               taskName: task.name,
               requiredWorkers: task.requiredWorkers,
               isAddition: true,
-            });
+            }));
           }
         },
       ]

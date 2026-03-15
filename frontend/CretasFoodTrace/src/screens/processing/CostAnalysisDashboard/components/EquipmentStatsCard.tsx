@@ -48,7 +48,7 @@ export const EquipmentStatsCard = React.memo<EquipmentStatsCardProps>(({ equipme
         <View style={styles.detailRow}>
           <Text variant="bodyMedium">{t('costAnalysisDashboard.equipmentStats.equipmentCost')}</Text>
           <Text variant="titleMedium" style={[styles.detailValue, { color: '#7B1FA2' }]}>
-            ¥{equipmentStats.totalEquipmentCost.toFixed(2)}
+            ¥{Number(equipmentStats.totalEquipmentCost ?? 0).toFixed(2)}
           </Text>
         </View>
 
@@ -62,7 +62,7 @@ export const EquipmentStatsCard = React.memo<EquipmentStatsCardProps>(({ equipme
               <View key={index} style={styles.detailRow}>
                 <Text variant="bodySmall">{detail.equipmentName}</Text>
                 <Text variant="bodySmall" style={styles.detailValue}>
-                  {detail.usageDuration ? `${Math.floor(detail.usageDuration / 60)}h` : '-'} • ¥{detail.equipmentCost?.toFixed(2) || '0.00'}
+                  {detail.usageDuration ? `${Math.floor(detail.usageDuration / 60)}h` : '-'} • ¥{Number(detail.equipmentCost ?? 0).toFixed(2)}
                 </Text>
               </View>
             ))}

@@ -50,7 +50,7 @@ export default function EfficiencyReportScreen() {
   const [activeTab, setActiveTab] = useState('overview');
 
   // 数据状态
-  const [efficiencyStats, setEfficiencyStats] = useState<any>(null);
+  const [efficiencyStats, setEfficiencyStats] = useState<{ equipmentOEE: number; equipmentUtilization: number; laborEfficiency: number; overallEfficiency: number } | null>(null);
 
   // OEE数据状态
   const [oeeData, setOeeData] = useState<OeeReportDTO | null>(null);
@@ -75,19 +75,19 @@ export default function EfficiencyReportScreen() {
         if (equipmentStatsResponse.success && equipmentStatsResponse.data) {
           const stats = equipmentStatsResponse.data;
           const newEfficiencyStats = {
-            equipmentOEE: (stats as any).averageOEE || 75, // 示例值
+            equipmentOEE: ('averageOEE' in stats ? (stats as { averageOEE: number }).averageOEE : 0),
             equipmentUtilization: stats.activeCount && stats.totalCount
               ? (stats.activeCount / stats.totalCount) * 100
-              : 80,
-            laborEfficiency: 85, // 需要从工时数据计算
-            overallEfficiency: 78,
+              : 0,
+            laborEfficiency: 0,
+            overallEfficiency: 0,
           };
           setEfficiencyStats(newEfficiencyStats);
 
           efficiencyReportLogger.info('效率报表数据加载成功', {
-            equipmentOEE: newEfficiencyStats.equipmentOEE.toFixed(1) + '%',
-            equipmentUtilization: newEfficiencyStats.equipmentUtilization.toFixed(1) + '%',
-            overallEfficiency: newEfficiencyStats.overallEfficiency.toFixed(1) + '%',
+            equipmentOEE: Number(newEfficiencyStats.equipmentOEE ?? 0).toFixed(1) + '%',
+            equipmentUtilization: Number(newEfficiencyStats.equipmentUtilization ?? 0).toFixed(1) + '%',
+            overallEfficiency: Number(newEfficiencyStats.overallEfficiency ?? 0).toFixed(1) + '%',
             factoryId,
           });
         }
@@ -97,10 +97,10 @@ export default function EfficiencyReportScreen() {
           error: (error as Error).message,
         });
         setEfficiencyStats({
-          equipmentOEE: 75,
-          equipmentUtilization: 80,
-          laborEfficiency: 85,
-          overallEfficiency: 78,
+          equipmentOEE: 0,
+          equipmentUtilization: 0,
+          laborEfficiency: 0,
+          overallEfficiency: 0,
         });
       }
     } catch (error) {
@@ -172,14 +172,14 @@ export default function EfficiencyReportScreen() {
         endDate,
       });
       // 解包嵌套的响应格式 {code, message, data}
-      const actualData = (rawResponse as any)?.data ?? rawResponse;
+      const actualData = (rawResponse && typeof rawResponse === 'object' && 'data' in rawResponse) ? (rawResponse as { data: OeeReportDTO }).data : rawResponse;
       setOeeData(actualData);
 
       efficiencyReportLogger.info('OEE报表数据加载成功', {
-        overallOee: (actualData.overallOee ?? 0).toFixed(1) + '%',
-        availability: (actualData.availability ?? 0).toFixed(1) + '%',
-        performance: (actualData.performance ?? 0).toFixed(1) + '%',
-        quality: (actualData.quality ?? 0).toFixed(1) + '%',
+        overallOee: Number(actualData.overallOee ?? 0).toFixed(1) + '%',
+        availability: Number(actualData.availability ?? 0).toFixed(1) + '%',
+        performance: Number(actualData.performance ?? 0).toFixed(1) + '%',
+        quality: Number(actualData.quality ?? 0).toFixed(1) + '%',
         factoryId,
       });
     } catch (error) {
@@ -245,40 +245,40 @@ export default function EfficiencyReportScreen() {
               <View style={styles.metricHeader}>
                 <Text style={styles.metricLabel}>{t('efficiency.equipmentOEE')}</Text>
                 <Text style={[styles.metricValue, { color: '#4CAF50' }]}>
-                  {(efficiencyStats.equipmentOEE ?? 0).toFixed(1)}%
+                  {Number(efficiencyStats.equipmentOEE ?? 0).toFixed(1)}%
                 </Text>
               </View>
-              <ProgressBar progress={(efficiencyStats.equipmentOEE ?? 0) / 100} color="#4CAF50" />
+              <ProgressBar progress={Number(efficiencyStats.equipmentOEE ?? 0) / 100} color="#4CAF50" />
             </View>
 
             <View style={styles.metricItem}>
               <View style={styles.metricHeader}>
                 <Text style={styles.metricLabel}>{t('efficiency.equipmentUtilization')}</Text>
                 <Text style={[styles.metricValue, { color: '#2196F3' }]}>
-                  {(efficiencyStats.equipmentUtilization ?? 0).toFixed(1)}%
+                  {Number(efficiencyStats.equipmentUtilization ?? 0).toFixed(1)}%
                 </Text>
               </View>
-              <ProgressBar progress={(efficiencyStats.equipmentUtilization ?? 0) / 100} color="#2196F3" />
+              <ProgressBar progress={Number(efficiencyStats.equipmentUtilization ?? 0) / 100} color="#2196F3" />
             </View>
 
             <View style={styles.metricItem}>
               <View style={styles.metricHeader}>
                 <Text style={styles.metricLabel}>{t('efficiency.laborEfficiency')}</Text>
                 <Text style={[styles.metricValue, { color: '#FF9800' }]}>
-                  {(efficiencyStats.laborEfficiency ?? 0).toFixed(1)}%
+                  {Number(efficiencyStats.laborEfficiency ?? 0).toFixed(1)}%
                 </Text>
               </View>
-              <ProgressBar progress={(efficiencyStats.laborEfficiency ?? 0) / 100} color="#FF9800" />
+              <ProgressBar progress={Number(efficiencyStats.laborEfficiency ?? 0) / 100} color="#FF9800" />
             </View>
 
             <View style={styles.metricItem}>
               <View style={styles.metricHeader}>
                 <Text style={styles.metricLabel}>{t('efficiency.overallEfficiency')}</Text>
                 <Text style={[styles.metricValue, { color: '#9C27B0' }]}>
-                  {(efficiencyStats.overallEfficiency ?? 0).toFixed(1)}%
+                  {Number(efficiencyStats.overallEfficiency ?? 0).toFixed(1)}%
                 </Text>
               </View>
-              <ProgressBar progress={(efficiencyStats.overallEfficiency ?? 0) / 100} color="#9C27B0" />
+              <ProgressBar progress={Number(efficiencyStats.overallEfficiency ?? 0) / 100} color="#9C27B0" />
             </View>
           </>
         ) : (
@@ -311,12 +311,12 @@ export default function EfficiencyReportScreen() {
               {/* 总OEE值 */}
               <View style={styles.oeeMainValue}>
                 <Text style={styles.oeeMainNumber}>
-                  {(oeeData.overallOee ?? 0).toFixed(1)}%
+                  {Number(oeeData.overallOee ?? 0).toFixed(1)}%
                 </Text>
                 <Text style={styles.oeeMainLabel}>综合OEE</Text>
                 {oeeData.targetOee > 0 && (
                   <Text style={styles.oeeTargetText}>
-                    目标: {(oeeData.targetOee ?? 0).toFixed(1)}%
+                    目标: {Number(oeeData.targetOee ?? 0).toFixed(1)}%
                   </Text>
                 )}
               </View>
@@ -327,7 +327,7 @@ export default function EfficiencyReportScreen() {
                   OEE = 可用率 x 性能率 x 质量率
                 </Text>
                 <Text style={styles.oeeFormulaValues}>
-                  {(oeeData.overallOee ?? 0).toFixed(1)}% = {(oeeData.availability ?? 0).toFixed(1)}% x {(oeeData.performance ?? 0).toFixed(1)}% x {(oeeData.quality ?? 0).toFixed(1)}%
+                  {Number(oeeData.overallOee ?? 0).toFixed(1)}% = {Number(oeeData.availability ?? 0).toFixed(1)}% x {Number(oeeData.performance ?? 0).toFixed(1)}% x {Number(oeeData.quality ?? 0).toFixed(1)}%
                 </Text>
               </View>
 
@@ -336,21 +336,21 @@ export default function EfficiencyReportScreen() {
                 <View style={[styles.oeeMetricCard, { backgroundColor: '#E8F5E9' }]}>
                   <Icon source="clock-outline" size={24} color="#4CAF50" />
                   <Text style={[styles.oeeMetricValue, { color: '#4CAF50' }]}>
-                    {(oeeData.availability ?? 0).toFixed(1)}%
+                    {Number(oeeData.availability ?? 0).toFixed(1)}%
                   </Text>
                   <Text style={styles.oeeMetricLabel}>可用率</Text>
                 </View>
                 <View style={[styles.oeeMetricCard, { backgroundColor: '#E3F2FD' }]}>
                   <Icon source="speedometer" size={24} color="#2196F3" />
                   <Text style={[styles.oeeMetricValue, { color: '#2196F3' }]}>
-                    {(oeeData.performance ?? 0).toFixed(1)}%
+                    {Number(oeeData.performance ?? 0).toFixed(1)}%
                   </Text>
                   <Text style={styles.oeeMetricLabel}>性能率</Text>
                 </View>
                 <View style={[styles.oeeMetricCard, { backgroundColor: '#FFF3E0' }]}>
                   <Icon source="check-circle-outline" size={24} color="#FF9800" />
                   <Text style={[styles.oeeMetricValue, { color: '#FF9800' }]}>
-                    {(oeeData.quality ?? 0).toFixed(1)}%
+                    {Number(oeeData.quality ?? 0).toFixed(1)}%
                   </Text>
                   <Text style={styles.oeeMetricLabel}>质量率</Text>
                 </View>
@@ -363,10 +363,10 @@ export default function EfficiencyReportScreen() {
                   <View style={styles.oeeDetailHeader}>
                     <Text style={styles.oeeDetailLabel}>可用率 (Availability)</Text>
                     <Text style={[styles.oeeDetailValue, { color: '#4CAF50' }]}>
-                      {(oeeData.availability ?? 0).toFixed(1)}%
+                      {Number(oeeData.availability ?? 0).toFixed(1)}%
                     </Text>
                   </View>
-                  <ProgressBar progress={(oeeData.availability ?? 0) / 100} color="#4CAF50" style={styles.oeeProgressBar} />
+                  <ProgressBar progress={Number(oeeData.availability ?? 0) / 100} color="#4CAF50" style={styles.oeeProgressBar} />
                   <Text style={styles.oeeDetailDesc}>设备实际运行时间占计划时间的比例</Text>
                 </View>
 
@@ -374,10 +374,10 @@ export default function EfficiencyReportScreen() {
                   <View style={styles.oeeDetailHeader}>
                     <Text style={styles.oeeDetailLabel}>性能率 (Performance)</Text>
                     <Text style={[styles.oeeDetailValue, { color: '#2196F3' }]}>
-                      {(oeeData.performance ?? 0).toFixed(1)}%
+                      {Number(oeeData.performance ?? 0).toFixed(1)}%
                     </Text>
                   </View>
-                  <ProgressBar progress={(oeeData.performance ?? 0) / 100} color="#2196F3" style={styles.oeeProgressBar} />
+                  <ProgressBar progress={Number(oeeData.performance ?? 0) / 100} color="#2196F3" style={styles.oeeProgressBar} />
                   <Text style={styles.oeeDetailDesc}>实际产出与理论产出的比例</Text>
                 </View>
 
@@ -385,10 +385,10 @@ export default function EfficiencyReportScreen() {
                   <View style={styles.oeeDetailHeader}>
                     <Text style={styles.oeeDetailLabel}>质量率 (Quality)</Text>
                     <Text style={[styles.oeeDetailValue, { color: '#FF9800' }]}>
-                      {(oeeData.quality ?? 0).toFixed(1)}%
+                      {Number(oeeData.quality ?? 0).toFixed(1)}%
                     </Text>
                   </View>
-                  <ProgressBar progress={(oeeData.quality ?? 0) / 100} color="#FF9800" style={styles.oeeProgressBar} />
+                  <ProgressBar progress={Number(oeeData.quality ?? 0) / 100} color="#FF9800" style={styles.oeeProgressBar} />
                   <Text style={styles.oeeDetailDesc}>合格品数量占总产出的比例</Text>
                 </View>
               </View>

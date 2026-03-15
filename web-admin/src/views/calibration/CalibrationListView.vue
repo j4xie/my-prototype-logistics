@@ -111,11 +111,7 @@ async function loadFactoryOptions() {
       factoryOptions.value = response.data;
     }
   } catch {
-    // Backend endpoint not implemented — use demo data
-    factoryOptions.value = [
-      { id: '1', factoryId: authStore.factoryId || '', name: '上海食品加工厂' },
-      { id: '2', factoryId: 'F002', name: '北京冷链物流中心' }
-    ];
+    ElMessage.error('加载工厂选项失败');
   }
 }
 
@@ -126,15 +122,7 @@ async function loadStatistics() {
       statistics.value = response.data;
     }
   } catch {
-    // Backend endpoint not implemented — use demo data
-    statistics.value = {
-      totalSessions: 56,
-      completedSessions: 42,
-      averageScore: 87.5,
-      averageImprovement: 12.3,
-      lastSessionDate: new Date().toISOString(),
-      weeklyTrend: []
-    };
+    ElMessage.error('加载统计数据失败');
   }
 }
 
@@ -156,41 +144,10 @@ async function loadData() {
       pagination.value.total = response.data.totalElements || 0;
     }
   } catch {
-    // Backend endpoint not implemented — use demo data
-    tableData.value = generateMockData();
-    pagination.value.total = 25;
+    ElMessage.error('加载校准数据失败');
   } finally {
     loading.value = false;
   }
-}
-
-function generateMockData(): CalibrationSession[] {
-  const types: Array<'manual' | 'auto' | 'scheduled'> = ['manual', 'auto', 'scheduled'];
-  const statuses: CalibrationSessionStatus[] = ['pending', 'in_progress', 'completed', 'failed'];
-
-  return Array.from({ length: 10 }, (_, i) => ({
-    id: `session-${i + 1}`,
-    sessionName: `校准会话 ${i + 1}`,
-    sessionType: types[Math.floor(Math.random() * types.length)],
-    status: statuses[Math.floor(Math.random() * statuses.length)],
-    factoryId: authStore.factoryId,
-    factoryName: authStore.factoryId || '未知工厂',
-    description: `第 ${i + 1} 次行为校准会话`,
-    progress: Math.floor(Math.random() * 100),
-    results: Math.random() > 0.5 ? {
-      overallScore: 80 + Math.floor(Math.random() * 20),
-      concisenessScore: 75 + Math.floor(Math.random() * 25),
-      successRateScore: 85 + Math.floor(Math.random() * 15),
-      efficiencyScore: 70 + Math.floor(Math.random() * 30),
-      improvement: Math.floor(Math.random() * 20) - 5,
-      recommendations: ['优化工具调用逻辑', '增加错误重试机制']
-    } : undefined,
-    createdByName: ['张三', '李四', '王五'][Math.floor(Math.random() * 3)],
-    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-    startTime: new Date(Date.now() - i * 86400000 + 3600000).toISOString(),
-    endTime: Math.random() > 0.3 ? new Date(Date.now() - i * 86400000 + 7200000).toISOString() : undefined,
-    duration: Math.floor(Math.random() * 3600)
-  }));
 }
 
 // ==================== 事件处理 ====================
@@ -258,6 +215,8 @@ async function submitCreate() {
       createDialogVisible.value = false;
       loadData();
       loadStatistics();
+    } else {
+      ElMessage.error(response.message || '创建失败');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -282,6 +241,8 @@ async function handleStart(row: CalibrationSession) {
     if (response.success) {
       ElMessage.success('会话已开始');
       loadData();
+    } else {
+      ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -307,6 +268,8 @@ async function handleComplete(row: CalibrationSession) {
       ElMessage.success('会话已完成');
       loadData();
       loadStatistics();
+    } else {
+      ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -331,6 +294,8 @@ async function handleCancel(row: CalibrationSession) {
     if (response.success) {
       ElMessage.success('会话已取消');
       loadData();
+    } else {
+      ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -356,6 +321,8 @@ async function handleDelete(row: CalibrationSession) {
       ElMessage.success('删除成功');
       loadData();
       loadStatistics();
+    } else {
+      ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
     if (error !== 'cancel') {

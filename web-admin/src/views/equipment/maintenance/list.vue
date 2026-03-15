@@ -6,13 +6,25 @@ import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search, Refresh, Tools, Check } from '@element-plus/icons-vue';
 
+interface MaintenanceEquipment {
+  id: string;
+  code: string;
+  name: string;
+  type: string;
+  location: string;
+  status: string;
+  lastMaintenanceDate: string;
+  nextMaintenanceDate: string;
+  daysUntilMaintenance: number;
+}
+
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('equipment'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<MaintenanceEquipment[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 
@@ -34,8 +46,8 @@ const statistics = ref({
   completedThisMonth: 0
 });
 
-onMounted(() => {
-  loadData();
+onMounted(async () => {
+  await loadData();
   loadStatistics();
 });
 
@@ -54,6 +66,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || response.data || [];
       pagination.value.total = response.data.totalElements || tableData.value.length;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -66,12 +80,27 @@ async function loadData() {
 async function loadStatistics() {
   if (!factoryId.value) return;
   try {
-    const response = await get(`/${factoryId.value}/equipment/maintenance-stats`);
+    const response = await get(`/${factoryId.value}/equipment/overall-statistics`);
     if (response.success && response.data) {
-      statistics.value = response.data;
+      const data = response.data as { statusDistribution?: Record<string, number> };
+      const statusDist = data.statusDistribution || {};
+      statistics.value = {
+        needingMaintenance: statusDist.maintenance || 0,
+        overdue: 0,
+        completedThisMonth: 0
+      };
+      // Compute overdue from table data if available
+      if (tableData.value.length > 0) {
+        statistics.value.overdue = tableData.value.filter(
+          item => item.daysUntilMaintenance != null && item.daysUntilMaintenance < 0
+        ).length;
+      }
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载统计数据失败');
     }
   } catch (error) {
     console.error('加载统计失败:', error);
+    ElMessage.error('加载统计数据失败');
   }
 }
 
@@ -98,7 +127,7 @@ function handleSizeChange(size: number) {
   loadData();
 }
 
-function handleMaintenance(row: any) {
+function handleMaintenance(row: MaintenanceEquipment) {
   maintenanceForm.value = {
     equipmentId: row.id,
     equipmentName: row.name,

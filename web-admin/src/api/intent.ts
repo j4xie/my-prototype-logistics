@@ -2,7 +2,7 @@
  * AI 意图配置 API
  * 对应后端 AIIntentConfigController
  */
-import { get, put, patch } from './request';
+import { get, put } from './request';
 import type { ApiResponse } from '@/types/api';
 
 // ============ 类型定义 ============

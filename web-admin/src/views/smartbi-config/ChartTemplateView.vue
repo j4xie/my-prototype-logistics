@@ -131,6 +131,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -148,6 +150,7 @@ async function loadDataSources() {
     }
   } catch (error) {
     console.error('加载数据源失败:', error);
+    ElMessage.error('加载数据源失败');
   }
 }
 
@@ -211,6 +214,8 @@ async function handleSubmit() {
       ElMessage.success(editForm.value.id ? '更新成功' : '创建成功');
       dialogVisible.value = false;
       loadData();
+    } else {
+      ElMessage.error(response.message || '保存失败');
     }
   } catch (error) {
     console.error('保存失败:', error);
@@ -237,6 +242,8 @@ async function handleDelete(row: ChartTemplate) {
     if (response.success) {
       ElMessage.success('删除成功');
       loadData();
+    } else {
+      ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -254,6 +261,8 @@ async function handlePreview(row: ChartTemplate) {
     const response = await previewChart(row.id);
     if (response.success) {
       previewData.value = response.data;
+    } else {
+      ElMessage.error(response.message || '获取预览数据失败');
     }
   } catch (error) {
     console.error('预览失败:', error);

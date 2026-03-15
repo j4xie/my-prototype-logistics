@@ -73,15 +73,18 @@ async function loadData() {
 
   loading.value = true;
   try {
-    const response = await get(`/${factoryId.value}/quality-check-items`, {
-      params: {
-        page: pagination.value.page,
-        size: pagination.value.size
-      }
-    });
+    const params: Record<string, string | number> = {
+      page: pagination.value.page,
+      size: pagination.value.size
+    };
+    if (searchForm.value.keyword) params.keyword = searchForm.value.keyword;
+    if (searchForm.value.category) params.category = searchForm.value.category;
+    const response = await get(`/${factoryId.value}/quality-check-items`, { params });
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -107,6 +110,7 @@ async function loadStatistics() {
     }
   } catch (error) {
     console.error('加载统计失败:', error);
+    ElMessage.error('加载统计数据失败');
   }
 }
 
@@ -232,6 +236,8 @@ async function handleToggleEnabled(row: any) {
       row.enabled = newEnabled;
       ElMessage.success(newEnabled ? '已启用' : '已禁用');
       loadStatistics();
+    } else {
+      ElMessage.error(response.message || '操作失败');
     }
   } catch {
     ElMessage.error('操作失败');

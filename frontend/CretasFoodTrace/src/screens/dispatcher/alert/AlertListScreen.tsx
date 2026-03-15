@@ -67,14 +67,15 @@ const SEVERITY_STYLES: Record<AlertSeverity, { bg: string; text: string; label: 
 };
 
 // 告警类型图标和标签
-const ALERT_TYPE_CONFIG: Record<string, { icon: string; label: string }> = {
+type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+const ALERT_TYPE_CONFIG: Record<string, { icon: IconName; label: string }> = {
   low_probability: { icon: 'chart-line-variant', label: '完成概率低' },
   resource_conflict: { icon: 'alert-octagon', label: '资源冲突' },
   deadline_risk: { icon: 'clock-alert', label: '交期风险' },
   efficiency_drop: { icon: 'trending-down', label: '效率下降' },
   worker_shortage: { icon: 'account-alert', label: '人员不足' },
   equipment_unavailable: { icon: 'wrench-clock', label: '设备不可用' },
-  material_shortage: { icon: 'package-variant-closed-remove', label: '物料短缺' },
+  material_shortage: { icon: 'package-variant-closed', label: '物料短缺' },
   efficiency_low: { icon: 'speedometer-slow', label: '效率偏低' },
   capacity_overload: { icon: 'factory', label: '产能超载' },
 };
@@ -288,7 +289,7 @@ export default function AlertListScreen() {
 
   // 获取告警类型配置
   const getAlertTypeConfig = (alertType: string) => {
-    return ALERT_TYPE_CONFIG[alertType] || { icon: 'alert', label: alertType };
+    return ALERT_TYPE_CONFIG[alertType] || { icon: 'alert' as IconName, label: alertType };
   };
 
   // 获取状态标签
@@ -335,7 +336,7 @@ export default function AlertListScreen() {
           <View style={styles.alertTypeRow}>
             <View style={[styles.alertTypeIcon, { backgroundColor: severityStyle.bg }]}>
               <MaterialCommunityIcons
-                name={typeConfig.icon as any}
+                name={typeConfig.icon}
                 size={18}
                 color={severityStyle.text}
               />

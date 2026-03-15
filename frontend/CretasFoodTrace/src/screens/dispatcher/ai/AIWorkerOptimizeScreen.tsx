@@ -241,28 +241,46 @@ export default function AIWorkerOptimizeScreen() {
 
   // 应用优化方案
   const handleApplyOptimization = () => {
+    if (!optimizationData) return;
+    const adjustmentCount = optimizationData.adjustments.length;
+
     Alert.alert(
       '应用优化方案',
-      '确定要应用AI推荐的人员优化方案吗？将生成3个人员调动申请。',
+      `确定要应用AI推荐的人员优化方案吗？将生成 ${adjustmentCount} 个人员调动申请。`,
       [
         { text: '取消', style: 'cancel' },
         {
           text: '确定',
-          onPress: () => {
-            Alert.alert(
-              '成功',
-              '人员优化方案已应用！\n\n已提交 3 个人员调动申请，等待审批。\n预计完成概率提升至 92%。'
-            );
+          onPress: async () => {
+            try {
+              const response = await schedulingApiClient.optimizeWorkers({
+                scheduleId,
+                planId,
+                optimizeFor: 'efficiency',
+              });
+
+              if (response.success) {
+                Alert.alert(
+                  '成功',
+                  `人员优化方案已提交！\n\n共 ${adjustmentCount} 个人员调动，等待审批。`,
+                  [{ text: '确定', onPress: () => navigation.goBack() }]
+                );
+              } else {
+                Alert.alert('失败', response.message || '应用优化方案失败，请重试');
+              }
+            } catch (err) {
+              console.error('Failed to apply optimization:', err);
+              Alert.alert('错误', '应用优化方案失败，请检查网络后重试');
+            }
           },
         },
       ]
     );
   };
 
-  // 手动调整
+  // 手动调整 — 导航到人员调动页面
   const handleManualAdjust = () => {
-    // TODO: 导航到人员调动页面
-    Alert.alert('提示', '即将跳转到人员调动页面');
+    navigation.goBack();
   };
 
   // 渲染收益统计项

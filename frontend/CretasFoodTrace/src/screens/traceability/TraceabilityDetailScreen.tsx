@@ -22,6 +22,7 @@ import {
   traceabilityApiClient,
   FullTraceResponse,
   MaterialInfo,
+  ProcessingStageInfo,
   QualityInfo,
   ShipmentInfo,
 } from '../../services/api/traceabilityApiClient';
@@ -215,6 +216,32 @@ const TraceabilityDetailScreen: React.FC = () => {
           </Card.Content>
         </Card>
 
+        {/* === 2.5 加工环节 === */}
+        {traceData.processingStages && traceData.processingStages.length > 0 && (
+          <Card style={styles.card}>
+            <Card.Content>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.sectionIconContainer, { backgroundColor: '#00BCD4' }]}>
+                  <MaterialCommunityIcons name="cog-transfer" size={24} color="#fff" />
+                </View>
+                <Text variant="titleMedium" style={styles.sectionTitle}>加工环节</Text>
+                <Chip mode="flat">{traceData.processingStages.length} 道工序</Chip>
+              </View>
+              <Divider style={styles.divider} />
+
+              {traceData.processingStages
+                .sort((a, b) => (a.stageOrder ?? 0) - (b.stageOrder ?? 0))
+                .map((stage, index) => (
+                <ProcessingStageCard
+                  key={index}
+                  stage={stage}
+                  isLast={index === (traceData.processingStages?.length ?? 0) - 1}
+                />
+              ))}
+            </Card.Content>
+          </Card>
+        )}
+
         {/* === 3. 质检记录 === */}
         <Card style={styles.card}>
           <Card.Content>
@@ -302,6 +329,47 @@ const InfoItem: React.FC<{
 );
 
 // 原材料卡片组件
+// 加工环节卡片组件
+const ProcessingStageCard: React.FC<{ stage: ProcessingStageInfo; isLast: boolean }> = ({ stage, isLast }) => (
+  <View style={[styles.itemCard, !isLast && styles.itemCardBorder]}>
+    <View style={styles.itemHeader}>
+      <Text style={styles.itemTitle}>{stage.stageName || stage.stageType}</Text>
+      <Text style={styles.itemSubtitle}>第{stage.stageOrder}道工序</Text>
+    </View>
+    <View style={styles.itemDetails}>
+      {stage.operatorName && (
+        <Text style={styles.itemDetail}>操作员: {stage.operatorName}</Text>
+      )}
+      {stage.equipmentName && (
+        <Text style={styles.itemDetail}>设备: {stage.equipmentName}</Text>
+      )}
+      {stage.durationMinutes != null && (
+        <Text style={styles.itemDetail}>耗时: {stage.durationMinutes}分钟</Text>
+      )}
+      {stage.inputWeight != null && stage.outputWeight != null && (
+        <Text style={styles.itemDetail}>
+          投入/产出: {stage.inputWeight}kg → {stage.outputWeight}kg
+        </Text>
+      )}
+      {stage.lossRate != null && (
+        <Text style={styles.itemDetail}>损耗率: {(stage.lossRate * 100).toFixed(1)}%</Text>
+      )}
+      {stage.passRate != null && (
+        <Text style={styles.itemDetail}>合格率: {(stage.passRate * 100).toFixed(1)}%</Text>
+      )}
+      {stage.temperature != null && (
+        <Text style={styles.itemDetail}>温度: {stage.temperature}°C</Text>
+      )}
+      {stage.startTime && (
+        <Text style={styles.itemDetail}>
+          时间: {new Date(stage.startTime).toLocaleString()}
+          {stage.endTime ? ` ~ ${new Date(stage.endTime).toLocaleTimeString()}` : ''}
+        </Text>
+      )}
+    </View>
+  </View>
+);
+
 const MaterialCard: React.FC<{ material: MaterialInfo; isLast: boolean }> = ({ material, isLast }) => (
   <View style={[styles.itemCard, !isLast && styles.itemCardBorder]}>
     <View style={styles.itemHeader}>

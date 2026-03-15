@@ -4,9 +4,18 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Search, Refresh, Download, Upload, Picture, ChatDotRound } from '@element-plus/icons-vue';
+import { Plus, Search, Refresh, Download, Upload, Picture, ChatDotRound, Setting, Rank, Delete as DeleteIcon } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PRODUCT_CONFIG } from '@/components/ai-entry/types';
+import {
+  getActiveWorkProcesses,
+  getProductWorkProcesses,
+  createProductWorkProcess,
+  deleteProductWorkProcess,
+  batchSortProductWorkProcesses,
+  type WorkProcessItem,
+  type ProductWorkProcessItem,
+} from '@/api/processProduction';
 
 // 产品分类定义
 const PRODUCT_CATEGORIES = [
@@ -106,6 +115,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -193,10 +204,13 @@ async function handleDelete(row: ProductType) {
     if (response.success) {
       ElMessage.success('删除成功');
       loadData();
+    } else {
+      ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除失败:', error);
+      ElMessage.error('删除失败');
     }
   }
 }
@@ -231,9 +245,12 @@ async function handleSubmit() {
       ElMessage.success(isEditing.value ? '编辑成功' : '新增成功');
       dialogVisible.value = false;
       loadData();
+    } else {
+      ElMessage.error(response.message || '提交失败');
     }
   } catch (error) {
     console.error('提交失败:', error);
+    ElMessage.error('提交失败');
   } finally {
     submitting.value = false;
   }
@@ -272,6 +289,93 @@ function handleImport() {
 function getCategoryLabel(value?: string) {
   const category = PRODUCT_CATEGORIES.find(c => c.value === value);
   return category?.label || value || '-';
+}
+
+// ==================== 工序配置抽屉 ====================
+const processDrawerVisible = ref(false);
+const processDrawerProduct = ref<ProductType | null>(null);
+const availableProcesses = ref<WorkProcessItem[]>([]);
+const linkedProcesses = ref<ProductWorkProcessItem[]>([]);
+const processLoading = ref(false);
+const addingProcessId = ref('');
+
+async function handleConfigProcesses(row: ProductType) {
+  processDrawerProduct.value = row;
+  processDrawerVisible.value = true;
+  processLoading.value = true;
+  try {
+    const [activeRes, linkedRes] = await Promise.all([
+      getActiveWorkProcesses(factoryId.value!),
+      getProductWorkProcesses(factoryId.value!, row.id),
+    ]);
+    availableProcesses.value = (activeRes.success ? (Array.isArray(activeRes.data) ? activeRes.data : []) : []) as WorkProcessItem[];
+    linkedProcesses.value = (linkedRes.success ? (Array.isArray(linkedRes.data) ? linkedRes.data : []) : []) as ProductWorkProcessItem[];
+  } catch {
+    ElMessage.error('加载工序配置失败');
+  } finally {
+    processLoading.value = false;
+  }
+}
+
+const unlinkedProcesses = computed(() => {
+  const linkedIds = new Set(linkedProcesses.value.map(lp => lp.workProcessId));
+  return availableProcesses.value.filter(p => !linkedIds.has(p.id));
+});
+
+async function handleAddProcess(processId: string) {
+  if (!processDrawerProduct.value) return;
+  addingProcessId.value = processId;
+  try {
+    const nextOrder = linkedProcesses.value.length + 1;
+    const res = await createProductWorkProcess(factoryId.value!, {
+      productTypeId: processDrawerProduct.value.id,
+      workProcessId: processId,
+      processOrder: nextOrder,
+    });
+    if (res.success) {
+      await refreshLinkedProcesses();
+      ElMessage.success('已关联');
+    } else {
+      ElMessage.error(res.message || '关联失败');
+    }
+  } catch {
+    ElMessage.error('关联失败');
+  } finally {
+    addingProcessId.value = '';
+  }
+}
+
+async function handleRemoveProcess(item: ProductWorkProcessItem) {
+  try {
+    await ElMessageBox.confirm(`确定取消关联工序「${item.processName}」？`, '提示', { type: 'warning' });
+    const res = await deleteProductWorkProcess(factoryId.value!, item.id);
+    if (res.success) {
+      await refreshLinkedProcesses();
+      ElMessage.success('已取消关联');
+    }
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error('操作失败');
+  }
+}
+
+async function handleMoveProcess(index: number, direction: 'up' | 'down') {
+  const list = [...linkedProcesses.value];
+  const swapIdx = direction === 'up' ? index - 1 : index + 1;
+  if (swapIdx < 0 || swapIdx >= list.length) return;
+  [list[index], list[swapIdx]] = [list[swapIdx], list[index]];
+  const sortItems = list.map((item, i) => ({ id: item.id, processOrder: i + 1 }));
+  try {
+    await batchSortProductWorkProcesses(factoryId.value!, sortItems);
+    await refreshLinkedProcesses();
+  } catch {
+    ElMessage.error('排序失败');
+  }
+}
+
+async function refreshLinkedProcesses() {
+  if (!processDrawerProduct.value) return;
+  const res = await getProductWorkProcesses(factoryId.value!, processDrawerProduct.value.id);
+  linkedProcesses.value = (res.success ? (Array.isArray(res.data) ? res.data : []) : []) as ProductWorkProcessItem[];
 }
 
 // ==================== AI Entry ====================
@@ -370,7 +474,7 @@ function handleAiFill(params: Record<string, unknown>) {
         <el-table-column prop="productCategory" label="产品大类" width="130" align="center">
           <template #default="{ row }">
             <el-tag size="small" type="info">
-              {{ getCategoryLabel(row.productCategory) }}
+              {{ getCategoryLabel(row.productCategory || row.category) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -398,9 +502,12 @@ function handleAiFill(params: Record<string, unknown>) {
             {{ row.notes || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="140" fixed="right" align="center">
+        <el-table-column label="操作" width="200" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button type="warning" link size="small" @click="handleConfigProcesses(row)">
+              <el-icon><Setting /></el-icon>工序
+            </el-button>
             <el-button v-if="canWrite" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -497,6 +604,78 @@ function handleAiFill(params: Record<string, unknown>) {
       :config="PRODUCT_CONFIG"
       @fill-form="handleAiFill"
     />
+
+    <!-- 工序配置抽屉 -->
+    <el-drawer
+      v-model="processDrawerVisible"
+      :title="`工序配置 — ${processDrawerProduct?.name || ''}`"
+      size="560px"
+      direction="rtl"
+    >
+      <div v-loading="processLoading" class="process-config">
+        <!-- 已关联工序（右侧） -->
+        <div class="process-section">
+          <div class="section-title">
+            <span>已关联工序</span>
+            <el-tag size="small" type="info">{{ linkedProcesses.length }} 个</el-tag>
+          </div>
+          <div v-if="linkedProcesses.length === 0" class="process-empty">
+            暂无关联工序，请从下方可选列表中添加
+          </div>
+          <div v-else class="linked-list">
+            <div v-for="(item, idx) in linkedProcesses" :key="item.id" class="linked-item">
+              <div class="linked-order">{{ idx + 1 }}</div>
+              <div class="linked-info">
+                <div class="linked-name">{{ item.processName }}</div>
+                <div class="linked-meta">
+                  <el-tag size="small" type="info">{{ item.processCategory }}</el-tag>
+                  <span class="linked-unit">{{ item.unitOverride || item.defaultUnit }}</span>
+                  <span v-if="item.estimatedMinutesOverride || item.defaultEstimatedMinutes" class="linked-time">
+                    {{ item.estimatedMinutesOverride || item.defaultEstimatedMinutes }}分钟
+                  </span>
+                </div>
+              </div>
+              <div class="linked-actions">
+                <el-button :icon="Rank" link size="small" :disabled="idx === 0" @click="handleMoveProcess(idx, 'up')" title="上移" />
+                <el-button :icon="Rank" link size="small" :disabled="idx === linkedProcesses.length - 1" @click="handleMoveProcess(idx, 'down')" title="下移" />
+                <el-button :icon="DeleteIcon" link size="small" type="danger" @click="handleRemoveProcess(item)" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <el-divider />
+
+        <!-- 可选工序（左侧） -->
+        <div class="process-section">
+          <div class="section-title">
+            <span>可选工序</span>
+            <el-tag size="small">{{ unlinkedProcesses.length }} 个</el-tag>
+          </div>
+          <div v-if="unlinkedProcesses.length === 0" class="process-empty">
+            所有工序已关联，或暂无可用工序
+          </div>
+          <div v-else class="available-list">
+            <div v-for="proc in unlinkedProcesses" :key="proc.id" class="available-item">
+              <div class="available-info">
+                <span class="available-name">{{ proc.processName }}</span>
+                <el-tag size="small" type="info">{{ proc.processCategory }}</el-tag>
+                <span class="available-unit">{{ proc.unit }}</span>
+              </div>
+              <el-button
+                type="primary"
+                size="small"
+                :icon="Plus"
+                :loading="addingProcessId === proc.id"
+                @click="handleAddProcess(proc.id)"
+              >
+                添加
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -620,5 +799,114 @@ function handleAiFill(params: Record<string, unknown>) {
   color: #909399;
   margin-top: 4px;
   line-height: 1.4;
+}
+
+.process-config {
+  min-height: 200px;
+}
+
+.process-section {
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #303133;
+  }
+}
+
+.process-empty {
+  text-align: center;
+  color: #909399;
+  padding: 24px 0;
+  font-size: 13px;
+}
+
+.linked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.linked-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #F5F7FA;
+  border-radius: 8px;
+  border: 1px solid #EBEEF5;
+
+  .linked-order {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #409EFF;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .linked-info {
+    flex: 1;
+
+    .linked-name {
+      font-weight: 500;
+      font-size: 14px;
+      color: #303133;
+    }
+
+    .linked-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+      font-size: 12px;
+      color: #909399;
+    }
+  }
+
+  .linked-actions {
+    display: flex;
+    gap: 2px;
+  }
+}
+
+.available-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.available-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid #EBEEF5;
+  border-radius: 6px;
+  background: #fff;
+
+  .available-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .available-name {
+      font-size: 14px;
+      color: #303133;
+    }
+
+    .available-unit {
+      font-size: 12px;
+      color: #909399;
+    }
+  }
 }
 </style>

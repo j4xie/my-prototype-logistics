@@ -175,7 +175,13 @@ public class EquipmentServiceImpl implements EquipmentService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<FactoryEquipment> equipmentPage = equipmentRepository.findByFactoryId(factoryId, pageable);
+        String keyword = pageRequest.getKeyword();
+        Page<FactoryEquipment> equipmentPage;
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            equipmentPage = equipmentRepository.searchByKeyword(factoryId, keyword.trim(), pageable);
+        } else {
+            equipmentPage = equipmentRepository.findByFactoryId(factoryId, pageable);
+        }
         List<EquipmentDTO> equipmentDTOs = equipmentPage.getContent().stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());

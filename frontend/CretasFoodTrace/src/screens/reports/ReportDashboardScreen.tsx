@@ -182,7 +182,7 @@ export default function ReportDashboardScreen() {
       }
 
       // 处理效率数据 (解包嵌套的响应格式)
-      const efficiencyActual = (efficiencyRes as any)?.data ?? efficiencyRes;
+      const efficiencyActual = (efficiencyRes && typeof efficiencyRes === 'object' && 'data' in efficiencyRes) ? (efficiencyRes as { data: Record<string, number> }).data : efficiencyRes;
       if (efficiencyActual) {
         setEfficiencyData({
           equipmentOEE: efficiencyActual.equipmentOEE ?? 0,
@@ -193,7 +193,7 @@ export default function ReportDashboardScreen() {
       }
 
       // 处理成本数据 (解包嵌套的响应格式)
-      const financeActual = (financeRes as any)?.data ?? financeRes;
+      const financeActual = (financeRes && typeof financeRes === 'object' && 'data' in financeRes) ? (financeRes as { data: Record<string, number> }).data : financeRes;
       if (financeActual) {
         setCostData({
           totalCost: financeActual.totalCost ?? 0,
@@ -204,7 +204,7 @@ export default function ReportDashboardScreen() {
       }
 
       // 处理人力成本分析 (解包嵌套的响应格式)
-      const laborCostActual = (laborCostRes as any)?.data ?? laborCostRes;
+      const laborCostActual = (laborCostRes && typeof laborCostRes === 'object' && 'data' in laborCostRes) ? (laborCostRes as { data: LaborCostAnalysis }).data : laborCostRes;
       setLaborCostAnalysis(laborCostActual);
 
       reportDashboardLogger.info('综合报表数据加载完成', {
@@ -319,7 +319,7 @@ export default function ReportDashboardScreen() {
                       </View>
                       <View style={styles.metricItem}>
                         <Text style={[styles.metricValue, { color: getStatusColor(productionData.completionRate) }]}>
-                          {(productionData.completionRate ?? 0).toFixed(1)}%
+                          {Number(productionData.completionRate ?? 0).toFixed(1)}%
                         </Text>
                         <Text style={styles.metricLabel}>完成率</Text>
                       </View>
@@ -370,11 +370,11 @@ export default function ReportDashboardScreen() {
                       <View style={styles.progressRow}>
                         <Text style={styles.progressLabel}>合格率</Text>
                         <Text style={[styles.progressValue, { color: getStatusColor(qualityData.passRate, 95) }]}>
-                          {(qualityData.passRate ?? 0).toFixed(1)}%
+                          {Number(qualityData.passRate ?? 0).toFixed(1)}%
                         </Text>
                       </View>
                       <ProgressBar
-                        progress={(qualityData.passRate ?? 0) / 100}
+                        progress={Number(qualityData.passRate ?? 0) / 100}
                         color={getStatusColor(qualityData.passRate, 95)}
                         style={styles.progressBar}
                       />
@@ -405,33 +405,33 @@ export default function ReportDashboardScreen() {
                       <View style={styles.efficiencyRow}>
                         <Text style={styles.efficiencyLabel}>设备OEE</Text>
                         <Text style={[styles.efficiencyValue, { color: getStatusColor(efficiencyData.equipmentOEE, 85) }]}>
-                          {(efficiencyData.equipmentOEE ?? 0).toFixed(1)}%
+                          {Number(efficiencyData.equipmentOEE ?? 0).toFixed(1)}%
                         </Text>
                       </View>
                       <ProgressBar
-                        progress={(efficiencyData.equipmentOEE ?? 0) / 100}
+                        progress={Number(efficiencyData.equipmentOEE ?? 0) / 100}
                         color={getStatusColor(efficiencyData.equipmentOEE, 85)}
                         style={styles.progressBar}
                       />
                       <View style={styles.efficiencyRow}>
                         <Text style={styles.efficiencyLabel}>设备利用率</Text>
                         <Text style={[styles.efficiencyValue, { color: getStatusColor(efficiencyData.equipmentUtilization) }]}>
-                          {(efficiencyData.equipmentUtilization ?? 0).toFixed(1)}%
+                          {Number(efficiencyData.equipmentUtilization ?? 0).toFixed(1)}%
                         </Text>
                       </View>
                       <ProgressBar
-                        progress={(efficiencyData.equipmentUtilization ?? 0) / 100}
+                        progress={Number(efficiencyData.equipmentUtilization ?? 0) / 100}
                         color={getStatusColor(efficiencyData.equipmentUtilization)}
                         style={styles.progressBar}
                       />
                       <View style={styles.efficiencyRow}>
                         <Text style={styles.efficiencyLabel}>综合效率</Text>
                         <Text style={[styles.efficiencyValue, { color: getStatusColor(efficiencyData.overallEfficiency) }]}>
-                          {(efficiencyData.overallEfficiency ?? 0).toFixed(1)}%
+                          {Number(efficiencyData.overallEfficiency ?? 0).toFixed(1)}%
                         </Text>
                       </View>
                       <ProgressBar
-                        progress={(efficiencyData.overallEfficiency ?? 0) / 100}
+                        progress={Number(efficiencyData.overallEfficiency ?? 0) / 100}
                         color={getStatusColor(efficiencyData.overallEfficiency)}
                         style={styles.progressBar}
                       />
@@ -521,13 +521,13 @@ export default function ReportDashboardScreen() {
                       </View>
                       <View style={styles.laborItem}>
                         <Text style={[styles.laborValue, { color: '#4CAF50' }]}>
-                          {(laborCostAnalysis.averageEfficiency ?? 0).toFixed(1)}
+                          {Number(laborCostAnalysis.averageEfficiency ?? 0).toFixed(1)}
                         </Text>
                         <Text style={styles.laborLabel}>件/小时</Text>
                       </View>
                       <View style={styles.laborItem}>
                         <Text style={[styles.laborValue, { color: '#FF9800' }]}>
-                          ¥{(laborCostAnalysis.costPerPiece ?? 0).toFixed(2)}
+                          ¥{Number(laborCostAnalysis.costPerPiece ?? 0).toFixed(2)}
                         </Text>
                         <Text style={styles.laborLabel}>单件成本</Text>
                       </View>

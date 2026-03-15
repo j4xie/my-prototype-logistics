@@ -16,7 +16,7 @@ class FinancialPDFGenerator:
 
     def generate(self, chart_images: Dict[str, str],
                  analysis_results: Dict[str, str],
-                 company_name: str = "白垩纪食品",
+                 company_name: str = "白垩纪科技",
                  year: int = 2026,
                  period_type: str = "year",
                  start_month: int = 1, end_month: int = 12,

@@ -15,7 +15,7 @@ import {
 import { Text, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
 import { alertApiClient, AlertDTO } from "../../../services/api/alertApiClient";
@@ -314,7 +314,7 @@ export function WHAlertListScreen() {
             <Button
               mode="contained"
               compact
-              onPress={() => navigation.navigate("WHAlertHandle" as any)}
+              onPress={() => navigation.dispatch(CommonActions.navigate("WHAlertHandle"))}
               style={styles.aiAlertBtnPrimary}
               labelStyle={{ color: "#fff", fontSize: 12 }}
             >
@@ -369,7 +369,7 @@ export function WHAlertListScreen() {
         <Button
           mode="contained"
           compact
-          onPress={() => navigation.navigate("WHAlertHandle" as any)}
+          onPress={() => navigation.dispatch(CommonActions.navigate("WHAlertHandle"))}
           style={[
             styles.alertActionBtn,
             isUrgent ? styles.alertActionBtnPrimary : styles.alertActionBtnSecondary,

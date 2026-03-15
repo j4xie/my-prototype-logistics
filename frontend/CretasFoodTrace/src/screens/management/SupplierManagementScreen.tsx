@@ -20,7 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { supplierApiClient, Supplier, CreateSupplierRequest } from '../../services/api/supplierApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建SupplierManagement专用logger
@@ -101,7 +101,7 @@ export default function SupplierManagementScreen() {
       }
     } catch (error) {
       supplierLogger.error('加载供应商列表失败', error, { factoryId: user?.factoryId });
-      const errorMessage = (error as any).response?.data?.message || (error instanceof Error ? error.message : '加载供应商列表失败');
+      const errorMessage = getErrorMsg(error) || (error instanceof Error ? error.message : '加载供应商列表失败');
       Alert.alert('错误', errorMessage);
       setSuppliers([]);
     } finally {
@@ -208,7 +208,7 @@ export default function SupplierManagementScreen() {
         isEdit: !!editingSupplier,
         supplierCode: formData.supplierCode,
       });
-      Alert.alert(t('common.error'), (error as any).response?.data?.message || '操作失败');
+      Alert.alert(t('common.error'), getErrorMsg(error) || '操作失败');
     }
   };
 
@@ -229,7 +229,7 @@ export default function SupplierManagementScreen() {
               loadSuppliers();
             } catch (error) {
               supplierLogger.error('删除供应商失败', error, { supplierId, supplierName });
-              Alert.alert('错误', (error as any).response?.data?.message || '删除失败');
+              Alert.alert('错误', getErrorMsg(error) || '删除失败');
             }
           },
         },
@@ -253,7 +253,7 @@ export default function SupplierManagementScreen() {
       loadSuppliers();
     } catch (error) {
       supplierLogger.error('切换状态失败', error, { supplierId, currentStatus });
-      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
+      Alert.alert('错误', getErrorMsg(error) || '操作失败');
     }
   };
 

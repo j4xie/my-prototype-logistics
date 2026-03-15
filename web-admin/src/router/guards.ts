@@ -36,7 +36,7 @@ export function setupRouterGuards(router: Router) {
   // 前置守卫
   router.beforeEach(async (to, _from, next) => {
     // 设置页面标题
-    document.title = to.meta.title ? `${to.meta.title} - 白垩纪管理系统` : '白垩纪管理系统';
+    document.title = to.meta.title ? `${to.meta.title} - 白垩纪AI Agent` : '白垩纪AI Agent';
 
     // 白名单路由直接放行
     if (whiteList.includes(to.path)) {
@@ -67,9 +67,9 @@ export function setupRouterGuards(router: Router) {
       return;
     }
 
-    // 同步角色和工厂ID到权限 store
+    // 同步角色、工厂ID、工厂类型到权限 store
     const permissionStore = usePermissionStore();
-    permissionStore.setRole(authStore.currentRole, authStore.factoryId);
+    permissionStore.setRole(authStore.currentRole, authStore.factoryId, authStore.factoryType);
 
     // 检查是否是 Mobile 专属角色 (一线员工: 操作员、质检员、仓库工人)
     // 这些角色只能使用移动端 App，不能登录 Web 管理后台

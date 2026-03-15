@@ -246,6 +246,55 @@ public interface ProductionReportRepository extends JpaRepository<ProductionRepo
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
 
+    // ==================== PROCESS 模式 ====================
+
+    List<ProductionReport> findByProcessTaskIdAndDeletedAtIsNull(String processTaskId);
+
+    List<ProductionReport> findByProcessTaskIdAndApprovalStatusAndDeletedAtIsNull(
+            String processTaskId, String approvalStatus);
+
+    Page<ProductionReport> findByFactoryIdAndApprovalStatusAndProcessTaskIdIsNotNullAndDeletedAtIsNull(
+            String factoryId, String approvalStatus, Pageable pageable);
+
+    @Query(value = """
+        SELECT
+            COALESCE(SUM(CAST(output_quantity AS DECIMAL(12,2))), 0) as total
+        FROM production_reports
+        WHERE process_task_id = :taskId
+          AND approval_status = 'APPROVED'
+          AND deleted_at IS NULL
+        """, nativeQuery = true)
+    Map<String, Object> sumApprovedQuantityByTaskId(@Param("taskId") String taskId);
+
+    @Query(value = """
+        SELECT
+            COALESCE(SUM(CAST(output_quantity AS DECIMAL(12,2))), 0) as total
+        FROM production_reports
+        WHERE process_task_id = :taskId
+          AND approval_status = 'PENDING'
+          AND deleted_at IS NULL
+        """, nativeQuery = true)
+    Map<String, Object> sumPendingQuantityByTaskId(@Param("taskId") String taskId);
+
+    @Query(value = """
+        SELECT
+            worker_id,
+            reporter_name as worker_name,
+            COALESCE(SUM(CAST(output_quantity AS DECIMAL(12,2))), 0) as total_quantity,
+            COUNT(*) as report_count
+        FROM production_reports
+        WHERE process_task_id = :taskId
+          AND approval_status = 'APPROVED'
+          AND deleted_at IS NULL
+        GROUP BY worker_id, reporter_name
+        ORDER BY total_quantity DESC
+        """, nativeQuery = true)
+    List<Map<String, Object>> getWorkerSummaryByTaskId(@Param("taskId") String taskId);
+
+    // ==================== 冲销防重 ====================
+
+    boolean existsByReversalOfIdAndDeletedAtIsNull(Long reversalOfId);
+
     // ==================== 报工防重提交 ====================
 
     boolean existsByFactoryIdAndWorkerIdAndBatchIdAndReportDateAndDeletedAtIsNull(

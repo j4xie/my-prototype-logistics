@@ -1,0 +1,49 @@
+# 速冻食品行业基准
+# 数据来源: 三全食品/安井食品年报 + 中国食品工业协会
+
+source: "三全食品/安井食品年报 / 中国速冻食品专业委员会"
+year: 2024
+
+metrics:
+  gross_margin:
+    name: "毛利率"
+    range: [22.0, 32.0]
+    median: 27.0
+    unit: "%"
+    source: "安井食品毛利率约25%, 三全食品约30%"
+    note: "速冻面点毛利高于速冻肉制品"
+
+  net_margin:
+    name: "净利率"
+    range: [3.0, 7.0]
+    median: 5.0
+    unit: "%"
+
+  oee:
+    name: "设备综合效率(OEE)"
+    range: [58.0, 80.0]
+    median: 68.0
+    unit: "%"
+    note: "速冻产线自动化程度中等, 换线频繁影响OEE"
+
+  raw_material_cost_ratio:
+    name: "原料成本占比"
+    range: [55.0, 70.0]
+    median: 62.0
+    unit: "%"
+
+  cold_chain_loss_rate:
+    name: "冷链损耗率"
+    range: [0.5, 3.0]
+    median: 1.5
+    unit: "%"
+    description: "冷链运输+仓储环节损耗率"
+    higher_is_worse: true
+    note: "-18°C全程冷链要求严格, 断链导致损耗急增"
+
+  energy_cost_ratio:
+    name: "能耗成本占比"
+    range: [8.0, 18.0]
+    median: 12.0
+    unit: "%"
+    note: "速冻能耗(制冷+冷库)显著高于常温食品"

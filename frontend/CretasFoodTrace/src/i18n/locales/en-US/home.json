@@ -147,7 +147,18 @@
       "medium": "Medium",
       "low": "Low"
     },
+    "type": {
+      "equipment": "Equipment",
+      "maintenance": "Maintenance",
+      "quality": "Quality",
+      "qualityFail": "Quality Fail",
+      "inventory": "Inventory",
+      "production": "Production",
+      "lowStock": "Low Stock",
+      "expiring": "Expiring"
+    },
     "time": {
+      "unknown": "Unknown time",
       "minutesAgo": "{{count}} min ago",
       "hoursAgo": "{{count}} hrs ago"
     },

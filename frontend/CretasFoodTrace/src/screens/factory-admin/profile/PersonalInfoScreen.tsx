@@ -73,7 +73,7 @@ export function PersonalInfoScreen() {
         setUserInfo({
           id: Number(user.id) || 0,
           username: user.username || '',
-          realName: (user as any).realName || (user as any).fullName || user.username || '',
+          realName: user.fullName || user.username || '',
           email: user.email || '',
           phone: user.phone || '',
           department: '',

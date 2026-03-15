@@ -435,9 +435,12 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             throw new BusinessException("批次可用数量不足");
         }
 
-        // 预留数量（这里简化处理，实际可能需要额外的预留字段）
+        // 增加预留数量，减少可用库存
+        BigDecimal currentReserved = batch.getReservedQuantity() != null ? batch.getReservedQuantity() : BigDecimal.ZERO;
+        batch.setReservedQuantity(currentReserved.add(quantity));
+
         materialBatchRepository.save(batch);
-        log.info("预留批次数量: batchId={}, quantity={}", batchId, quantity);
+        log.info("预留批次数量: batchId={}, quantity={}, reservedTotal={}", batchId, quantity, batch.getReservedQuantity());
     }
 
     @Override
@@ -452,8 +455,14 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         }
 
         // 释放预留数量
+        BigDecimal currentReserved = batch.getReservedQuantity() != null ? batch.getReservedQuantity() : BigDecimal.ZERO;
+        if (currentReserved.compareTo(quantity) < 0) {
+            throw new BusinessException("释放数量超过已预留数量");
+        }
+        batch.setReservedQuantity(currentReserved.subtract(quantity));
+
         materialBatchRepository.save(batch);
-        log.info("释放批次预留: batchId={}, quantity={}", batchId, quantity);
+        log.info("释放批次预留: batchId={}, quantity={}, reservedTotal={}", batchId, quantity, batch.getReservedQuantity());
     }
 
     @Override
@@ -465,6 +474,12 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
             throw new BusinessException("无权操作该批次");
+        }
+
+        // 检查可用数量是否充足
+        if (batch.getCurrentQuantity().compareTo(quantity) < 0) {
+            throw new BusinessException(String.format("批次可用数量不足，当前可用: %s, 请求使用: %s",
+                    batch.getCurrentQuantity().toPlainString(), quantity.toPlainString()));
         }
 
         // 使用数量
@@ -503,8 +518,73 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
     @Override
     public List<Map<String, Object>> getLowStockWarnings(String factoryId) {
-        // TODO: 实现低库存预警
-        return new ArrayList<>();
+        List<Map<String, Object>> warnings = new ArrayList<>();
+
+        // 1. 获取所有激活的原材料类型（含 minStock 阈值）
+        List<com.cretas.aims.entity.RawMaterialType> materialTypes =
+                materialTypeRepository.findByFactoryIdAndIsActive(factoryId, true);
+
+        // 2. 获取各原材料类型的当前库存汇总
+        List<Object[]> stockSummary = materialBatchRepository.sumQuantityByMaterialType(factoryId);
+        Map<String, BigDecimal> stockMap = new HashMap<>();
+        for (Object[] row : stockSummary) {
+            stockMap.put((String) row[0], (BigDecimal) row[1]);
+        }
+
+        // 3. 对比阈值，生成预警
+        for (com.cretas.aims.entity.RawMaterialType mt : materialTypes) {
+            BigDecimal minStock = mt.getMinStock();
+            if (minStock == null || minStock.compareTo(BigDecimal.ZERO) <= 0) {
+                continue; // 未设置安全库存
+            }
+
+            BigDecimal currentStock = stockMap.getOrDefault(mt.getId(), BigDecimal.ZERO);
+            if (currentStock.compareTo(minStock) < 0) {
+                BigDecimal gap = minStock.subtract(currentStock);
+                double stockRatio = minStock.compareTo(BigDecimal.ZERO) > 0
+                        ? currentStock.doubleValue() / minStock.doubleValue() * 100 : 0;
+
+                String warningLevel;
+                if (currentStock.compareTo(BigDecimal.ZERO) == 0) {
+                    warningLevel = "CRITICAL";
+                } else if (stockRatio < 30) {
+                    warningLevel = "CRITICAL";
+                } else if (stockRatio < 60) {
+                    warningLevel = "WARNING";
+                } else {
+                    warningLevel = "INFO";
+                }
+
+                Map<String, Object> warning = new LinkedHashMap<>();
+                warning.put("materialTypeId", mt.getId());
+                warning.put("materialName", mt.getName());
+                warning.put("materialCode", mt.getCode());
+                warning.put("category", mt.getCategory());
+                warning.put("currentStock", currentStock);
+                warning.put("safetyStock", minStock);
+                warning.put("unit", mt.getUnit());
+                warning.put("gap", gap);
+                warning.put("stockRatio", Math.round(stockRatio));
+                warning.put("warningLevel", warningLevel);
+                warnings.add(warning);
+            }
+        }
+
+        // 按严重程度排序：CRITICAL > WARNING > INFO
+        warnings.sort((a, b) -> {
+            int priority = getLevelPriority((String) a.get("warningLevel"))
+                    - getLevelPriority((String) b.get("warningLevel"));
+            return priority;
+        });
+
+        log.info("低库存预警查询: factoryId={}, 预警数量={}", factoryId, warnings.size());
+        return warnings;
+    }
+
+    private int getLevelPriority(String level) {
+        if ("CRITICAL".equals(level)) return 0;
+        if ("WARNING".equals(level)) return 1;
+        return 2;
     }
 
     @Override

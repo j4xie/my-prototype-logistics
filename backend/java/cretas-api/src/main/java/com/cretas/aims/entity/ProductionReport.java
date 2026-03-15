@@ -40,6 +40,10 @@ public class ProductionReport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @javax.persistence.Version
+    @Column(name = "version")
+    private Long version;
+
     @Column(name = "factory_id", nullable = false, length = 50)
     private String factoryId;
 
@@ -118,6 +122,33 @@ public class ProductionReport {
     @Column(name = "synced_to_smartbi")
     @Builder.Default
     private Boolean syncedToSmartbi = false;
+
+    // PROCESS mode fields
+    @Column(name = "process_task_id", length = 50)
+    private String processTaskId;
+
+    @Column(name = "is_supplemental")
+    @Builder.Default
+    private Boolean isSupplemental = false;
+
+    @Column(name = "approval_status", length = 20)
+    @Builder.Default
+    private String approvalStatus = "PENDING";
+
+    @Column(name = "approved_by")
+    private Long approvedBy;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    @Column(name = "rejected_reason", length = 500)
+    private String rejectedReason;
+
+    @Column(name = "notes", length = 500)
+    private String notes;
+
+    @Column(name = "reversal_of_id")
+    private Long reversalOfId;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

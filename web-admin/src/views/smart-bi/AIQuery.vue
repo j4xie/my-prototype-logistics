@@ -8,7 +8,7 @@ import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, nextTick, watch
 import { useChartResize } from '@/composables/useChartResize';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
-import { chatAnalysis, chatAnalysisStream, getUploadHistory, deduplicateUploads, type AnalysisResult, type AIInsightData, type ChartConfig, type UploadHistoryItem } from '@/api/smartbi';
+import { chatAnalysis, chatAnalysisStream, getUploadHistory, deduplicateUploads, nl2sql, type AnalysisResult, type AIInsightData, type ChartConfig, type UploadHistoryItem, type NL2SQLResponse } from '@/api/smartbi';
 import { ElMessage } from 'element-plus';
 import {
   ChatDotRound,
@@ -29,7 +29,8 @@ import {
   Sort,
   SetUp,
   DataAnalysis,
-  Flag
+  Flag,
+  Search
 } from '@element-plus/icons-vue';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -71,6 +72,7 @@ interface ChatMessage {
     columns: string[];
     data: Record<string, unknown>[];
   };
+  sqlResult?: NL2SQLResponse;
   loading?: boolean;
   streaming?: boolean;
 }
@@ -157,8 +159,33 @@ const useTemplate = (tpl: QueryTemplate) => {
   handleSendMessage();
 };
 
+// NL2SQL 模式
+const nl2sqlMode = ref(false);
+
 // 加载状态
 const isTyping = ref(false);
+
+// SSE 降级状态
+const sseWarningVisible = ref(false);
+const sseRetryVisible = ref(false);
+let sseWarningTimer: ReturnType<typeof setTimeout> | null = null;
+let sseRetryTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingRetryQuery = '';
+
+function clearSseDegradationTimers() {
+  if (sseWarningTimer) { clearTimeout(sseWarningTimer); sseWarningTimer = null; }
+  if (sseRetryTimer) { clearTimeout(sseRetryTimer); sseRetryTimer = null; }
+  sseWarningVisible.value = false;
+  sseRetryVisible.value = false;
+}
+
+function handleSseRetry() {
+  if (!pendingRetryQuery) return;
+  clearSseDegradationTimers();
+  inputQuery.value = pendingRetryQuery;
+  pendingRetryQuery = '';
+  handleSendMessage();
+}
 
 // 图表实例缓存
 const chartInstances: Map<string, echarts.ECharts> = new Map();
@@ -215,6 +242,8 @@ onUnmounted(() => {
   }
   if (scrollRafId !== null) cancelAnimationFrame(scrollRafId);
   if (chunkFlushTimer) clearTimeout(chunkFlushTimer);
+  if (typewriterTimer) clearTimeout(typewriterTimer);
+  clearSseDegradationTimers();
   chartInstances.forEach(chart => chart.dispose());
   chartInstances.clear();
 });
@@ -235,6 +264,11 @@ onBeforeUnmount(() => { isComponentAlive = false; });
 async function handleSendMessage() {
   const query = inputQuery.value.trim();
   if (!query) return;
+
+  // Route to NL2SQL handler if in SQL mode
+  if (nl2sqlMode.value) {
+    return handleNL2SQLQuery(query);
+  }
 
   // Cancel any in-flight stream
   if (activeStreamController) {
@@ -281,24 +315,42 @@ async function handleSendMessage() {
   // Helper to find the assistant message
   const getMessageIndex = () => chatHistory.value.findIndex(m => m.id === assistantId);
 
-  // SSE degradation watchdog: if no chunk arrives within 5s of status, show switching notice
-  let sseWatchdog: ReturnType<typeof setTimeout> | null = null;
+  // SSE degradation watchdog: 8s warning + 15s retry button
   let firstChunkReceived = false;
+  pendingRetryQuery = query;
+
   const startSseWatchdog = () => {
-    if (sseWatchdog) clearTimeout(sseWatchdog);
-    sseWatchdog = setTimeout(() => {
+    clearSseDegradationTimers();
+    // 8s: show inline warning
+    sseWarningTimer = setTimeout(() => {
       if (!firstChunkReceived) {
+        sseWarningVisible.value = true;
         const idx = getMessageIndex();
         if (idx !== -1) {
           const msg = chatHistory.value[idx];
-          msg.content = '正在切换备用通道，请稍候...';
+          msg.content = '网络连接不稳定，正在尝试重新连接...';
           msg.loading = true;
         }
+        scrollToBottom();
       }
-    }, 5000);
+    }, 8000);
+    // 15s: show retry button
+    sseRetryTimer = setTimeout(() => {
+      if (!firstChunkReceived) {
+        sseRetryVisible.value = true;
+        const idx = getMessageIndex();
+        if (idx !== -1) {
+          const msg = chatHistory.value[idx];
+          msg.content = '连接超时，服务响应较慢。';
+          msg.loading = false;
+        }
+        scrollToBottom();
+      }
+    }, 15000);
   };
   const clearSseWatchdog = () => {
-    if (sseWatchdog) { clearTimeout(sseWatchdog); sseWatchdog = null; }
+    clearSseDegradationTimers();
+    pendingRetryQuery = '';
   };
 
   // Try streaming first, fall back to non-streaming
@@ -316,13 +368,16 @@ async function handleSendMessage() {
     },
 
     onChunk(text: string) {
-      // First chunk arrived — cancel watchdog
+      // First chunk arrived — cancel watchdog and clear degradation UI
       if (!firstChunkReceived) {
         firstChunkReceived = true;
         clearSseWatchdog();
+        sseWarningVisible.value = false;
+        sseRetryVisible.value = false;
       }
       // Buffer chunks for 16ms before flushing to reduce Vue reactivity triggers
       chunkTargetId = assistantId;
+      chunkTargetIdx = -1; // invalidate cache so resolveTargetIdx re-lookups
       chunkBuffer += text;
       if (!chunkFlushTimer) {
         chunkFlushTimer = setTimeout(flushChunkBuffer, 16);
@@ -340,9 +395,10 @@ async function handleSendMessage() {
 
     async onDone(result: AnalysisResult) {
       clearSseWatchdog();
-      // Flush any remaining buffered chunks
+      // Flush any remaining buffered chunks + typewriter queue
       if (chunkFlushTimer) { clearTimeout(chunkFlushTimer); chunkFlushTimer = null; }
       flushChunkBuffer();
+      flushTypewriterImmediate();
 
       const idx = getMessageIndex();
       if (idx !== -1) {
@@ -385,9 +441,11 @@ async function handleSendMessage() {
 
     async onError(error: string) {
       clearSseWatchdog();
-      // Clear chunk buffer on error
+      // Clear chunk buffer + typewriter on error
       if (chunkFlushTimer) { clearTimeout(chunkFlushTimer); chunkFlushTimer = null; }
       chunkBuffer = '';
+      if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; }
+      typewriterQueue = '';
       console.error('AI 流式查询失败:', error);
 
       // Convert to user-friendly message
@@ -461,6 +519,89 @@ async function handleSendMessage() {
       scrollToBottom(true);
     },
   });
+}
+
+// NL2SQL 查询处理
+async function handleNL2SQLQuery(query: string) {
+  if (!selectedUploadId.value) {
+    ElMessage.warning('请先选择数据源');
+    return;
+  }
+
+  // Add user message
+  chatHistory.value.push({
+    id: `user-${Date.now()}`,
+    role: 'user',
+    content: query,
+    timestamp: new Date()
+  });
+  inputQuery.value = '';
+
+  const assistantId = `assistant-${Date.now()}`;
+  chatHistory.value.push({
+    id: assistantId,
+    role: 'assistant',
+    content: '',
+    timestamp: new Date(),
+    loading: true
+  });
+  scrollToBottom(true);
+  isTyping.value = true;
+
+  try {
+    const res = await nl2sql({
+      query,
+      uploadId: selectedUploadId.value,
+      factoryId: factoryId.value || 'F001',
+      execute: true,
+      limit: 200,
+    });
+
+    const idx = chatHistory.value.findIndex(m => m.id === assistantId);
+    if (idx === -1) return;
+
+    if (res.success && res.sql) {
+      // Build table from results
+      let table: ChatMessage['table'] | undefined;
+      if (res.result && res.result.length > 0) {
+        const columns = Object.keys(res.result[0]);
+        table = { columns, data: res.result };
+      }
+
+      chatHistory.value[idx] = {
+        id: assistantId,
+        role: 'assistant',
+        content: res.explanation || 'SQL 查询已执行',
+        timestamp: new Date(),
+        sqlResult: res,
+        table,
+        loading: false,
+      };
+    } else {
+      chatHistory.value[idx] = {
+        id: assistantId,
+        role: 'assistant',
+        content: res.message || '查询失败',
+        timestamp: new Date(),
+        sqlResult: res.sql ? res : undefined,
+        loading: false,
+      };
+    }
+  } catch (error) {
+    const idx = chatHistory.value.findIndex(m => m.id === assistantId);
+    if (idx !== -1) {
+      chatHistory.value[idx] = {
+        id: assistantId,
+        role: 'assistant',
+        content: '查询失败，请稍后重试',
+        timestamp: new Date(),
+        loading: false,
+      };
+    }
+  }
+
+  isTyping.value = false;
+  scrollToBottom(true);
 }
 
 /**
@@ -635,19 +776,80 @@ function scrollToBottom(force = false) {
 let chunkBuffer = '';
 let chunkFlushTimer: ReturnType<typeof setTimeout> | null = null;
 let chunkTargetId = '';
+// P2 PERF fix: Cache message index to avoid O(n) findIndex on every chunk/typewriter tick
+let chunkTargetIdx = -1;
+
+// Typewriter effect: drip characters from pending queue
+let typewriterQueue = '';
+let typewriterTimer: ReturnType<typeof setTimeout> | null = null;
+const TYPEWRITER_DELAY = 20; // ms per character drip
+
+/** Resolve cached index, re-lookup only if stale */
+function resolveTargetIdx(): number {
+  if (chunkTargetIdx >= 0 && chunkTargetIdx < chatHistory.value.length
+      && chatHistory.value[chunkTargetIdx].id === chunkTargetId) {
+    return chunkTargetIdx;
+  }
+  chunkTargetIdx = chatHistory.value.findIndex(m => m.id === chunkTargetId);
+  return chunkTargetIdx;
+}
+
+function drainTypewriter() {
+  if (!typewriterQueue || !chunkTargetId) {
+    typewriterTimer = null;
+    return;
+  }
+  const idx = resolveTargetIdx();
+  if (idx === -1) {
+    typewriterQueue = '';
+    typewriterTimer = null;
+    return;
+  }
+  // Drip 1-3 characters at a time for natural feel
+  const chars = Math.min(typewriterQueue.length, typewriterQueue.length > 20 ? 3 : 1);
+  const msg = chatHistory.value[idx];
+  msg.content += typewriterQueue.slice(0, chars);
+  msg.streaming = true;
+  typewriterQueue = typewriterQueue.slice(chars);
+  scrollToBottom();
+
+  if (typewriterQueue.length > 0) {
+    typewriterTimer = setTimeout(drainTypewriter, TYPEWRITER_DELAY);
+  } else {
+    typewriterTimer = null;
+  }
+}
 
 function flushChunkBuffer() {
   if (!chunkBuffer || !chunkTargetId) return;
-  const idx = chatHistory.value.findIndex(m => m.id === chunkTargetId);
+  const idx = resolveTargetIdx();
   if (idx !== -1) {
     const msg = chatHistory.value[idx];
-    msg.content = (msg.loading ? '' : msg.content) + chunkBuffer;
-    msg.loading = false;
+    // If message was loading (status text), clear it before appending
+    if (msg.loading) {
+      msg.content = '';
+      msg.loading = false;
+    }
     msg.streaming = true;
+    // Feed chunk into typewriter queue
+    typewriterQueue += chunkBuffer;
+    if (!typewriterTimer) {
+      drainTypewriter();
+    }
   }
   chunkBuffer = '';
   chunkFlushTimer = null;
-  scrollToBottom();
+}
+
+/** Immediately flush any remaining typewriter chars (used on stream end) */
+function flushTypewriterImmediate() {
+  if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; }
+  if (!typewriterQueue || !chunkTargetId) return;
+  const idx = resolveTargetIdx();
+  if (idx !== -1) {
+    chatHistory.value[idx].content += typewriterQueue;
+  }
+  typewriterQueue = '';
 }
 
 // 处理快捷问题
@@ -712,6 +914,16 @@ function handleKeydown(event: KeyboardEvent) {
             </el-tooltip>
           </el-option>
         </el-select>
+        <el-tooltip content="SQL 直查：直接将问题转为 SQL 查询数据" placement="bottom">
+          <el-switch
+            v-model="nl2sqlMode"
+            active-text="SQL 直查"
+            inactive-text="AI 分析"
+            style="margin-right: 12px"
+            :active-action-icon="Search"
+            :inactive-action-icon="Cpu"
+          />
+        </el-tooltip>
         <el-button :icon="Delete" @click="handleClearHistory">清空对话</el-button>
       </div>
     </div>
@@ -738,6 +950,14 @@ function handleKeydown(event: KeyboardEvent) {
               <div v-if="message.loading" class="loading-indicator">
                 <el-icon class="is-loading"><Loading /></el-icon>
                 <span>{{ message.content || '正在思考...' }}</span>
+                <span v-if="sseWarningVisible && !sseRetryVisible" class="sse-warning-hint">
+                  <el-icon><Warning /></el-icon> 网络连接不稳定
+                </span>
+              </div>
+              <!-- SSE retry button shown after 15s timeout -->
+              <div v-if="sseRetryVisible && !message.loading && !message.streaming && message.content === '连接超时，服务响应较慢。'" class="sse-retry-area">
+                <span class="sse-retry-text">{{ message.content }}</span>
+                <el-button type="primary" size="small" :icon="Refresh" @click="handleSseRetry">重新提问</el-button>
               </div>
               <template v-else>
                 <div v-if="message.role === 'assistant' && message.streaming" class="message-text streaming-text">{{ message.content }}</div>
@@ -759,15 +979,41 @@ function handleKeydown(event: KeyboardEvent) {
                   <div :id="`chart-${message.id}`" class="chart-container"></div>
                 </div>
 
+                <!-- NL2SQL 结果面板 -->
+                <div v-if="message.sqlResult" class="sql-result-panel">
+                  <div class="sql-meta">
+                    <el-tag size="small" :type="message.sqlResult.success ? 'success' : 'danger'">
+                      {{ message.sqlResult.intent || 'QUERY' }}
+                    </el-tag>
+                    <span v-if="message.sqlResult.confidence" class="sql-confidence">
+                      置信度 {{ (message.sqlResult.confidence * 100).toFixed(0) }}%
+                    </span>
+                    <span v-if="message.sqlResult.executionTimeMs" class="sql-time">
+                      {{ message.sqlResult.executionTimeMs }}ms
+                    </span>
+                    <span v-if="message.sqlResult.rowCount != null" class="sql-rows">
+                      {{ message.sqlResult.rowCount }} 行
+                    </span>
+                  </div>
+                  <div v-if="message.sqlResult.sql" class="sql-code">
+                    <pre><code>{{ message.sqlResult.sql }}</code></pre>
+                  </div>
+                  <div v-if="message.sqlResult.warnings?.length" class="sql-warnings">
+                    <el-tag v-for="(w, i) in message.sqlResult.warnings" :key="i" size="small" type="warning" style="margin: 2px">
+                      {{ w }}
+                    </el-tag>
+                  </div>
+                </div>
+
                 <!-- 表格展示 -->
                 <div v-if="message.table" class="message-table">
-                  <el-table :data="message.table.data" stripe border size="small">
+                  <el-table :data="message.table.data" stripe border size="small" max-height="400">
                     <el-table-column
                       v-for="col in message.table.columns"
                       :key="col"
                       :label="col"
                       :prop="col"
-                      min-width="80"
+                      min-width="100"
                     />
                   </el-table>
                 </div>
@@ -845,7 +1091,7 @@ function handleKeydown(event: KeyboardEvent) {
           ref="inputRef"
           type="textarea"
           :rows="2"
-          placeholder="输入您的问题，例如：本月销售额是多少？"
+          :placeholder="nl2sqlMode ? '输入数据查询，例如：各产品的销售额汇总' : '输入您的问题，例如：本月销售额是多少？'"
           :disabled="isTyping"
           @keydown="handleKeydown"
         />
@@ -1050,6 +1296,33 @@ function handleKeydown(event: KeyboardEvent) {
     .el-icon {
       font-size: 16px;
     }
+
+    .sse-warning-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 8px;
+      color: var(--el-color-warning, #E6A23C);
+      font-size: 12px;
+      animation: fade-in 0.3s ease-in;
+    }
+  }
+
+  .sse-retry-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0;
+
+    .sse-retry-text {
+      color: var(--el-text-color-secondary, #909399);
+      font-size: 14px;
+    }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   .message-insights {
@@ -1180,6 +1453,50 @@ function handleKeydown(event: KeyboardEvent) {
   font-size: 12px;
   color: var(--el-text-color-secondary, #909399);
   line-height: 1.5;
+}
+
+// NL2SQL 结果面板
+.sql-result-panel {
+  margin-top: 8px;
+
+  .sql-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+
+    .sql-confidence,
+    .sql-time,
+    .sql-rows {
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+    }
+  }
+
+  .sql-code {
+    background: #1e1e2e;
+    border-radius: 8px;
+    padding: 12px;
+    overflow-x: auto;
+    margin-bottom: 6px;
+
+    pre {
+      margin: 0;
+    }
+
+    code {
+      color: #cdd6f4;
+      font-family: 'Fira Code', 'Menlo', monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  }
+
+  .sql-warnings {
+    margin-top: 4px;
+  }
 }
 
 // 响应式

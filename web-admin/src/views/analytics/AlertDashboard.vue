@@ -79,6 +79,42 @@ function statusLabel(status: string): string {
   return map[status] || status
 }
 
+function levelLabel(level: string): string {
+  const map: Record<string, string> = {
+    CRITICAL: '严重',
+    WARNING: '警告',
+    INFO: '信息'
+  }
+  return map[level] || level
+}
+
+function alertTypeLabel(type: string): string {
+  const map: Record<string, string> = {
+    YIELD_DROP: '良率下降',
+    COST_SPIKE: '成本飙升',
+    QUALITY_ISSUE: '质量问题',
+    EQUIPMENT_FAILURE: '设备故障',
+    MATERIAL_SHORTAGE: '原料短缺',
+    DELIVERY_DELAY: '交付延迟',
+    THRESHOLD_BREACH: '阈值突破'
+  }
+  return map[type] || type
+}
+
+function metricLabel(metric: string): string {
+  const map: Record<string, string> = {
+    yield_rate: '良率',
+    defect_rate: '不良率',
+    material_cost: '材料成本',
+    labor_cost: '人工成本',
+    unit_cost: '单位成本',
+    total_cost: '总成本',
+    output_quantity: '产出量',
+    equipment_utilization: '设备利用率'
+  }
+  return map[metric] || metric
+}
+
 async function loadData() {
   if (!factoryId.value) {
     console.error('No factoryId available')
@@ -88,8 +124,10 @@ async function loadData() {
   loading.value = true
   try {
     const res = await get<AlertSummary>(`/${factoryId.value}/alerts/summary`)
-    if (res?.success !== false) {
+    if (res?.success) {
       summary.value = res.data || {}
+    } else {
+      ElMessage.error(res?.message || '加载告警汇总失败')
     }
   } catch (e) {
     console.error('Load alert summary failed:', e)
@@ -113,10 +151,12 @@ async function loadAlerts() {
     const res = await get<{ content: AlertRecord[]; totalElements: number }>(
       `/${factoryId.value}/alerts`, { params }
     )
-    if (res?.success !== false) {
+    if (res?.success) {
       const data = res.data || { content: [], totalElements: 0 }
       alerts.value = data.content || []
       totalAlerts.value = data.totalElements || 0
+    } else {
+      ElMessage.error(res?.message || '加载告警列表失败')
     }
   } catch (e) {
     console.error('Load alerts failed:', e)
@@ -130,8 +170,12 @@ async function triggerDetection() {
   detecting.value = true
   try {
     const res = await post<{ newAlerts: number }>(`/${factoryId.value}/alerts/detect`, {})
-    ElMessage.success(`检测完成，发现 ${res?.data?.newAlerts || 0} 条新告警`)
-    await loadData()
+    if (res?.success) {
+      ElMessage.success(`检测完成，发现 ${res?.data?.newAlerts || 0} 条新告警`)
+      await loadData()
+    } else {
+      ElMessage.error(res?.message || '检测失败')
+    }
   } catch (e) {
     ElMessage.error('检测失败')
   } finally {
@@ -142,9 +186,13 @@ async function triggerDetection() {
 async function acknowledgeAlert(alert: AlertRecord) {
   try {
     const userId = authStore.user?.id || authStore.user?.userId
-    await put<unknown>(`/${factoryId.value}/alerts/${alert.id}/acknowledge`, { userId })
-    ElMessage.success('已确认')
-    await loadData()
+    const res = await put<unknown>(`/${factoryId.value}/alerts/${alert.id}/acknowledge`, { userId })
+    if (res?.success) {
+      ElMessage.success('已确认')
+      await loadData()
+    } else {
+      ElMessage.error(res?.message || '操作失败')
+    }
   } catch (e) {
     ElMessage.error('操作失败')
   }
@@ -161,13 +209,17 @@ async function resolveAlert() {
   resolving.value = true
   try {
     const userId = authStore.user?.id || authStore.user?.userId
-    await put<unknown>(`/${factoryId.value}/alerts/${selectedAlert.value.id}/resolve`, {
+    const res = await put<unknown>(`/${factoryId.value}/alerts/${selectedAlert.value.id}/resolve`, {
       userId,
       resolutionNotes: resolutionNotes.value
     })
-    ElMessage.success('已解决')
-    resolveDialogVisible.value = false
-    await loadData()
+    if (res?.success) {
+      ElMessage.success('已解决')
+      resolveDialogVisible.value = false
+      await loadData()
+    } else {
+      ElMessage.error(res?.message || '操作失败')
+    }
   } catch (e) {
     ElMessage.error('操作失败')
   } finally {
@@ -240,12 +292,20 @@ onMounted(() => loadData())
       <el-table-column prop="level" label="级别" width="80">
         <template #default="{ row }">
           <el-tag :type="row.level === 'CRITICAL' ? 'danger' : row.level === 'WARNING' ? 'warning' : 'info'" size="small">
-            {{ row.level }}
+            {{ levelLabel(row.level) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="alertType" label="类型" width="120" />
-      <el-table-column prop="metricName" label="指标" width="120" />
+      <el-table-column prop="alertType" label="类型" width="120">
+        <template #default="{ row }">
+          {{ alertTypeLabel(row.alertType) }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="metricName" label="指标" width="120">
+        <template #default="{ row }">
+          {{ metricLabel(row.metricName) }}
+        </template>
+      </el-table-column>
       <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
       <el-table-column prop="currentValue" label="当前值" width="100">
         <template #default="{ row }">
@@ -262,7 +322,11 @@ onMounted(() => loadData())
           <el-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="createdAt" label="时间" width="160" />
+      <el-table-column label="时间" width="160">
+        <template #default="{ row }">
+          {{ row.createdAt ? row.createdAt.replace('T', ' ').substring(0, 19) : '-' }}
+        </template>
+      </el-table-column>
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button v-if="row.status === 'ACTIVE'" type="warning" size="small" @click="acknowledgeAlert(row)">确认</el-button>

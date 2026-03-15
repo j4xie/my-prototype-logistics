@@ -7,6 +7,7 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { useAuthStore } from '../../store/authStore';
 import { getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
+import { isAxiosError } from 'axios';
 import { aiService, detectAnalysisMode, type AIResult, type CostAnalysisResponse, type AnalysisMode } from '../../services/ai';
 import { AIModeIndicator } from '../../components/ai';
 
@@ -255,16 +256,17 @@ export default function AIAnalysisScreen() {
       setCurrentMode(response.mode);
       // Note: sessionId would need to come from response if backend supports it
     } catch (error) {
+      const status = isAxiosError(error) ? error.response?.status : undefined;
       aiAnalysisLogger.error('加载AI分析失败', error, {
         batchId,
         factoryId,
-        errorStatus: (error as any).response?.status,
+        errorStatus: status,
       });
 
       // Handle specific errors
-      if ((error as any).response?.status === 429) {
+      if (status === 429) {
         Alert.alert('配额不足', getErrorMsg(error) || '本周AI分析次数已达上限，请下周一再试');
-      } else if ((error as any).response?.status === 403) {
+      } else if (status === 403) {
         Alert.alert('功能已禁用', 'AI分析功能已被管理员禁用');
       } else {
         const errorMessage = getErrorMsg(error) || '加载AI分析失败，请稍后重试';

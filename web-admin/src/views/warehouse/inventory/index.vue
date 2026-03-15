@@ -76,6 +76,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -91,9 +93,12 @@ async function loadStatistics() {
     const response = await get(`/${factoryId.value}/material-batches/inventory/statistics`);
     if (response.success && response.data) {
       statistics.value = response.data;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载统计数据失败');
     }
   } catch (error) {
     console.error('加载统计失败:', error);
+    ElMessage.error('加载统计数据失败');
   }
 }
 
@@ -168,9 +173,12 @@ async function handleViewDetail(row: any) {
     const response = await get(`/${factoryId.value}/material-batches/${row.id}/usage-history`);
     if (response.success && response.data) {
       adjustHistory.value = Array.isArray(response.data) ? response.data : (response.data.content || []);
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载使用记录失败');
     }
-  } catch {
-    // Usage history may not exist for all batches
+  } catch (error) {
+    console.error('加载使用记录失败:', error);
+    ElMessage.error('加载使用记录失败');
   } finally {
     detailLoading.value = false;
   }
@@ -323,7 +331,11 @@ function getStatusText(status: string) {
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="updatedAt" label="更新时间" width="170" show-overflow-tooltip />
+        <el-table-column label="更新时间" width="170" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.updatedAt ? row.updatedAt.replace('T', ' ').substring(0, 19) : '-' }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="150" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" :icon="View" @click="handleViewDetail(row)">查看</el-button>

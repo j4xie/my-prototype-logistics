@@ -60,7 +60,7 @@ const calculateExpireStatus = (expiryDate?: string): { status: 'expired' | 'warn
   const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
   if (daysLeft <= 0) {
-    return { status: 'expired', daysLeft: 0 };
+    return { status: 'expired', daysLeft };
   } else if (daysLeft <= 3) {
     return { status: 'warning', daysLeft };
   }
@@ -282,7 +282,8 @@ export function WHExpireHandleScreen() {
             ]}
           >
             {batch.expireDate}
-            {batch.status === "expired" && " (今天)"}
+            {batch.status === "expired" && batch.daysLeft === 0 && " (今天)"}
+            {batch.status === "expired" && batch.daysLeft < 0 && ` (已过期${Math.abs(batch.daysLeft)}天)`}
           </Text>
         </View>
         <View style={styles.expireRow}>

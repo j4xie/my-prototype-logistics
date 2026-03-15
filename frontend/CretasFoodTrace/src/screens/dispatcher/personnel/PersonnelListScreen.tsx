@@ -276,11 +276,9 @@ export default function PersonnelListScreen() {
       // 获取可用工人列表
       const workersRes = await schedulingApiClient.getAvailableWorkers({ factoryId });
       if (workersRes.success && workersRes.data) {
-        // 处理分页响应或直接数组响应
-        const responseData = workersRes.data as any;
-        const workers = Array.isArray(responseData)
-          ? responseData
-          : (responseData.content || responseData.users || []);
+        // Handle both paginated ({ content: [...] }) and flat array responses
+        const rawData = workersRes.data;
+        const workers = Array.isArray(rawData) ? rawData : (rawData as any).content ?? [];
 
         // Define worker type for type safety
         type WorkerData = {
@@ -351,11 +349,17 @@ export default function PersonnelListScreen() {
             status,
             hireType,
             skills: worker.skillLevels
-              ? Object.entries(worker.skillLevels).map(([name, level]) => ({
-                  name,
-                  level: typeof level === 'number' ? level : 1,
-                  isPrimary: false,
-                }))
+              ? (Array.isArray(worker.skillLevels)
+                  ? (worker.skillLevels as any[]).map((s: any) => ({
+                      name: s.skillName || s.name || '未知',
+                      level: typeof s.level === 'number' ? s.level : 1,
+                      isPrimary: false,
+                    }))
+                  : Object.entries(worker.skillLevels).map(([name, level]) => ({
+                      name,
+                      level: typeof level === 'number' ? level : 1,
+                      isPrimary: false,
+                    })))
               : [],
             efficiency: worker.efficiency ?? 85,
             weeklyHours: worker.todayWorkHours,

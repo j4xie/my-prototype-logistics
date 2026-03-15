@@ -107,6 +107,9 @@
   },
   "cost": {
     "title": "Cost Report",
+    "analysisTitle": "Cost Analysis",
+    "overviewTab": "Cost Overview",
+    "varianceTab": "Cost Variance",
     "timeRange": "Time Range",
     "today": "Today",
     "thisWeek": "This Week",

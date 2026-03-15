@@ -15,7 +15,7 @@ import {
   Chip,
   useTheme,
 } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
@@ -114,7 +114,7 @@ export function WorkTypeListScreen() {
       const response = await workTypeApiClient.getActiveWorkTypes();
 
       // Handle both array response and wrapped response
-      const apiWorkTypes = Array.isArray(response) ? response : (response as any)?.data || [];
+      const apiWorkTypes = Array.isArray(response) ? response : (response && typeof response === 'object' && 'data' in response) ? (response as { data: ApiWorkType[] }).data : [];
       const transformed = apiWorkTypes.map(transformWorkType);
 
       setWorkTypes(transformed);
@@ -158,18 +158,18 @@ export function WorkTypeListScreen() {
     switch (workType.code) {
       case 'WT-RECEIVE':
         // 原料接收 -> 原料入库向导
-        navigation.navigate('CreateBatch' as any);
+        navigation.dispatch(CommonActions.navigate('CreateBatch'));
         break;
       case 'WT-INSPECT':
         // 质量检验 -> 质检记录向导
-        navigation.navigate('CreateQualityRecord' as any, {
+        navigation.dispatch(CommonActions.navigate('CreateQualityRecord', {
           batchId: 'BATCH_MOCK', // In real app, user might select batch first
           inspectionType: 'process'
-        });
+        }));
         break;
       case 'WT-PACKAGE':
         // 产品包装 -> 包装向导
-        navigation.navigate('CreatePackaging' as any);
+        navigation.dispatch(CommonActions.navigate('CreatePackaging'));
         break;
       default:
         // 其他类型 (加工、存储等) -> 通用工作向导

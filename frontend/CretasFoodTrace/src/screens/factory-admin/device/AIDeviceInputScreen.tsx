@@ -24,6 +24,7 @@ import * as ImagePicker from 'expo-image-picker';
 import formAssistantApiClient from '../../../services/api/formAssistantApiClient';
 import isapiApiClient from '../../../services/api/isapiApiClient';
 import { createScaleDevice } from '../../../services/api/scaleApiClient';
+import { getErrorMsg } from '../../../utils/errorHandler';
 import { EntityType } from '../../../services/api/formTemplateApiClient';
 
 type DeviceStackParamList = {
@@ -281,11 +282,11 @@ export function AIDeviceInputScreen() {
           },
         ]);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('添加设备失败:', error);
       Alert.alert(
         '添加失败',
-        error.response?.data?.message || error.message || '请检查设备信息后重试'
+        getErrorMsg(error) || '请检查设备信息后重试'
       );
     } finally {
       setIsSubmitting(false);

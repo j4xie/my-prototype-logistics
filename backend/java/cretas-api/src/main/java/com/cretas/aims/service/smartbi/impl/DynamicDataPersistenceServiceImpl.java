@@ -527,11 +527,25 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
         String dataType = mapping.getDataType();
         String subType = mapping.getSubType();
 
-        if ("NUMERIC".equalsIgnoreCase(dataType)) {
+        if ("NUMERIC".equalsIgnoreCase(dataType) || "NUMBER".equalsIgnoreCase(dataType) ||
+            "INTEGER".equalsIgnoreCase(dataType) || "FLOAT".equalsIgnoreCase(dataType) ||
+            "DECIMAL".equalsIgnoreCase(dataType) || "DOUBLE".equalsIgnoreCase(dataType)) {
             return true;
         }
-        if ("AMOUNT".equalsIgnoreCase(subType) || "CURRENCY".equalsIgnoreCase(subType)) {
+        if ("AMOUNT".equalsIgnoreCase(subType) || "CURRENCY".equalsIgnoreCase(subType) ||
+            "PERCENT".equalsIgnoreCase(subType) || "RATE".equalsIgnoreCase(subType)) {
             return true;
+        }
+        // Fallback: check field name for measure-like keywords
+        String standardField = mapping.getStandardField();
+        if (standardField != null) {
+            String lower = standardField.toLowerCase();
+            if (lower.matches(".*(amount|revenue|sales|cost|profit|price|quantity|total|sum|count|rate|ratio|" +
+                    "费用|成本|利润|收入|金额|数量|合计|销售额|营业额|" +
+                    "实收|实付|折后|优惠|单价|原价|折扣|退款|" +
+                    "人数|笔数|单数|份数|销量|产量|库存|周转).*")) {
+                return true;
+            }
         }
         return false;
     }

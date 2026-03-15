@@ -76,11 +76,14 @@ interface PerformanceMetric {
   note?: string;
 }
 
+// Icon name type aliases
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
 // 菜单项类型
 interface MenuItem {
   id: string;
   title: string;
-  icon: string;
+  icon: IoniconsName;
   iconType: 'ionicons' | 'material' | 'feather';
   badge?: string;
   badgeColor?: string;
@@ -348,7 +351,7 @@ export default function DSProfileScreen() {
           <Text style={styles.metricValue}>{metric.value}</Text>
           <Text style={[
             styles.metricChange,
-            { color: metric.changeType === 'up' ? DISPATCHER_THEME.success : DISPATCHER_THEME.success }
+            { color: metric.changeType === 'up' ? DISPATCHER_THEME.success : DISPATCHER_THEME.danger }
           ]}>
             {metric.change}
           </Text>
@@ -380,7 +383,7 @@ export default function DSProfileScreen() {
     >
       <View style={styles.menuItemLeft}>
         <Ionicons
-          name={item.icon as any}
+          name={item.icon}
           size={22}
           color={DISPATCHER_THEME.primary}
         />
@@ -495,7 +498,7 @@ export default function DSProfileScreen() {
           </TouchableOpacity>
 
           {/* 版本信息 */}
-          <Text style={styles.versionText}>白垩纪食品溯源系统 v1.0.0</Text>
+          <Text style={styles.versionText}>白垩纪AI Agent v1.0.0</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

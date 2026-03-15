@@ -1136,7 +1136,7 @@ class AIApiClient {
       // 11. error — 错误
       es.addEventListener('error', (event) => {
         // SSE error 事件可能是连接错误（无 data），也可能是后端发送的 error 事件（有 data）
-        const d = safeParseJSON((event as any).data);
+        const d = safeParseJSON('data' in event ? (event as { data?: string }).data : undefined);
         const errorMessage = d?.message as string
           || ('message' in event && typeof event.message === 'string' ? event.message : '流式请求失败');
         callbacks.onError?.(errorMessage);

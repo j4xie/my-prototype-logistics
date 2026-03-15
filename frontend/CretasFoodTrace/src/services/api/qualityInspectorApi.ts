@@ -99,7 +99,7 @@ class QualityInspectorApiClient {
     data: QualityInspectionForm
   ): Promise<QualityRecord> {
     const response = await apiClient.post<QIApiResponse<QualityRecord>>(
-      `${this.getBasePath()}/processing/batches/${batchId}/quality/inspection`,
+      `${this.getBasePath()}/processing/quality/inspections?batchId=${batchId}`,
       data
     );
     return response.data;
@@ -111,7 +111,7 @@ class QualityInspectorApiClient {
   async getInspectionRecord(batchId: string): Promise<QualityRecord | null> {
     try {
       const response = await apiClient.get<QIApiResponse<QualityRecord>>(
-        `${this.getBasePath()}/processing/batches/${batchId}/quality/inspection`
+        `${this.getBasePath()}/processing/quality/inspections?batchId=${batchId}`
       );
       return response.data;
     } catch (error) {
@@ -127,7 +127,7 @@ class QualityInspectorApiClient {
     data: Partial<QualityInspectionForm>
   ): Promise<QualityRecord> {
     const response = await apiClient.put<QIApiResponse<QualityRecord>>(
-      `${this.getBasePath()}/processing/batches/${batchId}/quality/inspection`,
+      `${this.getBasePath()}/processing/quality/inspections?batchId=${batchId}`,
       data
     );
     return response.data;
@@ -153,7 +153,7 @@ class QualityInspectorApiClient {
       packaging: { score: 0, notes: [] },
       totalScore: passRate,
       grade: (raw.qualityGrade as QualityRecord['grade']) ?? 'D',
-      passed: String(raw.result).toUpperCase() === 'PASS',
+      passed: ['PASS', 'PASSED', 'QUALIFIED', 'CONDITIONAL'].includes(String(raw.result ?? '').toUpperCase()),
       photos: [],
       inspector: {
         id: Number(raw.inspectorId ?? 0),

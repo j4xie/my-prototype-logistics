@@ -112,6 +112,9 @@
     "inactive": "已停用",
     "enabled": "启用",
     "disabled": "停用",
+    "all": "全部",
+    "enable": "启用",
+    "disable": "停用",
     "activate": "激活",
     "deactivate": "停用"
   },

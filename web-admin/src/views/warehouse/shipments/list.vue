@@ -35,6 +35,11 @@ const shipmentForm = ref({
 });
 const customers = ref<any[]>([]);
 const productBatches = ref<any[]>([]);
+const customerMap = computed(() => {
+  const map: Record<string, string> = {};
+  customers.value.forEach((c: any) => { if (c.id && c.name) map[c.id] = c.name; });
+  return map;
+});
 
 onMounted(() => {
   loadData();
@@ -58,6 +63,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -73,9 +80,12 @@ async function loadCustomers() {
     const response = await get(`/${factoryId.value}/customers`);
     if (response.success && response.data) {
       customers.value = response.data.content || response.data || [];
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载客户列表失败');
     }
   } catch (error) {
     console.error('加载客户列表失败:', error);
+    ElMessage.error('加载客户列表失败');
   }
 }
 
@@ -87,9 +97,12 @@ async function loadProductBatches() {
     });
     if (response.success && response.data) {
       productBatches.value = response.data.content || response.data || [];
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载产品批次失败');
     }
   } catch (error) {
     console.error('加载产品批次失败:', error);
+    ElMessage.error('加载产品批次失败');
   }
 }
 
@@ -280,11 +293,19 @@ function getStatusText(status: string) {
 
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="shipmentNumber" label="出货单号" width="160" :formatter="emptyCell" />
-        <el-table-column prop="customerName" label="客户名称" min-width="150" show-overflow-tooltip :formatter="emptyCell" />
-        <el-table-column prop="productBatchNumber" label="产品批次" width="160" :formatter="emptyCell" />
+        <el-table-column label="客户名称" min-width="150" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.customerName || customerMap[row.customerId] || row.customerId || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="产品" width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.productName || row.productBatchNumber || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="quantity" label="数量" width="100" align="right" :formatter="emptyCell" />
-        <el-table-column prop="vehicleNumber" label="车牌号" width="120" :formatter="emptyCell" />
-        <el-table-column prop="driverName" label="司机" width="100" :formatter="emptyCell" />
+        <el-table-column label="物流/车牌" width="140" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.logisticsCompany || row.vehicleNumber || row.trackingNumber || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="单价/金额" width="120" align="right">
+          <template #default="{ row }">{{ row.totalAmount ? `¥${row.totalAmount}` : row.unitPrice ? `¥${row.unitPrice}/${row.unit || ''}` : '-' }}</template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)" size="small">

@@ -126,13 +126,13 @@
   "about": {
     "title": "About",
     "version": "Version",
-    "appName": "Cretas Food Trace",
+    "appName": "Cretas AI Agent",
     "copyright": "Copyright",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
     "checkUpdate": "Check for Updates",
     "productIntro": "Product Introduction",
-    "productDescription": "Cretas Food Traceability System is a comprehensive food industry traceability management platform, enabling full chain tracking from raw materials to finished products.",
+    "productDescription": "Cretas AI Agentability System is a comprehensive food industry traceability management platform, enabling full chain tracking from raw materials to finished products.",
     "userAgreement": "User Agreement",
     "latestVersion": "Already the latest version"
   },

@@ -11,6 +11,8 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 import { useTranslation } from 'react-i18next';
 import { useRegister } from '../../hooks/useRegister';
 import { RegisterRequest } from '../../types/auth';
@@ -125,7 +127,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     placeholder: string,
     value: string,
     onChange: (text: string) => void,
-    icon: any,
+    icon: IoniconsName,
     secure = false,
     showSecure = false,
     toggleSecure?: () => void,

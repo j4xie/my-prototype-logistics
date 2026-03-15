@@ -1,6 +1,6 @@
 import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { API_BASE_URL } from '../../constants/config';
 
 /**
@@ -71,9 +71,26 @@ export interface BatchTraceResponse {
   lastUpdateTime: string;
 }
 
+export interface ProcessingStageInfo {
+  stageType: string;
+  stageName: string;
+  stageOrder: number;
+  startTime?: string;
+  endTime?: string;
+  durationMinutes?: number;
+  inputWeight?: number;
+  outputWeight?: number;
+  lossRate?: number;
+  passRate?: number;
+  temperature?: number;
+  equipmentName?: string;
+  operatorName?: string;
+}
+
 export interface FullTraceResponse {
   production: ProductionInfo;
   materials: MaterialInfo[];
+  processingStages?: ProcessingStageInfo[];
   qualityInspections: QualityInfo[];
   shipments: ShipmentInfo[];
   traceCode: string;
@@ -132,8 +149,8 @@ class TraceabilityApiClient {
         `${this.getPath(factoryId)}/batch/${batchNumber}`
       );
       return response.data || response;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 404) {
         return null;
       }
       throw error;
@@ -154,8 +171,8 @@ class TraceabilityApiClient {
         `${this.getPath(factoryId)}/full/${batchNumber}`
       );
       return response.data || response;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 404) {
         return null;
       }
       throw error;
@@ -173,8 +190,9 @@ class TraceabilityApiClient {
         `${API_BASE_URL}/api/public/trace/${batchNumber}`
       );
       return response.data?.data || response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[TraceabilityApiClient] 公开溯源查询失败:', error);
+      const axiosErr = error as { response?: { data?: { message?: string } } };
       return {
         productName: '',
         batchNumber: batchNumber,
@@ -184,7 +202,7 @@ class TraceabilityApiClient {
         traceCode: '',
         queryTime: new Date().toISOString(),
         isValid: false,
-        message: error.response?.data?.message || '溯源查询失败'
+        message: axiosErr.response?.data?.message || '溯源查询失败'
       };
     }
   }
@@ -199,8 +217,9 @@ class TraceabilityApiClient {
         `${API_BASE_URL}/api/public/trace/code/${traceCode}`
       );
       return response.data?.data || response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[TraceabilityApiClient] 溯源码查询失败:', error);
+      const axiosErr = error as { response?: { data?: { message?: string } } };
       return {
         productName: '',
         batchNumber: '',
@@ -210,7 +229,7 @@ class TraceabilityApiClient {
         traceCode: traceCode,
         queryTime: new Date().toISOString(),
         isValid: false,
-        message: error.response?.data?.message || '无效的溯源码'
+        message: axiosErr.response?.data?.message || '无效的溯源码'
       };
     }
   }

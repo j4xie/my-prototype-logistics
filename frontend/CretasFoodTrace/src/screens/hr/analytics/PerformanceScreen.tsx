@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import { Text, Card, Chip, Avatar, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -169,7 +169,7 @@ export default function PerformanceScreen() {
     return (
       <TouchableOpacity
         onPress={() =>
-          navigation.navigate('StaffDetail' as any, { staffId: item.userId })
+          navigation.dispatch(CommonActions.navigate('StaffDetail', { staffId: item.userId }))
         }
       >
         <Card style={styles.employeeCard}>

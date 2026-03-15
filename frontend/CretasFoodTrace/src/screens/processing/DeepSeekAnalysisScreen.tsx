@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Text, Card, Button, Appbar, ActivityIndicator, Chip, TextInput as PaperTextInput, IconButton, ProgressBar, Divider, Switch } from 'react-native-paper';
+import { isAxiosError } from 'axios';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
@@ -12,10 +13,10 @@ import { logger } from '../../utils/logger';
 // 创建DeepSeekAnalysis专用logger
 const deepSeekLogger = logger.createContextLogger('DeepSeekAnalysis');
 
-type DeepSeekAnalysisScreenRouteProp = RouteProp<ProcessingStackParamList, 'DeepSeekAnalysis'>;
+type DeepSeekAnalysisScreenRouteProp = RouteProp<ProcessingStackParamList, 'AIAnalysis'>;
 type DeepSeekAnalysisScreenNavigationProp = NativeStackNavigationProp<
   ProcessingStackParamList,
-  'DeepSeekAnalysis'
+  'AIAnalysis'
 >;
 
 // ========== 数据结构定义 ==========
@@ -246,24 +247,25 @@ export default function DeepSeekAnalysisScreen() {
 
       deepSeekLogger.info('AI分析加载成功', {
         batchId,
-        sessionId: (response as any).session_id,
-        hasAnalysis: !!(response as any).analysis,
-        quotaRemaining: (response as any).quota?.remaining,
+        sessionId: response.session_id,
+        hasAnalysis: !!response.analysis,
+        quotaRemaining: response.quota?.remainingQuota,
       });
 
       setAnalysisResponse(response);
-      setSessionId((response as any).session_id || '');
+      setSessionId(response.session_id || '');
     } catch (error) {
+      const status = isAxiosError(error) ? error.response?.status : undefined;
       deepSeekLogger.error('加载AI分析失败', error, {
         batchId,
         factoryId,
-        errorStatus: (error as any).response?.status,
+        errorStatus: status,
       });
 
       // Handle specific errors
-      if ((error as any).response?.status === 429) {
+      if (status === 429) {
         Alert.alert('配额不足', getErrorMsg(error) || '本周AI分析次数已达上限，请下周一再试');
-      } else if ((error as any).response?.status === 403) {
+      } else if (status === 403) {
         Alert.alert('功能已禁用', 'AI分析功能已被管理员禁用');
       } else {
         const errorMessage = getErrorMsg(error) || '加载AI分析失败，请稍后重试';
@@ -308,7 +310,7 @@ export default function DeepSeekAnalysisScreen() {
       deepSeekLogger.info('AI追问回答成功', {
         batchId,
         sessionId,
-        hasAnalysis: !!(response as any).analysis,
+        hasAnalysis: !!response.analysis,
       });
 
       setAnalysisResponse(response);

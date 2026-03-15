@@ -214,7 +214,10 @@ async function loadSelectOptions() {
       const d = mtRes.data as { content?: { id: string; name: string }[] } | { id: string; name: string }[];
       materialTypes.value = Array.isArray(d) ? d : d.content || [];
     }
-  } catch (e) { console.error('Failed to load select options:', e); }
+  } catch (e) {
+    console.error('Failed to load select options:', e);
+    ElMessage.error('加载选项数据失败');
+  }
 }
 
 const statsLoaded = ref(false);
@@ -233,7 +236,10 @@ async function loadStatistics() {
       };
       statsLoaded.value = true;
     }
-  } catch (e) { console.error('Failed to load requisition statistics:', e); }
+  } catch (e) {
+    console.error('Failed to load requisition statistics:', e);
+    ElMessage.error('加载领料统计失败');
+  }
 }
 
 const loading = ref(false);
@@ -365,10 +371,14 @@ async function submitCreateForm() {
   }
   submitting.value = true;
   try {
-    await createRequisition(factoryId.value, dialogForm.value);
-    ElMessage.success('领料单已创建');
-    dialogVisible.value = false;
-    loadData();
+    const res = await createRequisition(factoryId.value, dialogForm.value);
+    if (res.success) {
+      ElMessage.success('领料单已创建');
+      dialogVisible.value = false;
+      loadData();
+    } else {
+      ElMessage.error(res.message || '创建失败');
+    }
   } catch {
     ElMessage.error('创建失败，请检查网络连接');
   } finally { submitting.value = false; }
@@ -381,9 +391,13 @@ async function handleSubmit(row: RequisitionItem) {
   } catch { return; }
   submitting.value = true;
   try {
-    await submitRequisition(factoryId.value, row.id);
-    ElMessage.success('已提交');
-    loadData();
+    const res = await submitRequisition(factoryId.value, row.id);
+    if (res.success) {
+      ElMessage.success('已提交');
+      loadData();
+    } else {
+      ElMessage.error(res.message || '提交失败');
+    }
   } catch { ElMessage.error('提交失败，请检查网络'); }
   finally { submitting.value = false; }
 }
@@ -405,9 +419,13 @@ async function handleApprove(row: RequisitionItem) {
   } catch { return; }
   submitting.value = true;
   try {
-    await approveRequisition(factoryId.value, row.id, { actualQuantity });
-    ElMessage.success('已审批');
-    loadData();
+    const res = await approveRequisition(factoryId.value, row.id, { actualQuantity });
+    if (res.success) {
+      ElMessage.success('已审批');
+      loadData();
+    } else {
+      ElMessage.error(res.message || '审批失败');
+    }
   } catch { ElMessage.error('审批失败，请检查网络'); }
   finally { submitting.value = false; }
 }
@@ -421,9 +439,13 @@ async function handleReject(row: RequisitionItem) {
   } catch { return; }
   submitting.value = true;
   try {
-    await rejectRequisition(factoryId.value, row.id, { reason });
-    ElMessage.success('已驳回');
-    loadData();
+    const res = await rejectRequisition(factoryId.value, row.id, { reason });
+    if (res.success) {
+      ElMessage.success('已驳回');
+      loadData();
+    } else {
+      ElMessage.error(res.message || '驳回失败');
+    }
   } catch { ElMessage.error('驳回失败，请检查网络'); }
   finally { submitting.value = false; }
 }

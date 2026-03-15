@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import { Text, Card, SegmentedButtons, Avatar, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -240,7 +240,7 @@ export default function LaborCostScreen() {
                   key={worker.userId}
                   style={styles.rankRow}
                   onPress={() =>
-                    navigation.navigate('StaffDetail' as any, { staffId: worker.userId })
+                    navigation.dispatch(CommonActions.navigate('StaffDetail', { staffId: worker.userId }))
                   }
                 >
                   <View style={styles.rankBadge}>

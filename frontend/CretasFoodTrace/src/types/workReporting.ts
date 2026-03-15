@@ -69,14 +69,16 @@ export interface WorkReportResponse {
 }
 
 export interface CheckinRequest {
-  batchId: number;
+  batchId?: number;
+  processTaskId?: string;
   employeeId: number;
   checkinMethod: CheckinMethod;
   assignedBy?: number;
 }
 
 export interface CheckoutRequest {
-  batchId: number;
+  batchId?: number;
+  processTaskId?: string;
   employeeId: number;
 }
 

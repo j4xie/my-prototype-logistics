@@ -29,6 +29,8 @@ export function useRestaurantAnalytics<T>(
           seen.add(u.id)
           return true
         })
+      } else {
+        ElMessage.error(res.message || '加载数据源列表失败')
       }
     } catch (e) {
       console.error('Failed to load restaurant uploads:', e)
@@ -50,6 +52,8 @@ export function useRestaurantAnalytics<T>(
         if (res.data.dataQualityWarnings) {
           dataQualityWarnings.value = res.data.dataQualityWarnings
         }
+      } else if (res.success === false) {
+        ElMessage.error(res.message || '分析数据加载失败')
       }
     } catch (e) {
       console.error('Failed to load analytics:', e)

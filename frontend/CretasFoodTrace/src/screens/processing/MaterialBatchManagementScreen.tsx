@@ -17,7 +17,7 @@ import {
   Button,
   TextInput,
 } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { materialBatchApiClient, MaterialBatch } from '../../services/api/materialBatchApiClient';
 import { useAuthStore } from '../../store/authStore';
 import * as FileSystem from 'expo-file-system';
@@ -77,17 +77,17 @@ export default function MaterialBatchManagementScreen() {
         case 'expiring':
           // API: 即将过期批次（7天内）
           response = await materialBatchApiClient.getExpiringBatches(7, user?.factoryId);
-          setBatches(Array.isArray((response as any).data) ? (response as any).data : (response as any).data?.content || []);
+          setBatches(Array.isArray(response.data) ? response.data : (response.data as { content?: MaterialBatch[] })?.content || []);
           break;
         case 'expired':
           // API: 已过期批次
           response = await materialBatchApiClient.getExpiredBatches(user?.factoryId);
-          setBatches(Array.isArray((response as any).data) ? (response as any).data : (response as any).data?.content || []);
+          setBatches(Array.isArray(response.data) ? response.data : (response.data as { content?: MaterialBatch[] })?.content || []);
           break;
         case 'low_stock':
           // API: 低库存批次
           response = await materialBatchApiClient.getLowStockBatches(user?.factoryId);
-          setBatches(Array.isArray((response as any).data) ? (response as any).data : (response as any).data?.content || []);
+          setBatches(Array.isArray(response.data) ? response.data : (response.data as { content?: MaterialBatch[] })?.content || []);
           break;
         default:
           // API: 所有批次
@@ -96,7 +96,7 @@ export default function MaterialBatchManagementScreen() {
             page: 1, // 后端要求 page >= 1
             size: 100,
           });
-          setBatches(Array.isArray((response as any).data) ? (response as any).data : (response as any).data?.content || []);
+          setBatches(Array.isArray(response.data) ? response.data : (response.data as { content?: MaterialBatch[] })?.content || []);
       }
 
       materialBatchLogger.info('批次列表加载成功', { count: batches.length });
@@ -229,7 +229,7 @@ export default function MaterialBatchManagementScreen() {
 
       // 获取文件信息
       const fileInfo = await FileSystem.getInfoAsync(downloadResult.uri);
-      const fileSize = fileInfo.exists && !fileInfo.isDirectory ? (fileInfo as any).size || 0 : 0;
+      const fileSize = fileInfo.exists && !fileInfo.isDirectory ? (fileInfo as { size?: number }).size || 0 : 0;
       const isAvailable = await Sharing.isAvailableAsync();
 
       if (isAvailable) {
@@ -306,33 +306,33 @@ export default function MaterialBatchManagementScreen() {
   const handleConvertToFrozen = async (batch: MaterialBatch) => {
     try {
       setConvertingToFrozen(true);
-      materialBatchLogger.info('转为冻品', { batchId: (batch as any).id });
+      materialBatchLogger.info('转为冻品', { batchId: batch.id });
 
       // 获取当前日期
       const today = new Date().toISOString().split('T')[0] as string;
 
       // 调用API
       await materialBatchApiClient.convertToFrozen(
-        String((batch as any).id),
+        String(batch.id),
         {
           convertedBy: user?.id ?? 0,
           convertedDate: today,
-          storageLocation: (batch as any).storageLocation || '冷冻库',
-          notes: `批次 ${(batch as any).batchNumber} 转为冻品`,
+          storageLocation: batch.storageLocation || '冷冻库',
+          notes: `批次 ${batch.batchNumber} 转为冻品`,
         },
         user?.factoryId ?? ''
       );
 
-      materialBatchLogger.info('转冻品成功', { batchId: (batch as any).id });
+      materialBatchLogger.info('转冻品成功', { batchId: batch.id });
       Alert.alert(
         '转换成功',
-        `批次 ${(batch as any).batchNumber} 已成功转为冻品\n保质期已延长，存储位置已更新`
+        `批次 ${batch.batchNumber} 已成功转为冻品\n保质期已延长，存储位置已更新`
       );
 
       // 刷新列表
       await loadBatches();
     } catch (error) {
-      materialBatchLogger.error('转冻品失败', error, { batchId: (batch as any).id });
+      materialBatchLogger.error('转冻品失败', error, { batchId: batch.id });
       Alert.alert(
         '转换失败',
         getErrorMsg(error) || '转冻品失败，请重试'
@@ -346,11 +346,11 @@ export default function MaterialBatchManagementScreen() {
   const handleUndoFrozen = async (batch: MaterialBatch) => {
     try {
       setUndoingFrozen(true);
-      materialBatchLogger.info('撤销冻品转换', { batchId: (batch as any).id, reason: undoReason });
+      materialBatchLogger.info('撤销冻品转换', { batchId: batch.id, reason: undoReason });
 
       // 调用API
       await materialBatchApiClient.undoFrozen(
-        (batch as any).id,
+        batch.id,
         {
           operatorId: user?.id ?? 0,
           reason: undoReason || '误操作撤销',
@@ -358,10 +358,10 @@ export default function MaterialBatchManagementScreen() {
         user?.factoryId
       );
 
-      materialBatchLogger.info('撤销冻品成功', { batchId: (batch as any).id });
+      materialBatchLogger.info('撤销冻品成功', { batchId: batch.id });
       Alert.alert(
         '撤销成功',
-        `批次 ${(batch as any).batchNumber} 已恢复为鲜品状态`
+        `批次 ${batch.batchNumber} 已恢复为鲜品状态`
       );
 
       // 关闭弹窗并重置
@@ -372,7 +372,7 @@ export default function MaterialBatchManagementScreen() {
       // 刷新列表
       await loadBatches();
     } catch (error) {
-      materialBatchLogger.error('撤销冻品失败', error, { batchId: (batch as any).id });
+      materialBatchLogger.error('撤销冻品失败', error, { batchId: batch.id });
       const errorMsg = getErrorMsg(error) || '撤销失败';
       Alert.alert('撤销失败', errorMsg);
     } finally {
@@ -399,15 +399,15 @@ export default function MaterialBatchManagementScreen() {
   const fifoRecommended = getFIFORecommendation();
 
   const calculateUsagePercentage = (batch: MaterialBatch) => {
-    const inbound = (batch as any).inboundQuantity ?? 0;
-    const used = (batch as any).usedQuantity ?? 0;
+    const inbound = batch.inboundQuantity ?? 0;
+    const used = batch.usedQuantity ?? 0;
     if (inbound === 0) return 0;
     return (used / inbound) * 100;
   };
 
   const calculateRemainingPercentage = (batch: MaterialBatch) => {
-    const inbound = (batch as any).inboundQuantity ?? 0;
-    const remaining = (batch as any).remainingQuantity ?? 0;
+    const inbound = batch.inboundQuantity ?? 0;
+    const remaining = batch.remainingQuantity ?? 0;
     if (inbound === 0) return 0;
     return (remaining / inbound) * 100;
   };
@@ -417,9 +417,9 @@ export default function MaterialBatchManagementScreen() {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return (
-      (batch as any).batchNumber.toLowerCase().includes(query) ||
-      (batch as any).materialTypeId?.toLowerCase().includes(query) ||
-      (batch as any).storageLocation?.toLowerCase().includes(query)
+      batch.batchNumber.toLowerCase().includes(query) ||
+      batch.materialTypeId?.toLowerCase().includes(query) ||
+      batch.storageLocation?.toLowerCase().includes(query)
     );
   });
 
@@ -429,7 +429,7 @@ export default function MaterialBatchManagementScreen() {
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="原材料批次管理" />
-        <Appbar.Action icon="robot-outline" onPress={() => navigation.navigate('FAAITab' as any, { screen: 'AIChat', params: { entityType: 'MATERIAL' } })} />
+        <Appbar.Action icon="robot-outline" onPress={() => navigation.dispatch(CommonActions.navigate('FAAITab', { screen: 'AIChat', params: { entityType: 'MATERIAL' } }))} />
         <Appbar.Action icon="download" onPress={handleExportInventory} />
         <Appbar.Action icon="refresh" onPress={loadBatches} />
       </Appbar.Header>
@@ -510,7 +510,7 @@ export default function MaterialBatchManagementScreen() {
                             materialBatchLogger.info('处理过期批次', { count: batches.length });
 
                             // API integration - POST /material-batches/handle-expired
-                            const response = await materialBatchApiClient.handleExpiredBatches(user?.factoryId);
+                            const response = await materialBatchApiClient.handleExpiredBatches(undefined, user?.factoryId);
 
                             materialBatchLogger.info('过期批次处理成功', { count: batches.length });
 
@@ -598,16 +598,16 @@ export default function MaterialBatchManagementScreen() {
           </Card>
         ) : (
           filteredBatches.map((batch) => {
-            const daysUntilExpiry = calculateDaysUntilExpiry((batch as any).expiryDate);
+            const daysUntilExpiry = calculateDaysUntilExpiry(batch.expiryDate);
             const expiryWarning = getExpiryWarning(daysUntilExpiry);
             const usagePercent = calculateUsagePercentage(batch);
             const remainingPercent = calculateRemainingPercentage(batch);
 
-            const isFIFORecommended = fifoRecommended?.id === (batch as any).id;
+            const isFIFORecommended = fifoRecommended?.id === batch.id;
 
             return (
               <Card
-                key={(batch as any).id}
+                key={batch.id}
                 style={[
                   styles.batchCard,
                   isFIFORecommended && styles.fifoRecommendedCard
@@ -619,7 +619,7 @@ export default function MaterialBatchManagementScreen() {
                     <View style={styles.batchTitleRow}>
                       <View style={styles.batchTitleLeft}>
                         <View style={styles.batchNumberRow}>
-                          <Text style={styles.batchNumber}>{(batch as any).batchNumber}</Text>
+                          <Text style={styles.batchNumber}>{batch.batchNumber}</Text>
                           {isFIFORecommended && (
                             <Chip
                               mode="flat"
@@ -633,51 +633,51 @@ export default function MaterialBatchManagementScreen() {
                           )}
                         </View>
                         <Text style={styles.materialType}>
-                          {(batch as any).materialName || (batch as any).materialTypeId || '未知原料'}
+                          {batch.materialName || batch.materialTypeId || '未知原料'}
                         </Text>
-                        {(batch as any).supplierName && (
+                        {batch.supplierName && (
                           <Text style={styles.supplierText}>
-                            供应商: {(batch as any).supplierName}
+                            供应商: {batch.supplierName}
                           </Text>
                         )}
                       </View>
                       <View style={styles.chips}>
                         {/* 存储类型 Badge (来自原料类型) */}
-                        {(batch as any).storageType && getStorageTypeText((batch as any).storageType) && (
+                        {batch.storageType && getStorageTypeText(batch.storageType) && (
                           <View style={[
                             styles.storageTypeBadge,
-                            { backgroundColor: `${getStorageTypeColor((batch as any).storageType)}20` }
+                            { backgroundColor: `${getStorageTypeColor(batch.storageType)}20` }
                           ]}>
                             <Text style={[
                               styles.storageTypeBadgeText,
-                              { color: getStorageTypeColor((batch as any).storageType) }
+                              { color: getStorageTypeColor(batch.storageType) }
                             ]}>
-                              {getStorageTypeText((batch as any).storageType)}
+                              {getStorageTypeText(batch.storageType)}
                             </Text>
                           </View>
                         )}
                         {/* 可用状态 Badge */}
                         <View style={[
                           styles.statusBadge,
-                          { backgroundColor: `${getStatusColor((batch as any).status)}20` }
+                          { backgroundColor: `${getStatusColor(batch.status)}20` }
                         ]}>
                           <Text style={[
                             styles.statusBadgeText,
-                            { color: getStatusColor((batch as any).status) }
+                            { color: getStatusColor(batch.status) }
                           ]}>
-                            {getStatusText((batch as any).status)}
+                            {getStatusText(batch.status)}
                           </Text>
                         </View>
-                        {(batch as any).qualityGrade && (
+                        {batch.qualityGrade && (
                           <View style={[
                             styles.qualityBadge,
-                            { backgroundColor: `${getQualityColor((batch as any).qualityGrade)}20` }
+                            { backgroundColor: `${getQualityColor(batch.qualityGrade)}20` }
                           ]}>
                             <Text style={[
                               styles.qualityBadgeText,
-                              { color: getQualityColor((batch as any).qualityGrade) }
+                              { color: getQualityColor(batch.qualityGrade) }
                             ]}>
-                              {(batch as any).qualityGrade}级
+                              {batch.qualityGrade}级
                             </Text>
                           </View>
                         )}
@@ -689,7 +689,7 @@ export default function MaterialBatchManagementScreen() {
                       <IconButton
                         icon="pencil"
                         size={20}
-                        onPress={() => (navigation as any).navigate('EditBatch', { batchId: (batch as any).id })}
+                        onPress={() => navigation.dispatch(CommonActions.navigate('EditBatch', { batchId: batch.id }))}
                         style={styles.actionIcon}
                       />
                       <IconButton
@@ -707,7 +707,7 @@ export default function MaterialBatchManagementScreen() {
                     <View style={styles.quantityRow}>
                       <Text style={styles.quantityLabel}>剩余/总量：</Text>
                       <Text style={styles.quantityValue}>
-                        {((batch as any).remainingQuantity ?? 0).toFixed(2)} / {((batch as any).inboundQuantity ?? 0).toFixed(2)} kg
+                        {(batch.remainingQuantity ?? 0).toFixed(2)} / {(batch.inboundQuantity ?? 0).toFixed(2)} kg
                       </Text>
                     </View>
                     <ProgressBar
@@ -717,11 +717,11 @@ export default function MaterialBatchManagementScreen() {
                     />
                     <View style={styles.quantityDetails}>
                       <Text style={styles.quantityDetailText}>
-                        已用: {((batch as any).usedQuantity ?? 0).toFixed(2)} kg ({usagePercent.toFixed(1)}%)
+                        已用: {(batch.usedQuantity ?? 0).toFixed(2)} kg ({usagePercent.toFixed(1)}%)
                       </Text>
-                      {((batch as any).reservedQuantity ?? 0) > 0 && (
+                      {(batch.reservedQuantity ?? 0) > 0 && (
                         <Text style={styles.quantityDetailText}>
-                          预留: {((batch as any).reservedQuantity ?? 0).toFixed(2)} kg
+                          预留: {(batch.reservedQuantity ?? 0).toFixed(2)} kg
                         </Text>
                       )}
                     </View>
@@ -732,14 +732,14 @@ export default function MaterialBatchManagementScreen() {
                     <View style={styles.infoRow}>
                       <List.Icon icon="calendar-import" style={styles.infoIcon} />
                       <Text style={styles.infoText}>
-                        入库: {new Date((batch as any).inboundDate).toLocaleDateString()}
+                        入库: {new Date(batch.inboundDate).toLocaleDateString()}
                       </Text>
                     </View>
-                    {(batch as any).expiryDate && (
+                    {batch.expiryDate && (
                       <View style={styles.infoRow}>
                         <List.Icon icon="calendar-alert" style={styles.infoIcon} />
                         <Text style={styles.infoText}>
-                          到期: {new Date((batch as any).expiryDate).toLocaleDateString()}
+                          到期: {new Date(batch.expiryDate).toLocaleDateString()}
                         </Text>
                         {expiryWarning && (
                           <View style={[
@@ -756,17 +756,17 @@ export default function MaterialBatchManagementScreen() {
                         )}
                       </View>
                     )}
-                    {(batch as any).storageLocation && (
+                    {batch.storageLocation && (
                       <View style={styles.infoRow}>
                         <List.Icon icon="map-marker" style={styles.infoIcon} />
-                        <Text style={styles.infoText}>{(batch as any).storageLocation}</Text>
+                        <Text style={styles.infoText}>{batch.storageLocation}</Text>
                       </View>
                     )}
                     <View style={styles.infoRow}>
                       <List.Icon icon="currency-cny" style={styles.infoIcon} />
                       <Text style={styles.infoText}>
-                        单价: ¥{((batch as any).unitPrice || 0).toFixed(2)}/kg |
-                        总价: ¥{((batch as any).totalCost || 0).toFixed(2)}
+                        单价: ¥{(batch.unitPrice || 0).toFixed(2)}/kg |
+                        总价: ¥{(batch.totalCost || 0).toFixed(2)}
                       </Text>
                     </View>
                   </View>
@@ -780,7 +780,7 @@ export default function MaterialBatchManagementScreen() {
                         onPress={() => {
                           Alert.alert(
                             '转为冻品',
-                            `确定将批次 ${(batch as any).batchNumber} 转为冻品吗？\n这将延长保质期并更新库存状态。`,
+                            `确定将批次 ${batch.batchNumber} 转为冻品吗？\n这将延长保质期并更新库存状态。`,
                             [
                               { text: '取消', style: 'cancel' },
                               {
@@ -802,7 +802,7 @@ export default function MaterialBatchManagementScreen() {
                   )}
 
                   {/* Undo Frozen - P1-007 */}
-                  {(batch as any).status === 'frozen' && (
+                  {batch.status === 'frozen' && (
                     <View style={styles.conversionSection}>
                       <Button
                         mode="outlined"

@@ -9,12 +9,13 @@ function getFactoryId(): string {
     const userStr = localStorage.getItem('cretas_user');
     if (userStr) {
       const user = JSON.parse(userStr);
-      return user.factoryId || user.factoryUser?.factoryId || 'F001';
+      const fid = user.factoryId || user.factoryUser?.factoryId;
+      if (fid && typeof fid === 'string') return fid;
     }
   } catch {
-    // ignore
+    // ignore parse errors
   }
-  return 'F001';
+  throw new Error('Factory ID unavailable. Please log in again.');
 }
 
 function basePath() {
@@ -56,39 +57,39 @@ interface DateParams {
 // ==================== 生产分析 ====================
 
 export function getProductionDashboard(params?: DateParams) {
-  return get<ProductionDashboard>(`${basePath()}/dashboard`, params);
+  return get<ProductionDashboard>(`${basePath()}/dashboard`, { params });
 }
 
 export function getDailyTrend(params?: DateParams) {
-  return get<Record<string, unknown>[]>(`${basePath()}/daily-trend`, params);
+  return get<Record<string, unknown>[]>(`${basePath()}/daily-trend`, { params });
 }
 
 export function getByProduct(params?: DateParams) {
-  return get<Record<string, unknown>[]>(`${basePath()}/by-product`, params);
+  return get<Record<string, unknown>[]>(`${basePath()}/by-product`, { params });
 }
 
 export function getByProcess(params?: DateParams) {
-  return get<Record<string, unknown>[]>(`${basePath()}/by-process`, params);
+  return get<Record<string, unknown>[]>(`${basePath()}/by-process`, { params });
 }
 
 // ==================== 人效分析 ====================
 
 export function getEfficiencyDashboard(params?: DateParams) {
-  return get<EfficiencyDashboard>(`${basePath()}/efficiency/dashboard`, params);
+  return get<EfficiencyDashboard>(`${basePath()}/efficiency/dashboard`, { params });
 }
 
 export function getWorkerRanking(params?: DateParams) {
-  return get<Record<string, unknown>[]>(`${basePath()}/efficiency/workers`, params);
+  return get<Record<string, unknown>[]>(`${basePath()}/efficiency/workers`, { params });
 }
 
 export function getEfficiencyTrend(params?: DateParams) {
-  return get<Record<string, unknown>[]>(`${basePath()}/efficiency/trend`, params);
+  return get<Record<string, unknown>[]>(`${basePath()}/efficiency/trend`, { params });
 }
 
 export function getHoursByProduct(params?: DateParams) {
-  return get<Record<string, unknown>[]>(`${basePath()}/efficiency/hours`, params);
+  return get<Record<string, unknown>[]>(`${basePath()}/efficiency/hours`, { params });
 }
 
 export function getWorkerProcessCross(params?: DateParams) {
-  return get<Record<string, unknown>[]>(`${basePath()}/efficiency/cross`, params);
+  return get<Record<string, unknown>[]>(`${basePath()}/efficiency/cross`, { params });
 }

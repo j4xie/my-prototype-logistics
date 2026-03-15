@@ -53,6 +53,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载调度计划失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -104,6 +106,8 @@ async function handleConfirm(row: SchedulingPlan) {
     if (response.success) {
       ElMessage.success('计划已确认');
       loadData();
+    } else {
+      ElMessage.error(response.message || '确认失败');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -133,6 +137,8 @@ async function handleCancel(row: SchedulingPlan) {
     if (response.success) {
       ElMessage.success('计划已取消');
       loadData();
+    } else {
+      ElMessage.error(response.message || '取消失败');
     }
   } catch (error) {
     if (error !== 'cancel') {

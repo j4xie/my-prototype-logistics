@@ -103,23 +103,32 @@ describe('NfcCheckinScreen', () => {
     { id: 103, batchNumber: 'BATCH-2026-003', productName: '猪肉脯', status: 'IN_PROGRESS' },
   ];
 
-  const mockCheckins = [
+  const mockCheckins: import('../../../types/workReporting').CheckinWorkerDTO[] = [
     {
-      id: 1,
+      sessionId: 1,
       batchId: 101,
       employeeId: 33,
-      checkInTime: '2026-02-13T08:00:00Z',
-      status: 'working',
+      fullName: null,
+      position: null,
+      hireType: null,
+      hireTypeLabel: null,
       checkinMethod: 'QR',
+      checkInTime: '2026-02-13T08:00:00Z',
+      checkOutTime: null,
+      status: 'working',
     },
     {
-      id: 2,
+      sessionId: 2,
       batchId: 101,
       employeeId: 34,
+      fullName: null,
+      position: null,
+      hireType: null,
+      hireTypeLabel: null,
+      checkinMethod: 'QR',
       checkInTime: '2026-02-13T08:05:00Z',
       checkOutTime: '2026-02-13T17:00:00Z',
       status: 'completed',
-      checkinMethod: 'QR',
     },
   ];
 
@@ -351,7 +360,7 @@ describe('NfcCheckinScreen', () => {
 
       // 应该显示扫码模态框
       await waitFor(() => {
-        expect(screen.getByTestID('barcode-scanner-modal')).toBeTruthy();
+        expect(screen.getByTestId('barcode-scanner-modal')).toBeTruthy();
       });
     });
 
@@ -386,11 +395,11 @@ describe('NfcCheckinScreen', () => {
       fireEvent.press(screen.getByText('扫码签到'));
 
       await waitFor(() => {
-        expect(screen.getByTestID('mock-scan-btn')).toBeTruthy();
+        expect(screen.getByTestId('mock-scan-btn')).toBeTruthy();
       });
 
       // 模拟扫码（扫到employeeId=33）
-      fireEvent.press(screen.getByTestID('mock-scan-btn'));
+      fireEvent.press(screen.getByTestId('mock-scan-btn'));
 
       await waitFor(() => {
         expect(mockedWorkReportingApi.checkin).toHaveBeenCalledWith(
@@ -413,7 +422,7 @@ describe('NfcCheckinScreen', () => {
         success: false,
         code: 400,
         message: '员工已签到',
-        data: null as any,
+        data: null!,
       });
 
       render(<NfcCheckinScreen />);
@@ -431,10 +440,10 @@ describe('NfcCheckinScreen', () => {
       fireEvent.press(screen.getByText('扫码签到'));
 
       await waitFor(() => {
-        expect(screen.getByTestID('mock-scan-btn')).toBeTruthy();
+        expect(screen.getByTestId('mock-scan-btn')).toBeTruthy();
       });
 
-      fireEvent.press(screen.getByTestID('mock-scan-btn'));
+      fireEvent.press(screen.getByTestId('mock-scan-btn'));
 
       await waitFor(() => {
         expect(Alert.alert).toHaveBeenCalledWith('签到失败', '员工已签到');
@@ -493,7 +502,7 @@ describe('NfcCheckinScreen', () => {
         success: false,
         code: 400,
         message: '签退失败：工作时间不足',
-        data: null as any,
+        data: null!,
       });
 
       render(<NfcCheckinScreen />);

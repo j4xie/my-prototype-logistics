@@ -127,15 +127,20 @@ function adaptDashboardResponse(raw: any): DashboardData {
   const completionKpi = findKpi('completion_rate') || findKpi('completionRate') || kpiCards[2];
   const profitKpi = findKpi('profit') || findKpi('net_profit') || kpiCards[3];
 
+  const toNum = (v: any): number => {
+    const n = Number(v);
+    return isNaN(n) ? 0 : n;
+  };
+
   const kpi: KPIData = {
-    sales: salesKpi?.value ?? 0,
-    salesChange: salesKpi?.change ?? salesKpi?.changeRate ?? 0,
-    orders: ordersKpi?.value ?? 0,
-    ordersChange: ordersKpi?.change ?? ordersKpi?.changeRate ?? 0,
-    completionRate: completionKpi?.value ?? 0,
-    completionRateChange: completionKpi?.change ?? completionKpi?.changeRate ?? 0,
-    profit: profitKpi?.value ?? 0,
-    profitChange: profitKpi?.change ?? profitKpi?.changeRate ?? 0,
+    sales: toNum(salesKpi?.value),
+    salesChange: toNum(salesKpi?.change ?? salesKpi?.changeRate),
+    orders: toNum(ordersKpi?.value),
+    ordersChange: toNum(ordersKpi?.change ?? ordersKpi?.changeRate),
+    completionRate: toNum(completionKpi?.value),
+    completionRateChange: toNum(completionKpi?.change ?? completionKpi?.changeRate),
+    profit: toNum(profitKpi?.value),
+    profitChange: toNum(profitKpi?.change ?? profitKpi?.changeRate),
   };
 
   // Map rankings
@@ -184,7 +189,8 @@ interface KPICardProps {
   onPress?: () => void;
 }
 
-const KPICard: React.FC<KPICardProps> = ({ title, value, change, icon, color, onPress }) => {
+const KPICard: React.FC<KPICardProps> = ({ title, value, change: rawChange, icon, color, onPress }) => {
+  const change = typeof rawChange === 'number' && !isNaN(rawChange) ? rawChange : 0;
   const isPositive = change >= 0;
 
   return (
@@ -391,7 +397,7 @@ export default function ExecutiveDashboardScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={SMARTBI_THEME.primary} />
-          <Text style={styles.loadingText}>{t('common.loading', { defaultValue: '加载中...' })}</Text>
+          <Text style={styles.loadingText}>{t('loading', { defaultValue: '加载中...' })}</Text>
         </View>
       </SafeAreaView>
     );
@@ -405,10 +411,10 @@ export default function ExecutiveDashboardScreen() {
           <View style={styles.headerContent}>
             <View>
               <Text style={styles.headerTitle}>
-                {t('executive.title', { defaultValue: '经营驾驶舱' })}
+                {t('executiveDashboard.title', { defaultValue: '经营驾驶舱' })}
               </Text>
               <Text style={styles.headerSubtitle}>
-                {user?.username || t('common.user', { defaultValue: '用户' })}
+                {user?.username || t('user', { defaultValue: '用户' })}
               </Text>
             </View>
             <View style={styles.headerActions}>
@@ -422,7 +428,7 @@ export default function ExecutiveDashboardScreen() {
                 icon="bell-outline"
                 iconColor="#fff"
                 size={24}
-                onPress={() => Alert.alert(t('common.tip', { defaultValue: '提示' }), t('common.comingSoon', { defaultValue: '功能开发中' }))}
+                onPress={() => Alert.alert(t('tip', { defaultValue: '提示' }), t('comingSoon', { defaultValue: '功能开发中' }))}
               />
             </View>
           </View>
@@ -490,7 +496,7 @@ export default function ExecutiveDashboardScreen() {
             />
             <KPICard
               title={t('kpi.completionRate', { defaultValue: '完成率' })}
-              value={`${(dashboardData.kpi.completionRate ?? 0).toFixed(1)}%`}
+              value={`${Number(dashboardData.kpi.completionRate || 0).toFixed(1)}%`}
               change={dashboardData.kpi.completionRateChange ?? 0}
               icon="check-circle"
               color={SMARTBI_THEME.success}
@@ -516,7 +522,7 @@ export default function ExecutiveDashboardScreen() {
                 </Text>
                 <TouchableOpacity>
                   <Text style={styles.viewAll}>
-                    {t('common.viewAll', { defaultValue: '查看全部' })}
+                    {t('viewAll', { defaultValue: '查看全部' })}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -533,7 +539,7 @@ export default function ExecutiveDashboardScreen() {
                 </Text>
                 <TouchableOpacity>
                   <Text style={styles.viewAll}>
-                    {t('common.viewAll', { defaultValue: '查看全部' })}
+                    {t('viewAll', { defaultValue: '查看全部' })}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -560,7 +566,7 @@ export default function ExecutiveDashboardScreen() {
               </View>
               <TouchableOpacity>
                 <Text style={styles.viewAll}>
-                  {t('common.viewAll', { defaultValue: '查看全部' })}
+                  {t('viewAll', { defaultValue: '查看全部' })}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -607,7 +613,7 @@ export default function ExecutiveDashboardScreen() {
         <TouchableOpacity style={styles.askAIButton} onPress={navigateToNLQuery}>
           <MaterialCommunityIcons name="robot" size={24} color="#fff" />
           <Text style={styles.askAIButtonText}>
-            {t('common.askAI', { defaultValue: '向 AI 提问' })}
+            {t('askAI', { defaultValue: '向 AI 提问' })}
           </Text>
         </TouchableOpacity>
 

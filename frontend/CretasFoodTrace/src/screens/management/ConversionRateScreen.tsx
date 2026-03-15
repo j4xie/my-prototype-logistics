@@ -235,14 +235,14 @@ export default function ConversionRateScreen() {
               <>
                 <View style={styles.statItem}>
                   <Text style={styles.statValue}>
-                    {item.avgConversionRate?.toFixed(1)}%
+                    {Number(item.avgConversionRate ?? 0).toFixed(1)}%
                   </Text>
                   <Text style={styles.statLabel}>{t('conversionRate.avgConversionRate')}</Text>
                 </View>
                 {item.avgWastageRate != null && (
                   <View style={styles.statItem}>
                     <Text style={styles.statValue}>
-                      {item.avgWastageRate.toFixed(1)}%
+                      {Number(item.avgWastageRate ?? 0).toFixed(1)}%
                     </Text>
                     <Text style={styles.statLabel}>{t('conversionRate.avgWastageRate')}</Text>
                   </View>

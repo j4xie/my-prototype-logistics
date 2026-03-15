@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -267,13 +269,13 @@ export default function QITrendScreen() {
     </TouchableOpacity>
   );
 
-  const renderMetricTab = (m: MetricType, label: string, icon: string) => (
+  const renderMetricTab = (m: MetricType, label: string, icon: IoniconsName) => (
     <TouchableOpacity
       style={[styles.metricTab, metric === m && styles.metricTabActive]}
       onPress={() => setMetric(m)}
     >
       <Ionicons
-        name={icon as any}
+        name={icon}
         size={18}
         color={metric === m ? QI_COLORS.primary : QI_COLORS.textSecondary}
       />

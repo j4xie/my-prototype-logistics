@@ -98,7 +98,7 @@ export function InventoryAlertScreen() {
     const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (daysLeft <= 0) {
-      return { level: "urgent", daysLeft: 0 };
+      return { level: "urgent", daysLeft };
     } else if (daysLeft <= 3) {
       return { level: "urgent", daysLeft };
     } else if (daysLeft <= 7) {
@@ -410,6 +410,7 @@ export function InventoryAlertScreen() {
                   {alert.expiryDate}
                   {alert.daysLeft !== undefined && alert.daysLeft > 0 && ` (${alert.daysLeft}天后)`}
                   {alert.daysLeft === 0 && " (今天)"}
+                  {alert.daysLeft !== undefined && alert.daysLeft < 0 && ` (已过期${Math.abs(alert.daysLeft)}天)`}
                 </Text>
               </View>
             )}

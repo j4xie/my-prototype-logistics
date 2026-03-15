@@ -23,6 +23,8 @@ import {
 } from 'react-native';
 import { Text, Card, Chip, Avatar, ActivityIndicator, Menu, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -135,7 +137,7 @@ export default function AttendanceAnomalyScreen() {
             <Chip
               mode="flat"
               icon={() => (
-                <MaterialCommunityIcons name={config.icon as any} size={14} color={config.color} />
+                <MaterialCommunityIcons name={config.icon as MCIconName} size={14} color={config.color} />
               )}
               textStyle={{ fontSize: 11, color: config.color }}
               style={[styles.typeChip, { backgroundColor: config.color + '20' }]}

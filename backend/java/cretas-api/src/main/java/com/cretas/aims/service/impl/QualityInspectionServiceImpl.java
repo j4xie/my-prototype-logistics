@@ -2,12 +2,16 @@ package com.cretas.aims.service.impl;
 
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
+import com.cretas.aims.entity.ProductionAlert;
 import com.cretas.aims.entity.QualityInspection;
+import com.cretas.aims.event.ProductionAlertEvent;
 import com.cretas.aims.exception.EntityNotFoundException;
+import com.cretas.aims.repository.ProductionAlertRepository;
 import com.cretas.aims.repository.QualityInspectionRepository;
 import com.cretas.aims.service.QualityInspectionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class QualityInspectionServiceImpl implements QualityInspectionService {
 
     private final QualityInspectionRepository qualityInspectionRepository;
+    private final ProductionAlertRepository productionAlertRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public PageResponse<QualityInspection> getInspections(String factoryId, String productionBatchId, PageRequest pageRequest) {
@@ -82,6 +88,12 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
         QualityInspection saved = qualityInspectionRepository.save(inspection);
 
         log.info("质量检验记录创建成功: inspectionId={}", saved.getId());
+
+        // QI FAIL → 自动创建告警 + 发送通知
+        if ("FAIL".equalsIgnoreCase(saved.getResult())) {
+            createQualityFailAlert(saved);
+        }
+
         return saved;
     }
 
@@ -118,6 +130,54 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
         QualityInspection updated = qualityInspectionRepository.save(existing);
         log.info("质量检验记录更新成功: inspectionId={}", updated.getId());
 
+        // 更新为 FAIL 时也触发告警
+        if ("FAIL".equalsIgnoreCase(updated.getResult())) {
+            createQualityFailAlert(updated);
+        }
+
         return updated;
+    }
+
+    /**
+     * 质检不合格时创建 QUALITY_FAIL 告警并发布事件通知相关人员
+     */
+    private void createQualityFailAlert(QualityInspection inspection) {
+        try {
+            String level = "CRITICAL";
+            double passRate = inspection.getPassRate() != null ? inspection.getPassRate().doubleValue() : 0;
+            if (passRate >= 70) {
+                level = "WARNING";
+            }
+
+            String description = String.format("质检不合格 — 批次ID: %d, 合格率: %.1f%%, 不合格数: %s",
+                    inspection.getProductionBatchId(),
+                    passRate,
+                    inspection.getFailCount() != null ? inspection.getFailCount().toPlainString() : "N/A");
+
+            ProductionAlert alert = ProductionAlert.builder()
+                    .factoryId(inspection.getFactoryId())
+                    .alertType("QUALITY_FAIL")
+                    .level(level)
+                    .status("ACTIVE")
+                    .metricName("quality_pass_rate")
+                    .currentValue(passRate)
+                    .baselineValue(95.0)
+                    .thresholdValue(70.0)
+                    .batchId(inspection.getProductionBatchId())
+                    .description(description)
+                    .build();
+
+            ProductionAlert saved = productionAlertRepository.save(alert);
+
+            // 发布事件 → AlertNotificationListener 异步通知相关人员
+            eventPublisher.publishEvent(new ProductionAlertEvent(
+                    this, saved.getId(), saved.getFactoryId(),
+                    saved.getAlertType(), saved.getLevel(), saved.getDescription()));
+
+            log.info("质检不合格告警已创建: alertId={}, level={}, batchId={}",
+                    saved.getId(), level, inspection.getProductionBatchId());
+        } catch (Exception e) {
+            log.error("创建质检告警失败: inspectionId={}", inspection.getId(), e);
+        }
     }
 }

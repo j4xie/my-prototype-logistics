@@ -34,11 +34,20 @@ const factoryMgmtLogger = logger.createContextLogger('FactoryManagement');
  */
 type NavigationProp = NativeStackNavigationProp<PlatformStackParamList, 'FactoryManagement'>;
 
+// Extended factory type for UI display (includes computed fields not in FactoryDTO)
+interface DisplayFactory extends FactoryDTO {
+  industry: string;
+  region: string;
+  aiQuota: number;
+  totalUsers: number;
+  createdAt: string;
+}
+
 export default function FactoryManagementScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation('platform');
-  const [factories, setFactories] = useState<any[]>([]);
-  const [filteredFactories, setFilteredFactories] = useState<any[]>([]);
+  const [factories, setFactories] = useState<DisplayFactory[]>([]);
+  const [filteredFactories, setFilteredFactories] = useState<DisplayFactory[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -69,7 +78,7 @@ export default function FactoryManagementScreen() {
       const query = searchQuery.toLowerCase();
       const filtered = factories.filter(
         (factory) =>
-          factory.name.toLowerCase().includes(query) ||
+          (factory.name || '').toLowerCase().includes(query) ||
           factory.id.toLowerCase().includes(query) ||
           factory.industry.toLowerCase().includes(query) ||
           factory.region.toLowerCase().includes(query)
@@ -99,11 +108,11 @@ export default function FactoryManagementScreen() {
           factoryCount: response.data.length,
         });
         // 将后端FactoryDTO映射到前端显示格式
-        const mappedFactories = response.data.map((factory: FactoryDTO) => {
-          const mapped = {
-            id: factory.id,
+        const mappedFactories = response.data.map((factory: FactoryDTO): DisplayFactory => {
+          const mapped: DisplayFactory = {
+            ...factory,
             name: factory.name || factory.factoryName, // ✅ API返回name字段，factoryName作为后备
-            industry: t('factory.foodProcessing'), // 后端暂无此字段
+            industry: factory.industry || t('factory.foodProcessing'), // 后端暂无此字段
             region: factory.address || t('factory.unknown'),
             status: factory.isActive !== false ? 'active' : 'inactive',
             aiQuota: 100, // 后端暂无此字段
@@ -145,9 +154,9 @@ export default function FactoryManagementScreen() {
     setRefreshing(false);
   };
 
-  const handleFactoryPress = (factory: any) => {
+  const handleFactoryPress = (factory: DisplayFactory) => {
     Alert.alert(
-      factory.name,
+      factory.name || factory.factoryName,
       `ID: ${factory.id}\n${t('factory.industry')}: ${factory.industry}\n${t('factory.region')}: ${factory.region}\n${t('factory.usersCount')}: ${factory.totalUsers}\nAI${t('common.buttons.quota', { defaultValue: '配额' })}: ${factory.aiQuota}${t('factory.weeklyQuota')}`,
       [
         { text: t('common.buttons.cancel'), style: 'cancel' },
@@ -157,7 +166,7 @@ export default function FactoryManagementScreen() {
     );
   };
 
-  const handleEditFactory = (factory: any) => {
+  const handleEditFactory = (factory: DisplayFactory) => {
     setEditMode(true);
     setEditingFactoryId(factory.id);
     setFormData({
@@ -171,11 +180,11 @@ export default function FactoryManagementScreen() {
     setDialogVisible(true);
   };
 
-  const handleViewDetails = (factory: any) => {
+  const handleViewDetails = (factory: DisplayFactory) => {
     Alert.alert(t('factoryManagement.viewDetails'), t('factoryManagement.detailsInDevelopment', { name: factory.name }));
   };
 
-  const handleSetupTemplates = (factory: any) => {
+  const handleSetupTemplates = (factory: DisplayFactory) => {
     navigation.navigate('FactorySetup', {
       factoryId: factory.id,
       factoryName: factory.name,
@@ -268,7 +277,7 @@ export default function FactoryManagementScreen() {
     }
   };
 
-  const renderFactoryCard = (factory: any) => {
+  const renderFactoryCard = (factory: DisplayFactory) => {
     return (
       <Card key={factory.id} style={styles.factoryCard} mode="elevated">
         <Pressable onPress={() => handleFactoryPress(factory)}>

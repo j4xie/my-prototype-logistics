@@ -76,6 +76,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载生产计划失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -91,9 +93,12 @@ async function loadProductTypes() {
     const response = await get(`/${factoryId.value}/product-types`);
     if (response.success && response.data) {
       productTypes.value = response.data.content || response.data || [];
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载产品类型失败');
     }
   } catch (error) {
     console.error('加载产品类型失败:', error);
+    ElMessage.error('加载产品类型失败');
   }
 }
 
@@ -141,6 +146,7 @@ async function submitPlan() {
     return;
   }
 
+  if (!factoryId.value) return;
   dialogLoading.value = true;
   try {
     const response = await post(`/${factoryId.value}/production-plans`, planForm.value);
@@ -294,12 +300,17 @@ async function loadReferenceData() {
     ]);
     if (linesRes?.data) {
       productionLines.value = Array.isArray(linesRes.data) ? linesRes.data : (linesRes.data as Record<string, unknown>).content || [];
+    } else if (linesRes && !linesRes.success) {
+      ElMessage.error(linesRes.message || '加载产线数据失败');
     }
     if (supsRes?.data) {
       supervisors.value = Array.isArray(supsRes.data) ? supsRes.data : (supsRes.data as Record<string, unknown>).content || [];
+    } else if (supsRes && !supsRes.success) {
+      ElMessage.error(supsRes.message || '加载主管数据失败');
     }
   } catch (e) {
     console.warn('Failed to load reference data:', e);
+    ElMessage.error('加载参考数据失败');
   }
 }
 

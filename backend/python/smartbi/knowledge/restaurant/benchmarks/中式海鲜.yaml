@@ -1,0 +1,27 @@
+# 中式海鲜行业基准数据
+#
+# 数据来源：
+#   - 馨厨香 7 店 POS 实测
+
+source: "馨厨香7店POS实测"
+year: 2024
+
+metrics:
+  food_cost_ratio:
+    name: "食材成本率"
+    range: [38.0, 48.0]
+    median: 43.0
+    source: "馨厨香7店POS实测"
+    note: "海鲜食材价格波动大，季节性强"
+
+  table_turnover:
+    name: "翻台率"
+    range: [2.0, 3.5]
+    median: 2.5
+    source: "馨厨香运营数据"
+
+  average_ticket:
+    name: "客单价"
+    range: [80.0, 180.0]
+    median: 120.0
+    source: "馨厨香POS实测"

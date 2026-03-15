@@ -27,6 +27,8 @@ async function loadData() {
     if (res.success && res.data) {
       tableData.value = res.data.content || [];
       pagination.value.total = res.data.totalElements || 0;
+    } else if (res.success === false) {
+      ElMessage.error(res.message || '加载成品数据失败');
     }
   } catch { ElMessage.error('加载失败'); }
   finally { loading.value = false; }
@@ -65,7 +67,7 @@ function statusType(row: any) {
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="batchNumber" label="批次号" width="170" />
         <el-table-column label="产品" min-width="150" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.productType?.name || row.productTypeId || '-' }}</template>
+          <template #default="{ row }">{{ row.productName || row.productType?.name || row.productTypeId || '-' }}</template>
         </el-table-column>
         <el-table-column prop="producedQuantity" label="生产数量" width="110" align="right" />
         <el-table-column prop="shippedQuantity" label="已发货" width="100" align="right" />

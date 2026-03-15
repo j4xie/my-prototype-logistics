@@ -193,3 +193,19 @@ export const put = <T>(url: string, data?: object): Promise<ApiResponse<T>> => {
 export const del = <T>(url: string): Promise<ApiResponse<T>> => {
   return request.delete(url);
 };
+
+// Admin API 便捷方法 — 绕过 /api/mobile baseURL，直接使用绝对路径
+// 用于 /api/admin/* 等非 /api/mobile 前缀的后端接口
+const adminBaseURL = import.meta.env.VITE_API_BASE_URL ? '' : '';
+export const adminGet = <T>(url: string, config?: object): Promise<ApiResponse<T>> => {
+  return request.get(url, { ...config, baseURL: adminBaseURL });
+};
+export const adminPost = <T>(url: string, data?: object, config?: object): Promise<ApiResponse<T>> => {
+  return request.post(url, data, { ...config, baseURL: adminBaseURL });
+};
+export const adminPut = <T>(url: string, data?: object): Promise<ApiResponse<T>> => {
+  return request.put(url, data, { baseURL: adminBaseURL });
+};
+export const adminDel = <T>(url: string): Promise<ApiResponse<T>> => {
+  return request.delete(url, { baseURL: adminBaseURL });
+};

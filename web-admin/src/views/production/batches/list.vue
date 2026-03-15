@@ -53,6 +53,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -95,6 +97,7 @@ async function handleCreate() {
       }
     } catch (e) {
       console.error('加载产品类型失败:', e);
+      ElMessage.error('加载产品类型失败');
     }
   }
 }
@@ -196,7 +199,9 @@ function getStatusText(status: string) {
       <!-- 数据表格 -->
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="batchNumber" label="批次号" width="160" />
-        <el-table-column prop="productTypeName" label="产品类型" min-width="150" show-overflow-tooltip />
+        <el-table-column label="产品类型" min-width="150" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.productTypeName || row.productName || row.productTypeId || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="plannedQuantity" label="计划数量" width="100" align="right" />
         <el-table-column prop="actualQuantity" label="实际数量" width="100" align="right" />
         <el-table-column prop="status" label="状态" width="100" align="center">

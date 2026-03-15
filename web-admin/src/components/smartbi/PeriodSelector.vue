@@ -415,11 +415,11 @@ defineExpose({
     <!-- Tab Header -->
     <div v-if="showQuickSelect || showCustomTab" class="selector-tabs">
       <el-radio-group v-model="activeTab" size="small" :disabled="disabled">
-        <el-radio-button v-if="showQuickSelect" label="quick">
+        <el-radio-button v-if="showQuickSelect" value="quick">
           <el-icon class="tab-icon"><Clock /></el-icon>
           快捷选择
         </el-radio-button>
-        <el-radio-button v-if="showCustomTab" label="custom">
+        <el-radio-button v-if="showCustomTab" value="custom">
           <el-icon class="tab-icon"><Calendar /></el-icon>
           自定义
         </el-radio-button>
@@ -462,12 +462,12 @@ defineExpose({
       <div class="selector-row">
         <span class="row-label">类型:</span>
         <el-radio-group v-model="selectedType" size="small" :disabled="disabled">
-          <el-radio-button label="month">单月</el-radio-button>
-          <el-radio-button label="quarter">单季</el-radio-button>
-          <el-radio-button label="year">单年</el-radio-button>
-          <el-radio-button label="month_range">月份范围</el-radio-button>
-          <el-radio-button label="quarter_range">季度范围</el-radio-button>
-          <el-radio-button v-if="showCustomTab" label="custom">自定义范围</el-radio-button>
+          <el-radio-button value="month">单月</el-radio-button>
+          <el-radio-button value="quarter">单季</el-radio-button>
+          <el-radio-button value="year">单年</el-radio-button>
+          <el-radio-button value="month_range">月份范围</el-radio-button>
+          <el-radio-button value="quarter_range">季度范围</el-radio-button>
+          <el-radio-button v-if="showCustomTab" value="custom">自定义范围</el-radio-button>
         </el-radio-group>
       </div>
 

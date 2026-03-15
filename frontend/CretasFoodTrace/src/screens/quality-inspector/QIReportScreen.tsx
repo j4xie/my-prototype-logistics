@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -104,13 +106,13 @@ export default function QIReportScreen() {
     </TouchableOpacity>
   );
 
-  const renderFormatOption = (format: ReportFormat, icon: string, label: string) => (
+  const renderFormatOption = (format: ReportFormat, icon: IoniconsName, label: string) => (
     <TouchableOpacity
       style={[styles.formatOption, reportFormat === format && styles.formatOptionActive]}
       onPress={() => setReportFormat(format)}
     >
       <Ionicons
-        name={icon as any}
+        name={icon}
         size={24}
         color={reportFormat === format ? QI_COLORS.primary : QI_COLORS.textSecondary}
       />

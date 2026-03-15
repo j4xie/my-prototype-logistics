@@ -24,6 +24,8 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -81,7 +83,7 @@ interface VoiceRecord {
 // 常量
 // ============================================
 
-const CHECK_CATEGORIES = [
+const CHECK_CATEGORIES: { key: string; label: string; icon: IoniconsName }[] = [
   { key: 'appearance', label: '外观', icon: 'eye-outline' },
   { key: 'smell', label: '气味', icon: 'flower-outline' },
   { key: 'specification', label: '规格', icon: 'resize-outline' },
@@ -508,7 +510,7 @@ export default function VoiceInspectionResultScreen() {
                 <View key={item.category} style={styles.itemCard}>
                   <View style={styles.itemHeader}>
                     <Ionicons
-                      name={categoryInfo?.icon as any || 'ellipse'}
+                      name={categoryInfo?.icon ?? 'ellipse'}
                       size={18}
                       color={QI_COLORS.primary}
                     />

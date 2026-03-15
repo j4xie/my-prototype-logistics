@@ -72,6 +72,8 @@ async function loadSettings() {
       if (response.data.security) {
         securitySettings.value = { ...securitySettings.value, ...response.data.security };
       }
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载设置失败');
     }
   } catch {
     // Settings may not be initialized yet — use defaults silently
@@ -91,6 +93,8 @@ async function loadSystemStatus() {
         lastBackup: response.data.lastBackup || '',
         databaseSize: response.data.databaseSize || ''
       };
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载系统状态失败');
     }
   } catch {
     // Use defaults — system status is non-critical

@@ -37,11 +37,11 @@ import { productionPlanApiClient } from '../../../services/api/productionPlanApi
 // 班次类型
 type ShiftType = 'day' | 'night' | 'full_day';
 
-const SHIFT_OPTIONS: { value: ShiftType; label: string; hours: string; icon: string }[] = [
-  { value: 'day', label: '白班', hours: '08:00 - 17:00', icon: 'white-balance-sunny' },
-  { value: 'night', label: '夜班', hours: '18:00 - 02:00', icon: 'weather-night' },
-  { value: 'full_day', label: '全天', hours: '08:00 - 22:00', icon: 'hours-24' },
-];
+const SHIFT_OPTIONS = [
+  { value: 'day' as ShiftType, label: '白班', hours: '08:00 - 17:00', icon: 'white-balance-sunny' },
+  { value: 'night' as ShiftType, label: '夜班', hours: '18:00 - 02:00', icon: 'weather-night' },
+  { value: 'full_day' as ShiftType, label: '全天', hours: '08:00 - 22:00', icon: 'hours-24' },
+] as const;
 
 // 生成的排程接口
 interface GeneratedSchedule {
@@ -168,12 +168,29 @@ export default function AIScheduleGenerateScreen() {
       if (response.success && response.data) {
         // 后端返回 SchedulingPlanDTO，直接作为 plan 使用
         // 注意：后端返回的是 SchedulingPlanDTO，包含 id, planDate, lineSchedules 等
-        const plan = response.data as any; // SchedulingPlanDTO
+        interface LineScheduleDTO {
+          batchNumber?: string;
+          productTypeName?: string;
+          lineName?: string;
+          productionLineId?: string;
+          assignedWorkers?: number;
+          plannedStartTime?: string;
+          plannedEndTime?: string;
+          predictedEfficiency?: number;
+          completionProbability?: number;
+        }
+        interface SchedulingPlanDTO {
+          id: string;
+          planName?: string;
+          totalWorkers?: number;
+          lineSchedules?: LineScheduleDTO[];
+        }
+        const plan = response.data as SchedulingPlanDTO;
         const lineSchedules = plan.lineSchedules || [];
 
         // 从 lineSchedules 构建每条产线的排程详情
         const schedules: GeneratedSchedule[] = lineSchedules.length > 0
-          ? lineSchedules.map((schedule: any) => ({
+          ? lineSchedules.map((schedule: LineScheduleDTO) => ({
               planId: plan.id, // 这是 SchedulingPlan 的 ID，用于确认
               planNumber: schedule.batchNumber ?? plan.planName ?? '-',
               productName: schedule.productTypeName ?? '-',
@@ -346,7 +363,7 @@ export default function AIScheduleGenerateScreen() {
                       onPress={() => setShiftType(option.value)}
                     >
                       <MaterialCommunityIcons
-                        name={option.icon as any}
+                        name={option.icon}
                         size={22}
                         color={shiftType === option.value ? '#fff' : DISPATCHER_THEME.primary}
                       />

@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Alert } from 'react-native';
+import { isAxiosError } from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { processingApiClient } from '../../../../services/api/processingApiClient';
 import { BatchCostAnalysis } from '../../../../types/processing';
 import { CACHE_CONFIG } from '../constants';
-import { handleError } from '../../../../utils/errorHandler';  // ✅ 修复: 正确的相对路径 (2025-11-20)
 import { logger } from '../../../../utils/logger';
 
 // 创建CostData专用logger
@@ -124,30 +124,32 @@ export const useCostData = (batchId: string | number): UseCostDataReturn => {
 
         costDataLogger.info('成本数据加载成功并缓存', {
           batchId,
-          totalCost: (response.data as any).totalCost,
+          totalCost: (response.data as unknown as { costBreakdown?: { totalCost?: number } })?.costBreakdown?.totalCost,
         });
       } else {
         throw new Error(response.message || '加载失败');
       }
     } catch (err: unknown) {
       // ✅ 修复: 使用unknown类型代替any (2025-11-20)
-      const error = err as any;
-      costDataLogger.error('加载成本数据失败', error as Error, {
+      const error = err instanceof Error ? err : new Error(String(err));
+      const status = isAxiosError(err) ? err.response?.status : undefined;
+      costDataLogger.error('加载成本数据失败', error, {
         batchId,
-        statusCode: error.response?.status,
+        statusCode: status,
       });
 
       // 错误处理
-      if (error.response?.status === 404) {
+      if (status === 404) {
         Alert.alert('错误', '批次不存在或已被删除');
         navigation.goBack();
-      } else if (error.response?.status === 403) {
+      } else if (status === 403) {
         Alert.alert('权限不足', '您没有查看此批次成本的权限');
         navigation.goBack();
       } else {
+        const responseMsg = isAxiosError(err) ? (err.response?.data as { message?: string })?.message : undefined;
         Alert.alert(
           '加载失败',
-          error.response?.data?.message || error.message || '加载成本数据失败，请稍后重试'
+          responseMsg || error.message || '加载成本数据失败，请稍后重试'
         );
       }
     } finally {

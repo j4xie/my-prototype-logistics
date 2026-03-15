@@ -71,7 +71,7 @@ export function WHInboundCreateScreen() {
         inboundDate: today.toISOString().split('T')[0],
         productionDate: formData.productionDate || undefined,
         expiryDate: formData.expiryDate || undefined,
-        storageLocation: formData.storageTemp || undefined,
+        storageConditions: formData.storageTemp || undefined,
         notes: formData.remarks || undefined,
         status: 'available',
       };

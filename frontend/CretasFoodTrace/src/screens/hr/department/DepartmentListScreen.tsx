@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Text, Card, Searchbar, Chip, FAB, ActivityIndicator, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons'
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -29,15 +29,14 @@ export default function DepartmentListScreen() {
   const loadData = useCallback(async () => {
     try {
       const res = await departmentApiClient.getDepartments();
-      // Handle both direct array and paged response formats
-      const data = Array.isArray(res) ? res : (res as any)?.content ?? [];
-      setDepartments(data.map((d: any) => ({
+      const data = res?.data?.content ?? [];
+      setDepartments(data.map((d) => ({
         id: String(d.id),
         name: d.name,
         code: d.code,
-        memberCount: d.memberCount ?? d.employeeCount ?? 0,
+        memberCount: (d as typeof d & { memberCount?: number }).memberCount ?? d.employeeCount ?? 0,
         managerName: d.managerName,
-        isActive: d.isActive ?? d.status === 'active',
+        isActive: d.isActive ?? (d as typeof d & { status?: string }).status === 'active',
         description: d.description,
       })));
     } catch (error) {
@@ -72,7 +71,7 @@ export default function DepartmentListScreen() {
   ), [departments, searchQuery]);
 
   const renderItem = useCallback(({ item }: { item: Department }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('DepartmentDetail' as any, { departmentId: item.id })}>
+    <TouchableOpacity onPress={() => navigation.dispatch(CommonActions.navigate('DepartmentDetail', { departmentId: item.id }))}>
       <Card style={styles.card}>
         <Card.Content style={styles.cardContent}>
           <View style={styles.iconContainer}>
@@ -157,7 +156,7 @@ export default function DepartmentListScreen() {
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => navigation.navigate('DepartmentAdd' as any)}
+        onPress={() => navigation.dispatch(CommonActions.navigate('DepartmentAdd'))}
         color="#fff"
       />
     </SafeAreaView>

@@ -174,7 +174,7 @@ export default function DataExportScreen() {
 
       // 获取文件信息
       const fileInfo = await FileSystem.getInfoAsync(downloadResult.uri);
-      const fileSize = fileInfo.exists && !fileInfo.isDirectory ? (fileInfo as any).size || 0 : 0;
+      const fileSize = fileInfo.exists && !fileInfo.isDirectory ? (fileInfo as { size?: number }).size || 0 : 0;
 
       dataExportLogger.info('报表导出成功', {
         reportType,
@@ -226,7 +226,7 @@ export default function DataExportScreen() {
         reportType,
         exportFormat,
         dateRange: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
-        errorType: (error as any).message?.includes('Network') ? 'NETWORK' : (error as any).message?.includes('401') || (error as any).message?.includes('403') ? 'AUTH' : 'UNKNOWN',
+        errorType: error instanceof Error && error.message?.includes('Network') ? 'NETWORK' : error instanceof Error && (error.message?.includes('401') || error.message?.includes('403')) ? 'AUTH' : 'UNKNOWN',
       });
 
       let errorMessage: string = t('export.exportFailed');

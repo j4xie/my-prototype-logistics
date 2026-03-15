@@ -51,12 +51,18 @@ async function loadData() {
 
   loading.value = true;
   try {
-    const params: any = {
+    const params: Record<string, string | number> = {
       page: pagination.value.page,
       size: pagination.value.size,
       startDate: formatDate(searchForm.value.dateRange[0]),
       endDate: formatDate(searchForm.value.dateRange[1])
     };
+    if (searchForm.value.keyword) {
+      params.keyword = searchForm.value.keyword;
+    }
+    if (searchForm.value.status) {
+      params.status = searchForm.value.status;
+    }
 
     // 使用管理员端点获取所有员工的考勤记录
     const response = await get(`/${factoryId.value}/timeclock/admin/history`, { params });
@@ -256,6 +262,15 @@ function formatDateDisplay(date: string | null) {
 function getAttendanceStatus(row: any) {
   return row.attendanceStatus || row.status || '-';
 }
+
+// 考勤详情弹窗
+const detailVisible = ref(false);
+const detailRow = ref<any>({});
+
+function handleDetail(row: any) {
+  detailRow.value = row;
+  detailVisible.value = true;
+}
 </script>
 
 <template>
@@ -378,8 +393,8 @@ function getAttendanceStatus(row: any) {
           </template>
         </el-table-column>
         <el-table-column label="操作" width="80" fixed="right" align="center">
-          <template #default>
-            <el-button type="primary" link size="small">详情</el-button>
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="handleDetail(row)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -396,6 +411,24 @@ function getAttendanceStatus(row: any) {
         />
       </div>
     </el-card>
+
+    <el-dialog v-model="detailVisible" title="考勤详情" width="500px">
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="员工姓名">{{ getEmployeeName(detailRow) }}</el-descriptions-item>
+        <el-descriptions-item label="工号">{{ getEmployeeNumber(detailRow) }}</el-descriptions-item>
+        <el-descriptions-item label="部门">{{ getDepartmentName(detailRow) }}</el-descriptions-item>
+        <el-descriptions-item label="日期">{{ formatDateDisplay(detailRow.clockDate) }}</el-descriptions-item>
+        <el-descriptions-item label="上班打卡">{{ formatTime(detailRow.clockInTime) }}</el-descriptions-item>
+        <el-descriptions-item label="下班打卡">{{ formatTime(detailRow.clockOutTime) }}</el-descriptions-item>
+        <el-descriptions-item label="工时">{{ formatWorkHours(detailRow.workDurationMinutes) }} 小时</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="getStatusType(getAttendanceStatus(detailRow))" size="small">
+            {{ getStatusText(getAttendanceStatus(detailRow)) }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="备注">{{ detailRow.notes || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
   </div>
 </template>
 

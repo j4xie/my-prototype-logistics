@@ -178,8 +178,8 @@ class ConversionApiClient {
     });
 
     // 转换返回格式以匹配前端期望
-    if ((result as any).success && (result as any).data) {
-      const materialReq = Array.isArray((result as any).data) ? (result as any).data[0] : (result as any).data;
+    if (result.success && result.data) {
+      const materialReq = Array.isArray(result.data) ? result.data[0] : result.data;
       return {
         success: true,
         data: {

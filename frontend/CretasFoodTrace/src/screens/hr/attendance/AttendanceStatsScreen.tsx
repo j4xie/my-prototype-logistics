@@ -57,12 +57,12 @@ export default function AttendanceStatsScreen() {
         setStats({
           totalEmployees: data.totalEmployees,
           avgAttendanceRate: data.avgAttendanceRate,
-          totalWorkHours: (data as any).totalWorkHours ?? data.totalEmployees * 8,
-          avgDailyHours: (data as any).avgDailyHours ?? 8,
+          totalWorkHours: ('totalWorkHours' in data ? (data as { totalWorkHours: number }).totalWorkHours : data.totalEmployees * 8),
+          avgDailyHours: ('avgDailyHours' in data ? (data as { avgDailyHours: number }).avgDailyHours : 8),
           lateCount: data.totalLateCount,
           earlyLeaveCount: data.totalEarlyLeaveCount,
           absentCount: data.totalAbsentCount,
-          departmentStats: (data as any).departmentStats ?? [],
+          departmentStats: ('departmentStats' in data ? (data as { departmentStats: AttendanceStats['departmentStats'] }).departmentStats : []),
         });
       }
     } catch (error) {

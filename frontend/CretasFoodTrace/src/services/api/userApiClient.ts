@@ -26,6 +26,7 @@ export interface UserDTO {
   departmentDisplayName?: string;  // 部门显示名称
   position?: string;
   isActive: boolean;
+  hireDate?: string;
   createdAt: string;
   updatedAt?: string;
 }

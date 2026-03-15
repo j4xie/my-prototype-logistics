@@ -9,7 +9,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * 白垩纪食品溯源系统 - Spring Boot 主应用类
+ * 白垩纪AI Agent - Spring Boot 主应用类
  *
  * @author Cretas Team
  * @version 1.0.0

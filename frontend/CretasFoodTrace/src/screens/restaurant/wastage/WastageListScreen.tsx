@@ -108,7 +108,7 @@ export function WastageListScreen() {
               return (
                 <Surface key={r.id} style={styles.card} elevation={1}>
                   <View style={styles.cardHeader}>
-                    <MaterialCommunityIcons name={TYPE_ICONS[r.type] || 'help-circle-outline'} size={20} color="#FF5630" />
+                    <MaterialCommunityIcons name={(TYPE_ICONS[r.type] || 'help-circle-outline') as any} size={20} color="#FF5630" />
                     <Text style={styles.wastageNumber}>{r.wastageNumber}</Text>
                     <View style={[styles.badge, { backgroundColor: sc.bg }]}>
                       <Text style={{ color: sc.color, fontSize: 12 }}>{t(`wastage.status.${r.status}`)}</Text>

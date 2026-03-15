@@ -16,6 +16,8 @@ public interface ProcessCheckinRecordRepository extends JpaRepository<ProcessChe
     List<ProcessCheckinRecord> findByFactoryIdAndEmployeeIdAndStatus(
             String factoryId, Long employeeId, String status);
 
+    List<ProcessCheckinRecord> findByFactoryIdAndStatus(String factoryId, String status);
+
     @Query("SELECT p FROM ProcessCheckinRecord p WHERE p.factoryId = :factoryId " +
            "AND p.checkInTime >= :startOfDay AND p.checkInTime < :endOfDay " +
            "ORDER BY p.checkInTime DESC")

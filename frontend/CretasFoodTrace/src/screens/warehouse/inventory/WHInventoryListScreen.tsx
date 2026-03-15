@@ -6,7 +6,7 @@
  * - materialBatchApiClient - 获取库存统计和批次列表
  */
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   ScrollView,
@@ -24,7 +24,9 @@ import {
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTranslation } from 'react-i18next';
 import { WHInventoryStackParamList } from "../../../types/navigation";
@@ -54,7 +56,7 @@ interface InventoryItem {
 interface QuickAction {
   key: string;
   label: string;
-  icon: string;
+  icon: MCIconName;
   color: string;
   screen: keyof WHInventoryStackParamList;
 }
@@ -208,10 +210,12 @@ export function WHInventoryListScreen() {
     }
   }, []);
 
-  // 初始加载
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // 重新进入页面时刷新数据（盘点/调拨/入库后返回能看到最新库存）
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -244,7 +248,7 @@ export function WHInventoryListScreen() {
   };
 
   const handleQuickAction = (action: QuickAction) => {
-    navigation.navigate(action.screen as any);
+    (navigation.navigate as (screen: string) => void)(action.screen);
   };
 
   return (
@@ -286,7 +290,7 @@ export function WHInventoryListScreen() {
                 ]}
               >
                 <MaterialCommunityIcons
-                  name={action.icon as any}
+                  name={action.icon}
                   size={24}
                   color={action.color}
                 />

@@ -333,7 +333,7 @@ export function WHPutawayScreen() {
                     style={[
                       styles.capacityFill,
                       {
-                        width: `${(location.used / location.capacity) * 100}%`,
+                        width: `${location.capacity > 0 ? (location.used / location.capacity) * 100 : 0}%`,
                       },
                     ]}
                   />

@@ -1,0 +1,49 @@
+# 饮料行业基准
+# 数据来源: 农夫山泉/东鹏饮料/养元饮品年报 + 中国饮料工业协会
+
+source: "农夫山泉/东鹏饮料年报 / 中国饮料工业协会"
+year: 2024
+
+metrics:
+  gross_margin:
+    name: "毛利率"
+    range: [35.0, 50.0]
+    median: 43.0
+    unit: "%"
+    source: "农夫山泉毛利率约59%(包装水极高), 东鹏约44%"
+    note: "包装水毛利极高(>55%), 果汁/茶饮料约35-45%"
+
+  net_margin:
+    name: "净利率"
+    range: [5.0, 12.0]
+    median: 8.5
+    unit: "%"
+    source: "农夫山泉净利率约28%(行业极值), 中小企业约5-10%"
+
+  oee:
+    name: "设备综合效率(OEE)"
+    range: [70.0, 92.0]
+    median: 82.0
+    unit: "%"
+    note: "灌装线高度自动化, OEE是食品行业最高的子行业"
+
+  raw_material_cost_ratio:
+    name: "原料成本占比"
+    range: [30.0, 50.0]
+    median: 40.0
+    unit: "%"
+    note: "包装水原料成本极低, 果汁浓缩液成本较高"
+
+  capacity_utilization:
+    name: "产能利用率"
+    range: [60.0, 90.0]
+    median: 75.0
+    unit: "%"
+    note: "饮料有明显季节性(夏季高峰), 淡季产能利用率低"
+
+  selling_expense_ratio:
+    name: "销售费用率"
+    range: [12.0, 25.0]
+    median: 18.0
+    unit: "%"
+    note: "饮料行业营销费用高(广告+渠道费), 显著高于食品均值"

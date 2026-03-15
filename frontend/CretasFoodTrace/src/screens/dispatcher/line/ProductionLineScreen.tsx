@@ -403,7 +403,7 @@ export default function ProductionLineScreen() {
     const maintenanceCount = lines.filter(l => l.status === 'maintenance').length;
     const totalCapacity = lines
       .filter(l => l.status === 'active')
-      .reduce((sum, l) => sum + l.capacity, 0);
+      .reduce((sum, l) => sum + (l.capacity || 0), 0);
 
     return (
       <Card style={styles.statsCard}>

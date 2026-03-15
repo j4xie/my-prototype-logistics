@@ -11,6 +11,7 @@ import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.service.ProcessingService;
 import com.cretas.aims.service.ProcessingStageRecordService;
+import com.cretas.aims.service.QualityInspectionService;
 import com.cretas.aims.service.AIAnalysisService;
 import com.cretas.aims.service.CacheService;
 import com.cretas.aims.dto.processing.ProcessingStageRecordDTO;
@@ -62,6 +63,8 @@ public class ProcessingServiceImpl implements ProcessingService {
     private final CacheService cacheService;
     private final ProcessingStageRecordService processingStageRecordService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final QualityInspectionService qualityInspectionService;
+    private final ProductionAlertRepository productionAlertRepository;
 
     /**
      * 将字符串 batchId 安全转换为 Long。
@@ -508,7 +511,8 @@ public class ProcessingServiceImpl implements ProcessingService {
         qualityInspection.setPassRate(passRate);
         qualityInspection.setResult((String) inspection.get("result"));
         qualityInspection.setNotes((String) inspection.get("notes"));
-        QualityInspection saved = qualityInspectionRepository.save(qualityInspection);
+        // 通过 QualityInspectionService 保存，FAIL 时自动创建告警 + 发布事件
+        QualityInspection saved = qualityInspectionService.createInspection(factoryId, qualityInspection);
         Map<String, Object> result = new HashMap<>();
         result.put("inspection", saved);
         result.put("passRate", passRate);
@@ -1684,6 +1688,19 @@ public class ProcessingServiceImpl implements ProcessingService {
             alert.put("data", equipment);
             alert.put("lastMaintenance", equipment.getLastMaintenanceDate());
             alert.put("createdAt", LocalDateTime.now());
+            alertList.add(alert);
+        }
+
+        // 质检不合格告警（来自 ProductionAlert 表）
+        List<ProductionAlert> qualityAlerts = productionAlertRepository.findByFactoryIdAndStatus(factoryId, "ACTIVE");
+        for (ProductionAlert qa : qualityAlerts) {
+            Map<String, Object> alert = new HashMap<>();
+            alert.put("type", qa.getAlertType());
+            alert.put("level", qa.getLevel());
+            alert.put("status", qa.getStatus());
+            alert.put("message", qa.getDescription());
+            alert.put("data", qa);
+            alert.put("createdAt", qa.getCreatedAt());
             alertList.add(alert);
         }
 

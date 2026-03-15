@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { Text, Appbar, Searchbar, IconButton, SegmentedButtons } from 'react-native-paper';
-import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { BatchStatusBadge, BatchStatus } from '../../components/processing';
 import { processingApiClient as processingAPI, BatchResponse } from '../../services/api/processingApiClient';
@@ -200,7 +200,7 @@ export default function BatchListScreen() {
                 {!loading && !searchQuery && (
                   <NeoButton
                     variant="primary"
-                    onPress={() => (navigation as any).navigate('ProductionPlanManagement')}
+                    onPress={() => navigation.dispatch(CommonActions.navigate('ProductionPlanManagement'))}
                     style={styles.emptyButton}
                   >
                     {t('batchList.empty.goToProductionPlan')}

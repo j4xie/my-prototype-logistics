@@ -17,11 +17,12 @@ import {
   Menu,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { shipmentApiClient, ShipmentRecord, CreateShipmentRequest, ShipmentStats } from '../../services/api/shipmentApiClient';
 import { customerApiClient, Customer } from '../../services/api/customerApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { logger } from '../../utils/logger';
+import { getErrorMsg } from '../../utils/errorHandler';
 
 const shipmentLogger = logger.createContextLogger('ShipmentManagement');
 
@@ -86,22 +87,26 @@ export default function ShipmentManagementScreen() {
       const [shipmentsRes, customersRes, statsRes] = await Promise.all([
         shipmentApiClient.getShipments({
           factoryId: user?.factoryId,
-          page: 1,
+          page: 0,
           size: 100,
         }),
         customerApiClient.getCustomers({
           factoryId: user?.factoryId,
-          page: 1,
+          page: 0,
           size: 100,
         }),
         shipmentApiClient.getShipmentStats(user?.factoryId),
       ]);
 
-      setShipments(shipmentsRes.data || []);
+      // Defensive: handle various response shapes
+      const shipmentList = Array.isArray(shipmentsRes) ? shipmentsRes
+        : Array.isArray(shipmentsRes?.data) ? shipmentsRes.data
+        : [];
+      setShipments(shipmentList);
       setCustomers(customersRes.data || []);
       setStats(statsRes);
       shipmentLogger.info('出货数据加载成功', {
-        shipmentCount: shipmentsRes.data?.length || 0,
+        shipmentCount: shipmentList.length,
         customerCount: customersRes.data?.length || 0,
       });
     } catch (error) {
@@ -113,17 +118,8 @@ export default function ShipmentManagementScreen() {
   };
 
   const handleSearch = () => {
-    if (!searchQuery.trim()) {
-      loadData();
-      return;
-    }
-    // 本地过滤
-    const filtered = shipments.filter(s =>
-      s.shipmentNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.productName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.trackingNumber?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setShipments(filtered);
+    // Search is now handled reactively via filteredShipments derivation below.
+    // This function kept for onSubmitEditing binding — no-op since filtering is live.
   };
 
   const handleAdd = () => {
@@ -189,7 +185,7 @@ export default function ShipmentManagementScreen() {
       loadData();
     } catch (error) {
       shipmentLogger.error('保存出货记录失败', error as Error);
-      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
+      Alert.alert('错误', getErrorMsg(error) || '操作失败');
     }
   };
 
@@ -255,9 +251,17 @@ export default function ShipmentManagementScreen() {
     return customer?.name || customerId;
   };
 
-  // 筛选出货记录
+  // 筛选出货记录（状态 + 搜索）
   const filteredShipments = shipments.filter(s => {
     if (filterStatus !== 'all' && s.status !== filterStatus) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      if (
+        !s.shipmentNumber?.toLowerCase().includes(q) &&
+        !s.productName?.toLowerCase().includes(q) &&
+        !s.trackingNumber?.toLowerCase().includes(q)
+      ) return false;
+    }
     return true;
   });
 
@@ -281,7 +285,7 @@ export default function ShipmentManagementScreen() {
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="出货管理" />
-        <Appbar.Action icon="robot-outline" onPress={() => navigation.navigate('FAAITab' as any, { screen: 'AIChat', params: { entityType: 'SHIPMENT', initialMessage: '我要创建发货单' } })} />
+        <Appbar.Action icon="robot-outline" onPress={() => navigation.dispatch(CommonActions.navigate('FAAITab', { screen: 'AIChat', params: { entityType: 'SHIPMENT', initialMessage: '我要创建发货单' } }))} />
         <Appbar.Action icon="refresh" onPress={loadData} />
       </Appbar.Header>
 
@@ -388,7 +392,7 @@ export default function ShipmentManagementScreen() {
                     {shipment.totalAmount && (
                       <View style={styles.infoRow}>
                         <List.Icon icon="currency-cny" style={styles.infoIcon} />
-                        <Text style={styles.infoText}>¥{shipment.totalAmount.toFixed(2)}</Text>
+                        <Text style={styles.infoText}>¥{Number(shipment.totalAmount ?? 0).toFixed(2)}</Text>
                       </View>
                     )}
                     <View style={styles.infoRow}>

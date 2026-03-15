@@ -90,6 +90,13 @@ public class StateMachine extends BaseEntity {
     private Integer version = 1;
 
     /**
+     * 发布状态: draft / published / archived
+     */
+    @Column(name = "publish_status", length = 20)
+    @Builder.Default
+    private String publishStatus = "draft";
+
+    /**
      * 是否启用
      */
     @Column(name = "enabled")

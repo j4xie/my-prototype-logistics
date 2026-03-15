@@ -15,13 +15,15 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS } from '../../types/qualityInspector';
 
 interface SettingItem {
   id: string;
-  icon: string;
+  icon: IoniconsName;
   label: string;
   type: 'toggle' | 'action' | 'value';
   value?: boolean | string;
@@ -207,7 +209,7 @@ export default function QISettingsScreen() {
       disabled={item.type === 'toggle'}
     >
       <View style={styles.settingLeft}>
-        <Ionicons name={item.icon as any} size={22} color={QI_COLORS.textSecondary} />
+        <Ionicons name={item.icon} size={22} color={QI_COLORS.textSecondary} />
         <Text style={styles.settingLabel}>{item.label}</Text>
       </View>
       <View style={styles.settingRight}>

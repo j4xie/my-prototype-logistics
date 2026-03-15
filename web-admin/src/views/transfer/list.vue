@@ -49,6 +49,8 @@ async function loadData() {
     if (res.success && res.data) {
       tableData.value = res.data.content || [];
       pagination.value.total = res.data.totalElements || 0;
+    } else if (res.success === false) {
+      ElMessage.error(res.message || '加载失败');
     }
   } catch { ElMessage.error('加载失败'); }
   finally { loading.value = false; }

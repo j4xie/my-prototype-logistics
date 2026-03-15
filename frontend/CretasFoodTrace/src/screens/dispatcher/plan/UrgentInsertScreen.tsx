@@ -127,7 +127,7 @@ export default function UrgentInsertScreen() {
   };
 
   const analyzeSlots = async () => {
-    if (!productTypeId || !quantity) {
+    if (!productTypeId || !quantity || isNaN(parseFloat(quantity)) || parseFloat(quantity) <= 0) {
       Alert.alert(t('common.info'), t('urgentInsert.validation.selectProductAndQuantity'));
       return;
     }
@@ -831,7 +831,7 @@ export default function UrgentInsertScreen() {
                                 styles.affectedPlanCrValue,
                                 { color: plan.crValue < 0.5 ? '#ff4d4f' : '#52c41a' }
                               ]}>
-                                {plan.crValue.toFixed(2)}
+                                {Number(plan.crValue ?? 0).toFixed(2)}
                               </Text>
                             </View>
                           )}

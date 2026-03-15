@@ -49,9 +49,19 @@ export function MaterialBatchScreen() {
       const response = await materialBatchApiClient.getMaterialBatches({
         page: 1,
         size: 50,
-      }) as { success: boolean; data?: { content?: MaterialBatch[] } };
+      });
       if (response.success && response.data) {
-        setBatches(response.data.content || []);
+        setBatches((response.data.content || []).map(b => ({
+          id: b.id,
+          batchNumber: b.batchNumber,
+          materialTypeName: b.materialName,
+          materialTypeId: b.materialTypeId,
+          quantity: b.inboundQuantity,
+          unit: b.storageType || '',
+          supplierName: b.supplierName,
+          status: b.status,
+          receivedAt: b.inboundDate,
+        })));
       }
     } catch (err) {
       console.error('加载原料批次失败:', err);

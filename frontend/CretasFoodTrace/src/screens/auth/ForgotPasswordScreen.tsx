@@ -3,6 +3,8 @@ import { View, StyleSheet, ScrollView, Alert, TextInput, TouchableOpacity, Statu
 import { Text, ProgressBar, ActivityIndicator } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 import { useTranslation } from 'react-i18next';
 import { forgotPasswordAPI } from '../../services/api/forgotPasswordApiClient';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
@@ -191,7 +193,7 @@ export default function ForgotPasswordScreen() {
     placeholder: string,
     value: string,
     onChange: (text: string) => void,
-    icon: any,
+    icon: IoniconsName,
     error?: string,
     keyboardType: 'default' | 'number-pad' | 'phone-pad' = 'default',
     secure = false,

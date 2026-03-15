@@ -53,6 +53,7 @@ PUBLIC_PREFIXES = (
     "/api/smartbi/cross-sheet",  # Cross-sheet analysis
     "/api/smartbi/yoy-",  # YoY comparison
     "/api/smartbi/benchmark",  # Industry benchmarks
+    "/api/smartbi/layouts",  # Dashboard layout persistence — frontend direct calls
     # "/api/smartbi/restaurant-analytics/" — removed: requires JWT auth (IDOR fix)
     "/api/statistical/",  # Statistical analysis
     "/api/analysis/",  # Analysis endpoints

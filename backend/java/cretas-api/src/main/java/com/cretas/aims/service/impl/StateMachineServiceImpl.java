@@ -1,6 +1,7 @@
 package com.cretas.aims.service.impl;
 
 import com.cretas.aims.entity.rules.StateMachine;
+import com.cretas.aims.service.workflow.WorkflowLearningService;
 import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.entity.QualityInspection;
 import com.cretas.aims.entity.enums.QualityStatus;
@@ -47,15 +48,22 @@ public class StateMachineServiceImpl implements StateMachineService {
     private final ObjectMapper objectMapper;
     private final QualityDispositionRuleService qualityDispositionRuleService;
     private final QualityInspectionRepository qualityInspectionRepository;
+    private final WorkflowLearningService workflowLearningService;
+    private final com.cretas.aims.repository.ProcessTaskRepository processTaskRepository;
+    private final com.cretas.aims.repository.ProductionReportRepository productionReportRepository;
 
     // 静态引用用于SpEL函数调用
     private static QualityDispositionRuleService staticQualityService;
     private static QualityInspectionRepository staticInspectionRepo;
+    private static com.cretas.aims.repository.ProcessTaskRepository staticProcessTaskRepo;
+    private static com.cretas.aims.repository.ProductionReportRepository staticProductionReportRepo;
 
     @javax.annotation.PostConstruct
     public void init() {
         staticQualityService = this.qualityDispositionRuleService;
         staticInspectionRepo = this.qualityInspectionRepository;
+        staticProcessTaskRepo = this.processTaskRepository;
+        staticProductionReportRepo = this.productionReportRepository;
     }
 
     // SpEL 表达式解析器
@@ -123,6 +131,61 @@ public class StateMachineServiceImpl implements StateMachineService {
     @Override
     public List<StateMachineConfig> getAllStateMachines(String factoryId) {
         return stateMachineRepository.findByFactoryIdAndEnabledTrue(factoryId).stream()
+                .map(this::convertToConfig)
+                .collect(Collectors.toList());
+    }
+
+    // ==================== 版本管理 ====================
+
+    @Override
+    @Transactional
+    public StateMachineConfig publishDraft(String factoryId, String entityType, String draftId, Long userId) {
+        log.info("发布状态机草稿 - factoryId={}, entityType={}, draftId={}", factoryId, entityType, draftId);
+
+        StateMachine draft = stateMachineRepository.findById(draftId)
+                .orElseThrow(() -> new IllegalArgumentException("草稿不存在: " + draftId));
+
+        if (!"draft".equals(draft.getPublishStatus())) {
+            throw new IllegalStateException("只能发布草稿状态的配置，当前状态: " + draft.getPublishStatus());
+        }
+
+        // 1. Archive current published version
+        stateMachineRepository.findByFactoryIdAndEntityTypeAndPublishStatus(factoryId, entityType, "published")
+                .ifPresent(published -> {
+                    published.setPublishStatus("archived");
+                    stateMachineRepository.save(published);
+                    log.info("已归档旧版本 - version={}", published.getVersion());
+                });
+
+        // 2. Publish the draft with incremented version
+        Integer maxVersion = stateMachineRepository.findMaxVersion(factoryId, entityType);
+        draft.setPublishStatus("published");
+        draft.setVersion(maxVersion + 1);
+        draft.setEnabled(true);
+
+        StateMachine saved = stateMachineRepository.save(draft);
+        log.info("状态机已发布 - version={}", saved.getVersion());
+
+        // Post-publish: analyze and index for AI learning (non-blocking)
+        try {
+            workflowLearningService.analyzeAndIndex(saved);
+        } catch (Exception e) {
+            log.warn("工作流学习分析失败（不影响发布）", e);
+        }
+
+        return convertToConfig(saved);
+    }
+
+    @Override
+    public Optional<StateMachineConfig> getPublishedStateMachine(String factoryId, String entityType) {
+        return stateMachineRepository.findByFactoryIdAndEntityTypeAndPublishStatus(factoryId, entityType, "published")
+                .map(this::convertToConfig);
+    }
+
+    @Override
+    public List<StateMachineConfig> getVersionHistory(String factoryId, String entityType) {
+        return stateMachineRepository.findByFactoryIdAndEntityTypeOrderByVersionDesc(factoryId, entityType)
+                .stream()
                 .map(this::convertToConfig)
                 .collect(Collectors.toList());
     }
@@ -485,6 +548,20 @@ public class StateMachineServiceImpl implements StateMachineService {
                     StateMachineServiceImpl.class.getDeclaredMethod("getQualityDisposition",
                             String.class, Long.class));
 
+            // ==================== 生产工作流守卫函数 ====================
+
+            // 注册 isCompletedGtePlanned 函数 - 完成量 >= 计划量
+            context.registerFunction("isCompletedGtePlanned",
+                    StateMachineServiceImpl.class.getDeclaredMethod("isCompletedGtePlanned", String.class));
+
+            // 注册 hasNoPendingSupplements 函数 - 无待审补报
+            context.registerFunction("hasNoPendingSupplements",
+                    StateMachineServiceImpl.class.getDeclaredMethod("hasNoPendingSupplements", String.class));
+
+            // 注册 previousStatusIs 函数 - 补报前终态匹配
+            context.registerFunction("previousStatusIs",
+                    StateMachineServiceImpl.class.getDeclaredMethod("previousStatusIs", String.class, String.class));
+
         } catch (NoSuchMethodException e) {
             log.warn("注册守卫函数失败: {}", e.getMessage());
         }
@@ -641,6 +718,56 @@ public class StateMachineServiceImpl implements StateMachineService {
 
         } catch (Exception e) {
             return "HOLD";
+        }
+    }
+
+    // ==================== 生产工作流守卫函数 ====================
+
+    /**
+     * 检查完成量是否 >= 计划量 (供 SpEL 调用)
+     * 用法: #isCompletedGtePlanned(taskId)
+     */
+    public static boolean isCompletedGtePlanned(String taskId) {
+        if (staticProcessTaskRepo == null) return true;
+        try {
+            return staticProcessTaskRepo.findById(taskId)
+                    .map(task -> task.getCompletedQuantity().compareTo(task.getPlannedQuantity()) >= 0)
+                    .orElse(false);
+        } catch (Exception e) {
+            log.warn("isCompletedGtePlanned guard failed for taskId={}: {}", taskId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 检查是否无待审补报记录 (供 SpEL 调用)
+     * 用法: #hasNoPendingSupplements(taskId)
+     */
+    public static boolean hasNoPendingSupplements(String taskId) {
+        if (staticProductionReportRepo == null) return true;
+        try {
+            java.util.List<com.cretas.aims.entity.ProductionReport> pending =
+                    staticProductionReportRepo.findByProcessTaskIdAndApprovalStatusAndDeletedAtIsNull(taskId, "PENDING");
+            return pending.isEmpty();
+        } catch (Exception e) {
+            log.warn("hasNoPendingSupplements guard failed for taskId={}: {}", taskId, e.getMessage());
+            return true;
+        }
+    }
+
+    /**
+     * 检查补报前终态是否匹配 (供 SpEL 调用)
+     * 用法: #previousStatusIs('COMPLETED')
+     */
+    public static boolean previousStatusIs(String taskId, String expectedStatus) {
+        if (staticProcessTaskRepo == null) return true;
+        try {
+            return staticProcessTaskRepo.findById(taskId)
+                    .map(task -> expectedStatus.equals(task.getPreviousTerminalStatus()))
+                    .orElse(false);
+        } catch (Exception e) {
+            log.warn("previousStatusIs guard failed for taskId={}: {}", taskId, e.getMessage());
+            return false;
         }
     }
 

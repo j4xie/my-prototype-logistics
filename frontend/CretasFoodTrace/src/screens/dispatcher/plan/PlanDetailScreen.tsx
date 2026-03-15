@@ -94,56 +94,68 @@ interface ProductionBatch {
 }
 
 // Data transformation helpers
-const transformPlanToDetail = (apiPlan: any): PlanDetail => {
-  const status = (apiPlan.status || 'pending').toLowerCase();
-  const plannedQty = apiPlan.plannedQuantity || 0;
-  const actualQty = apiPlan.actualQuantity || 0;
+const transformPlanToDetail = (apiPlan: Record<string, unknown> | object): PlanDetail => {
+  const plan = apiPlan as Record<string, unknown>;
+  const status = (String(plan.status || 'pending')).toLowerCase();
+  const plannedQty = Number(plan.plannedQuantity || 0);
+  const actualQty = Number(plan.actualQuantity || 0);
   const progress = plannedQty > 0 ? Math.round((actualQty / plannedQty) * 100) : 0;
 
   return {
-    id: apiPlan.id || '',
-    planNumber: apiPlan.planNumber || apiPlan.id || '',
-    product: apiPlan.productTypeName || apiPlan.productName || '',
+    id: String(plan.id || ''),
+    planNumber: String(plan.planNumber || plan.id || ''),
+    product: String(plan.productTypeName || plan.productName || ''),
     quantity: `${plannedQty}kg`,
-    workshop: apiPlan.workshopName || '生产车间',
-    supervisor: apiPlan.supervisorName || apiPlan.createdByName || '',
-    planDate: apiPlan.planDate || apiPlan.plannedDate || '',
-    priority: apiPlan.priority === 1 ? 'high' : apiPlan.priority === 3 ? 'low' : 'medium',
+    workshop: String(plan.workshopName || '生产车间'),
+    supervisor: String(plan.supervisorName || plan.createdByName || ''),
+    planDate: String(plan.planDate || plan.plannedDate || ''),
+    priority: plan.priority === 1 ? 'high' : plan.priority === 3 ? 'low' : 'medium',
     status: status as PlanDetail['status'],
     progress,
     completedQuantity: `${actualQty}kg`,
     remainingQuantity: `${Math.max(0, plannedQty - actualQty)}kg`,
-    estimatedCompletion: apiPlan.estimatedCompletion || apiPlan.expectedCompletionDate || '',
+    estimatedCompletion: String(plan.estimatedCompletion || plan.expectedCompletionDate || ''),
   };
 };
 
-const transformMaterials = (apiMaterials: any[]): MaterialMatch[] => {
-  return (apiMaterials || []).map((m, index) => ({
-    id: m.id || String(index + 1),
-    name: m.materialTypeName || m.name || '',
-    batchNumber: m.batchNumber || '',
-    required: `${m.requiredQuantity || m.required || 0}${m.unit || 'kg'}`,
-    available: `${m.availableQuantity || m.available || 0}${m.unit || 'kg'}`,
-    matched: m.matched ?? ((m.availableQuantity || 0) >= (m.requiredQuantity || 0)),
-  }));
+const transformMaterials = (apiMaterials: unknown[]): MaterialMatch[] => {
+  return (apiMaterials || []).map((item, index) => {
+    const m = item as Record<string, unknown>;
+    return {
+    id: String(m.id || index + 1),
+    name: String(m.materialTypeName || m.name || ''),
+    batchNumber: String(m.batchNumber || ''),
+    required: `${Number(m.requiredQuantity || m.required || 0)}${String(m.unit || 'kg')}`,
+    available: `${Number(m.availableQuantity || m.available || 0)}${String(m.unit || 'kg')}`,
+    matched: (m.matched as boolean) ?? (Number(m.availableQuantity || 0) >= Number(m.requiredQuantity || 0)),
+  };
+  });
 };
 
-const transformWorkers = (apiWorkers: any[]): AssignedWorker[] => {
-  return (apiWorkers || []).map((w, index) => ({
-    id: w.id || w.userId || String(index + 1),
-    name: w.name || w.workerName || w.userName || '',
-    avatar: (w.name || w.workerName || w.userName || '').charAt(0),
-  }));
+const transformWorkers = (apiWorkers: unknown[]): AssignedWorker[] => {
+  return (apiWorkers || []).map((item, index) => {
+    const w = item as Record<string, unknown>;
+    const name = String(w.name || w.workerName || w.userName || '');
+    return {
+      id: String(w.id || w.userId || index + 1),
+      name,
+      avatar: name.charAt(0),
+    };
+  });
 };
 
-const transformBatches = (apiBatches: any[]): ProductionBatch[] => {
-  return (apiBatches || []).map((b, index) => ({
-    id: b.id || String(index + 1),
-    batchNumber: b.batchNumber || '',
-    status: (b.status || 'pending').toLowerCase() === 'in_progress' ? 'in_progress' :
-            (b.status || 'pending').toLowerCase() === 'completed' ? 'completed' : 'pending',
-    progress: b.progress || b.completionPercent || 0,
-  }));
+const transformBatches = (apiBatches: unknown[]): ProductionBatch[] => {
+  return (apiBatches || []).map((item, index) => {
+    const b = item as Record<string, unknown>;
+    const status = String(b.status || 'pending').toLowerCase();
+    return {
+      id: String(b.id || index + 1),
+      batchNumber: String(b.batchNumber || ''),
+      status: status === 'in_progress' ? 'in_progress' :
+              status === 'completed' ? 'completed' : 'pending',
+      progress: Number(b.progress || b.completionPercent || 0),
+    };
+  });
 };
 
 export default function PlanDetailScreen() {
@@ -185,7 +197,7 @@ export default function PlanDetailScreen() {
           batches?: unknown[];
           schedules?: unknown[];
         };
-        setPlan(transformPlanToDetail(planData));
+        setPlan(transformPlanToDetail(planData as unknown as Record<string, unknown>));
 
         // Extract materials from plan if available
         if (planData.materials) {
@@ -443,7 +455,7 @@ export default function PlanDetailScreen() {
           ]}
         >
           <Text style={[styles.batchStatusText, { color: getStatusStyle(batch.status).color }]}>
-            {batch.status === 'in_progress' ? '生产中' : '待开始'}
+            {batch.status === 'in_progress' ? '生产中' : batch.status === 'completed' ? '已完成' : '待开始'}
           </Text>
         </View>
       </View>
@@ -562,7 +574,7 @@ export default function PlanDetailScreen() {
             <Text style={styles.detailLabel}>优先级</Text>
             <View style={[styles.priorityBadge, getPriorityStyle(plan.priority)]}>
               <Text style={[styles.priorityText, { color: getPriorityStyle(plan.priority).color }]}>
-                高
+                {plan.priority === 'high' ? '高' : plan.priority === 'medium' ? '中' : '低'}
               </Text>
             </View>
           </View>

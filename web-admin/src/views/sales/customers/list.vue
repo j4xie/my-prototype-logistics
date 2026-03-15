@@ -36,6 +36,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -74,9 +76,13 @@ async function handleDelete(row: any) {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
     });
-    await del(`/${factoryId.value}/sales/customers/${row.id}`);
-    ElMessage.success('删除成功');
-    loadData();
+    const res = await del(`/${factoryId.value}/customers/${row.id}`);
+    if (res.success) {
+      ElMessage.success('删除成功');
+      loadData();
+    } else {
+      ElMessage.error(res.message || '删除失败');
+    }
   } catch (e) {
     if (e !== 'cancel') {
       console.error('Delete customer failed:', e);
@@ -119,11 +125,13 @@ async function handleDelete(row: any) {
         <el-table-column prop="name" label="客户名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="contactPerson" label="联系人" width="120" />
         <el-table-column prop="phone" label="联系电话" width="140" />
-        <el-table-column prop="address" label="地址" min-width="200" show-overflow-tooltip />
+        <el-table-column label="地址" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.address || row.shippingAddress || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'info'" size="small">
-              {{ row.status === 'ACTIVE' ? '合作中' : '已停用' }}
+            <el-tag :type="(row.status === 'ACTIVE' || row.isActive === true) ? 'success' : 'info'" size="small">
+              {{ (row.status === 'ACTIVE' || row.isActive === true) ? '合作中' : '已停用' }}
             </el-tag>
           </template>
         </el-table-column>

@@ -161,6 +161,8 @@ export interface QualityStatistics {
     failed: number;
     pending: number;
     passRate: number;
+    inspecting?: number;
+    avgInspectionMinutes?: number;
   };
   week: {
     total: number;
@@ -282,12 +284,12 @@ export interface QIPagedResponse<T> {
 // ============================================
 
 export type QualityInspectorStackParamList = {
-  // Tab 根页面
-  QIHomeTab: undefined;
-  QIInspectTab: undefined;
-  QIRecordsTab: undefined;
-  QIAnalysisTab: undefined;
-  QIProfileTab: undefined;
+  // Tab 根页面 (support nested navigation via { screen, params })
+  QIHomeTab: { screen?: string; params?: Record<string, unknown> } | undefined;
+  QIInspectTab: { screen?: string; params?: Record<string, unknown> } | undefined;
+  QIRecordsTab: { screen?: string; params?: Record<string, unknown> } | undefined;
+  QIAnalysisTab: { screen?: string; params?: Record<string, unknown> } | undefined;
+  QIProfileTab: { screen?: string; params?: Record<string, unknown> } | undefined;
 
   // Stack 页面
   QIHome: undefined;

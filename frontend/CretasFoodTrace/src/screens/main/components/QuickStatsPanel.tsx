@@ -231,7 +231,7 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
               <Icon source="factory" size={24} color="#2196F3" />
               <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.todayOutput')}</Text>
               <Text variant="titleMedium" style={styles.statValue}>
-                {statsData.todayOutput.toFixed(1)} kg
+                {Number(statsData.todayOutput ?? 0).toFixed(1)} kg
               </Text>
             </View>
             <View style={styles.statItem}>

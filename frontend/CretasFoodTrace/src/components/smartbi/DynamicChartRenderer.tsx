@@ -57,9 +57,10 @@ function extractLabels(chartConfig: DynamicChartConfig): string[] {
   if (firstSeries?.data && firstSeries.data.length > 0) {
     return firstSeries.data.map(item => item.name);
   }
-  if (chartConfig.rawData?.length > 0 && chartConfig.xAxis) {
+  const rawDataForLabels = chartConfig.rawData;
+  if (rawDataForLabels && rawDataForLabels.length > 0 && chartConfig.xAxis) {
     const xField = chartConfig.xAxis.field;
-    return chartConfig.rawData.map(row => String(row[xField] ?? ''));
+    return rawDataForLabels.map(row => String(row[xField] ?? ''));
   }
   return [];
 }
@@ -74,9 +75,10 @@ function extractValues(chartConfig: DynamicChartConfig, seriesIndex = 0): number
     return series.data.map(item => item.value);
   }
   const firstYAxis = chartConfig.yAxis?.[0];
-  if (chartConfig.rawData?.length > 0 && firstYAxis) {
+  const rawDataForValues = chartConfig.rawData;
+  if (rawDataForValues && rawDataForValues.length > 0 && firstYAxis) {
     const yField = firstYAxis.field;
-    return chartConfig.rawData.map(row => Number(row[yField]) || 0);
+    return rawDataForValues.map(row => Number(row[yField]) || 0);
   }
   return [];
 }

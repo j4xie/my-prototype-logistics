@@ -50,7 +50,7 @@ public class OutOfDomainTool extends AbstractBusinessTool {
         log.info("域外输入 - 工厂ID: {}", factoryId);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("message", "我是白垩纪食品溯源系统AI助手，可以帮您查询库存、生产、质检、设备、发货等业务数据。请告诉我您需要什么帮助？");
+        result.put("message", "我是白垩纪AI Agent助手，可以帮您查询库存、生产、质检、设备、发货等业务数据。请告诉我您需要什么帮助？");
 
         return result;
     }

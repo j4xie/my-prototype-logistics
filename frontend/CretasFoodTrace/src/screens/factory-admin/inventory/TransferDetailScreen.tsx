@@ -54,9 +54,18 @@ export default function TransferDetailScreen() {
       { text: '取消', style: 'cancel' },
       { text: '确定', onPress: async () => {
         try {
-          const fn = (transferApiClient as any)[action + 'Transfer'];
+          const actionMap: Record<string, (id: string) => Promise<{ success: boolean; data: InternalTransfer }>> = {
+            request: (id) => transferApiClient.requestTransfer(id),
+            approve: (id) => transferApiClient.approveTransfer(id),
+            reject: (id) => transferApiClient.rejectTransfer(id),
+            ship: (id) => transferApiClient.shipTransfer(id),
+            receive: (id) => transferApiClient.receiveTransfer(id),
+            confirm: (id) => transferApiClient.confirmTransfer(id),
+            cancel: (id) => transferApiClient.cancelTransfer(id),
+          };
+          const fn = actionMap[action];
           if (fn) {
-            const res = await fn.call(transferApiClient, transferId);
+            const res = await fn(transferId);
             if (res?.success) { Alert.alert('成功', '操作成功'); loadTransfer(); }
           }
         } catch { Alert.alert('错误', '操作失败'); }

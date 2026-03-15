@@ -1,0 +1,424 @@
+package com.cretas.aims.service.impl;
+
+import com.cretas.aims.dto.ProductWorkProcessDTO;
+import com.cretas.aims.entity.ProductWorkProcess;
+import com.cretas.aims.entity.WorkProcess;
+import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.repository.ProductWorkProcessRepository;
+import com.cretas.aims.repository.WorkProcessRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+/**
+ * ProductWorkProcessServiceImpl 单元测试
+ *
+ * 测试覆盖:
+ * - UT-PWP-01: 创建产品-工序关联测试
+ * - UT-PWP-02: 按产品查询工序列表（含工序数据富化）
+ * - UT-PWP-03: 批量排序测试
+ * - UT-PWP-04: 删除关联测试
+ *
+ * @author Cretas Team
+ * @since 2026-03-12
+ */
+@DisplayName("ProductWorkProcessServiceImpl 单元测试")
+@ExtendWith(MockitoExtension.class)
+class ProductWorkProcessServiceImplTest {
+
+    @Mock
+    private ProductWorkProcessRepository repository;
+
+    @Mock
+    private WorkProcessRepository workProcessRepository;
+
+    @InjectMocks
+    private ProductWorkProcessServiceImpl service;
+
+    @Captor
+    private ArgumentCaptor<ProductWorkProcess> entityCaptor;
+
+    private static final String FACTORY_ID = "F001";
+    private static final String PRODUCT_TYPE_ID = "pt-1";
+    private static final String WORK_PROCESS_ID = "wp-1";
+
+    private ProductWorkProcess buildDefaultAssociation() {
+        return ProductWorkProcess.builder()
+                .id(1L)
+                .factoryId(FACTORY_ID)
+                .productTypeId(PRODUCT_TYPE_ID)
+                .workProcessId(WORK_PROCESS_ID)
+                .processOrder(1)
+                .build();
+    }
+
+    private WorkProcess buildDefaultWorkProcess() {
+        return WorkProcess.builder()
+                .id(WORK_PROCESS_ID)
+                .factoryId(FACTORY_ID)
+                .processName("炸制")
+                .processCategory("加工")
+                .unit("kg")
+                .estimatedMinutes(30)
+                .sortOrder(1)
+                .isActive(true)
+                .build();
+    }
+
+    // ==================== 创建关联测试 ====================
+
+    @Nested
+    @DisplayName("创建产品-工序关联测试")
+    class CreateTests {
+
+        @Test
+        @DisplayName("UT-PWP-01a: create() 成功 — 工序存在且无重复")
+        void testCreateSuccessWithValidWorkProcess() {
+            // Arrange
+            ProductWorkProcessDTO dto = ProductWorkProcessDTO.builder()
+                    .productTypeId(PRODUCT_TYPE_ID)
+                    .workProcessId(WORK_PROCESS_ID)
+                    .processOrder(1)
+                    .build();
+
+            when(repository.existsByFactoryIdAndProductTypeIdAndWorkProcessId(
+                    FACTORY_ID, PRODUCT_TYPE_ID, WORK_PROCESS_ID))
+                    .thenReturn(false);
+            when(workProcessRepository.findByFactoryIdAndId(FACTORY_ID, WORK_PROCESS_ID))
+                    .thenReturn(Optional.of(buildDefaultWorkProcess()));
+            when(repository.save(any(ProductWorkProcess.class))).thenAnswer(inv -> {
+                ProductWorkProcess arg = inv.getArgument(0);
+                arg.setId(1L); // simulate DB-generated ID
+                return arg;
+            });
+
+            // Act
+            ProductWorkProcessDTO result = service.create(FACTORY_ID, dto);
+
+            // Assert
+            verify(repository).existsByFactoryIdAndProductTypeIdAndWorkProcessId(
+                    FACTORY_ID, PRODUCT_TYPE_ID, WORK_PROCESS_ID);
+            verify(workProcessRepository).findByFactoryIdAndId(FACTORY_ID, WORK_PROCESS_ID);
+            verify(repository).save(entityCaptor.capture());
+
+            ProductWorkProcess saved = entityCaptor.getValue();
+            assertEquals(FACTORY_ID, saved.getFactoryId());
+            assertEquals(PRODUCT_TYPE_ID, saved.getProductTypeId());
+            assertEquals(WORK_PROCESS_ID, saved.getWorkProcessId());
+            assertEquals(1, saved.getProcessOrder());
+            assertNotNull(result.getId());
+        }
+
+        @Test
+        @DisplayName("UT-PWP-01b: create() 重复关联抛出 BusinessException")
+        void testCreateDuplicateThrows() {
+            // Arrange
+            ProductWorkProcessDTO dto = ProductWorkProcessDTO.builder()
+                    .productTypeId(PRODUCT_TYPE_ID)
+                    .workProcessId(WORK_PROCESS_ID)
+                    .build();
+
+            when(repository.existsByFactoryIdAndProductTypeIdAndWorkProcessId(
+                    FACTORY_ID, PRODUCT_TYPE_ID, WORK_PROCESS_ID))
+                    .thenReturn(true);
+
+            // Act & Assert
+            BusinessException ex = assertThrows(BusinessException.class,
+                    () -> service.create(FACTORY_ID, dto));
+            assertEquals("该产品已关联此工序", ex.getMessage());
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("UT-PWP-01c: create() 工序不存在抛出 ResourceNotFoundException")
+        void testCreateWorkProcessNotFoundThrows() {
+            // Arrange
+            ProductWorkProcessDTO dto = ProductWorkProcessDTO.builder()
+                    .productTypeId(PRODUCT_TYPE_ID)
+                    .workProcessId("nonexistent-wp")
+                    .build();
+
+            when(repository.existsByFactoryIdAndProductTypeIdAndWorkProcessId(
+                    FACTORY_ID, PRODUCT_TYPE_ID, "nonexistent-wp"))
+                    .thenReturn(false);
+            when(workProcessRepository.findByFactoryIdAndId(FACTORY_ID, "nonexistent-wp"))
+                    .thenReturn(Optional.empty());
+
+            // Act & Assert
+            ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
+                    () -> service.create(FACTORY_ID, dto));
+            assertTrue(ex.getMessage().contains("WorkProcess"));
+        }
+
+        @Test
+        @DisplayName("UT-PWP-01d: create() processOrder 为 null 时默认为 0")
+        void testCreateNullProcessOrderDefaultsToZero() {
+            // Arrange
+            ProductWorkProcessDTO dto = ProductWorkProcessDTO.builder()
+                    .productTypeId(PRODUCT_TYPE_ID)
+                    .workProcessId(WORK_PROCESS_ID)
+                    .processOrder(null)
+                    .build();
+
+            when(repository.existsByFactoryIdAndProductTypeIdAndWorkProcessId(
+                    FACTORY_ID, PRODUCT_TYPE_ID, WORK_PROCESS_ID))
+                    .thenReturn(false);
+            when(workProcessRepository.findByFactoryIdAndId(FACTORY_ID, WORK_PROCESS_ID))
+                    .thenReturn(Optional.of(buildDefaultWorkProcess()));
+            when(repository.save(any(ProductWorkProcess.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // Act
+            service.create(FACTORY_ID, dto);
+
+            // Assert
+            verify(repository).save(entityCaptor.capture());
+            assertEquals(0, entityCaptor.getValue().getProcessOrder(),
+                    "processOrder 为 null 时应默认为 0");
+        }
+    }
+
+    // ==================== 按产品查询工序列表测试 ====================
+
+    @Nested
+    @DisplayName("按产品查询工序列表测试")
+    class ListByProductTests {
+
+        @Test
+        @DisplayName("UT-PWP-02: listByProduct() 按 processOrder 排序并富化 WorkProcess 数据")
+        void testListByProductEnrichedWithWorkProcessData() {
+            // Arrange
+            ProductWorkProcess assoc1 = ProductWorkProcess.builder()
+                    .id(1L)
+                    .factoryId(FACTORY_ID)
+                    .productTypeId(PRODUCT_TYPE_ID)
+                    .workProcessId("wp-1")
+                    .processOrder(1)
+                    .build();
+
+            ProductWorkProcess assoc2 = ProductWorkProcess.builder()
+                    .id(2L)
+                    .factoryId(FACTORY_ID)
+                    .productTypeId(PRODUCT_TYPE_ID)
+                    .workProcessId("wp-2")
+                    .processOrder(2)
+                    .unitOverride("件")
+                    .estimatedMinutesOverride(45)
+                    .build();
+
+            WorkProcess wp1 = WorkProcess.builder()
+                    .id("wp-1")
+                    .factoryId(FACTORY_ID)
+                    .processName("炸制")
+                    .processCategory("加工")
+                    .unit("kg")
+                    .estimatedMinutes(30)
+                    .build();
+
+            WorkProcess wp2 = WorkProcess.builder()
+                    .id("wp-2")
+                    .factoryId(FACTORY_ID)
+                    .processName("包装")
+                    .processCategory("后处理")
+                    .unit("件")
+                    .estimatedMinutes(15)
+                    .build();
+
+            when(repository.findByFactoryIdAndProductTypeIdOrderByProcessOrderAsc(FACTORY_ID, PRODUCT_TYPE_ID))
+                    .thenReturn(List.of(assoc1, assoc2));
+            when(workProcessRepository.findByFactoryIdAndIdIn(eq(FACTORY_ID), anyList()))
+                    .thenReturn(List.of(wp1, wp2));
+
+            // Act
+            List<ProductWorkProcessDTO> result = service.listByProduct(FACTORY_ID, PRODUCT_TYPE_ID);
+
+            // Assert
+            verify(repository).findByFactoryIdAndProductTypeIdOrderByProcessOrderAsc(FACTORY_ID, PRODUCT_TYPE_ID);
+            verify(workProcessRepository).findByFactoryIdAndIdIn(eq(FACTORY_ID), anyList());
+
+            assertEquals(2, result.size());
+
+            // First item: enriched with wp1 data
+            ProductWorkProcessDTO first = result.get(0);
+            assertEquals(1L, first.getId());
+            assertEquals("wp-1", first.getWorkProcessId());
+            assertEquals(1, first.getProcessOrder());
+            assertEquals("炸制", first.getProcessName(), "应从 WorkProcess 富化 processName");
+            assertEquals("加工", first.getProcessCategory(), "应从 WorkProcess 富化 processCategory");
+            assertEquals("kg", first.getDefaultUnit(), "应从 WorkProcess 富化 defaultUnit");
+            assertEquals(30, first.getDefaultEstimatedMinutes(), "应从 WorkProcess 富化 defaultEstimatedMinutes");
+
+            // Second item: has overrides + enriched with wp2
+            ProductWorkProcessDTO second = result.get(1);
+            assertEquals(2L, second.getId());
+            assertEquals("wp-2", second.getWorkProcessId());
+            assertEquals(2, second.getProcessOrder());
+            assertEquals("包装", second.getProcessName());
+            assertEquals("件", second.getUnitOverride(), "unitOverride 应保留");
+            assertEquals(45, second.getEstimatedMinutesOverride(), "estimatedMinutesOverride 应保留");
+        }
+
+        @Test
+        @DisplayName("UT-PWP-02b: listByProduct() 空关联返回空列表，不查询 WorkProcess")
+        void testListByProductEmptyReturnsEmpty() {
+            // Arrange
+            when(repository.findByFactoryIdAndProductTypeIdOrderByProcessOrderAsc(FACTORY_ID, PRODUCT_TYPE_ID))
+                    .thenReturn(Collections.emptyList());
+            when(workProcessRepository.findByFactoryIdAndIdIn(eq(FACTORY_ID), anyList()))
+                    .thenReturn(Collections.emptyList());
+
+            // Act
+            List<ProductWorkProcessDTO> result = service.listByProduct(FACTORY_ID, PRODUCT_TYPE_ID);
+
+            // Assert
+            assertTrue(result.isEmpty());
+        }
+    }
+
+    // ==================== 批量排序测试 ====================
+
+    @Nested
+    @DisplayName("批量排序测试")
+    class BatchSortTests {
+
+        @Test
+        @DisplayName("UT-PWP-03: batchSort() 更新多个关联的 processOrder")
+        void testBatchSortUpdatesProcessOrder() {
+            // Arrange
+            ProductWorkProcess assoc1 = buildDefaultAssociation();
+            assoc1.setId(1L);
+            assoc1.setProcessOrder(1);
+
+            ProductWorkProcess assoc2 = ProductWorkProcess.builder()
+                    .id(2L)
+                    .factoryId(FACTORY_ID)
+                    .productTypeId(PRODUCT_TYPE_ID)
+                    .workProcessId("wp-2")
+                    .processOrder(2)
+                    .build();
+
+            when(repository.findByFactoryIdAndId(FACTORY_ID, 1L))
+                    .thenReturn(Optional.of(assoc1));
+            when(repository.findByFactoryIdAndId(FACTORY_ID, 2L))
+                    .thenReturn(Optional.of(assoc2));
+            when(repository.save(any(ProductWorkProcess.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            List<ProductWorkProcessDTO.SortItem> items = List.of(
+                    ProductWorkProcessDTO.SortItem.builder().id(1L).processOrder(3).build(),
+                    ProductWorkProcessDTO.SortItem.builder().id(2L).processOrder(1).build()
+            );
+
+            // Act
+            service.batchSort(FACTORY_ID, items);
+
+            // Assert
+            verify(repository, times(2)).save(any(ProductWorkProcess.class));
+            assertEquals(3, assoc1.getProcessOrder(), "assoc1 processOrder 应更新为 3");
+            assertEquals(1, assoc2.getProcessOrder(), "assoc2 processOrder 应更新为 1");
+        }
+
+        @Test
+        @DisplayName("UT-PWP-03b: batchSort() 不存在的 ID 静默跳过")
+        void testBatchSortSkipsMissingIds() {
+            // Arrange
+            when(repository.findByFactoryIdAndId(FACTORY_ID, 999L))
+                    .thenReturn(Optional.empty());
+
+            List<ProductWorkProcessDTO.SortItem> items = List.of(
+                    ProductWorkProcessDTO.SortItem.builder().id(999L).processOrder(1).build()
+            );
+
+            // Act — should not throw
+            service.batchSort(FACTORY_ID, items);
+
+            // Assert
+            verify(repository).findByFactoryIdAndId(FACTORY_ID, 999L);
+            verify(repository, never()).save(any());
+        }
+    }
+
+    // ==================== 删除关联测试 ====================
+
+    @Nested
+    @DisplayName("删除关联测试")
+    class DeleteTests {
+
+        @Test
+        @DisplayName("UT-PWP-04a: delete() 成功删除关联")
+        void testDeleteSuccess() {
+            // Arrange
+            ProductWorkProcess existing = buildDefaultAssociation();
+            when(repository.findByFactoryIdAndId(FACTORY_ID, 1L))
+                    .thenReturn(Optional.of(existing));
+
+            // Act
+            service.delete(FACTORY_ID, 1L);
+
+            // Assert
+            verify(repository).findByFactoryIdAndId(FACTORY_ID, 1L);
+            verify(repository).delete(existing);
+        }
+
+        @Test
+        @DisplayName("UT-PWP-04b: delete() 不存在时抛出 ResourceNotFoundException")
+        void testDeleteNotFoundThrows() {
+            // Arrange
+            when(repository.findByFactoryIdAndId(FACTORY_ID, 999L))
+                    .thenReturn(Optional.empty());
+
+            // Act & Assert
+            ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
+                    () -> service.delete(FACTORY_ID, 999L));
+            assertTrue(ex.getMessage().contains("ProductWorkProcess"));
+            verify(repository, never()).delete(any());
+        }
+    }
+
+    // ==================== 更新关联测试 ====================
+
+    @Nested
+    @DisplayName("更新关联测试")
+    class UpdateTests {
+
+        @Test
+        @DisplayName("update() 部分更新保留未修改字段")
+        void testPartialUpdatePreservesUnchangedFields() {
+            // Arrange
+            ProductWorkProcess existing = buildDefaultAssociation();
+            existing.setUnitOverride("件");
+            existing.setEstimatedMinutesOverride(45);
+            when(repository.findByFactoryIdAndId(FACTORY_ID, 1L))
+                    .thenReturn(Optional.of(existing));
+            when(repository.save(any(ProductWorkProcess.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // Only update processOrder
+            ProductWorkProcessDTO dto = ProductWorkProcessDTO.builder()
+                    .processOrder(5)
+                    .build();
+
+            // Act
+            ProductWorkProcessDTO result = service.update(FACTORY_ID, 1L, dto);
+
+            // Assert
+            verify(repository).save(entityCaptor.capture());
+            ProductWorkProcess saved = entityCaptor.getValue();
+            assertEquals(5, saved.getProcessOrder(), "processOrder 应被更新为 5");
+            assertEquals("件", saved.getUnitOverride(), "unitOverride 未传入应保持原值");
+            assertEquals(45, saved.getEstimatedMinutesOverride(), "estimatedMinutesOverride 未传入应保持原值");
+        }
+    }
+}

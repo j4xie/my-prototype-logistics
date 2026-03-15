@@ -61,4 +61,22 @@ public interface StateMachineRepository extends JpaRepository<StateMachine, Stri
      */
     @Query("SELECT DISTINCT sm.entityType FROM StateMachine sm WHERE sm.factoryId = :factoryId")
     List<String> findDistinctEntityTypesByFactoryId(@Param("factoryId") String factoryId);
+
+    /**
+     * 查询已发布的状态机版本
+     */
+    Optional<StateMachine> findByFactoryIdAndEntityTypeAndPublishStatus(
+            String factoryId, String entityType, String publishStatus);
+
+    /**
+     * 按发布状态查询
+     */
+    List<StateMachine> findByFactoryIdAndEntityTypeOrderByVersionDesc(
+            String factoryId, String entityType);
+
+    /**
+     * 获取最大版本号
+     */
+    @Query("SELECT COALESCE(MAX(sm.version), 0) FROM StateMachine sm WHERE sm.factoryId = :factoryId AND sm.entityType = :entityType")
+    Integer findMaxVersion(@Param("factoryId") String factoryId, @Param("entityType") String entityType);
 }

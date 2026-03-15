@@ -291,31 +291,31 @@ export default function QualityInspectorNavigator() {
       <Tab.Screen
         name="QIHomeTab"
         component={HomeStack}
-        options={{ tabBarLabel: '首页', tabBarTestID: 'qi-tab-home' }}
+        options={{ tabBarLabel: '首页', tabBarButtonTestID: 'qi-tab-home' }}
       />
       {isScreenEnabled('QualityInspection') && (
       <Tab.Screen
         name="QIInspectTab"
         component={InspectStack}
-        options={{ tabBarLabel: '质检', tabBarTestID: 'qi-tab-inspect' }}
+        options={{ tabBarLabel: '质检', tabBarButtonTestID: 'qi-tab-inspect' }}
       />
       )}
       <Tab.Screen
         name="QIRecordsTab"
         component={RecordsStack}
-        options={{ tabBarLabel: '记录', tabBarTestID: 'qi-tab-records' }}
+        options={{ tabBarLabel: '记录', tabBarButtonTestID: 'qi-tab-records' }}
       />
       {isScreenEnabled('QualityAnalysis') && (
       <Tab.Screen
         name="QIAnalysisTab"
         component={AnalysisStack}
-        options={{ tabBarLabel: '分析', tabBarTestID: 'qi-tab-analysis' }}
+        options={{ tabBarLabel: '分析', tabBarButtonTestID: 'qi-tab-analysis' }}
       />
       )}
       <Tab.Screen
         name="QIProfileTab"
         component={ProfileStack}
-        options={{ tabBarLabel: '我的', tabBarTestID: 'qi-tab-profile' }}
+        options={{ tabBarLabel: '我的', tabBarButtonTestID: 'qi-tab-profile' }}
       />
     </Tab.Navigator>
   );

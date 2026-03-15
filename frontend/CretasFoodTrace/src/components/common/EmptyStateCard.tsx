@@ -6,8 +6,10 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
 interface EmptyStateCardProps {
-  icon?: string;
+  icon?: MCIconName;
   title: string;
   description?: string;
   actionLabel?: string;
@@ -26,7 +28,7 @@ export default function EmptyStateCard({
   return (
     <View style={[styles.container, compact && styles.containerCompact]}>
       <MaterialCommunityIcons
-        name={icon as any}
+        name={icon}
         size={compact ? 36 : 48}
         color="#C0C4CC"
       />

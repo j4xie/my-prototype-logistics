@@ -1,0 +1,18 @@
+# 餐饮连锁(通用)行业基准数据
+# 当无法检测到具体子行业时使用的 fallback
+
+source: "2025中国餐饮连锁化发展白皮书 + 中国饭店协会年度报告"
+year: 2024
+
+metrics:
+  food_cost_ratio:
+    name: "食材成本率"
+    range: [35.0, 45.0]
+    median: 40.0
+    source: "2025中国餐饮连锁化发展白皮书"
+
+  average_ticket:
+    name: "客单价"
+    range: [40.0, 100.0]
+    median: 65.0
+    source: "2025中国餐饮连锁化发展白皮书"

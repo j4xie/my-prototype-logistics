@@ -1,5 +1,10 @@
 {
   "title": "Platform Management Center",
+  "home": {
+    "greetings": {
+      "defaultUser": "Admin"
+    }
+  },
   "dashboard": {
     "title": "Platform Management Center",
     "welcomeBack": "Welcome back, {{name}}",
@@ -624,5 +629,23 @@
     "confirmAction": "Confirm",
     "times": "times",
     "utilization": "Utilization"
+  },
+  "common": {
+    "loading": "Loading...",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "success": "Success",
+    "error": "Error",
+    "sessionExpired": "Session expired, please login again",
+    "buttons": {
+      "ok": "OK",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "quota": "Quota"
+    }
   }
 }

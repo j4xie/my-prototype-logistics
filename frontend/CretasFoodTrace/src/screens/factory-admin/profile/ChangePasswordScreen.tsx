@@ -17,6 +17,7 @@ import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../store/authStore';
 import { userApiClient } from '../../../services/api/userApiClient';
+import { getErrorMsg } from '../../../utils/errorHandler';
 
 export function ChangePasswordScreen() {
   const navigation = useNavigation();
@@ -84,9 +85,9 @@ export function ChangePasswordScreen() {
       Alert.alert(t('messages.saveSuccess'), t('messages.passwordChanged'), [
         { text: t('changePassword.confirm'), onPress: () => navigation.goBack() }
       ]);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Change password failed:', error);
-      const message = error?.response?.data?.message || t('changePassword.errors.changeFailed');
+      const message = getErrorMsg(error) || t('changePassword.errors.changeFailed');
       Alert.alert(t('changePassword.errors.changeFailedTitle'), message);
     } finally {
       setLoading(false);

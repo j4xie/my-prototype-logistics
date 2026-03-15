@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Text, Card, Button, ActivityIndicator, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -319,7 +319,7 @@ export default function MyAttendanceScreen() {
             <View style={styles.quickActions}>
               <TouchableOpacity
                 style={styles.quickItem}
-                onPress={() => navigation.navigate('AttendanceStats' as any)}
+                onPress={() => navigation.dispatch(CommonActions.navigate('AttendanceStats'))}
               >
                 <View style={[styles.quickIcon, { backgroundColor: HR_THEME.primary + '15' }]}>
                   <MaterialCommunityIcons name="chart-bar" size={24} color={HR_THEME.primary} />
@@ -328,7 +328,7 @@ export default function MyAttendanceScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.quickItem}
-                onPress={() => navigation.navigate('AttendanceAnomaly' as any)}
+                onPress={() => navigation.dispatch(CommonActions.navigate('AttendanceAnomaly'))}
               >
                 <View style={[styles.quickIcon, { backgroundColor: HR_THEME.warning + '15' }]}>
                   <MaterialCommunityIcons name="alert-circle" size={24} color={HR_THEME.warning} />
@@ -337,7 +337,7 @@ export default function MyAttendanceScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.quickItem}
-                onPress={() => navigation.navigate('AttendanceManage' as any)}
+                onPress={() => navigation.dispatch(CommonActions.navigate('AttendanceManage'))}
               >
                 <View style={[styles.quickIcon, { backgroundColor: HR_THEME.info + '15' }]}>
                   <MaterialCommunityIcons name="calendar-clock" size={24} color={HR_THEME.info} />

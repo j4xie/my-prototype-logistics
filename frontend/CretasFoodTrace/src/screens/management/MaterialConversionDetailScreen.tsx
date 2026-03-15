@@ -282,8 +282,8 @@ export default function MaterialConversionDetailScreen() {
   const handleUseSuggestion = () => {
     if (suggestion?.hasData) {
       setFormData({
-        conversionRate: suggestion.suggestedRate?.toFixed(2) ?? '',
-        wastageRate: suggestion.suggestedWastageRate?.toFixed(2) ?? '',
+        conversionRate: Number(suggestion.suggestedRate ?? 0).toFixed(2),
+        wastageRate: Number(suggestion.suggestedWastageRate ?? 0).toFixed(2),
         notes: `基于 ${suggestion.sampleCount} 批次历史数据自动计算`,
       });
     }
@@ -612,14 +612,14 @@ export default function MaterialConversionDetailScreen() {
                           <View style={styles.suggestionRow}>
                             <Text style={styles.suggestionLabel}>建议转换率:</Text>
                             <Text style={styles.suggestionValue}>
-                              {suggestion.suggestedRate?.toFixed(2)}%
+                              {Number(suggestion.suggestedRate ?? 0).toFixed(2)}%
                             </Text>
                           </View>
                           {suggestion.suggestedWastageRate != null && (
                             <View style={styles.suggestionRow}>
                               <Text style={styles.suggestionLabel}>建议损耗率:</Text>
                               <Text style={styles.suggestionValue}>
-                                {suggestion.suggestedWastageRate.toFixed(2)}%
+                                {Number(suggestion.suggestedWastageRate ?? 0).toFixed(2)}%
                               </Text>
                             </View>
                           )}

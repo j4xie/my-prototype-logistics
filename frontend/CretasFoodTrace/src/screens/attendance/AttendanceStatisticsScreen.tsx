@@ -378,24 +378,24 @@ export default function AttendanceStatisticsScreen() {
 
                 <View style={styles.statsGrid}>
                   <View style={styles.statBox}>
-                    <Text style={styles.statValue}>{stats?.totalHours.toFixed(1) || '0.0'}</Text>
+                    <Text style={styles.statValue}>{Number(stats?.totalHours ?? 0).toFixed(1) || '0.0'}</Text>
                     <Text style={styles.statLabel}>{t('attendance.statistics.totalHours')}</Text>
                   </View>
                   <View style={styles.statBox}>
                     <Text style={[styles.statValue, { color: '#2E7D32' }]}>
-                      {stats?.regularHours.toFixed(1) || '0.0'}
+                      {Number(stats?.regularHours ?? 0).toFixed(1) || '0.0'}
                     </Text>
                     <Text style={styles.statLabel}>{t('attendance.statistics.regularHours')}</Text>
                   </View>
                   <View style={styles.statBox}>
                     <Text style={[styles.statValue, { color: '#D32F2F' }]}>
-                      {stats?.overtimeHours.toFixed(1) || '0.0'}
+                      {Number(stats?.overtimeHours ?? 0).toFixed(1) || '0.0'}
                     </Text>
                     <Text style={styles.statLabel}>{t('attendance.statistics.overtimeHours')}</Text>
                   </View>
                   <View style={styles.statBox}>
                     <Text style={styles.statValue}>
-                      {stats?.averageDailyHours.toFixed(1) || '0.0'}
+                      {Number(stats?.averageDailyHours ?? 0).toFixed(1) || '0.0'}
                     </Text>
                     <Text style={styles.statLabel}>{t('attendance.statistics.avgDailyHours')}</Text>
                   </View>
@@ -449,7 +449,7 @@ export default function AttendanceStatisticsScreen() {
                           </Chip>
                         </View>
                         <Text style={styles.recordTotal}>
-                          {record.totalHours.toFixed(1)}{t('attendance.statistics.hours')}
+                          {Number(record.totalHours ?? 0).toFixed(1)}{t('attendance.statistics.hours')}
                         </Text>
                       </View>
 
@@ -457,13 +457,13 @@ export default function AttendanceStatisticsScreen() {
                         <View style={styles.recordDetailItem}>
                           <List.Icon icon="clock-outline" style={styles.recordIcon} />
                           <Text style={styles.recordDetailText}>
-                            {t('attendance.statistics.normal')}: {record.regularHours.toFixed(1)}h
+                            {t('attendance.statistics.normal')}: {Number(record.regularHours ?? 0).toFixed(1)}h
                           </Text>
                         </View>
                         <View style={styles.recordDetailItem}>
                           <List.Icon icon="clock-fast" style={styles.recordIcon} />
                           <Text style={[styles.recordDetailText, { color: '#D32F2F' }]}>
-                            {t('attendance.statistics.overtime')}: {record.overtimeHours.toFixed(1)}h
+                            {t('attendance.statistics.overtime')}: {Number(record.overtimeHours ?? 0).toFixed(1)}h
                           </Text>
                         </View>
                       </View>

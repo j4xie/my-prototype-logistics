@@ -24,6 +24,7 @@ import { aiApiClient, AICostAnalysisResponse } from '../../services/api/aiApiCli
 import { MarkdownRenderer } from '../../components/common/MarkdownRenderer';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
+import { isAxiosError } from 'axios';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
@@ -145,7 +146,7 @@ export default function AIAnalysisDetailScreen() {
         reportId,
         reportType,
         factoryId: factoryId,
-        errorStatus: (error as any).response?.status,
+        errorStatus: isAxiosError(error) ? error.response?.status : undefined,
       });
       Alert.alert(t('aiAnalysisDetail.loadFailed'), getErrorMsg(error) || t('aiAnalysisDetail.messages.retryMessage'));
     } finally {

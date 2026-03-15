@@ -1,0 +1,92 @@
+# 产能利用率偏低 — 操作建议手册
+#
+# 触发条件: capacity_utilization < benchmark.range[0]
+# 严重程度: 低于下限10个百分点以内=中等, 超过10+=严重
+
+diagnosis_code: capacity_utilization_low
+trigger_metric: capacity_utilization
+trigger_condition: "actual < range_low"
+display_name: "产能利用率偏低"
+
+severity_levels:
+  moderate:
+    condition: "range_low - actual <= 10"
+    label: "轻度偏低"
+    urgency: "分析原因"
+  severe:
+    condition: "range_low - actual > 10"
+    label: "严重偏低"
+    urgency: "评估产能规划"
+
+diagnosis_checklist:
+  - question: "产能利用率低是季节性的还是持续性的？"
+    if_seasonal: "正常——优化淡旺季排产策略"
+    if_persistent: "评估产能过剩原因(市场/订单/设备)"
+  - question: "是否存在订单不足的情况？"
+    if_yes: "问题在销售端——需加强市场开拓"
+  - question: "设备是否因频繁故障而闲置？"
+    if_yes: "参考oee_low手册改善设备可用率"
+
+action_plans:
+  - id: 1
+    name: "排产优化"
+    priority: "P0"
+    actions:
+      - "分析产能利用率按周/月/季的波动规律"
+      - "旺季提前生产(Make-to-Stock)平滑产能需求"
+      - "优化排产算法——减少换线次数，增大单品批量"
+      - "建立滚动排产计划(周+月+季)对齐销售预测"
+    expected_impact: "产能利用率提升5-15个百分点"
+
+  - id: 2
+    name: "产品结构调整"
+    priority: "P0"
+    actions:
+      - "分析各产品线的产能占比和利润贡献"
+      - "增加高利润、高周转产品的排产比例"
+      - "评估代工(OEM/ODM)消化闲置产能的可行性"
+      - "开发季节性产品填补淡季产能空缺"
+    expected_impact: "闲置产能利用率提升20-40%"
+
+  - id: 3
+    name: "产能弹性管理"
+    priority: "P1"
+    actions:
+      - "评估部分产线临时关停的经济性(固定成本 vs 维持成本)"
+      - "建立灵活用工制度(旺季临时工/淡季轮休)"
+      - "评估产能共享模式(同行业代工互换)"
+      - "长期考虑：产能扩张决策需基于3年需求预测"
+    expected_impact: "固定成本分摊优化，降低单位成本"
+
+sub_sector_notes:
+  饮料:
+    - "饮料行业季节性显著——夏季产能利用率可达95%，冬季降至50%"
+    - "热饮(奶茶/咖啡/热巧)产品线可对冲冬季淡季"
+    - "PET瓶线和灌装线的切换灵活性影响产能利用"
+  速冻食品:
+    - "速冻食品受节令影响(春节/中秋需求高峰)"
+    - "冷库产能是独立瓶颈——满库时即使产线空闲也无法生产"
+    - "B2B(餐饮渠道)订单可平滑B2C的季节波动"
+  烘焙食品:
+    - "短保面包产能受日销量限制——不能过量生产"
+    - "节日礼盒(中秋/春节)可大幅提升临时产能利用率"
+    - "考虑增加长保品类(饼干/蛋糕卷)填充产能"
+  肉制品:
+    - "屠宰线产能利用率受上游活畜供应影响"
+    - "深加工产品线(火腿肠/肉干)可消化初加工产能"
+    - "冷链物流产能也需同步规划"
+
+decision_tree:
+  root: "产能利用率是否低于子行业下限？"
+  yes:
+    question: "是季节性淡季还是持续性低利用？"
+    seasonal:
+      action: "排产优化(P0) + 季节性产品开发(P0)"
+    persistent:
+      question: "是订单不足还是设备闲置？"
+      orders:
+        action: "产品结构调整(P0) + 市场开拓"
+      equipment:
+        action: "参考oee_low手册 + 产能弹性管理(P1)"
+  no:
+    action: "产能利用率达标，注意不要过度扩张产能"

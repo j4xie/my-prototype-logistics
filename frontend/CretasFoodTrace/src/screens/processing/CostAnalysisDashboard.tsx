@@ -11,6 +11,7 @@ import {
   TextInput,
   Chip,
 } from 'react-native-paper';
+import { isAxiosError } from 'axios';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { processingApiClient } from '../../services/api/processingApiClient';
@@ -144,13 +145,13 @@ export default function CostAnalysisDashboard() {
       }
     } catch (err: unknown) {
       // ✅ 修复: 使用unknown类型代替any (2025-11-20)
-      const error = err as any;
+      const error = err instanceof Error ? err : new Error(String(err));
       costAnalysisLogger.error('AI分析失败', error, { batchId, hasQuestion: !!question });
 
       // 处理429错误（超限）
-      if (error.response?.status === 429) {
-        Alert.alert('使用上限', error.response?.data?.message || '本周AI分析次数已达上限，请下周一再试');
-      } else if (error.response?.status === 403) {
+      if (isAxiosError(err) && err.response?.status === 429) {
+        Alert.alert('使用上限', err.response?.data?.message || '本周AI分析次数已达上限，请下周一再试');
+      } else if (isAxiosError(err) && err.response?.status === 403) {
         Alert.alert('功能已禁用', 'AI分析功能已被工厂管理员禁用');
       } else {
         Alert.alert('错误', 'AI分析失败，请稍后重试');

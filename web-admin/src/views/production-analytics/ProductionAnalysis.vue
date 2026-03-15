@@ -108,8 +108,7 @@ function renderCharts() {
 
 function renderTrendChart() {
   if (!trendChartRef.value || !dashboard.value) return;
-  trendChart?.dispose();
-  trendChart = echarts.init(trendChartRef.value);
+  if (!trendChart || trendChart.isDisposed?.()) trendChart = echarts.init(trendChartRef.value, 'cretas');
   const data = dashboard.value.dailyTrend;
   const dates = data.map(d => String(d.date).slice(5));
   trendChart.setOption({
@@ -128,8 +127,7 @@ function renderTrendChart() {
 
 function renderYieldChart() {
   if (!yieldChartRef.value || !dashboard.value) return;
-  yieldChart?.dispose();
-  yieldChart = echarts.init(yieldChartRef.value);
+  if (!yieldChart || yieldChart.isDisposed?.()) yieldChart = echarts.init(yieldChartRef.value, 'cretas');
   const data = dashboard.value.dailyTrend;
   const dates = data.map(d => String(d.date).slice(5));
   const yieldRates = data.map(d => {
@@ -154,8 +152,7 @@ function renderYieldChart() {
 
 function renderProductChart() {
   if (!productChartRef.value || !dashboard.value) return;
-  productChart?.dispose();
-  productChart = echarts.init(productChartRef.value);
+  if (!productChart || productChart.isDisposed?.()) productChart = echarts.init(productChartRef.value, 'cretas');
   const data = dashboard.value.byProduct;
   productChart.setOption({
     tooltip: { trigger: 'axis', confine: true },
@@ -171,8 +168,7 @@ function renderProductChart() {
 
 function renderProcessChart() {
   if (!processChartRef.value || !dashboard.value) return;
-  processChart?.dispose();
-  processChart = echarts.init(processChartRef.value);
+  if (!processChart || processChart.isDisposed?.()) processChart = echarts.init(processChartRef.value, 'cretas');
   const data = dashboard.value.byProcess;
   processChart.setOption({
     tooltip: { trigger: 'item', confine: true, formatter: '{b}: {c} ({d}%)' },
@@ -221,12 +217,13 @@ onMounted(() => {
   loadData();
   if (typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver(handleResize);
-    document.querySelectorAll('.chart').forEach(el => resizeObserver!.observe(el));
+    document.querySelectorAll('.chart-body').forEach(el => resizeObserver!.observe(el));
   }
   window.addEventListener('resize', handleResize);
 });
 
 onBeforeUnmount(() => {
+  if (resizeRaf) cancelAnimationFrame(resizeRaf);
   resizeObserver?.disconnect();
   if (renderTimer) clearTimeout(renderTimer);
   window.removeEventListener('resize', handleResize);

@@ -27,6 +27,7 @@ export interface UnifiedLoginResponseData {
   tokenType?: string;
   factoryId?: string;
   factoryName?: string;
+  factoryType?: string;
   profile?: {
     name?: string;
     email?: string;

@@ -41,6 +41,8 @@ async function loadData() {
     if (res.success && res.data) {
       tableData.value = res.data.content || [];
       pagination.value.total = res.data.totalElements || 0;
+    } else if (res.success === false) {
+      ElMessage.error(res.message || '加载价格表失败');
     }
   } catch { ElMessage.error('加载失败'); }
   finally { loading.value = false; }
@@ -59,6 +61,7 @@ async function handleCreate() {
   try {
     const res = await post(`/${factoryId.value}/price-lists`, form.value);
     if (res.success) { ElMessage.success('创建成功'); dialogVisible.value = false; loadData(); }
+    else { ElMessage.error(res.message || '创建失败'); }
   } catch { ElMessage.error('创建失败'); }
 }
 
@@ -67,7 +70,8 @@ async function handleDelete(id: string) {
     await ElMessageBox.confirm('确认删除此价格表？', '提示');
     const res = await del(`/${factoryId.value}/price-lists/${id}`);
     if (res.success) { ElMessage.success('删除成功'); loadData(); }
-  } catch { /* cancelled */ }
+    else { ElMessage.error(res.message || '删除失败'); }
+  } catch (error) { if (error !== 'cancel') ElMessage.error('删除失败'); }
 }
 
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }

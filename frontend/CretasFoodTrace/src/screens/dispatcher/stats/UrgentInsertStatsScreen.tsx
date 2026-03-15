@@ -205,7 +205,7 @@ export default function UrgentInsertStatsScreen() {
               <MaterialCommunityIcons name="check-circle" size={24} color="#52c41a" />
             </View>
             <Text style={[styles.statsValue, { color: DISPATCHER_THEME.success }]}>
-              {data.successRate.toFixed(1)}%
+              {Number(data.successRate ?? 0).toFixed(1)}%
             </Text>
             <Text style={styles.statsLabel}>成功率</Text>
           </View>
@@ -215,7 +215,7 @@ export default function UrgentInsertStatsScreen() {
               <MaterialCommunityIcons name="speedometer" size={24} color="#fa8c16" />
             </View>
             <Text style={[styles.statsValue, { color: getImpactColor(data.averageImpactScore) }]}>
-              {data.averageImpactScore.toFixed(1)}
+              {Number(data.averageImpactScore ?? 0).toFixed(1)}
             </Text>
             <Text style={styles.statsLabel}>平均影响评分</Text>
           </View>
@@ -225,7 +225,7 @@ export default function UrgentInsertStatsScreen() {
               <MaterialCommunityIcons name="alert" size={24} color="#ff4d4f" />
             </View>
             <Text style={[styles.statsValue, { color: DISPATCHER_THEME.danger }]}>
-              {data.forcedInsertRate.toFixed(1)}%
+              {Number(data.forcedInsertRate ?? 0).toFixed(1)}%
             </Text>
             <Text style={styles.statsLabel}>强制插单比例</Text>
           </View>
@@ -395,7 +395,7 @@ export default function UrgentInsertStatsScreen() {
                         color={getImpactColor(record.impactScore)}
                       />
                       <Text style={[styles.impactValue, { color: getImpactColor(record.impactScore) }]}>
-                        {record.impactScore.toFixed(1)}
+                        {Number(record.impactScore ?? 0).toFixed(1)}
                       </Text>
                     </View>
                   </View>

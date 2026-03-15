@@ -40,13 +40,13 @@ import { productTypeApiClient, ProductType } from '../../../services/api/product
 type NavigationProp = NativeStackNavigationProp<DispatcherStackParamList, 'PlanCreate'>;
 
 // 计划来源类型选项
-const SOURCE_TYPE_OPTIONS: { value: PlanSourceType; label: string; icon: string; description: string }[] = [
-  { value: 'customer_order', label: '客户订单', icon: 'account-group', description: '来自客户的生产订单' },
-  { value: 'ai_forecast', label: 'AI预测', icon: 'robot', description: '基于AI需求预测生成' },
-  { value: 'safety_stock', label: '安全库存', icon: 'package-variant', description: '库存低于阈值触发' },
-  { value: 'manual', label: '手动创建', icon: 'pencil', description: '调度员手动录入' },
-  { value: 'urgent_insert', label: '紧急插单', icon: 'lightning-bolt', description: '紧急订单快速插入' },
-];
+const SOURCE_TYPE_OPTIONS = [
+  { value: 'customer_order' as PlanSourceType, label: '客户订单', icon: 'account-group', description: '来自客户的生产订单' },
+  { value: 'ai_forecast' as PlanSourceType, label: 'AI预测', icon: 'robot', description: '基于AI需求预测生成' },
+  { value: 'safety_stock' as PlanSourceType, label: '安全库存', icon: 'package-variant', description: '库存低于阈值触发' },
+  { value: 'manual' as PlanSourceType, label: '手动创建', icon: 'pencil', description: '调度员手动录入' },
+  { value: 'urgent_insert' as PlanSourceType, label: '紧急插单', icon: 'lightning-bolt', description: '紧急订单快速插入' },
+] as const;
 
 // 优先级选项
 const PRIORITY_OPTIONS = [
@@ -219,7 +219,7 @@ export function PlanCreateScreen() {
               {selectedSourceOption ? (
                 <View style={styles.selectValueRow}>
                   <MaterialCommunityIcons
-                    name={selectedSourceOption.icon as any}
+                    name={selectedSourceOption.icon}
                     size={20}
                     color={DISPATCHER_THEME.primary}
                   />
@@ -247,7 +247,7 @@ export function PlanCreateScreen() {
                       }}
                     >
                       <MaterialCommunityIcons
-                        name={option.icon as any}
+                        name={option.icon}
                         size={20}
                         color={sourceType === option.value ? DISPATCHER_THEME.primary : '#666'}
                       />

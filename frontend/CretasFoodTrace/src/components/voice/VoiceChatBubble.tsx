@@ -8,6 +8,8 @@ import { StyleSheet, View, Text, ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ChatMessage, InspectionData } from '../../services/voice/types';
 
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
 interface VoiceChatBubbleProps {
   message: ChatMessage;
   style?: ViewStyle;
@@ -65,14 +67,17 @@ interface ExtractedDataDisplayProps {
   data: Partial<InspectionData>;
 }
 
+/** Type for InspectionData score fields (excludes sampleSize) */
+type InspectionScoreKey = 'appearance' | 'smell' | 'specification' | 'weight' | 'packaging';
+
 const ExtractedDataDisplay: React.FC<ExtractedDataDisplayProps> = ({ data }) => {
-  const items = [
+  const items: ReadonlyArray<{ key: InspectionScoreKey; label: string; icon: MCIconName }> = [
     { key: 'appearance', label: '外观', icon: 'eye' },
     { key: 'smell', label: '气味', icon: 'flower' },
     { key: 'specification', label: '规格', icon: 'ruler' },
     { key: 'weight', label: '重量', icon: 'scale' },
     { key: 'packaging', label: '包装', icon: 'package-variant' },
-  ] as const;
+  ];
 
   const displayItems = items.filter(
     (item) => data[item.key]?.score !== undefined
@@ -92,7 +97,7 @@ const ExtractedDataDisplay: React.FC<ExtractedDataDisplayProps> = ({ data }) => 
           <View key={item.key} style={styles.extractedItem}>
             <View style={styles.extractedHeader}>
               <MaterialCommunityIcons
-                name={item.icon as any}
+                name={item.icon}
                 size={14}
                 color="#6B7280"
               />
@@ -151,7 +156,7 @@ export const SystemMessage: React.FC<SystemMessageProps> = ({
   type = 'info',
   style,
 }) => {
-  const getTypeConfig = () => {
+  const getTypeConfig = (): { icon: MCIconName; color: string; bg: string } => {
     switch (type) {
       case 'success':
         return { icon: 'check-circle', color: '#10B981', bg: '#D1FAE5' };
@@ -169,7 +174,7 @@ export const SystemMessage: React.FC<SystemMessageProps> = ({
   return (
     <View style={[styles.systemContainer, { backgroundColor: config.bg }, style]}>
       <MaterialCommunityIcons
-        name={config.icon as any}
+        name={config.icon}
         size={16}
         color={config.color}
       />

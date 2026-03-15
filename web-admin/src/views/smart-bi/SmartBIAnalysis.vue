@@ -409,6 +409,64 @@
                   </span>
                 </div>
 
+                <!-- Explore Panel Toggle (Superset-style multi-dimension) -->
+                <div v-if="hasChartData(sheet)" class="explore-panel-toggle">
+                  <el-button size="small" text @click="explorePanelVisible = !explorePanelVisible">
+                    <el-icon><Operation /></el-icon>
+                    {{ explorePanelVisible ? '收起探索面板' : '展开探索面板' }}
+                    <el-badge v-if="exploreDimensions.length" :value="exploreDimensions.length" type="primary" />
+                  </el-button>
+                </div>
+                <el-collapse-transition>
+                  <div v-show="explorePanelVisible && hasChartData(sheet)" class="explore-panel">
+                    <div class="explore-panel-left">
+                      <div class="explore-section-title">可用维度</div>
+                      <div class="dimension-list available">
+                        <div v-for="dim in availableExploreDimensions(sheet)" :key="dim" class="dimension-chip"
+                             @click="addExploreDimension(dim)">
+                          <el-icon><Plus /></el-icon>
+                          {{ dim }}
+                          <span class="dim-count">{{ getDimensionValues(sheet, dim).length }}</span>
+                        </div>
+                        <div v-if="availableExploreDimensions(sheet).length === 0" class="explore-empty">
+                          所有维度已选择
+                        </div>
+                      </div>
+                    </div>
+                    <div class="explore-panel-right">
+                      <div class="explore-section-title">已选维度 (上下排序)</div>
+                      <div class="dimension-list selected">
+                        <div v-for="(dim, idx) in exploreDimensions" :key="dim" class="dimension-chip active">
+                          <div class="dim-header">
+                            <el-icon class="drag-handle"><Rank /></el-icon>
+                            <span>{{ dim }}</span>
+                            <div class="dim-actions">
+                              <el-button size="small" :icon="Top" circle text :disabled="idx === 0" @click="moveExploreDimension(idx, -1)" />
+                              <el-button size="small" :icon="Bottom" circle text :disabled="idx === exploreDimensions.length - 1" @click="moveExploreDimension(idx, 1)" />
+                              <el-button size="small" :icon="Close" circle text type="danger" @click="removeExploreDimension(idx)" />
+                            </div>
+                          </div>
+                          <div class="dim-values">
+                            <el-checkbox-group v-model="exploreDimensionFilters[dim]" size="small">
+                              <el-checkbox v-for="val in getDimensionValues(sheet, dim).slice(0, 20)" :key="val" :label="val" :value="val" />
+                            </el-checkbox-group>
+                            <span v-if="getDimensionValues(sheet, dim).length > 20" class="dim-more">
+                              +{{ getDimensionValues(sheet, dim).length - 20 }} 更多
+                            </span>
+                          </div>
+                        </div>
+                        <div v-if="!exploreDimensions.length" class="explore-empty">
+                          点击左侧维度添加到分析
+                        </div>
+                      </div>
+                      <div v-if="exploreDimensions.length" class="explore-actions">
+                        <el-button size="small" type="primary" @click="applyExploreFilter(sheet)">应用筛选</el-button>
+                        <el-button size="small" @click="clearExploreFilter(sheet)">清除</el-button>
+                      </div>
+                    </div>
+                  </div>
+                </el-collapse-transition>
+
                 <div v-if="enrichingSheets.has(sheet.sheetIndex) && !hasChartData(sheet)" class="chart-skeleton-wrapper">
                   <div v-if="enrichPhases.get(sheet.sheetIndex)?.chartsTotal" class="chart-progress-hint">
                     图表加载中 {{ enrichPhases.get(sheet.sheetIndex)?.charts || 0 }}/{{ enrichPhases.get(sheet.sheetIndex)?.chartsTotal }}...
@@ -424,7 +482,7 @@
                     :available-charts="availableChartDefinitions"
                     :editable="true"
                     @layout-change="handleLayoutChange"
-                    @save="(layout: DashboardLayout) => handleLayoutSave(layout, sheet.uploadId)"
+                    @save="(layout: DashboardLayout) => handleLayoutSave(layout, sheet.uploadId, sheet.sheetIndex)"
                     @card-configure="(card: DashboardCard) => {}"
                   >
                     <template #card-content="{ card }">
@@ -1141,7 +1199,7 @@ import { getUploadTableData, getUploadHistory, deduplicateUploads, enrichSheetAn
 import type { FoodTemplate } from '@/api/smartbi';
 import type { UploadHistoryItem, EnrichResult, EnrichProgress, ColumnSummary, StructuredAIData, SmartKPI, DrillDownResult as DrillDownResultType, CrossSheetResult as CrossSheetResultType, FinancialMetrics, YoYResult, YoYComparisonItem, StatisticalResult, PythonHealthStatus } from '@/api/smartbi';
 import { ElMessage } from 'element-plus';
-import { UploadFilled, Upload, Refresh, CircleCheckFilled, CircleCloseFilled, Loading, List, Document, Tickets, InfoFilled, ArrowRight, Pointer, DataAnalysis, TrendCharts, Download, Filter, Warning, WarningFilled, QuestionFilled, Share, CopyDocument, Link, Timer } from '@element-plus/icons-vue';
+import { UploadFilled, Upload, Refresh, CircleCheckFilled, CircleCloseFilled, Loading, List, Document, Tickets, InfoFilled, ArrowRight, Pointer, DataAnalysis, TrendCharts, Download, Filter, Warning, WarningFilled, QuestionFilled, Share, CopyDocument, Link, Timer, Operation, Plus, Rank, Top, Bottom, Close } from '@element-plus/icons-vue';
 import type { UploadFile, UploadUserFile, UploadInstance } from 'element-plus';
 import echarts from '@/utils/echarts';
 import type { SmartBIChartOption, SmartBIChartItem } from '@/types/echarts';
@@ -1365,6 +1423,11 @@ const globalFilterValues = ref<string[]>([]);
 const filteredRawData = ref<Record<string, any>[] | null>(null);
 const totalRowCount = ref(0);
 const filteredRowCount = ref(0);
+
+// Explore Panel state (Superset-style multi-dimension)
+const explorePanelVisible = ref(false);
+const exploreDimensions = ref<string[]>([]);
+const exploreDimensionFilters = reactive<Record<string, string[]>>({});
 
 // Q2: Auto-refresh state
 const autoRefreshInterval = ref<number>(0);
@@ -3931,6 +3994,7 @@ const handleRefreshChart = async (sheet: SheetResult, chartIndex: number) => {
     }
   } catch (e) {
     console.error('Chart refresh failed:', e);
+    ElMessage.error('刷新图表失败，请重试');
   } finally {
     switchingChart.value = null;
   }
@@ -4002,6 +4066,7 @@ const handleApplyChartConfig = async (
     }
   } catch (e) {
     console.error('Apply chart config failed:', e);
+    ElMessage.error('应用图表配置失败');
   } finally {
     switchingChart.value = null;
   }
@@ -4445,6 +4510,76 @@ const clearGlobalFilter = (sheet: SheetResult) => {
   }
 };
 
+// ========== Explore Panel (Superset-style multi-dimension) ==========
+const availableExploreDimensions = (sheet: SheetResult): string[] => {
+  return getFilterableDimensions(sheet).filter(d => !exploreDimensions.value.includes(d));
+};
+
+const addExploreDimension = (dim: string) => {
+  if (!exploreDimensions.value.includes(dim)) {
+    exploreDimensions.value.push(dim);
+    exploreDimensionFilters[dim] = []; // empty = all values (no filter)
+  }
+};
+
+const removeExploreDimension = (idx: number) => {
+  const dim = exploreDimensions.value[idx];
+  exploreDimensions.value.splice(idx, 1);
+  delete exploreDimensionFilters[dim];
+};
+
+const moveExploreDimension = (idx: number, direction: number) => {
+  const newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= exploreDimensions.value.length) return;
+  const arr = exploreDimensions.value;
+  const temp = arr[idx];
+  arr[idx] = arr[newIdx];
+  arr[newIdx] = temp;
+  // Force reactivity
+  exploreDimensions.value = [...arr];
+};
+
+const applyExploreFilter = (sheet: SheetResult) => {
+  const rawData = sheetRawDataCache.get(sheet.uploadId!);
+  if (!rawData) return;
+
+  let filtered = [...rawData];
+  for (const dim of exploreDimensions.value) {
+    const selectedVals = exploreDimensionFilters[dim];
+    if (selectedVals && selectedVals.length > 0) {
+      filtered = filtered.filter(row => selectedVals.includes(String(row[dim] ?? '')));
+    }
+    // If selectedVals is empty array, no filter is applied for this dimension (all values pass)
+  }
+
+  if (filtered.length === rawData.length) {
+    // No actual filtering happened — clear filter state
+    filteredRawData.value = null;
+    totalRowCount.value = 0;
+    filteredRowCount.value = 0;
+  } else {
+    totalRowCount.value = rawData.length;
+    filteredRowCount.value = filtered.length;
+    filteredRawData.value = filtered;
+  }
+
+  // Re-render charts with filtered data
+  rebuildChartsWithData(sheet, filtered.length < rawData.length ? filtered : rawData);
+};
+
+const clearExploreFilter = (sheet: SheetResult) => {
+  exploreDimensions.value = [];
+  Object.keys(exploreDimensionFilters).forEach(k => delete exploreDimensionFilters[k]);
+  filteredRawData.value = null;
+  totalRowCount.value = 0;
+  filteredRowCount.value = 0;
+
+  // Reset to original data
+  if (sheet.uploadId) {
+    enrichSheet(sheet);
+  }
+};
+
 // ========== Cross-chart linked filter (Phase 3.4 — Power BI + Superset + Tableau) ==========
 const applyChartFilter = (sheet: SheetResult, params: any) => {
   const filterValue = params.name || params.seriesName || '';
@@ -4851,6 +4986,7 @@ const loadHistory = async () => {
     }
   } catch (error) {
     console.error('加载历史记录失败:', error);
+    ElMessage.error('加载历史记录失败');
   } finally {
     historyLoading.value = false;
   }
@@ -6225,5 +6361,125 @@ onMounted(() => {
 @keyframes chartCardFadeIn {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== Explore Panel (Superset-style) ========== */
+.explore-panel-toggle {
+  margin: 8px 0 4px;
+}
+
+.explore-panel {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: var(--el-fill-color-lighter, #fafafa);
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color-lighter, #ebeef5);
+  margin-bottom: 12px;
+}
+
+.explore-panel-left,
+.explore-panel-right {
+  flex: 1;
+  min-width: 0;
+}
+
+.explore-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin-bottom: 8px;
+}
+
+.dimension-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dimension-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+  }
+
+  &.active {
+    border-color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+    flex-direction: column;
+    align-items: stretch;
+    cursor: default;
+  }
+
+  .dim-count {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--el-text-color-secondary);
+    background: var(--el-fill-color);
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+}
+
+.dim-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .drag-handle {
+    cursor: grab;
+    color: var(--el-text-color-secondary);
+  }
+
+  .dim-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 2px;
+  }
+}
+
+.dim-values {
+  padding-top: 6px;
+  border-top: 1px solid var(--el-border-color-lighter);
+  margin-top: 6px;
+
+  .el-checkbox {
+    margin-right: 8px;
+    margin-bottom: 4px;
+  }
+
+  .dim-more {
+    font-size: 11px;
+    color: var(--el-text-color-secondary);
+    margin-left: 4px;
+  }
+}
+
+.explore-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--el-text-color-placeholder);
+  font-size: 13px;
+}
+
+.explore-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 </style>

@@ -11,14 +11,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { workReportingApiClient } from '../../services/api/workReportingApiClient';
 import { processingApiClient, type ProcessingBatch } from '../../services/api/processingApiClient';
+import { processTaskApiClient, type ProcessTaskItem } from '../../services/api/processTaskApiClient';
 import BarcodeScannerModal from '../../components/processing/BarcodeScannerModal';
 import NfcCheckinModal from '../../components/processing/NfcCheckinModal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../../store/authStore';
+import { useFactoryFeatureStore } from '../../store/factoryFeatureStore';
 import { isNfcModuleInstalled, isNfcAvailable } from '../../utils/nfcUtils';
-import type { BatchWorkSessionResponse } from '../../types/workReporting';
+import type { BatchWorkSessionResponse, CheckinWorkerDTO } from '../../types/workReporting';
 
 type CheckinTab = 'nfc' | 'qr';
 
@@ -29,12 +32,22 @@ interface BatchItem {
   status?: string;
 }
 
+interface TaskItem {
+  id: string;
+  displayName: string;
+  productName?: string;
+  processName?: string;
+  processCategory?: string;
+  status?: string;
+}
+
 export default function NfcCheckinScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const getFactoryId = useAuthStore((s) => s.getFactoryId);
   const factoryId = getFactoryId();
+  const isProcessMode = useFactoryFeatureStore((s) => s.isProcessMode);
 
   if (!factoryId) {
     return (
@@ -57,6 +70,10 @@ export default function NfcCheckinScreen() {
   const [startingBatch, setStartingBatch] = useState(false);
   const [isFallback, setIsFallback] = useState(false);
 
+  // PROCESS mode state
+  const [processTasks, setProcessTasks] = useState<TaskItem[]>([]);
+  const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
+
   // NFC availability
   const [nfcSupported, setNfcSupported] = useState(false);
   const [activeTab, setActiveTab] = useState<CheckinTab>('nfc');
@@ -77,8 +94,40 @@ export default function NfcCheckinScreen() {
   }, []);
 
   useEffect(() => {
-    loadBatches();
+    if (isProcessMode()) {
+      loadProcessTasks();
+    } else {
+      loadBatches();
+    }
   }, []);
+
+  const loadProcessTasks = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await processTaskApiClient.getActiveTasks(factoryId!) as { success?: boolean; data?: ProcessTaskItem[] };
+      if (res?.success && Array.isArray(res.data)) {
+        const tasks = res.data.map((t: ProcessTaskItem) => ({
+          id: t.id,
+          displayName: `${t.processName || '工序'} — ${t.productTypeName || t.productTypeId}`,
+          productName: t.productTypeName,
+          processName: t.processName,
+          processCategory: t.processCategory,
+          status: t.status,
+        }));
+        setProcessTasks(tasks);
+        // 自动选中上次使用的工序
+        const lastId = await AsyncStorage.getItem('lastProcessTaskId');
+        if (lastId && !selectedTask) {
+          const match = tasks.find((t: TaskItem) => t.id === lastId);
+          if (match) setSelectedTask(match);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load process tasks:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [factoryId]);
 
   const parseBatchList = (res: { success?: boolean; data?: { content?: ProcessingBatch[] } }): BatchItem[] => {
     if (!res?.success) return [];
@@ -134,7 +183,17 @@ export default function NfcCheckinScreen() {
     try {
       const response = await workReportingApiClient.getCheckinList(batchId);
       if (response.success && response.data) {
-        setCheckins(Array.isArray(response.data) ? response.data : []);
+        const workers = Array.isArray(response.data) ? response.data : [];
+        // Map CheckinWorkerDTO to BatchWorkSessionResponse shape
+        setCheckins(workers.map((w: CheckinWorkerDTO) => ({
+          id: w.sessionId,
+          batchId: w.batchId,
+          employeeId: w.employeeId,
+          checkInTime: w.checkInTime ?? undefined,
+          checkOutTime: w.checkOutTime ?? undefined,
+          status: w.status,
+          checkinMethod: w.checkinMethod ?? undefined,
+        })));
       }
     } catch (error) {
       console.warn('Failed to load checkins:', error);
@@ -184,8 +243,50 @@ export default function NfcCheckinScreen() {
   // --- Checkin handlers ---
 
   const performCheckin = useCallback(async (employeeId: number, method: 'NFC' | 'QR') => {
-    if (!selectedBatch || !user?.id) return;
+    if (!user?.id) return;
 
+    if (isProcessMode()) {
+      if (!selectedTask) return;
+      setCheckinLoading(true);
+      try {
+        const response = await processTaskApiClient.processCheckin({
+          employeeId,
+          processName: selectedTask.processName,
+          processCategory: selectedTask.processCategory,
+          checkinMethod: method,
+        });
+        if (response.success) {
+          const empName = response.data?.employeeName || `工号${employeeId}`;
+          Alert.alert('签到成功', `${empName} 已签到「${selectedTask.processName || '工序'}」`);
+          // 刷新签到列表（适配 ProcessCheckinRecord → BatchWorkSessionResponse 类型）
+          try {
+            const res = await processTaskApiClient.getActiveCheckins();
+            if (res.success && Array.isArray(res.data)) {
+              setCheckins(res.data.map((r: { id: number; employeeId: number; employeeName?: string; checkInTime?: string; checkOutTime?: string; status?: string; processName?: string }) => ({
+                id: r.id,
+                batchId: 0,
+                employeeId: r.employeeId,
+                employeeName: r.employeeName,
+                checkInTime: r.checkInTime,
+                checkOutTime: r.checkOutTime,
+                status: r.status === 'CHECKED_IN' ? 'working' : 'finished',
+                processName: r.processName,
+              })));
+            }
+          } catch { /* silent */ }
+        } else {
+          Alert.alert('签到失败', response.message || '签到接口异常');
+        }
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : '签到失败';
+        Alert.alert('签到失败', msg);
+      } finally {
+        setCheckinLoading(false);
+      }
+      return;
+    }
+
+    if (!selectedBatch) return;
     setCheckinLoading(true);
     try {
       const response = await workReportingApiClient.checkin({
@@ -196,7 +297,7 @@ export default function NfcCheckinScreen() {
       });
 
       if (response.success) {
-        Alert.alert('签到成功', `员工 #${employeeId} 已通过 ${method === 'NFC' ? 'NFC' : 'QR扫码'} 签到`);
+        Alert.alert('签到成功', `工号${employeeId} 已通过 ${method === 'NFC' ? 'NFC' : 'QR扫码'} 签到`);
         loadCheckins(selectedBatch.id);
       } else {
         Alert.alert('签到失败', response.message);
@@ -207,7 +308,7 @@ export default function NfcCheckinScreen() {
     } finally {
       setCheckinLoading(false);
     }
-  }, [selectedBatch, user, loadCheckins]);
+  }, [selectedBatch, selectedTask, user, loadCheckins, isProcessMode]);
 
   // NFC tag read handler
   const handleNfcTagRead = useCallback((employeeId: string) => {
@@ -231,10 +332,27 @@ export default function NfcCheckinScreen() {
     performCheckin(employeeId, 'QR');
   }, [performCheckin]);
 
-  // Checkout handler
-  const handleCheckout = useCallback(async (employeeId: number) => {
-    if (!selectedBatch) return;
+  const handleCheckout = useCallback(async (employeeId: number, checkinRecordId?: number) => {
+    if (isProcessMode()) {
+      if (!checkinRecordId) {
+        Alert.alert('签退失败', '无签到记录ID');
+        return;
+      }
+      try {
+        const response = await processTaskApiClient.processCheckout(checkinRecordId);
+        if (response.success) {
+          Alert.alert('签退成功');
+        } else {
+          Alert.alert('签退失败', response.message || '签退接口异常');
+        }
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : '签退失败';
+        Alert.alert('签退失败', msg);
+      }
+      return;
+    }
 
+    if (!selectedBatch) return;
     try {
       const response = await workReportingApiClient.checkout({
         batchId: selectedBatch.id,
@@ -250,7 +368,7 @@ export default function NfcCheckinScreen() {
       const msg = error instanceof Error ? error.message : '签退失败';
       Alert.alert('签退失败', msg);
     }
-  }, [selectedBatch, loadCheckins]);
+  }, [selectedBatch, selectedTask, loadCheckins, isProcessMode]);
 
   // Fallback from NFC modal to QR
   const handleNfcFallbackToQR = useCallback(() => {
@@ -258,9 +376,59 @@ export default function NfcCheckinScreen() {
     setScannerVisible(true);
   }, []);
 
-  // --- Render: Batch selection (Phase 1) ---
+  // --- Render: Selection (Phase 1) ---
 
-  if (!selectedBatch) {
+  const noSelection = isProcessMode() ? !selectedTask : !selectedBatch;
+
+  if (noSelection) {
+    if (isProcessMode()) {
+      return (
+        <View style={styles.container}>
+          <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>选择工序任务签到</Text>
+            <View style={{ width: 40 }} />
+          </View>
+
+          {loading ? (
+            <ActivityIndicator size="large" color="#4F46E5" style={{ marginTop: 100 }} />
+          ) : processTasks.length === 0 ? (
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons name="clipboard-off-outline" size={48} color="#9CA3AF" />
+              <Text style={styles.emptyText}>暂无活跃工序任务</Text>
+              <Text style={styles.emptySubtext}>请联系调度员创建工序任务</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={processTasks}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ padding: 16 }}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.batchCard}
+                  onPress={() => { setSelectedTask(item); AsyncStorage.setItem('lastProcessTaskId', item.id).catch(() => {}); }}
+                >
+                  <View style={styles.batchInfo}>
+                    <Text style={styles.batchNumber}>{item.processName || '工序'}</Text>
+                    {item.productName && (
+                      <Text style={styles.batchProduct}>{item.productName}</Text>
+                    )}
+                  </View>
+                  <View style={[styles.batchStatusBadge, styles.batchStatusActive]}>
+                    <Text style={[styles.batchStatusText, styles.batchStatusActiveText]}>
+                      {item.status === 'IN_PROGRESS' ? '进行中' : item.status === 'PENDING' ? '待开始' : '补报中'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          )}
+        </View>
+      );
+    }
+
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
@@ -331,10 +499,12 @@ export default function NfcCheckinScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity onPress={() => setSelectedBatch(null)} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => { isProcessMode() ? setSelectedTask(null) : setSelectedBatch(null); }} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1F2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{selectedBatch.batchNumber}</Text>
+        <Text style={styles.headerTitle}>
+          {isProcessMode() ? (selectedTask?.displayName || '工序签到') : selectedBatch?.batchNumber}
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -436,7 +606,7 @@ export default function NfcCheckinScreen() {
           checkins.map((session) => (
             <View key={session.id} style={styles.checkinCard}>
               <View style={styles.checkinInfo}>
-                <Text style={styles.checkinName}>员工 #{session.employeeId}</Text>
+                <Text style={styles.checkinName}>{session.employeeName || `工号${session.employeeId}`}</Text>
                 <Text style={styles.checkinTime}>
                   {session.checkInTime ? session.checkInTime.substring(11, 16) : '--:--'}
                 </Text>
@@ -471,7 +641,7 @@ export default function NfcCheckinScreen() {
               {session.status === 'working' && (
                 <TouchableOpacity
                   style={styles.checkoutBtn}
-                  onPress={() => handleCheckout(session.employeeId)}
+                  onPress={() => handleCheckout(session.employeeId, session.id)}
                 >
                   <Text style={styles.checkoutBtnText}>签退</Text>
                 </TouchableOpacity>

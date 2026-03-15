@@ -1,0 +1,54 @@
+# 折扣率偏高 — 操作建议手册
+
+diagnosis_code: discount_rate_high
+trigger_metric: discount_rate
+trigger_condition: "actual > range_high"
+display_name: "折扣率偏高"
+
+severity_levels:
+  moderate:
+    condition: "actual - range_high <= 5"
+    label: "略高"
+  severe:
+    condition: "actual - range_high > 5"
+    label: "严重偏高(利润侵蚀)"
+
+action_plans:
+  - id: 1
+    name: "折扣策略审查"
+    priority: "P0"
+    actions:
+      - "盘点当前所有折扣渠道(团购/会员/平台优惠/满减/员工折扣)"
+      - "计算每个折扣渠道的实际让利金额和带来的增量客流"
+      - "淘汰ROI低于1.5的折扣活动"
+      - "设定折扣率红线(建议不超过15%)"
+    expected_impact: "折扣率降低3-5个百分点"
+
+  - id: 2
+    name: "从打折转向增值"
+    priority: "P0"
+    actions:
+      - "用赠品替代直接打折(赠品成本通常<折扣金额的50%)"
+      - "推出限量/限时套餐替代全场折扣"
+      - "会员体系从折扣驱动改为积分/权益驱动"
+      - "新客引流用体验价(低成本菜品)而非全单折扣"
+    expected_impact: "同等引流效果，让利金额降低30-50%"
+
+  - id: 3
+    name: "平台依赖度降低"
+    priority: "P1"
+    actions:
+      - "分析美团/大众点评等平台的实际抽佣+折扣总成本"
+      - "建立私域流量(微信群/小程序/公众号)减少平台依赖"
+      - "平台套餐设计：用高毛利菜品组合，控制套餐成本率"
+    expected_impact: "平台折扣占比降低20-30%"
+
+sub_sector_notes:
+  火锅:
+    - "火锅团购竞争激烈，但低价团购损害品牌定位"
+    - "建议限制团购份数(每桌限用1份)而非取消团购"
+    - "锅底免费策略需慎用——一旦开始很难取消"
+  快餐:
+    - "快餐折扣率本应较低(客单价已经不高)"
+    - "如果折扣>10%，检查是否外卖平台满减过度"
+    - "堂食不建议折扣，外卖通过凑单门槛控制实际折扣"

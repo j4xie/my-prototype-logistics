@@ -49,11 +49,11 @@ type ScheduleMode = 'batch' | 'plan';
 type ShiftType = 'day' | 'night' | 'full_day';
 
 // 班次选项配置
-const SHIFT_OPTIONS: { value: ShiftType; label: string; hours: string; icon: string }[] = [
-  { value: 'day', label: '白班', hours: '08:00 - 17:00', icon: 'white-balance-sunny' },
-  { value: 'night', label: '夜班', hours: '18:00 - 02:00', icon: 'weather-night' },
-  { value: 'full_day', label: '全天', hours: '08:00 - 22:00', icon: 'hours-24' },
-];
+const SHIFT_OPTIONS = [
+  { value: 'day' as ShiftType, label: '白班', hours: '08:00 - 17:00', icon: 'white-balance-sunny' },
+  { value: 'night' as ShiftType, label: '夜班', hours: '18:00 - 02:00', icon: 'weather-night' },
+  { value: 'full_day' as ShiftType, label: '全天', hours: '08:00 - 22:00', icon: 'hours-24' },
+] as const;
 
 export default function AIScheduleScreen() {
   const navigation = useNavigation<any>();
@@ -279,7 +279,7 @@ export default function AIScheduleScreen() {
 
         // 更新完成概率
         if (scheduleResult.completionProbability !== undefined) {
-          setCompletionProbability(Math.round(scheduleResult.completionProbability * 100));
+          setCompletionProbability(Math.round(scheduleResult.completionProbability > 1 ? scheduleResult.completionProbability : scheduleResult.completionProbability * 100));
         }
         if (scheduleResult.simulationRuns !== undefined) {
           setSimulationCount(scheduleResult.simulationRuns);
@@ -491,7 +491,7 @@ export default function AIScheduleScreen() {
                   onPress={() => setShiftType(option.value)}
                 >
                   <MaterialCommunityIcons
-                    name={option.icon as any}
+                    name={option.icon}
                     size={20}
                     color={shiftType === option.value ? '#fff' : '#666'}
                   />

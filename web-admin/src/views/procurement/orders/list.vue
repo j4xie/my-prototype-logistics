@@ -63,6 +63,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     ElMessage.error('加载数据失败');
@@ -76,15 +78,15 @@ async function loadSuppliers() {
   try {
     const res = await get(`/${factoryId.value}/suppliers`, { params: { page: 1, size: 100 } });
     if (res.success && res.data) suppliers.value = res.data.content || [];
-  } catch { /* ignore */ }
+  } catch { ElMessage.error('加载供应商列表失败'); }
 }
 
 async function loadMaterials() {
   if (!factoryId.value) return;
   try {
-    const res = await get(`/${factoryId.value}/materials/types`);
+    const res = await get(`/${factoryId.value}/raw-material-types`);
     if (res.success && res.data) materials.value = Array.isArray(res.data) ? res.data : res.data.content || [];
-  } catch { /* ignore */ }
+  } catch { ElMessage.error('加载原料列表失败'); }
 }
 
 function addItem() {
@@ -104,6 +106,8 @@ async function handleCreate() {
       dialogVisible.value = false;
       resetForm();
       loadData();
+    } else {
+      ElMessage.error(res.message || '创建失败');
     }
   } catch (error) {
     ElMessage.error('创建失败');
@@ -128,8 +132,10 @@ async function handleAction(orderId: string, action: string) {
     if (res.success) {
       ElMessage.success(`${a.label}成功`);
       loadData();
+    } else {
+      ElMessage.error(res.message || `${a.label}失败`);
     }
-  } catch { /* cancelled */ }
+  } catch (error) { if (error !== 'cancel') ElMessage.error(`${a.label}失败`); }
 }
 
 function goDetail(id: string) {

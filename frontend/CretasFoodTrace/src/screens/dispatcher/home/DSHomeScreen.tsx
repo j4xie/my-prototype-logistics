@@ -351,7 +351,7 @@ export default function DSHomeScreen() {
                   <View
                     style={[
                       styles.quickPersonnelBarFill,
-                      { width: `${(workshop.activeWorkers / workshop.totalWorkers) * 100}%` }
+                      { width: `${workshop.totalWorkers > 0 ? (workshop.activeWorkers / workshop.totalWorkers) * 100 : 0}%` }
                     ]}
                   />
                 </View>
@@ -365,7 +365,7 @@ export default function DSHomeScreen() {
                 {dashboard?.workers?.idle ?? 4}人
               </Text>
               {isScreenEnabled('AIWorkerOptimize') && (
-              <TouchableOpacity onPress={() => navigation.navigate('AI', { screen: 'AIWorkerOptimize' })}>
+              <TouchableOpacity onPress={() => navigation.navigate('AITab', { screen: 'AIWorkerOptimize' })}>
                 <Text style={styles.aiOptimizeLink}>AI优化 →</Text>
               </TouchableOpacity>
               )}

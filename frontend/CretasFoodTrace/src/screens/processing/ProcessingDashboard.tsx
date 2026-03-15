@@ -47,7 +47,7 @@ interface DashboardOverviewData {
 export default function ProcessingDashboard() {
   const navigation = useNavigation<ProcessingDashboardNavigationProp>();
   const { user } = useAuthStore();
-  const { isScreenEnabled } = useFactoryFeatureStore();
+  const { isScreenEnabled, isProcessMode } = useFactoryFeatureStore();
   const { t } = useTranslation('processing');
 
   // 状态管理
@@ -305,6 +305,18 @@ export default function ProcessingDashboard() {
                 >
                   {t('dashboard.quickActions.teamReport', '班组报工')}
                 </Button>
+                {isProcessMode() && (
+                  <Button
+                    mode="contained"
+                    icon="format-list-checks"
+                    onPress={() => navigation.navigate('ProcessTaskList', {})}
+                    style={styles.actionButton}
+                    buttonColor="#0891B2"
+                    testID="dashboard-process-task-btn"
+                  >
+                    工序任务
+                  </Button>
+                )}
               </View>
             )}
 

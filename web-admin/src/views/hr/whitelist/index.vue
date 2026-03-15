@@ -59,6 +59,8 @@ async function loadData() {
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -74,9 +76,12 @@ async function loadDepartments() {
     const response = await get(`/${factoryId.value}/departments`);
     if (response.success && response.data) {
       departments.value = response.data.content || response.data || [];
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载部门列表失败');
     }
   } catch (error) {
     console.error('加载部门列表失败:', error);
+    ElMessage.error('加载部门列表失败');
   }
 }
 
@@ -86,9 +91,12 @@ async function loadStatistics() {
     const response = await get(`/${factoryId.value}/whitelist/stats`);
     if (response.success && response.data) {
       statistics.value = { total: response.data.totalCount || 0, used: response.data.activeCount || 0, expired: response.data.expiredCount || 0 };
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载统计失败');
     }
   } catch (error) {
     console.error('加载统计失败:', error);
+    ElMessage.error('加载统计失败');
   }
 }
 
@@ -289,7 +297,11 @@ function getRoleText(role: string) {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="添加时间" width="180" />
+        <el-table-column label="添加时间" width="180">
+          <template #default="{ row }">
+            {{ row.createdAt ? row.createdAt.replace('T', ' ').substring(0, 19) : '-' }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="150" fixed="right" align="center">
           <template #default="{ row }">
             <el-button

@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
@@ -115,6 +116,14 @@ class ShipmentApiClient {
     if (Array.isArray(apiResponse)) {
       return { data: apiResponse, totalElements: apiResponse.length, totalPages: 1 };
     }
+    // 格式4: { success: true, data: { content: [...] } } (统一响应 + Spring Page)
+    if (apiResponse.data && apiResponse.data.content && Array.isArray(apiResponse.data.content)) {
+      return {
+        data: apiResponse.data.content,
+        totalElements: apiResponse.data.totalElements || apiResponse.data.content.length,
+        totalPages: apiResponse.data.totalPages || 1
+      };
+    }
 
     console.warn('[ShipmentApiClient] 未知的响应格式:', apiResponse);
     return { data: [], totalElements: 0, totalPages: 0 };
@@ -230,8 +239,8 @@ class ShipmentApiClient {
         `${this.getPath(factoryId)}/tracking/${trackingNumber}`
       );
       return response.data || response;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 404) {
         return null;
       }
       throw error;

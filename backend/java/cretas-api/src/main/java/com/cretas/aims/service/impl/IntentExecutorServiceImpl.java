@@ -28,6 +28,7 @@ import com.cretas.aims.service.RuleEngineService;
 import com.cretas.aims.service.SemanticCacheService;
 import com.cretas.aims.service.ConversationMemoryService;
 import com.cretas.aims.service.ToolRouterService;
+import java.util.concurrent.atomic.AtomicLong;
 import com.cretas.aims.service.ResultFormatterService;
 import com.cretas.aims.service.ResultValidatorService;
 import com.cretas.aims.service.ParameterExtractionLearningService;
@@ -116,6 +117,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
     // 新增：工具路由服务
     private final ToolRouterService toolRouterService;
+
+    // ===== 路由分支可观测性计数器 =====
+    private final AtomicLong branchToolDirect = new AtomicLong();    // 分支1: intent绑定→Tool直接执行
+    private final AtomicLong branchSkill = new AtomicLong();         // 分支2: Skill编排
+    private final AtomicLong branchDynamic = new AtomicLong();       // 分支3: ToolRouter动态选择
+    private final AtomicLong branchNoMatch = new AtomicLong();       // 分支4: 无匹配
 
     // 新增：Skill路由服务（多Tool编排）
     private SkillRouterService skillRouterService;
@@ -777,7 +784,8 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 && (boundToolName == null || boundToolName.isBlank())) {
             IntentExecuteResponse skillResponse = trySkillRoute(request.getUserInput(), factoryId, userId);
             if (skillResponse != null) {
-                log.info("Skill 优先匹配成功: intentCode={}, userInput={}", intent.getIntentCode(), request.getUserInput());
+                long count = branchSkill.incrementAndGet();
+                log.info("[Branch:Skill] Skill 优先匹配成功: intentCode={}, userInput={}, total={}", intent.getIntentCode(), request.getUserInput(), count);
                 return skillResponse;
             }
         }
@@ -808,7 +816,8 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         if (toolName != null && !toolName.isEmpty()) {
             Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
             if (toolOpt.isPresent()) {
-                log.info("使用 Tool 执行: intentCode={}, toolName={}", intent.getIntentCode(), toolName);
+                long count = branchToolDirect.incrementAndGet();
+                log.info("[Branch:ToolDirect] 使用 Tool 执行: intentCode={}, toolName={}, total={}", intent.getIntentCode(), toolName, count);
                 response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole, matchResult);
             } else {
                 log.warn("Tool 未找到: toolName={}, intentCode={}", toolName, intent.getIntentCode());
@@ -828,22 +837,37 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         // 4c. 无Tool绑定 — 走动态选择 (Skill已在4a检查过)
         else if (skillRouterService != null && skillRouterService.isSkillsEnabled()
                 && toolRouterService.requiresDynamicSelection(matchResult)) {
-            log.info("触发动态工具选择: intentCode={}", intent.getIntentCode());
+            long count = branchDynamic.incrementAndGet();
+            log.info("[Branch:Dynamic] 触发动态工具选择: intentCode={}, total={}", intent.getIntentCode(), count);
             response = executeWithDynamicToolSelection(factoryId, request, intent, matchResult, userId, userRole);
         }
         else if (skillRouterService != null && skillRouterService.isSkillsEnabled()) {
-            log.warn("无 Tool/Skill 匹配: intentCode={}, category={}", intent.getIntentCode(), intent.getIntentCategory());
+            long count = branchNoMatch.incrementAndGet();
+            log.warn("[Branch:NoMatch] 无 Tool/Skill 匹配: intentCode={}, category={}, total={}", intent.getIntentCode(), intent.getIntentCategory(), count);
             response = buildNoToolResponse(intent);
         }
         // 4d. 动态工具选择（模块D, skillRouter未启用时）
         else if (toolRouterService.requiresDynamicSelection(matchResult)) {
-            log.info("触发动态工具选择: intentCode={}", intent.getIntentCode());
+            long count = branchDynamic.incrementAndGet();
+            log.info("[Branch:Dynamic] 触发动态工具选择(无Skill): intentCode={}, total={}", intent.getIntentCode(), count);
             response = executeWithDynamicToolSelection(factoryId, request, intent, matchResult, userId, userRole);
         }
         // 4d. 无匹配路由
         else {
-            log.warn("无路由匹配: intentCode={}, category={}", intent.getIntentCode(), intent.getIntentCategory());
+            long count = branchNoMatch.incrementAndGet();
+            log.warn("[Branch:NoMatch] 无路由匹配: intentCode={}, category={}, total={}", intent.getIntentCode(), intent.getIntentCategory(), count);
             response = buildNoToolResponse(intent);
+        }
+
+        // 路由分支统计 — 每50次请求输出一次汇总
+        long total = branchToolDirect.get() + branchSkill.get() + branchDynamic.get() + branchNoMatch.get();
+        if (total > 0 && total % 50 == 0) {
+            log.info("[Branch:Stats] total={}, ToolDirect={} ({}%), Skill={} ({}%), Dynamic={} ({}%), NoMatch={} ({}%)",
+                    total,
+                    branchToolDirect.get(), branchToolDirect.get() * 100 / total,
+                    branchSkill.get(), branchSkill.get() * 100 / total,
+                    branchDynamic.get(), branchDynamic.get() * 100 / total,
+                    branchNoMatch.get(), branchNoMatch.get() * 100 / total);
         }
 
         // 6.5. 检查是否需要更多信息，生成澄清问题并创建对话会话
@@ -3555,7 +3579,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             if (factoryAnalysisContext != null && !factoryAnalysisContext.isEmpty()) {
                 // 有预计算分析数据 - 提供数据驱动的建议
                 systemPrompt = """
-                    你是白垩纪食品溯源系统的智能助手。用户正在询问一个关于生产管理、质量控制或成本优化的咨询问题。
+                    你是白垩纪AI Agent的智能助手。用户正在询问一个关于生产管理、质量控制或成本优化的咨询问题。
 
                     **重要**: 下面是该工厂的最新运营分析报告，请基于此数据提供针对性建议：
 
@@ -3575,7 +3599,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             } else {
                 // 无预计算数据 - 使用通用建议模板
                 systemPrompt = """
-                    你是白垩纪食品溯源系统的智能助手。用户正在询问一个关于生产管理、质量控制或食品安全的通用咨询问题。
+                    你是白垩纪AI Agent的智能助手。用户正在询问一个关于生产管理、质量控制或食品安全的通用咨询问题。
 
                     请根据以下原则回答：
                     1. 提供专业、实用的建议
@@ -3590,7 +3614,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         } else {
             // 闲聊类型
             systemPrompt = """
-                你是白垩纪食品溯源系统的智能助手。用户发起了一个日常对话。
+                你是白垩纪AI Agent的智能助手。用户发起了一个日常对话。
 
                 请根据以下原则回答：
                 1. 友好、亲切地回应
@@ -3660,7 +3684,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             String factoryAnalysisContext = getPrecomputedAnalysisContext(factoryId);
             if (factoryAnalysisContext != null && !factoryAnalysisContext.isEmpty()) {
                 systemPrompt = """
-                    你是白垩纪食品溯源系统的智能助手。用户正在询问一个关于生产管理、质量控制或成本优化的咨询问题。
+                    你是白垩纪AI Agent的智能助手。用户正在询问一个关于生产管理、质量控制或成本优化的咨询问题。
 
                     **重要**: 下面是该工厂的最新运营分析报告，请基于此数据提供针对性建议：
 
@@ -3679,7 +3703,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     """.formatted(factoryAnalysisContext);
             } else {
                 systemPrompt = """
-                    你是白垩纪食品溯源系统的智能助手。用户正在询问一个关于生产管理、质量控制或食品安全的通用咨询问题。
+                    你是白垩纪AI Agent的智能助手。用户正在询问一个关于生产管理、质量控制或食品安全的通用咨询问题。
 
                     请根据以下原则回答：
                     1. 提供专业、实用的建议
@@ -3693,7 +3717,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             }
         } else {
             systemPrompt = """
-                你是白垩纪食品溯源系统的智能助手。用户发起了一个日常对话。
+                你是白垩纪AI Agent的智能助手。用户发起了一个日常对话。
 
                 请根据以下原则回答：
                 1. 友好、亲切地回应

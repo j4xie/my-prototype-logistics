@@ -195,7 +195,10 @@ async function loadMaterialTypes() {
       const d = res.data as { content?: { id: string; name: string }[] } | { id: string; name: string }[];
       materialTypes.value = Array.isArray(d) ? d : d.content || [];
     }
-  } catch (e) { console.error('Failed to load material types:', e); }
+  } catch (e) {
+    console.error('Failed to load material types:', e);
+    ElMessage.error('加载食材类型失败');
+  }
 }
 
 const statsLoaded = ref(false);
@@ -213,7 +216,10 @@ async function loadStatistics() {
       };
       statsLoaded.value = true;
     }
-  } catch (e) { console.error('Failed to load stocktaking summary:', e); }
+  } catch (e) {
+    console.error('Failed to load stocktaking summary:', e);
+    ElMessage.error('加载盘点统计失败');
+  }
 }
 
 const loading = ref(false);
@@ -290,10 +296,14 @@ async function submitCreateForm() {
   }
   submitting.value = true;
   try {
-    await createStocktakingRecord(factoryId.value, dialogForm.value);
-    ElMessage.success('盘点单已创建');
-    dialogVisible.value = false;
-    loadData();
+    const res = await createStocktakingRecord(factoryId.value, dialogForm.value);
+    if (res.success) {
+      ElMessage.success('盘点单已创建');
+      dialogVisible.value = false;
+      loadData();
+    } else {
+      ElMessage.error(res.message || '创建失败');
+    }
   } catch (e) {
     console.error('Create stocktaking failed:', e);
     ElMessage.error('创建失败');
@@ -311,13 +321,17 @@ async function submitComplete() {
   }
   submitting.value = true;
   try {
-    await completeStocktaking(factoryId.value, completeForm.value.id, {
+    const res = await completeStocktaking(factoryId.value, completeForm.value.id, {
       actualQuantity: completeForm.value.actualQuantity,
       adjustmentReason: completeForm.value.adjustmentReason || undefined
     });
-    ElMessage.success('盘点已完成');
-    completeDialogVisible.value = false;
-    loadData();
+    if (res.success) {
+      ElMessage.success('盘点已完成');
+      completeDialogVisible.value = false;
+      loadData();
+    } else {
+      ElMessage.error(res.message || '完成盘点失败');
+    }
   } catch (e) {
     console.error('Complete stocktaking failed:', e);
     ElMessage.error('完成盘点失败');
@@ -327,9 +341,13 @@ async function submitComplete() {
 async function handleCancel(row: StocktakingRecord) {
   try {
     await ElMessageBox.confirm('确认取消该盘点？', '提示', { type: 'warning' });
-    await cancelStocktaking(factoryId.value, row.id);
-    ElMessage.success('已取消');
-    loadData();
+    const res = await cancelStocktaking(factoryId.value, row.id);
+    if (res.success) {
+      ElMessage.success('已取消');
+      loadData();
+    } else {
+      ElMessage.error(res.message || '取消失败');
+    }
   } catch (e) {
     if (e !== 'cancel') {
       console.error('Cancel stocktaking failed:', e);

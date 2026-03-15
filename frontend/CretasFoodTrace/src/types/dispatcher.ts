@@ -774,7 +774,7 @@ export type DispatcherStackParamList = {
   AIScheduleGenerate: undefined;
   LinUCBDebug: undefined;
   PersonnelList: undefined;
-  PersonnelDetail: { employeeId: number };
+  PersonnelDetail: { personnelId: number };
   PersonnelSchedule: undefined;
   PersonnelTransfer: { employeeId?: number };
   PersonnelAttendance: { employeeId?: number };

@@ -152,6 +152,9 @@ export function AppNavigator() {
       const factoryId = getFactoryId(user);
       if (factoryId) {
         loadFeatures(factoryId);
+      } else {
+        // platform_admin has no factoryId — skip feature loading, all modules enabled by default
+        useFactoryFeatureStore.setState({ loaded: true });
       }
     }
   }, [isAuthenticated, user, featuresLoaded]);

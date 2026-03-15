@@ -169,3 +169,36 @@ class SmartBiPgAnalysisResult(Base):
             "insights": self.insights,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+class SmartBiDashboardLayout(Base):
+    """
+    Dashboard layout persistence.
+    Stores user-customized chart layout (position, size) per upload/sheet.
+    """
+    __tablename__ = "smart_bi_dashboard_layouts"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    factory_id = Column(String(50), nullable=False, index=True)
+    upload_id = Column(BigInteger, nullable=False, index=True)
+    sheet_index = Column(Integer, nullable=False, default=0)
+    user_id = Column(BigInteger)
+
+    layout_name = Column(String(100))
+    layout_data = Column(JSONB, nullable=False)  # Full DashboardLayout JSON
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "factoryId": self.factory_id,
+            "uploadId": self.upload_id,
+            "sheetIndex": self.sheet_index,
+            "userId": self.user_id,
+            "layoutName": self.layout_name,
+            "layoutData": self.layout_data,
+            "createdAt": self.created_at.isoformat() if self.created_at else None,
+            "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
+        }

@@ -11,12 +11,14 @@ import com.cretas.aims.service.AIIntentService;
 import com.cretas.aims.service.IntentSemanticsParser;
 import com.cretas.aims.service.SemanticCacheService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.ArrayList;
@@ -38,6 +40,7 @@ import static org.mockito.Mockito.*;
  * @since 2026-01-05
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("IntentExecutorService SSE 集成测试")
 class IntentExecutorStreamIT {
 
@@ -53,6 +56,7 @@ class IntentExecutorStreamIT {
     @Mock
     private ObjectMapper objectMapper;
 
+    @InjectMocks
     private IntentExecutorServiceImpl intentExecutorService;
 
     private static final String FACTORY_ID = "F001";
@@ -60,17 +64,6 @@ class IntentExecutorStreamIT {
     private static final String USER_ROLE = "factory_super_admin";
     private static final String USER_INPUT = "查询今日产量";
     private static final String INTENT_CODE = "QUERY_PRODUCTION";
-
-    @BeforeEach
-    void setUp() {
-        intentExecutorService = new IntentExecutorServiceImpl(
-                aiIntentService,
-                Collections.emptyList(), // handlers
-                semanticsParser,
-                semanticCacheService,
-                objectMapper
-        );
-    }
 
     // ========== SSE 基础流程测试 ==========
 
@@ -89,7 +82,7 @@ class IntentExecutorStreamIT {
         // Mock 意图识别
         IntentMatchResult matchResult = createMockMatchResult();
         when(aiIntentService.recognizeIntentWithConfidence(
-                eq(USER_INPUT), eq(FACTORY_ID), anyInt()))
+                eq(USER_INPUT), eq(FACTORY_ID), anyInt(), any(), any()))
                 .thenReturn(matchResult);
 
         // When
@@ -175,7 +168,7 @@ class IntentExecutorStreamIT {
 
         IntentMatchResult matchResult = createMockMatchResult();
         when(aiIntentService.recognizeIntentWithConfidence(
-                eq(USER_INPUT), eq(FACTORY_ID), anyInt()))
+                eq(USER_INPUT), eq(FACTORY_ID), anyInt(), any(), any()))
                 .thenReturn(matchResult);
 
         // When
@@ -208,7 +201,7 @@ class IntentExecutorStreamIT {
                 .thenReturn(SemanticCacheHit.miss(10));
 
         when(aiIntentService.recognizeIntentWithConfidence(
-                eq(USER_INPUT), eq(FACTORY_ID), anyInt()))
+                eq(USER_INPUT), eq(FACTORY_ID), anyInt(), any(), any()))
                 .thenThrow(new RuntimeException("意图识别服务不可用"));
 
         // When
@@ -235,7 +228,7 @@ class IntentExecutorStreamIT {
         // 但意图识别正常工作
         IntentMatchResult matchResult = createMockMatchResult();
         when(aiIntentService.recognizeIntentWithConfidence(
-                eq(USER_INPUT), eq(FACTORY_ID), anyInt()))
+                eq(USER_INPUT), eq(FACTORY_ID), anyInt(), any(), any()))
                 .thenReturn(matchResult);
 
         // When

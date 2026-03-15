@@ -86,6 +86,7 @@ interface ExpiringItemProps {
 }
 
 function ExpiringItem({ item, onNavigateBatch }: ExpiringItemProps) {
+  const navigation = useNavigation<NavigationProp>();
   const days = item.daysUntilExpiry;
   const badge = getDaysBadgeStyle(days);
   const daysColor = getDaysColor(days);

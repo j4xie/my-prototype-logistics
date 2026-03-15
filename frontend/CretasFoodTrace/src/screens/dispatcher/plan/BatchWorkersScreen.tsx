@@ -30,6 +30,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { isAxiosError } from 'axios';
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
+import { processingApiClient } from '../../../services/api/processingApiClient';
 
 // 调度员主题色
 const DISPATCHER_THEME = {
@@ -75,22 +76,24 @@ interface Worker {
 }
 
 // Data transformation helpers
-const transformBatchInfo = (apiData: any): BatchInfo => ({
-  id: apiData.id || '',
-  batchNumber: apiData.batchNumber || '',
-  product: apiData.productTypeName || apiData.productName || '',
-  quantity: `${apiData.plannedQuantity || 0}kg`,
-  workshop: apiData.workshopName || '生产车间',
-  suggestedWorkers: apiData.suggestedWorkers || apiData.recommendedWorkerCount || '4-6',
-  estimatedHours: apiData.estimatedHours || apiData.estimatedDuration || 6,
-  status: (apiData.status || 'pending').toLowerCase() === 'in_progress' ? 'in_progress' : 'pending',
+const transformBatchInfo = (apiData: Record<string, unknown>): BatchInfo => ({
+  id: String(apiData.id || ''),
+  batchNumber: String(apiData.batchNumber || ''),
+  product: String(apiData.productTypeName || apiData.productName || ''),
+  quantity: `${Number(apiData.plannedQuantity || 0)}kg`,
+  workshop: String(apiData.workshopName || '生产车间'),
+  suggestedWorkers: String(apiData.suggestedWorkers || apiData.recommendedWorkerCount || '4-6'),
+  estimatedHours: Number(apiData.estimatedHours || apiData.estimatedDuration || 6),
+  status: String(apiData.status || 'pending').toLowerCase() === 'in_progress' ? 'in_progress' : 'pending',
 });
 
-const transformWorkers = (apiWorkers: any[]): Worker[] => {
+const transformWorkers = (apiWorkers: Record<string, unknown>[]): Worker[] => {
   return (apiWorkers || []).map((w, index) => {
     // Determine worker group based on status and attributes
     let group: Worker['group'] = 'workshop_idle';
-    const status = (w.status || 'idle').toLowerCase();
+    const status = String(w.status || 'idle').toLowerCase();
+
+    const name = String(w.name || w.workerName || w.userName || '');
 
     if (w.isTransferable || w.workshop !== w.currentWorkshop) {
       group = 'transferable';
@@ -101,21 +104,21 @@ const transformWorkers = (apiWorkers: any[]): Worker[] => {
     }
 
     return {
-      id: w.id || w.userId || String(index + 1),
-      name: w.name || w.workerName || w.userName || '',
-      avatar: (w.name || w.workerName || w.userName || '').charAt(0),
-      employeeCode: w.employeeCode || w.employeeNumber || '',
+      id: String(w.id || w.userId || index + 1),
+      name,
+      avatar: name.charAt(0),
+      employeeCode: String(w.employeeCode || w.employeeNumber || ''),
       status: status === 'working' || status === 'busy' ? 'working' :
               status === 'available' ? 'available' : 'idle',
-      efficiency: w.efficiency || w.efficiencyRate || 85,
-      skill: w.skill || w.skillName || '通用',
-      skillLevel: w.skillLevel || 2,
-      weeklyHours: w.weeklyHours || w.currentWeekHours || 0,
-      maxWeeklyHours: w.maxWeeklyHours || 40,
-      workshop: w.workshop || w.workshopName,
-      currentTask: w.currentTask || w.currentBatchNumber,
-      isTemporary: w.isTemporary || w.employeeType === 'temporary',
-      contractDaysLeft: w.contractDaysLeft || w.contractRemaining,
+      efficiency: Number(w.efficiency || w.efficiencyRate || 85),
+      skill: String(w.skill || w.skillName || '通用'),
+      skillLevel: Number(w.skillLevel || 2),
+      weeklyHours: Number(w.weeklyHours || w.currentWeekHours || 0),
+      maxWeeklyHours: Number(w.maxWeeklyHours || 40),
+      workshop: w.workshop ? String(w.workshop) : w.workshopName ? String(w.workshopName) : undefined,
+      currentTask: w.currentTask ? String(w.currentTask) : w.currentBatchNumber ? String(w.currentBatchNumber) : undefined,
+      isTemporary: Boolean(w.isTemporary) || w.employeeType === 'temporary',
+      contractDaysLeft: w.contractDaysLeft ? Number(w.contractDaysLeft) : w.contractRemaining ? Number(w.contractRemaining) : undefined,
       group,
     };
   });
@@ -134,7 +137,7 @@ export default function BatchWorkersScreen() {
   const [searchText, setSearchText] = useState('');
   const [showMoreTransferable, setShowMoreTransferable] = useState(false);
 
-  // Load batch workers data from API
+  // Load batch info + workers data from API
   const loadBatchWorkers = useCallback(async () => {
     if (!batchId) {
       setLoading(false);
@@ -142,11 +145,39 @@ export default function BatchWorkersScreen() {
     }
 
     try {
-      const response = await schedulingApiClient.getBatchWorkers(batchId);
-      // getBatchWorkers returns { content, totalElements } directly
-      if (response.content && response.content.length > 0) {
-        // Transform workers list from response.content
-        const workersList = response.content.map((w: {
+      // Fetch batch details and workers in parallel
+      const [batchResponse, workersResponse] = await Promise.all([
+        processingApiClient.getBatchById(batchId).catch(() => null),
+        schedulingApiClient.getBatchWorkers(batchId),
+      ]);
+
+      // Set batch info from processing API
+      if (batchResponse?.success && batchResponse.data) {
+        const b = batchResponse.data;
+        setBatchInfo(transformBatchInfo({
+          id: b.id,
+          batchNumber: b.batchNumber,
+          productTypeName: b.productType,
+          plannedQuantity: b.targetQuantity,
+          status: b.status,
+        }));
+      } else {
+        // Fallback: create minimal batch info from batchId so the page is usable
+        setBatchInfo({
+          id: batchId,
+          batchNumber: batchId,
+          product: '加载中...',
+          quantity: '-',
+          workshop: '生产车间',
+          suggestedWorkers: '4-6',
+          estimatedHours: 6,
+          status: 'pending',
+        });
+      }
+
+      // Set workers from getBatchWorkers response
+      if (workersResponse.content && workersResponse.content.length > 0) {
+        const workersList = workersResponse.content.map((w: {
           id: number;
           userId: number;
           userName: string;

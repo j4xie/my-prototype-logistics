@@ -56,32 +56,28 @@ export async function getProductionDashboard(
   params?: DateParams,
   factoryId?: string
 ): Promise<ApiResponse<ProductionDashboard>> {
-  const response = await apiClient.get(`${basePath(factoryId)}/dashboard`, { params });
-  return response.data;
+  return apiClient.get<ApiResponse<ProductionDashboard>>(`${basePath(factoryId)}/dashboard`, { params });
 }
 
 export async function getDailyTrend(
   params?: DateParams,
   factoryId?: string
 ): Promise<ApiResponse<Record<string, unknown>[]>> {
-  const response = await apiClient.get(`${basePath(factoryId)}/daily-trend`, { params });
-  return response.data;
+  return apiClient.get<ApiResponse<Record<string, unknown>[]>>(`${basePath(factoryId)}/daily-trend`, { params });
 }
 
 export async function getByProduct(
   params?: DateParams,
   factoryId?: string
 ): Promise<ApiResponse<Record<string, unknown>[]>> {
-  const response = await apiClient.get(`${basePath(factoryId)}/by-product`, { params });
-  return response.data;
+  return apiClient.get<ApiResponse<Record<string, unknown>[]>>(`${basePath(factoryId)}/by-product`, { params });
 }
 
 export async function getByProcess(
   params?: DateParams,
   factoryId?: string
 ): Promise<ApiResponse<Record<string, unknown>[]>> {
-  const response = await apiClient.get(`${basePath(factoryId)}/by-process`, { params });
-  return response.data;
+  return apiClient.get<ApiResponse<Record<string, unknown>[]>>(`${basePath(factoryId)}/by-process`, { params });
 }
 
 // ==================== 人效分析 ====================
@@ -90,38 +86,33 @@ export async function getEfficiencyDashboard(
   params?: DateParams,
   factoryId?: string
 ): Promise<ApiResponse<EfficiencyDashboard>> {
-  const response = await apiClient.get(`${basePath(factoryId)}/efficiency/dashboard`, { params });
-  return response.data;
+  return apiClient.get<ApiResponse<EfficiencyDashboard>>(`${basePath(factoryId)}/efficiency/dashboard`, { params });
 }
 
 export async function getWorkerRanking(
   params?: DateParams,
   factoryId?: string
 ): Promise<ApiResponse<Record<string, unknown>[]>> {
-  const response = await apiClient.get(`${basePath(factoryId)}/efficiency/workers`, { params });
-  return response.data;
+  return apiClient.get<ApiResponse<Record<string, unknown>[]>>(`${basePath(factoryId)}/efficiency/workers`, { params });
 }
 
 export async function getEfficiencyTrend(
   params?: DateParams,
   factoryId?: string
 ): Promise<ApiResponse<Record<string, unknown>[]>> {
-  const response = await apiClient.get(`${basePath(factoryId)}/efficiency/trend`, { params });
-  return response.data;
+  return apiClient.get<ApiResponse<Record<string, unknown>[]>>(`${basePath(factoryId)}/efficiency/trend`, { params });
 }
 
 export async function getHoursByProduct(
   params?: DateParams,
   factoryId?: string
 ): Promise<ApiResponse<Record<string, unknown>[]>> {
-  const response = await apiClient.get(`${basePath(factoryId)}/efficiency/hours`, { params });
-  return response.data;
+  return apiClient.get<ApiResponse<Record<string, unknown>[]>>(`${basePath(factoryId)}/efficiency/hours`, { params });
 }
 
 export async function getWorkerProcessCross(
   params?: DateParams,
   factoryId?: string
 ): Promise<ApiResponse<Record<string, unknown>[]>> {
-  const response = await apiClient.get(`${basePath(factoryId)}/efficiency/cross`, { params });
-  return response.data;
+  return apiClient.get<ApiResponse<Record<string, unknown>[]>>(`${basePath(factoryId)}/efficiency/cross`, { params });
 }

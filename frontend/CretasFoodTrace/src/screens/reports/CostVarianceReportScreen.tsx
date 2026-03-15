@@ -91,10 +91,10 @@ export default function CostVarianceReportScreen() {
       setReportData(data);
 
       costVarianceLogger.info('成本差异报表数据加载成功', {
-        totalPlannedCost: data.totalPlannedCost?.toFixed(2),
-        totalActualCost: data.totalActualCost?.toFixed(2),
-        totalVariance: data.totalVariance?.toFixed(2),
-        totalVarianceRate: data.totalVarianceRate?.toFixed(2),
+        totalPlannedCost: Number(data.totalPlannedCost ?? 0).toFixed(2),
+        totalActualCost: Number(data.totalActualCost ?? 0).toFixed(2),
+        totalVariance: Number(data.totalVariance ?? 0).toFixed(2),
+        totalVarianceRate: Number(data.totalVarianceRate ?? 0).toFixed(2),
         factoryId,
       });
     } catch (error) {

@@ -10,7 +10,7 @@ import { INSPECTION_ITEMS, calculateGrade } from './config';
  * 系统提示词
  */
 export const QUALITY_INSPECTION_SYSTEM_PROMPT = `
-你是白垩纪食品溯源系统的智能质检助手。你的任务是：
+你是白垩纪AI Agent的智能质检助手。你的任务是：
 1. 理解质检员的口述内容
 2. 提取关键检验数据
 3. 引导完成所有检验项目

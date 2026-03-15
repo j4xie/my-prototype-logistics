@@ -330,13 +330,13 @@ export default function OnTimeDeliveryReportScreen() {
               {(otifData.otifRate ?? 0) >= targetOtif ? (
                 <View style={styles.achievementBadge}>
                   <Text style={styles.achievementText}>
-                    已达成目标 (+{((otifData.otifRate ?? 0) - targetOtif).toFixed(1)}%)
+                    已达成目标 (+{(Number(otifData.otifRate ?? 0) - targetOtif).toFixed(1)}%)
                   </Text>
                 </View>
               ) : (
                 <View style={styles.gapBadge}>
                   <Text style={styles.gapText}>
-                    距目标差 {(targetOtif - (otifData.otifRate ?? 0)).toFixed(1)}%
+                    距目标差 {(targetOtif - Number(otifData.otifRate ?? 0)).toFixed(1)}%
                   </Text>
                 </View>
               )}
@@ -431,10 +431,10 @@ export default function OnTimeDeliveryReportScreen() {
                 <View style={styles.progressItem}>
                   <View style={styles.progressHeader}>
                     <Text style={styles.progressLabel}>准时率</Text>
-                    <Text style={styles.progressValue}>{(otifData.onTimeRate ?? 0).toFixed(1)}%</Text>
+                    <Text style={styles.progressValue}>{Number(otifData.onTimeRate ?? 0).toFixed(1)}%</Text>
                   </View>
                   <ProgressBar
-                    progress={(otifData.onTimeRate ?? 0) / 100}
+                    progress={Number(otifData.onTimeRate ?? 0) / 100}
                     color="#4CAF50"
                     style={styles.progressBar}
                   />
@@ -443,10 +443,10 @@ export default function OnTimeDeliveryReportScreen() {
                 <View style={styles.progressItem}>
                   <View style={styles.progressHeader}>
                     <Text style={styles.progressLabel}>足量率</Text>
-                    <Text style={styles.progressValue}>{(otifData.inFullRate ?? 0).toFixed(1)}%</Text>
+                    <Text style={styles.progressValue}>{Number(otifData.inFullRate ?? 0).toFixed(1)}%</Text>
                   </View>
                   <ProgressBar
-                    progress={(otifData.inFullRate ?? 0) / 100}
+                    progress={Number(otifData.inFullRate ?? 0) / 100}
                     color="#FF9800"
                     style={styles.progressBar}
                   />
@@ -455,10 +455,10 @@ export default function OnTimeDeliveryReportScreen() {
                 <View style={styles.progressItem}>
                   <View style={styles.progressHeader}>
                     <Text style={styles.progressLabel}>OTIF率</Text>
-                    <Text style={styles.progressValue}>{(otifData.otifRate ?? 0).toFixed(1)}%</Text>
+                    <Text style={styles.progressValue}>{Number(otifData.otifRate ?? 0).toFixed(1)}%</Text>
                   </View>
                   <ProgressBar
-                    progress={(otifData.otifRate ?? 0) / 100}
+                    progress={Number(otifData.otifRate ?? 0) / 100}
                     color="#2196F3"
                     style={styles.progressBar}
                   />

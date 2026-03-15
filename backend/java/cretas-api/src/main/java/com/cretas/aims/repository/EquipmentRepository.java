@@ -53,6 +53,13 @@ public interface EquipmentRepository extends JpaRepository<FactoryEquipment, Lon
     List<FactoryEquipment> searchByKeyword(@Param("factoryId") String factoryId, @Param("keyword") String keyword);
 
     /**
+     * 根据名称搜索设备（分页）
+     */
+    @Query("SELECT e FROM FactoryEquipment e WHERE e.factoryId = :factoryId " +
+           "AND (e.equipmentName LIKE CONCAT('%', :keyword, '%') OR e.equipmentCode LIKE CONCAT(:keyword, '%') OR e.model LIKE CONCAT('%', :keyword, '%'))")
+    Page<FactoryEquipment> searchByKeyword(@Param("factoryId") String factoryId, @Param("keyword") String keyword, Pageable pageable);
+
+    /**
      * 根据类型查找设备
      */
     List<FactoryEquipment> findByFactoryIdAndType(String factoryId, String type);

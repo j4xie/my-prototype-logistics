@@ -107,6 +107,9 @@
   },
   "cost": {
     "title": "成本报表",
+    "analysisTitle": "成本分析",
+    "overviewTab": "成本概览",
+    "varianceTab": "成本差异",
     "timeRange": "时间范围",
     "today": "今日",
     "thisWeek": "本周",

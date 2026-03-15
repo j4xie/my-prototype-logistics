@@ -476,10 +476,12 @@ async function buildExplorationCharts(data: Record<string, unknown>[]) {
         };
       }
 
+      // P2 PERF fix: Sample data for chart building to avoid 4x payload duplication
+      const chartData = data.length > 1000 ? data.slice(0, 1000) : data;
       const topRecs = recResult.recommendations.slice(0, 4);
       const plans = topRecs.map(rec => ({
         chartType: rec.chartType,
-        data: data,
+        data: chartData,
         xField: rec.xField || dataInfo.value.categoricalColumns[0] || '',
         yFields: rec.yFields || dataInfo.value.numericColumns.slice(0, 2),
         title: rec.reason || `${rec.chartType} 图表`,
@@ -1335,9 +1337,11 @@ function resetFilters() {
 }
 
 onUnmounted(() => {
+  if (resizeRaf) { cancelAnimationFrame(resizeRaf); resizeRaf = 0; }
   resizeObserver?.disconnect();
   resizeObserver = null;
   window.removeEventListener('resize', handleResize);
+  if (salesAbortController) { salesAbortController.abort(); salesAbortController = null; }
   trendChart?.dispose();
   pieChart?.dispose();
 });

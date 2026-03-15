@@ -102,7 +102,7 @@ export default function ProductionReportScreen() {
         productionReportLogger.info('生产报表数据加载成功', {
           batchCount: batches.length,
           totalOutput: stats.totalOutput,
-          completionRate: stats.completionRate.toFixed(1) + '%',
+          completionRate: Number(stats.completionRate ?? 0).toFixed(1) + '%',
           factoryId,
         });
       } else {
@@ -144,7 +144,7 @@ export default function ProductionReportScreen() {
       productionReportLogger.debug('加载实时监控数据', { factoryId });
       const response = await reportApiClient.getRealtimeData(factoryId);
       // 解包嵌套的响应格式 {code, message, data}
-      const actualData = (response as any)?.data ?? response;
+      const actualData = (response && typeof response === 'object' && 'data' in response) ? (response as { data: typeof response }).data : response;
       setRealtimeData(actualData);
       productionReportLogger.info('实时监控数据加载成功', {
         runningPlans: actualData.runningPlans,
@@ -191,7 +191,7 @@ export default function ProductionReportScreen() {
         endDate: formatDate(endDate),
       });
       // 解包嵌套的响应格式 {code, message, data}
-      const actualData = (response as any)?.data ?? response;
+      const actualData = (response && typeof response === 'object' && 'data' in response) ? (response as { data: typeof response }).data : response;
       setCapacityData(actualData);
       productionReportLogger.info('产能利用数据加载成功', {
         overallUtilization: actualData.overallUtilization,
@@ -211,7 +211,7 @@ export default function ProductionReportScreen() {
   const calculateProductionStats = (batches: any[]) => {
     const totalBatches = batches.length;
     const totalOutput = batches.reduce((sum, batch) => {
-      const output = batch.actualOutput || batch.targetOutput || 0;
+      const output = batch.actualQuantity || batch.outputQuantity || batch.targetQuantity || 0;
       return sum + output;
     }, 0);
 
@@ -364,7 +364,7 @@ export default function ProductionReportScreen() {
             </View>
             <View style={styles.statBox}>
               <Text style={[styles.statValue, { color: '#2196F3' }]}>
-                {(productionStats.completionRate ?? 0).toFixed(1)}%
+                {Number(productionStats.completionRate ?? 0).toFixed(1)}%
               </Text>
               <Text style={styles.statLabel}>{t('production.completionRate')}</Text>
             </View>
@@ -416,7 +416,7 @@ export default function ProductionReportScreen() {
                 </DataTable.Cell>
                 <DataTable.Cell numeric>
                   <Text variant="bodySmall">
-                    {formatQuantity(batch.actualOutput || batch.targetOutput)}
+                    {formatQuantity(batch.actualQuantity || batch.outputQuantity || batch.targetQuantity)}
                   </Text>
                 </DataTable.Cell>
                 <DataTable.Cell>{getStatusChip(batch.status)}</DataTable.Cell>
@@ -600,7 +600,7 @@ export default function ProductionReportScreen() {
     ) ?? 0;
 
     // 计算时间分配（基于整体利用率估算）
-    const overallUtilization = capacityData.overallUtilization ?? 0;
+    const overallUtilization = Number(capacityData.overallUtilization ?? 0);
     const idleTime = Math.max(0, 100 - overallUtilization);
 
     return (
@@ -674,11 +674,11 @@ export default function ProductionReportScreen() {
                   <View style={styles.equipmentCapacityHeader}>
                     <Text style={styles.equipmentName}>{line.lineName ?? line.lineId}</Text>
                     <Text style={[styles.equipmentUtilization, { color: getUtilizationColor(line.utilization ?? 0) }]}>
-                      {(line.utilization ?? 0).toFixed(1)}%
+                      {Number(line.utilization ?? 0).toFixed(1)}%
                     </Text>
                   </View>
                   <ProgressBar
-                    progress={(line.utilization ?? 0) / 100}
+                    progress={Number(line.utilization ?? 0) / 100}
                     color={getUtilizationColor(line.utilization ?? 0)}
                     style={styles.equipmentProgressBar}
                   />

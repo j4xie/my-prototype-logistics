@@ -1,0 +1,29 @@
+# 牛肉面/面食行业基准数据
+#
+# 数据来源：
+#   - 唏嘛香 POS 实测
+#   - 面食行业数据
+
+source: "唏嘛香POS实测 + 面食行业数据"
+year: 2024
+
+metrics:
+  food_cost_ratio:
+    name: "食材成本率"
+    range: [30.0, 38.0]
+    median: 34.0
+    source: "唏嘛香POS实测 + 面食行业数据"
+    note: "面食类食材成本低(面粉+配菜)，牛肉成本是主要变量"
+
+  table_turnover:
+    name: "翻台率"
+    range: [5.0, 10.0]
+    median: 7.0
+    source: "唏嘛香运营数据"
+    note: "快餐面食翻台极高，用餐时间短"
+
+  average_ticket:
+    name: "客单价"
+    range: [20.0, 45.0]
+    median: 30.0
+    source: "唏嘛香POS实测"

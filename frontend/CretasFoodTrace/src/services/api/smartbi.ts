@@ -361,6 +361,29 @@ export const smartBIApi = {
       }
     );
   },
+
+  // ==================== 人效分析 ====================
+
+  /**
+   * 获取人效汇总数据
+   * @param period - 时间周期: day, week, month
+   * @param factoryId - 工厂ID
+   */
+  async getEfficiencySummary(period: string, factoryId?: string): Promise<ApiResponse<any>> {
+    const { getEfficiencyDashboard } = await import('./productionAnalyticsApiClient');
+    return getEfficiencyDashboard({ startDate: period }, factoryId);
+  },
+
+  /**
+   * 获取工人效率排名
+   * @param date - 日期
+   * @param limit - 返回条数
+   * @param factoryId - 工厂ID
+   */
+  async getEfficiencyRanking(date: string, limit: number, factoryId?: string): Promise<ApiResponse<any>> {
+    const { getWorkerRanking } = await import('./productionAnalyticsApiClient');
+    return getWorkerRanking({ startDate: date }, factoryId);
+  },
 };
 
 // 别名导出，兼容旧代码

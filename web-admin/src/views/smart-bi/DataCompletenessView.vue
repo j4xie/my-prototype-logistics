@@ -7,8 +7,9 @@
  * Requires: asyncpg + PostgreSQL with the relevant entity tables
  * Fallback: Shows friendly "service unavailable" message instead of error
  */
-import { ref, onMounted, computed } from 'vue'
-import { Refresh, DataAnalysis } from '@element-plus/icons-vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Refresh, DataAnalysis, Search, Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/store/modules/auth'
 import { pythonFetch } from '@/api/smartbi/common'
 
@@ -31,8 +32,78 @@ interface CompletenessItem {
   fieldCompleteness: FieldCompleteness
 }
 
+// --- Feature 2B: Custom Validation Rules ---
+interface ValidationRule {
+  id: string
+  entityType: string
+  fieldName: string
+  ruleType: 'required' | 'numeric' | 'date_format' | 'min_length' | 'regex'
+  ruleValue?: string
+  enabled: boolean
+  label: string
+}
+
+const RULE_TYPE_OPTIONS = [
+  { value: 'required', label: '必填' },
+  { value: 'numeric', label: '数值' },
+  { value: 'date_format', label: '日期格式' },
+  { value: 'min_length', label: '最小长度' },
+  { value: 'regex', label: '正则' },
+] as const
+
+// Field options per entity type — mirrors the Python backend ENTITY_FIELD_MAP
+const ENTITY_FIELD_OPTIONS: Record<string, string[]> = {
+  PROCESSING_BATCH: [
+    'batch_number', 'product_name', 'planned_quantity', 'actual_quantity',
+    'good_quantity', 'defect_quantity', 'yield_rate', 'material_cost',
+    'labor_cost', 'equipment_cost', 'total_cost', 'unit_cost',
+    'equipment_id', 'supervisor_id', 'worker_count', 'start_time', 'end_time'
+  ],
+  WORK_SESSION: [
+    'user_id', 'work_type_id', 'start_time', 'end_time',
+    'break_minutes', 'actual_work_minutes', 'hourly_rate', 'completed_time'
+  ],
+  MATERIAL_BATCH: [
+    'batch_number', 'material_type_id', 'quantity', 'unit_price',
+    'supplier_id', 'expiry_date', 'storage_location'
+  ],
+  QUALITY_INSPECTION: [
+    'batch_id', 'inspector_id', 'inspection_type',
+    'result', 'defect_count', 'defect_type'
+  ],
+  EQUIPMENT: [
+    'equipment_name', 'equipment_type', 'operating_hours',
+    'last_maintenance_date', 'status'
+  ],
+}
+
 const completenessData = ref<CompletenessItem[]>([])
 const selectedModule = ref<CompletenessItem | null>(null)
+
+// --- Feature 2A: Drill-to-Detail state ---
+const drillDrawerVisible = ref(false)
+const drillField = ref<{ field: string; fieldRaw: string; completeness: number } | null>(null)
+const drillEntityType = ref('')
+
+// --- Feature 2B: Custom Validation Rules state ---
+const validationRules = ref<ValidationRule[]>([])
+const ruleDialogVisible = ref(false)
+const editingRule = ref<ValidationRule | null>(null)
+const ruleForm = ref<{
+  entityType: string
+  fieldName: string
+  ruleType: 'required' | 'numeric' | 'date_format' | 'min_length' | 'regex'
+  ruleValue: string
+  enabled: boolean
+  label: string
+}>({
+  entityType: '',
+  fieldName: '',
+  ruleType: 'required',
+  ruleValue: '',
+  enabled: true,
+  label: '',
+})
 
 const fieldTableData = computed(() => {
   if (!selectedModule.value?.fieldCompleteness) return []
@@ -127,11 +198,15 @@ function selectModule(item: CompletenessItem) {
   selectedModule.value = item
 }
 
+let abortController: AbortController | null = null;
+
 async function loadData() {
   if (!factoryId.value) {
     errorMessage.value = '无法获取工厂信息，请重新登录'
     return
   }
+  if (abortController) abortController.abort();
+  abortController = new AbortController();
   loading.value = true
   errorMessage.value = ''
   serviceAvailable.value = true
@@ -139,7 +214,8 @@ async function loadData() {
   try {
     const json = await pythonFetch('/api/client-requirement/completeness/compute', {
       method: 'POST',
-      body: JSON.stringify({ factory_id: factoryId.value })
+      body: JSON.stringify({ factory_id: factoryId.value }),
+      signal: abortController.signal
     }) as { success?: boolean; data?: CompletenessItem[] }
 
     if (json.success) {
@@ -149,6 +225,7 @@ async function loadData() {
       }
     } else {
       completenessData.value = []
+      ElMessage.error('加载完整度数据失败')
     }
   } catch (e: unknown) {
     console.warn('Load completeness failed:', e)
@@ -168,7 +245,208 @@ async function loadData() {
   }
 }
 
-onMounted(loadData)
+// --- Feature 2A: Drill-to-Detail ---
+const drillMissingCount = computed(() => {
+  if (!drillField.value || !selectedModule.value) return 0
+  const total = selectedModule.value.totalRecords
+  return Math.round(total * (100 - drillField.value.completeness) / 100)
+})
+
+const drillFilledCount = computed(() => {
+  if (!selectedModule.value) return 0
+  return selectedModule.value.totalRecords - drillMissingCount.value
+})
+
+function handleFieldRowClick(row: { field: string; fieldRaw: string; completeness: number }) {
+  if (row.completeness >= 100) return
+  if (!selectedModule.value) return
+  drillField.value = row
+  drillEntityType.value = selectedModule.value.entityType
+  drillDrawerVisible.value = true
+}
+
+function isFieldClickable(row: { completeness: number }): boolean {
+  return row.completeness < 100
+}
+
+// --- Feature 2B: Custom Validation Rules ---
+function rulesStorageKey(): string {
+  return `cretas_completeness_rules_${factoryId.value || 'default'}`
+}
+
+function loadRules() {
+  try {
+    const raw = localStorage.getItem(rulesStorageKey())
+    if (raw) {
+      validationRules.value = JSON.parse(raw)
+    }
+  } catch (e) {
+    console.warn('Failed to load validation rules from localStorage:', e)
+    validationRules.value = []
+  }
+}
+
+function saveRules() {
+  try {
+    localStorage.setItem(rulesStorageKey(), JSON.stringify(validationRules.value))
+  } catch (e) {
+    console.warn('Failed to save validation rules to localStorage:', e)
+  }
+}
+
+const ruleFieldOptions = computed(() => {
+  const entityType = ruleForm.value.entityType
+  if (!entityType || !ENTITY_FIELD_OPTIONS[entityType]) return []
+  return ENTITY_FIELD_OPTIONS[entityType].map(f => ({
+    value: f,
+    label: fieldLabel(f),
+  }))
+})
+
+const showRuleValue = computed(() => {
+  return ruleForm.value.ruleType === 'min_length' || ruleForm.value.ruleType === 'regex'
+})
+
+function generateRuleLabel(): string {
+  const entity = entityLabel(ruleForm.value.entityType)
+  const field = fieldLabel(ruleForm.value.fieldName)
+  const ruleTypeName = RULE_TYPE_OPTIONS.find(r => r.value === ruleForm.value.ruleType)?.label || ruleForm.value.ruleType
+  let label = `${entity} - ${field}: ${ruleTypeName}`
+  if (showRuleValue.value && ruleForm.value.ruleValue) {
+    label += `(${ruleForm.value.ruleValue})`
+  }
+  return label
+}
+
+function resetRuleForm() {
+  ruleForm.value = {
+    entityType: '',
+    fieldName: '',
+    ruleType: 'required',
+    ruleValue: '',
+    enabled: true,
+    label: '',
+  }
+  editingRule.value = null
+}
+
+function handleAddRule() {
+  resetRuleForm()
+  ruleDialogVisible.value = true
+}
+
+function handleEditRule(rule: ValidationRule) {
+  editingRule.value = rule
+  ruleForm.value = {
+    entityType: rule.entityType,
+    fieldName: rule.fieldName,
+    ruleType: rule.ruleType,
+    ruleValue: rule.ruleValue || '',
+    enabled: rule.enabled,
+    label: rule.label,
+  }
+  ruleDialogVisible.value = true
+}
+
+function handleDeleteRule(rule: ValidationRule) {
+  ElMessageBox.confirm(`确定删除规则 "${rule.label}" ?`, '确认删除', {
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(() => {
+    validationRules.value = validationRules.value.filter(r => r.id !== rule.id)
+    saveRules()
+    ElMessage.success('规则已删除')
+  }).catch(() => {})
+}
+
+function handleToggleRule(rule: ValidationRule) {
+  const idx = validationRules.value.findIndex(r => r.id === rule.id)
+  if (idx !== -1) {
+    validationRules.value[idx].enabled = rule.enabled
+    saveRules()
+  }
+}
+
+function handleSaveRule() {
+  if (!ruleForm.value.entityType || !ruleForm.value.fieldName || !ruleForm.value.ruleType) {
+    ElMessage.warning('请填写完整的规则信息')
+    return
+  }
+  if (showRuleValue.value && !ruleForm.value.ruleValue) {
+    ElMessage.warning('请输入约束值')
+    return
+  }
+
+  const label = generateRuleLabel()
+
+  if (editingRule.value) {
+    // Update existing rule
+    const idx = validationRules.value.findIndex(r => r.id === editingRule.value!.id)
+    if (idx !== -1) {
+      validationRules.value[idx] = {
+        ...validationRules.value[idx],
+        entityType: ruleForm.value.entityType,
+        fieldName: ruleForm.value.fieldName,
+        ruleType: ruleForm.value.ruleType,
+        ruleValue: showRuleValue.value ? ruleForm.value.ruleValue : undefined,
+        enabled: ruleForm.value.enabled,
+        label,
+      }
+    }
+  } else {
+    // Add new rule
+    validationRules.value.push({
+      id: `rule_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      entityType: ruleForm.value.entityType,
+      fieldName: ruleForm.value.fieldName,
+      ruleType: ruleForm.value.ruleType,
+      ruleValue: showRuleValue.value ? ruleForm.value.ruleValue : undefined,
+      enabled: ruleForm.value.enabled,
+      label,
+    })
+  }
+
+  const isEdit = !!editingRule.value
+  saveRules()
+  ruleDialogVisible.value = false
+  resetRuleForm()
+  ElMessage.success(isEdit ? '规则已更新' : '规则已添加')
+}
+
+/** Check if a field (by raw name) has any custom rules defined */
+function fieldHasRule(fieldRaw: string): boolean {
+  if (!selectedModule.value) return false
+  return validationRules.value.some(
+    r => r.entityType === selectedModule.value!.entityType && r.fieldName === fieldRaw
+  )
+}
+
+/** Get rule type labels for a field */
+function fieldRuleLabels(fieldRaw: string): string[] {
+  if (!selectedModule.value) return []
+  return validationRules.value
+    .filter(r => r.entityType === selectedModule.value!.entityType && r.fieldName === fieldRaw && r.enabled)
+    .map(r => RULE_TYPE_OPTIONS.find(opt => opt.value === r.ruleType)?.label || r.ruleType)
+}
+
+const enabledRuleCount = computed(() => validationRules.value.filter(r => r.enabled).length)
+
+const ENTITY_TYPE_OPTIONS = computed(() => {
+  return Object.keys(ENTITY_FIELD_OPTIONS).map(key => ({
+    value: key,
+    label: entityLabel(key),
+  }))
+})
+
+onMounted(() => {
+  loadRules()
+  loadData()
+})
+
+onUnmounted(() => {
+  if (abortController) abortController.abort();
+})
 </script>
 
 <template>
@@ -255,6 +533,123 @@ onMounted(loadData)
       </div>
     </div>
 
+    <!-- Feature 2B: Custom Validation Rules (collapsible section) -->
+    <div v-if="completenessData.length > 0" class="rules-section">
+      <el-collapse>
+        <el-collapse-item>
+          <template #title>
+            <div class="rules-collapse-title">
+              <span>自定义校验规则</span>
+              <el-badge :value="enabledRuleCount" :hidden="enabledRuleCount === 0" class="rules-badge" />
+            </div>
+          </template>
+          <div class="rules-content">
+            <div class="rules-toolbar">
+              <el-button type="primary" :icon="Plus" size="small" @click="handleAddRule">添加规则</el-button>
+              <span class="rules-hint">校验规则仅保存在本地浏览器中，不影响后端数据计算</span>
+            </div>
+            <el-table
+              v-if="validationRules.length > 0"
+              :data="validationRules"
+              size="small"
+              stripe
+              :max-height="320"
+            >
+              <el-table-column label="模块" width="120">
+                <template #default="{ row }">{{ entityLabel(row.entityType) }}</template>
+              </el-table-column>
+              <el-table-column label="字段" width="140">
+                <template #default="{ row }">{{ fieldLabel(row.fieldName) }}</template>
+              </el-table-column>
+              <el-table-column label="规则类型" width="120">
+                <template #default="{ row }">
+                  <el-tag size="small" type="info">
+                    {{ RULE_TYPE_OPTIONS.find(r => r.value === row.ruleType)?.label || row.ruleType }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="约束值" width="140">
+                <template #default="{ row }">
+                  <span v-if="row.ruleValue">{{ row.ruleValue }}</span>
+                  <span v-else class="text-muted">-</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="启用" width="80" align="center">
+                <template #default="{ row }">
+                  <el-switch
+                    v-model="row.enabled"
+                    size="small"
+                    @change="handleToggleRule(row)"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="120" align="center">
+                <template #default="{ row }">
+                  <el-button link type="primary" :icon="Edit" size="small" @click="handleEditRule(row)" />
+                  <el-button link type="danger" :icon="Delete" size="small" @click="handleDeleteRule(row)" />
+                </template>
+              </el-table-column>
+            </el-table>
+            <el-empty v-else description="暂无自定义规则" :image-size="60" />
+          </div>
+        </el-collapse-item>
+      </el-collapse>
+    </div>
+
+    <!-- Feature 2B: Add Rule Dialog -->
+    <el-dialog
+      v-model="ruleDialogVisible"
+      :title="editingRule ? '编辑校验规则' : '添加校验规则'"
+      width="520px"
+      destroy-on-close
+    >
+      <el-form label-width="90px" :model="ruleForm">
+        <el-form-item label="模块" required>
+          <el-select v-model="ruleForm.entityType" placeholder="选择模块" style="width: 100%" @change="ruleForm.fieldName = ''">
+            <el-option
+              v-for="opt in ENTITY_TYPE_OPTIONS"
+              :key="opt.value"
+              :value="opt.value"
+              :label="opt.label"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="字段" required>
+          <el-select v-model="ruleForm.fieldName" placeholder="选择字段" style="width: 100%" :disabled="!ruleForm.entityType">
+            <el-option
+              v-for="opt in ruleFieldOptions"
+              :key="opt.value"
+              :value="opt.value"
+              :label="opt.label"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="规则类型" required>
+          <el-select v-model="ruleForm.ruleType" placeholder="选择规则类型" style="width: 100%">
+            <el-option
+              v-for="opt in RULE_TYPE_OPTIONS"
+              :key="opt.value"
+              :value="opt.value"
+              :label="opt.label"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="showRuleValue" label="约束值" required>
+          <el-input
+            v-model="ruleForm.ruleValue"
+            :placeholder="ruleForm.ruleType === 'min_length' ? '输入最小长度 (如: 3)' : '输入正则表达式 (如: ^\\d{4}-\\d{2}-\\d{2}$)'"
+          />
+        </el-form-item>
+        <el-form-item label="启用">
+          <el-switch v-model="ruleForm.enabled" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="ruleDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSaveRule">{{ editingRule ? '更新' : '添加' }}</el-button>
+      </template>
+    </el-dialog>
+
     <!-- Module Cards -->
     <div v-if="serviceAvailable" class="module-grid" v-loading="loading">
       <div
@@ -287,8 +682,32 @@ onMounted(loadData)
     <!-- Field Detail Table -->
     <div class="detail-section" v-if="selectedModule">
       <h3>{{ entityLabel(selectedModule.entityType) }} - 字段完整度</h3>
-      <el-table :data="fieldTableData" stripe :max-height="480">
-        <el-table-column prop="field" label="字段" min-width="140" />
+      <el-table
+        :data="fieldTableData"
+        stripe
+        :max-height="480"
+        :row-class-name="({ row }: { row: any }) => isFieldClickable(row) ? 'clickable-row' : ''"
+        @row-click="handleFieldRowClick"
+      >
+        <el-table-column prop="field" label="字段" min-width="180">
+          <template #default="{ row }">
+            <div class="field-name-cell">
+              <span>{{ row.field }}</span>
+              <template v-if="fieldHasRule(row.fieldRaw)">
+                <el-tag
+                  v-for="rl in fieldRuleLabels(row.fieldRaw)"
+                  :key="rl"
+                  size="small"
+                  type="warning"
+                  class="field-rule-tag"
+                >{{ rl }}</el-tag>
+              </template>
+              <el-tooltip v-if="isFieldClickable(row)" content="点击查看" placement="top">
+                <el-icon class="drill-hint-icon"><Search /></el-icon>
+              </el-tooltip>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="completeness" label="完整度" width="120">
           <template #default="{ row }">
             <span :style="{ color: getScoreColor(row.completeness), fontWeight: 600 }">
@@ -318,6 +737,86 @@ onMounted(loadData)
         </el-table-column>
       </el-table>
     </div>
+
+    <!-- Feature 2A: Drill-to-Detail Drawer -->
+    <el-drawer
+      v-model="drillDrawerVisible"
+      :title="`字段详情 — ${drillField?.field || ''}`"
+      size="480px"
+      direction="rtl"
+    >
+      <div v-if="drillField" class="drill-content">
+        <div class="drill-summary-cards">
+          <div class="drill-card">
+            <div class="drill-card-label">所属模块</div>
+            <div class="drill-card-value">{{ entityLabel(drillEntityType) }}</div>
+          </div>
+          <div class="drill-card">
+            <div class="drill-card-label">字段名称</div>
+            <div class="drill-card-value">{{ drillField.field }}</div>
+          </div>
+          <div class="drill-card">
+            <div class="drill-card-label">总记录数</div>
+            <div class="drill-card-value">{{ selectedModule?.totalRecords ?? 0 }}</div>
+          </div>
+          <div class="drill-card">
+            <div class="drill-card-label">缺失记录数</div>
+            <div class="drill-card-value" style="color: var(--el-color-danger, #ef4444)">{{ drillMissingCount }}</div>
+          </div>
+        </div>
+
+        <div class="drill-completeness-bar-section">
+          <h4>完整度分布</h4>
+          <div class="drill-bar-container">
+            <div
+              class="drill-bar-filled"
+              :style="{ width: drillField.completeness + '%', backgroundColor: getScoreColor(drillField.completeness) }"
+            >
+              <span v-if="drillField.completeness >= 15">{{ drillFilledCount }} 条已填</span>
+            </div>
+            <div
+              class="drill-bar-missing"
+              :style="{ width: (100 - drillField.completeness) + '%' }"
+            >
+              <span v-if="(100 - drillField.completeness) >= 15">{{ drillMissingCount }} 条缺失</span>
+            </div>
+          </div>
+          <div class="drill-bar-legend">
+            <span class="legend-item">
+              <span class="legend-dot" :style="{ background: getScoreColor(drillField.completeness) }"></span>
+              已填充 {{ drillField.completeness.toFixed(1) }}%
+            </span>
+            <span class="legend-item">
+              <span class="legend-dot" style="background: #e5e7eb"></span>
+              缺失 {{ (100 - drillField.completeness).toFixed(1) }}%
+            </span>
+          </div>
+        </div>
+
+        <div class="drill-explanation">
+          <h4>缺失说明</h4>
+          <p>
+            在「{{ entityLabel(drillEntityType) }}」模块中，字段「{{ drillField.field }}」的数据填充率为
+            <strong :style="{ color: getScoreColor(drillField.completeness) }">{{ drillField.completeness.toFixed(1) }}%</strong>。
+            共有 <strong>{{ drillMissingCount }}</strong> 条记录的该字段值为空或未填写。
+          </p>
+          <p>建议排查数据录入流程，确保该字段在业务操作中被正确填写。</p>
+        </div>
+
+        <el-alert
+          type="info"
+          :closable="false"
+          style="margin-top: 16px"
+        >
+          <template #title>
+            <span style="font-weight: 500">详细缺失记录列表需要后端支持，请联系管理员开启</span>
+          </template>
+          <p style="margin: 4px 0 0; font-size: 12px; color: var(--el-text-color-secondary)">
+            后端接口就绪后，此处将展示每条缺失记录的 ID 及关联信息。
+          </p>
+        </el-alert>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -500,5 +999,208 @@ onMounted(loadData)
     margin: 0 0 12px 0;
     color: var(--el-text-color-primary, #303133);
   }
+
+  // Feature 2A: Clickable rows
+  :deep(.clickable-row) {
+    cursor: pointer;
+
+    &:hover td {
+      background-color: var(--el-color-primary-light-9, #ecf5ff) !important;
+    }
+  }
+}
+
+// Feature 2A: Field name cell with rule tags and drill hint
+.field-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+
+  .field-rule-tag {
+    font-size: 11px;
+    padding: 0 4px;
+    height: 18px;
+    line-height: 18px;
+  }
+
+  .drill-hint-icon {
+    color: var(--el-text-color-placeholder, #c0c4cc);
+    font-size: 14px;
+    margin-left: auto;
+    flex-shrink: 0;
+    transition: color 0.2s;
+  }
+}
+
+.clickable-row:hover .drill-hint-icon {
+  color: var(--el-color-primary, #1B65A8);
+}
+
+// Feature 2A: Drill drawer content
+.drill-content {
+  padding: 0 4px;
+
+  h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--el-text-color-primary, #303133);
+    margin: 0 0 12px;
+  }
+}
+
+.drill-summary-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.drill-card {
+  background: #f5f7fa;
+  border-radius: 8px;
+  padding: 14px 16px;
+
+  .drill-card-label {
+    font-size: 12px;
+    color: var(--el-text-color-secondary, #909399);
+    margin-bottom: 4px;
+  }
+
+  .drill-card-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--el-text-color-primary, #303133);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.drill-completeness-bar-section {
+  margin-bottom: 24px;
+}
+
+.drill-bar-container {
+  display: flex;
+  height: 32px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #e5e7eb;
+}
+
+.drill-bar-filled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  transition: width 0.3s ease;
+  min-width: 0;
+}
+
+.drill-bar-missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5e7eb;
+  color: var(--el-text-color-secondary, #909399);
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 0;
+}
+
+.drill-bar-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--el-text-color-regular, #606266);
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+}
+
+.drill-explanation {
+  margin-top: 20px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  border-left: 3px solid var(--el-color-primary, #1B65A8);
+
+  p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--el-text-color-regular, #606266);
+    margin: 0 0 8px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// Feature 2B: Validation rules section
+.rules-section {
+  margin-bottom: 20px;
+
+  :deep(.el-collapse) {
+    border: 1px solid var(--el-border-color-lighter, #ebeef5);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  :deep(.el-collapse-item__header) {
+    padding: 0 16px;
+    height: 48px;
+    font-size: 14px;
+    font-weight: 500;
+    background: #fafafa;
+  }
+
+  :deep(.el-collapse-item__content) {
+    padding: 0;
+  }
+}
+
+.rules-collapse-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rules-badge {
+  :deep(.el-badge__content) {
+    font-size: 11px;
+  }
+}
+
+.rules-content {
+  padding: 16px;
+}
+
+.rules-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+
+  .rules-hint {
+    font-size: 12px;
+    color: var(--el-text-color-placeholder, #c0c4cc);
+  }
+}
+
+.text-muted {
+  color: var(--el-text-color-placeholder, #c0c4cc);
 }
 </style>

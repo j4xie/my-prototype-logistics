@@ -76,7 +76,6 @@ export default function PurchaseOrderDetailScreen() {
             }));
             const res = await purchaseApiClient.updateOrder(orderId, {
               supplierId: order.supplierId,
-              orderDate: order.orderDate as any,
               items,
               remark: newRemark || order.remark,
             });

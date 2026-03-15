@@ -1020,7 +1020,7 @@
       "copy": "复制"
     },
     "shareTemplate": {
-      "header": "【白垩纪食品溯源系统 - AI分析报告】",
+      "header": "【白垩纪AI Agent - AI分析报告】",
       "reportTitle": "报告标题: {{title}}",
       "reportType": "报告类型: {{type}}",
       "generatedAt": "生成时间: {{time}}",
@@ -1203,7 +1203,7 @@
     },
     "loading": "加载中...",
     "shareReport": "分享报告",
-    "shareTitle": "白垩纪食品溯源系统 - AI分析报告",
+    "shareTitle": "白垩纪AI Agent - AI分析报告",
     "reportTitle": "报告标题",
     "reportTypeLabel": "报告类型",
     "generatedAt": "生成时间",

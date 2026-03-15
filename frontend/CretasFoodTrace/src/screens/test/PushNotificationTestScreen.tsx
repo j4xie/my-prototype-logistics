@@ -68,8 +68,8 @@ export default function PushNotificationTestScreen() {
       await registerDevice();
       setIsRegistered(true);
       Alert.alert('成功', '设备已注册');
-    } catch (error: any) {
-      Alert.alert('失败', error.message);
+    } catch (error) {
+      Alert.alert('失败', error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -78,8 +78,8 @@ export default function PushNotificationTestScreen() {
       await unregisterDevice();
       setIsRegistered(false);
       Alert.alert('成功', '设备已注销');
-    } catch (error: any) {
-      Alert.alert('失败', error.message);
+    } catch (error) {
+      Alert.alert('失败', error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -102,8 +102,8 @@ export default function PushNotificationTestScreen() {
         const error = await response.text();
         Alert.alert('失败', error);
       }
-    } catch (error: any) {
-      Alert.alert('失败', error.message);
+    } catch (error) {
+      Alert.alert('失败', error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -112,8 +112,8 @@ export default function PushNotificationTestScreen() {
       await clearAllNotifications();
       setNotifications([]);
       Alert.alert('成功', '所有通知已清除');
-    } catch (error: any) {
-      Alert.alert('失败', error.message);
+    } catch (error) {
+      Alert.alert('失败', error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -122,8 +122,8 @@ export default function PushNotificationTestScreen() {
       const newCount = badgeCount + 1;
       await setBadgeCount(newCount);
       setBadgeCountState(newCount);
-    } catch (error: any) {
-      Alert.alert('失败', error.message);
+    } catch (error) {
+      Alert.alert('失败', error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -131,8 +131,8 @@ export default function PushNotificationTestScreen() {
     try {
       await setBadgeCount(0);
       setBadgeCountState(0);
-    } catch (error: any) {
-      Alert.alert('失败', error.message);
+    } catch (error) {
+      Alert.alert('失败', error instanceof Error ? error.message : String(error));
     }
   };
 

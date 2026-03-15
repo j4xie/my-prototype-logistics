@@ -34,10 +34,10 @@ interface MenuItem {
   title: string;
   icon: string;
   module: ModuleName;
-  roles?: string[];  // 可选：限制特定角色可见
-  hideForFactories?: string[];  // 可选：在特定工厂类型下隐藏
+  roles?: string[];
+  hideForFactoryTypes?: string[];
   children?: MenuItem[];
-  groupLabel?: string;  // 可选：分组标签（仅作为子菜单内的分割标题）
+  groupLabel?: string;
 }
 
 // 财务主管专用菜单 - 简化版
@@ -58,7 +58,8 @@ const menuConfig: MenuItem[] = [
       { path: '/production/batches', title: '生产批次', icon: '', module: 'production' },
       { path: '/production/plans', title: '生产计划', icon: '', module: 'production' },
       { path: '/production/conversions', title: '转换率配置', icon: '', module: 'production' },
-      { path: '/production/bom', title: 'BOM成本管理', icon: '', module: 'production' }
+      { path: '/production/bom', title: 'BOM成本管理', icon: '', module: 'production' },
+      { path: '/production/approval', title: '报工审批', icon: '', module: 'production' }
     ]
   },
   {
@@ -133,7 +134,11 @@ const menuConfig: MenuItem[] = [
       { path: '/system/logs', title: '操作日志', icon: '', module: 'system' },
       { path: '/system/settings', title: '系统设置', icon: '', module: 'system' },
       { path: '/system/ai-intents', title: 'AI意图配置', icon: '', module: 'system' },
+      { path: '/system/skill-tools', title: 'Skill/Tool治理', icon: '', module: 'system' },
       { path: '/system/products', title: '产品信息管理', icon: '', module: 'system' },
+      { path: '/system/work-processes', title: '工序管理', icon: '', module: 'system' },
+      { path: '/system/product-processes', title: '产品-工序配置', icon: '', module: 'system' },
+      { path: '/system/workflow-designer', title: '工作流设计器', icon: '', module: 'system' },
       { path: '/system/features', title: '功能模块配置', icon: '', module: 'system' },
       { path: '/system/pos', title: 'POS集成', icon: '', module: 'system' },
       { path: '/system/smartbi-config', title: 'SmartBI配置', icon: '', module: 'system' }
@@ -175,14 +180,14 @@ const menuConfig: MenuItem[] = [
   },
   {
     path: '/calibration', title: '行为校准', icon: 'Aim', module: 'system',
-    hideForFactories: ['F002'],
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/calibration/list', title: '校准管理', icon: '', module: 'system' }
     ]
   },
   {
     path: '/production-analytics', title: '生产分析', icon: 'Histogram', module: 'analytics',
-    hideForFactories: ['F002'],
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/production-analytics/production', title: '生产数据分析', icon: 'Histogram', module: 'analytics' },
       { path: '/production-analytics/efficiency', title: '人效分析', icon: 'User', module: 'analytics' }
@@ -210,15 +215,12 @@ const menuConfig: MenuItem[] = [
 
 // 检查菜单项是否可见（基于角色限制 + 工厂类型限制）
 function canSeeMenuItem(item: MenuItem): boolean {
-  // 工厂类型隐藏: 在特定工厂下不显示
-  if (item.hideForFactories?.includes(authStore.factoryId)) {
+  if (item.hideForFactoryTypes?.includes(authStore.factoryType)) {
     return false;
   }
-  // 如果没有 roles 限制，只检查模块权限
   if (!item.roles || item.roles.length === 0) {
     return permissionStore.canAccess(item.module);
   }
-  // 有 roles 限制时，检查当前角色是否在允许列表中
   return item.roles.includes(permissionStore.currentRole) && permissionStore.canAccess(item.module);
 }
 
@@ -279,7 +281,7 @@ function handleSelect(path: string) {
     <!-- Logo -->
     <div class="sidebar-logo">
       <img src="/logo.svg" alt="Logo" class="logo-icon" />
-      <span v-if="!appStore.sidebarCollapsed || appStore.isMobile" class="logo-text">白垩纪管理系统</span>
+      <span v-if="!appStore.sidebarCollapsed || appStore.isMobile" class="logo-text">白垩纪AI Agent</span>
     </div>
 
     <!-- 菜单 -->

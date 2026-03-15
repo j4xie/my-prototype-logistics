@@ -1,0 +1,35 @@
+# 日料行业基准数据
+#
+# 数据来源：
+#   - 御九井 POS 实测
+#   - 红餐《日料品类发展报告2025》(市场700亿, 寿司占42.4%)
+
+source: "御九井POS实测 + 红餐日料报告2025"
+year: 2024
+
+sub_sector_info:
+  market_size_billion: 700
+  chain_rate: 18
+  sushi_share: 42.4  # 寿司门店占比 %
+  sushi_under_35: 50  # 寿司人均<35元占比 %
+
+metrics:
+  food_cost_ratio:
+    name: "食材成本率"
+    range: [35.0, 45.0]
+    median: 40.0
+    source: "御九井POS实测 + 行业报告"
+    note: "日料食材进口依赖度高，成本波动大"
+
+  table_turnover:
+    name: "翻台率"
+    range: [1.5, 3.0]
+    median: 2.2
+    source: "御九井运营数据"
+
+  average_ticket:
+    name: "客单价"
+    range: [80.0, 250.0]
+    median: 120.0
+    source: "御九井POS实测"
+    note: "精致日料客单高，回转寿司客单35元以下"

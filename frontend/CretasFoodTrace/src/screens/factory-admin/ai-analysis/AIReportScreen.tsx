@@ -153,7 +153,7 @@ export function AIReportScreen() {
           {item.totalCost !== undefined && (
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>{t('aiReport.totalCost')}</Text>
-              <Text style={styles.statValue}>¥{item.totalCost.toFixed(2)}</Text>
+              <Text style={styles.statValue}>¥{Number(item.totalCost ?? 0).toFixed(2)}</Text>
             </View>
           )}
           {item.keyFindingsCount !== undefined && (

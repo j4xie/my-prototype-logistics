@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useReportWorkflow } from '../../hooks/useReportWorkflow';
 import { processingApiClient, type ProcessingBatch } from '../../services/api/processingApiClient';
 import { workReportingApiClient } from '../../services/api/workReportingApiClient';

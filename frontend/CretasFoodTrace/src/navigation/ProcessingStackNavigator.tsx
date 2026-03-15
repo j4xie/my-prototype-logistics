@@ -66,6 +66,13 @@ import { WorkstationMonitorScreen } from '../screens/production/WorkstationMonit
 // 标签扫描 (shared模块)
 import LabelScanScreen from '../screens/shared/LabelScanScreen';
 
+// 工序制生产页面
+import ProcessTaskListScreen from '../screens/processing/ProcessTaskListScreen';
+import ProcessTaskDetailScreen from '../screens/processing/ProcessTaskDetailScreen';
+import ProcessTaskReportScreen from '../screens/processing/ProcessTaskReportScreen';
+import ProcessTaskHistoryScreen from '../screens/processing/ProcessTaskHistoryScreen';
+import ProcessRunOverviewScreen from '../screens/processing/ProcessRunOverviewScreen';
+
 // 报工页面
 import ScanReportScreen from '../screens/processing/ScanReportScreen';
 import TeamBatchReportScreen from '../screens/processing/TeamBatchReportScreen';
@@ -274,6 +281,28 @@ export function ProcessingStackNavigator() {
       <Stack.Screen
         name="LabelScan"
         component={LabelScanScreen}
+      />
+
+      {/* 工序制生产 - Process Mode */}
+      <Stack.Screen
+        name="ProcessTaskList"
+        component={ProcessTaskListScreen}
+      />
+      <Stack.Screen
+        name="ProcessTaskDetail"
+        component={ProcessTaskDetailScreen}
+      />
+      <Stack.Screen
+        name="ProcessTaskReport"
+        component={ProcessTaskReportScreen}
+      />
+      <Stack.Screen
+        name="ProcessTaskHistory"
+        component={ProcessTaskHistoryScreen}
+      />
+      <Stack.Screen
+        name="ProcessRunOverview"
+        component={ProcessRunOverviewScreen}
       />
 
       {/* 报工 */}

@@ -48,6 +48,8 @@ async function loadData() {
     const response = await getIntentList(factoryId.value, params);
     if (response.success && response.data) {
       tableData.value = response.data;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
     console.error('加载失败:', error);
@@ -63,9 +65,12 @@ async function loadCategories() {
     const response = await getIntentCategories(factoryId.value);
     if (response.success && response.data) {
       categories.value = response.data;
+    } else if (response.success === false) {
+      ElMessage.error(response.message || '加载分类失败');
     }
   } catch (error) {
     console.error('加载分类失败:', error);
+    ElMessage.error('加载分类失败');
   }
 }
 
@@ -88,6 +93,8 @@ async function handleToggleActive(row: AIIntentConfig) {
     if (response.success) {
       row.isActive = !row.isActive;
       ElMessage.success(`已${row.isActive ? '启用' : '禁用'} ${row.intentName}`);
+    } else {
+      ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
     console.error('切换状态失败:', error);

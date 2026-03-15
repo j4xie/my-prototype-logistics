@@ -22,6 +22,8 @@ import {
 } from 'react-native';
 import { Text, Card, ActivityIndicator, Button, ProgressBar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -127,10 +129,10 @@ export default function StaffAIAnalysisScreen() {
     return HR_THEME.danger;
   };
 
-  const renderScoreItem = (label: string, score: number, icon: string) => (
+  const renderScoreItem = (label: string, score: number, icon: MCIconName) => (
     <View style={styles.scoreItem}>
       <View style={styles.scoreHeader}>
-        <MaterialCommunityIcons name={icon as any} size={20} color={HR_THEME.primary} />
+        <MaterialCommunityIcons name={icon} size={20} color={HR_THEME.primary} />
         <Text style={styles.scoreLabel}>{label}</Text>
         <Text style={[styles.scoreValue, { color: getScoreColor(score) }]}>{score}</Text>
       </View>

@@ -39,7 +39,9 @@
     "list": {
       "title": "员工列表",
       "searchPlaceholder": "搜索员工...",
+      "empty": "暂无员工数据",
       "filter": {
+        "title": "筛选",
         "all": "全部"
       }
     },
@@ -92,6 +94,27 @@
       "analyzing": "分析中",
       "result": "分析结果",
       "noData": "暂无分析数据"
+    },
+    "ai": {
+      "title": "AI 员工分析",
+      "loading": "正在分析...",
+      "noData": "暂无分析数据",
+      "startHint": "点击下方按钮开始AI分析",
+      "startAnalysis": "开始分析",
+      "overallScore": "综合评分",
+      "analysisDate": "分析日期",
+      "sections": {
+        "ability": "能力评估",
+        "strengths": "优势亮点",
+        "improvements": "待改进项",
+        "suggestions": "发展建议"
+      },
+      "scores": {
+        "efficiency": "工作效率",
+        "quality": "工作质量",
+        "attendance": "出勤表现",
+        "teamwork": "团队协作"
+      }
     },
     "search": {
       "placeholder": "搜索员工..."
@@ -401,7 +424,19 @@
     "title": "部门管理",
     "list": {
       "title": "部门列表",
-      "empty": "暂无部门数据"
+      "empty": "暂无部门数据",
+      "searchPlaceholder": "搜索部门...",
+      "totalPrefix": "共",
+      "totalSuffix": "个部门",
+      "noManager": "暂无负责人",
+      "memberCount": "{{count}} 人",
+      "deleteConfirm": "确认删除",
+      "deleteMessage": "确定要删除部门「{{name}}」吗？",
+      "deleteFailed": "删除失败",
+      "status": {
+        "active": "正常",
+        "disabled": "已停用"
+      }
     },
     "add": {
       "title": "添加部门",
@@ -426,11 +461,28 @@
       "members": "部门成员",
       "manager": "负责人",
       "memberCount": "成员数量",
+      "memberCountValue": "{{count}} 人",
       "createdAt": "创建时间",
       "statusActive": "正常运行",
       "statusInactive": "已停用",
       "noMembers": "暂无成员",
-      "employee": "员工"
+      "noManager": "暂无负责人",
+      "notFound": "未找到部门信息",
+      "loadFailed": "加载部门详情失败",
+      "employee": "员工",
+      "status": {
+        "active": "正常运行",
+        "disabled": "已停用"
+      },
+      "sections": {
+        "basicInfo": "基本信息",
+        "members": "部门成员"
+      },
+      "fields": {
+        "manager": "负责人",
+        "memberCount": "成员数量",
+        "createdAt": "创建时间"
+      }
     }
   },
   "whitelist": {
@@ -445,7 +497,8 @@
       "deleteSuccess": "删除成功",
       "deleteFailed": "删除失败",
       "unsetRole": "未设定角色",
-      "addedAt": "添加"
+      "addedAt": "添加",
+      "noRole": "未设定角色"
     },
     "add": {
       "title": "添加白名单",
@@ -466,6 +519,21 @@
       "failed": "添加失败",
       "tipTitle": "提示",
       "errorTitle": "错误"
+    }
+  },
+  "schedule": {
+    "title": "排班管理",
+    "dateFormat": "{{month}}月{{day}}日 星期{{weekday}}",
+    "noSchedule": "当日暂无排班安排",
+    "addHint": "点击下方按钮添加排班",
+    "weekdays": {
+      "sunday": "日",
+      "monday": "一",
+      "tuesday": "二",
+      "wednesday": "三",
+      "thursday": "四",
+      "friday": "五",
+      "saturday": "六"
     }
   },
   "scheduling": {
@@ -661,6 +729,7 @@
     "tip": "提示"
   },
   "common": {
+    "user": "用户",
     "cancel": "取消",
     "confirm": "确定",
     "save": "保存",

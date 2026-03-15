@@ -680,9 +680,9 @@ defineExpose({
           size="small"
           @change="onGranularityChange"
         >
-          <el-radio-button label="day">Day</el-radio-button>
-          <el-radio-button label="week">Week</el-radio-button>
-          <el-radio-button label="month">Month</el-radio-button>
+          <el-radio-button value="day">Day</el-radio-button>
+          <el-radio-button value="week">Week</el-radio-button>
+          <el-radio-button value="month">Month</el-radio-button>
         </el-radio-group>
       </div>
     </div>

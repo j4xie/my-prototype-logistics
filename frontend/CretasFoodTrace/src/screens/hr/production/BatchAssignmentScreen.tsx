@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import { Text, Card, Chip, Avatar, ActivityIndicator, Searchbar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -89,10 +89,10 @@ export default function BatchAssignmentScreen() {
   );
 
   const handleItemPress = (item: BatchAssignmentItem) => {
-    navigation.navigate('BatchWorkers' as any, {
+    navigation.dispatch(CommonActions.navigate('BatchWorkers', {
       batchId: item.batchId,
       batchName: `${item.batchNumber} - ${item.productName}`,
-    });
+    }));
   };
 
   const renderItem = ({ item }: { item: BatchAssignmentItem }) => {

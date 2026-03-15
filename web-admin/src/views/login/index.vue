@@ -74,7 +74,7 @@ function quickLogin(username: string) {
         <div class="login-logo-wrap">
           <img src="/logo.svg" alt="Logo" class="login-logo" />
         </div>
-        <h1 class="login-title">白垩纪食品溯源系统</h1>
+        <h1 class="login-title">白垩纪AI Agent</h1>
         <p class="login-subtitle">企业级智能管理平台</p>
       </div>
 
@@ -152,7 +152,7 @@ function quickLogin(username: string) {
 
       <!-- 底部信息 -->
       <div class="login-footer">
-        <p>© 2026 白垩纪食品科技. All rights reserved.</p>
+        <p>© 2026 白垩纪科技. All rights reserved.</p>
       </div>
     </div>
   </div>

@@ -135,14 +135,14 @@ export default function ApprovalListScreen() {
   };
 
   const getUrgencyColor = (priority?: number) => {
-    if (!priority) return '#999';
+    if (priority == null) return '#999';
     if (priority >= 10) return '#ff4d4f';
     if (priority >= 8) return '#fa8c16';
     return '#52c41a';
   };
 
   const getUrgencyLabel = (priority?: number) => {
-    if (!priority) return '普通';
+    if (priority == null) return '普通';
     if (priority >= 10) return '加急';
     if (priority >= 8) return '紧急';
     return '普通';

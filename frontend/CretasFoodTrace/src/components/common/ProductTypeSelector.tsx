@@ -47,7 +47,7 @@ export const ProductTypeSelector: React.FC<ProductTypeSelectorProps> = ({
     try {
       setLoading(true);
       const result = await productTypeApiClient.getProductTypes({ isActive: true, limit: 100 });
-      const productTypesList: ProductType[] = Array.isArray(result.data) ? result.data : (result.data as any)?.productTypes || [];
+      const productTypesList: ProductType[] = (Array.isArray(result.data) ? result.data : (result.data as { productTypes?: ProductType[] })?.productTypes || []).map(p => ({ ...p, code: (p as ProductType & { code?: string }).code || '' }));
       console.log('✅ Product types loaded:', productTypesList.length);
 
       // 批量检查每个产品的转换率配置状态
@@ -55,9 +55,9 @@ export const ProductTypeSelector: React.FC<ProductTypeSelectorProps> = ({
         productTypesList.map(async (product) => {
           try {
             const conversionRes = await conversionApiClient.getConversionsByProduct(product.id);
-            const hasConversion = (conversionRes as any)?.success &&
-              Array.isArray((conversionRes as any)?.data) &&
-              (conversionRes as any)?.data.length > 0;
+            const hasConversion = conversionRes?.success &&
+              Array.isArray(conversionRes?.data) &&
+              conversionRes?.data.length > 0;
             return { ...product, hasConversionRate: hasConversion };
           } catch {
             // 如果查询失败，假设未配置

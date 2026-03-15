@@ -14,7 +14,7 @@ import {
   Menu,
   Chip,
 } from 'react-native-paper';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
 import {
@@ -88,8 +88,8 @@ export default function EquipmentManagementScreen() {
       // Load all users, can be filtered by role later
       const response = await userApiClient.getUsers({ factoryId, size: 100 });
       // Handle paginated response
-      const users = Array.isArray(response) ? response : ((response as any)?.content || []);
-      setOperatorUsers(users);
+      const users = Array.isArray(response) ? response : (response && typeof response === 'object' && 'content' in response) ? (response as { content: unknown[] }).content || [] : [];
+      setOperatorUsers(users as UserDTO[]);
     } catch (error) {
       equipmentMgmtLogger.error('Failed to load operator users list', error as Error);
       setOperatorUsers([]);
@@ -285,7 +285,7 @@ export default function EquipmentManagementScreen() {
       <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('equipmentManagement.title')} titleStyle={{ fontWeight: '600' }} />
-        <Appbar.Action icon="robot-outline" onPress={() => navigation.navigate('FAAITab' as any, { screen: 'AIChat', params: { entityType: 'EQUIPMENT' } })} />
+        <Appbar.Action icon="robot-outline" onPress={() => navigation.dispatch(CommonActions.navigate('FAAITab', { screen: 'AIChat', params: { entityType: 'EQUIPMENT' } }))} />
         <Appbar.Action icon="monitor-dashboard" onPress={() => navigation.navigate('EquipmentMonitoring')} />
       </Appbar.Header>
 

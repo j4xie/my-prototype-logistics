@@ -138,7 +138,7 @@ export default function EfficiencyAnalysisScreen() {
             {/* KPI 卡片 */}
             <View style={styles.kpiGrid}>
               {dashboard.kpis.map((kpi) => {
-                const colors = GRADIENT_COLORS[kpi.gradient] || GRADIENT_COLORS.purple;
+                const colors = GRADIENT_COLORS[kpi.gradient] ?? { bg: '#7C3AED', text: '#fff' };
                 return (
                   <Surface key={kpi.key} style={[styles.kpiCard, { backgroundColor: colors.bg }]} elevation={2}>
                     <Text style={[styles.kpiLabel, { color: colors.text }]}>{kpi.label}</Text>

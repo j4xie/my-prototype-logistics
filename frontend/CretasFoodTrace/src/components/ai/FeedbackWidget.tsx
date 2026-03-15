@@ -54,7 +54,8 @@ interface FeedbackWidgetProps {
 }
 
 export function FeedbackWidget({ queryId, question, answer, sessionId, intentCode, foodKbMetadata }: FeedbackWidgetProps) {
-  const { factoryId, token } = useAuthStore();
+  const factoryId = useAuthStore(s => s.getFactoryId());
+  const token = useAuthStore(s => s.tokens?.accessToken);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -136,7 +137,7 @@ export function FeedbackWidget({ queryId, question, answer, sessionId, intentCod
           .filter((t): t is string => !!t),
       };
 
-      const response = await apiClient.post(
+      const response = await apiClient.post<{ success: boolean; message?: string; data?: unknown }>(
         `/api/mobile/${factoryId}/food-kb/feedback/submit`,
         requestBody,
         {

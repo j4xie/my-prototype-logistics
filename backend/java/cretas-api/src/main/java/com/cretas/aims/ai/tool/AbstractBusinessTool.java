@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -246,6 +247,52 @@ public abstract class AbstractBusinessTool extends AbstractTool {
             logExecutionFailure(toolCall, e);
             return buildSanitizedErrorResult(e);
         }
+    }
+
+    // ==================== Governance: Convention-based Defaults ====================
+
+    /**
+     * Auto-derive ActionType from tool name convention.
+     * Tools named *_create → WRITE, *_delete → DELETE, *_update → UPDATE,
+     * *_analyze / *_analysis → ANALYZE, *_notify → NOTIFY, *_generate → GENERATE.
+     * Everything else defaults to READ.
+     */
+    @Override
+    public ActionType getActionType() {
+        String name = getToolName();
+        if (name == null) return ActionType.READ;
+        if (name.endsWith("_create") || name.contains("_create_")) return ActionType.WRITE;
+        if (name.endsWith("_delete") || name.contains("_delete_")) return ActionType.DELETE;
+        if (name.endsWith("_update") || name.contains("_update_")) return ActionType.UPDATE;
+        if (name.contains("_analyze") || name.contains("_analysis")) return ActionType.ANALYZE;
+        if (name.contains("_notify") || name.contains("_alert")) return ActionType.NOTIFY;
+        if (name.contains("_generate")) return ActionType.GENERATE;
+        return ActionType.READ;
+    }
+
+    /**
+     * Auto-derive RiskLevel from ActionType convention.
+     * DELETE → MEDIUM, WRITE → MEDIUM (data creation), UPDATE → LOW,
+     * everything else → LOW.
+     */
+    @Override
+    public RiskLevel getRiskLevel() {
+        ActionType action = getActionType();
+        switch (action) {
+            case DELETE: return RiskLevel.MEDIUM;
+            case WRITE: return RiskLevel.MEDIUM;
+            default: return RiskLevel.LOW;
+        }
+    }
+
+    /**
+     * Auto-derive domain tag from tool name prefix (first segment before '_').
+     */
+    @Override
+    public Set<String> getDomainTags() {
+        String name = getToolName();
+        if (name == null || !name.contains("_")) return Set.of();
+        return Set.of(name.substring(0, name.indexOf('_')));
     }
 
     // ==================== 类型转换工具方法 ====================

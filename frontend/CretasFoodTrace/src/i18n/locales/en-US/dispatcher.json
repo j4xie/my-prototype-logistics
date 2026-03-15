@@ -613,5 +613,35 @@
   "error": {
     "loadFailed": "Failed to load. Please check network.",
     "retry": "Retry"
+  },
+  "personnelScheduleScreen": {
+    "title": "Personnel Schedule",
+    "viewModes": {
+      "week": "Week",
+      "month": "Month",
+      "list": "List"
+    },
+    "weekTitle": "{{year}}/{{month}} Week {{week}}",
+    "weekRange": "{{startMonth}}.{{startDay}} - {{endMonth}}.{{endDay}}",
+    "stats": {
+      "thisWeek": "This Week",
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "conflicts": "Conflicts"
+    },
+    "workshops": {
+      "all": "All",
+      "slicing": "Slicing",
+      "packaging": "Packaging",
+      "freezing": "Freezing"
+    },
+    "shifts": {
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "evening": "Evening"
+    },
+    "copyLastWeekTitle": "Copy Last Week",
+    "copyLastWeekMessage": "Copy last week's schedule to this week?",
+    "copyLastWeekSuccess": "Successfully copied last week's schedule"
   }
 }

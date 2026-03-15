@@ -122,7 +122,7 @@ export const DEFAULT_THEME: RoleTheme = {
   successColor: '#52C41A',
   warningColor: '#FAAD14',
   errorColor: '#FF4D4F',
-  welcomeText: '欢迎使用白垩纪食品溯源系统',
+  welcomeText: '欢迎使用白垩纪AI Agent',
 };
 
 /**

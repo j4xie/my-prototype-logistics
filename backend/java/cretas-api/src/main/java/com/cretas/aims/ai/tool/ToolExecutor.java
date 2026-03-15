@@ -3,6 +3,7 @@ package com.cretas.aims.ai.tool;
 import com.cretas.aims.ai.dto.ToolCall;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Tool 执行器接口
@@ -15,6 +16,14 @@ import java.util.Map;
  * @since 2026-01-06
  */
 public interface ToolExecutor {
+
+    // ==================== Governance Enums ====================
+
+    enum ActionType { READ, WRITE, UPDATE, DELETE, GENERATE, NOTIFY, ANALYZE }
+
+    enum RiskLevel { LOW, MEDIUM, HIGH, CRITICAL }
+
+    // ==================== Core Methods ====================
 
     /**
      * 获取工具名称（必须与 Tool Definition 中的 name 一致）
@@ -108,5 +117,43 @@ public interface ToolExecutor {
      */
     default String preview(ToolCall toolCall, Map<String, Object> context) throws Exception {
         return execute(toolCall, context);
+    }
+
+    // ==================== Governance Metadata (default methods) ====================
+
+    /**
+     * 工具操作类型（READ/WRITE/UPDATE/DELETE/GENERATE/NOTIFY/ANALYZE）
+     */
+    default ActionType getActionType() {
+        return ActionType.READ;
+    }
+
+    /**
+     * 工具风险等级（LOW/MEDIUM/HIGH/CRITICAL）
+     */
+    default RiskLevel getRiskLevel() {
+        return RiskLevel.LOW;
+    }
+
+    /**
+     * 工具版本号（语义化版本）
+     */
+    default String getVersion() {
+        return "1.0.0";
+    }
+
+    /**
+     * 废弃通知。返回 null 表示工具仍然活跃；非 null 表示已废弃，内容为迁移说明。
+     */
+    default String getDeprecationNotice() {
+        return null;
+    }
+
+    /**
+     * 工具所属领域标签，用于多维索引和治理分析。
+     * 空集合表示未标注（将被治理审计标记为需要补充）。
+     */
+    default Set<String> getDomainTags() {
+        return Set.of();
     }
 }

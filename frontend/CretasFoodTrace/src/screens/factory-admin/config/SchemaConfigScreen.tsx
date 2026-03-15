@@ -621,8 +621,8 @@ export function SchemaConfigScreen() {
     try {
       const updatedSchema = { ...currentSchema };
       if (updatedSchema.properties && updatedSchema.properties[fieldName]) {
-        (updatedSchema.properties[fieldName] as any).title = editFieldTitle;
-        (updatedSchema.properties[fieldName] as any).required = editFieldRequired;
+        updatedSchema.properties[fieldName].title = editFieldTitle;
+        updatedSchema.properties[fieldName].required = editFieldRequired;
       }
 
       await formTemplateApiClient.createOrUpdateTemplate(previewEntityType, {

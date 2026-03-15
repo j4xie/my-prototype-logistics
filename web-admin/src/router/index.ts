@@ -92,6 +92,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'BomManagement',
             component: () => import('@/views/production/bom-unified/index.vue'),
             meta: { requiresAuth: true, title: 'BOM配方管理', module: 'production' }
+          },
+          {
+            path: 'approval',
+            name: 'ProductionApproval',
+            component: () => import('@/views/production/approval/list.vue'),
+            meta: { requiresAuth: true, title: '报工审批', module: 'production' }
           }
         ]
       },
@@ -376,6 +382,12 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: 'AI意图配置', module: 'system' }
           },
           {
+            path: 'skill-tools',
+            name: 'SystemSkillTools',
+            component: () => import('@/views/system/skill-tools/index.vue'),
+            meta: { requiresAuth: true, title: 'Skill/Tool 治理', module: 'system' }
+          },
+          {
             path: 'products',
             name: 'ProductManagement',
             component: () => import('@/views/system/products/index.vue'),
@@ -392,6 +404,24 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SystemPos',
             component: () => import('@/views/system/pos/list.vue'),
             meta: { requiresAuth: true, title: 'POS集成', module: 'system' }
+          },
+          {
+            path: 'work-processes',
+            name: 'WorkProcesses',
+            component: () => import('@/views/system/work-processes/index.vue'),
+            meta: { requiresAuth: true, title: '工序管理', module: 'system' }
+          },
+          {
+            path: 'product-processes',
+            name: 'ProductProcesses',
+            component: () => import('@/views/system/product-processes/index.vue'),
+            meta: { requiresAuth: true, title: '产品-工序配置', module: 'system' }
+          },
+          {
+            path: 'workflow-designer',
+            name: 'WorkflowDesigner',
+            component: () => import('@/views/system/workflow-designer/index.vue'),
+            meta: { requiresAuth: true, title: '工作流设计器', module: 'system' }
           },
           {
             path: 'smartbi-config',

@@ -41,16 +41,25 @@ async function loadConnections() {
   loading.value = true;
   try {
     const res = await get(`/${factoryId.value}/pos/connections`);
-    if (res.success) connections.value = Array.isArray(res.data) ? res.data : [];
+    if (res.success) {
+      connections.value = Array.isArray(res.data) ? res.data : [];
+    } else {
+      ElMessage.error(res.message || '加载失败');
+    }
   } catch { ElMessage.error('加载失败'); }
   finally { loading.value = false; }
+}
+
+function resetForm() {
+  form.value = { brand: 'KERUYUN', connectionName: '', appKey: '', appSecret: '', posStoreId: '', remark: '' };
 }
 
 async function handleCreate() {
   if (!form.value.connectionName || !form.value.appKey) return ElMessage.warning('请填写必填项');
   try {
     const res = await post(`/${factoryId.value}/pos/connections`, form.value);
-    if (res.success) { ElMessage.success('创建成功'); dialogVisible.value = false; loadConnections(); }
+    if (res.success) { ElMessage.success('创建成功'); resetForm(); dialogVisible.value = false; loadConnections(); }
+    else { ElMessage.error(res.message || '创建失败'); }
   } catch { ElMessage.error('创建失败'); }
 }
 
@@ -59,13 +68,17 @@ async function handleDelete(id: string) {
     await ElMessageBox.confirm('确认删除此POS连接？', '提示');
     const res = await del(`/${factoryId.value}/pos/connections/${id}`);
     if (res.success) { ElMessage.success('删除成功'); loadConnections(); }
-  } catch { /* cancelled */ }
+    else { ElMessage.error(res.message || '删除失败'); }
+  } catch (e) {
+    if (e !== 'cancel') { ElMessage.error('删除失败'); }
+  }
 }
 
 async function handleToggle(id: string, active: boolean) {
   try {
     const res = await post(`/${factoryId.value}/pos/connections/${id}/toggle`, undefined, { params: { active } } as Record<string, unknown>);
     if (res.success) { ElMessage.success(active ? '已启用' : '已停用'); loadConnections(); }
+    else { ElMessage.error(res.message || '操作失败'); }
   } catch { ElMessage.error('操作失败'); }
 }
 
@@ -89,6 +102,8 @@ async function handleSync(id: string) {
     if (res.success) {
       const count = Array.isArray(res.data) ? res.data.length : 0;
       ElMessage.success(`同步完成，获取 ${count} 条订单`);
+    } else {
+      ElMessage.error(res.message || '同步失败');
     }
   } catch { ElMessage.error('同步失败'); }
   finally { syncLoading.value[id] = false; }
@@ -130,7 +145,7 @@ async function handleSync(id: string) {
           <el-descriptions :column="2" size="small" border style="margin-top: 12px">
             <el-descriptions-item label="App Key">{{ conn.appKey ? '***' + conn.appKey.slice(-4) : '-' }}</el-descriptions-item>
             <el-descriptions-item label="门店ID">{{ conn.posStoreId || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="最近同步">{{ conn.lastSyncAt || '从未同步' }}</el-descriptions-item>
+            <el-descriptions-item label="最近同步">{{ conn.lastSyncAt ? conn.lastSyncAt.replace('T', ' ').substring(0, 19) : '从未同步' }}</el-descriptions-item>
             <el-descriptions-item label="状态">
               <el-tag :type="conn.isActive ? 'success' : 'info'" size="small">
                 {{ conn.isActive ? '已启用' : '已停用' }}
