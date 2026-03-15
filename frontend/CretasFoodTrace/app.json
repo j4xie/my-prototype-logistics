@@ -14,8 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cretas.foodtrace",
-      "buildNumber": "1"
+      "bundleIdentifier": "com.cretaceousfuture",
+      "buildNumber": "2"
     },
     "android": {
       "adaptiveIcon": {

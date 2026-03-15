@@ -18,7 +18,7 @@ module.exports = ({ config }) => {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.cretas.foodtrace',
+      bundleIdentifier: 'com.cretaceousfuture',
     },
     android: {
       adaptiveIcon: {
