@@ -4,7 +4,7 @@ module.exports = ({ config }) => {
 
   return {
     ...config,
-    name: 'CretasFoodTrace',
+    name: '白垩纪AI Agent',
     slug: 'CretasFoodTrace',
     version: '1.0.0',
     orientation: 'portrait',
