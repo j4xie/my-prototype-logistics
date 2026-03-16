@@ -2,7 +2,7 @@ package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.WhitelistStatus;
 import lombok.*;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**

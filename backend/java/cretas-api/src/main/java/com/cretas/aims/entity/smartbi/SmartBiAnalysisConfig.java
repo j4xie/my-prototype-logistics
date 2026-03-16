@@ -5,7 +5,7 @@ import com.cretas.aims.entity.smartbi.enums.AnalysisConfigType;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * SmartBI Analysis Config Entity - Configuration for different analysis types

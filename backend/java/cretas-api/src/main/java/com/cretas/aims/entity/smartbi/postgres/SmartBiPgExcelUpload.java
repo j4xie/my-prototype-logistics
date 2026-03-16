@@ -1,12 +1,11 @@
 package com.cretas.aims.entity.smartbi.postgres;
 
 import com.cretas.aims.entity.smartbi.enums.UploadStatus;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +27,6 @@ import java.util.Map;
            @Index(name = "idx_pg_upload_status", columnList = "upload_status"),
            @Index(name = "idx_pg_upload_table_type", columnList = "detected_table_type")
        })
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @Data
 @Builder
 @NoArgsConstructor
@@ -68,7 +66,7 @@ public class SmartBiPgExcelUpload {
      * Detected table structure (JSONB)
      * Contains: headerRows, dataStartRow, orientation, mergedCells
      */
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "detected_structure", columnDefinition = "jsonb")
     private Map<String, Object> detectedStructure;
 
@@ -76,7 +74,7 @@ public class SmartBiPgExcelUpload {
      * Field mappings resolved by AI (JSONB)
      * Maps original column names to semantic field names
      */
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "field_mappings", columnDefinition = "jsonb")
     private Map<String, String> fieldMappings;
 
@@ -84,7 +82,7 @@ public class SmartBiPgExcelUpload {
      * Additional context info (JSONB)
      * Contains: industry, timeRange, primaryDimension, etc.
      */
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "context_info", columnDefinition = "jsonb")
     private Map<String, Object> contextInfo;
 

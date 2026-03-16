@@ -1,11 +1,10 @@
 package com.cretas.aims.entity.smartbi.postgres;
 
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +26,6 @@ import java.util.Map;
            @Index(name = "idx_pg_analysis_factory", columnList = "factory_id"),
            @Index(name = "idx_pg_analysis_type", columnList = "analysis_type")
        })
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @Data
 @Builder
 @NoArgsConstructor
@@ -64,7 +62,7 @@ public class SmartBiPgAnalysisResult {
      * - forecast: { predictions, confidence, methodology }
      * - benchmark: { industryComparison, rankings }
      */
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "analysis_result", columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> analysisResult;
 
@@ -72,7 +70,7 @@ public class SmartBiPgAnalysisResult {
      * Chart configurations (JSONB array)
      * Contains ready-to-render chart specs
      */
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "chart_configs", columnDefinition = "jsonb")
     private List<Map<String, Object>> chartConfigs;
 
@@ -80,21 +78,21 @@ public class SmartBiPgAnalysisResult {
      * KPI values extracted/calculated (JSONB)
      * Example: { "totalRevenue": 1500000, "yoyGrowth": 0.15 }
      */
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "kpi_values", columnDefinition = "jsonb")
     private Map<String, Object> kpiValues;
 
     /**
      * AI-generated insights (JSONB array)
      */
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "insights", columnDefinition = "jsonb")
     private List<Map<String, Object>> insights;
 
     /**
      * Request parameters used for this analysis
      */
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "request_params", columnDefinition = "jsonb")
     private Map<String, Object> requestParams;
 

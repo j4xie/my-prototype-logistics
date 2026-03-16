@@ -25,7 +25,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.cretas.aims.entity.BatchWorkSession;
 import com.cretas.aims.repository.QualityInspectionRepository;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

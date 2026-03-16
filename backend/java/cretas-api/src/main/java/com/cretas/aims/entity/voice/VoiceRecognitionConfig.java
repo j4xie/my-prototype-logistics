@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.Builder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * 语音识别配置实体

@@ -4,7 +4,7 @@ import com.cretas.aims.entity.BaseEntity;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * SmartBI 指标公式配置实体

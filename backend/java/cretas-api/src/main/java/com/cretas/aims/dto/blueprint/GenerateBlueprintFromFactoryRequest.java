@@ -2,7 +2,7 @@ package com.cretas.aims.dto.blueprint;
 
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * 从工厂生成蓝图请求DTO

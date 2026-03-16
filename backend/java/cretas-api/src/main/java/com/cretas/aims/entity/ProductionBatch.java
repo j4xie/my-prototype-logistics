@@ -3,16 +3,15 @@ package com.cretas.aims.entity;
 import com.cretas.aims.entity.enums.ProductionBatchStatus;
 import com.cretas.aims.entity.enums.QualityStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import javax.persistence.*;
-import javax.validation.constraints.*;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -29,7 +28,6 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)  // 继承 BaseEntity，需要调用 super
 @Entity
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @Table(name = "production_batches",
        indexes = {
            @Index(name = "idx_batch_factory", columnList = "factory_id"),
@@ -242,7 +240,7 @@ public class ProductionBatch extends BaseEntity {
      * AI-configured custom fields stored as JSONB.
      * e.g. {"drying_temp": 85, "seasoning_code": "A-003"}
      */
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "custom_fields", columnDefinition = "jsonb")
     @Builder.Default
     private Map<String, Object> customFields = new HashMap<>();

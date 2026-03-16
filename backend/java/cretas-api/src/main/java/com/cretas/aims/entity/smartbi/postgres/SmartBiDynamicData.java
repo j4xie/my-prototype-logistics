@@ -1,11 +1,10 @@
 package com.cretas.aims.entity.smartbi.postgres;
 
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -39,7 +38,6 @@ import java.util.Map;
            @Index(name = "idx_dynamic_period", columnList = "factory_id, period"),
            @Index(name = "idx_dynamic_category", columnList = "factory_id, category")
        })
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @Data
 @Builder
 @NoArgsConstructor
@@ -79,7 +77,7 @@ public class SmartBiDynamicData {
      * Contains all columns with their original field names
      * Example: {"营业收入": 1500000, "部门": "江苏分部"}
      */
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "row_data", columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> rowData;
 

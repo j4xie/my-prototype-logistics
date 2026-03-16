@@ -4,7 +4,7 @@ import com.cretas.aims.entity.BaseEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

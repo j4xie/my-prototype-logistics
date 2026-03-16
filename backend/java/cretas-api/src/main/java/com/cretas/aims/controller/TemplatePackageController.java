@@ -22,9 +22,9 @@ import org.springframework.web.bind.annotation.*;
 
 import com.cretas.aims.util.ErrorSanitizer;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import java.util.*;
 

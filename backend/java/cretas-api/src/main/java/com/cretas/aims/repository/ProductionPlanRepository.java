@@ -83,7 +83,7 @@ public interface ProductionPlanRepository extends JpaRepository<ProductionPlan, 
     /**
      * 根据产品类型查找生产计划
      */
-    List<ProductionPlan> findByFactoryIdAndProductTypeId(String factoryId, Integer productTypeId);
+    List<ProductionPlan> findByFactoryIdAndProductTypeId(String factoryId, String productTypeId);
 
     /**
      * 根据客户订单号查找

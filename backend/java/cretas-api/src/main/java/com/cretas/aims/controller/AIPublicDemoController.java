@@ -84,7 +84,7 @@ public class AIPublicDemoController {
 
     private static final long MAX_REQUESTS_PER_MINUTE = 10;
 
-    private boolean isRateLimited(javax.servlet.http.HttpServletRequest httpRequest) {
+    private boolean isRateLimited(jakarta.servlet.http.HttpServletRequest httpRequest) {
         String ip = httpRequest.getHeader("X-Forwarded-For");
         if (ip == null || ip.isEmpty()) {
             ip = httpRequest.getRemoteAddr();
@@ -131,7 +131,7 @@ public class AIPublicDemoController {
     @Operation(summary = "演示执行AI意图", description = "无需登录的AI意图识别与执行演示。查询类操作可执行，写入类操作需要权限验证。支持多轮对话。")
     public ResponseEntity<ApiResponse<IntentExecuteResponse>> executeDemo(
             @RequestBody DemoExecuteRequest request,
-            javax.servlet.http.HttpServletRequest httpRequest) {
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
 
         if (isRateLimited(httpRequest)) {
             log.warn("AI Demo rate limited: IP={}", httpRequest.getRemoteAddr());
@@ -274,7 +274,7 @@ public class AIPublicDemoController {
     @Operation(summary = "演示意图识别", description = "仅识别意图，不执行操作。支持多轮对话。")
     public ResponseEntity<ApiResponse<IntentRecognizeResponse>> recognizeDemo(
             @RequestBody DemoExecuteRequest request,
-            javax.servlet.http.HttpServletRequest httpRequest) {
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
 
         if (isRateLimited(httpRequest)) {
             log.warn("AI Demo rate limited: IP={}", httpRequest.getRemoteAddr());

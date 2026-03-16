@@ -3,7 +3,7 @@ package com.cretas.aims.config;
 import com.cretas.aims.service.RequestScopedEmbeddingCache;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.*;
+import jakarta.servlet.*;
 import java.io.IOException;
 
 /**

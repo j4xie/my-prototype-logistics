@@ -5,7 +5,7 @@ import com.cretas.aims.entity.smartbi.enums.UploadStatus;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * SmartBI Excel Upload Entity - Records for Excel file uploads

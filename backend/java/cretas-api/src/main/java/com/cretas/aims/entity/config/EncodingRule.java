@@ -4,7 +4,7 @@ import com.cretas.aims.entity.BaseEntity;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * 编码规则配置实体

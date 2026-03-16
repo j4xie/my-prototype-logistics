@@ -272,7 +272,7 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
      * 根据生产计划ID和批次ID查找使用记录
      */
     @Query("SELECT u FROM ProductionPlanBatchUsage u WHERE u.productionPlanId = :planId AND u.materialBatchId = :batchId")
-    Optional<Object> findByProductionPlanIdAndBatchId(@Param("planId") Integer planId,
+    Optional<Object> findByProductionPlanIdAndBatchId(@Param("planId") String planId,
                                                        @Param("batchId") String batchId);
 
     /**

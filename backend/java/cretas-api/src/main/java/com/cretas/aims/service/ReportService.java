@@ -5,7 +5,7 @@ import com.cretas.aims.dto.report.DashboardStatisticsDTO;
 import com.cretas.aims.dto.report.KpiMetricsDTO;
 import com.cretas.aims.dto.report.OeeReportDTO;
 import com.cretas.aims.dto.report.ProductionByProductDTO;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;

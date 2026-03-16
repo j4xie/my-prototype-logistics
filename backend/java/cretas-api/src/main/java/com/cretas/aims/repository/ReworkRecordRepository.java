@@ -47,7 +47,7 @@ public interface ReworkRecordRepository extends JpaRepository<ReworkRecord, Long
     /**
      * 根据质检记录ID查询返工记录
      */
-    List<ReworkRecord> findByQualityInspectionId(Long qualityInspectionId);
+    List<ReworkRecord> findByQualityInspectionId(String qualityInspectionId);
 
     /**
      * 根据生产批次ID查询返工记录
@@ -57,12 +57,12 @@ public interface ReworkRecordRepository extends JpaRepository<ReworkRecord, Long
     /**
      * 根据原材料批次ID查询返工记录
      */
-    List<ReworkRecord> findByMaterialBatchId(Integer materialBatchId);
+    List<ReworkRecord> findByMaterialBatchId(String materialBatchId);
 
     /**
      * 根据负责人ID查询返工记录
      */
-    Page<ReworkRecord> findBySupervisorId(Integer supervisorId, Pageable pageable);
+    Page<ReworkRecord> findBySupervisorId(Long supervisorId, Pageable pageable);
 
     // ===================================================================
     // 状态查询方法
@@ -194,7 +194,7 @@ public interface ReworkRecordRepository extends JpaRepository<ReworkRecord, Long
     @Query("SELECT r FROM ReworkRecord r WHERE " +
            "(r.productionBatchId = :batchId OR r.materialBatchId = :batchId) " +
            "ORDER BY r.startTime DESC")
-    List<ReworkRecord> findAllByBatchId(@Param("batchId") Long batchId);
+    List<ReworkRecord> findAllByBatchId(@Param("batchId") String batchId);
 
     /**
      * 检查批次是否有进行中的返工
@@ -202,5 +202,5 @@ public interface ReworkRecordRepository extends JpaRepository<ReworkRecord, Long
     @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END FROM ReworkRecord r " +
            "WHERE (r.productionBatchId = :batchId OR r.materialBatchId = :batchId) " +
            "AND r.status IN ('PENDING', 'IN_PROGRESS')")
-    boolean hasActiveRework(@Param("batchId") Long batchId);
+    boolean hasActiveRework(@Param("batchId") String batchId);
 }

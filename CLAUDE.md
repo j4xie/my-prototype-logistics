@@ -8,7 +8,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 | 组件 | 技术栈 |
 |------|--------|
-| **后端** | Java 11 + Spring Boot 2.7.15 + PostgreSQL + JPA |
+| **后端** | Java 21 + Spring Boot 3.2.12 + PostgreSQL + JPA (Hibernate 6) |
 | **前端** | Expo 53+ + TypeScript + React Navigation 7+ |
 | **AI服务** | Python + LLM API |
 

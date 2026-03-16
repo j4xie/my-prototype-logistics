@@ -4,7 +4,7 @@ import com.cretas.aims.entity.BaseEntity;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * AI意图域默认配置实体

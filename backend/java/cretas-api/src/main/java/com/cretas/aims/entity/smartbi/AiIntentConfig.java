@@ -6,7 +6,7 @@ import lombok.experimental.SuperBuilder;
 
 import org.hibernate.annotations.GenericGenerator;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * AI 意图配置实体

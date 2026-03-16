@@ -1,7 +1,7 @@
 package com.cretas.aims.entity.iot;
 
 import lombok.*;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**

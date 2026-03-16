@@ -1,11 +1,10 @@
 package com.cretas.aims.entity;
 
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +21,6 @@ import java.util.Map;
        indexes = {
            @Index(name = "idx_ffc_factory", columnList = "factory_id")
        })
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @Data
 @Builder
 @NoArgsConstructor
@@ -46,7 +44,7 @@ public class FactoryFeatureConfig {
     @Builder.Default
     private Boolean enabled = true;
 
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "config", columnDefinition = "jsonb")
     @Builder.Default
     private Map<String, Object> config = new HashMap<>();

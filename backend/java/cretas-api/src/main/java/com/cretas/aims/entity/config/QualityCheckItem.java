@@ -7,7 +7,7 @@ import com.cretas.aims.entity.enums.SamplingStrategy;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 /**

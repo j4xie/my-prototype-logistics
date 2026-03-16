@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.cretas.aims.annotation.RequirePermission;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.util.Map;
 
 @Slf4j

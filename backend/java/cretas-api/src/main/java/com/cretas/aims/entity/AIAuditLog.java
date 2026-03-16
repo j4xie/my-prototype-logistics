@@ -2,7 +2,7 @@ package com.cretas.aims.entity;
 
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * AI审计日志实体 - 记录所有AI分析请求用于合规和分析

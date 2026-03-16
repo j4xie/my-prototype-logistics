@@ -22,12 +22,12 @@ public interface MaterialConsumptionRepository extends JpaRepository<MaterialCon
     /**
      * 根据生产计划查找消耗记录
      */
-    List<MaterialConsumption> findByProductionPlanId(Integer productionPlanId);
+    List<MaterialConsumption> findByProductionPlanId(String productionPlanId);
 
     /**
      * 根据批次查找消耗记录
      */
-    List<MaterialConsumption> findByBatchId(Integer batchId);
+    List<MaterialConsumption> findByBatchId(String batchId);
 
     /**
      * 查找工厂的消耗记录
@@ -47,13 +47,13 @@ public interface MaterialConsumptionRepository extends JpaRepository<MaterialCon
      * 计算生产计划的总消耗成本
      */
     @Query("SELECT SUM(m.totalCost) FROM MaterialConsumption m WHERE m.productionPlanId = :planId")
-    BigDecimal calculateTotalCostByPlan(@Param("planId") Integer planId);
+    BigDecimal calculateTotalCostByPlan(@Param("planId") String planId);
 
     /**
      * 计算批次的总消耗量
      */
     @Query("SELECT SUM(m.quantity) FROM MaterialConsumption m WHERE m.batchId = :batchId")
-    BigDecimal calculateTotalQuantityByBatch(@Param("batchId") Integer batchId);
+    BigDecimal calculateTotalQuantityByBatch(@Param("batchId") String batchId);
 
     /**
      * 获取生产计划的消耗统计
@@ -61,12 +61,12 @@ public interface MaterialConsumptionRepository extends JpaRepository<MaterialCon
     @Query("SELECT m.batch.materialType.name, SUM(m.quantity), SUM(m.totalCost) " +
            "FROM MaterialConsumption m WHERE m.productionPlanId = :planId " +
            "GROUP BY m.batch.materialType.name")
-    List<Object[]> getConsumptionStatsByPlan(@Param("planId") Integer planId);
+    List<Object[]> getConsumptionStatsByPlan(@Param("planId") String planId);
 
     /**
      * 删除生产计划的所有消耗记录
      */
-    void deleteByProductionPlanId(Integer productionPlanId);
+    void deleteByProductionPlanId(String productionPlanId);
 
     /**
      * 根据生产批次ID查找消耗记录

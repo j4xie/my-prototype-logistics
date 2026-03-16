@@ -5,7 +5,7 @@ import com.cretas.aims.entity.enums.PosBrand;
 import com.cretas.aims.entity.enums.PosSyncStatus;
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

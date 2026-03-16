@@ -2,7 +2,7 @@ package com.cretas.aims.dto.scheduling;
 
 import lombok.Data;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * 重新调度请求

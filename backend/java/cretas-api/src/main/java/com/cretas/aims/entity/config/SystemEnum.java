@@ -3,7 +3,7 @@ package com.cretas.aims.entity.config;
 import com.cretas.aims.entity.BaseEntity;
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * 系统枚举配置实体

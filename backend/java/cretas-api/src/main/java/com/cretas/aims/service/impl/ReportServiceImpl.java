@@ -1699,7 +1699,7 @@ public class ReportServiceImpl implements ReportService {
     }
     @Override
     public void exportReportAsExcel(String factoryId, String reportType, LocalDate startDate, LocalDate endDate,
-                                    javax.servlet.http.HttpServletResponse response) {
+                                    jakarta.servlet.http.HttpServletResponse response) {
         log.info("导出Excel报表: factoryId={}, type={}, startDate={}, endDate={}",
                 factoryId, reportType, startDate, endDate);
         // 这里需要使用Apache POI等库来生成Excel文件
@@ -1713,7 +1713,7 @@ public class ReportServiceImpl implements ReportService {
     }
     @Override
     public void exportReportAsPdf(String factoryId, String reportType, LocalDate startDate, LocalDate endDate,
-                                  javax.servlet.http.HttpServletResponse response) {
+                                  jakarta.servlet.http.HttpServletResponse response) {
         log.info("导出PDF报表: factoryId={}, type={}, startDate={}, endDate={}",
                 factoryId, reportType, startDate, endDate);
         // 这里需要使用iText等库来生成PDF文件

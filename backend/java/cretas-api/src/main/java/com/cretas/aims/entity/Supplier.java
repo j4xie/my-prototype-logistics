@@ -2,7 +2,7 @@ package com.cretas.aims.entity;
 
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;

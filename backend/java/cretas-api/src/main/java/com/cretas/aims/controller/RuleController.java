@@ -19,8 +19,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.util.*;
 import com.cretas.aims.util.ErrorSanitizer;
 
@@ -619,7 +619,7 @@ public class RuleController {
         /**
          * DRL 规则内容 (完整的 Drools 规则定义)
          */
-        @javax.validation.constraints.NotBlank(message = "规则内容不能为空")
+        @jakarta.validation.constraints.NotBlank(message = "规则内容不能为空")
         private String ruleContent;
 
         /**

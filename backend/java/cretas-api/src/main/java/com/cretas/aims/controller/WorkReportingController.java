@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.cretas.aims.annotation.RequirePermission;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

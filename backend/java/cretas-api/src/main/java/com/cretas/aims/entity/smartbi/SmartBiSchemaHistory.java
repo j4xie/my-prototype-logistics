@@ -5,7 +5,7 @@ import com.cretas.aims.entity.smartbi.enums.SchemaChangeType;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * SmartBI Schema History Entity - Tracks schema changes for datasources

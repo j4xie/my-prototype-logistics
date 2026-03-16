@@ -1,7 +1,7 @@
 package com.cretas.aims.entity;
 
 import lombok.*;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 /**
  * 工作类型实体类

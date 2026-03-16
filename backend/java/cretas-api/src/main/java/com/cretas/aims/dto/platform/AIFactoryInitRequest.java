@@ -1,8 +1,8 @@
 package com.cretas.aims.dto.platform;
 
 import lombok.Data;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 /**
  * AI 工厂初始化请求

@@ -2,7 +2,7 @@ package com.cretas.aims.entity;
 
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 /**
  * 会话实体类

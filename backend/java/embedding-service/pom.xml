@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.15</version>
+        <version>3.2.12</version>
         <relativePath/>
     </parent>
 
@@ -19,13 +19,13 @@
     <description>gRPC-based Embedding Service with DJL/ONNX Runtime</description>
 
     <properties>
-        <java.version>17</java.version>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <grpc.version>1.58.0</grpc.version>
-        <protobuf.version>3.24.3</protobuf.version>
-        <grpc-spring-boot.version>2.15.0.RELEASE</grpc-spring-boot.version>
+        <grpc.version>1.63.0</grpc.version>
+        <protobuf.version>3.25.3</protobuf.version>
+        <grpc-spring-boot.version>3.1.0.RELEASE</grpc-spring-boot.version>
         <djl.version>0.30.0</djl.version>
         <lombok.version>1.18.36</lombok.version>
     </properties>
@@ -101,7 +101,14 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Annotation API for generated code -->
+        <!-- Jakarta Annotation API (PostConstruct, PreDestroy) -->
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+            <version>2.1.1</version>
+        </dependency>
+
+        <!-- javax.annotation-api needed for gRPC protobuf-generated code (@Generated) -->
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
@@ -156,9 +163,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <source>17</source>
-                    <target>17</target>
-                    <release>17</release>
+                    <source>21</source>
+                    <target>21</target>
+                    <release>21</release>
                     <encoding>UTF-8</encoding>
                     <annotationProcessorPaths>
                         <path>

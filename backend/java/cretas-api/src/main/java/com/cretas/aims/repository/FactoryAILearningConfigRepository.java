@@ -42,9 +42,10 @@ public interface FactoryAILearningConfigRepository extends JpaRepository<Factory
     /**
      * 获取所有需要检查阶段转换的工厂
      */
-    @Query("SELECT c FROM FactoryAILearningConfig c " +
-           "WHERE c.learningPhase = 'LEARNING' " +
-           "AND DATEDIFF(CURRENT_DATE, c.createdAt) >= c.matureThresholdDays")
+    @Query(value = "SELECT c.* FROM factory_ai_learning_config c " +
+           "WHERE c.learning_phase = 'LEARNING' " +
+           "AND EXTRACT(DAY FROM (CURRENT_DATE - c.created_at)) >= c.mature_threshold_days",
+           nativeQuery = true)
     List<FactoryAILearningConfig> findFactoriesReadyForMatureTransition();
 
     /**

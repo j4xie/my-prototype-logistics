@@ -6,7 +6,7 @@ import com.cretas.aims.entity.common.UnifiedDeviceType;
 import com.cretas.aims.entity.enums.DeviceCategory;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

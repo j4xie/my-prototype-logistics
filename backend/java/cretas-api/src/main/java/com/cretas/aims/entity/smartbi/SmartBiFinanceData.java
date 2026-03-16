@@ -5,7 +5,7 @@ import com.cretas.aims.entity.smartbi.enums.RecordType;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 

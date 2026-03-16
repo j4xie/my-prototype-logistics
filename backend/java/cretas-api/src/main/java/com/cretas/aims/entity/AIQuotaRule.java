@@ -2,7 +2,7 @@ package com.cretas.aims.entity;
 
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.DayOfWeek;
 import java.util.HashMap;
 import java.util.Map;

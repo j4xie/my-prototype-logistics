@@ -1,11 +1,10 @@
 package com.cretas.aims.entity.smartbi.postgres;
 
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +33,6 @@ import java.util.Map;
            @UniqueConstraint(name = "uk_pg_field_upload_name",
                              columnNames = {"upload_id", "original_name"})
        })
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @Data
 @Builder
 @NoArgsConstructor
@@ -110,7 +108,7 @@ public class SmartBiPgFieldDefinition {
      * Sample values from the data (JSONB array)
      * Used for display hints and validation
      */
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "sample_values", columnDefinition = "jsonb")
     private List<Object> sampleValues;
 
@@ -118,7 +116,7 @@ public class SmartBiPgFieldDefinition {
      * Field statistics (JSONB)
      * Contains: min, max, mean, nullCount, distinctCount
      */
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "statistics", columnDefinition = "jsonb")
     private Map<String, Object> statistics;
 

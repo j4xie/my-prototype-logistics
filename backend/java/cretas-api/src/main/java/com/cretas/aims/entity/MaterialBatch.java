@@ -1,12 +1,11 @@
 package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import javax.persistence.*;
-import javax.validation.constraints.*;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,7 +26,6 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @Table(name = "material_batches",
        indexes = {
            @Index(name = "idx_batch_factory", columnList = "factory_id"),
@@ -238,7 +236,7 @@ public class MaterialBatch extends BaseEntity {
     }
 
     // AI-configured custom fields stored as JSONB
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "custom_fields", columnDefinition = "jsonb")
     private Map<String, Object> customFields = new HashMap<>();
 

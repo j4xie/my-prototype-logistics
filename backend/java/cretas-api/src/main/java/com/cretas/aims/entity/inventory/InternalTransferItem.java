@@ -5,7 +5,7 @@ import com.cretas.aims.entity.enums.TransferItemType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 /**

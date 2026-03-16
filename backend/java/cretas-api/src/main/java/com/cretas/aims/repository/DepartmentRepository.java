@@ -70,5 +70,5 @@ public interface DepartmentRepository extends JpaRepository<Department, Integer>
     /**
      * 根据工厂ID和负责人ID查询部门
      */
-    List<Department> findByFactoryIdAndManagerUserId(String factoryId, Integer managerUserId);
+    List<Department> findByFactoryIdAndManagerUserId(String factoryId, Long managerUserId);
 }

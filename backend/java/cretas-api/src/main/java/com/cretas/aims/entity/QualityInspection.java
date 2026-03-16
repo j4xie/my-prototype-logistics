@@ -2,11 +2,10 @@ package com.cretas.aims.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -25,7 +24,6 @@ import java.util.Map;
 @NoArgsConstructor
 @Builder
 @Entity
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @Table(name = "quality_inspections",
        indexes = {
            @Index(name = "idx_inspection_factory", columnList = "factory_id"),
@@ -106,7 +104,7 @@ public class QualityInspection extends BaseEntity {
     }
 
     // AI-configured custom fields stored as JSONB
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "custom_fields", columnDefinition = "jsonb")
     @Builder.Default
     private Map<String, Object> customFields = new HashMap<>();

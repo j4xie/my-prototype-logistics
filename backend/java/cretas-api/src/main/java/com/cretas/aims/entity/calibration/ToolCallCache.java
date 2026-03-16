@@ -2,7 +2,7 @@ package com.cretas.aims.entity.calibration;
 
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**

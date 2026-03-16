@@ -12,7 +12,7 @@ import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -161,10 +161,10 @@ public class IsapiDevice extends BaseEntity {
     @Column(name = "location_description", length = 255)
     private String locationDescription;
 
-    @Column(name = "latitude", precision = 10, scale = 8)
+    @Column(name = "latitude")
     private Double latitude;
 
-    @Column(name = "longitude", precision = 11, scale = 8)
+    @Column(name = "longitude")
     private Double longitude;
 
     // ==================== 关联信息 ====================

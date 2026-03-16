@@ -3,7 +3,7 @@ package com.cretas.aims.entity.scale;
 import com.cretas.aims.entity.BaseEntity;
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * 秤协议配置实体

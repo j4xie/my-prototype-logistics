@@ -32,7 +32,7 @@ public class CacheService {
         return redisTemplate == null;
     }
 
-    @javax.annotation.PostConstruct
+    @jakarta.annotation.PostConstruct
     public void init() {
         if (redisTemplate == null) {
             log.warn("使用内存临时缓存服务 (Redis不可用)");

@@ -1,11 +1,10 @@
 package com.cretas.aims.entity;
 
-import com.vladmihalcea.hibernate.type.json.JsonType;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import lombok.*;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,7 +19,6 @@ import java.util.Map;
         @Index(name = "idx_pr_worker", columnList = "worker_id"),
         @Index(name = "idx_pr_type", columnList = "report_type")
 })
-@TypeDef(name = "json", typeClass = JsonType.class)
 @Data
 @Builder
 @NoArgsConstructor
@@ -40,7 +38,7 @@ public class ProductionReport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @javax.persistence.Version
+    @jakarta.persistence.Version
     @Column(name = "version")
     private Long version;
 
@@ -89,11 +87,11 @@ public class ProductionReport {
     @Column(name = "operation_volume", precision = 10, scale = 2)
     private BigDecimal operationVolume;
 
-    @Type(type = "json")
+    @Type(JsonType.class)
     @Column(name = "hour_entries", columnDefinition = "jsonb")
     private List<Map<String, Object>> hourEntries;
 
-    @Type(type = "json")
+    @Type(JsonType.class)
     @Column(name = "non_production_entries", columnDefinition = "jsonb")
     private List<Map<String, Object>> nonProductionEntries;
 
@@ -103,11 +101,11 @@ public class ProductionReport {
     @Column(name = "production_end_time")
     private LocalTime productionEndTime;
 
-    @Type(type = "json")
+    @Type(JsonType.class)
     @Column(name = "custom_fields", columnDefinition = "jsonb")
     private Map<String, Object> customFields;
 
-    @Type(type = "json")
+    @Type(JsonType.class)
     @Column(name = "photos", columnDefinition = "jsonb")
     private List<String> photos;
 

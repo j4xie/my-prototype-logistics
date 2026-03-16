@@ -58,7 +58,7 @@ public class StateMachineServiceImpl implements StateMachineService {
     private static com.cretas.aims.repository.ProcessTaskRepository staticProcessTaskRepo;
     private static com.cretas.aims.repository.ProductionReportRepository staticProductionReportRepo;
 
-    @javax.annotation.PostConstruct
+    @jakarta.annotation.PostConstruct
     public void init() {
         staticQualityService = this.qualityDispositionRuleService;
         staticInspectionRepo = this.qualityInspectionRepository;

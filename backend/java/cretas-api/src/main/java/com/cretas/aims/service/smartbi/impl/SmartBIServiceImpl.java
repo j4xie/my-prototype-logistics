@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.time.Duration;

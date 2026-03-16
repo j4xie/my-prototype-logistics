@@ -1,7 +1,7 @@
 package com.cretas.aims.entity.learning;
 
 import lombok.*;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;

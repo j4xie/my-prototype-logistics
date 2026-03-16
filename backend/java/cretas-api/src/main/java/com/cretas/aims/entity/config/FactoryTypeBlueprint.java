@@ -4,7 +4,7 @@ import com.cretas.aims.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * 工厂类型蓝图实体

@@ -5,7 +5,7 @@ import com.cretas.aims.entity.smartbi.enums.DatasourceType;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
