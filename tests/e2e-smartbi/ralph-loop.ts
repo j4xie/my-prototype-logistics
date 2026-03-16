@@ -1,4 +1,11 @@
 /**
+ * @deprecated 2026-03-11 — 此独立 Playwright 脚本已被 Ralph Loop 插件替代。
+ * 新方案使用 `.claude/ralph-prompts/web-admin-all-pages.md` 状态驱动循环，
+ * 通过 Playwright MCP 工具执行，进度保存在 `.claude/ralph-state/web-admin-progress.json`。
+ * 保留此文件仅供参考，不再维护。
+ */
+
+/**
  * Ralph Loop - SmartBI 完整自动化测试循环
  *
  * 完整流程:
@@ -10,7 +17,7 @@
  * 用法:
  *   npm run ralph-loop              # 无头模式运行
  *   npm run ralph-loop:headed       # 显示浏览器窗口
- *   LOOPS=100 npm run ralph-loop    # 运行 100 轮
+ *   LOOPS=100 npm run ralph-loop    # 运行 100 轮 (默认 50 轮)
  */
 
 import { chromium, Browser, Page, BrowserContext } from '@playwright/test';
@@ -25,7 +32,7 @@ const CONFIG = {
   healthEndpoint: '/api/mobile/health',
   headed: process.env.HEADED === 'true',
   slowMo: parseInt(process.env.SLOW_MO || '0'),
-  maxLoops: parseInt(process.env.LOOPS || '0') || Infinity,
+  maxLoops: parseInt(process.env.LOOPS || '50'),
   pauseOnError: process.env.PAUSE_ON_ERROR === 'true',
   testDataDir: path.join(__dirname, 'test-data'),
   reportDir: path.join(__dirname, 'reports'),

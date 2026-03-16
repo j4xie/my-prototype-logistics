@@ -1,5 +1,14 @@
 {
   "mcpServers": {
+    "playwright-rn": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "@playwright/mcp@latest",
+        "--browser", "chromium"
+      ]
+    },
     "playwright-test": {
       "command": "cmd",
       "args": [

@@ -32,7 +32,7 @@ Iteratively test and optimize the AI chat system for the Mall miniprogram. Each 
 ## Iteration Protocol
 - Round N: Run 500 NEW test cases → Evaluate → Generate optimization report
 - Round N+1: First verify Round N optimizations → Then run 500 NEW test cases → Evaluate
-- Continue until cumulative test cases reach 10,000 (20 rounds)
+- Continue until cumulative test cases reach 10,000 (max 20 rounds, hard cap 50 iterations)
 
 ## Optimization Scope
 When issues are found, optimize:
