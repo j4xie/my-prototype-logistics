@@ -1,0 +1,23 @@
+{
+  "title": "物流管理",
+  "shipment_overview": "出货概览",
+  "recent_shipments": "最近出货",
+  "no_shipments": "暂无出货记录",
+  "status": {
+    "pending": "待发货",
+    "shipped": "运输中",
+    "delivered": "已签收",
+    "returned": "已退货"
+  },
+  "quick_action": {
+    "create_shipment": "创建出货",
+    "shipment_list": "出货列表",
+    "tracking": "运单追踪"
+  },
+  "error": {
+    "load_failed": "数据加载失败，请下拉刷新重试",
+    "load_exception": "数据加载异常，请稍后重试",
+    "use_admin_module": "请使用管理模块创建出货",
+    "tracking_coming_soon": "运单追踪功能即将上线"
+  }
+}

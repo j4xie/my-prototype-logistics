@@ -43,6 +43,7 @@ interface MenuItem {
 // 财务主管专用菜单 - 简化版
 const financeManagerMenu: MenuItem[] = [
   { path: '/smart-bi/dashboard', title: '经营驾驶舱', icon: 'Odometer', module: 'analytics' },
+  { path: '/smart-bi/financial-dashboard', title: '财务分析看板', icon: 'TrendCharts', module: 'analytics' },
   { path: '/smart-bi/finance', title: '财务分析', icon: 'Money', module: 'analytics' },
   { path: '/smart-bi/sales', title: '销售分析', icon: 'TrendCharts', module: 'sales' },
   { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
@@ -198,6 +199,7 @@ const menuConfig: MenuItem[] = [
     children: [
       // -- 分析入口 --
       { path: '/smart-bi/dashboard', title: '经营驾驶舱', icon: 'Monitor', module: 'analytics', groupLabel: '分析入口' },
+      { path: '/smart-bi/financial-dashboard', title: '财务分析看板', icon: 'TrendCharts', module: 'analytics' },
       { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' },
       { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
       // -- 预定义报表 --

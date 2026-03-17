@@ -72,8 +72,8 @@ const props = withDefaults(defineProps<Props>(), {
   showLabel: true,
   unit: '万元',
   colors: () => [
-    '#1B65A8', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
-    '#00d4ff', '#ff6b9d', '#c084fc', '#fbbf24', '#34d399'
+    '#2D8B57', '#4472C4', '#E8B931', '#A9D18E', '#6B778C',
+    '#36B37E', '#5B9BD5', '#FFC000', '#ED7D31', '#70AD47'
   ],
   showLegend: true,
   showCenterTotal: true,
@@ -234,10 +234,10 @@ const chartOptions = computed<EChartsOption>(() => {
     z: 10,
     style: {
       text: `◉ ${props.currentYear}年 (外环)`,
-      fill: '#1B65A8',
+      fill: '#2D8B57',
       font: 'bold 11px sans-serif',
       textAlign: 'left',
-      backgroundColor: 'rgba(27,101,168,0.1)',
+      backgroundColor: 'rgba(45,139,87,0.1)',
       borderRadius: 4,
       padding: [3, 6, 3, 6]
     },
@@ -361,7 +361,7 @@ const chartOptions = computed<EChartsOption>(() => {
           rich: {
             name: { color: '#303133', fontSize: 11, fontWeight: 600, lineHeight: 16 },
             amt: { color: '#606266', fontSize: 10, lineHeight: 14 },
-            pct: { color: '#1B65A8', fontSize: 10, fontWeight: 'bold', lineHeight: 14 }
+            pct: { color: '#2D8B57', fontSize: 10, fontWeight: 'bold', lineHeight: 14 }
           }
         } : { show: false },
         labelLine: props.showLabel ? {
@@ -591,8 +591,8 @@ defineExpose({
         }
 
         &.current .dot {
-          background: #1B65A8;
-          box-shadow: 0 0 0 2px rgba(27, 101, 168, 0.2);
+          background: #2D8B57;
+          box-shadow: 0 0 0 2px rgba(45, 139, 87, 0.2);
         }
 
         &.previous .dot {
@@ -636,7 +636,7 @@ defineExpose({
         gap: 4px;
 
         &.primary {
-          color: #1B65A8;
+          color: #2D8B57;
         }
 
         &.positive {

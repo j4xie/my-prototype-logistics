@@ -390,7 +390,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
   display: inline-block;
   padding: 4px 16px;
   border-radius: 20px;
-  background: #1B65A8;
+  background: #2D8B57;
   color: #fff;
   font-size: 13px;
   margin-bottom: 24px;
@@ -400,7 +400,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
   font-size: 48px;
   font-weight: 700;
   margin: 0 0 12px;
-  color: #1B65A8;
+  color: #2D8B57;
 }
 
 .theme-dark .cover-title {
@@ -429,7 +429,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
 .cover-kpi-value {
   font-size: 32px;
   font-weight: 700;
-  color: #1B65A8;
+  color: #2D8B57;
 }
 
 .theme-dark .cover-kpi-value {
@@ -496,7 +496,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
 
 .chart-kpi-chip {
   flex: 1;
-  background: rgba(27, 101, 168, 0.08);
+  background: rgba(45, 139, 87, 0.08);
   border-radius: 8px;
   padding: 10px 12px;
   display: flex;
@@ -511,7 +511,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
 .chip-value {
   font-size: 20px;
   font-weight: 700;
-  color: #1B65A8;
+  color: #2D8B57;
 }
 
 .theme-dark .chip-value {
@@ -532,7 +532,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
 .chart-analysis-panel {
   width: 220px;
   flex-shrink: 0;
-  background: rgba(27, 101, 168, 0.04);
+  background: rgba(45, 139, 87, 0.04);
   border-radius: 8px;
   padding: 16px;
   overflow-y: auto;
@@ -546,7 +546,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
   font-size: 14px;
   font-weight: 600;
   margin: 0 0 12px;
-  color: #1B65A8;
+  color: #2D8B57;
 }
 
 .theme-dark .analysis-title {
@@ -569,7 +569,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
 
 .analysis-item::before {
   content: '• ';
-  color: #1B65A8;
+  color: #2D8B57;
   font-weight: 700;
 }
 
@@ -593,7 +593,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
 }
 
 .conclusion-item {
-  background: rgba(27, 101, 168, 0.06);
+  background: rgba(45, 139, 87, 0.06);
   border-radius: 8px;
   padding: 16px;
   display: flex;
@@ -608,7 +608,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
 .conclusion-num {
   font-size: 24px;
   font-weight: 700;
-  color: #1B65A8;
+  color: #2D8B57;
   opacity: 0.5;
   flex-shrink: 0;
 }
@@ -632,7 +632,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(27, 101, 168, 0.12);
+  background: rgba(45, 139, 87, 0.12);
   border: none;
   border-radius: 50%;
   width: 44px;
@@ -648,7 +648,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
 }
 
 .nav-btn:hover:not(:disabled) {
-  background: rgba(27, 101, 168, 0.24);
+  background: rgba(45, 139, 87, 0.24);
 }
 
 .nav-btn:disabled {
@@ -680,7 +680,7 @@ const bgClass = computed(() => isDark.value ? 'theme-dark' : 'theme-light');
 }
 
 .dot.active {
-  background: #1B65A8;
+  background: #2D8B57;
   transform: scale(1.3);
 }
 

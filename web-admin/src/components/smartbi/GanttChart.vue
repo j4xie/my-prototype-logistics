@@ -65,7 +65,7 @@ const currentZoom = ref<ZoomLevel>(props.zoomLevel);
 // Status colors
 const STATUS_COLORS: Record<string, string> = {
   completed: '#36B37E',
-  'in-progress': '#1B65A8',
+  'in-progress': '#2D8B57',
   delayed: '#FF5630',
   planned: '#97a8be',
 };
@@ -294,8 +294,8 @@ const chartOptions = computed<EChartsOption>(() => {
         startValue: timeRange.value.min,
         endValue: timeRange.value.max,
         borderColor: '#ebeef5',
-        fillerColor: 'rgba(27,101,168,0.12)',
-        handleStyle: { color: '#1B65A8' },
+        fillerColor: 'rgba(45,139,87,0.12)',
+        handleStyle: { color: '#2D8B57' },
         textStyle: { color: '#909399', fontSize: 10 },
       },
       {
@@ -311,8 +311,8 @@ const chartOptions = computed<EChartsOption>(() => {
               right: 0,
               width: 16,
               borderColor: '#ebeef5',
-              fillerColor: 'rgba(27,101,168,0.12)',
-              handleStyle: { color: '#1B65A8' },
+              fillerColor: 'rgba(45,139,87,0.12)',
+              handleStyle: { color: '#2D8B57' },
               startValue: 0,
               endValue: Math.min(9, taskCount - 1),
             },
@@ -584,7 +584,7 @@ defineExpose({
 
     <!-- Status legend -->
     <div v-if="tasks.length > 0" class="status-legend">
-      <span v-for="(color, key) in { completed: '#36B37E', 'in-progress': '#1B65A8', delayed: '#FF5630', planned: '#97a8be' }" :key="key" class="legend-item">
+      <span v-for="(color, key) in { completed: '#36B37E', 'in-progress': '#2D8B57', delayed: '#FF5630', planned: '#97a8be' }" :key="key" class="legend-item">
         <i :style="{ background: color }"></i>
         {{ { completed: '已完成', 'in-progress': '进行中', delayed: '已延期', planned: '计划中' }[key as string] }}
       </span>
@@ -642,13 +642,13 @@ defineExpose({
       transition: all 0.2s;
 
       &:hover {
-        color: #1B65A8;
+        color: #2D8B57;
         background: #e6f0ff;
       }
 
       &.active {
         color: #fff;
-        background: #1B65A8;
+        background: #2D8B57;
         font-weight: 600;
       }
     }
@@ -688,7 +688,7 @@ defineExpose({
       color: #303133;
 
       &--green { color: #36B37E; }
-      &--blue { color: #1B65A8; }
+      &--blue { color: #2D8B57; }
       &--red { color: #FF5630; }
     }
   }

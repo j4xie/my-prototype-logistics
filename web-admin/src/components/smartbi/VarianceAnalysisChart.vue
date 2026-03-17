@@ -202,7 +202,7 @@ const chartOptions = computed<EChartsOption>(() => {
       data: [
         { name: '预算', icon: 'rect', itemStyle: { color: '#C0C4CC' } },
         { name: '实际', icon: 'rect', itemStyle: { color: '#36B37E' } },
-        ...(props.showCumulative ? [{ name: '累计差异', icon: 'line', itemStyle: { color: '#1B65A8' } }] : []),
+        ...(props.showCumulative ? [{ name: '累计差异', icon: 'line', itemStyle: { color: '#2D8B57' } }] : []),
       ],
       textStyle: { color: '#606266', fontSize: 11 },
     },
@@ -239,11 +239,11 @@ const chartOptions = computed<EChartsOption>(() => {
             {
               type: 'value' as const,
               name: '累计',
-              nameTextStyle: { color: '#1B65A8', fontSize: 11 },
+              nameTextStyle: { color: '#2D8B57', fontSize: 11 },
               axisLine: { show: false },
               axisTick: { show: false },
               axisLabel: {
-                color: '#1B65A8',
+                color: '#2D8B57',
                 fontSize: 10,
                 formatter: (v: number) => formatValue(v),
               },
@@ -313,8 +313,8 @@ const chartOptions = computed<EChartsOption>(() => {
               })),
               symbol: 'circle',
               symbolSize: 6,
-              lineStyle: { type: 'dashed', color: '#1B65A8', width: 2 },
-              itemStyle: { color: '#1B65A8', borderWidth: 2, borderColor: '#fff' },
+              lineStyle: { type: 'dashed', color: '#2D8B57', width: 2 },
+              itemStyle: { color: '#2D8B57', borderWidth: 2, borderColor: '#fff' },
               smooth: true,
             },
           ]

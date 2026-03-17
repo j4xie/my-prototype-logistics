@@ -16,7 +16,7 @@ const THEMES: Record<ThemeName, ThemeConfig> = {
   business: {
     name: 'business',
     label: '商务蓝',
-    colors: ['#1B65A8', '#2B98D1', '#5BC0EB', '#9AD4E8', '#2E86AB', '#A23B72', '#F18F01', '#C73E1D'],
+    colors: ['#2D8B57', '#2B98D1', '#5BC0EB', '#9AD4E8', '#2E86AB', '#A23B72', '#F18F01', '#C73E1D'],
     backgroundColor: '#ffffff',
     textColor: '#303133',
     axisColor: '#909399',

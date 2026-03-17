@@ -98,7 +98,7 @@ class CategoryStructureDonutBuilder(AbstractFinancialChartBuilder):
                 },
             })
 
-        # Inner ring: last year (70% opacity)
+        # Inner ring: last year (70% opacity) with outside labels and decal
         inner_data = []
         for i, cat in enumerate(categories):
             val = round(ly_vals[i] / divisor, 2)
@@ -107,9 +107,13 @@ class CategoryStructureDonutBuilder(AbstractFinancialChartBuilder):
             inner_data.append({
                 "name": cat,
                 "value": val,
-                "itemStyle": {"color": base_color, "opacity": 0.55},
+                "itemStyle": {
+                    "color": base_color,
+                    "opacity": 0.55,
+                    "decal": {"symbol": "rect", "symbolSize": 0.8},
+                },
                 "label": {
-                    "formatter": f"{pct}%",
+                    "formatter": f"{cat}\n{self._format_value(ly_vals[i], scale)}\n{pct}%",
                 },
             })
 
@@ -141,12 +145,11 @@ class CategoryStructureDonutBuilder(AbstractFinancialChartBuilder):
                     "data": inner_data,
                     "label": {
                         "show": True,
-                        "position": "inside",
+                        "position": "outside",
                         "fontSize": 9,
-                        "color": "#fff",
-                        "fontWeight": "bold",
+                        "lineHeight": 13,
                     },
-                    "labelLine": {"show": False},
+                    "labelLine": {"show": True, "length": 8, "length2": 6},
                     "itemStyle": {"borderColor": "#fff", "borderWidth": 2},
                     "emphasis": {
                         "itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.3)"},
@@ -193,7 +196,7 @@ class CategoryStructureDonutBuilder(AbstractFinancialChartBuilder):
                 "top": "46%",
                 "style": {
                     "text": f"{year}年",
-                    "fontSize": 14,
+                    "fontSize": 18,
                     "fill": COLORS['primary'],
                     "textAlign": "center",
                     "fontWeight": "bold",

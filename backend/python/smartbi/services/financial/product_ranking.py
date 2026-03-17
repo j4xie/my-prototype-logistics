@@ -77,7 +77,7 @@ class ProductRankingParetoBuilder(AbstractFinancialChartBuilder):
         scaled_revenues = [round(v / scale['divisor'], 2) for v in revenues]
 
         # Generate gradient colors from primary to lighter shades
-        primary = COLORS['primary']  # "#1B65A8"
+        primary = COLORS['primary']  # "#2D8B57"
         bar_colors = self._generate_gradient_colors(primary, len(products))
 
         # --- KPIs ---

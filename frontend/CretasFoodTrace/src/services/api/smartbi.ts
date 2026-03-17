@@ -384,6 +384,41 @@ export const smartBIApi = {
     const { getWorkerRanking } = await import('./productionAnalyticsApiClient');
     return getWorkerRanking({ startDate: date }, factoryId);
   },
+
+  // ==================== 现金流分析 ====================
+  getCashFlowAnalysis: async (
+    params: AnalysisParams
+  ): Promise<ApiResponse<any>> => {
+    const { factoryId, ...queryParams } = params;
+    const currentFactoryId = requireFactoryId(factoryId);
+    return apiClient.get<ApiResponse<any>>(
+      `/api/mobile/${currentFactoryId}/smart-bi/analysis/finance`,
+      { params: { ...queryParams, analysisType: 'cashflow' } }
+    );
+  },
+
+  // ==================== 财务比率分析 ====================
+  getFinancialRatios: async (
+    params: AnalysisParams
+  ): Promise<ApiResponse<any>> => {
+    const { factoryId, ...queryParams } = params;
+    const currentFactoryId = requireFactoryId(factoryId);
+    return apiClient.get<ApiResponse<any>>(
+      `/api/mobile/${currentFactoryId}/smart-bi/analysis/finance`,
+      { params: { ...queryParams, analysisType: 'ratios' } }
+    );
+  },
+
+  // ==================== 客户RFM分析 ====================
+  getRFMAnalysis: async (
+    factoryId?: string
+  ): Promise<ApiResponse<any>> => {
+    const currentFactoryId = requireFactoryId(factoryId);
+    return apiClient.get<ApiResponse<any>>(
+      `/api/mobile/${currentFactoryId}/smart-bi/analysis/finance`,
+      { params: { analysisType: 'rfm' } }
+    );
+  },
 };
 
 // 别名导出，兼容旧代码

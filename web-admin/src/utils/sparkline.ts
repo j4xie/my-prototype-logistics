@@ -40,7 +40,7 @@ export function sparklineSVG(
   highlightIndex = -1,
   width = 120,
   height = 30,
-  color = '#1B65A8',
+  color = '#2D8B57',
 ): string {
   if (!data || data.length < 2) return '';
   const pad = 3;

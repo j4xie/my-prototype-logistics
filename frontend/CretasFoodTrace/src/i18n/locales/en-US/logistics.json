@@ -1,0 +1,23 @@
+{
+  "title": "Logistics",
+  "shipment_overview": "Shipment Overview",
+  "recent_shipments": "Recent Shipments",
+  "no_shipments": "No shipment records",
+  "status": {
+    "pending": "Pending",
+    "shipped": "Shipped",
+    "delivered": "Delivered",
+    "returned": "Returned"
+  },
+  "quick_action": {
+    "create_shipment": "Create Shipment",
+    "shipment_list": "Shipment List",
+    "tracking": "Track Shipment"
+  },
+  "error": {
+    "load_failed": "Failed to load data, pull down to refresh",
+    "load_exception": "Data loading error, please try again later",
+    "use_admin_module": "Please use the Management module to create shipments",
+    "tracking_coming_soon": "Shipment tracking coming soon"
+  }
+}

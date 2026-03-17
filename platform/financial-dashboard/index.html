@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>财务分析看板 - 白垩纪食品</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#2D8B57;--primary-light:#36B37E;--primary-dark:#1a6b3c;
+  --accent-amber:#FFAB00;--accent-red:#FF5630;--accent-blue:#2B7EC1;
+  --bg:#f0f2f5;--card:#fff;--sidebar:#1a2332;--sidebar-hover:#243042;
+  --text:#1a2332;--text-secondary:#7A8599;--text-muted:#a0aab8;
+  --border:#e8ecf1;--shadow:0 2px 8px rgba(0,0,0,.08);
+  --radius:12px;--gap:16px;
+}
+html{font-size:14px}
+body{font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+/* ── Layout ── */
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--sidebar);color:#c8d0da;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.sidebar-logo .logo-icon{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;font-weight:700}
+.sidebar-logo .logo-text{font-size:15px;font-weight:600;color:#e8ecf1}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:12px;padding:12px 20px;cursor:pointer;transition:all .2s;font-size:13.5px;color:#9aa5b4;border-left:3px solid transparent}
+.nav-item:hover{background:var(--sidebar-hover);color:#d0d8e4}
+.nav-item.active{background:rgba(45,139,87,.15);color:#5ede9a;border-left-color:var(--primary);font-weight:500}
+.nav-item .nav-icon{width:20px;text-align:center;font-size:16px}
+.nav-item .nav-num{font-size:11px;opacity:.5;margin-left:auto}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:#5a6778}
+
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:17px;font-weight:600;color:var(--text)}
+.period-selector{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.period-selector .btn-group{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.period-selector .btn-group button{border:none;background:#fff;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--text-secondary);font-family:inherit;transition:all .15s}
+.period-selector .btn-group button.active{background:var(--primary);color:#fff}
+.period-selector .btn-group button:not(:last-child){border-right:1px solid var(--border)}
+.period-selector select{border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit;color:var(--text);background:#fff;cursor:pointer}
+.period-selector .apply-btn{background:var(--primary);color:#fff;border:none;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;transition:background .15s}
+.period-selector .apply-btn:hover{background:var(--primary-dark)}
+.period-extra{display:flex;align-items:center;gap:6px}
+.period-extra.hidden{display:none}
+
+.content{flex:1;padding:20px 24px 40px}
+.tab-panel{display:none;animation:fadeIn .3s ease}
+.tab-panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── KPI Cards ── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);margin-bottom:var(--gap)}
+.kpi-card{background:var(--card);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border);position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.green::before{background:var(--primary)}
+.kpi-card.amber::before{background:var(--accent-amber)}
+.kpi-card.red::before{background:var(--accent-red)}
+.kpi-card.blue::before{background:var(--accent-blue)}
+.kpi-label{font-size:12.5px;color:var(--text-secondary);margin-bottom:8px;font-weight:400}
+.kpi-value{font-size:28px;font-weight:700;color:var(--text);line-height:1.1}
+.kpi-value .unit{font-size:13px;font-weight:400;color:var(--text-secondary);margin-left:4px}
+.kpi-sub{font-size:12px;color:var(--text-muted);margin-top:6px;display:flex;align-items:center;gap:4px}
+.kpi-sub .trend-up{color:var(--primary)}
+.kpi-sub .trend-down{color:var(--accent-red)}
+
+/* ── Chart Cards ── */
+.chart-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:20px;margin-bottom:var(--gap)}
+.chart-card .card-title{font-size:14.5px;font-weight:600;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.chart-card .card-title::before{content:'';width:3px;height:16px;background:var(--primary);border-radius:2px}
+.chart-box{width:100%;position:relative}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--gap)}
+
+/* ── Tab1: Timeline ── */
+.timeline-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+.timeline-node{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1}
+.timeline-node .node-label{font-size:12px;color:var(--text-secondary)}
+.timeline-node .node-value{font-size:20px;font-weight:700;color:var(--primary)}
+.timeline-node .node-dot{width:14px;height:14px;background:var(--primary);border-radius:50%;position:relative}
+.timeline-node .node-dot::after{content:'';position:absolute;top:50%;right:-100%;width:100%;height:2px;background:var(--primary);opacity:.3}
+.timeline-node:last-child .node-dot::after{display:none}
+.timeline-connector{flex:1;height:2px;background:linear-gradient(90deg,var(--primary),rgba(45,139,87,.2));margin:0 -8px;align-self:center;margin-top:22px}
+
+/* ── Tab2: MoM Row ── */
+.mom-row{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;margin-bottom:var(--gap)}
+.mom-cell{text-align:center;padding:8px 4px;border-radius:8px;background:var(--card);border:1px solid var(--border)}
+.mom-cell .month{font-size:11px;color:var(--text-muted)}
+.mom-cell .val{font-size:13px;font-weight:600;margin-top:2px}
+.mom-cell .val.pos{color:var(--primary)}
+.mom-cell .val.neg{color:var(--accent-red)}
+
+.qtr-boxes{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);margin-bottom:var(--gap)}
+.qtr-box{background:var(--card);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border);box-shadow:var(--shadow);text-align:center}
+.qtr-box .qtr-name{font-size:12px;color:var(--text-secondary);margin-bottom:6px}
+.qtr-box .qtr-diff{font-size:20px;font-weight:700;color:var(--text)}
+.qtr-box .qtr-pct{font-size:14px;font-weight:600;margin-top:4px}
+
+/* ── Tab8: Findings ── */
+.findings-section{margin-bottom:var(--gap)}
+.findings-section .section-title{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.findings-section .section-title .dot{width:8px;height:8px;border-radius:50%}
+.finding-list{list-style:none}
+.finding-list li{padding:12px 16px;background:var(--card);border-radius:8px;margin-bottom:8px;font-size:13.5px;line-height:1.6;border-left:3px solid transparent;box-shadow:var(--shadow);display:flex;align-items:flex-start;gap:10px}
+.finding-list li .fi{font-size:16px;flex-shrink:0;margin-top:1px}
+.finding-list.good li{border-left-color:var(--primary)}
+.finding-list.bad li{border-left-color:var(--accent-red)}
+.finding-list.rec li{border-left-color:var(--accent-blue)}
+
+/* ── Data Table ── */
+.data-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:12px}
+.data-table th{background:#f5f7fa;padding:8px 10px;text-align:center;font-weight:500;color:var(--text-secondary);border-bottom:1px solid var(--border)}
+.data-table td{padding:7px 10px;text-align:center;border-bottom:1px solid #f0f2f5;color:var(--text)}
+.data-table .pos{color:var(--primary);font-weight:500}
+.data-table .neg{color:var(--accent-red);font-weight:500}
+.data-table .row-label{text-align:left;font-weight:500;color:var(--text)}
+
+/* ── Print ── */
+@media print{
+  .sidebar,.topbar{display:none!important}
+  .main{margin-left:0!important}
+  .tab-panel{display:block!important;page-break-after:always}
+  .chart-card{break-inside:avoid}
+}
+@media(max-width:1100px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .grid-2{grid-template-columns:1fr}
+}
+/* ── Nav Groups ── */
+.nav-group{margin-bottom:2px}
+.nav-group-title{display:flex;align-items:center;justify-content:space-between;padding:10px 20px 6px;font-size:10.5px;font-weight:600;color:#5a6778;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none}
+.nav-group-title:hover{color:#8a95a8}
+.nav-group-title .arrow{transition:transform .2s;font-size:10px}
+.nav-group-title .arrow.collapsed{transform:rotate(-90deg)}
+.nav-group-items{overflow:hidden;max-height:600px;transition:max-height .3s ease}
+.nav-group-items.collapsed{max-height:0!important}
+.kpi-row-5{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--gap);margin-bottom:var(--gap)}
+.gauge-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--gap)}
+.grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:var(--gap)}
+@media(max-width:1100px){.kpi-row-5,.gauge-grid{grid-template-columns:repeat(2,1fr)}.grid-2-1{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">C</div>
+      <div class="logo-text">财务分析看板</div>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav">
+      <div class="nav-group">
+        <div class="nav-group-title" onclick="toggleGroup(this)">基础分析<span class="arrow">▾</span></div>
+        <div class="nav-group-items">
+          <div class="nav-item active" data-tab="tab1"><span class="nav-icon">&#9632;</span>预算完成情况<span class="nav-num">01</span></div>
+          <div class="nav-item" data-tab="tab2"><span class="nav-icon">&#9650;</span>同比环比分析<span class="nav-num">02</span></div>
+          <div class="nav-item" data-tab="tab3"><span class="nav-icon">&#9660;</span>损益表瀑布图<span class="nav-num">03</span></div>
+          <div class="nav-item" data-tab="tab4"><span class="nav-icon">&#9673;</span>关键指标记分卡<span class="nav-num">04</span></div>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title" onclick="toggleGroup(this)">深度分析<span class="arrow">▾</span></div>
+        <div class="nav-group-items">
+          <div class="nav-item" data-tab="tab5"><span class="nav-icon">&#9679;</span>费用分析<span class="nav-num">05</span></div>
+          <div class="nav-item" data-tab="tab6"><span class="nav-icon">&#9733;</span>毛利率分析<span class="nav-num">06</span></div>
+          <div class="nav-item" data-tab="tab7"><span class="nav-icon">&#9776;</span>品类分析<span class="nav-num">07</span></div>
+          <div class="nav-item" data-tab="tab8"><span class="nav-icon">&#9673;</span>产品结构<span class="nav-num">08</span></div>
+          <div class="nav-item" data-tab="tab9"><span class="nav-icon">&#9733;</span>重点产品排名<span class="nav-num">09</span></div>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title" onclick="toggleGroup(this)">现金流与成本<span class="arrow">▾</span></div>
+        <div class="nav-group-items">
+          <div class="nav-item" data-tab="tab10"><span class="nav-icon">&#9660;</span>现金流量瀑布图<span class="nav-num">10</span></div>
+          <div class="nav-item" data-tab="tab11"><span class="nav-icon">&#9650;</span>现金流趋势<span class="nav-num">11</span></div>
+          <div class="nav-item" data-tab="tab12"><span class="nav-icon">&#9776;</span>成本流向桑基图<span class="nav-num">12</span></div>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title" onclick="toggleGroup(this)">专项分析<span class="arrow">▾</span></div>
+        <div class="nav-group-items">
+          <div class="nav-item" data-tab="tab13"><span class="nav-icon">&#9632;</span>方差分析<span class="nav-num">13</span></div>
+          <div class="nav-item" data-tab="tab14"><span class="nav-icon">&#9654;</span>目标达成进度<span class="nav-num">14</span></div>
+          <div class="nav-item" data-tab="tab15"><span class="nav-icon">&#9673;</span>应收账款账龄<span class="nav-num">15</span></div>
+          <div class="nav-item" data-tab="tab16"><span class="nav-icon">&#9679;</span>渠道分析<span class="nav-num">16</span></div>
+          <div class="nav-item" data-tab="tab17"><span class="nav-icon">&#9733;</span>人力成本分析<span class="nav-num">17</span></div>
+          <div class="nav-item" data-tab="tab18"><span class="nav-icon">&#9776;</span>多维度对比矩阵<span class="nav-num">18</span></div>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title" onclick="toggleGroup(this)">总结<span class="arrow">▾</span></div>
+        <div class="nav-group-items">
+          <div class="nav-item" data-tab="tab19"><span class="nav-icon">&#9998;</span>分析结论与建议<span class="nav-num">19</span></div>
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">&copy; 2026 白垩纪食品<br>财务分析看板 v2.0</div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">预算完成情况</div>
+      <div class="period-selector">
+        <div class="btn-group" id="periodType">
+          <button class="active" data-type="year">单年</button>
+          <button data-type="quarter">单季</button>
+          <button data-type="month">单月</button>
+          <button data-type="custom">自定义</button>
+        </div>
+        <select id="yearSel"><option value="2024">2024年</option><option value="2025">2025年</option><option value="2026" selected>2026年</option></select>
+        <div class="period-extra hidden" id="quarterExtra"><select id="quarterSel"><option value="Q1">Q1</option><option value="Q2">Q2</option><option value="Q3">Q3</option><option value="Q4">Q4</option></select></div>
+        <div class="period-extra hidden" id="monthExtra"><select id="monthSel"></select></div>
+        <div class="period-extra hidden" id="customExtra"><select id="customStart"></select><span style="color:var(--text-muted);font-size:12px">至</span><select id="customEnd"></select></div>
+        <button class="apply-btn" id="applyBtn">应用</button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Tab 1: Budget Achievement -->
+      <div class="tab-panel active" id="tab1">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">年度目标</div><div class="kpi-value">35,429<span class="unit">万元</span></div><div class="kpi-sub">2026年全年预算</div></div>
+          <div class="kpi-card amber"><div class="kpi-label">年度实际</div><div class="kpi-value">17,891<span class="unit">万元</span></div><div class="kpi-sub">累计至当前</div></div>
+          <div class="kpi-card blue"><div class="kpi-label">达成率</div><div class="kpi-value">50.50<span class="unit">%</span></div><div class="kpi-sub">目标进度过半</div></div>
+          <div class="kpi-card red"><div class="kpi-label">差额</div><div class="kpi-value">-17,538<span class="unit">万元</span></div><div class="kpi-sub"><span class="trend-down">&#9660; 待完成</span></div></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-title">季度达成率趋势</div>
+          <div class="timeline-row">
+            <div class="timeline-node"><div class="node-label">Q1</div><div class="node-value">20.82%</div><div class="node-dot"></div></div>
+            <div class="timeline-connector"></div>
+            <div class="timeline-node"><div class="node-label">Q2</div><div class="node-value">67.57%</div><div class="node-dot"></div></div>
+            <div class="timeline-connector"></div>
+            <div class="timeline-node"><div class="node-label">Q3</div><div class="node-value">80.23%</div><div class="node-dot"></div></div>
+            <div class="timeline-connector"></div>
+            <div class="timeline-node"><div class="node-label">Q4</div><div class="node-value" style="color:var(--accent-red)">32.16%</div><div class="node-dot" style="background:var(--accent-red)"></div></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="chart-card"><div class="card-title">Q1 月度预算达成</div><div class="chart-box" id="budgetQ1" style="height:260px"></div></div>
+          <div class="chart-card"><div class="card-title">Q2 月度预算达成</div><div class="chart-box" id="budgetQ2" style="height:260px"></div></div>
+          <div class="chart-card"><div class="card-title">Q3 月度预算达成</div><div class="chart-box" id="budgetQ3" style="height:260px"></div></div>
+          <div class="chart-card"><div class="card-title">Q4 月度预算达成</div><div class="chart-box" id="budgetQ4" style="height:260px"></div></div>
+        </div>
+      </div>
+
+      <!-- Tab 2: YoY & MoM -->
+      <div class="tab-panel" id="tab2">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">上年累计</div><div class="kpi-value">17,424<span class="unit">万元</span></div><div class="kpi-sub">2025年同期</div></div>
+          <div class="kpi-card green"><div class="kpi-label">本年累计</div><div class="kpi-value">28,191<span class="unit">万元</span></div><div class="kpi-sub">2026年累计</div></div>
+          <div class="kpi-card amber"><div class="kpi-label">同比增长</div><div class="kpi-value">10,767<span class="unit">万元</span></div><div class="kpi-sub"><span class="trend-up">&#9650; 增长额</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">增长率</div><div class="kpi-value">61.79<span class="unit">%</span></div><div class="kpi-sub"><span class="trend-up">&#9650; 同比增长</span></div></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-title">月度环比变动</div>
+          <div class="mom-row" id="momRow"></div>
+        </div>
+        <div class="qtr-boxes" id="qtrBoxes"></div>
+        <div class="chart-card"><div class="card-title">月度同比对比</div><div class="chart-box" id="yoyChart" style="height:380px"></div></div>
+      </div>
+
+      <!-- Tab 3: P&L Waterfall -->
+      <div class="tab-panel" id="tab3">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">营业收入</div><div class="kpi-value">8,333<span class="unit">万元</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">营业成本</div><div class="kpi-value">1,471<span class="unit">万元</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">毛利率</div><div class="kpi-value">82.4<span class="unit">%</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">净利率</div><div class="kpi-value">39.7<span class="unit">%</span></div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">损益表瀑布图</div><div class="chart-box" id="waterfallChart" style="height:480px"></div></div>
+      </div>
+
+      <!-- Tab 4: KPI Scorecard -->
+      <div class="tab-panel" id="tab4">
+        <div class="kpi-row-5">
+          <div class="kpi-card green"><div class="kpi-label">收入完成率</div><div class="kpi-value">50.5<span class="unit">%</span></div><div class="kpi-sub">目标 100%</div></div>
+          <div class="kpi-card blue"><div class="kpi-label">毛利率</div><div class="kpi-value">82.4<span class="unit">%</span></div><div class="kpi-sub"><span class="trend-up">&#9650; 目标 80%</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">净利率</div><div class="kpi-value">39.7<span class="unit">%</span></div><div class="kpi-sub"><span class="trend-up">&#9650; 目标 35%</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">费用率</div><div class="kpi-value">8.8<span class="unit">%</span></div><div class="kpi-sub"><span class="trend-up">&#9650; 目标 ≤10%</span></div></div>
+          <div class="kpi-card green"><div class="kpi-label">同比增长</div><div class="kpi-value">61.8<span class="unit">%</span></div><div class="kpi-sub">参考线 20%</div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">关键指标仪表盘</div><div class="gauge-grid"><div class="chart-box" id="gauge1" style="height:220px"></div><div class="chart-box" id="gauge2" style="height:220px"></div><div class="chart-box" id="gauge3" style="height:220px"></div><div class="chart-box" id="gauge4" style="height:220px"></div><div class="chart-box" id="gauge5" style="height:220px"></div></div></div>
+        <div class="chart-card"><div class="card-title">各指标月度趋势</div><div class="chart-box" id="kpiSparklines" style="height:260px"></div></div>
+      </div>
+
+      <!-- Tab 5: Expense Analysis -->
+      <div class="tab-panel" id="tab5">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">费用合计 (25年)</div><div class="kpi-value">1,892<span class="unit">万元</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">费用合计 (26年)</div><div class="kpi-value">2,472<span class="unit">万元</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">同比增长</div><div class="kpi-value">30.7<span class="unit">%</span></div><div class="kpi-sub"><span class="trend-down">&#9650; 费用上升</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">费用率</div><div class="kpi-value">8.8<span class="unit">%</span></div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">月度费用同比分析</div><div class="chart-box" id="expenseChart" style="height:400px"></div></div>
+      </div>
+
+      <!-- Tab 7: Category Analysis -->
+      <div class="tab-panel" id="tab7">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">汤料</div><div class="kpi-value">8,521<span class="unit">万元</span></div><div class="kpi-sub"><span class="trend-up">&#9650; +15.3%</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">酱料</div><div class="kpi-value">9,621<span class="unit">万元</span></div><div class="kpi-sub"><span class="trend-up">&#9650; +22.1%</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">底料</div><div class="kpi-value">7,248<span class="unit">万元</span></div><div class="kpi-sub"><span class="trend-up">&#9650; +8.6%</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">其它</div><div class="kpi-value">2,801<span class="unit">万元</span></div><div class="kpi-sub"><span class="trend-up">&#9650; +3.2%</span></div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">月度品类结构对比</div><div class="chart-box" id="categoryChart" style="height:420px"></div></div>
+      </div>
+
+      <!-- Tab 6: Gross Margin -->
+      <div class="tab-panel" id="tab6">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">上年毛利率</div><div class="kpi-value">78.2<span class="unit">%</span></div></div>
+          <div class="kpi-card green"><div class="kpi-label">本年毛利率</div><div class="kpi-value">82.4<span class="unit">%</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">差异</div><div class="kpi-value">+4.2<span class="unit">pp</span></div><div class="kpi-sub"><span class="trend-up">&#9650; 提升</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">趋势</div><div class="kpi-value" style="font-size:32px">&#8593;</div><div class="kpi-sub">持续改善</div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">月度毛利率趋势</div><div class="chart-box" id="marginChart" style="height:340px"></div></div>
+        <div class="chart-card">
+          <div class="card-title">毛利率明细</div>
+          <table class="data-table" id="marginTable"></table>
+        </div>
+      </div>
+
+      <!-- Tab 8: Product Structure -->
+      <div class="tab-panel" id="tab8">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">汤料占比</div><div class="kpi-value">31<span class="unit">%</span></div><div class="kpi-sub">3,521 万元</div></div>
+          <div class="kpi-card blue"><div class="kpi-label">酱料占比</div><div class="kpi-value">35<span class="unit">%</span></div><div class="kpi-sub">3,921 万元</div></div>
+          <div class="kpi-card amber"><div class="kpi-label">底料占比</div><div class="kpi-value">27<span class="unit">%</span></div><div class="kpi-sub">3,048 万元</div></div>
+          <div class="kpi-card red"><div class="kpi-label">其它占比</div><div class="kpi-value">7<span class="unit">%</span></div><div class="kpi-sub">801 万元</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="chart-card"><div class="card-title">产品结构对比（嵌套环形图）</div><div class="chart-box" id="donutChart" style="height:420px"></div></div>
+          <div class="chart-card">
+            <div class="card-title">品类同比变动</div>
+            <table class="data-table" id="structureTable"></table>
+            <div class="chart-box" id="structureBar" style="height:260px;margin-top:12px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 9: Product Ranking -->
+      <div class="tab-panel" id="tab9">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">Top1 产品</div><div class="kpi-value" style="font-size:22px">酱料A</div><div class="kpi-sub">收入 2,800 万</div></div>
+          <div class="kpi-card blue"><div class="kpi-label">Top3 贡献占比</div><div class="kpi-value">56.3<span class="unit">%</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">帕累托 80% 线</div><div class="kpi-value">5<span class="unit">个产品</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">产品总数</div><div class="kpi-value">8<span class="unit">个</span></div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">重点产品排名 (帕累托分析)</div><div class="chart-box" id="productRankChart" style="height:440px"></div></div>
+      </div>
+
+      <!-- Tab 10: Cash Flow Waterfall -->
+      <div class="tab-panel" id="tab10">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">期初现金</div><div class="kpi-value">12,500<span class="unit">万元</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">经营净现金流</div><div class="kpi-value">+1,200<span class="unit">万元</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">投资净额</div><div class="kpi-value">-1,800<span class="unit">万元</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">期末现金</div><div class="kpi-value">12,000<span class="unit">万元</span></div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">现金流量瀑布图</div><div class="chart-box" id="cashflowWaterfallChart" style="height:500px"></div></div>
+      </div>
+
+      <!-- Tab 11: Cashflow Trend -->
+      <div class="tab-panel" id="tab11">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">经营现金流合计</div><div class="kpi-value">12,530<span class="unit">万元</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">投资现金流合计</div><div class="kpi-value">-2,580<span class="unit">万元</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">筹资现金流合计</div><div class="kpi-value">-250<span class="unit">万元</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">净现金流</div><div class="kpi-value">9,700<span class="unit">万元</span></div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">月度现金流趋势</div><div class="chart-box" id="cashflowTrendChart" style="height:400px"></div></div>
+      </div>
+
+      <!-- Tab 12: Cost Flow Sankey -->
+      <div class="tab-panel" id="tab12">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">营业收入</div><div class="kpi-value">8,333<span class="unit">万元</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">成本费用合计</div><div class="kpi-value">5,025<span class="unit">万元</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">净利润</div><div class="kpi-value">3,308<span class="unit">万元</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">净利率</div><div class="kpi-value">39.7<span class="unit">%</span></div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">成本流向桑基图</div><div class="chart-box" id="sankeyChart" style="height:500px"></div></div>
+      </div>
+
+      <!-- Tab 13: Variance Analysis -->
+      <div class="tab-panel" id="tab13">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">总预算</div><div class="kpi-value">35,429<span class="unit">万元</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">总实际</div><div class="kpi-value">28,191<span class="unit">万元</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">总差异</div><div class="kpi-value">-7,238<span class="unit">万元</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">达成率</div><div class="kpi-value">79.6<span class="unit">%</span></div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">预算 vs 实际方差分析</div><div class="chart-box" id="varianceChart" style="height:420px"></div></div>
+      </div>
+
+      <!-- Tab 14: Bullet Chart -->
+      <div class="tab-panel" id="tab14">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">综合达成率</div><div class="kpi-value">87.3<span class="unit">%</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">最优指标</div><div class="kpi-value" style="font-size:20px">毛利率</div><div class="kpi-sub">103% 达成</div></div>
+          <div class="kpi-card red"><div class="kpi-label">最差指标</div><div class="kpi-value" style="font-size:20px">收入</div><div class="kpi-sub">50.5% 达成</div></div>
+          <div class="kpi-card amber"><div class="kpi-label">达标指标数</div><div class="kpi-value">4<span class="unit">/ 6</span></div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">目标达成进度 (子弹图)</div><div class="chart-box" id="bulletChart" style="height:400px"></div></div>
+      </div>
+
+      <!-- Tab 15: AR Aging -->
+      <div class="tab-panel" id="tab15">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">应收账款总额</div><div class="kpi-value">4,820<span class="unit">万元</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">逾期金额</div><div class="kpi-value">680<span class="unit">万元</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">逾期率</div><div class="kpi-value">14.1<span class="unit">%</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">平均回款天数</div><div class="kpi-value">38<span class="unit">天</span></div></div>
+        </div>
+        <div class="grid-2-1">
+          <div class="chart-card"><div class="card-title">月度应收账款账龄分布</div><div class="chart-box" id="arAgingChart" style="height:380px"></div></div>
+          <div class="chart-card"><div class="card-title">当前账龄占比</div><div class="chart-box" id="arAgingPie" style="height:380px"></div></div>
+        </div>
+      </div>
+
+      <!-- Tab 16: Channel Analysis -->
+      <div class="tab-panel" id="tab16">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">线上收入</div><div class="kpi-value">6,820<span class="unit">万元</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">线下收入</div><div class="kpi-value">5,180<span class="unit">万元</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">线上占比</div><div class="kpi-value">56.8<span class="unit">%</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">增长最快渠道</div><div class="kpi-value" style="font-size:20px">电商</div><div class="kpi-sub"><span class="trend-up">&#9650; +35.2%</span></div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">渠道收入分析</div><div class="chart-box" id="channelChart" style="height:420px"></div></div>
+      </div>
+
+      <!-- Tab 17: HR Cost Analysis -->
+      <div class="tab-panel" id="tab17">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">人力成本总额</div><div class="kpi-value">3,260<span class="unit">万元</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">人均成本</div><div class="kpi-value">16.3<span class="unit">万/人</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">人均产出</div><div class="kpi-value">41.7<span class="unit">万/人</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">人效比</div><div class="kpi-value">2.56<span class="unit">x</span></div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">月度人力成本结构与人效</div><div class="chart-box" id="hrCostChart" style="height:400px"></div></div>
+      </div>
+
+      <!-- Tab 18: Small Multiples -->
+      <div class="tab-panel" id="tab18">
+        <div class="kpi-row">
+          <div class="kpi-card green"><div class="kpi-label">品类数</div><div class="kpi-value">4<span class="unit">个</span></div></div>
+          <div class="kpi-card blue"><div class="kpi-label">指标维度</div><div class="kpi-value">3<span class="unit">个</span></div></div>
+          <div class="kpi-card amber"><div class="kpi-label">对比周期</div><div class="kpi-value">12<span class="unit">月</span></div></div>
+          <div class="kpi-card red"><div class="kpi-label">最佳品类</div><div class="kpi-value" style="font-size:20px">酱料</div><div class="kpi-sub">综合表现最优</div></div>
+        </div>
+        <div class="chart-card"><div class="card-title">多维度对比矩阵 (品类 × 指标)</div><div class="chart-box" id="smallMultiplesChart" style="height:600px"></div></div>
+      </div>
+
+      <!-- Tab 19: Conclusions -->
+      <div class="tab-panel" id="tab19">
+        <div class="findings-section">
+          <div class="section-title"><span class="dot" style="background:var(--primary)"></span>积极发现</div>
+          <ul class="finding-list good">
+            <li><span class="fi">&#10004;</span>营业收入同比增长 <b>61.79%</b>，增势强劲，主要受酱料和汤料品类驱动</li>
+            <li><span class="fi">&#10004;</span>毛利率提升 <b>4.2</b> 个百分点至 <b>82.4%</b>，成本控制成效显著</li>
+            <li><span class="fi">&#10004;</span>酱料品类增长 <b>22.1%</b>，成为第一大收入来源，市场竞争力突出</li>
+            <li><span class="fi">&#10004;</span>Q3 预算达成率最高达 <b>80.23%</b>，经营管理水平稳步提升</li>
+          </ul>
+        </div>
+        <div class="findings-section">
+          <div class="section-title"><span class="dot" style="background:var(--accent-red)"></span>风险预警</div>
+          <ul class="finding-list bad">
+            <li><span class="fi">&#10060;</span>Q4 预算达成率仅 <b>32.16%</b>，远低于预期，需重点关注冲刺计划</li>
+            <li><span class="fi">&#10060;</span>费用同比增长 <b>30.7%</b>，增速高于收入增速，费用率有上升风险</li>
+            <li><span class="fi">&#10060;</span>底料品类增速放缓至 <b>8.6%</b>，竞争加剧或产品老化需警惕</li>
+            <li><span class="fi">&#10060;</span>研发费用占比偏高 <b>12%</b>，短期内可能影响利润表现</li>
+          </ul>
+        </div>
+        <div class="findings-section">
+          <div class="section-title"><span class="dot" style="background:var(--accent-blue)"></span>行动建议</div>
+          <ul class="finding-list rec">
+            <li><span class="fi">&#10148;</span><b>加强 Q4 销售冲刺</b>，制定专项促销方案，确保全年预算目标达成</li>
+            <li><span class="fi">&#10148;</span><b>优化费用结构</b>，重点控制管理费用增长，提升费用使用效率</li>
+            <li><span class="fi">&#10148;</span><b>推动底料品类创新</b>，开发新口味和新规格，提升增长动力</li>
+            <li><span class="fi">&#10148;</span><b>评估研发投入 ROI</b>，聚焦高回报项目，优化资源配置</li>
+          </ul>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════
+//  Tab Navigation
+// ═══════════════════════════════════════════════════
+const tabTitles = {
+  tab1:'预算完成情况',tab2:'同比环比分析',tab3:'损益表瀑布图',tab4:'关键指标记分卡',
+  tab5:'费用分析',tab6:'毛利率分析',tab7:'品类分析',tab8:'产品结构',
+  tab9:'重点产品排名',tab10:'现金流量瀑布图',tab11:'现金流趋势',tab12:'成本流向桑基图',
+  tab13:'方差分析',tab14:'目标达成进度',tab15:'应收账款账龄',tab16:'渠道分析',
+  tab17:'人力成本分析',tab18:'多维度对比矩阵',tab19:'分析结论与建议'
+};
+function toggleGroup(el){const items=el.nextElementSibling;const arrow=el.querySelector('.arrow');items.classList.toggle('collapsed');arrow.classList.toggle('collapsed');}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const tab = item.dataset.tab;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById(tab).classList.add('active');
+    document.getElementById('topbarTitle').textContent = tabTitles[tab];
+    // Resize charts in the newly visible tab
+    setTimeout(() => { charts.forEach(c => c.resize()); }, 50);
+  });
+});
+
+// ═══════════════════════════════════════════════════
+//  Period Selector
+// ═══════════════════════════════════════════════════
+const monthSel = document.getElementById('monthSel');
+const customStart = document.getElementById('customStart');
+const customEnd = document.getElementById('customEnd');
+for (let i = 1; i <= 12; i++) {
+  const o1 = new Option(i + '月', i); monthSel.add(o1);
+  const o2 = new Option(i + '月', i); customStart.add(o2);
+  const o3 = new Option(i + '月', i); customEnd.add(o3);
+}
+customEnd.value = '12';
+
+document.querySelectorAll('#periodType button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#periodType button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const t = btn.dataset.type;
+    document.getElementById('quarterExtra').classList.toggle('hidden', t !== 'quarter');
+    document.getElementById('monthExtra').classList.toggle('hidden', t !== 'month');
+    document.getElementById('customExtra').classList.toggle('hidden', t !== 'custom');
+  });
+});
+
+document.getElementById('applyBtn').addEventListener('click', () => {
+  // Simulate re-render with slight variation
+  renderAllCharts();
+});
+
+// ═══════════════════════════════════════════════════
+//  ECharts Instances
+// ═══════════════════════════════════════════════════
+const charts = [];
+function initChart(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const c = echarts.init(el, null, { renderer: 'canvas' });
+  charts.push(c);
+  return c;
+}
+
+const C = { primary: '#2D8B57', light: '#36B37E', amber: '#FFAB00', red: '#FF5630', blue: '#2B7EC1', gray: '#6B778C', muted: '#a0aab8' };
+const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+function baseGrid() { return { left: '3%', right: '4%', bottom: '10%', top: '18%', containLabel: true }; }
+function baseTooltip() { return { trigger: 'axis', backgroundColor: 'rgba(255,255,255,.96)', borderColor: '#e8ecf1', textStyle: { color: '#1a2332', fontSize: 12 }, extraCssText: 'box-shadow:0 4px 16px rgba(0,0,0,.1);border-radius:8px;' }; }
+function baseAxis() { return { splitLine: { lineStyle: { color: '#edf2f7', type: 'dashed' } }, axisLabel: { color: '#7a8599', fontSize: 11 }, axisLine: { lineStyle: { color: '#e2e8f0' } } }; }
+
+// ═══════════════════════════════════════════════════
+//  Render Functions
+// ═══════════════════════════════════════════════════
+
+function renderBudgetQuarters() {
+  const quarters = [
+    { id: 'budgetQ1', months: ['1月','2月','3月'], targets: [2800,2900,2700], actuals: [1800,2100,2500] },
+    { id: 'budgetQ2', months: ['4月','5月','6月'], targets: [3100,3000,2800], actuals: [2900,2800,1900] },
+    { id: 'budgetQ3', months: ['7月','8月','9月'], targets: [2900,3200,3100], actuals: [2600,2800,2500] },
+    { id: 'budgetQ4', months: ['10月','11月','12月'], targets: [3000,2800,3100], actuals: [1200,900,860] },
+  ];
+  quarters.forEach(q => {
+    const c = initChart(q.id);
+    if (!c) return;
+    const pcts = q.targets.map((t, i) => Math.round(q.actuals[i] / t * 100) + '%');
+    c.setOption({
+      tooltip: baseTooltip(),
+      grid: { left: '4%', right: '4%', bottom: '8%', top: '22%', containLabel: true },
+      xAxis: { type: 'category', data: q.months, ...baseAxis() },
+      yAxis: { type: 'value', name: '万元', nameTextStyle: { fontSize: 11, color: '#7a8599' }, ...baseAxis() },
+      series: [
+        { name: '月目标', type: 'bar', data: q.targets, barWidth: '30%', itemStyle: { color: C.primary, borderRadius: [4,4,0,0] } },
+        { name: '月实际', type: 'bar', data: q.actuals, barWidth: '30%', itemStyle: { color: C.amber, borderRadius: [4,4,0,0] },
+          label: { show: true, position: 'top', formatter: (p) => pcts[p.dataIndex], fontSize: 10, color: '#666', fontWeight: 600 }
+        },
+      ],
+      legend: { top: '2%', textStyle: { fontSize: 11 } },
+    });
+  });
+}
+
+function renderMoMRow() {
+  const vals = [12.3, -5.1, 8.7, -2.3, 15.6, -8.9, 3.2, 11.4, -4.7, 6.8, -1.2, 9.5];
+  const row = document.getElementById('momRow');
+  row.innerHTML = '';
+  vals.forEach((v, i) => {
+    const cls = v >= 0 ? 'pos' : 'neg';
+    const sign = v >= 0 ? '+' : '';
+    row.innerHTML += `<div class="mom-cell"><div class="month">${i + 1}月</div><div class="val ${cls}">${sign}${v}%</div></div>`;
+  });
+}
+
+function renderQtrBoxes() {
+  const data = [
+    { name: 'Q1', diff: '4,231', pct: '112%', color: C.primary },
+    { name: 'Q2', diff: '252', pct: '5%', color: C.amber },
+    { name: 'Q3', diff: '4,386', pct: '138%', color: C.primary },
+    { name: 'Q4', diff: '1,898', pct: '35%', color: C.amber },
+  ];
+  const box = document.getElementById('qtrBoxes');
+  box.innerHTML = '';
+  data.forEach(d => {
+    box.innerHTML += `<div class="qtr-box"><div class="qtr-name">${d.name} 同比</div><div class="qtr-diff">+${d.diff}</div><div class="qtr-pct" style="color:${d.color}">&#9650; ${d.pct}</div></div>`;
+  });
+}
+
+function renderYoYChart() {
+  const c = initChart('yoyChart');
+  if (!c) return;
+  const d25 = [1200,1350,1480,1560,1420,1380,1510,1620,1490,1350,1280,1690];
+  const d26 = [1950,2100,2380,2610,2420,2180,2510,2820,2390,2150,2080,2600];
+  const growth = d25.map((v, i) => Math.round((d26[i] - v) / v * 100));
+  c.setOption({
+    tooltip: { ...baseTooltip(), trigger: 'axis' },
+    legend: { data: ['25年', '26年', '增长率'], top: '2%', textStyle: { fontSize: 11 } },
+    grid: { left: '3%', right: '5%', bottom: '8%', top: '16%', containLabel: true },
+    xAxis: { type: 'category', data: months, ...baseAxis() },
+    yAxis: [
+      { type: 'value', name: '万元', ...baseAxis() },
+      { type: 'value', name: '增长率 %', ...baseAxis(), splitLine: { show: false }, axisLabel: { formatter: '{value}%' } },
+    ],
+    series: [
+      { name: '25年', type: 'bar', data: d25, barWidth: '25%', itemStyle: { color: '#b8dfc9', borderRadius: [4,4,0,0] } },
+      { name: '26年', type: 'bar', data: d26, barWidth: '25%', itemStyle: { color: C.primary, borderRadius: [4,4,0,0] } },
+      { name: '增长率', type: 'line', yAxisIndex: 1, data: growth, symbol: 'circle', symbolSize: 8,
+        lineStyle: { color: C.amber, width: 2 }, itemStyle: { color: C.amber },
+        label: { show: true, position: 'top', formatter: (p) => { const v = p.value; return v >= 0 ? '+' + v + '%' : v + '%'; }, fontSize: 10, fontWeight: 600,
+          color: (p) => p.value >= 0 ? C.primary : C.red
+        }
+      },
+    ],
+  });
+}
+
+function renderWaterfall() {
+  const c = initChart('waterfallChart');
+  if (!c) return;
+  const items = [
+    { name: '营业收入', val: 8333, type: 'total' },
+    { name: '营业成本', val: -1471, type: 'dec' },
+    { name: '毛利润', val: 6862, type: 'sub' },
+    { name: '销售费用', val: -540, type: 'dec' },
+    { name: '管理费用', val: -329, type: 'dec' },
+    { name: '研发费用', val: -999, type: 'dec' },
+    { name: '财务费用', val: -604, type: 'dec' },
+    { name: '其他收益', val: 65, type: 'inc' },
+    { name: '营业外收入', val: 42, type: 'inc' },
+    { name: '营业外支出', val: -86, type: 'dec' },
+    { name: '所得税', val: -1103, type: 'dec' },
+    { name: '净利润', val: 3308, type: 'total' },
+  ];
+  const cats = items.map(i => i.name);
+  const helper = [], values = [], colors = [];
+  let running = 0;
+  items.forEach(item => {
+    if (item.type === 'total' || item.type === 'sub') {
+      helper.push(0);
+      values.push(item.val);
+      running = item.val;
+      colors.push(item.type === 'total' ? '#3a4a5c' : '#5a6d80');
+    } else {
+      if (item.val < 0) {
+        helper.push(running + item.val);
+        values.push(Math.abs(item.val));
+        running += item.val;
+        colors.push(C.red);
+      } else {
+        helper.push(running);
+        values.push(item.val);
+        running += item.val;
+        colors.push(C.primary);
+      }
+    }
+  });
+  // Use horizontal bars
+  c.setOption({
+    tooltip: { ...baseTooltip(), formatter: (p) => {
+      if (p.seriesName === '辅助') return '';
+      const idx = p.dataIndex;
+      return `${cats[idx]}<br/><b>${items[idx].val >= 0 ? '+' : ''}${items[idx].val.toLocaleString()}</b> 万元`;
+    }},
+    grid: { left: '12%', right: '8%', bottom: '4%', top: '4%', containLabel: true },
+    yAxis: { type: 'category', data: cats.slice().reverse(), axisLabel: { fontSize: 12, color: '#1a2332', fontWeight: 500 }, axisTick: { show: false }, axisLine: { lineStyle: { color: '#e2e8f0' } } },
+    xAxis: { type: 'value', name: '万元', ...baseAxis(), position: 'top' },
+    series: [
+      { name: '辅助', type: 'bar', stack: 'w', data: helper.slice().reverse(), barWidth: '50%',
+        itemStyle: { color: 'transparent', borderColor: 'transparent' }, emphasis: { itemStyle: { color: 'transparent' } }, tooltip: { show: false } },
+      { name: '数值', type: 'bar', stack: 'w', data: values.slice().reverse().map((v, i) => ({
+          value: v, itemStyle: { color: colors.slice().reverse()[i], borderRadius: items.slice().reverse()[i].val >= 0 ? [0,4,4,0] : [4,0,0,4] }
+        })), barWidth: '50%',
+        label: { show: true, position: 'right', formatter: (p) => {
+          const idx = items.length - 1 - p.dataIndex;
+          const val = items[idx].val;
+          return (val >= 0 ? '+' : '') + val.toLocaleString();
+        }, fontSize: 11, color: '#333', fontWeight: 600 },
+      },
+    ],
+  });
+}
+
+function renderExpenseChart() {
+  const c = initChart('expenseChart');
+  if (!c) return;
+  const d25 = [140,155,160,148,165,170,152,158,145,162,168,169];
+  const d26 = [185,198,210,195,218,225,198,205,190,212,220,216];
+  const rates = [88,92,95,90,93,96,91,94,87,93,95,94];
+  const yoy = d25.map((v, i) => Math.round((d26[i] - v) / v * 100));
+  c.setOption({
+    tooltip: { ...baseTooltip(), trigger: 'axis' },
+    legend: { data: ['25年费用', '26年费用', '达成率'], top: '2%', textStyle: { fontSize: 11 } },
+    grid: baseGrid(),
+    xAxis: { type: 'category', data: months, ...baseAxis() },
+    yAxis: [
+      { type: 'value', name: '万元', ...baseAxis() },
+      { type: 'value', name: '达成率 %', min: 70, max: 110, ...baseAxis(), splitLine: { show: false } },
+    ],
+    series: [
+      { name: '25年费用', type: 'bar', data: d25, barWidth: '25%', itemStyle: { color: '#b8dfc9', borderRadius: [4,4,0,0] } },
+      { name: '26年费用', type: 'bar', data: d26, barWidth: '25%', itemStyle: { color: C.amber, borderRadius: [4,4,0,0] },
+        label: { show: true, position: 'top', formatter: (p) => { const v = yoy[p.dataIndex]; return (v >= 0 ? '+' : '') + v + '%'; }, fontSize: 9, color: (p) => yoy[p.dataIndex] > 0 ? C.red : C.primary, fontWeight: 600 }
+      },
+      { name: '达成率', type: 'line', yAxisIndex: 1, data: rates, symbol: 'circle', symbolSize: 6,
+        lineStyle: { color: C.primary, width: 2 }, itemStyle: { color: C.primary, borderColor: '#fff', borderWidth: 2 },
+        areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(45,139,87,.15)'},{offset:1,color:'rgba(45,139,87,0)'}]) }
+      },
+    ],
+  });
+}
+
+function renderCategoryChart() {
+  const c = initChart('categoryChart');
+  if (!c) return;
+  const mths = ['1月','2月','3月','4月','5月','6月'];
+  const d25 = { tang: [320,350,380,360,340,370], jiang: [380,400,420,410,390,430], di: [280,300,310,290,270,320], other: [120,110,130,125,115,135] };
+  const d26 = { tang: [380,410,440,420,400,430], jiang: [460,490,520,500,480,530], di: [310,330,340,320,300,350], other: [130,120,140,135,125,145] };
+  const catNames = ['汤料','酱料','底料','其它'];
+  const catColors25 = ['rgba(45,139,87,.4)','rgba(43,126,193,.4)','rgba(255,171,0,.4)','rgba(107,119,140,.4)'];
+  const catColors26 = [C.primary, C.blue, C.amber, C.gray];
+  const xData = [];
+  mths.forEach(m => { xData.push(m + '\n25年'); xData.push(m + '\n26年'); });
+
+  const series = [];
+  const keys = ['tang','jiang','di','other'];
+  keys.forEach((k, ki) => {
+    const data = [];
+    mths.forEach((_, mi) => {
+      data.push({ value: d25[k][mi], itemStyle: { color: catColors25[ki] } });
+      data.push({ value: d26[k][mi], itemStyle: { color: catColors26[ki] } });
+    });
+    series.push({ name: catNames[ki], type: 'bar', stack: 'total', data, barWidth: '55%',
+      itemStyle: { borderRadius: ki === keys.length - 1 ? [3,3,0,0] : 0 }
+    });
+  });
+
+  c.setOption({
+    tooltip: { ...baseTooltip(), trigger: 'axis' },
+    legend: { data: catNames, top: '2%', textStyle: { fontSize: 11 } },
+    grid: { left: '3%', right: '4%', bottom: '12%', top: '14%', containLabel: true },
+    xAxis: { type: 'category', data: xData, ...baseAxis(), axisLabel: { fontSize: 10, interval: 0, lineHeight: 16 } },
+    yAxis: { type: 'value', name: '万元', ...baseAxis() },
+    series,
+  });
+}
+
+function renderMarginChart() {
+  const c = initChart('marginChart');
+  if (!c) return;
+  const d25 = [76.5,77.2,78.1,77.8,78.5,79.2,78.8,77.9,78.6,79.1,78.3,78.2];
+  const d26 = [80.1,81.3,82.5,81.8,82.9,83.5,82.1,81.6,83.2,84.1,82.8,82.4];
+  c.setOption({
+    tooltip: { ...baseTooltip(), trigger: 'axis', formatter: (ps) => {
+      let s = ps[0].axisValue + '<br/>';
+      ps.forEach(p => { s += `${p.marker} ${p.seriesName}: <b>${p.value}%</b><br/>`; });
+      if (ps.length >= 2) { const diff = (ps[1].value - ps[0].value).toFixed(1); s += `差异: <b style="color:${diff >= 0 ? C.primary : C.red}">${diff >= 0 ? '+' : ''}${diff}pp</b>`; }
+      return s;
+    }},
+    legend: { data: ['25年毛利率', '26年毛利率'], top: '2%', textStyle: { fontSize: 11 } },
+    grid: baseGrid(),
+    xAxis: { type: 'category', data: months, ...baseAxis(), boundaryGap: false },
+    yAxis: { type: 'value', name: '%', min: 74, max: 86, ...baseAxis(), axisLabel: { formatter: '{value}%' } },
+    series: [
+      { name: '25年毛利率', type: 'line', data: d25, symbol: 'circle', symbolSize: 5,
+        lineStyle: { color: C.muted, type: 'dashed', width: 2 }, itemStyle: { color: C.muted } },
+      { name: '26年毛利率', type: 'line', data: d26, symbol: 'circle', symbolSize: 6,
+        lineStyle: { color: C.primary, width: 2.5 }, itemStyle: { color: C.primary, borderColor: '#fff', borderWidth: 2 },
+        areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(45,139,87,.18)'},{offset:1,color:'rgba(45,139,87,0)'}]) }
+      },
+    ],
+  });
+
+  // Table
+  const tbl = document.getElementById('marginTable');
+  const diff = d25.map((v, i) => (d26[i] - v).toFixed(1));
+  tbl.innerHTML = `<thead><tr><th></th>${months.map(m => `<th>${m}</th>`).join('')}<th>平均</th></tr></thead>
+    <tbody>
+    <tr><td class="row-label">25年毛利率</td>${d25.map(v => `<td>${v}%</td>`).join('')}<td><b>${(d25.reduce((a,b)=>a+b,0)/12).toFixed(1)}%</b></td></tr>
+    <tr><td class="row-label">26年毛利率</td>${d26.map(v => `<td>${v}%</td>`).join('')}<td><b>${(d26.reduce((a,b)=>a+b,0)/12).toFixed(1)}%</b></td></tr>
+    <tr><td class="row-label">差异 (pp)</td>${diff.map(v => `<td class="${parseFloat(v)>=0?'pos':'neg'}">${parseFloat(v)>=0?'+':''}${v}</td>`).join('')}<td class="pos"><b>+${(diff.reduce((a,b)=>a+parseFloat(b),0)/12).toFixed(1)}</b></td></tr>
+    </tbody>`;
+}
+
+function renderDonutChart() {
+  const c = initChart('donutChart');
+  if (!c) return;
+  const colors = [C.primary, C.blue, C.amber, C.gray];
+  const lightColors = ['rgba(45,139,87,.45)','rgba(43,126,193,.45)','rgba(255,171,0,.45)','rgba(107,119,140,.45)'];
+  c.setOption({
+    tooltip: { trigger: 'item', formatter: '{a}<br/>{b}: {c} 万元 ({d}%)' },
+    legend: { orient: 'horizontal', bottom: '2%', textStyle: { fontSize: 11 } },
+    series: [
+      { name: '24年', type: 'pie', radius: ['28%', '48%'], center: ['50%', '45%'],
+        label: { show: false },
+        data: [
+          { value: 3024, name: '汤料', itemStyle: { color: lightColors[0] } },
+          { value: 3415, name: '酱料', itemStyle: { color: lightColors[1] } },
+          { value: 2900, name: '底料', itemStyle: { color: lightColors[2] } },
+          { value: 662, name: '其它', itemStyle: { color: lightColors[3] } },
+        ],
+        itemStyle: { borderColor: '#fff', borderWidth: 2 },
+      },
+      { name: '25年', type: 'pie', radius: ['54%', '74%'], center: ['50%', '45%'],
+        label: { show: true, formatter: '{b}\n{c} ({d}%)', fontSize: 11, lineHeight: 16 },
+        labelLine: { length: 12, length2: 16 },
+        data: [
+          { value: 3521, name: '汤料', itemStyle: { color: colors[0] } },
+          { value: 3921, name: '酱料', itemStyle: { color: colors[1] } },
+          { value: 3048, name: '底料', itemStyle: { color: colors[2] } },
+          { value: 801, name: '其它', itemStyle: { color: colors[3] } },
+        ],
+        itemStyle: { borderColor: '#fff', borderWidth: 2 },
+      },
+    ],
+    graphic: [
+      { type: 'text', left: 'center', top: '42%', style: { text: '产品结构\n对比', textAlign: 'center', fill: '#1a2332', fontSize: 13, fontWeight: 600, lineHeight: 18 } },
+    ],
+  });
+
+  // Structure table
+  const tbl = document.getElementById('structureTable');
+  const cats = [
+    { name: '汤料', v24: 3024, v25: 3521 },
+    { name: '酱料', v24: 3415, v25: 3921 },
+    { name: '底料', v24: 2900, v25: 3048 },
+    { name: '其它', v24: 662, v25: 801 },
+  ];
+  const total24 = cats.reduce((a, c) => a + c.v24, 0);
+  const total25 = cats.reduce((a, c) => a + c.v25, 0);
+  tbl.innerHTML = `<thead><tr><th>品类</th><th>24年 (万元)</th><th>占比</th><th>25年 (万元)</th><th>占比</th><th>变动</th></tr></thead>
+    <tbody>${cats.map(c => {
+      const p24 = (c.v24/total24*100).toFixed(1);
+      const p25 = (c.v25/total25*100).toFixed(1);
+      const chg = ((c.v25-c.v24)/c.v24*100).toFixed(1);
+      return `<tr><td class="row-label">${c.name}</td><td>${c.v24.toLocaleString()}</td><td>${p24}%</td><td>${c.v25.toLocaleString()}</td><td>${p25}%</td><td class="${chg>=0?'pos':'neg'}">${chg>=0?'+':''}${chg}%</td></tr>`;
+    }).join('')}
+    <tr style="font-weight:600;border-top:2px solid var(--border)"><td class="row-label">合计</td><td>${total24.toLocaleString()}</td><td>100%</td><td>${total25.toLocaleString()}</td><td>100%</td><td class="pos">+${((total25-total24)/total24*100).toFixed(1)}%</td></tr>
+    </tbody>`;
+
+  // Small bar chart
+  const bc = initChart('structureBar');
+  if (!bc) return;
+  bc.setOption({
+    tooltip: baseTooltip(),
+    grid: { left: '4%', right: '4%', bottom: '8%', top: '8%', containLabel: true },
+    xAxis: { type: 'category', data: cats.map(c=>c.name), ...baseAxis() },
+    yAxis: { type: 'value', name: '万元', ...baseAxis() },
+    series: [
+      { name: '24年', type: 'bar', data: cats.map(c=>c.v24), barWidth: '30%', itemStyle: { color: '#b8dfc9', borderRadius: [4,4,0,0] } },
+      { name: '25年', type: 'bar', data: cats.map(c=>c.v25), barWidth: '30%', itemStyle: { color: C.primary, borderRadius: [4,4,0,0] },
+        label: { show: true, position: 'top', formatter: (p) => { const idx = p.dataIndex; const chg = ((cats[idx].v25-cats[idx].v24)/cats[idx].v24*100).toFixed(0); return '+' + chg + '%'; }, fontSize: 10, color: C.primary, fontWeight: 600 }
+      },
+    ],
+    legend: { top: '0%', textStyle: { fontSize: 10 } },
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  New Chart Render Functions (11 tabs)
+// ═══════════════════════════════════════════════════
+
+function renderKPIScorecard() {
+  const gauges = [
+    {id:'gauge1',name:'收入完成率',value:50.5,max:120,color:C.primary},
+    {id:'gauge2',name:'毛利率',value:82.4,max:100,color:C.blue},
+    {id:'gauge3',name:'净利率',value:39.7,max:60,color:C.amber},
+    {id:'gauge4',name:'费用率',value:8.8,max:20,color:C.red},
+    {id:'gauge5',name:'同比增长',value:61.8,max:100,color:C.light},
+  ];
+  gauges.forEach(g => {
+    const c = initChart(g.id); if (!c) return;
+    c.setOption({
+      series: [{
+        type:'gauge',startAngle:200,endAngle:-20,min:0,max:g.max,
+        progress:{show:true,width:14,itemStyle:{color:g.color}},
+        axisLine:{lineStyle:{width:14,color:[[1,'#e8ecf1']]}},
+        axisTick:{show:false},splitLine:{show:false},axisLabel:{show:false},pointer:{show:false},
+        title:{show:true,offsetCenter:[0,'72%'],fontSize:12,color:'#7a8599'},
+        detail:{valueAnimation:true,fontSize:22,fontWeight:700,offsetCenter:[0,'42%'],formatter:'{value}%',color:g.color},
+        data:[{value:g.value,name:g.name}]
+      }]
+    });
+  });
+  // Sparklines
+  const sc = initChart('kpiSparklines'); if (!sc) return;
+  const sparkData = {
+    '收入完成率':[20,28,35,38,42,45,48,50,50.5],
+    '毛利率':[80.1,81.3,82.5,81.8,82.9,83.5,82.1,81.6,82.4],
+    '净利率':[35.2,36.8,38.1,37.5,39.2,40.1,38.8,39.0,39.7],
+    '费用率':[9.5,9.2,9.0,8.9,8.8,8.7,8.9,8.8,8.8],
+    '同比增长':[45,48,52,55,58,60,59,61,61.8],
+  };
+  const colors = [C.primary,C.blue,C.amber,C.red,C.light];
+  sc.setOption({
+    tooltip:{...baseTooltip(),trigger:'axis'},
+    legend:{data:Object.keys(sparkData),top:'2%',textStyle:{fontSize:11}},
+    grid:{left:'3%',right:'4%',bottom:'8%',top:'18%',containLabel:true},
+    xAxis:{type:'category',data:['1月','2月','3月','4月','5月','6月','7月','8月','9月'],...baseAxis()},
+    yAxis:{type:'value',name:'%',...baseAxis()},
+    series:Object.entries(sparkData).map(([name,data],i)=>({
+      name,type:'line',data,symbol:'circle',symbolSize:5,
+      lineStyle:{color:colors[i],width:2},itemStyle:{color:colors[i]}
+    }))
+  });
+}
+
+function renderProductRanking() {
+  const c = initChart('productRankChart'); if (!c) return;
+  const products = ['酱料A','汤料B','底料C','汤料D','酱料E','底料F','其它G','其它H'];
+  const revenue = [2800,2400,2100,1800,1500,1200,800,500];
+  const total = revenue.reduce((a,b)=>a+b,0);
+  const cumPct = []; let cum = 0;
+  revenue.forEach(v => { cum += v; cumPct.push(Math.round(cum/total*1000)/10); });
+  const catColors = {'酱':C.primary,'汤':C.blue,'底':C.amber,'其':C.gray};
+  c.setOption({
+    tooltip:{...baseTooltip(),trigger:'axis'},
+    legend:{data:['收入','累计占比'],top:'2%',textStyle:{fontSize:11}},
+    grid:{left:'12%',right:'8%',bottom:'6%',top:'14%',containLabel:true},
+    yAxis:{type:'category',data:products.slice().reverse(),axisLabel:{fontSize:12,color:'#1a2332'},...baseAxis()},
+    xAxis:[
+      {type:'value',name:'万元',position:'bottom',...baseAxis()},
+      {type:'value',name:'累计占比 %',min:0,max:100,position:'top',...baseAxis(),splitLine:{show:false},axisLabel:{formatter:'{value}%'}}
+    ],
+    series:[
+      {name:'收入',type:'bar',data:revenue.slice().reverse().map((v,i)=>{
+        const pName=products.slice().reverse()[i]; const key=pName.charAt(0);
+        return {value:v,itemStyle:{color:catColors[key]||C.gray,borderRadius:[0,4,4,0]}};
+      }),barWidth:'55%',label:{show:true,position:'right',formatter:'{c}',fontSize:11,fontWeight:600}},
+      {name:'累计占比',type:'line',xAxisIndex:1,data:cumPct.slice().reverse(),symbol:'diamond',symbolSize:8,
+        lineStyle:{color:'#333',width:2,type:'dashed'},itemStyle:{color:'#333'},
+        label:{show:true,position:'top',formatter:'{c}%',fontSize:10,fontWeight:600},
+        markLine:{silent:true,data:[{xAxis:80,label:{formatter:'80%',position:'end',fontSize:11},lineStyle:{color:C.red,type:'dashed',width:2}}]}
+      }
+    ]
+  });
+}
+
+function renderCashFlowWaterfall() {
+  const c = initChart('cashflowWaterfallChart'); if (!c) return;
+  const items = [
+    {name:'期初现金余额',val:12500,type:'total'},{name:'销售收到现金',val:8200,type:'inc'},
+    {name:'购买支付现金',val:-4300,type:'dec'},{name:'支付工资',val:-1800,type:'dec'},
+    {name:'税费支出',val:-900,type:'dec'},{name:'经营活动小计',val:13700,type:'sub'},
+    {name:'购买设备',val:-2100,type:'dec'},{name:'出售资产',val:300,type:'inc'},
+    {name:'投资活动小计',val:11900,type:'sub'},{name:'银行借款',val:1500,type:'inc'},
+    {name:'偿还借款',val:-800,type:'dec'},{name:'支付股利',val:-600,type:'dec'},
+    {name:'期末现金余额',val:12000,type:'total'}
+  ];
+  const cats=items.map(i=>i.name), helper=[], values=[], colors=[];
+  let running=0;
+  items.forEach(item=>{
+    if(item.type==='total'||item.type==='sub'){
+      helper.push(0); values.push(item.val); running=item.val;
+      colors.push(item.type==='total'?'#3a4a5c':'#5a6d80');
+    } else if(item.val<0){
+      helper.push(running+item.val); values.push(Math.abs(item.val)); running+=item.val; colors.push(C.red);
+    } else {
+      helper.push(running); values.push(item.val); running+=item.val; colors.push(C.primary);
+    }
+  });
+  c.setOption({
+    tooltip:{...baseTooltip(),formatter:p=>{if(p.seriesName==='辅助')return '';const idx=p.dataIndex;return `${cats[idx]}<br/><b>${items[idx].val>=0?'+':''}${items[idx].val.toLocaleString()}</b> 万元`;}},
+    grid:{left:'14%',right:'8%',bottom:'4%',top:'4%',containLabel:true},
+    yAxis:{type:'category',data:cats.slice().reverse(),axisLabel:{fontSize:11.5,color:'#1a2332',fontWeight:500},axisTick:{show:false},axisLine:{lineStyle:{color:'#e2e8f0'}}},
+    xAxis:{type:'value',name:'万元',...baseAxis(),position:'top'},
+    series:[
+      {name:'辅助',type:'bar',stack:'w',data:helper.slice().reverse(),barWidth:'50%',itemStyle:{color:'transparent',borderColor:'transparent'},emphasis:{itemStyle:{color:'transparent'}},tooltip:{show:false}},
+      {name:'数值',type:'bar',stack:'w',data:values.slice().reverse().map((v,i)=>({value:v,itemStyle:{color:colors.slice().reverse()[i],borderRadius:items.slice().reverse()[i].val>=0?[0,4,4,0]:[4,0,0,4]}})),barWidth:'50%',
+        label:{show:true,position:'right',formatter:p=>{const idx=items.length-1-p.dataIndex;const val=items[idx].val;return (val>=0?'+':'')+val.toLocaleString();},fontSize:11,color:'#333',fontWeight:600}}
+    ]
+  });
+}
+
+function renderCashflowTrend() {
+  const c = initChart('cashflowTrendChart'); if (!c) return;
+  const operating = [800,900,1100,950,1050,1200,980,1050,1150,1000,1100,1250];
+  const investing = [-200,-150,-300,-180,-220,-250,-170,-200,-280,-190,-210,-230];
+  const financing = [-100,-50,200,-80,-120,150,-60,-100,100,-70,-90,50];
+  const net = []; let cum=0;
+  months.forEach((_,i)=>{cum+=operating[i]+investing[i]+financing[i];net.push(cum);});
+  c.setOption({
+    tooltip:{...baseTooltip(),trigger:'axis'},
+    legend:{data:['经营','投资','筹资','净现金流累计'],top:'2%',textStyle:{fontSize:11}},
+    grid:baseGrid(),
+    xAxis:{type:'category',data:months,...baseAxis()},
+    yAxis:{type:'value',name:'万元',...baseAxis()},
+    series:[
+      {name:'经营',type:'line',stack:'cf',data:operating,areaStyle:{color:'rgba(45,139,87,.4)'},lineStyle:{color:C.primary},itemStyle:{color:C.primary}},
+      {name:'投资',type:'line',stack:'cf',data:investing,areaStyle:{color:'rgba(43,126,193,.4)'},lineStyle:{color:C.blue},itemStyle:{color:C.blue}},
+      {name:'筹资',type:'line',stack:'cf',data:financing,areaStyle:{color:'rgba(255,171,0,.4)'},lineStyle:{color:C.amber},itemStyle:{color:C.amber}},
+      {name:'净现金流累计',type:'line',data:net,lineStyle:{color:'#333',type:'dashed',width:2},itemStyle:{color:'#333'},symbol:'circle',symbolSize:6,
+        label:{show:true,position:'top',formatter:'{c}',fontSize:10,fontWeight:600}}
+    ]
+  });
+}
+
+function renderCostFlowSankey() {
+  const c = initChart('sankeyChart'); if (!c) return;
+  c.setOption({
+    tooltip:{trigger:'item',formatter:p=>p.dataType==='edge'?`${p.data.source} → ${p.data.target}<br/><b>${p.data.value.toLocaleString()}</b> 万元`:`${p.name}<br/><b>${p.value.toLocaleString()}</b> 万元`},
+    series:[{
+      type:'sankey',layout:'none',emphasis:{focus:'adjacency'},
+      nodeAlign:'left',orient:'horizontal',
+      lineStyle:{color:'gradient',opacity:0.4,curveness:0.5},
+      label:{fontSize:12,fontWeight:500},
+      data:[
+        {name:'营业收入',itemStyle:{color:C.primary}},{name:'营业成本',itemStyle:{color:C.red}},
+        {name:'毛利润',itemStyle:{color:C.blue}},{name:'销售费用',itemStyle:{color:'#e06666'}},
+        {name:'管理费用',itemStyle:{color:'#e06666'}},{name:'研发费用',itemStyle:{color:'#e06666'}},
+        {name:'财务费用',itemStyle:{color:'#e06666'}},{name:'营业利润',itemStyle:{color:'#5b9bd5'}},
+        {name:'所得税',itemStyle:{color:C.amber}},{name:'其他调整',itemStyle:{color:C.gray}},
+        {name:'净利润',itemStyle:{color:C.primary}}
+      ],
+      links:[
+        {source:'营业收入',target:'营业成本',value:1471},{source:'营业收入',target:'毛利润',value:6862},
+        {source:'毛利润',target:'销售费用',value:540},{source:'毛利润',target:'管理费用',value:329},
+        {source:'毛利润',target:'研发费用',value:999},{source:'毛利润',target:'财务费用',value:604},
+        {source:'毛利润',target:'营业利润',value:4390},
+        {source:'营业利润',target:'所得税',value:1103},{source:'营业利润',target:'其他调整',value:21-42+86},
+        {source:'营业利润',target:'净利润',value:3308}
+      ]
+    }]
+  });
+}
+
+function renderVarianceAnalysis() {
+  const c = initChart('varianceChart'); if (!c) return;
+  const items = [
+    {name:'营业收入',budget:8500,actual:8333},{name:'营业成本',budget:1600,actual:1471},
+    {name:'销售费用',budget:500,actual:540},{name:'管理费用',budget:350,actual:329},
+    {name:'研发费用',budget:900,actual:999},{name:'财务费用',budget:550,actual:604},
+    {name:'净利润',budget:3200,actual:3308}
+  ];
+  items.sort((a,b)=>Math.abs(b.actual-b.budget)-Math.abs(a.actual-a.budget));
+  const names=items.map(i=>i.name).reverse();
+  const diffs=items.map(i=>i.actual-i.budget).reverse();
+  const pcts=items.map((i)=>((i.actual-i.budget)/i.budget*100).toFixed(1)).reverse();
+  c.setOption({
+    tooltip:{...baseTooltip(),trigger:'axis',formatter:p=>{const i=p[0].dataIndex;return `${names[i]}<br/>预算: ${items[items.length-1-i].budget.toLocaleString()}<br/>实际: ${items[items.length-1-i].actual.toLocaleString()}<br/>差异: <b style="color:${diffs[i]>=0?C.primary:C.red}">${diffs[i]>=0?'+':''}${diffs[i].toLocaleString()}</b> (${diffs[i]>=0?'+':''}${pcts[i]}%)`;}},
+    grid:{left:'12%',right:'12%',bottom:'6%',top:'6%',containLabel:true},
+    yAxis:{type:'category',data:names,axisLabel:{fontSize:12,color:'#1a2332',fontWeight:500},...baseAxis()},
+    xAxis:{type:'value',name:'差异 (万元)',...baseAxis()},
+    series:[{
+      type:'bar',data:diffs.map((v,i)=>({value:v,itemStyle:{color:v>=0?C.primary:C.red,borderRadius:v>=0?[0,4,4,0]:[4,0,0,4]}})),barWidth:'50%',
+      label:{show:true,position:p=>p.value>=0?'right':'left',formatter:p=>`${p.value>=0?'+':''}${p.value.toLocaleString()} (${pcts[p.dataIndex]}%)`,fontSize:11,fontWeight:600,color:p=>p.value>=0?C.primary:C.red}
+    }]
+  });
+}
+
+function renderBulletChart() {
+  const c = initChart('bulletChart'); if (!c) return;
+  // Normalize all KPIs to 0-100 scale for shared axis
+  const kpis = [
+    {name:'收入',actual:8333,target:16500,poor:8000,good:12000,excellent:16500,max:19800},
+    {name:'成本控制',actual:1471,target:1600,poor:2000,good:1600,excellent:1200,max:2400},
+    {name:'毛利率 %',actual:82.4,target:80,poor:70,good:80,excellent:90,max:100},
+    {name:'净利率 %',actual:39.7,target:35,poor:25,good:35,excellent:45,max:54},
+    {name:'费用率 %',actual:8.8,target:10,poor:15,good:10,excellent:5,max:18},
+    {name:'人效 万/人',actual:41.7,target:40,poor:30,good:40,excellent:50,max:60}
+  ];
+  const norm = v => v; // use raw values per-row via renderItem
+  const names = kpis.map(k=>k.name).reverse();
+  const renderItem = (params, api) => {
+    const idx = api.value(0);
+    const kpi = kpis[kpis.length-1-idx];
+    const categoryWidth = api.size([0,1])[1]*0.6;
+    const y = api.coord([0,idx])[1];
+    // Map KPI value to x pixel using 0-100 normalized scale
+    const toX = v => api.coord([v/kpi.max*100,idx])[0];
+    const x0 = api.coord([0,idx])[0];
+    const barH = categoryWidth*0.35;
+    const items = [];
+    // Sort zones so they draw left to right
+    const zoneVals = [kpi.poor,kpi.good,kpi.excellent].sort((a,b)=>a-b);
+    const zoneColors = ['rgba(255,86,48,.15)','rgba(255,171,0,.15)','rgba(45,139,87,.15)'];
+    let prevPx = x0;
+    zoneVals.forEach((zv,zi)=>{
+      const zx=toX(zv);
+      items.push({type:'rect',shape:{x:prevPx,y:y-categoryWidth/2,width:zx-prevPx,height:categoryWidth},style:{fill:zoneColors[zi]}});
+      prevPx=zx;
+    });
+    // Actual bar
+    const actualPx = toX(kpi.actual);
+    items.push({type:'rect',shape:{x:x0,y:y-barH/2,width:actualPx-x0,height:barH},style:{fill:C.primary}});
+    // Target line
+    const tx=toX(kpi.target);
+    items.push({type:'line',shape:{x1:tx,y1:y-categoryWidth/2-2,x2:tx,y2:y+categoryWidth/2+2},style:{stroke:'#1a2332',lineWidth:2.5}});
+    // Actual value label
+    items.push({type:'text',style:{text:`${kpi.actual} (${(kpi.actual/kpi.target*100).toFixed(0)}%)`,x:actualPx+6,y:y-4,fill:'#333',fontSize:11,fontWeight:600}});
+    return {type:'group',children:items};
+  };
+  c.setOption({
+    tooltip:{trigger:'axis',formatter:p=>{const idx=p[0]?.dataIndex;if(idx===undefined)return '';const kpi=kpis[kpis.length-1-idx];return `${kpi.name}<br/>实际: <b>${kpi.actual}</b><br/>目标: ${kpi.target}<br/>达成: <b>${(kpi.actual/kpi.target*100).toFixed(0)}%</b>`;}},
+    grid:{left:'12%',right:'16%',bottom:'6%',top:'6%',containLabel:true},
+    yAxis:{type:'category',data:names,axisLabel:{fontSize:12,color:'#1a2332',fontWeight:500},...baseAxis()},
+    xAxis:{type:'value',min:0,max:100,show:false,...baseAxis()},
+    series:[{type:'custom',renderItem,encode:{x:0,y:0},data:kpis.map((_,i)=>[kpis.length-1-i]),z:2}]
+  });
+}
+
+function renderARaging() {
+  // Stacked bar chart
+  const c = initChart('arAgingChart'); if (!c) return;
+  const mths = ['7月','8月','9月','10月','11月','12月'];
+  const d0_30 =  [620,650,680,700,720,710];
+  const d31_60 = [180,170,190,160,155,150];
+  const d61_90 = [80,85,75,70,65,60];
+  const d90p =   [50,55,45,40,35,30];
+  c.setOption({
+    tooltip:{...baseTooltip(),trigger:'axis'},
+    legend:{data:['0-30天','31-60天','61-90天','90天+'],top:'2%',textStyle:{fontSize:11}},
+    grid:baseGrid(),
+    xAxis:{type:'category',data:mths,...baseAxis()},
+    yAxis:{type:'value',name:'万元',...baseAxis()},
+    series:[
+      {name:'0-30天',type:'bar',stack:'ar',data:d0_30,barWidth:'45%',itemStyle:{color:C.primary,borderRadius:[0,0,0,0]}},
+      {name:'31-60天',type:'bar',stack:'ar',data:d31_60,itemStyle:{color:C.amber}},
+      {name:'61-90天',type:'bar',stack:'ar',data:d61_90,itemStyle:{color:'#ff9f43'}},
+      {name:'90天+',type:'bar',stack:'ar',data:d90p,itemStyle:{color:C.red,borderRadius:[4,4,0,0]}}
+    ]
+  });
+  // Pie chart
+  const pc = initChart('arAgingPie'); if (!pc) return;
+  pc.setOption({
+    tooltip:{trigger:'item',formatter:'{b}: {c} 万元 ({d}%)'},
+    series:[{
+      type:'pie',radius:['40%','70%'],center:['50%','50%'],
+      label:{show:true,formatter:'{b}\n{d}%',fontSize:11},
+      data:[
+        {value:710,name:'0-30天',itemStyle:{color:C.primary}},
+        {value:150,name:'31-60天',itemStyle:{color:C.amber}},
+        {value:60,name:'61-90天',itemStyle:{color:'#ff9f43'}},
+        {value:30,name:'90天+',itemStyle:{color:C.red}}
+      ],
+      itemStyle:{borderColor:'#fff',borderWidth:2}
+    }]
+  });
+}
+
+function renderChannelAnalysis() {
+  const c = initChart('channelChart'); if (!c) return;
+  const mths = months;
+  const zhixiao = [280,300,320,310,330,340,320,350,360,340,350,370];
+  const jingxiao = [220,230,240,250,260,270,250,260,280,270,280,290];
+  const dianshang = [180,200,220,240,260,280,260,300,320,310,330,350];
+  const other =     [60,65,70,68,72,75,70,78,80,76,80,85];
+  c.setOption({
+    tooltip:{...baseTooltip(),trigger:'axis'},
+    legend:{data:['直销','经销商','电商','其他'],top:'2%',textStyle:{fontSize:11}},
+    grid:baseGrid(),
+    xAxis:{type:'category',data:mths,...baseAxis()},
+    yAxis:{type:'value',name:'万元',...baseAxis()},
+    series:[
+      {name:'直销',type:'bar',stack:'ch',data:zhixiao,barWidth:'50%',itemStyle:{color:C.primary}},
+      {name:'经销商',type:'bar',stack:'ch',data:jingxiao,itemStyle:{color:C.blue}},
+      {name:'电商',type:'bar',stack:'ch',data:dianshang,itemStyle:{color:C.amber}},
+      {name:'其他',type:'bar',stack:'ch',data:other,itemStyle:{color:C.gray,borderRadius:[4,4,0,0]}}
+    ]
+  });
+}
+
+function renderHRCostAnalysis() {
+  const c = initChart('hrCostChart'); if (!c) return;
+  const salary =   [180,185,190,188,195,200,192,198,205,195,200,210];
+  const welfare =  [40,42,44,43,45,48,44,46,50,46,48,52];
+  const training = [15,12,18,14,16,20,15,17,22,16,18,25];
+  const efficiency=[38,39,40,39.5,41,42.5,40.5,41.5,43,41,42,44];
+  c.setOption({
+    tooltip:{...baseTooltip(),trigger:'axis'},
+    legend:{data:['薪酬','福利','培训','人均产出'],top:'2%',textStyle:{fontSize:11}},
+    grid:baseGrid(),
+    xAxis:{type:'category',data:months,...baseAxis()},
+    yAxis:[
+      {type:'value',name:'万元',...baseAxis()},
+      {type:'value',name:'万/人',min:30,max:50,...baseAxis(),splitLine:{show:false}}
+    ],
+    series:[
+      {name:'薪酬',type:'bar',stack:'hr',data:salary,barWidth:'45%',itemStyle:{color:C.primary}},
+      {name:'福利',type:'bar',stack:'hr',data:welfare,itemStyle:{color:C.blue}},
+      {name:'培训',type:'bar',stack:'hr',data:training,itemStyle:{color:C.amber,borderRadius:[4,4,0,0]}},
+      {name:'人均产出',type:'line',yAxisIndex:1,data:efficiency,symbol:'circle',symbolSize:6,
+        lineStyle:{color:C.red,width:2.5},itemStyle:{color:C.red,borderColor:'#fff',borderWidth:2},
+        label:{show:true,position:'top',formatter:'{c}',fontSize:10,fontWeight:600}}
+    ]
+  });
+}
+
+function renderSmallMultiples() {
+  const c = initChart('smallMultiplesChart'); if (!c) return;
+  const categories = ['汤料','酱料','底料','其它'];
+  const metrics = ['收入','成本','毛利率'];
+  const data = {
+    '汤料':  {收入:[320,350,380,360,340,370,380,410,440,420,400,430],成本:[65,70,72,68,64,71,70,75,80,76,72,78],毛利率:[79.7,80.0,81.1,81.1,81.2,80.8,81.6,81.7,81.8,81.9,82.0,81.9]},
+    '酱料':  {收入:[380,400,420,410,390,430,460,490,520,500,480,530],成本:[60,63,65,62,58,66,68,72,76,73,70,78],毛利率:[84.2,84.3,84.5,84.9,85.1,84.7,85.2,85.3,85.4,85.4,85.4,85.3]},
+    '底料':  {收入:[280,300,310,290,270,320,310,330,340,320,300,350],成本:[70,75,78,73,68,80,78,83,85,80,75,88],毛利率:[75.0,75.0,74.8,74.8,74.8,75.0,74.8,74.8,75.0,75.0,75.0,74.9]},
+    '其它':  {收入:[120,110,130,125,115,135,130,120,140,135,125,145],成本:[50,46,54,52,48,56,54,50,58,56,52,60],毛利率:[58.3,58.2,58.5,58.4,58.3,58.5,58.5,58.3,58.6,58.5,58.4,58.6]}
+  };
+  const grids=[], xAxes=[], yAxes=[], series=[];
+  const cols=4, rows=3;
+  const gapX=6,gapY=8,padL=6,padR=2,padT=8,padB=5;
+  const cellW=(100-padL-padR-(cols-1)*gapX)/cols;
+  const cellH=(100-padT-padB-(rows-1)*gapY)/rows;
+  categories.forEach((cat,ci)=>{
+    metrics.forEach((met,mi)=>{
+      const idx=mi*cols+ci;
+      const left=padL+ci*(cellW+gapX)+'%';
+      const top=padT+mi*(cellH+gapY)+'%';
+      grids.push({left,top,width:cellW+'%',height:cellH+'%'});
+      xAxes.push({type:'category',data:months,gridIndex:idx,show:mi===rows-1,axisLabel:{fontSize:9,color:'#999'},axisLine:{show:false},axisTick:{show:false}});
+      yAxes.push({type:'value',gridIndex:idx,show:ci===0,axisLabel:{fontSize:9,color:'#999'},splitLine:{lineStyle:{color:'#f0f2f5'}},axisLine:{show:false},axisTick:{show:false}});
+      const lineColors=[C.primary,C.red,C.amber];
+      const areaColors=['rgba(45,139,87,0.15)','rgba(255,86,48,0.15)','rgba(255,171,0,0.15)'];
+      series.push({
+        type:'line',data:data[cat][met],xAxisIndex:idx,yAxisIndex:idx,symbol:'none',
+        lineStyle:{color:lineColors[mi],width:1.5},
+        areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:areaColors[mi]},{offset:1,color:'rgba(0,0,0,0)'}])}
+      });
+    });
+  });
+  // Title annotations
+  const graphic = [];
+  categories.forEach((cat,ci)=>{
+    graphic.push({type:'text',left:(padL+ci*(cellW+gapX)+cellW/2)+'%',top:'2%',style:{text:cat,textAlign:'center',fontSize:12,fontWeight:600,fill:'#1a2332'}});
+  });
+  metrics.forEach((met,mi)=>{
+    graphic.push({type:'text',left:'1%',top:(padT+mi*(cellH+gapY)+cellH/2)+'%',style:{text:met,textAlign:'left',fontSize:11,fontWeight:500,fill:'#7a8599'}});
+  });
+  c.setOption({grid:grids,xAxis:xAxes,yAxis:yAxes,series,graphic,tooltip:{trigger:'axis',backgroundColor:'rgba(255,255,255,.96)',borderColor:'#e8ecf1',textStyle:{fontSize:11}}});
+}
+
+// ═══════════════════════════════════════════════════
+//  Init
+// ═══════════════════════════════════════════════════
+function renderAllCharts() {
+  // Clear previous
+  charts.forEach(c => c.dispose());
+  charts.length = 0;
+  renderBudgetQuarters();
+  renderMoMRow();
+  renderQtrBoxes();
+  renderYoYChart();
+  renderWaterfall();
+  renderKPIScorecard();
+  renderExpenseChart();
+  renderCategoryChart();
+  renderMarginChart();
+  renderDonutChart();
+  renderProductRanking();
+  renderCashFlowWaterfall();
+  renderCashflowTrend();
+  renderCostFlowSankey();
+  renderVarianceAnalysis();
+  renderBulletChart();
+  renderARaging();
+  renderChannelAnalysis();
+  renderHRCostAnalysis();
+  renderSmallMultiples();
+}
+
+renderAllCharts();
+window.addEventListener('resize', () => { charts.forEach(c => c.resize()); });
+</script>
+</body>
+</html>

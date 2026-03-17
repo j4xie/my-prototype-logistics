@@ -54,6 +54,7 @@
     "expo-localization": "~16.1.6",
     "expo-location": "^18.1.6",
     "expo-notifications": "^0.31.5",
+    "expo-print": "^55.0.8",
     "expo-secure-store": "~14.2.4",
     "expo-sharing": "~13.1.5",
     "expo-speech": "~13.1.7",

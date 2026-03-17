@@ -125,7 +125,12 @@
     "yuan": "CNY",
     "percent": "%",
     "hour": "hour",
-    "minute": "min"
+    "minute": "min",
+    "people": "",
+    "days": "d",
+    "times": "x",
+    "ten_thousand": "0K",
+    "hundred_million": "00M"
   },
   "pagination": {
     "total": "Total {{total}} items",
@@ -530,6 +535,17 @@
   },
   "executiveDashboard": {
     "title": "Executive Dashboard"
-  }
+  },
+  "dateRange": {
+    "last7days": "Last 7 Days",
+    "last30days": "Last 30 Days",
+    "thisQuarter": "This Quarter",
+    "thisYear": "This Year",
+    "selectRange": "Select Date Range"
+  },
+  "quick_actions": "Quick Actions",
+  "see_all": "See All",
+  "noData": "No data",
+  "legend": "Legend"
 }
 

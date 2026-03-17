@@ -12,3 +12,4 @@ export { default as ProductTypeSelector } from './ProductTypeSelector';
 export { default as SupplierSelector } from './SupplierSelector';
 export { default as CustomerSelector } from './CustomerSelector';
 export { default as MarkdownRenderer } from './MarkdownRenderer';
+export { VoiceMicButton } from './VoiceMicButton';

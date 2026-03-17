@@ -177,7 +177,7 @@ const progressPercent = computed(() => {
 // Get progress color based on percentage
 const progressColor = computed(() => {
   if (progressPercent.value >= 100) return '#67c23a';
-  if (progressPercent.value >= 70) return '#1B65A8';
+  if (progressPercent.value >= 70) return '#2D8B57';
   if (progressPercent.value >= 50) return '#e6a23c';
   return '#f56c6c';
 });
@@ -524,7 +524,7 @@ function handleClick() {
     width: 24px;
     height: 24px;
     border: 2px solid #dcdfe6;
-    border-top-color: #1B65A8;
+    border-top-color: #2D8B57;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }

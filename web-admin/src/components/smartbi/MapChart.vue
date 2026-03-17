@@ -42,7 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
   valueLabel: 'Value',
   valueUnit: '',
   minColor: '#e0f3ff',
-  maxColor: '#1B65A8',
+  maxColor: '#2D8B57',
   showLabel: true,
   zoom: 1.2,
   roam: true,
@@ -128,7 +128,7 @@ const chartOptions = computed<EChartsOption>(() => {
           <div style="font-weight: 600; margin-bottom: 4px;">${data.name}</div>
           <div style="margin-top: 4px; display:flex; flex-direction:column; gap:2px;">
             <div>${props.valueLabel}: <span style="font-weight: 600;">${value.toLocaleString()}${props.valueUnit}</span></div>
-            ${rank > 0 ? `<div style="color:#909399;">全国排名: <span style="font-weight:600; color:#1B65A8;">#${rank}</span></div>` : ''}
+            ${rank > 0 ? `<div style="color:#909399;">全国排名: <span style="font-weight:600; color:#2D8B57;">#${rank}</span></div>` : ''}
             <div style="color:#909399;">占比: <span style="font-weight:600; color:#e6a23c;">${pct}%</span></div>
           </div>
         `;
@@ -195,7 +195,7 @@ const chartOptions = computed<EChartsOption>(() => {
             color: '#303133'
           },
           itemStyle: {
-            areaColor: '#1B65A8'
+            areaColor: '#2D8B57'
           }
         },
         data: props.data.map(d => ({
@@ -477,9 +477,9 @@ defineExpose({
       line-height: 1;
 
       &:hover {
-        background: #1B65A8;
+        background: #2D8B57;
         color: #fff;
-        border-color: #1B65A8;
+        border-color: #2D8B57;
       }
     }
   }

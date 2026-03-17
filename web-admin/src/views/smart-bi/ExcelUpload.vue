@@ -942,7 +942,7 @@ function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'su
     justify-content: center;
     transition: border-color 0.2s ease, background-color 0.2s ease;
     &:hover {
-      border-color: var(--el-color-primary, #1B65A8);
+      border-color: var(--el-color-primary, #2D8B57);
       background-color: var(--el-color-primary-light-9, #ecf5ff);
     }
   }

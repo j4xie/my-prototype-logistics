@@ -483,7 +483,7 @@ watch(selectedFactoryId, () => {
       color: var(--el-text-color-primary, #303133);
 
       .el-icon {
-        color: var(--el-color-primary, #1B65A8);
+        color: var(--el-color-primary, #2D8B57);
       }
     }
   }

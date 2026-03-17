@@ -1,0 +1,181 @@
+# Coming Soon 功能 — iOS 模拟器原生测试
+# 前提: App 已启动并登录 factory_admin1
+# Tab坐标: 首页(8%) AI分析(25%) 报表(42%) 智能分析(58%) 管理(75%) 我的(92%)
+appId: com.cretaceousfuture
+---
+
+# 等待首页加载
+- extendedWaitUntil:
+    visible:
+      text: "Today's Overview"
+    timeout: 120000
+
+- takeScreenshot: test-00-home-loaded
+
+# ========== Test A: 智能分析 → 现金流 ==========
+- tapOn:
+    point: "58%,98%"
+
+# SmartBI 页面标题可能是中文
+- extendedWaitUntil:
+    visible:
+      text: "全部功能"
+    timeout: 15000
+
+- scrollUntilVisible:
+    element:
+      text: "现金流分析"
+    direction: DOWN
+    timeout: 10000
+
+- tapOn:
+    text: "现金流分析"
+
+- extendedWaitUntil:
+    visible:
+      text: "经营现金流"
+    timeout: 15000
+
+- assertVisible:
+    text: "投资现金流"
+- assertVisible:
+    text: "净现金流"
+
+- takeScreenshot: test-a-cashflow-native
+
+# iOS 返回：点击左上角返回按钮 (约5%, 6%)
+- tapOn:
+    point: "8%,6%"
+
+# 重新点击智能分析tab确保回到SmartBI首页
+- tapOn:
+    point: "58%,98%"
+
+- extendedWaitUntil:
+    visible:
+      text: "全部功能"
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      text: "客户RFM分析"
+    direction: DOWN
+    timeout: 15000
+
+- tapOn:
+    text: "客户RFM分析"
+
+- extendedWaitUntil:
+    visible:
+      text: "高价值客户"
+    timeout: 15000
+
+- tapOn:
+    text: "沉睡客户"
+
+- extendedWaitUntil:
+    visible:
+      text: "沉睡客户 详情"
+    timeout: 5000
+
+- takeScreenshot: test-b-rfm-native
+
+- tapOn:
+    point: "8%,6%"
+- tapOn:
+    point: "58%,98%"
+
+# ========== Test C: 财务比率 ==========
+- extendedWaitUntil:
+    visible:
+      text: "全部功能"
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      text: "盈利/流动"
+    direction: DOWN
+    timeout: 15000
+
+- tapOn:
+    text: "盈利/流动"
+
+- extendedWaitUntil:
+    visible:
+      text: "盈利能力"
+    timeout: 30000
+
+- scrollUntilVisible:
+    element:
+      text: "偿债能力"
+    direction: DOWN
+    timeout: 5000
+
+- tapOn:
+    text: "偿债能力"
+
+- extendedWaitUntil:
+    visible:
+      text: "资产负债率"
+    timeout: 5000
+
+- takeScreenshot: test-c-ratios-native
+
+- tapOn:
+    point: "8%,6%"
+
+# ========== Test D: 我的 → 通知设置 ==========
+- tapOn:
+    point: "92%,98%"
+
+- extendedWaitUntil:
+    visible:
+      text: "factory_admin1"
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      text: "Notifications"
+    direction: DOWN
+    timeout: 5000
+
+- tapOn:
+    text: "Notifications"
+
+- extendedWaitUntil:
+    visible:
+      text: "Push Notifications"
+    timeout: 10000
+
+- assertVisible:
+    text: "Production Alerts"
+
+- takeScreenshot: test-d-notifications-native
+
+- tapOn:
+    point: "8%,6%"
+
+# ========== Test E: AI Chat 麦克风 ==========
+- tapOn:
+    point: "25%,98%"
+
+- extendedWaitUntil:
+    visible:
+      text: "AI Chat"
+    timeout: 10000
+
+- tapOn:
+    text: "AI Chat"
+
+- extendedWaitUntil:
+    visible:
+      text: "Hello"
+    timeout: 15000
+
+- takeScreenshot: test-e-ai-chat-native
+
+- tapOn:
+    point: "8%,6%"
+
+# ========== 完成 ==========
+- takeScreenshot: test-final-complete

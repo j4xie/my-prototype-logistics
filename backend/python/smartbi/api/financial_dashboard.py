@@ -35,6 +35,8 @@ class AnalyzeRequest(BaseModel):
     chart_type: str
     analysis_context: str
     chart_result: Optional[Dict] = None
+    follow_up_question: Optional[str] = None
+    previous_analysis: Optional[str] = None
 
 
 class PPTExportRequest(BaseModel):
@@ -160,30 +162,47 @@ async def batch_generate(request: FinancialDashboardRequest):
 
 @router.post("/analyze")
 async def analyze_chart(request: AnalyzeRequest):
-    """AI analysis for a single chart."""
+    """AI analysis for a single chart, with optional follow-up conversation."""
     try:
-        prompt = (
-            f"请对以下财务数据进行专业分析：\n\n"
-            f"图表类型：{request.chart_type}\n"
-            f"数据摘要：{request.analysis_context}\n\n"
-            f"请提供：\n"
-            f"1. 核心发现（3-5条）\n"
-            f"2. 风险预警（如有）\n"
-            f"3. 改进建议（2-3条）\n\n"
-            f"要求：结合食品加工行业特点，数据驱动，具体可操作。"
-        )
-
         from smartbi.config import get_settings
         from openai import OpenAI
         settings = get_settings()
         client = OpenAI(api_key=settings.llm_api_key, base_url=settings.llm_base_url)
 
+        system_msg = "你是服务于食品加工企业CFO的资深财务分析师。请用简洁的中文回复。"
+
+        if request.follow_up_question and request.previous_analysis:
+            # Follow-up: multi-turn conversation with history
+            messages = [
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": (
+                    f"请对以下财务数据进行分析：\n"
+                    f"图表类型：{request.chart_type}\n"
+                    f"数据摘要：{request.analysis_context}"
+                )},
+                {"role": "assistant", "content": request.previous_analysis},
+                {"role": "user", "content": request.follow_up_question},
+            ]
+        else:
+            # Initial analysis
+            prompt = (
+                f"请对以下财务数据进行专业分析：\n\n"
+                f"图表类型：{request.chart_type}\n"
+                f"数据摘要：{request.analysis_context}\n\n"
+                f"请提供：\n"
+                f"1. 核心发现（3-5条）\n"
+                f"2. 风险预警（如有）\n"
+                f"3. 改进建议（2-3条）\n\n"
+                f"要求：结合食品加工行业特点，数据驱动，具体可操作。"
+            )
+            messages = [
+                {"role": "system", "content": system_msg + "请用要点列表格式。"},
+                {"role": "user", "content": prompt},
+            ]
+
         response = client.chat.completions.create(
             model=settings.llm_insight_model,
-            messages=[
-                {"role": "system", "content": "你是服务于食品加工企业CFO的资深财务分析师。请用简洁的中文文本回复，使用要点列表格式。"},
-                {"role": "user", "content": prompt},
-            ],
+            messages=messages,
             max_tokens=2000,
             temperature=0.3,
         )

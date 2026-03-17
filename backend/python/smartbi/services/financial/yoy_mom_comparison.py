@@ -1,4 +1,12 @@
-"""YoY/MoM Comparison Chart Builder — 同比环比情况."""
+"""YoY/MoM Comparison Chart Builder — 同比环比情况.
+
+Steven's Power BI design:
+- YoY growth shown as SCATTER circle bubbles (red/green) on top of bars
+- Star markers for quarterly totals above bar groups
+- Prominent red quarterly summary boxes at bottom
+- Monthly data rows (本年/上年) as graphic elements inside chart
+- In 综合 viewMode, MoM line is hidden for cleaner look
+"""
 import logging
 from typing import Dict, List, Any, Optional
 import pandas as pd
@@ -12,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
-    """Grouped bar (current vs last year) + YoY% line + MoM% line."""
+    """Grouped bar (current vs last year) + YoY% scatter bubbles."""
 
     chart_type = "yoy_mom_comparison"
     display_name = "同比环比情况"
@@ -20,7 +28,8 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
     required_columns = ['actual', 'last_year', 'period']
     display_order = 2
 
-    def build(self, df: pd.DataFrame, column_mapping, period: Dict, year: int = 2026) -> Dict[str, Any]:
+    def build(self, df: pd.DataFrame, column_mapping, period: Dict, year: int = 2026,
+              view_mode: str = "综合") -> Dict[str, Any]:
         start_month = period.get('start_month', 1)
         end_month = period.get('end_month', 12)
         labels = self._month_labels(start_month, end_month)
@@ -45,25 +54,6 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
         for i in range(1, len(actual_vals)):
             rate = self._calc_growth_rate(actual_vals[i], actual_vals[i - 1])
             mom_rates.append(rate if rate is not None else 0)
-
-        # Quarter totals for star markPoints
-        quarter_points = []
-        for q in range(4):
-            q_start = q * 3 + 1
-            q_end = q * 3 + 3
-            if q_start < start_month or q_end > end_month:
-                continue
-            q_actual = sum(actual_vals[m - start_month] for m in range(q_start, q_end + 1) if start_month <= m <= end_month)
-            q_ly = sum(last_year_vals[m - start_month] for m in range(q_start, q_end + 1) if start_month <= m <= end_month)
-            q_yoy = self._calc_growth_rate(q_actual, q_ly)
-            quarter_points.append({
-                "coord": [q_end - start_month, q_yoy or 0],
-                "value": f"Q{q+1}: {q_yoy:.1f}%" if q_yoy is not None else f"Q{q+1}",
-                "symbol": "pin",
-                "symbolSize": 40,
-                "itemStyle": {"color": COLORS['yoy_up'] if (q_yoy or 0) > 0 else COLORS['yoy_down']},
-                "label": {"fontSize": 9},
-            })
 
         # KPIs
         total_actual = sum(v or 0 for v in actual_vals)
@@ -90,12 +80,63 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
         actual_scaled = [round(v / divisor, 2) if v else 0 for v in actual_vals]
         ly_scaled = [round(v / divisor, 2) if v else 0 for v in last_year_vals]
 
-        # ECharts option
+        # --- Build YoY scatter bubble data (colored circles with rate labels) ---
+        yoy_scatter_data = []
+        for i, rate in enumerate(yoy_rates):
+            yoy_scatter_data.append({
+                "value": [i, round(rate, 1)],
+                "itemStyle": {
+                    "color": COLORS['yoy_up'] if rate >= 0 else COLORS['yoy_down'],
+                },
+                "label": {
+                    "show": True,
+                    "position": "inside",
+                    "formatter": f"{round(rate, 0):.0f}%" if abs(rate) < 1000 else f"{round(rate, 0):.0f}%",
+                    "fontSize": 9,
+                    "fontWeight": "bold",
+                    "color": "#fff",
+                },
+            })
+
+        # --- Build quarterly star markers as graphic elements ---
+        quarter_star_graphics = []
+        month_range = list(range(start_month, end_month + 1))
+        for q in range(4):
+            q_start_m = q * 3 + 1
+            q_end = q * 3 + 3
+            if q_start_m < start_month or q_end > end_month:
+                continue
+            q_actual = sum(actual_vals[m - start_month] for m in range(q_start_m, q_end + 1) if start_month <= m <= end_month)
+            q_formatted = f"{round(q_actual / divisor):,}" if divisor > 1 else f"{round(q_actual):,}"
+            # Position above the middle month of the quarter
+            q_mid_idx = month_range.index(q_start_m + 1) if (q_start_m + 1) in month_range else month_range.index(q_end)
+            x_pct = 8 + q_mid_idx * (84 / max(len(labels) - 1, 1)) if len(labels) > 1 else 50
+            quarter_star_graphics.append({
+                "type": "text",
+                "style": {
+                    "text": f"\u2605{q_formatted}",
+                    "fontSize": 12,
+                    "fill": COLORS['danger'],
+                    "fontWeight": "bold",
+                    "textAlign": "center",
+                },
+                "left": f"{x_pct}%",
+                "top": "8%",
+                "silent": True,
+                "z": 100,
+            })
+
+        # --- ECharts option ---
+        is_comprehensive = view_mode == "综合"
+        legend_data = [f"本年{scale['name_suffix']}", f"上年{scale['name_suffix']}", "同比增长率"]
+        if not is_comprehensive:
+            legend_data.append("环比增长率")
+
         option = self._base_echarts_option()
         option.update({
-            "grid": {"left": "3%", "right": "5%", "bottom": "12%", "top": "16%", "containLabel": True},
+            "grid": {"left": "3%", "right": "5%", "bottom": "18%", "top": "16%", "containLabel": True},
             "legend": {
-                "data": [f"本年{scale['name_suffix']}", f"上年{scale['name_suffix']}", "同比增长率", "环比增长率"],
+                "data": legend_data,
                 "top": "2%",
                 "textStyle": {"fontSize": 11},
             },
@@ -138,48 +179,44 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
                     "barMaxWidth": 28,
                     "emphasis": {"itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.2)"}},
                 },
+                # Change 1: YoY as SCATTER bubbles instead of LINE
                 {
                     "name": "同比增长率",
-                    "type": "line",
+                    "type": "scatter",
                     "yAxisIndex": 1,
-                    "data": [round(r, 1) for r in yoy_rates],
+                    "data": yoy_scatter_data,
+                    "symbolSize": 30,
                     "itemStyle": {"color": COLORS['danger']},
-                    "lineStyle": {"width": 2.5},
-                    "symbol": "circle",
-                    "symbolSize": 8,
                     "label": {
                         "show": True,
-                        "position": "top",
-                        "fontSize": 10,
-                        "color": COLORS['danger'],
-                        "formatter": "{c}%",
-                        "backgroundColor": "rgba(255,255,255,0.85)",
-                        "borderRadius": 3,
-                        "padding": [2, 4],
+                        "position": "inside",
+                        "fontSize": 9,
+                        "fontWeight": "bold",
+                        "color": "#fff",
                     },
-                    "markLine": {
-                        "silent": True,
-                        "data": [{"yAxis": 0, "label": {"show": False}}],
-                        "lineStyle": {"type": "dashed", "color": "#aaa", "width": 1},
+                    "emphasis": {
+                        "itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.3)"},
+                        "scale": 1.2,
                     },
-                    "markPoint": {
-                        "data": quarter_points,
-                        "label": {"fontSize": 9, "color": "#fff"},
-                    } if quarter_points else {},
-                },
-                {
-                    "name": "环比增长率",
-                    "type": "line",
-                    "yAxisIndex": 1,
-                    "data": [round(r, 1) for r in mom_rates],
-                    "itemStyle": {"color": COLORS['accent']},
-                    "lineStyle": {"width": 1.5, "type": "dashed"},
-                    "symbol": "triangle",
-                    "symbolSize": 6,
-                    "label": {"show": False},
+                    "z": 10,
                 },
             ],
         })
+
+        # Change 6: Only add MoM line when NOT in 综合 viewMode
+        if not is_comprehensive:
+            option["series"].append({
+                "name": "环比增长率",
+                "type": "line",
+                "yAxisIndex": 1,
+                "data": [round(r, 1) for r in mom_rates],
+                "itemStyle": {"color": COLORS['accent']},
+                "lineStyle": {"width": 1.5, "type": "dashed"},
+                "symbol": "triangle",
+                "symbolSize": 6,
+                "label": {"show": False},
+            })
+
         self._apply_datazoom(option)
 
         # Quarter markArea
@@ -187,7 +224,7 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
         if mark_areas:
             option["series"][0]["markArea"] = {"silent": True, "data": mark_areas}
 
-        # === Monthly MoM rate row (top of chart) ===
+        # === Monthly MoM rate row (top of chart) — Change 4: font 10px ===
         mom_row_graphics = []
         for i, mom_rate in enumerate(mom_rates):
             x_pct = 8 + i * (84 / max(len(labels) - 1, 1)) if len(labels) > 1 else 50
@@ -201,7 +238,7 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
                 "type": "text",
                 "style": {
                     "text": text,
-                    "fontSize": 8,
+                    "fontSize": 10,
                     "fill": color,
                     "fontWeight": "bold",
                     "textAlign": "center",
@@ -217,11 +254,11 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
             diff = a - ly
             if abs(diff) > 0:
                 color = COLORS['yoy_up'] if diff > 0 else COLORS['yoy_down']
-                arrow = "▲" if diff > 0 else "▼"
+                arrow = "\u25b2" if diff > 0 else "\u25bc"
                 graphic_elements.append({
                     "type": "text",
                     "left": f"{8 + i * (84 / max(len(labels) - 1, 1)) if len(labels) > 1 else 50}%",
-                    "top": "88%",
+                    "top": "82%",
                     "style": {
                         "text": f"{arrow}{abs(diff):.1f}",
                         "fontSize": 8,
@@ -231,9 +268,68 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
                     "silent": True,
                 })
 
-        # === Quarterly summary red boxes ===
+        # === Change 5: Monthly data rows (本年/上年) as graphic elements inside chart ===
+        data_row_graphics = []
+        # Row label "本年"
+        data_row_graphics.append({
+            "type": "text",
+            "style": {
+                "text": "本年",
+                "fontSize": 9,
+                "fill": "#333",
+                "fontWeight": "bold",
+                "textAlign": "right",
+            },
+            "left": "4%",
+            "bottom": "10%",
+            "silent": True,
+        })
+        # Row label "上年"
+        data_row_graphics.append({
+            "type": "text",
+            "style": {
+                "text": "上年",
+                "fontSize": 9,
+                "fill": "#999",
+                "fontWeight": "bold",
+                "textAlign": "right",
+            },
+            "left": "4%",
+            "bottom": "7%",
+            "silent": True,
+        })
+        # Monthly values for 本年 and 上年
+        for i in range(len(labels)):
+            x_pct = 8 + i * (84 / max(len(labels) - 1, 1)) if len(labels) > 1 else 50
+            # Current year value
+            data_row_graphics.append({
+                "type": "text",
+                "style": {
+                    "text": f"{actual_scaled[i]:,.1f}" if actual_scaled[i] else "0",
+                    "fontSize": 9,
+                    "fill": "#333",
+                    "textAlign": "center",
+                },
+                "left": f"{x_pct}%",
+                "bottom": "10%",
+                "silent": True,
+            })
+            # Last year value
+            data_row_graphics.append({
+                "type": "text",
+                "style": {
+                    "text": f"{ly_scaled[i]:,.1f}" if ly_scaled[i] else "0",
+                    "fontSize": 9,
+                    "fill": "#999",
+                    "textAlign": "center",
+                },
+                "left": f"{x_pct}%",
+                "bottom": "7%",
+                "silent": True,
+            })
+
+        # === Change 3: Enhanced quarterly summary red boxes ===
         quarter_summary_graphics = []
-        month_range = list(range(start_month, end_month + 1))
         for q in range(4):
             q_end = q * 3 + 3
             q_start_m = q * 3 + 1
@@ -245,14 +341,21 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
                 for m in range(q_start_m, q_end + 1)
                 if start_month <= m <= end_month
             )
-            q_formatted = f"{round(q_actual_total / divisor, 1)}"
+            q_ly_total = sum(
+                last_year_vals[m - start_month]
+                for m in range(q_start_m, q_end + 1)
+                if start_month <= m <= end_month
+            )
+            q_yoy_rate = self._calc_growth_rate(q_actual_total, q_ly_total)
+            q_formatted = f"{round(q_actual_total / divisor):,}" if divisor > 1 else f"{round(q_actual_total):,}"
+            q_rate_str = f"{q_yoy_rate:.0f}%" if q_yoy_rate is not None else "—"
             x_pct = 8 + q_idx * (84 / max(len(labels) - 1, 1)) if len(labels) > 1 else 50
-            # Red border box
+            # Red filled background box (larger, more prominent)
             quarter_summary_graphics.append({
                 "type": "rect",
-                "shape": {"x": -28, "y": -10, "width": 56, "height": 20, "r": 3},
+                "shape": {"x": -36, "y": -14, "width": 72, "height": 28, "r": 4},
                 "style": {
-                    "fill": "rgba(255,86,48,0.06)",
+                    "fill": "rgba(255,86,48,0.15)",
                     "stroke": COLORS['danger'],
                     "lineWidth": 1.5,
                 },
@@ -260,15 +363,16 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
                 "bottom": "1%",
                 "silent": True,
             })
-            # Quarterly total text
+            # Quarterly total text — two lines: amount + rate
             quarter_summary_graphics.append({
                 "type": "text",
                 "style": {
-                    "text": f"Q{q + 1}:{q_formatted}",
-                    "fontSize": 8,
+                    "text": f"Q{q + 1}: {q_formatted}\n{q_rate_str}",
+                    "fontSize": 10,
                     "fill": COLORS['danger'],
                     "fontWeight": "bold",
                     "textAlign": "center",
+                    "lineHeight": 13,
                 },
                 "left": f"{x_pct}%",
                 "bottom": "1.5%",
@@ -276,7 +380,8 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
             })
 
         # Merge all graphic elements
-        all_graphics = mom_row_graphics + graphic_elements + quarter_summary_graphics
+        all_graphics = (mom_row_graphics + graphic_elements + quarter_star_graphics
+                        + data_row_graphics + quarter_summary_graphics)
         if all_graphics:
             option["graphic"] = all_graphics
 

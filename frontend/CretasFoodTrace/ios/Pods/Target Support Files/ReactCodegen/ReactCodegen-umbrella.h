@@ -69,6 +69,8 @@
 #import "RNDateTimePickerCGenJSI.h"
 #import "rngesturehandler_codegen/rngesturehandler_codegen.h"
 #import "rngesturehandler_codegenJSI.h"
+#import "RNLocalizeSpec/RNLocalizeSpec.h"
+#import "RNLocalizeSpecJSI.h"
 #import "rnreanimated/rnreanimated.h"
 #import "rnreanimatedJSI.h"
 #import "rnscreens/rnscreens.h"

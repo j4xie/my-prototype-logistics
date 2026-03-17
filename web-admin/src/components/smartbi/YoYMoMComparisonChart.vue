@@ -75,8 +75,8 @@ const viewMode = ref<ViewMode>(props.defaultViewMode);
 
 // Color palette
 const colors = {
-  currentPeriod: '#1B65A8',      // Blue - current period
-  lastYearSame: '#91cc75',       // Light green - last year same period
+  currentPeriod: '#2D8B57',      // Blue - current period
+  lastYearSame: '#A9D18E',       // Light green - last year same period
   yoyGrowthLine: '#ee6666',      // Red - YoY growth line
   momGrowthLine: '#fac858',      // Yellow - MoM growth line
   positiveGrowth: '#67c23a',     // Green - positive
@@ -274,7 +274,7 @@ const chartOptions = computed<EChartsOption>(() => {
         {
           xAxis: g.start,
           itemStyle: {
-            color: idx % 2 === 0 ? 'rgba(255,86,48,0.04)' : 'rgba(27,101,168,0.04)',
+            color: idx % 2 === 0 ? 'rgba(255,86,48,0.04)' : 'rgba(45,139,87,0.04)',
             borderColor: '#FF5630',
             borderWidth: 1,
             borderType: 'solid'
@@ -623,7 +623,7 @@ const chartOptions = computed<EChartsOption>(() => {
         borderColor: '#dcdfe6',
         fillerColor: 'rgba(64, 158, 255, 0.2)',
         handleStyle: {
-          color: '#1B65A8'
+          color: '#2D8B57'
         }
       },
       {
@@ -807,7 +807,7 @@ defineExpose({
             <tr class="mdt-row-current">
               <td class="mdt-row-label">本年值</td>
               <td v-for="item in data" :key="item.period" class="mdt-cell">
-                <span style="font-weight: 600; color: #1B65A8;">{{ formatNumber(item.current, 0) }}</span>
+                <span style="font-weight: 600; color: #2D8B57;">{{ formatNumber(item.current, 0) }}</span>
               </td>
             </tr>
             <tr class="mdt-row-yoy">
@@ -877,8 +877,8 @@ defineExpose({
       transition: all 0.2s ease;
 
       &.highlight {
-        background: linear-gradient(135deg, #ecf5ff 0%, #f0f9eb 100%);
-        border-color: #b3d8ff;
+        background: linear-gradient(135deg, #e8f5e9 0%, #f0f9eb 100%);
+        border-color: #A9D18E;
       }
 
       &:hover {
@@ -902,7 +902,7 @@ defineExpose({
         gap: 4px;
 
         &.primary {
-          color: #1B65A8;
+          color: #2D8B57;
         }
 
         &.positive {
@@ -974,7 +974,7 @@ defineExpose({
       }
 
       .mdt-row-current .mdt-cell {
-        background: rgba(27, 101, 168, 0.03);
+        background: rgba(45, 139, 87, 0.03);
       }
 
       .mdt-row-yoy .mdt-cell,

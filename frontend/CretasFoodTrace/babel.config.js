@@ -1,27 +1,13 @@
-module.exports = function(api) {
+module.exports = function (api) {
   api.cache(true);
-
-  const presets = ['babel-preset-expo'];
-
-  const plugins = [
-    // Add react-native-dotenv for environment variable management
-    [
-      'module:react-native-dotenv',
-      {
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [
+      ['module:react-native-dotenv', {
         moduleName: '@env',
         path: '.env',
-        safe: false,
-        allowUndefined: true,
-        verbose: false,
-      },
+      }],
+      'react-native-reanimated/plugin',
     ],
-  ];
-
-  // Transform import.meta for web compatibility (Zustand devtools uses import.meta.env)
-  plugins.push('babel-plugin-transform-import-meta');
-
-  return {
-    presets,
-    plugins,
   };
 };

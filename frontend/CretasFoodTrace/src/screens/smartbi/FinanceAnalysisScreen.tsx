@@ -538,32 +538,32 @@ export function FinanceAnalysisScreen() {
         )}
 
         {/* KPI Cards */}
-        {financeData && (
+        {financeData?.kpi && (
           <View style={styles.kpiGrid}>
             <FinanceKPICard
               title={t('kpi.revenue', { defaultValue: '营收' })}
-              value={formatCurrency(financeData.kpi.revenue)}
+              value={formatCurrency(financeData.kpi.revenue ?? 0)}
               change={financeData.kpi.revenueChange}
               icon="trending-up"
               color={SMARTBI_THEME.primary}
             />
             <FinanceKPICard
               title={t('kpi.cost', { defaultValue: '成本' })}
-              value={formatCurrency(financeData.kpi.cost)}
+              value={formatCurrency(financeData.kpi.cost ?? 0)}
               change={financeData.kpi.costChange}
               icon="currency-usd-off"
               color={SMARTBI_THEME.warning}
             />
             <FinanceKPICard
               title={t('kpi.grossMargin', { defaultValue: '毛利率' })}
-              value={`${financeData.kpi.grossMargin.toFixed(1)}%`}
+              value={`${(financeData.kpi.grossMargin ?? 0).toFixed(1)}%`}
               icon="percent"
               color={SMARTBI_THEME.info}
               isPercentage
             />
             <FinanceKPICard
               title={t('kpi.netProfit', { defaultValue: '净利润' })}
-              value={formatCurrency(financeData.kpi.netProfit)}
+              value={formatCurrency(financeData.kpi.netProfit ?? 0)}
               change={financeData.kpi.profitChange}
               icon="cash"
               color={SMARTBI_THEME.success}
@@ -572,7 +572,7 @@ export function FinanceAnalysisScreen() {
         )}
 
         {/* Trend Chart */}
-        {financeData && (
+        {financeData?.trends && financeData.trends.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               {t('finance.trendChart', { defaultValue: '趋势图表' })}
@@ -589,7 +589,7 @@ export function FinanceAnalysisScreen() {
         )}
 
         {/* Cost Breakdown */}
-        {financeData && financeData.costBreakdown.length > 0 && (
+        {financeData?.costBreakdown && financeData.costBreakdown.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               {t('finance.costBreakdown', { defaultValue: '成本构成' })}
@@ -610,7 +610,7 @@ export function FinanceAnalysisScreen() {
         )}
 
         {/* Alerts */}
-        {financeData && financeData.alerts.length > 0 && (
+        {financeData?.alerts && financeData.alerts.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>

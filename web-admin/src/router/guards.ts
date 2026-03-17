@@ -23,6 +23,7 @@ const ROLE_PATH_WHITELIST: Record<string, string[]> = {
     '/dashboard',
     '/smart-bi/dashboard',
     '/smart-bi/finance',
+    '/smart-bi/financial-dashboard',
     '/smart-bi/sales',
     '/smart-bi/query',
     '/smart-bi/query-templates',

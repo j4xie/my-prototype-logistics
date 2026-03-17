@@ -167,8 +167,8 @@ class ExpenseYoyBudgetBuilder(AbstractFinancialChartBuilder):
                             "label": {
                                 "show": True,
                                 "position": "top",
-                                "formatter": f"\u2713{round(r, 1)}%" if r <= 100 and r > 0 else f"{round(r, 1)}%",
-                                "fontSize": 9,
+                                "formatter": f"\u2713{round(r, 1)}%" if r <= 100 and r > 0 else f"\u2713*{round(r, 1)}%",
+                                "fontSize": 11,
                                 "color": COLORS['success'] if r <= 100 and r > 0 else COLORS['achievement'],
                             },
                         }
@@ -197,15 +197,21 @@ class ExpenseYoyBudgetBuilder(AbstractFinancialChartBuilder):
             diff = a - ly
             if abs(diff) > 0.01:
                 pct = yoy_rates[i]
-                color = COLORS['yoy_up'] if diff > 0 else COLORS['yoy_down']
-                arrow = "+" if diff > 0 else ""
+                if diff > 0:
+                    # Increase: red with checkmark prefix
+                    color = COLORS['yoy_up']
+                    text = f"\u2713*{abs(pct):.0f}%"
+                else:
+                    # Decrease: green with minus prefix
+                    color = COLORS['yoy_down']
+                    text = f"-{abs(pct):.0f}%"
                 graphic_elements.append({
                     "type": "text",
                     "left": f"{7 + i * (84 / max(len(labels), 1))}%",
                     "bottom": "6%",
                     "style": {
-                        "text": f"{arrow}{pct:.0f}%",
-                        "fontSize": 8,
+                        "text": text,
+                        "fontSize": 11,
                         "fill": color,
                         "textAlign": "center",
                         "fontWeight": "bold",

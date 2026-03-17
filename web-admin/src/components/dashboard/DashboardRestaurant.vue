@@ -68,7 +68,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 const permissionStore = usePermissionStore();
 
 const allQuickActions = [
-  { title: '配方管理', icon: KnifeFork, route: '/restaurant/recipes', color: '#1B65A8', module: 'restaurant' },
+  { title: '配方管理', icon: KnifeFork, route: '/restaurant/recipes', color: '#2D8B57', module: 'restaurant' },
   { title: '领料管理', icon: Box, route: '/restaurant/requisitions', color: '#36B37E', module: 'restaurant' },
   { title: '盘点管理', icon: ShoppingCart, route: '/restaurant/stocktaking', color: '#FFAB00', module: 'restaurant' },
   { title: '损耗管理', icon: Warning, route: '/restaurant/wastage', color: '#FF5630', module: 'restaurant' },

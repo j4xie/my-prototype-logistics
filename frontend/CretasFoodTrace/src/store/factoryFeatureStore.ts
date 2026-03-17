@@ -45,6 +45,29 @@ const SCREEN_TO_MODULE: Record<string, string> = {
   CostAnalysisDashboard: 'finance',
   CostComparison: 'finance',
   AIReportList: 'production',
+  // Finance coming-soon screens (controlled via disabledScreens)
+  FinancialRatios: 'finance',
+  CashFlow: 'finance',
+  CustomerRFM: 'finance',
+  FinanceAnalysis: 'finance',
+  // SmartBI sub-screens
+  SalesAnalysis: 'smartbi',
+  ExecutiveDashboard: 'smartbi',
+  SmartBIDataAnalysis: 'smartbi',
+  // Reports
+  TrendReport: 'production',
+  // Profile features
+  NotificationSettings: 'system',
+  // Logistics module screens
+  LogisticsDashboard: 'logistics',
+  ShipmentList: 'logistics',
+  ShipmentDetail: 'logistics',
+  CreateShipment: 'logistics',
+  TrackingDetail: 'logistics',
+  // Trace module screens
+  TraceDashboard: 'trace',
+  TraceQuery: 'trace',
+  TraceScan: 'trace',
 };
 
 /** Maps report types to their owning module IDs. */

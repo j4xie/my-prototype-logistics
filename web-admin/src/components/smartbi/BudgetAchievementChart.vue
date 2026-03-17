@@ -52,13 +52,13 @@ let rafId = 0;
 
 // Color configuration
 const colors = {
-  budget: '#1B65A8',       // Blue for budget/target
+  budget: '#2D8B57',       // Green for budget/target
   actual: '#67c23a',       // Green for actual
   overAchieve: '#67c23a',  // Green for >100%
   onTrack: '#e6a23c',      // Yellow for 80-100%
   underAchieve: '#f56c6c', // Red for <80%
   quarterBg: [
-    'rgba(27, 101, 168, 0.05)',   // Q1
+    'rgba(45, 139, 87, 0.05)',    // Q1
     'rgba(103, 194, 58, 0.05)',   // Q2
     'rgba(230, 162, 60, 0.05)',   // Q3
     'rgba(245, 108, 108, 0.05)'   // Q4
@@ -348,7 +348,7 @@ const chartOptions = computed<EChartsOption>(() => {
         smooth: true,
         symbol: 'circle',
         symbolSize: 8,
-        lineStyle: { width: 2, color: '#e6a23c' },
+        lineStyle: { width: 2, color: '#2D8B57' },
         itemStyle: {
           color: (params) => {
             const rate = achievementRates[params.dataIndex as number];
@@ -374,14 +374,14 @@ const chartOptions = computed<EChartsOption>(() => {
         smooth: false,
         symbol: 'circle',
         symbolSize: 12,
-        lineStyle: { width: 2, color: '#1B65A8', type: 'dashed' },
+        lineStyle: { width: 2, color: '#2D8B57', type: 'dashed' },
         label: {
           show: true,
           position: 'top',
           formatter: (params) => `${(params.value as number)}%`,
           fontSize: 10,
           fontWeight: 600,
-          color: '#1B65A8'
+          color: '#2D8B57'
         }
       }
     ]
@@ -496,12 +496,13 @@ defineExpose({
       />
     </div>
 
-    <!-- Quarterly Progress Bars -->
+    <!-- Quarterly Progress Bars — prominent display matching Steven's Power BI -->
     <div v-if="quarterlyData.length > 0" class="quarter-progress-row">
       <div
-        v-for="quarter in quarterlyData"
+        v-for="(quarter, qi) in quarterlyData"
         :key="quarter.name"
         class="quarter-progress-item"
+        :class="{ 'qp-achieved': quarter.achievementRate >= 100 }"
       >
         <div class="qp-header">
           <span class="qp-name">{{ quarter.name }}</span>
@@ -526,14 +527,23 @@ defineExpose({
             }"
           ></div>
         </div>
-        <div class="qp-meta">
-          <span>实{{ quarter.actual }}</span>
-          <span style="color: #909399;">/ {{ quarter.budget }}</span>
+        <div class="qp-values">
+          <div class="qp-actual">
+            <span class="qp-val-label">实际</span>
+            <span class="qp-val-num">{{ quarter.actual }}</span>
+          </div>
+          <div class="qp-budget">
+            <span class="qp-val-label">预算</span>
+            <span class="qp-val-num">{{ quarter.budget }}</span>
+          </div>
+        </div>
+        <div class="qp-gap" :class="{ 'qp-gap-positive': quarter.actual >= quarter.budget }">
+          {{ quarter.actual >= quarter.budget ? '+' : '' }}{{ (quarter.actual - quarter.budget).toFixed(2) }}
         </div>
       </div>
     </div>
 
-    <!-- Quarterly Timeline -->
+    <!-- Quarterly Timeline — larger rate badges -->
     <div v-if="showTimeline && quarterlyData.length > 0" class="quarterly-timeline">
       <div
         v-for="quarter in quarterlyData"
@@ -546,6 +556,11 @@ defineExpose({
           :class="getStatusClass(quarter.achievementRate)"
         >
           {{ quarter.achievementRate }}%
+        </div>
+        <div class="quarter-detail">
+          <span class="qd-actual">{{ quarter.actual }}</span>
+          <span class="qd-sep">/</span>
+          <span class="qd-budget">{{ quarter.budget }}</span>
         </div>
       </div>
     </div>
@@ -605,7 +620,7 @@ defineExpose({
 
   .kpi-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: 2fr 2fr 2fr 1fr;
     gap: 16px;
     margin-bottom: 24px;
 
@@ -621,8 +636,8 @@ defineExpose({
   .quarter-progress-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 14px;
+    margin-bottom: 20px;
 
     @media (max-width: 900px) {
       grid-template-columns: repeat(2, 1fr);
@@ -630,55 +645,96 @@ defineExpose({
 
     .quarter-progress-item {
       background: #f8f9fa;
-      border-radius: 8px;
-      padding: 10px 14px;
+      border-radius: 10px;
+      padding: 14px 16px;
       border: 1px solid #ebeef5;
+      transition: box-shadow 0.2s, border-color 0.2s;
+
+      &:hover {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        border-color: #dcdfe6;
+      }
+
+      &.qp-achieved {
+        border-left: 3px solid #67c23a;
+      }
 
       .qp-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 6px;
+        margin-bottom: 10px;
 
         .qp-name {
-          font-size: 13px;
-          font-weight: 600;
-          color: #606266;
+          font-size: 15px;
+          font-weight: 700;
+          color: #303133;
         }
 
         .qp-rate {
-          font-size: 14px;
-          font-weight: 700;
+          font-size: 18px;
+          font-weight: 800;
         }
       }
 
       .qp-track {
         position: relative;
-        height: 6px;
+        height: 10px;
         background: #e4e7ed;
-        border-radius: 3px;
+        border-radius: 5px;
         overflow: hidden;
         display: flex;
+        margin-bottom: 10px;
 
         .qp-fill {
           height: 100%;
-          border-radius: 3px;
+          border-radius: 5px;
           transition: width 0.6s ease;
         }
 
         .qp-overflow {
           height: 100%;
-          border-radius: 3px;
+          border-radius: 5px;
           opacity: 0.6;
         }
       }
 
-      .qp-meta {
+      .qp-values {
         display: flex;
-        gap: 4px;
-        margin-top: 5px;
-        font-size: 11px;
-        color: #303133;
+        justify-content: space-between;
+        margin-bottom: 6px;
+
+        .qp-actual, .qp-budget {
+          display: flex;
+          flex-direction: column;
+
+          .qp-val-label {
+            font-size: 11px;
+            color: #909399;
+            margin-bottom: 2px;
+          }
+
+          .qp-val-num {
+            font-size: 14px;
+            font-weight: 600;
+            color: #303133;
+          }
+        }
+
+        .qp-budget .qp-val-num {
+          color: #606266;
+        }
+      }
+
+      .qp-gap {
+        font-size: 12px;
+        font-weight: 600;
+        color: #f56c6c;
+        text-align: right;
+
+        &.qp-gap-positive {
+          color: #67c23a;
+        }
       }
     }
   }
@@ -686,17 +742,17 @@ defineExpose({
   .quarterly-timeline {
     display: flex;
     justify-content: space-around;
-    padding: 16px 20px;
+    padding: 18px 20px;
     margin-bottom: 20px;
     background: linear-gradient(90deg,
-      rgba(64, 158, 255, 0.08) 0%,
-      rgba(64, 158, 255, 0.08) 25%,
-      rgba(103, 194, 58, 0.08) 25%,
-      rgba(103, 194, 58, 0.08) 50%,
-      rgba(230, 162, 60, 0.08) 50%,
-      rgba(230, 162, 60, 0.08) 75%,
-      rgba(245, 108, 108, 0.08) 75%,
-      rgba(245, 108, 108, 0.08) 100%
+      rgba(45, 139, 87, 0.06) 0%,
+      rgba(45, 139, 87, 0.06) 25%,
+      rgba(54, 179, 126, 0.06) 25%,
+      rgba(54, 179, 126, 0.06) 50%,
+      rgba(232, 185, 49, 0.06) 50%,
+      rgba(232, 185, 49, 0.06) 75%,
+      rgba(169, 209, 142, 0.06) 75%,
+      rgba(169, 209, 142, 0.06) 100%
     );
     border-radius: var(--radius-md);
     position: relative;
@@ -704,7 +760,7 @@ defineExpose({
     &::before {
       content: '';
       position: absolute;
-      top: 50%;
+      top: 42%;
       left: 10%;
       right: 10%;
       height: 2px;
@@ -716,7 +772,7 @@ defineExpose({
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       z-index: 1;
 
       .quarter-name {
@@ -730,9 +786,9 @@ defineExpose({
       }
 
       .quarter-rate {
-        font-size: 16px;
-        font-weight: 700;
-        padding: 6px 14px;
+        font-size: 20px;
+        font-weight: 800;
+        padding: 6px 16px;
         border-radius: var(--radius-xl);
         background: #fff;
         box-shadow: var(--shadow-md);
@@ -750,6 +806,28 @@ defineExpose({
         &.status-danger {
           color: #f56c6c;
           border: 2px solid #f56c6c;
+        }
+      }
+
+      .quarter-detail {
+        font-size: 12px;
+        color: #909399;
+        background: #fff;
+        padding: 2px 8px;
+        border-radius: 4px;
+
+        .qd-actual {
+          font-weight: 600;
+          color: #E8B931;
+        }
+
+        .qd-sep {
+          margin: 0 2px;
+          color: #c0c4cc;
+        }
+
+        .qd-budget {
+          color: #2D8B57;
         }
       }
     }

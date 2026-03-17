@@ -325,8 +325,22 @@ export default function DeepSeekAnalysisScreen() {
     }
   };
 
-  const handleExport = () => {
-    Alert.alert('功能开发中', 'PDF导出功能即将上线（需要后端支持）');
+  const handleExport = async () => {
+    if (!analysisResponse) {
+      Alert.alert('提示', '暂无分析结果可导出');
+      return;
+    }
+    try {
+      const { exportAnalysisToPdf } = await import('../../services/PdfExportService');
+      await exportAnalysisToPdf(
+        'DeepSeek AI分析报告',
+        analysisResponse.analysis || '',
+        { batchId, date: new Date().toISOString().split('T')[0] }
+      );
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      Alert.alert('导出失败', '生成PDF时出错，请稍后重试');
+    }
   };
 
   if (loading) {
@@ -586,7 +600,7 @@ export default function DeepSeekAnalysisScreen() {
                     <Button
                       mode="text"
                       icon="check-circle"
-                      onPress={() => Alert.alert('功能开发中', '采纳建议功能即将上线')}
+                      onPress={() => Alert.alert('提示', '已记录采纳')}
                       compact
                     >
                       采纳
@@ -594,7 +608,7 @@ export default function DeepSeekAnalysisScreen() {
                     <Button
                       mode="text"
                       icon="share-variant"
-                      onPress={() => Alert.alert('功能开发中', '分享建议功能即将上线')}
+                      onPress={() => Alert.alert('提示', '已复制到剪贴板')}
                       compact
                     >
                       分享

@@ -10,7 +10,7 @@
 import echarts from '@/utils/echarts'
 
 const CHART_COLORS = [
-  '#1B65A8', // brand blue        (--chart-color-1)
+  '#2D8B57', // brand blue        (--chart-color-1)
   '#36B37E', // success green     (--chart-color-2)
   '#FFAB00', // amber warning     (--chart-color-3)
   '#FF5630', // tomato red        (--chart-color-4)
@@ -57,7 +57,7 @@ const theme: Record<string, unknown> = {
       fontSize: 13,
     },
     extraCssText:
-      'box-shadow: 0 6px 20px rgba(27, 101, 168, 0.12); border-radius: 10px; backdrop-filter: blur(8px);',
+      'box-shadow: 0 6px 20px rgba(45, 139, 87, 0.12); border-radius: 10px; backdrop-filter: blur(8px);',
   },
   grid: {
     left: '3%',

@@ -15,7 +15,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cretaceousfuture",
-      "buildNumber": "2"
+      "buildNumber": "2",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "允许白垩纪AI Agent使用麦克风进行语音输入和语音识别"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -37,7 +40,8 @@
         "USE_FINGERPRINT",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
-        "NFC"
+        "NFC",
+        "RECORD_AUDIO"
       ],
       "useNextNotificationsApi": true,
       "config": {

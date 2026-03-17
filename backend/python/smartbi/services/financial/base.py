@@ -54,11 +54,11 @@ def _detect_value_scale(values: list) -> dict:
         return {"divisor": 1, "suffix": "", "name_suffix": ""}
 
 
-# Theme colors matching THEME_PALETTES["business"]
+# Theme colors — aligned with Steven's Power BI green/yellow design language
 COLORS = {
-    "primary": "#1B65A8",
+    "primary": "#2D8B57",        # Green — primary color (was blue #1B65A8)
     "secondary": "#36B37E",
-    "accent": "#FFAB00",
+    "accent": "#E8B931",         # Yellow/Gold — accent (was #FFAB00)
     "danger": "#FF5630",
     "muted": "#6B778C",
     "success": "#36B37E",
@@ -67,31 +67,41 @@ COLORS = {
     "text_accent": "#B37700",
     "text_success": "#1B7A4A",
     "text_warning": "#B37700",
-    "charts": ["#1B65A8", "#36B37E", "#FFAB00", "#FF5630", "#6B778C",
-               "#2B7EC1", "#57D9A3", "#FFC400", "#FF8B6A", "#4C9AFF"],
-    # P&L waterfall colors
+    # Chart series: green-first palette matching Steven's Power BI
+    "charts": ["#2D8B57", "#4472C4", "#E8B931", "#A9D18E", "#6B778C",
+               "#36B37E", "#5B9BD5", "#FFC000", "#ED7D31", "#70AD47"],
+    # P&L waterfall colors (Steven: red=income, green=cost, blue=total)
     "revenue": "#FF5630",    # red = income (positive)
     "cost": "#36B37E",       # green = cost (deduction)
     "expense": "#57D9A3",    # light green
-    "profit": "#1B65A8",     # blue = summary
+    "profit": "#4472C4",     # blue = summary (net profit)
     "tax": "#6B778C",        # grey
-    # Budget vs Actual
-    "budget": "#1B65A8",
-    "actual": "#36B37E",
+    # Budget vs Actual (Steven: green=target, yellow=actual)
+    "budget": "#2D8B57",     # green = target/budget
+    "actual": "#E8B931",     # yellow = actual
     "target_line": "#FFAB00",
-    "achievement": "#e6a23c",
-    # YoY
-    "current_year": "#1B65A8",
-    "last_year": "#91cc75",
+    "achievement": "#2D8B57",  # green line for achievement rate
+    # YoY (Steven: green=current year, light=last year)
+    "current_year": "#2D8B57",   # green = current year bars
+    "last_year": "#A9D18E",      # light green = last year bars
     "yoy_up": "#FF5630",
     "yoy_down": "#36B37E",
+    # Category fixed colors (Steven: 汤料=绿, 酱料=蓝, 底料=橙, 其它=浅绿)
+    "cat_tanglio": "#2D8B57",    # 汤料 = dark green
+    "cat_jiangliao": "#4472C4",  # 酱料 = blue
+    "cat_diliao": "#E8B931",     # 底料 = yellow/orange
+    "cat_other": "#A9D18E",      # 其它 = light green
 }
+
+# Legacy alias for builders still using "primary" as blue
+COLORS_LEGACY_BLUE = "#1B65A8"
 
 MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月',
                 '7月', '8月', '9月', '10月', '11月', '12月']
 
-QUARTER_COLORS = ['rgba(27,101,168,0.03)', 'rgba(54,179,126,0.03)',
-                  'rgba(255,171,0,0.03)', 'rgba(255,86,48,0.03)']
+# Quarter background shading — subtle green tones matching Steven's Power BI
+QUARTER_COLORS = ['rgba(45,139,87,0.04)', 'rgba(54,179,126,0.04)',
+                  'rgba(232,185,49,0.04)', 'rgba(169,209,142,0.04)']
 
 
 class AbstractFinancialChartBuilder(ABC):
@@ -235,9 +245,9 @@ class AbstractFinancialChartBuilder(ABC):
                 "height": 18,
                 "bottom": 0,
                 "borderColor": "transparent",
-                "backgroundColor": "rgba(27,101,168,0.05)",
-                "fillerColor": "rgba(27,101,168,0.12)",
-                "handleStyle": {"color": "#1B65A8", "borderColor": "#1B65A8"},
+                "backgroundColor": "rgba(45,139,87,0.05)",
+                "fillerColor": "rgba(45,139,87,0.12)",
+                "handleStyle": {"color": "#2D8B57", "borderColor": "#2D8B57"},
                 "textStyle": {"fontSize": 10, "color": "#909399"},
                 "brushSelect": False,
             },
@@ -276,7 +286,7 @@ class AbstractFinancialChartBuilder(ABC):
                     "saveAsImage": {"title": "保存图片", "pixelRatio": 2},
                 },
                 "iconStyle": {"borderColor": "#909399"},
-                "emphasis": {"iconStyle": {"borderColor": "#1B65A8"}},
+                "emphasis": {"iconStyle": {"borderColor": "#2D8B57"}},
             },
             # A4: Default emphasis style — builders merge this into per-series emphasis
             # Note: ECharts ignores top-level emphasis; this serves as a template

@@ -847,7 +847,7 @@ onUnmounted(() => {
 
 .notice-card {
   border-radius: 12px;
-  border-left: 4px solid #1B65A8;
+  border-left: 4px solid #2D8B57;
 
   :deep(.el-card__body) {
     padding: 32px;
@@ -860,7 +860,7 @@ onUnmounted(() => {
   margin: 0 auto;
 
   .notice-icon {
-    color: var(--el-color-primary, #1B65A8);
+    color: var(--el-color-primary, #2D8B57);
     margin-bottom: 16px;
   }
 
@@ -954,7 +954,7 @@ onUnmounted(() => {
   }
 
   &.selected {
-    border-color: var(--el-color-primary, #1B65A8);
+    border-color: var(--el-color-primary, #2D8B57);
   }
 
   &.score-good {
@@ -1034,7 +1034,7 @@ onUnmounted(() => {
 }
 
 .clickable-row:hover .drill-hint-icon {
-  color: var(--el-color-primary, #1B65A8);
+  color: var(--el-color-primary, #2D8B57);
 }
 
 // Feature 2A: Drill drawer content
@@ -1135,7 +1135,7 @@ onUnmounted(() => {
   padding: 16px;
   background: #fafafa;
   border-radius: 8px;
-  border-left: 3px solid var(--el-color-primary, #1B65A8);
+  border-left: 3px solid var(--el-color-primary, #2D8B57);
 
   p {
     font-size: 13px;

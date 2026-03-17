@@ -34,9 +34,9 @@ export type MainTabParamList = {
   PlatformTab: NavigatorScreenParams<PlatformStackParamList>;  // 平台管理
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;  // 个人中心
   ReportTab: NavigatorScreenParams<ReportStackParamList>;  // 报表中心
-  // 未来模块预留
-  LogisticsTab?: NavigatorScreenParams<LogisticsStackParamList>;
-  TraceTab?: NavigatorScreenParams<TraceStackParamList>;
+  // 物流 & 溯源模块
+  LogisticsTab: NavigatorScreenParams<LogisticsStackParamList>;
+  TraceTab: NavigatorScreenParams<TraceStackParamList>;
 };
 
 // ==================== 生产模块导航参数 ====================
@@ -651,12 +651,18 @@ export type WHProfileScreenProps<T extends keyof WHProfileStackParamList> =
 
 export type LogisticsStackParamList = {
   LogisticsDashboard: undefined;
-  // ... 物流模块页面
+  ShipmentList: { status?: string };
+  ShipmentDetail: { shipmentId: string };
+  CreateShipment: undefined;
+  TrackingDetail: { trackingNumber: string };
 };
 
 export type TraceStackParamList = {
   TraceDashboard: undefined;
-  // ... 溯源模块页面
+  TraceQuery: undefined;
+  TraceDetail: { batchNumber: string };
+  TraceScan: undefined;
+  PublicTrace: { batchNumber?: string; traceCode?: string };
 };
 
 export type WorkStackParamList = {

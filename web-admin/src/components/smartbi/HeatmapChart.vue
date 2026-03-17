@@ -49,7 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
   valueLabel: 'Value',
   valueUnit: '',
   minColor: '#ffffff',
-  maxColor: '#1B65A8',
+  maxColor: '#2D8B57',
   showLabel: true,
   alertMode: false,
   autoLabelContrast: true,
@@ -196,7 +196,7 @@ const chartOptions = computed<EChartsOption>(() => {
             <div style="font-weight: 600; color: ${data.color};">
               ${value.toLocaleString()}${props.valueUnit}
             </div>
-            ${rank > 0 ? `<div style="color:#909399;">排名: <span style="font-weight:600;color:#1B65A8;">#${rank}</span></div>` : ''}
+            ${rank > 0 ? `<div style="color:#909399;">排名: <span style="font-weight:600;color:#2D8B57;">#${rank}</span></div>` : ''}
           </div>
         `;
       }

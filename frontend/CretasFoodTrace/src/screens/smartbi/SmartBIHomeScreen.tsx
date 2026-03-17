@@ -9,6 +9,7 @@ import { Text, Card, Icon, Surface } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { SmartBIStackParamList } from '../../types/smartbi';
 import { useFactoryFeatureStore } from '../../store/factoryFeatureStore';
 // KPICardMobile removed — KPI section now links to ExecutiveDashboard for real data
@@ -72,6 +73,7 @@ function QuickActionCard({ icon, title, subtitle, color, onPress }: QuickActionC
 }
 
 export function SmartBIHomeScreen() {
+  const { t } = useTranslation('smartbi');
   const navigation = useNavigation<NavigationProp>();
   const { isScreenEnabled } = useFactoryFeatureStore();
 
@@ -124,6 +126,30 @@ export function SmartBIHomeScreen() {
       screen: 'NLQuery',
       onPress: () => navigation.navigate('NLQuery', {}),
     },
+    {
+      icon: 'cash-multiple',
+      title: t('menu.cashflow_title'),
+      description: t('menu.cashflow_desc'),
+      color: '#10B981',
+      screen: 'CashFlow',
+      onPress: () => navigation.navigate('CashFlow', {}),
+    },
+    {
+      icon: 'account-star',
+      title: t('menu.rfm_title'),
+      description: t('menu.rfm_desc'),
+      color: '#4F46E5',
+      screen: 'CustomerRFM',
+      onPress: () => navigation.navigate('CustomerRFM', {}),
+    },
+    {
+      icon: 'chart-box',
+      title: t('menu.ratios_title'),
+      description: t('menu.ratios_desc'),
+      color: '#F59E0B',
+      screen: 'FinancialRatios',
+      onPress: () => navigation.navigate('FinancialRatios', {}),
+    },
   ].filter(item => isScreenEnabled(item.screen));
 
   return (
@@ -147,20 +173,22 @@ export function SmartBIHomeScreen() {
         </Card>
 
         {/* 核心指标入口 */}
-        <TouchableOpacity
-          style={styles.kpiEntryCard}
-          onPress={() => navigation.navigate('ExecutiveDashboard')}
-          activeOpacity={0.8}
-        >
-          <Surface style={styles.kpiEntrySurface} elevation={2}>
-            <Icon source="chart-box" size={36} color="#9C27B0" />
-            <View style={styles.kpiEntryText}>
-              <Text variant="titleMedium" style={{ fontWeight: '600' }}>核心指标</Text>
-              <Text variant="bodySmall" style={{ color: '#666' }}>进入经营驾驶舱查看实时数据</Text>
-            </View>
-            <Icon source="chevron-right" size={24} color="#9E9E9E" />
-          </Surface>
-        </TouchableOpacity>
+        {isScreenEnabled('ExecutiveDashboard') && (
+          <TouchableOpacity
+            style={styles.kpiEntryCard}
+            onPress={() => navigation.navigate('ExecutiveDashboard')}
+            activeOpacity={0.8}
+          >
+            <Surface style={styles.kpiEntrySurface} elevation={2}>
+              <Icon source="chart-box" size={36} color="#9C27B0" />
+              <View style={styles.kpiEntryText}>
+                <Text variant="titleMedium" style={{ fontWeight: '600' }}>核心指标</Text>
+                <Text variant="bodySmall" style={{ color: '#666' }}>进入经营驾驶舱查看实时数据</Text>
+              </View>
+              <Icon source="chevron-right" size={24} color="#9E9E9E" />
+            </Surface>
+          </TouchableOpacity>
+        )}
 
         {/* 快捷操作卡片 */}
         <View style={styles.quickActionsContainer}>
@@ -168,34 +196,16 @@ export function SmartBIHomeScreen() {
             快捷操作
           </Text>
           <View style={styles.quickActionsGrid}>
-            <QuickActionCard
-              icon="file-excel"
-              title="上传Excel"
-              subtitle="导入数据分析"
-              color="#9C27B0"
-              onPress={() => navigation.navigate('ExcelUpload')}
-            />
-            <QuickActionCard
-              icon="view-dashboard"
-              title="经营驾驶舱"
-              subtitle="查看核心指标"
-              color="#2196F3"
-              onPress={() => navigation.navigate('ExecutiveDashboard')}
-            />
-            <QuickActionCard
-              icon="robot"
-              title="AI问答"
-              subtitle="智能数据查询"
-              color="#F44336"
-              onPress={() => navigation.navigate('NLQuery', {})}
-            />
-            <QuickActionCard
-              icon="chart-timeline-variant"
-              title="数据分析"
-              subtitle="批量图表生成"
-              color="#00BCD4"
-              onPress={() => navigation.navigate('SmartBIDataAnalysis')}
-            />
+            {[
+              { icon: 'file-excel', title: '上传Excel', subtitle: '导入数据分析', color: '#9C27B0', screen: 'ExcelUpload' as const, nav: () => navigation.navigate('ExcelUpload') },
+              { icon: 'view-dashboard', title: '经营驾驶舱', subtitle: '查看核心指标', color: '#2196F3', screen: 'ExecutiveDashboard' as const, nav: () => navigation.navigate('ExecutiveDashboard') },
+              { icon: 'robot', title: 'AI问答', subtitle: '智能数据查询', color: '#F44336', screen: 'NLQuery' as const, nav: () => navigation.navigate('NLQuery', {}) },
+              { icon: 'chart-timeline-variant', title: '数据分析', subtitle: '批量图表生成', color: '#00BCD4', screen: 'SmartBIDataAnalysis' as const, nav: () => navigation.navigate('SmartBIDataAnalysis') },
+            ]
+              .filter(qa => isScreenEnabled(qa.screen))
+              .map((qa, index) => (
+                <QuickActionCard key={index} icon={qa.icon} title={qa.title} subtitle={qa.subtitle} color={qa.color} onPress={qa.nav} />
+              ))}
           </View>
         </View>
 
@@ -209,17 +219,6 @@ export function SmartBIHomeScreen() {
           ))}
         </View>
 
-        {/* 提示信息 */}
-        <Card style={styles.tipCard}>
-          <Card.Content>
-            <View style={styles.tipContent}>
-              <Icon source="information" size={20} color="#2196F3" />
-              <Text variant="bodySmall" style={styles.tipText}>
-                SmartBI 功能正在开发中，更多功能即将上线
-              </Text>
-            </View>
-          </Card.Content>
-        </Card>
       </ScrollView>
     </SafeAreaView>
   );
@@ -349,19 +348,6 @@ const styles = StyleSheet.create({
   menuDescription: {
     color: '#757575',
     marginTop: 2,
-  },
-  tipCard: {
-    margin: 16,
-    backgroundColor: '#E3F2FD',
-  },
-  tipContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tipText: {
-    color: '#1565C0',
-    marginLeft: 8,
-    flex: 1,
   },
 });
 

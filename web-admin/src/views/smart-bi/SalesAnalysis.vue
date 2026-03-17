@@ -1039,8 +1039,8 @@ function updateTrendChart() {
             { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
           ])
         },
-        lineStyle: { width: 3, color: '#1B65A8' },
-        itemStyle: { color: '#1B65A8' },
+        lineStyle: { width: 3, color: '#2D8B57' },
+        itemStyle: { color: '#2D8B57' },
         markPoint: salesData.some(v => v < 0) ? {
           data: [
             { type: 'min', name: '最低值', symbol: 'pin', symbolSize: 40, label: { formatter: '{c}', fontSize: 10 } }
@@ -1079,8 +1079,8 @@ function updateTrendChart() {
             { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
           ])
         },
-        lineStyle: { width: 3, color: '#1B65A8' },
-        itemStyle: { color: '#1B65A8' },
+        lineStyle: { width: 3, color: '#2D8B57' },
+        itemStyle: { color: '#2D8B57' },
         markPoint: salesData.some(v => v < 0) ? {
           data: [
             { type: 'min', name: '最低值', symbol: 'pin', symbolSize: 40, label: { formatter: '{c}', fontSize: 10 } }
@@ -1150,7 +1150,7 @@ function updatePieChart() {
   if (!pieChart) return;
 
   // 预定义颜色
-  const colors = ['#1B65A8', '#36B37E', '#E6A23C', '#FF5630', '#909399', '#00CED1', '#FF69B4', '#8A2BE2'];
+  const colors = ['#2D8B57', '#36B37E', '#E6A23C', '#FF5630', '#909399', '#00CED1', '#FF69B4', '#8A2BE2'];
 
   // 从 API 数据中提取饼图数据
   const pieData = config.data.map((item, index) => ({
@@ -1611,7 +1611,7 @@ onUnmounted(() => {
           />
           <!-- Single category: show stat instead of useless full-circle pie -->
           <div v-else-if="useDynamicPie && pieDynamicConfig && pieDynamicConfig.data?.length === 1" class="single-category-stat">
-            <el-icon :size="40" color="#1B65A8"><TrendCharts /></el-icon>
+            <el-icon :size="40" color="#2D8B57"><TrendCharts /></el-icon>
             <div class="stat-info">
               <div class="stat-label">{{ pieDynamicConfig.data[0]?.[pieDynamicConfig.xAxisField || 'name'] || '产品类别' }}</div>
               <div class="stat-value">100%</div>
@@ -1818,7 +1818,7 @@ onUnmounted(() => {
   border-top: 3px solid transparent;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
-  &.kpi-accent-0 { border-top-color: #1B65A8; }
+  &.kpi-accent-0 { border-top-color: #2D8B57; }
   &.kpi-accent-1 { border-top-color: #36B37E; }
   &.kpi-accent-2 { border-top-color: #FFAB00; }
   &.kpi-accent-3 { border-top-color: #6554C0; }
@@ -1904,7 +1904,7 @@ onUnmounted(() => {
 
     .sales-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--el-color-primary, #1B65A8), var(--el-color-primary-light-3, #79bbff));
+      background: linear-gradient(90deg, var(--el-color-primary, #2D8B57), var(--el-color-primary-light-3, #79bbff));
       border-radius: 3px;
       transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -1948,7 +1948,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: var(--el-color-primary, #1B65A8);
+      color: var(--el-color-primary, #2D8B57);
     }
   }
 }
@@ -2036,7 +2036,7 @@ onUnmounted(() => {
   .stat-value {
     font-size: 32px;
     font-weight: 700;
-    color: var(--el-color-primary, #1B65A8);
+    color: var(--el-color-primary, #2D8B57);
     margin-bottom: 4px;
   }
 
@@ -2103,7 +2103,7 @@ onUnmounted(() => {
 .exploration-card {
   margin-top: 16px;
   border-radius: 8px;
-  border-left: 4px solid var(--el-color-primary, #1B65A8);
+  border-left: 4px solid var(--el-color-primary, #2D8B57);
 
   .card-header {
     display: flex;
@@ -2112,7 +2112,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: var(--el-color-primary, #1B65A8);
+      color: var(--el-color-primary, #2D8B57);
     }
   }
 }

@@ -5,7 +5,7 @@
  */
 import { ref, reactive, computed, watch, nextTick, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
-import { DataAnalysis, VideoPlay, Download, Collection, SetUp, ArrowDown, Delete } from '@element-plus/icons-vue';
+import { DataAnalysis, VideoPlay, Download, Collection, SetUp, ArrowDown, ArrowRight, Delete } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
 import { processEChartsOptions } from '@/utils/echarts-fmt';
 import { sparklinePath, sparklineSVG } from '@/utils/sparkline';
@@ -27,11 +27,8 @@ function safeClone<T>(obj: T): T {
 // Components
 import PeriodSelector from '@/components/smartbi/PeriodSelector.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
-import ExpenseYoYBudgetChart from '@/components/smartbi/ExpenseYoYBudgetChart.vue';
-import GrossMarginTrendChart from '@/components/smartbi/GrossMarginTrendChart.vue';
 import PresentationMode from '@/components/smartbi/PresentationMode.vue';
 import type { Slide } from '@/components/smartbi/PresentationMode.vue';
-import VarianceAnalysisChart from '@/components/smartbi/VarianceAnalysisChart.vue';
 import SankeyChart from '@/components/smartbi/SankeyChart.vue';
 import SmallMultiplesChart from '@/components/smartbi/SmallMultiplesChart.vue';
 import BookmarkPanel from '@/components/smartbi/BookmarkPanel.vue';
@@ -66,6 +63,19 @@ const availableDimensions = ref<{ name: string; values: string[] }[]>([]);
 let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
 const useSvgRenderer = ref(false); // D4: SVG renderer toggle
 const isInDemoMode = ref(false); // Track demo mode for slicer re-generation
+
+// Tab navigation state
+const viewMode = ref<'tab' | 'grid'>('tab');
+const activeTab = ref('budget_achievement');
+const collapsedGroups = reactive(new Set<string>());
+const conclusionsText = ref('');
+const conclusionsLoading = ref(false);
+
+// Follow-up interaction state
+interface FollowUpItem { question: string; answer: string }
+const followUpsByType = ref<Record<string, FollowUpItem[]>>({});
+const followUpInput = ref('');
+const followUpLoading = ref(false);
 
 // D2: User annotations (persisted in localStorage)
 interface Annotation { text: string; x: number; y: number; chartType: string; color: string; id: number }
@@ -178,9 +188,6 @@ const smallMultiplesDimension = ref('category');
 // Conditional Formatting (panel is self-contained via service singleton)
 
 // Chart instance refs for getDataURL
-const chartRefExpenseYoY = ref<InstanceType<typeof ExpenseYoYBudgetChart> | null>(null);
-const chartRefGrossMargin = ref<InstanceType<typeof GrossMarginTrendChart> | null>(null);
-const chartRefVariance = ref<InstanceType<typeof VarianceAnalysisChart> | null>(null);
 const chartRefSankey = ref<InstanceType<typeof SankeyChart> | null>(null);
 // Generic chart DOM refs for existing chart components
 const chartDomRefs = ref<Map<string, HTMLElement>>(new Map());
@@ -281,26 +288,32 @@ function getAnomalies(chartType: string): string[] {
   return anomalyMap.value.get(chartType) ?? [];
 }
 
+// 去掉与其他页面重复的图表:
+// kpi_scorecard → 经营驾驶舱, expense_yoy_budget → 财务分析-成本, gross_margin_trend → 财务分析-利润,
+// product_ranking → 销售分析+驾驶舱, ar_aging → 财务分析-应收, variance_analysis → 财务分析-预算
 const chartTypes = [
-  { key: 'kpi_scorecard', label: '关键指标记分卡', icon: '🏆' },
-  { key: 'budget_achievement', label: '预算达成分析', icon: '📊' },
-  { key: 'yoy_mom_comparison', label: '同环比分析', icon: '📈' },
-  { key: 'pnl_waterfall', label: '损益表瀑布图', icon: '🌊' },
-  { key: 'expense_yoy_budget', label: '费用同比及预算达成', icon: '💰' },
-  { key: 'category_yoy_comparison', label: '品类同期对比', icon: '📊' },
-  { key: 'gross_margin_trend', label: '毛利率同比趋势', icon: '📉' },
-  { key: 'category_structure_donut', label: '品类结构同比饼图', icon: '🎯' },
-  { key: 'cost_flow_sankey', label: '成本流向桑基图', icon: '🔀' },
-  { key: 'variance_analysis', label: '预算差异分析', icon: '📐' },
-  { key: 'cash_flow_waterfall', label: '现金流量瀑布图', icon: '💵' },
-  { key: 'channel_analysis', label: '渠道分析', icon: '🏪' },
-  { key: 'product_ranking', label: '重点产品排名', icon: '🏅' },
-  { key: 'ar_aging', label: '应收账款账龄', icon: '⏳' },
-  { key: 'cashflow_trend', label: '现金流趋势', icon: '💹' },
-  { key: 'hr_cost_analysis', label: '人力成本分析', icon: '👥' },
-  { key: 'bullet_chart', label: '目标达成进度', icon: '🎯' },
-  { key: 'small_multiples', label: '多维度对比矩阵', icon: '📋' },
+  { key: 'budget_achievement',      label: '预算达成分析',   icon: '📊', group: '核心财务', order: 1 },
+  { key: 'yoy_mom_comparison',      label: '同环比分析',     icon: '📈', group: '核心财务', order: 2 },
+  { key: 'pnl_waterfall',           label: '损益表瀑布图',   icon: '🌊', group: '核心财务', order: 3 },
+  { key: 'category_yoy_comparison', label: '品类同期对比',   icon: '📊', group: '品类与渠道', order: 4 },
+  { key: 'category_structure_donut',label: '产品结构',       icon: '🎯', group: '品类与渠道', order: 5 },
+  { key: 'channel_analysis',        label: '渠道分析',       icon: '🏪', group: '品类与渠道', order: 6 },
+  { key: 'cash_flow_waterfall',     label: '现金流量瀑布图', icon: '💵', group: '现金流与成本', order: 7 },
+  { key: 'cashflow_trend',          label: '现金流趋势',     icon: '💹', group: '现金流与成本', order: 8 },
+  { key: 'cost_flow_sankey',        label: '成本流向桑基图', icon: '🔀', group: '现金流与成本', order: 9 },
+  { key: 'bullet_chart',            label: '目标达成进度',   icon: '🎯', group: '运营专项', order: 10 },
+  { key: 'hr_cost_analysis',        label: '人力成本分析',   icon: '👥', group: '运营专项', order: 11 },
+  { key: 'small_multiples',         label: '多维度对比矩阵', icon: '📋', group: '运营专项', order: 12 },
 ];
+
+const chartsByGroup = computed(() => {
+  const groups = new Map<string, typeof chartTypes>();
+  for (const ct of chartTypes) {
+    if (!groups.has(ct.group)) groups.set(ct.group, []);
+    groups.get(ct.group)!.push(ct);
+  }
+  return groups;
+});
 
 const presentationSlides = computed<Slide[]>(() => {
   const slides: Slide[] = [{ type: 'cover' }];
@@ -509,33 +522,6 @@ function setChartDomRef(chartType: string, el: Element | null) {
 
 function collectChartImages(): Record<string, string> {
   const images: Record<string, string> = {};
-
-  // Collect from ExpenseYoYBudgetChart
-  if (chartRefExpenseYoY.value?.chartInstance) {
-    try {
-      images['expense_yoy_budget'] = chartRefExpenseYoY.value.chartInstance.getDataURL({
-        type: 'png', pixelRatio: 2, backgroundColor: '#fff',
-      });
-    } catch (e) { console.warn('Failed to get ExpenseYoY image:', e); }
-  }
-
-  // Collect from GrossMarginTrendChart
-  if (chartRefGrossMargin.value?.chartInstance) {
-    try {
-      images['gross_margin_trend'] = chartRefGrossMargin.value.chartInstance.getDataURL({
-        type: 'png', pixelRatio: 2, backgroundColor: '#fff',
-      });
-    } catch (e) { console.warn('Failed to get GrossMargin image:', e); }
-  }
-
-  // Collect from VarianceAnalysisChart
-  if (chartRefVariance.value?.chartInstance) {
-    try {
-      images['variance_analysis'] = chartRefVariance.value.chartInstance.getDataURL({
-        type: 'png', pixelRatio: 2, backgroundColor: '#fff',
-      });
-    } catch (e) { console.warn('Failed to get VarianceAnalysis image:', e); }
-  }
 
   // Collect from SankeyChart
   if (chartRefSankey.value?.chartInstance) {
@@ -904,6 +890,97 @@ function onFormattingRulesChange(_rules: unknown[]) {
   // Rules are managed by the ConditionalFormattingService singleton; no extra action needed
 }
 
+// ---- Tab navigation ----
+function toggleGroup(groupName: string) {
+  if (collapsedGroups.has(groupName)) collapsedGroups.delete(groupName);
+  else collapsedGroups.add(groupName);
+}
+
+async function generateConclusions() {
+  conclusionsLoading.value = true;
+  try {
+    const allAnalysis = Object.entries(analysisByType.value)
+      .filter(([, text]) => text)
+      .map(([type, text]) => {
+        const ct = chartTypes.find(c => c.key === type);
+        return `【${ct?.label || type}】\n${text}`;
+      })
+      .join('\n\n');
+
+    if (!allAnalysis) {
+      conclusionsText.value = '请先等待各图表的AI分析完成，然后再生成总结。';
+      return;
+    }
+
+    const resp = await analyzeChart({
+      chart_type: 'overall_summary',
+      analysis_context: allAnalysis,
+    });
+    if (resp.success) {
+      conclusionsText.value = resp.analysis || '暂无分析结论';
+    } else {
+      conclusionsText.value = resp.error || '分析暂不可用';
+    }
+  } catch (err) {
+    console.error('generateConclusions failed:', err);
+    conclusionsText.value = '生成结论失败，请重试';
+  } finally {
+    conclusionsLoading.value = false;
+  }
+}
+
+async function submitFollowUp(chartType: string) {
+  const question = followUpInput.value.trim();
+  if (!question) return;
+
+  const chart = getChart(chartType);
+  if (!chart) return;
+
+  // Build previous analysis = initial analysis + all follow-up answers
+  let fullAnalysis = analysisByType.value[chartType] || '';
+  const history = followUpsByType.value[chartType] || [];
+  for (const item of history) {
+    fullAnalysis += `\n\n用户追问: ${item.question}\n回复: ${item.answer}`;
+  }
+
+  followUpLoading.value = true;
+  followUpInput.value = '';
+
+  try {
+    const resp = await analyzeChart({
+      chart_type: chartType,
+      analysis_context: chart.analysisContext || '',
+      follow_up_question: question,
+      previous_analysis: fullAnalysis,
+    });
+
+    if (!followUpsByType.value[chartType]) followUpsByType.value[chartType] = [];
+    followUpsByType.value[chartType].push({
+      question,
+      answer: resp.success ? (resp.analysis || '暂无回复') : (resp.error || '请求失败'),
+    });
+  } catch (err) {
+    console.error('followUp failed:', err);
+    if (!followUpsByType.value[chartType]) followUpsByType.value[chartType] = [];
+    followUpsByType.value[chartType].push({ question, answer: '请求失败，请重试' });
+  } finally {
+    followUpLoading.value = false;
+  }
+}
+
+watch(activeTab, async (newTab) => {
+  if (newTab === 'conclusions' || viewMode.value !== 'tab') return;
+  // Auto-trigger AI analysis for the active chart
+  requestAnalysis(newTab);
+  await nextTick();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const domEl = chartDomRefs.value.get(newTab);
+      if (domEl) renderGenericChart(newTab, domEl);
+    });
+  });
+});
+
 // ---- B3: Dark mode toggle ----
 function toggleDarkMode() {
   isDarkMode.value = !isDarkMode.value;
@@ -920,19 +997,15 @@ function toggleDarkMode() {
         newInstance.setOption(processed, { notMerge: true });
       }
     }
-    // Re-render custom component charts (ExpenseYoY, GrossMargin, Variance, Sankey)
-    for (const compRef of [chartRefExpenseYoY, chartRefGrossMargin, chartRefVariance, chartRefSankey]) {
+    // Re-render custom component charts (Sankey)
+    for (const compRef of [chartRefSankey]) {
       const inst = compRef.value?.chartInstance;
       if (inst) {
         const domEl = inst.getDom();
         inst.dispose();
         if (domEl) {
           const newInst = echarts.init(domEl, theme);
-          // Re-fetch chart data and setOption
-          const chartType = compRef === chartRefExpenseYoY ? 'expense_yoy_budget'
-            : compRef === chartRefGrossMargin ? 'gross_margin_trend'
-            : compRef === chartRefVariance ? 'variance_analysis'
-            : 'cost_flow_sankey';
+          const chartType = 'cost_flow_sankey';
           const chart = getChart(chartType);
           if (chart?.echartsOption) {
             const processed = processEChartsOptions(safeClone(chart.echartsOption) as Record<string, unknown>);
@@ -1096,8 +1169,8 @@ function handleCardKeydown(event: KeyboardEvent, cardIndex: number) {
 // ---- E1: Synchronized crosshair (tooltip linkage) ----
 // Time-series chart types that share the same x-axis (months)
 const timeSeriesChartTypes = [
-  'budget_achievement', 'yoy_mom_comparison', 'expense_yoy_budget',
-  'category_yoy_comparison', 'gross_margin_trend', 'cashflow_trend',
+  'budget_achievement', 'yoy_mom_comparison',
+  'category_yoy_comparison', 'cashflow_trend',
   'hr_cost_analysis',
 ];
 
@@ -1324,6 +1397,11 @@ onBeforeUnmount(() => {
           <el-tag v-if="periodLabel" type="info" size="small" style="margin-right: 8px">
             {{ periodLabel }}
           </el-tag>
+          <el-segmented
+            v-model="viewMode"
+            :options="[{ label: 'Tab', value: 'tab' }, { label: 'Grid', value: 'grid' }]"
+            size="small"
+          />
           <el-button size="small" @click="toggleDarkMode" :title="isDarkMode ? '切换亮色' : '切换暗色'">
             {{ isDarkMode ? '☀️' : '🌙' }}
           </el-button>
@@ -1452,8 +1530,8 @@ onBeforeUnmount(() => {
       <SmartBIEmptyState type="no-data" title="请选择数据源和时间范围" description="点击「生成看板」开始分析" :show-action="false" />
     </div>
 
-    <!-- Loading skeleton -->
-    <div v-if="isGenerating" class="charts-grid">
+    <!-- Loading skeleton (grid mode) -->
+    <div v-if="isGenerating && viewMode === 'grid'" class="charts-grid">
       <el-card v-for="ct in chartTypes" :key="ct.key" class="chart-card chart-card--visible" shadow="hover">
         <template #header>
           <div class="chart-card-header">
@@ -1465,159 +1543,8 @@ onBeforeUnmount(() => {
       </el-card>
     </div>
 
-    <!-- Charts Grid -->
-    <div v-if="dashboardResponse && !isGenerating" class="charts-grid">
-
-      <!-- Chart 4: Expense YoY Budget (custom component) -->
-      <el-card
-        v-if="getChart('expense_yoy_budget')"
-        :ref="(el: any) => { if (el?.$el) observeChartCard(el.$el, 'expense_yoy_budget') }"
-        class="chart-card chart-card--wide"
-        :class="{ 'chart-card--visible': visibleCharts.has('expense_yoy_budget') }"
-        data-chart-type="expense_yoy_budget"
-        shadow="hover"
-      >
-        <template #header>
-          <div class="chart-card-header">
-            <span>💰 费用同比及预算达成分析</span>
-            <el-button
-              size="small"
-              text
-              type="primary"
-              :loading="analysisLoadingByType['expense_yoy_budget']"
-              @click="forceRequestAnalysis('expense_yoy_budget')"
-            >
-              {{ analysisByType['expense_yoy_budget'] ? '重新分析' : 'AI分析' }}
-            </el-button>
-          </div>
-        </template>
-        <template v-if="getChartEchartsOption(getChart('expense_yoy_budget'))">
-          <!-- KPI row from API -->
-          <div v-if="getChart('expense_yoy_budget')!.kpis?.length" class="generic-kpi-row">
-            <div
-              v-for="kpi in getChart('expense_yoy_budget')!.kpis.slice(0, 4)"
-              :key="kpi.label"
-              class="generic-kpi-chip"
-              :class="{ 'kpi-up': kpi.trend === 'up', 'kpi-down': kpi.trend === 'down' }"
-            >
-              <span class="kpi-val">{{ typeof kpi.value === 'number' ? kpi.value.toFixed(1) : kpi.value }}{{ kpi.unit }}</span>
-              <span class="kpi-lbl">{{ kpi.label }}</span>
-            </div>
-          </div>
-          <!-- ECharts canvas rendered via DOM ref -->
-          <div
-            :ref="(el) => setChartDomRef('expense_yoy_budget', el as Element | null)"
-            class="generic-chart-canvas"
-          />
-        </template>
-        <ExpenseYoYBudgetChart
-          v-else
-          ref="chartRefExpenseYoY"
-          :data="[]"
-          :loading="false"
-          :height="360"
-        />
-        <div v-if="analysisLoadingByType['expense_yoy_budget'] || analysisByType['expense_yoy_budget']" class="analysis-panel">
-          <ChartSkeleton v-if="analysisLoadingByType['expense_yoy_budget']" type="ai" />
-          <div v-else class="analysis-text">
-            {{ analysisByType['expense_yoy_budget'] }}
-          </div>
-        </div>
-      </el-card>
-
-      <!-- Chart 6: Gross Margin Trend (custom component) -->
-      <el-card
-        v-if="getChart('gross_margin_trend')"
-        :ref="(el: any) => { if (el?.$el) observeChartCard(el.$el, 'gross_margin_trend') }"
-        class="chart-card chart-card--wide"
-        :class="{ 'chart-card--visible': visibleCharts.has('gross_margin_trend') }"
-        data-chart-type="gross_margin_trend"
-        shadow="hover"
-      >
-        <template #header>
-          <div class="chart-card-header">
-            <span>📉 毛利率同比趋势分析</span>
-            <el-button
-              size="small"
-              text
-              type="primary"
-              :loading="analysisLoadingByType['gross_margin_trend']"
-              @click="forceRequestAnalysis('gross_margin_trend')"
-            >
-              {{ analysisByType['gross_margin_trend'] ? '重新分析' : 'AI分析' }}
-            </el-button>
-          </div>
-        </template>
-        <template v-if="getChartEchartsOption(getChart('gross_margin_trend'))">
-          <!-- KPI row from API -->
-          <div v-if="getChart('gross_margin_trend')!.kpis?.length" class="generic-kpi-row">
-            <div
-              v-for="kpi in getChart('gross_margin_trend')!.kpis.slice(0, 4)"
-              :key="kpi.label"
-              class="generic-kpi-chip"
-              :class="{ 'kpi-up': kpi.trend === 'up', 'kpi-down': kpi.trend === 'down' }"
-            >
-              <span class="kpi-val">{{ typeof kpi.value === 'number' ? kpi.value.toFixed(1) : kpi.value }}{{ kpi.unit }}</span>
-              <span class="kpi-lbl">{{ kpi.label }}</span>
-            </div>
-          </div>
-          <!-- ECharts canvas rendered via DOM ref -->
-          <div
-            :ref="(el) => setChartDomRef('gross_margin_trend', el as Element | null)"
-            class="generic-chart-canvas"
-          />
-        </template>
-        <GrossMarginTrendChart
-          v-else
-          ref="chartRefGrossMargin"
-          :data="[]"
-          :loading="false"
-          :height="320"
-        />
-        <div v-if="analysisLoadingByType['gross_margin_trend'] || analysisByType['gross_margin_trend']" class="analysis-panel">
-          <ChartSkeleton v-if="analysisLoadingByType['gross_margin_trend']" type="ai" />
-          <div v-else class="analysis-text">
-            {{ analysisByType['gross_margin_trend'] }}
-          </div>
-        </div>
-      </el-card>
-
-      <!-- Chart: Variance Analysis -->
-      <el-card
-        v-if="getChart('variance_analysis')"
-        :ref="(el: any) => { if (el?.$el) observeChartCard(el.$el, 'variance_analysis') }"
-        class="chart-card chart-card--wide"
-        :class="{ 'chart-card--visible': visibleCharts.has('variance_analysis') }"
-        data-chart-type="variance_analysis"
-        shadow="hover"
-      >
-        <template #header>
-          <div class="chart-card-header">
-            <span>📐 预算差异分析</span>
-            <el-button
-              size="small"
-              text
-              type="primary"
-              :loading="analysisLoadingByType['variance_analysis']"
-              @click="forceRequestAnalysis('variance_analysis')"
-            >
-              {{ analysisByType['variance_analysis'] ? '重新分析' : 'AI分析' }}
-            </el-button>
-          </div>
-        </template>
-        <VarianceAnalysisChart
-          ref="chartRefVariance"
-          :data="[]"
-          :echarts-option="getChart('variance_analysis')!.echartsOption ?? {}"
-          height="480px"
-        />
-        <div v-if="analysisLoadingByType['variance_analysis'] || analysisByType['variance_analysis']" class="analysis-panel">
-          <ChartSkeleton v-if="analysisLoadingByType['variance_analysis']" type="ai" />
-          <div v-else class="analysis-text">
-            {{ analysisByType['variance_analysis'] }}
-          </div>
-        </div>
-      </el-card>
+    <!-- Charts Grid (grid mode) -->
+    <div v-if="dashboardResponse && !isGenerating && viewMode === 'grid'" class="charts-grid">
 
       <!-- Chart: Cost Flow Sankey -->
       <el-card
@@ -1657,8 +1584,8 @@ onBeforeUnmount(() => {
         </div>
       </el-card>
 
-      <!-- Generic Charts (1,2,3,5,7) rendered via echartsOption from API -->
-      <template v-for="ct in chartTypes.filter(c => !['expense_yoy_budget', 'gross_margin_trend'].includes(c.key))" :key="ct.key">
+      <!-- Generic Charts rendered via echartsOption from API -->
+      <template v-for="ct in chartTypes.filter(c => c.key !== 'cost_flow_sankey')" :key="ct.key">
       <el-card
         v-if="getChart(ct.key)"
         :ref="(el: any) => { if (el?.$el) observeChartCard(el.$el, ct.key) }"
@@ -1832,7 +1759,7 @@ onBeforeUnmount(() => {
                     v-if="Array.isArray((row as Record<string, unknown>).values)"
                     v-html="sparklineSVG(
                       ((row as Record<string, unknown>).values as unknown[]).map((c: unknown) => parseFloat(String(c)) || 0),
-                      -1, 80, 22, '#1B65A8'
+                      -1, 80, 22, '#2D8B57'
                     )"
                   />
                 </td>
@@ -1843,6 +1770,306 @@ onBeforeUnmount(() => {
       </el-card>
       </template>
 
+    </div>
+
+    <!-- Tab mode: Loading -->
+    <div v-if="isGenerating && viewMode === 'tab'" class="dashboard-layout">
+      <aside class="dash-sidebar">
+        <div v-for="[groupName] in chartsByGroup" :key="groupName" class="nav-group">
+          <div class="nav-group-title">{{ groupName }}</div>
+        </div>
+      </aside>
+      <main class="dash-content">
+        <el-card shadow="hover">
+          <ChartSkeleton type="kpi" />
+          <ChartSkeleton type="chart" />
+        </el-card>
+      </main>
+    </div>
+
+    <!-- Tab mode: Dashboard layout with sidebar -->
+    <div v-if="dashboardResponse && !isGenerating && viewMode === 'tab'" class="dashboard-layout">
+      <!-- Sidebar navigation -->
+      <aside class="dash-sidebar">
+        <div v-for="[groupName, items] in chartsByGroup" :key="groupName" class="nav-group">
+          <div class="nav-group-title" @click="toggleGroup(groupName)">
+            <span>{{ groupName }}</span>
+            <el-icon :size="12"><component :is="collapsedGroups.has(groupName) ? ArrowRight : ArrowDown" /></el-icon>
+          </div>
+          <div v-show="!collapsedGroups.has(groupName)" class="nav-group-items">
+            <div
+              v-for="ct in items"
+              :key="ct.key"
+              class="nav-tab-item"
+              :class="{ active: activeTab === ct.key, available: !!getChart(ct.key) }"
+              @click="activeTab = ct.key"
+            >
+              <span class="nav-icon">{{ ct.icon }}</span>
+              <span class="nav-label">{{ ct.label }}</span>
+              <span class="nav-order">{{ String(ct.order).padStart(2, '0') }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="nav-group">
+          <div
+            class="nav-tab-item"
+            :class="{ active: activeTab === 'conclusions' }"
+            @click="activeTab = 'conclusions'"
+          >
+            <span class="nav-icon">📝</span>
+            <span class="nav-label">分析结论与建议</span>
+            <span class="nav-order">19</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Content area -->
+      <main class="dash-content">
+        <!-- Conclusions tab -->
+        <template v-if="activeTab === 'conclusions'">
+          <el-card shadow="hover">
+            <template #header>
+              <div class="chart-card-header">
+                <span>📝 分析结论与建议</span>
+                <el-button size="small" type="primary" :loading="conclusionsLoading" @click="generateConclusions">
+                  {{ conclusionsText ? '重新生成' : '生成结论' }}
+                </el-button>
+              </div>
+            </template>
+            <ChartSkeleton v-if="conclusionsLoading" type="ai" />
+            <div v-else-if="conclusionsText" class="analysis-text">{{ conclusionsText }}</div>
+            <div v-else style="text-align: center; padding: 40px; color: #909399">
+              <p>汇总所有图表的分析结果，生成整体结论与建议</p>
+              <el-button type="primary" style="margin-top: 16px" @click="generateConclusions">生成分析结论</el-button>
+            </div>
+          </el-card>
+        </template>
+
+        <!-- Active chart tab -->
+        <template v-else-if="getChart(activeTab)">
+          <!-- KPI row -->
+          <div v-if="getChart(activeTab)!.kpis?.length" class="tab-kpi-row">
+            <div
+              v-for="kpi in getChart(activeTab)!.kpis"
+              :key="kpi.label"
+              class="generic-kpi-chip"
+              :class="{ 'kpi-up': kpi.trend === 'up', 'kpi-down': kpi.trend === 'down' }"
+            >
+              <span class="kpi-val">{{ getAnimatedKpi(activeTab, kpi.label, kpi.value) }}{{ kpi.unit }}</span>
+              <span class="kpi-lbl">{{ kpi.label }}</span>
+              <svg v-if="kpi.sparkline?.length >= 2" class="kpi-sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
+                <path :d="sparklinePath(kpi.sparkline)" fill="none" :stroke="kpi.trend === 'down' ? '#FF5630' : '#36B37E'" stroke-width="1.5" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Quarterly progress bars (budget_achievement) -->
+          <div
+            v-if="activeTab === 'budget_achievement' && getChart(activeTab)?.quarterlyProgress?.length"
+            class="quarterly-progress-row"
+            style="margin-bottom: 16px"
+          >
+            <div v-for="qp in getChart(activeTab)!.quarterlyProgress" :key="qp.quarter" class="q-progress-item">
+              <span class="q-label">{{ qp.quarter }}</span>
+              <el-progress
+                :percentage="Math.min(qp.rate, 100)"
+                :color="qp.rate >= 100 ? '#36B37E' : qp.rate >= 80 ? '#FFAB00' : '#FF5630'"
+                :stroke-width="10"
+                :text-inside="true"
+              />
+              <span class="q-rate" :style="{ color: qp.rate >= 100 ? '#36B37E' : qp.rate >= 80 ? '#FFAB00' : '#FF5630' }">{{ qp.rate }}%</span>
+            </div>
+          </div>
+
+          <!-- Chart -->
+          <el-card shadow="hover" class="tab-chart-card">
+            <template #header>
+              <div class="chart-card-header">
+                <div class="chart-card-title-group">
+                  <span>{{ chartTypes.find(c => c.key === activeTab)?.icon }} {{ chartTypes.find(c => c.key === activeTab)?.label }}</span>
+                  <el-tag
+                    v-if="getAnomalies(activeTab).length > 0"
+                    type="warning"
+                    size="small"
+                    effect="dark"
+                    class="anomaly-badge"
+                    :title="getAnomalies(activeTab).join('\n')"
+                  >
+                    ⚠ {{ getAnomalies(activeTab).length }}
+                  </el-tag>
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px">
+                  <el-button size="small" text title="聚焦放大" @click="enterSpotlight(activeTab)">🔍</el-button>
+                  <el-button
+                    v-if="annotations[activeTab]?.length"
+                    size="small"
+                    text
+                    type="warning"
+                    :title="`${annotations[activeTab].length} 个标注`"
+                    @click="clearAllAnnotations(activeTab)"
+                  >
+                    <el-icon><Delete /></el-icon> {{ annotations[activeTab].length }}
+                  </el-button>
+                  <el-button
+                    v-if="getChart(activeTab)?.tableData"
+                    size="small"
+                    text
+                    type="info"
+                    @click="tableVisibleByType[activeTab] = !tableVisibleByType[activeTab]"
+                  >
+                    {{ tableVisibleByType[activeTab] ? '隐藏表格' : '数据表' }}
+                  </el-button>
+                  <el-button
+                    size="small"
+                    text
+                    type="primary"
+                    :loading="analysisLoadingByType[activeTab]"
+                    @click="forceRequestAnalysis(activeTab)"
+                  >
+                    {{ analysisByType[activeTab] ? '重新分析' : 'AI分析' }}
+                  </el-button>
+                </div>
+              </div>
+            </template>
+            <div
+              :ref="(el) => setChartDomRef(activeTab, el as Element | null)"
+              class="generic-chart-canvas"
+              style="height: 480px"
+              role="img"
+              :aria-label="`${chartTypes.find(c => c.key === activeTab)?.label}图表`"
+              title="单击: 交叉过滤 | 双击: 添加标注"
+            />
+          </el-card>
+
+          <!-- Monthly data rows (yoy_mom_comparison) -->
+          <div
+            v-if="activeTab === 'yoy_mom_comparison' && getChart(activeTab)?.monthlyDataRows"
+            class="monthly-data-rows"
+            style="margin-top: 16px"
+          >
+            <div class="data-row">
+              <span class="data-row-label">本年</span>
+              <span
+                v-for="(v, idx) in getChart(activeTab)!.monthlyDataRows.currentYear"
+                :key="'cy-' + idx"
+                class="data-row-cell"
+              >{{ v }}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-row-label">上年</span>
+              <span
+                v-for="(v, idx) in getChart(activeTab)!.monthlyDataRows.lastYear"
+                :key="'ly-' + idx"
+                class="data-row-cell"
+              >{{ v }}</span>
+            </div>
+          </div>
+
+          <!-- Data table -->
+          <el-card
+            v-if="tableVisibleByType[activeTab] && getChart(activeTab)?.tableData"
+            shadow="hover"
+            style="margin-top: 16px"
+          >
+            <template #header>
+              <div class="chart-card-header"><span>数据明细</span></div>
+            </template>
+            <div class="chart-data-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th v-for="col in (getChart(activeTab)!.tableData as Record<string, unknown>)?.headers as string[] ?? []" :key="col">{{ col }}</th>
+                    <th style="min-width:80px">趋势</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(row, rIdx) in (getChart(activeTab)!.tableData as Record<string, unknown>)?.rows as Record<string, unknown>[] ?? []" :key="rIdx">
+                    <td>{{ (row as Record<string, unknown>).label }}</td>
+                    <td v-for="(val, vIdx) in ((row as Record<string, unknown>).values as unknown[] ?? [])" :key="vIdx">{{ val }}</td>
+                    <td>
+                      <span
+                        v-if="Array.isArray((row as Record<string, unknown>).values)"
+                        v-html="sparklineSVG(
+                          ((row as Record<string, unknown>).values as unknown[]).map((c: unknown) => parseFloat(String(c)) || 0),
+                          -1, 80, 22, '#2D8B57'
+                        )"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </el-card>
+
+          <!-- AI Analysis (always visible) + Follow-up conversation -->
+          <el-card shadow="hover" style="margin-top: 16px" class="analysis-card-tab">
+            <template #header>
+              <div class="chart-card-header">
+                <span>AI 分析</span>
+                <el-button
+                  v-if="analysisByType[activeTab]"
+                  size="small"
+                  text
+                  type="primary"
+                  :loading="analysisLoadingByType[activeTab]"
+                  @click="forceRequestAnalysis(activeTab); followUpsByType[activeTab] = []"
+                >
+                  重新分析
+                </el-button>
+              </div>
+            </template>
+
+            <!-- Initial analysis -->
+            <ChartSkeleton v-if="analysisLoadingByType[activeTab]" type="ai" />
+            <div v-else-if="analysisByType[activeTab]" class="analysis-text">{{ analysisByType[activeTab] }}</div>
+            <div v-else style="text-align: center; padding: 24px; color: #909399">
+              <p style="margin-bottom: 12px">点击下方按钮获取该图表的 AI 分析</p>
+              <el-button type="primary" size="small" @click="requestAnalysis(activeTab)">生成 AI 分析</el-button>
+            </div>
+
+            <!-- Follow-up conversation history -->
+            <div v-if="followUpsByType[activeTab]?.length" class="follow-up-history">
+              <div v-for="(item, idx) in followUpsByType[activeTab]" :key="idx" class="follow-up-item">
+                <div class="follow-up-question">
+                  <span class="follow-up-role">追问</span>
+                  <span>{{ item.question }}</span>
+                </div>
+                <div class="follow-up-answer analysis-text">{{ item.answer }}</div>
+              </div>
+            </div>
+
+            <!-- Follow-up loading -->
+            <div v-if="followUpLoading" class="follow-up-item" style="margin-top: 12px">
+              <ChartSkeleton type="ai" />
+            </div>
+
+            <!-- Follow-up input -->
+            <div v-if="analysisByType[activeTab]" class="follow-up-input">
+              <el-input
+                v-model="followUpInput"
+                placeholder="对此分析有疑问？输入追问..."
+                size="small"
+                :disabled="followUpLoading"
+                @keyup.enter="submitFollowUp(activeTab)"
+              />
+              <el-button
+                type="primary"
+                size="small"
+                :loading="followUpLoading"
+                :disabled="!followUpInput.trim()"
+                @click="submitFollowUp(activeTab)"
+              >
+                发送
+              </el-button>
+            </div>
+          </el-card>
+        </template>
+
+        <!-- No data -->
+        <template v-else>
+          <SmartBIEmptyState message="该图表暂无数据，请检查数据源" />
+        </template>
+      </main>
     </div>
 
     <!-- Small Multiples Section -->
@@ -1911,7 +2138,7 @@ onBeforeUnmount(() => {
         <el-form-item label="标注颜色">
           <div style="display: flex; gap: 8px">
             <span
-              v-for="c in ['#e6a23c', '#FF5630', '#36B37E', '#1B65A8', '#6B778C']"
+              v-for="c in ['#e6a23c', '#FF5630', '#36B37E', '#2D8B57', '#6B778C']"
               :key="c"
               style="width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s"
               :style="{ background: c, borderColor: annotationForm.color === c ? '#333' : 'transparent' }"
@@ -2031,9 +2258,9 @@ onBeforeUnmount(() => {
 
 /* C4: Focus ring for keyboard navigation */
 .chart-card:focus {
-  outline: 2px solid #1B65A8;
+  outline: 2px solid #2D8B57;
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(27, 101, 168, 0.15);
+  box-shadow: 0 0 0 4px rgba(45, 139, 87, 0.15);
 }
 
 .chart-card:focus:not(:focus-visible) {
@@ -2061,7 +2288,7 @@ onBeforeUnmount(() => {
 .generic-kpi-chip {
   flex: 1;
   min-width: 100px;
-  background: rgba(27, 101, 168, 0.06);
+  background: rgba(45, 139, 87, 0.06);
   border-radius: 8px;
   padding: 10px 12px;
   display: flex;
@@ -2081,7 +2308,7 @@ onBeforeUnmount(() => {
 .kpi-val {
   font-size: 28px;
   font-weight: 700;
-  color: var(--el-color-primary, #1B65A8);
+  color: var(--el-color-primary, #2D8B57);
   font-feature-settings: "tnum";
   letter-spacing: -0.5px;
   line-height: 1.2;
@@ -2158,7 +2385,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 2px;
   padding: 6px 16px;
-  background: rgba(27, 101, 168, 0.03);
+  background: rgba(45, 139, 87, 0.03);
   border-radius: 6px;
   margin-top: 4px;
 }
@@ -2222,12 +2449,12 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(27, 101, 168, 0.08);
+  background: rgba(45, 139, 87, 0.08);
   border-radius: 8px;
   padding: 8px 16px;
   margin-bottom: 12px;
   font-size: 13px;
-  color: var(--el-color-primary, #1B65A8);
+  color: var(--el-color-primary, #2D8B57);
 }
 
 /* Analysis panel */
@@ -2242,7 +2469,7 @@ onBeforeUnmount(() => {
   color: var(--el-text-color-regular, #606266);
   line-height: 1.7;
   white-space: pre-wrap;
-  background: rgba(27, 101, 168, 0.04);
+  background: rgba(45, 139, 87, 0.04);
   border-radius: 6px;
   padding: 12px;
 }
@@ -2388,7 +2615,7 @@ onBeforeUnmount(() => {
 /* ---- E5: Card hover micro-interactions ---- */
 .chart-card--visible:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(27, 101, 168, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 28px rgba(45, 139, 87, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 /* ---- E7: KPI Scorecard full-width header ---- */
@@ -2431,7 +2658,7 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 .chart-data-table th {
-  background: rgba(27, 101, 168, 0.06);
+  background: rgba(45, 139, 87, 0.06);
   padding: 6px 10px;
   text-align: left;
   font-weight: 600;
@@ -2448,7 +2675,7 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 .chart-data-table tr:hover td {
-  background: rgba(27, 101, 168, 0.03);
+  background: rgba(45, 139, 87, 0.03);
 }
 
 /* ---- E6: Print stylesheet ---- */
@@ -2553,8 +2780,8 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  background: rgba(27, 101, 168, 0.04);
-  border: 1px solid rgba(27, 101, 168, 0.1);
+  background: rgba(45, 139, 87, 0.04);
+  border: 1px solid rgba(45, 139, 87, 0.1);
   border-radius: 8px;
   padding: 8px 16px;
   margin-bottom: 12px;
@@ -2622,5 +2849,237 @@ onBeforeUnmount(() => {
   flex: 1;
   width: 100%;
   min-height: 0;
+}
+
+/* ---- Tab mode: Sidebar + Content layout ---- */
+.dashboard-layout {
+  display: flex;
+  gap: 16px;
+  min-height: calc(100vh - 120px);
+}
+
+.dash-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #1a2332;
+  border-radius: 12px;
+  color: #c8d0da;
+  padding: 12px 0;
+  overflow-y: auto;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 120px);
+}
+
+.nav-group {
+  margin-bottom: 4px;
+}
+
+.nav-group-title {
+  padding: 10px 16px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #5a6778;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.nav-group-title:hover {
+  color: #8899aa;
+}
+
+.nav-group-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-tab-item {
+  padding: 9px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-left: 3px solid transparent;
+  color: #9aa5b4;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.nav-tab-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #c8d0da;
+}
+
+.nav-tab-item.active {
+  background: rgba(45, 139, 87, 0.15);
+  color: #5ede9a;
+  border-left-color: #2D8B57;
+  font-weight: 500;
+}
+
+.nav-tab-item.available {
+  color: #c8d0da;
+}
+
+.nav-tab-item:not(.available):not(.active) {
+  opacity: 0.5;
+}
+
+.nav-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+.nav-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-order {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.4;
+  flex-shrink: 0;
+}
+
+.dash-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.tab-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.tab-chart-card {
+  margin-bottom: 0;
+}
+
+/* Dark mode sidebar */
+.financial-dashboard-pbi[data-theme="dark"] .dash-sidebar {
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Responsive: collapse sidebar on small screens */
+@media (max-width: 1024px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+  .dash-sidebar {
+    width: 100%;
+    max-height: none;
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px;
+  }
+  .nav-group {
+    flex: 1;
+    min-width: 200px;
+  }
+  .nav-group-items {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .nav-tab-item {
+    padding: 6px 12px;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    font-size: 12px;
+  }
+  .nav-tab-item.active {
+    border-bottom-color: #2D8B57;
+    border-left-color: transparent;
+  }
+}
+
+@media print {
+  .dash-sidebar {
+    display: none !important;
+  }
+  .dashboard-layout {
+    display: block !important;
+  }
+}
+
+/* ---- Follow-up conversation ---- */
+.follow-up-history {
+  margin-top: 16px;
+  border-top: 1px dashed var(--el-border-color-lighter, #e8e8e8);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.follow-up-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.follow-up-question {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--el-text-color-primary, #303133);
+}
+
+.follow-up-role {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: #2D8B57;
+  border-radius: 4px;
+  padding: 1px 6px;
+  line-height: 1.5;
+}
+
+.follow-up-answer {
+  margin-left: 0;
+}
+
+.follow-up-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  border-top: 1px solid var(--el-border-color-lighter, #f0f0f0);
+  padding-top: 12px;
+}
+
+.follow-up-input .el-input {
+  flex: 1;
+}
+
+/* Dark mode follow-up */
+.financial-dashboard-pbi[data-theme="dark"] .follow-up-history {
+  border-top-color: var(--border-color);
+}
+
+.financial-dashboard-pbi[data-theme="dark"] .follow-up-role {
+  background: #1B7A4A;
+}
+
+.financial-dashboard-pbi[data-theme="dark"] .follow-up-input {
+  border-top-color: var(--border-color);
 }
 </style>

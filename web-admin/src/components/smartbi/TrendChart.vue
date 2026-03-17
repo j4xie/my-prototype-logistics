@@ -114,7 +114,7 @@ const selectedRowIndex = ref<number | null>(null);
 
 // Default color palette
 const colorPalette = [
-  '#1B65A8', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
+  '#2D8B57', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
   '#00d4ff', '#ff6b9d', '#c084fc', '#fbbf24', '#34d399'
 ];
 
@@ -372,7 +372,7 @@ const chartOptions = computed<EChartsOption>(() => {
       symbol: 'none',
       stack: 'confidence',
       areaStyle: {
-        color: props.series[0]?.color || '#1B65A8',
+        color: props.series[0]?.color || '#2D8B57',
         opacity: 0.12
       }
     } as echarts.LineSeriesOption);
@@ -545,7 +545,7 @@ const chartOptions = computed<EChartsOption>(() => {
         borderColor: '#dcdfe6',
         fillerColor: 'rgba(64, 158, 255, 0.2)',
         handleStyle: {
-          color: '#1B65A8'
+          color: '#2D8B57'
         }
       },
       {

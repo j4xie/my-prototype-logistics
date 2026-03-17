@@ -118,7 +118,7 @@ function buildOption() {
   // Quarter markArea backgrounds (3 months each for 12-month data)
   const markAreaData: [Record<string, unknown>, Record<string, unknown>][] = [];
   const quarterColors = [
-    'rgba(27, 101, 168, 0.04)',
+    'rgba(45, 139, 87, 0.04)',
     'rgba(103, 194, 58, 0.04)',
     'rgba(230, 162, 60, 0.04)',
     'rgba(245, 108, 108, 0.04)',
@@ -213,16 +213,16 @@ function buildOption() {
         data: achievementData,
         smooth: true,
         symbol: 'circle',
-        symbolSize: 6,
-        lineStyle: { color: '#1B65A8', width: 2 },
-        itemStyle: { color: '#1B65A8' },
+        symbolSize: 8,
+        lineStyle: { color: '#2D8B57', width: 2 },
+        itemStyle: { color: '#E8B931' },
         label: {
           show: true,
           position: 'top',
           formatter: (p: { value: number }) =>
             p.value >= 100 ? `${p.value}% ✓` : `${p.value}%`,
-          fontSize: 10,
-          color: (p: { value: number }) => p.value >= 100 ? '#36B37E' : '#1B65A8',
+          fontSize: 11,
+          color: (p: { value: number }) => p.value >= 100 ? '#36B37E' : '#2D8B57',
         },
       },
     ],
@@ -259,7 +259,7 @@ watch(() => props.data, () => {
 watch(() => props.loading, (loading) => {
   if (!chartInstance.value) return;
   if (loading) {
-    chartInstance.value.showLoading({ text: '加载中...', color: '#1B65A8' });
+    chartInstance.value.showLoading({ text: '加载中...', color: '#2D8B57' });
   } else {
     chartInstance.value.hideLoading();
     chartInstance.value.setOption(buildOption(), { notMerge: true });

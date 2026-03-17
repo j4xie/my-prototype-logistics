@@ -1,0 +1,8 @@
+{
+  "error": {
+    "no_speech_detected": "No speech detected, please try again",
+    "recognition_failed": "Please check your network connection and retry",
+    "permission_required": "Microphone permission is required for voice input",
+    "service_connecting": "Voice recognition service connecting..."
+  }
+}

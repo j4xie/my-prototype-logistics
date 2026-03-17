@@ -82,6 +82,8 @@ export interface PPTExportRequest {
 export interface AnalyzeChartRequest {
   chart_type: string;
   analysis_context: string;
+  follow_up_question?: string;
+  previous_analysis?: string;
 }
 
 export interface AnalyzeChartResponse {

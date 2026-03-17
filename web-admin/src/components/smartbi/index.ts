@@ -65,7 +65,7 @@ export interface ChartTheme {
 }
 
 export const defaultChartTheme: ChartTheme = {
-  primaryColor: '#1B65A8',
+  primaryColor: '#2D8B57',
   successColor: '#67c23a',
   warningColor: '#e6a23c',
   dangerColor: '#f56c6c',
@@ -78,7 +78,7 @@ export const defaultChartTheme: ChartTheme = {
 // Color palettes for charts
 export const colorPalettes = {
   default: [
-    '#1B65A8', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
+    '#2D8B57', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
     '#00d4ff', '#ff6b9d', '#c084fc', '#fbbf24', '#34d399'
   ],
   warm: [
@@ -86,7 +86,7 @@ export const colorPalettes = {
     '#f97316', '#ef4444', '#ec4899', '#f59e0b', '#d946ef'
   ],
   cool: [
-    '#1B65A8', '#67c23a', '#00d4ff', '#34d399', '#06b6d4',
+    '#2D8B57', '#67c23a', '#00d4ff', '#34d399', '#06b6d4',
     '#3b82f6', '#10b981', '#0ea5e9', '#14b8a6', '#22c55e'
   ],
   gradient: [

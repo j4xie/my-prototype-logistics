@@ -61,6 +61,8 @@ from smartbi.api import (
     layout,
     nl_to_sql,
     whatif,
+    rfm,
+    financial_ratios,
 )
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
@@ -325,6 +327,8 @@ app.include_router(financial_dashboard.router, prefix="/api/smartbi/financial-da
 app.include_router(layout.router, prefix="/api/smartbi", tags=["Dashboard Layout"])
 app.include_router(nl_to_sql.router, prefix="/api/smartbi", tags=["NL2SQL"])
 app.include_router(whatif.router, prefix="/api/smartbi/whatif", tags=["WhatIf Simulator"])
+app.include_router(rfm.router, prefix="/api/smartbi", tags=["Customer RFM"])
+app.include_router(financial_ratios.router, prefix="/api/smartbi", tags=["Financial Ratios"])
 
 # Optional: Data sync endpoint (auto-adaptation for system tables)
 if hasattr(data_sync, 'router') and data_sync.router is not None:

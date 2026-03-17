@@ -101,12 +101,13 @@ class GrossMarginTrendBuilder(AbstractFinancialChartBuilder):
         avg_current = round(sum(current_margins) / len(current_margins), 2) if current_margins else 0
         avg_ly = round(sum(ly_margins) / len(ly_margins), 2) if ly_margins else 0
         avg_diff = round(avg_current - avg_ly, 2)
-        if current_margins:
-            best_month_idx = max(range(len(current_margins)), key=lambda i: current_margins[i])
-            best_month_label = labels[best_month_idx] if best_month_idx < len(labels) else '-'
-            best_month_value = f"{best_month_label} ({current_margins[best_month_idx]:.1f}%)"
+        # Best diff month (largest positive improvement)
+        if margin_diff:
+            best_diff_idx = max(range(len(margin_diff)), key=lambda i: margin_diff[i])
+            best_diff_label = labels[best_diff_idx] if best_diff_idx < len(labels) else '-'
+            best_diff_value = f"{best_diff_label} ({margin_diff[best_diff_idx]:+.1f}%)"
         else:
-            best_month_value = '-'
+            best_diff_value = '-'
 
         kpis = [
             {"label": "本年累计毛利率", "value": f"{avg_current:.1f}", "unit": "%",
@@ -114,19 +115,37 @@ class GrossMarginTrendBuilder(AbstractFinancialChartBuilder):
              "sparkline": [round(v, 1) for v in current_margins]},
             {"label": "上年累计毛利率", "value": f"{avg_ly:.1f}", "unit": "%", "trend": "flat",
              "sparkline": [round(v, 1) for v in ly_margins]},
-            {"label": "差异", "value": f"{avg_diff:+.1f}", "unit": "pp",
+            {"label": "平均差异", "value": f"{avg_diff:+.1f}", "unit": "%",
              "trend": self._trend_from_value(avg_diff),
              "sparkline": [round(d, 2) for d in margin_diff]},
-            {"label": "最佳月份", "value": best_month_value,
+            {"label": "最佳改善月", "value": best_diff_value,
              "unit": "", "trend": "up"},
         ]
 
-        # ECharts option
+        # ECharts option — single difference line (red line + yellow dots)
         option = self._base_echarts_option()
-        option["grid"] = {"left": "3%", "right": "4%", "bottom": "25%", "top": "15%", "containLabel": True}
+        option["grid"] = {"left": "3%", "right": "4%", "bottom": "15%", "top": "15%", "containLabel": True}
+
+        # Build label data with positional formatting
+        diff_series_data = []
+        for d in margin_diff:
+            arrow = "↑" if d >= 0 else "↓"
+            color = "#36B37E" if d >= 0 else "#FF5630"
+            diff_series_data.append({
+                "value": round(d, 2),
+                "label": {
+                    "show": True,
+                    "position": "top" if d >= 0 else "bottom",
+                    "formatter": f"{arrow}{abs(d):.1f}%",
+                    "fontSize": 10,
+                    "color": color,
+                    "fontWeight": "bold",
+                },
+            })
+
         option.update({
             "legend": {
-                "data": ["本年毛利率", "上年毛利率", "差异"],
+                "data": ["毛利率差异"],
                 "top": "2%",
                 "textStyle": {"fontSize": 11},
             },
@@ -137,116 +156,37 @@ class GrossMarginTrendBuilder(AbstractFinancialChartBuilder):
             },
             "yAxis": {
                 "type": "value",
-                "name": "毛利率 (%)",
+                "name": "差异 (%)",
                 "nameTextStyle": {"fontSize": 11},
                 "axisLabel": {"formatter": "{value}%", "fontSize": 10},
                 "splitLine": {"lineStyle": {"type": "dashed", "color": "#e8e8e8"}},
             },
             "series": [
                 {
-                    "name": "本年毛利率",
+                    "name": "毛利率差异",
                     "type": "line",
-                    "data": [round(v, 1) for v in current_margins],
-                    "itemStyle": {"color": COLORS['current_year']},
-                    "lineStyle": {"width": 3},
+                    "data": diff_series_data,
+                    "lineStyle": {"color": "#FF0000", "width": 2.5},
+                    "itemStyle": {"color": "#E8B931", "borderColor": "#FF0000", "borderWidth": 2},
                     "symbol": "circle",
-                    "symbolSize": 8,
-                    "label": {
-                        "show": True,
-                        "position": "top",
-                        "formatter": "{c}%",
-                        "fontSize": 10,
-                        "color": COLORS['current_year'],
-                        "fontWeight": "bold",
-                        "backgroundColor": "rgba(255,255,255,0.8)",
-                        "borderRadius": 3,
-                        "padding": [2, 4],
-                    },
-                    "areaStyle": {"color": "rgba(27,101,168,0.08)"},
+                    "symbolSize": 10,
                     "smooth": 0.3,
-                },
-                {
-                    "name": "上年毛利率",
-                    "type": "line",
-                    "data": [round(v, 1) for v in ly_margins],
-                    "itemStyle": {"color": COLORS['last_year']},
-                    "lineStyle": {"width": 2, "type": "dashed"},
-                    "symbol": "triangle",
-                    "symbolSize": 6,
-                    "label": {
-                        "show": True,
-                        "position": "bottom",
-                        "formatter": "{c}%",
-                        "fontSize": 9,
-                        "color": COLORS['last_year'],
-                    },
-                    "smooth": 0.3,
-                },
-                {
-                    "name": "差异",
-                    "type": "bar",
-                    "data": [
-                        {
-                            "value": round(d, 2),
-                            "itemStyle": {
-                                "color": self._gradient_color(COLORS['yoy_up'] if d > 0 else COLORS['yoy_down']),
-                                "borderRadius": [2, 2, 0, 0] if d >= 0 else [0, 0, 2, 2],
-                                "opacity": 0.6,
-                            },
-                        }
-                        for d in margin_diff
-                    ],
-                    "barMaxWidth": 20,
-                    "label": {
-                        "show": True,
-                        "position": "top",
-                        "formatter": "{c}pp",
-                        "fontSize": 8,
-                        "color": "#666",
-                    },
                 },
             ],
         })
         self._apply_datazoom(option)
 
-        # Fix 70: Trend line + R² for current year margin
-        if len(current_margins) >= 3:
-            self._add_trend_series(option, current_margins, "毛利率趋势线")
+        # Data table below chart — with 合计 (average) column
+        avg_ly_val = round(sum(ly_margins) / len(ly_margins), 1) if ly_margins else 0
+        avg_cur_val = round(sum(current_margins) / len(current_margins), 1) if current_margins else 0
+        avg_diff_val = round(sum(margin_diff) / len(margin_diff), 2) if margin_diff else 0
 
-        # Quarter markArea
-        mark_areas = self._quarter_mark_areas(start_month, end_month)
-        if mark_areas:
-            option["series"][0]["markArea"] = {"silent": True, "data": mark_areas}
-
-        # Annotations for significant changes
-        graphic_elements = []
-        for i, d in enumerate(margin_diff):
-            if abs(d) >= 3:  # Significant change threshold: 3pp
-                arrow = "^" if d > 0 else "v"
-                color = COLORS['yoy_up'] if d > 0 else COLORS['yoy_down']
-                graphic_elements.append({
-                    "type": "text",
-                    "left": f"{6 + i * (86 / max(len(labels), 1))}%",
-                    "top": "10%",
-                    "style": {
-                        "text": f"{arrow}{abs(d):.1f}pp",
-                        "fontSize": 9,
-                        "fill": color,
-                        "textAlign": "center",
-                        "fontWeight": "bold",
-                    },
-                    "silent": True,
-                })
-        if graphic_elements:
-            option["graphic"] = graphic_elements
-
-        # Data table below chart
         table_data = {
-            "headers": ["指标"] + labels,
+            "headers": ["指标"] + labels + ["合计"],
             "rows": [
-                {"label": "上年毛利率(%)", "values": [round(v, 1) for v in ly_margins]},
-                {"label": "本年毛利率(%)", "values": [round(v, 1) for v in current_margins]},
-                {"label": "差异(pp)", "values": [round(d, 2) for d in margin_diff]},
+                {"label": "上年毛利率(%)", "values": [round(v, 1) for v in ly_margins] + [avg_ly_val]},
+                {"label": "本年毛利率(%)", "values": [round(v, 1) for v in current_margins] + [avg_cur_val]},
+                {"label": "差异(%)", "values": [round(d, 2) for d in margin_diff] + [avg_diff_val]},
             ],
         }
 

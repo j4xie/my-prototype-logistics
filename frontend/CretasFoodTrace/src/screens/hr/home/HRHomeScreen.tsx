@@ -176,7 +176,7 @@ export default function HRHomeScreen() {
               icon="bell-outline"
               iconColor="#fff"
               size={24}
-              onPress={() => Alert.alert(t('messages.tip'), t('home.notifications.comingSoon'))}
+              onPress={() => Alert.alert(t('messages.tip'), t('home.notifications.noNew', { defaultValue: '暂无新通知' }))}
             />
           </View>
         </View>

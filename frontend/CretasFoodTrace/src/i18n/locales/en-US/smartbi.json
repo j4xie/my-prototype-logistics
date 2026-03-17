@@ -1,0 +1,91 @@
+{
+  "cashflow": {
+    "title": "Cash Flow Analysis",
+    "operating_cf": "Operating Cash Flow",
+    "investing_cf": "Investing Cash Flow",
+    "financing_cf": "Financing Cash Flow",
+    "net_cf": "Net Cash Flow",
+    "three_activities": "Three Activities Cash Flow",
+    "operating_activity": "Operating Activity",
+    "investing_activity": "Investing Activity",
+    "financing_activity": "Financing Activity",
+    "trend_title": "Cash Flow Trend",
+    "health_tip": "Cash Flow Health Tip",
+    "tip_positive_ocf": "Operating activities generate positive cash flow, indicating healthy business operations.",
+    "tip_negative_ocf": "Operating cash flow is negative, pay attention to core business profitability.",
+    "tip_positive_net": "Net cash flow is positive, financial position is healthy.",
+    "tip_negative_net": "Net cash flow is negative, monitor liquidity.",
+    "demo_data_message": "Using demo data (backend has not returned cash flow data yet)",
+    "legend": {
+      "operating": "Operating",
+      "investing": "Investing",
+      "financing": "Financing"
+    }
+  },
+  "rfm": {
+    "title": "Customer RFM Analysis",
+    "demo_data_message": "Showing demo data. Real data will appear after RFM analysis is configured.",
+    "total_customers": "Total Customers",
+    "segments_count": "Segments",
+    "high_value_ratio": "High Value %",
+    "segments_distribution": "Segment Distribution",
+    "tap_segment_hint": "Tap a segment for details",
+    "segment_detail": "{{name}} Details",
+    "rfm_score": "RFM Score",
+    "recency_label": "R (Recency)",
+    "frequency_label": "F (Frequency)",
+    "monetary_label": "M (Monetary)",
+    "avg_customer_value": "Avg. Order Value",
+    "marketing_suggestion": "Marketing Suggestion",
+    "all_segments_strategies": "All Segment Strategies",
+    "segments": {
+      "champions": "Champions",
+      "loyal": "Loyal Customers",
+      "potential": "Potential Customers",
+      "at_risk": "At Risk",
+      "hibernating": "Hibernating",
+      "lost": "Lost Customers"
+    },
+    "suggestions": {
+      "champions": "Maintain relationships, provide VIP-exclusive offers",
+      "loyal": "Cross-sell, increase order value",
+      "potential": "Encourage repeat purchases, build loyalty",
+      "at_risk": "Win back immediately, send exclusive coupons",
+      "hibernating": "Reactivate, push new product info",
+      "lost": "Analyze churn reasons, low-cost outreach"
+    }
+  },
+  "ratios": {
+    "title": "Financial Ratios Analysis",
+    "demo_data_message": "Showing demo data. Real data will appear after configuration.",
+    "health_score": "Financial Health Score",
+    "total_metrics": "Total Metrics",
+    "detail_section": "Financial Ratio Details",
+    "expand_hint": "Tap category to expand/collapse",
+    "legend_title": "Legend",
+    "benchmark_line": "Industry Benchmark",
+    "benchmark_label": "Industry avg: {{value}}{{unit}}",
+    "status": {
+      "good": "Good",
+      "caution": "Caution",
+      "warning": "Warning",
+      "good_above": "Good (above benchmark)",
+      "caution_near": "Caution (near benchmark)",
+      "warning_below": "Warning (below benchmark)"
+    },
+    "categories": {
+      "profitability": "Profitability",
+      "liquidity": "Liquidity",
+      "efficiency": "Efficiency",
+      "leverage": "Leverage"
+    }
+  },
+  "menu": {
+    "cashflow_title": "Cash Flow Analysis",
+    "cashflow_desc": "Operating/Investing/Financing Cash Flow",
+    "rfm_title": "Customer RFM Analysis",
+    "rfm_desc": "Customer Segmentation & Targeted Marketing",
+    "ratios_title": "Financial Ratios Analysis",
+    "ratios_desc": "Profitability/Liquidity/Efficiency/Leverage"
+  }
+}

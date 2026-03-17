@@ -20,7 +20,7 @@
   align-items: center;
   margin-bottom: 24px;
   padding: 28px 32px;
-  background: linear-gradient(135deg, #0C1929 0%, #14507F 50%, #1B65A8 100%);
+  background: linear-gradient(135deg, #0C1929 0%, #14507F 50%, #2D8B57 100%);
   border-radius: var(--radius-lg, 14px);
   position: relative;
   overflow: hidden;
@@ -90,7 +90,7 @@
 
     &:hover {
       transform: translateY(-4px);
-      box-shadow: var(--shadow-lg, 0 4px 16px rgba(27, 101, 168, 0.10));
+      box-shadow: var(--shadow-lg, 0 4px 16px rgba(45, 139, 87, 0.10));
     }
   }
 
@@ -164,7 +164,7 @@
       transform: translateX(-50%);
       width: 0;
       height: 2px;
-      background: var(--color-primary, #1B65A8);
+      background: var(--color-primary, #2D8B57);
       border-radius: 1px;
       transition: width 0.25s ease;
     }

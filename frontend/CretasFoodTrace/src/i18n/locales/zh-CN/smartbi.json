@@ -1,0 +1,91 @@
+{
+  "cashflow": {
+    "title": "现金流分析",
+    "operating_cf": "经营现金流",
+    "investing_cf": "投资现金流",
+    "financing_cf": "筹资现金流",
+    "net_cf": "净现金流",
+    "three_activities": "三大活动现金流",
+    "operating_activity": "经营活动",
+    "investing_activity": "投资活动",
+    "financing_activity": "筹资活动",
+    "trend_title": "现金流趋势",
+    "health_tip": "现金流健康提示",
+    "tip_positive_ocf": "经营活动产生正向现金流，企业主营业务运营健康。",
+    "tip_negative_ocf": "经营活动现金流为负，需关注主营业务盈利能力。",
+    "tip_positive_net": "净现金流为正，资金状况良好。",
+    "tip_negative_net": "净现金流为负，建议关注资金流动性。",
+    "demo_data_message": "使用演示数据（后端暂未返回现金流数据）",
+    "legend": {
+      "operating": "经营",
+      "investing": "投资",
+      "financing": "筹资"
+    }
+  },
+  "rfm": {
+    "title": "客户RFM分析",
+    "demo_data_message": "当前显示演示数据，实际数据将在 RFM 分析配置后显示",
+    "total_customers": "客户总数",
+    "segments_count": "客户分群",
+    "high_value_ratio": "高价值占比",
+    "segments_distribution": "客户分群分布",
+    "tap_segment_hint": "点击分群查看详情",
+    "segment_detail": "{{name}} 详情",
+    "rfm_score": "RFM 评分",
+    "recency_label": "R (近度)",
+    "frequency_label": "F (频度)",
+    "monetary_label": "M (金额)",
+    "avg_customer_value": "平均客单价",
+    "marketing_suggestion": "营销建议",
+    "all_segments_strategies": "全部分群营销策略",
+    "segments": {
+      "champions": "高价值客户",
+      "loyal": "忠实客户",
+      "potential": "潜力客户",
+      "at_risk": "风险客户",
+      "hibernating": "沉睡客户",
+      "lost": "流失客户"
+    },
+    "suggestions": {
+      "champions": "维护关系，提供VIP专属优惠",
+      "loyal": "交叉销售，提升客单价",
+      "potential": "引导复购，培养忠诚度",
+      "at_risk": "立即挽回，发送专属优惠券",
+      "hibernating": "激活唤醒，推送新品信息",
+      "lost": "分析流失原因，低成本触达"
+    }
+  },
+  "ratios": {
+    "title": "财务比率分析",
+    "demo_data_message": "当前显示演示数据，配置财务比率分析后将显示真实数据",
+    "health_score": "财务健康分",
+    "total_metrics": "指标总数",
+    "detail_section": "财务比率详情",
+    "expand_hint": "点击分类展开 / 收起详情",
+    "legend_title": "图例说明",
+    "benchmark_line": "行业基准线",
+    "benchmark_label": "行业均值: {{value}}{{unit}}",
+    "status": {
+      "good": "良好",
+      "caution": "关注",
+      "warning": "警告",
+      "good_above": "良好（超过基准）",
+      "caution_near": "关注（接近基准）",
+      "warning_below": "警告（低于基准）"
+    },
+    "categories": {
+      "profitability": "盈利能力",
+      "liquidity": "流动性",
+      "efficiency": "运营效率",
+      "leverage": "偿债能力"
+    }
+  },
+  "menu": {
+    "cashflow_title": "现金流分析",
+    "cashflow_desc": "经营/投资/筹资现金流",
+    "rfm_title": "客户RFM分析",
+    "rfm_desc": "客户分群与精准营销",
+    "ratios_title": "财务比率分析",
+    "ratios_desc": "盈利/流动/效率/偿债比率"
+  }
+}

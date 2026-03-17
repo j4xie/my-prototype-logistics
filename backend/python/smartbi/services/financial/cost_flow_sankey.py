@@ -28,7 +28,7 @@ class CostFlowSankeyBuilder(AbstractFinancialChartBuilder):
         'revenue': '#FF5630',
         'cost': '#36B37E',
         'expense': '#57D9A3',
-        'profit': '#1B65A8',
+        'profit': '#4472C4',
         'tax': '#6B778C',
         'other': '#FFAB00',
     }

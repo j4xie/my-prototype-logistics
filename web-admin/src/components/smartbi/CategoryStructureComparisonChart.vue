@@ -87,15 +87,15 @@ const viewMode = ref<ChartViewMode>(props.defaultViewMode);
 
 // Color palette
 const colors = {
-  currentYear: '#1B65A8',      // Blue - current year
-  compareYear: '#91cc75',      // Light green - compare year
+  currentYear: '#2D8B57',      // Blue - current year
+  compareYear: '#A9D18E',      // Light green - compare year
   growthLine: '#ee6666',       // Red - growth rate line
   positive: '#67c23a',         // Green - positive growth
   negative: '#f56c6c',         // Red - negative growth
   neutral: '#909399',          // Gray - neutral
   pieColors: [
-    '#1B65A8', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
-    '#00d4ff', '#ff6b9d', '#c084fc', '#fbbf24', '#34d399'
+    '#2D8B57', '#4472C4', '#E8B931', '#A9D18E', '#6B778C',
+    '#36B37E', '#5B9BD5', '#FFC000', '#ED7D31', '#70AD47'
   ]
 };
 
@@ -256,7 +256,7 @@ const buildSideBySideChartOptions = (): EChartsOption => {
         barWidth: '35%',
         barGap: '5%',
         data: compareValues,
-        itemStyle: { color: '#91cc75', borderRadius: [4, 4, 0, 0] },
+        itemStyle: { color: '#A9D18E', borderRadius: [4, 4, 0, 0] },
         emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } },
         label: {
           show: true,
@@ -271,7 +271,7 @@ const buildSideBySideChartOptions = (): EChartsOption => {
         type: 'bar',
         barWidth: '35%',
         data: currentValues,
-        itemStyle: { color: '#1B65A8', borderRadius: [4, 4, 0, 0] },
+        itemStyle: { color: '#2D8B57', borderRadius: [4, 4, 0, 0] },
         emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } },
         label: {
           show: true,
@@ -284,7 +284,7 @@ const buildSideBySideChartOptions = (): EChartsOption => {
           },
           rich: {
             val: { color: '#303133', fontSize: 10, fontWeight: 600, lineHeight: 16 },
-            yoy: { color: '#1B65A8', fontSize: 9, lineHeight: 14, fontWeight: 'bold' }
+            yoy: { color: '#2D8B57', fontSize: 9, lineHeight: 14, fontWeight: 'bold' }
           }
         }
       }
@@ -433,14 +433,14 @@ const buildBarChartOptions = (): EChartsOption => {
           },
           rich: {
             yoyTag: {
-              color: '#1B65A8',
+              color: '#2D8B57',
               fontSize: 9,
               fontWeight: 'bold',
               padding: [2, 4],
               borderRadius: 3,
               borderWidth: 1,
-              borderColor: '#b3d8ff',
-              backgroundColor: 'rgba(27,101,168,0.08)'
+              borderColor: '#A9D18E',
+              backgroundColor: 'rgba(45,139,87,0.08)'
             }
           }
         }
@@ -866,8 +866,8 @@ defineExpose({
       transition: all 0.2s ease;
 
       &.highlight {
-        background: linear-gradient(135deg, #ecf5ff 0%, #f0f9eb 100%);
-        border-color: #b3d8ff;
+        background: linear-gradient(135deg, #e8f5e9 0%, #f0f9eb 100%);
+        border-color: #A9D18E;
       }
 
       &:hover {
@@ -892,7 +892,7 @@ defineExpose({
         font-variant-numeric: tabular-nums;
 
         &.primary {
-          color: #1B65A8;
+          color: #2D8B57;
         }
 
         &.positive {

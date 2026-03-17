@@ -5322,9 +5322,9 @@ onMounted(() => {
         gap: 14px;
         padding: 18px 22px;
         margin-bottom: 20px;
-        background: linear-gradient(135deg, #1B65A806 0%, #2B7EC106 100%);
-        border: 1px solid #1B65A820;
-        border-left: 4px solid #1B65A8;
+        background: linear-gradient(135deg, #2D8B5706 0%, #2B7EC106 100%);
+        border: 1px solid #2D8B5720;
+        border-left: 4px solid #2D8B57;
         border-radius: 12px;
 
         .summary-icon {
@@ -5332,7 +5332,7 @@ onMounted(() => {
           width: 36px;
           height: 36px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #1B65A8 0%, #2B7EC1 100%);
+          background: linear-gradient(135deg, #2D8B57 0%, #2B7EC1 100%);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -5550,7 +5550,7 @@ onMounted(() => {
             background: var(--el-color-primary-light-9, #eff6ff);
             border-radius: 8px;
             font-size: 13px;
-            color: var(--color-primary, #1B65A8);
+            color: var(--color-primary, #2D8B57);
           }
 
           // P2: Section headers for chart grouping

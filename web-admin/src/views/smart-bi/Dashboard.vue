@@ -867,12 +867,12 @@ function initTrendChart(chartConfig?: ChartConfig) {
         data: s.data,
         areaStyle: index === 0 ? {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(27, 101, 168, 0.3)' },
-            { offset: 1, color: 'rgba(27, 101, 168, 0.05)' }
+            { offset: 0, color: 'rgba(45, 139, 87, 0.3)' },
+            { offset: 1, color: 'rgba(45, 139, 87, 0.05)' }
           ])
         } : undefined,
-        lineStyle: { width: 3, color: index === 0 ? '#1B65A8' : '#36B37E' },
-        itemStyle: { color: index === 0 ? '#1B65A8' : '#36B37E' }
+        lineStyle: { width: 3, color: index === 0 ? '#2D8B57' : '#36B37E' },
+        itemStyle: { color: index === 0 ? '#2D8B57' : '#36B37E' }
       }))
     };
     enhanceChartDefaults(option as Record<string, unknown>);
@@ -1648,7 +1648,7 @@ onUnmounted(() => {
   }
 
   &.revenue .kpi-icon {
-    background: linear-gradient(135deg, #1B65A8, #4C9AFF);
+    background: linear-gradient(135deg, #2D8B57, #4C9AFF);
   }
 
   &.profit .kpi-icon {
@@ -1746,7 +1746,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #1B65A8;
+      color: #2D8B57;
     }
   }
 
@@ -1849,11 +1849,11 @@ onUnmounted(() => {
 
         .region-bar {
           height: 100%;
-          background: linear-gradient(90deg, #1B65A8, #4C9AFF);
+          background: linear-gradient(90deg, #2D8B57, #4C9AFF);
           border-radius: 4px;
           transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s ease;
 
-          &.rank-bar-0 { background: linear-gradient(90deg, #1B65A8, #4C9AFF); }
+          &.rank-bar-0 { background: linear-gradient(90deg, #2D8B57, #4C9AFF); }
           &.rank-bar-1 { background: linear-gradient(90deg, #36B37E, #57D9A3); }
           &.rank-bar-2 { background: linear-gradient(90deg, #FFAB00, #FFC400); }
           &.rank-bar-3 { background: linear-gradient(90deg, #A0AEC0, #CBD5E0); }
@@ -1935,7 +1935,7 @@ onUnmounted(() => {
 
     .citation-ref {
       cursor: pointer;
-      color: var(--el-color-primary, #1B65A8);
+      color: var(--el-color-primary, #2D8B57);
       transition: opacity 0.2s;
 
       &:hover {
@@ -1948,7 +1948,7 @@ onUnmounted(() => {
 
 .insight-citation {
   cursor: pointer;
-  color: var(--el-color-primary, #1B65A8);
+  color: var(--el-color-primary, #2D8B57);
   transition: color 0.2s;
 
   &:hover {
@@ -1981,7 +1981,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #1B65A8;
+      color: #2D8B57;
     }
   }
 
@@ -2006,7 +2006,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #1B65A8;
+      color: #2D8B57;
     }
   }
 
@@ -2034,7 +2034,7 @@ onUnmounted(() => {
       &.insight-success { border-left-color: var(--el-color-success, #36B37E); background: var(--el-color-success-light-9, #f6ffed); }
       &.insight-warning { border-left-color: var(--el-color-warning, #E6A23C); background: var(--el-color-warning-light-9, #fffbe6); }
       &.insight-danger  { border-left-color: var(--el-color-danger, #FF5630); background: var(--el-color-danger-light-9, #fff2f0); }
-      &.insight-info    { border-left-color: var(--el-color-primary, #1B65A8); background: var(--el-color-primary-light-9, #e6f7ff); }
+      &.insight-info    { border-left-color: var(--el-color-primary, #2D8B57); background: var(--el-color-primary-light-9, #e6f7ff); }
 
       .el-tag {
         flex-shrink: 0;
@@ -2084,7 +2084,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: #1B65A8;
+      color: #2D8B57;
     }
   }
 
@@ -2098,9 +2098,9 @@ onUnmounted(() => {
 
       &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(27, 101, 168, 0.15);
-        color: var(--el-color-primary, #1B65A8);
-        border-color: var(--el-color-primary, #1B65A8);
+        box-shadow: 0 4px 12px rgba(45, 139, 87, 0.15);
+        color: var(--el-color-primary, #2D8B57);
+        border-color: var(--el-color-primary, #2D8B57);
       }
     }
   }
@@ -2201,7 +2201,7 @@ onUnmounted(() => {
       }
     }
     &.revenue .kpi-icon { background: rgba(54, 179, 126, 0.2); }
-    &.profit .kpi-icon { background: rgba(27, 101, 168, 0.2); }
+    &.profit .kpi-icon { background: rgba(45, 139, 87, 0.2); }
     &.orders .kpi-icon { background: rgba(255, 171, 0, 0.2); }
     &.customers .kpi-icon { background: rgba(114, 46, 209, 0.2); }
   }

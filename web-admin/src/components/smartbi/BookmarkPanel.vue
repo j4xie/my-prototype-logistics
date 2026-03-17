@@ -418,7 +418,7 @@ watch(() => props.dashboardId, () => {
 }
 
 .bmp__header-icon {
-  color: #1B65A8;
+  color: #2D8B57;
 }
 
 .bmp__header-title {
@@ -526,7 +526,7 @@ watch(() => props.dashboardId, () => {
 
 .bmp__item--dragover {
   background: #e8f0fa;
-  border-color: #1B65A8;
+  border-color: #2D8B57;
   border-style: dashed;
 }
 
@@ -538,7 +538,7 @@ watch(() => props.dashboardId, () => {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #1B65A8;
+  background: #2D8B57;
 }
 
 .bmp__drag-handle {

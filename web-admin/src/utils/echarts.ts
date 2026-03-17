@@ -75,7 +75,7 @@ echarts.use([
 
 // ---- Light theme ----
 echarts.registerTheme('cretas', {
-  color: ['#1B65A8', '#36B37E', '#FFAB00', '#FF5630', '#6B778C',
+  color: ['#2D8B57', '#36B37E', '#FFAB00', '#FF5630', '#6B778C',
           '#4C9AFF', '#57D9A3', '#FFC400', '#FF8B6A', '#A3A0FB'],
   backgroundColor: 'transparent',
   textStyle: { color: '#303133' },

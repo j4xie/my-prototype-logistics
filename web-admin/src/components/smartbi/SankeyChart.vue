@@ -63,7 +63,7 @@ let resizeObserver: ResizeObserver | null = null;
 let rafId = 0;
 
 // Color palette - assigned by node depth
-const PALETTE = ['#1B65A8', '#36B37E', '#FFAB00', '#FF5630', '#6B778C', '#00B8D9', '#6554C0', '#FF8B00'];
+const PALETTE = ['#2D8B57', '#36B37E', '#FFAB00', '#FF5630', '#6B778C', '#00B8D9', '#6554C0', '#FF8B00'];
 
 // Compute node depth map for color assignment
 const nodeDepthMap = computed(() => {
@@ -244,7 +244,7 @@ const chartOptions = computed<EChartsOption>(() => {
             <div style="font-weight:700;font-size:14px;margin-bottom:6px;">${d.source} → ${d.target}</div>
             <div style="line-height:1.8;">
               <span style="color:#909399;">流量：</span><b>${formatValue(d.value || 0)}${props.unit}</b><br/>
-              <span style="color:#909399;">占来源：</span><b style="color:#1B65A8;">${pct}%</b><br/>
+              <span style="color:#909399;">占来源：</span><b style="color:#2D8B57;">${pct}%</b><br/>
               <span style="color:#909399;">占总量：</span><b style="color:#6B778C;">${((d.value || 0) / Math.max(totalFlow, 1) * 100).toFixed(1)}%</b>
             </div>`;
         }
@@ -456,7 +456,7 @@ defineExpose({
 
       &--highlight {
         font-size: 12px;
-        color: #1B65A8;
+        color: #2D8B57;
         font-weight: 600;
       }
     }

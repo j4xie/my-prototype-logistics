@@ -174,7 +174,16 @@ class PnlWaterfallBuilder(AbstractFinancialChartBuilder):
         option = self._base_echarts_option()
         option.pop("dataZoom", None)
         option.pop("toolbox", None)
-        option["grid"] = {"left": "5%", "right": "5%", "bottom": "8%", "top": "12%", "containLabel": True}
+        option["legend"] = {
+            "top": "2%", "left": "center",
+            "data": [
+                {"name": "增加", "icon": "rect", "itemStyle": {"color": COLORS['revenue']}},
+                {"name": "减少", "icon": "rect", "itemStyle": {"color": COLORS['cost']}},
+                {"name": "汇总", "icon": "rect", "itemStyle": {"color": COLORS['profit']}},
+            ],
+            "textStyle": {"fontSize": 11},
+        }
+        option["grid"] = {"left": "5%", "right": "5%", "bottom": "8%", "top": "20%", "containLabel": True}
         option.update({
             "xAxis": {
                 "type": "category",

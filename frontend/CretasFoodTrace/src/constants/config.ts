@@ -16,6 +16,7 @@ const getApiBaseUrl = () => {
   // 优先读取环境变量，支持通过 .env 文件配置不同环境
   // 注意：必须使用 import from '@env'，不能用 process.env
   const envUrl = REACT_APP_API_URL;
+  console.log('[DEBUG-CONFIG] REACT_APP_API_URL from @env:', JSON.stringify(envUrl));
 
   if (envUrl && envUrl.trim() !== '') {
     // P4 Fix: Wrap console.log with __DEV__ to avoid production logging

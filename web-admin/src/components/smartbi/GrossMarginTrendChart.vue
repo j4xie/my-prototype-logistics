@@ -50,12 +50,18 @@ const marginDiff = computed(() =>
   Math.round((avgCurrentMargin.value - avgLastYearMargin.value) * 100) / 100
 );
 
-const bestMonth = computed(() => {
+const bestDiffMonth = computed(() => {
   if (!props.data.length) return '-';
-  const best = props.data.reduce((prev, curr) =>
-    curr.currentMargin > prev.currentMargin ? curr : prev
-  );
-  return best.month;
+  let bestIdx = 0;
+  let bestVal = props.data[0].currentMargin - props.data[0].lastYearMargin;
+  for (let i = 1; i < props.data.length; i++) {
+    const diff = props.data[i].currentMargin - props.data[i].lastYearMargin;
+    if (diff > bestVal) {
+      bestVal = diff;
+      bestIdx = i;
+    }
+  }
+  return `${props.data[bestIdx].month} (${bestVal >= 0 ? '+' : ''}${bestVal.toFixed(1)}%)`;
 });
 
 const kpiList = computed(() => {
@@ -78,15 +84,15 @@ const kpiList = computed(() => {
       trend: 'flat' as TrendDirection,
     },
     {
-      title: '差异(pp)',
+      title: '平均差异',
       value: (marginDiff.value > 0 ? '+' : '') + marginDiff.value.toFixed(2),
-      unit: 'pp',
+      unit: '%',
       status: diffStatus,
       trend: diffTrend,
     },
     {
-      title: '最佳月份',
-      value: bestMonth.value,
+      title: '最佳改善月',
+      value: bestDiffMonth.value,
       unit: '',
       status: 'success' as StatusType,
       trend: 'flat' as TrendDirection,
@@ -97,14 +103,25 @@ const kpiList = computed(() => {
 // ---- ECharts Option ----
 function buildOption() {
   const months = props.data.map(d => d.month);
-  const currentData = props.data.map(d => d.currentMargin);
-  const lastYearData = props.data.map(d => d.lastYearMargin);
-  const diffData = props.data.map(d =>
-    Math.round((d.currentMargin - d.lastYearMargin) * 100) / 100
-  );
+  const diffData = props.data.map(d => {
+    const diff = Math.round((d.currentMargin - d.lastYearMargin) * 100) / 100;
+    const arrow = diff >= 0 ? '\u2191' : '\u2193';
+    const labelColor = diff >= 0 ? '#36B37E' : '#FF5630';
+    return {
+      value: diff,
+      label: {
+        show: true,
+        position: diff >= 0 ? 'top' : 'bottom',
+        formatter: `${arrow}${Math.abs(diff).toFixed(1)}%`,
+        fontSize: 10,
+        color: labelColor,
+        fontWeight: 'bold',
+      },
+    };
+  });
 
   return {
-    grid: { top: 24, right: 50, bottom: 60, left: 60, containLabel: true },
+    grid: { top: 24, right: 30, bottom: 40, left: 60, containLabel: true },
     tooltip: {
       trigger: 'axis',
       formatter: (params: unknown[]) => {
@@ -112,9 +129,10 @@ function buildOption() {
         const month = (params as Array<{ axisValue: string }>)[0]?.axisValue || '';
         let html = `<div style="font-weight:600;margin-bottom:4px;">${month}</div>`;
         for (const p of ps) {
+          const sign = p.value >= 0 ? '+' : '';
           html += `<div style="display:flex;align-items:center;gap:6px;">
             <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${p.color}"></span>
-            <span>${p.seriesName}:</span><strong>${p.value.toFixed(2)}${p.seriesName === '差异' ? 'pp' : '%'}</strong>
+            <span>${p.seriesName}:</span><strong>${sign}${p.value.toFixed(2)}%</strong>
           </div>`;
         }
         return html;
@@ -122,7 +140,7 @@ function buildOption() {
     },
     legend: {
       bottom: 0,
-      data: ['上年毛利率', '本年毛利率', '差异'],
+      data: ['\u6bdb\u5229\u7387\u5dee\u5f02'],
       itemWidth: 14,
       itemHeight: 10,
     },
@@ -131,65 +149,23 @@ function buildOption() {
       data: months,
       axisLabel: { fontSize: 11 },
     },
-    yAxis: [
-      {
-        type: 'value',
-        name: '毛利率(%)',
-        nameTextStyle: { fontSize: 11, color: '#909399' },
-        axisLabel: { fontSize: 11, formatter: '{value}%' },
-        splitLine: { lineStyle: { type: 'dashed', color: '#f0f0f0' } },
-      },
-      {
-        type: 'value',
-        name: '差异(pp)',
-        nameTextStyle: { fontSize: 11, color: '#909399' },
-        axisLabel: { fontSize: 11, formatter: '{value}pp' },
-        splitLine: { show: false },
-      },
-    ],
+    yAxis: {
+      type: 'value',
+      name: '\u5dee\u5f02(%)',
+      nameTextStyle: { fontSize: 11, color: '#909399' },
+      axisLabel: { fontSize: 11, formatter: '{value}%' },
+      splitLine: { lineStyle: { type: 'dashed', color: '#f0f0f0' } },
+    },
     series: [
       {
-        name: '上年毛利率',
+        name: '\u6bdb\u5229\u7387\u5dee\u5f02',
         type: 'line',
-        yAxisIndex: 0,
-        data: lastYearData,
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 5,
-        lineStyle: { color: '#36B37E', width: 2, type: 'dashed' },
-        itemStyle: { color: '#36B37E' },
-      },
-      {
-        name: '本年毛利率',
-        type: 'line',
-        yAxisIndex: 0,
-        data: currentData,
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 6,
-        lineStyle: { color: '#1B65A8', width: 2.5 },
-        itemStyle: { color: '#1B65A8' },
-      },
-      {
-        name: '差异',
-        type: 'line',
-        yAxisIndex: 1,
         data: diffData,
-        smooth: true,
-        symbol: 'diamond',
-        symbolSize: 8,
-        lineStyle: { color: '#FF5630', width: 2 },
-        itemStyle: { color: '#FFAB00', borderColor: '#FF5630', borderWidth: 2 },
-        label: {
-          show: true,
-          position: 'top',
-          formatter: (p: { value: number }) => {
-            const sign = p.value >= 0 ? '↑' : '↓';
-            return `${sign}${Math.abs(p.value).toFixed(1)}pp`;
-          },
-          fontSize: 10,
-          color: (p: { value: number }) => p.value >= 0 ? '#36B37E' : '#FF5630',
-        },
+        smooth: 0.3,
+        symbol: 'circle',
+        symbolSize: 10,
+        lineStyle: { color: '#FF0000', width: 2.5 },
+        itemStyle: { color: '#E8B931', borderColor: '#FF0000', borderWidth: 2 },
       },
     ],
   };
@@ -223,7 +199,7 @@ watch(() => props.data, () => {
 watch(() => props.loading, (loading) => {
   if (!chartInstance.value) return;
   if (loading) {
-    chartInstance.value.showLoading({ text: '加载中...', color: '#1B65A8' });
+    chartInstance.value.showLoading({ text: '加载中...', color: '#2D8B57' });
   } else {
     chartInstance.value.hideLoading();
     chartInstance.value.setOption(buildOption(), { notMerge: true });
@@ -275,6 +251,7 @@ defineExpose({ chartInstance });
           <tr>
             <th class="row-label">指标</th>
             <th v-for="item in data" :key="item.month" class="month-col">{{ item.month }}</th>
+            <th class="month-col total-col">合计</th>
           </tr>
         </thead>
         <tbody>
@@ -283,15 +260,17 @@ defineExpose({ chartInstance });
             <td v-for="item in data" :key="item.month" class="data-cell">
               {{ item.lastYearMargin.toFixed(1) }}%
             </td>
+            <td class="data-cell total-col">{{ avgLastYearMargin.toFixed(1) }}%</td>
           </tr>
           <tr class="row-current">
             <td class="row-label">本年毛利率</td>
             <td v-for="item in data" :key="item.month" class="data-cell">
               {{ item.currentMargin.toFixed(1) }}%
             </td>
+            <td class="data-cell total-col">{{ avgCurrentMargin.toFixed(1) }}%</td>
           </tr>
           <tr class="row-diff">
-            <td class="row-label">差异(pp)</td>
+            <td class="row-label">差异(%)</td>
             <td
               v-for="item in data"
               :key="item.month"
@@ -301,7 +280,16 @@ defineExpose({ chartInstance });
                 'negative': item.currentMargin - item.lastYearMargin < 0
               }"
             >
-              {{ (item.currentMargin - item.lastYearMargin) >= 0 ? '+' : '' }}{{ (item.currentMargin - item.lastYearMargin).toFixed(1) }}
+              {{ (item.currentMargin - item.lastYearMargin) >= 0 ? '+' : '' }}{{ (item.currentMargin - item.lastYearMargin).toFixed(1) }}%
+            </td>
+            <td
+              class="data-cell total-col"
+              :class="{
+                'positive': marginDiff > 0,
+                'negative': marginDiff < 0
+              }"
+            >
+              {{ marginDiff >= 0 ? '+' : '' }}{{ marginDiff.toFixed(1) }}%
             </td>
           </tr>
         </tbody>
@@ -370,7 +358,7 @@ defineExpose({ chartInstance });
 }
 
 .row-current td {
-  background: rgba(27, 101, 168, 0.06);
+  background: rgba(45, 139, 87, 0.06);
   font-weight: 600;
 }
 
@@ -382,5 +370,11 @@ defineExpose({ chartInstance });
 .row-diff .data-cell.negative {
   color: #FF5630;
   font-weight: 600;
+}
+
+.total-col {
+  background: #f0f5ff !important;
+  font-weight: 600;
+  border-left: 2px solid #d9d9d9;
 }
 </style>

@@ -428,7 +428,7 @@ export default function ExecutiveDashboardScreen() {
                 icon="bell-outline"
                 iconColor="#fff"
                 size={24}
-                onPress={() => Alert.alert(t('tip', { defaultValue: '提示' }), t('comingSoon', { defaultValue: '功能开发中' }))}
+                onPress={() => Alert.alert(t('tip', { defaultValue: '提示' }), t('noNewNotifications', { defaultValue: '暂无新通知' }))}
               />
             </View>
           </View>

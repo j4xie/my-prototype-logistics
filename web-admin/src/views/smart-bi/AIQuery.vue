@@ -118,7 +118,7 @@ interface QueryTemplate {
 }
 
 const templateCategories = [
-  { key: 'sales', label: '销售分析', icon: 'TrendCharts', color: '#1B65A8' },
+  { key: 'sales', label: '销售分析', icon: 'TrendCharts', color: '#2D8B57' },
   { key: 'finance', label: '财务分析', icon: 'Money', color: '#67C23A' },
   { key: 'cost', label: '成本分析', icon: 'PieChart', color: '#E6A23C' },
   { key: 'comparison', label: '对比分析', icon: 'DataAnalysis', color: '#F56C6C' },
@@ -695,8 +695,8 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
         data: s.data,
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(27, 101, 168, 0.3)' },
-            { offset: 1, color: 'rgba(27, 101, 168, 0.05)' }
+            { offset: 0, color: 'rgba(45, 139, 87, 0.3)' },
+            { offset: 1, color: 'rgba(45, 139, 87, 0.05)' }
           ])
         }
       }))
@@ -713,7 +713,7 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
         type: 'bar',
         data: s.data,
         itemStyle: {
-          color: i === 0 ? '#1B65A8' : '#67C23A',
+          color: i === 0 ? '#2D8B57' : '#67C23A',
           borderRadius: [4, 4, 0, 0]
         }
       }))
@@ -730,7 +730,7 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
           name: s.name,
           value: s.value,
           itemStyle: {
-            color: ['#1B65A8', '#67C23A', '#E6A23C', '#F56C6C', '#909399'][i % 5]
+            color: ['#2D8B57', '#67C23A', '#E6A23C', '#F56C6C', '#909399'][i % 5]
           }
         })),
         emphasis: {
@@ -1274,7 +1274,7 @@ function handleKeydown(event: KeyboardEvent) {
         content: '▍';
         display: inline;
         animation: cursor-blink 0.6s steps(2) infinite;
-        color: var(--el-color-primary, #1B65A8);
+        color: var(--el-color-primary, #2D8B57);
         font-weight: 300;
         margin-left: 1px;
       }
@@ -1429,8 +1429,8 @@ function handleKeydown(event: KeyboardEvent) {
   transition: all 0.2s;
 
   &:hover {
-    border-color: var(--el-color-primary, #1B65A8);
-    box-shadow: 0 4px 12px rgba(27, 101, 168, 0.15);
+    border-color: var(--el-color-primary, #2D8B57);
+    box-shadow: 0 4px 12px rgba(45, 139, 87, 0.15);
     transform: translateY(-2px);
   }
 }

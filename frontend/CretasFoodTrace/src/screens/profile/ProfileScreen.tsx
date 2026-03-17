@@ -10,6 +10,7 @@ import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components
 import { theme } from '../../theme';
 import { logger } from '../../utils/logger';
 import { handleError } from '../../utils/errorHandler';
+import { useFactoryFeatureStore } from '../../store/factoryFeatureStore';
 
 // 创建ProfileScreen专用logger
 const profileLogger = logger.createContextLogger('ProfileScreen');
@@ -18,6 +19,7 @@ export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
   const navigation = useNavigation();
   const { language, setLanguage } = useLanguageStore();
+  const { isScreenEnabled } = useFactoryFeatureStore();
 
   const toggleLanguage = () => {
     const newLang: SupportedLanguage = language === 'zh-CN' ? 'en-US' : 'zh-CN';
@@ -265,20 +267,24 @@ export default function ProfileScreen() {
             <Divider style={styles.divider} />
 
             {/* 通知设置 */}
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={() => {
-                profileLogger.info('打开通知设置');
-                Alert.alert('通知设置', '推送通知功能即将上线');
-              }}
-            >
-                <View style={styles.settingLeft}>
-                    <List.Icon icon="bell-outline" color="#FF9800" />
-                    <Text style={styles.settingText}>通知设置</Text>
-                </View>
-                <List.Icon icon="chevron-right" color={theme.colors.textTertiary} />
-            </TouchableOpacity>
-            <Divider style={styles.divider} />
+            {isScreenEnabled('NotificationSettings') && (
+              <>
+                <TouchableOpacity
+                  style={styles.settingItem}
+                  onPress={() => {
+                    profileLogger.info('打开通知设置');
+                    (navigation as any).navigate('NotificationCenter');
+                  }}
+                >
+                    <View style={styles.settingLeft}>
+                        <List.Icon icon="bell-outline" color="#FF9800" />
+                        <Text style={styles.settingText}>通知设置</Text>
+                    </View>
+                    <List.Icon icon="chevron-right" color={theme.colors.textTertiary} />
+                </TouchableOpacity>
+                <Divider style={styles.divider} />
+              </>
+            )}
 
             {/* 数据导出 */}
             <TouchableOpacity

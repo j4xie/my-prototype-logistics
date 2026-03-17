@@ -21,6 +21,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
+import { VoiceMicButton } from '../../../components/common/VoiceMicButton';
 import formAssistantApiClient from '../../../services/api/formAssistantApiClient';
 import isapiApiClient from '../../../services/api/isapiApiClient';
 import { createScaleDevice } from '../../../services/api/scaleApiClient';
@@ -193,22 +194,32 @@ export function AIDeviceInputScreen() {
     }
   };
 
-  // Handle voice input (placeholder)
-  const handleVoiceInput = () => {
-    Alert.alert(
-      '语音输入',
-      '请说出设备信息，例如：\n"添加一个叫东门入口的摄像头，IP是192.168.1.100，密码是admin123"',
-      [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '开始录音',
-          onPress: () => {
-            // TODO: Integrate with voice recognition service
-            Alert.alert('提示', '语音识别功能即将上线');
-          },
-        },
-      ]
-    );
+  // Handle voice transcript — populate the device name field with recognized text
+  const handleVoiceTranscript = (text: string) => {
+    // Try to parse common patterns like "叫XXX的摄像头，IP是X.X.X.X，密码是XXXX"
+    const nameMatch = text.match(/叫(.+?)(?:的|摄像头|电子秤|设备|，|,|$)/);
+    const ipMatch = text.match(/IP(?:是|地址是|：|:)?\s*([\d.]+)/i);
+    const passwordMatch = text.match(/密码(?:是|：|:)?\s*(\S+)/);
+    const portMatch = text.match(/端口(?:是|：|:)?\s*(\d+)/);
+
+    if (nameMatch?.[1]) {
+      updateFormField('name', nameMatch[1].trim());
+    }
+    if (ipMatch?.[1]) {
+      updateFormField('ip', ipMatch[1].trim());
+    }
+    if (passwordMatch?.[1]) {
+      updateFormField('password', passwordMatch[1].trim());
+    }
+    if (portMatch?.[1]) {
+      updateFormField('port', portMatch[1].trim());
+    }
+
+    // If nothing was parsed, put the full text into device name so the user
+    // can see what was heard and edit accordingly
+    if (!nameMatch && !ipMatch && !passwordMatch && !portMatch) {
+      updateFormField('name', text);
+    }
   };
 
   // Validate form
@@ -414,16 +425,18 @@ export function AIDeviceInputScreen() {
                   </TouchableOpacity>
                 </>
               ) : (
-                <TouchableOpacity
-                  style={[styles.aiActionButton, styles.voiceButton]}
-                  onPress={handleVoiceInput}
-                >
-                  <Icon source="microphone" size={48} color="#38a169" />
+                <View style={[styles.aiActionButton, styles.voiceButton]}>
+                  <VoiceMicButton
+                    onTranscript={handleVoiceTranscript}
+                    size={56}
+                    color="#38a169"
+                    activeColor="#EF4444"
+                  />
                   <Text style={styles.aiActionText}>点击开始语音输入</Text>
                   <Text style={styles.aiActionHint}>
                     说出设备名称、IP地址等信息
                   </Text>
-                </TouchableOpacity>
+                </View>
               )}
             </View>
           )}

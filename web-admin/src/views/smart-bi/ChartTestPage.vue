@@ -284,7 +284,7 @@ const chartTypes = Object.keys(testCharts.value);
     gap: 12px;
 
     .chart-type {
-      background: #1B65A8;
+      background: #2D8B57;
       color: white;
       padding: 2px 8px;
       border-radius: 4px;

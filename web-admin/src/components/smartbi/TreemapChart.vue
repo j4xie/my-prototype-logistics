@@ -54,7 +54,7 @@ let resizeObserver: ResizeObserver | null = null;
 let rafId = 0;
 
 // Color palette for category mode
-const PALETTE = ['#1B65A8', '#36B37E', '#FFAB00', '#FF5630', '#6B778C', '#00B8D9', '#6554C0', '#FF8B00', '#4C9AFF', '#57D9A3'];
+const PALETTE = ['#2D8B57', '#36B37E', '#FFAB00', '#FF5630', '#6B778C', '#00B8D9', '#6554C0', '#FF8B00', '#4C9AFF', '#57D9A3'];
 
 function formatValue(v: number): string {
   if (v >= 100000000) return (v / 100000000).toFixed(2) + '亿';
@@ -133,7 +133,7 @@ const chartOptions = computed<EChartsOption>(() => {
       emphasis: {
         itemStyle: {
           color: '#e6f0ff',
-          textStyle: { color: '#1B65A8', fontWeight: 600 },
+          textStyle: { color: '#2D8B57', fontWeight: 600 },
         },
       },
     },
@@ -238,7 +238,7 @@ const chartOptions = computed<EChartsOption>(() => {
           <div style="font-weight:700;font-size:14px;margin-bottom:8px;">${name}</div>
           <div style="line-height:1.8;">
             <span style="color:#909399;">金额：</span><b>${formatValue(value)}${props.unit}</b><br/>
-            <span style="color:#909399;">占父节点：</span><b style="color:#1B65A8;">${parentPct}%</b><br/>
+            <span style="color:#909399;">占父节点：</span><b style="color:#2D8B57;">${parentPct}%</b><br/>
             <span style="color:#909399;">占总量：</span><b style="color:#6B778C;">${pct}%</b>${growthHtml}
           </div>`;
       },
@@ -267,7 +267,7 @@ const chartOptions = computed<EChartsOption>(() => {
         min: minV,
         max: maxV,
         calculable: false,
-        inRange: { color: ['#c6e2ff', '#1B65A8'] },
+        inRange: { color: ['#c6e2ff', '#2D8B57'] },
       },
       series: [{ ...baseSeries, colorMappingBy: 'value' }],
     } as EChartsOption;
@@ -455,7 +455,7 @@ defineExpose({
 
       &--name {
         font-size: 12px;
-        color: #1B65A8;
+        color: #2D8B57;
         font-weight: 600;
         white-space: nowrap;
         overflow: hidden;

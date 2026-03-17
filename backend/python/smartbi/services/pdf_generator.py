@@ -64,7 +64,7 @@ class FinancialPDFGenerator:
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle(
             'CTitle', parent=styles['Title'],
-            fontName=chinese_font, fontSize=28, textColor=HexColor('#1B65A8'),
+            fontName=chinese_font, fontSize=28, textColor=HexColor('#2D8B57'),
             spaceAfter=20, alignment=1,
         )
         subtitle_style = ParagraphStyle(
@@ -74,7 +74,7 @@ class FinancialPDFGenerator:
         )
         heading_style = ParagraphStyle(
             'CHeading', parent=styles['Heading2'],
-            fontName=chinese_font, fontSize=18, textColor=HexColor('#1B65A8'),
+            fontName=chinese_font, fontSize=18, textColor=HexColor('#2D8B57'),
             spaceBefore=10, spaceAfter=8,
         )
         body_style = ParagraphStyle(

@@ -125,7 +125,12 @@
     "yuan": "元",
     "percent": "%",
     "hour": "小时",
-    "minute": "分"
+    "minute": "分",
+    "people": "人",
+    "days": "天",
+    "times": "次",
+    "ten_thousand": "万",
+    "hundred_million": "亿"
   },
   "pagination": {
     "total": "共 {{total}} 条",
@@ -547,6 +552,17 @@
   },
   "executiveDashboard": {
     "title": "经营驾驶舱"
-  }
+  },
+  "dateRange": {
+    "last7days": "近7天",
+    "last30days": "近30天",
+    "thisQuarter": "本季度",
+    "thisYear": "本年度",
+    "selectRange": "选择日期范围"
+  },
+  "quick_actions": "快捷操作",
+  "see_all": "查看全部",
+  "noData": "暂无数据",
+  "legend": "图例说明"
 }
 

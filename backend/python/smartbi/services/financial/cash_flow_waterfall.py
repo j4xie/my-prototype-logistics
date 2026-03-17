@@ -178,7 +178,7 @@ class CashFlowWaterfallBuilder(AbstractFinancialChartBuilder):
         running_totals = []
 
         color_map = {
-            'operating': '#1B65A8',        # blue
+            'operating': '#2D8B57',        # green
             'operating_detail': '#4C9AFF', # light blue
             'investing': '#FFAB00',        # amber
             'financing': '#6B778C',        # grey

@@ -16,14 +16,14 @@ HR_BENEFITS_RATIO = 0.25
 HR_TRAINING_RATIO = 0.10
 HR_OTHER_RATIO = 0.05
 
-# Blue shades for HR categories
+# Green/blue shades for HR categories
 HR_COLORS = {
-    "salary": "#1B65A8",      # deep blue — 薪资
+    "salary": "#2D8B57",      # green — 薪资
     "benefits": "#4C9AFF",    # medium blue — 福利
     "training": "#79B8FF",    # light blue — 培训
     "other": "#B3D4FC",       # pale blue — 其他
     "efficiency": "#36B37E",  # green — 人均产值 line
-    "yoy_salary": "rgba(27,101,168,0.3)",    # dashed YoY lines
+    "yoy_salary": "rgba(45,139,87,0.3)",     # dashed YoY lines
     "yoy_benefits": "rgba(76,154,255,0.3)",
 }
 

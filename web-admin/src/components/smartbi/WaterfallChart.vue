@@ -38,7 +38,7 @@ const plColors = {
   revenueSub: '#FF8F73',        // Sub revenue - lighter red
   cost: '#36B37E',              // Cost/expense items - green (outflow)
   costSub: '#79F2C0',           // Sub cost - lighter green
-  profit: '#1B65A8',            // Profit/total items - blue
+  profit: '#4472C4',            // Profit/total items - blue
   profitSub: '#4C9AFF'          // Sub profit - lighter blue
 };
 
@@ -48,7 +48,7 @@ const props = withDefaults(defineProps<Props>(), {
   colors: () => ({
     increase: '#FF5630',  // Red for revenue/increase (P&L semantic)
     decrease: '#36B37E',  // Green for cost/decrease (P&L semantic)
-    total: '#1B65A8'      // Blue for totals/profit
+    total: '#4472C4'      // Blue for totals/profit
   }),
   showDataLabels: true,
   valueUnit: '',

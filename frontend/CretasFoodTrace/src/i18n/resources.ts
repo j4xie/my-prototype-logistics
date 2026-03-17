@@ -20,6 +20,9 @@ import zhErrors from './locales/zh-CN/errors.json';
 import zhPlatform from './locales/zh-CN/platform.json';
 import zhWorkshop from './locales/zh-CN/workshop.json';
 import zhRestaurant from './locales/zh-CN/restaurant.json';
+import zhSmartbi from './locales/zh-CN/smartbi.json';
+import zhLogistics from './locales/zh-CN/logistics.json';
+import zhVoice from './locales/zh-CN/voice.json';
 
 // ========== en-US 英文资源 ==========
 import enCommon from './locales/en-US/common.json';
@@ -38,6 +41,9 @@ import enErrors from './locales/en-US/errors.json';
 import enPlatform from './locales/en-US/platform.json';
 import enWorkshop from './locales/en-US/workshop.json';
 import enRestaurant from './locales/en-US/restaurant.json';
+import enSmartbi from './locales/en-US/smartbi.json';
+import enLogistics from './locales/en-US/logistics.json';
+import enVoice from './locales/en-US/voice.json';
 
 /**
  * 翻译资源配置
@@ -61,6 +67,9 @@ export const resources = {
     platform: zhPlatform,
     workshop: zhWorkshop,
     restaurant: zhRestaurant,
+    smartbi: zhSmartbi,
+    logistics: zhLogistics,
+    voice: zhVoice,
   },
   'en-US': {
     common: enCommon,
@@ -79,6 +88,9 @@ export const resources = {
     platform: enPlatform,
     workshop: enWorkshop,
     restaurant: enRestaurant,
+    smartbi: enSmartbi,
+    logistics: enLogistics,
+    voice: enVoice,
   },
 } as const;
 

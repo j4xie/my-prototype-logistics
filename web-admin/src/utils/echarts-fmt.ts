@@ -243,7 +243,7 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
           }
         }
         if (fullData.length >= 3) {
-          const color = firstP.color && typeof firstP.color === 'string' ? firstP.color : '#1B65A8';
+          const color = firstP.color && typeof firstP.color === 'string' ? firstP.color : '#2D8B57';
           html += sparklineSVG(fullData, typeof dataIdx === 'number' ? dataIdx : -1, 140, 28, color);
         }
       }

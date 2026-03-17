@@ -356,8 +356,8 @@ watch(() => props.modelValue, (visible) => {
               <!-- Welcome -->
               <div v-if="messages.length === 0" class="welcome-area">
                 <div class="welcome-avatar">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1B65A8" stroke-width="1.5">
-                    <rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="8.5" cy="16" r="1.5" fill="#1B65A8"/><circle cx="15.5" cy="16" r="1.5" fill="#1B65A8"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2D8B57" stroke-width="1.5">
+                    <rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="8.5" cy="16" r="1.5" fill="#2D8B57"/><circle cx="15.5" cy="16" r="1.5" fill="#2D8B57"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
                   </svg>
                 </div>
                 <div class="welcome-text">{{ config.welcomeMessage }}</div>
@@ -381,8 +381,8 @@ watch(() => props.modelValue, (visible) => {
                 <div v-for="(msg, index) in messages" :key="'msg-'+index" :class="['chat-message', msg.role]">
                   <!-- Avatar -->
                   <div class="msg-avatar" v-if="msg.role === 'assistant'">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B65A8" stroke-width="2">
-                      <rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="8.5" cy="16" r="1.5" fill="#1B65A8"/><circle cx="15.5" cy="16" r="1.5" fill="#1B65A8"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2D8B57" stroke-width="2">
+                      <rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="8.5" cy="16" r="1.5" fill="#2D8B57"/><circle cx="15.5" cy="16" r="1.5" fill="#2D8B57"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
                     </svg>
                   </div>
                   <div class="chat-bubble" v-html="renderMarkdown(msg.content)" />
@@ -392,8 +392,8 @@ watch(() => props.modelValue, (visible) => {
               <Transition name="fade-up">
                 <div v-if="loading" class="chat-message assistant">
                   <div class="msg-avatar">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B65A8" stroke-width="2">
-                      <rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="8.5" cy="16" r="1.5" fill="#1B65A8"/><circle cx="15.5" cy="16" r="1.5" fill="#1B65A8"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2D8B57" stroke-width="2">
+                      <rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="8.5" cy="16" r="1.5" fill="#2D8B57"/><circle cx="15.5" cy="16" r="1.5" fill="#2D8B57"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
                     </svg>
                   </div>
                   <div class="chat-bubble loading-bubble">
@@ -408,7 +408,7 @@ watch(() => props.modelValue, (visible) => {
                 <div v-if="previewParams" class="preview-card">
                   <div class="preview-header">
                     <span class="preview-title">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B65A8" stroke-width="2" style="vertical-align: -3px; margin-right: 6px">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2D8B57" stroke-width="2" style="vertical-align: -3px; margin-right: 6px">
                         <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                       </svg>
                       AI 收集到的信息
@@ -563,12 +563,12 @@ watch(() => props.modelValue, (visible) => {
 
 .tutorial-btn {
   font-size: 13px;
-  color: #1B65A8;
+  color: #2D8B57;
   padding: 4px 12px;
   border-radius: 6px;
   transition: all 0.2s;
 
-  &:hover { background: rgba(27, 101, 168, 0.06); }
+  &:hover { background: rgba(45, 139, 87, 0.06); }
 }
 
 // ==================== Container ====================
@@ -604,7 +604,7 @@ watch(() => props.modelValue, (visible) => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #1B65A8, #409EFF);
+  background: linear-gradient(90deg, #2D8B57, #409EFF);
   border-radius: 2px;
   transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -624,9 +624,9 @@ watch(() => props.modelValue, (visible) => {
   transition: all 0.3s;
 
   &.active {
-    background: #1B65A8;
+    background: #2D8B57;
     transform: scale(1.3);
-    box-shadow: 0 0 0 3px rgba(27, 101, 168, 0.15);
+    box-shadow: 0 0 0 3px rgba(45, 139, 87, 0.15);
   }
   &.done { background: #67c23a; }
 }
@@ -644,7 +644,7 @@ watch(() => props.modelValue, (visible) => {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1B65A8, #409EFF);
+  background: linear-gradient(135deg, #2D8B57, #409EFF);
   color: #fff;
   font-size: 24px;
   font-weight: 700;
@@ -652,7 +652,7 @@ watch(() => props.modelValue, (visible) => {
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
-  box-shadow: 0 4px 16px rgba(27, 101, 168, 0.25);
+  box-shadow: 0 4px 16px rgba(45, 139, 87, 0.25);
 }
 
 .step-card-title {
@@ -679,7 +679,7 @@ watch(() => props.modelValue, (visible) => {
   background: #F4F6F9;
   border-radius: 10px;
   border: 1px solid #EDF2F7;
-  box-shadow: 0 2px 12px rgba(27, 101, 168, 0.06);
+  box-shadow: 0 2px 12px rgba(45, 139, 87, 0.06);
 }
 
 .demo-input-mock {
@@ -693,7 +693,7 @@ watch(() => props.modelValue, (visible) => {
     color: #1A2332;
   }
   .typing-text { animation: fadeSlideIn 0.6s ease-out both; }
-  .typing-cursor { animation: pulse 1s infinite; color: #1B65A8; font-weight: 300; }
+  .typing-cursor { animation: pulse 1s infinite; color: #2D8B57; font-weight: 300; }
 }
 
 .demo-chat-mock { display: flex; flex-direction: column; gap: 8px; }
@@ -706,7 +706,7 @@ watch(() => props.modelValue, (visible) => {
   animation: fadeSlideIn 0.3s ease-out both;
 
   &.demo-user {
-    background: linear-gradient(135deg, #1B65A8, #409EFF);
+    background: linear-gradient(135deg, #2D8B57, #409EFF);
     color: #fff;
     align-self: flex-end;
     border-radius: 10px 10px 4px 10px;
@@ -755,7 +755,7 @@ watch(() => props.modelValue, (visible) => {
 .demo-form-btn {
   margin-top: 4px;
   padding: 6px 0;
-  background: linear-gradient(135deg, #1B65A8, #409EFF);
+  background: linear-gradient(135deg, #2D8B57, #409EFF);
   color: #fff;
   text-align: center;
   border-radius: 6px;
@@ -797,7 +797,7 @@ watch(() => props.modelValue, (visible) => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1B65A8, #409EFF);
+  background: linear-gradient(135deg, #2D8B57, #409EFF);
   color: #fff;
   font-size: 14px;
   font-weight: 700;
@@ -805,7 +805,7 @@ watch(() => props.modelValue, (visible) => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(27, 101, 168, 0.2);
+  box-shadow: 0 2px 8px rgba(45, 139, 87, 0.2);
 }
 
 .step-content { flex: 1; padding-top: 2px; }
@@ -829,14 +829,14 @@ watch(() => props.modelValue, (visible) => {
   transition: all 0.25s ease;
 
   &:hover {
-    background: rgba(27, 101, 168, 0.06);
-    border-color: rgba(27, 101, 168, 0.2);
+    background: rgba(45, 139, 87, 0.06);
+    border-color: rgba(45, 139, 87, 0.2);
     transform: translateX(6px);
-    box-shadow: 0 2px 12px rgba(27, 101, 168, 0.08);
+    box-shadow: 0 2px 12px rgba(45, 139, 87, 0.08);
   }
 }
 
-.example-icon { color: #1B65A8; font-size: 14px; flex-shrink: 0; }
+.example-icon { color: #2D8B57; font-size: 14px; flex-shrink: 0; }
 .example-text { font-size: 13px; color: #1A2332; line-height: 1.4; }
 
 .field-list { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -890,7 +890,7 @@ watch(() => props.modelValue, (visible) => {
   width: 56px;
   height: 56px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(27, 101, 168, 0.08), rgba(64, 158, 255, 0.08));
+  background: linear-gradient(135deg, rgba(45, 139, 87, 0.08), rgba(64, 158, 255, 0.08));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -922,16 +922,16 @@ watch(() => props.modelValue, (visible) => {
   line-height: 1.5;
 
   &:hover {
-    background: rgba(27, 101, 168, 0.04);
-    border-color: rgba(27, 101, 168, 0.2);
-    color: #1B65A8;
+    background: rgba(45, 139, 87, 0.04);
+    border-color: rgba(45, 139, 87, 0.2);
+    color: #2D8B57;
     transform: translateX(4px);
-    box-shadow: 0 2px 8px rgba(27, 101, 168, 0.08);
+    box-shadow: 0 2px 8px rgba(45, 139, 87, 0.08);
   }
 }
 
 .chip-arrow {
-  color: #1B65A8;
+  color: #2D8B57;
   flex-shrink: 0;
   font-size: 13px;
   line-height: 1.5;
@@ -968,7 +968,7 @@ watch(() => props.modelValue, (visible) => {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(27, 101, 168, 0.08), rgba(64, 158, 255, 0.08));
+  background: linear-gradient(135deg, rgba(45, 139, 87, 0.08), rgba(64, 158, 255, 0.08));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -977,11 +977,11 @@ watch(() => props.modelValue, (visible) => {
 }
 
 .chat-message.user .chat-bubble {
-  background: linear-gradient(135deg, #1B65A8, #409EFF);
+  background: linear-gradient(135deg, #2D8B57, #409EFF);
   color: white;
   text-align: left;
   border-radius: 14px 14px 4px 14px;
-  box-shadow: 0 2px 8px rgba(27, 101, 168, 0.15);
+  box-shadow: 0 2px 8px rgba(45, 139, 87, 0.15);
 }
 
 .chat-message.assistant .chat-bubble {
@@ -989,7 +989,7 @@ watch(() => props.modelValue, (visible) => {
   color: #1A2332;
   border-radius: 14px 14px 14px 4px;
   border: 1px solid #EDF2F7;
-  box-shadow: 0 1px 4px rgba(27, 101, 168, 0.04);
+  box-shadow: 0 1px 4px rgba(45, 139, 87, 0.04);
 }
 
 .chat-bubble {
@@ -1002,7 +1002,7 @@ watch(() => props.modelValue, (visible) => {
 
   :deep(p) { margin: 4px 0; }
   :deep(ul), :deep(ol) { padding-left: 20px; margin: 4px 0; }
-  :deep(code) { background: rgba(27, 101, 168, 0.06); padding: 2px 4px; border-radius: 4px; font-size: 13px; }
+  :deep(code) { background: rgba(45, 139, 87, 0.06); padding: 2px 4px; border-radius: 4px; font-size: 13px; }
   :deep(strong) { font-weight: 600; color: #1A2332; }
 }
 
@@ -1024,7 +1024,7 @@ watch(() => props.modelValue, (visible) => {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #1B65A8;
+    background: #2D8B57;
     opacity: 0.4;
     animation: pulse 1.2s infinite;
 
@@ -1040,12 +1040,12 @@ watch(() => props.modelValue, (visible) => {
   border-radius: 12px;
   overflow: hidden;
   background: #fff;
-  box-shadow: 0 4px 16px rgba(27, 101, 168, 0.08);
+  box-shadow: 0 4px 16px rgba(45, 139, 87, 0.08);
 }
 
 .preview-header {
   padding: 12px 16px;
-  background: linear-gradient(135deg, rgba(27, 101, 168, 0.04), rgba(64, 158, 255, 0.06));
+  background: linear-gradient(135deg, rgba(45, 139, 87, 0.04), rgba(64, 158, 255, 0.06));
   border-bottom: 1px solid #EDF2F7;
   display: flex;
   justify-content: space-between;
@@ -1125,8 +1125,8 @@ watch(() => props.modelValue, (visible) => {
   transition: border-color 0.2s, box-shadow 0.2s;
 
   &:focus-within {
-    border-color: rgba(27, 101, 168, 0.3);
-    box-shadow: 0 0 0 3px rgba(27, 101, 168, 0.06);
+    border-color: rgba(45, 139, 87, 0.3);
+    box-shadow: 0 0 0 3px rgba(45, 139, 87, 0.06);
     background: #fff;
   }
 
@@ -1157,14 +1157,14 @@ watch(() => props.modelValue, (visible) => {
   transition: all 0.25s ease;
 
   &.active {
-    background: linear-gradient(135deg, #1B65A8, #409EFF);
+    background: linear-gradient(135deg, #2D8B57, #409EFF);
     color: #fff;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(27, 101, 168, 0.25);
+    box-shadow: 0 2px 8px rgba(45, 139, 87, 0.25);
 
     &:hover {
       transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(27, 101, 168, 0.3);
+      box-shadow: 0 4px 12px rgba(45, 139, 87, 0.3);
     }
     &:active { transform: scale(0.95); }
   }

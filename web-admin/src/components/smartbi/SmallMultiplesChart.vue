@@ -520,13 +520,13 @@ defineExpose({ syncTooltip });
 }
 
 .sm-chart__cell:hover {
-  border-color: #1B65A8;
+  border-color: #2D8B57;
 }
 
 .sm-chart__cell--hovered {
   transform: scale(1.025);
-  box-shadow: 0 4px 16px rgba(27, 101, 168, 0.18);
-  border-color: #1B65A8;
+  box-shadow: 0 4px 16px rgba(45, 139, 87, 0.18);
+  border-color: #2D8B57;
   z-index: 2;
 }
 
@@ -565,7 +565,7 @@ defineExpose({ syncTooltip });
 .sm-chart__cell-total {
   font-size: 11px;
   font-weight: 600;
-  color: #1B65A8;
+  color: #2D8B57;
   background: #e8f0fa;
   padding: 1px 6px;
   border-radius: 10px;

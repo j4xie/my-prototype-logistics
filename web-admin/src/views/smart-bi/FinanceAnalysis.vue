@@ -926,7 +926,7 @@ function updateChartFromDynamicData(charts: DynamicAnalysisResponse['charts']) {
           type: chart.type as 'bar' | 'line',
           data: ds.data,
           smooth: chart.type === 'line',
-          itemStyle: { color: '#1B65A8' }
+          itemStyle: { color: '#2D8B57' }
         }))
       };
     }
@@ -1648,7 +1648,7 @@ function buildAxisChart(config: ChartConfig_Local): echarts.EChartsOption {
         data: yData,
         smooth: chartType === 'line',
         itemStyle: {
-          color: '#1B65A8'
+          color: '#2D8B57'
         }
       }
     ]
@@ -2052,7 +2052,7 @@ onUnmounted(() => {
             <p style="color: #909399; margin-top: 12px;">
               当前{{ analysisTypes.find(t => t.type === analysisType)?.label || '' }}暂无图表数据
             </p>
-            <p v-if="dataSources.length > 0" style="color: #1B65A8; font-size: 12px; cursor: pointer;" @click="selectedDataSource = String(dataSources[0].id)">
+            <p v-if="dataSources.length > 0" style="color: #2D8B57; font-size: 12px; cursor: pointer;" @click="selectedDataSource = String(dataSources[0].id)">
               切换到上传数据查看分析
             </p>
           </div>
@@ -2331,12 +2331,12 @@ onUnmounted(() => {
       background: var(--el-color-primary-light-9, #ecf5ff);
 
       .el-icon, span {
-        color: var(--el-color-primary, #1B65A8);
+        color: var(--el-color-primary, #2D8B57);
       }
     }
 
     &.active {
-      background: var(--el-color-primary, #1B65A8);
+      background: var(--el-color-primary, #2D8B57);
 
       .el-icon, span {
         color: #fff;
@@ -2358,7 +2358,7 @@ onUnmounted(() => {
   border-radius: 8px;
   text-align: center;
   padding: 8px 0;
-  border-top: 3px solid var(--el-color-primary, #1B65A8);
+  border-top: 3px solid var(--el-color-primary, #2D8B57);
   border-left: none;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   cursor: default;
@@ -2380,7 +2380,7 @@ onUnmounted(() => {
     border-top-color: var(--el-color-danger, #F56C6C);
   }
 
-  &.kpi-accent-0 { border-top-color: #1B65A8; }
+  &.kpi-accent-0 { border-top-color: #2D8B57; }
   &.kpi-accent-1 { border-top-color: #36B37E; }
   &.kpi-accent-2 { border-top-color: #FFAB00; }
   &.kpi-accent-3 { border-top-color: #6554C0; }
@@ -2445,7 +2445,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: var(--el-color-primary, #1B65A8);
+      color: var(--el-color-primary, #2D8B57);
     }
   }
 }
@@ -2505,7 +2505,7 @@ onUnmounted(() => {
 .exploration-card {
   margin-top: 16px;
   border-radius: 8px;
-  border-left: 4px solid var(--el-color-primary, #1B65A8);
+  border-left: 4px solid var(--el-color-primary, #2D8B57);
 
   .card-header {
     display: flex;
@@ -2514,7 +2514,7 @@ onUnmounted(() => {
     font-weight: 600;
 
     .el-icon {
-      color: var(--el-color-primary, #1B65A8);
+      color: var(--el-color-primary, #2D8B57);
     }
   }
 }

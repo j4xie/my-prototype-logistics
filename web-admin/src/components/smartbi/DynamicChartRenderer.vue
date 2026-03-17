@@ -168,7 +168,7 @@ function updateChart() {
         },
         right: 16, top: 4,
         iconStyle: { borderColor: '#9ca3af' },
-        emphasis: { iconStyle: { borderColor: '#1B65A8' } },
+        emphasis: { iconStyle: { borderColor: '#2D8B57' } },
       };
       // Fix 63: Use notMerge=false when same chart type for smooth data transitions
       const curChartType = (props.config as Record<string, unknown>).chartType as string | undefined;
@@ -260,8 +260,8 @@ function buildFromDashboardConfig(config: DashboardChartConfig): echarts.ECharts
       data: s.data,
       areaStyle: index === 0
         ? { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(27, 101, 168, 0.3)' },
-            { offset: 1, color: 'rgba(27, 101, 168, 0.05)' },
+            { offset: 0, color: 'rgba(45, 139, 87, 0.3)' },
+            { offset: 1, color: 'rgba(45, 139, 87, 0.05)' },
           ]) }
         : undefined,
       lineStyle: { width: 3, color: PIE_COLORS[index % PIE_COLORS.length] },
@@ -687,7 +687,7 @@ function buildRadarChart(config: LegacyChartConfig): echarts.EChartsOption {
       data: [{
         value: values,
         name: '指标值',
-        areaStyle: { color: 'rgba(27, 101, 168, 0.3)' },
+        areaStyle: { color: 'rgba(45, 139, 87, 0.3)' },
         lineStyle: { color: CHART_COLORS[0], width: 2 },
         itemStyle: { color: CHART_COLORS[0] },
       }],
@@ -741,8 +741,8 @@ function buildAreaChart(config: LegacyChartConfig): echarts.EChartsOption {
       smooth: true,
       areaStyle: {
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(27, 101, 168, 0.5)' },
-          { offset: 1, color: 'rgba(27, 101, 168, 0.05)' },
+          { offset: 0, color: 'rgba(45, 139, 87, 0.5)' },
+          { offset: 1, color: 'rgba(45, 139, 87, 0.05)' },
         ]),
       },
       lineStyle: { color: CHART_COLORS[0], width: 2 },

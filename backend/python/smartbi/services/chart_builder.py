@@ -147,16 +147,16 @@ class ChartBuilder:
     # Brand: Atlassian-inspired (blue/green/amber/red/slate + lighter variants)
     THEME_PALETTES = {
         "business": {
-            "primary": ["#1B65A8", "#2B7EC1", "#4C9AFF", "#93c5fd", "#bfdbfe"],
+            "primary": ["#2D8B57", "#2B7EC1", "#4C9AFF", "#93c5fd", "#bfdbfe"],
             "secondary": ["#36B37E", "#57D9A3", "#34d399", "#6ee7b7", "#a7f3d0"],
             "accent": ["#FFAB00", "#FFC400", "#fbbf24", "#fcd34d", "#fde68a"],
             "danger": ["#FF5630", "#FF8B6A", "#f87171", "#fca5a5"],
             "charts": [
-                "#1B65A8", "#36B37E", "#FFAB00", "#FF5630", "#6B778C",
+                "#2D8B57", "#36B37E", "#FFAB00", "#FF5630", "#6B778C",
                 "#2B7EC1", "#57D9A3", "#FFC400", "#FF8B6A", "#4C9AFF"
             ],
             "gradients": [
-                {"start": "#1B65A8", "end": "#4C9AFF"},   # blue
+                {"start": "#2D8B57", "end": "#4C9AFF"},   # blue
                 {"start": "#36B37E", "end": "#57D9A3"},   # green
                 {"start": "#FFAB00", "end": "#FFC400"},   # amber
                 {"start": "#FF5630", "end": "#FF8B6A"},   # red
@@ -166,7 +166,7 @@ class ChartBuilder:
                 "success": "#36B37E",
                 "warning": "#FFAB00",
                 "danger": "#FF5630",
-                "info": "#1B65A8",
+                "info": "#2D8B57",
                 "muted": "#6B778C",
             }
         }
@@ -1424,7 +1424,7 @@ class ChartBuilder:
                 config["dataZoom"] = [
                     {"type": "slider", "start": 0, "end": round(self.DATAZOOM_THRESHOLD / len(x_data) * 100),
                      "borderColor": "transparent", "backgroundColor": "#f3f4f6",
-                     "fillerColor": "rgba(27,101,168,0.12)", "handleStyle": {"color": "#1B65A8"}},
+                     "fillerColor": "rgba(45,139,87,0.12)", "handleStyle": {"color": "#2D8B57"}},
                     {"type": "inside"}
                 ]
                 config["grid"]["bottom"] = "15%"
@@ -1644,7 +1644,7 @@ class ChartBuilder:
                     "type": "bar",
                     "data": y_data,
                     "yAxisIndex": 0,
-                    "itemStyle": {"color": "#1B65A8"}
+                    "itemStyle": {"color": "#2D8B57"}
                 },
                 {
                     "name": "累计百分比",
@@ -1712,7 +1712,7 @@ class ChartBuilder:
                     "type": "bar",
                     "data": actual_data,
                     "barWidth": 15,
-                    "itemStyle": {"color": "#1B65A8"},
+                    "itemStyle": {"color": "#2D8B57"},
                     "z": 2
                 },
                 {
@@ -2192,7 +2192,7 @@ class ChartBuilder:
                     "data": budgets,
                     "barGap": "0%",
                     "itemStyle": {
-                        "color": "#1B65A8",
+                        "color": "#2D8B57",
                         "borderRadius": [4, 4, 0, 0]
                     },
                     "emphasis": {"focus": "series"}
@@ -2303,7 +2303,7 @@ class ChartBuilder:
                 "left": "center",
                 "bottom": "0%",
                 "inRange": {
-                    "color": ["#FF5630", "#FF8B6A", "#ffffff", "#4C9AFF", "#1B65A8"]
+                    "color": ["#FF5630", "#FF8B6A", "#ffffff", "#4C9AFF", "#2D8B57"]
                 },
                 "text": ["正相关", "负相关"],
                 "textStyle": {"fontSize": 11}
@@ -2533,8 +2533,8 @@ class ChartBuilder:
         # Build nodes
         node_colors = {
             "营业收入": "#FF5630",
-            "毛利润": "#1B65A8",
-            "净利润": "#1B65A8",
+            "毛利润": "#2D8B57",
+            "净利润": "#2D8B57",
         }
         node_names = ["营业收入"]
         links = []
@@ -3041,7 +3041,7 @@ class ChartBuilder:
                 "left": "center",
                 "bottom": 0,
                 "inRange": {
-                    "color": ["#f0f9ff", "#bae6fd", "#38bdf8", "#0284c7", "#1B65A8"],
+                    "color": ["#f0f9ff", "#bae6fd", "#38bdf8", "#0284c7", "#2D8B57"],
                 },
                 "textStyle": {"fontSize": 11},
             },
@@ -3155,7 +3155,7 @@ class ChartBuilder:
 
         Uses horizontal bars: transparent base + colored bar for each task.
         Y-axis = task names (category, inverse), X-axis = time axis.
-        Color by status: completed=#36B37E, in-progress=#1B65A8, delayed=#FF5630, planned=#6B778C.
+        Color by status: completed=#36B37E, in-progress=#2D8B57, delayed=#FF5630, planned=#6B778C.
         Progress fill: darker shade for completed portion.
         Today line: red dashed markLine at current date.
         """
@@ -3231,9 +3231,9 @@ class ChartBuilder:
             'completed': '#36B37E',
             'complete': '#36B37E',
             '已完成': '#36B37E',
-            'in-progress': '#1B65A8',
-            'in_progress': '#1B65A8',
-            '进行中': '#1B65A8',
+            'in-progress': '#2D8B57',
+            'in_progress': '#2D8B57',
+            '进行中': '#2D8B57',
             'delayed': '#FF5630',
             '延迟': '#FF5630',
             '超期': '#FF5630',
@@ -3243,7 +3243,7 @@ class ChartBuilder:
         }
         status_colors_dark = {
             '#36B37E': '#2D9D6C',
-            '#1B65A8': '#155290',
+            '#2D8B57': '#155290',
             '#FF5630': '#E04A2A',
             '#6B778C': '#596475',
         }
@@ -3486,8 +3486,8 @@ class ChartBuilder:
                     "width": 15,
                     "borderColor": "transparent",
                     "backgroundColor": "#f3f4f6",
-                    "fillerColor": "rgba(27,101,168,0.12)",
-                    "handleStyle": {"color": "#1B65A8"},
+                    "fillerColor": "rgba(45,139,87,0.12)",
+                    "handleStyle": {"color": "#2D8B57"},
                 },
                 {"type": "inside", "yAxisIndex": 0},
             ]

@@ -22,6 +22,7 @@ import ManagementStackNavigator from './ManagementStackNavigator';
 import PlatformStackNavigator from './PlatformStackNavigator';
 import AttendanceStackNavigator from './AttendanceStackNavigator';
 import ProfileStackNavigator from './ProfileStackNavigator'; // Phase 3 P2 - 使用导航器而非单页
+import LogisticsStackNavigator from './LogisticsStackNavigator';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -198,6 +199,20 @@ export function MainNavigator() {
             title: '生产',
             tabBarIcon: ({ color, size }) => (
               <Icon source="cube-outline" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
+
+      {/* 物流模块 - 有物流权限 */}
+      {hasPermission('logistics_access') && (
+        <Tab.Screen
+          name="LogisticsTab"
+          component={LogisticsStackNavigator}
+          options={{
+            title: '物流',
+            tabBarIcon: ({ color, size }) => (
+              <Icon source="truck-delivery" size={size} color={color} />
             ),
           }}
         />

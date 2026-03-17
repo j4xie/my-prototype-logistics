@@ -31,7 +31,7 @@ const statCards = computed(() => [
     value: overview.value?.todayOutput ?? 0,
     unit: 'kg',
     icon: TrendCharts,
-    color: '#1B65A8',
+    color: '#2D8B57',
     route: '/production/batches'
   },
   {
@@ -62,7 +62,7 @@ const statCards = computed(() => [
 
 // 快捷操作 - 管理员专属
 const quickActions = [
-  { title: '生产管理', icon: TrendCharts, route: '/production/batches', color: '#1B65A8' },
+  { title: '生产管理', icon: TrendCharts, route: '/production/batches', color: '#2D8B57' },
   { title: '仓储管理', icon: Box, route: '/warehouse/materials', color: '#36B37E' },
   { title: '人员管理', icon: User, route: '/hr/employees', color: '#FFAB00' },
   { title: '财务报表', icon: Money, route: '/finance/reports', color: '#FF5630' },

@@ -563,7 +563,7 @@ function renderCharts() {
     if (ratingChart) ratingChart.dispose()
     ratingChart = echarts.init(ratingChartRef.value, 'cretas')
     const ratings = stats.value.byRating || {}
-    const colors = ['#F56C6C', '#E6A23C', '#909399', '#67C23A', '#1B65A8']
+    const colors = ['#F56C6C', '#E6A23C', '#909399', '#67C23A', '#2D8B57']
     ratingChart.setOption({
       tooltip: { trigger: 'axis', confine: true },
       xAxis: {
@@ -688,14 +688,14 @@ onUnmounted(() => {
 }
 .stat-card {
   text-align: center;
-  border-top: 3px solid var(--el-color-primary, #1B65A8);
+  border-top: 3px solid var(--el-color-primary, #2D8B57);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   cursor: default;
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   }
-  &:nth-child(1) { border-top-color: #1B65A8; }
+  &:nth-child(1) { border-top-color: #2D8B57; }
   &:nth-child(2) { border-top-color: #FFAB00; }
   &:nth-child(3) { border-top-color: #36B37E; }
   &:nth-child(4) { border-top-color: #FF5630; }

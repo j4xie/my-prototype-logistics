@@ -353,4 +353,4 @@ class SmallMultiplesBuilder(AbstractFinancialChartBuilder):
                 return f"rgba({r},{g},{b},{alpha})"
         except (ValueError, IndexError):
             pass
-        return f"rgba(27,101,168,{alpha})"
+        return f"rgba(45,139,87,{alpha})"

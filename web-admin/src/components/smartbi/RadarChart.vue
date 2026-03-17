@@ -56,7 +56,7 @@ const props = withDefaults(defineProps<Props>(), {
   areaStyle: true,
   splitNumber: 5,
   colors: () => [
-    '#1B65A8', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
+    '#2D8B57', '#67c23a', '#e6a23c', '#f56c6c', '#909399',
     '#00d4ff', '#ff6b9d', '#c084fc', '#fbbf24', '#34d399'
   ],
   areaOpacity: 0.25,
@@ -143,7 +143,7 @@ const chartOptions = computed<EChartsOption>(() => {
         const seriesIndex = props.series.findIndex(s => s.name === seriesName);
         const color = seriesIndex >= 0
           ? (props.series[seriesIndex].color || props.colors[seriesIndex % props.colors.length])
-          : '#1B65A8';
+          : '#2D8B57';
 
         let html = `<div style="font-weight: 600; margin-bottom: 8px; color:${color};">${seriesName}</div>`;
 

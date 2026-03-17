@@ -13,6 +13,7 @@ import { UserPermissions } from '../../types/auth';
 import { ScreenWrapper } from '../../components/ui';
 import { theme } from '../../theme';
 import { hasProductionCapability } from '../../utils/factoryType';
+import { useFactoryFeatureStore } from '../../store/factoryFeatureStore';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<MainTabParamList, 'HomeTab'>;
 
@@ -25,6 +26,7 @@ export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useAuthStore();
   const { t } = useTranslation('home');
+  const { isModuleEnabled } = useFactoryFeatureStore();
 
   // Module Configuration
   const modules: ModuleConfig[] = useMemo(() => {
@@ -50,8 +52,9 @@ export default function HomeScreen() {
         name: t('modules.logistics.name'),
         icon: 'truck-delivery',
         description: t('modules.logistics.description'),
-        status: 'coming_soon',
+        status: 'available',
         requiredPermissions: ['logistics_access'],
+        route: 'LogisticsTab',
         color: '#FAAD14', // Neo Orange
       },
       {
@@ -59,8 +62,9 @@ export default function HomeScreen() {
         name: t('modules.trace.name'),
         icon: 'qrcode-scan',
         description: t('modules.trace.description'),
-        status: 'coming_soon',
+        status: 'available',
         requiredPermissions: ['trace_access'],
+        route: 'ProcessingTab',
         color: '#722ED1', // Neo Purple
       },
       {
@@ -70,7 +74,7 @@ export default function HomeScreen() {
         description: t('modules.admin.description'),
         status: 'available',
         requiredPermissions: ['admin_access'],
-        route: 'AdminTab',
+        route: 'ManagementTab',
         color: '#13C2C2', // Neo Cyan
       },
       {
@@ -85,6 +89,7 @@ export default function HomeScreen() {
     ];
 
     return allModules.filter(module => {
+      if (!isModuleEnabled(module.id)) return false;
       if (module.id === 'processing' && !hasProductionCapability(user)) return false;
       if (module.requiredPermissions.length === 0) return true;
       return module.requiredPermissions.some(perm => {
@@ -99,17 +104,9 @@ export default function HomeScreen() {
         return false;
       });
     });
-  }, [user, t]);
+  }, [user, t, isModuleEnabled]);
 
   const handleModulePress = (module: ModuleConfig) => {
-    if (module.status === 'coming_soon') {
-      Alert.alert(
-        t('alerts.comingSoon.title'),
-        t('alerts.comingSoon.message', { moduleName: module.name })
-      );
-      return;
-    }
-
     if (module.status === 'locked') {
       Alert.alert(
         t('alerts.noAccess.title'),

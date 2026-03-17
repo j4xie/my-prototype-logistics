@@ -96,7 +96,7 @@ const paramValues = reactive<Record<string, unknown>>({});
 // 分类配置
 const categoryOptions = [
   { value: '财务分析', icon: Money, color: '#67C23A', tagType: 'success' as const },
-  { value: '销售分析', icon: TrendCharts, color: '#1B65A8', tagType: 'primary' as const },
+  { value: '销售分析', icon: TrendCharts, color: '#2D8B57', tagType: 'primary' as const },
   { value: '生产分析', icon: Histogram, color: '#E6A23C', tagType: 'warning' as const },
   { value: '自定义', icon: DataAnalysis, color: '#909399', tagType: 'info' as const }
 ];
@@ -960,7 +960,7 @@ function formatDate(dateStr?: string): string {
       font-weight: 600;
 
       .el-icon {
-        color: var(--el-color-primary, #1B65A8);
+        color: var(--el-color-primary, #2D8B57);
       }
     }
   }
@@ -1124,7 +1124,7 @@ function formatDate(dateStr?: string): string {
       gap: 6px;
       font-size: 13px;
       font-weight: 600;
-      color: var(--el-color-primary, #1B65A8);
+      color: var(--el-color-primary, #2D8B57);
     }
   }
 
@@ -1139,7 +1139,7 @@ function formatDate(dateStr?: string): string {
 
     .el-icon {
       font-size: 18px;
-      color: var(--el-color-primary, #1B65A8);
+      color: var(--el-color-primary, #2D8B57);
     }
   }
 
@@ -1175,7 +1175,7 @@ function formatDate(dateStr?: string): string {
   padding: 6px 0;
   cursor: pointer;
   font-size: 12px;
-  color: var(--el-color-primary, #1B65A8);
+  color: var(--el-color-primary, #2D8B57);
   border-top: 1px dashed #dcdfe6;
   transition: color 0.2s;
 

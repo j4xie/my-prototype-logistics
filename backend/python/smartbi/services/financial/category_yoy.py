@@ -107,12 +107,16 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
         series_list = []
 
         # Pre-calculate monthly totals for top-of-stack labels
-        monthly_total_scaled = [
+        monthly_total_actual_scaled = [
             round(sum(cat_monthly_actual[cat][m] or 0 for cat in categories) / divisor, 1)
             for m in range(end_month - start_month + 1)
         ]
+        monthly_total_ly_scaled = [
+            round(sum(cat_monthly_ly[cat][m] or 0 for cat in categories) / divisor, 1)
+            for m in range(end_month - start_month + 1)
+        ]
 
-        # Current year stacked bars
+        # Current year stacked bars (left bar in each pair)
         for ci, cat in enumerate(categories):
             color = chart_colors[ci % len(chart_colors)]
             actual_scaled = [round(v / divisor, 2) if v else 0 for v in cat_monthly_actual[cat]]
@@ -126,7 +130,7 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
                 "barGap": "20%",
                 "emphasis": {"itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.2)"}},
             }
-            # Last category gets monthly total label on top of stack
+            # Last category gets monthly total label on top of current year stack
             if ci == len(categories) - 1:
                 series_item["data"] = [
                     {
@@ -134,7 +138,7 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
                         "label": {
                             "show": True,
                             "position": "top",
-                            "formatter": f"{monthly_total_scaled[m]}",
+                            "formatter": f"{monthly_total_actual_scaled[m]}",
                             "fontSize": 9,
                             "color": "#666",
                         },
@@ -143,23 +147,39 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
                 ]
             series_list.append(series_item)
 
-        # Last year stacked bars
+        # Last year stacked bars (right bar in each pair)
         for ci, cat in enumerate(categories):
             color = chart_colors[ci % len(chart_colors)]
             ly_scaled = [round(v / divisor, 2) if v else 0 for v in cat_monthly_ly[cat]]
-            series_list.append({
+            series_item = {
                 "name": f"{cat}(上年)",
                 "type": "bar",
                 "stack": "lastyear",
                 "data": ly_scaled,
                 "itemStyle": {
                     "color": self._gradient_color(color),
-                    "opacity": 0.45,
+                    "opacity": 0.75,
                     "borderRadius": [1, 1, 0, 0] if ci == len(categories) - 1 else [0, 0, 0, 0],
                 },
                 "barMaxWidth": 24,
                 "emphasis": {"itemStyle": {"shadowBlur": 8, "shadowColor": "rgba(0,0,0,0.15)"}},
-            })
+            }
+            # Last category gets monthly total label on top of last year stack
+            if ci == len(categories) - 1:
+                series_item["data"] = [
+                    {
+                        "value": ly_scaled[m],
+                        "label": {
+                            "show": True,
+                            "position": "top",
+                            "formatter": f"{monthly_total_ly_scaled[m]}",
+                            "fontSize": 9,
+                            "color": "#999",
+                        },
+                    }
+                    for m in range(len(ly_scaled))
+                ]
+            series_list.append(series_item)
 
         # Monthly total YoY% labels
         monthly_total_actual = [
@@ -177,7 +197,7 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
 
         # ECharts option
         option = self._base_echarts_option()
-        option["grid"] = {"left": "3%", "right": "5%", "bottom": "10%", "top": "15%", "containLabel": True}
+        option["grid"] = {"left": "3%", "right": "8%", "bottom": "10%", "top": "15%", "containLabel": True}
         option.update({
             "legend": {
                 "data": [f"{cat}(本年)" for cat in categories],
@@ -206,25 +226,95 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
         if mark_areas and series_list:
             series_list[0]["markArea"] = {"silent": True, "data": mark_areas}
 
-        # YoY arrows as graphic elements on top of current year bars
+        # --- Connecting dashed lines between paired bar totals (markLine) ---
+        # Add markLine on the last current-year category series to connect
+        # last-year stack top to current-year stack top for each month
+        if len(categories) > 0:
+            # Find the last current-year series (top of current stack)
+            last_cur_series_idx = len(categories) - 1
+            mark_line_data = []
+            for m in range(end_month - start_month + 1):
+                ly_top = monthly_total_ly_scaled[m]
+                cur_top = monthly_total_actual_scaled[m]
+                # markLine from (m, ly_top) to (m, cur_top) — vertical connector
+                mark_line_data.append([
+                    {"xAxis": m, "yAxis": ly_top, "symbol": "none"},
+                    {"xAxis": m, "yAxis": cur_top, "symbol": "none"},
+                ])
+            series_list[last_cur_series_idx]["markLine"] = {
+                "silent": True,
+                "symbol": "none",
+                "lineStyle": {"type": "dashed", "color": "#ccc", "width": 1},
+                "data": mark_line_data,
+                "label": {"show": False},
+                "animation": False,
+            }
+
+        # --- Large YoY% annotations BETWEEN bar pairs + per-category change arrows ---
+        num_months = len(labels)
         graphic_elements = []
+
+        # Calculate the chart area proportions for positioning
+        # Grid: left=3%, right=5%, so usable width is ~92% (from 3% to 95%)
+        chart_left_pct = 5.0   # approximate left edge with containLabel
+        chart_right_pct = 95.0
+        chart_width_pct = chart_right_pct - chart_left_pct
+
         for i, yoy in enumerate(monthly_yoy):
+            # X position: centered on this month's pair of bars
+            x_pct = chart_left_pct + (i + 0.5) / max(num_months, 1) * chart_width_pct
+
             if yoy is not None:
+                # Large YoY percentage — positioned between the two bars at ~50% height
                 color = COLORS['yoy_up'] if yoy > 0 else COLORS['yoy_down']
-                arrow = "+" if yoy > 0 else ""
+                arrow = "\u2191" if yoy > 0 else "\u2193"
+                yoy_text = f"{yoy:.2f}%{arrow}"
+
+                # Position at roughly 50% of the chart height (between top and bottom)
                 graphic_elements.append({
                     "type": "text",
-                    "left": f"{6 + i * (86 / max(len(labels), 1))}%",
-                    "bottom": "4%",
+                    "left": f"{x_pct:.1f}%",
+                    "top": "48%",
                     "style": {
-                        "text": f"{arrow}{yoy:.0f}%",
-                        "fontSize": 8,
+                        "text": yoy_text,
+                        "fontSize": 13,
                         "fill": color,
                         "textAlign": "center",
                         "fontWeight": "bold",
                     },
                     "silent": True,
+                    "z": 100,
                 })
+
+            # Per-category change annotations — small text to the right of each bar pair
+            # Stack them vertically, offset slightly right of the bar pair center
+            cat_x_pct = x_pct + chart_width_pct / num_months * 0.32
+            for ci, cat in enumerate(categories):
+                cat_actual_val = cat_monthly_actual[cat][i] if i < len(cat_monthly_actual[cat]) else 0
+                cat_ly_val = cat_monthly_ly[cat][i] if i < len(cat_monthly_ly[cat]) else 0
+                cat_yoy = self._calc_growth_rate(cat_actual_val, cat_ly_val)
+                if cat_yoy is not None:
+                    cat_color = COLORS['yoy_up'] if cat_yoy > 0 else COLORS['yoy_down']
+                    cat_arrow = "\u2191" if cat_yoy > 0 else "\u2193"
+                    cat_text = f"{cat_arrow}{cat_yoy:.1f}%"
+                    # Vertical offset: stack categories from top to bottom
+                    # Place in the upper portion of chart area, spaced by category index
+                    cat_top_pct = 18 + ci * 8
+                    if cat_top_pct < 65:  # Only show if within chart area
+                        graphic_elements.append({
+                            "type": "text",
+                            "left": f"{cat_x_pct:.1f}%",
+                            "top": f"{cat_top_pct}%",
+                            "style": {
+                                "text": cat_text,
+                                "fontSize": 7,
+                                "fill": cat_color,
+                                "textAlign": "left",
+                            },
+                            "silent": True,
+                            "z": 90,
+                        })
+
         if graphic_elements:
             option["graphic"] = graphic_elements
 

@@ -33,7 +33,7 @@ import { AIModeIndicator } from '../../../components/ai/AIModeIndicator';
 import { FeedbackWidget, FoodKBQueryMetadata } from '../../../components/ai/FeedbackWidget';
 import { RichContentRenderer, detectRichData, type RichData } from '../../../components/ai/RichContentRenderer';
 import { useAuthStore } from '../../../store/authStore';
-import { speechRecognitionService } from '../../../services/voice/SpeechRecognitionService';
+import { VoiceMicButton } from '../../../components/common/VoiceMicButton';
 import { aiApiClient } from '../../../services/api/aiApiClient';
 import type { IntentSSECallbacks } from '../../../services/api/aiApiClient';
 import type { FAAIStackParamList } from '../../../types/navigation';
@@ -163,7 +163,6 @@ export default function AIChatScreen() {
   const [inputText, setInputText] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
   const [quotaRemaining, setQuotaRemaining] = useState<number | null>(null);
 
   // 实时检测当前输入的分析模式
@@ -231,30 +230,6 @@ export default function AIChatScreen() {
     );
     // 发送用户选择作为新消息
     await handleSend(action.label);
-  };
-
-  // 语音输入
-  const handleVoiceInput = async () => {
-    if (isRecording) {
-      // 停止录音，获取识别结果
-      try {
-        const result = await speechRecognitionService.stopListening();
-        setIsRecording(false);
-        if (result.text?.trim()) {
-          setInputText(result.text.trim());
-        }
-      } catch {
-        setIsRecording(false);
-      }
-    } else {
-      // 开始录音
-      try {
-        setIsRecording(true);
-        await speechRecognitionService.startListening();
-      } catch {
-        setIsRecording(false);
-      }
-    }
   };
 
   // 发送消息 — 使用真正的 SSE 流式传输
@@ -774,13 +749,14 @@ export default function AIChatScreen() {
             </View>
           )}
           <View style={styles.inputContainer}>
-            <TouchableOpacity
-              style={[styles.addButton, isRecording && styles.recordingButton]}
-              onPress={handleVoiceInput}
+            <VoiceMicButton
+              onTranscript={(text) => setInputText(text)}
+              size={36}
+              color="#666"
+              activeColor="#EF4444"
               disabled={isLoading}
-            >
-              <IconButton icon={isRecording ? 'stop' : 'microphone'} size={20} iconColor={isRecording ? '#fff' : '#666'} />
-            </TouchableOpacity>
+              style={styles.addButton}
+            />
             <View style={styles.inputWrapper}>
               <TextInput
                 testID="ai-chat-input"
@@ -985,9 +961,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  recordingButton: {
-    backgroundColor: '#ef4444',
   },
   inputWrapper: {
     flex: 1,

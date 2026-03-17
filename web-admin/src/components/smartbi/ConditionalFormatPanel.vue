@@ -194,7 +194,7 @@ function onTypeChange() {
     editForm.value.iconSet = { type: 'arrows', thresholds: [66, 33] };
     delete editForm.value.conditions;
   } else if (type === 'dataBar') {
-    editForm.value.dataBar = { minValue: 0, maxValue: 100, positiveColor: '#1B65A8', negativeColor: '#f56c6c' };
+    editForm.value.dataBar = { minValue: 0, maxValue: 100, positiveColor: '#2D8B57', negativeColor: '#f56c6c' };
     delete editForm.value.conditions;
   }
 }
@@ -499,8 +499,8 @@ watch(() => props.tableId, () => {
 
 .cfp__preset-tag:hover {
   background: #ecf5ff;
-  border-color: #1B65A8;
-  color: #1B65A8;
+  border-color: #2D8B57;
+  color: #2D8B57;
 }
 
 .cfp__empty {
@@ -528,7 +528,7 @@ watch(() => props.tableId, () => {
 }
 
 .cfp__rule-item--dragover {
-  border-color: #1B65A8;
+  border-color: #2D8B57;
   background: #ecf5ff;
 }
 

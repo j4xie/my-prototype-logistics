@@ -190,7 +190,7 @@ export class ConditionalFormattingService {
       const color = value >= 0 ? positiveColor : negativeColor;
       return { width, color };
     }
-    return { width: 0, color: '#1B65A8' };
+    return { width: 0, color: '#2D8B57' };
   }
 
   interpolateColor(value: number, gradient: FormatRule['gradient']): string {

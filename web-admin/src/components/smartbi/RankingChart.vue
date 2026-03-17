@@ -46,7 +46,7 @@ const props = withDefaults(defineProps<Props>(), {
   maxItems: 10,
   showRank: true,
   valueUnit: '',
-  barColor: '#1B65A8',
+  barColor: '#2D8B57',
   showPercentage: false,
   clickable: true,
   showRankChange: false,
