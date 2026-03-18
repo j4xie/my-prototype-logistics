@@ -1037,13 +1037,18 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("达成率", "BATCH_CONSUMPTION_QUERY");
         phraseToIntentMapping.put("BOM达成率", "BATCH_CONSUMPTION_QUERY");
         phraseToIntentMapping.put("批次消耗", "BATCH_CONSUMPTION_QUERY");
-        // 消耗调整
+        // 消耗调整 (注意: 输入会被去掉数量"5公斤"和食物词"辣椒")
+        phraseToIntentMapping.put("这批多用了", "BATCH_CONSUMPTION_ADJUST");
+        phraseToIntentMapping.put("这批少用了", "BATCH_CONSUMPTION_ADJUST");
+        phraseToIntentMapping.put("实际多用", "BATCH_CONSUMPTION_ADJUST");
+        phraseToIntentMapping.put("实际少用", "BATCH_CONSUMPTION_ADJUST");
         phraseToIntentMapping.put("多用了", "BATCH_CONSUMPTION_ADJUST");
         phraseToIntentMapping.put("少用了", "BATCH_CONSUMPTION_ADJUST");
         phraseToIntentMapping.put("消耗调整", "BATCH_CONSUMPTION_ADJUST");
         phraseToIntentMapping.put("实际用量", "BATCH_CONSUMPTION_ADJUST");
         phraseToIntentMapping.put("物料差异", "BATCH_CONSUMPTION_ADJUST");
         phraseToIntentMapping.put("调整用量", "BATCH_CONSUMPTION_ADJUST");
+        phraseToIntentMapping.put("耗料调整", "BATCH_CONSUMPTION_ADJUST");
         // === SKU毛利率 ===
         phraseToIntentMapping.put("毛利率", "SKU_GROSS_MARGIN");
         phraseToIntentMapping.put("查毛利率", "SKU_GROSS_MARGIN");
@@ -3615,8 +3620,8 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("供应商绩效", "SUPPLIER_EVALUATE");
         phraseToIntentMapping.put("客户分析报表", "CUSTOMER_STATS");
         phraseToIntentMapping.put("客户分析", "CUSTOMER_STATS");
-        phraseToIntentMapping.put("物料消耗统计", "REPORT_INVENTORY");
-        phraseToIntentMapping.put("物料消耗", "REPORT_INVENTORY");
+        // 物料消耗 → BATCH_CONSUMPTION_QUERY（不是 REPORT_INVENTORY）
+        // 已在 initPhraseMappingsPart1 中正确映射，此处不再覆盖
         phraseToIntentMapping.put("追溯统计", "TRACE_BATCH");
         phraseToIntentMapping.put("批次合格率", "QUALITY_STATS");
         phraseToIntentMapping.put("合格率统计", "QUALITY_STATS");

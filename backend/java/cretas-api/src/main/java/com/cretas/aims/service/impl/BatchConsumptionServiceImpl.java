@@ -231,7 +231,7 @@ public class BatchConsumptionServiceImpl implements BatchConsumptionService {
                     adj.setTotalCost(alloc.multiply(batchUnitPrice).setScale(2, RoundingMode.HALF_UP));
                     adj.setConsumptionTime(LocalDateTime.now());
                     adj.setConsumedAt(LocalDateTime.now());
-                    adj.setRecordedBy(0L);
+                    adj.setRecordedBy(1L);
                     adj.setSourceType(SOURCE_ADJUSTMENT);
                     adj.setNotes("差异调整(+): " + reason);
                     consumptionRepository.save(adj);
@@ -253,7 +253,7 @@ public class BatchConsumptionServiceImpl implements BatchConsumptionService {
             adj.setTotalCost(delta.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP));
             adj.setConsumptionTime(LocalDateTime.now());
             adj.setConsumedAt(LocalDateTime.now());
-            adj.setRecordedBy(0L);
+            adj.setRecordedBy(1L);
             adj.setSourceType(SOURCE_ADJUSTMENT);
             adj.setNotes("差异调整(-): " + reason);
             consumptionRepository.save(adj);
