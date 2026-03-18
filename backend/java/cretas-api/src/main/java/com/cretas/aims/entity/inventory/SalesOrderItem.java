@@ -96,6 +96,7 @@ public class SalesOrderItem extends BaseEntity {
     /** 未发货数量 */
     @Transient
     public BigDecimal getPendingQuantity() {
+        if (quantity == null) return BigDecimal.ZERO;
         BigDecimal delivered = deliveredQuantity != null ? deliveredQuantity : BigDecimal.ZERO;
         return quantity.subtract(delivered);
     }

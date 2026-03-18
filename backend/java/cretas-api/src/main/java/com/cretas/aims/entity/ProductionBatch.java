@@ -349,9 +349,10 @@ public class ProductionBatch extends BaseEntity {
         if (supervisorId == null && supervisorName == null) {
             return null;
         }
-        return Map.of(
-            "id", supervisorId != null ? supervisorId : 0,
-            "fullName", supervisorName != null ? supervisorName : ""
-        );
+        // 使用 HashMap 替代 Map.of()，避免不可变 Map 序列化问题
+        Map<String, Object> map = new java.util.HashMap<>();
+        map.put("id", supervisorId != null ? supervisorId : 0);
+        map.put("fullName", supervisorName != null ? supervisorName : "");
+        return map;
     }
 }

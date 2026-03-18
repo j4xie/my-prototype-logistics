@@ -138,6 +138,8 @@ public class SalesServiceImpl implements SalesService {
     @Transactional
     public SalesOrder confirmOrder(String factoryId, String orderId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
+        // 强制加载 items，防止事件处理器中 LazyInitializationException
+        org.hibernate.Hibernate.initialize(order.getItems());
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
             throw new BusinessException("只有草稿状态的订单可以确认");
         }

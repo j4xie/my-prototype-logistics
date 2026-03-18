@@ -165,10 +165,14 @@ public class RuleEngineServiceImpl implements RuleEngineService {
             // 创建 KieSession
             KieSession session = container.newKieSession();
             List<Object> results = new ArrayList<>();
+            // .drl 文件声明 global ValidationResult validationResult，也声明 results
+            com.cretas.aims.dto.intent.ValidationResult validationResult =
+                    com.cretas.aims.dto.intent.ValidationResult.builder().valid(true).build();
 
             try {
-                // 设置全局变量用于收集结果
-                session.setGlobal("results", results);
+                // 设置全局变量 — 同时设置两个，兼容不同 .drl 文件的声明
+                try { session.setGlobal("results", results); } catch (Exception ignored) {}
+                try { session.setGlobal("validationResult", validationResult); } catch (Exception ignored) {}
 
                 // 插入事实
                 for (Object fact : facts) {
@@ -179,7 +183,10 @@ public class RuleEngineServiceImpl implements RuleEngineService {
                 int firedCount = session.fireAllRules();
                 log.debug("触发了 {} 条规则", firedCount);
 
-                // 返回第一个结果
+                // 优先从 validationResult 取结果，fallback 到 results 列表
+                if (!validationResult.isValid() || validationResult.getViolations() != null) {
+                    return (T) validationResult;
+                }
                 return results.isEmpty() ? null : (T) results.get(0);
 
             } finally {
@@ -218,9 +225,12 @@ public class RuleEngineServiceImpl implements RuleEngineService {
 
             KieSession session = container.newKieSession();
             List<Object> results = new ArrayList<>();
+            com.cretas.aims.dto.intent.ValidationResult validationResult =
+                    com.cretas.aims.dto.intent.ValidationResult.builder().valid(true).build();
 
             try {
-                session.setGlobal("results", results);
+                try { session.setGlobal("results", results); } catch (Exception ignored) {}
+                try { session.setGlobal("validationResult", validationResult); } catch (Exception ignored) {}
 
                 for (Object fact : facts) {
                     session.insert(fact);

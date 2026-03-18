@@ -1241,21 +1241,28 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             return;
         }
         try {
-            // 查询该类型所有可用批次的总量
-            List<MaterialBatch> activeBatches = materialBatchRepository
-                    .findAvailableBatchesFEFO(materialType.getFactoryId(), materialType.getId());
-            java.math.BigDecimal existingQty = activeBatches.stream()
-                    .filter(b -> !b.getId().equals(newBatchId))
-                    .map(b -> b.getReceiptQuantity()
-                            .subtract(b.getUsedQuantity() != null ? b.getUsedQuantity() : java.math.BigDecimal.ZERO)
-                            .subtract(b.getReservedQuantity() != null ? b.getReservedQuantity() : java.math.BigDecimal.ZERO))
-                    .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+            // 直接用增量公式: newAvg = (existingQty * currentAvg + receiptQty * receiptPrice) / (existingQty + receiptQty)
+            // 不依赖 findAvailableBatchesFEFO 查询（该查询有 enum 状态匹配问题）
+            java.math.BigDecimal currentAvg = materialType.getMovingAvgPrice();
+            java.math.BigDecimal existingQty;
 
-            java.math.BigDecimal currentAvg = materialType.getMovingAvgPrice() != null
-                    ? materialType.getMovingAvgPrice()
-                    : (materialType.getUnitPrice() != null ? materialType.getUnitPrice() : java.math.BigDecimal.ZERO);
+            if (currentAvg != null && currentAvg.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                // 有现有均价 — 用 totalWeight 反推现有量，或查库存总量
+                List<MaterialBatch> allBatches = materialBatchRepository
+                        .findByFactoryIdAndMaterialTypeId(
+                                materialType.getFactoryId(), materialType.getId());
+                existingQty = allBatches.stream()
+                        .filter(b -> !b.getId().equals(newBatchId))
+                        .map(b -> b.getTotalWeight() != null ? b.getTotalWeight() : java.math.BigDecimal.ZERO)
+                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+            } else {
+                // 首批入库 — 均价直接等于本批单价
+                currentAvg = java.math.BigDecimal.ZERO;
+                existingQty = java.math.BigDecimal.ZERO;
+            }
 
-            java.math.BigDecimal totalValue = existingQty.multiply(currentAvg).add(receiptQty.multiply(receiptPrice));
+            java.math.BigDecimal totalValue = existingQty.multiply(currentAvg)
+                    .add(receiptQty.multiply(receiptPrice));
             java.math.BigDecimal totalQty = existingQty.add(receiptQty);
 
             if (totalQty.compareTo(java.math.BigDecimal.ZERO) > 0) {
