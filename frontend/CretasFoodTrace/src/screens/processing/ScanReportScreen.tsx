@@ -30,6 +30,7 @@ interface ReportForm {
   outputQuantity: string;
   goodQuantity: string;
   defectQuantity: string;
+  inputQuantity: string;
   notes: string;
 }
 
@@ -46,7 +47,7 @@ const ScanReportScreen: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
   const [form, setForm] = useState<ReportForm>({
-    outputQuantity: '', goodQuantity: '', defectQuantity: '', notes: '',
+    outputQuantity: '', goodQuantity: '', defectQuantity: '', inputQuantity: '', notes: '',
   });
 
   const handleScan = useCallback(async (code: string) => {
@@ -87,12 +88,16 @@ const ScanReportScreen: React.FC = () => {
       return;
     }
 
-    const reportPayload = {
+    const inputQty = parseFloat(form.inputQuantity);
+    const reportPayload: Record<string, unknown> = {
       actualQuantity: output,
       goodQuantity: isNaN(good) ? output : good,
       defectQuantity: parseInt(form.defectQuantity, 10) || 0,
       notes: form.notes,
     };
+    if (!isNaN(inputQty) && inputQty > 0) {
+      reportPayload.inputQuantity = inputQty;
+    }
 
     setSubmitting(true);
     try {
@@ -182,6 +187,13 @@ const ScanReportScreen: React.FC = () => {
                 <TextInput style={styles.input} keyboardType="numeric" placeholder="输入产出数量"
                   value={form.outputQuantity} onChangeText={v => setForm(p => ({...p, outputQuantity: v}))} />
               </View>
+              {isFieldVisible('PROCESSING_BATCH', 'inputQuantity') && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>投入量 (kg)</Text>
+                <TextInput style={styles.input} keyboardType="decimal-pad" placeholder="本工序投入原料量"
+                  value={form.inputQuantity} onChangeText={v => setForm(p => ({...p, inputQuantity: v}))} />
+              </View>
+              )}
               {isFieldVisible('PROCESSING_BATCH', 'goodQuantity') && (
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>合格数量</Text>
