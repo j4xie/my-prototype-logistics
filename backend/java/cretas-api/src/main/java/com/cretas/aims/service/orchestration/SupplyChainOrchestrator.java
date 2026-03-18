@@ -217,8 +217,8 @@ public class SupplyChainOrchestrator {
         // ProductionPlan 无 productName 字段；productTypeName 冗余记录在 sourceCustomerName 旁
         // 如业务需要，可将 productTypeName 写入 notes 字段
         plan.setNotes("自动创建：来自销售订单 " + salesOrderId + "，产品 " + productTypeName);
-        // createdBy 需要系统用户ID；此处使用占位值 0L（系统自动创建）
-        plan.setCreatedBy(0L);
+        // createdBy: 使用 null 避免外键违约（0L 不存在于 users 表）
+        plan.setCreatedBy(null);
 
         ProductionPlan saved = productionPlanRepository.save(plan);
         log.info("自动创建生产计划: PP={}, product={}, qty={}, sourceOrder={}",

@@ -399,6 +399,7 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
                 .createdBy(materialType.getCreatedBy())
                 .createdAt(materialType.getCreatedAt())
                 .updatedAt(materialType.getUpdatedAt())
+                .movingAvgPrice(materialType.getMovingAvgPrice())
                 .build();
     }
 

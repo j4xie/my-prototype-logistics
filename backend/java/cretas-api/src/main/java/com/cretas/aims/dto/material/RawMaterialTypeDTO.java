@@ -59,4 +59,5 @@ public class RawMaterialTypeDTO {
     private Integer totalBatches;
     private BigDecimal currentStock;
     private BigDecimal totalValue;
+    private BigDecimal movingAvgPrice;
 }
