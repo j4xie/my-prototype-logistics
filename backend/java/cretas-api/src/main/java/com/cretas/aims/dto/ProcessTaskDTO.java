@@ -41,6 +41,7 @@ public class ProcessTaskDTO {
 
     private BigDecimal completedQuantity;
     private BigDecimal pendingQuantity;
+    private BigDecimal inputQuantity;
 
     private String unit;
     private LocalDate startDate;

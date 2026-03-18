@@ -1024,6 +1024,34 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("发货进度", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("出货进度", "SHIPMENT_QUERY");
 
+        // === 物料消耗 / BOM达成率 ===
+        phraseToIntentMapping.put("物料消耗", "BATCH_CONSUMPTION_QUERY");
+        phraseToIntentMapping.put("查看物料消耗", "BATCH_CONSUMPTION_QUERY");
+        phraseToIntentMapping.put("消耗明细", "BATCH_CONSUMPTION_QUERY");
+        phraseToIntentMapping.put("消耗汇总", "BATCH_CONSUMPTION_QUERY");
+        phraseToIntentMapping.put("消耗统计", "BATCH_CONSUMPTION_QUERY");
+        phraseToIntentMapping.put("物料消耗统计", "BATCH_CONSUMPTION_QUERY");
+        phraseToIntentMapping.put("耗料查询", "BATCH_CONSUMPTION_QUERY");
+        phraseToIntentMapping.put("耗料情况", "BATCH_CONSUMPTION_QUERY");
+        phraseToIntentMapping.put("用了多少料", "BATCH_CONSUMPTION_QUERY");
+        phraseToIntentMapping.put("达成率", "BATCH_CONSUMPTION_QUERY");
+        phraseToIntentMapping.put("BOM达成率", "BATCH_CONSUMPTION_QUERY");
+        phraseToIntentMapping.put("批次消耗", "BATCH_CONSUMPTION_QUERY");
+        // 消耗调整
+        phraseToIntentMapping.put("多用了", "BATCH_CONSUMPTION_ADJUST");
+        phraseToIntentMapping.put("少用了", "BATCH_CONSUMPTION_ADJUST");
+        phraseToIntentMapping.put("消耗调整", "BATCH_CONSUMPTION_ADJUST");
+        phraseToIntentMapping.put("实际用量", "BATCH_CONSUMPTION_ADJUST");
+        phraseToIntentMapping.put("物料差异", "BATCH_CONSUMPTION_ADJUST");
+        phraseToIntentMapping.put("调整用量", "BATCH_CONSUMPTION_ADJUST");
+        // === SKU毛利率 ===
+        phraseToIntentMapping.put("毛利率", "SKU_GROSS_MARGIN");
+        phraseToIntentMapping.put("查毛利率", "SKU_GROSS_MARGIN");
+        phraseToIntentMapping.put("SKU毛利率", "SKU_GROSS_MARGIN");
+        phraseToIntentMapping.put("产品利润", "SKU_GROSS_MARGIN");
+        phraseToIntentMapping.put("单品利润", "SKU_GROSS_MARGIN");
+        phraseToIntentMapping.put("哪个产品赚钱", "SKU_GROSS_MARGIN");
+
         // === 库存相关 (使用实际存在的意图代码) ===
         phraseToIntentMapping.put("库存查询", "REPORT_INVENTORY");
         phraseToIntentMapping.put("查库存", "MATERIAL_BATCH_QUERY");
