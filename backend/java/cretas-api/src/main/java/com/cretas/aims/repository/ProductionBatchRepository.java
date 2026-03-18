@@ -271,4 +271,18 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
             @Param("factoryId") String factoryId,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 查询工厂最近已完成的生产批次（最多50条）
+     */
+    @Query("SELECT b FROM ProductionBatch b WHERE b.factoryId = :factoryId AND b.status = 'COMPLETED' " +
+           "ORDER BY b.endTime DESC NULLS LAST")
+    java.util.List<ProductionBatch> findRecentCompletedByFactory(
+            @Param("factoryId") String factoryId,
+            org.springframework.data.domain.Pageable pageable);
+
+    default java.util.List<ProductionBatch> findRecentCompletedByFactory(String factoryId) {
+        return findRecentCompletedByFactory(factoryId,
+                org.springframework.data.domain.PageRequest.of(0, 50));
+    }
 }

@@ -78,6 +78,9 @@ public class ProcessTask extends BaseEntity {
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
 
+    @Column(name = "input_quantity", precision = 12, scale = 2)
+    private BigDecimal inputQuantity;
+
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 

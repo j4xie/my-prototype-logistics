@@ -113,4 +113,25 @@ public interface MaterialConsumptionRepository extends JpaRepository<MaterialCon
     List<MaterialConsumption> findByFactoryIdAndBatchId(
             @Param("factoryId") String factoryId,
             @Param("batchId") String batchId);
+
+    /**
+     * 按生产批次ID和物料类型ID查询消耗记录
+     */
+    List<MaterialConsumption> findByProductionBatchIdAndMaterialTypeId(Long productionBatchId, String materialTypeId);
+
+    /**
+     * 按生产批次ID和工厂ID查询消耗记录
+     */
+    List<MaterialConsumption> findByProductionBatchIdAndFactoryId(Long productionBatchId, String factoryId);
+
+    /**
+     * 计算生产批次的总消耗成本
+     */
+    @Query("SELECT COALESCE(SUM(m.totalCost), 0) FROM MaterialConsumption m WHERE m.productionBatchId = :batchId")
+    BigDecimal calculateTotalCostByProductionBatch(@Param("batchId") Long batchId);
+
+    /**
+     * 按生产批次ID和来源类型查询
+     */
+    List<MaterialConsumption> findByProductionBatchIdAndSourceType(Long productionBatchId, String sourceType);
 }

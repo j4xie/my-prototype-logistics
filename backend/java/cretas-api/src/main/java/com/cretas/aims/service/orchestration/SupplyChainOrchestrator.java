@@ -8,6 +8,7 @@ import com.cretas.aims.event.*;
 import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.repository.inventory.FinishedGoodsBatchRepository;
+import com.cretas.aims.service.BatchConsumptionService;
 import com.cretas.aims.service.QualityInspectionService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -52,6 +53,7 @@ public class SupplyChainOrchestrator {
     private final FinishedGoodsBatchRepository finishedGoodsBatchRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final QualityInspectionService qualityInspectionService;
+    private final BatchConsumptionService batchConsumptionService;
 
     // ═══════════ 正向链：SO → 库存 → 生产 → 采购 ═══════════
 
@@ -145,6 +147,14 @@ public class SupplyChainOrchestrator {
                 batch.getFactoryId(), batch.getId(), batch.getGoodQuantity());
 
         try {
+            // ⑦-AUTO: BOM自动扣料
+            try {
+                batchConsumptionService.autoConsumeForBatch(batch);
+                log.info("自动扣料成功: batchId={}", batch.getId());
+            } catch (Exception e) {
+                log.error("自动扣料失败(不影响后续流程): batchId={}", batch.getId(), e);
+            }
+
             // ⑦a 自动创建成品批次
             if (batch.getGoodQuantity() != null && batch.getGoodQuantity().compareTo(BigDecimal.ZERO) > 0) {
                 FinishedGoodsBatch fg = createFinishedGoodsFromBatch(batch);

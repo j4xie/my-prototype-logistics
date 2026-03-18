@@ -23,7 +23,9 @@ import java.time.LocalDateTime;
            @Index(name = "idx_consumption_factory", columnList = "factory_id"),
            @Index(name = "idx_consumption_plan", columnList = "production_plan_id"),
            @Index(name = "idx_consumption_batch", columnList = "batch_id"),
-           @Index(name = "idx_consumption_time", columnList = "consumption_time")
+           @Index(name = "idx_consumption_time", columnList = "consumption_time"),
+           @Index(name = "idx_consumption_production_batch", columnList = "production_batch_id"),
+           @Index(name = "idx_consumption_material_type", columnList = "material_type_id")
        }
 )
 public class MaterialConsumption extends BaseEntity {
@@ -53,6 +55,16 @@ public class MaterialConsumption extends BaseEntity {
     private Long recordedBy;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    @Column(name = "planned_quantity", precision = 10, scale = 2)
+    private BigDecimal plannedQuantity;
+
+    @Column(name = "material_type_id", length = 191)
+    private String materialTypeId;
+
+    @Column(name = "source_type", length = 20)
+    private String sourceType;
+
     // 关联关系 (使用 @JsonIgnore 防止循环引用)
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)

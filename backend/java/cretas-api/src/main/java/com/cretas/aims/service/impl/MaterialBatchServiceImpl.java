@@ -167,6 +167,9 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         batch = materialBatchRepository.save(batch);
         log.info("创建原材料批次成功: batchNumber={}", batch.getBatchNumber());
 
+        // 更新物料类型移动平均价
+        updateMovingAvgPrice(materialType, batch.getReceiptQuantity(), batch.getUnitPrice(), batch.getId());
+
         // 自动匹配到未来生产计划
         try {
             var matchResults = futurePlanMatchingService.matchBatchToFuturePlans(batch);
@@ -1223,5 +1226,48 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         }
 
         return batchNumber;
+    }
+
+    /**
+     * 入库时更新物料类型的移动平均价
+     * 公式: 新均价 = (现有总量 × 现均价 + 入库数量 × 入库价) / (现有总量 + 入库数量)
+     */
+    private void updateMovingAvgPrice(com.cretas.aims.entity.RawMaterialType materialType,
+                                      java.math.BigDecimal receiptQty, java.math.BigDecimal receiptPrice,
+                                      String newBatchId) {
+        if (receiptQty == null || receiptPrice == null
+                || receiptQty.compareTo(java.math.BigDecimal.ZERO) <= 0
+                || receiptPrice.compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        try {
+            // 查询该类型所有可用批次的总量
+            List<MaterialBatch> activeBatches = materialBatchRepository
+                    .findAvailableBatchesFEFO(materialType.getFactoryId(), materialType.getId());
+            java.math.BigDecimal existingQty = activeBatches.stream()
+                    .filter(b -> !b.getId().equals(newBatchId))
+                    .map(b -> b.getReceiptQuantity()
+                            .subtract(b.getUsedQuantity() != null ? b.getUsedQuantity() : java.math.BigDecimal.ZERO)
+                            .subtract(b.getReservedQuantity() != null ? b.getReservedQuantity() : java.math.BigDecimal.ZERO))
+                    .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+            java.math.BigDecimal currentAvg = materialType.getMovingAvgPrice() != null
+                    ? materialType.getMovingAvgPrice()
+                    : (materialType.getUnitPrice() != null ? materialType.getUnitPrice() : java.math.BigDecimal.ZERO);
+
+            java.math.BigDecimal totalValue = existingQty.multiply(currentAvg).add(receiptQty.multiply(receiptPrice));
+            java.math.BigDecimal totalQty = existingQty.add(receiptQty);
+
+            if (totalQty.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                java.math.BigDecimal newAvg = totalValue.divide(totalQty, 4, java.math.RoundingMode.HALF_UP);
+                materialType.setMovingAvgPrice(newAvg);
+                materialTypeRepository.save(materialType);
+                log.info("更新移动均价: materialType={}, 现有量={}, 入库量={}, 新均价={}",
+                        materialType.getName(), existingQty, receiptQty, newAvg);
+            }
+        } catch (Exception e) {
+            log.warn("更新移动均价失败(不影响入库): materialType={}, error={}",
+                    materialType.getId(), e.getMessage());
+        }
     }
 }

@@ -191,6 +191,9 @@ public class RawMaterialType extends BaseEntity {
     @Column(name = "max_stock", precision = 10, scale = 2)
     private BigDecimal maxStock;
 
+    @Column(name = "moving_avg_price", precision = 12, scale = 4)
+    private BigDecimal movingAvgPrice;
+
     // ========== 状态和备注 ==========
 
     /**

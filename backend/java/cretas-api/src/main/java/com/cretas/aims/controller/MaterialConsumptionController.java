@@ -8,6 +8,7 @@ import com.cretas.aims.entity.User;
 import com.cretas.aims.repository.MaterialConsumptionRepository;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.UserRepository;
+import com.cretas.aims.service.BatchConsumptionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,6 +49,7 @@ public class MaterialConsumptionController {
     private final MaterialConsumptionRepository consumptionRepository;
     private final MaterialBatchRepository materialBatchRepository;
     private final UserRepository userRepository;
+    private final BatchConsumptionService batchConsumptionService;
 
     /**
      * 1. 获取消耗记录列表（分页）
@@ -312,6 +314,47 @@ public class MaterialConsumptionController {
         return ApiResponse.success(result);
     }
 
+    /**
+     * 8. 差异调整
+     */
+    @PostMapping("/batch/{productionBatchId}/adjust")
+    @Operation(summary = "调整物料消耗", description = "调整生产批次中某种物料的实际消耗量")
+    public ApiResponse<Void> adjustConsumption(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "生产批次ID") Long productionBatchId,
+            @RequestBody Map<String, Object> body) {
+
+        String materialTypeId = (String) body.get("materialTypeId");
+        Object rawQty = body.get("actualQuantity");
+        String reason = (String) body.getOrDefault("reason", "手工调整");
+
+        if (materialTypeId == null || rawQty == null) {
+            return ApiResponse.error(400, "materialTypeId和actualQuantity必填");
+        }
+        BigDecimal actualQuantity = new BigDecimal(rawQty.toString());
+
+        log.info("差异调整: factoryId={}, batchId={}, materialType={}, qty={}",
+                factoryId, productionBatchId, materialTypeId, actualQuantity);
+
+        batchConsumptionService.adjustConsumption(factoryId, productionBatchId, materialTypeId, actualQuantity, reason);
+        return ApiResponse.successMessage("调整成功");
+    }
+
+    /**
+     * 9. 获取批次消耗汇总（含计划vs实际、BOM达成率）
+     */
+    @GetMapping("/batch/{productionBatchId}/summary")
+    @Operation(summary = "获取批次消耗汇总", description = "获取生产批次的物料消耗明细，含BOM计划量、实际量和达成率")
+    public ApiResponse<Map<String, Object>> getBatchConsumptionSummary(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "生产批次ID") Long productionBatchId) {
+
+        log.info("获取批次消耗汇总: factoryId={}, batchId={}", factoryId, productionBatchId);
+
+        Map<String, Object> summary = batchConsumptionService.getConsumptionSummary(factoryId, productionBatchId);
+        return ApiResponse.success(summary);
+    }
+
     // ========== 辅助方法 ==========
 
     /**
@@ -379,6 +422,8 @@ public class MaterialConsumptionController {
         map.put("consumedAt", c.getConsumedAt());
         map.put("recordedBy", c.getRecordedBy());
         map.put("notes", c.getNotes());
+        map.put("plannedQuantity", c.getPlannedQuantity());
+        map.put("sourceType", c.getSourceType());
         map.put("createdAt", c.getCreatedAt());
         map.put("updatedAt", c.getUpdatedAt());
 
@@ -387,7 +432,11 @@ public class MaterialConsumptionController {
             MaterialBatch batch = batchMap.get(c.getBatchId());
             if (batch != null) {
                 map.put("batchNumber", batch.getBatchNumber());
-                map.put("materialTypeId", batch.getMaterialTypeId());
+                if (c.getMaterialTypeId() == null) {
+                    map.put("materialTypeId", batch.getMaterialTypeId());
+                } else {
+                    map.put("materialTypeId", c.getMaterialTypeId());
+                }
             }
         }
 
