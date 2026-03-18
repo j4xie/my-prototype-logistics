@@ -1,0 +1,111 @@
+# flows/factory-admin/79-ai-consumption-query.yaml
+# S1+S4: AI natural language query for consumption data + adjustment
+# Verifies: AI chat input, consumption intent recognition, response display
+
+appId: com.cretas.foodtrace
+
+env:
+  USERNAME: factory_admin1
+  PASSWORD: "123456"
+  HOME_ROOT_ID: fa-home-root
+
+---
+
+# === INITIALIZATION ===
+- launchApp:
+    clearState: true
+
+- runFlow:
+    when:
+      visible: "Wait"
+    file: ../common/_dismiss_anr.yaml
+
+- runFlow: ../common/_wait_for_app.yaml
+
+- runFlow:
+    file: ../common/_login.yaml
+    env:
+      USERNAME: ${USERNAME}
+      PASSWORD: ${PASSWORD}
+      HOME_ROOT_ID: ${HOME_ROOT_ID}
+
+- runFlow:
+    when:
+      visible: "重试"
+    file: ../common/_retry_load.yaml
+
+# ========================================
+# M-01: Navigate to AI tab
+# ========================================
+
+- extendedWaitUntil:
+    visible:
+      id: "fa-home-root"
+    timeout: 30000
+
+- tapOn:
+    id: "bottom-tab-ai"
+
+- extendedWaitUntil:
+    visible:
+      id: "ai-chat-input"
+    timeout: 15000
+
+- takeScreenshot: 79-01-ai-chat-home
+
+# ========================================
+# M-02: Query consumption data
+# ========================================
+
+- tapOn:
+    id: "ai-chat-input"
+
+- inputText: "查看最近完成批次的物料消耗"
+
+- tapOn:
+    id: "ai-send-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "ai-chat-message-1"
+    timeout: 30000
+
+- takeScreenshot: 79-02-consumption-response
+
+# ========================================
+# M-03: Query BOM achievement rate
+# ========================================
+
+- tapOn:
+    id: "ai-chat-input"
+
+- inputText: "BOM达成率是多少"
+
+- tapOn:
+    id: "ai-send-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "ai-chat-message-2"
+    timeout: 30000
+
+- takeScreenshot: 79-03-bom-rate-response
+
+# ========================================
+# M-04: Query SKU gross margin
+# ========================================
+
+- tapOn:
+    id: "ai-chat-input"
+
+- inputText: "查一下毛利率"
+
+- tapOn:
+    id: "ai-send-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "ai-chat-message-3"
+    timeout: 30000
+
+- takeScreenshot: 79-04-margin-response

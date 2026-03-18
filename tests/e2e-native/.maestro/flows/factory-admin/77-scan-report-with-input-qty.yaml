@@ -1,0 +1,157 @@
+# flows/factory-admin/77-scan-report-with-input-qty.yaml
+# S2+S3: Scan report flow with input quantity (投入量)
+# Verifies: scan entry point, batch info display, output qty + input qty fields, submit
+
+appId: com.cretas.foodtrace
+
+env:
+  USERNAME: factory_admin1
+  PASSWORD: "123456"
+  HOME_ROOT_ID: fa-home-root
+
+---
+
+# === INITIALIZATION ===
+- launchApp:
+    clearState: true
+
+- runFlow:
+    when:
+      visible: "Wait"
+    file: ../common/_dismiss_anr.yaml
+
+- runFlow: ../common/_wait_for_app.yaml
+
+- runFlow:
+    file: ../common/_login.yaml
+    env:
+      USERNAME: ${USERNAME}
+      PASSWORD: ${PASSWORD}
+      HOME_ROOT_ID: ${HOME_ROOT_ID}
+
+- runFlow:
+    when:
+      visible: "重试"
+    file: ../common/_retry_load.yaml
+
+# ========================================
+# M-01: Navigate to Processing tab
+# ========================================
+
+- extendedWaitUntil:
+    visible:
+      id: "fa-home-root"
+    timeout: 30000
+
+- tapOn:
+    id: "bottom-tab-processing"
+
+- extendedWaitUntil:
+    visible:
+      text: "工序任务"
+    timeout: 15000
+
+- takeScreenshot: 77-01-processing-home
+
+# ========================================
+# M-02: Enter Process Task list
+# ========================================
+
+- tapOn:
+    text: "工序任务"
+
+- extendedWaitUntil:
+    visible:
+      id: "process-task-list"
+    timeout: 15000
+
+- takeScreenshot: 77-02-task-list
+
+# ========================================
+# M-03: Open first task detail
+# ========================================
+
+- tapOn:
+    id: "process-task-card-0"
+
+- extendedWaitUntil:
+    visible:
+      id: "task-detail-planned-qty"
+    timeout: 10000
+
+- takeScreenshot: 77-03-task-detail
+
+# ========================================
+# M-04: Start report (报工)
+# ========================================
+
+- runFlow:
+    when:
+      visible:
+        id: "task-detail-report-btn"
+    commands:
+      - tapOn:
+          id: "task-detail-report-btn"
+      - extendedWaitUntil:
+          visible:
+            id: "report-quantity-input"
+          timeout: 10000
+
+- takeScreenshot: 77-04-report-form
+
+# ========================================
+# M-05: Fill output quantity
+# ========================================
+
+- tapOn:
+    id: "report-quantity-input"
+
+- eraseText: 20
+
+- inputText: "100"
+
+- takeScreenshot: 77-05-output-filled
+
+# ========================================
+# M-06: Verify input quantity field exists (S3 - 投入量)
+# ========================================
+
+- scrollUntilVisible:
+    element:
+      id: "report-input-quantity"
+    direction: DOWN
+    timeout: 10000
+
+- tapOn:
+    id: "report-input-quantity"
+
+- eraseText: 20
+
+- inputText: "120"
+
+- pressKey: back
+
+- takeScreenshot: 77-06-input-qty-filled
+
+# ========================================
+# M-07: Submit report
+# ========================================
+
+- scrollUntilVisible:
+    element:
+      id: "report-submit-btn"
+    direction: DOWN
+    timeout: 10000
+
+- tapOn:
+    id: "report-submit-btn"
+
+- extendedWaitUntil:
+    visible:
+      text: "OK"
+    timeout: 15000
+
+- takeScreenshot: 77-07-submit-result
+
+- tapOn:
+    text: "OK"

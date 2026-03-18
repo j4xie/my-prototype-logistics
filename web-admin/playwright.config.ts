@@ -61,5 +61,17 @@ export default defineConfig({
       dependencies: ['vue-auth'],
       use: { storageState: 'test-results/.auth/factory-admin.json' },
     },
+    // Step 8: 六扇门一期 E2E (Web Admin)
+    {
+      name: 'liushanmen-e2e',
+      testMatch: 'liushanmen-e2e.spec.ts',
+      dependencies: ['vue-auth'],
+      use: { storageState: 'test-results/.auth/factory-admin.json' },
+    },
+    // Step 9: 六扇门一期 E2E (RN Expo Web — 比 Maestro 快)
+    {
+      name: 'liushanmen-rn-e2e',
+      testMatch: 'liushanmen-rn-e2e.spec.ts',
+    },
   ],
 });

@@ -1,0 +1,127 @@
+# flows/factory-admin/80-material-inventory-flow.yaml
+# S5: Material inventory flow - warehouse view + stock check
+# Verifies: warehouse tab, inventory list, material detail, batch info, stock status
+
+appId: com.cretas.foodtrace
+
+env:
+  USERNAME: factory_admin1
+  PASSWORD: "123456"
+  HOME_ROOT_ID: fa-home-root
+
+---
+
+# === INITIALIZATION ===
+- launchApp:
+    clearState: true
+
+- runFlow:
+    when:
+      visible: "Wait"
+    file: ../common/_dismiss_anr.yaml
+
+- runFlow: ../common/_wait_for_app.yaml
+
+- runFlow:
+    file: ../common/_login.yaml
+    env:
+      USERNAME: ${USERNAME}
+      PASSWORD: ${PASSWORD}
+      HOME_ROOT_ID: ${HOME_ROOT_ID}
+
+- runFlow:
+    when:
+      visible: "重试"
+    file: ../common/_retry_load.yaml
+
+# ========================================
+# M-01: Navigate to Warehouse tab
+# ========================================
+
+- extendedWaitUntil:
+    visible:
+      id: "fa-home-root"
+    timeout: 30000
+
+- tapOn:
+    id: "bottom-tab-warehouse"
+
+- extendedWaitUntil:
+    visible:
+      text: "库存"
+    timeout: 15000
+
+- takeScreenshot: 80-01-warehouse-home
+
+# ========================================
+# M-02: Enter Inventory Management
+# ========================================
+
+- tapOn:
+    text: "库存管理"
+
+- extendedWaitUntil:
+    visible:
+      id: "inventory-list"
+    timeout: 15000
+
+- takeScreenshot: 80-02-inventory-list
+
+# ========================================
+# M-03: Open first material detail
+# ========================================
+
+- tapOn:
+    id: "material-item-0"
+
+- extendedWaitUntil:
+    visible:
+      id: "material-detail-header"
+    timeout: 10000
+
+- takeScreenshot: 80-03-material-detail
+
+# ========================================
+# M-04: Verify stock info display
+# ========================================
+
+- assertVisible:
+    text: "可用"
+
+- scrollUntilVisible:
+    element:
+      text: "批次"
+    direction: DOWN
+    timeout: 10000
+
+- takeScreenshot: 80-04-batch-info
+
+# ========================================
+# M-05: Check batch details
+# ========================================
+
+- runFlow:
+    when:
+      visible:
+        id: "batch-row-0"
+    commands:
+      - tapOn:
+          id: "batch-row-0"
+      - extendedWaitUntil:
+          visible:
+            text: "入库日期"
+          timeout: 10000
+      - takeScreenshot: 80-05-batch-detail
+
+# ========================================
+# M-06: Go back to inventory list
+# ========================================
+
+- pressKey: back
+
+- extendedWaitUntil:
+    visible:
+      id: "inventory-list"
+    timeout: 10000
+
+- takeScreenshot: 80-06-back-to-list

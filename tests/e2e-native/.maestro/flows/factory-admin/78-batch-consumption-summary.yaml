@@ -1,0 +1,130 @@
+# flows/factory-admin/78-batch-consumption-summary.yaml
+# S4: View batch consumption summary + BOM achievement rate
+# Verifies: production batch detail, consumption tab, AUTO_BOM records display
+
+appId: com.cretas.foodtrace
+
+env:
+  USERNAME: factory_admin1
+  PASSWORD: "123456"
+  HOME_ROOT_ID: fa-home-root
+
+---
+
+# === INITIALIZATION ===
+- launchApp:
+    clearState: true
+
+- runFlow:
+    when:
+      visible: "Wait"
+    file: ../common/_dismiss_anr.yaml
+
+- runFlow: ../common/_wait_for_app.yaml
+
+- runFlow:
+    file: ../common/_login.yaml
+    env:
+      USERNAME: ${USERNAME}
+      PASSWORD: ${PASSWORD}
+      HOME_ROOT_ID: ${HOME_ROOT_ID}
+
+- runFlow:
+    when:
+      visible: "重试"
+    file: ../common/_retry_load.yaml
+
+# ========================================
+# M-01: Navigate to Processing tab
+# ========================================
+
+- extendedWaitUntil:
+    visible:
+      id: "fa-home-root"
+    timeout: 30000
+
+- tapOn:
+    id: "bottom-tab-processing"
+
+- extendedWaitUntil:
+    visible:
+      text: "工序任务"
+    timeout: 15000
+
+- takeScreenshot: 78-01-processing-home
+
+# ========================================
+# M-02: Go to Production Batches
+# ========================================
+
+- scrollUntilVisible:
+    element:
+      text: "生产批次"
+    direction: DOWN
+    timeout: 10000
+
+- tapOn:
+    text: "生产批次"
+
+- extendedWaitUntil:
+    visible:
+      id: "production-batch-list"
+    timeout: 15000
+
+- takeScreenshot: 78-02-batch-list
+
+# ========================================
+# M-03: Open first batch detail
+# ========================================
+
+- tapOn:
+    id: "batch-item-0"
+
+- extendedWaitUntil:
+    visible:
+      id: "batch-detail-header"
+    timeout: 10000
+
+- takeScreenshot: 78-03-batch-detail
+
+# ========================================
+# M-04: Switch to Consumption tab
+# ========================================
+
+- runFlow:
+    when:
+      visible:
+        text: "消耗"
+    commands:
+      - tapOn:
+          text: "消耗"
+      - extendedWaitUntil:
+          visible:
+            text: "物料消耗"
+          timeout: 10000
+
+- takeScreenshot: 78-04-consumption-tab
+
+# ========================================
+# M-05: Verify consumption data display
+# ========================================
+
+- scrollUntilVisible:
+    element:
+      text: "达成率"
+    direction: DOWN
+    timeout: 10000
+
+- takeScreenshot: 78-05-achievement-rate
+
+# ========================================
+# M-06: Scroll to see full consumption detail
+# ========================================
+
+- scrollUntilVisible:
+    element:
+      text: "合计"
+    direction: DOWN
+    timeout: 10000
+
+- takeScreenshot: 78-06-consumption-total
