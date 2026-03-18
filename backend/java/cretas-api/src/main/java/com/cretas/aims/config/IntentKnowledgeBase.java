@@ -5190,10 +5190,10 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("通知配置", "FACTORY_NOTIFICATION_CONFIG");
         phraseToIntentMapping.put("通知设置", "FACTORY_NOTIFICATION_CONFIG");
 
-        // v29: 财务/成本 — 防止 N/A
-        phraseToIntentMapping.put("毛利率", "PROFIT_TREND_ANALYSIS");
+        // v29: 财务/成本 — 毛利率已在 Part1 映射到 SKU_GROSS_MARGIN（有 tool 绑定），不再覆盖
+        // phraseToIntentMapping.put("毛利率", "PROFIT_TREND_ANALYSIS");  // 已移至 SKU_GROSS_MARGIN
         phraseToIntentMapping.put("净利率", "PROFIT_TREND_ANALYSIS");
-        phraseToIntentMapping.put("利润率", "PROFIT_TREND_ANALYSIS");
+        phraseToIntentMapping.put("利润率", "SKU_GROSS_MARGIN");
         phraseToIntentMapping.put("利润分析", "PROFIT_TREND_ANALYSIS");
         phraseToIntentMapping.put("利润趋势", "PROFIT_TREND_ANALYSIS");
         phraseToIntentMapping.put("财务指标", "REPORT_FINANCE");
