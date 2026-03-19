@@ -210,6 +210,7 @@ public class ProcessTaskServiceImpl implements ProcessTaskService {
                 .plannedQuantity(entity.getPlannedQuantity())
                 .completedQuantity(entity.getCompletedQuantity())
                 .pendingQuantity(entity.getPendingQuantity())
+                .inputQuantity(entity.getInputQuantity())
                 .unit(entity.getUnit())
                 .status(entity.getStatus().name())
                 .totalWorkers(workerSummaries.size())

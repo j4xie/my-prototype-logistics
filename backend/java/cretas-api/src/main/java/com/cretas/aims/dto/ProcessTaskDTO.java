@@ -94,6 +94,7 @@ public class ProcessTaskDTO {
         private BigDecimal plannedQuantity;
         private BigDecimal completedQuantity;
         private BigDecimal pendingQuantity;
+        private BigDecimal inputQuantity;
         private String unit;
         private String status;
         private Integer totalWorkers;
