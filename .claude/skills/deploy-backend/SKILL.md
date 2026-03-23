@@ -67,18 +67,18 @@ allowed-tools:
 ### 方式 A: 一键脚本 (推荐)
 
 ```bash
-./deploy-backend.sh                  # 部署到生产 (默认)
-./deploy-backend.sh --env test       # 部署到测试
-./deploy-backend.sh --env all        # 部署后重启两套
+./scripts/deploy/deploy-backend.sh                  # 部署到生产 (默认)
+./scripts/deploy/deploy-backend.sh --env test       # 部署到测试
+./scripts/deploy/deploy-backend.sh --env all        # 部署后重启两套
 ```
 
 脚本自动完成：Maven 打包 → 并行上传 (GitHub 6路竞争 / rsync / OSS / R2) → 服务器备份 → 部署 → 重启 → 健康检查 (30次重试)
 
 可选参数：
 ```bash
-./deploy-backend.sh --jar v1.2             # 指定版本号
-./deploy-backend.sh --git                  # Git 部署模式 (服务器端编译)
-./deploy-backend.sh --env test --jar v1.2  # 组合使用
+./scripts/deploy/deploy-backend.sh --jar v1.2             # 指定版本号
+./scripts/deploy/deploy-backend.sh --git                  # Git 部署模式 (服务器端编译)
+./scripts/deploy/deploy-backend.sh --env test --jar v1.2  # 组合使用
 ```
 
 ### 方式 B: 手动步骤 (脚本失败时使用)
@@ -122,9 +122,9 @@ done
 
 ```bash
 # 方式 A: 使用脚本
-./deploy-smartbi-python.sh                # 部署到生产 (默认)
-./deploy-smartbi-python.sh --env test     # 部署到测试
-./deploy-smartbi-python.sh --env all      # 部署后重启两套
+./scripts/deploy/deploy-smartbi-python.sh                # 部署到生产 (默认)
+./scripts/deploy/deploy-smartbi-python.sh --env test     # 部署到测试
+./scripts/deploy/deploy-smartbi-python.sh --env all      # 部署后重启两套
 ```
 
 ### Python 部署验证

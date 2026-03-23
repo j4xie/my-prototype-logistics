@@ -70,10 +70,10 @@ uvicorn main:app --port 8083     # 启动服务
 ### 部署到服务器
 ```bash
 # 方式1: JAR 部署 (推荐，默认)
-./deploy-backend.sh              # 本地打包 → GitHub Release → 服务器拉取
+./scripts/deploy/deploy-backend.sh              # 本地打包 → GitHub Release → 服务器拉取
 
 # 方式2: Git 部署 (旧方式)
-./deploy-backend.sh --git        # git push → 服务器编译
+./scripts/deploy/deploy-backend.sh --git        # git push → 服务器编译
 
 # 或使用 skill
 /deploy-backend

@@ -1,12 +1,16 @@
 #!/bin/bash
 
-# 宝塔上 AI 服务检查脚本
+# 宝塔上 AI 服务检查脚本 - 已修正路径
+# 正确路径: /www/wwwroot/project/backend-ai-chat
 # 在宝塔终端运行此脚本来验证 AI 服务状态和路径配置
 
 echo "=========================================="
 echo "白垩纪 AI 服务检查脚本"
 echo "=========================================="
 echo ""
+
+# 正确的 AI 服务目录
+AI_DIR="/www/wwwroot/project/backend-ai-chat"
 
 # 1. 检查 AI 服务进程
 echo "【1】检查 AI 服务是否运行..."
@@ -23,13 +27,12 @@ echo ""
 # 2. 检查 8085 端口
 echo "【2】检查 8085 端口状态..."
 echo "---"
-lsof -i :8085 || netstat -tuln | grep 8085 || echo "❌ 8085端口未被占用"
+lsof -i :8085 2>/dev/null || netstat -tuln | grep 8085 2>/dev/null || echo "❌ 8085端口未被占用"
 echo ""
 
 # 3. 检查目录结构
 echo "【3】检查 AI 服务目录结构..."
 echo "---"
-AI_DIR="/www/wwwroot/cretas/backend-ai-chat"
 
 if [ -d "$AI_DIR" ]; then
     echo "✅ 目录存在: $AI_DIR"
@@ -38,6 +41,7 @@ if [ -d "$AI_DIR" ]; then
     ls -la "$AI_DIR" | head -20
 else
     echo "❌ 目录不存在: $AI_DIR"
+    echo "期望位置: $AI_DIR"
 fi
 echo ""
 
@@ -75,7 +79,7 @@ echo "---"
 if [ -d "$AI_DIR/venv/lib/python"* ]; then
     echo "✅ 虚拟环境库目录存在"
     echo "已安装的主要包:"
-    "$AI_DIR/venv/bin/pip" list | grep -E 'fastapi|uvicorn|redis|pydantic' || echo "⚠️ 部分依赖未安装"
+    "$AI_DIR/venv/bin/pip" list 2>/dev/null | grep -E 'fastapi|uvicorn|redis|pydantic' || echo "⚠️ 部分依赖未安装"
 else
     echo "❌ 虚拟环境未初始化"
 fi
@@ -84,12 +88,13 @@ echo ""
 # 7. 检查日志文件
 echo "【7】检查日志文件..."
 echo "---"
-if [ -d "$AI_DIR/logs" ]; then
-    echo "✅ logs 目录存在"
+LOGS_DIR="/www/wwwroot/project/logs"
+if [ -d "$LOGS_DIR" ]; then
+    echo "✅ logs 目录存在: $LOGS_DIR"
     echo "最近的日志文件:"
-    ls -lrt "$AI_DIR/logs" | tail -5
+    ls -lrt "$LOGS_DIR" | tail -5
 else
-    echo "❌ logs 目录不存在"
+    echo "❌ logs 目录不存在: $LOGS_DIR"
 fi
 echo ""
 
@@ -107,3 +112,6 @@ echo ""
 echo "=========================================="
 echo "检查完成"
 echo "=========================================="
+echo ""
+echo "AI 服务目录: $AI_DIR"
+echo "日志目录: $LOGS_DIR"

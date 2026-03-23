@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# 宝塔上启动 AI 服务的脚本
-# 使用方法: bash /www/wwwroot/cretas/start-ai-service.sh
+# 宝塔上启动 AI 服务的脚本 - 已修正路径
+# 正确路径: /www/wwwroot/project/backend-ai-chat
+# 使用方法: bash /www/wwwroot/project/start-ai-service.sh
 
-AI_DIR="/www/wwwroot/cretas/backend-ai-chat"
-LOG_FILE="/www/wwwroot/cretas/logs/ai-service.log"
+AI_DIR="/www/wwwroot/project/backend-ai-chat"
+LOG_FILE="/www/wwwroot/project/logs/ai-service.log"
 
 echo "=========================================="
 echo "启动白垩纪 AI 服务"
@@ -14,7 +15,8 @@ echo ""
 # 检查目录是否存在
 if [ ! -d "$AI_DIR" ]; then
     echo "❌ 错误: AI 服务目录不存在: $AI_DIR"
-    echo "请确保已经将 backend-ai-chat 目录复制到宝塔服务器"
+    echo "请确保已经将 backend-ai-chat 目录放在宝塔服务器"
+    echo "期望位置: $AI_DIR"
     exit 1
 fi
 
@@ -42,18 +44,25 @@ if [ ! -f "$AI_DIR/venv/bin/python" ]; then
     echo "❌ 虚拟环境不存在，正在创建..."
     cd "$AI_DIR"
     python3 -m venv venv
-    echo "✅ 虚拟环境创建完成"
+    if [ $? -eq 0 ]; then
+        echo "✅ 虚拟环境创建完成"
+    else
+        echo "❌ 虚拟环境创建失败"
+        exit 1
+    fi
 fi
+echo "✅ 虚拟环境存在"
 echo ""
 
 # 安装依赖
 echo "【3】安装/更新依赖..."
 cd "$AI_DIR"
-"$AI_DIR/venv/bin/pip" install -q -r requirements.txt
+"$AI_DIR/venv/bin/pip" install -q -r requirements.txt 2>&1
 if [ $? -eq 0 ]; then
     echo "✅ 依赖安装完成"
 else
     echo "❌ 依赖安装失败"
+    tail -20 "$LOG_FILE" 2>/dev/null || echo "查看日志了解详情: $LOG_FILE"
     exit 1
 fi
 echo ""
@@ -101,4 +110,4 @@ echo "常用命令:"
 echo "1. 查看日志: tail -f $LOG_FILE"
 echo "2. 停止服务: pkill -f 'python.*main.py'"
 echo "3. 重启服务: bash $0"
-echo "4. 检查状态: bash /www/wwwroot/cretas/check-ai-service.sh"
+echo "4. 检查状态: bash /www/wwwroot/project/check-ai-service.sh"

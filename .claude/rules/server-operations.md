@@ -181,8 +181,8 @@ ssh root@47.100.235.168 "journalctl -u cretas-backend --since '5 min ago' --no-p
 
 | 部署目标 | 脚本 | 说明 |
 |----------|------|------|
-| Java 后端 | `./deploy-backend.sh [--env prod\|test\|all]` | Maven 打包 → 并行上传 → 备份 → 部署 → 健康检查 |
-| Python 服务 | `./deploy-smartbi-python.sh [--env prod\|test\|all]` | rsync 增量同步 → 安装依赖 → 重启 → 健康检查 |
+| Java 后端 | `./scripts/deploy/deploy-backend.sh [--env prod\|test\|all]` | Maven 打包 → 并行上传 → 备份 → 部署 → 健康检查 |
+| Python 服务 | `./scripts/deploy/deploy-smartbi-python.sh [--env prod\|test\|all]` | rsync 增量同步 → 安装依赖 → 重启 → 健康检查 |
 | 全栈部署 | 使用 `/deploy-backend` skill | 根据指令自动选择部署范围 |
 
 `--env` 默认 `prod`，只更新生产环境。

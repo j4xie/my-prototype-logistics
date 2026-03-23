@@ -105,7 +105,7 @@ backend/python/ (端口 8083)
 
 ```bash
 # 部署脚本
-./deploy-smartbi-python.sh
+./scripts/deploy/deploy-smartbi-python.sh
 
 # 服务器目录
 /www/wwwroot/cretas/code/backend/python/
