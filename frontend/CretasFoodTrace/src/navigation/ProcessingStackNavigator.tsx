@@ -15,6 +15,7 @@ import ProductionPlanManagementScreen from '../screens/processing/ProductionPlan
 import MaterialBatchManagementScreen from '../screens/processing/MaterialBatchManagementScreen';
 import MaterialReceiptScreen from '../screens/processing/MaterialReceiptScreen';
 import MaterialReceiptAIScreen from '../screens/processing/MaterialReceiptAIScreen';
+import MaterialBatchSuccessScreen from '../screens/processing/MaterialBatchSuccessScreen';
 
 // AI智能分析页面 - Phase 3
 import AIReportListScreen from '../screens/processing/AIReportListScreen';
@@ -78,6 +79,7 @@ import ScanReportScreen from '../screens/processing/ScanReportScreen';
 import TeamBatchReportScreen from '../screens/processing/TeamBatchReportScreen';
 import DynamicReportScreen from '../screens/processing/DynamicReportScreen';
 import NfcCheckinScreen from '../screens/processing/NfcCheckinScreen';
+import ThreeStepReportScreen from '../screens/processing/ThreeStepReportScreen';
 
 // 溯源功能 - Phase 3
 import {
@@ -173,6 +175,10 @@ export function ProcessingStackNavigator() {
       <Stack.Screen
         name="MaterialReceiptAI"
         component={MaterialReceiptAIScreen}
+      />
+      <Stack.Screen
+        name="MaterialBatchSuccess"
+        component={MaterialBatchSuccessScreen}
       />
 
       {/* AI智能分析 - Phase 3新增 */}
@@ -321,6 +327,10 @@ export function ProcessingStackNavigator() {
       <Stack.Screen
         name="NfcCheckin"
         component={NfcCheckinScreen}
+      />
+      <Stack.Screen
+        name="ThreeStepReport"
+        component={ThreeStepReportScreen}
       />
     </Stack.Navigator>
   );

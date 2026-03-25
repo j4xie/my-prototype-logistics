@@ -64,7 +64,6 @@ export function DispatcherTabNavigator() {
           ),
         }}
       />
-      {isScreenEnabled('ProductionPlanning') && (
       <Tab.Screen
         name="PlanTab"
         component={DSPlanStackNavigator}
@@ -75,43 +74,6 @@ export function DispatcherTabNavigator() {
           ),
         }}
       />
-      )}
-      {isScreenEnabled('AISchedule') && (
-      <Tab.Screen
-        name="AITab"
-        component={DSAIStackNavigator}
-        options={{
-          tabBarLabel: 'AI调度',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="robot" size={size} color={color} />
-          ),
-        }}
-      />
-      )}
-      {isScreenEnabled('SmartBI') && (
-      <Tab.Screen
-        name="SmartBITab"
-        component={SmartBIStackNavigator}
-        options={{
-          tabBarLabel: '智能分析',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="chart-timeline-variant" size={size} color={color} />
-          ),
-        }}
-      />
-      )}
-      {isScreenEnabled('PersonnelManagement') && (
-      <Tab.Screen
-        name="PersonnelTab"
-        component={DSPersonnelStackNavigator}
-        options={{
-          tabBarLabel: '人员',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-group" size={size} color={color} />
-          ),
-        }}
-      />
-      )}
       <Tab.Screen
         name="ProfileTab"
         component={DSProfileStackNavigator}

@@ -44,6 +44,12 @@ import { ProductionLineScreen } from '../screens/dispatcher/line';
 // Stats 模块
 import { UrgentInsertStatsScreen } from '../screens/dispatcher/stats';
 
+// SmartBI 模块
+import SmartBIStackNavigator from './SmartBIStackNavigator';
+
+// 工序任务 (从计划详情跳入)
+import ProcessRunOverviewScreen from '../screens/processing/ProcessRunOverviewScreen';
+
 /**
  * 调度员导航参数类型 (仅已实现的屏幕)
  */
@@ -71,6 +77,10 @@ export type DispatcherStackParamList = {
   ProductionLine: undefined;
   // Stats 模块
   UrgentInsertStats: undefined;
+  // SmartBI 模块
+  SmartBI: undefined;
+  // 工序任务总览
+  ProcessRunOverview: { productionRunId: string };
 };
 
 const Stack = createStackNavigator<DispatcherStackParamList>();
@@ -113,6 +123,12 @@ export function DispatcherNavigator() {
 
       {/* Stats 模块 */}
       <Stack.Screen name="UrgentInsertStats" component={UrgentInsertStatsScreen} />
+
+      {/* SmartBI 模块 */}
+      <Stack.Screen name="SmartBI" component={SmartBIStackNavigator} />
+
+      {/* 工序任务总览 */}
+      <Stack.Screen name="ProcessRunOverview" component={ProcessRunOverviewScreen} />
     </Stack.Navigator>
   );
 }

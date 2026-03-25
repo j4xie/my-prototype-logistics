@@ -21,8 +21,11 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -47,6 +50,7 @@ public class PriceListController {
         PriceList priceList = new PriceList();
         priceList.setFactoryId(factoryId);
         priceList.setName(request.getName());
+        priceList.setCustomerId(request.getCustomerId());
         priceList.setPriceType(request.getPriceType());
         priceList.setEffectiveFrom(request.getEffectiveFrom());
         priceList.setEffectiveTo(request.getEffectiveTo());
@@ -101,6 +105,65 @@ public class PriceListController {
         PriceList priceList = priceListRepository.findById(priceListId)
                 .orElseThrow(() -> new ResourceNotFoundException("价格表不存在"));
         return ApiResponse.success("查询成功", priceList);
+    }
+
+    /**
+     * 价格查询：选了客户+产品后自动填价
+     * 优先级: 客户专属价格 → 全局价格 → null
+     */
+    @GetMapping("/lookup")
+    @Operation(summary = "查询产品售价（客户专属→全局）")
+    public ApiResponse<Map<String, Object>> lookupPrice(
+            @PathVariable @NotBlank String factoryId,
+            @RequestParam(required = false) String customerId,
+            @RequestParam String productTypeId) {
+        LocalDate today = LocalDate.now();
+
+        // 1. 先查客户专属价格
+        BigDecimal price = null;
+        String source = null;
+        String priceListName = null;
+
+        if (customerId != null && !customerId.isBlank()) {
+            List<PriceList> customerLists = priceListRepository.findEffectiveForCustomer(
+                    factoryId, customerId, "SELLING_PRICE", today);
+            for (PriceList pl : customerLists) {
+                PriceListItem match = findItemByProduct(pl.getId(), productTypeId);
+                if (match != null) {
+                    price = match.getStandardPrice();
+                    source = "CUSTOMER";
+                    priceListName = pl.getName();
+                    break;
+                }
+            }
+        }
+
+        // 2. 没有客户专属 → 查全局价格
+        if (price == null) {
+            List<PriceList> globalLists = priceListRepository.findEffectiveGlobal(
+                    factoryId, "SELLING_PRICE", today);
+            for (PriceList pl : globalLists) {
+                PriceListItem match = findItemByProduct(pl.getId(), productTypeId);
+                if (match != null) {
+                    price = match.getStandardPrice();
+                    source = "GLOBAL";
+                    priceListName = pl.getName();
+                    break;
+                }
+            }
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("found", price != null);
+        result.put("price", price);
+        result.put("source", source);
+        result.put("priceListName", priceListName);
+        return ApiResponse.success("查询成功", result);
+    }
+
+    private PriceListItem findItemByProduct(String priceListId, String productTypeId) {
+        List<PriceListItem> items = priceListItemRepository.findByPriceListIdAndProductTypeId(priceListId, productTypeId);
+        return items.isEmpty() ? null : items.get(0);
     }
 
     @DeleteMapping("/{priceListId}")

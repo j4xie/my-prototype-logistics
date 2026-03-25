@@ -18,6 +18,7 @@ export interface ProcessTaskItem {
   plannedQuantity: number;
   completedQuantity: number;
   pendingQuantity: number;
+  inputQuantity?: number;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CLOSED' | 'SUPPLEMENTING';
   assignedWorkerIds?: string;
   workflowVersionId?: string;
@@ -38,6 +39,7 @@ export interface ProcessTaskSummary {
   plannedQuantity?: number;
   completedQuantity?: number;
   pendingQuantity?: number;
+  inputQuantity?: number;
   unit?: string;
   status?: string;
   productionRunId?: string;
@@ -155,7 +157,7 @@ class ProcessTaskApiClient {
     return apiClient.put(`${base}/process-work-reporting/batch-approve`, reportIds);
   }
 
-  async submitNormalReport(data: { processTaskId: string; outputQuantity: number; reporterName?: string; notes?: string }, factoryId?: string) {
+  async submitNormalReport(data: { processTaskId: string; outputQuantity: number; reporterName?: string; targetWorkerId?: number; notes?: string }, factoryId?: string) {
     const base = this.getBase(factoryId);
     return apiClient.post(`${base}/process-work-reporting/normal`, data);
   }
@@ -177,7 +179,7 @@ class ProcessTaskApiClient {
 
   // --- Process Checkin (工序模式签到) ---
 
-  async processCheckin(data: { employeeId: number; processName?: string; processCategory?: string; checkinMethod?: string }, factoryId?: string) {
+  async processCheckin(data: { employeeId: number; processName?: string; processCategory?: string; checkinMethod?: string; processTaskId?: string }, factoryId?: string) {
     const base = this.getBase(factoryId);
     return apiClient.post(`${base}/process-checkin`, data);
   }
@@ -190,6 +192,12 @@ class ProcessTaskApiClient {
   async getActiveCheckins(factoryId?: string) {
     const base = this.getBase(factoryId);
     return apiClient.get(`${base}/process-checkin/active`);
+  }
+
+  /** 根据产品关联的工序，一键生成工序任务 */
+  async generateTasksFromProduct(data: { productTypeId: string; sourceCustomerName?: string }, factoryId?: string) {
+    const base = this.getBase(factoryId);
+    return apiClient.post(`${base}/process-tasks/generate-from-product`, data);
   }
 }
 

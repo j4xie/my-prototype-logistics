@@ -39,13 +39,9 @@ import { productTypeApiClient, ProductType } from '../../../services/api/product
 
 type NavigationProp = NativeStackNavigationProp<DispatcherStackParamList, 'PlanCreate'>;
 
-// 计划来源类型选项
+// 计划来源类型选项 (六扇门一期: 仅手动创建, 其他来源待画布配置系统支持后开放)
 const SOURCE_TYPE_OPTIONS = [
-  { value: 'customer_order' as PlanSourceType, label: '客户订单', icon: 'account-group', description: '来自客户的生产订单' },
-  { value: 'ai_forecast' as PlanSourceType, label: 'AI预测', icon: 'robot', description: '基于AI需求预测生成' },
-  { value: 'safety_stock' as PlanSourceType, label: '安全库存', icon: 'package-variant', description: '库存低于阈值触发' },
   { value: 'manual' as PlanSourceType, label: '手动创建', icon: 'pencil', description: '调度员手动录入' },
-  { value: 'urgent_insert' as PlanSourceType, label: '紧急插单', icon: 'lightning-bolt', description: '紧急订单快速插入' },
 ] as const;
 
 // 优先级选项
@@ -74,7 +70,7 @@ export function PlanCreateScreen() {
     return iso.split('T')[0] ?? iso.substring(0, 10);
   });
   const [planType, setPlanType] = useState<PlanType>('FROM_INVENTORY');
-  const [customerOrderNumber, setCustomerOrderNumber] = useState('');
+  const [autoCustomerName, setAutoCustomerName] = useState('');
   const [notes, setNotes] = useState('');
   const [showProductPicker, setShowProductPicker] = useState(false);
 
@@ -90,7 +86,7 @@ export function PlanCreateScreen() {
   const [isMixedBatch, setIsMixedBatch] = useState(false);
   const [showSourceTypePicker, setShowSourceTypePicker] = useState(false);
 
-  // 加载产品类型
+  // 加载产品类型 + 客户列表
   useEffect(() => {
     loadProducts();
   }, []);
@@ -108,12 +104,23 @@ export function PlanCreateScreen() {
     }
   };
 
+  // 选产品时从产品的 relatedCustomer 字段自动带出客户
+  const lookupCustomerForProduct = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    const customer = (product as any)?.relatedCustomer;
+    setAutoCustomerName(customer || '');
+  };
+
   const selectedProduct = products.find((p) => p.id === selectedProductId);
   const selectedSourceOption = SOURCE_TYPE_OPTIONS.find((s) => s.value === sourceType);
 
   const validateForm = (): boolean => {
     if (!selectedProductId) {
       Alert.alert(t('common.info'), t('planCreate.validation.selectProduct'));
+      return false;
+    }
+    if (!autoCustomerName) {
+      Alert.alert('提示', '该产品未绑定客户，请在Web管理端产品设置中关联客户');
       return false;
     }
     if (!plannedQuantity || parseFloat(plannedQuantity) <= 0) {
@@ -142,7 +149,7 @@ export function PlanCreateScreen() {
         plannedQuantity: parseFloat(plannedQuantity),
         plannedDate,
         planType,
-        customerOrderNumber: customerOrderNumber || undefined,
+        sourceCustomerName: autoCustomerName || undefined,
         notes: notes || undefined,
         // 调度员扩展字段 - 后端需要支持这些字段
         // sourceType,
@@ -269,70 +276,7 @@ export function PlanCreateScreen() {
             )}
           </View>
 
-          {/* 计划类型选择 */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>原料计划类型</Text>
-            <View style={styles.planTypeGrid}>
-              <TouchableOpacity
-                style={[
-                  styles.planTypeItem,
-                  planType === 'FROM_INVENTORY' && styles.planTypeItemActive,
-                ]}
-                onPress={() => setPlanType('FROM_INVENTORY')}
-              >
-                <Icon
-                  source="package-variant"
-                  size={24}
-                  color={planType === 'FROM_INVENTORY' ? '#fff' : DISPATCHER_THEME.primary}
-                />
-                <Text
-                  style={[
-                    styles.planTypeLabel,
-                    planType === 'FROM_INVENTORY' && styles.planTypeLabelActive,
-                  ]}
-                >
-                  库存生产
-                </Text>
-                <Text
-                  style={[
-                    styles.planTypeDesc,
-                    planType === 'FROM_INVENTORY' && styles.planTypeDescActive,
-                  ]}
-                >
-                  使用现有原料
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.planTypeItem,
-                  planType === 'FUTURE' && styles.planTypeItemActive,
-                ]}
-                onPress={() => setPlanType('FUTURE')}
-              >
-                <Icon
-                  source="calendar-clock"
-                  size={24}
-                  color={planType === 'FUTURE' ? '#fff' : DISPATCHER_THEME.primary}
-                />
-                <Text
-                  style={[
-                    styles.planTypeLabel,
-                    planType === 'FUTURE' && styles.planTypeLabelActive,
-                  ]}
-                >
-                  预排计划
-                </Text>
-                <Text
-                  style={[
-                    styles.planTypeDesc,
-                    planType === 'FUTURE' && styles.planTypeDescActive,
-                  ]}
-                >
-                  待采购原料
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          {/* 原料计划类型: 六扇门一期固定为库存生产, 隐藏整个选择器 */}
 
           {/* 产品选择 */}
           <View style={styles.section}>
@@ -364,6 +308,7 @@ export function PlanCreateScreen() {
                       onPress={() => {
                         setSelectedProductId(product.id);
                         setShowProductPicker(false);
+                        lookupCustomerForProduct(product.id);
                       }}
                     >
                       <Text
@@ -374,15 +319,34 @@ export function PlanCreateScreen() {
                       >
                         {product.name}
                       </Text>
-                      {product.unit && (
-                        <Text style={styles.pickerItemUnit}>({product.unit})</Text>
-                      )}
+                      <Text style={styles.pickerItemUnit}>
+                        ({product.unit || 'kg'}){(product as any).relatedCustomer ? ` · ${(product as any).relatedCustomer}` : ''}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                   {products.length === 0 && (
                     <Text style={styles.pickerEmpty}>暂无产品类型</Text>
                   )}
                 </ScrollView>
+              </View>
+            )}
+          </View>
+
+          {/* 客户 (从产品的 relatedCustomer 自动带出) */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>客户 *</Text>
+            {autoCustomerName ? (
+              <View style={[styles.textInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+                <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>{autoCustomerName}</Text>
+                <Text style={{ fontSize: 12, color: '#52c41a' }}>已关联</Text>
+              </View>
+            ) : selectedProductId ? (
+              <View style={[styles.textInput, { backgroundColor: '#fff2e8' }]}>
+                <Text style={{ fontSize: 14, color: '#fa8c16' }}>该产品未绑定客户，请在Web管理端设置</Text>
+              </View>
+            ) : (
+              <View style={styles.textInput}>
+                <Text style={{ fontSize: 14, color: '#999' }}>请先选择产品</Text>
               </View>
             )}
           </View>
@@ -536,18 +500,6 @@ export function PlanCreateScreen() {
                 <View style={[styles.switchThumb, isMixedBatch && styles.switchThumbActive]} />
               </TouchableOpacity>
             </View>
-          </View>
-
-          {/* 订单号 */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>客户订单号 (可选)</Text>
-            <TextInput
-              style={styles.textInput}
-              value={customerOrderNumber}
-              onChangeText={setCustomerOrderNumber}
-              placeholder="请输入客户订单号"
-              placeholderTextColor="#999"
-            />
           </View>
 
           {/* 备注 */}

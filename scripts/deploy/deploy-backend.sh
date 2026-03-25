@@ -13,11 +13,23 @@ set -e
 
 # 加载共享函数库
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/scripts/lib/deploy-common.sh" ]; then
-    source "$SCRIPT_DIR/scripts/lib/deploy-common.sh"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+if [ -f "$PROJECT_ROOT/scripts/lib/deploy-common.sh" ]; then
+    source "$PROJECT_ROOT/scripts/lib/deploy-common.sh"
 else
-    echo "警告: 未找到 scripts/lib/deploy-common.sh，使用内联函数"
+    echo "提示: 使用内联函数"
     log() { echo "[$(date '+%Y-%m-%dT%H:%M:%S')] [$1] ${*:2}"; }
+    get_file_size_human() {
+        local size
+        size=$(stat -c%s "$1" 2>/dev/null || stat -f%z "$1" 2>/dev/null || wc -c < "$1" 2>/dev/null)
+        if [ "${size:-0}" -gt 1048576 ] 2>/dev/null; then
+            echo "$((size / 1048576))MB"
+        elif [ "${size:-0}" -gt 1024 ] 2>/dev/null; then
+            echo "$((size / 1024))KB"
+        else
+            echo "${size:-0}B"
+        fi
+    }
 fi
 
 # ==================== 配置 ====================

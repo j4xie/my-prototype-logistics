@@ -28,7 +28,8 @@ import java.util.UUID;
 @Table(name = "price_lists",
         indexes = {
                 @Index(name = "idx_pl_factory", columnList = "factory_id"),
-                @Index(name = "idx_pl_effective", columnList = "effective_from,effective_to")
+                @Index(name = "idx_pl_effective", columnList = "effective_from,effective_to"),
+                @Index(name = "idx_pl_customer", columnList = "factory_id,customer_id,price_type")
         }
 )
 public class PriceList extends BaseEntity {
@@ -50,6 +51,10 @@ public class PriceList extends BaseEntity {
 
     @Column(name = "name", nullable = false, length = 200)
     private String name;
+
+    /** 客户ID（null=全局价格表，非null=客户专属价格） */
+    @Column(name = "customer_id", length = 191)
+    private String customerId;
 
     /** 价格表类型: PURCHASE_PRICE / TRANSFER_PRICE / SELLING_PRICE */
     @Column(name = "price_type", nullable = false, length = 32)

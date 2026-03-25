@@ -384,6 +384,7 @@ public class ProductTypeServiceImpl implements ProductTypeService {
                 .productionTimeMinutes(productType.getProductionTimeMinutes())
                 .shelfLifeDays(productType.getShelfLifeDays())
                 .packageSpec(productType.getPackageSpec())
+                .relatedCustomer(productType.getRelatedCustomer())
                 .isActive(productType.getIsActive())
                 .notes(productType.getNotes())
                 .createdBy(productType.getCreatedBy())

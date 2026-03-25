@@ -13,7 +13,7 @@
  * @since 2025-12-28
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
+import { productionPlanApiClient } from '../../../services/api/productionPlanApiClient';
+import { processTaskApiClient } from '../../../services/api/processTaskApiClient';
 
 // 主题颜色
 const DISPATCHER_THEME = {
@@ -48,21 +50,30 @@ const DISPATCHER_THEME = {
   cardBackground: '#ffffff',
 };
 
-// 计划详情类型
+// 计划详情类型 (对接 production-plans API)
 interface PlanDetail {
   id: string;
   planNumber: string;
   product: string;
-  quantity: string;
-  workshop: string;
-  supervisor: string;
-  planDate: string;
-  priority: 'high' | 'medium' | 'low';
-  status: 'draft' | 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'paused' | 'cancelled';
+  productTypeId: string;
+  productUnit: string;
+  sourceCustomerName: string;
+  quantity: number;
+  actualQuantity: number;
+  status: string;
+  statusDisplay: string;
+  priority: number;
   progress: number;
-  completedQuantity: string;
-  remainingQuantity: string;
-  estimatedCompletion: string;
+  remainingQuantity: number;
+  plannedDate: string;
+  expectedCompletion: string;
+  planType: string;
+  sourceType: string;
+  processName: string;
+  notes: string;
+  createdByName: string;
+  assignedSupervisorName: string;
+  suggestedProductionLineName: string;
 }
 
 // 可重排状态列表
@@ -96,25 +107,34 @@ interface ProductionBatch {
 // Data transformation helpers
 const transformPlanToDetail = (apiPlan: Record<string, unknown> | object): PlanDetail => {
   const plan = apiPlan as Record<string, unknown>;
-  const status = (String(plan.status || 'pending')).toLowerCase();
   const plannedQty = Number(plan.plannedQuantity || 0);
   const actualQty = Number(plan.actualQuantity || 0);
   const progress = plannedQty > 0 ? Math.round((actualQty / plannedQty) * 100) : 0;
+  const unit = String(plan.productUnit || 'kg');
 
   return {
     id: String(plan.id || ''),
-    planNumber: String(plan.planNumber || plan.id || ''),
+    planNumber: String(plan.planNumber || ''),
     product: String(plan.productTypeName || plan.productName || ''),
-    quantity: `${plannedQty}kg`,
-    workshop: String(plan.workshopName || '生产车间'),
-    supervisor: String(plan.supervisorName || plan.createdByName || ''),
-    planDate: String(plan.planDate || plan.plannedDate || ''),
-    priority: plan.priority === 1 ? 'high' : plan.priority === 3 ? 'low' : 'medium',
-    status: status as PlanDetail['status'],
+    productTypeId: String(plan.productTypeId || ''),
+    productUnit: unit,
+    sourceCustomerName: String(plan.sourceCustomerName || ''),
+    quantity: plannedQty,
+    actualQuantity: actualQty,
+    status: String(plan.status || 'PENDING'),
+    statusDisplay: String(plan.statusDisplayName || plan.status || ''),
+    priority: Number(plan.priority || 5),
     progress,
-    completedQuantity: `${actualQty}kg`,
-    remainingQuantity: `${Math.max(0, plannedQty - actualQty)}kg`,
-    estimatedCompletion: String(plan.estimatedCompletion || plan.expectedCompletionDate || ''),
+    remainingQuantity: Number(plan.remainingQuantity || Math.max(0, plannedQty - actualQty)),
+    plannedDate: String(plan.plannedDate || ''),
+    expectedCompletion: String(plan.expectedCompletionDate || ''),
+    planType: String(plan.planTypeDisplayName || plan.planType || ''),
+    sourceType: String(plan.sourceTypeDisplayName || plan.sourceType || ''),
+    processName: String(plan.processName || ''),
+    notes: String(plan.notes || ''),
+    createdByName: String(plan.createdByName || ''),
+    assignedSupervisorName: String(plan.assignedSupervisorName || ''),
+    suggestedProductionLineName: String(plan.suggestedProductionLineName || ''),
   };
 };
 
@@ -186,8 +206,8 @@ export default function PlanDetailScreen() {
     }
 
     try {
-      // Fetch plan details
-      const planResponse = await schedulingApiClient.getPlan(planId);
+      // Fetch plan details from production-plans
+      const planResponse = await productionPlanApiClient.getProductionPlanById(planId);
       if (planResponse.success && planResponse.data) {
         // Cast to extended type that may include additional fields from API
         const planData = planResponse.data as typeof planResponse.data & {
@@ -209,9 +229,9 @@ export default function PlanDetailScreen() {
           setWorkers(transformWorkers(planData.workers || planData.assignedWorkers || []));
         }
 
-        // Extract batches from plan if available (may come from lineSchedules)
-        if (planData.batches || planData.schedules || planData.lineSchedules) {
-          setBatches(transformBatches(planData.batches || planData.schedules || planData.lineSchedules || []));
+        // Extract batches from plan if available
+        if (planData.batches || planData.schedules) {
+          setBatches(transformBatches(planData.batches || planData.schedules || []));
         }
       }
     } catch (error) {
@@ -250,45 +270,28 @@ export default function PlanDetailScreen() {
 
   // 获取状态标签样式
   const getStatusStyle = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return { backgroundColor: '#f5f5f5', color: '#999' };
-      case 'pending':
-        return { backgroundColor: '#fff7e6', color: '#fa8c16' };
-      case 'confirmed':
-        return { backgroundColor: '#f0f5ff', color: '#597ef7' };
-      case 'in_progress':
-        return { backgroundColor: '#e6f7ff', color: '#1890ff' };
-      case 'completed':
-        return { backgroundColor: '#f6ffed', color: '#52c41a' };
-      case 'paused':
-        return { backgroundColor: '#fff1f0', color: '#ff4d4f' };
-      case 'cancelled':
-        return { backgroundColor: '#fafafa', color: '#bfbfbf' };
-      default:
-        return { backgroundColor: '#f5f5f5', color: '#666' };
+    switch (status?.toUpperCase()) {
+      case 'DRAFT': return { backgroundColor: '#f5f5f5', color: '#999' };
+      case 'PENDING': case 'PLANNED': return { backgroundColor: '#fff7e6', color: '#fa8c16' };
+      case 'CONFIRMED': return { backgroundColor: '#f0f5ff', color: '#597ef7' };
+      case 'IN_PROGRESS': return { backgroundColor: '#e6f7ff', color: '#1890ff' };
+      case 'COMPLETED': return { backgroundColor: '#f6ffed', color: '#52c41a' };
+      case 'PAUSED': return { backgroundColor: '#fff1f0', color: '#ff4d4f' };
+      case 'CANCELLED': return { backgroundColor: '#fafafa', color: '#bfbfbf' };
+      default: return { backgroundColor: '#f5f5f5', color: '#666' };
     }
   };
 
-  // 获取状态文本
   const getStatusText = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return '草稿';
-      case 'pending':
-        return '待开始';
-      case 'confirmed':
-        return '已确认';
-      case 'in_progress':
-        return '进行中';
-      case 'completed':
-        return '已完成';
-      case 'paused':
-        return '已暂停';
-      case 'cancelled':
-        return '已取消';
-      default:
-        return status;
+    switch (status?.toUpperCase()) {
+      case 'DRAFT': return '草稿';
+      case 'PENDING': case 'PLANNED': return '待执行';
+      case 'CONFIRMED': return '已确认';
+      case 'IN_PROGRESS': return '进行中';
+      case 'COMPLETED': return '已完成';
+      case 'PAUSED': return '已暂停';
+      case 'CANCELLED': return '已取消';
+      default: return status;
     }
   };
 
@@ -306,18 +309,84 @@ export default function PlanDetailScreen() {
     }
   };
 
-  // 暂停计划
-  const handlePausePlan = () => {
+  const [tasksGenerated, setTasksGenerated] = useState(false);
+  const [generatedRunId, setGeneratedRunId] = useState<string | null>(null);
+  const [checkingTasks, setCheckingTasks] = useState(true);
+
+  // 页面加载时检查是否已生成过工序任务
+  useEffect(() => {
+    if (!plan?.productTypeId) { setCheckingTasks(false); return; }
+    (async () => {
+      try {
+        const res = await processTaskApiClient.getActiveTasks() as any;
+        const tasks = Array.isArray(res?.data) ? res.data : res?.data?.content || [];
+        const match = tasks.find((t: any) => t.productTypeId === plan.productTypeId);
+        if (match) {
+          setTasksGenerated(true);
+          setGeneratedRunId(match.productionRunId || null);
+        }
+      } catch { /* silent */ }
+      finally { setCheckingTasks(false); }
+    })();
+  }, [plan?.productTypeId]);
+
+  // 生成工序任务
+  const handleGenerateProcessTasks = () => {
+    if (!plan?.productTypeId) {
+      Alert.alert('提示', '该计划未关联产品，无法生成工序任务');
+      return;
+    }
     Alert.alert(
-      '暂停计划',
-      '确定要暂停该生产计划吗？',
+      '生成工序任务',
+      `确定为「${plan.product}」生成工序任务？\n系统将根据产品关联的工序自动创建任务。`,
       [
         { text: '取消', style: 'cancel' },
         {
-          text: '确定',
-          onPress: () => {
-            // TODO: 调用暂停API
-            Alert.alert('成功', '计划已暂停');
+          text: '确定生成',
+          onPress: async () => {
+            try {
+              const res = await processTaskApiClient.generateTasksFromProduct({
+                productTypeId: plan.productTypeId,
+                sourceCustomerName: plan.sourceCustomerName || plan.product,
+              });
+              const data = res as { success?: boolean; data?: unknown[]; message?: string };
+              if (data?.success && Array.isArray(data.data) && data.data.length > 0) {
+                const runId = (data.data[0] as any)?.productionRunId;
+                setTasksGenerated(true);
+                setGeneratedRunId(runId || null);
+                Alert.alert('成功', `已生成 ${data.data.length} 个工序任务`);
+              } else {
+                setTasksGenerated(true);
+                Alert.alert('提示', data?.message || '工序任务已生成');
+              }
+            } catch (error) {
+              const msg = error instanceof Error ? error.message : '生成失败';
+              Alert.alert('错误', msg);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // 取消计划
+  const handlePausePlan = () => {
+    Alert.alert(
+      '取消计划',
+      '确定要取消该生产计划吗？取消后不可恢复。',
+      [
+        { text: '返回', style: 'cancel' },
+        {
+          text: '确定取消',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await productionPlanApiClient.cancelProductionPlan(planId, '调度员取消');
+              Alert.alert('成功', '计划已取消');
+              loadPlanData();
+            } catch (e) {
+              Alert.alert('错误', e instanceof Error ? e.message : '取消失败');
+            }
           },
         },
       ]
@@ -328,15 +397,19 @@ export default function PlanDetailScreen() {
   const handleCompletePlan = () => {
     Alert.alert(
       '完成计划',
-      '确定要将该计划标记为已完成吗？',
+      `确定将该计划标记为已完成吗？\n计划量: ${plan?.quantity ?? 0} ${plan?.productUnit ?? 'kg'}`,
       [
         { text: '取消', style: 'cancel' },
         {
-          text: '确定',
-          style: 'default',
-          onPress: () => {
-            // TODO: 调用完成API
-            Alert.alert('成功', '计划已完成');
+          text: '确定完成',
+          onPress: async () => {
+            try {
+              await productionPlanApiClient.completeProduction(planId, plan?.quantity ?? 0);
+              Alert.alert('成功', '计划已完成');
+              loadPlanData();
+            } catch (e) {
+              Alert.alert('错误', e instanceof Error ? e.message : '完成失败');
+            }
           },
         },
       ]
@@ -555,29 +628,51 @@ export default function PlanDetailScreen() {
             <Text style={styles.detailValue}>{plan.product}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>数量</Text>
-            <Text style={styles.detailValue}>{plan.quantity}</Text>
+            <Text style={styles.detailLabel}>客户</Text>
+            <Text style={styles.detailValue}>{plan.sourceCustomerName || '-'}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>车间</Text>
-            <Text style={styles.detailValue}>{plan.workshop}</Text>
+            <Text style={styles.detailLabel}>计划数量</Text>
+            <Text style={styles.detailValue}>{plan.quantity} {plan.productUnit}</Text>
           </View>
+          {plan.processName ? (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>工序</Text>
+              <Text style={styles.detailValue}>{plan.processName}</Text>
+            </View>
+          ) : null}
+          {plan.plannedDate ? (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>计划日期</Text>
+              <Text style={styles.detailValue}>{plan.plannedDate}</Text>
+            </View>
+          ) : null}
+          {plan.expectedCompletion ? (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>预计完成</Text>
+              <Text style={styles.detailValue}>{plan.expectedCompletion}</Text>
+            </View>
+          ) : null}
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>负责人</Text>
-            <Text style={styles.detailValue}>{plan.supervisor}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>计划日期</Text>
-            <Text style={styles.detailValue}>{plan.planDate}</Text>
+            <Text style={styles.detailLabel}>来源</Text>
+            <Text style={styles.detailValue}>{plan.sourceType || '手动创建'}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>优先级</Text>
-            <View style={[styles.priorityBadge, getPriorityStyle(plan.priority)]}>
-              <Text style={[styles.priorityText, { color: getPriorityStyle(plan.priority).color }]}>
-                {plan.priority === 'high' ? '高' : plan.priority === 'medium' ? '中' : '低'}
-              </Text>
-            </View>
+            <Text style={styles.detailValue}>{plan.priority >= 8 ? '高' : plan.priority >= 5 ? '中' : '低'}</Text>
           </View>
+          {plan.assignedSupervisorName ? (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>主管</Text>
+              <Text style={styles.detailValue}>{plan.assignedSupervisorName}</Text>
+            </View>
+          ) : null}
+          {plan.suggestedProductionLineName ? (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>产线</Text>
+              <Text style={styles.detailValue}>{plan.suggestedProductionLineName}</Text>
+            </View>
+          ) : null}
         </View>
 
         {/* 生产进度 */}
@@ -597,15 +692,17 @@ export default function PlanDetailScreen() {
           </View>
           <View style={styles.quantityRow}>
             <Text style={styles.quantityText}>
-              已完成: <Text style={styles.quantityValue}>{plan.completedQuantity}</Text>
+              已完成: <Text style={styles.quantityValue}>{plan.actualQuantity} {plan.productUnit}</Text>
             </Text>
             <Text style={styles.quantityText}>
-              剩余: <Text style={styles.quantityValue}>{plan.remainingQuantity}</Text>
+              剩余: <Text style={styles.quantityValue}>{plan.remainingQuantity} {plan.productUnit}</Text>
             </Text>
           </View>
-          <Text style={styles.estimatedCompletion}>
-            预计完成: {plan.estimatedCompletion}
-          </Text>
+          {plan.expectedCompletion ? (
+            <Text style={styles.estimatedCompletion}>
+              预计完成: {plan.expectedCompletion}
+            </Text>
+          ) : null}
         </View>
 
         {/* 原料匹配 */}
@@ -655,6 +752,32 @@ export default function PlanDetailScreen() {
 
       {/* 底部操作栏 */}
       <View style={styles.bottomActions}>
+        {plan?.productTypeId && !checkingTasks ? (
+          tasksGenerated && generatedRunId ? (
+            <TouchableOpacity
+              style={styles.rescheduleButton}
+              onPress={() => {
+                console.log('[PlanDetail] Navigate to ProcessRunOverview, runId:', generatedRunId);
+                if (generatedRunId) {
+                  navigation.navigate('ProcessRunOverview', { productionRunId: generatedRunId });
+                } else {
+                  Alert.alert('提示', '未找到工序任务ID，请重新生成');
+                }
+              }}
+            >
+              <Ionicons name="checkmark-circle" size={16} color={DISPATCHER_THEME.primary} />
+              <Text style={[styles.rescheduleButtonText, { color: DISPATCHER_THEME.primary }]}>查看工序任务</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.rescheduleButton}
+              onPress={handleGenerateProcessTasks}
+            >
+              <Ionicons name="list" size={16} color={DISPATCHER_THEME.success} />
+              <Text style={[styles.rescheduleButtonText, { color: DISPATCHER_THEME.success }]}>生成工序任务</Text>
+            </TouchableOpacity>
+          )
+        ) : null}
         {canReschedule && (
           <TouchableOpacity
             style={styles.rescheduleButton}
@@ -668,7 +791,7 @@ export default function PlanDetailScreen() {
           style={[styles.secondaryButton, canReschedule && styles.smallerButton]}
           onPress={handlePausePlan}
         >
-          <Text style={styles.secondaryButtonText}>暂停计划</Text>
+          <Text style={styles.secondaryButtonText}>取消计划</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.primaryButton, canReschedule && styles.smallerButton]}

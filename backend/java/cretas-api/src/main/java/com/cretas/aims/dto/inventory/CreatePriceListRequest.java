@@ -20,6 +20,9 @@ public class CreatePriceListRequest {
     @NotBlank(message = "价格表名称不能为空")
     private String name;
 
+    /** 客户ID（可选，null=全局价格表） */
+    private String customerId;
+
     /** PURCHASE_PRICE / TRANSFER_PRICE / SELLING_PRICE */
     @NotBlank(message = "价格类型不能为空")
     private String priceType;

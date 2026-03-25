@@ -33,6 +33,10 @@ public class ProductTypeDTO {
     private Integer productionTimeMinutes;
     private Integer shelfLifeDays;
     private String packageSpec;
+
+    @Schema(description = "关联客户名称")
+    private String relatedCustomer;
+
     private Boolean isActive;
     private String notes;
     private Long createdBy;

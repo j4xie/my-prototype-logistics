@@ -254,6 +254,7 @@ export default function NfcCheckinScreen() {
           processName: selectedTask.processName,
           processCategory: selectedTask.processCategory,
           checkinMethod: method,
+          processTaskId: selectedTask.id,
         });
         if (response.success) {
           const empName = response.data?.employeeName || `工号${employeeId}`;

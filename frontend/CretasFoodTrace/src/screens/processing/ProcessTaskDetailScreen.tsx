@@ -15,6 +15,22 @@ import { theme } from '../../theme';
 
 type Props = ProcessingScreenProps<'ProcessTaskDetail'>;
 
+/** Format datetime string to show date + time (e.g. "03-20 15:30") */
+const formatReportTime = (dateStr?: string): string => {
+  if (!dateStr) return '-';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${mm}-${dd} ${hh}:${min}`;
+  } catch {
+    return dateStr;
+  }
+};
+
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   PENDING: { label: '待开始', color: '#909399' },
   IN_PROGRESS: { label: '进行中', color: '#1890ff' },
@@ -102,9 +118,17 @@ export default function ProcessTaskDetailScreen() {
     plannedQuantity: summary.plannedQuantity || 0,
     completedQuantity: summary.completedQuantity || 0,
     pendingQuantity: summary.pendingQuantity || 0,
+    inputQuantity: summary.inputQuantity,
     status: (summary.status || 'PENDING') as ProcessTaskItem['status'],
   } as ProcessTaskItem : null);
   const status = task ? STATUS_CONFIG[task.status] || { label: task.status, color: '#909399' } : null;
+
+  // Input/Output comparison
+  const inputQty = task?.inputQuantity;
+  const completedQty = task ? task.completedQuantity : undefined;
+  const showIOComparison = inputQty != null && inputQty > 0 && completedQty != null && completedQty > 0;
+  const conversionRate = showIOComparison ? (completedQty / inputQty) * 100 : 0;
+  const conversionColor = conversionRate >= 90 ? '#67c23a' : conversionRate >= 80 ? '#e6a23c' : '#f56c6c';
 
   const progress = task && task.plannedQuantity > 0
     ? Math.min((task.completedQuantity / task.plannedQuantity) * 100, 100)
@@ -173,6 +197,33 @@ export default function ProcessTaskDetailScreen() {
                   <View style={[styles.progressFill, { width: `${progress}%` }]} />
                 </View>
                 <Text style={styles.progressText}>{progress.toFixed(1)}%</Text>
+              </View>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Input/Output Comparison */}
+        {showIOComparison && (
+          <Card style={styles.card} testID="process-io-comparison">
+            <Card.Content>
+              <Text variant="titleMedium" style={styles.sectionTitle}>投入产出对比</Text>
+              <View style={styles.ioRow}>
+                <Text style={styles.ioLabel}>投入量</Text>
+                <Text style={styles.ioValue}>{inputQty} {task?.unit || 'kg'}</Text>
+              </View>
+              <View style={styles.ioRow}>
+                <Text style={styles.ioLabel}>产出量</Text>
+                <Text style={styles.ioValue}>{completedQty} {task?.unit || 'kg'}</Text>
+              </View>
+              <Divider style={styles.divider} />
+              <View style={styles.ioRow}>
+                <Text style={styles.ioLabel}>转化率</Text>
+                <View style={styles.ioRateContainer}>
+                  <View style={[styles.ioRateDot, { backgroundColor: conversionColor }]} />
+                  <Text style={[styles.ioRateValue, { color: conversionColor }]}>
+                    {conversionRate.toFixed(1)}%
+                  </Text>
+                </View>
               </View>
             </Card.Content>
           </Card>
@@ -249,7 +300,7 @@ export default function ProcessTaskDetailScreen() {
                           <Chip compact style={styles.supplementChip} textStyle={styles.supplementText}>补报</Chip>
                         )}
                       </View>
-                      <Text style={styles.reportDate}>{r.reportDate}</Text>
+                      <Text style={styles.reportDate}>{formatReportTime(r.reportDate || r.createdAt)}</Text>
                     </View>
                     <View style={styles.reportRight}>
                       <Text style={[styles.reportQty, r.outputQuantity < 0 && { color: '#f56c6c' }]}>
@@ -273,12 +324,12 @@ const styles = StyleSheet.create({
   card: { marginBottom: 12, borderRadius: 12, backgroundColor: '#fff', elevation: 2 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontWeight: '700', color: '#333', flex: 1 },
-  subtitle: { color: '#666', marginTop: 4, fontSize: 13 },
+  subtitle: { color: '#666', marginTop: 4, fontSize: 15 },
   divider: { marginVertical: 12 },
   quantityGrid: { flexDirection: 'row', justifyContent: 'space-around' },
   quantityItem: { alignItems: 'center' },
-  quantityValue: { fontSize: 22, fontWeight: '700', color: '#333' },
-  quantityLabel: { fontSize: 12, color: '#999', marginTop: 2 },
+  quantityValue: { fontSize: 26, fontWeight: '700', color: '#333' },
+  quantityLabel: { fontSize: 14, color: '#999', marginTop: 2 },
   progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
   progressTrack: { flex: 1, height: 8, backgroundColor: '#f0f0f0', borderRadius: 4, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: theme.colors.primary, borderRadius: 4 },
@@ -290,20 +341,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0',
   },
-  workerName: { fontSize: 14, fontWeight: '500', color: '#333' },
+  workerName: { fontSize: 16, fontWeight: '500', color: '#333' },
   workerStats: { flexDirection: 'row', gap: 12 },
-  workerStat: { fontSize: 12, color: '#666' },
+  workerStat: { fontSize: 14, color: '#666' },
   reportRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f5f5f5',
   },
   reportHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  reporterName: { fontSize: 14, fontWeight: '500', color: '#333' },
-  supplementChip: { height: 20, backgroundColor: '#e6a23c15' },
-  supplementText: { fontSize: 10, color: '#e6a23c' },
-  reportDate: { fontSize: 12, color: '#999', marginTop: 2 },
+  reporterName: { fontSize: 16, fontWeight: '500', color: '#333' },
+  supplementChip: { height: 22, backgroundColor: '#e6a23c15' },
+  supplementText: { fontSize: 11, color: '#e6a23c' },
+  reportDate: { fontSize: 14, color: '#999', marginTop: 2 },
   reportRight: { alignItems: 'flex-end' },
-  reportQty: { fontSize: 16, fontWeight: '700', color: '#1890ff' },
-  reportStatus: { fontSize: 11, marginTop: 2 },
+  reportQty: { fontSize: 18, fontWeight: '700', color: '#1890ff' },
+  reportStatus: { fontSize: 13, marginTop: 2 },
   emptyText: { color: '#999', textAlign: 'center', paddingVertical: 20 },
+  ioRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 6,
+  },
+  ioLabel: { fontSize: 14, color: '#666' },
+  ioValue: { fontSize: 15, fontWeight: '600', color: '#333' },
+  ioRateContainer: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ioRateDot: { width: 8, height: 8, borderRadius: 4 },
+  ioRateValue: { fontSize: 18, fontWeight: '700' },
 });

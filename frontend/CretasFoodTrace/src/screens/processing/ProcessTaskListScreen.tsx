@@ -198,6 +198,7 @@ export default function ProcessTaskListScreen() {
       <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
         <Appbar.BackAction testID="process-task-list-back" onPress={() => navigation.goBack()} />
         <Appbar.Content title="工序任务" titleStyle={{ fontWeight: '600' }} />
+        <Appbar.Action testID="three-step-report-btn" icon="qrcode-scan" onPress={() => navigation.navigate('ThreeStepReport')} />
         <Appbar.Action testID="process-task-approval-btn" icon="clipboard-check-outline" onPress={() => navigation.navigate('ProcessTaskApproval' as never)} />
         <Appbar.Action testID="process-task-history-btn" icon="history" onPress={() => navigation.navigate('ProcessTaskHistory')} />
       </Appbar.Header>
@@ -280,9 +281,9 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   processName: { fontWeight: '700', color: theme.colors.text, fontSize: 20 },
-  category: { color: theme.colors.textTertiary, marginTop: 2, fontSize: 15 },
-  statusBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  statusText: { fontSize: 12, fontWeight: '600' },
+  category: { color: theme.colors.textTertiary, marginTop: 2, fontSize: 16 },
+  statusBadge: { borderRadius: 12, paddingHorizontal: 12, paddingVertical: 5 },
+  statusText: { fontSize: 14, fontWeight: '600' },
   cardBody: { gap: 10 },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   quantityRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
@@ -290,10 +291,10 @@ const styles = StyleSheet.create({
   label: { color: theme.colors.textSecondary, fontSize: 15, marginBottom: 2 },
   value: { color: theme.colors.text, fontWeight: '600', fontSize: 18 },
   highlight: { color: theme.colors.primary, fontWeight: '700' },
-  progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   progressTrack: {
     flex: 1,
-    height: 6,
+    height: 8,
     backgroundColor: theme.colors.surfaceVariant,
     borderRadius: 3,
     overflow: 'hidden',

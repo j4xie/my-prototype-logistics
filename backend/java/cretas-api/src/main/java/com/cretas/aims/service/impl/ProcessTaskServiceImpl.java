@@ -324,14 +324,16 @@ public class ProcessTaskServiceImpl implements ProcessTaskService {
             WorkProcess wp = workProcessRepository.findById(assoc.getWorkProcessId()).orElse(null);
             String unit = wp != null ? wp.getUnit() : "kg";
 
-            // Get planned quantity: from map if provided, otherwise use default
-            BigDecimal plannedQty = plannedQuantities != null
-                    ? plannedQuantities.getOrDefault(assoc.getWorkProcessId(), BigDecimal.ZERO)
-                    : BigDecimal.ZERO;
-            // P2-4: Skip tasks with zero planned quantity
-            if (plannedQty.compareTo(BigDecimal.ZERO) <= 0) {
-                log.info("Skipping work process {} — planned quantity is zero", assoc.getWorkProcessId());
-                continue;
+            // Get planned quantity: from map if provided, otherwise default 100
+            BigDecimal plannedQty = BigDecimal.ZERO;
+            if (plannedQuantities != null && !plannedQuantities.isEmpty()) {
+                plannedQty = plannedQuantities.getOrDefault(assoc.getWorkProcessId(), BigDecimal.ZERO);
+                if (plannedQty.compareTo(BigDecimal.ZERO) <= 0) {
+                    log.info("Skipping work process {} — planned quantity is zero", assoc.getWorkProcessId());
+                    continue;
+                }
+            } else {
+                plannedQty = new BigDecimal("100");
             }
 
             ProcessTask task = ProcessTask.builder()

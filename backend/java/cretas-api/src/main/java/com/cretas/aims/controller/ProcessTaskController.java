@@ -92,7 +92,7 @@ public class ProcessTaskController {
 
     @PostMapping("/generate-from-product")
     @Operation(summary = "根据产品工序配置批量生成任务")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'factory_super_admin', 'dispatcher', 'workshop_supervisor')")
     public ApiResponse<List<ProcessTaskDTO>> generateFromProduct(
             @PathVariable String factoryId,
             @RequestBody Map<String, Object> body) {
@@ -113,8 +113,13 @@ public class ProcessTaskController {
             log.warn("Failed to parse plannedQuantities, using defaults: {}", e.getMessage());
         }
 
-        return ApiResponse.success(processTaskService.generateFromProduct(
-                factoryId, productTypeId, plannedQuantities, sourceCustomerName, createdBy));
+        try {
+            return ApiResponse.success(processTaskService.generateFromProduct(
+                    factoryId, productTypeId, plannedQuantities, sourceCustomerName, createdBy));
+        } catch (Exception e) {
+            log.error("generateFromProduct failed: factoryId={}, productTypeId={}", factoryId, productTypeId, e);
+            return ApiResponse.error("生成工序任务失败: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{id}/summary")

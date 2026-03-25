@@ -86,6 +86,12 @@ export type ProcessingStackParamList = {
   MaterialReceipt: undefined;
   MaterialReceiptAI: undefined;
   MaterialBatchManagement: undefined;
+  MaterialBatchSuccess: {
+    batchNumber: string;
+    materialName: string;
+    quantity: number;
+    supplierName: string;
+  };
 
   // Phase 3 P2: 质检统计分析
   QualityAnalytics: undefined;
@@ -116,6 +122,7 @@ export type ProcessingStackParamList = {
   TeamBatchReport: undefined;
   DynamicReport: { reportType: 'PROGRESS' | 'HOURS' };
   NfcCheckin: undefined;
+  ThreeStepReport: undefined;
 
   // 标签扫描 - 通用组件
   LabelScan: {
@@ -476,6 +483,7 @@ export type WSHomeStackParamList = {
   // 生产报工
   DynamicReport: { reportType: 'PROGRESS' | 'HOURS' };
   NfcCheckin: undefined;
+  ThreeStepReport: undefined;
   MyWorkReports: undefined;
 };
 

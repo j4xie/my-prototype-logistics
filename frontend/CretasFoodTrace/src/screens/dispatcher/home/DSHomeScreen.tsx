@@ -58,10 +58,7 @@ export default function DSHomeScreen() {
         setDashboard(dashboardRes.data);
       }
 
-      // TODO: P2 - Replace with real workshop status API when available
-      // Currently using mock data. Backend needs to provide:
-      // GET /api/mobile/{factoryId}/workshops/status
-      // The production lines API doesn't include worker statistics
+      // Transform production lines to workshop status format
       if (linesRes.success && linesRes.data && linesRes.data.length > 0) {
         // Transform production lines to workshop status format
         const workshopMap = new Map<string, WorkshopStatus>();
@@ -75,10 +72,10 @@ export default function DSHomeScreen() {
               activeWorkers: 0,
               idleWorkers: 0,
               temporaryWorkers: 0,
-              utilization: line.status === 'active' ? 0.8 : 0,
+              utilization: 0,
               currentOutput: 0,
               targetOutput: line.capacity || 0,
-              efficiency: line.status === 'active' ? 0.85 : 0,
+              efficiency: 0,
               activeTaskGroups: [],
               alerts: [],
             });
@@ -88,17 +85,17 @@ export default function DSHomeScreen() {
           setWorkshops(Array.from(workshopMap.values()));
         } else {
           // Fallback when no workshops found from production lines
-          setWorkshops(fallbackWorkshops);
+          setWorkshops([]);
         }
       } else {
         // Fallback when API returns no data
-        setWorkshops(fallbackWorkshops);
+        setWorkshops([]);
       }
     } catch (err) {
       console.error('加载调度首页数据失败:', err);
       setError('加载失败');
       // Fallback when API call fails
-      setWorkshops(fallbackWorkshops);
+      setWorkshops([]);
     } finally {
       setLoading(false);
     }
@@ -114,8 +111,8 @@ export default function DSHomeScreen() {
     loadData();
   }, [loadData]);
 
-  const completionProbability = dashboard?.aiInsights?.completionProbability ?? 80;
-  const riskLevel = dashboard?.aiInsights?.riskLevel ?? 'medium';
+  const completionProbability = dashboard?.aiInsights?.completionProbability ?? 0;
+  const riskLevel = dashboard?.aiInsights?.riskLevel ?? 'low';
 
   // 错误状态
   if (error && !dashboard) {
@@ -180,9 +177,10 @@ export default function DSHomeScreen() {
         </LinearGradient>
 
         {/* AI智能调度中心入口 */}
-        {isScreenEnabled('AISchedule') && (
+        {/* AI调度卡片: 暂时隐藏，scheduling API 未完成 */}
+        {false && isScreenEnabled('AISchedule') && (
         <TouchableOpacity
-          onPress={() => navigation.navigate('AITab', { screen: 'AISchedule' })}
+          onPress={() => navigation.navigate('AIScheduleAnalysis')}
           activeOpacity={0.9}
         >
           <LinearGradient
@@ -214,11 +212,11 @@ export default function DSHomeScreen() {
                 </View>
                 <View style={styles.aiStatRow}>
                   <Text style={styles.aiStatLabel}>待排产批次</Text>
-                  <Text style={styles.aiStatValue}>{dashboard?.overview?.delayedPlans ?? 5} 个</Text>
+                  <Text style={styles.aiStatValue}>{dashboard?.overview?.delayedPlans ?? 0} 个</Text>
                 </View>
                 <View style={styles.aiStatRow}>
                   <Text style={styles.aiStatLabel}>优化空间</Text>
-                  <Text style={styles.aiStatValue}>+12%</Text>
+                  <Text style={styles.aiStatValue}>{dashboard?.aiInsights?.optimizationPotential ? `+${dashboard.aiInsights.optimizationPotential}%` : '-'}</Text>
                 </View>
               </View>
             </View>
@@ -240,12 +238,12 @@ export default function DSHomeScreen() {
             <View style={styles.aiRiskContent}>
               <Text style={styles.aiRiskTitle}>AI 风险预警</Text>
               <Text style={styles.aiRiskDesc}>
-                检测到 {dashboard?.overview?.delayedPlans ?? 2} 个批次完成概率低于70%，建议调整人员配置或交期
+                检测到 {dashboard?.overview?.delayedPlans ?? 0} 个批次完成概率低于70%，建议调整人员配置或交期
               </Text>
             </View>
             <TouchableOpacity
               style={styles.aiRiskAction}
-              onPress={() => navigation.navigate('AITab', { screen: 'AICompletionProb' })}
+              onPress={() => navigation.navigate('AICompletionProb')}
             >
               <Text style={styles.aiRiskActionText}>查看</Text>
             </TouchableOpacity>
@@ -264,16 +262,16 @@ export default function DSHomeScreen() {
               onPress={() => navigation.navigate('TaskAssignment', { scheduleId: 'new' })}
             >
               <Text style={[styles.pendingTaskCount, styles.danger]}>
-                {dashboard?.overview?.delayedPlans ?? 3}
+                {dashboard?.overview?.delayedPlans ?? 0}
               </Text>
               <Text style={styles.pendingTaskLabel}>待分配任务</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.pendingTaskItem}
-              onPress={() => navigation.navigate('PlanList')}
+              onPress={() => navigation.navigate('PlanTab')}
             >
               <Text style={[styles.pendingTaskCount, styles.info]}>
-                {dashboard?.overview?.activePlans ?? 4}
+                {dashboard?.overview?.activePlans ?? 0}
               </Text>
               <Text style={styles.pendingTaskLabel}>进行中任务</Text>
             </TouchableOpacity>
@@ -282,9 +280,36 @@ export default function DSHomeScreen() {
               onPress={() => navigation.navigate('PlanTab', { screen: 'ApprovalList' })}
             >
               <Text style={[styles.pendingTaskCount, styles.warning]}>
-                {dashboard?.alerts?.unresolved ?? 3}
+                {dashboard?.alerts?.unresolved ?? 0}
               </Text>
               <Text style={styles.pendingTaskLabel}>待审批事项</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* 快捷入口 */}
+        <View style={styles.pendingTasksCard}>
+          <View style={styles.pendingTasksGrid}>
+            <TouchableOpacity
+              style={styles.pendingTaskItem}
+              onPress={() => navigation.navigate('PersonnelSchedule')}
+            >
+              <MaterialCommunityIcons name="account-group" size={24} color={DISPATCHER_THEME.primary} />
+              <Text style={styles.pendingTaskLabel}>人员管理</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.pendingTaskItem}
+              onPress={() => navigation.navigate('SmartBI')}
+            >
+              <MaterialCommunityIcons name="chart-timeline-variant" size={24} color="#1890ff" />
+              <Text style={styles.pendingTaskLabel}>智能分析</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.pendingTaskItem}
+              onPress={() => navigation.navigate('ProductionLine')}
+            >
+              <MaterialCommunityIcons name="factory" size={24} color="#52c41a" />
+              <Text style={styles.pendingTaskLabel}>产线状态</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -300,7 +325,7 @@ export default function DSHomeScreen() {
         </View>
 
         <View style={styles.workshopMiniList}>
-          {(workshops.length > 0 ? workshops : fallbackWorkshops).slice(0, 3).map((workshop, index) => (
+          {workshops.slice(0, 3).map((workshop, index) => (
             <TouchableOpacity
               key={workshop.workshopId || index}
               style={styles.workshopMiniCard}
@@ -340,7 +365,7 @@ export default function DSHomeScreen() {
             </TouchableOpacity>
             )}
           </View>
-          {(workshops.length > 0 ? workshops : fallbackWorkshops).slice(0, 3).map((workshop, index) => (
+          {workshops.slice(0, 3).map((workshop, index) => (
             <View key={workshop.workshopId || index} style={styles.quickPersonnelRow}>
               <Text style={styles.quickPersonnelWorkshop}>{workshop.workshopName}</Text>
               <View style={styles.quickPersonnelStats}>
@@ -362,10 +387,10 @@ export default function DSHomeScreen() {
             <Text style={styles.quickPersonnelWorkshop}>机动人员</Text>
             <View style={styles.quickPersonnelStats}>
               <Text style={[styles.quickPersonnelCount, { color: DISPATCHER_THEME.success }]}>
-                {dashboard?.workers?.idle ?? 4}人
+                {dashboard?.workers?.idle ?? 0}人
               </Text>
               {isScreenEnabled('AIWorkerOptimize') && (
-              <TouchableOpacity onPress={() => navigation.navigate('AITab', { screen: 'AIWorkerOptimize' })}>
+              <TouchableOpacity onPress={() => navigation.navigate('AIWorkerOptimize')}>
                 <Text style={styles.aiOptimizeLink}>AI优化 →</Text>
               </TouchableOpacity>
               )}
@@ -377,44 +402,33 @@ export default function DSHomeScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>待审批事项</Text>
           <TouchableOpacity onPress={() => navigation.navigate('PlanTab', { screen: 'ApprovalList' })}>
-            <Text style={styles.sectionAction}>{dashboard?.alerts?.unresolved ?? 3}项待处理 {'>'}</Text>
+            <Text style={styles.sectionAction}>{dashboard?.alerts?.unresolved ?? 0}项待处理 {'>'}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.approvalList}>
-          <TouchableOpacity
-            style={styles.approvalCard}
-            onPress={() => navigation.navigate('ApprovalDetail', { approvalId: '1' })}
-          >
-            <View style={styles.approvalHeader}>
-              <View style={[styles.approvalType, styles.approvalTypePlan]}>
-                <MaterialCommunityIcons name="calendar" size={14} color="#1890ff" />
-                <Text style={styles.approvalTypeText}>计划</Text>
-              </View>
-              <View style={styles.approvalStatus}>
-                <Text style={styles.approvalStatusText}>待审批</Text>
-              </View>
+          {(dashboard?.alerts?.unresolved ?? 0) === 0 ? (
+            <View style={styles.approvalCard}>
+              <Text style={{ color: '#999', textAlign: 'center', paddingVertical: 12 }}>暂无待审批事项</Text>
             </View>
-            <Text style={styles.approvalContent}>新增生产计划申请</Text>
-            <Text style={styles.approvalMeta}>带鱼片100kg · 张主任提交</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.approvalCard}
-            onPress={() => navigation.navigate('ApprovalDetail', { approvalId: '2' })}
-          >
-            <View style={styles.approvalHeader}>
-              <View style={[styles.approvalType, styles.approvalTypeTransfer]}>
-                <MaterialCommunityIcons name="account-switch" size={14} color="#722ed1" />
-                <Text style={[styles.approvalTypeText, { color: '#722ed1' }]}>调动</Text>
+          ) : (
+            <TouchableOpacity
+              style={styles.approvalCard}
+              onPress={() => navigation.navigate('PlanTab', { screen: 'ApprovalList' })}
+            >
+              <View style={styles.approvalHeader}>
+                <View style={[styles.approvalType, styles.approvalTypePlan]}>
+                  <MaterialCommunityIcons name="calendar" size={14} color="#1890ff" />
+                  <Text style={styles.approvalTypeText}>审批</Text>
+                </View>
+                <View style={styles.approvalStatus}>
+                  <Text style={styles.approvalStatusText}>待处理</Text>
+                </View>
               </View>
-              <View style={styles.approvalStatus}>
-                <Text style={styles.approvalStatusText}>待审批</Text>
-              </View>
-            </View>
-            <Text style={styles.approvalContent}>人员调动申请</Text>
-            <Text style={styles.approvalMeta}>冷冻→切片 · 2人</Text>
-          </TouchableOpacity>
+              <Text style={styles.approvalContent}>{dashboard?.alerts?.unresolved} 项待审批</Text>
+              <Text style={styles.approvalMeta}>点击查看详情</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={{ height: 100 }} />
@@ -423,53 +437,6 @@ export default function DSHomeScreen() {
   );
 }
 
-// Fallback data when API fails or returns empty results
-// TODO: P2 - Replace with real workshop status API when available
-// Backend needs to provide: GET /api/mobile/{factoryId}/workshops/status
-const fallbackWorkshops: WorkshopStatus[] = [
-  {
-    workshopId: 'WS001',
-    workshopName: '切片车间',
-    totalWorkers: 10,
-    activeWorkers: 8,
-    idleWorkers: 2,
-    temporaryWorkers: 2,
-    utilization: 0.75,
-    currentOutput: 375,
-    targetOutput: 500,
-    efficiency: 0.75,
-    activeTaskGroups: [],
-    alerts: [],
-  },
-  {
-    workshopId: 'WS002',
-    workshopName: '包装车间',
-    totalWorkers: 8,
-    activeWorkers: 6,
-    idleWorkers: 2,
-    temporaryWorkers: 1,
-    utilization: 0.60,
-    currentOutput: 240,
-    targetOutput: 400,
-    efficiency: 0.60,
-    activeTaskGroups: [],
-    alerts: [],
-  },
-  {
-    workshopId: 'WS003',
-    workshopName: '冷冻车间',
-    totalWorkers: 6,
-    activeWorkers: 0,
-    idleWorkers: 6,
-    temporaryWorkers: 0,
-    utilization: 0,
-    currentOutput: 0,
-    targetOutput: 300,
-    efficiency: 0,
-    activeTaskGroups: [],
-    alerts: [],
-  },
-];
 
 const styles = StyleSheet.create({
   container: {

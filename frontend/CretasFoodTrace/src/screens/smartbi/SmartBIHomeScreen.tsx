@@ -153,7 +153,17 @@ export function SmartBIHomeScreen() {
   ].filter(item => isScreenEnabled(item.screen));
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* 返回按钮 */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingVertical: 10, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}>
+        <TouchableOpacity
+          onPress={() => navigation.canGoBack() && navigation.goBack()}
+          style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 }}
+        >
+          <Icon source="chevron-left" size={28} color="#333" />
+          <Text style={{ fontSize: 16, color: '#333' }}>返回</Text>
+        </TouchableOpacity>
+      </View>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* 头部介绍 */}
         <Card style={styles.headerCard}>
