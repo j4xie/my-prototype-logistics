@@ -58,7 +58,7 @@ export type DispatcherStackParamList = {
   // Home 模块
   WorkshopStatus: { workshopId?: string };
   // Plan 模块
-  PlanDetail: { planId: string };
+  PlanDetail: { planId: string; planData?: Record<string, unknown> };
   TaskAssignment: { planId?: string };
   BatchWorkers: { batchId: string; batchName: string };
   // AI 模块

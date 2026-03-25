@@ -14,7 +14,7 @@
  * @since 2025-12-28
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -90,61 +90,7 @@ interface MenuItem {
   screen?: string;
 }
 
-// Default data for initial display
-// TODO: P1 - Replace with API call: userApiClient.getDispatcherProfile()
-const defaultProfile: UserProfile = {
-  name: '赵调度',
-  code: '099',
-  role: '调度员',
-  department: '生产调度部',
-  hireDate: '2022-06-15',
-  tenure: '2年6个月',
-  avatar: '赵',
-};
-
-// TODO: P1 - Replace with API call: schedulingApiClient.getDispatcherTodayStats()
-const defaultTodayStats: TodayStats = {
-  pendingApprovals: 8,
-  processed: 5,
-  transfers: 3,
-  plans: 12,
-};
-
-// TODO: P1 - Replace with API call: schedulingApiClient.getDispatcherPerformance()
-const defaultPerformanceMetrics: PerformanceMetric[] = [
-  {
-    label: '计划完成率',
-    value: '87%',
-    percentage: 87,
-    change: '↑5%',
-    changeType: 'up',
-    gradientColors: ['#52c41a', '#95de64'],
-  },
-  {
-    label: '准时交付率(OTD)',
-    value: '94%',
-    percentage: 94,
-    change: '↑2%',
-    changeType: 'up',
-    gradientColors: ['#1890ff', '#69c0ff'],
-  },
-  {
-    label: '人员调配效率',
-    value: '90%',
-    percentage: 90,
-    change: '↑3%',
-    changeType: 'up',
-    gradientColors: ['#a18cd1', '#fbc2eb'],
-  },
-  {
-    label: '平均紧急响应时间',
-    value: '15分钟',
-    change: '↓3分钟',
-    changeType: 'down',
-    gradientColors: ['#722ed1', '#a18cd1'],
-    note: '目标: <20分钟 · 达成',
-  },
-];
+// Defaults removed — all data loaded from API in component
 
 const functionMenuItems: MenuItem[] = [
   {
@@ -190,16 +136,12 @@ const accountMenuItems: MenuItem[] = [
     title: '技能认证管理',
     icon: 'star-outline',
     iconType: 'ionicons',
-    badge: '4项已认证',
-    badgeColor: DISPATCHER_THEME.success,
   },
   {
     id: 'employeeCode',
     title: '工号绑定设置',
     icon: 'card-outline',
     iconType: 'ionicons',
-    badge: '(099) 已绑定',
-    badgeColor: DISPATCHER_THEME.secondary,
   },
 ];
 
@@ -240,24 +182,101 @@ const systemMenuItems: MenuItem[] = [
 export default function DSProfileScreen() {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
-  const [profile] = useState<UserProfile>(defaultProfile);
-  const [todayStats] = useState<TodayStats>(defaultTodayStats);
-  const [metrics] = useState<PerformanceMetric[]>(defaultPerformanceMetrics);
+  const { user } = useAuthStore();
+  const [todayStats, setTodayStats] = useState<TodayStats>({ pendingApprovals: 0, processed: 0, transfers: 0, plans: 0 });
+  const [metrics, setMetrics] = useState<PerformanceMetric[]>([]);
   const { language, setLanguage } = useLanguageStore();
   const logout = useAuthStore((state) => state.logout);
+
+  // Real profile from auth store
+  const profile: UserProfile = {
+    name: user?.fullName || user?.username || '调度员',
+    code: (user as any)?.employeeCode || '-',
+    role: '调度员',
+    department: (user as any)?.department || '生产调度部',
+    hireDate: (user as any)?.hireDate || '-',
+    tenure: '',
+    avatar: (user?.fullName || '调').charAt(0),
+  };
 
   const toggleLanguage = () => {
     const newLang: SupportedLanguage = language === 'zh-CN' ? 'en-US' : 'zh-CN';
     setLanguage(newLang);
   };
 
+  // Load real stats from production-plans
+  const loadStats = useCallback(async () => {
+    try {
+      const { productionPlanApiClient } = await import('../../../services/api/productionPlanApiClient');
+      const res = await productionPlanApiClient.getProductionPlans({ page: 1, size: 200 } as any);
+      const dataObj = (res?.data || res) as any;
+      const plans = dataObj?.content || (Array.isArray(dataObj) ? dataObj : []);
+      if (!Array.isArray(plans)) return;
+
+      let pending = 0, inProgress = 0, completed = 0, cancelled = 0;
+      for (const p of plans) {
+        const s = (p.status || '').toUpperCase();
+        if (s === 'PENDING' || s === 'PLANNED') pending++;
+        else if (s === 'IN_PROGRESS') inProgress++;
+        else if (s === 'COMPLETED') completed++;
+        else if (s === 'CANCELLED') cancelled++;
+      }
+      const total = plans.length;
+      const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+      const activeRate = total > 0 ? Math.round(((completed + inProgress) / total) * 100) : 0;
+
+      setTodayStats({
+        pendingApprovals: pending,
+        processed: completed,
+        transfers: inProgress,
+        plans: total,
+      });
+
+      setMetrics([
+        {
+          label: '计划完成率',
+          value: `${completionRate}%`,
+          percentage: completionRate,
+          change: `${completed}/${total}`,
+          changeType: 'up',
+          gradientColors: ['#52c41a', '#95de64'],
+        },
+        {
+          label: '执行中占比',
+          value: `${activeRate}%`,
+          percentage: activeRate,
+          change: `${inProgress} 进行中`,
+          changeType: 'up',
+          gradientColors: ['#1890ff', '#69c0ff'],
+        },
+        {
+          label: '待执行计划',
+          value: `${pending}`,
+          percentage: total > 0 ? Math.round((pending / total) * 100) : 0,
+          change: `共 ${total} 个计划`,
+          changeType: 'up',
+          gradientColors: ['#a18cd1', '#fbc2eb'],
+        },
+        {
+          label: '取消率',
+          value: `${total > 0 ? Math.round((cancelled / total) * 100) : 0}%`,
+          percentage: total > 0 ? Math.round((cancelled / total) * 100) : 0,
+          change: `${cancelled} 已取消`,
+          changeType: cancelled > 5 ? 'up' : 'down',
+          gradientColors: ['#722ed1', '#a18cd1'],
+        },
+      ]);
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => { loadStats(); }, [loadStats]);
+
   // 下拉刷新
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // TODO: 调用API刷新数据
-    // await schedulingApiClient.getDispatcherProfile();
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    await loadStats();
+    setRefreshing(false);
+  }, [loadStats]);
 
   // 退出登录
   const handleLogout = () => {

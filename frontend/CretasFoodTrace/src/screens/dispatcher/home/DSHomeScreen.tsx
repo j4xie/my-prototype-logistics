@@ -30,6 +30,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { DISPATCHER_THEME, SchedulingDashboard, WorkshopStatus } from '../../../types/dispatcher';
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
+import { productionPlanApiClient } from '../../../services/api/productionPlanApiClient';
 import { useAuthStore } from '../../../store/authStore';
 import { useFactoryFeatureStore } from '../../../store/factoryFeatureStore';
 
@@ -43,19 +44,37 @@ export default function DSHomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<SchedulingDashboard | null>(null);
   const [workshops, setWorkshops] = useState<WorkshopStatus[]>([]);
+  const [planStats, setPlanStats] = useState({ pending: 0, inProgress: 0, completed: 0, total: 0 });
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       // P0 Fix: Parallel API requests to eliminate waterfall
-      const [dashboardRes, linesRes] = await Promise.all([
+      const [dashboardRes, linesRes, plansRes] = await Promise.all([
         schedulingApiClient.getDashboard(),
         schedulingApiClient.getProductionLines(),
+        productionPlanApiClient.getProductionPlans({ page: 1, size: 200 } as any).catch(() => null),
       ]);
 
       if (dashboardRes.success && dashboardRes.data) {
         setDashboard(dashboardRes.data);
+      }
+
+      // Calculate plan stats from production-plans
+      if (plansRes?.success !== false) {
+        const dataObj = (plansRes?.data || plansRes) as any;
+        const plans = dataObj?.content || (Array.isArray(dataObj) ? dataObj : []);
+        if (Array.isArray(plans)) {
+          const counts = { pending: 0, inProgress: 0, completed: 0, total: plans.length };
+          for (const p of plans) {
+            const s = (p.status || '').toUpperCase();
+            if (s === 'PENDING' || s === 'PLANNED') counts.pending++;
+            else if (s === 'IN_PROGRESS') counts.inProgress++;
+            else if (s === 'COMPLETED') counts.completed++;
+          }
+          setPlanStats(counts);
+        }
       }
 
       // Transform production lines to workshop status format
@@ -262,27 +281,27 @@ export default function DSHomeScreen() {
               onPress={() => navigation.navigate('TaskAssignment', { scheduleId: 'new' })}
             >
               <Text style={[styles.pendingTaskCount, styles.danger]}>
-                {dashboard?.overview?.delayedPlans ?? 0}
+                {planStats.pending}
               </Text>
-              <Text style={styles.pendingTaskLabel}>待分配任务</Text>
+              <Text style={styles.pendingTaskLabel}>待执行</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.pendingTaskItem}
               onPress={() => navigation.navigate('PlanTab')}
             >
               <Text style={[styles.pendingTaskCount, styles.info]}>
-                {dashboard?.overview?.activePlans ?? 0}
+                {planStats.inProgress}
               </Text>
-              <Text style={styles.pendingTaskLabel}>进行中任务</Text>
+              <Text style={styles.pendingTaskLabel}>进行中</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.pendingTaskItem}
-              onPress={() => navigation.navigate('PlanTab', { screen: 'ApprovalList' })}
+              onPress={() => navigation.navigate('PlanTab')}
             >
-              <Text style={[styles.pendingTaskCount, styles.warning]}>
-                {dashboard?.alerts?.unresolved ?? 0}
+              <Text style={[styles.pendingTaskCount, { color: '#52c41a' }]}>
+                {planStats.completed}
               </Text>
-              <Text style={styles.pendingTaskLabel}>待审批事项</Text>
+              <Text style={styles.pendingTaskLabel}>已完成</Text>
             </TouchableOpacity>
           </View>
         </View>

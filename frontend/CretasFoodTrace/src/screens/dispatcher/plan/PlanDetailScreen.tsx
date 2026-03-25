@@ -71,6 +71,7 @@ interface PlanDetail {
   sourceType: string;
   processName: string;
   notes: string;
+  createdAt: string;
   createdByName: string;
   assignedSupervisorName: string;
   suggestedProductionLineName: string;
@@ -132,6 +133,8 @@ const transformPlanToDetail = (apiPlan: Record<string, unknown> | object): PlanD
     sourceType: String(plan.sourceTypeDisplayName || plan.sourceType || ''),
     processName: String(plan.processName || ''),
     notes: String(plan.notes || ''),
+    createdAt: String(plan.createdAt || ''),
+    createdBy: plan.createdBy as any,
     createdByName: String(plan.createdByName || ''),
     assignedSupervisorName: String(plan.assignedSupervisorName || ''),
     suggestedProductionLineName: String(plan.suggestedProductionLineName || ''),
@@ -182,12 +185,15 @@ export default function PlanDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { t } = useTranslation('dispatcher');
-  const params = route.params as { planId?: string } | undefined;
+  const params = route.params as { planId?: string; planData?: Record<string, unknown> } | undefined;
   const planId = params?.planId || '';
 
-  const [loading, setLoading] = useState(true);
+  // Use pre-passed data for instant render, then refresh from API
+  const initialPlan = params?.planData ? transformPlanToDetail(params.planData) : null;
+
+  const [loading, setLoading] = useState(!initialPlan);
   const [refreshing, setRefreshing] = useState(false);
-  const [plan, setPlan] = useState<PlanDetail | null>(null);
+  const [plan, setPlan] = useState<PlanDetail | null>(initialPlan);
   const [materials, setMaterials] = useState<MaterialMatch[]>([]);
   const [workers, setWorkers] = useState<AssignedWorker[]>([]);
   const [batches, setBatches] = useState<ProductionBatch[]>([]);
@@ -311,24 +317,6 @@ export default function PlanDetailScreen() {
 
   const [tasksGenerated, setTasksGenerated] = useState(false);
   const [generatedRunId, setGeneratedRunId] = useState<string | null>(null);
-  const [checkingTasks, setCheckingTasks] = useState(true);
-
-  // 页面加载时检查是否已生成过工序任务
-  useEffect(() => {
-    if (!plan?.productTypeId) { setCheckingTasks(false); return; }
-    (async () => {
-      try {
-        const res = await processTaskApiClient.getActiveTasks() as any;
-        const tasks = Array.isArray(res?.data) ? res.data : res?.data?.content || [];
-        const match = tasks.find((t: any) => t.productTypeId === plan.productTypeId);
-        if (match) {
-          setTasksGenerated(true);
-          setGeneratedRunId(match.productionRunId || null);
-        }
-      } catch { /* silent */ }
-      finally { setCheckingTasks(false); }
-    })();
-  }, [plan?.productTypeId]);
 
   // 生成工序任务
   const handleGenerateProcessTasks = () => {
@@ -382,8 +370,9 @@ export default function PlanDetailScreen() {
           onPress: async () => {
             try {
               await productionPlanApiClient.cancelProductionPlan(planId, '调度员取消');
-              Alert.alert('成功', '计划已取消');
-              loadPlanData();
+              Alert.alert('成功', '计划已取消', [
+                { text: '返回列表', onPress: () => navigation.goBack() },
+              ]);
             } catch (e) {
               Alert.alert('错误', e instanceof Error ? e.message : '取消失败');
             }
@@ -594,9 +583,7 @@ export default function PlanDetailScreen() {
           <Ionicons name="chevron-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>计划详情</Text>
-        <TouchableOpacity style={styles.editButton}>
-          <Text style={styles.editButtonText}>编辑</Text>
-        </TouchableOpacity>
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
@@ -661,6 +648,16 @@ export default function PlanDetailScreen() {
             <Text style={styles.detailLabel}>优先级</Text>
             <Text style={styles.detailValue}>{plan.priority >= 8 ? '高' : plan.priority >= 5 ? '中' : '低'}</Text>
           </View>
+          {plan.createdAt ? (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>创建时间</Text>
+              <Text style={styles.detailValue}>{plan.createdAt.replace('T', ' ').substring(0, 16)}</Text>
+            </View>
+          ) : null}
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>创建人</Text>
+            <Text style={styles.detailValue}>{plan.createdByName || `用户#${(plan as any).createdBy || '-'}`}</Text>
+          </View>
           {plan.assignedSupervisorName ? (
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>主管</Text>
@@ -705,43 +702,37 @@ export default function PlanDetailScreen() {
           ) : null}
         </View>
 
-        {/* 原料匹配 */}
+        {/* 原料匹配 (仅活跃计划显示) */}
+        {plan.status?.toUpperCase() !== 'CANCELLED' && plan.status?.toUpperCase() !== 'COMPLETED' && materials.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>原料匹配</Text>
-            <TouchableOpacity>
-              <Text style={styles.sectionLink}>重新匹配</Text>
-            </TouchableOpacity>
           </View>
           {materials.map(renderMaterialCard)}
         </View>
+        )}
 
-        {/* 已分配员工 */}
+        {/* 已分配员工 (仅活跃计划显示) */}
+        {plan.status?.toUpperCase() !== 'CANCELLED' && plan.status?.toUpperCase() !== 'COMPLETED' && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>已分配员工 ({workers.length}人)</Text>
-            <TouchableOpacity>
-              <Text style={styles.sectionLink}>+ 分配</Text>
-            </TouchableOpacity>
           </View>
-          <View style={styles.workersContainer}>
-            <View style={styles.avatarGroup}>
-              {workers.map((worker) => (
-                <View key={worker.id} style={styles.avatar}>
-                  <Text style={styles.avatarText}>{worker.avatar}</Text>
-                </View>
-              ))}
+          {workers.length > 0 ? (
+            <View style={styles.workersContainer}>
+              <View style={styles.avatarGroup}>
+                {workers.map((worker) => (
+                  <View key={worker.id} style={styles.avatar}>
+                    <Text style={styles.avatarText}>{worker.avatar}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
-          <View style={styles.workerStats}>
-            <Text style={styles.workerStatText}>
-              总工时: <Text style={styles.workerStatValue}>480min</Text>
-            </Text>
-            <Text style={styles.workerStatText}>
-              人工成本: <Text style={[styles.workerStatValue, { color: DISPATCHER_THEME.warning }]}>¥400</Text>
-            </Text>
-          </View>
+          ) : (
+            <Text style={{ color: '#999', textAlign: 'center', paddingVertical: 12 }}>暂未分配员工</Text>
+          )}
         </View>
+        )}
 
         {/* 关联生产批次 */}
         <View style={[styles.section, { marginBottom: 120 }]}>
@@ -752,7 +743,7 @@ export default function PlanDetailScreen() {
 
       {/* 底部操作栏 */}
       <View style={styles.bottomActions}>
-        {plan?.productTypeId && !checkingTasks ? (
+        {plan?.productTypeId && plan?.status?.toUpperCase() !== 'CANCELLED' && plan?.status?.toUpperCase() !== 'COMPLETED' ? (
           tasksGenerated && generatedRunId ? (
             <TouchableOpacity
               style={styles.rescheduleButton}
@@ -787,25 +778,14 @@ export default function PlanDetailScreen() {
             <Text style={styles.rescheduleButtonText}>重新排程</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity
-          style={[styles.secondaryButton, canReschedule && styles.smallerButton]}
-          onPress={handlePausePlan}
-        >
-          <Text style={styles.secondaryButtonText}>取消计划</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.primaryButton, canReschedule && styles.smallerButton]}
-          onPress={handleCompletePlan}
-        >
-          <LinearGradient
-            colors={[DISPATCHER_THEME.primary, DISPATCHER_THEME.secondary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.primaryButtonGradient}
+        {plan?.status?.toUpperCase() !== 'CANCELLED' && plan?.status?.toUpperCase() !== 'COMPLETED' && (
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handlePausePlan}
           >
-            <Text style={styles.primaryButtonText}>完成计划</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <Text style={styles.secondaryButtonText}>取消计划</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* 重排确认弹窗 */}

@@ -266,7 +266,7 @@ class ProductionPlanApiClient {
 
   // 8. 取消生产计划
   async cancelProductionPlan(planId: string, reason?: string, factoryId?: string): Promise<ApiResponse<ProductionPlan>> {
-    return await apiClient.post(`${this.getPath(factoryId)}/${planId}/cancel`, { reason });
+    return await apiClient.post(`${this.getPath(factoryId)}/${planId}/cancel`, null, { params: { reason } });
   }
 
   // ===== 材料管理 (1个API) =====

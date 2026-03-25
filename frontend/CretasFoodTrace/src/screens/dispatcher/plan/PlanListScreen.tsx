@@ -38,10 +38,10 @@ interface PlanItem {
 
 const STATUS_TABS = [
   { key: 'all', label: '全部' },
-  { key: 'DRAFT', label: '草稿' },
   { key: 'PLANNED', label: '待执行' },
   { key: 'IN_PROGRESS', label: '进行中' },
   { key: 'COMPLETED', label: '已完成' },
+  { key: 'CANCELLED', label: '已取消' },
 ];
 
 const getStatusStyle = (status?: string) => {
@@ -77,13 +77,22 @@ export default function PlanListScreen() {
         const list = dataObj.content || (Array.isArray(dataObj) ? dataObj : []);
         let items: PlanItem[] = Array.isArray(list) ? list : [];
 
-        // Client-side status filter (API doesn't support status param)
+        // Filter out drafts older than 1 day
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        items = items.filter(i => {
+          if ((i.status || '').toUpperCase() === 'DRAFT') {
+            return (i.createdAt || '') >= oneDayAgo;
+          }
+          return true;
+        });
+
+        // Client-side status filter
         if (activeTab !== 'all') {
           const statusMap: Record<string, string[]> = {
-            'DRAFT': ['DRAFT'],
             'PLANNED': ['PLANNED', 'PENDING'],
             'IN_PROGRESS': ['IN_PROGRESS'],
             'COMPLETED': ['COMPLETED'],
+            'CANCELLED': ['CANCELLED'],
           };
           const targets = statusMap[activeTab];
           if (targets) items = items.filter(i => targets.includes((i.status || '').toUpperCase()));
@@ -98,6 +107,14 @@ export default function PlanListScreen() {
             (i.planNumber || '').toLowerCase().includes(q)
           );
         }
+
+        // Sort: drafts on top (by createdAt desc), then rest by createdAt desc
+        items.sort((a, b) => {
+          const aIsDraft = (a.status || '').toUpperCase() === 'DRAFT' ? 0 : 1;
+          const bIsDraft = (b.status || '').toUpperCase() === 'DRAFT' ? 0 : 1;
+          if (aIsDraft !== bIsDraft) return aIsDraft - bIsDraft;
+          return (b.createdAt || '').localeCompare(a.createdAt || '');
+        });
 
         setPlans(items);
         setTotal(items.length);
@@ -128,7 +145,7 @@ export default function PlanListScreen() {
       <TouchableOpacity
         style={styles.card}
         activeOpacity={0.7}
-        onPress={() => navigation.navigate('PlanDetail', { planId: item.id })}
+        onPress={() => navigation.navigate('PlanDetail', { planId: item.id, planData: item })}
       >
         {/* Top row: plan name + status */}
         <View style={styles.cardTop}>
@@ -144,6 +161,9 @@ export default function PlanListScreen() {
             <Text style={[styles.statusText, { color: s.color }]}>{s.label}</Text>
           </View>
         </View>
+        {item.status?.toUpperCase() === 'DRAFT' && (
+          <Text style={{ fontSize: 11, color: '#fa8c16', marginBottom: 6 }}>草稿将在24小时后自动清理</Text>
+        )}
 
         {/* Info row */}
         <View style={styles.cardInfo}>

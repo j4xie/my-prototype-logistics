@@ -49,6 +49,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
     private final ProductionPlanRepository productionPlanRepository;
     private final ProductionBatchRepository productionBatchRepository;
+    private final com.cretas.aims.repository.ProcessTaskRepository processTaskRepository;
     private final MaterialBatchRepository materialBatchRepository;
     private final MaterialConsumptionRepository materialConsumptionRepository;
     private final ProductionPlanBatchUsageRepository planBatchUsageRepository;
@@ -64,6 +65,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     public ProductionPlanServiceImpl(
             ProductionPlanRepository productionPlanRepository,
             ProductionBatchRepository productionBatchRepository,
+            com.cretas.aims.repository.ProcessTaskRepository processTaskRepository,
             MaterialBatchRepository materialBatchRepository,
             MaterialConsumptionRepository materialConsumptionRepository,
             ProductionPlanBatchUsageRepository planBatchUsageRepository,
@@ -76,6 +78,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             ExcelUtil excelUtil) {
         this.productionPlanRepository = productionPlanRepository;
         this.productionBatchRepository = productionBatchRepository;
+        this.processTaskRepository = processTaskRepository;
         this.materialBatchRepository = materialBatchRepository;
         this.materialConsumptionRepository = materialConsumptionRepository;
         this.planBatchUsageRepository = planBatchUsageRepository;
@@ -344,6 +347,24 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             plan.getNotes() + "\n取消原因：" + reason :
             "取消原因：" + reason);
         productionPlanRepository.save(plan);
+
+        // 级联关闭关联的工序任务
+        if (plan.getProductTypeId() != null) {
+            var tasks = processTaskRepository.findByFactoryIdAndProductTypeId(
+                    factoryId, plan.getProductTypeId());
+            int closedCount = 0;
+            for (var task : tasks) {
+                if (task.getStatus() != com.cretas.aims.entity.enums.ProcessTaskStatus.CLOSED
+                        && task.getStatus() != com.cretas.aims.entity.enums.ProcessTaskStatus.COMPLETED) {
+                    task.setStatus(com.cretas.aims.entity.enums.ProcessTaskStatus.CLOSED);
+                    processTaskRepository.save(task);
+                    closedCount++;
+                }
+            }
+            if (closedCount > 0) {
+                log.info("级联关闭 {} 个工序任务: planId={}, productTypeId={}", closedCount, planId, plan.getProductTypeId());
+            }
+        }
 
         log.info("取消生产计划: planId={}, reason={}", planId, reason);
     }

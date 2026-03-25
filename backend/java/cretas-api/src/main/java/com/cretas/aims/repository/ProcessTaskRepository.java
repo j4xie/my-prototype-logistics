@@ -32,6 +32,8 @@ public interface ProcessTaskRepository extends JpaRepository<ProcessTask, String
 
     Page<ProcessTask> findByFactoryIdAndProductTypeId(String factoryId, String productTypeId, Pageable pageable);
 
+    List<ProcessTask> findByFactoryIdAndProductTypeId(String factoryId, String productTypeId);
+
     Page<ProcessTask> findByFactoryIdAndStatusAndProductTypeId(
             String factoryId, ProcessTaskStatus status, String productTypeId, Pageable pageable);
 
