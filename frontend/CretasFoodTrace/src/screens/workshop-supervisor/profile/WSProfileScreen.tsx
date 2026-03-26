@@ -3,7 +3,7 @@
  * 包含: 用户信息、账户设置、帮助与支持、关于
  */
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -139,6 +139,18 @@ export function WSProfileScreen() {
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('profile.sections.helpSupport')}</Text>
           <View style={styles.menuGroup}>
+            <MenuItem
+              icon="school-outline"
+              title="操作教程"
+              onPress={() => {
+                const { useTutorialStore } = require('../../../store/tutorialStore');
+                useTutorialStore.getState().resetAllTutorials();
+                Alert.alert('教程已重置', '返回首页后将重新显示操作引导', [
+                  { text: '去首页', onPress: () => navigation.navigate('WSHomeTab' as never) },
+                ]);
+              }}
+              rightText="重新学习"
+            />
             <MenuItem
               icon="information-outline"
               title={t('profile.menu.about')}

@@ -33,7 +33,7 @@ const getDeviceLanguage = (): SupportedLanguage => {
 // 初始化 i18n
 i18n.use(initReactI18next).init({
   resources,
-  lng: getDeviceLanguage(),
+  lng: DEFAULT_LANGUAGE, // 默认中文，用户可在设置里切换
   fallbackLng: DEFAULT_LANGUAGE,
 
   // 命名空间配置

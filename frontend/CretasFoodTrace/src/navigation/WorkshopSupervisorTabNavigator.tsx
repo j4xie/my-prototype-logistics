@@ -91,20 +91,7 @@ export function WorkshopSupervisorTabNavigator() {
       />
       )}
 
-      {/* 设备Tab */}
-      {isScreenEnabled('EquipmentMonitoring') && (
-      <Tab.Screen
-        name="WSEquipmentTab"
-        component={WSEquipmentStackNavigator}
-        options={{
-          title: "设备",
-          tabBarButtonTestID: "tab-equipment",
-          tabBarIcon: ({ color, size }) => (
-            <Icon source="tools" size={size} color={color} />
-          ),
-        }}
-      />
-      )}
+      {/* 设备Tab — 移到快捷操作入口，不在底部Tab显示 */}
 
       {/* 我的Tab - 永远显示 */}
       <Tab.Screen

@@ -33,6 +33,12 @@ import DraftReportsScreen from "../../screens/processing/DraftReportsScreen";
 import DynamicReportScreen from "../../screens/processing/DynamicReportScreen";
 import NfcCheckinScreen from "../../screens/processing/NfcCheckinScreen";
 import MyWorkReportsScreen from "../../screens/processing/MyWorkReportsScreen";
+import ProcessTaskListScreen from "../../screens/processing/ProcessTaskListScreen";
+import ProcessTaskDetailScreen from "../../screens/processing/ProcessTaskDetailScreen";
+import ProcessTaskReportScreen from "../../screens/processing/ProcessTaskReportScreen";
+import ProcessRunOverviewScreen from "../../screens/processing/ProcessRunOverviewScreen";
+import ThreeStepReportScreen from "../../screens/processing/ThreeStepReportScreen";
+import ProcessOperationScreen from "../../screens/processing/ProcessOperationScreen";
 
 const Stack = createNativeStackNavigator<WSHomeStackParamList>();
 
@@ -103,6 +109,12 @@ export function WSHomeStackNavigator() {
       <Stack.Screen name="DynamicReport" component={DynamicReportScreen} options={{ title: "生产报工" }} />
       <Stack.Screen name="NfcCheckin" component={NfcCheckinScreen} options={{ title: "扫码签到" }} />
       <Stack.Screen name="MyWorkReports" component={MyWorkReportsScreen} options={{ title: "我的报工" }} />
+      <Stack.Screen name="ProcessTaskList" component={ProcessTaskListScreen} options={{ title: "工序任务" }} />
+      <Stack.Screen name="ProcessTaskDetail" component={ProcessTaskDetailScreen} options={{ title: "任务详情" }} />
+      <Stack.Screen name="ProcessTaskReport" component={ProcessTaskReportScreen} options={{ title: "报工" }} />
+      <Stack.Screen name="ProcessRunOverview" component={ProcessRunOverviewScreen} options={{ title: "生产单总览" }} />
+      <Stack.Screen name="ThreeStepReport" component={ThreeStepReportScreen} options={{ title: "三步报工" }} />
+      <Stack.Screen name="ProcessOperation" component={ProcessOperationScreen} options={{ title: "工序操作" }} />
     </Stack.Navigator>
   );
 }

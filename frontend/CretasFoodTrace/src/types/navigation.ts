@@ -484,6 +484,11 @@ export type WSHomeStackParamList = {
   DynamicReport: { reportType: 'PROGRESS' | 'HOURS' };
   NfcCheckin: undefined;
   ThreeStepReport: undefined;
+  ProcessTaskList: undefined;
+  ProcessTaskDetail: { taskId: string };
+  ProcessTaskReport: { taskId: string; processName?: string; unit?: string };
+  ProcessRunOverview: { productionRunId: string };
+  ProcessOperation: undefined;
   MyWorkReports: undefined;
 };
 

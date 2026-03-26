@@ -22,6 +22,10 @@ import { WSHomeStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
 import { useFactoryFeatureStore } from '../../../store/factoryFeatureStore';
 import { OfflineIndicator } from '../../../components/common/OfflineIndicator';
+import { QuickActionsGrid } from '../../../components/common/QuickActionsGrid';
+import { TutorialOverlay } from '../../../components/common/TutorialOverlay';
+import { WORKSHOP_SUP_ACTIONS } from '../../../store/quickActionsStore';
+import { useTutorialStore, TUTORIAL_HOME } from '../../../store/tutorialStore';
 import { useDraftReportStore } from '../../../store/draftReportStore';
 import { dashboardAPI } from '../../../services/api/dashboardApiClient';
 import { processingApiClient } from '../../../services/api/processingApiClient';
@@ -86,6 +90,21 @@ export function WSHomeScreen() {
   const insets = useSafeAreaInsets();
   const draftCount = useDraftReportStore(s => s.drafts.length);
 
+  // Tutorial
+  const activeTutorial = useTutorialStore(s => s.activeTutorial);
+  const activeStep = useTutorialStore(s => s.activeStep);
+  const completedHome = useTutorialStore(s => s.completedTutorials[TUTORIAL_HOME.id]);
+  const showTutorial = activeTutorial === TUTORIAL_HOME.id;
+
+  useEffect(() => {
+    if (!loading && !completedHome && activeTutorial === null) {
+      const timer = setTimeout(() => {
+        useTutorialStore.getState().startTutorial(TUTORIAL_HOME.id);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, completedHome]);
+
   // 状态
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -112,6 +131,7 @@ export function WSHomeScreen() {
     total: 0,
   });
   const [scheduleTasks, setScheduleTasks] = useState<SupervisorTaskDTO[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // 获取问候语
   const getGreeting = () => {
@@ -173,7 +193,7 @@ export function WSHomeScreen() {
             progress,
             currentOutput: batch.actualQuantity || 0,
             targetOutput: batch.targetQuantity,
-            estimatedTime: batch.endTime ? new Date(batch.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '--:--',
+            estimatedTime: batch.endTime ? new Date(batch.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--',
           };
         });
         setInProgressBatches(batches);
@@ -189,7 +209,7 @@ export function WSHomeScreen() {
             batchNumber: batch.batchNumber,
             productName: batch.productType,
             targetQuantity: batch.targetQuantity,
-            plannedStartTime: batch.startTime ? new Date(batch.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '--:--',
+            plannedStartTime: batch.startTime ? new Date(batch.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--',
             workshopLocation: 'A区', // Note: Workshop location not in ProcessingBatch, using default
             assignedWorkers: 0, // Note: Assigned workers not in ProcessingBatch
             equipment: '', // Note: Equipment not in ProcessingBatch
@@ -202,6 +222,15 @@ export function WSHomeScreen() {
         // 无待处理任务
         setNextTask(null);
       }
+
+      // 获取未读通知数
+      try {
+        const { notificationApiClient } = await import('../../../services/api/notificationApiClient');
+        const notifRes = await notificationApiClient.getUnreadCount() as any;
+        if (notifRes?.success && notifRes.data) {
+          setUnreadCount(notifRes.data.count ?? notifRes.data ?? 0);
+        }
+      } catch { /* silent */ }
 
       // 获取排程任务
       try {
@@ -304,87 +333,23 @@ export function WSHomeScreen() {
             onPress={() => navigation.navigate('Notifications')}
           >
             <Icon source="bell-outline" size={24} color="#fff" />
+            {unreadCount > 0 && (
             <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>3</Text>
+              <Text style={styles.notificationBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
             </View>
+            )}
           </TouchableOpacity>
         </View>
 
         {/* 快捷操作 */}
         <View testID="quick-actions-section" style={styles.quickActionsSection}>
-          <Text style={styles.sectionTitle}>快捷操作</Text>
-          <View style={styles.quickActionsGrid}>
-            <TouchableOpacity
-              testID="quick-action-team-report"
-              style={styles.quickActionBtn}
-              onPress={() => navigation.navigate('TeamBatchReport')}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#F0FDF4' }]}>
-                <MaterialCommunityIcons name="account-group" size={22} color="#16A34A" />
-              </View>
-              <Text style={styles.quickActionLabel}>班组报工</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              testID="quick-action-drafts"
-              style={styles.quickActionBtn}
-              onPress={() => navigation.navigate('DraftReports')}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#FFFBEB' }]}>
-                <MaterialCommunityIcons name="file-clock-outline" size={22} color="#D97706" />
-                {draftCount > 0 && (
-                  <View style={styles.draftBadge}>
-                    <Text style={styles.draftBadgeText}>{draftCount}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.quickActionLabel}>草稿管理</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              testID="quick-action-checkin"
-              style={styles.quickActionBtn}
-              onPress={() => navigation.navigate('NfcCheckin')}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#F5F3FF' }]}>
-                <MaterialCommunityIcons name="nfc-variant" size={22} color="#7C3AED" />
-              </View>
-              <Text style={styles.quickActionLabel}>扫码签到</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              testID="quick-action-progress"
-              style={styles.quickActionBtn}
-              onPress={() => navigation.navigate('DynamicReport', { reportType: 'PROGRESS' })}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#EFF6FF' }]}>
-                <MaterialCommunityIcons name="chart-line" size={22} color="#2563EB" />
-              </View>
-              <Text style={styles.quickActionLabel}>产量上报</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              testID="quick-action-hours"
-              style={styles.quickActionBtn}
-              onPress={() => navigation.navigate('DynamicReport', { reportType: 'HOURS' })}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#FEF2F2' }]}>
-                <MaterialCommunityIcons name="clock-outline" size={22} color="#DC2626" />
-              </View>
-              <Text style={styles.quickActionLabel}>工时上报</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              testID="quick-action-my-reports"
-              style={styles.quickActionBtn}
-              onPress={() => navigation.navigate('MyWorkReports')}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#ECFDF5' }]}>
-                <MaterialCommunityIcons name="clipboard-text-clock-outline" size={22} color="#059669" />
-              </View>
-              <Text style={styles.quickActionLabel}>我的报工</Text>
-            </TouchableOpacity>
-          </View>
+          <QuickActionsGrid
+            role="workshop_supervisor"
+            allActions={WORKSHOP_SUP_ACTIONS}
+            onActionPress={(action) => {
+              navigation.navigate(action.screen as never, action.params as never);
+            }}
+          />
         </View>
 
         {/* 下一批任务卡片 - 最醒目 */}
@@ -471,9 +436,9 @@ export function WSHomeScreen() {
                   </Text>
                   <Text style={styles.scheduleTaskTime}>
                     {new Date(task.plannedStartTime).toLocaleTimeString('zh-CN', {
-                      hour: '2-digit', minute: '2-digit'
+                      hour: '2-digit', minute: '2-digit', hour12: false
                     })} - {new Date(task.plannedEndTime).toLocaleTimeString('zh-CN', {
-                      hour: '2-digit', minute: '2-digit'
+                      hour: '2-digit', minute: '2-digit', hour12: false
                     })}
                   </Text>
                 </View>
@@ -617,6 +582,15 @@ export function WSHomeScreen() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
+
+      {/* Tutorial Overlay */}
+      <TutorialOverlay
+        visible={showTutorial}
+        steps={TUTORIAL_HOME.steps}
+        currentStep={activeStep}
+        onNext={() => useTutorialStore.getState().nextStep(TUTORIAL_HOME.steps.length)}
+        onSkip={() => useTutorialStore.getState().skipTutorial()}
+      />
     </View>
   );
 }
