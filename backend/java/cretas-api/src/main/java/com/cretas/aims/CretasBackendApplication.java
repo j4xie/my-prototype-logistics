@@ -30,25 +30,22 @@ public class CretasBackendApplication {
 
     /**
      * 全局 CORS 配置
-     * 允许跨域请求（用于React Native前端调用）
+     * allowedOriginPatterns("*") with allowCredentials(true) is required
+     * for web admin HttpOnly cookie authentication.
+     * (allowedOrigins("*") would conflict with allowCredentials(true))
      */
     @Bean
     public WebMvcConfigurer corsConfigurer() {
-        return new CorsWebMvcConfigurer();
-    }
-
-    /**
-     * CORS配置实现类（避免DevTools类加载问题）
-     */
-    private static class CorsWebMvcConfigurer implements WebMvcConfigurer {
-        @Override
-        public void addCorsMappings(CorsRegistry registry) {
-            registry.addMapping("/api/**")
-                    .allowedOrigins("*")
-                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                    .allowedHeaders("*")
-                    .allowCredentials(false)
-                    .maxAge(3600);
-        }
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/api/**")
+                        .allowedOriginPatterns("*")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(true)
+                        .maxAge(3600);
+            }
+        };
     }
 }

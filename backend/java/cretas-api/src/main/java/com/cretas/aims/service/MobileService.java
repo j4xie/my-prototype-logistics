@@ -129,8 +129,9 @@ public interface MobileService {
      *
      * @param userId 用户ID
      * @param deviceId 设备ID
+     * @param token 当前请求的JWT token，用于加入黑名单
      */
-    void logout(Long userId, String deviceId);
+    void logout(Long userId, String deviceId, String token);
 
     /**
      * 获取移动端配置

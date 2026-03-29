@@ -1,5 +1,7 @@
 package com.cretas.aims.config;
 
+import com.cretas.aims.service.TokenBlacklistService;
+import com.cretas.aims.utils.CookieAuthHelper;
 import com.cretas.aims.utils.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -49,6 +51,9 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private TokenBlacklistService tokenBlacklistService;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // CORS preflight: 浏览器 OPTIONS 请求不携带 Authorization，直接放行
@@ -56,19 +61,24 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // 从Authorization header中提取token
-        String authorization = request.getHeader("Authorization");
+        // Extract token: try Authorization header first (mobile), then cookie fallback (web)
+        String token = extractToken(request);
 
         String tokenFactoryId = null;
         String tokenRole = null;
         Long userId = null;
 
-        if (authorization != null && authorization.startsWith("Bearer ")) {
-            String token = authorization.substring(7); // 移除"Bearer "前缀
-
+        if (token != null) {
             try {
                 // 验证token
                 if (jwtUtil.validateToken(token)) {
+                    // 检查token是否已被撤销（登出后的黑名单检查）
+                    if (tokenBlacklistService.isBlacklisted(token)) {
+                        log.warn("Token已被撤销（用户已登出）");
+                        sendUnauthorizedResponse(response, "Token已失效，请重新登录");
+                        return false;
+                    }
+
                     // 提取userId
                     userId = jwtUtil.getUserIdFromToken(token);
                     if (userId != null) {
@@ -103,7 +113,7 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
                 log.error("解析JWT token失败: {}", e.getMessage());
             }
         } else {
-            log.debug("请求未包含Authorization header或格式不正确");
+            log.debug("请求未包含Authorization header或有效cookie");
         }
 
         // 跨工厂权限验证
@@ -271,5 +281,23 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
 
         ObjectMapper mapper = new ObjectMapper();
         response.getWriter().write(mapper.writeValueAsString(errorResponse));
+    }
+
+    /**
+     * Extract JWT token from the request.
+     * Priority: Authorization header (mobile) > cookie (web admin).
+     */
+    private String extractToken(HttpServletRequest request) {
+        // 1. Try Authorization header first (mobile clients)
+        String authorization = request.getHeader("Authorization");
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring(7).trim();
+            if (!token.isEmpty()) {
+                return token;
+            }
+        }
+
+        // 2. Fallback: try HttpOnly cookie (web admin clients)
+        return CookieAuthHelper.extractCookieValue(request, CookieAuthHelper.ACCESS_TOKEN_COOKIE);
     }
 }

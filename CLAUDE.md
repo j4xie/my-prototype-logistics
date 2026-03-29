@@ -32,15 +32,7 @@ This file provides guidance to Claude Code when working with this repository.
 | FRP | 7501 | 内网穿透 |
 
 ### 测试账号
-| 角色 | 用户名 | 密码 | factoryId |
-|------|--------|------|-----------|
-| 工厂超级管理员 | `factory_admin1` | `123456` | F001 |
-| 平台管理员 | `platform_admin` | `123456` | - |
-| 车间主管 | `workshop_sup1` | `123456` | F001 |
-| 仓储主管 | `warehouse_mgr1` | `123456` | F001 |
-| HR 管理员 | `hr_admin1` | `123456` | F001 |
-| 调度员 | `dispatcher1` | `123456` | F001 |
-| 质检员 | `quality_insp1` | `123456` | F001 |
+测试凭证不提交到代码仓库。参见项目根目录 `.env.test.example` 获取格式，实际密码本地配置。
 
 ---
 

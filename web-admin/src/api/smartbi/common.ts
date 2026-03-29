@@ -115,15 +115,12 @@ export const PYTHON_HEADERS: Record<string, string> = {
 
 /**
  * Get auth headers for Python service calls.
- * Reads JWT from localStorage (same token used for Java backend).
+ * JWT tokens are now in HttpOnly cookies (not readable by JS).
+ * Python service auth relies on X-Internal-Secret for direct calls.
+ * When going through Vite proxy (dev), cookies are forwarded automatically.
  */
 export function getPythonAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { ...PYTHON_HEADERS };
-  const token = localStorage.getItem('cretas_access_token');
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
+  return { ...PYTHON_HEADERS };
 }
 
 // ==================== snake_case -> camelCase transform (AUDIT-065) ====================
@@ -170,6 +167,7 @@ export async function pythonFetch(path: string, options: RequestInit & { timeout
     const response = await fetch(`${PYTHON_SMARTBI_URL}${path}`, {
       ...fetchOptions,
       signal: controller.signal,
+      credentials: 'include', // Send cookies through proxy
       headers: {
         ...getPythonAuthHeaders(),
         ...fetchOptions.headers,

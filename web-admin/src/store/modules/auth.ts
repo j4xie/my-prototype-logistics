@@ -1,27 +1,30 @@
 /**
  * 认证状态管理
- * 注意：此文件不能导入其他 store 模块和 API 模块，避免循环依赖
- * API 调用使用动态导入
+ *
+ * Auth strategy:
+ *   Tokens are stored in HttpOnly cookies (set by the server).
+ *   JavaScript cannot read them — this is intentional (XSS protection).
+ *   User info (non-sensitive) is kept in localStorage for fast hydration.
+ *   `isAuthenticated` is derived from having user info in memory;
+ *   if the cookie has expired the next API call will 401 and redirect to login.
+ *
+ * Note: This file must not import other store modules or API modules at the
+ * top level to avoid circular dependencies. Use dynamic imports inside functions.
  */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User } from '@/types/auth';
 import { isPlatformUser, isFactoryUser, ROLE_METADATA } from '@/types/auth';
-// 注意：不在顶层导入 api/auth，改为在函数内动态导入
 
-// 存储 Key
-const TOKEN_KEY = 'cretas_access_token';
-const REFRESH_TOKEN_KEY = 'cretas_refresh_token';
+// localStorage keys (only for non-sensitive user info)
 const USER_KEY = 'cretas_user';
 
 export const useAuthStore = defineStore('auth', () => {
   // State
-  const accessToken = ref<string | null>(localStorage.getItem(TOKEN_KEY));
-  const refreshToken = ref<string | null>(localStorage.getItem(REFRESH_TOKEN_KEY));
   const user = ref<User | null>(null);
   const loading = ref(false);
 
-  // 初始化时尝试从 localStorage 恢复用户信息
+  // 初始化时尝试从 localStorage 恢复用户信息 (non-sensitive)
   const storedUser = localStorage.getItem(USER_KEY);
   if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
     try {
@@ -31,16 +34,16 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (e) {
       console.error('Failed to parse stored user:', e);
-      // 清理无效数据
       localStorage.removeItem(USER_KEY);
     }
   } else if (storedUser) {
-    // 清理无效数据 (如 "undefined" 字符串)
     localStorage.removeItem(USER_KEY);
   }
 
   // Getters
-  const isAuthenticated = computed(() => !!accessToken.value && !!user.value);
+  // Since tokens are in HttpOnly cookies (not readable by JS), we check user info.
+  // If the cookie expired, the next API call will 401 and the interceptor redirects to login.
+  const isAuthenticated = computed(() => !!user.value);
 
   const currentRole = computed(() => {
     if (!user.value) return 'unactivated';
@@ -72,25 +75,15 @@ export const useAuthStore = defineStore('auth', () => {
   const department = computed(() => roleMetadata.value?.department ?? 'none');
 
   // Actions
-  function setTokens(access: string, refresh: string) {
-    accessToken.value = access;
-    refreshToken.value = refresh;
-    localStorage.setItem(TOKEN_KEY, access);
-    localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
-  }
-
   function setUser(userData: User) {
     user.value = userData;
     localStorage.setItem(USER_KEY, JSON.stringify(userData));
   }
 
   function clearAuth() {
-    accessToken.value = null;
-    refreshToken.value = null;
     user.value = null;
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    // Note: HttpOnly cookies are cleared by the server on logout
   }
 
   async function login(username: string, password: string): Promise<boolean> {
@@ -102,16 +95,8 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.success && response.data) {
         const data = response.data;
-        // 后端返回扁平结构：token/accessToken, refreshToken, 用户信息直接在 data 中
-        const token = data.accessToken || data.token;
-        const refresh = data.refreshToken;
-
-        if (!token || !refresh) {
-          console.error('Missing token in response:', data);
-          return false;
-        }
-
-        setTokens(token, refresh);
+        // Tokens are now set as HttpOnly cookies by the server (Set-Cookie header).
+        // We only store the non-sensitive user info locally.
 
         // 构建用户对象 - 后端返回的是工厂用户
         const userData: User = {
@@ -144,6 +129,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     try {
       // 动态导入 API，避免循环依赖
+      // The backend clears HttpOnly cookies via Set-Cookie: Max-Age=0
       const { logout: logoutApi } = await import('@/api/auth');
       await logoutApi();
     } catch (error) {
@@ -154,10 +140,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchCurrentUser(): Promise<boolean> {
-    if (!accessToken.value) return false;
-
     try {
       // 动态导入 API，避免循环依赖
+      // Auth cookie is sent automatically via withCredentials
       const { getCurrentUser } = await import('@/api/auth');
       const response = await getCurrentUser();
       if (response.success && response.data) {
@@ -185,8 +170,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     // State
-    accessToken,
-    refreshToken,
     user,
     loading,
 
@@ -202,7 +185,6 @@ export const useAuthStore = defineStore('auth', () => {
     department,
 
     // Actions
-    setTokens,
     setUser,
     clearAuth,
     login,

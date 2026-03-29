@@ -2072,8 +2072,9 @@ const uploadFile = async () => {
     const response = await fetch(url, {
       method: 'POST',
       body: formData,
+      credentials: 'include', // Send HttpOnly auth cookies
       headers: {
-        'Authorization': `Bearer ${authStore.accessToken}`,
+        'X-Client-Type': 'web',
       },
       signal: uploadAbortController?.signal,
     });

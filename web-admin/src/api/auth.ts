@@ -23,9 +23,15 @@ export function login(data: LoginRequest): Promise<ApiResponse<LoginData>> {
 
 /**
  * 刷新令牌
+ * For web clients the refresh token is in an HttpOnly cookie (sent automatically).
+ * The optional parameter is kept for backward compatibility with mobile/other callers.
  */
-export function refreshToken(refreshToken: string): Promise<ApiResponse<{ accessToken: string; refreshToken: string }>> {
-  return request.post('/auth/refresh', { refreshToken });
+export function refreshToken(token?: string): Promise<ApiResponse<{ accessToken: string; refreshToken: string }>> {
+  if (token) {
+    return request.post('/auth/refresh', null, { params: { refreshToken: token } });
+  }
+  // Web client: refresh token comes from cookie, no body/params needed
+  return request.post('/auth/refresh');
 }
 
 /**

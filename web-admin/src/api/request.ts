@@ -16,8 +16,10 @@ const showMessage = async (message: string, type: 'success' | 'error' | 'warning
 const request: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/mobile',
   timeout: 30000,
+  withCredentials: true, // Send HttpOnly cookies with every request
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'X-Client-Type': 'web' // Tells backend to use cookie-based auth
   }
 });
 
@@ -30,12 +32,8 @@ const getRouter = async () => {
 // 请求拦截器
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // 获取 token（从 localStorage 直接读取，避免 store 依赖问题）
-    const token = localStorage.getItem('cretas_access_token');
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // Auth is handled by HttpOnly cookies (sent automatically via withCredentials).
+    // No need to read tokens from localStorage.
 
     // FormData 时删除 Content-Type，让浏览器自动设置 multipart/form-data
     if (config.data instanceof FormData) {
@@ -53,16 +51,16 @@ request.interceptors.request.use(
 // Token 刷新状态
 let isRefreshing = false;
 let failedQueue: Array<{
-  resolve: (token: string) => void;
+  resolve: () => void;
   reject: (error: Error) => void;
 }> = [];
 
-const processQueue = (error: Error | null, token: string | null = null) => {
+const processQueue = (error: Error | null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
-      prom.resolve(token!);
+      prom.resolve();
     }
   });
   failedQueue = [];
@@ -90,18 +88,18 @@ request.interceptors.response.use(
     };
   },
   async (error: AxiosError<ApiResponse>) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _silent?: boolean };
     const status = error.response?.status;
 
-    // 401 未授权 - 尝试刷新 token
+    // 401 未授权 - 尝试刷新 token via cookie
     if (status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         // 如果正在刷新，将请求加入队列
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
+          .then(() => {
+            // Cookie is already refreshed by the server, just retry
             return request(originalRequest);
           })
           .catch((err) => Promise.reject(err));
@@ -111,38 +109,28 @@ request.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshToken = localStorage.getItem('cretas_refresh_token');
-
-        if (!refreshToken) {
-          throw new Error('No refresh token');
-        }
-
-        // 刷新 token
+        // Refresh token is in an HttpOnly cookie scoped to the refresh path.
+        // The server reads it from the cookie and sets updated cookies in the response.
         const response = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
           `${import.meta.env.VITE_API_BASE_URL || '/api/mobile'}/auth/refresh`,
-          { refreshToken }
+          {},
+          {
+            withCredentials: true,
+            headers: { 'X-Client-Type': 'web' }
+          }
         );
 
-        if (response.data.success && response.data.data) {
-          const { accessToken, refreshToken: newRefreshToken } = response.data.data;
-
-          // 保存新 token
-          localStorage.setItem('cretas_access_token', accessToken);
-          localStorage.setItem('cretas_refresh_token', newRefreshToken);
-
-          processQueue(null, accessToken);
-
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        if (response.data.success) {
+          // Cookies are updated automatically by the browser from Set-Cookie headers
+          processQueue(null);
           return request(originalRequest);
         } else {
           throw new Error('Token refresh failed');
         }
       } catch (refreshError) {
-        processQueue(refreshError as Error, null);
+        processQueue(refreshError as Error);
 
-        // 刷新失败，清除认证状态并跳转登录
-        localStorage.removeItem('cretas_access_token');
-        localStorage.removeItem('cretas_refresh_token');
+        // 刷新失败，清除本地状态并跳转登录
         localStorage.removeItem('cretas_user');
 
         // 延迟跳转，避免循环依赖

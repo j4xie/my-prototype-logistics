@@ -30,15 +30,15 @@ import type {
 const calibrationRequest = axios.create({
   baseURL: '',
   timeout: 30000,
-  headers: { 'Content-Type': 'application/json' }
+  withCredentials: true, // Send HttpOnly cookies
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Client-Type': 'web'
+  }
 });
 
-// 请求拦截器: 注入 JWT token
+// 请求拦截器 (auth handled by cookies, no localStorage needed)
 calibrationRequest.interceptors.request.use((config) => {
-  const token = localStorage.getItem('cretas_access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
   return config;
 });
 

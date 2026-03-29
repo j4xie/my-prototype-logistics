@@ -174,6 +174,19 @@ public class JwtUtil {
     }
 
     /**
+     * 从Token中获取过期时间
+     *
+     * @return 过期时间，解析失败返回null
+     */
+    public Date getExpirationDateFromToken(String token) {
+        Claims claims = getClaimsFromToken(token);
+        if (claims != null) {
+            return claims.getExpiration();
+        }
+        return null;
+    }
+
+    /**
      * 检查Token是否过期
      */
     public boolean isTokenExpired(String token) {
