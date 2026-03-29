@@ -11,6 +11,8 @@ from typing import Any, Optional, List, Dict
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from common.responses import ApiException, ErrorCode
+
 from services.chart_builder import ChartBuilder, _sanitize_for_json
 from services.shared_pool import shared_executor
 
@@ -81,7 +83,7 @@ async def build_chart(request: ChartBuildRequest):
     """
     try:
         if not request.data:
-            raise HTTPException(status_code=400, detail="Data is required")
+            raise ApiException("Data is required", ErrorCode.VALIDATION_ERROR, 400)
 
         result = chart_builder.build(
             chart_type=request.chartType,
@@ -104,7 +106,7 @@ async def build_chart(request: ChartBuildRequest):
             error=sanitized.get("error")
         )
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"Chart build error: {e}", exc_info=True)

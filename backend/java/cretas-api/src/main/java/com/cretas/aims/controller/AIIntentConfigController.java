@@ -20,6 +20,8 @@ import com.cretas.aims.entity.config.AIIntentConfigHistory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.cretas.aims.annotation.RateLimit;
+import com.cretas.aims.annotation.RateLimit.LimitType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -196,6 +198,7 @@ public class AIIntentConfigController {
 
     @PostMapping("/execute")
     @Operation(summary = "执行AI意图", description = "识别用户输入的意图并执行对应操作")
+    @RateLimit(count = 20, period = 60, limitType = LimitType.USER, message = "AI请求过于频繁，请稍后再试")
     public ResponseEntity<ApiResponse<IntentExecuteResponse>> executeIntent(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @RequestBody IntentExecuteRequest request,
@@ -219,6 +222,7 @@ public class AIIntentConfigController {
     @PostMapping("/execute/multi")
     @Operation(summary = "执行多意图 (Multi-Label Classification)",
                description = "使用 Sigmoid-based 多标签分类识别并执行多个意图")
+    @RateLimit(count = 20, period = 60, limitType = LimitType.USER, message = "AI请求过于频繁，请稍后再试")
     public ResponseEntity<ApiResponse<IntentExecuteResponse>> executeMultiIntent(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @RequestBody IntentExecuteRequest request,
@@ -241,6 +245,7 @@ public class AIIntentConfigController {
 
     @PostMapping(value = "/execute/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "流式执行AI意图 (SSE)", description = "通过 Server-Sent Events 实时返回执行进度")
+    @RateLimit(count = 20, period = 60, limitType = LimitType.USER, message = "AI请求过于频繁，请稍后再试")
     public SseEmitter executeIntentStream(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @RequestBody IntentExecuteRequest request,

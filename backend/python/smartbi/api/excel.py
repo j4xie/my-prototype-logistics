@@ -13,6 +13,8 @@ from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from common.responses import ApiException, ErrorCode
+
 from services.excel_parser import ExcelParser
 from services.field_detector import FieldDetector
 from services.data_feature_analyzer import DataFeatureAnalyzer
@@ -39,10 +41,13 @@ async def _validate_upload(file: UploadFile) -> bytes:
     filename = file.filename or ""
     ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
     if ext not in (".xlsx", ".xls", ".csv"):
-        raise HTTPException(status_code=400, detail="仅支持 .xlsx, .xls, .csv 文件")
+        raise ApiException("仅支持 .xlsx, .xls, .csv 文件", ErrorCode.VALIDATION_ERROR, 400)
     content = await file.read()
     if len(content) > MAX_UPLOAD_SIZE:
-        raise HTTPException(status_code=413, detail=f"文件过大 ({len(content) // 1024 // 1024}MB)，限制 50MB")
+        raise ApiException(
+            f"文件过大 ({len(content) // 1024 // 1024}MB)，限制 50MB",
+            ErrorCode.VALIDATION_ERROR, 413,
+        )
     return content
 
 # Initialize services
@@ -249,7 +254,7 @@ async def list_sheets_detailed(file: UploadFile = File(...)):
             sheets=sheets
         )
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"List sheets error: {e}", exc_info=True)
@@ -361,7 +366,7 @@ async def preview_excel(
 
     except Exception as e:
         logger.error(f"Excel preview error: {e}", exc_info=True)
-        return {"success": False, "error": "Excel处理失败，请检查文件格式后重试"}
+        return {"success": False, "data": None, "message": "Excel处理失败，请检查文件格式后重试"}
 
 
 class SheetAnalysisResponse(BaseModel):
@@ -394,9 +399,9 @@ async def analyze_sheets(file: UploadFile = File(...)):
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
-            raise HTTPException(
-                status_code=400,
-                detail="This endpoint only supports Excel files (.xlsx, .xls)"
+            raise ApiException(
+                "This endpoint only supports Excel files (.xlsx, .xls)",
+                ErrorCode.VALIDATION_ERROR, 400,
             )
 
         content = await file.read()
@@ -434,7 +439,7 @@ async def analyze_sheets(file: UploadFile = File(...)):
         finally:
             await llm_mapper.close()
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"Sheet analysis error: {e}", exc_info=True)
@@ -556,9 +561,9 @@ async def auto_parse_excel(
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls", ".csv"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Supported file types: .xlsx, .xls, .csv"
+            raise ApiException(
+                "Supported file types: .xlsx, .xls, .csv",
+                ErrorCode.VALIDATION_ERROR, 400,
             )
 
         # Read file content
@@ -578,9 +583,9 @@ async def auto_parse_excel(
                     effective_index = xl.sheet_names.index(effective_sheet_name)
                     logger.info(f"Resolved sheet_name '{effective_sheet_name}' to index {effective_index}")
                 else:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Sheet '{effective_sheet_name}' not found. Available: {xl.sheet_names}"
+                    raise ApiException(
+                        f"Sheet '{effective_sheet_name}' not found. Available: {xl.sheet_names}",
+                        ErrorCode.VALIDATION_ERROR, 400,
                     )
             except HTTPException:
                 raise
@@ -882,7 +887,7 @@ async def auto_parse_excel(
             recommendedCharts=recommended_charts
         )
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"Auto-parse error: {e}", exc_info=True)
@@ -1006,13 +1011,13 @@ async def submit_auto_parse_feedback(
 
         if success:
             logger.info(f"Feedback recorded: {correction_type} correction for {cache_key}")
-            return {"success": True, "message": "Feedback recorded"}
+            return {"success": True, "data": None, "message": "Feedback recorded"}
         else:
-            return {"success": False, "error": "Cache key not found"}
+            return {"success": False, "data": None, "message": "Cache key not found", "code": "NOT_FOUND"}
 
     except Exception as e:
         logger.error(f"Feedback submission error: {e}", exc_info=True)
-        return {"success": False, "error": "Excel处理失败，请检查文件格式后重试"}
+        return {"success": False, "data": None, "message": "Excel处理失败，请检查文件格式后重试"}
 
 
 # =============================================================================
@@ -1061,9 +1066,9 @@ async def extract_context(
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Supported file types: .xlsx, .xls"
+            raise ApiException(
+                "Supported file types: .xlsx, .xls",
+                ErrorCode.VALIDATION_ERROR, 400,
             )
 
         content = await file.read()
@@ -1093,7 +1098,7 @@ async def extract_context(
             has_content=context_info.has_content()
         )
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"Context extraction error: {e}", exc_info=True)
@@ -1163,17 +1168,17 @@ async def export_excel(
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Supported file types: .xlsx, .xls"
+            raise ApiException(
+                "Supported file types: .xlsx, .xls",
+                ErrorCode.VALIDATION_ERROR, 400,
             )
 
         # Validate format
         format_lower = format.lower()
         if format_lower not in ["json", "markdown", "csv"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Supported formats: json, markdown, csv"
+            raise ApiException(
+                "Supported formats: json, markdown, csv",
+                ErrorCode.VALIDATION_ERROR, 400,
             )
 
         content = await file.read()
@@ -1210,7 +1215,7 @@ async def export_excel(
             processing_time_ms=processing_time
         )
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"Export error: {e}", exc_info=True)
@@ -1333,9 +1338,9 @@ async def get_export_metadata(
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Supported file types: .xlsx, .xls"
+            raise ApiException(
+                "Supported file types: .xlsx, .xls",
+                ErrorCode.VALIDATION_ERROR, 400,
             )
 
         content = await file.read()
@@ -1368,7 +1373,7 @@ async def get_export_metadata(
             ) if data.context and data.context.has_content() else None
         )
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"Export metadata error: {e}", exc_info=True)
@@ -1428,9 +1433,9 @@ async def batch_export_all_sheets(
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Supported file types: .xlsx, .xls"
+            raise ApiException(
+                "Supported file types: .xlsx, .xls",
+                ErrorCode.VALIDATION_ERROR, 400,
             )
 
         content = await file.read()
@@ -1468,7 +1473,7 @@ async def batch_export_all_sheets(
 
         return response
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"Batch export error: {e}", exc_info=True)
@@ -2186,9 +2191,9 @@ async def raw_export_excel(
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Supported file types: .xlsx, .xls"
+            raise ApiException(
+                "Supported file types: .xlsx, .xls",
+                ErrorCode.VALIDATION_ERROR, 400,
             )
 
         content = await file.read()
@@ -2225,9 +2230,9 @@ async def raw_export_excel(
                 include_metadata=include_metadata
             )
         else:
-            raise HTTPException(
-                status_code=400,
-                detail="Supported formats: json, json_simple, markdown, csv"
+            raise ApiException(
+                "Supported formats: json, json_simple, markdown, csv",
+                ErrorCode.VALIDATION_ERROR, 400,
             )
 
         processing_time = int((time.time() - start_time) * 1000)
@@ -2244,7 +2249,7 @@ async def raw_export_excel(
             processing_time_ms=processing_time
         )
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"Raw export error: {e}", exc_info=True)
@@ -2398,9 +2403,9 @@ async def analyze_excel_structure(
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Supported file types: .xlsx, .xls"
+            raise ApiException(
+                "Supported file types: .xlsx, .xls",
+                ErrorCode.VALIDATION_ERROR, 400,
             )
 
         content = await file.read()
@@ -2473,7 +2478,7 @@ async def analyze_excel_structure(
             processing_time_ms=processing_time
         )
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"LLM structure analysis error: {e}", exc_info=True)
@@ -2736,9 +2741,9 @@ async def analyze_workbook(
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Supported file types: .xlsx, .xls"
+            raise ApiException(
+                "Supported file types: .xlsx, .xls",
+                ErrorCode.VALIDATION_ERROR, 400,
             )
 
         content = await file.read()
@@ -2993,7 +2998,7 @@ async def analyze_workbook(
         finally:
             processor.close()
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"Analyze workbook error: {e}", exc_info=True)
@@ -3027,7 +3032,7 @@ async def analyze_workbook_stream(
     filename = file.filename or ""
     ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
     if ext not in [".xlsx", ".xls"]:
-        raise HTTPException(status_code=400, detail="Supported file types: .xlsx, .xls")
+        raise ApiException("Supported file types: .xlsx, .xls", ErrorCode.VALIDATION_ERROR, 400)
 
     content = await file.read()
     logger.info(f"Analyze workbook stream: {filename}, size={len(content)}")
@@ -3082,7 +3087,7 @@ async def list_uploads(status: Optional[str] = Query(None)):
         from smartbi.config import get_pg_pool
         pool = await get_pg_pool()
         if not pool:
-            return {"success": False, "data": [], "error": "Database not configured"}
+            return {"success": False, "data": [], "message": "Database not configured", "code": "SERVICE_UNAVAILABLE"}
         async with pool.acquire() as conn:
             query = """
                 SELECT id, file_name, sheet_name, row_count, column_count, upload_status, created_at
@@ -3105,7 +3110,7 @@ async def list_uploads(status: Optional[str] = Query(None)):
                     "status": r.get("upload_status", ""),
                     "createdAt": r["created_at"].isoformat() if r.get("created_at") else "",
                 })
-            return {"success": True, "data": items}
+            return {"success": True, "data": items, "message": "ok"}
     except Exception as e:
         logger.error(f"List uploads failed: {e}")
-        return {"success": False, "data": [], "error": "Failed to list uploads"}
+        return {"success": False, "data": [], "message": "Failed to list uploads"}

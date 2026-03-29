@@ -4,6 +4,8 @@
 fastapi>=0.70.0,<1.0.0
 cachetools>=5.3.0
 uvicorn>=0.15.0,<1.0.0
+gunicorn>=21.2.0,<23.0.0
+slowapi>=0.1.9,<1.0.0
 python-multipart>=0.0.5
 
 # Data processing
@@ -48,6 +50,9 @@ reportlab>=4.0
 
 # Pydantic settings (for environment variable loading)
 pydantic-settings>=2.0.0 ; python_version >= "3.9"
+
+# Prometheus metrics for FastAPI
+prometheus-fastapi-instrumentator>=6.0.0
 
 # Foreign Object Detection (YOLO ONNX inference)
 onnxruntime>=1.14.0,<2.0.0

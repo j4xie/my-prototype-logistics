@@ -23,12 +23,20 @@ import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+
+from prometheus_fastapi_instrumentator import Instrumentator
+
 from auth_middleware import JWTAuthMiddleware
+from common.middleware.correlation import CorrelationIdMiddleware, CorrelationIdLogFilter
+from common.responses import ApiException, error_response, ErrorCode
 
 # Import settings from smartbi config
 from smartbi.config import get_settings
@@ -108,6 +116,7 @@ except ImportError as e:
 try:
     from food_kb.api import knowledge as food_kb_api
     from food_kb.api import industry_report as food_kb_industry_report_api
+    from food_kb.api import manual_chat as food_kb_manual_chat_api
     _food_kb_available = True
 except ImportError as e:
     _food_kb_available = False
@@ -134,12 +143,16 @@ except ImportError as e:
 
 # Configure logging with rotation
 _log_level = logging.DEBUG if get_settings().debug else logging.INFO
-_log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+_log_format = "%(asctime)s - %(name)s - %(levelname)s - [%(correlation_id)s] - %(message)s"
 _log_formatter = logging.Formatter(_log_format)
+
+# Correlation ID log filter (injects correlation_id from contextvar into log records)
+_correlation_filter = CorrelationIdLogFilter()
 
 # Root logger setup
 _root_logger = logging.getLogger()
 _root_logger.setLevel(_log_level)
+_root_logger.addFilter(_correlation_filter)
 
 # Console handler (always)
 _console_handler = logging.StreamHandler()
@@ -280,6 +293,24 @@ app = FastAPI(
     redoc_url="/redoc" if os.environ.get("PYTHON_ENV", "production") != "production" else None
 )
 
+# Prometheus metrics instrumentation
+# Exposes /metrics endpoint with request count, latency histograms, etc.
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+
+# Rate limiting — exempt internal Java→Python calls (X-Internal-Secret header)
+def _rate_limit_key(request: Request) -> str:
+    if request.headers.get("X-Internal-Secret"):
+        return "internal-exempt"
+    return get_remote_address(request)
+
+limiter = Limiter(
+    key_func=_rate_limit_key,
+    default_limits=["60/minute"],
+    storage_uri="memory://",
+)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # T4.2: Gzip compression — reduces chart JSON payloads by 60-75%
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
@@ -301,6 +332,11 @@ app.add_middleware(
     jwt_secret=settings.jwt_secret,
     enabled=settings.jwt_auth_enabled,
 )
+
+# Correlation ID Middleware
+# Added LAST so it wraps all other middleware (Starlette executes in reverse order).
+# Reads X-Correlation-ID from Java→Python calls; generates UUID for direct calls.
+app.add_middleware(CorrelationIdMiddleware)
 
 # =====================================================
 # SmartBI API Routes
@@ -377,6 +413,7 @@ else:
 if _food_kb_available:
     app.include_router(food_kb_api.router, prefix="/api/food-kb", tags=["Food Knowledge Base"])
     app.include_router(food_kb_industry_report_api.router, prefix="/api/food-kb/industry-report", tags=["Industry Report RAG"])
+    app.include_router(food_kb_manual_chat_api.router, prefix="/api/food-kb", tags=["Manual Chat"])
 else:
     logger.warning("Food Knowledge Base routes not registered")
 
@@ -493,17 +530,25 @@ async def root():
     }
 
 
+@app.exception_handler(ApiException)
+async def api_exception_handler(request, exc: ApiException):
+    """Handle ApiException with unified {success, data, message, code} format."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=error_response(exc.message, exc.code),
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    """Global exception handler"""
+    """Global exception handler — unified format for unhandled errors."""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={
-            "success": False,
-            "message": str(exc) if settings.debug else "Internal server error",
-            "data": None
-        }
+        content=error_response(
+            str(exc) if settings.debug else "Internal server error",
+            ErrorCode.INTERNAL_ERROR,
+        ),
     )
 
 

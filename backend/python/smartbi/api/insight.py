@@ -12,6 +12,8 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from common.responses import ApiException, ErrorCode
+
 from services.insight_generator import InsightGenerator
 
 logger = logging.getLogger(__name__)
@@ -84,7 +86,7 @@ async def generate_insights(request: InsightRequest):
     """
     try:
         if not request.data:
-            raise HTTPException(status_code=400, detail="Data is required")
+            raise ApiException("Data is required", ErrorCode.VALIDATION_ERROR, 400)
 
         result = await insight_generator.generate_insights(
             data=request.data,
@@ -113,11 +115,11 @@ async def generate_insights(request: InsightRequest):
             error=result.get("error")
         )
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"Insight generation error: {e}", exc_info=True)
-        return InsightResponse(success=False, error="分析生成失败，请稍后重试")
+        return InsightResponse(success=False, error="分析生成失败，请稍后重试", message="分析生成失败，请稍后重试")
 
 
 @router.get("/types")
@@ -178,7 +180,7 @@ async def analyze_metrics(metrics: List[dict]):
     """
     try:
         if not metrics:
-            raise HTTPException(status_code=400, detail="Metrics are required")
+            raise ApiException("Metrics are required", ErrorCode.VALIDATION_ERROR, 400)
 
         # Create minimal data structure for insight generation
         result = await insight_generator.generate_insights(
@@ -195,11 +197,11 @@ async def analyze_metrics(metrics: List[dict]):
             method=result.get("method")
         )
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"Metrics analysis error: {e}", exc_info=True)
-        return InsightResponse(success=False, error="分析生成失败，请稍后重试")
+        return InsightResponse(success=False, error="分析生成失败，请稍后重试", message="分析生成失败，请稍后重试")
 
 
 async def _load_upload_data(upload_id: int, limit: int = 50000) -> List[Dict[str, Any]]:
@@ -249,13 +251,13 @@ async def quick_summary(request: Request):
                 try:
                     upload_id = int(upload_id)
                 except (TypeError, ValueError):
-                    raise HTTPException(status_code=400, detail=f"Invalid upload_id: {upload_id}")
+                    raise ApiException(f"Invalid upload_id: {upload_id}", ErrorCode.VALIDATION_ERROR, 400)
                 data = await _load_upload_data(upload_id)
         else:
-            raise HTTPException(status_code=400, detail="Expected JSON array or object with upload_id")
+            raise ApiException("Expected JSON array or object with upload_id", ErrorCode.VALIDATION_ERROR, 400)
 
         if not data:
-            raise HTTPException(status_code=400, detail="Data is required (provide data array or valid upload_id)")
+            raise ApiException("Data is required (provide data array or valid upload_id)", ErrorCode.VALIDATION_ERROR, 400)
 
         import pandas as pd
         import numpy as np
@@ -326,11 +328,11 @@ async def quick_summary(request: Request):
 
         return summary
 
-    except HTTPException:
+    except (HTTPException, ApiException):
         raise
     except Exception as e:
         logger.error(f"Quick summary error: {e}", exc_info=True)
-        return {"success": False, "error": "分析生成失败，请稍后重试"}
+        return {"success": False, "data": None, "message": "分析生成失败，请稍后重试"}
 
 
 @router.post("/generate-stream")
@@ -346,7 +348,7 @@ async def generate_insights_stream(request: InsightRequest):
     instead of waiting 5-10s for the full response.
     """
     if not request.data:
-        raise HTTPException(status_code=400, detail="Data is required")
+        raise ApiException("Data is required", ErrorCode.VALIDATION_ERROR, 400)
 
     async def event_generator():
         async for event in insight_generator.generate_insights_stream(

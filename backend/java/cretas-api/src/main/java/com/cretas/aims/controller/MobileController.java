@@ -9,6 +9,7 @@ import com.cretas.aims.entity.EquipmentAlert;
 import com.cretas.aims.entity.enums.AlertStatus;
 import com.cretas.aims.repository.EquipmentAlertRepository;
 import com.cretas.aims.service.MobileService;
+import com.cretas.aims.utils.CookieAuthHelper;
 import com.cretas.aims.utils.SecurityUtils;
 import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,7 +20,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.cretas.aims.annotation.RateLimit;
+import com.cretas.aims.annotation.RateLimit.LimitType;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
@@ -41,6 +45,7 @@ public class MobileController {
 
     private final MobileService mobileService;
     private final EquipmentAlertRepository equipmentAlertRepository;
+    private final CookieAuthHelper cookieAuthHelper;
 
     // ==================== 健康检查 ====================
 
@@ -57,29 +62,73 @@ public class MobileController {
 
     @PostMapping("/auth/unified-login")
     @Operation(summary = "统一登录接口")
+    @RateLimit(count = 5, period = 60, limitType = LimitType.IP, message = "登录请求过于频繁，请60秒后再试")
     public ApiResponse<MobileDTO.LoginResponse> unifiedLogin(
-            @RequestBody @Valid MobileDTO.LoginRequest request) {
-        log.info("移动端统一登录: username={}", request.getUsername());
+            @RequestBody @Valid MobileDTO.LoginRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+        log.info("统一登录: username={}, clientType={}", request.getUsername(),
+                httpRequest.getHeader(CookieAuthHelper.CLIENT_TYPE_HEADER));
         MobileDTO.LoginResponse response = mobileService.unifiedLogin(request);
+
+        // For web clients, set HttpOnly cookies in addition to the JSON response
+        if (cookieAuthHelper.isWebClient(httpRequest) && response.getToken() != null) {
+            cookieAuthHelper.setAuthCookies(httpResponse, response.getToken(), response.getRefreshToken());
+            log.debug("Web client detected, auth cookies set for user={}", request.getUsername());
+        }
+
         return ApiResponse.success(response);
     }
 
     @PostMapping("/auth/refresh")
     @Operation(summary = "刷新访问令牌", description = "使用刷新令牌获取新的访问令牌")
+    @RateLimit(count = 10, period = 60, limitType = LimitType.USER, message = "令牌刷新过于频繁，请稍后再试")
     public ApiResponse<MobileDTO.LoginResponse> refreshToken(
-            @RequestParam @Parameter(description = "刷新令牌", example = "eyJhbGciOiJIUzI1NiJ9...") String refreshToken) {
-        log.debug("刷新令牌");
-        MobileDTO.LoginResponse response = mobileService.refreshToken(refreshToken);
+            @RequestParam(required = false) @Parameter(description = "刷新令牌", example = "eyJhbGciOiJIUzI1NiJ9...") String refreshToken,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+        // For web clients, try to read refresh token from cookie if not provided as param
+        String tokenToUse = refreshToken;
+        if ((tokenToUse == null || tokenToUse.isEmpty()) && cookieAuthHelper.isWebClient(httpRequest)) {
+            tokenToUse = CookieAuthHelper.extractCookieValue(httpRequest, CookieAuthHelper.REFRESH_TOKEN_COOKIE);
+        }
+
+        log.debug("刷新令牌, source={}", (refreshToken != null && !refreshToken.isEmpty()) ? "param" : "cookie");
+        MobileDTO.LoginResponse response = mobileService.refreshToken(tokenToUse);
+
+        // Update cookies for web clients
+        if (cookieAuthHelper.isWebClient(httpRequest) && response.getToken() != null) {
+            cookieAuthHelper.setAuthCookies(httpResponse, response.getToken(), response.getRefreshToken());
+        }
+
         return ApiResponse.success(response);
     }
 
     @PostMapping("/auth/logout")
     @Operation(summary = "用户登出", description = "登出当前用户，可选择性地清除指定设备的登录状态")
     public ApiResponse<Void> logout(
-            @RequestParam(required = false) @Parameter(description = "设备ID", example = "device-uuid-12345") String deviceId) {
+            @RequestParam(required = false) @Parameter(description = "设备ID", example = "device-uuid-12345") String deviceId,
+            HttpServletRequest request,
+            HttpServletResponse httpResponse) {
         Long userId = SecurityUtils.getCurrentUserId();
+        // Extract token from header first, then cookie fallback
+        String token = null;
+        String authorization = request.getHeader("Authorization");
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            token = authorization.substring(7);
+        }
+        if (token == null) {
+            token = CookieAuthHelper.extractCookieValue(request, CookieAuthHelper.ACCESS_TOKEN_COOKIE);
+        }
+
         log.info("用户登出: userId={}, deviceId={}", userId, deviceId);
-        mobileService.logout(userId, deviceId);
+        mobileService.logout(userId, deviceId, token);
+
+        // Clear cookies for web clients (always safe to clear, even for mobile)
+        if (cookieAuthHelper.isWebClient(request)) {
+            cookieAuthHelper.clearAuthCookies(httpResponse);
+        }
+
         return ApiResponse.success();
     }
 
@@ -127,6 +176,7 @@ public class MobileController {
 
     @PostMapping("/auth/register-phase-one")
     @Operation(summary = "移动端注册-第一阶段（验证手机号）")
+    @RateLimit(count = 3, period = 60, limitType = LimitType.IP, message = "注册请求过于频繁，请60秒后再试")
     public ApiResponse<MobileDTO.RegisterPhaseOneResponse> registerPhaseOne(
             @RequestBody @Valid MobileDTO.RegisterPhaseOneRequest request) {
         log.info("移动端注册第一阶段: phone={}", request.getPhoneNumber());
@@ -136,6 +186,7 @@ public class MobileController {
 
     @PostMapping("/auth/register-phase-two")
     @Operation(summary = "移动端注册-第二阶段（创建账户）")
+    @RateLimit(count = 3, period = 60, limitType = LimitType.IP, message = "注册请求过于频繁，请60秒后再试")
     public ApiResponse<MobileDTO.RegisterPhaseTwoResponse> registerPhaseTwo(
             @RequestBody @Valid MobileDTO.RegisterPhaseTwoRequest request) {
         log.info("移动端注册第二阶段: factoryId={}, username={}", request.getFactoryId(), request.getUsername());
@@ -306,9 +357,10 @@ public class MobileController {
     @GetMapping("/auth/validate")
     @Operation(summary = "验证令牌", description = "验证JWT令牌是否有效")
     public ApiResponse<Boolean> validateToken(
-            @Parameter(description = "访问令牌", required = true, example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
-            @RequestHeader("Authorization") String authorization) {
-        String token = TokenUtils.extractToken(authorization);
+            @Parameter(description = "访问令牌", example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            HttpServletRequest httpRequest) {
+        String token = resolveToken(authorization, httpRequest);
         boolean isValid = mobileService.validateToken(token);
         return ApiResponse.success(isValid);
     }
@@ -319,9 +371,10 @@ public class MobileController {
     @GetMapping("/auth/me")
     @Operation(summary = "获取当前用户信息", description = "根据Token获取当前登录用户的详细信息")
     public ApiResponse<UserDTO> getCurrentUser(
-            @Parameter(description = "访问令牌", required = true, example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
-            @RequestHeader("Authorization") String authorization) {
-        String token = TokenUtils.extractToken(authorization);
+            @Parameter(description = "访问令牌", example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            HttpServletRequest httpRequest) {
+        String token = resolveToken(authorization, httpRequest);
         UserDTO user = mobileService.getUserFromToken(token);
         return ApiResponse.success(user);
     }
@@ -332,13 +385,14 @@ public class MobileController {
     @PostMapping("/auth/change-password")
     @Operation(summary = "修改密码", description = "修改当前用户的登录密码")
     public ApiResponse<Void> changePassword(
-            @Parameter(description = "访问令牌", required = true, example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
-            @RequestHeader("Authorization") String authorization,
+            @Parameter(description = "访问令牌", example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @Parameter(description = "原密码", required = true, example = "OldPass@123")
             @RequestParam String oldPassword,
             @Parameter(description = "新密码", required = true, example = "NewPass@456")
-            @RequestParam String newPassword) {
-        String token = TokenUtils.extractToken(authorization);
+            @RequestParam String newPassword,
+            HttpServletRequest httpRequest) {
+        String token = resolveToken(authorization, httpRequest);
         UserDTO user = mobileService.getUserFromToken(token);
         log.info("修改密码: userId={}", user.getId());
         mobileService.changePassword(user.getId(), oldPassword, newPassword);
@@ -668,5 +722,24 @@ public class MobileController {
 
         MobileDTO.FeedbackResponse response = mobileService.submitFeedback(factoryId, request, userId);
         return ApiResponse.success("反馈提交成功", response);
+    }
+
+    // ==================== Private helpers ====================
+
+    /**
+     * Resolve JWT token from Authorization header (mobile) or cookie (web).
+     * Used by endpoints that need the raw token (validate, me, change-password).
+     */
+    private String resolveToken(String authorization, HttpServletRequest request) {
+        // 1. Try Authorization header (mobile clients)
+        if (authorization != null && !authorization.isEmpty()) {
+            return TokenUtils.extractToken(authorization);
+        }
+        // 2. Fallback: cookie (web clients)
+        String cookieToken = CookieAuthHelper.extractCookieValue(request, CookieAuthHelper.ACCESS_TOKEN_COOKIE);
+        if (cookieToken != null && !cookieToken.isEmpty()) {
+            return cookieToken;
+        }
+        throw new com.cretas.aims.exception.BusinessException("未提供认证信息");
     }
 }

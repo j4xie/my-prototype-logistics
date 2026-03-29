@@ -10,10 +10,12 @@ import com.cretas.aims.dto.python.PythonAnalysisResponse;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
 import com.cretas.aims.dto.smartbi.ForecastResult;
 import com.cretas.aims.dto.smartbi.MetricResult;
+import com.cretas.aims.exception.PythonServiceUnavailableException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -50,6 +52,7 @@ public class PythonSmartBIClient {
     private final PythonSmartBIConfig config;
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final PythonServiceCircuitBreaker circuitBreaker;
 
     // 服务可用性状态
     private final AtomicBoolean serviceAvailable = new AtomicBoolean(false);
@@ -59,9 +62,11 @@ public class PythonSmartBIClient {
 
     public PythonSmartBIClient(PythonSmartBIConfig config,
                                @Qualifier("aiServiceHttpClient") OkHttpClient baseHttpClient,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               PythonServiceCircuitBreaker circuitBreaker) {
         this.config = config;
         this.objectMapper = objectMapper;
+        this.circuitBreaker = circuitBreaker;
 
         // 为 Python SmartBI 服务创建专用的 HttpClient
         // 添加拦截器：所有 Java→Python 内部调用自动带 X-Internal-Secret 头
@@ -71,10 +76,14 @@ public class PythonSmartBIClient {
                 .writeTimeout(config.getTimeout(), TimeUnit.MILLISECONDS)
                 .addInterceptor(chain -> {
                     Request original = chain.request();
-                    Request withAuth = original.newBuilder()
-                            .header("X-Internal-Secret", System.getenv().getOrDefault("INTERNAL_API_SECRET", "cretas-internal-2026"))
-                            .build();
-                    return chain.proceed(withAuth);
+                    Request.Builder builder = original.newBuilder()
+                            .header("X-Internal-Secret", System.getenv().getOrDefault("INTERNAL_API_SECRET", "cretas-internal-2026"));
+                    // Propagate correlation ID from MDC to outgoing Python calls
+                    String correlationId = MDC.get("correlationId");
+                    if (correlationId != null) {
+                        builder.header("X-Correlation-ID", correlationId);
+                    }
+                    return chain.proceed(builder.build());
                 })
                 .build();
     }
@@ -351,15 +360,24 @@ public class PythonSmartBIClient {
     // ==================== 通用请求执行 ====================
 
     /**
-     * 执行请求并带重试机制
+     * 执行请求并带重试机制 + 熔断器保护
      */
     private <T> T executeWithRetry(Request request, Class<T> responseType) throws IOException {
+        // 熔断器检查：如果熔断中，立即快速失败
+        if (!circuitBreaker.isCallPermitted()) {
+            throw new PythonServiceUnavailableException(
+                    circuitBreaker.getState().name(),
+                    circuitBreaker.getRemainingOpenTimeMs());
+        }
+
         int retries = 0;
         IOException lastException = null;
 
         while (retries <= config.getMaxRetries()) {
             try {
-                return execute(request, responseType);
+                T result = execute(request, responseType);
+                circuitBreaker.recordSuccess();
+                return result;
             } catch (IOException e) {
                 lastException = e;
                 retries++;
@@ -375,21 +393,31 @@ public class PythonSmartBIClient {
             }
         }
 
-        // 标记服务不可用
+        // 所有重试耗尽，记录失败（可能触发熔断）
+        circuitBreaker.recordFailure();
         serviceAvailable.set(false);
         throw lastException;
     }
 
     /**
-     * 执行请求并带重试机制（TypeReference 版本）
+     * 执行请求并带重试机制 + 熔断器保护（TypeReference 版本）
      */
     private <T> T executeWithRetry(Request request, TypeReference<T> typeReference) throws IOException {
+        // 熔断器检查：如果熔断中，立即快速失败
+        if (!circuitBreaker.isCallPermitted()) {
+            throw new PythonServiceUnavailableException(
+                    circuitBreaker.getState().name(),
+                    circuitBreaker.getRemainingOpenTimeMs());
+        }
+
         int retries = 0;
         IOException lastException = null;
 
         while (retries <= config.getMaxRetries()) {
             try {
-                return execute(request, typeReference);
+                T result = execute(request, typeReference);
+                circuitBreaker.recordSuccess();
+                return result;
             } catch (IOException e) {
                 lastException = e;
                 retries++;
@@ -405,6 +433,8 @@ public class PythonSmartBIClient {
             }
         }
 
+        // 所有重试耗尽，记录失败（可能触发熔断）
+        circuitBreaker.recordFailure();
         serviceAvailable.set(false);
         throw lastException;
     }
@@ -465,7 +495,7 @@ public class PythonSmartBIClient {
             PythonFieldDetectionResponse response = executeWithRetry(httpRequest, PythonFieldDetectionResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("字段检测失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -510,7 +540,7 @@ public class PythonSmartBIClient {
             PythonFieldMappingResponse response = executeWithRetry(httpRequest, PythonFieldMappingResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("字段映射失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -554,7 +584,7 @@ public class PythonSmartBIClient {
             PythonChartConfigResponse response = executeWithRetry(httpRequest, PythonChartConfigResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("图表配置推荐失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -599,7 +629,7 @@ public class PythonSmartBIClient {
             PythonMetricResponse response = executeWithRetry(httpRequest, PythonMetricResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("指标计算 V2 失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -633,7 +663,7 @@ public class PythonSmartBIClient {
             PythonForecastResponse response = executeWithRetry(httpRequest, PythonForecastResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("预测分析 V2 失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -678,7 +708,7 @@ public class PythonSmartBIClient {
             PythonInsightResponse response = executeWithRetry(httpRequest, PythonInsightResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("AI 洞察生成失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -722,7 +752,7 @@ public class PythonSmartBIClient {
             PythonChartResponse response = executeWithRetry(httpRequest, PythonChartResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("图表构建失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -813,7 +843,7 @@ public class PythonSmartBIClient {
             PythonExcelParseResponse response = executeWithRetry(httpRequest, PythonExcelParseResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("Excel 解析 V2 失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -860,7 +890,7 @@ public class PythonSmartBIClient {
             PythonLeastSquaresResponse response = executeWithRetry(httpRequest, PythonLeastSquaresResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("最小二乘法求解失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -1040,7 +1070,7 @@ public class PythonSmartBIClient {
             PythonAnalysisResponse response = executeWithRetry(httpRequest, PythonAnalysisResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("{}失败: {}", operationName, e.getMessage());
             return Optional.empty();
         }
@@ -1100,7 +1130,7 @@ public class PythonSmartBIClient {
             ClassifierResponse response = executeWithRetry(httpRequest, ClassifierResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("意图分类失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -1142,7 +1172,7 @@ public class PythonSmartBIClient {
             ClassifierBatchResponse response = executeWithRetry(httpRequest, ClassifierBatchResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("批量意图分类失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -1217,7 +1247,7 @@ public class PythonSmartBIClient {
             LinUCBComputeResponse response = executeWithRetry(httpRequest, LinUCBComputeResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("LinUCB UCB 计算失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -1261,7 +1291,7 @@ public class PythonSmartBIClient {
             LinUCBUpdateResponse response = executeWithRetry(httpRequest, LinUCBUpdateResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("LinUCB 模型更新失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -1315,7 +1345,7 @@ public class PythonSmartBIClient {
             LinUCBBatchResponse response = executeWithRetry(httpRequest, LinUCBBatchResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("LinUCB 批量计算失败: {}", e.getMessage());
             return Optional.empty();
         }
@@ -1342,7 +1372,7 @@ public class PythonSmartBIClient {
                     .post(RequestBody.create(JSON, objectMapper.writeValueAsString(body)))
                     .build();
             return executeWithRetry(request, Map.class);
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("食品知识库查询失败: {}", e.getMessage());
             Map<String, Object> errorResult = new java.util.HashMap<>();
             errorResult.put("success", false);
@@ -1366,7 +1396,7 @@ public class PythonSmartBIClient {
                     .post(RequestBody.create(JSON, objectMapper.writeValueAsString(body)))
                     .build();
             return executeWithRetry(request, Map.class);
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.warn("食品知识库实体提取失败: {}", e.getMessage());
             Map<String, Object> errorResult = new java.util.HashMap<>();
             errorResult.put("success", false);
@@ -1388,7 +1418,7 @@ public class PythonSmartBIClient {
                     .post(RequestBody.create(JSON, objectMapper.writeValueAsString(feedbackRequest)))
                     .build();
             return executeWithRetry(request, Map.class);
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("提交食品知识库反馈失败: {}", e.getMessage());
             Map<String, Object> errorResult = new java.util.HashMap<>();
             errorResult.put("success", false);
@@ -1409,7 +1439,7 @@ public class PythonSmartBIClient {
                     .post(RequestBody.create(JSON, objectMapper.writeValueAsString(logRequest)))
                     .build();
             return executeWithRetry(request, Map.class);
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.warn("记录食品知识库查询日志失败（非致命）: {}", e.getMessage());
             Map<String, Object> errorResult = new java.util.HashMap<>();
             errorResult.put("success", false);
@@ -1429,7 +1459,7 @@ public class PythonSmartBIClient {
                     .get()
                     .build();
             return executeWithRetry(request, Map.class);
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("获取食品知识库反馈统计失败: {}", e.getMessage());
             Map<String, Object> errorResult = new java.util.HashMap<>();
             errorResult.put("success", false);
@@ -1474,7 +1504,7 @@ public class PythonSmartBIClient {
             FinanceExtractResponse response = executeWithRetry(httpRequest, FinanceExtractResponse.class);
             return Optional.ofNullable(response);
 
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.warn("财务数据提取失败(非阻塞): {}", e.getMessage());
             return Optional.empty();
         }
@@ -1505,7 +1535,7 @@ public class PythonSmartBIClient {
                     .post(RequestBody.create(JSON, objectMapper.writeValueAsString(request)))
                     .build();
             return executeWithRetry(httpRequest, Map.class);
-        } catch (IOException e) {
+        } catch (IOException | PythonServiceUnavailableException e) {
             log.error("财务看板调用失败: endpoint={}, error={}", endpoint, e.getMessage());
             return null;
         }

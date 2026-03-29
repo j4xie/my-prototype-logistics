@@ -24,6 +24,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from smartbi.config import coerce_numeric_columns
 
+from common.responses import ApiException, ErrorCode
+
 # Services
 from services.cross_analyzer import CrossAnalyzer, DrillDownResult, DimensionHierarchy
 from services.industry_benchmark import (

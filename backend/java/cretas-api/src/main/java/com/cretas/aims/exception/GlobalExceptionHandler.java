@@ -25,6 +25,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import org.slf4j.MDC;
 import java.sql.SQLException;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -45,9 +46,17 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     /**
-     * 生成错误追踪ID，用于关联日志和用户反馈
+     * 生成错误追踪ID，用于关联日志和用户反馈。
+     * Reuses the request's correlation ID from MDC when available so that
+     * the trace ID shown to users matches the log correlation ID.
+     * Falls back to a random UUID segment if MDC is empty.
      */
     private String generateTraceId() {
+        String correlationId = MDC.get("correlationId");
+        if (correlationId != null && !correlationId.isBlank()) {
+            // Use first 8 chars of the correlation ID for user-facing trace code
+            return correlationId.substring(0, Math.min(8, correlationId.length())).toUpperCase();
+        }
         return UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
@@ -95,6 +104,17 @@ public class GlobalExceptionHandler {
                 && !lowerMsg.contains("nullpointer")
                 && !lowerMsg.contains("class cast")
                 && !lowerMsg.contains("classcast");
+    }
+
+    /**
+     * 处理限流超限异常 — 返回 HTTP 429 Too Many Requests
+     */
+    @ExceptionHandler(RateLimitExceededException.class)
+    public org.springframework.http.ResponseEntity<ApiResponse<?>> handleRateLimitExceededException(
+            RateLimitExceededException e) {
+        log.warn("限流触发: {}", e.getMessage());
+        return org.springframework.http.ResponseEntity.status(429)
+                .body(ApiResponse.error(429, e.getMessage()));
     }
 
     /**
