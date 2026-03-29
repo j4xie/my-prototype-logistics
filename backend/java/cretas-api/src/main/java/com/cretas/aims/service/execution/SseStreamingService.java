@@ -1,0 +1,619 @@
+package com.cretas.aims.service.execution;
+
+import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.dto.ChatCompletionRequest;
+import com.cretas.aims.ai.dto.ChatMessage;
+import com.cretas.aims.ai.tool.ToolExecutor;
+import com.cretas.aims.ai.tool.ToolRegistry;
+import com.cretas.aims.config.DashScopeConfig;
+import com.cretas.aims.config.IntentKnowledgeBase;
+import com.cretas.aims.config.IntentKnowledgeBase.QuestionType;
+import com.cretas.aims.dto.ai.IntentExecuteRequest;
+import com.cretas.aims.dto.ai.IntentExecuteResponse;
+import com.cretas.aims.dto.cache.SemanticCacheHit;
+import com.cretas.aims.dto.intent.IntentMatchResult;
+import com.cretas.aims.entity.config.AIIntentConfig;
+import com.cretas.aims.exception.LlmSchemaValidationException;
+import com.cretas.aims.service.AIIntentService;
+import com.cretas.aims.service.AnalysisRouterService;
+import com.cretas.aims.service.ResultFormatterService;
+import com.cretas.aims.service.SemanticCacheService;
+import com.cretas.aims.service.SlotFillingService;
+import com.cretas.aims.util.ErrorSanitizer;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import jakarta.annotation.PreDestroy;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+
+/**
+ * SSE 流式执行服务
+ *
+ * 负责 SseEmitter 管理、流式意图执行、流式对话回复、
+ * SSE 事件格式化与发送。拥有独占的 SSE 线程池。
+ */
+@Slf4j
+@Service
+public class SseStreamingService {
+
+    private static final long SSE_TIMEOUT_MS = 120_000L;
+
+    private final ExecutorService sseExecutor = java.util.concurrent.Executors.newFixedThreadPool(
+            8, r -> { Thread t = new Thread(r, "intent-sse"); t.setDaemon(true); return t; });
+
+    private final AIIntentService aiIntentService;
+    private final SemanticCacheService semanticCacheService;
+    private final IntentKnowledgeBase knowledgeBase;
+    private final AnalysisRouterService analysisRouterService;
+    private final ObjectMapper objectMapper;
+    private final ToolRegistry toolRegistry;
+    private final ToolDispatchService toolDispatchService;
+    private final DynamicToolSelectionService dynamicToolSelectionService;
+    private final DashScopeClient dashScopeClient;
+    private final DashScopeConfig dashScopeConfig;
+
+    @Autowired(required = false)
+    private ResultFormatterService resultFormatterService;
+
+    @Autowired(required = false)
+    private SlotFillingService slotFillingService;
+
+    @Autowired
+    public SseStreamingService(@Lazy AIIntentService aiIntentService,
+                               SemanticCacheService semanticCacheService,
+                               IntentKnowledgeBase knowledgeBase,
+                               AnalysisRouterService analysisRouterService,
+                               ObjectMapper objectMapper,
+                               ToolRegistry toolRegistry,
+                               ToolDispatchService toolDispatchService,
+                               DynamicToolSelectionService dynamicToolSelectionService,
+                               DashScopeClient dashScopeClient,
+                               DashScopeConfig dashScopeConfig) {
+        this.aiIntentService = aiIntentService;
+        this.semanticCacheService = semanticCacheService;
+        this.knowledgeBase = knowledgeBase;
+        this.analysisRouterService = analysisRouterService;
+        this.objectMapper = objectMapper;
+        this.toolRegistry = toolRegistry;
+        this.toolDispatchService = toolDispatchService;
+        this.dynamicToolSelectionService = dynamicToolSelectionService;
+        this.dashScopeClient = dashScopeClient;
+        this.dashScopeConfig = dashScopeConfig;
+    }
+
+    @PreDestroy
+    public void destroy() {
+        log.info("关闭 SSE 执行器线程池...");
+        sseExecutor.shutdown();
+    }
+
+    /**
+     * SSE 线程池 — 暴露给 MultiIntentExecutionService 用于并行执行
+     */
+    public ExecutorService getSseExecutor() {
+        return sseExecutor;
+    }
+
+    // ==================== 公开方法 ====================
+
+    /**
+     * SSE 流式执行意图
+     */
+    public SseEmitter executeStream(String factoryId, IntentExecuteRequest request,
+                                     Long userId, String userRole) {
+        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
+
+        emitter.onCompletion(() -> log.debug("SSE connection completed: factoryId={}", factoryId));
+        emitter.onTimeout(() -> log.warn("SSE connection timeout: factoryId={}", factoryId));
+        emitter.onError(e -> log.error("SSE connection error: factoryId={}", factoryId, e));
+
+        sseExecutor.execute(() -> executeStreamAsync(emitter, factoryId, request, userId, userRole));
+
+        return emitter;
+    }
+
+    // ==================== 内部方法 ====================
+
+    /**
+     * 异步执行流式意图处理
+     */
+    private void executeStreamAsync(SseEmitter emitter, String factoryId,
+                                     IntentExecuteRequest request, Long userId, String userRole) {
+        try {
+            long startTime = System.currentTimeMillis();
+
+            // 1. 开始事件
+            sendSseEvent(emitter, "start", Map.of(
+                    "message", "开始处理...",
+                    "timestamp", LocalDateTime.now().toString()
+            ));
+
+            String userInput = request.getUserInput();
+
+            // 1.5. 早期问题类型检测
+            if (userInput != null && !userInput.isEmpty()) {
+                QuestionType earlyQuestionType = knowledgeBase.detectQuestionType(userInput);
+                if (earlyQuestionType == QuestionType.GENERAL_QUESTION ||
+                    earlyQuestionType == QuestionType.CONVERSATIONAL) {
+
+                    boolean isAnalysis = earlyQuestionType == QuestionType.GENERAL_QUESTION
+                            && analysisRouterService.isAnalysisRequest(userInput, earlyQuestionType);
+                    Optional<String> foodPhrase = knowledgeBase.matchPhrase(userInput);
+                    boolean isFood = foodPhrase.isPresent() && "FOOD_KNOWLEDGE_QUERY".equals(foodPhrase.get());
+
+                    if (!isAnalysis && !isFood) {
+                        log.info("Stream: 早期检测到{}，使用流式 LLM 回复", earlyQuestionType);
+                        streamConversationalResponse(emitter, factoryId, userInput, earlyQuestionType,
+                                request.getEnableThinking(), request.getThinkingBudget(), startTime);
+                        return;
+                    }
+                }
+            }
+
+            // 2. 查询语义缓存
+            SemanticCacheHit cacheHit = semanticCacheService.queryCache(factoryId, userInput);
+
+            if (cacheHit.isHit()) {
+                sendSseEvent(emitter, "cache_hit", Map.of(
+                        "hitType", cacheHit.getHitType(),
+                        "similarity", cacheHit.getSimilarity() != null ? cacheHit.getSimilarity() : 1.0,
+                        "latencyMs", cacheHit.getLatencyMs()
+                ));
+
+                if (cacheHit.hasExecutionResult()) {
+                    IntentExecuteResponse cachedResponse = deserializeResponse(cacheHit.getExecutionResult());
+                    if (cachedResponse != null) {
+                        sendSseEvent(emitter, "result", cachedResponse);
+                        sendSseEvent(emitter, "complete", Map.of(
+                                "status", "SUCCESS",
+                                "cacheHit", true,
+                                "totalLatencyMs", System.currentTimeMillis() - startTime
+                        ));
+                        emitter.complete();
+                        return;
+                    }
+                }
+
+                IntentMatchResult cachedMatch = deserializeIntentResult(cacheHit.getIntentResult());
+                if (cachedMatch != null && cachedMatch.hasMatch()) {
+                    sendSseEvent(emitter, "intent_recognized", Map.of(
+                            "intentCode", cachedMatch.getBestMatch().getIntentCode(),
+                            "intentName", cachedMatch.getBestMatch().getIntentName(),
+                            "confidence", cachedMatch.getConfidence(),
+                            "matchMethod", "CACHE"
+                    ));
+                    executeAndStreamResult(emitter, factoryId, request, cachedMatch.getBestMatch(),
+                            userId, userRole, startTime, cachedMatch);
+                    return;
+                }
+            }
+
+            // 3. 缓存未命中
+            sendSseEvent(emitter, "cache_miss", Map.of(
+                    "latencyMs", cacheHit.getLatencyMs()
+            ));
+
+            // 4. 意图识别
+            sendSseEvent(emitter, "progress", Map.of(
+                    "stage", "intent_recognition",
+                    "message", "正在识别意图..."
+            ));
+
+            IntentMatchResult matchResult;
+            try {
+                matchResult = aiIntentService.recognizeIntentWithConfidence(
+                        userInput, factoryId, 3, userId, userRole, request.getSessionId());
+            } catch (LlmSchemaValidationException e) {
+                IntentExecuteResponse validationFailureResponse = buildValidationFailureResponse(e);
+                sendSseEvent(emitter, "result", validationFailureResponse);
+                sendSseEvent(emitter, "complete", Map.of(
+                        "status", "VALIDATION_FAILED",
+                        "cacheHit", false,
+                        "totalLatencyMs", System.currentTimeMillis() - startTime
+                ));
+                emitter.complete();
+                return;
+            }
+
+            // 5. 处理识别结果
+            if (!matchResult.hasMatch()) {
+                IntentExecuteResponse noMatchResponse = buildNoMatchResponseForStream(matchResult, factoryId);
+                sendSseEvent(emitter, "result", noMatchResponse);
+                sendSseEvent(emitter, "complete", Map.of(
+                        "status", "NO_MATCH",
+                        "cacheHit", false,
+                        "totalLatencyMs", System.currentTimeMillis() - startTime
+                ));
+                emitter.complete();
+                return;
+            }
+
+            AIIntentConfig intent = matchResult.getBestMatch();
+            sendSseEvent(emitter, "intent_recognized", Map.of(
+                    "intentCode", intent.getIntentCode(),
+                    "intentName", intent.getIntentName(),
+                    "intentCategory", intent.getIntentCategory(),
+                    "confidence", matchResult.getConfidence(),
+                    "matchMethod", matchResult.getMatchMethod() != null ? matchResult.getMatchMethod().name() : "UNKNOWN"
+            ));
+
+            // 6. 需要确认的情况
+            if (Boolean.TRUE.equals(matchResult.getRequiresConfirmation())
+                    && !Boolean.TRUE.equals(request.getForceExecute())) {
+                IntentExecuteResponse clarificationResponse = buildClarificationResponseForStream(matchResult, factoryId);
+                sendSseEvent(emitter, "result", clarificationResponse);
+                sendSseEvent(emitter, "complete", Map.of(
+                        "status", "NEED_CLARIFICATION",
+                        "cacheHit", false,
+                        "totalLatencyMs", System.currentTimeMillis() - startTime
+                ));
+                emitter.complete();
+                return;
+            }
+
+            // 7a. Skill 路由
+            if (dynamicToolSelectionService.isSkillsEnabled()) {
+                try {
+                    IntentExecuteResponse skillResponse = dynamicToolSelectionService.trySkillRoute(
+                            request.getUserInput(), factoryId, userId);
+                    if (skillResponse != null) {
+                        sendSseEvent(emitter, "result", skillResponse);
+                        sendSseEvent(emitter, "complete", Map.of(
+                                "status", skillResponse.getStatus(),
+                                "cacheHit", false,
+                                "totalLatencyMs", System.currentTimeMillis() - startTime
+                        ));
+                        emitter.complete();
+                        return;
+                    }
+                } catch (Exception e) {
+                    log.warn("[SSE] Skill 路由异常，回退到 Tool: {}", e.getMessage());
+                }
+            }
+
+            // 7b. Slot Filling
+            if (userId != null && !Boolean.TRUE.equals(request.getSkipSlotFilling())
+                    && slotFillingService != null) {
+                try {
+                    IntentExecuteResponse slotFillingResponse = slotFillingService.checkAndStartSlotFilling(
+                            factoryId, userId, intent, request, matchResult);
+                    if (slotFillingResponse != null) {
+                        log.info("[SSE] 触发 Slot Filling: intentCode={}", intent.getIntentCode());
+                        if (slotFillingResponse.getFormattedText() == null
+                                && slotFillingResponse.getMessage() != null
+                                && slotFillingResponse.getMessage().length() >= 5) {
+                            slotFillingResponse.setFormattedText(slotFillingResponse.getMessage());
+                        }
+                        sendSseEvent(emitter, "result", slotFillingResponse);
+                        sendSseEvent(emitter, "complete", Map.of(
+                                "status", "NEED_MORE_INFO",
+                                "cacheHit", false,
+                                "totalLatencyMs", System.currentTimeMillis() - startTime
+                        ));
+                        emitter.complete();
+                        return;
+                    }
+                } catch (Exception e) {
+                    log.warn("[SSE] Slot Filling 异常，直接执行 Tool: {}", e.getMessage());
+                }
+            }
+
+            // 7c. 执行意图 (Tool)
+            executeAndStreamResult(emitter, factoryId, request, intent, userId, userRole, startTime, matchResult);
+
+        } catch (Exception e) {
+            log.error("SSE 执行失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
+            try {
+                sendSseEvent(emitter, "error", Map.of(
+                        "message", ErrorSanitizer.sanitize(e),
+                        "type", ErrorSanitizer.getSafeTypeName(e)
+                ));
+            } catch (Exception ignored) {
+            }
+            emitter.completeWithError(e);
+        }
+    }
+
+    /**
+     * 执行意图并流式返回结果
+     */
+    private void executeAndStreamResult(SseEmitter emitter, String factoryId,
+                                         IntentExecuteRequest request, AIIntentConfig intent,
+                                         Long userId, String userRole, long startTime,
+                                         IntentMatchResult matchResult) throws IOException {
+        // 权限检查
+        if (!aiIntentService.hasPermission(intent.getIntentCode(), userRole)) {
+            IntentExecuteResponse noPermissionResponse = IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .status("NO_PERMISSION")
+                    .message("您没有权限执行此操作。需要角色: " + intent.getRequiredRoles())
+                    .executedAt(LocalDateTime.now())
+                    .build();
+            sendSseEvent(emitter, "result", noPermissionResponse);
+            sendSseEvent(emitter, "complete", Map.of(
+                    "status", "NO_PERMISSION",
+                    "totalLatencyMs", System.currentTimeMillis() - startTime
+            ));
+            emitter.complete();
+            return;
+        }
+
+        // 审批检查
+        if (intent.needsApproval() && !Boolean.TRUE.equals(request.getForceExecute())) {
+            IntentExecuteResponse approvalResponse = IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .status("PENDING_APPROVAL")
+                    .message("此操作需要审批，已提交审批请求")
+                    .requiresApproval(true)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+            sendSseEvent(emitter, "result", approvalResponse);
+            sendSseEvent(emitter, "complete", Map.of(
+                    "status", "PENDING_APPROVAL",
+                    "totalLatencyMs", System.currentTimeMillis() - startTime
+            ));
+            emitter.complete();
+            return;
+        }
+
+        // 发送执行中事件
+        sendSseEvent(emitter, "executing", Map.of(
+                "intentCode", intent.getIntentCode(),
+                "intentName", intent.getIntentName()
+        ));
+
+        // 路由到 Tool
+        String toolName = intent.getToolName();
+        IntentExecuteResponse response;
+
+        if (toolName != null && !toolName.isEmpty()) {
+            Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
+            if (toolOpt.isPresent()) {
+                log.info("[SSE] 使用 Tool 执行: intentCode={}, toolName={}", intent.getIntentCode(), toolName);
+                response = toolDispatchService.executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole, matchResult);
+            } else {
+                log.warn("[SSE] Tool 未找到: toolName={}", toolName);
+                response = toolDispatchService.buildNoToolResponse(intent);
+            }
+        } else {
+            log.warn("[SSE] 无 Tool 绑定: intentCode={}", intent.getIntentCode());
+            response = toolDispatchService.buildNoToolResponse(intent);
+        }
+
+        // 格式化结果
+        boolean isSuccessStatus = "SUCCESS".equals(response.getStatus()) || "COMPLETED".equals(response.getStatus());
+        if (resultFormatterService != null && isSuccessStatus && response.getResultData() != null) {
+            try {
+                resultFormatterService.formatAndSet(response);
+            } catch (Exception e) {
+                log.warn("[SSE] 结果格式化异常: {}", e.getMessage());
+            }
+        }
+        if (response.getFormattedText() == null && response.getMessage() != null
+                && response.getMessage().length() >= 5) {
+            response.setFormattedText(response.getMessage());
+        }
+
+        sendSseEvent(emitter, "result", response);
+
+        // 缓存结果
+        if ("COMPLETED".equals(response.getStatus()) || "SUCCESS".equals(response.getStatus())) {
+            try {
+                semanticCacheService.cacheResult(factoryId, request.getUserInput(), matchResult, response);
+            } catch (Exception e) {
+                log.warn("缓存执行结果失败: {}", e.getMessage());
+            }
+        }
+
+        sendSseEvent(emitter, "complete", Map.of(
+                "status", response.getStatus(),
+                "cacheHit", false,
+                "totalLatencyMs", System.currentTimeMillis() - startTime
+        ));
+        emitter.complete();
+    }
+
+    /**
+     * 流式生成对话回复
+     */
+    private void streamConversationalResponse(SseEmitter emitter, String factoryId,
+                                               String userInput, QuestionType questionType,
+                                               Boolean enableThinking, Integer thinkingBudget,
+                                               long startTime) throws IOException {
+        String systemPrompt;
+        if (questionType == QuestionType.GENERAL_QUESTION) {
+            systemPrompt = """
+                你是白垩纪AI Agent的智能助手。用户正在询问一个关于生产管理、质量控制或食品安全的通用咨询问题。
+
+                请根据以下原则回答：
+                1. 提供专业、实用的建议
+                2. 结合食品加工行业的最佳实践
+                3. 如果问题涉及具体数据查询，建议用户使用系统的具体功能
+                4. 回答简洁明了，不超过300字
+                5. 使用中文回答
+
+                注意：这不是一个具体的系统操作指令，而是通用知识咨询。
+                """;
+        } else {
+            systemPrompt = """
+                你是白垩纪AI Agent的智能助手。用户发起了一个日常对话。
+
+                请根据以下原则回答：
+                1. 友好、亲切地回应
+                2. 如果用户打招呼，简单回应并询问是否需要帮助
+                3. 适时引导用户使用系统功能
+                4. 回答简洁，不超过100字
+                5. 使用中文回答
+                """;
+        }
+
+        boolean useThinking = Boolean.TRUE.equals(enableThinking)
+                && questionType == QuestionType.GENERAL_QUESTION
+                && dashScopeConfig.isThinkingEnabled();
+
+        String model = useThinking ? dashScopeConfig.getModel() : dashScopeConfig.getFastModel();
+        int maxTokens = useThinking ? 2000 : 500;
+
+        ChatCompletionRequest aiRequest = ChatCompletionRequest.builder()
+                .model(model)
+                .messages(List.of(ChatMessage.system(systemPrompt), ChatMessage.user(userInput)))
+                .temperature(0.7)
+                .maxTokens(maxTokens)
+                .extraBody(ChatCompletionRequest.ExtraBody.builder()
+                        .enableThinking(useThinking).build())
+                .build();
+
+        sendSseEvent(emitter, "meta", Map.of(
+                "model", model,
+                "thinking", useThinking,
+                "questionType", questionType.name()));
+
+        try {
+            dashScopeClient.chatCompletionStream(aiRequest,
+                token -> {
+                    try {
+                        emitter.send(SseEmitter.event().name("token").data(token));
+                    } catch (Exception e) {
+                        log.debug("Client disconnected during stream token");
+                    }
+                },
+                response -> {
+                    try {
+                        String fullContent = response.getContent() != null ? response.getContent() : "";
+                        Integer tokensUsed = response.getUsage() != null
+                                ? response.getUsage().getTotalTokens() : null;
+                        String finishReason = response.getChoices() != null && !response.getChoices().isEmpty()
+                                ? response.getChoices().get(0).getFinishReason() : "stop";
+
+                        IntentExecuteResponse fullResult = IntentExecuteResponse.builder()
+                                .intentRecognized(false)
+                                .status("COMPLETED")
+                                .message(fullContent)
+                                .formattedText(fullContent)
+                                .executedAt(LocalDateTime.now())
+                                .build();
+                        sendSseEvent(emitter, "result", fullResult);
+
+                        sendSseEvent(emitter, "complete", Map.of(
+                                "status", "SUCCESS",
+                                "fullContent", fullContent,
+                                "tokensUsed", tokensUsed != null ? tokensUsed : 0,
+                                "finishReason", finishReason,
+                                "model", model,
+                                "totalLatencyMs", System.currentTimeMillis() - startTime
+                        ));
+                        emitter.complete();
+                    } catch (Exception e) {
+                        log.debug("Error sending stream complete: {}", e.getMessage());
+                    }
+                });
+        } catch (Exception e) {
+            log.error("Stream conversational response failed: {}", e.getMessage());
+            String fallback = questionType == QuestionType.GENERAL_QUESTION
+                    ? "抱歉，我暂时无法回答您的问题。您可以尝试询问具体的系统操作。"
+                    : "您好！有什么可以帮您的吗？";
+
+            IntentExecuteResponse fallbackResult = IntentExecuteResponse.builder()
+                    .intentRecognized(false)
+                    .status("COMPLETED")
+                    .message(fallback)
+                    .formattedText(fallback)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+            sendSseEvent(emitter, "result", fallbackResult);
+            sendSseEvent(emitter, "complete", Map.of(
+                    "status", "LLM_ERROR",
+                    "fullContent", fallback,
+                    "totalLatencyMs", System.currentTimeMillis() - startTime
+            ));
+            emitter.complete();
+        }
+    }
+
+    // ==================== 工具方法 ====================
+
+    void sendSseEvent(SseEmitter emitter, String eventName, Object data) throws IOException {
+        try {
+            String json = objectMapper.writeValueAsString(data);
+            emitter.send(SseEmitter.event().name(eventName).data(json));
+        } catch (JsonProcessingException e) {
+            log.warn("序列化 SSE 事件数据失败: {}", e.getMessage());
+            throw new IOException("Failed to serialize SSE event data", e);
+        }
+    }
+
+    private IntentExecuteResponse deserializeResponse(String json) {
+        if (json == null || json.isEmpty()) return null;
+        try {
+            return objectMapper.readValue(json, IntentExecuteResponse.class);
+        } catch (JsonProcessingException e) {
+            log.warn("反序列化执行结果失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private IntentMatchResult deserializeIntentResult(String json) {
+        if (json == null || json.isEmpty()) return null;
+        try {
+            return objectMapper.readValue(json, IntentMatchResult.class);
+        } catch (JsonProcessingException e) {
+            log.warn("反序列化意图结果失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private IntentExecuteResponse buildValidationFailureResponse(LlmSchemaValidationException e) {
+        return IntentExecuteResponse.builder()
+                .intentRecognized(false)
+                .status("VALIDATION_FAILED")
+                .message("AI 无法准确理解您的意图，请重新描述或从常用操作中选择。")
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+
+    private IntentExecuteResponse buildNoMatchResponseForStream(IntentMatchResult matchResult, String factoryId) {
+        String message = matchResult.getConversationMessage() != null && !matchResult.getConversationMessage().isEmpty()
+                ? matchResult.getConversationMessage()
+                : "我没有理解您的意图，请更详细地描述您的需求。";
+        return IntentExecuteResponse.builder()
+                .intentRecognized(false)
+                .status("NEED_CLARIFICATION")
+                .message(message)
+                .formattedText(message)
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+
+    private IntentExecuteResponse buildClarificationResponseForStream(IntentMatchResult matchResult, String factoryId) {
+        AIIntentConfig matchedIntent = matchResult.getBestMatch();
+        String clarificationMessage = matchResult.getClarificationQuestion();
+        if (clarificationMessage == null || clarificationMessage.isEmpty()) {
+            clarificationMessage = "您的请求可能匹配多个操作，请确认您想要执行的操作。";
+        }
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true)
+                .intentCode(matchedIntent.getIntentCode())
+                .intentName(matchedIntent.getIntentName())
+                .intentCategory(matchedIntent.getIntentCategory())
+                .status("NEED_CLARIFICATION")
+                .message(clarificationMessage)
+                .formattedText(clarificationMessage)
+                .confidence(matchResult.getConfidence())
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+}

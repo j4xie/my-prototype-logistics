@@ -19,3 +19,13 @@ export type {
   FieldType,
   EnumOption,
 } from './homeModuleSchemas';
+
+// FAHomeScreen sub-components
+export { ShakingCard } from './ShakingCard';
+export { WelcomeHeader } from './WelcomeHeader';
+export { AIInsightCard } from './AIInsightCard';
+export { StatCardGrid } from './StatCardGrid';
+export { QuickActionsModule } from './QuickActionsModule';
+export { DevToolsModule } from './DevToolsModule';
+export { EditToolbar } from './EditToolbar';
+export { AddItemSheet } from './AddItemSheet';

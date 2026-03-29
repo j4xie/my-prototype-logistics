@@ -1,0 +1,1272 @@
+package com.cretas.aims.service.execution;
+
+import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.dto.ChatCompletionRequest;
+import com.cretas.aims.ai.dto.ChatCompletionResponse;
+import com.cretas.aims.ai.dto.ChatMessage;
+import com.cretas.aims.ai.tool.ToolExecutor;
+import com.cretas.aims.ai.tool.ToolRegistry;
+import com.cretas.aims.config.DashScopeConfig;
+import com.cretas.aims.config.IntentKnowledgeBase;
+import com.cretas.aims.config.IntentKnowledgeBase.QuestionType;
+import com.cretas.aims.dto.ai.*;
+import com.cretas.aims.dto.cache.SemanticCacheHit;
+import com.cretas.aims.dto.conversation.ConversationMessage;
+import com.cretas.aims.dto.intent.IntentMatchResult;
+import com.cretas.aims.dto.intent.IntentValidationFact;
+import com.cretas.aims.dto.intent.ValidationResult;
+import com.cretas.aims.entity.AIAnalysisResult;
+import com.cretas.aims.entity.config.AIIntentConfig;
+import com.cretas.aims.entity.conversation.ConversationSession;
+import com.cretas.aims.exception.LlmSchemaValidationException;
+import com.cretas.aims.repository.AIAnalysisResultRepository;
+import com.cretas.aims.repository.ProductTypeRepository;
+import com.cretas.aims.service.*;
+import com.cretas.aims.service.calibration.BehaviorCalibrationService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+
+import jakarta.annotation.PostConstruct;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+/**
+ * 意图执行编排器
+ *
+ * 核心 execute() 路由方法 -- 编排缓存检查、意图识别、
+ * 权限/审批/规则验证、Tool/Skill/动态选择分发、
+ * 结果格式化和缓存回写。
+ *
+ * 此类是 "指挥官"，调用其余 4 个子服务完成实际工作。
+ */
+@Slf4j
+@Service
+public class IntentExecutionOrchestrator {
+
+    // ===== 依赖 =====
+    private final AIIntentService aiIntentService;
+    private final IntentSemanticsParser semanticsParser;
+    private final SemanticCacheService semanticCacheService;
+    private final RuleEngineService ruleEngineService;
+    private final ConversationService conversationService;
+    private final ConversationMemoryService conversationMemoryService;
+    private final ObjectMapper objectMapper;
+    private final DashScopeClient dashScopeClient;
+    private final DashScopeConfig dashScopeConfig;
+    private final IntentKnowledgeBase knowledgeBase;
+    private final AIAnalysisResultRepository analysisResultRepository;
+    private final ToolRegistry toolRegistry;
+    private final AnalysisRouterService analysisRouterService;
+    private final ComplexityRouter complexityRouter;
+    private final AgentOrchestrator agentOrchestrator;
+    private final AgenticRAGRouterService agenticRAGRouterService;
+    private final ResultValidatorService resultValidatorService;
+
+    // Sub-services
+    private final ToolDispatchService toolDispatchService;
+    private final DynamicToolSelectionService dynamicToolSelectionService;
+
+    // Optional dependencies
+    @Autowired(required = false)
+    private ResultFormatterService resultFormatterService;
+
+    @Autowired(required = false)
+    private PreviewTokenService previewTokenService;
+
+    @Autowired(required = false)
+    private ProductTypeRepository productTypeRepository;
+
+    @Autowired(required = false)
+    private SlotFillingService slotFillingService;
+
+    @Autowired(required = false)
+    private com.cretas.aims.config.IntentSlotConfiguration intentSlotConfiguration;
+
+    // ===== Route counters =====
+    private final AtomicLong branchToolDirect = new AtomicLong();
+    private final AtomicLong branchSkill = new AtomicLong();
+    private final AtomicLong branchDynamic = new AtomicLong();
+    private final AtomicLong branchNoMatch = new AtomicLong();
+
+    @Value("${cretas.ai.validation.enabled:true}")
+    private boolean validationEnabled;
+
+    /** 通用短回复集合 */
+    private static final Set<String> GENERIC_SHORT_REPLIES = Set.of(
+            "查询完成，暂无数据", "操作完成", "查询完成", "查询成功", "执行成功",
+            "查询完成,暂无数据", "处理完成", "请求成功"
+    );
+
+    @Autowired
+    public IntentExecutionOrchestrator(
+            @Lazy AIIntentService aiIntentService,
+            IntentSemanticsParser semanticsParser,
+            SemanticCacheService semanticCacheService,
+            RuleEngineService ruleEngineService,
+            ConversationService conversationService,
+            ConversationMemoryService conversationMemoryService,
+            ObjectMapper objectMapper,
+            DashScopeClient dashScopeClient,
+            DashScopeConfig dashScopeConfig,
+            IntentKnowledgeBase knowledgeBase,
+            AIAnalysisResultRepository analysisResultRepository,
+            ToolRegistry toolRegistry,
+            AnalysisRouterService analysisRouterService,
+            ComplexityRouter complexityRouter,
+            AgentOrchestrator agentOrchestrator,
+            AgenticRAGRouterService agenticRAGRouterService,
+            ResultValidatorService resultValidatorService,
+            ToolDispatchService toolDispatchService,
+            DynamicToolSelectionService dynamicToolSelectionService) {
+        this.aiIntentService = aiIntentService;
+        this.semanticsParser = semanticsParser;
+        this.semanticCacheService = semanticCacheService;
+        this.ruleEngineService = ruleEngineService;
+        this.conversationService = conversationService;
+        this.conversationMemoryService = conversationMemoryService;
+        this.objectMapper = objectMapper;
+        this.dashScopeClient = dashScopeClient;
+        this.dashScopeConfig = dashScopeConfig;
+        this.knowledgeBase = knowledgeBase;
+        this.analysisResultRepository = analysisResultRepository;
+        this.toolRegistry = toolRegistry;
+        this.analysisRouterService = analysisRouterService;
+        this.complexityRouter = complexityRouter;
+        this.agentOrchestrator = agentOrchestrator;
+        this.agenticRAGRouterService = agenticRAGRouterService;
+        this.resultValidatorService = resultValidatorService;
+        this.toolDispatchService = toolDispatchService;
+        this.dynamicToolSelectionService = dynamicToolSelectionService;
+    }
+
+    @PostConstruct
+    public void init() {
+        log.info("意图执行编排器初始化完成 (Facade-SubService 架构)");
+    }
+
+    // ==================== 核心执行方法 ====================
+
+    /**
+     * 主执行方法 -- 路由用户请求到 Tool / Skill / 动态选择 / LLM 对话
+     */
+    public IntentExecuteResponse execute(String factoryId, IntentExecuteRequest request,
+                                          Long userId, String userRole) {
+
+        log.info("执行意图: factoryId={}, userInput={}, intentCode={}, userId={}, role={}",
+                factoryId,
+                request.getUserInput() != null && request.getUserInput().length() > 50 ?
+                        request.getUserInput().substring(0, 50) + "..." : request.getUserInput(),
+                request.getIntentCode(), userId, userRole);
+
+        // 0. 显式意图代码
+        if (request.getIntentCode() != null && !request.getIntentCode().isEmpty()) {
+            return executeWithExplicitIntent(factoryId, request, userId, userRole);
+        }
+
+        // 0.3. 多轮对话延续
+        if (request.getSessionId() != null && !request.getSessionId().isEmpty()) {
+            IntentExecuteResponse conversationResponse = handleConversationContinuation(
+                    factoryId, request, userId, userRole);
+            if (conversationResponse != null) {
+                return conversationResponse;
+            }
+        }
+
+        // 0.3. 早期问题类型检测
+        String userInput = request.getUserInput();
+        if (userInput != null && !userInput.isEmpty()) {
+            IntentExecuteResponse earlyRouteResponse = handleEarlyQuestionTypeDetection(
+                    factoryId, userInput, request, userId, userRole);
+            if (earlyRouteResponse != null) {
+                return earlyRouteResponse;
+            }
+        }
+
+        // 0.5. 语义缓存
+        if (userInput != null && !userInput.isEmpty()) {
+            handleSemanticCache(factoryId, userInput, request);
+        }
+
+        // 1. 识别意图
+        IntentMatchResult matchResult;
+        try {
+            matchResult = aiIntentService.recognizeIntentWithConfidence(
+                    request.getUserInput(), factoryId, 3, userId, userRole, request.getSessionId());
+        } catch (LlmSchemaValidationException e) {
+            log.warn("LLM Schema 验证失败: type={}, message={}", e.getFailureType(), e.getMessage());
+            return buildValidationFailureResponse(factoryId, request.getUserInput(), e);
+        }
+
+        // 2. 二次确认
+        if (matchResult.hasMatch() && Boolean.TRUE.equals(matchResult.getRequiresConfirmation())
+                && !Boolean.TRUE.equals(request.getForceExecute())) {
+            return buildClarificationResponse(matchResult, factoryId);
+        }
+
+        // 2b. 通用咨询/闲聊
+        if (matchResult.getQuestionType() == QuestionType.GENERAL_QUESTION ||
+            matchResult.getQuestionType() == QuestionType.CONVERSATIONAL) {
+            String llmResponse = generateConversationalResponse(factoryId, request.getUserInput(),
+                    matchResult.getQuestionType(), request.getEnableThinking(), request.getThinkingBudget());
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(false)
+                    .status("COMPLETED")
+                    .message(llmResponse)
+                    .formattedText(llmResponse)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        // 3. 无匹配
+        if (!matchResult.hasMatch()) {
+            return buildNoMatchResponse(matchResult, factoryId);
+        }
+
+        AIIntentConfig intent = matchResult.getBestMatch();
+        log.info("识别到意图: code={}, category={}, sensitivity={}, matchMethod={}, confidence={}",
+                intent.getIntentCode(), intent.getIntentCategory(), intent.getSensitivityLevel(),
+                matchResult.getMatchMethod(), matchResult.getConfidence());
+
+        // 权限检查
+        if (!aiIntentService.hasPermission(intent.getIntentCode(), userRole)) {
+            return buildNoPermissionResponse(intent);
+        }
+
+        // 审批检查
+        if (intent.needsApproval() && !Boolean.TRUE.equals(request.getForceExecute())) {
+            return buildApprovalResponse(intent);
+        }
+
+        // Drools 验证
+        if (validationEnabled) {
+            ValidationResult validationResult = validateWithDrools(factoryId, intent, request, userId, userRole);
+            if (!validationResult.isValid()) {
+                return buildDroolsFailureResponse(intent, validationResult);
+            }
+        }
+
+        // 3.5. Skill 优先检查
+        String boundToolName = intent.getToolName();
+        if (dynamicToolSelectionService.isSkillsEnabled()
+                && (boundToolName == null || boundToolName.isBlank())) {
+            IntentExecuteResponse skillResponse = dynamicToolSelectionService.trySkillRoute(
+                    request.getUserInput(), factoryId, userId);
+            if (skillResponse != null) {
+                long count = branchSkill.incrementAndGet();
+                log.info("[Branch:Skill] Skill 优先匹配成功: total={}", count);
+                return skillResponse;
+            }
+        }
+
+        // 3.6. Slot Filling
+        if (userId != null && !Boolean.TRUE.equals(request.getSkipSlotFilling()) && slotFillingService != null) {
+            IntentExecuteResponse slotFillingResponse = slotFillingService.checkAndStartSlotFilling(
+                    factoryId, userId, intent, request, matchResult);
+            if (slotFillingResponse != null) {
+                if (slotFillingResponse.getFormattedText() == null
+                        && slotFillingResponse.getMessage() != null
+                        && slotFillingResponse.getMessage().length() >= 5) {
+                    slotFillingResponse.setFormattedText(slotFillingResponse.getMessage());
+                }
+                return slotFillingResponse;
+            }
+        }
+
+        // 4. 路由到执行器
+        String toolName = intent.getToolName();
+        IntentExecuteResponse response;
+
+        if (toolName != null && !toolName.isEmpty()) {
+            Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
+            if (toolOpt.isPresent()) {
+                long count = branchToolDirect.incrementAndGet();
+                log.info("[Branch:ToolDirect] 使用 Tool 执行: intentCode={}, toolName={}, total={}",
+                        intent.getIntentCode(), toolName, count);
+                response = toolDispatchService.executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole, matchResult);
+            } else {
+                log.warn("Tool 未找到: toolName={}, intentCode={}", toolName, intent.getIntentCode());
+                response = toolDispatchService.buildNoToolResponse(intent);
+            }
+        } else if (dynamicToolSelectionService.isSkillsEnabled()
+                && dynamicToolSelectionService.requiresDynamicSelection(matchResult)) {
+            long count = branchDynamic.incrementAndGet();
+            log.info("[Branch:Dynamic] 触发动态工具选择: total={}", count);
+            response = dynamicToolSelectionService.executeWithDynamicToolSelection(
+                    factoryId, request, intent, matchResult, userId, userRole);
+        } else if (dynamicToolSelectionService.requiresDynamicSelection(matchResult)) {
+            long count = branchDynamic.incrementAndGet();
+            log.info("[Branch:Dynamic] 触发动态工具选择(无Skill): total={}", count);
+            response = dynamicToolSelectionService.executeWithDynamicToolSelection(
+                    factoryId, request, intent, matchResult, userId, userRole);
+        } else {
+            long count = branchNoMatch.incrementAndGet();
+            log.warn("[Branch:NoMatch] 无路由匹配: intentCode={}, total={}", intent.getIntentCode(), count);
+            response = toolDispatchService.buildNoToolResponse(intent);
+        }
+
+        // 路由分支统计
+        logBranchStats();
+
+        // 6.5. NEED_MORE_INFO enrichment
+        if ("NEED_MORE_INFO".equals(response.getStatus())) {
+            response = enrichWithClarificationQuestions(response, request, intent, factoryId, userId);
+        }
+
+        // 6.8. 结果格式化
+        applyResultFormatting(response);
+
+        // 6.9. formattedText 兜底
+        applyFormattedTextFallback(response);
+
+        // 7. 缓存
+        processResponseCaching(factoryId, request, matchResult, response);
+
+        // 8. 对话记忆
+        if (request.getSessionId() != null && !request.getSessionId().isEmpty()) {
+            updateConversationMemory(request.getSessionId(), request, response, matchResult, factoryId, userId);
+        }
+
+        return response;
+    }
+
+    /**
+     * 使用显式意图代码执行 (跳过意图识别)
+     */
+    public IntentExecuteResponse executeWithExplicitIntent(String factoryId, IntentExecuteRequest request,
+                                                            Long userId, String userRole) {
+        String intentCode = request.getIntentCode();
+        log.info("使用显式意图代码执行: intentCode={}, factoryId={}", intentCode, factoryId);
+
+        Optional<AIIntentConfig> intentOpt = aiIntentService.getIntentByCode(factoryId, intentCode);
+        if (intentOpt.isEmpty()) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(false)
+                    .status("FAILED")
+                    .message("未找到意图配置: " + intentCode)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        AIIntentConfig intent = intentOpt.get();
+
+        if (!aiIntentService.hasPermission(intent.getIntentCode(), userRole)) {
+            return buildNoPermissionResponse(intent);
+        }
+
+        if (intent.needsApproval() && !Boolean.TRUE.equals(request.getForceExecute())) {
+            return buildApprovalResponse(intent);
+        }
+
+        // Preview mode
+        if (Boolean.TRUE.equals(request.getPreviewOnly()) && intent.getToolName() != null && !intent.getToolName().isEmpty()) {
+            Optional<ToolExecutor> previewToolOpt = toolRegistry.getExecutor(intent.getToolName());
+            if (previewToolOpt.isPresent() && previewToolOpt.get().supportsPreview()) {
+                return toolDispatchService.executeToolPreview(previewToolOpt.get(), factoryId, request, intent, userId, userRole);
+            }
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .status("FAILED")
+                    .message("预览模式暂不支持此意图类型")
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        // Tool 执行
+        String toolName = intent.getToolName();
+        IntentExecuteResponse response;
+
+        if (toolName != null && !toolName.isEmpty()) {
+            Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
+            if (toolOpt.isPresent()) {
+                response = toolDispatchService.executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole, null);
+            } else {
+                response = toolDispatchService.buildNoToolResponse(intent);
+            }
+        } else {
+            response = toolDispatchService.buildNoToolResponse(intent);
+        }
+
+        if ("NEED_MORE_INFO".equals(response.getStatus())) {
+            response = enrichWithClarificationQuestions(response, request, intent, factoryId, userId);
+        }
+
+        applyResultFormatting(response);
+        applyFormattedTextFallback(response);
+
+        return response;
+    }
+
+    /**
+     * 确认执行预览的操作
+     */
+    public IntentExecuteResponse confirm(String factoryId, String confirmToken,
+                                          Long userId, String userRole) {
+        log.info("确认执行: factoryId={}, confirmToken={}", factoryId, confirmToken);
+
+        if (previewTokenService == null) {
+            return IntentExecuteResponse.builder()
+                    .status("FAILED")
+                    .message("确认服务不可用")
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        PreviewTokenService.ConfirmResult confirmResult = previewTokenService.confirmToken(confirmToken, userId);
+        if (!confirmResult.isSuccess()) {
+            return IntentExecuteResponse.builder()
+                    .status("FAILED")
+                    .message(confirmResult.getMessage())
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        var token = confirmResult.getToken();
+        String intentCode = token.getIntentCode();
+        String entityId = token.getEntityId();
+        String entityType = token.getEntityType();
+
+        try {
+            Map<String, Object> context = confirmResult.getExecutionResult() != null
+                    ? confirmResult.getExecutionResult() : new HashMap<>();
+            context.put("confirmed", true);
+            context.put("entityId", entityId);
+            context.put("entityType", entityType);
+
+            IntentExecuteRequest execRequest = IntentExecuteRequest.builder()
+                    .userInput("确认执行: " + intentCode)
+                    .context(context)
+                    .build();
+
+            Optional<AIIntentConfig> intentConfigOpt = aiIntentService.getIntentByCode(factoryId, intentCode);
+            if (intentConfigOpt.isEmpty()) {
+                return IntentExecuteResponse.builder()
+                        .status("FAILED")
+                        .message("意图配置不存在: " + intentCode)
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+
+            AIIntentConfig intentConfig = intentConfigOpt.get();
+            String toolName = intentConfig.getToolName();
+            if (toolName != null && !toolName.isEmpty()) {
+                Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
+                if (toolOpt.isPresent()) {
+                    return toolDispatchService.executeWithTool(
+                            toolOpt.get(), factoryId, execRequest, intentConfig, userId, userRole, null);
+                }
+            }
+
+            return IntentExecuteResponse.builder()
+                    .status("FAILED")
+                    .message("未找到工具: " + intentCode)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("确认执行失败: confirmToken={}, error={}", confirmToken, e.getMessage(), e);
+            return IntentExecuteResponse.builder()
+                    .status("FAILED")
+                    .message("执行失败: " + com.cretas.aims.util.ErrorSanitizer.sanitize(e))
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+    }
+
+    // ==================== 内部路由方法 ====================
+
+    private IntentExecuteResponse handleConversationContinuation(String factoryId, IntentExecuteRequest request,
+                                                                   Long userId, String userRole) {
+        log.info("检测到会话延续: sessionId={}", request.getSessionId());
+        try {
+            ConversationService.ConversationResponse conversationResp =
+                    conversationService.continueConversation(request.getSessionId(), request.getUserInput());
+
+            if (conversationResp == null ||
+                conversationResp.getStatus() == ConversationSession.SessionStatus.CANCELLED) {
+                return null; // Continue normal flow
+            }
+
+            if (conversationResp.isCompleted() && conversationResp.getIntentCode() != null) {
+                conversationService.endConversation(request.getSessionId(), conversationResp.getIntentCode());
+                request.setIntentCode(conversationResp.getIntentCode());
+                request.setForceExecute(true);
+                return executeWithExplicitIntent(factoryId, request, userId, userRole);
+            }
+
+            // Conversation continues
+            IntentExecuteResponse.IntentExecuteResponseBuilder responseBuilder = IntentExecuteResponse.builder()
+                    .intentRecognized(false)
+                    .status("CONVERSATION_CONTINUE")
+                    .message(conversationResp.getMessage())
+                    .formattedText(conversationResp.getMessage())
+                    .executedAt(LocalDateTime.now());
+
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("sessionId", conversationResp.getSessionId());
+            metadata.put("currentRound", conversationResp.getCurrentRound());
+            metadata.put("maxRounds", conversationResp.getMaxRounds());
+            metadata.put("status", conversationResp.getStatus() != null ? conversationResp.getStatus().name() : null);
+
+            if (conversationResp.getCandidates() != null && !conversationResp.getCandidates().isEmpty()) {
+                List<IntentExecuteResponse.SuggestedAction> candidateActions = new ArrayList<>();
+                for (ConversationService.CandidateInfo candidate : conversationResp.getCandidates()) {
+                    Map<String, Object> params = new HashMap<>();
+                    params.put("intentCode", candidate.getIntentCode());
+                    params.put("sessionId", conversationResp.getSessionId());
+                    params.put("forceExecute", true);
+                    candidateActions.add(IntentExecuteResponse.SuggestedAction.builder()
+                            .actionCode("SELECT_INTENT")
+                            .actionName(candidate.getIntentName())
+                            .description(candidate.getDescription() != null ? candidate.getDescription() :
+                                    String.format("置信度: %.0f%%", candidate.getConfidence() * 100))
+                            .endpoint("/api/mobile/" + factoryId + "/ai-intents/execute")
+                            .parameters(params)
+                            .build());
+                }
+                metadata.put("candidates", conversationResp.getCandidates());
+                responseBuilder.suggestedActions(candidateActions);
+            }
+            responseBuilder.metadata(metadata);
+            return responseBuilder.build();
+        } catch (Exception e) {
+            log.error("会话延续失败: sessionId={}, error={}", request.getSessionId(), e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private IntentExecuteResponse handleEarlyQuestionTypeDetection(String factoryId, String userInput,
+                                                                     IntentExecuteRequest request,
+                                                                     Long userId, String userRole) {
+        QuestionType earlyQuestionType = knowledgeBase.detectQuestionType(userInput);
+
+        if (earlyQuestionType != QuestionType.GENERAL_QUESTION &&
+            earlyQuestionType != QuestionType.CONVERSATIONAL) {
+            return null;
+        }
+
+        // Analysis request check
+        if (earlyQuestionType == QuestionType.GENERAL_QUESTION &&
+            analysisRouterService.isAnalysisRequest(userInput, earlyQuestionType)) {
+            return executeAnalysisFlow(factoryId, userInput, request, userId, userRole);
+        }
+
+        // Food knowledge intercept
+        if (earlyQuestionType == QuestionType.GENERAL_QUESTION) {
+            Optional<String> foodPhraseMatch = knowledgeBase.matchPhrase(userInput);
+            if (foodPhraseMatch.isPresent() && "FOOD_KNOWLEDGE_QUERY".equals(foodPhraseMatch.get())) {
+                IntentExecuteRequest foodRequest = IntentExecuteRequest.builder()
+                        .userInput(userInput)
+                        .intentCode("FOOD_KNOWLEDGE_QUERY")
+                        .build();
+                return execute(factoryId, foodRequest, userId, userRole);
+            }
+            if (knowledgeBase.hasEntityIntentConflict(userInput, "PROCESSING_GENERIC")) {
+                IntentExecuteRequest foodRequest = IntentExecuteRequest.builder()
+                        .userInput(userInput)
+                        .intentCode("FOOD_KNOWLEDGE_QUERY")
+                        .build();
+                return execute(factoryId, foodRequest, userId, userRole);
+            }
+        }
+
+        // Agentic RAG routing
+        if (earlyQuestionType == QuestionType.GENERAL_QUESTION) {
+            RAGRouteResult ragRouteResult = agenticRAGRouterService.route(userInput);
+
+            switch (ragRouteResult.getConsultationType()) {
+                case KNOWLEDGE_SEARCH:
+                    String knowledgeResponse = agenticRAGRouterService.executeKnowledgeSearch(userInput, ragRouteResult);
+                    return buildRAGResponse(knowledgeResponse, ragRouteResult, "KNOWLEDGE_SEARCH");
+                case WEB_SEARCH:
+                    String webSearchResponse = agenticRAGRouterService.executeWebSearch(userInput, ragRouteResult);
+                    return buildRAGResponse(webSearchResponse, ragRouteResult, "WEB_SEARCH");
+                case TRACEABILITY:
+                    if (ragRouteResult.shouldConvertToIntent() && ragRouteResult.isHighConfidence()) {
+                        if (ragRouteResult.isNeedsClarification()) {
+                            return IntentExecuteResponse.builder()
+                                    .intentRecognized(false)
+                                    .status("NEED_CLARIFICATION")
+                                    .message(ragRouteResult.getClarificationQuestion())
+                                    .formattedText(ragRouteResult.getClarificationQuestion())
+                                    .executedAt(LocalDateTime.now())
+                                    .build();
+                        }
+                        Map<String, Object> traceabilityContext = new HashMap<>(ragRouteResult.getExtractedParams());
+                        IntentExecuteRequest traceabilityRequest = IntentExecuteRequest.builder()
+                                .userInput(userInput)
+                                .intentCode(ragRouteResult.getSuggestedIntent())
+                                .context(traceabilityContext)
+                                .build();
+                        return execute(factoryId, traceabilityRequest, userId, userRole);
+                    }
+                    break;
+                case GENERAL:
+                default:
+                    break;
+            }
+        }
+
+        // OUT_OF_DOMAIN / CONTEXT_CONTINUE intercept
+        Optional<String> conversationalPhraseMatch = knowledgeBase.matchPhrase(userInput);
+        if (conversationalPhraseMatch.isPresent()) {
+            String matchedIntent = conversationalPhraseMatch.get();
+            if ("OUT_OF_DOMAIN".equals(matchedIntent) || "CONTEXT_CONTINUE".equals(matchedIntent)) {
+                IntentExecuteRequest interceptRequest = IntentExecuteRequest.builder()
+                        .userInput(userInput)
+                        .intentCode(matchedIntent)
+                        .sessionId(request.getSessionId())
+                        .build();
+                return execute(factoryId, interceptRequest, userId, userRole);
+            }
+        }
+
+        // Default: LLM conversational response
+        String llmResponse = generateConversationalResponse(factoryId, userInput, earlyQuestionType,
+                request.getEnableThinking(), request.getThinkingBudget());
+        return IntentExecuteResponse.builder()
+                .intentRecognized(false)
+                .status("COMPLETED")
+                .message(llmResponse)
+                .formattedText(llmResponse)
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+
+    private void handleSemanticCache(String factoryId, String userInput, IntentExecuteRequest request) {
+        try {
+            SemanticCacheHit cacheHit = semanticCacheService.queryCache(factoryId, userInput);
+            if (cacheHit.isHit()) {
+                if (cacheHit.hasExecutionResult()) {
+                    // Note: full cache hit with execution result is returned directly
+                    // from the original execute() -- this method just primes the request context
+                }
+                IntentMatchResult cachedMatch = deserializeIntentResult(cacheHit.getIntentResult());
+                if (cachedMatch != null && cachedMatch.hasMatch()) {
+                    if (request.getContext() == null) {
+                        request.setContext(new HashMap<>());
+                    }
+                    request.getContext().put("__cacheHit", true);
+                    request.getContext().put("__cacheHitType",
+                            cacheHit.getHitType() != null ? cacheHit.getHitType().name() : "SEMANTIC");
+                }
+            }
+        } catch (Exception e) {
+            log.warn("语义缓存查询失败: {}", e.getMessage());
+        }
+    }
+
+    // ==================== 分析流程 ====================
+
+    private IntentExecuteResponse executeAnalysisFlow(String factoryId, String userInput,
+                                                       IntentExecuteRequest request,
+                                                       Long userId, String userRole) {
+        try {
+            AnalysisTopic topic = analysisRouterService.detectAnalysisTopic(userInput);
+            AnalysisContext analysisContext = AnalysisContext.builder()
+                    .userInput(userInput).topic(topic).factoryId(factoryId)
+                    .userId(userId).userRole(userRole).sessionId(request.getSessionId())
+                    .enableThinking(request.getEnableThinking()).thinkingBudget(request.getThinkingBudget())
+                    .build();
+
+            ProcessingMode processingMode = complexityRouter.route(userInput, analysisContext);
+            AnalysisResult analysisResult;
+
+            if (processingMode == ProcessingMode.MULTI_AGENT || processingMode == ProcessingMode.DEEP_REASONING) {
+                analysisResult = agentOrchestrator.executeCollaborativeAnalysis(analysisContext);
+            } else {
+                analysisResult = analysisRouterService.executeAnalysis(analysisContext);
+            }
+
+            if (analysisResult.isSuccess()) {
+                String status = analysisResult.isRequiresHumanReview() ? "ANALYSIS_PENDING_REVIEW" : "ANALYSIS_COMPLETED";
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(false)
+                        .status(status)
+                        .message(analysisResult.getFormattedAnalysis())
+                        .formattedText(analysisResult.getFormattedAnalysis())
+                        .metadata(Map.of("analysisTopic", topic.name(), "processingMode", processingMode.name()))
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+
+            // Fallback
+            String fallback = generateConversationalResponse(factoryId, userInput,
+                    QuestionType.GENERAL_QUESTION, request.getEnableThinking(), request.getThinkingBudget());
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(false).status("COMPLETED")
+                    .message(fallback).formattedText(fallback).executedAt(LocalDateTime.now()).build();
+
+        } catch (Exception e) {
+            log.error("分析流程异常: {}", e.getMessage(), e);
+            String fallback = generateConversationalResponse(factoryId, userInput,
+                    QuestionType.GENERAL_QUESTION, request.getEnableThinking(), request.getThinkingBudget());
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(false).status("COMPLETED")
+                    .message(fallback).formattedText(fallback).executedAt(LocalDateTime.now()).build();
+        }
+    }
+
+    // ==================== LLM 对话 ====================
+
+    String generateConversationalResponse(String factoryId, String userInput, QuestionType questionType,
+                                                   Boolean enableThinking, Integer thinkingBudget) {
+        String systemPrompt;
+        if (questionType == QuestionType.GENERAL_QUESTION) {
+            String factoryAnalysisContext = getPrecomputedAnalysisContext(factoryId);
+            if (factoryAnalysisContext != null && !factoryAnalysisContext.isEmpty()) {
+                systemPrompt = """
+                    你是白垩纪AI Agent的智能助手。用户正在询问一个关于生产管理、质量控制或成本优化的咨询问题。
+                    **重要**: 下面是该工厂的最新运营分析报告：
+                    ---
+                    %s
+                    ---
+                    请基于数据提供针对性建议，不超过500字，使用中文。
+                    """.formatted(factoryAnalysisContext);
+            } else {
+                systemPrompt = "你是白垩纪AI Agent的智能助手。请提供专业、实用的生产管理建议，不超过300字，使用中文。";
+            }
+        } else {
+            systemPrompt = "你是白垩纪AI Agent的智能助手。友好回应，不超过100字，使用中文。";
+        }
+
+        try {
+            boolean useThinkingMode = Boolean.TRUE.equals(enableThinking)
+                    && questionType == QuestionType.GENERAL_QUESTION
+                    && dashScopeConfig.isThinkingEnabled();
+            int budget = (thinkingBudget != null && thinkingBudget >= 10 && thinkingBudget <= 100) ? thinkingBudget : 30;
+
+            String response;
+            if (useThinkingMode) {
+                ChatCompletionResponse thinkingResponse = dashScopeClient.chatWithThinking(systemPrompt, userInput, budget);
+                response = thinkingResponse.getContent();
+                if (thinkingResponse.hasError()) {
+                    response = dashScopeClient.chat(systemPrompt, userInput);
+                }
+            } else {
+                response = dashScopeClient.chat(systemPrompt, userInput);
+            }
+            return response;
+        } catch (Exception e) {
+            log.error("LLM 对话回复生成失败: {}", e.getMessage(), e);
+            return questionType == QuestionType.GENERAL_QUESTION
+                    ? "抱歉，我暂时无法回答您的问题。您可以尝试询问具体的系统操作。"
+                    : "您好！有什么可以帮您的吗？";
+        }
+    }
+
+    // ==================== 响应构建 ====================
+
+    private IntentExecuteResponse buildNoPermissionResponse(AIIntentConfig intent) {
+        String msg = "您没有权限执行此操作。需要角色: " + intent.getRequiredRoles();
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intent.getIntentCode())
+                .intentName(intent.getIntentName()).intentCategory(intent.getIntentCategory())
+                .sensitivityLevel(intent.getSensitivityLevel())
+                .status("NO_PERMISSION").message(msg).formattedText(msg)
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse buildApprovalResponse(AIIntentConfig intent) {
+        String msg = "此操作需要审批确认。审批请求已提交。";
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intent.getIntentCode())
+                .intentName(intent.getIntentName()).intentCategory(intent.getIntentCategory())
+                .sensitivityLevel(intent.getSensitivityLevel())
+                .status("PENDING_APPROVAL").message(msg).formattedText(msg)
+                .requiresApproval(true).approvalChainId(intent.getApprovalChainId())
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse buildDroolsFailureResponse(AIIntentConfig intent, ValidationResult validationResult) {
+        String msg = "业务规则验证未通过: " + validationResult.getViolationsSummary();
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true).intentCode(intent.getIntentCode())
+                .intentName(intent.getIntentName()).intentCategory(intent.getIntentCategory())
+                .status("VALIDATION_FAILED").message(msg).formattedText(msg)
+                .validationViolations(validationResult.getViolations())
+                .recommendations(validationResult.getRecommendations())
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    IntentExecuteResponse buildClarificationResponse(IntentMatchResult matchResult, String factoryId) {
+        AIIntentConfig matchedIntent = matchResult.getBestMatch();
+        List<IntentExecuteResponse.SuggestedAction> candidateActions = buildCandidateActions(matchResult, factoryId);
+
+        String clarificationMessage = matchResult.getClarificationQuestion();
+        if (clarificationMessage == null || clarificationMessage.isEmpty()) {
+            clarificationMessage = "您的请求可能匹配多个操作，请确认您想要执行的操作：";
+        }
+
+        Map<String, Object> metadata = new HashMap<>();
+        if (matchResult.getSessionId() != null && !matchResult.getSessionId().isEmpty()) {
+            metadata.put("sessionId", matchResult.getSessionId());
+            metadata.put("needMoreInfo", true);
+            if (matchResult.getConversationMessage() != null) {
+                metadata.put("conversationMessage", matchResult.getConversationMessage());
+            }
+        }
+
+        IntentExecuteResponse.IntentExecuteResponseBuilder builder = IntentExecuteResponse.builder()
+                .intentRecognized(true)
+                .intentCode(matchedIntent.getIntentCode())
+                .intentName(matchedIntent.getIntentName())
+                .intentCategory(matchedIntent.getIntentCategory())
+                .status("NEED_CLARIFICATION")
+                .message(clarificationMessage)
+                .formattedText(clarificationMessage)
+                .confidence(matchResult.getConfidence())
+                .matchMethod(matchResult.getMatchMethod() != null ? matchResult.getMatchMethod().name() : null)
+                .suggestedActions(candidateActions)
+                .executedAt(LocalDateTime.now());
+
+        if (!metadata.isEmpty()) builder.metadata(metadata);
+        return builder.build();
+    }
+
+    private IntentExecuteResponse buildNoMatchResponse(IntentMatchResult matchResult, String factoryId) {
+        Map<String, Object> metadata = new HashMap<>();
+        if (matchResult.getSessionId() != null && !matchResult.getSessionId().isEmpty()) {
+            metadata.put("sessionId", matchResult.getSessionId());
+            metadata.put("needMoreInfo", true);
+            if (matchResult.getConversationMessage() != null) {
+                metadata.put("conversationMessage", matchResult.getConversationMessage());
+            }
+        }
+
+        if (matchResult.getTopCandidates() != null && !matchResult.getTopCandidates().isEmpty()) {
+            List<IntentExecuteResponse.SuggestedAction> candidateActions = buildCandidateActions(matchResult, factoryId);
+            String weakSignalMsg = "我不太确定您想执行什么操作，请从以下选项中选择或更详细地描述您的需求：";
+            IntentExecuteResponse.IntentExecuteResponseBuilder builder = IntentExecuteResponse.builder()
+                    .intentRecognized(false).status("NEED_CLARIFICATION")
+                    .message(weakSignalMsg).formattedText(weakSignalMsg)
+                    .suggestedActions(candidateActions).executedAt(LocalDateTime.now());
+            if (!metadata.isEmpty()) builder.metadata(metadata);
+            return builder.build();
+        }
+
+        List<IntentExecuteResponse.SuggestedAction> defaultSuggestions = buildDefaultSuggestions(factoryId);
+        String message = matchResult.getConversationMessage() != null && !matchResult.getConversationMessage().isEmpty()
+                ? matchResult.getConversationMessage()
+                : "我没有理解您的意图，请从以下常用操作中选择，或更详细地描述您的需求：";
+
+        IntentExecuteResponse.IntentExecuteResponseBuilder builder = IntentExecuteResponse.builder()
+                .intentRecognized(false).status("NEED_CLARIFICATION")
+                .message(message).formattedText(message)
+                .executedAt(LocalDateTime.now()).suggestedActions(defaultSuggestions);
+        if (!metadata.isEmpty()) builder.metadata(metadata);
+        return builder.build();
+    }
+
+    private IntentExecuteResponse buildValidationFailureResponse(String factoryId, String userInput,
+                                                                   LlmSchemaValidationException e) {
+        String truncatedInput = userInput != null && userInput.length() > 30 ? userInput.substring(0, 30) + "..." : userInput;
+        String clarificationMessage = switch (e.getFailureType()) {
+            case PARSE_ERROR -> String.format("AI 无法正确理解您的请求「%s」，请重新描述您的需求。", truncatedInput);
+            case UNKNOWN_INTENT_CODE -> "AI 识别的操作类型无法执行，请从常用操作中选择。";
+            case INVALID_CONFIDENCE -> String.format("AI 对您的请求「%s」理解不够确定，请更详细地描述。", truncatedInput);
+            default -> String.format("AI 无法准确理解您的意图「%s」，请重新描述。", truncatedInput);
+        };
+
+        List<IntentExecuteResponse.SuggestedAction> suggestedActions = new ArrayList<>();
+        suggestedActions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("REPHRASE").actionName("重新描述您的需求")
+                .description("请尝试用不同的方式描述").build());
+        suggestedActions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("SHOW_INTENTS").actionName("从常用操作中选择")
+                .endpoint("/api/mobile/" + factoryId + "/ai-intents").build());
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(false).status("VALIDATION_FAILED")
+                .message(clarificationMessage).suggestedActions(suggestedActions)
+                .metadata(Map.of("validationFailureType", e.getFailureType().name(),
+                        "requiresDoubleCheck", true))
+                .executedAt(LocalDateTime.now()).build();
+    }
+
+    private IntentExecuteResponse buildRAGResponse(String responseContent, RAGRouteResult ragRouteResult, String routeType) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("routeType", routeType);
+        metadata.put("consultationType", ragRouteResult.getConsultationType().name());
+        metadata.put("confidence", ragRouteResult.getConfidence());
+        String status = ragRouteResult.isHighConfidence() ? "RAG_COMPLETED" : "RAG_COMPLETED_LOW_CONFIDENCE";
+        return IntentExecuteResponse.builder()
+                .intentRecognized(false).status(status).message(responseContent)
+                .metadata(metadata).executedAt(LocalDateTime.now()).build();
+    }
+
+    // ==================== 工具方法 ====================
+
+    private List<IntentExecuteResponse.SuggestedAction> buildCandidateActions(IntentMatchResult matchResult, String factoryId) {
+        List<IntentExecuteResponse.SuggestedAction> actions = new ArrayList<>();
+        if (matchResult.getTopCandidates() != null) {
+            for (IntentMatchResult.CandidateIntent candidate : matchResult.getTopCandidates()) {
+                if (actions.size() >= 3) break;
+                Map<String, Object> params = new HashMap<>();
+                params.put("intentCode", candidate.getIntentCode());
+                params.put("forceExecute", true);
+                actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                        .actionCode("SELECT_INTENT").actionName(candidate.getIntentName())
+                        .description(candidate.getDescription() != null ? candidate.getDescription() :
+                                String.format("置信度: %.0f%%", candidate.getConfidence() * 100))
+                        .endpoint("/api/mobile/" + factoryId + "/ai-intents/execute")
+                        .parameters(params).build());
+            }
+        }
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("REPHRASE").actionName("重新描述").build());
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("SHOW_INTENTS").actionName("查看所有可用操作")
+                .endpoint("/api/mobile/" + factoryId + "/ai-intents").build());
+        return actions;
+    }
+
+    private List<IntentExecuteResponse.SuggestedAction> buildDefaultSuggestions(String factoryId) {
+        List<IntentExecuteResponse.SuggestedAction> actions = new ArrayList<>();
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("MATERIAL_BATCH_QUERY").actionName("查询原料库存")
+                .endpoint("/api/mobile/" + factoryId + "/material-batches").build());
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("PROCESSING_BATCH_LIST").actionName("查询生产批次")
+                .endpoint("/api/mobile/" + factoryId + "/processing/batches").build());
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("REPHRASE").actionName("重新描述").build());
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("SHOW_INTENTS").actionName("查看所有可用操作")
+                .endpoint("/api/mobile/" + factoryId + "/ai-intents").build());
+        return actions;
+    }
+
+    private void applyResultFormatting(IntentExecuteResponse response) {
+        String status = response.getStatus();
+        boolean isSuccessStatus = "SUCCESS".equals(status) || "COMPLETED".equals(status);
+        if (resultFormatterService != null && isSuccessStatus && response.getResultData() != null) {
+            try {
+                resultFormatterService.formatAndSet(response);
+            } catch (Exception e) {
+                log.debug("结果格式化失败（非致命）: {}", e.getMessage());
+            }
+        }
+    }
+
+    private void applyFormattedTextFallback(IntentExecuteResponse response) {
+        String currentFT = response.getFormattedText();
+        String msg = response.getMessage();
+        boolean ftMissing = currentFT == null;
+        boolean ftGeneric = currentFT != null && GENERIC_SHORT_REPLIES.contains(currentFT.trim());
+        boolean ftShort = currentFT != null && currentFT.length() < 15;
+        if ((ftMissing || ftGeneric || ftShort) && msg != null && msg.length() >= 20
+                && msg.length() > (currentFT != null ? currentFT.length() : 0)) {
+            response.setFormattedText(msg);
+        } else if (ftMissing && msg != null && msg.length() >= 5) {
+            response.setFormattedText(msg);
+        }
+        // Ultimate fallback
+        if (response.getFormattedText() == null && response.getMessage() != null && !response.getMessage().isEmpty()) {
+            response.setFormattedText(response.getMessage());
+        }
+    }
+
+    private void processResponseCaching(String factoryId, IntentExecuteRequest request,
+                                         IntentMatchResult matchResult, IntentExecuteResponse response) {
+        try {
+            if (request.getContext() != null) {
+                Object cacheHit = request.getContext().get("__cacheHit");
+                if (Boolean.TRUE.equals(cacheHit)) {
+                    response.setFromCache(true);
+                    Object hitType = request.getContext().get("__cacheHitType");
+                    response.setCacheHitType(hitType != null ? hitType.toString() : "SEMANTIC");
+                    request.getContext().remove("__cacheHit");
+                    request.getContext().remove("__cacheHitType");
+                    return;
+                }
+            }
+            if ("COMPLETED".equals(response.getStatus()) && request.getUserInput() != null) {
+                semanticCacheService.cacheResult(factoryId, request.getUserInput(), matchResult, response);
+            }
+        } catch (Exception e) {
+            log.warn("处理响应缓存失败: {}", e.getMessage());
+        }
+    }
+
+    // ==================== 对话记忆 ====================
+
+    private void updateConversationMemory(String sessionId, IntentExecuteRequest request,
+                                           IntentExecuteResponse response, IntentMatchResult intentResult,
+                                           String factoryId, Long userId) {
+        try {
+            String userInput = request.getUserInput();
+            String assistantMessage = response.getMessage() != null ? response.getMessage() : "执行完成";
+            conversationMemoryService.addMessage(sessionId, ConversationMessage.user(userInput));
+            conversationMemoryService.addMessage(sessionId, ConversationMessage.assistant(assistantMessage));
+            // Extract entities from response data
+            extractAndUpdateEntitySlots(sessionId, response, intentResult);
+            if (intentResult != null && intentResult.getBestMatch() != null) {
+                conversationMemoryService.updateLastIntent(sessionId, intentResult.getBestMatch().getIntentCode());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to update conversation memory: sessionId={}, error={}", sessionId, e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void extractAndUpdateEntitySlots(String sessionId, IntentExecuteResponse response,
+                                              IntentMatchResult intentResult) {
+        if (response.getAffectedEntities() != null) {
+            for (IntentExecuteResponse.AffectedEntity entity : response.getAffectedEntities()) {
+                try {
+                    com.cretas.aims.dto.conversation.EntitySlot.SlotType slotType = mapEntityTypeToSlotType(entity.getEntityType());
+                    if (slotType != null) {
+                        var slot = com.cretas.aims.dto.conversation.EntitySlot.builder()
+                                .type(slotType).id(entity.getEntityId()).name(entity.getEntityName()).build();
+                        conversationMemoryService.updateEntitySlot(sessionId, slotType, slot);
+                    }
+                } catch (Exception e) { log.debug("Failed to update entity slot: {}", e.getMessage()); }
+            }
+        }
+        // Fallback entity extraction from resultData
+        Object data = response.getResultData();
+        if (data == null) return;
+        try {
+            List<Map<String, Object>> items = null;
+            if (data instanceof Map) {
+                Map<String, Object> dataMap = (Map<String, Object>) data;
+                if (dataMap.containsKey("content") && dataMap.get("content") instanceof List)
+                    items = (List<Map<String, Object>>) dataMap.get("content");
+            } else if (data instanceof List) {
+                items = (List<Map<String, Object>>) data;
+            }
+            if (items == null || items.isEmpty()) return;
+            Object firstItemObj = items.get(0);
+            if (firstItemObj == null) return;
+            Map<String, Object> firstItem;
+            if (firstItemObj instanceof Map) {
+                firstItem = (Map<String, Object>) firstItemObj;
+            } else {
+                firstItem = objectMapper.convertValue(firstItemObj,
+                        new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+            }
+            extractSlot(sessionId, firstItem, "BATCH", "id", "batchId", "batch_id");
+            extractSlot(sessionId, firstItem, "SUPPLIER", "supplierId", "supplier_id");
+            extractSlot(sessionId, firstItem, "PRODUCT", "productTypeId", "productId", "materialTypeId");
+        } catch (Exception e) { log.debug("Entity extraction failed: {}", e.getMessage()); }
+    }
+
+    private void extractSlot(String sessionId, Map<String, Object> item, String entityType, String... idKeys) {
+        String id = getStringValue(item, idKeys);
+        if (id != null) {
+            var slotType = mapEntityTypeToSlotType(entityType);
+            if (slotType != null) {
+                var slot = com.cretas.aims.dto.conversation.EntitySlot.builder()
+                        .type(slotType).id(id).build();
+                conversationMemoryService.updateEntitySlot(sessionId, slotType, slot);
+            }
+        }
+    }
+
+    private String getStringValue(Map<String, Object> map, String... keys) {
+        for (String key : keys) { Object v = map.get(key); if (v != null) return v.toString(); }
+        return null;
+    }
+
+    private com.cretas.aims.dto.conversation.EntitySlot.SlotType mapEntityTypeToSlotType(String entityType) {
+        if (entityType == null) return null;
+        return switch (entityType.toUpperCase()) {
+            case "BATCH", "MATERIAL_BATCH" -> com.cretas.aims.dto.conversation.EntitySlot.SlotType.BATCH;
+            case "SUPPLIER" -> com.cretas.aims.dto.conversation.EntitySlot.SlotType.SUPPLIER;
+            case "CUSTOMER" -> com.cretas.aims.dto.conversation.EntitySlot.SlotType.CUSTOMER;
+            case "PRODUCT", "PRODUCT_TYPE" -> com.cretas.aims.dto.conversation.EntitySlot.SlotType.PRODUCT;
+            case "WAREHOUSE", "LOCATION" -> com.cretas.aims.dto.conversation.EntitySlot.SlotType.WAREHOUSE;
+            default -> null;
+        };
+    }
+
+    // ==================== Drools ====================
+
+    private ValidationResult validateWithDrools(String factoryId, AIIntentConfig intent,
+                                                 IntentExecuteRequest request, Long userId, String userRole) {
+        try {
+            IntentValidationFact fact = IntentValidationFact.builder()
+                    .intentCategory(intent.getIntentCategory())
+                    .operation(extractOperationType(intent))
+                    .timestamp(LocalDateTime.now())
+                    .targetFactoryId(factoryId).currentFactoryId(factoryId)
+                    .userRole(userRole)
+                    .forceExecute(Boolean.TRUE.equals(request.getForceExecute()))
+                    .batchSize(extractBatchSize(request))
+                    .userId(userId).username(extractUsername(request))
+                    .intentCode(intent.getIntentCode())
+                    .build();
+
+            ValidationResult result = ruleEngineService.executeRulesWithAudit(
+                    factoryId, "intentValidation", "INTENT", intent.getIntentCode(),
+                    userId, extractUsername(request), userRole, fact);
+
+            return result != null ? result : ValidationResult.builder().valid(true).build();
+        } catch (Exception e) {
+            log.error("Drools规则验证异常: intentCode={}, error={}", intent.getIntentCode(), e.getMessage(), e);
+            ValidationResult failedResult = ValidationResult.builder().valid(false).build();
+            failedResult.addViolation("规则验证异常", "Drools规则引擎执行异常: " + e.getMessage(), "HIGH");
+            return failedResult;
+        }
+    }
+
+    private String extractOperationType(AIIntentConfig intent) {
+        String code = intent.getIntentCode();
+        if (code.contains("CREATE") || code.contains("ADD")) return "CREATE";
+        if (code.contains("UPDATE") || code.contains("MODIFY")) return "UPDATE";
+        if (code.contains("DELETE") || code.contains("REMOVE")) return "DELETE";
+        return "QUERY";
+    }
+
+    private int extractBatchSize(IntentExecuteRequest request) {
+        if (request.getContext() == null) return 1;
+        Object bs = request.getContext().get("batchSize");
+        if (bs instanceof Integer) return (Integer) bs;
+        if (bs instanceof String) { try { return Integer.parseInt((String) bs); } catch (NumberFormatException e) { return 1; } }
+        return 1;
+    }
+
+    private String extractUsername(IntentExecuteRequest request) {
+        if (request.getContext() == null) return "unknown";
+        Object u = request.getContext().get("username");
+        return u != null ? u.toString() : "unknown";
+    }
+
+    // ==================== NEED_MORE_INFO enrichment ====================
+
+    private IntentExecuteResponse enrichWithClarificationQuestions(IntentExecuteResponse response,
+                                                                    IntentExecuteRequest request,
+                                                                    AIIntentConfig intent,
+                                                                    String factoryId, Long userId) {
+        try {
+            List<String> missingParams = parseMissingParameters(response.getMessage());
+            if (missingParams.isEmpty()) return response;
+
+            List<String> clarificationQuestions = missingParams.stream()
+                    .map(p -> generateQuestionForParameter(p))
+                    .collect(Collectors.toList());
+            if (missingParams.size() > 1) {
+                clarificationQuestions.add("请提供以上所有必需信息，以便我能够帮您完成操作。");
+            }
+
+            List<ConversationService.RequiredParameter> requiredParameters = missingParams.stream()
+                    .map(name -> ConversationService.RequiredParameter.builder()
+                            .name(name).label(name).type("string").collected(false).build())
+                    .collect(Collectors.toList());
+
+            String sessionId = null;
+            if (userId != null) {
+                try {
+                    var conversationResp = conversationService.startParameterCollection(
+                            factoryId, userId, intent.getIntentCode(), intent.getIntentName(),
+                            requiredParameters, clarificationQuestions);
+                    if (conversationResp != null) sessionId = conversationResp.getSessionId();
+                } catch (Exception e) { log.warn("Failed to create parameter collection session: {}", e.getMessage()); }
+            }
+
+            // Build parameter options
+            List<IntentExecuteResponse.SuggestedAction> suggestedActions = new ArrayList<>();
+            if (productTypeRepository != null) {
+                for (String param : missingParams) {
+                    if (param.toLowerCase().contains("productid")) {
+                        try {
+                            var products = productTypeRepository.findByFactoryId(factoryId);
+                            if (products != null) {
+                                int limit = Math.min(products.size(), 10);
+                                for (int i = 0; i < limit; i++) {
+                                    var p = products.get(i);
+                                    suggestedActions.add(IntentExecuteResponse.SuggestedAction.builder()
+                                            .actionCode("SELECT_PARAM_productId_" + p.getId())
+                                            .actionName(p.getName())
+                                            .description(p.getCode() != null ? "编码: " + p.getCode() : null)
+                                            .build());
+                                }
+                            }
+                        } catch (Exception e) { log.warn("查询产品列表失败: {}", e.getMessage()); }
+                    }
+                }
+            }
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(response.getIntentRecognized())
+                    .intentCode(response.getIntentCode())
+                    .intentName(response.getIntentName())
+                    .intentCategory(response.getIntentCategory())
+                    .status(response.getStatus())
+                    .message("需要更多信息来完成此操作")
+                    .clarificationQuestions(clarificationQuestions)
+                    .suggestedActions(suggestedActions.isEmpty() ? null : suggestedActions)
+                    .sessionId(sessionId)
+                    .executedAt(response.getExecutedAt())
+                    .build();
+        } catch (Exception e) {
+            log.error("Failed to enrich clarification questions: {}", e.getMessage(), e);
+            return response;
+        }
+    }
+
+    private List<String> parseMissingParameters(String message) {
+        List<String> params = new ArrayList<>();
+        if (message == null) return params;
+        Pattern pattern = Pattern.compile("\\(([^)]+)\\)");
+        Matcher matcher = pattern.matcher(message);
+        while (matcher.find()) { String p = matcher.group(1).trim(); if (!p.isEmpty()) params.add(p); }
+        return params;
+    }
+
+    private String generateQuestionForParameter(String paramName) {
+        String lp = paramName.toLowerCase();
+        if (lp.contains("batchid")) return "请问您要操作哪个批次？请提供批次ID。";
+        if (lp.contains("quantity")) return "请问数量是多少？";
+        if (lp.contains("date")) return "请问日期是？格式：yyyy-MM-dd";
+        return "请提供 " + paramName + "。";
+    }
+
+    // ==================== Utility ====================
+
+    private String getPrecomputedAnalysisContext(String factoryId) {
+        if (factoryId == null || factoryId.isEmpty()) return null;
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            StringBuilder context = new StringBuilder();
+            analysisResultRepository.findFirstByFactoryIdAndReportTypeAndExpiresAtAfterOrderByCreatedAtDesc(
+                    factoryId, "daily", now).ifPresent(r -> context.append("## 日报\n").append(r.getAnalysisText()).append("\n"));
+            analysisResultRepository.findFirstByFactoryIdAndReportTypeAndExpiresAtAfterOrderByCreatedAtDesc(
+                    factoryId, "weekly", now).ifPresent(r -> context.append("## 周报\n").append(r.getAnalysisText()).append("\n"));
+            if (context.length() == 0) {
+                analysisResultRepository.findFirstByFactoryIdAndReportTypeAndExpiresAtAfterOrderByCreatedAtDesc(
+                        factoryId, "monthly", now).ifPresent(r -> context.append("## 月报\n").append(r.getAnalysisText()).append("\n"));
+            }
+            return context.length() > 0 ? context.toString() : null;
+        } catch (Exception e) { return null; }
+    }
+
+    private IntentMatchResult deserializeIntentResult(String json) {
+        if (json == null || json.isEmpty()) return null;
+        try { return objectMapper.readValue(json, IntentMatchResult.class); }
+        catch (JsonProcessingException e) { return null; }
+    }
+
+    private void logBranchStats() {
+        long total = branchToolDirect.get() + branchSkill.get() + branchDynamic.get() + branchNoMatch.get();
+        if (total > 0 && total % 50 == 0) {
+            log.info("[Branch:Stats] total={}, ToolDirect={}%, Skill={}%, Dynamic={}%, NoMatch={}%",
+                    total,
+                    branchToolDirect.get() * 100 / total,
+                    branchSkill.get() * 100 / total,
+                    branchDynamic.get() * 100 / total,
+                    branchNoMatch.get() * 100 / total);
+        }
+    }
+}
