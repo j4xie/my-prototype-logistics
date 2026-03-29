@@ -11,8 +11,19 @@
       "@/*": ["src/*"]
     },
 
-    /* Linting - relaxed for initial build */
+    /* Strict mode: incremental rollout */
+    /* Phase A (enabled): low-breakage flags */
     "strict": false,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "strictBindCallApply": true,
+    /* Phase B (next): enable these after fixing Phase A issues */
+    // "strictFunctionTypes": true,
+    // "strictPropertyInitialization": true,
+    /* Phase C (final): highest impact — needs ~233 any fixes */
+    // "noImplicitAny": true,
+    // "strictNullChecks": true,
+
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,

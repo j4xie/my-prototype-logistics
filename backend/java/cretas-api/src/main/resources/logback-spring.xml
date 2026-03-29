@@ -17,8 +17,8 @@
     <!-- 定义变量 -->
     <property name="LOG_PATH" value="${LOG_PATH:-logs}"/>
     <property name="APP_NAME" value="cretas-backend"/>
-    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"/>
-    <property name="LOG_PATTERN_COLORED" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) [%thread] %cyan(%logger{50}) - %msg%n"/>
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId:-}] [u:%X{userId:-}] [f:%X{factoryId:-}] %logger{50} - %msg%n"/>
+    <property name="LOG_PATTERN_COLORED" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) [%thread] [%X{correlationId:-}] [u:%X{userId:-}] [f:%X{factoryId:-}] %cyan(%logger{50}) - %msg%n"/>
 
     <!-- 控制台输出（带颜色） -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
