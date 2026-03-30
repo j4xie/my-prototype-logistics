@@ -20,7 +20,6 @@ public class CreateSalesOrderRequest {
     @NotBlank(message = "客户ID不能为空")
     private String customerId;
 
-    @NotNull(message = "下单日期不能为空")
     private LocalDate orderDate;
 
     private LocalDate requiredDeliveryDate;
@@ -30,6 +29,12 @@ public class CreateSalesOrderRequest {
     private BigDecimal discountAmount;
 
     private String remark;
+
+    private String salesperson;
+
+    private Boolean shippingIncluded;
+
+    private BigDecimal shippingFee;
 
     @Valid
     @NotEmpty(message = "订单行项目不能为空")

@@ -14,6 +14,7 @@ import com.cretas.aims.service.scheduling.core.SchedulingPlanCrudService;
 import com.cretas.aims.service.scheduling.core.WorkerAssignmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -48,10 +49,10 @@ public class SchedulingPlanCrudServiceImpl implements SchedulingPlanCrudService 
     private final NotificationService notificationService;
     private final PushNotificationService pushNotificationService;
     private final ProductionLineSupervisorRepository supervisorRepository;
-    @Lazy
-    private final WorkerAssignmentService workerAssignmentService;
-    @Lazy
-    private final SchedulingAIService schedulingAIService;
+    @Lazy @Autowired
+    private WorkerAssignmentService workerAssignmentService;
+    @Lazy @Autowired
+    private SchedulingAIService schedulingAIService;
 
     // ==================== 调度计划 CRUD ====================
 

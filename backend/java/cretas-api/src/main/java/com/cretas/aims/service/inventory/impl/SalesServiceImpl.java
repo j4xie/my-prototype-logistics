@@ -11,6 +11,7 @@ import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.CustomerRepository;
 import com.cretas.aims.repository.inventory.*;
 import com.cretas.aims.event.SalesOrderConfirmedEvent;
+import com.cretas.aims.event.SalesOrderFinanceApprovedEvent;
 import com.cretas.aims.service.inventory.SalesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,11 +73,14 @@ public class SalesServiceImpl implements SalesService {
         order.setFactoryId(factoryId);
         order.setOrderNumber(orderNumber);
         order.setCustomerId(request.getCustomerId());
-        order.setOrderDate(request.getOrderDate());
+        order.setOrderDate(request.getOrderDate() != null ? request.getOrderDate() : java.time.LocalDate.now());
         order.setRequiredDeliveryDate(request.getRequiredDeliveryDate());
         order.setDeliveryAddress(request.getDeliveryAddress());
         order.setDiscountAmount(request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO);
         order.setRemark(request.getRemark());
+        order.setSalesperson(request.getSalesperson());
+        order.setShippingIncluded(request.getShippingIncluded());
+        order.setShippingFee(request.getShippingFee());
         order.setStatus(SalesOrderStatus.DRAFT);
         order.setCreatedBy(userId);
 
@@ -138,8 +142,6 @@ public class SalesServiceImpl implements SalesService {
     @Transactional
     public SalesOrder confirmOrder(String factoryId, String orderId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
-        // 强制加载 items，防止事件处理器中 LazyInitializationException
-        org.hibernate.Hibernate.initialize(order.getItems());
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
             throw new BusinessException("只有草稿状态的订单可以确认");
         }
@@ -148,14 +150,86 @@ public class SalesServiceImpl implements SalesService {
         SalesOrder saved = salesOrderRepository.save(order);
         log.info("确认销售订单: orderId={}, orderNumber={}", orderId, saved.getOrderNumber());
 
-        // 发布SO确认事件 → 触发供应链联动（库存检查+生产计划+采购建议）
+        // 注意: 供应链联动不再在确认时触发
+        // 新流程: CONFIRMED -> 提交财务审核 -> 财务批准后才触发供应链联动
+        // 发布确认事件仅用于通知（不再驱动生产）
         try {
             applicationEventPublisher.publishEvent(new SalesOrderConfirmedEvent(this, factoryId, saved.getId()));
-            log.info("已发布SalesOrderConfirmedEvent: SO={}", saved.getId());
+            log.info("已发布SalesOrderConfirmedEvent(仅通知): SO={}", saved.getId());
         } catch (Exception e) {
-            log.error("发布SalesOrderConfirmedEvent失败(不影响订单确认): SO={}", saved.getId(), e);
+            log.error("发布SalesOrderConfirmedEvent失败: SO={}", saved.getId(), e);
         }
 
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public SalesOrder submitForFinanceReview(String factoryId, String orderId) {
+        SalesOrder order = getSalesOrderById(factoryId, orderId);
+        if (order.getStatus() != SalesOrderStatus.CONFIRMED
+                && order.getStatus() != SalesOrderStatus.FINANCE_REJECTED) {
+            throw new BusinessException("只有已确认或财务驳回状态的订单可以提交财务审核");
+        }
+        order.setStatus(SalesOrderStatus.PENDING_FINANCE_REVIEW);
+        // 清除上一次审核记录，重新审核
+        order.setFinanceReviewedBy(null);
+        order.setFinanceReviewedAt(null);
+        order.setFinanceReviewNotes(null);
+        SalesOrder saved = salesOrderRepository.save(order);
+        log.info("销售订单已提交财务审核: orderId={}, orderNumber={}", orderId, saved.getOrderNumber());
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public SalesOrder financeApproveOrder(String factoryId, String orderId, String notes, Long reviewerId) {
+        SalesOrder order = getSalesOrderById(factoryId, orderId);
+        // 强制加载 items，防止事件处理器中 LazyInitializationException
+        org.hibernate.Hibernate.initialize(order.getItems());
+        if (order.getStatus() != SalesOrderStatus.PENDING_FINANCE_REVIEW) {
+            throw new BusinessException("只有待财务审核状态的订单可以审批");
+        }
+        order.setStatus(SalesOrderStatus.FINANCE_APPROVED);
+        order.setFinanceReviewedBy(reviewerId);
+        order.setFinanceReviewedAt(LocalDateTime.now());
+        order.setFinanceReviewNotes(notes);
+
+        // 计算预估成本与利润（如果前端/财务未手动填写，此处可后续扩展从BOM自动计算）
+        if (order.getEstimatedCost() != null && order.getTotalAmount() != null) {
+            order.setEstimatedProfit(order.getTotalAmount().subtract(order.getEstimatedCost()));
+        }
+
+        SalesOrder saved = salesOrderRepository.save(order);
+        log.info("销售订单财务审核通过: orderId={}, orderNumber={}, reviewerId={}",
+                orderId, saved.getOrderNumber(), reviewerId);
+
+        // 发布财务审核通过事件 → 触发供应链联动（库存检查+生产计划+采购建议）
+        try {
+            applicationEventPublisher.publishEvent(
+                    new SalesOrderFinanceApprovedEvent(this, factoryId, saved.getId(), reviewerId));
+            log.info("已发布SalesOrderFinanceApprovedEvent: SO={}", saved.getId());
+        } catch (Exception e) {
+            log.error("发布SalesOrderFinanceApprovedEvent失败(不影响审批): SO={}", saved.getId(), e);
+        }
+
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public SalesOrder financeRejectOrder(String factoryId, String orderId, String reason, Long reviewerId) {
+        SalesOrder order = getSalesOrderById(factoryId, orderId);
+        if (order.getStatus() != SalesOrderStatus.PENDING_FINANCE_REVIEW) {
+            throw new BusinessException("只有待财务审核状态的订单可以驳回");
+        }
+        order.setStatus(SalesOrderStatus.FINANCE_REJECTED);
+        order.setFinanceReviewedBy(reviewerId);
+        order.setFinanceReviewedAt(LocalDateTime.now());
+        order.setFinanceReviewNotes(reason);
+        SalesOrder saved = salesOrderRepository.save(order);
+        log.info("销售订单财务审核驳回: orderId={}, orderNumber={}, reviewerId={}, reason={}",
+                orderId, saved.getOrderNumber(), reviewerId, reason);
         return saved;
     }
 
@@ -183,10 +257,11 @@ public class SalesServiceImpl implements SalesService {
         // 如果关联销售订单，验证状态
         if (request.getSalesOrderId() != null && !request.getSalesOrderId().isEmpty()) {
             SalesOrder order = getSalesOrderById(factoryId, request.getSalesOrderId());
-            if (order.getStatus() != SalesOrderStatus.CONFIRMED &&
+            if (order.getStatus() != SalesOrderStatus.FINANCE_APPROVED &&
+                    order.getStatus() != SalesOrderStatus.CONFIRMED &&
                     order.getStatus() != SalesOrderStatus.PROCESSING &&
                     order.getStatus() != SalesOrderStatus.PARTIAL_DELIVERED) {
-                throw new BusinessException("只有已确认/处理中/部分发货状态的订单可以创建发货单");
+                throw new BusinessException("只有财务已批准/已确认/处理中/部分发货状态的订单可以创建发货单");
             }
         }
 
@@ -348,7 +423,10 @@ public class SalesServiceImpl implements SalesService {
 
         long totalOrders = monthlyOrders.size();
         long pendingOrders = monthlyOrders.stream()
-                .filter(o -> o.getStatus() == SalesOrderStatus.CONFIRMED || o.getStatus() == SalesOrderStatus.PROCESSING)
+                .filter(o -> o.getStatus() == SalesOrderStatus.CONFIRMED
+                        || o.getStatus() == SalesOrderStatus.PENDING_FINANCE_REVIEW
+                        || o.getStatus() == SalesOrderStatus.FINANCE_APPROVED
+                        || o.getStatus() == SalesOrderStatus.PROCESSING)
                 .count();
         BigDecimal monthlyRevenue = monthlyOrders.stream()
                 .filter(o -> o.getStatus() != SalesOrderStatus.CANCELLED)

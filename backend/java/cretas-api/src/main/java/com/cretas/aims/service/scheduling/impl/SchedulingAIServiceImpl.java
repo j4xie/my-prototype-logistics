@@ -15,6 +15,7 @@ import com.cretas.aims.service.scheduling.core.WorkerAssignmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -53,10 +54,10 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
     private final FeatureEngineeringService featureEngineeringService;
     private final NotificationService notificationService;
     private final PushNotificationService pushNotificationService;
-    @Lazy
-    private final SchedulingPlanCrudService schedulingPlanCrudService;
-    @Lazy
-    private final WorkerAssignmentService workerAssignmentService;
+    @Lazy @Autowired
+    private SchedulingPlanCrudService schedulingPlanCrudService;
+    @Lazy @Autowired
+    private WorkerAssignmentService workerAssignmentService;
 
     @Value("${cretas.ai.service.url:http://localhost:8083}")
     private String aiServiceUrl;
