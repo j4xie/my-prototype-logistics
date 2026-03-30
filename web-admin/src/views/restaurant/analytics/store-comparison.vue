@@ -115,8 +115,8 @@ function renderChart() {
       trigger: 'axis',
       confine: true,
       axisPointer: { type: 'shadow' },
-      formatter: (params: any) => {
-        const p = params[0]
+      formatter: (params: Record<string, unknown>[]) => {
+        const p = params[0] as Record<string, unknown>
         const store = stores.value.find(s => s.name === p.name)
         if (!store) return p.name
         return `<b>${store.name}</b><br/>营收: ¥${store.revenue.toLocaleString()}<br/>品均收入: ¥${store.avgTicket.toFixed(0)}<br/>折扣率: ${store.discountPct.toFixed(1)}%`

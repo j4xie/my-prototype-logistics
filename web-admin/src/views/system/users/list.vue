@@ -14,7 +14,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('system'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchForm = ref({ username: '', roleCode: '' });
 
@@ -165,9 +165,9 @@ async function handleCreateUser() {
 
 // View/Edit/Reset handlers
 const viewDialogVisible = ref(false);
-const viewUser = ref<any>({});
+const viewUser = ref<Record<string, unknown>>({});
 
-function handleViewUser(row: any) {
+function handleViewUser(row: Record<string, unknown>) {
   viewUser.value = row;
   viewDialogVisible.value = true;
 }
@@ -184,7 +184,7 @@ const editForm = reactive({
   roleCode: ''
 });
 
-function handleEditUser(row: any) {
+function handleEditUser(row: Record<string, unknown>) {
   editForm.id = row.id;
   editForm.username = row.username;
   editForm.email = row.email || '';
@@ -221,7 +221,7 @@ async function handleSaveEdit() {
   }
 }
 
-async function handleResetPassword(row: any) {
+async function handleResetPassword(row: Record<string, unknown>) {
   if (!factoryId.value) return;
   try {
     const { value: newPassword } = await ElMessageBox.prompt(
@@ -252,7 +252,7 @@ async function handleResetPassword(row: any) {
   }
 }
 
-async function handleToggleActive(row: any) {
+async function handleToggleActive(row: Record<string, unknown>) {
   if (!factoryId.value) return;
   try {
     await ElMessageBox.confirm(

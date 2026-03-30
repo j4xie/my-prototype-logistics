@@ -4,7 +4,7 @@ import { formatDate as _formatDate, formatDateTime as _formatDateTime } from './
  * 日期格式化 — el-table-column :formatter — "YYYY-MM-DD"
  * null / undefined / '' 显示为 '-'
  */
-export function formatDateCell(_row: any, _column: any, cellValue: any): string {
+export function formatDateCell(_row: unknown, _column: unknown, cellValue: string | Date | null | undefined): string {
   return _formatDate(cellValue)
 }
 
@@ -12,7 +12,7 @@ export function formatDateCell(_row: any, _column: any, cellValue: any): string 
  * 日期时间格式化 — el-table-column :formatter — "YYYY-MM-DD HH:mm:ss"
  * null / undefined / '' 显示为 '-'
  */
-export function formatDateTimeCell(_row: any, _column: any, cellValue: any): string {
+export function formatDateTimeCell(_row: unknown, _column: unknown, cellValue: string | Date | null | undefined): string {
   return _formatDateTime(cellValue)
 }
 
@@ -20,7 +20,7 @@ export function formatDateTimeCell(_row: any, _column: any, cellValue: any): str
  * 表格空单元格格式化器 — 配合 el-table-column 的 :formatter 属性使用
  * null / undefined / '' 显示为 '-'，保留 0 等有效值
  */
-export function emptyCell(_row: any, _column: any, cellValue: any): string {
+export function emptyCell(_row: unknown, _column: unknown, cellValue: unknown): string {
   return cellValue != null && cellValue !== '' ? String(cellValue) : '-'
 }
 
@@ -36,7 +36,7 @@ export function formatAmount(val: number | null | undefined): string {
  * 数量格式化 — 千分位（整数）；null/undefined 显示 '-'
  * 配合 el-table-column 的 :formatter 属性使用
  */
-export function formatQty(_row: any, _column: any, cellValue: any): string {
+export function formatQty(_row: unknown, _column: unknown, cellValue: unknown): string {
   if (cellValue == null || cellValue === '') return '-'
   return Number(cellValue).toLocaleString('zh-CN')
 }
@@ -59,8 +59,8 @@ export type TagType = '' | 'success' | 'warning' | 'danger' | 'info'
  * @param filename 文件名（不含扩展名）
  */
 export async function exportTableToExcel(
-  data: any[],
-  columns: { field: string; label: string; formatter?: (val: any, row: any) => string }[],
+  data: Record<string, unknown>[],
+  columns: { field: string; label: string; formatter?: (val: unknown, row: Record<string, unknown>) => string }[],
   filename: string
 ) {
   const XLSX = await import('xlsx')

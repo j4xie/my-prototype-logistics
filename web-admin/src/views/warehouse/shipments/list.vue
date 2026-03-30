@@ -14,7 +14,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchForm = ref({
   keyword: '',
@@ -33,11 +33,11 @@ const shipmentForm = ref({
   driverPhone: '',
   notes: ''
 });
-const customers = ref<any[]>([]);
-const productBatches = ref<any[]>([]);
+const customers = ref<Record<string, unknown>[]>([]);
+const productBatches = ref<Record<string, unknown>[]>([]);
 const customerMap = computed(() => {
   const map: Record<string, string> = {};
-  customers.value.forEach((c: any) => { if (c.id && c.name) map[c.id] = c.name; });
+  customers.value.forEach((c) => { if (c.id && c.name) map[String(c.id)] = String(c.name); });
   return map;
 });
 
@@ -164,7 +164,7 @@ async function submitShipment() {
   }
 }
 
-async function handleShip(row: any) {
+async function handleShip(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm('确定发货?', '操作确认', { type: 'warning' });
     const response = await put(`/${factoryId.value}/shipments/${row.id}/status`, {
@@ -183,7 +183,7 @@ async function handleShip(row: any) {
   }
 }
 
-async function handleDelivered(row: any) {
+async function handleDelivered(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm('确认已送达?', '操作确认', { type: 'warning' });
     const response = await put(`/${factoryId.value}/shipments/${row.id}/status`, {
@@ -202,7 +202,7 @@ async function handleDelivered(row: any) {
   }
 }
 
-async function handleCancel(row: any) {
+async function handleCancel(row: Record<string, unknown>) {
   try {
     const { value } = await ElMessageBox.prompt('请输入取消原因', '取消出货', {
       inputPattern: /.+/,
@@ -227,9 +227,9 @@ async function handleCancel(row: any) {
 
 // 详情抽屉
 const detailVisible = ref(false);
-const detailRow = ref<any>(null);
+const detailRow = ref<Record<string, unknown> | null>(null);
 
-function showDetail(row: any) {
+function showDetail(row: Record<string, unknown>) {
   detailRow.value = row;
   detailVisible.value = true;
 }

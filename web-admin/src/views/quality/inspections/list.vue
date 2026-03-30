@@ -13,7 +13,7 @@ const canWrite = computed(() => permissionStore.canWrite('quality'));
 
 const loading = ref(false);
 const submitting = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 const filterResult = ref('');
@@ -28,7 +28,7 @@ const dialogForm = ref({
 
 // 详情抽屉
 const detailVisible = ref(false);
-const detailData = ref<any>(null);
+const detailData = ref<Record<string, unknown> | null>(null);
 
 onMounted(() => {
   loadData();
@@ -111,7 +111,7 @@ async function submitCreateForm() {
   }
 }
 
-function showDetail(row: any) {
+function showDetail(row: Record<string, unknown>) {
   detailData.value = row;
   detailVisible.value = true;
 }

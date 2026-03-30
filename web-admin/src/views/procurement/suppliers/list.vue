@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
-import { get } from '@/api/request';
+import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { del } from '@/api/request';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 
 const authStore = useAuthStore();
@@ -13,9 +12,39 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
+
+// Dialog state
+const dialogVisible = ref(false);
+const dialogMode = ref<'view' | 'create' | 'edit'>('view');
+const dialogTitle = computed(() => {
+  if (dialogMode.value === 'create') return '新增供应商';
+  if (dialogMode.value === 'edit') return '编辑供应商';
+  return '查看供应商';
+});
+const submitting = ref(false);
+const formRef = ref();
+
+const defaultForm = {
+  id: '',
+  name: '',
+  contactPerson: '',
+  phone: '',
+  address: '',
+  email: '',
+  bankAccount: '',
+  taxId: '',
+  notes: '',
+};
+const form = reactive({ ...defaultForm });
+
+const formRules = {
+  name: [{ required: true, message: '请输入供应商名称', trigger: 'blur' }],
+  contactPerson: [{ required: true, message: '请输入联系人', trigger: 'blur' }],
+  phone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }],
+};
 
 onMounted(() => {
   loadData();
@@ -69,19 +98,100 @@ function handleSizeChange(size: number) {
   loadData();
 }
 
-function isActive(row: any) {
+function isActive(row: Record<string, unknown>) {
   return row.status === 'ACTIVE' || row.isActive === true;
 }
 
-function getStatusType(row: any) {
+function getStatusType(row: Record<string, unknown>) {
   return isActive(row) ? 'success' : 'info';
 }
 
-function getStatusText(row: any) {
+function getStatusText(row: Record<string, unknown>) {
   return isActive(row) ? '合作中' : '已停用';
 }
 
-async function handleDelete(row: any) {
+function resetForm() {
+  Object.assign(form, defaultForm);
+}
+
+function handleCreate() {
+  resetForm();
+  dialogMode.value = 'create';
+  dialogVisible.value = true;
+}
+
+function handleView(row: Record<string, unknown>) {
+  Object.assign(form, {
+    id: row.id || '',
+    name: row.name || '',
+    contactPerson: row.contactPerson || '',
+    phone: row.phone || row.contactPhone || '',
+    address: row.address || '',
+    email: row.email || '',
+    bankAccount: row.bankAccount || '',
+    taxId: row.taxId || '',
+    notes: row.notes || '',
+  });
+  dialogMode.value = 'view';
+  dialogVisible.value = true;
+}
+
+function handleEdit(row: Record<string, unknown>) {
+  Object.assign(form, {
+    id: row.id || '',
+    name: row.name || '',
+    contactPerson: row.contactPerson || '',
+    phone: row.phone || row.contactPhone || '',
+    address: row.address || '',
+    email: row.email || '',
+    bankAccount: row.bankAccount || '',
+    taxId: row.taxId || '',
+    notes: row.notes || '',
+  });
+  dialogMode.value = 'edit';
+  dialogVisible.value = true;
+}
+
+async function handleSubmit() {
+  if (!formRef.value) return;
+  await formRef.value.validate();
+
+  submitting.value = true;
+  try {
+    const payload = {
+      name: form.name,
+      contactPerson: form.contactPerson,
+      phone: form.phone,
+      address: form.address,
+      email: form.email,
+      bankAccount: form.bankAccount,
+      taxNumber: form.taxId,
+      notes: form.notes,
+    };
+
+    let res;
+    if (dialogMode.value === 'create') {
+      res = await post(`/${factoryId.value}/suppliers`, payload);
+    } else {
+      res = await put(`/${factoryId.value}/suppliers/${form.id}`, payload);
+    }
+
+    if (res && res.success === false) {
+      ElMessage.error(res.message || '操作失败');
+      return;
+    }
+    ElMessage.success(dialogMode.value === 'create' ? '新增成功' : '编辑成功');
+    dialogVisible.value = false;
+    loadData();
+  } catch (error) {
+    console.error('Submit failed:', error);
+    ElMessage.error('操作失败');
+  } finally {
+    submitting.value = false;
+  }
+}
+
+async function handleDelete(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm(`确定删除供应商「${row.name}」吗？`, '删除确认', {
       type: 'warning',
@@ -115,7 +225,7 @@ async function handleDelete(row: any) {
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
-            <el-button v-if="canWrite" type="primary" :icon="Plus">
+            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">
               新增供应商
             </el-button>
           </div>
@@ -164,8 +274,8 @@ async function handleDelete(row: any) {
         </el-table-column>
         <el-table-column label="操作" width="160" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link size="small">查看</el-button>
-            <el-button v-if="canWrite" type="primary" link size="small">编辑</el-button>
+            <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
+            <el-button v-if="canWrite" type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button v-if="canWrite" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -184,6 +294,53 @@ async function handleDelete(row: any) {
         />
       </div>
     </el-card>
+
+    <!-- 新增/编辑/查看 Dialog -->
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px" destroy-on-close>
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="dialogMode !== 'view' ? formRules : undefined"
+        :disabled="dialogMode === 'view'"
+        label-width="100px"
+      >
+        <el-form-item label="供应商名称" prop="name">
+          <el-input v-model="form.name" placeholder="请输入供应商名称" />
+        </el-form-item>
+        <el-form-item label="联系人" prop="contactPerson">
+          <el-input v-model="form.contactPerson" placeholder="请输入联系人" />
+        </el-form-item>
+        <el-form-item label="联系电话" prop="phone">
+          <el-input v-model="form.phone" placeholder="请输入联系电话" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="form.email" placeholder="请输入邮箱" />
+        </el-form-item>
+        <el-form-item label="地址">
+          <el-input v-model="form.address" placeholder="请输入地址" />
+        </el-form-item>
+        <el-form-item label="银行账户">
+          <el-input v-model="form.bankAccount" placeholder="请输入银行账户" />
+        </el-form-item>
+        <el-form-item label="税号">
+          <el-input v-model="form.taxId" placeholder="请输入税号" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="form.notes" type="textarea" :rows="3" placeholder="请输入备注" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">{{ dialogMode === 'view' ? '关闭' : '取消' }}</el-button>
+        <el-button
+          v-if="dialogMode !== 'view'"
+          type="primary"
+          :loading="submitting"
+          @click="handleSubmit"
+        >
+          确定
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 

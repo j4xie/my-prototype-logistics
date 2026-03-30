@@ -1549,7 +1549,7 @@ onBeforeUnmount(() => {
       <!-- Chart: Cost Flow Sankey -->
       <el-card
         v-if="getChart('cost_flow_sankey')"
-        :ref="(el: any) => { if (el?.$el) observeChartCard(el.$el, 'cost_flow_sankey') }"
+        :ref="(el: { $el?: HTMLElement } | null) => { if (el?.$el) observeChartCard(el.$el, 'cost_flow_sankey') }"
         class="chart-card chart-card--wide"
         :class="{ 'chart-card--visible': visibleCharts.has('cost_flow_sankey') }"
         data-chart-type="cost_flow_sankey"
@@ -1588,7 +1588,7 @@ onBeforeUnmount(() => {
       <template v-for="ct in chartTypes.filter(c => c.key !== 'cost_flow_sankey')" :key="ct.key">
       <el-card
         v-if="getChart(ct.key)"
-        :ref="(el: any) => { if (el?.$el) observeChartCard(el.$el, ct.key) }"
+        :ref="(el: { $el?: HTMLElement } | null) => { if (el?.$el) observeChartCard(el.$el, ct.key) }"
         class="chart-card"
         :class="{ 'chart-card--wide chart-card--scorecard': ct.key === 'kpi_scorecard', 'chart-card--visible': visibleCharts.has(ct.key) }"
         :data-chart-type="ct.key"

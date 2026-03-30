@@ -23,7 +23,7 @@ const canWrite = computed(() => permissionStore.canWrite('production'));
 
 const loading = ref(false);
 const actionLoading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchForm = ref({
   keyword: '',
@@ -45,11 +45,11 @@ const planForm = ref({
   processName: '',
   batchDate: '',
 });
-const productTypes = ref<any[]>([]);
+const productTypes = ref<Record<string, unknown>[]>([]);
 
 // Import/Export & reference data
-const productionLines = ref<any[]>([]);
-const supervisors = ref<any[]>([]);
+const productionLines = ref<Record<string, unknown>[]>([]);
+const supervisors = ref<Record<string, unknown>[]>([]);
 
 // AI Entry Drawer
 const aiEntryVisible = ref(false);
@@ -164,7 +164,7 @@ async function submitPlan() {
   }
 }
 
-async function handleStart(row: any) {
+async function handleStart(row: Record<string, unknown>) {
   if (actionLoading.value) return;
   try {
     await ElMessageBox.confirm('确定开始此生产计划?', '提示', { type: 'warning' });
@@ -185,7 +185,7 @@ async function handleStart(row: any) {
   }
 }
 
-async function handleComplete(row: any) {
+async function handleComplete(row: Record<string, unknown>) {
   if (actionLoading.value) return;
   try {
     const { value } = await ElMessageBox.prompt('请输入实际产量', '完成生产', {
@@ -211,7 +211,7 @@ async function handleComplete(row: any) {
   }
 }
 
-async function handleCancel(row: any) {
+async function handleCancel(row: Record<string, unknown>) {
   if (actionLoading.value) return;
   try {
     const { value } = await ElMessageBox.prompt('请输入取消原因', '取消计划', {
@@ -237,7 +237,7 @@ async function handleCancel(row: any) {
   }
 }
 
-async function handleCreateBatch(row: any) {
+async function handleCreateBatch(row: Record<string, unknown>) {
   if (actionLoading.value) return;
   try {
     await ElMessageBox.confirm(
@@ -253,6 +253,32 @@ async function handleCreateBatch(row: any) {
       loadData();
     } else {
       ElMessage.error(response.message || '转换失败');
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('操作失败');
+    }
+  } finally {
+    actionLoading.value = false;
+  }
+}
+
+async function handleGenerateTransfer(row: Record<string, unknown>) {
+  if (actionLoading.value) return;
+  try {
+    await ElMessageBox.confirm(
+      `确定为计划 "${row.planNumber}" 生成调拨单？\n\n将根据 BOM 配方自动计算所需原辅料及包材，生成调拨申请发送给仓库。`,
+      '生成调拨单',
+      { type: 'info', confirmButtonText: '生成', cancelButtonText: '取消' }
+    );
+    actionLoading.value = true;
+    const response = await post(`/${factoryId.value}/production-plans/${row.id}/generate-transfer`);
+    if (response.success) {
+      const count = response.data?.items?.length || 0;
+      ElMessage.success(`调拨单已生成，共 ${count} 项物料，等待仓库审批`);
+      loadData();
+    } else {
+      ElMessage.error(response.message || '生成失败');
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -287,6 +313,15 @@ function getStatusText(status: string) {
     CANCELLED: '已取消'
   };
   return map[status?.toUpperCase()] || status;
+}
+
+// ==================== View Plan ====================
+const viewDialogVisible = ref(false);
+const viewPlan = ref<Record<string, unknown> | null>(null);
+
+function handleViewPlan(row: Record<string, unknown>) {
+  viewPlan.value = row;
+  viewDialogVisible.value = true;
 }
 
 // ==================== Reference Data ====================
@@ -335,7 +370,7 @@ async function handleDownloadTemplate() {
   }
 }
 
-async function handleImportFile(uploadFile: any) {
+async function handleImportFile(uploadFile: { raw?: File }) {
   if (!uploadFile?.raw) return;
 
   const file = uploadFile.raw;
@@ -500,7 +535,7 @@ function handleAiFill(params: Record<string, unknown>) {
         <el-table-column prop="createdAt" label="创建时间" width="180" :formatter="formatDateTimeCell" />
         <el-table-column label="操作" width="280" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link size="small">查看</el-button>
+            <el-button type="primary" link size="small" @click="handleViewPlan(row)">查看</el-button>
             <el-button
               v-if="canWrite && isPendingStatus(row.status)"
               type="warning"
@@ -509,6 +544,14 @@ function handleAiFill(params: Record<string, unknown>) {
               :disabled="actionLoading"
               @click="handleCreateBatch(row)"
             >转为批次</el-button>
+            <el-button
+              v-if="canWrite && isPendingStatus(row.status)"
+              type="warning"
+              link
+              size="small"
+              :disabled="actionLoading"
+              @click="handleGenerateTransfer(row)"
+            >生成调拨单</el-button>
             <el-button
               v-if="canWrite && isPendingStatus(row.status)"
               type="success"
@@ -552,6 +595,31 @@ function handleAiFill(params: Record<string, unknown>) {
         />
       </div>
     </el-card>
+
+    <!-- 查看计划详情 -->
+    <el-dialog v-model="viewDialogVisible" title="计划详情" width="560px" destroy-on-close>
+      <el-descriptions v-if="viewPlan" :column="2" border>
+        <el-descriptions-item label="计划编号">{{ viewPlan.planNumber }}</el-descriptions-item>
+        <el-descriptions-item label="产品类型">{{ viewPlan.productTypeName }}</el-descriptions-item>
+        <el-descriptions-item label="客户">{{ viewPlan.sourceCustomerName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="工序">{{ viewPlan.processName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="计划数量">{{ viewPlan.plannedQuantity }}</el-descriptions-item>
+        <el-descriptions-item label="实际数量">{{ viewPlan.actualQuantity || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="计划日期">{{ viewPlan.plannedDate }}</el-descriptions-item>
+        <el-descriptions-item label="批次日期">{{ viewPlan.batchDate || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="getStatusType(viewPlan.status)" size="small">{{ getStatusText(viewPlan.status) }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="来源">
+          <el-tag v-if="viewPlan.sourceType === 'EXCEL_IMPORT'" type="warning" size="small">Excel导入</el-tag>
+          <el-tag v-else-if="viewPlan.sourceType === 'AI_CHAT'" type="success" size="small">AI创建</el-tag>
+          <el-tag v-else size="small">手动</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="建议产线">{{ viewPlan.suggestedProductionLineName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="指派主管">{{ viewPlan.assignedSupervisorName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">{{ viewPlan.notes || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
 
     <!-- 新建计划对话框 -->
     <el-dialog v-model="dialogVisible" title="新建生产计划" width="500px">

@@ -38,6 +38,7 @@ interface ProductType {
   unit: string;
   specification?: string;
   relatedCustomer?: string;
+  temperatureZone?: string;
   imageUrl?: string;
   notes?: string;
   isActive: boolean;
@@ -57,6 +58,57 @@ const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 const activeTab = ref<ProductCategory>('FINISHED_PRODUCT');
 
+// SKU组装
+const skuDialogVisible = ref(false);
+const skuLoading = ref(false);
+const skuForm = ref({
+  templateId: '',
+  customerId: '',
+  recipeVersion: 'default',
+});
+const templateOptions = ref<Record<string, unknown>[]>([]);
+const customerOptions = ref<Record<string, unknown>[]>([]);
+const templateRecipes = ref<Record<string, unknown>[]>([]);
+
+async function loadSkuOptions() {
+  try {
+    const [templatesRes, customersRes] = await Promise.all([
+      get(`/${factoryId.value}/product-types/templates`),
+      get(`/${factoryId.value}/customers?size=200`),
+    ]);
+    templateOptions.value = templatesRes.success ? (templatesRes.data || []) : [];
+    customerOptions.value = customersRes.success ? (customersRes.data?.content || customersRes.data || []) : [];
+  } catch { /* silent */ }
+}
+
+async function loadTemplateRecipe(templateId: string) {
+  try {
+    const res = await get(`/${factoryId.value}/conversions?productTypeId=${templateId}`);
+    templateRecipes.value = res.success ? (res.data?.content || res.data || []) : [];
+  } catch { templateRecipes.value = []; }
+}
+
+async function handleAssembleSku() {
+  if (!skuForm.value.templateId) { ElMessage.warning('请选择产品模板'); return; }
+  skuLoading.value = true;
+  try {
+    const res = await post(`/${factoryId.value}/product-types/assemble-sku`, skuForm.value);
+    if (res.success) {
+      ElMessage.success(`SKU创建成功: ${res.data?.code || ''}`);
+      skuDialogVisible.value = false;
+      skuForm.value = { templateId: '', customerId: '', recipeVersion: 'default' };
+      templateRecipes.value = [];
+      loadData();
+    } else {
+      ElMessage.error(res.message || 'SKU创建失败');
+    }
+  } catch (e: unknown) {
+    ElMessage.error((e instanceof Error ? e.message : null) || '操作失败');
+  } finally {
+    skuLoading.value = false;
+  }
+}
+
 // 弹窗状态
 const dialogVisible = ref(false);
 const dialogTitle = ref('新增产品');
@@ -73,9 +125,23 @@ const formData = reactive<Partial<ProductType>>({
   unit: '',
   specification: '',
   relatedCustomer: '',
+  temperatureZone: '',
   imageUrl: '',
   notes: ''
 });
+
+// 客户下拉列表
+const customers = ref<{ id: string; name: string }[]>([]);
+
+async function loadCustomers() {
+  if (!factoryId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/customers`, { params: { size: 200 } });
+    if (res.success) {
+      customers.value = res.data?.content || res.data || [];
+    }
+  } catch { /* silent */ }
+}
 
 // 表单验证规则
 const formRules = {
@@ -97,6 +163,7 @@ const formRules = {
 
 onMounted(() => {
   loadData();
+  loadCustomers();
 });
 
 async function loadData() {
@@ -162,6 +229,7 @@ function resetForm() {
   formData.unit = '';
   formData.specification = '';
   formData.relatedCustomer = '';
+  formData.temperatureZone = '';
   formData.imageUrl = '';
   formData.notes = '';
 }
@@ -183,6 +251,7 @@ function handleEdit(row: ProductType) {
   formData.unit = row.unit;
   formData.specification = row.specification || '';
   formData.relatedCustomer = row.relatedCustomer || '';
+  formData.temperatureZone = row.temperatureZone || '';
   formData.imageUrl = row.imageUrl || '';
   formData.notes = row.notes || '';
   dialogVisible.value = true;
@@ -222,17 +291,20 @@ async function handleSubmit() {
     await formRef.value.validate();
     submitting.value = true;
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       code: formData.code,
       name: formData.name,
       productCategory: formData.productCategory,
       unit: formData.unit,
       specification: formData.specification,
       relatedCustomer: formData.relatedCustomer,
+      temperatureZone: formData.temperatureZone,
       imageUrl: formData.imageUrl,
       notes: formData.notes,
-      isActive: true
     };
+    if (!isEditing.value) {
+      payload.isActive = true;
+    }
 
     let response;
     if (isEditing.value) {
@@ -413,6 +485,11 @@ function handleAiFill(params: Record<string, unknown>) {
             <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
               AI录入
             </el-button>
+            <el-tooltip content="选择产品模板+客户+配方组装为定制SKU" placement="bottom">
+              <el-button type="warning" :disabled="!canWrite" @click="skuDialogVisible = true">
+                SKU组装
+              </el-button>
+            </el-tooltip>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleAdd">
               新增产品
             </el-button>
@@ -476,6 +553,14 @@ function handleAiFill(params: Record<string, unknown>) {
             <el-tag size="small" type="info">
               {{ getCategoryLabel(row.productCategory || row.category) }}
             </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="temperatureZone" label="温区" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.temperatureZone" size="small" :type="row.temperatureZone === '冷冻' ? 'primary' : row.temperatureZone === '冷藏' ? 'info' : 'warning'">
+              {{ row.temperatureZone }}
+            </el-tag>
+            <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column prop="imageUrl" label="图片" width="100" align="center">
@@ -542,8 +627,8 @@ function handleAiFill(params: Record<string, unknown>) {
         label-position="right"
       >
         <el-form-item label="产品编号" prop="code">
-          <el-input v-model="formData.code" placeholder="留空自动生成，如: CP-F001-001" :disabled="isEditing" />
-          <div class="form-tip">留空则系统自动生成编号（成品→CP, 原料→YL, 包辅材→BF）</div>
+          <el-input v-model="formData.code" placeholder="留空自动生成，如: CPDD0001" :disabled="isEditing" />
+          <div class="form-tip">留空则系统自动生成编号（如 CP + 客户首字母 + 序号: CPDD0001）</div>
         </el-form-item>
         <el-form-item label="产品名称" prop="name">
           <el-input v-model="formData.name" placeholder="请输入产品名称" />
@@ -565,7 +650,21 @@ function handleAiFill(params: Record<string, unknown>) {
           <el-input v-model="formData.specification" placeholder="请输入规格（如：310g*42袋/箱）" />
         </el-form-item>
         <el-form-item label="关联客户" prop="relatedCustomer">
-          <el-input v-model="formData.relatedCustomer" placeholder="请输入关联客户" />
+          <el-select v-model="formData.relatedCustomer" placeholder="请选择关联客户" filterable clearable allow-create style="width: 100%">
+            <el-option
+              v-for="c in customers"
+              :key="c.id"
+              :label="c.name"
+              :value="c.name"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="温区" prop="temperatureZone">
+          <el-select v-model="formData.temperatureZone" placeholder="请选择温区" clearable style="width: 100%">
+            <el-option label="常温" value="常温" />
+            <el-option label="冷藏" value="冷藏" />
+            <el-option label="冷冻" value="冷冻" />
+          </el-select>
         </el-form-item>
         <el-form-item label="产品图片" prop="imageUrl">
           <el-input v-model="formData.imageUrl" placeholder="请输入图片URL" />
@@ -594,6 +693,78 @@ function handleAiFill(params: Record<string, unknown>) {
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSubmit">
           确定
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- SKU 组装对话框 -->
+    <el-dialog
+      v-model="skuDialogVisible"
+      title="SKU组装 — 产品模板 + 客户 + 配方"
+      width="600px"
+      @open="loadSkuOptions"
+    >
+      <el-form :model="skuForm" label-width="100px">
+        <el-form-item label="产品模板" required>
+          <el-select
+            v-model="skuForm.templateId"
+            placeholder="选择基础产品"
+            filterable
+            style="width: 100%"
+            @change="(val: string) => { if (val) loadTemplateRecipe(val); }"
+          >
+            <el-option
+              v-for="t in templateOptions"
+              :key="t.id"
+              :label="`${t.name} (${t.unit})`"
+              :value="t.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="客户">
+          <el-select
+            v-model="skuForm.customerId"
+            placeholder="选择客户"
+            filterable
+            clearable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="c in customerOptions"
+              :key="c.id"
+              :label="c.name"
+              :value="c.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="配方版本">
+          <el-input v-model="skuForm.recipeVersion" placeholder="default" />
+        </el-form-item>
+
+        <el-form-item v-if="templateRecipes.length > 0" label="配方预览">
+          <el-table :data="templateRecipes" size="small" border stripe style="width: 100%">
+            <el-table-column prop="materialType.name" label="原料" width="120">
+              <template #default="{ row }">
+                {{ row.materialType?.name || row.materialTypeId }}
+              </template>
+            </el-table-column>
+            <el-table-column label="转换率" width="80" align="center">
+              <template #default="{ row }">{{ row.conversionRate }}</template>
+            </el-table-column>
+            <el-table-column label="损耗率" width="80" align="center">
+              <template #default="{ row }">{{ row.wastageRate || 0 }}%</template>
+            </el-table-column>
+            <el-table-column label="标准用量" width="90" align="center">
+              <template #default="{ row }">{{ row.standardUsage || '-' }}</template>
+            </el-table-column>
+          </el-table>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="skuDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="skuLoading" @click="handleAssembleSku">
+          创建SKU
         </el-button>
       </template>
     </el-dialog>

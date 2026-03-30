@@ -6,9 +6,27 @@
  * those references from pre-registered safe registries (no eval / new Function).
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { sparklineSVG } from './sparkline';
+
+/** ECharts formatter callback param — covers tooltip/label params for all chart types */
+interface EChartsParam {
+  name?: string;
+  value?: unknown;
+  data?: unknown;
+  dataType?: string;
+  dataIndex?: number;
+  seriesName?: string;
+  seriesType?: string;
+  seriesIndex?: number;
+  componentType?: string;
+  marker?: string;
+  color?: string | { colorStops?: Array<{ offset: number; color: string }> };
+  percent?: number;
+  axisValueLabel?: string;
+  dimensionNames?: string[];
+  series?: { data?: unknown[] };
+  [key: string]: unknown;
+}
 
 // ---- Animation registry ----
 const ANIM_REGISTRY: Record<string, (idx: number) => number> = {
@@ -18,27 +36,32 @@ const ANIM_REGISTRY: Record<string, (idx: number) => number> = {
 };
 
 // ---- Formatter registry ----
-const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
-  thousands_sep: (v: any) => {
-    if (typeof v !== 'number' || isNaN(v)) return v == null || isNaN(v) ? '-' : String(v);
-    const abs = Math.abs(v);
-    if (abs >= 1e8) return (v / 1e8).toFixed(1) + '亿';
-    if (abs >= 1e4) return (v / 1e4).toFixed(1) + '万';
-    return v.toLocaleString('zh-CN');
+const FMT_REGISTRY: Record<string, (...args: unknown[]) => string> = {
+  thousands_sep: (v: unknown) => {
+    const num = typeof v === 'number' ? v : Number(v);
+    if (typeof num !== 'number' || isNaN(num)) return v == null ? '-' : String(v);
+    const abs = Math.abs(num);
+    if (abs >= 1e8) return (num / 1e8).toFixed(1) + '亿';
+    if (abs >= 1e4) return (num / 1e4).toFixed(1) + '万';
+    return num.toLocaleString('zh-CN');
   },
-  boxplot_tooltip: (p: any) => {
-    const d = p.data;
-    return `${p.name}<br/>最小: ${d[0]}<br/>Q1: ${d[1]}<br/>中位数: ${d[2]}<br/>Q3: ${d[3]}<br/>最大: ${d[4]}`;
+  boxplot_tooltip: (p: unknown) => {
+    const param = p as EChartsParam;
+    const d = param.data as number[];
+    return `${param.name}<br/>最小: ${d[0]}<br/>Q1: ${d[1]}<br/>中位数: ${d[2]}<br/>Q3: ${d[3]}<br/>最大: ${d[4]}`;
   },
-  correlation_tooltip: (p: any) => p.data[2].toFixed(2),
-  correlation_label: (p: any) => p.data[2].toFixed(1),
-  quadrant_scatter_tooltip: (p: any) =>
-    `${p.data[2]}<br/>收入: ${Number(p.data[0]).toLocaleString()}<br/>利润率: ${p.data[1]}%`,
-  quadrant_scatter_label: (p: any) => p.data[2],
+  correlation_tooltip: (p: unknown) => ((p as EChartsParam).data as number[])[2].toFixed(2),
+  correlation_label: (p: unknown) => ((p as EChartsParam).data as number[])[2].toFixed(1),
+  quadrant_scatter_tooltip: (p: unknown) => {
+    const d = (p as EChartsParam).data as (string | number)[];
+    return `${d[2]}<br/>收入: ${Number(d[0]).toLocaleString()}<br/>利润率: ${d[1]}%`;
+  },
+  quadrant_scatter_label: (p: unknown) => String(((p as EChartsParam).data as unknown[])[2]),
   // Sankey financial chart formatters (unscaled values — auto-detect scale)
-  sankey_financial_label: (p: any) => {
-    const name = p.name || '';
-    const val = p.value;
+  sankey_financial_label: (p: unknown) => {
+    const param = p as EChartsParam;
+    const name = param.name || '';
+    const val = param.value as number;
     if (typeof val !== 'number' || isNaN(val)) return name;
     const abs = Math.abs(val);
     const formatted = abs >= 1e8
@@ -48,11 +71,13 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
         : val.toLocaleString('zh-CN');
     return `${name}\n${formatted}`;
   },
-  sankey_financial_tooltip: (p: any) => {
-    if (p.dataType === 'edge') {
-      const src = p.data?.source || '';
-      const tgt = p.data?.target || '';
-      const val = p.data?.value ?? 0;
+  sankey_financial_tooltip: (p: unknown) => {
+    const param = p as EChartsParam;
+    if (param.dataType === 'edge') {
+      const d = param.data as Record<string, unknown> | undefined;
+      const src = d?.source || '';
+      const tgt = d?.target || '';
+      const val = (d?.value as number) ?? 0;
       const abs = Math.abs(val);
       const formatted = abs >= 1e8
         ? (val / 1e8).toFixed(2) + '亿'
@@ -61,8 +86,8 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
           : Number(val).toLocaleString('zh-CN');
       return `<b>${src} → ${tgt}</b><br/>金额: ${formatted}元`;
     }
-    const name = p.name || '';
-    const val = p.value ?? 0;
+    const name = param.name || '';
+    const val = (param.value as number) ?? 0;
     const abs = Math.abs(val);
     const formatted = abs >= 1e8
       ? (val / 1e8).toFixed(2) + '亿'
@@ -72,64 +97,75 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
     return `<b>${name}</b><br/>金额: ${formatted}元`;
   },
   // Sankey formatters for pre-scaled values (万)
-  'sankey_financial_label_万': (p: any) => {
-    const name = p.name || '';
-    const val = p.value;
+  'sankey_financial_label_万': (p: unknown) => {
+    const param = p as EChartsParam;
+    const name = param.name || '';
+    const val = param.value as number;
     if (typeof val !== 'number' || isNaN(val)) return name;
     return `${name}\n${val.toFixed(1)}万`;
   },
-  'sankey_financial_tooltip_万': (p: any) => {
-    if (p.dataType === 'edge') {
-      const src = p.data?.source || '';
-      const tgt = p.data?.target || '';
-      const val = p.data?.value ?? 0;
+  'sankey_financial_tooltip_万': (p: unknown) => {
+    const param = p as EChartsParam;
+    if (param.dataType === 'edge') {
+      const d = param.data as Record<string, unknown> | undefined;
+      const src = d?.source || '';
+      const tgt = d?.target || '';
+      const val = (d?.value as number) ?? 0;
       return `<b>${src} → ${tgt}</b><br/>金额: ${Number(val).toFixed(2)}万元`;
     }
-    const name = p.name || '';
-    const val = p.value ?? 0;
+    const name = param.name || '';
+    const val = (param.value as number) ?? 0;
     return `<b>${name}</b><br/>金额: ${Number(val).toFixed(2)}万元`;
   },
   // Sankey formatters for pre-scaled values (亿)
-  'sankey_financial_label_亿': (p: any) => {
-    const name = p.name || '';
-    const val = p.value;
+  'sankey_financial_label_亿': (p: unknown) => {
+    const param = p as EChartsParam;
+    const name = param.name || '';
+    const val = param.value as number;
     if (typeof val !== 'number' || isNaN(val)) return name;
     return `${name}\n${val.toFixed(2)}亿`;
   },
-  'sankey_financial_tooltip_亿': (p: any) => {
-    if (p.dataType === 'edge') {
-      const src = p.data?.source || '';
-      const tgt = p.data?.target || '';
-      const val = p.data?.value ?? 0;
+  'sankey_financial_tooltip_亿': (p: unknown) => {
+    const param = p as EChartsParam;
+    if (param.dataType === 'edge') {
+      const d = param.data as Record<string, unknown> | undefined;
+      const src = d?.source || '';
+      const tgt = d?.target || '';
+      const val = (d?.value as number) ?? 0;
       return `<b>${src} → ${tgt}</b><br/>金额: ${Number(val).toFixed(2)}亿元`;
     }
-    const name = p.name || '';
-    const val = p.value ?? 0;
+    const name = param.name || '';
+    const val = (param.value as number) ?? 0;
     return `<b>${name}</b><br/>金额: ${Number(val).toFixed(2)}亿元`;
   },
-  financial_rich_tooltip: (params: any) => {
+  financial_rich_tooltip: (params: unknown) => {
     // Handle both axis and non-axis (pie/radar/gauge) tooltips
     if (!params) return '';
+    let items: EChartsParam[];
     // Pie/gauge/radar: single param object, not array
     if (!Array.isArray(params)) {
+      const p = params as EChartsParam;
       // Pie chart tooltip
-      if (params.componentType === 'series' && (params.seriesType === 'pie' || params.seriesType === 'gauge' || params.seriesType === 'radar')) {
-        const color = typeof params.color === 'string' ? params.color : (params.color?.colorStops?.[1]?.color || '#666');
-        const val = typeof params.value === 'number' ? params.value : parseFloat(params.value ?? '0');
+      if (p.componentType === 'series' && (p.seriesType === 'pie' || p.seriesType === 'gauge' || p.seriesType === 'radar')) {
+        const colorObj = p.color;
+        const color = typeof colorObj === 'string' ? colorObj : ((colorObj as Record<string, unknown>)?.colorStops as Array<{ color: string }> | undefined)?.[1]?.color || '#666';
+        const val = typeof p.value === 'number' ? p.value : parseFloat(String(p.value ?? '0'));
         const abs = Math.abs(val);
         const formatted = abs >= 1e8 ? (val / 1e8).toFixed(2) + '亿' : abs >= 1e4 ? (val / 1e4).toFixed(1) + '万' : val.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
-        const pctStr = params.percent != null ? ` (${params.percent.toFixed(1)}%)` : '';
-        return `<div style="font-weight:600;margin-bottom:4px;font-size:13px;color:#1A2332">${params.seriesName || ''}</div>`
+        const pctStr = p.percent != null ? ` (${(p.percent as number).toFixed(1)}%)` : '';
+        return `<div style="font-weight:600;margin-bottom:4px;font-size:13px;color:#1A2332">${p.seriesName || ''}</div>`
           + `<div style="display:flex;align-items:center;gap:6px">`
           + `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color}"></span>`
-          + `<span style="font-size:12px;color:#666">${params.name || ''}</span>`
+          + `<span style="font-size:12px;color:#666">${p.name || ''}</span>`
           + `<span style="font-weight:600;font-size:12px;color:#333;margin-left:auto">${formatted}${pctStr}</span>`
           + `</div>`;
       }
-      params = [params];
+      items = [p];
+    } else {
+      items = params as EChartsParam[];
     }
-    if (!params.length) return '';
-    const title = params[0].axisValueLabel || params[0].name || '';
+    if (!items.length) return '';
+    const title = items[0].axisValueLabel || items[0].name || '';
     let html = `<div style="font-weight:600;margin-bottom:6px;font-size:13px;color:#1A2332">${title}</div>`;
     const fmtVal = (v: number) => {
       if (typeof v !== 'number' || isNaN(v)) return '-';
@@ -138,23 +174,24 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
       if (abs >= 1e4) return (v / 1e4).toFixed(1) + '万';
       return v.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
     };
-    const vals = params.map((p: any) => {
+    const vals = items.map((p: EChartsParam) => {
       const v = Array.isArray(p.value) ? p.value[1] : p.value;
       return typeof v === 'number' ? Math.abs(v) : 0;
     });
     const maxVal = Math.max(...vals, 1);
-    for (const p of params) {
-      const val = Array.isArray(p.value) ? p.value[1] : p.value;
-      const numVal = typeof val === 'number' ? val : parseFloat(val);
+    for (const p of items) {
+      const val = Array.isArray(p.value) ? (p.value as number[])[1] : p.value;
+      const numVal = typeof val === 'number' ? val : parseFloat(String(val));
       const sName = (p.seriesName || '') as string;
       const isRateSeries = /同比|增长|达成|环比/.test(sName);
       const formatted = isRateSeries
         ? (isNaN(numVal) ? '-' : numVal.toFixed(1) + '%')
         : fmtVal(numVal);
       const pct = Math.min(Math.abs(numVal) / maxVal * 100, 100);
-      const color = p.color && typeof p.color === 'object'
-        ? (p.color.colorStops?.[1]?.color || '#666')
-        : (p.color || '#666');
+      const colorObj = p.color;
+      const color = colorObj && typeof colorObj === 'object'
+        ? ((colorObj as Record<string, unknown>).colorStops as Array<{ color: string }> | undefined)?.[1]?.color || '#666'
+        : (colorObj as string || '#666');
       html += `<div style="display:flex;align-items:center;margin:4px 0;gap:6px">`;
       html += `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></span>`;
       html += `<span style="flex:1;font-size:12px;color:#666">${p.seriesName || ''}</span>`;
@@ -167,10 +204,10 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
 
     // --- Delta comparisons between series pairs ---
     const seriesMap: Record<string, number> = {};
-    for (const p of params) {
+    for (const p of items) {
       const name = (p.seriesName || '') as string;
-      const v = Array.isArray(p.value) ? p.value[1] : p.value;
-      seriesMap[name] = typeof v === 'number' ? v : parseFloat(v);
+      const v = Array.isArray(p.value) ? (p.value as number[])[1] : p.value;
+      seriesMap[name] = typeof v === 'number' ? v : parseFloat(String(v));
     }
 
     const deltaPairs: { label: string; delta: number; base: number }[] = [];
@@ -207,16 +244,16 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
     // --- Summary: total of bar-type series ---
     let barTotal = 0;
     let hasBar = false;
-    for (const p of params) {
+    for (const p of items) {
       const name = (p.seriesName || '') as string;
       const isRateSeries = /同比|增长|达成|环比/.test(name);
       if (p.seriesType === 'bar' && !isRateSeries) {
-        const v = Array.isArray(p.value) ? p.value[1] : p.value;
-        const numV = typeof v === 'number' ? v : parseFloat(v);
+        const v = Array.isArray(p.value) ? (p.value as number[])[1] : p.value;
+        const numV = typeof v === 'number' ? v : parseFloat(String(v));
         if (!isNaN(numV)) { barTotal += numV; hasBar = true; }
       }
     }
-    if (hasBar && params.length > 1) {
+    if (hasBar && items.length > 1) {
       html += `<div style="border-top:1px dashed #e8e8e8;margin-top:6px;padding-top:4px;font-size:11px;color:#999">`;
       html += `合计: <b style="color:#333">${fmtVal(barTotal)}</b>`;
       html += `</div>`;
@@ -224,22 +261,20 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
 
     // Fix 68: Sparkline mini-chart in tooltip (Power BI Tooltip Pages)
     // Show sparkline for the first series that has enough data points
-    if (params.length > 0) {
-      const firstP = params[0];
-      const seriesData = firstP.data;
+    if (items.length > 0) {
+      const firstP = items[0];
       // Try to get full series data from encode or series context
       const dataIdx = firstP.dataIndex as number | undefined;
       // If series has the full data array available via seriesData
-      if (Array.isArray((firstP as any).dimensionNames) || typeof dataIdx === 'number') {
+      if (Array.isArray(firstP.dimensionNames) || typeof dataIdx === 'number') {
         // Get all values from the series to build sparkline
         const fullData: number[] = [];
-        const componentIndex = firstP.seriesIndex ?? 0;
         // Access params' series data if available
-        if ((firstP as any).series?.data) {
-          const sd = (firstP as any).series.data;
+        if (firstP.series?.data) {
+          const sd = firstP.series.data;
           for (const d of sd) {
-            const v = typeof d === 'number' ? d : (Array.isArray(d) ? d[1] : d?.value);
-            fullData.push(typeof v === 'number' ? v : parseFloat(v) || 0);
+            const v = typeof d === 'number' ? d : (Array.isArray(d) ? d[1] : (d as Record<string, unknown>)?.value);
+            fullData.push(typeof v === 'number' ? v : parseFloat(String(v)) || 0);
           }
         }
         if (fullData.length >= 3) {
@@ -251,8 +286,9 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
 
     return html;
   },
-  stack_total: (p: any) => {
-    const v = typeof p.value === 'number' ? p.value : parseFloat(p.value);
+  stack_total: (p: unknown) => {
+    const param = p as EChartsParam;
+    const v = typeof param.value === 'number' ? param.value : parseFloat(String(param.value));
     if (isNaN(v)) return '';
     const abs = Math.abs(v);
     if (abs >= 1e8) return (v / 1e8).toFixed(1) + '亿';
@@ -260,20 +296,21 @@ const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
     return v.toLocaleString('zh-CN');
   },
   // Fix 69: CAGR annotation label formatter
-  cagr_annotation: (p: any) => {
-    const val = p.value ?? p.data?.value;
+  cagr_annotation: (p: unknown) => {
+    const param = p as EChartsParam;
+    const val = param.value ?? (param.data as Record<string, unknown> | undefined)?.value;
     if (typeof val === 'string') return val;
     if (typeof val === 'number') return `CAGR ${val >= 0 ? '+' : ''}${val.toFixed(1)}%`;
     return '';
   },
   // Fix 70: R² label formatter
-  r_squared_label: (p: any) => {
-    const val = p.value ?? p.data?.value;
+  r_squared_label: (p: unknown) => {
+    const param = p as EChartsParam;
+    const val = param.value ?? (param.data as Record<string, unknown> | undefined)?.value;
     if (typeof val === 'number') return `R²=${val.toFixed(2)}`;
     return String(val ?? '');
   },
 };
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
  * Recursively resolve __ANIM__ / __FMT__ magic strings in an ECharts option tree.

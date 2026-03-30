@@ -19,7 +19,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const statusFilter = ref('');
 const dialogVisible = ref(false);
@@ -31,8 +31,8 @@ const form = ref({
   remark: '',
   items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }]
 });
-const suppliers = ref<any[]>([]);
-const materials = ref<any[]>([]);
+const suppliers = ref<Record<string, unknown>[]>([]);
+const materials = ref<Record<string, unknown>[]>([]);
 
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
@@ -57,7 +57,7 @@ async function loadData() {
     const url = statusFilter.value
       ? `/${factoryId.value}/purchase/orders/by-status`
       : `/${factoryId.value}/purchase/orders`;
-    const params: any = { page: pagination.value.page, size: pagination.value.size };
+    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
     if (statusFilter.value) params.status = statusFilter.value;
     const response = await get(url, { params });
     if (response.success && response.data) {

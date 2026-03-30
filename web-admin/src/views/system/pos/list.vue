@@ -12,7 +12,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('system'));
 
 const loading = ref(false);
-const connections = ref<any[]>([]);
+const connections = ref<Record<string, unknown>[]>([]);
 const dialogVisible = ref(false);
 const testLoading = ref<Record<string, boolean>>({});
 const syncLoading = ref<Record<string, boolean>>({});

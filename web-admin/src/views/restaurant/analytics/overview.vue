@@ -411,7 +411,7 @@ function renderQuadrantMini() {
   }))
 
   chart.setOption({
-    tooltip: { trigger: 'item', confine: true, formatter: (p: any) => { const raw = p.data._raw || p.value; return `销量: ${raw[0]}, 品均收入: ¥${raw[1].toFixed(1)}` } },
+    tooltip: { trigger: 'item', confine: true, formatter: (p: Record<string, unknown>) => { const d = p.data as Record<string, unknown>; const raw = (d._raw || p.value) as number[]; return `销量: ${raw[0]}, 品均收入: ¥${raw[1].toFixed(1)}` } },
     legend: { bottom: 0, textStyle: { fontSize: 11 } },
     grid: { left: 50, right: 20, top: 20, bottom: 40 },
     xAxis: { name: '销量', type: 'value', max: xMax, splitLine: { show: false } },
@@ -509,7 +509,7 @@ function renderTrendLine() {
   const chart = echarts.getInstanceByDom(el) || echarts.init(el)
   const trend = data.value.trendAnalysis
 
-  const series: any[] = [{
+  const series: Record<string, unknown>[] = [{
     name: '总营收',
     type: 'line',
     data: trend.dailyTrend.map(d => [d.date, d.revenue]),
@@ -584,10 +584,10 @@ function renderHourlyBar() {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
       confine: true,
-      formatter: (params: any) => {
-        const p = params[0]
-        const item = hourly.find((d: any) => d.hour === p.dataIndex)
-        return `${p.dataIndex}:00-${p.dataIndex + 1}:00<br/>营收: ¥${p.value.toLocaleString()}${item ? '<br/>订单: ' + item.orderCount + '笔' : ''}`
+      formatter: (params: Record<string, unknown>[]) => {
+        const p = params[0] as Record<string, unknown>
+        const item = hourly.find((d: Record<string, unknown>) => d.hour === p.dataIndex)
+        return `${p.dataIndex}:00-${Number(p.dataIndex) + 1}:00<br/>营收: ¥${Number(p.value).toLocaleString()}${item ? '<br/>订单: ' + item.orderCount + '笔' : ''}`
       },
     },
     grid: { left: 50, right: 20, top: 10, bottom: 20 },
@@ -625,7 +625,7 @@ function renderMealPie() {
   chart.setOption({
     tooltip: {
       confine: true,
-      formatter: (p: any) => `${p.name}<br/>¥${p.value.toLocaleString()} (${p.data.pct}%)<br/>${p.data.orderCount}笔`,
+      formatter: (p: Record<string, unknown>) => { const d = p.data as Record<string, unknown>; return `${p.name}<br/>¥${Number(p.value).toLocaleString()} (${d.pct}%)<br/>${d.orderCount}笔`; },
     },
     series: [{
       type: 'pie',
@@ -651,7 +651,7 @@ function renderPriceBand() {
   const pb = data.value.priceBandAnalysis
 
   chart.setOption({
-    tooltip: { trigger: 'axis', confine: true, formatter: (p: any) => `${p[0].name}<br/>营收占比: ${p[0].data.pct}%<br/>SKU: ${p[0].data.skuCount}` },
+    tooltip: { trigger: 'axis', confine: true, formatter: (p: Record<string, unknown>[]) => { const item = p[0] as Record<string, unknown>; const d = item.data as Record<string, unknown>; return `${item.name}<br/>营收占比: ${d.pct}%<br/>SKU: ${d.skuCount}`; } },
     grid: { left: 50, right: 20, top: 10, bottom: 30 },
     xAxis: { type: 'category', data: pb.bands.map(b => b.band), axisLabel: { fontSize: 11 } },
     yAxis: { type: 'value', axisLabel: { formatter: '{value}%' } },
@@ -659,7 +659,7 @@ function renderPriceBand() {
       type: 'bar',
       data: pb.bands.map(b => ({ value: b.pct, pct: b.pct, skuCount: b.skuCount })),
       itemStyle: {
-        color: (p: any) => pb.bands[p.dataIndex].band === pb.mainBand ? '#67C23A' : '#409EFF',
+        color: (p: Record<string, unknown>) => pb.bands[p.dataIndex as number].band === pb.mainBand ? '#67C23A' : '#409EFF',
         borderRadius: [4, 4, 0, 0],
       },
       barMaxWidth: 32,
@@ -716,7 +716,7 @@ function renderStoreEfficiency() {
   }))
 
   chart.setOption({
-    tooltip: { trigger: 'item', confine: true, formatter: (p: any) => `营收: ¥${p.value[0].toLocaleString()}<br/>品项数: ${p.value[1]}` },
+    tooltip: { trigger: 'item', confine: true, formatter: (p: Record<string, unknown>) => { const v = p.value as number[]; return `营收: ¥${v[0].toLocaleString()}<br/>品项数: ${v[1]}`; } },
     legend: { top: 0, textStyle: { fontSize: 10 } },
     grid: { left: 50, right: 20, top: 30, bottom: 20 },
     xAxis: { name: '营收', type: 'value', splitLine: { show: false }, axisLabel: { formatter: (v: number) => v >= 1e4 ? (v / 1e4).toFixed(0) + '万' : String(v) } },

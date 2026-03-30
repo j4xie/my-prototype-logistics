@@ -20,16 +20,19 @@ const orderId = computed(() => route.params.id as string);
 
 const loading = ref(false);
 const submitting = ref(false);
-const order = ref<any>(null);
-const deliveries = ref<any[]>([]);
+const order = ref<Record<string, unknown> | null>(null);
+const deliveries = ref<Record<string, unknown>[]>([]);
 const deliveryDialogVisible = ref(false);
-const deliveryForm = ref<{ deliveryAddress: string; logisticsCompany: string; items: any[] }>({
+const deliveryForm = ref<{ deliveryAddress: string; logisticsCompany: string; items: Record<string, unknown>[] }>({
   deliveryAddress: '', logisticsCompany: '', items: [],
 });
 
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
   CONFIRMED: { text: '已确认', type: '' },
+  PENDING_FINANCE_REVIEW: { text: '待财务审核', type: 'warning' },
+  FINANCE_APPROVED: { text: '财务已批准', type: 'success' },
+  FINANCE_REJECTED: { text: '财务已驳回', type: 'danger' },
   PROCESSING: { text: '处理中', type: 'warning' },
   PARTIAL_DELIVERED: { text: '部分发货', type: 'warning' },
   COMPLETED: { text: '已完成', type: 'success' },
@@ -69,6 +72,7 @@ async function handleAction(action: string) {
   const map: Record<string, { label: string; url: string }> = {
     confirm: { label: '确认订单', url: `/${factoryId.value}/sales/orders/${orderId.value}/confirm` },
     cancel: { label: '取消订单', url: `/${factoryId.value}/sales/orders/${orderId.value}/cancel` },
+    'submit-for-review': { label: '提交财务审核', url: `/${factoryId.value}/sales/orders/${orderId.value}/submit-for-review` },
   };
   const a = map[action];
   if (!a) return;
@@ -84,12 +88,31 @@ async function handleAction(action: string) {
   finally { submitting.value = false; }
 }
 
+async function handleFinanceAction(action: 'approve' | 'reject') {
+  if (submitting.value) return;
+  const isApprove = action === 'approve';
+  const label = isApprove ? '审核通过' : '审核驳回';
+  try {
+    const { value: notes } = await ElMessageBox.prompt(
+      isApprove ? '确认财务审核通过？可选填备注：' : '请填写驳回原因：',
+      label,
+      { confirmButtonText: label, cancelButtonText: '取消', inputPlaceholder: isApprove ? '（选填）' : '驳回原因' }
+    );
+    submitting.value = true;
+    const url = `/${factoryId.value}/sales/orders/${orderId.value}/${isApprove ? 'finance-approve' : 'finance-reject'}`;
+    const res = await post(url, { notes: notes || '' });
+    if (res.success) { ElMessage.success(`${label}成功`); loadOrder(); }
+    else { ElMessage.error(res.message || `${label}失败`); }
+  } catch { /* cancelled */ }
+  finally { submitting.value = false; }
+}
+
 function openDeliveryDialog() {
   if (!order.value?.items?.length) return;
   deliveryForm.value = {
     deliveryAddress: order.value.deliveryAddress || '',
     logisticsCompany: '',
-    items: order.value.items.map((it: any) => ({
+    items: (order.value.items as Record<string, unknown>[]).map((it) => ({
       productTypeId: it.productTypeId,
       productName: it.productName,
       deliveredQuantity: it.quantity - (it.deliveredQuantity || 0),
@@ -162,7 +185,10 @@ async function handleDelivered(deliveryId: string) {
           </div>
           <div class="header-right" v-if="order && canWrite">
             <el-button v-if="order.status === 'DRAFT'" type="success" :loading="submitting" @click="handleAction('confirm')">确认订单</el-button>
-            <el-button v-if="['CONFIRMED','PROCESSING','PARTIAL_DELIVERED'].includes(order.status)" type="primary" :loading="submitting" @click="openDeliveryDialog">{{ label('delivery') }}</el-button>
+            <el-button v-if="order.status === 'CONFIRMED'" type="warning" :loading="submitting" @click="handleAction('submit-for-review')">提交财务审核</el-button>
+            <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="success" :loading="submitting" @click="handleFinanceAction('approve')">审核通过</el-button>
+            <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="danger" :loading="submitting" @click="handleFinanceAction('reject')">审核驳回</el-button>
+            <el-button v-if="['CONFIRMED','FINANCE_APPROVED','PROCESSING','PARTIAL_DELIVERED'].includes(order.status)" type="primary" :loading="submitting" @click="openDeliveryDialog">{{ label('delivery') }}</el-button>
             <el-button v-if="['DRAFT','CONFIRMED'].includes(order.status)" type="danger" :disabled="submitting" @click="handleAction('cancel')">取消</el-button>
           </div>
         </div>
@@ -173,9 +199,13 @@ async function handleDelivered(deliveryId: string) {
           <el-descriptions-item label="订单编号">{{ order.orderNumber }}</el-descriptions-item>
           <el-descriptions-item :label="label('customer')">{{ order.customer?.name || order.customerId }}</el-descriptions-item>
           <el-descriptions-item label="下单日期">{{ order.orderDate }}</el-descriptions-item>
+          <el-descriptions-item label="业务员">{{ order.salesperson || '-' }}</el-descriptions-item>
           <el-descriptions-item label="交货日期">{{ order.requiredDeliveryDate || '-' }}</el-descriptions-item>
           <el-descriptions-item label="总金额">{{ formatAmount(order.totalAmount) }}</el-descriptions-item>
           <el-descriptions-item label="折扣">{{ order.discountAmount ? formatAmount(order.discountAmount) : '-' }}</el-descriptions-item>
+          <el-descriptions-item label="含运费">{{ order.shippingIncluded ? '是' : '否' }}</el-descriptions-item>
+          <el-descriptions-item label="运费">{{ order.shippingFee ? formatAmount(order.shippingFee) : '-' }}</el-descriptions-item>
+          <el-descriptions-item label="实际发货金额">{{ order.actualShippedAmount ? formatAmount(order.actualShippedAmount) : '-' }}</el-descriptions-item>
           <el-descriptions-item label="交货地址" :span="3">{{ order.deliveryAddress || '-' }}</el-descriptions-item>
           <el-descriptions-item label="备注" :span="3">{{ order.remark || '-' }}</el-descriptions-item>
         </el-descriptions>

@@ -16,7 +16,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('production'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchForm = ref({
   batchNumber: '',
@@ -26,7 +26,7 @@ const searchForm = ref({
 // 创建批次
 const createDialogVisible = ref(false);
 const creating = ref(false);
-const productTypes = ref<any[]>([]);
+const productTypes = ref<Record<string, unknown>[]>([]);
 const createForm = ref({
   productTypeId: '',
   plannedQuantity: null as number | null,
@@ -113,7 +113,7 @@ async function submitCreate() {
     return;
   }
 
-  const selectedProduct = productTypes.value.find((p: any) => p.id === createForm.value.productTypeId);
+  const selectedProduct = productTypes.value.find((p) => p.id === createForm.value.productTypeId);
   creating.value = true;
   try {
     const response = await post(`/${factoryId.value}/processing/batches`, {
@@ -130,7 +130,7 @@ async function submitCreate() {
     } else {
       ElMessage.error(response.message || '创建失败');
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     ElMessage.error(error?.response?.data?.message || '创建失败');
   } finally {
     creating.value = false;

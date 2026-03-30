@@ -12,7 +12,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('quality'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 20, total: 0 });
 const searchForm = ref({
   category: '',
@@ -158,7 +158,7 @@ function handleCreate() {
   dialogVisible.value = true;
 }
 
-function handleEdit(row: any) {
+function handleEdit(row: Record<string, unknown>) {
   editingId.value = row.id;
   dialogTitle.value = '编辑质检标准';
   itemForm.value = {
@@ -208,7 +208,7 @@ async function submitForm() {
   }
 }
 
-async function handleDelete(row: any) {
+async function handleDelete(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm(`确定要删除质检项「${row.itemName}」吗？`, '删除确认', { type: 'warning' });
   } catch { return; }
@@ -227,7 +227,7 @@ async function handleDelete(row: any) {
   }
 }
 
-async function handleToggleEnabled(row: any) {
+async function handleToggleEnabled(row: Record<string, unknown>) {
   const newEnabled = !row.enabled;
   const action = newEnabled ? 'enable' : 'disable';
   try {
@@ -284,7 +284,7 @@ function getSeverityText(severity: string) {
   return map[severity] || severity || '-';
 }
 
-function formatStandard(row: any) {
+function formatStandard(row: Record<string, unknown>) {
   if (row.minValue !== null && row.maxValue !== null) {
     return `${row.minValue} - ${row.maxValue} ${row.unit || ''}`;
   }

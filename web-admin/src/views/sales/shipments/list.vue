@@ -13,7 +13,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const customerMap = ref<Record<string, string>>({});
 
@@ -29,7 +29,7 @@ async function loadCustomers() {
     if (res.success && res.data) {
       const list = res.data.content || [];
       const map: Record<string, string> = {};
-      list.forEach((c: any) => { if (c.id && c.name) map[c.id] = c.name; });
+      list.forEach((c: Record<string, unknown>) => { if (c.id && c.name) map[String(c.id)] = String(c.name); });
       customerMap.value = map;
     } else if (res.success === false) {
       ElMessage.error(res.message || '加载客户数据失败');
@@ -62,6 +62,15 @@ async function loadData() {
 function handlePageChange(page: number) {
   pagination.value.page = page;
   loadData();
+}
+
+// ==================== View ====================
+const viewDialogVisible = ref(false);
+const viewRecord = ref<Record<string, unknown> | null>(null);
+
+function handleView(row: Record<string, unknown>) {
+  viewRecord.value = row;
+  viewDialogVisible.value = true;
 }
 
 function getStatusType(status: string) {
@@ -111,11 +120,25 @@ function getStatusText(status: string) {
         </el-table-column>
         <el-table-column prop="createdAt" label="出货时间" width="180" :formatter="formatDateTimeCell" />
         <el-table-column label="操作" width="120" fixed="right">
-          <template #default>
-            <el-button type="primary" link>查看</el-button>
+          <template #default="{ row }">
+            <el-button type="primary" link @click="handleView(row)">查看</el-button>
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 查看详情 -->
+      <el-dialog v-model="viewDialogVisible" title="出货详情" width="500px" destroy-on-close>
+        <el-descriptions v-if="viewRecord" :column="1" border>
+          <el-descriptions-item label="出货单号">{{ viewRecord.shipmentNumber || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="客户">{{ customerMap[viewRecord.customerId] || viewRecord.customerId || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="产品">{{ viewRecord.productName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="数量">{{ viewRecord.quantity || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="getStatusType(viewRecord.status)">{{ getStatusText(viewRecord.status) }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="出货时间">{{ viewRecord.createdAt || '-' }}</el-descriptions-item>
+        </el-descriptions>
+      </el-dialog>
 
       <el-pagination
         v-model:current-page="pagination.page"

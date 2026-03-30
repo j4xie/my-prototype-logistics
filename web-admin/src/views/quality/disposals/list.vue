@@ -13,7 +13,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('quality'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchForm = ref({
   keyword: '',
@@ -31,7 +31,7 @@ const disposalForm = ref({
   notes: ''
 });
 const actionLoading = ref(false);
-const batches = ref<any[]>([]);
+const batches = ref<Record<string, unknown>[]>([]);
 
 onMounted(() => {
   loadData();
@@ -136,7 +136,7 @@ async function submitDisposal() {
   }
 }
 
-async function handleApprove(row: any) {
+async function handleApprove(row: Record<string, unknown>) {
   if (actionLoading.value) return;
   try {
     await ElMessageBox.confirm('确定批准此废弃申请?', '审批确认', { type: 'warning' });
@@ -159,7 +159,7 @@ async function handleApprove(row: any) {
   }
 }
 
-async function handleReject(row: any) {
+async function handleReject(row: Record<string, unknown>) {
   if (actionLoading.value) return;
   let reason: string;
   try {
@@ -206,6 +206,15 @@ function getStatusText(status: string) {
     COMPLETED: '已完成'
   };
   return map[status?.toUpperCase()] || status;
+}
+
+// ==================== View ====================
+const viewDialogVisible = ref(false);
+const viewRecord = ref<Record<string, unknown> | null>(null);
+
+function handleView(row: Record<string, unknown>) {
+  viewRecord.value = row;
+  viewDialogVisible.value = true;
 }
 
 function getTypeText(type: string) {
@@ -276,7 +285,7 @@ function getTypeText(type: string) {
         <el-table-column prop="createdAt" label="申请时间" width="180" :formatter="formatDateTimeCell" />
         <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link size="small">查看</el-button>
+            <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
             <el-button
               v-if="canWrite && row.status === 'PENDING'"
               type="success"
@@ -311,6 +320,22 @@ function getTypeText(type: string) {
         />
       </div>
     </el-card>
+
+    <!-- 查看详情 -->
+    <el-dialog v-model="viewDialogVisible" title="废弃处理详情" width="500px" destroy-on-close>
+      <el-descriptions v-if="viewRecord" :column="1" border>
+        <el-descriptions-item label="记录编号">{{ viewRecord.recordNumber || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="批次号">{{ viewRecord.batchNumber || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="废弃类型">{{ getTypeText(viewRecord.disposalType) }}</el-descriptions-item>
+        <el-descriptions-item label="数量">{{ viewRecord.quantity }}</el-descriptions-item>
+        <el-descriptions-item label="废弃原因">{{ viewRecord.reason || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="申请人">{{ viewRecord.applicantName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="getStatusType(viewRecord.status)" size="small">{{ getStatusText(viewRecord.status) }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="备注">{{ viewRecord.notes || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
 
     <!-- 新建废弃申请对话框 -->
     <el-dialog v-model="dialogVisible" title="新建废弃申请" width="500px">

@@ -14,8 +14,8 @@ const factoryId = computed(() => authStore.factoryId);
 const batchId = computed(() => route.params.id as string);
 
 const loading = ref(false);
-const batch = ref<any>(null);
-const timeline = ref<any[]>([]);
+const batch = ref<Record<string, unknown> | null>(null);
+const timeline = ref<Record<string, unknown>[]>([]);
 
 onMounted(() => {
   loadData();
@@ -100,19 +100,19 @@ function getQualityStatusType(status: string) {
   return map[status?.toUpperCase()] || 'info';
 }
 
-function formatNum(val: any, suffix = '') {
+function formatNum(val: unknown, suffix = '') {
   if (val === null || val === undefined) return '-';
   const n = Number(val);
   return isNaN(n) ? '-' : n.toLocaleString('zh-CN') + suffix;
 }
 
-function formatCost(val: any) {
+function formatCost(val: unknown) {
   if (val === null || val === undefined) return '-';
   const n = Number(val);
   return isNaN(n) ? '-' : '¥' + n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function formatPercent(val: any) {
+function formatPercent(val: unknown) {
   if (val === null || val === undefined) return '-';
   const n = Number(val);
   return isNaN(n) ? '-' : n.toFixed(1) + '%';

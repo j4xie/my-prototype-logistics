@@ -20,7 +20,7 @@ const transferId = computed(() => route.params.id as string);
 
 const loading = ref(false);
 const submitting = ref(false);
-const transfer = ref<any>(null);
+const transfer = ref<Record<string, unknown> | null>(null);
 
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },

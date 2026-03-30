@@ -94,14 +94,14 @@ function updateCharts() {
       tooltip: { trigger: 'axis', confine: true },
       xAxis: {
         type: 'category',
-        data: data.map((d: any) => d.date || d.label)
+        data: data.map((d: Record<string, unknown>) => d.date || d.label)
       },
       yAxis: { type: 'value', name: '产量' },
       series: [{
         name: '产量',
         type: 'line',
         smooth: true,
-        data: data.map((d: any) => d.output || d.value || 0),
+        data: data.map((d: Record<string, unknown>) => d.output || d.value || 0),
         areaStyle: { opacity: 0.3 },
         itemStyle: { color: '#409EFF' }
       }]
@@ -116,14 +116,14 @@ function updateCharts() {
       tooltip: { trigger: 'axis', confine: true, formatter: '{b}: {c}%' },
       xAxis: {
         type: 'category',
-        data: data.map((d: any) => d.date || d.label)
+        data: data.map((d: Record<string, unknown>) => d.date || d.label)
       },
       yAxis: { type: 'value', name: '合格率 (%)', max: 100 },
       series: [{
         name: '合格率',
         type: 'line',
         smooth: true,
-        data: data.map((d: any) => ((d.passRate || d.value || 0) * 100).toFixed(1)),
+        data: data.map((d: Record<string, unknown>) => (Number(d.passRate || d.value || 0) * 100).toFixed(1)),
         areaStyle: { opacity: 0.3 },
         itemStyle: { color: '#67C23A' }
       }]
@@ -138,13 +138,13 @@ function updateCharts() {
       tooltip: { trigger: 'axis', confine: true },
       xAxis: {
         type: 'category',
-        data: data.map((d: any) => d.date || d.label)
+        data: data.map((d: Record<string, unknown>) => d.date || d.label)
       },
       yAxis: { type: 'value', name: '成本 (元)' },
       series: [{
         name: '总成本',
         type: 'bar',
-        data: data.map((d: any) => d.totalCost || d.value || 0),
+        data: data.map((d: Record<string, unknown>) => d.totalCost || d.value || 0),
         itemStyle: { color: '#E6A23C' }
       }]
     });

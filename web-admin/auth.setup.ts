@@ -1,3 +1,8 @@
+/**
+ * Auth setup — logs in via the UI, waits for the server to set the HttpOnly
+ * cookie, then saves the storageState (cookies + localStorage) for downstream
+ * test projects that declare `dependencies: ['vue-auth']`.
+ */
 import { test as setup, expect } from '@playwright/test';
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:5173';
@@ -12,15 +17,19 @@ async function doLogin(page: import('@playwright/test').Page, username: string, 
   await page.waitForTimeout(8000);
   await page.waitForLoadState('networkidle');
 
-  // 验证 token 已存入 localStorage
-  const token = await page.evaluate(() => localStorage.getItem('cretas_access_token'));
+  // Verify: user info should be in localStorage (non-sensitive data).
+  // The access token is now in an HttpOnly cookie (not readable by JS).
   const user = await page.evaluate(() => localStorage.getItem('cretas_user'));
-  console.log(`[auth-setup] ${username}: token=${token ? token.substring(0, 20) + '...' : 'NULL'}, user=${user ? 'OK' : 'NULL'}`);
-  console.log(`[auth-setup] ${username}: URL=${page.url()}`);
+  console.log(`[auth-setup] ${username}: user=${user ? 'OK' : 'NULL'}, URL=${page.url()}`);
 
-  if (!token || !user) {
-    // 重试一次
-    console.log(`[auth-setup] ${username}: token 缺失，重试`);
+  // Check cookies for the HttpOnly auth token
+  const cookies = await page.context().cookies();
+  const authCookie = cookies.find(c => c.name === 'cretas_access_token');
+  console.log(`[auth-setup] ${username}: auth cookie=${authCookie ? 'SET' : 'MISSING'}`);
+
+  if (!user || !authCookie) {
+    // Retry once
+    console.log(`[auth-setup] ${username}: auth incomplete, retrying`);
     await page.goto(BASE_URL + '/login', { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
     await page.getByPlaceholder('\u8bf7\u8f93\u5165\u7528\u6237\u540d').fill(username);
@@ -30,23 +39,27 @@ async function doLogin(page: import('@playwright/test').Page, username: string, 
     await page.waitForTimeout(10000);
     await page.waitForLoadState('networkidle');
 
-    const token2 = await page.evaluate(() => localStorage.getItem('cretas_access_token'));
-    console.log(`[auth-setup] ${username} retry: token=${token2 ? token2.substring(0, 20) + '...' : 'STILL NULL'}`);
+    const user2 = await page.evaluate(() => localStorage.getItem('cretas_user'));
+    const cookies2 = await page.context().cookies();
+    const authCookie2 = cookies2.find(c => c.name === 'cretas_access_token');
+    console.log(`[auth-setup] ${username} retry: user=${user2 ? 'OK' : 'STILL NULL'}, cookie=${authCookie2 ? 'SET' : 'STILL MISSING'}`);
   }
 
-  // 确保在目标 origin 上再保存 (navigate away from login to trigger router)
+  // Navigate to dashboard to trigger router (ensures correct origin for storageState)
   await page.goto(BASE_URL + '/dashboard', { waitUntil: 'networkidle', timeout: 30000 });
   await page.waitForTimeout(3000);
   console.log(`[auth-setup] ${username}: final URL=${page.url()}`);
 
+  // Save storageState (includes both cookies and localStorage)
   await page.context().storageState({ path: outPath });
 
-  // 验证保存结果
+  // Verify saved result
   const fs = await import('fs');
   const saved = JSON.parse(fs.readFileSync(outPath, 'utf-8'));
+  const cookieCount = saved.cookies?.length || 0;
   const originCount = saved.origins?.length || 0;
   const itemCount = saved.origins?.reduce((n: number, o: { localStorage?: unknown[] }) => n + (o.localStorage?.length || 0), 0) || 0;
-  console.log(`[auth-setup] ${username}: saved origins=${originCount}, items=${itemCount}`);
+  console.log(`[auth-setup] ${username}: saved cookies=${cookieCount}, origins=${originCount}, localStorage items=${itemCount}`);
 }
 
 setup('factory_admin1 登录并保存状态', async ({ page }) => {

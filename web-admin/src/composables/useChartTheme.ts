@@ -84,21 +84,36 @@ export function useChartTheme() {
   }
 
   // Merge theme overrides into any ECharts option
-  function applyTheme(option: Record<string, any>): Record<string, any> {
+  function applyTheme(option: Record<string, unknown>): Record<string, unknown> {
     const overrides = getEChartsThemeOverrides();
+    const mergeAxis = (ax: Record<string, unknown>) => {
+      const axisLine = (ax?.axisLine || {}) as Record<string, unknown>;
+      const lineStyle = (axisLine?.lineStyle || {}) as Record<string, unknown>;
+      const axisLabel = (ax?.axisLabel || {}) as Record<string, unknown>;
+      const splitLine = (ax?.splitLine || {}) as Record<string, unknown>;
+      const splitLineStyle = (splitLine?.lineStyle || {}) as Record<string, unknown>;
+      return {
+        ...ax,
+        axisLine: { ...axisLine, lineStyle: { ...lineStyle, color: overrides.xAxis.axisLine.lineStyle.color } },
+        axisLabel: { ...axisLabel, color: overrides.xAxis.axisLabel.color },
+        splitLine: { ...splitLine, lineStyle: { ...splitLineStyle, color: overrides.xAxis.splitLine.lineStyle.color } },
+      };
+    };
+    const optTitle = (option.title || {}) as Record<string, unknown>;
+    const optLegend = (option.legend || {}) as Record<string, unknown>;
     return {
       ...option,
       color: overrides.color,
       backgroundColor: overrides.backgroundColor,
-      textStyle: { ...(option.textStyle || {}), ...overrides.textStyle },
-      title: { ...(option.title || {}), textStyle: { ...(option.title?.textStyle || {}), ...overrides.title.textStyle } },
-      legend: { ...(option.legend || {}), textStyle: { ...(option.legend?.textStyle || {}), ...overrides.legend.textStyle } },
+      textStyle: { ...((option.textStyle || {}) as Record<string, unknown>), ...overrides.textStyle },
+      title: { ...optTitle, textStyle: { ...((optTitle.textStyle || {}) as Record<string, unknown>), ...overrides.title.textStyle } },
+      legend: { ...optLegend, textStyle: { ...((optLegend.textStyle || {}) as Record<string, unknown>), ...overrides.legend.textStyle } },
       xAxis: Array.isArray(option.xAxis)
-        ? option.xAxis.map((x: any) => ({ ...x, axisLine: { ...x?.axisLine, lineStyle: { ...x?.axisLine?.lineStyle, color: overrides.xAxis.axisLine.lineStyle.color } }, axisLabel: { ...x?.axisLabel, color: overrides.xAxis.axisLabel.color }, splitLine: { ...x?.splitLine, lineStyle: { ...x?.splitLine?.lineStyle, color: overrides.xAxis.splitLine.lineStyle.color } } }))
-        : option.xAxis ? { ...option.xAxis, axisLine: { ...option.xAxis?.axisLine, lineStyle: { ...option.xAxis?.axisLine?.lineStyle, color: overrides.xAxis.axisLine.lineStyle.color } }, axisLabel: { ...option.xAxis?.axisLabel, color: overrides.xAxis.axisLabel.color }, splitLine: { ...option.xAxis?.splitLine, lineStyle: { ...option.xAxis?.splitLine?.lineStyle, color: overrides.xAxis.splitLine.lineStyle.color } } } : undefined,
+        ? option.xAxis.map((x: Record<string, unknown>) => mergeAxis(x))
+        : option.xAxis ? mergeAxis(option.xAxis as Record<string, unknown>) : undefined,
       yAxis: Array.isArray(option.yAxis)
-        ? option.yAxis.map((y: any) => ({ ...y, axisLine: { ...y?.axisLine, lineStyle: { ...y?.axisLine?.lineStyle, color: overrides.yAxis.axisLine.lineStyle.color } }, axisLabel: { ...y?.axisLabel, color: overrides.yAxis.axisLabel.color }, splitLine: { ...y?.splitLine, lineStyle: { ...y?.splitLine?.lineStyle, color: overrides.yAxis.splitLine.lineStyle.color } } }))
-        : option.yAxis ? { ...option.yAxis, axisLine: { ...option.yAxis?.axisLine, lineStyle: { ...option.yAxis?.axisLine?.lineStyle, color: overrides.yAxis.axisLine.lineStyle.color } }, axisLabel: { ...option.yAxis?.axisLabel, color: overrides.yAxis.axisLabel.color }, splitLine: { ...option.yAxis?.splitLine, lineStyle: { ...option.yAxis?.splitLine?.lineStyle, color: overrides.yAxis.splitLine.lineStyle.color } } } : undefined
+        ? option.yAxis.map((y: Record<string, unknown>) => mergeAxis(y))
+        : option.yAxis ? mergeAxis(option.yAxis as Record<string, unknown>) : undefined
     };
   }
 

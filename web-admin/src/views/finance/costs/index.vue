@@ -11,10 +11,10 @@ const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
-const overview = ref<any>(null);
-const transactions = ref<any[]>([]);
+const overview = ref<Record<string, unknown> | null>(null);
+const transactions = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
-const agingData = ref<any[]>([]);
+const agingData = ref<Record<string, unknown>[]>([]);
 const searchType = ref('');
 
 onMounted(() => {
@@ -51,7 +51,7 @@ async function loadTransactions() {
   if (!factoryId.value) return;
 
   try {
-    const params: any = {
+    const params: Record<string, unknown> = {
       page: pagination.value.page,
       size: pagination.value.size
     };
@@ -91,7 +91,7 @@ function handleSizeChange(size: number) {
   loadTransactions();
 }
 
-function formatMoney(val: any) {
+function formatMoney(val: unknown) {
   if (val === null || val === undefined) return '¥0.00';
   const n = Number(val);
   return isNaN(n) ? '¥0.00' : '¥' + n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

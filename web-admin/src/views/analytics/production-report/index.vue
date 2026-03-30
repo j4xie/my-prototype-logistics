@@ -179,10 +179,9 @@ function updateChart() {
       trigger: 'axis',
       confine: true,
       axisPointer: { type: 'shadow' },
-      formatter: (params: any) => {
-        const item = params[0];
-        const index = reversedData.length - 1 - item.dataIndex;
-        const unit = units[item.dataIndex] || '件';
+      formatter: (params: Record<string, unknown>[]) => {
+        const item = params[0] as Record<string, unknown>;
+        const unit = units[item.dataIndex as number] || '件';
         return `${item.name}<br/>产量: ${item.value} ${unit}`;
       }
     },
@@ -230,8 +229,8 @@ function updateChart() {
       label: {
         show: true,
         position: 'right',
-        formatter: (params: any) => {
-          const unit = units[params.dataIndex] || '件';
+        formatter: (params: Record<string, unknown>) => {
+          const unit = units[params.dataIndex as number] || '件';
           return `${params.value} ${unit}`;
         },
         fontSize: 12,

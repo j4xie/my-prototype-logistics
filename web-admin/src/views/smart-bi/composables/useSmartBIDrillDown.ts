@@ -70,8 +70,7 @@ export function useSmartBIDrillDown(deps: {
 
       if (registerClick) {
         instance.off('click');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        instance.on('click', (params: any) => {
+        instance.on('click', (params: Record<string, unknown>) => {
           if (drillDownLoading.value) return;
           if (!params.name) return;
           const sheet = currentDrillSheet.value;
@@ -141,8 +140,7 @@ export function useSmartBIDrillDown(deps: {
   };
 
   /** Handle chart click → start drill-down */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleChartDrillDown = async (sheet: SheetRef, chartIndex: number, params: any) => {
+  const handleChartDrillDown = async (sheet: SheetRef, chartIndex: number, params: Record<string, unknown>) => {
     if (drillDownLoading.value) return;
     if (!params.name && !params.seriesName) return;
     if (!sheet.uploadId) return;

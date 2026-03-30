@@ -14,11 +14,11 @@ const canWrite = computed(() => permissionStore.canWrite('production'));
 // State
 const loading = ref(false);
 const selectedProductTypeId = ref<string>('');
-const productTypes = ref<any[]>([]);
-const costSummary = ref<any>(null);
+const productTypes = ref<Record<string, unknown>[]>([]);
+const costSummary = ref<Record<string, unknown> | null>(null);
 
 // BOM Items (原辅料)
-const bomItems = ref<any[]>([]);
+const bomItems = ref<Record<string, unknown>[]>([]);
 const bomDialogVisible = ref(false);
 const bomDialogLoading = ref(false);
 const isBomEdit = ref(false);
@@ -37,7 +37,7 @@ const bomForm = ref({
 });
 
 // Labor Costs (人工费用)
-const laborCosts = ref<any[]>([]);
+const laborCosts = ref<Record<string, unknown>[]>([]);
 const laborDialogVisible = ref(false);
 const laborDialogLoading = ref(false);
 const isLaborEdit = ref(false);
@@ -54,7 +54,7 @@ const laborForm = ref({
 });
 
 // Overhead Costs (均摊费用)
-const overheadCosts = ref<any[]>([]);
+const overheadCosts = ref<Record<string, unknown>[]>([]);
 const overheadDialogVisible = ref(false);
 const overheadDialogLoading = ref(false);
 const isOverheadEdit = ref(false);
@@ -70,7 +70,10 @@ const overheadForm = ref({
 });
 
 // Raw material types for dropdown
-const materialTypes = ref<any[]>([]);
+const materialTypes = ref<Record<string, unknown>[]>([]);
+
+// Per-serving cost calculation
+const standardServingWeight = ref<number>(0.5); // kg per serving, user-adjustable
 
 // Process categories for dropdown
 const processCategories = ['通用工序', '分割工序', '包装工序', '质检工序', '冷藏工序'];
@@ -103,7 +106,10 @@ async function loadProductTypes() {
   try {
     const response = await get(`/${factoryId.value}/product-types/active`);
     if (response.success && response.data) {
-      productTypes.value = response.data;
+      // Issue 7: Only show finished products in BOM dropdown
+      productTypes.value = (response.data as Record<string, unknown>[]).filter(
+        (p: Record<string, unknown>) => p.productCategory === 'FINISHED_PRODUCT' || p.category === '成品' || !p.productCategory
+      );
       // Select first product if available
       if (productTypes.value.length > 0 && !selectedProductTypeId.value) {
         selectedProductTypeId.value = productTypes.value[0].id;
@@ -118,9 +124,10 @@ async function loadProductTypes() {
 async function loadMaterialTypes() {
   if (!factoryId.value) return;
   try {
-    const response = await get(`/${factoryId.value}/raw-material-types`);
+    // Issue 8: Fetch ALL active materials to stay in sync with material master
+    const response = await get(`/${factoryId.value}/raw-material-types/active`);
     if (response.success && response.data) {
-      materialTypes.value = response.data.content || response.data || [];
+      materialTypes.value = Array.isArray(response.data) ? response.data : (response.data.content || []);
     }
   } catch (error) {
     console.error('Failed to load material types:', error);
@@ -163,7 +170,7 @@ function handleAddBomItem() {
   bomDialogVisible.value = true;
 }
 
-function handleEditBomItem(row: any) {
+function handleEditBomItem(row: Record<string, unknown>) {
   isBomEdit.value = true;
   bomForm.value = {
     id: row.id,
@@ -209,7 +216,7 @@ async function submitBomForm() {
   }
 }
 
-async function handleDeleteBomItem(row: any) {
+async function handleDeleteBomItem(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm('Are you sure you want to delete this item?', 'Confirm', { type: 'warning' });
     const response = await del(`/${factoryId.value}/bom/items/${row.id}`);
@@ -272,7 +279,7 @@ function handleAddLaborCost() {
   laborDialogVisible.value = true;
 }
 
-function handleEditLaborCost(row: any) {
+function handleEditLaborCost(row: Record<string, unknown>) {
   isLaborEdit.value = true;
   laborForm.value = {
     id: row.id,
@@ -316,7 +323,7 @@ async function submitLaborForm() {
   }
 }
 
-async function handleDeleteLaborCost(row: any) {
+async function handleDeleteLaborCost(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm('Are you sure you want to delete this item?', 'Confirm', { type: 'warning' });
     const response = await del(`/${factoryId.value}/bom/labor/${row.id}`);
@@ -363,7 +370,7 @@ function handleAddOverheadCost() {
   overheadDialogVisible.value = true;
 }
 
-function handleEditOverheadCost(row: any) {
+function handleEditOverheadCost(row: Record<string, unknown>) {
   isOverheadEdit.value = true;
   overheadForm.value = {
     id: row.id,
@@ -406,7 +413,7 @@ async function submitOverheadForm() {
   }
 }
 
-async function handleDeleteOverheadCost(row: any) {
+async function handleDeleteOverheadCost(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm('Are you sure you want to delete this item?', 'Confirm', { type: 'warning' });
     const response = await del(`/${factoryId.value}/bom/overhead/${row.id}`);
@@ -464,6 +471,42 @@ const totalCost = computed(() => {
   return materialCostTotal.value + laborCostTotal.value + overheadCostTotal.value;
 });
 
+// Issue 12: Group BOM items by material category
+const groupedBomItems = computed(() => {
+  const groups: { category: string; items: Record<string, unknown>[] }[] = [];
+  const categoryMap = new Map<string, Record<string, unknown>[]>();
+  const categoryOrder = ['原材料', '辅料', '包材', '调味料', '其他'];
+
+  for (const item of bomItems.value) {
+    // Try to get category from linked material or fall back
+    const cat = item.materialCategory || item.category || '其他';
+    if (!categoryMap.has(cat)) categoryMap.set(cat, []);
+    categoryMap.get(cat)!.push(item);
+  }
+
+  // Sort by predefined order
+  for (const cat of categoryOrder) {
+    if (categoryMap.has(cat)) {
+      groups.push({ category: cat, items: categoryMap.get(cat)! });
+      categoryMap.delete(cat);
+    }
+  }
+  // Any remaining categories
+  for (const [cat, items] of categoryMap) {
+    groups.push({ category: cat, items });
+  }
+
+  return groups;
+});
+
+const hasMultipleCategories = computed(() => groupedBomItems.value.length > 1);
+
+// Issue 11: Cost per serving
+const costPerServing = computed(() => {
+  if (standardServingWeight.value <= 0) return 0;
+  return totalCost.value * standardServingWeight.value;
+});
+
 // ========== Export ==========
 function exportToExcel(type: string) {
   let headers: string[];
@@ -471,7 +514,7 @@ function exportToExcel(type: string) {
   if (type === 'material') {
     if (bomItems.value.length === 0) { ElMessage.warning('暂无BOM数据可导出'); return; }
     headers = ['物料名称', '物料编号', '数量', '单位', '单价(元)', '小计(元)', '备注'];
-    rows = bomItems.value.map((item: any) => [
+    rows = bomItems.value.map((item: Record<string, unknown>) => [
       item.materialName || '', item.materialCode || '', String(item.quantity ?? ''),
       item.unit || '', String(item.unitPrice ?? ''),
       String(((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)), item.notes || ''
@@ -479,14 +522,14 @@ function exportToExcel(type: string) {
   } else if (type === 'labor') {
     if (laborCosts.value.length === 0) { ElMessage.warning('暂无人工成本数据'); return; }
     headers = ['工序名称', '工时(分钟)', '单价(元/时)', '费用(元)'];
-    rows = laborCosts.value.map((item: any) => [
+    rows = laborCosts.value.map((item: Record<string, unknown>) => [
       item.processName || '', String(item.duration ?? ''), String(item.unitPrice ?? ''),
       String(((item.duration || 0) / 60 * (item.unitPrice || 0)).toFixed(2))
     ]);
   } else {
     if (overheadCosts.value.length === 0) { ElMessage.warning('暂无制造费用数据'); return; }
     headers = ['费用名称', '金额(元)', '分摊率', '分摊金额(元)'];
-    rows = overheadCosts.value.map((item: any) => [
+    rows = overheadCosts.value.map((item: Record<string, unknown>) => [
       item.name || '', String(item.unitPrice ?? ''), String(item.allocationRate ?? 1),
       String(((item.unitPrice || 0) * (item.allocationRate || 1)).toFixed(2))
     ]);
@@ -550,6 +593,17 @@ function refreshData() {
                 <span class="cost-label">总成本:</span>
                 <span class="cost-value">{{ totalCost.toFixed(2) }} 元/kg</span>
               </div>
+              <!-- Issue 11: Per-serving cost -->
+              <div class="cost-item serving">
+                <el-input-number
+                  v-model="standardServingWeight"
+                  :min="0.01" :max="100" :precision="2" :step="0.1"
+                  size="small"
+                  style="width: 90px;"
+                />
+                <span class="cost-label" style="margin-left: 4px;">kg/份</span>
+                <span class="cost-value" style="margin-left: 8px;">{{ costPerServing.toFixed(2) }} 元/份</span>
+              </div>
             </div>
           </el-card>
         </div>
@@ -571,7 +625,16 @@ function refreshData() {
             </div>
           </div>
         </template>
-        <el-table empty-text="暂无数据" :data="bomItems" v-loading="loading" stripe border size="small" style="width: 100%">
+        <el-table empty-text="暂无数据" :data="bomItems" v-loading="loading" stripe border size="small" style="width: 100%"
+          :row-class-name="({ row }: { row: Record<string, unknown> }) => row._isCategoryHeader ? 'category-header-row' : ''">
+          <!-- Issue 12: Show material category column -->
+          <el-table-column prop="materialCategory" label="类型" width="70" align="center">
+            <template #default="{ row }">
+              <el-tag size="small" :type="row.materialCategory === '原材料' ? '' : row.materialCategory === '包材' ? 'warning' : 'info'" disable-transitions>
+                {{ row.materialCategory || row.category || '-' }}
+              </el-tag>
+            </template>
+          </el-table-column>
           <el-table-column prop="materialName" label="物料名称" min-width="120" show-overflow-tooltip />
           <el-table-column prop="standardQuantity" label="成品含量" width="90" align="right">
             <template #default="{ row }">
@@ -583,13 +646,21 @@ function refreshData() {
               {{ (row.yieldRate || 100).toFixed(2) }}%
             </template>
           </el-table-column>
+          <!-- Issue 13: Conversion rate inline -->
+          <el-table-column label="转换率" width="80" align="right">
+            <template #default="{ row }">
+              {{ row.conversionRate ? row.conversionRate.toFixed(4) : '-' }}
+            </template>
+          </el-table-column>
           <el-table-column label="原料投量/份" width="100" align="right">
             <template #default="{ row }">
-              {{ ((row.standardQuantity || 0) / ((row.yieldRate || 100) / 100)).toFixed(4) }}
+              {{ row.conversionRate
+                ? ((row.standardQuantity || 0) / row.conversionRate).toFixed(4)
+                : ((row.standardQuantity || 0) / ((row.yieldRate || 100) / 100)).toFixed(4) }}
             </template>
           </el-table-column>
           <el-table-column prop="unit" label="单位" width="60" align="center" />
-          <el-table-column prop="unitPrice" label="单价" width="80" align="right">
+          <el-table-column prop="unitPrice" label="单价(含税)" width="90" align="right">
             <template #default="{ row }">
               {{ (row.unitPrice || 0).toFixed(2) }}
             </template>
@@ -734,7 +805,7 @@ function refreshData() {
         <el-form-item label="计量单位">
           <el-input v-model="bomForm.unit" placeholder="如: kg" />
         </el-form-item>
-        <el-form-item label="单价">
+        <el-form-item label="单价（含税）">
           <el-input-number v-model="bomForm.unitPrice" :min="0" :precision="4" :step="0.1" style="width: 100%" />
         </el-form-item>
         <el-form-item label="税率%">
@@ -769,6 +840,13 @@ function refreshData() {
         </el-form-item>
         <el-form-item label="操作量">
           <el-input-number v-model="laborForm.standardQuantity" :min="0" :precision="2" :step="0.1" style="width: 100%" />
+        </el-form-item>
+        <!-- Issue 10: Real-time subtotal calculation -->
+        <el-form-item label="费用小计">
+          <div class="labor-subtotal">
+            {{ ((laborForm.unitPrice || 0) * (laborForm.standardQuantity || 1)).toFixed(4) }} 元
+          </div>
+          <div class="form-tip">= 工序单价 × 操作量</div>
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="laborForm.notes" type="textarea" :rows="2" />
@@ -962,5 +1040,28 @@ function refreshData() {
   font-size: 12px;
   color: #909399;
   margin-top: 4px;
+}
+
+.labor-subtotal {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e6a23c;
+  line-height: 32px;
+}
+
+.cost-item.serving {
+  display: flex;
+  align-items: center;
+
+  .cost-label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .cost-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #90ee90;
+  }
 }
 </style>

@@ -165,8 +165,8 @@ function updateGanttChart() {
   const option: echarts.EChartsOption = {
     tooltip: {
       confine: true,
-      formatter: (params: any) => {
-        const schedule = params.data.schedule as LineSchedule;
+      formatter: (params: Record<string, unknown>) => {
+        const schedule = (params.data as Record<string, unknown>).schedule as LineSchedule;
         const start = new Date(schedule.plannedStartTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
         const end = new Date(schedule.plannedEndTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
         const prob = schedule.predictedCompletionProb
@@ -211,7 +211,7 @@ function updateGanttChart() {
     },
     series: [{
       type: 'custom',
-      renderItem: (params: any, api: any) => {
+      renderItem: (_params: Record<string, unknown>, api: Record<string, (...args: unknown[]) => unknown>) => {
         const lineIndex = api.value(0);
         const startTime = api.value(1);
         const endTime = api.value(2);
@@ -263,9 +263,10 @@ function updateGanttChart() {
   ganttChart.value.setOption(option);
 
   // 点击事件
-  ganttChart.value.on('click', (params: any) => {
-    if (params.data?.schedule) {
-      selectedSchedule.value = params.data.schedule;
+  ganttChart.value.on('click', (params: Record<string, unknown>) => {
+    const data = params.data as Record<string, unknown> | undefined;
+    if (data?.schedule) {
+      selectedSchedule.value = data.schedule as LineSchedule;
     }
   });
 }

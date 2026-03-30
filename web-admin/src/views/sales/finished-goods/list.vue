@@ -12,7 +12,7 @@ const { label } = useBusinessMode();
 const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 
 onMounted(() => loadData());
@@ -37,11 +37,11 @@ async function loadData() {
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
 
-function availableQty(row: any) {
+function availableQty(row: Record<string, unknown>) {
   return (row.producedQuantity || 0) - (row.shippedQuantity || 0) - (row.reservedQuantity || 0);
 }
 
-function statusType(row: any) {
+function statusType(row: Record<string, unknown>) {
   const avail = availableQty(row);
   if (avail <= 0) return 'danger';
   if (avail < (row.producedQuantity || 1) * 0.2) return 'warning';

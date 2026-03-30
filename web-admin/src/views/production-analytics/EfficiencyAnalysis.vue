@@ -13,7 +13,7 @@ const factoryId = computed(() => authStore.factoryId);
 // ==================== 预算 vs 实际 ====================
 const activeMainTab = ref('efficiency');
 const budgetLoading = ref(false);
-const budgetData = ref<any[]>([]);
+const budgetData = ref<Record<string, unknown>[]>([]);
 
 async function loadBudgetVsActual() {
   if (!factoryId.value) return;
@@ -23,7 +23,7 @@ async function loadBudgetVsActual() {
     if (res.success && res.data) {
       const raw = Array.isArray(res.data) ? res.data : res.data.content || [];
       // 映射后端字段到前端表格列
-      budgetData.value = raw.map((item: any) => ({
+      budgetData.value = raw.map((item: Record<string, unknown>) => ({
         ...item,
         period: item.planNumber || '-',
         budgetCost: item.estimatedLaborCost != null && item.estimatedMaterialCost != null

@@ -1321,9 +1321,9 @@ interface SheetResult {
   tableType?: 'index' | 'data' | 'summary' | 'metadata' | 'unknown';
   flowResult?: {
     recommendedChartType?: string;
-    chartConfig?: any;
+    chartConfig?: Record<string, unknown>;
     aiAnalysis?: string;
-    recommendedTemplates?: any[];
+    recommendedTemplates?: Record<string, unknown>[];
     charts?: Array<{ chartType: string; title: string; config: Record<string, unknown>; totalItems?: number }>;
     kpiSummary?: { rowCount: number; columnCount: number; columns: ColumnSummary[] };
     structuredAI?: StructuredAIData;
@@ -1992,7 +1992,7 @@ const previewSheets = async (file: File) => {
       return true;
     }
     return false;
-  } catch (error: any) {
+  } catch (error: unknown) {
     ElMessage.error(`预览失败: ${error.message || '未知错误'}`);
     return false;
   }
@@ -2124,7 +2124,7 @@ const uploadFile = async () => {
       }
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error.name === 'AbortError') return; // Component unmounted or new upload started
     uploadStatus.value = 'exception';
     progressText.value = '上传失败';
@@ -2134,7 +2134,7 @@ const uploadFile = async () => {
 };
 
 // 处理 SSE 事件
-const handleSSEEvent = (event: any) => {
+const handleSSEEvent = (event: Record<string, unknown>) => {
   const { type, progress, sheetIndex, sheetName, stage, message, completedSheets, totalSheets, dictionaryHits: dictHits, llmAnalyzedFields: llmFields, result } = event;
 
   // 更新总体进度
@@ -2258,26 +2258,28 @@ const ANIM_REGISTRY: Record<string, (idx: number) => number> = {
 };
 
 /** Formatter registry — tooltip/label callbacks by named key */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const FMT_REGISTRY: Record<string, (...args: any[]) => string> = {
-  thousands_sep: (v: any) => {
-    if (typeof v !== 'number' || isNaN(v)) return v == null || isNaN(v) ? '-' : String(v);
-    const abs = Math.abs(v);
-    if (abs >= 1e8) return (v / 1e8).toFixed(1) + '亿';
-    if (abs >= 1e4) return (v / 1e4).toFixed(1) + '万';
-    return v.toLocaleString('zh-CN');
+const FMT_REGISTRY: Record<string, (...args: unknown[]) => string> = {
+  thousands_sep: (v: unknown) => {
+    const num = typeof v === 'number' ? v : Number(v);
+    if (typeof num !== 'number' || isNaN(num)) return v == null ? '-' : String(v);
+    const abs = Math.abs(num);
+    if (abs >= 1e8) return (num / 1e8).toFixed(1) + '亿';
+    if (abs >= 1e4) return (num / 1e4).toFixed(1) + '万';
+    return num.toLocaleString('zh-CN');
   },
-  boxplot_tooltip: (p: any) => {
-    const d = p.data;
-    return `${p.name}<br/>最小: ${d[0]}<br/>Q1: ${d[1]}<br/>中位数: ${d[2]}<br/>Q3: ${d[3]}<br/>最大: ${d[4]}`;
+  boxplot_tooltip: (p: unknown) => {
+    const param = p as Record<string, unknown>;
+    const d = param.data as number[];
+    return `${param.name}<br/>最小: ${d[0]}<br/>Q1: ${d[1]}<br/>中位数: ${d[2]}<br/>Q3: ${d[3]}<br/>最大: ${d[4]}`;
   },
-  correlation_tooltip: (p: any) => p.data[2].toFixed(2),
-  correlation_label: (p: any) => p.data[2].toFixed(1),
-  quadrant_scatter_tooltip: (p: any) =>
-    `${p.data[2]}<br/>收入: ${Number(p.data[0]).toLocaleString()}<br/>利润率: ${p.data[1]}%`,
-  quadrant_scatter_label: (p: any) => p.data[2],
+  correlation_tooltip: (p: unknown) => ((p as Record<string, unknown>).data as number[])[2].toFixed(2),
+  correlation_label: (p: unknown) => ((p as Record<string, unknown>).data as number[])[2].toFixed(1),
+  quadrant_scatter_tooltip: (p: unknown) => {
+    const d = (p as Record<string, unknown>).data as (string | number)[];
+    return `${d[2]}<br/>收入: ${Number(d[0]).toLocaleString()}<br/>利润率: ${d[1]}%`;
+  },
+  quadrant_scatter_label: (p: unknown) => String(((p as Record<string, unknown>).data as unknown[])[2]),
 };
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
  * Process ECharts options: resolve __ANIM__/__FMT__ named references from Python.
@@ -2348,7 +2350,7 @@ const applyAnomalyOverlay = (opts: Record<string, unknown>, anomalies: Record<st
         symbolSize: 8,
         itemStyle: { color: '#dc2626', borderColor: '#fff', borderWidth: 1 },
         label: { show: false },
-        data: anomalyData.outliers.map((o: any) => ({
+        data: anomalyData.outliers.map((o: Record<string, unknown>) => ({
           xAxis: o.index,
           yAxis: o.value,
           value: `${o.deviation > 0 ? '+' : ''}${o.deviation}σ`
@@ -2456,7 +2458,7 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
   // Legend data humanization
   const legend = ((opts as SmartBIChartOption)).legend;
   if (legend && Array.isArray(legend.data)) {
-    legend.data = legend.data.map((item: any) => {
+    legend.data = legend.data.map((item: Record<string, unknown>) => {
       if (typeof item === 'string') return nameOf(item);
       if (item && typeof item.name === 'string') {
         item.name = nameOf(item.name);
@@ -2575,7 +2577,7 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
     }
     // D5: 标签截断 — rotated labels can be shorter since they have more vertical space
     if (!xAxis.axisLabel.formatter) {
-      const isWaterfall = Array.isArray(series) && series.some((s: any) => s.type === 'bar' && s.stack);
+      const isWaterfall = Array.isArray(series) && series.some((s: Record<string, unknown>) => s.type === 'bar' && s.stack);
       const maxLen = isWaterfall ? 18 : (curRotate >= 35 ? 7 : 10);
       xAxis.axisLabel.formatter = (val: string) => {
         const str = String(val);
@@ -2900,7 +2902,7 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
 // 渲染当前激活 Tab 的所有图表（多图表仪表板 — 8-benchmark upgrade）
 // T5.2: Intersection Observer — only render charts when they enter the viewport
 let chartObserver: IntersectionObserver | null = null;
-const pendingChartConfigs = new Map<string, { chart: any; idx: number; sheet: any }>();
+const pendingChartConfigs = new Map<string, { chart: Record<string, unknown>; idx: number; sheet: Record<string, unknown> }>();
 
 function getOrCreateChartObserver(): IntersectionObserver {
   if (chartObserver) return chartObserver;
@@ -2952,7 +2954,7 @@ const renderActiveCharts = () => {
 };
 
 /** Render a single chart into its DOM container */
-function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeSheet: any) {
+function renderSingleChart(dom: HTMLElement, chart: Record<string, unknown>, idx: number, activeSheet: Record<string, unknown>) {
     const config = chart.config;
     if (!config || isChartDataEmpty(config)) return;
 
@@ -3069,7 +3071,7 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
         if (Array.isArray(seriesArr)) {
           for (const s of seriesArr) {
             if (s.type === 'pie' && Array.isArray(s.data)) {
-              const pieIdx = s.data.findIndex((d: any) => d.name === filterVal);
+              const pieIdx = (s.data as Record<string, unknown>[]).findIndex((d) => d.name === filterVal);
               if (pieIdx >= 0) {
                 instance.dispatchAction({ type: 'downplay' });
                 instance.dispatchAction({ type: 'highlight', dataIndex: pieIdx });
@@ -3116,9 +3118,9 @@ function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeShee
           // Pie: match by name
           const sibSeries = sibOpt?.series;
           if (Array.isArray(sibSeries)) {
-            sibSeries.forEach((s: any) => {
+            sibSeries.forEach((s: Record<string, unknown>) => {
               if (s.type === 'pie' && Array.isArray(s.data)) {
-                const pieIdx = s.data.findIndex((d: any) => d.name === hoverValue);
+                const pieIdx = (s.data as Record<string, unknown>[]).findIndex((d) => d.name === hoverValue);
                 if (pieIdx >= 0) sibInstance.dispatchAction({ type: 'highlight', dataIndex: pieIdx });
               }
             });
@@ -3283,7 +3285,7 @@ const renderChart = (sheet: SheetResult) => {
   }
 
   // 确定 ECharts options
-  let echartsOptions: any = null;
+  let echartsOptions: Record<string, unknown> | null = null;
 
   // Case 1: chartConfig 本身就是完整 ECharts 配置（来自 Python enrichment）
   if (chartConfig.series || chartConfig.xAxis || chartConfig.yAxis) {
@@ -3325,7 +3327,7 @@ const renderChart = (sheet: SheetResult) => {
 };
 
 // 根据数据构建基础 ECharts 配置
-const buildBasicOptions = (chartType: string, data: any): any => {
+const buildBasicOptions = (chartType: string, data: Record<string, unknown>): Record<string, unknown> | null => {
 
   // 从数据中提取可能的字段
   if (!data || typeof data !== 'object') return null;
@@ -3340,7 +3342,7 @@ const buildBasicOptions = (chartType: string, data: any): any => {
       return {
         title: { text: chartType + ' Chart' },
         tooltip: {},
-        xAxis: { type: 'category', data: data[key].map((_: any, i: number) => i + 1) },
+        xAxis: { type: 'category', data: (data[key] as unknown[]).map((_: unknown, i: number) => i + 1) },
         yAxis: { type: 'value' },
         series: [{ type: chartType.toLowerCase() || 'line', data: data[key] }]
       };
@@ -3502,13 +3504,13 @@ const getCacheHint = (sheet: SheetResult): string => {
 };
 
 // 检测 ECharts chartConfig 中数据是否为空
-const isChartDataEmpty = (chartConfig: any): boolean => {
+const isChartDataEmpty = (chartConfig: Record<string, unknown>): boolean => {
   if (!chartConfig || Object.keys(chartConfig).length === 0) return true;
 
   // 辅助：检查 series 数组是否全为空数据
-  const isSeriesEmpty = (series: any) => {
+  const isSeriesEmpty = (series: unknown) => {
     const arr = Array.isArray(series) ? series : [series];
-    return arr.every((s: any) => !s.data || s.data.length === 0);
+    return arr.every((s: Record<string, unknown>) => !s.data || (s.data as unknown[]).length === 0);
   };
 
   // Case 1: 直接 ECharts options 格式（有 series）
@@ -3519,20 +3521,20 @@ const isChartDataEmpty = (chartConfig: any): boolean => {
   // Case 2: Java 返回的 { chartOptions: "JSON string" } 格式
   if (chartConfig.chartOptions && typeof chartConfig.chartOptions === 'string') {
     try {
-      const parsed = JSON.parse(chartConfig.chartOptions);
+      const parsed = JSON.parse(chartConfig.chartOptions as string);
       if (parsed.series) return isSeriesEmpty(parsed.series);
     } catch { /* ignore parse error */ }
   }
 
   // Case 3: Java 返回的 { options: {...} } 格式
-  if (chartConfig.options?.series) {
-    return isSeriesEmpty(chartConfig.options.series);
+  if ((chartConfig.options as Record<string, unknown> | undefined)?.series) {
+    return isSeriesEmpty((chartConfig.options as Record<string, unknown>).series);
   }
 
   // Case 4: 有 data 但没有有效数据
   if (chartConfig.data && typeof chartConfig.data === 'object') {
-    const values = Object.values(chartConfig.data);
-    return values.every((v: any) => !Array.isArray(v) || v.length === 0);
+    const values = Object.values(chartConfig.data as Record<string, unknown>);
+    return values.every((v: unknown) => !Array.isArray(v) || v.length === 0);
   }
 
   return false;
@@ -3681,12 +3683,12 @@ const enrichSheet = async (sheet: SheetResult, forceRefresh = false) => {
         // Auto-retry empty charts (works for both cached and fresh results)
         if (currentSheet.flowResult.charts?.length) {
           const emptyIdx = currentSheet.flowResult.charts
-            .map((c: any, i: number) => {
+            .map((c: { config: Record<string, unknown> }, i: number) => {
               if (!c.config || Object.keys(c.config).length === 0) return i;
               const series = c.config.series;
               if (!series) return i;
               const arr = Array.isArray(series) ? series : [series];
-              return arr.every((s: any) => !s.data || s.data.length === 0) ? i : -1;
+              return arr.every((s: Record<string, unknown>) => !s.data || (s.data as unknown[]).length === 0) ? i : -1;
             })
             .filter((i: number) => i >= 0);
           if (emptyIdx.length > 0) {
@@ -4454,7 +4456,7 @@ const rebuildChartsWithData = async (sheet: SheetResult, data: Record<string, un
 
     const results = await Promise.allSettled(chartPromises);
     const newCharts = results
-      .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value?.success)
+      .filter((r): r is PromiseFulfilledResult<Record<string, unknown>> => r.status === 'fulfilled' && (r as PromiseFulfilledResult<Record<string, unknown>>).value?.success !== undefined)
       .map(r => ({
         chartType: r.value.option?.series?.[0]?.type || 'bar',
         title: r.value.option?.title?.text || '筛选分析',
@@ -4582,7 +4584,7 @@ const clearExploreFilter = (sheet: SheetResult) => {
 };
 
 // ========== Cross-chart linked filter (Phase 3.4 — Power BI + Superset + Tableau) ==========
-const applyChartFilter = (sheet: SheetResult, params: any) => {
+const applyChartFilter = (sheet: SheetResult, params: Record<string, unknown>) => {
   const filterValue = params.name || params.seriesName || '';
   if (!filterValue) return;
 

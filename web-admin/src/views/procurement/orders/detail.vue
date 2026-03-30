@@ -20,8 +20,8 @@ const orderId = computed(() => route.params.id as string);
 
 const loading = ref(false);
 const submitting = ref(false);
-const order = ref<any>(null);
-const receives = ref<any[]>([]);
+const order = ref<Record<string, unknown> | null>(null);
+const receives = ref<Record<string, unknown>[]>([]);
 const receiveDialogVisible = ref(false);
 const receiveForm = ref<{ items: { materialTypeId: string; receivedQuantity: number; unit: string; unitPrice: number }[] }>({ items: [] });
 
@@ -84,7 +84,7 @@ async function handleAction(action: string) {
 
 function openReceiveDialog() {
   if (!order.value?.items?.length) return;
-  receiveForm.value.items = order.value.items.map((it: any) => ({
+  receiveForm.value.items = (order.value.items as Record<string, unknown>[]).map((it) => ({
     materialTypeId: it.materialTypeId,
     materialName: it.materialName,
     receivedQuantity: it.quantity - (it.receivedQuantity || 0),

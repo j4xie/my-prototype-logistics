@@ -113,8 +113,7 @@ export function useSmartBIStatistical(deps: {
       instance.setOption({
         tooltip: {
           position: 'top',
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          formatter: (p: any) => `${measures[p.data[0]]} vs ${measures[p.data[1]]}<br/>相关系数: ${p.data[2]}`
+          formatter: (p: Record<string, unknown>) => { const d = p.data as number[]; return `${measures[d[0]]} vs ${measures[d[1]]}<br/>相关系数: ${d[2]}`; }
         },
         grid: { left: '18%', right: '10%', bottom: '18%', top: '5%', containLabel: true },
         xAxis: { type: 'category', data: measures, splitArea: { show: true }, axisLabel: { rotate: 45, fontSize: 10 } },

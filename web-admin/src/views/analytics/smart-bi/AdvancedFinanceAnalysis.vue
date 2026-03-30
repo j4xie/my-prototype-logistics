@@ -147,7 +147,7 @@ async function loadKPIData() {
         margin: { value: data.margin || 0, trend: data.marginTrend || 'flat', trendValue: data.marginChange || 0 }
       };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to load KPI data:', error);
     errors.kpi = error?.message || '加载 KPI 数据失败';
   } finally {
@@ -178,7 +178,7 @@ async function loadBudgetData() {
       yearTarget.value = data.yearTarget || 0;
       yearActual.value = data.yearActual || 0;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to load budget data:', error);
     errors.budget = error?.message || '加载预算数据失败';
   } finally {
@@ -204,7 +204,7 @@ async function loadYoYMoMData() {
     if (response.success && response.data) {
       yoyMomData.value = response.data as ComparisonData[];
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to load YoY/MoM data:', error);
     errors.yoyMom = error?.message || '加载同比环比数据失败';
   } finally {
@@ -226,9 +226,9 @@ async function loadDonutData() {
     });
 
     if (response.success && response.data) {
-      const data = response.data as { categories: any[] };
+      const data = response.data as { categories: Record<string, unknown>[] };
       // Transform category data to donut format
-      donutData.value = (data.categories || []).map((c: any) => ({
+      donutData.value = (data.categories || []).map((c: Record<string, unknown>) => ({
         category: c.category,
         currentValue: c.currentAmount || 0,
         previousValue: c.compareAmount || 0,
@@ -236,7 +236,7 @@ async function loadDonutData() {
         previousRatio: c.compareRatio || 0
       }));
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to load donut data:', error);
     errors.donut = error?.message || '加载品类环形图数据失败';
   } finally {
@@ -269,7 +269,7 @@ async function loadCategoryData() {
         totalYoyGrowthRate: 0
       };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to load category data:', error);
     errors.category = error?.message || '加载品类对比数据失败';
   } finally {
@@ -297,7 +297,7 @@ async function loadWaterfallData() {
       waterfallData.value = [];
       errors.waterfall = '瀑布图数据接口待实现';
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to load waterfall data:', error);
     errors.waterfall = error?.message || '加载瀑布图数据失败';
   } finally {
@@ -325,7 +325,7 @@ async function loadAIInsight() {
       aiInsight.value = null;
       errors.insight = 'AI 分析功能待实现';
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to load AI insight:', error);
     errors.insight = error?.message || '加载 AI 分析失败';
   } finally {

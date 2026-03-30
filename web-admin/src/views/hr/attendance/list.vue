@@ -12,7 +12,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('hr'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 // 默认查询最近30天
 const getDefaultDateRange = (): [Date, Date] => {
@@ -151,7 +151,7 @@ function handleExport() {
     return;
   }
   const headers = ['员工姓名', '工号', '部门', '日期', '上班打卡', '下班打卡', '工时(h)', '状态', '备注'];
-  const rows = tableData.value.map((row: any) => [
+  const rows = tableData.value.map((row: Record<string, unknown>) => [
     getEmployeeName(row),
     getEmployeeNumber(row),
     getDepartmentName(row),
@@ -224,17 +224,17 @@ function formatWorkHours(minutes: number | null) {
 }
 
 // 获取员工姓名 (从 user 对象中提取)
-function getEmployeeName(row: any) {
+function getEmployeeName(row: Record<string, unknown>) {
   return row.user?.fullName || row.username || '-';
 }
 
 // 获取工号 (使用 username)
-function getEmployeeNumber(row: any) {
+function getEmployeeNumber(row: Record<string, unknown>) {
   return row.username || '-';
 }
 
 // 获取部门名称
-function getDepartmentName(row: any) {
+function getDepartmentName(row: Record<string, unknown>) {
   const dept = row.user?.department;
   if (!dept) return '-';
   // 部门名称映射
@@ -259,15 +259,15 @@ function formatDateDisplay(date: string | null) {
 }
 
 // 获取考勤状态 (优先使用 attendanceStatus，否则用 status)
-function getAttendanceStatus(row: any) {
+function getAttendanceStatus(row: Record<string, unknown>) {
   return row.attendanceStatus || row.status || '-';
 }
 
 // 考勤详情弹窗
 const detailVisible = ref(false);
-const detailRow = ref<any>({});
+const detailRow = ref<Record<string, unknown>>({});
 
-function handleDetail(row: any) {
+function handleDetail(row: Record<string, unknown>) {
   detailRow.value = row;
   detailVisible.value = true;
 }

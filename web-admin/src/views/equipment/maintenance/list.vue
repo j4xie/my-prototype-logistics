@@ -166,6 +166,15 @@ async function submitMaintenance() {
   }
 }
 
+// ==================== View ====================
+const viewDialogVisible = ref(false);
+const viewEquipment = ref<MaintenanceEquipment | null>(null);
+
+function handleView(row: MaintenanceEquipment) {
+  viewEquipment.value = row;
+  viewDialogVisible.value = true;
+}
+
 function getUrgencyType(days: number) {
   if (days < 0) return 'danger';
   if (days <= 7) return 'warning';
@@ -249,7 +258,7 @@ function getUrgencyText(days: number) {
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link size="small">查看</el-button>
+            <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
             <el-button
               v-if="canWrite"
               type="success"
@@ -274,6 +283,28 @@ function getUrgencyText(days: number) {
         />
       </div>
     </el-card>
+
+    <!-- 查看详情 -->
+    <el-dialog v-model="viewDialogVisible" title="设备详情" width="500px" destroy-on-close>
+      <el-descriptions v-if="viewEquipment" :column="1" border>
+        <el-descriptions-item label="设备编号">{{ viewEquipment.code }}</el-descriptions-item>
+        <el-descriptions-item label="设备名称">{{ viewEquipment.name }}</el-descriptions-item>
+        <el-descriptions-item label="设备类型">{{ viewEquipment.type }}</el-descriptions-item>
+        <el-descriptions-item label="位置">{{ viewEquipment.location || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="设备状态">
+          <el-tag :type="viewEquipment.status === 'RUNNING' ? 'success' : 'warning'" size="small">
+            {{ viewEquipment.status === 'RUNNING' ? '运行中' : '停机' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="上次维护">{{ viewEquipment.lastMaintenanceDate || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="下次维护">{{ viewEquipment.nextMaintenanceDate || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="紧急程度">
+          <el-tag :type="getUrgencyType(viewEquipment.daysUntilMaintenance)" size="small">
+            {{ getUrgencyText(viewEquipment.daysUntilMaintenance) }}
+          </el-tag>
+        </el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
 
     <!-- 维护记录对话框 -->
     <el-dialog v-model="dialogVisible" title="记录维护" width="500px" :close-on-click-modal="false">

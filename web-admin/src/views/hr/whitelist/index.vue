@@ -12,7 +12,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('hr'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 
@@ -29,7 +29,7 @@ const whitelistForm = ref({
   expirationDate: '',
   notes: ''
 });
-const departments = ref<any[]>([]);
+const departments = ref<Record<string, unknown>[]>([]);
 
 // 统计数据
 const statistics = ref({
@@ -137,7 +137,7 @@ function handleCreate() {
   dialogVisible.value = true;
 }
 
-function handleEdit(row: any) {
+function handleEdit(row: Record<string, unknown>) {
   isEdit.value = true;
   whitelistForm.value = {
     id: row.id,
@@ -186,7 +186,7 @@ async function submitForm() {
   }
 }
 
-async function handleDelete(row: any) {
+async function handleDelete(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm('确定删除此白名单记录?', '提示', { type: 'warning' });
     const response = await del(`/${factoryId.value}/whitelist/${row.id}`);
@@ -204,13 +204,13 @@ async function handleDelete(row: any) {
   }
 }
 
-function getStatusType(row: any) {
+function getStatusType(row: Record<string, unknown>) {
   if (row.isUsed) return 'success';
   if (row.isExpired) return 'danger';
   return 'info';
 }
 
-function getStatusText(row: any) {
+function getStatusText(row: Record<string, unknown>) {
   if (row.isUsed) return '已使用';
   if (row.isExpired) return '已过期';
   return '待使用';

@@ -36,7 +36,7 @@ const loading = ref(false);
 const plans = ref<SchedulingPlan[]>([]);
 const selectedPlanId = ref<string | null>(null);
 const selectedPlan = ref<SchedulingPlan | null>(null);
-const availableWorkers = ref<any[]>([]);
+const availableWorkers = ref<Record<string, unknown>[]>([]);
 
 // 分配对话框
 const assignDialogVisible = ref(false);

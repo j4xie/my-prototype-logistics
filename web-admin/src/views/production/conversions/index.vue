@@ -12,7 +12,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('production'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 
@@ -28,8 +28,8 @@ const conversionForm = ref({
   wastageRate: 0,
   notes: ''
 });
-const materialTypes = ref<any[]>([]);
-const productTypes = ref<any[]>([]);
+const materialTypes = ref<Record<string, unknown>[]>([]);
+const productTypes = ref<Record<string, unknown>[]>([]);
 
 onMounted(() => {
   loadData();
@@ -120,7 +120,7 @@ function handleCreate() {
   dialogVisible.value = true;
 }
 
-function handleEdit(row: any) {
+function handleEdit(row: Record<string, unknown>) {
   isEdit.value = true;
   conversionForm.value = {
     id: row.id,
@@ -161,7 +161,7 @@ async function submitForm() {
   }
 }
 
-async function handleDelete(row: any) {
+async function handleDelete(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm('确定删除此转换率配置?', '提示', { type: 'warning' });
     const response = await del(`/${factoryId.value}/conversions/${row.id}`);

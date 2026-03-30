@@ -93,7 +93,7 @@ async function loadFinanceData() {
     const startStr = formatDate(startDate);
     const endStr = formatDate(endDate);
 
-    const response = await get<any>(`/${factoryId.value}/smart-bi/analysis/finance?startDate=${startStr}&endDate=${endStr}`);
+    const response = await get<Record<string, unknown>>(`/${factoryId.value}/smart-bi/analysis/finance?startDate=${startStr}&endDate=${endStr}`);
     if (response.success && response.data) {
       financeData.value = response.data;
     } else {

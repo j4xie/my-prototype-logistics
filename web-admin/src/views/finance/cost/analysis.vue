@@ -11,7 +11,7 @@ const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
-const costData = ref<any>(null);
+const costData = ref<Record<string, unknown> | null>(null);
 const dateRange = ref<[Date, Date] | null>(null);
 
 onMounted(() => {

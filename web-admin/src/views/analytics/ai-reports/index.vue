@@ -10,12 +10,12 @@ const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
-const reports = ref<any[]>([]);
-const selectedReport = ref<any>(null);
+const reports = ref<Record<string, unknown>[]>([]);
+const selectedReport = ref<Record<string, unknown> | null>(null);
 const detailDialogVisible = ref(false);
 
 // 异常检测结果
-const anomalies = ref<any[]>([]);
+const anomalies = ref<Record<string, unknown>[]>([]);
 const anomalyLoading = ref(false);
 
 onMounted(() => {
@@ -65,7 +65,7 @@ async function loadAnomalies() {
   }
 }
 
-async function viewReport(report: any) {
+async function viewReport(report: Record<string, unknown>) {
   try {
     const response = await get(`/${factoryId.value}/ai/reports/${report.id}`);
     if (response.success && response.data) {

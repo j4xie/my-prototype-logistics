@@ -25,8 +25,8 @@ const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
-const batches = ref<any[]>([]);
-const productionLines = ref<any[]>([]);
+const batches = ref<Record<string, unknown>[]>([]);
+const productionLines = ref<Record<string, unknown>[]>([]);
 
 // 表单数据
 const form = ref({

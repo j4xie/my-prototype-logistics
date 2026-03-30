@@ -29,7 +29,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const statusFilter = ref('');
 const dialogVisible = ref(false);
@@ -39,14 +39,20 @@ const form = ref({
   requiredDeliveryDate: '',
   deliveryAddress: '',
   remark: '',
+  salesperson: '',
+  shippingIncluded: false,
+  shippingFee: 0,
   items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
 });
-const customers = ref<any[]>([]);
-const products = ref<any[]>([]);
+const customers = ref<Record<string, unknown>[]>([]);
+const products = ref<Record<string, unknown>[]>([]);
 
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
   CONFIRMED: { text: '已确认', type: '' },
+  PENDING_FINANCE_REVIEW: { text: '待财务审核', type: 'warning' },
+  FINANCE_APPROVED: { text: '财务已批准', type: 'success' },
+  FINANCE_REJECTED: { text: '财务已驳回', type: 'danger' },
   PROCESSING: { text: '处理中', type: 'warning' },
   PARTIAL_DELIVERED: { text: '部分发货', type: 'warning' },
   COMPLETED: { text: '已完成', type: 'success' },
@@ -62,7 +68,7 @@ async function loadData() {
     const url = statusFilter.value
       ? `/${factoryId.value}/sales/orders/by-status`
       : `/${factoryId.value}/sales/orders`;
-    const params: any = { page: pagination.value.page, size: pagination.value.size };
+    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
     if (statusFilter.value) params.status = statusFilter.value;
     const res = await get(url, { params });
     if (res.success && res.data) {
@@ -159,14 +165,14 @@ function handleAiFill(params: Record<string, unknown>) {
   dialogVisible.value = true;
 }
 
-async function handleQuickDelivery(row: any) {
+async function handleQuickDelivery(row: Record<string, unknown>) {
   const today = new Date().toISOString().slice(0, 10);
   // Build items from order items (each with productTypeId, deliveredQuantity, unit)
-  let items: any[] = [];
+  let items: Record<string, unknown>[] = [];
   if (row.items && row.items.length > 0) {
     items = row.items
-      .filter((item: any) => item.productTypeId || item.productType?.id)
-      .map((item: any) => ({
+      .filter((item: Record<string, unknown>) => item.productTypeId || item.productType?.id)
+      .map((item: Record<string, unknown>) => ({
         productTypeId: item.productTypeId || item.productType?.id,
         deliveredQuantity: item.quantity || 0,
         unit: item.unit || 'kg',
@@ -203,7 +209,7 @@ async function submitQuickDelivery() {
   }
 }
 
-async function handleQuickInvoice(row: any) {
+async function handleQuickInvoice(row: Record<string, unknown>) {
   invoiceForm.value = {
     orderId: row.id,
     counterpartyId: row.customerId || row.customer?.id || '',
@@ -229,7 +235,7 @@ async function submitQuickInvoice() {
   }
 }
 
-async function handleQuickPayment(row: any) {
+async function handleQuickPayment(row: Record<string, unknown>) {
   paymentForm.value = {
     counterpartyId: row.customerId || row.customer?.id || '',
     amount: row.totalAmount || 0,
@@ -284,11 +290,15 @@ async function submitQuickPayment() {
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="orderNumber" label="订单编号" width="170" />
         <el-table-column label="客户" min-width="150" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.customer?.name || customers.find((c: any) => c.id === row.customerId)?.name || row.customerId || '-' }}</template>
+          <template #default="{ row }">{{ row.customer?.name || customers.find((c: Record<string, unknown>) => c.id === row.customerId)?.name || row.customerId || '-' }}</template>
         </el-table-column>
+        <el-table-column prop="salesperson" label="业务员" width="100" show-overflow-tooltip />
         <el-table-column prop="orderDate" label="下单日期" width="120" />
         <el-table-column prop="totalAmount" label="总金额" width="130" align="right">
           <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
+        </el-table-column>
+        <el-table-column prop="shippingFee" label="运费" width="100" align="right">
+          <template #default="{ row }">{{ row.shippingFee ? formatAmount(row.shippingFee) : '-' }}</template>
         </el-table-column>
         <el-table-column prop="discountAmount" label="折扣" width="100" align="right">
           <template #default="{ row }">{{ row.discountAmount ? formatAmount(row.discountAmount) : '-' }}</template>
@@ -407,6 +417,11 @@ async function submitQuickPayment() {
         </el-form-item>
         <el-form-item label="交货日期"><el-date-picker v-model="form.requiredDeliveryDate" type="date" value-format="YYYY-MM-DD" /></el-form-item>
         <el-form-item label="交货地址"><el-input v-model="form.deliveryAddress" /></el-form-item>
+        <el-form-item label="业务员"><el-input v-model="form.salesperson" placeholder="负责业务员" /></el-form-item>
+        <el-form-item label="含运费">
+          <el-switch v-model="form.shippingIncluded" />
+          <el-input-number v-if="form.shippingIncluded" v-model="form.shippingFee" :min="0" :precision="2" placeholder="运费金额" style="width: 180px; margin-left: 12px" />
+        </el-form-item>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
         <el-divider>{{ label('product') }}明细</el-divider>
         <div v-for="(item, idx) in form.items" :key="idx" class="item-row">

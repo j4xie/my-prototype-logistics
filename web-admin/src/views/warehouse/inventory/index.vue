@@ -12,7 +12,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 20, total: 0 });
 const searchKeyword = ref('');
 const statusFilter = ref('');
@@ -38,9 +38,9 @@ const adjustForm = ref({
 
 // 批次详情对话框
 const detailDialogVisible = ref(false);
-const detailData = ref<any>(null);
+const detailData = ref<Record<string, unknown> | null>(null);
 const detailLoading = ref(false);
-const adjustHistory = ref<any[]>([]);
+const adjustHistory = ref<Record<string, unknown>[]>([]);
 
 // 状态选项
 const statusOptions = [
@@ -126,7 +126,7 @@ function handleSizeChange(size: number) {
   loadData();
 }
 
-function handleAdjust(row: any) {
+function handleAdjust(row: Record<string, unknown>) {
   adjustForm.value = {
     batchId: row.id,
     batchNumber: row.batchNumber,
@@ -164,7 +164,7 @@ async function submitAdjust() {
   }
 }
 
-async function handleViewDetail(row: any) {
+async function handleViewDetail(row: Record<string, unknown>) {
   detailData.value = row;
   detailDialogVisible.value = true;
   adjustHistory.value = [];
@@ -209,7 +209,7 @@ async function handleExport() {
 }
 
 // 过期日期高亮
-function getExpireDateClass(row: any): string {
+function getExpireDateClass(row: Record<string, unknown>): string {
   if (!row.expirationDate && !row.expireDate) return '';
   const dateStr = row.expirationDate || row.expireDate;
   const expDate = new Date(dateStr);

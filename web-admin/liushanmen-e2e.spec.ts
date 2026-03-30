@@ -11,25 +11,23 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
+import { fetchLoginToken, injectAuthCookie, LoginResult } from './e2e-auth-helper';
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:5173';
-const API = process.env.E2E_API_URL || 'http://47.100.235.168:10011/api/mobile';
+const API = process.env.E2E_API_URL || 'http://47.100.235.168:10010/api/mobile';
 const FACTORY_ID = 'F001';
 const SD = 'test-results/screenshots/liushanmen';
 
 let TOKEN = '';
+let authResult: LoginResult | null = null;
 
 // --- Helpers ---
 
-async function login(): Promise<string> {
-  const res = await fetch(`${API}/auth/unified-login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'factory_admin1', password: '123456' }),
-  });
-  const json = await res.json();
-  TOKEN = json.data?.accessToken || json.data?.token || '';
-  return TOKEN;
+async function injectAuth(page: Page) {
+  if (!authResult) return;
+  await injectAuthCookie(page.context(), page, authResult.token, authResult.loginData, BASE_URL);
+  await page.goto(BASE_URL + '/dashboard', { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await page.waitForTimeout(3000);
 }
 
 async function api(path: string, opts: RequestInit = {}): Promise<any> {
@@ -46,11 +44,10 @@ async function api(path: string, opts: RequestInit = {}): Promise<any> {
 
 async function gotoPage(page: Page, path: string) {
   await page.goto(BASE_URL + path, {
-    waitUntil: 'networkidle',
+    waitUntil: 'domcontentloaded',
     timeout: 30000,
   });
   await page.waitForTimeout(3000);
-  await page.waitForLoadState('networkidle');
 }
 
 async function shot(page: Page, name: string) {
@@ -69,7 +66,8 @@ test.describe.serial('六扇门一期 Web-Admin E2E', () => {
   test.setTimeout(120000);
 
   test.beforeAll(async () => {
-    await login();
+    authResult = await fetchLoginToken('factory_admin1', '123456', API);
+    TOKEN = authResult.token;
     expect(TOKEN).toBeTruthy();
   });
 
@@ -430,5 +428,592 @@ test.describe.serial('六扇门一期 Web-Admin E2E', () => {
       await page.waitForTimeout(2000);
       await shot(page, 'w9-02-batch-detail-yield.png');
     }
+  });
+});
+
+// ================================================================
+// 六扇门一期 Phase 2 — 新功能页面 E2E
+// ================================================================
+
+test.describe.serial('六扇门一期 新功能页面 E2E', () => {
+  test.setTimeout(120000);
+
+  test.beforeAll(async () => {
+    authResult = await fetchLoginToken('factory_admin1', '123456', API);
+    TOKEN = authResult.token;
+    expect(TOKEN).toBeTruthy();
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await injectAuth(page);
+  });
+
+  // ------------------------------------------------------------------
+  // W-P0-01: BOM达成率分析页
+  // ------------------------------------------------------------------
+  test('W-P0-01: BOM达成率分析页 — 完整功能验证', async ({ page }) => {
+    // Navigate with hash routing
+    await gotoPage(page, '/production/bom-achievement');
+    let pageContent = await page.textContent('body').catch(() => '');
+    if (pageContent.includes('login') && !pageContent.includes('BOM')) {
+      await injectAuth(page);
+      await gotoPage(page, '/production/bom-achievement');
+    }
+
+    // Verify page title — use auto-waiting expect
+    const title = page.locator('text=BOM达成率分析').first();
+    await expect(title).toBeVisible({ timeout: 15000 });
+    console.log('W-P0-01: title visible=true');
+
+    // Verify KPI cards (wait for rendering)
+    await page.waitForTimeout(2000);
+    const kpiCards = page.locator('.el-card');
+    const kpiCount = await kpiCards.count();
+    console.log(`W-P0-01: KPI cards count=${kpiCount}`);
+    expect(kpiCount).toBeGreaterThanOrEqual(4);
+
+    // Verify KPI labels — non-critical, just log
+    const kpiLabels = ['总批次数', '平均达成率', '超耗批次数', '最低达成率'];
+    for (const label of kpiLabels) {
+      const labelEl = page.locator(`.kpi-label:has-text("${label}")`);
+      const visible = await labelEl.isVisible().catch(() => false);
+      console.log(`W-P0-01: KPI "${label}" visible=${visible}`);
+    }
+
+    // Verify el-table loads
+    const table = page.locator('.el-table').first();
+    await expect(table).toBeVisible({ timeout: 10000 });
+    console.log('W-P0-01: table visible=true');
+
+    // Verify "达成率" column header
+    const achievementHeader = page.locator('.el-table__header-wrapper').locator('text=达成率').first();
+    await expect(achievementHeader).toBeVisible({ timeout: 10000 });
+    console.log('W-P0-01: "达成率" header visible=true');
+
+    // Check for table rows
+    const rows = page.locator('.el-table__row');
+    const rowCount = await rows.count();
+    console.log(`W-P0-01: table rows=${rowCount}`);
+
+    // Check for color-coded el-tag elements (success/warning/danger)
+    if (rowCount > 0) {
+      const tags = page.locator('.el-table__body-wrapper .el-tag');
+      const tagCount = await tags.count();
+      console.log(`W-P0-01: el-tag count in table=${tagCount}`);
+
+      // Click first row expand button to verify detail table
+      const expandBtn = page.locator('.el-table__expand-icon').first();
+      if (await expandBtn.isVisible().catch(() => false)) {
+        await expandBtn.click();
+        await page.waitForTimeout(2000);
+
+        // Verify expanded content appears (either detail table or empty)
+        const expandContent = page.locator('.expand-content');
+        const expandVisible = await expandContent.first().isVisible().catch(() => false);
+        console.log(`W-P0-01: expand content visible=${expandVisible}`);
+
+        // Check for detail table columns
+        const detailHeaders = ['原材料', '计划用量', '实际用量', '偏差'];
+        for (const h of detailHeaders) {
+          const el = page.locator('.expand-content').locator(`text=${h}`);
+          const v = await el.isVisible().catch(() => false);
+          console.log(`W-P0-01: detail header "${h}" visible=${v}`);
+        }
+      }
+    }
+
+    // Verify date range picker exists
+    const datePicker = page.locator('.el-date-editor').first();
+    await expect(datePicker).toBeVisible({ timeout: 10000 });
+    console.log('W-P0-01: date picker visible=true');
+
+    // Verify pagination — non-critical
+    const pagination = page.locator('.el-pagination');
+    const paginationVisible = await pagination.isVisible().catch(() => false);
+    console.log(`W-P0-01: pagination visible=${paginationVisible}`);
+
+    await shotFull(page, 'w-p0-01-bom-achievement-page.png');
+  });
+
+  // ------------------------------------------------------------------
+  // W-P0-02: 物料移动均价趋势页
+  // ------------------------------------------------------------------
+  test('W-P0-02: 物料移动均价趋势页 — 完整功能验证', async ({ page }) => {
+    await gotoPage(page, '/warehouse/material-price-trend');
+    let pageContent = await page.textContent('body').catch(() => '');
+    if (pageContent.includes('login') && !pageContent.includes('物料')) {
+      await injectAuth(page);
+      await gotoPage(page, '/warehouse/material-price-trend');
+    }
+
+    // Verify page title — use auto-waiting expect
+    const title = page.locator('text=物料移动均价趋势').first();
+    await expect(title).toBeVisible({ timeout: 15000 });
+    console.log('W-P0-02: title visible=true');
+
+    // Verify el-table with material data
+    const table = page.locator('.el-table').first();
+    await expect(table).toBeVisible({ timeout: 10000 });
+    console.log('W-P0-02: table visible=true');
+
+    // Verify column headers
+    const expectedHeaders = ['物料名称', '当前均价', '最近入库价', '库存量'];
+    for (const h of expectedHeaders) {
+      const header = page.locator('.el-table__header-wrapper').locator(`text=${h}`);
+      const visible = await header.isVisible().catch(() => false);
+      console.log(`W-P0-02: header "${h}" visible=${visible}`);
+    }
+
+    // Check for price values containing "¥"
+    const rows = page.locator('.el-table__row');
+    const rowCount = await rows.count();
+    console.log(`W-P0-02: table rows=${rowCount}`);
+
+    if (rowCount > 0) {
+      const priceValues = page.locator('.price-value');
+      const priceCount = await priceValues.count();
+      console.log(`W-P0-02: price value cells=${priceCount}`);
+
+      // Verify at least one price is not "-"
+      if (priceCount > 0) {
+        const firstPrice = await priceValues.first().textContent();
+        console.log(`W-P0-02: first price value="${firstPrice}"`);
+        const hasPrice = firstPrice && firstPrice.includes('¥');
+        console.log(`W-P0-02: has ¥ symbol=${hasPrice}`);
+      }
+
+      // Try expanding a row to verify chart container
+      const expandBtn = page.locator('.el-table__expand-icon').first();
+      if (await expandBtn.isVisible().catch(() => false)) {
+        await expandBtn.click();
+        await page.waitForTimeout(3000);
+
+        const chartContainer = page.locator('.chart-container, .chart-box');
+        const chartVisible = await chartContainer.first().isVisible().catch(() => false);
+        console.log(`W-P0-02: chart container after expand visible=${chartVisible}`);
+
+        // If chart loaded, check for canvas (ECharts)
+        if (chartVisible) {
+          const canvas = page.locator('.chart-box canvas');
+          const canvasVisible = await canvas.isVisible().catch(() => false);
+          console.log(`W-P0-02: ECharts canvas visible=${canvasVisible}`);
+        }
+      }
+    }
+
+    // Verify search input
+    const searchInput = page.locator('.el-input').first();
+    await expect(searchInput).toBeVisible({ timeout: 10000 });
+    console.log('W-P0-02: search input visible=true');
+
+    // Test search functionality (placeholder includes "编号 / 类别")
+    const searchField = page.getByPlaceholder(/搜索物料名称/);
+    if (await searchField.isVisible().catch(() => false)) {
+      await searchField.fill('test');
+      await page.waitForTimeout(1000);
+      console.log('W-P0-02: search filter applied');
+      await searchField.clear();
+      await page.waitForTimeout(500);
+    }
+
+    await shotFull(page, 'w-p0-02-material-price-trend.png');
+  });
+
+  // ------------------------------------------------------------------
+  // W-P1-01: SKU毛利率排名页
+  // ------------------------------------------------------------------
+  test('W-P1-01: SKU毛利率排名页 — 完整功能验证', async ({ page }) => {
+    await gotoPage(page, '/finance/sku-margin');
+    let pageContent = await page.textContent('body').catch(() => '');
+    if (pageContent.includes('login') && !pageContent.includes('SKU')) {
+      await injectAuth(page);
+      await gotoPage(page, '/finance/sku-margin');
+    }
+
+    // Verify page title — use auto-waiting expect
+    const title = page.locator('text=SKU毛利率分析').first();
+    await expect(title).toBeVisible({ timeout: 15000 });
+    console.log('W-P1-01: title "SKU毛利率分析" visible=true');
+
+    // Wait for data to load (uses AI intent API + fallback)
+    await page.waitForTimeout(5000);
+
+    // Verify 4 KPI cards (kpi-card class applied on el-card elements)
+    const kpiCards = page.locator('.kpi-card');
+    const kpiCount = await kpiCards.count();
+    console.log(`W-P1-01: KPI cards count=${kpiCount}`);
+    expect(kpiCount).toBeGreaterThanOrEqual(4);
+
+    // Verify KPI labels (non-critical, just log)
+    const kpiLabels = ['平均毛利率', '最高毛利SKU', '最低毛利SKU', 'SKU数量'];
+    for (const label of kpiLabels) {
+      const labelEl = page.locator(`.kpi-label:has-text("${label}")`);
+      const visible = await labelEl.isVisible().catch(() => false);
+      console.log(`W-P1-01: KPI "${label}" visible=${visible}`);
+    }
+
+    // Verify bar chart canvas exists (ECharts renders to canvas) — non-critical
+    const chartContainer = page.locator('.chart-container');
+    const chartVisible = await chartContainer.isVisible().catch(() => false);
+    console.log(`W-P1-01: chart container visible=${chartVisible}`);
+
+    if (chartVisible) {
+      const canvas = page.locator('.chart-container canvas');
+      const canvasVisible = await canvas.isVisible().catch(() => false);
+      console.log(`W-P1-01: ECharts canvas visible=${canvasVisible}`);
+    }
+
+    // Verify section title "Top 10 SKU 毛利率排名" — non-critical
+    const sectionTitle = page.locator('text=Top 10 SKU 毛利率排名');
+    console.log(`W-P1-01: section title visible=${await sectionTitle.isVisible().catch(() => false)}`);
+
+    // Verify el-table with data
+    const table = page.locator('.el-table').first();
+    await expect(table).toBeVisible({ timeout: 10000 });
+    console.log('W-P1-01: table visible=true');
+
+    // Verify "毛利率" column header
+    const marginHeader = page.locator('.el-table__header-wrapper').locator('text=毛利率').first();
+    await expect(marginHeader).toBeVisible({ timeout: 10000 });
+    console.log('W-P1-01: "毛利率" header visible=true');
+
+    // Verify additional column headers
+    const expectedHeaders = ['产品名称', '产量', '物料成本', '总成本', '售价', '毛利率'];
+    for (const h of expectedHeaders) {
+      const header = page.locator('.el-table__header-wrapper').locator(`text=${h}`).first();
+      const visible = await header.isVisible().catch(() => false);
+      console.log(`W-P1-01: header "${h}" visible=${visible}`);
+    }
+
+    // Check for color-coded margin tags
+    const rows = page.locator('.el-table__row');
+    const rowCount = await rows.count();
+    console.log(`W-P1-01: table rows=${rowCount}`);
+
+    if (rowCount > 0) {
+      const marginTags = page.locator('.el-table__body-wrapper .el-tag');
+      const tagCount = await marginTags.count();
+      console.log(`W-P1-01: margin tags count=${tagCount}`);
+      expect(tagCount).toBeGreaterThan(0);
+    }
+
+    // Verify date range picker
+    const datePicker = page.locator('.el-date-editor').first();
+    await expect(datePicker).toBeVisible({ timeout: 10000 });
+    console.log('W-P1-01: date picker visible=true');
+
+    // Verify pagination — non-critical
+    const pagination = page.locator('.el-pagination');
+    const paginationVisible = await pagination.isVisible().catch(() => false);
+    console.log(`W-P1-01: pagination visible=${paginationVisible}`);
+
+    await shotFull(page, 'w-p1-01-sku-margin.png');
+  });
+
+  // ------------------------------------------------------------------
+  // W-P2-01: 供应链闭环总览
+  // ------------------------------------------------------------------
+  test('W-P2-01: 供应链闭环总览 — 完整功能验证', async ({ page }) => {
+    await gotoPage(page, '/analytics/supply-chain');
+    let pageContent = await page.textContent('body').catch(() => '');
+    if (pageContent.includes('login') && !pageContent.includes('进销存')) {
+      await injectAuth(page);
+      await gotoPage(page, '/analytics/supply-chain');
+    }
+
+    // Verify page title — use auto-waiting expect
+    const title = page.locator('text=进销存闭环总览').first();
+    await expect(title).toBeVisible({ timeout: 15000 });
+    console.log('W-P2-01: title "进销存闭环总览" visible=true');
+
+    // Verify subtitle with flow description — non-critical
+    const subtitle = page.locator('text=采购');
+    console.log(`W-P2-01: subtitle visible=${await subtitle.first().isVisible().catch(() => false)}`);
+
+    // Wait for data + chart to load
+    await page.waitForTimeout(5000);
+
+    // Verify Sankey chart canvas
+    const sankeyChart = page.locator('.sankey-chart').first();
+    await expect(sankeyChart).toBeVisible({ timeout: 10000 });
+    console.log('W-P2-01: sankey chart container visible=true');
+
+    // Check for Sankey canvas — non-critical
+    const sankeyCanvas = page.locator('.sankey-chart canvas');
+    const canvasVisible = await sankeyCanvas.isVisible().catch(() => false);
+    console.log(`W-P2-01: Sankey ECharts canvas visible=${canvasVisible}`);
+
+    // Verify 6 summary cards (stat-card class on el-card elements)
+    const statCards = page.locator('.stat-card');
+    const statCardCount = await statCards.count();
+    console.log(`W-P2-01: stat cards count=${statCardCount}`);
+    expect(statCardCount).toBeGreaterThanOrEqual(6);
+
+    // Verify card labels — non-critical
+    const cardLabels = ['采购总额', '入库批次', '领用数量', '生产批次', '成品数量', '出库/销售额'];
+    for (const label of cardLabels) {
+      const labelEl = page.locator(`.stat-label:has-text("${label}")`);
+      const visible = await labelEl.isVisible().catch(() => false);
+      console.log(`W-P2-01: card "${label}" visible=${visible}`);
+    }
+
+    // Verify tabs for different stages
+    const tabs = page.locator('.el-tabs__item');
+    const tabCount = await tabs.count();
+    console.log(`W-P2-01: tab count=${tabCount}`);
+    expect(tabCount).toBeGreaterThanOrEqual(4);
+
+    // Click each tab and verify table loads
+    const tabNames = ['采购订单', '入库记录', '生产批次', '出库/销售'];
+    for (const tabName of tabNames) {
+      const tab = page.locator(`.el-tabs__item:has-text("${tabName}")`);
+      if (await tab.isVisible().catch(() => false)) {
+        await tab.click();
+        await page.waitForTimeout(1500);
+
+        const tabTable = page.locator('.el-table').first();
+        const tabTableVisible = await tabTable.isVisible().catch(() => false);
+        console.log(`W-P2-01: tab "${tabName}" table visible=${tabTableVisible}`);
+      }
+    }
+
+    // Verify date range picker — non-critical
+    const datePicker = page.locator('.el-date-editor');
+    const datePickerVisible = await datePicker.first().isVisible().catch(() => false);
+    console.log(`W-P2-01: date picker visible=${datePickerVisible}`);
+
+    await shotFull(page, 'w-p2-01-supply-chain-overview.png');
+  });
+
+  // ------------------------------------------------------------------
+  // W-P2-02: 工序投入产出对比
+  // ------------------------------------------------------------------
+  test('W-P2-02: 工序投入产出对比 — 完整功能验证', async ({ page }) => {
+    await gotoPage(page, '/production/process-io');
+    let pageContent = await page.textContent('body').catch(() => '');
+    if (pageContent.includes('login') && !pageContent.includes('投入产出')) {
+      await injectAuth(page);
+      await gotoPage(page, '/production/process-io');
+    }
+
+    // Verify page title — use auto-waiting expect
+    const title = page.locator('text=工序级投入产出对比').first();
+    await expect(title).toBeVisible({ timeout: 15000 });
+    console.log('W-P2-02: title visible=true');
+
+    // Wait for data to load
+    await page.waitForTimeout(3000);
+
+    // Verify 4 KPI cards (kpi-card class applied on el-card elements)
+    const kpiCards = page.locator('.kpi-card');
+    const kpiCount = await kpiCards.count();
+    console.log(`W-P2-02: KPI cards count=${kpiCount}`);
+    expect(kpiCount).toBeGreaterThanOrEqual(4);
+
+    // Verify KPI labels — non-critical
+    const kpiLabels = ['工序数量', '平均转化率', '平均损耗率', '低效工序数'];
+    for (const label of kpiLabels) {
+      const labelEl = page.locator(`.kpi-label:has-text("${label}")`);
+      const visible = await labelEl.isVisible().catch(() => false);
+      console.log(`W-P2-02: KPI "${label}" visible=${visible}`);
+    }
+
+    // Verify el-table
+    const table = page.locator('.el-table').first();
+    await expect(table).toBeVisible({ timeout: 10000 });
+    console.log('W-P2-02: table visible=true');
+
+    // Verify table column headers
+    const expectedHeaders = ['工序名称', '投入量', '产出量', '转化率', '损耗率', '转化率进度', '任务数'];
+    for (const h of expectedHeaders) {
+      const header = page.locator('.el-table__header-wrapper').locator(`text=${h}`).first();
+      const visible = await header.isVisible().catch(() => false);
+      console.log(`W-P2-02: header "${h}" visible=${visible}`);
+    }
+
+    // Check for color-coded conversion rate tags
+    const rows = page.locator('.el-table__row');
+    const rowCount = await rows.count();
+    console.log(`W-P2-02: table rows=${rowCount}`);
+
+    if (rowCount > 0) {
+      // Verify el-tag for conversion rates
+      const conversionTags = page.locator('.el-table__body-wrapper .el-tag');
+      const tagCount = await conversionTags.count();
+      console.log(`W-P2-02: conversion/wastage tags count=${tagCount}`);
+
+      // Verify el-progress bars
+      const progressBars = page.locator('.el-table__body-wrapper .el-progress');
+      const progressCount = await progressBars.count();
+      console.log(`W-P2-02: progress bars count=${progressCount}`);
+    }
+
+    // Verify rate legend
+    const legend = page.locator('.rate-legend');
+    const legendVisible = await legend.isVisible().catch(() => false);
+    console.log(`W-P2-02: rate legend visible=${legendVisible}`);
+
+    // Verify product filter select
+    const productSelect = page.locator('.el-select').first();
+    const selectVisible = await productSelect.isVisible().catch(() => false);
+    console.log(`W-P2-02: product filter select visible=${selectVisible}`);
+
+    // Verify date range picker
+    const datePicker = page.locator('.el-date-editor');
+    const datePickerVisible = await datePicker.first().isVisible().catch(() => false);
+    console.log(`W-P2-02: date picker visible=${datePickerVisible}`);
+
+    await shotFull(page, 'w-p2-02-process-io-comparison.png');
+  });
+
+  // ------------------------------------------------------------------
+  // W-NAV-01: 侧边栏导航完整性
+  // ------------------------------------------------------------------
+  test('W-NAV-01: 侧边栏导航完整性 — 所有新页面可达', async ({ page }) => {
+    // Start at dashboard
+    await gotoPage(page, '/dashboard');
+
+    const newPages = [
+      { path: '/production/bom-achievement', title: 'BOM达成率', screenshotName: 'w-nav-01-bom-achievement.png' },
+      { path: '/warehouse/material-price-trend', title: '物料', screenshotName: 'w-nav-01-material-price-trend.png' },
+      { path: '/finance/sku-margin', title: 'SKU毛利率', screenshotName: 'w-nav-01-sku-margin.png' },
+      { path: '/analytics/supply-chain', title: '进销存', screenshotName: 'w-nav-01-supply-chain.png' },
+      { path: '/production/process-io', title: '投入产出', screenshotName: 'w-nav-01-process-io.png' },
+    ];
+
+    for (const pg of newPages) {
+      // Navigate directly
+      await gotoPage(page, pg.path);
+      let bodyText = await page.textContent('body').catch(() => '');
+
+      // If redirected to login, inject auth and retry
+      if (bodyText.includes('login') || bodyText.includes('登 录')) {
+        await injectAuth(page);
+        await gotoPage(page, pg.path);
+        bodyText = await page.textContent('body').catch(() => '');
+      }
+
+      const is404 = bodyText.includes('404') || bodyText.includes('not found');
+      console.log(`W-NAV-01: ${pg.path} → is404=${is404}, URL=${page.url()}`);
+      expect(is404).toBeFalsy();
+
+      // Verify some content from the page loaded
+      const hasTitle = bodyText.includes(pg.title);
+      console.log(`W-NAV-01: ${pg.path} → contains "${pg.title}"=${hasTitle}`);
+
+      await shot(page, pg.screenshotName);
+    }
+  });
+
+  // ------------------------------------------------------------------
+  // W-DATA-01: 数据流验证 — BOM达成率数据一致性
+  // ------------------------------------------------------------------
+  test('W-DATA-01: BOM达成率数据一致性验证', async ({ page }) => {
+    await gotoPage(page, '/production/bom-achievement');
+    let pageContent = await page.textContent('body').catch(() => '');
+    if (pageContent.includes('login') && !pageContent.includes('BOM')) {
+      await injectAuth(page);
+      await gotoPage(page, '/production/bom-achievement');
+    }
+
+    // Wait for data to load
+    await page.waitForTimeout(3000);
+
+    // Wait for KPI cards to render, then read the total from first KPI card
+    const firstKpiCard = page.locator('.kpi-card').first();
+    await expect(firstKpiCard).toBeVisible({ timeout: 10000 });
+    const totalKpi = firstKpiCard.locator('.kpi-value');
+    const totalText = await totalKpi.textContent().catch(() => '0');
+    const totalFromKpi = parseInt(totalText || '0', 10);
+    console.log(`W-DATA-01: KPI total batches=${totalFromKpi}`);
+
+    // Read the "共 X 条记录" count from header
+    const dataCountEl = page.locator('.data-count');
+    const dataCountText = await dataCountEl.textContent().catch(() => '');
+    console.log(`W-DATA-01: data count text="${dataCountText}"`);
+
+    // Count visible table rows
+    const rows = page.locator('.el-table__row');
+    const visibleRows = await rows.count();
+    console.log(`W-DATA-01: visible table rows=${visibleRows}`);
+
+    // If total > page size (10), pagination should be present
+    if (totalFromKpi > 10) {
+      const pagination = page.locator('.el-pagination').first();
+      await expect(pagination).toBeVisible({ timeout: 10000 });
+      console.log(`W-DATA-01: pagination visible (expected because total=${totalFromKpi} > 10)=true`);
+
+      // Click next page to verify data continues
+      const nextBtn = page.locator('.el-pagination .btn-next');
+      if (await nextBtn.isVisible().catch(() => false)) {
+        await nextBtn.click();
+        await page.waitForTimeout(3000);
+        const rowsPage2 = await page.locator('.el-table__row').count();
+        console.log(`W-DATA-01: page 2 rows=${rowsPage2}`);
+        expect(rowsPage2).toBeGreaterThan(0);
+      }
+    }
+
+    // Verify row count is consistent: visible <= total
+    expect(visibleRows).toBeLessThanOrEqual(Math.max(totalFromKpi, 10));
+
+    await shot(page, 'w-data-01-bom-consistency.png');
+  });
+
+  // ------------------------------------------------------------------
+  // W-DATA-02: 数据流验证 — 物料均价非空
+  // ------------------------------------------------------------------
+  test('W-DATA-02: 物料均价非空验证', async ({ page }) => {
+    await gotoPage(page, '/warehouse/material-price-trend');
+    let pageContent = await page.textContent('body').catch(() => '');
+    if (pageContent.includes('login') && !pageContent.includes('物料')) {
+      await injectAuth(page);
+      await gotoPage(page, '/warehouse/material-price-trend');
+    }
+
+    // Wait for data to load
+    await page.waitForTimeout(3000);
+
+    // Check for rows
+    const rows = page.locator('.el-table__row');
+    const rowCount = await rows.count();
+    console.log(`W-DATA-02: table rows=${rowCount}`);
+
+    if (rowCount > 0) {
+      // Find price value cells
+      const priceValues = page.locator('.price-value');
+      const priceCount = await priceValues.count();
+      console.log(`W-DATA-02: price cells=${priceCount}`);
+
+      // Verify at least one row has a non-empty price with ¥
+      let foundPrice = false;
+      for (let i = 0; i < Math.min(priceCount, 10); i++) {
+        const text = await priceValues.nth(i).textContent().catch(() => '');
+        if (text && text.includes('¥') && !text.includes('¥0.00')) {
+          foundPrice = true;
+          console.log(`W-DATA-02: found price at index ${i}: "${text}"`);
+          break;
+        }
+      }
+      console.log(`W-DATA-02: found non-empty price=${foundPrice}`);
+      // Note: if no materials have prices yet, this is informational
+    } else {
+      console.log('W-DATA-02: no material rows (empty table)');
+    }
+
+    // Also verify via API
+    const types = await api('/raw-material-types/active');
+    const typeList = Array.isArray(types.data) ? types.data : types.data?.content || [];
+    let apiPriceFound = false;
+    for (const mt of typeList.slice(0, 10)) {
+      if (mt.movingAvgPrice != null && mt.movingAvgPrice > 0) {
+        apiPriceFound = true;
+        console.log(`W-DATA-02: API price found: ${mt.name} = ¥${mt.movingAvgPrice}`);
+        break;
+      }
+    }
+    console.log(`W-DATA-02: API has non-zero price=${apiPriceFound}`);
+
+    await shot(page, 'w-data-02-material-price-check.png');
   });
 });

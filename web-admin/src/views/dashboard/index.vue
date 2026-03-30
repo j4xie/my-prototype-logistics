@@ -22,7 +22,7 @@ const dashboardComponentName = computed(() => {
   return getDashboardComponent(authStore.currentRole, authStore.factoryType);
 });
 
-const asyncOpts = (loader: () => Promise<any>) => defineAsyncComponent({
+const asyncOpts = (loader: () => Promise<{ default: ReturnType<typeof defineComponent> }>) => defineAsyncComponent({
   loader,
   loadingComponent: { render: () => h('div', { style: 'text-align:center;padding:60px;color:#7A8599' }, '加载中...') },
   errorComponent: { render: () => h('div', { style: 'text-align:center;padding:60px;color:#FF5630' }, '加载失败，请刷新页面') },

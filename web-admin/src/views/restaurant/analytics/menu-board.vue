@@ -215,8 +215,9 @@ function renderChart() {
     tooltip: {
       trigger: 'item',
       confine: true,
-      formatter: (p: any) => {
-        const raw = p.data._raw || p.value
+      formatter: (p: Record<string, unknown>) => {
+        const d = p.data as Record<string, unknown>
+        const raw = (d._raw || p.value) as number[]
         return `<b>${p.name}</b><br/>销量: ${raw[0]}<br/>品均收入: ¥${raw[1].toFixed(1)}`
       },
     },
@@ -259,7 +260,7 @@ function renderChart() {
   })
 
   chart.off('click')
-  chart.on('click', (params: any) => {
+  chart.on('click', (params: Record<string, unknown>) => {
     if (params.componentType === 'series' && params.name) {
       selectedItem.value = data.value!.items.find(i => i.name === params.name) || null
       if (selectedItem.value) drawerVisible.value = true

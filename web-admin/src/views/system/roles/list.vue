@@ -1,9 +1,129 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { usePermissionStore } from '@/store/modules/permission';
+import { useAuthStore } from '@/store/modules/auth';
+import { get, put } from '@/api/request';
+import { ElMessage } from 'element-plus';
 
 const permissionStore = usePermissionStore();
+const authStore = useAuthStore();
+const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('system'));
+
+// Permission modules
+const allPermissionModules = [
+  { key: 'production', label: '生产管理' },
+  { key: 'quality', label: '质检管理' },
+  { key: 'warehouse', label: '仓库管理' },
+  { key: 'procurement', label: '采购管理' },
+  { key: 'sales', label: '销售管理' },
+  { key: 'hr', label: '人事管理' },
+  { key: 'equipment', label: '设备管理' },
+  { key: 'finance', label: '财务管理' },
+  { key: 'system', label: '系统设置' },
+  { key: 'ai', label: 'AI 分析' },
+  { key: 'report', label: '报表中心' },
+  { key: 'dashboard', label: '数据看板' },
+];
+
+// View permissions dialog
+const viewDialogVisible = ref(false);
+const viewingRole = ref<Record<string, unknown> | null>(null);
+const rolePermissions = ref<Record<string, unknown>[]>([]);
+const permissionsLoading = ref(false);
+
+// Edit dialog
+const editDialogVisible = ref(false);
+const editingRole = ref<Record<string, unknown> | null>(null);
+const editForm = reactive({
+  displayName: '',
+  description: '',
+  permissions: {} as Record<string, string>, // module -> 'rw' | 'r' | 'w' | '-'
+});
+const editSubmitting = ref(false);
+
+async function handleViewPermissions(row: Record<string, unknown>) {
+  viewingRole.value = row;
+  viewDialogVisible.value = true;
+  permissionsLoading.value = true;
+  try {
+    const res = await get(`/${factoryId.value}/roles/${row.name}/permissions`);
+    if (res.success && res.data) {
+      rolePermissions.value = res.data;
+    } else {
+      // Fallback: derive from role level
+      rolePermissions.value = derivePermissions(row);
+    }
+  } catch {
+    // Fallback for missing API
+    rolePermissions.value = derivePermissions(row);
+  } finally {
+    permissionsLoading.value = false;
+  }
+}
+
+function derivePermissions(role: Record<string, unknown>) {
+  // Sensible defaults based on level
+  return allPermissionModules.map(m => {
+    let access = '-';
+    if (role.level === 1) access = 'rw'; // super admin
+    else if (role.name.includes(m.key.replace('ment', '').replace('管理', ''))) access = 'rw';
+    else if (role.level <= 2) access = 'r';
+    return { module: m.key, label: m.label, access };
+  });
+}
+
+function getAccessTag(access: string) {
+  const map: Record<string, { type: string; label: string }> = {
+    rw: { type: 'success', label: '读写' },
+    r: { type: 'warning', label: '只读' },
+    w: { type: 'info', label: '只写' },
+    '-': { type: 'danger', label: '无权限' },
+  };
+  return map[access] || map['-'];
+}
+
+function handleEdit(row: Record<string, unknown>) {
+  editingRole.value = row;
+  editForm.displayName = row.displayName;
+  editForm.description = row.description;
+  // Init permissions from current view or defaults
+  const perms = derivePermissions(row);
+  editForm.permissions = {};
+  perms.forEach(p => {
+    editForm.permissions[p.module] = p.access;
+  });
+  editDialogVisible.value = true;
+}
+
+async function handleEditSubmit() {
+  editSubmitting.value = true;
+  try {
+    const payload = {
+      displayName: editForm.displayName,
+      description: editForm.description,
+      permissions: editForm.permissions,
+    };
+    const res = await put(`/${factoryId.value}/roles/${editingRole.value.name}`, payload);
+    if (res && res.success === false) {
+      ElMessage.error(res.message || '保存失败');
+      return;
+    }
+    ElMessage.success('保存成功');
+    // Update local data
+    const role = roles.value.find(r => r.name === editingRole.value.name);
+    if (role) {
+      role.displayName = editForm.displayName;
+      role.description = editForm.description;
+    }
+    editDialogVisible.value = false;
+  } catch (error) {
+    console.error('Edit role failed:', error);
+    ElMessage.error('保存失败');
+  } finally {
+    editSubmitting.value = false;
+  }
+}
 
 // 14种工厂角色数据
 const roles = ref([
@@ -169,13 +289,61 @@ function getLevelTag(level: number) {
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
-          <template #default>
-            <el-button type="primary" link>查看权限</el-button>
-            <el-button v-if="canWrite" type="primary" link>编辑</el-button>
+          <template #default="{ row }">
+            <el-button type="primary" link @click="handleViewPermissions(row)">查看权限</el-button>
+            <el-tooltip content="角色编辑功能开发中" placement="top"><el-button type="info" link disabled>编辑</el-button></el-tooltip>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
+
+    <!-- 查看权限 Dialog -->
+    <el-dialog v-model="viewDialogVisible" :title="`${viewingRole?.displayName} — 权限详情`" width="500px" destroy-on-close>
+      <el-table :data="rolePermissions" v-loading="permissionsLoading" stripe border>
+        <el-table-column prop="label" label="功能模块" width="140" />
+        <el-table-column prop="access" label="权限" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag :type="getAccessTag(row.access).type" size="small">
+              {{ getAccessTag(row.access).label }}
+            </el-tag>
+          </template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button @click="viewDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 编辑角色 Dialog -->
+    <el-dialog v-model="editDialogVisible" :title="`编辑角色 — ${editingRole?.displayName}`" width="600px" destroy-on-close>
+      <el-form label-width="100px">
+        <el-form-item label="角色名称">
+          <el-input v-model="editForm.displayName" placeholder="请输入角色名称" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="editForm.description" type="textarea" :rows="2" placeholder="请输入描述" />
+        </el-form-item>
+        <el-form-item label="权限配置">
+          <el-table :data="allPermissionModules" stripe border size="small" style="width: 100%">
+            <el-table-column prop="label" label="功能模块" width="120" />
+            <el-table-column label="权限" align="center">
+              <template #default="{ row }">
+                <el-radio-group v-model="editForm.permissions[row.key]" size="small">
+                  <el-radio-button value="rw">读写</el-radio-button>
+                  <el-radio-button value="r">只读</el-radio-button>
+                  <el-radio-button value="w">只写</el-radio-button>
+                  <el-radio-button value="-">无</el-radio-button>
+                </el-radio-group>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="editSubmitting" @click="handleEditSubmit">保存</el-button>
+      </template>
+    </el-dialog>
 
     <el-card style="margin-top: 20px;">
       <template #header>

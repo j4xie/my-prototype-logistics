@@ -14,13 +14,34 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 
+const materialTypes = ref<Record<string, unknown>[]>([]);
+const suppliers = ref<Record<string, unknown>[]>([]);
+
 onMounted(() => {
   loadData();
+  loadMaterialTypes();
+  loadSuppliers();
 });
+
+async function loadMaterialTypes() {
+  if (!factoryId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/product-types`, { params: { productCategory: 'RAW_MATERIAL', size: 200 } });
+    if (res.success && res.data) materialTypes.value = res.data.content || res.data || [];
+  } catch { /* silent */ }
+}
+
+async function loadSuppliers() {
+  if (!factoryId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/suppliers`, { params: { size: 200 } });
+    if (res.success && res.data) suppliers.value = res.data.content || res.data || [];
+  } catch { /* silent */ }
+}
 
 async function loadData() {
   if (!factoryId.value) return;
@@ -108,24 +129,30 @@ const editingId = ref<string | null>(null);
 
 const formData = reactive({
   batchNumber: '',
-  materialName: '',
-  supplierName: '',
-  quantity: null as number | null,
-  unit: 'kg',
-  expiryDate: '',
+  materialTypeId: '',
+  supplierId: '',
+  receiptDate: new Date().toISOString().slice(0, 10),
+  receiptQuantity: null as number | null,
+  quantityUnit: 'kg',
+  totalWeight: null as number | null,
+  totalValue: null as number | null,
+  expireDate: '',
   notes: '',
 });
 
 const formRules = {
   batchNumber: [{ required: true, message: '请输入批次号', trigger: 'blur' }],
-  materialName: [{ required: true, message: '请输入原料名称', trigger: 'blur' }],
-  quantity: [{ required: true, message: '请输入数量', trigger: 'blur' }],
+  materialTypeId: [{ required: true, message: '请选择原料类型', trigger: 'change' }],
+  receiptQuantity: [{ required: true, message: '请输入数量', trigger: 'blur' }],
+  receiptDate: [{ required: true, message: '请选择入库日期', trigger: 'change' }],
+  totalWeight: [{ required: true, message: '请输入总重量(kg)', trigger: 'blur' }],
+  totalValue: [{ required: true, message: '请输入总价值(元)', trigger: 'blur' }],
 };
 
 function handleCreate() {
   editingId.value = null;
   formDialogTitle.value = '入库登记';
-  Object.assign(formData, { batchNumber: '', materialName: '', supplierName: '', quantity: null, unit: 'kg', expiryDate: '', notes: '' });
+  Object.assign(formData, { batchNumber: '', materialTypeId: '', supplierId: '', receiptDate: new Date().toISOString().slice(0, 10), receiptQuantity: null, quantityUnit: 'kg', totalWeight: null, totalValue: null, expireDate: '', notes: '' });
   formDialogVisible.value = true;
 }
 
@@ -134,11 +161,14 @@ function handleEdit(row: Record<string, unknown>) {
   formDialogTitle.value = '编辑批次';
   Object.assign(formData, {
     batchNumber: row.batchNumber || '',
-    materialName: row.materialTypeName || row.materialName || '',
-    supplierName: row.supplierName || '',
-    quantity: row.quantity ?? row.currentQuantity ?? null,
-    unit: row.unit || 'kg',
-    expiryDate: row.expiryDate || '',
+    materialTypeId: row.materialTypeId || '',
+    supplierId: row.supplierId || '',
+    receiptDate: row.receiptDate || row.inboundDate || new Date().toISOString().slice(0, 10),
+    receiptQuantity: row.receiptQuantity ?? row.quantity ?? row.currentQuantity ?? null,
+    quantityUnit: row.quantityUnit || row.unit || 'kg',
+    totalWeight: row.totalWeight ?? null,
+    totalValue: row.totalValue ?? null,
+    expireDate: row.expireDate || row.expiryDate || '',
     notes: row.notes || '',
   });
   formDialogVisible.value = true;
@@ -264,17 +294,21 @@ async function handleFormSubmit() {
         <el-form-item label="批次号" prop="batchNumber">
           <el-input v-model="formData.batchNumber" placeholder="如 MB-2026-001" :disabled="!!editingId" />
         </el-form-item>
-        <el-form-item label="原料名称" prop="materialName">
-          <el-input v-model="formData.materialName" placeholder="如 带鱼、虾仁" />
+        <el-form-item label="原料类型" prop="materialTypeId">
+          <el-select v-model="formData.materialTypeId" placeholder="选择原料类型" filterable style="width: 100%">
+            <el-option v-for="mt in materialTypes" :key="mt.id" :label="mt.name" :value="mt.id" />
+          </el-select>
         </el-form-item>
         <el-form-item label="供应商">
-          <el-input v-model="formData.supplierName" placeholder="供应商名称" />
+          <el-select v-model="formData.supplierId" placeholder="选择供应商" filterable clearable style="width: 100%">
+            <el-option v-for="s in suppliers" :key="s.id" :label="s.name" :value="s.id" />
+          </el-select>
         </el-form-item>
-        <el-form-item label="数量" prop="quantity">
-          <el-input-number v-model="formData.quantity" :min="0" :precision="1" style="width: 100%" />
+        <el-form-item label="数量" prop="receiptQuantity">
+          <el-input-number v-model="formData.receiptQuantity" :min="0" :precision="1" style="width: 100%" />
         </el-form-item>
         <el-form-item label="单位">
-          <el-select v-model="formData.unit" style="width: 100%">
+          <el-select v-model="formData.quantityUnit" style="width: 100%">
             <el-option label="kg" value="kg" />
             <el-option label="g" value="g" />
             <el-option label="L" value="L" />
@@ -282,8 +316,17 @@ async function handleFormSubmit() {
             <el-option label="箱" value="箱" />
           </el-select>
         </el-form-item>
+        <el-form-item label="入库日期" prop="receiptDate">
+          <el-date-picker v-model="formData.receiptDate" type="date" value-format="YYYY-MM-DD" placeholder="选择入库日期" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="总重量(kg)" prop="totalWeight">
+          <el-input-number v-model="formData.totalWeight" :min="0" :precision="3" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="总价值(元)" prop="totalValue">
+          <el-input-number v-model="formData.totalValue" :min="0" :precision="2" style="width: 100%" />
+        </el-form-item>
         <el-form-item label="过期日期">
-          <el-date-picker v-model="formData.expiryDate" type="date" value-format="YYYY-MM-DD" placeholder="选择过期日期" style="width: 100%" />
+          <el-date-picker v-model="formData.expireDate" type="date" value-format="YYYY-MM-DD" placeholder="选择过期日期" style="width: 100%" />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="formData.notes" type="textarea" :rows="2" />
