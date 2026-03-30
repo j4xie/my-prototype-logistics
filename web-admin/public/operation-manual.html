@@ -1,0 +1,4852 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>白垩纪食品溯源系统 — 完整操作手册</title>
+<style>
+  /* ===== RESET & BASE ===== */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+    background: #f0f2f7;
+    color: #1e293b;
+    line-height: 1.8;
+    font-size: 15px;
+  }
+
+  /* ===== LAYOUT ===== */
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  /* ===== HEADER ===== */
+  .doc-header {
+    text-align: center;
+    padding: 48px 20px 36px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border-radius: 0 0 24px 24px;
+    margin-bottom: 32px;
+  }
+  .doc-header h1 { font-size: 32px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px; }
+  .doc-header .subtitle { font-size: 16px; opacity: 0.85; margin-bottom: 16px; }
+  .doc-header .meta { font-size: 13px; opacity: 0.7; }
+  .doc-header .meta span { margin: 0 12px; }
+
+  /* ===== TABLE OF CONTENTS ===== */
+  .toc {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 2px 12px rgba(102,126,234,0.08);
+    border-left: 5px solid #667eea;
+  }
+  .toc h2 { font-size: 20px; color: #667eea; margin-bottom: 16px; border: none; padding: 0; }
+  .toc ol { padding-left: 20px; }
+  .toc ol li { margin: 6px 0; }
+  .toc ol li a { color: #4F46E5; text-decoration: none; font-weight: 500; }
+  .toc ol li a:hover { text-decoration: underline; }
+  .toc .toc-note { font-size: 13px; color: #94a3b8; margin-top: 12px; font-style: italic; }
+
+  /* ===== SECTION HEADERS ===== */
+  .section-anchor { padding-top: 20px; }
+  h2.section-title {
+    font-size: 24px;
+    color: #1e293b;
+    margin: 40px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #667eea;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  h2.section-title .section-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  h3 { font-size: 18px; color: #4338ca; margin: 24px 0 12px; }
+  h4 { font-size: 16px; color: #6366f1; margin: 18px 0 10px; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 24px;
+    margin: 16px 0;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    border: 1px solid #e8ecf3;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .card-title { font-size: 17px; font-weight: 700; color: #1e293b; }
+
+  /* ===== BADGES ===== */
+  .badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .badge-web { background: #eef2ff; color: #4F46E5; }
+  .badge-app { background: #ecfdf5; color: #059669; }
+  .badge-auto { background: #fff7ed; color: #EA580C; }
+  .badge-ai { background: #f5f3ff; color: #7c3aed; }
+  .badge-danger { background: #fef2f2; color: #DC2626; }
+  .badge-info { background: #eff6ff; color: #2563eb; }
+
+  /* ===== MENU PATH ===== */
+  .menu-path {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 14px;
+    margin: 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+  }
+  .menu-path .sep { color: #94a3b8; margin: 0 2px; }
+
+  /* ===== STEPS ===== */
+  .steps { margin: 16px 0; }
+  .step {
+    display: flex;
+    gap: 14px;
+    margin: 12px 0;
+    align-items: flex-start;
+  }
+  .step-num {
+    min-width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-content { flex: 1; }
+  .step-action { font-weight: 700; color: #1e293b; font-size: 15px; }
+  .step-detail { color: #64748b; font-size: 14px; margin-top: 3px; line-height: 1.6; }
+
+  /* ===== TABLES ===== */
+  .table-wrapper { overflow-x: auto; margin: 14px 0; border-radius: 10px; border: 1px solid #e2e8f0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    padding: 12px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #f8fafc; }
+  td.required { color: #DC2626; font-weight: 600; }
+  td.optional { color: #94a3b8; }
+  .code {
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+    font-size: 13px;
+    color: #4338ca;
+  }
+
+  /* ===== INFO BOXES ===== */
+  .info-box {
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 14px 0;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .info-box strong { display: block; margin-bottom: 4px; }
+  .info-box.warning {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    border-left: 4px solid #f59e0b;
+  }
+  .info-box.danger {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    border-left: 4px solid #DC2626;
+  }
+  .info-box.tip {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    border-left: 4px solid #059669;
+  }
+  .info-box.info {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    border-left: 4px solid #3b82f6;
+  }
+
+  /* ===== ACCOUNT CARDS ===== */
+  .accounts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 16px 0;
+  }
+  .account-card {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 18px;
+    border: 1px solid #e2e8f0;
+    transition: box-shadow 0.2s;
+  }
+  .account-card:hover { box-shadow: 0 4px 16px rgba(102,126,234,0.12); }
+  .account-card .role-name {
+    font-weight: 800;
+    font-size: 15px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .account-card .role-name .dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .account-card .cred-row {
+    font-size: 13px;
+    color: #64748b;
+    margin: 3px 0;
+  }
+  .account-card .cred-row .label { color: #94a3b8; margin-right: 4px; }
+  .account-card .cred-row .val { font-family: 'Cascadia Code', monospace; color: #1e293b; font-weight: 600; }
+  .account-card .scope { font-size: 12px; color: #94a3b8; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; }
+
+  /* ===== ARCHITECTURE DIAGRAM ===== */
+  .arch-diagram {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    color: #e2e8f0;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .arch-diagram .highlight-blue { color: #60a5fa; }
+  .arch-diagram .highlight-green { color: #34d399; }
+  .arch-diagram .highlight-purple { color: #a78bfa; }
+  .arch-diagram .highlight-orange { color: #fb923c; }
+  .arch-diagram .highlight-gray { color: #64748b; }
+
+  /* ===== FORMULA ===== */
+  .formula-box {
+    background: #fefce8;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  .formula-box .formula {
+    font-family: 'Cascadia Code', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: #92400e;
+    margin: 6px 0;
+    padding: 8px 12px;
+    background: #fef9c3;
+    border-radius: 6px;
+    display: inline-block;
+  }
+  .formula-box .example { color: #78716c; margin-top: 8px; }
+
+  /* ===== SUB STEPS (nested) ===== */
+  .sub-steps {
+    margin: 10px 0 10px 16px;
+    padding-left: 16px;
+    border-left: 2px solid #e2e8f0;
+  }
+  .sub-step { margin: 6px 0; color: #475569; font-size: 14px; }
+  .sub-step::before { content: "- "; color: #667eea; font-weight: 700; }
+
+  /* ===== FLOW ARROW ===== */
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 14px 0;
+  }
+  .flow-box {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4338ca;
+    white-space: nowrap;
+  }
+  .flow-box.active { background: #667eea; color: #fff; border-color: #667eea; }
+  .flow-arrow { color: #94a3b8; font-size: 18px; flex-shrink: 0; }
+
+  /* ===== PRINT ===== */
+  @media print {
+    body { background: #fff; font-size: 12px; }
+    .container { max-width: 100%; padding: 0; }
+    .doc-header { border-radius: 0; }
+    .card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+    .info-box { break-inside: avoid; }
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 640px) {
+    .accounts-grid { grid-template-columns: 1fr; }
+    .doc-header h1 { font-size: 24px; }
+    .container { padding: 12px; }
+    .card { padding: 16px; }
+    h2.section-title { font-size: 20px; }
+  }
+
+/* Part 2 styles */
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f7fa; color: #333; line-height: 1.7; }
+  .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+  h1 { text-align: center; font-size: 28px; color: #667eea; margin: 30px 0 10px; }
+  .subtitle { text-align: center; color: #999; font-size: 14px; margin-bottom: 30px; }
+  h2 { font-size: 22px; color: #333; margin: 30px 0 15px; padding-bottom: 8px; border-bottom: 3px solid #667eea; }
+  h3 { font-size: 17px; color: #4F46E5; margin: 20px 0 10px; }
+  h4 { font-size: 15px; color: #555; margin: 14px 0 8px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .badge-web { background: #EEF2FF; color: #4F46E5; }
+  .badge-rn { background: #ECFDF5; color: #059669; }
+  .badge-auto { background: #FFF7ED; color: #EA580C; }
+  .badge-ai { background: #F5F3FF; color: #7C3AED; }
+  .badge-danger { background: #FEF2F2; color: #DC2626; }
+  .step { display: flex; gap: 12px; margin: 8px 0; align-items: flex-start; }
+  .step-num { min-width: 28px; height: 28px; border-radius: 14px; background: #667eea; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-num-green { min-width: 28px; height: 28px; border-radius: 14px; background: #059669; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-num-orange { min-width: 28px; height: 28px; border-radius: 14px; background: #EA580C; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-content { flex: 1; }
+  .step-action { font-weight: 600; color: #333; }
+  .step-detail { color: #666; font-size: 14px; margin-top: 2px; }
+  .step-auto { background: #FFF7ED; border-left: 3px solid #EA580C; padding: 6px 12px; margin-top: 4px; border-radius: 0 6px 6px 0; font-size: 13px; color: #EA580C; }
+  .step-success { background: #ECFDF5; border-left: 3px solid #059669; padding: 6px 12px; margin-top: 4px; border-radius: 0 6px 6px 0; font-size: 13px; color: #059669; }
+  .step-danger { background: #FEF2F2; border-left: 3px solid #DC2626; padding: 6px 12px; margin-top: 4px; border-radius: 0 6px 6px 0; font-size: 13px; color: #DC2626; }
+  .step-info { background: #EFF6FF; border-left: 3px solid #2563EB; padding: 6px 12px; margin-top: 4px; border-radius: 0 6px 6px 0; font-size: 13px; color: #2563EB; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th { background: #667eea; color: #fff; padding: 10px 12px; text-align: left; }
+  td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+  tr:hover td { background: #f8f9ff; }
+  .role-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 16px; font-size: 13px; font-weight: 600; }
+  .role-admin { background: #EEF2FF; color: #4F46E5; }
+  .role-warehouse { background: #E0F2FE; color: #0284C7; }
+  .role-workshop { background: #ECFDF5; color: #059669; }
+  .timeline { border-left: 3px solid #667eea; padding-left: 20px; margin: 16px 0; }
+  .timeline-item { position: relative; padding: 8px 0; }
+  .timeline-item::before { content: ''; position: absolute; left: -26px; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: #667eea; }
+  .timeline-time { font-size: 13px; color: #999; }
+  .timeline-action { font-weight: 600; }
+  .highlight { background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  .highlight strong { color: #B45309; }
+  .highlight-blue { background: #EFF6FF; border: 1px solid #93C5FD; border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  .highlight-blue strong { color: #1D4ED8; }
+  .highlight-green { background: #ECFDF5; border: 1px solid #6EE7B7; border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  .highlight-green strong { color: #047857; }
+  .highlight-red { background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  .highlight-red strong { color: #DC2626; }
+  .code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 13px; }
+  .accounts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .account-card { background: #f8f9ff; border-radius: 8px; padding: 12px; border: 1px solid #e8e8ff; }
+  .account-card .role { font-weight: 700; color: #4F46E5; margin-bottom: 4px; }
+  .account-card .cred { font-size: 13px; color: #666; }
+  .section-intro { background: #f8f9ff; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px 0; border-left: 4px solid #667eea; font-size: 14px; color: #555; }
+  .field-table td:first-child { font-weight: 600; white-space: nowrap; }
+  .field-table td:nth-child(2) { text-align: center; }
+  .required-yes { color: #DC2626; font-weight: 700; }
+  .required-no { color: #999; }
+  .color-green { color: #059669; font-weight: 600; }
+  .color-yellow { color: #D97706; font-weight: 600; }
+  .color-red { color: #DC2626; font-weight: 600; }
+  .screen-path { background: #EEF2FF; border-radius: 6px; padding: 8px 14px; font-size: 14px; font-weight: 600; color: #4F46E5; margin: 8px 0; display: inline-block; }
+  .divider { border-top: 1px dashed #ddd; margin: 16px 0; }
+  .sub-step { margin-left: 40px; padding: 4px 0; font-size: 14px; color: #555; }
+  .sub-step::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 3px; background: #667eea; margin-right: 8px; vertical-align: middle; }
+  .faq-q { font-weight: 700; color: #333; margin-top: 12px; }
+  .faq-a { color: #666; margin-bottom: 8px; padding-left: 16px; border-left: 2px solid #667eea; font-size: 14px; }
+  .method-label { display: inline-block; background: #667eea; color: #fff; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+  .method-label-green { display: inline-block; background: #059669; color: #fff; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+  .method-label-orange { display: inline-block; background: #EA580C; color: #fff; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+  @media print { body { background: #fff; } .container { max-width: 100%; } }
+  @media (max-width: 600px) { .accounts-grid { grid-template-columns: 1fr; } }
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- HEADER                                                        -->
+<!-- ============================================================ -->
+<div class="doc-header">
+  <h1>白垩纪食品溯源系统</h1>
+  <div class="subtitle">完整操作手册 (Cretas Food Traceability System — Operation Manual)</div>
+  <div class="meta">
+    <span>版本 2.0</span>
+    <span>|</span>
+    <span>2026 年 3 月</span>
+    <span>|</span>
+    <span>第一部分：基础配置 (Sections 1-6)</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- TABLE OF CONTENTS                                             -->
+<!-- ============================================================ -->
+<div class="toc">
+  <h2>目录 (Table of Contents)</h2>
+  <ol>
+    <li><a href="#section1">系统概览与测试账号 (System Overview & Test Accounts)</a></li>
+    <li><a href="#section2">员工管理与工牌生成 (Employee Management & Badge Generation)</a></li>
+    <li><a href="#section3">客户管理 (Customer Management)</a></li>
+    <li><a href="#section4">原料类型管理 (Raw Material Type Management)</a></li>
+    <li><a href="#section5">产品模板与 BOM 配置 (Product Templates & BOM Configuration)</a></li>
+    <li><a href="#section6">SKU 组装与原料入库 (SKU Assembly & Material Inbound)</a></li>
+    <li>6C. 销售订单管理 (Sales Order Management)</li>
+    <li>6D. 供应商管理 (Supplier Management)</li>
+  </ol>
+  <div class="toc-note">本手册为第一部分（基础配置），涵盖系统初始化到首次生产前的所有准备工作。第二部分（第 7-12 节）涵盖生产计划、报工、仓储、质检、AI 对话等运营流程。</div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION 1: SYSTEM OVERVIEW                                    -->
+<!-- ============================================================ -->
+<div id="section1" class="section-anchor"></div>
+<h2 class="section-title">
+  <span class="section-num">1</span>
+  系统概览与测试账号 (System Overview)
+</h2>
+
+<!-- 1.1 Architecture -->
+<h3>1.1 系统架构</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-info">ARCHITECTURE</span>
+    <span class="card-title">三端协同架构</span>
+  </div>
+  <p style="color:#64748b; margin-bottom: 16px;">
+    白垩纪食品溯源系统由三个核心组件协同工作，分别面向不同使用场景：
+  </p>
+
+  <div class="arch-diagram"><span class="highlight-gray">  +--------------------------+</span>
+<span class="highlight-gray">  |</span> <span class="highlight-blue">Web Admin (管理后台)</span>     <span class="highlight-gray">|</span>  Vue.js 网页端
+<span class="highlight-gray">  |</span> http://139.196.165.140:8086 <span class="highlight-gray">|</span>  管理配置 + 数据分析 + 报表
+<span class="highlight-gray">  +-----------++--------------+</span>
+<span class="highlight-gray">              ||</span>
+<span class="highlight-gray">              \/</span>
+<span class="highlight-gray">  +--------------------------+</span>
+<span class="highlight-gray">  |</span> <span class="highlight-purple">Backend API (后端服务)</span>    <span class="highlight-gray">|</span>  Java Spring Boot
+<span class="highlight-gray">  |</span> http://47.100.235.168:10010<span class="highlight-gray">|</span>  业务逻辑 + 数据库 + AI 意图
+<span class="highlight-gray">  +-----------++--------------+</span>
+<span class="highlight-gray">              ||</span>
+<span class="highlight-gray">              \/</span>
+<span class="highlight-gray">  +--------------------------+</span>
+<span class="highlight-gray">  |</span> <span class="highlight-green">Mobile App (移动端)</span>      <span class="highlight-gray">|</span>  React Native (Expo)
+<span class="highlight-gray">  |</span> Android / iOS 安装        <span class="highlight-gray">|</span>  现场操作 + 报工 + 扫码
+<span class="highlight-gray">  +--------------------------+</span></div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>组件</th>
+          <th>技术栈</th>
+          <th>用途</th>
+          <th>访问方式</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Web Admin</strong><br>管理后台</td>
+          <td>Vue 3 + Element Plus + Vite</td>
+          <td>系统管理、基础数据维护、报表查看、数据分析、AI 对话</td>
+          <td>浏览器打开<br><span class="code">http://139.196.165.140:8086</span></td>
+        </tr>
+        <tr>
+          <td><strong>Mobile App</strong><br>移动端</td>
+          <td>React Native (Expo 53+) + TypeScript</td>
+          <td>现场报工、扫码出入库、签到签退、接收调度任务、AI 语音</td>
+          <td>安装 APK (Android) 或通过 Expo Go 扫码</td>
+        </tr>
+        <tr>
+          <td><strong>Backend API</strong><br>后端服务</td>
+          <td>Java 21 + Spring Boot 3.2 + PostgreSQL</td>
+          <td>统一后端：认证、业务逻辑、AI 意图识别、数据存储</td>
+          <td>前端自动连接，无需用户操作<br><span class="code">http://47.100.235.168:10010</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 1.2 Access URLs -->
+<h3>1.2 访问地址</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB</span>
+    <span class="card-title">Web Admin 管理后台</span>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">打开浏览器（推荐 Chrome / Edge）</div>
+        <div class="step-detail">不支持 IE 浏览器。推荐使用 Chrome 90+ 或 Edge 90+ 以上版本。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">在地址栏输入</div>
+        <div class="step-detail"><span class="code">http://139.196.165.140:8086</span></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">看到登录页面，输入用户名和密码即可登录</div>
+        <div class="step-detail">登录成功后系统会根据角色自动跳转到对应的首页。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box tip">
+    <strong>提示：移动端 App 访问</strong>
+    移动端安装 APK 后，App 会自动连接到后端服务器（<span class="code">47.100.235.168:10010</span>），登录时只需输入用户名和密码，无需配置服务器地址。
+  </div>
+</div>
+
+<!-- 1.3 Test Accounts -->
+<h3>1.3 测试账号</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-danger">IMPORTANT</span>
+    <span class="card-title">演示/测试账号一览</span>
+  </div>
+  <p style="color:#64748b; margin-bottom: 16px;">
+    以下 4 个账号用于演示和测试，所有账号密码统一为 <span class="code">123456</span>，所属工厂为 <span class="code">F001</span>。正式使用前请修改密码。
+  </p>
+
+  <div class="accounts-grid">
+    <!-- Account 1 -->
+    <div class="account-card" style="border-left: 4px solid #4F46E5;">
+      <div class="role-name">
+        <span class="dot" style="background:#4F46E5;"></span>
+        工厂超级管理员
+      </div>
+      <div class="cred-row"><span class="label">用户名：</span><span class="val">factory_admin1</span></div>
+      <div class="cred-row"><span class="label">密码：</span><span class="val">123456</span></div>
+      <div class="cred-row"><span class="label">角色代码：</span><span class="val">factory_super_admin</span></div>
+      <div class="scope">
+        <strong>可用端：</strong>Web Admin + Mobile App<br>
+        <strong>权限范围：</strong>全部功能 — 系统管理、员工管理、客户管理、产品配置、排产计划、报表分析、AI 对话、仓储查看
+      </div>
+    </div>
+
+    <!-- Account 2 -->
+    <div class="account-card" style="border-left: 4px solid #EA580C;">
+      <div class="role-name">
+        <span class="dot" style="background:#EA580C;"></span>
+        调度员
+      </div>
+      <div class="cred-row"><span class="label">用户名：</span><span class="val">dispatcher1</span></div>
+      <div class="cred-row"><span class="label">密码：</span><span class="val">123456</span></div>
+      <div class="cred-row"><span class="label">角色代码：</span><span class="val">dispatcher</span></div>
+      <div class="scope">
+        <strong>可用端：</strong>Mobile App<br>
+        <strong>权限范围：</strong>排产计划创建与调度、工序任务分配、计划进度跟踪
+      </div>
+    </div>
+
+    <!-- Account 3 -->
+    <div class="account-card" style="border-left: 4px solid #0284C7;">
+      <div class="role-name">
+        <span class="dot" style="background:#0284C7;"></span>
+        仓储主管
+      </div>
+      <div class="cred-row"><span class="label">用户名：</span><span class="val">warehouse_mgr1</span></div>
+      <div class="cred-row"><span class="label">密码：</span><span class="val">123456</span></div>
+      <div class="cred-row"><span class="label">角色代码：</span><span class="val">warehouse_manager</span></div>
+      <div class="scope">
+        <strong>可用端：</strong>Mobile App<br>
+        <strong>权限范围：</strong>原料入库、成品出库、库存查看、调拨审批、移动平均价
+      </div>
+    </div>
+
+    <!-- Account 4 -->
+    <div class="account-card" style="border-left: 4px solid #059669;">
+      <div class="role-name">
+        <span class="dot" style="background:#059669;"></span>
+        车间主管
+      </div>
+      <div class="cred-row"><span class="label">用户名：</span><span class="val">workshop_sup1</span></div>
+      <div class="cred-row"><span class="label">密码：</span><span class="val">123456</span></div>
+      <div class="cred-row"><span class="label">角色代码：</span><span class="val">workshop_supervisor</span></div>
+      <div class="scope">
+        <strong>可用端：</strong>Mobile App<br>
+        <strong>权限范围：</strong>产线报工、员工签到签退、当班生产数据查看、原料消耗确认
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box warning">
+    <strong>注意：角色与可用端的关系</strong>
+    <strong>Web Admin</strong> 目前仅支持 <span class="code">factory_super_admin</span>（工厂管理员）登录。其余角色（调度员、仓储主管、车间主管）通过 <strong>Mobile App</strong> 操作。这是因为现场操作人员通常使用手机或平板完成工作，Web Admin 侧重于管理和数据分析。
+  </div>
+</div>
+
+<!-- 1.4 Initial Setup Flow -->
+<h3>1.4 系统初始化顺序</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-auto">FLOW</span>
+    <span class="card-title">首次使用配置流程（建议按顺序完成）</span>
+  </div>
+  <p style="color:#64748b; margin-bottom: 16px;">
+    一个全新的工厂接入系统后，建议按以下顺序完成基础数据配置：
+  </p>
+  <div class="flow-row">
+    <div class="flow-box active">1. 员工管理</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">2. 客户管理</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">3. 原料类型</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">4. 产品模板</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">5. BOM 配方</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">6. SKU 组装</div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-box">7. 原料入库</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">8. 排产计划</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">9. 现场报工</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">10. 质检</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">11. 成品出库</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">12. 报表分析</div>
+  </div>
+  <div class="info-box tip">
+    <strong>提示：步骤 1-6 是必要的前置配置</strong>
+    没有完成这些基础配置，后续的排产计划和报工操作将无法进行。本手册第一部分详细讲解步骤 1-6，第二部分讲解步骤 7-12。
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION 2: EMPLOYEE MANAGEMENT                                -->
+<!-- ============================================================ -->
+<div id="section2" class="section-anchor"></div>
+<h2 class="section-title">
+  <span class="section-num">2</span>
+  员工管理与工牌生成 (Employee Management & Badge)
+</h2>
+
+<!-- 2.1 Create Employee -->
+<h3>2.1 创建员工账号</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">新增员工</span>
+  </div>
+
+  <div class="menu-path">
+    系统管理 <span class="sep">&rsaquo;</span> 员工管理 <span class="sep">&rsaquo;</span> 点击「新增」按钮
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">使用 factory_admin1 登录 Web Admin</div>
+        <div class="step-detail">地址：<span class="code">http://139.196.165.140:8086</span>，用户名 <span class="code">factory_admin1</span>，密码 <span class="code">123456</span></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">点击左侧菜单「系统管理」，展开后点击「员工管理」</div>
+        <div class="step-detail">进入员工列表页面，可以看到当前工厂所有员工。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">点击列表上方的「新增」按钮</div>
+        <div class="step-detail">弹出新增员工对话框。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">填写员工信息（详见下方字段说明表）</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-action">点击「确定」提交</div>
+        <div class="step-detail">提交后员工账号立即生效，员工可以使用设置的用户名和密码登录 App。</div>
+      </div>
+    </div>
+  </div>
+
+  <h4>字段说明</h4>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>字段名</th>
+          <th>英文标识</th>
+          <th>必填</th>
+          <th>示例</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>用户名</strong></td>
+          <td><span class="code">username</span></td>
+          <td class="required">必填</td>
+          <td>zhangsan01</td>
+          <td>登录账号，仅支持英文字母、数字和下划线。在同一工厂内不能重复。这是员工登录 App 或 Web 时输入的账号。</td>
+        </tr>
+        <tr>
+          <td><strong>密码</strong></td>
+          <td><span class="code">password</span></td>
+          <td class="required">必填</td>
+          <td>123456</td>
+          <td>初始登录密码。建议首次设置简单密码，通知员工登录后自行修改。最少 6 位。</td>
+        </tr>
+        <tr>
+          <td><strong>姓名</strong></td>
+          <td><span class="code">fullName</span></td>
+          <td class="required">必填</td>
+          <td>张三</td>
+          <td>员工真实姓名，用于系统内显示和打印工牌。支持中文。</td>
+        </tr>
+        <tr>
+          <td><strong>工号</strong></td>
+          <td><span class="code">employeeCode</span></td>
+          <td class="required">必填</td>
+          <td>EMP-001</td>
+          <td>
+            员工唯一编号。<strong>这个编号会打印在工牌二维码上</strong>，用于扫码签到签退、报工身份识别。
+            建议使用统一编号规则，如 <span class="code">EMP-001</span>、<span class="code">EMP-002</span>。
+            同一工厂内不可重复。
+          </td>
+        </tr>
+        <tr>
+          <td><strong>角色</strong></td>
+          <td><span class="code">role</span></td>
+          <td class="required">必填</td>
+          <td>workshop_supervisor</td>
+          <td>
+            决定员工的功能权限，从下拉列表选择。详见下方角色说明。
+          </td>
+        </tr>
+        <tr>
+          <td><strong>手机号</strong></td>
+          <td><span class="code">phone</span></td>
+          <td class="optional">选填</td>
+          <td>13800138000</td>
+          <td>员工联系电话，用于后续短信通知（如排产提醒）。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>角色代码说明</h4>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>角色代码</th>
+          <th>中文名称</th>
+          <th>可用端</th>
+          <th>典型职责</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="code">factory_super_admin</span></td>
+          <td>工厂超级管理员</td>
+          <td>Web Admin + App</td>
+          <td>工厂老板或厂长，拥有全部权限。管理员工、客户、产品配置，查看报表和 AI 分析。</td>
+        </tr>
+        <tr>
+          <td><span class="code">workshop_supervisor</span></td>
+          <td>车间主管</td>
+          <td>App</td>
+          <td>车间现场负责人。管理本班组员工签到、监控报工数据、确认原料消耗。</td>
+        </tr>
+        <tr>
+          <td><span class="code">warehouse_manager</span></td>
+          <td>仓储主管</td>
+          <td>App</td>
+          <td>仓库负责人。操作原料入库、成品出库、库存查询、调拨审批、查看移动平均价。</td>
+        </tr>
+        <tr>
+          <td><span class="code">dispatcher</span></td>
+          <td>调度员</td>
+          <td>App</td>
+          <td>生产排程。创建排产计划、分配工序任务到产线、跟踪计划完成进度。</td>
+        </tr>
+        <tr>
+          <td><span class="code">quality_inspector</span></td>
+          <td>质检员</td>
+          <td>App</td>
+          <td>品控人员。执行来料检验、成品抽检、记录不合格项。</td>
+        </tr>
+        <tr>
+          <td><span class="code">hr_admin</span></td>
+          <td>HR 管理员</td>
+          <td>App</td>
+          <td>人事管理。查看员工考勤记录、管理工时统计。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-box warning">
+    <strong>注意：工号 (employeeCode) 设置后请勿随意修改</strong>
+    工号会编码到工牌二维码中。如果修改了工号，之前打印的工牌将失效，需要重新打印。建议在创建时就使用明确的编号规则。
+  </div>
+</div>
+
+<!-- 2.2 Badge Generation -->
+<h3>2.2 员工工牌生成</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="badge badge-auto">新功能</span>
+    <span class="card-title">生成并打印员工工牌</span>
+  </div>
+
+  <div class="menu-path">
+    系统管理 <span class="sep">&rsaquo;</span> 员工工牌生成
+  </div>
+
+  <p style="color:#64748b; margin-bottom: 14px;">
+    工牌包含员工姓名、工号和二维码。车间主管扫描工牌二维码即可快速识别员工身份（用于签到签退、报工等场景）。
+  </p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入「系统管理 &rsaquo; 员工工牌生成」页面</div>
+        <div class="step-detail">页面会显示当前工厂所有已启用的员工列表。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">勾选需要生成工牌的员工</div>
+        <div class="step-detail">可以全选，也可以只勾选特定员工。支持按姓名或工号搜索筛选。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">点击「生成工牌」按钮</div>
+        <div class="step-detail">系统根据每位员工的 <span class="code">employeeCode</span>（工号）自动生成对应的二维码。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">预览工牌卡片</div>
+        <div class="step-detail">
+          每张工牌标准尺寸为 <strong>85mm x 54mm</strong>（与标准名片尺寸相同）。
+          工牌内容包括：公司名称、员工姓名、工号、二维码。
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-action">点击「打印」</div>
+        <div class="step-detail">使用浏览器打印功能 (Ctrl+P) 输出。建议使用卡片纸打印，裁切后装入工牌套。</div>
+      </div>
+    </div>
+  </div>
+
+  <h4>二维码扫描原理</h4>
+  <div class="info-box info">
+    <strong>扫码流程说明</strong>
+    <ol style="margin-top: 8px; padding-left: 20px;">
+      <li>工牌上的二维码内容 = 员工的 <span class="code">employeeCode</span> 字符串（例如 <span class="code">EMP-001</span>）</li>
+      <li>车间主管或管理员在 App 中打开扫码功能，对准工牌扫描</li>
+      <li>App 读取到 <span class="code">EMP-001</span>，调用后端 API 查询该工号对应的员工信息</li>
+      <li>系统返回员工姓名、角色等信息，完成身份识别</li>
+    </ol>
+    <p style="margin-top: 8px;">因此，<strong>工号 (employeeCode) 是整个扫码体系的核心标识</strong>，必须保证唯一且稳定。</p>
+  </div>
+
+  <div class="info-box tip">
+    <strong>打印建议</strong>
+    推荐使用 250g 以上的铜版纸或卡片纸打印工牌。如果有证卡打印机（如 Magicard / Evolis），可以直接打印为 PVC 卡片。普通 A4 纸打印后裁切也可以临时使用。
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION 3: CUSTOMER MANAGEMENT                                -->
+<!-- ============================================================ -->
+<div id="section3" class="section-anchor"></div>
+<h2 class="section-title">
+  <span class="section-num">3</span>
+  客户管理 (Customer Management)
+</h2>
+
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">客户管理概述</span>
+  </div>
+  <p style="color:#64748b;">
+    客户信息是后续创建 SKU（客户专属产品）、销售订单、出货单的基础。系统支持两种方式录入客户：<strong>Excel 批量导入</strong>和<strong>手动逐条创建</strong>。
+  </p>
+</div>
+
+<!-- 3.1 Excel Import -->
+<h3>3.1 Excel 批量导入客户</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">从 Excel 导入客户</span>
+  </div>
+
+  <div class="menu-path">
+    销售 <span class="sep">&rsaquo;</span> 客户管理 <span class="sep">&rsaquo;</span> 点击「导入」按钮
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入客户管理页面</div>
+        <div class="step-detail">左侧菜单「销售」&rsaquo;「客户管理」，进入客户列表。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">下载导入模板</div>
+        <div class="step-detail">点击「导入」按钮旁的「下载模板」链接，获取 Excel 模板文件。模板中包含所有可填字段的列标题和示例数据。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">在 Excel 中填写客户数据</div>
+        <div class="step-detail">按模板格式填写，每行一个客户。<strong>必填字段</strong>见下方表格。建议先填几条测试数据，确认导入无误后再批量填写。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">上传 Excel 文件</div>
+        <div class="step-detail">点击「导入」&rsaquo; 选择填好的 Excel 文件 &rsaquo; 系统自动解析并显示预览。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-action">确认导入</div>
+        <div class="step-detail">检查预览数据无误后，点击「确认导入」。系统会逐行校验并给出导入结果（成功数、失败数及失败原因）。</div>
+      </div>
+    </div>
+  </div>
+
+  <h4>字段说明</h4>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>字段名</th>
+          <th>英文标识</th>
+          <th>必填</th>
+          <th>示例</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>客户编号</strong></td>
+          <td><span class="code">code</span></td>
+          <td class="required">必填</td>
+          <td>HT</td>
+          <td>客户唯一编号代码，在工厂内不可重复。建议使用客户简称缩写，如「汇庭」=「HT」、「盒马」=「HM」。用于生成 SKU 编码时作为前缀。</td>
+        </tr>
+        <tr>
+          <td><strong>客户简称</strong></td>
+          <td><span class="code">name</span></td>
+          <td class="required">必填</td>
+          <td>汇庭餐饮</td>
+          <td>客户显示名称，出现在系统的各个下拉选择、报表中。建议简洁明了。</td>
+        </tr>
+        <tr>
+          <td><strong>等级/类型</strong></td>
+          <td><span class="code">type</span></td>
+          <td class="optional">选填</td>
+          <td>A</td>
+          <td>客户等级分类。可自定义，如 A/B/C 或 VIP/普通。用于后续按等级筛选和分析。</td>
+        </tr>
+        <tr>
+          <td><strong>状态</strong></td>
+          <td><span class="code">status</span></td>
+          <td class="optional">选填</td>
+          <td>active</td>
+          <td>客户状态。默认为 active（活跃）。可选值：active（活跃）、inactive（停用）。</td>
+        </tr>
+        <tr>
+          <td><strong>联系人</strong></td>
+          <td><span class="code">contactPerson</span></td>
+          <td class="optional">选填</td>
+          <td>李经理</td>
+          <td>客户方主要联系人姓名。</td>
+        </tr>
+        <tr>
+          <td><strong>电话</strong></td>
+          <td><span class="code">phone</span></td>
+          <td class="optional">选填</td>
+          <td>021-88888888</td>
+          <td>联系电话，座机或手机均可。</td>
+        </tr>
+        <tr>
+          <td><strong>地址</strong></td>
+          <td><span class="code">address</span></td>
+          <td class="optional">选填</td>
+          <td>上海市浦东新区XX路100号</td>
+          <td>客户收货地址或办公地址，用于出货单打印。</td>
+        </tr>
+        <tr>
+          <td><strong>结算模式</strong></td>
+          <td><span class="code">settlementMode</span></td>
+          <td class="optional">选填</td>
+          <td>月结30天</td>
+          <td>与客户约定的付款方式，如「月结30天」「货到付款」「预付」。用于财务对账参考。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-box warning">
+    <strong>Excel 导入注意事项</strong>
+    <ul style="margin-top: 6px; padding-left: 20px;">
+      <li>文件格式必须是 <span class="code">.xlsx</span>（不支持 <span class="code">.xls</span> 旧格式）</li>
+      <li>第一行为标题行，不要删除或修改模板的标题行</li>
+      <li>客户编号 (code) 重复的行会被跳过并标记为失败</li>
+      <li>建议单次导入不超过 500 条，避免超时</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 3.2 Manual Creation -->
+<h3>3.2 手动创建客户</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">逐条新增客户</span>
+  </div>
+
+  <div class="menu-path">
+    销售 <span class="sep">&rsaquo;</span> 客户管理 <span class="sep">&rsaquo;</span> 点击「新增」按钮
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">在客户管理页面点击「新增」按钮</div>
+        <div class="step-detail">弹出新增客户对话框。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">填写客户编号 (code) 和客户简称 (name)</div>
+        <div class="step-detail">这两个是必填字段。编号建议用简短的英文缩写（如 HT、HM），名称用中文简称。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">根据需要填写其余选填字段</div>
+        <div class="step-detail">联系人、电话、地址、等级、结算模式等。选填字段可以后续再补充。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">点击「确定」保存</div>
+        <div class="step-detail">保存成功后，客户出现在列表中。系统自动生成唯一的内部 ID（格式为 <span class="code">CUS-xxx</span>），但日常使用中主要以客户编号 (code) 作为标识。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box tip">
+    <strong>客户编号的重要性</strong>
+    客户编号 (code) 会在后续多个场景中使用：
+    <ul style="margin-top: 6px; padding-left: 20px;">
+      <li><strong>SKU 编码</strong> — 组装 SKU 时，系统生成格式为 <span class="code">CP-{客户编号}-{产品编码}</span> 的编码，如 <span class="code">CP-HT-YYQ</span></li>
+      <li><strong>销售订单</strong> — 下单时选择客户</li>
+      <li><strong>出货单</strong> — 出库时关联客户和收货地址</li>
+      <li><strong>报表分析</strong> — 按客户维度分析销量和利润</li>
+    </ul>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION 4: RAW MATERIAL TYPE MANAGEMENT                       -->
+<!-- ============================================================ -->
+<div id="section4" class="section-anchor"></div>
+<h2 class="section-title">
+  <span class="section-num">4</span>
+  原料类型管理 (Raw Material Type Management)
+</h2>
+
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">原料类型概述</span>
+  </div>
+  <p style="color:#64748b;">
+    「原料类型」定义了工厂使用的所有原材料品种。注意这是<strong>类型定义</strong>（比如「带鱼」「墨鱼」「食盐」），不是具体的库存批次。每种原料类型只需创建一次，后续入库时选择对应的类型即可。
+  </p>
+</div>
+
+<h3>4.1 创建原料类型</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">新增原料类型</span>
+  </div>
+
+  <div class="menu-path">
+    库存管理 <span class="sep">&rsaquo;</span> 原料管理 <span class="sep">&rsaquo;</span> 点击「新增」按钮
+  </div>
+  <p style="color:#94a3b8; font-size: 13px; margin-top: -4px; margin-bottom: 12px;">
+    也可通过：系统管理 &rsaquo; 原料类型 进入（两个入口指向同一功能）
+  </p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入原料管理页面</div>
+        <div class="step-detail">左侧菜单「库存管理」&rsaquo;「原料管理」，查看已有原料类型列表。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">点击「新增」按钮</div>
+        <div class="step-detail">弹出新增原料类型对话框。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">填写原料信息（详见下方字段说明表）</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">点击「确定」保存</div>
+        <div class="step-detail">保存后该原料类型可在 BOM 配方、入库操作中被选择。</div>
+      </div>
+    </div>
+  </div>
+
+  <h4>字段说明</h4>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>字段名</th>
+          <th>英文标识</th>
+          <th>必填</th>
+          <th>示例</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>编码</strong></td>
+          <td><span class="code">code</span></td>
+          <td class="required">必填</td>
+          <td>DY</td>
+          <td>原料唯一编码。在同一工厂内不可重复。建议使用拼音缩写，如「带鱼」= DY、「墨鱼」= MY、「食盐」= SY。后续入库和报工中都会用到此编码。</td>
+        </tr>
+        <tr>
+          <td><strong>名称</strong></td>
+          <td><span class="code">name</span></td>
+          <td class="required">必填</td>
+          <td>带鱼</td>
+          <td>原料显示名称。出现在系统的各个选择列表、库存报表中。</td>
+        </tr>
+        <tr>
+          <td><strong>单位</strong></td>
+          <td><span class="code">unit</span></td>
+          <td class="required">必填</td>
+          <td>kg</td>
+          <td>
+            计量单位。入库、消耗、报表都使用此单位。常用选项：
+            <span class="code">kg</span>（千克）、
+            <span class="code">g</span>（克）、
+            <span class="code">L</span>（升）、
+            <span class="code">个</span>、
+            <span class="code">包</span>、
+            <span class="code">箱</span>。
+            <strong>设定后不建议修改</strong>，否则会导致历史数据单位混乱。
+          </td>
+        </tr>
+        <tr>
+          <td><strong>分类</strong></td>
+          <td><span class="code">category</span></td>
+          <td class="optional">选填</td>
+          <td>海产</td>
+          <td>
+            原料分类，用于分组筛选。常见分类：海产、肉类、蔬菜、调味品、包辅材、添加剂。
+            可以自定义分类名称。
+          </td>
+        </tr>
+        <tr>
+          <td><strong>存储方式</strong></td>
+          <td><span class="code">storageType</span></td>
+          <td class="optional">选填</td>
+          <td>frozen</td>
+          <td>
+            存储条件要求。可选值：
+            <span class="code">frozen</span>（冷冻 -18&#176;C 以下）、
+            <span class="code">fresh</span>（冷藏 0-4&#176;C）、
+            <span class="code">dry</span>（常温干燥）。
+            用于仓储管理提醒和库位分配参考。
+          </td>
+        </tr>
+        <tr>
+          <td><strong>保质期天数</strong></td>
+          <td><span class="code">shelfLifeDays</span></td>
+          <td class="optional">选填</td>
+          <td>180</td>
+          <td>
+            该原料从入库日算起的保质期天数。系统用此数据计算批次的到期日期，支持 <strong>FEFO</strong>（First Expire, First Out / 先到期先出）策略。
+            例如冷冻海产保质期 180 天，调味品可能 365 天。
+          </td>
+        </tr>
+        <tr>
+          <td><strong>库存预警值</strong></td>
+          <td><span class="code">minStock</span></td>
+          <td class="optional">选填</td>
+          <td>50</td>
+          <td>
+            当该原料的库存总量低于此值时，系统自动触发低库存预警。
+            单位与上方「单位」字段一致。
+            例如设为 50，表示库存低于 50kg 时会在首页提醒。
+          </td>
+        </tr>
+        <tr>
+          <td><strong>参考单价</strong></td>
+          <td><span class="code">unitPrice</span></td>
+          <td class="optional">选填</td>
+          <td>28.00</td>
+          <td>
+            初始参考价格（元/单位）。实际每批入库时会填写真实采购价，系统自动计算<strong>移动平均价</strong> (Moving Average Price)。
+            此字段仅作为新原料的初始参考值。
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>典型原料示例</h4>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>编码</th>
+          <th>名称</th>
+          <th>单位</th>
+          <th>分类</th>
+          <th>存储</th>
+          <th>保质期</th>
+          <th>预警值</th>
+          <th>参考单价</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="code">DY</span></td><td>带鱼</td><td>kg</td><td>海产</td><td>frozen</td><td>180天</td><td>100</td><td>15.00</td>
+        </tr>
+        <tr>
+          <td><span class="code">MY</span></td><td>墨鱼</td><td>kg</td><td>海产</td><td>frozen</td><td>180天</td><td>80</td><td>22.00</td>
+        </tr>
+        <tr>
+          <td><span class="code">SY</span></td><td>食盐</td><td>kg</td><td>调味品</td><td>dry</td><td>730天</td><td>20</td><td>3.00</td>
+        </tr>
+        <tr>
+          <td><span class="code">DF</span></td><td>淀粉</td><td>kg</td><td>辅料</td><td>dry</td><td>365天</td><td>30</td><td>5.50</td>
+        </tr>
+        <tr>
+          <td><span class="code">BZD</span></td><td>包装袋</td><td>个</td><td>包辅材</td><td>dry</td><td>—</td><td>500</td><td>0.30</td>
+        </tr>
+        <tr>
+          <td><span class="code">ZRY</span></td><td>植物油</td><td>L</td><td>调味品</td><td>dry</td><td>365天</td><td>50</td><td>12.00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-box info">
+    <strong>「原料类型」与「原料批次」的区别</strong>
+    <ul style="margin-top: 6px; padding-left: 20px;">
+      <li><strong>原料类型</strong>：定义这种原料「是什么」 — 名称、单位、保质期等属性。只需创建一次。</li>
+      <li><strong>原料批次</strong>：记录这种原料「来了多少」 — 每次入库产生一个批次，包含数量、批次号、采购价、到期日。一种原料类型可以有多个批次。</li>
+    </ul>
+    <p style="margin-top: 8px;">例如：「墨鱼」是一个原料类型，而「2026年3月25日从舟山渔业进了300kg墨鱼，批次号 MB-20260325-001」是一个原料批次。</p>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION 5: PRODUCT TEMPLATES + BOM                            -->
+<!-- ============================================================ -->
+<div id="section5" class="section-anchor"></div>
+<h2 class="section-title">
+  <span class="section-num">5</span>
+  产品模板与 BOM 配置 (Product Templates & BOM)
+</h2>
+
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-danger">CORE CONCEPT</span>
+    <span class="card-title">理解「模板」与「SKU」的关系</span>
+  </div>
+  <p style="color:#64748b; margin-bottom: 14px;">
+    在本系统中，产品分为两个层级：
+  </p>
+  <div class="flow-row">
+    <div class="flow-box active">产品模板 (Template)</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box" style="background:#dcfce7; border-color:#86efac; color:#166534;">SKU (客户专属产品)</div>
+  </div>
+  <ul style="margin-top: 14px; padding-left: 24px; color: #475569; line-height: 2;">
+    <li><strong>产品模板</strong>：定义产品的通用信息（名称、单位、配方 BOM）。不关联任何客户，不能直接用于排产。</li>
+    <li><strong>SKU</strong>：将模板 + 客户绑定，形成可销售、可排产的最终产品。一个模板可以组装出多个 SKU（分别给不同客户）。</li>
+  </ul>
+  <div class="info-box info" style="margin-top: 14px;">
+    <strong>为什么要分两层？</strong>
+    因为同一个产品（如「墨鱼圈」）可能同时供应多个客户（汇庭、盒马、叮咚），每个客户的规格可能略有不同。模板定义通用配方，SKU 继承模板配方并关联具体客户。
+  </div>
+</div>
+
+<!-- 5A: Create Product Template -->
+<h3>5.1 创建产品模板 (Part A)</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">新增产品模板</span>
+  </div>
+
+  <div class="menu-path">
+    系统管理 <span class="sep">&rsaquo;</span> 产品管理 <span class="sep">&rsaquo;</span> 点击「新增产品」按钮
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入「系统管理 &rsaquo; 产品管理」页面</div>
+        <div class="step-detail">显示当前工厂所有产品列表（模板 + SKU 混合显示）。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">点击「新增产品」按钮</div>
+        <div class="step-detail">弹出新增产品对话框。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">填写产品信息（详见下方字段表）</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">「关联客户」字段留空！</div>
+        <div class="step-detail">
+          <strong style="color:#DC2626;">非常重要</strong>：创建模板时，「关联客户」字段必须留空。
+          如果选了客户，创建出来的就不是模板而是直接变成 SKU，将无法再复用给其他客户。
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-action">点击「确定」保存</div>
+        <div class="step-detail">保存后产品模板创建完成。接下来需要为模板配置 BOM 配方（见 5.2 节）。</div>
+      </div>
+    </div>
+  </div>
+
+  <h4>字段说明</h4>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>字段名</th>
+          <th>英文标识</th>
+          <th>必填</th>
+          <th>示例</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>产品编码</strong></td>
+          <td><span class="code">code</span></td>
+          <td class="required">必填</td>
+          <td>YYQ</td>
+          <td>产品唯一编码。同一工厂内不可重复。建议用拼音缩写，如「墨鱼圈」= YYQ、「鱼丸」= YW、「鱼排」= YP。此编码会在组装 SKU 时被引用。</td>
+        </tr>
+        <tr>
+          <td><strong>产品名称</strong></td>
+          <td><span class="code">name</span></td>
+          <td class="required">必填</td>
+          <td>墨鱼圈</td>
+          <td>产品显示名称。出现在排产计划、生产报告、出库单等各处。</td>
+        </tr>
+        <tr>
+          <td><strong>单位</strong></td>
+          <td><span class="code">unit</span></td>
+          <td class="required">必填</td>
+          <td>kg</td>
+          <td>生产单位。排产计划中的目标数量、报工的实际产量都使用此单位。常用：<span class="code">kg</span>、<span class="code">个</span>、<span class="code">箱</span>。</td>
+        </tr>
+        <tr>
+          <td><strong>产品大类</strong></td>
+          <td><span class="code">productCategory</span></td>
+          <td class="optional">选填</td>
+          <td>FINISHED_PRODUCT</td>
+          <td>
+            产品分类。可选值：
+            <ul style="margin: 4px 0; padding-left: 16px; font-size: 13px;">
+              <li><span class="code">FINISHED_PRODUCT</span> — 成品（最常用，如墨鱼圈、鱼丸）</li>
+              <li><span class="code">RAW_MATERIAL</span> — 原料（特殊场景，原料作为产品出售）</li>
+              <li><span class="code">PACKAGING</span> — 包辅材</li>
+              <li><span class="code">SEASONING</span> — 调味品</li>
+              <li><span class="code">CUSTOMER_PROVIDED</span> — 客户自带料</li>
+            </ul>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>规格</strong></td>
+          <td><span class="code">specification</span></td>
+          <td class="optional">选填</td>
+          <td>500g/袋</td>
+          <td>包装规格说明。例如「500g/袋」「1kg/箱」「20个/盒」。用于出货单和标签打印。</td>
+        </tr>
+        <tr>
+          <td><strong>温区</strong></td>
+          <td><span class="code">temperatureZone</span></td>
+          <td class="optional">选填</td>
+          <td>冷冻</td>
+          <td>
+            产品存储温区。下拉选择：
+            <ul style="margin: 4px 0; padding-left: 16px; font-size: 13px;">
+              <li><span class="code" style="background:#FEF3C7; color:#92400E;">常温</span> — 常温存储</li>
+              <li><span class="code" style="background:#DBEAFE; color:#1E40AF;">冷藏</span> — 0-4°C 冷藏</li>
+              <li><span class="code" style="background:#E0E7FF; color:#3730A3;">冷冻</span> — -18°C 以下冷冻</li>
+            </ul>
+            列表中以彩色标签形式显示，方便快速区分。
+          </td>
+        </tr>
+        <tr>
+          <td><strong>关联客户</strong></td>
+          <td><span class="code">customerId</span></td>
+          <td style="color:#DC2626; font-weight:700;">不要填！</td>
+          <td>—</td>
+          <td style="color:#DC2626;">创建模板时此字段<strong>必须留空</strong>。填了客户就变成 SKU 而非模板。SKU 组装操作见第 6 节。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-box tip">
+    <strong>产品编码自动生成规则</strong>
+    「产品编码」字段留空时，系统会自动生成编码。规则为：<span class="code">CP</span> + 客户名称首字母拼音 + 4 位序号。<br>
+    例如：客户「叮咚」→ <span class="code">CPDD0001</span>；客户「汇庭商贸」→ <span class="code">CPHT0001</span>。<br>
+    手动输入编码时以手动值为准，自动生成仅在留空时触发。
+  </div>
+
+  <div class="info-box tip">
+    <strong>关联客户字段改进</strong>
+    「关联客户」字段已升级为下拉选择框，从客户列表中选择（支持搜索过滤）。也可手动输入新客户名称。创建模板时仍然<strong>不要选择客户</strong>。
+  </div>
+
+  <div class="info-box danger">
+    <strong>常见错误：创建模板时误填了客户</strong>
+    如果在「新增产品」时选择了客户，系统会将其视为 SKU 而非模板。此时该产品只能供这一个客户使用，无法再作为模板组装给其他客户。<br>
+    <strong>解决方法</strong>：删除误创建的产品，重新创建时留空「关联客户」。
+  </div>
+</div>
+
+<!-- 5B: BOM Configuration -->
+<h3>5.2 配置 BOM 转换率 (Part B)</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="badge badge-danger">CORE</span>
+    <span class="card-title">设置产品配方（BOM 转换率）</span>
+  </div>
+
+  <div class="menu-path">
+    生产管理 <span class="sep">&rsaquo;</span> BOM <span class="sep">&rsaquo;</span> 转换率 Tab <span class="sep">&rsaquo;</span> 点击「新建」按钮
+  </div>
+
+  <p style="color:#64748b; margin-bottom: 14px;">
+    BOM (Bill of Materials / 物料清单) 定义了生产一种产品需要消耗哪些原料，以及每种原料的用量比例。这是整个生产管理的核心数据，直接影响：排产计划的原料需求计算、BOM 达成率分析、SKU 成本核算。
+  </p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入「生产管理 &rsaquo; BOM」页面</div>
+        <div class="step-detail">页面顶部有多个 Tab，点击「转换率」Tab。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">点击「新建」按钮</div>
+        <div class="step-detail">弹出新建 BOM 转换率对话框。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">选择产品和原料</div>
+        <div class="step-detail">从「产品」下拉框选择目标产品（如墨鱼圈），从「原料」下拉框选择原料（如墨鱼）。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">填写转换率和损耗率</div>
+        <div class="step-detail">详见下方字段说明和计算公式。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-action">点击「确定」保存</div>
+        <div class="step-detail">保存后，该产品的 BOM 中增加了一条原料关系。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <div class="step-action">重复步骤 2-5，为该产品添加所有需要的原料</div>
+        <div class="step-detail">例如墨鱼圈需要：墨鱼、食盐、淀粉、包装袋，共需创建 4 条转换率记录。</div>
+      </div>
+    </div>
+  </div>
+
+  <h4>字段说明</h4>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>字段名</th>
+          <th>英文标识</th>
+          <th>必填</th>
+          <th>示例</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>产品</strong></td>
+          <td><span class="code">productTypeId</span></td>
+          <td class="required">必填</td>
+          <td>墨鱼圈</td>
+          <td>从下拉列表中选择要配置配方的产品。显示产品名称和编码。</td>
+        </tr>
+        <tr>
+          <td><strong>原料</strong></td>
+          <td><span class="code">materialTypeId</span></td>
+          <td class="required">必填</td>
+          <td>墨鱼</td>
+          <td>从下拉列表中选择该产品使用的原料。显示原料名称和编码。</td>
+        </tr>
+        <tr>
+          <td><strong>转换率</strong></td>
+          <td><span class="code">conversionRate</span></td>
+          <td class="required">必填</td>
+          <td>0.80</td>
+          <td>
+            <strong>核心字段</strong>。含义：<strong>1 单位原料可以转换为多少单位产品</strong>。<br>
+            例如 0.80 表示 1kg 墨鱼可以生产出 0.80kg 墨鱼圈。<br>
+            例如 50.0 表示 1kg 食盐可以用于生产 50kg 产品（用量很小的辅料）。
+          </td>
+        </tr>
+        <tr>
+          <td><strong>损耗率 (%)</strong></td>
+          <td><span class="code">wastageRate</span></td>
+          <td class="optional">选填</td>
+          <td>5.00</td>
+          <td>
+            生产过程中的正常损耗百分比。例如 5.00 表示 5% 的原料在加工过程中会损失（边角料、蒸发等）。
+            用于计算实际需要的原料量。默认为 0（无损耗）。
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>计算公式详解</h4>
+  <div class="formula-box">
+    <strong>核心公式（系统内部计算逻辑）：</strong>
+
+    <p style="margin-top: 12px;"><strong>1. 标准用量（不含损耗）</strong></p>
+    <div class="formula">standardUsage = 1 / conversionRate</div>
+    <p class="example">例：转换率 0.80 &rarr; 标准用量 = 1/0.80 = <strong>1.25</strong>（生产 1kg 产品需要 1.25kg 原料）</p>
+
+    <p style="margin-top: 12px;"><strong>2. 实际用量（含损耗）</strong></p>
+    <div class="formula">actualUsage = standardUsage &times; (1 + wastageRate/100)</div>
+    <p class="example">例：损耗率 5% &rarr; 实际用量 = 1.25 &times; 1.05 = <strong>1.3125</strong></p>
+
+    <p style="margin-top: 12px;"><strong>3. 排产需求量</strong></p>
+    <div class="formula">requiredAmount = plannedQuantity &times; actualUsage</div>
+    <p class="example">例：计划生产 200kg 墨鱼圈 &rarr; 需要 200 &times; 1.3125 = <strong>262.5kg</strong> 墨鱼</p>
+  </div>
+
+  <h4>完整 BOM 示例：墨鱼圈</h4>
+  <p style="color:#64748b; margin-bottom: 10px;">
+    以下为「墨鱼圈」产品的完整 BOM 配方。每一行对应一条转换率记录，需要逐条在系统中创建。
+  </p>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>原料</th>
+          <th>编码</th>
+          <th>转换率</th>
+          <th>损耗率</th>
+          <th>含义</th>
+          <th>生产200kg产品需要</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>墨鱼</strong></td>
+          <td><span class="code">MY</span></td>
+          <td>0.80</td>
+          <td>5%</td>
+          <td>1kg 墨鱼 &rarr; 0.80kg 产品（主料）</td>
+          <td>200 &times; (1/0.80) &times; 1.05 = <strong>262.5 kg</strong></td>
+        </tr>
+        <tr>
+          <td><strong>食盐</strong></td>
+          <td><span class="code">SY</span></td>
+          <td>50.0</td>
+          <td>0%</td>
+          <td>1kg 食盐 &rarr; 50kg 产品（用量少）</td>
+          <td>200 &times; (1/50.0) &times; 1.00 = <strong>4.0 kg</strong></td>
+        </tr>
+        <tr>
+          <td><strong>淀粉</strong></td>
+          <td><span class="code">DF</span></td>
+          <td>12.5</td>
+          <td>2%</td>
+          <td>1kg 淀粉 &rarr; 12.5kg 产品</td>
+          <td>200 &times; (1/12.5) &times; 1.02 = <strong>16.32 kg</strong></td>
+        </tr>
+        <tr>
+          <td><strong>包装袋</strong></td>
+          <td><span class="code">BZD</span></td>
+          <td>0.5</td>
+          <td>3%</td>
+          <td>1 个包装袋 &rarr; 装 0.5kg 产品</td>
+          <td>200 &times; (1/0.5) &times; 1.03 = <strong>412 个</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-box warning">
+    <strong>转换率设置常见误区</strong>
+    <ul style="margin-top: 6px; padding-left: 20px;">
+      <li><strong>不要把转换率搞反</strong>：转换率是「1 单位原料产出多少产品」，不是「1 单位产品需要多少原料」。如果 1kg 墨鱼产出 0.8kg 产品，转换率填 <strong>0.80</strong>，不是 1.25。</li>
+      <li><strong>辅料的转换率通常很大</strong>：比如食盐，1kg 盐够做 50kg 产品，转换率就是 50.0。</li>
+      <li><strong>包装材料注意单位</strong>：如果包装袋单位是「个」，1 个袋子装 0.5kg 产品，转换率就是 0.5。</li>
+      <li><strong>损耗率设太高会导致原料需求虚高</strong>：正常生产损耗一般在 2%-10%，超过 15% 建议复核。</li>
+    </ul>
+  </div>
+
+  <div class="info-box tip">
+    <strong>小技巧：如何验证 BOM 是否正确</strong>
+    <ol style="margin-top: 6px; padding-left: 20px;">
+      <li>在 Web Admin 的 BOM 页面，找到刚配置的产品</li>
+      <li>查看系统自动计算的「标准用量」列，确认数值合理</li>
+      <li>心算验证：如果计划生产 100kg，需要的原料量是否符合实际经验</li>
+      <li>如有偏差，直接编辑转换率修正</li>
+    </ol>
+  </div>
+
+  <h4>BOM 成本与分类增强</h4>
+  <div class="info-box tip">
+    <strong>含税单价标注</strong>
+    BOM 中的单价字段标注为「单价（含税）」，明确为含税采购价格。可配置增值税率（如 13%），系统自动计算不含税成本。
+  </div>
+  <div class="info-box tip">
+    <strong>每份成本换算</strong>
+    系统同时显示 <strong>元/kg</strong> 和 <strong>元/份</strong> 两种成本维度。标准份量可在产品设置中配置（默认 0.5kg），用于计算每份原料成本，方便与零售定价对比。
+  </div>
+  <div class="info-box tip">
+    <strong>物料分类标签</strong>
+    BOM 物料按类型分组显示，每种物料前标注分类标签：<span class="code" style="background:#DBEAFE; color:#1E40AF;">原材料</span>、<span class="code" style="background:#FEF3C7; color:#92400E;">包材</span>、<span class="code" style="background:#D1FAE5; color:#065F46;">辅料</span>，便于快速识别配方构成。
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION 6: SKU ASSEMBLY + MATERIAL INBOUND                    -->
+<!-- ============================================================ -->
+<div id="section6" class="section-anchor"></div>
+<h2 class="section-title">
+  <span class="section-num">6</span>
+  SKU 组装与原料入库 (SKU Assembly & Material Inbound)
+</h2>
+
+<!-- 6A: SKU Assembly -->
+<h3>6.1 SKU 组装 — 「拼积木」(Part A)</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="badge badge-auto">CORE WORKFLOW</span>
+    <span class="card-title">将产品模板组装为客户专属 SKU</span>
+  </div>
+
+  <div class="menu-path">
+    系统管理 <span class="sep">&rsaquo;</span> 产品管理 <span class="sep">&rsaquo;</span> 点击「SKU 组装」按钮
+  </div>
+
+  <p style="color:#64748b; margin-bottom: 14px;">
+    SKU 组装是将<strong>产品模板</strong>和<strong>客户</strong>组合在一起，创建出一个可用于排产和销售的最终产品。这个过程类似于「拼积木」— 模板提供配方，客户提供归属，拼在一起就是 SKU。
+  </p>
+
+  <div class="flow-row">
+    <div class="flow-box">产品模板<br><small>墨鱼圈 (YYQ)</small></div>
+    <div class="flow-arrow" style="font-size:24px;">+</div>
+    <div class="flow-box">客户<br><small>汇庭 (HT)</small></div>
+    <div class="flow-arrow" style="font-size:24px;">=</div>
+    <div class="flow-box active">SKU<br><small>CP-HT-YYQ</small></div>
+  </div>
+
+  <div class="steps" style="margin-top: 20px;">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入「系统管理 &rsaquo; 产品管理」页面</div>
+        <div class="step-detail">显示产品列表。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">点击页面上方的「SKU 组装」按钮</div>
+        <div class="step-detail">弹出 SKU 组装对话框。这是一个分步向导界面。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">第一步：选择产品模板</div>
+        <div class="step-detail">
+          从「产品模板」下拉框中选择一个模板。只有<strong>未关联客户</strong>的产品才会出现在这个列表中。
+          选择后，页面下方会自动加载该模板的 BOM 配方预览。
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">第二步：选择客户</div>
+        <div class="step-detail">
+          从「客户」下拉框中选择这个 SKU 所属的客户。下拉列表显示客户简称和编号。
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-action">第三步：确认配方预览</div>
+        <div class="step-detail">
+          系统自动从模板加载 BOM 配方，显示所有原料及其转换率。请检查配方是否正确。
+          如果该客户的配方与标准模板有差异，可以在 SKU 创建后单独修改。
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <div class="step-action">点击「创建 SKU」按钮</div>
+        <div class="step-detail">
+          系统创建 SKU 并自动生成编码，格式为 <span class="code">CP-{客户编号}-{产品编码}</span>。
+          <br>例如：客户「汇庭」(HT) + 产品「墨鱼圈」(YYQ) = <span class="code">CP-HT-YYQ</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box danger">
+    <strong>重要：从此刻起，排产计划必须使用 SKU，不能使用模板</strong>
+    SKU 创建完成后，在创建排产计划时，应该选择 SKU（如 CP-HT-YYQ）而不是模板（如 YYQ）。模板仅用于定义配方和组装 SKU，不能直接参与生产排程。
+  </div>
+
+  <h4>AI 对话快捷方式</h4>
+  <div class="card" style="background: #f5f3ff; border-color: #c4b5fd;">
+    <div class="card-header" style="border-bottom-color: #ddd6fe;">
+      <span class="badge badge-ai">AI</span>
+      <span class="card-title">通过 AI 对话创建 SKU</span>
+    </div>
+    <p style="color:#64748b; margin-bottom: 10px;">
+      除了上述手动操作外，工厂管理员还可以通过 AI 对话快速创建 SKU：
+    </p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-action">在 App 的 AI 对话界面输入自然语言指令</div>
+          <div class="step-detail">
+            示例指令：
+            <div class="sub-steps" style="margin-top: 6px;">
+              <div class="sub-step"><span class="code">"给汇庭创建墨鱼圈SKU"</span></div>
+              <div class="sub-step"><span class="code">"为盒马组装鱼丸产品"</span></div>
+              <div class="sub-step"><span class="code">"创建叮咚的带鱼段SKU"</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-action">AI 自动匹配模板和客户并执行创建</div>
+          <div class="step-detail">系统识别意图后，自动查找对应的产品模板和客户，执行 SKU 组装操作。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-action">确认 AI 返回的创建结果</div>
+          <div class="step-detail">AI 会返回创建成功的 SKU 编码和配方概要，确认无误即可。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h4>SKU 组装结果示例</h4>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>产品模板</th>
+          <th>客户</th>
+          <th>生成的 SKU 编码</th>
+          <th>SKU 名称</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>墨鱼圈 (YYQ)</td>
+          <td>汇庭 (HT)</td>
+          <td><span class="code">CP-HT-YYQ</span></td>
+          <td>墨鱼圈 - 汇庭</td>
+        </tr>
+        <tr>
+          <td>墨鱼圈 (YYQ)</td>
+          <td>盒马 (HM)</td>
+          <td><span class="code">CP-HM-YYQ</span></td>
+          <td>墨鱼圈 - 盒马</td>
+        </tr>
+        <tr>
+          <td>鱼丸 (YW)</td>
+          <td>汇庭 (HT)</td>
+          <td><span class="code">CP-HT-YW</span></td>
+          <td>鱼丸 - 汇庭</td>
+        </tr>
+        <tr>
+          <td>带鱼段 (DYD)</td>
+          <td>叮咚 (DD)</td>
+          <td><span class="code">CP-DD-DYD</span></td>
+          <td>带鱼段 - 叮咚</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 6B: Raw Material Inbound -->
+<h3>6.2 原料入库 (Part B)</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-app">MOBILE APP</span>
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">原料到货入库操作</span>
+  </div>
+
+  <p style="color:#64748b; margin-bottom: 14px;">
+    当工厂采购的原料到货后，仓储主管需要在系统中进行入库登记。入库操作可以在 <strong>Mobile App</strong>（推荐，更方便）或 <strong>Web Admin</strong> 上完成。
+  </p>
+
+  <h4>Mobile App 入库操作</h4>
+  <div class="info-box info" style="margin-bottom: 14px;">
+    <strong>操作角色：</strong>仓储主管 (<span class="code">warehouse_mgr1</span> / 密码 <span class="code">123456</span>)<br>
+    <strong>操作入口：</strong>App 首页 &rsaquo; 「原料入库」卡片 或 底部导航「仓储」&rsaquo;「新增入库」
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">使用仓储主管账号登录 App</div>
+        <div class="step-detail">用户名 <span class="code">warehouse_mgr1</span>，密码 <span class="code">123456</span>。登录后进入仓储主管首页。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">点击「原料入库」</div>
+        <div class="step-detail">进入入库表单页面。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">选择原料类型</div>
+        <div class="step-detail">从下拉列表中选择本次入库的原料。列表显示第 4 节创建的所有原料类型（如「墨鱼」「带鱼」「食盐」）。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">填写入库数量</div>
+        <div class="step-detail">输入实际到货数量。单位由原料类型自动带入（如 kg）。必须为正数。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-action">填写单价</div>
+        <div class="step-detail">本批次的实际采购单价（元/单位）。系统会用此价格更新该原料的<strong>移动平均价</strong>。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <div class="step-action">填写到期日期</div>
+        <div class="step-detail">
+          该批原料的保质到期日。点击日期选择器选择日期。
+          系统使用此日期执行 <strong>FEFO</strong> (First Expire, First Out) 策略 — 生产时优先消耗最快到期的批次。
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">7</div>
+      <div class="step-content">
+        <div class="step-action">填写供应商（选填）</div>
+        <div class="step-detail">输入供应商名称，如「舟山渔业」「中盐集团」。用于后续供应商追溯和分析。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">8</div>
+      <div class="step-content">
+        <div class="step-action">提交入库</div>
+        <div class="step-detail">
+          点击「提交」按钮完成入库。系统自动执行以下操作：
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h4>入库字段一览</h4>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>字段名</th>
+          <th>英文标识</th>
+          <th>必填</th>
+          <th>示例</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>原料类型</strong></td>
+          <td><span class="code">materialTypeId</span></td>
+          <td class="required">必填</td>
+          <td>墨鱼</td>
+          <td>从已创建的原料类型列表中选择。显示原料名称和编码。</td>
+        </tr>
+        <tr>
+          <td><strong>批次号</strong></td>
+          <td><span class="code">batchNumber</span></td>
+          <td style="color:#EA580C; font-weight:600;">自动生成</td>
+          <td>MB-20260327-001</td>
+          <td>系统根据日期自动生成，格式为 <span class="code">MB-{YYYYMMDD}-{序号}</span>。每天序号从 001 递增。不需要手动填写。</td>
+        </tr>
+        <tr>
+          <td><strong>入库数量</strong></td>
+          <td><span class="code">quantity</span></td>
+          <td class="required">必填</td>
+          <td>300</td>
+          <td>本批次实际到货数量。单位由原料类型自动确定（如 kg、个）。</td>
+        </tr>
+        <tr>
+          <td><strong>单位</strong></td>
+          <td><span class="code">unit</span></td>
+          <td style="color:#EA580C; font-weight:600;">自动带入</td>
+          <td>kg</td>
+          <td>从原料类型自动带入，不需要手动选择。</td>
+        </tr>
+        <tr>
+          <td><strong>单价</strong></td>
+          <td><span class="code">unitPrice</span></td>
+          <td class="required">必填</td>
+          <td>28.00</td>
+          <td>本批次的采购单价（元/单位）。系统据此计算移动平均价和批次总金额。</td>
+        </tr>
+        <tr>
+          <td><strong>到期日期</strong></td>
+          <td><span class="code">expiryDate</span></td>
+          <td class="required">必填</td>
+          <td>2026-04-15</td>
+          <td>该批原料的保质到期日。用于 FEFO 出库排序和即将过期预警。</td>
+        </tr>
+        <tr>
+          <td><strong>供应商</strong></td>
+          <td><span class="code">supplier</span></td>
+          <td class="optional">选填</td>
+          <td>舟山渔业</td>
+          <td>原料供应商名称。用于供应商追溯和来源分析。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>入库后系统自动执行</h4>
+  <div class="card" style="background: #f0fdf4; border-color: #a7f3d0;">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num" style="background:#059669;">A</div>
+        <div class="step-content">
+          <div class="step-action">生成批次记录</div>
+          <div class="step-detail">系统创建一条原料批次记录，包含批次号、数量、单价、到期日等完整信息。该批次可在「库存查看」中追踪。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:#059669;">B</div>
+        <div class="step-content">
+          <div class="step-action">更新库存总量</div>
+          <div class="step-detail">该原料的库存总量自动增加入库数量。如果库存从低于预警值恢复到正常水平，低库存预警会自动解除。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:#059669;">C</div>
+        <div class="step-content">
+          <div class="step-action">更新移动平均价 (Moving Average Price)</div>
+          <div class="step-detail">
+            系统自动计算新的移动平均价：
+            <div class="formula-box" style="margin-top: 8px; background: #dcfce7; border-color: #86efac;">
+              <div class="formula" style="background: #bbf7d0; color: #166534;">
+                新均价 = (原库存量 &times; 原均价 + 入库量 &times; 入库单价) / (原库存量 + 入库量)
+              </div>
+              <p class="example">
+                例：原有库存 200kg @ 26元/kg，本次入库 300kg @ 28元/kg<br>
+                新均价 = (200&times;26 + 300&times;28) / (200+300) = (5200+8400) / 500 = <strong>27.2 元/kg</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box warning">
+    <strong>入库注意事项</strong>
+    <ul style="margin-top: 6px; padding-left: 20px;">
+      <li><strong>数量必须准确</strong>：入库数量直接影响库存余量。如果到货时需要质检扣减，应在质检后再填写实际合格数量入库。</li>
+      <li><strong>单价影响成本</strong>：入库单价用于计算移动平均价，进而影响 SKU 成本核算和毛利率分析。填写实际采购价，不要填含税价。</li>
+      <li><strong>到期日期很重要</strong>：填错到期日期会导致 FEFO 排序错乱。建议核对供应商提供的生产日期和保质期进行换算。</li>
+      <li><strong>同一天可以多次入库</strong>：不同供应商的同种原料、同一供应商的不同批次，都应分别入库登记。系统会生成不同的批次号（如 MB-20260327-001、MB-20260327-002）。</li>
+    </ul>
+  </div>
+
+  <div class="info-box tip">
+    <strong>入库完成后的检查</strong>
+    入库成功后，建议到 App 的「库存」页面确认：
+    <ol style="margin-top: 6px; padding-left: 20px;">
+      <li>该原料的库存总量是否正确增加</li>
+      <li>新批次是否出现在批次列表中</li>
+      <li>移动平均价是否合理更新</li>
+    </ol>
+    如果发现入库数据有误，联系工厂管理员在 Web Admin 中进行修正。
+  </div>
+</div>
+
+<!-- End of Section 6 -->
+
+<div class="card" style="text-align: center; margin-top: 40px; border-top: 4px solid #667eea;">
+  <h3 style="color: #667eea; margin: 0 0 10px;">第一部分完毕</h3>
+  <p style="color: #64748b;">
+    以上章节涵盖了系统初始化和基础数据配置的完整流程（含销售订单和供应商管理）。
+    <br>完成这些配置后，工厂即可进入生产运营阶段。
+  </p>
+  <p style="color: #94a3b8; font-size: 13px; margin-top: 12px;">
+    第二部分（第 7-12 节）涵盖：排产计划、工序报工、质检、仓储出库、AI 对话、报表分析。
+  </p>
+</div>
+
+</div> <!-- end .container -->
+
+<div class="container">
+
+<!-- ====================================================================== -->
+<!-- SECTION 6C: 销售订单管理                                                -->
+<!-- ====================================================================== -->
+<h2>六C、销售订单管理</h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员</span>
+  <span class="badge badge-web">Web Admin</span>
+</p>
+
+<div class="section-intro">
+  销售订单记录客户的采购需求，是排产计划的来源之一。订单经财务审核后可自动触发排产流程。
+</div>
+
+<div class="card">
+<h3>Step 6C.1: 创建销售订单</h3>
+
+<div class="menu-path">
+  销售管理 <span class="sep">&rsaquo;</span> 销售订单 <span class="sep">&rsaquo;</span> 点击「新增订单」按钮
+</div>
+
+<h4>新增字段说明</h4>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>字段名</th><th>必填</th><th>示例</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>业务员</strong></td>
+        <td class="optional">选填</td>
+        <td>张三</td>
+        <td>负责此订单的业务人员，用于业绩统计和订单跟踪。</td>
+      </tr>
+      <tr>
+        <td><strong>含运费</strong></td>
+        <td class="optional">选填</td>
+        <td>勾选</td>
+        <td>勾选后显示运费金额输入框。不勾选则运费为 0。</td>
+      </tr>
+      <tr>
+        <td><strong>运费</strong></td>
+        <td class="optional">选填</td>
+        <td>200.00</td>
+        <td>运费金额（元）。仅在勾选「含运费」后显示。计入订单总金额。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="card">
+<h3>Step 6C.2: 财务审核流程</h3>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">提交财务审核</div>
+      <div class="step-detail">在销售订单详情页，订单状态为「已确认」时，点击「提交财务审核」按钮。订单状态变为「待财务审核」。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">财务人员审核</div>
+      <div class="step-detail">
+        财务人员在订单列表中筛选「待财务审核」状态的订单，点击进入详情：
+        <ul style="margin-top:6px; padding-left:16px;">
+          <li><strong>审核通过</strong> — 可填写审核备注，点击「审核通过」</li>
+          <li><strong>审核驳回</strong> — 填写驳回原因，点击「审核驳回」，订单退回「已确认」状态</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">自动触发排产</div>
+      <div class="step-detail">财务审核通过后，订单状态变为「财务已批准」，系统自动触发排产流程，无需手动创建生产计划。</div>
+    </div>
+  </div>
+</div>
+
+<h4>订单状态流转</h4>
+<div class="flow-container" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0;">
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#F1F5F9; font-weight:600;">草稿</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#DBEAFE; font-weight:600;">已确认</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#FEF3C7; font-weight:600;">待财务审核</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#D1FAE5; font-weight:600;">财务已批准</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#E0E7FF; font-weight:600;">生产中</div>
+</div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- SECTION 6D: 供应商管理                                                  -->
+<!-- ====================================================================== -->
+<h2>六D、供应商管理</h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员</span>
+  <span class="badge badge-web">Web Admin</span>
+</p>
+
+<div class="section-intro">
+  供应商管理用于维护原料供应商信息，便于采购追溯和供应商评估分析。
+</div>
+
+<div class="card">
+<h3>Step 6D.1: 新增供应商</h3>
+
+<div class="menu-path">
+  采购管理 <span class="sep">&rsaquo;</span> 供应商管理 <span class="sep">&rsaquo;</span> 点击「新增供应商」按钮
+</div>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">点击「新增供应商」</div>
+      <div class="step-detail">弹出新增供应商对话框。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">填写供应商信息</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">点击「确定」保存</div>
+    </div>
+  </div>
+</div>
+
+<h4>字段说明</h4>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>字段名</th><th>必填</th><th>示例</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>供应商名称</strong></td>
+        <td class="required">必填</td>
+        <td>舟山渔业有限公司</td>
+        <td>供应商全称，同一工厂内不可重复。</td>
+      </tr>
+      <tr>
+        <td><strong>联系人</strong></td>
+        <td class="required">必填</td>
+        <td>王经理</td>
+        <td>供应商主要联系人姓名。</td>
+      </tr>
+      <tr>
+        <td><strong>联系电话</strong></td>
+        <td class="required">必填</td>
+        <td>138-0000-1234</td>
+        <td>联系人电话号码。</td>
+      </tr>
+      <tr>
+        <td><strong>地址</strong></td>
+        <td class="optional">选填</td>
+        <td>浙江省舟山市定海区</td>
+        <td>供应商办公或仓库地址。</td>
+      </tr>
+      <tr>
+        <td><strong>邮箱</strong></td>
+        <td class="optional">选填</td>
+        <td>wang@zhoushan.com</td>
+        <td>电子邮箱地址。</td>
+      </tr>
+      <tr>
+        <td><strong>银行账户</strong></td>
+        <td class="optional">选填</td>
+        <td>6222 0000 1234 5678</td>
+        <td>付款用银行账号信息。</td>
+      </tr>
+      <tr>
+        <td><strong>税号</strong></td>
+        <td class="optional">选填</td>
+        <td>91330901MA...</td>
+        <td>纳税人识别号，用于开票。</td>
+      </tr>
+      <tr>
+        <td><strong>备注</strong></td>
+        <td class="optional">选填</td>
+        <td>主要供应墨鱼、鱿鱼</td>
+        <td>供应商补充说明，如主营品类、合作方式等。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="card">
+<h3>Step 6D.2: 查看与编辑供应商</h3>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">「查看」按钮</div>
+      <div class="step-detail">只读查看供应商详细信息，不可修改。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">「编辑」按钮</div>
+      <div class="step-detail">修改供应商信息后点击「确定」保存更新。</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<h1>白垩纪食品溯源系统</h1>
+<p class="subtitle">操作手册 第二部分: 生产流程 (Section 7-12) | 六扇门食品定制版 | 更新: 2026-03-27</p>
+
+<div class="section-intro">
+  本部分涵盖日常生产的全部操作流程: 从管理员创建生产计划开始，经过仓库审批发货、车间签收领料、员工签到报工，到最后查看分析报表和使用AI对话。<br>
+  <strong>前提条件:</strong> 第一部分 (Section 1-6) 中的基础配置已完成 -- 客户、原料、产品模板、BOM转换率、SKU 均已配置完毕。
+</div>
+
+<!-- ====================================================================== -->
+<!-- SECTION 7: 创建生产计划 + 生成调拨单                                    -->
+<!-- ====================================================================== -->
+<h2>七、创建生产计划 + 生成调拨单</h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员 / 调度员</span>
+  <span class="badge badge-web">Web Admin</span>
+  <span style="color:#999; margin-left:8px;">通常在生产前一天下午操作</span>
+</p>
+
+<div class="section-intro">
+  生产计划是整个生产流程的起点。管理员在 Web Admin 后台创建计划后，系统可一键生成调拨单，自动计算所有原辅料需求并发送给仓库审批。
+</div>
+
+<!-- Step 7.1 -->
+<div class="card">
+<h3>Step 7.1: 进入生产计划页面</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">打开 Web Admin 后台</div>
+    <div class="step-detail">
+      浏览器访问 <code class="code">http://139.196.165.140:8086</code><br>
+      使用管理员账号登录: 用户名 <code class="code">factory_admin1</code>，密码 <code class="code">123456</code>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">左侧菜单: 生产管理 → 生产计划</div>
+    <div class="step-detail">
+      点击左侧导航栏中的「生产管理」展开子菜单，再点击「生产计划」进入生产计划管理页面。<br>
+      页面顶部显示: 标题「生产计划管理」 + 右侧总记录数。<br>
+      工具栏按钮（从左到右）: [下载模板] [导入Excel] [导出Excel] [AI对话创建] [新建计划]
+    </div>
+  </div>
+</div>
+
+<div class="screen-path">菜单路径: 生产管理 → 生产计划</div>
+</div>
+
+<!-- Step 7.2 -->
+<div class="card">
+<h3>Step 7.2: 创建新计划（手动方式）</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">点击右上角蓝色「新建计划」按钮</div>
+    <div class="step-detail">弹出对话框，标题为「新建生产计划」，宽度约 500px。</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">逐项填写表单字段</div>
+    <div class="step-detail">下方表格详细说明每一个字段的含义和填写方法:</div>
+  </div>
+</div>
+
+<table class="field-table">
+  <tr>
+    <th>字段名称</th>
+    <th>是否必填</th>
+    <th>示例值</th>
+    <th>详细说明</th>
+  </tr>
+  <tr>
+    <td>产品类型</td>
+    <td class="required-yes">必填</td>
+    <td>CP-汇庭商贸-墨鱼圈</td>
+    <td>
+      <strong>下拉选择框</strong>。这里列出的是系统中所有的产品 (包括模板和 SKU)。<br>
+      <strong>重要: 务必选择 SKU (带 "CP-" 前缀 + 客户名)，而不是基础模板!</strong><br>
+      例如: 选「CP-汇庭商贸-墨鱼圈」(SKU)，不要选「墨鱼圈」(模板)。<br>
+      原因: 只有 SKU 才绑定了客户和完整的 BOM 配方，后续生成调拨单需要 BOM 来计算原料需求。<br>
+      如果列表中找不到对应 SKU，需先回到「系统管理 → 产品信息管理」页面使用 SKU 组装功能创建（见第一部分 Section 5）。
+    </td>
+  </tr>
+  <tr>
+    <td>客户名称</td>
+    <td class="required-no">选填</td>
+    <td>汇庭商贸</td>
+    <td>
+      <strong>文本输入框</strong>。填写本批生产的目标客户名称。<br>
+      如果选择的产品类型是 SKU (如 CP-汇庭商贸-墨鱼圈)，客户信息已包含在 SKU 名称中，此字段可用来做额外备注。<br>
+      填写后会在计划列表的「客户」列显示，方便筛选和识别。
+    </td>
+  </tr>
+  <tr>
+    <td>工序</td>
+    <td class="required-no">选填</td>
+    <td>分切、包装</td>
+    <td>
+      <strong>文本输入框</strong>。如果本批次只涉及特定工序可以在此注明。<br>
+      留空表示按产品标准工序流程执行全部工序。<br>
+      BOM 展开不依赖此字段，它是给车间主管的参考信息。
+    </td>
+  </tr>
+  <tr>
+    <td>批次日期</td>
+    <td class="required-no">选填</td>
+    <td>2026-03-28</td>
+    <td>
+      <strong>日期选择器</strong>。生产批次的归属日期，用于批次编号生成。<br>
+      与「计划日期」的区别: 批次日期是产品标签上的生产日期，计划日期是计划排产的日期。通常两者相同。<br>
+      留空时系统默认使用计划日期。
+    </td>
+  </tr>
+  <tr>
+    <td>计划数量</td>
+    <td class="required-yes">必填</td>
+    <td>200</td>
+    <td>
+      <strong>数字输入框</strong>（最小值 1）。本批次计划生产的成品数量。<br>
+      单位与产品类型设定的单位一致 (通常是 kg)。<br>
+      例如: 200 表示计划生产 200 kg 墨鱼圈。<br>
+      系统生成调拨单时会用此数量乘以 BOM 转换率计算原料需求。
+    </td>
+  </tr>
+  <tr>
+    <td>计划日期</td>
+    <td class="required-yes">必填</td>
+    <td>2026-03-28</td>
+    <td>
+      <strong>日期选择器</strong>。计划执行生产的日期。<br>
+      通常选明天或后天的日期，给仓库留出备货时间。<br>
+      例如: 今天 3 月 27 日下午排产，计划日期选 3 月 28 日。
+    </td>
+  </tr>
+  <tr>
+    <td>备注</td>
+    <td class="required-no">选填</td>
+    <td>汇庭急单，优先处理</td>
+    <td>
+      <strong>多行文本框</strong>（3 行高度）。任何需要传达给车间或仓库的附加信息。<br>
+      例如: 急单优先、客户特殊要求、包装规格说明等。
+    </td>
+  </tr>
+  <tr>
+    <td>建议产线</td>
+    <td class="required-no">选填</td>
+    <td>一号加工线</td>
+    <td>
+      <strong>下拉选择框</strong>。从已配置的产线列表中选择建议使用的产线。<br>
+      选项来自: 系统中已配置的生产产线 (由管理员在「调度中心」或「设备管理」配置)。<br>
+      此字段是建议性质，车间主管可以根据实际情况调整。
+    </td>
+  </tr>
+  <tr>
+    <td>预计工人数</td>
+    <td class="required-no">选填</td>
+    <td>2</td>
+    <td>
+      <strong>数字输入框</strong>（范围 1-100）。预估需要安排的工人数量。<br>
+      辅助车间主管提前安排人手。<br>
+      仅供参考，不会限制实际签到人数。
+    </td>
+  </tr>
+  <tr>
+    <td>指派主管</td>
+    <td class="required-no">选填</td>
+    <td>workshop_sup1</td>
+    <td>
+      <strong>下拉选择框</strong>。从已注册的车间主管账号中选择本批次的负责人。<br>
+      选项来自: 系统中角色为车间主管 (workshop_supervisor) 的用户。<br>
+      不选时任何车间主管都可以操作此批次。
+    </td>
+  </tr>
+</table>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <div class="step-action">点击对话框底部的蓝色「确定」按钮提交</div>
+    <div class="step-detail">
+      如果必填字段未填写，会弹出提示「请填写完整信息」，不会提交。<br>
+      提交成功: 顶部显示绿色提示「创建成功」，对话框自动关闭，列表自动刷新。<br>
+      提交失败: 顶部显示红色错误提示（如产品类型不存在等），保持对话框打开以便修改。
+    </div>
+  </div>
+</div>
+
+<div class="step-success">
+  创建成功后，新计划出现在列表中，状态为「待执行」(PLANNED/PENDING)。<br>
+  列表中可以看到: 计划编号 (系统自动生成)、产品类型、客户、工序、计划数量、计划日期、状态、来源 (手动/Excel导入/AI创建) 等列。
+</div>
+
+<div class="highlight">
+  <strong>其他创建方式:</strong><br>
+  1. <strong>Excel 批量导入:</strong> 点击「下载模板」获取 Excel 模板 → 填写多条计划 → 点击「导入Excel」上传文件 → 系统逐行解析并批量创建。导入结果会显示成功/失败条数及失败原因。<br>
+  2. <strong>AI 对话创建:</strong> 点击绿色「AI对话创建」按钮 → 在右侧抽屉中用自然语言描述需求（如"给汇庭排200kg墨鱼圈"）→ AI 解析后自动填充表单 → 确认提交。
+</div>
+</div>
+
+<!-- Step 7.3 -->
+<div class="card">
+<h3>Step 7.3: 生成调拨单（核心步骤）</h3>
+
+<div class="section-intro">
+  调拨单是连接「排产」和「仓储」的桥梁。生成调拨单后，系统自动根据 BOM 配方计算所有原辅料需求，并通知仓库备货。
+</div>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">在计划列表中找到刚创建的计划</div>
+    <div class="step-detail">
+      可使用搜索框输入计划编号或产品名称搜索，也可按状态筛选「待执行」。<br>
+      确认计划状态为「待执行」— 只有此状态才能生成调拨单。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">点击该行操作列中的黄色文字「生成调拨单」按钮</div>
+    <div class="step-detail">
+      操作列中有多个按钮（从左到右）: [查看] [转为批次] [生成调拨单] [开始] [取消]。<br>
+      找到黄色字样的「生成调拨单」并点击。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <div class="step-action">确认对话框</div>
+    <div class="step-detail">
+      弹出确认框，显示信息:<br>
+      <em>"确定为计划 "PP-20260328-001" 生成调拨单？<br>
+      将根据 BOM 配方自动计算所需原辅料及包材，生成调拨申请发送给仓库。"</em><br>
+      点击蓝色「生成」按钮确认。
+    </div>
+  </div>
+</div>
+
+<div class="step-auto">
+  系统后台自动执行以下操作（约 1-3 秒完成）:<br><br>
+  <strong>第 1 步 — BOM 展开:</strong> 读取该 SKU 绑定的 BOM 配方 (转换率表)，根据计划数量反算每种原料的需求量。<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;计算公式: 原料需求量 = 计划产量 / 转换率 x (1 + 损耗率)<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;例如: 200kg 墨鱼圈，转换率 0.80，损耗 5% → 需要墨鱼 200/0.80 x 1.05 = 262.5 kg<br><br>
+  <strong>第 2 步 — FEFO 库存校验:</strong> 检查仓库当前库存是否足够，按先到期先出 (First-Expire-First-Out) 原则分配批次。<br><br>
+  <strong>第 3 步 — 创建调拨单:</strong> 生成一张 InternalTransfer 调拨单，包含所有原辅料的行项目 (line items)，每项标注: 物料名称、需求数量、单位。<br><br>
+  <strong>第 4 步 — 自动提交审批:</strong> 调拨单状态设为「已申请」(REQUESTED)，自动推送给仓库端。仓储主管在手机 App 上会看到新的待处理调拨。
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-content">
+    <div class="step-action">查看操作结果</div>
+    <div class="step-detail">
+      成功时: 顶部绿色提示「调拨单已生成，共 N 项物料，等待仓库审批」。<br>
+      可在「调拨管理 → 调拨单列表」页面查看新生成的调拨单详情。
+    </div>
+  </div>
+</div>
+
+<div class="highlight-red">
+  <strong>可能的错误及处理:</strong><br>
+  <strong>"该产品无BOM配置"</strong> — 选择的产品没有配置转换率/BOM。解决: 先到「生产管理 → 转换率配置」为该产品添加 BOM（见第一部分 Section 5B）。<br>
+  <strong>"产品类型不存在"</strong> — 选择的产品已被删除或ID无效。解决: 重新选择正确的产品类型。<br>
+  <strong>网络错误</strong> — 检查网络连接后重试。
+</div>
+
+<div class="highlight">
+  <strong>操作列中其他按钮说明:</strong><br>
+  <strong>[转为批次]</strong> — 将计划直接转为生产批次（不走调拨流程，适用于车间已有物料的情况）。<br>
+  <strong>[开始]</strong> — 将计划状态改为「进行中」，表示已开始执行。<br>
+  <strong>[完成]</strong> — (进行中状态才显示) 弹窗输入实际产量后完成计划。<br>
+  <strong>[取消]</strong> — 弹窗输入取消原因后取消计划。
+</div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- SECTION 8: 仓储审批 + 发货                                             -->
+<!-- ====================================================================== -->
+<h2>八、仓储审批 + 发货</h2>
+<p>
+  <span class="role-tag role-warehouse">仓储主管</span>
+  <span class="badge badge-rn">手机 App</span>
+  <span style="color:#999; margin-left:8px;">收到调拨通知后操作</span>
+</p>
+
+<div class="section-intro">
+  管理员生成调拨单后，仓储主管在手机 App 上审批并执行实际发货操作。发货时系统自动按 FEFO 规则扣减库存。
+</div>
+
+<!-- Step 8.1 -->
+<div class="card">
+<h3>Step 8.1: 登录仓储主管账号</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">在手机 App 上使用仓储主管账号登录</div>
+    <div class="step-detail">
+      用户名: <code class="code">warehouse_mgr1</code><br>
+      密码: <code class="code">123456</code><br>
+      登录成功后进入仓储主管专属首页。
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Step 8.2 -->
+<div class="card">
+<h3>Step 8.2: 查看待处理调拨单</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">在首页找到橙色「领料调拨」卡片，点击进入</div>
+    <div class="step-detail">
+      首页显示多个功能卡片，「领料调拨」卡片通常为橙色底色。<br>
+      点击后进入调拨单列表页面。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">在调拨单列表中找到待审批的单据</div>
+    <div class="step-detail">
+      列表中每张调拨单卡片显示以下信息:<br>
+      <strong>调拨编号:</strong> 系统自动生成的唯一编号，如 IT-20260328-001<br>
+      <strong>调拨类型:</strong> 如「生产领料」<br>
+      <strong>当前状态:</strong> 待审批的显示为「已申请」<br>
+      <strong>申请日期:</strong> 调拨单创建时间<br>
+      <strong>物料项数:</strong> 包含多少种物料，如「共 3 项」
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Step 8.3 -->
+<div class="card">
+<h3>Step 8.3: 审批调拨单</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">点击调拨单卡片，进入详情页</div>
+    <div class="step-detail">
+      详情页显示完整的物料清单，每一项包含:<br>
+      <strong>物料名称:</strong> 如「墨鱼」「食盐」「包装袋」<br>
+      <strong>需求数量:</strong> 系统根据 BOM 计算的需求量，如 262.5 kg<br>
+      <strong>单位:</strong> kg / 包 / 箱 等
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">审核物料清单，确认仓库有货</div>
+    <div class="step-detail">
+      仓储主管需核对:<br>
+      - 每种物料当前库存是否充足<br>
+      - 数量是否合理（与计划产量匹配）<br>
+      - 是否有即将过期的物料需优先使用
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <div class="step-action">操作: 审批通过 或 驳回</div>
+    <div class="step-detail">
+      <strong>通过:</strong> 点击页面底部的「审批通过」按钮 → 状态变更为「已批准」(APPROVED)<br>
+      <strong>驳回:</strong> 点击「驳回」按钮 → 弹出输入框要求填写驳回原因（必填）→ 确认后状态变更为「已驳回」(REJECTED)
+    </div>
+  </div>
+</div>
+
+<div class="highlight">
+  <strong>驳回场景:</strong> 库存不足、物料质量问题、计划数量异常等。驳回后管理员会看到驳回原因，需修改计划或补货后重新生成调拨单。
+</div>
+</div>
+
+<!-- Step 8.4 -->
+<div class="card">
+<h3>Step 8.4: 物理备货 + 系统确认发运</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">在仓库中按清单实际备货</div>
+    <div class="step-detail">
+      审批通过后，仓管员在物理仓库中:<br>
+      - 按照 FEFO 原则（先到期先出）拣选物料<br>
+      - 检查保质期标签<br>
+      - 称重核对数量<br>
+      - 将备好的物料放到发货区
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">物理备货完成后，在 App 中点击「确认发运」按钮</div>
+    <div class="step-detail">
+      此操作表示物料已经从仓库发出，准备交给车间。<br>
+      点击后状态变更为「已发运」(SHIPPED)。
+    </div>
+  </div>
+</div>
+
+<div class="step-auto">
+  系统在确认发运时自动执行以下操作:<br><br>
+  <strong>FEFO 库存扣减:</strong><br>
+  - 系统自动从仓库库存中扣减本次发运的物料数量<br>
+  - 按 FEFO 原则: 优先扣减最早到期的批次<br>
+  - 例如: 需要 262.5kg 墨鱼，仓库有两批:<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;批次 A: 到期日 4/15，库存 200kg → 全部扣减，剩余 0<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;批次 B: 到期日 5/20，库存 300kg → 扣减 62.5kg，剩余 237.5kg<br>
+  - 每个被扣减批次的 usedQuantity (已使用量) 相应增加
+</div>
+
+<div class="highlight-red">
+  <strong>库存不足时:</strong><br>
+  如果实际库存不足以满足调拨需求，系统会<strong>阻断发运操作</strong>（报错「库存不足」），<strong>不会</strong>静默扣减到负数。<br>
+  解决方法: 需要先完成原料入库（采购入库或其他调拨入库），确保库存充足后再点击「确认发运」。
+</div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- SECTION 9: 车间签收 + 领料确认                                          -->
+<!-- ====================================================================== -->
+<h2>九、车间签收 + 领料确认</h2>
+<p>
+  <span class="role-tag role-workshop">车间主管</span>
+  <span class="badge badge-rn">手机 App</span>
+  <span style="color:#999; margin-left:8px;">生产当天早上</span>
+</p>
+
+<div class="section-intro">
+  仓库发货后，车间主管在手机 App 上完成签收确认，然后在生产过程中录入每种原料的实际使用量，用于计算 BOM 达成率。
+</div>
+
+<!-- Step 9.1 -->
+<div class="card">
+<h3>Step 9.1: 登录并签收物料</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">使用车间主管账号登录手机 App</div>
+    <div class="step-detail">
+      用户名: <code class="code">workshop_sup1</code><br>
+      密码: <code class="code">123456</code>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">点击底部 Tab 栏的「批次」选项卡</div>
+    <div class="step-detail">
+      底部导航栏有多个 Tab: 首页、批次、（其他...）。<br>
+      点击「批次」进入批次管理页面。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <div class="step-action">页面顶部切换到「物料调拨」标签</div>
+    <div class="step-detail">
+      批次页面顶部通常有多个标签页，选择「物料调拨」查看发送给本车间的调拨单。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-content">
+    <div class="step-action">找到状态为「已发运」的调拨单，点击进入详情</div>
+    <div class="step-detail">
+      核对收到的实物与清单上的物料名称和数量是否一致。<br>
+      如有差异（如实收少于清单数量），需联系仓库核实。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-content">
+    <div class="step-action">核对无误后，点击「确认签收」按钮</div>
+    <div class="step-detail">
+      签收后状态变更为「已签收」(RECEIVED)。<br>
+      此操作确认车间已物理收到物料。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">6</div>
+  <div class="step-content">
+    <div class="step-action">点击「确认入库」按钮完成闭环</div>
+    <div class="step-detail">
+      确认入库后状态变更为「已确认」(CONFIRMED)。
+    </div>
+  </div>
+</div>
+
+<div class="step-auto">
+  系统在确认入库时自动执行:<br>
+  在车间/工厂仓库中创建新的原料批次记录，记录各物料的接收数量、来源调拨单、入库时间等信息。<br>
+  这些批次数据后续会用于生产报工时的原料消耗追踪。
+</div>
+</div>
+
+<!-- Step 9.2 -->
+<div class="card">
+<h3>Step 9.2: 录入实际领料用量（关键步骤）</h3>
+
+<div class="section-intro">
+  录入实际用量是整个系统最核心的数据采集点之一。有了实际用量数据，系统才能计算 BOM 达成率、实际成本、SKU 毛利率。<strong>不录入则这些分析报表全部为空。</strong>
+</div>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">进入生产批次详情页</div>
+    <div class="step-detail">
+      在「批次」Tab 中找到对应的生产批次（不是调拨单），点击进入批次详情页。<br>
+      批次详情页显示: 批次号、产品名称、计划数量、当前状态等基本信息。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">在批次详情页底部，点击蓝色「原料领料」按钮</div>
+    <div class="step-detail">
+      此按钮将导航到「原料消耗」页面（MaterialConsumptionScreen）。<br>
+      页面顶部紫色标题栏显示「原料消耗」，右上角有刷新按钮。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <div class="step-action">查看 BOM 物料清单</div>
+    <div class="step-detail">
+      页面顶部显示批次信息卡片: 批次号 + 产品名称 + 总体达成率。<br><br>
+      下方列出所有 BOM 配方中的物料，每种物料一张卡片，包含以下信息:
+    </div>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th>卡片字段</th>
+    <th>含义</th>
+    <th>示例</th>
+  </tr>
+  <tr>
+    <td><strong>物料名称</strong></td>
+    <td>原料/辅料的名称</td>
+    <td>墨鱼</td>
+  </tr>
+  <tr>
+    <td><strong>状态徽章</strong> (右上角)</td>
+    <td>
+      尚未录入: 显示黄色「待领料」<br>
+      已录入: 显示达成率百分比（颜色按阈值变化）
+    </td>
+    <td>
+      <span class="color-yellow">待领料</span> 或 <span class="color-green">97.8%</span>
+    </td>
+  </tr>
+  <tr>
+    <td><strong>计划量</strong></td>
+    <td>根据 BOM 计算的理论需求量</td>
+    <td>262.5</td>
+  </tr>
+  <tr>
+    <td><strong>实际量</strong></td>
+    <td>车间主管录入的实际使用量（未录入显示 "-"）</td>
+    <td>258.0 或 -</td>
+  </tr>
+  <tr>
+    <td><strong>差异</strong></td>
+    <td>实际量 - 计划量。正数 = 超用（红色），负数 = 节省（绿色），零 = 精确</td>
+    <td><span class="color-green">-4.5</span> 或 <span class="color-red">+12.0</span></td>
+  </tr>
+  <tr>
+    <td><strong>底部按钮</strong></td>
+    <td>点击可录入或更新实际用量</td>
+    <td>「录入实际用量」或「更新用量」</td>
+  </tr>
+</table>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-content">
+    <div class="step-action">为每种物料录入实际用量</div>
+    <div class="step-detail">对列表中的每种物料执行以下操作:</div>
+  </div>
+</div>
+
+<div class="step" style="margin-left: 20px;">
+  <div class="step-num">a</div>
+  <div class="step-content">
+    <div class="step-action">点击物料卡片底部的「录入实际用量」按钮</div>
+    <div class="step-detail">
+      弹出底部弹窗 (Modal)，标题显示物料名称。
+    </div>
+  </div>
+</div>
+
+<div class="step" style="margin-left: 20px;">
+  <div class="step-num">b</div>
+  <div class="step-content">
+    <div class="step-action">弹窗中填写实际使用量</div>
+    <div class="step-detail">
+      弹窗内容包括:<br>
+      <strong>参考信息:</strong> 显示计划量（如「计划量: 262.5 kg」）和已录入量（首次为 0）<br>
+      <strong>输入框:</strong> 在此输入实际使用的数量<br>
+      <strong>快捷按钮:</strong> 两个快速填充按钮:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;[计划量] — 点击自动填入 BOM 计划量（262.5），表示完全按计划使用<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;[95%] — 点击填入计划量的 95%（249.4），表示略低于计划<br>
+      <strong>底部按钮:</strong> [取消] 和 [确认录入]
+    </div>
+  </div>
+</div>
+
+<div class="step" style="margin-left: 20px;">
+  <div class="step-num">c</div>
+  <div class="step-content">
+    <div class="step-action">输入数量后，点击「确认录入」</div>
+    <div class="step-detail">
+      成功: 提示「录入成功 — 墨鱼 实际用量 258.0」，弹窗关闭，列表自动刷新。<br>
+      失败: 提示「录入失败」+ 错误原因。<br>
+      输入无效数字（0、负数、非数字）: 提示「请输入有效的数量」。
+    </div>
+  </div>
+</div>
+
+<div class="step" style="margin-left: 20px;">
+  <div class="step-num">d</div>
+  <div class="step-content">
+    <div class="step-action">对所有物料重复上述 a-c 步骤</div>
+    <div class="step-detail">
+      逐一录入每种物料的实际用量: 墨鱼、食盐、包装袋 等。<br>
+      录入后该物料卡片的状态徽章会从「待领料」变为达成率百分比。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-content">
+    <div class="step-action">查看总体达成率</div>
+    <div class="step-detail">
+      全部物料录入完成后，页面顶部的「总体达成率」自动更新。<br>
+      颜色规则:
+    </div>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th>达成率范围</th>
+    <th>颜色</th>
+    <th>含义</th>
+  </tr>
+  <tr>
+    <td>&ge; 95%</td>
+    <td><span class="color-green">绿色</span></td>
+    <td>优秀 — 实际用量与计划高度吻合，物料管控良好</td>
+  </tr>
+  <tr>
+    <td>85% ~ 94%</td>
+    <td><span class="color-yellow">黄色</span></td>
+    <td>一般 — 存在一定偏差，需关注原因</td>
+  </tr>
+  <tr>
+    <td>&lt; 85%</td>
+    <td><span class="color-red">红色</span></td>
+    <td>异常 — 偏差过大，需排查问题（配方不准、浪费、称量误差等）</td>
+  </tr>
+</table>
+
+<div class="highlight">
+  <strong>可以多次更新:</strong> 如果初次录入的数量有误，可再次点击物料卡片底部的「更新用量」按钮重新录入。新值会覆盖旧值。
+</div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- SECTION 10: 员工签到 + 报工 + 签退                                      -->
+<!-- ====================================================================== -->
+<h2>十、员工签到 + 报工 + 签退</h2>
+<p>
+  <span class="role-tag role-workshop">车间主管</span>
+  <span class="badge badge-rn">手机 App</span>
+  <span style="color:#999; margin-left:8px;">生产当天 8:00 - 17:00</span>
+</p>
+
+<div class="section-intro">
+  车间主管通过手机 App 管理员工的签到/签退和产量报工。所有操作在「工序操作」页面完成，支持扫码和手动操作两种方式。
+</div>
+
+<!-- Step 10.1 -->
+<div class="card">
+<h3>Step 10.1: 进入工序操作页面</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">在首页找到「工序操作」快捷入口，点击进入</div>
+    <div class="step-detail">
+      车间主管首页显示多个快捷操作卡片，找到「工序操作」并点击。<br>
+      进入后页面标题为「工序操作」，顶部导航栏右侧有一个扫码图标（用于扫码定位，后面 Step 10.4 方式B 详述）。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">在工序任务列表中选择要操作的工序</div>
+    <div class="step-detail">
+      页面显示提示文字: "选择要操作的工序"<br>
+      下方列出所有当前活跃的工序任务（状态为「进行中」「待开始」或「补充中」的任务），每个任务卡片显示:
+    </div>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th>卡片字段</th>
+    <th>含义</th>
+    <th>示例</th>
+  </tr>
+  <tr>
+    <td><strong>工序名称</strong></td>
+    <td>当前工序的名称</td>
+    <td>拆箱分拣</td>
+  </tr>
+  <tr>
+    <td><strong>状态标签</strong></td>
+    <td>蓝色圆角标签，显示当前状态</td>
+    <td>进行中 / 待开始</td>
+  </tr>
+  <tr>
+    <td><strong>产品名称</strong></td>
+    <td>对应的产品类型</td>
+    <td>CP-汇庭商贸-墨鱼圈</td>
+  </tr>
+  <tr>
+    <td><strong>计划 / 完成</strong></td>
+    <td>计划产量和已完成产量</td>
+    <td>计划: 200 kg &nbsp; 完成: 50</td>
+  </tr>
+  <tr>
+    <td><strong>进度条</strong></td>
+    <td>完成比例的可视化进度条 + 百分比</td>
+    <td>进度条填充 25% + 文字「25%」</td>
+  </tr>
+</table>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <div class="step-action">点击选择一个工序（如「拆箱分拣」）</div>
+    <div class="step-detail">
+      进入操作面板页面。页面标题变为该工序名称（如「拆箱分拣」）。<br>
+      操作面板分为三大区域: 任务概况、员工签到/签退、报产量。<br>
+      左上角返回箭头可回到工序列表重新选择。
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Step 10.2 -->
+<div class="card">
+<h3>Step 10.2: 操作面板 — 任务概况区域</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">页面最上方: 任务概况卡片</div>
+    <div class="step-detail">
+      显示当前工序的核心数据，一目了然:
+    </div>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th>指标</th>
+    <th>含义</th>
+    <th>示例</th>
+  </tr>
+  <tr>
+    <td><strong>计划 (单位)</strong></td>
+    <td>本工序的计划产量</td>
+    <td>200 (kg)</td>
+  </tr>
+  <tr>
+    <td><strong>已完成</strong></td>
+    <td>已审批通过的累计完成量</td>
+    <td>50</td>
+  </tr>
+  <tr>
+    <td><strong>待审批</strong></td>
+    <td>已提交但尚未审批的报工量</td>
+    <td>45</td>
+  </tr>
+  <tr>
+    <td><strong>剩余</strong></td>
+    <td>计划量 - 已完成 - 待审批 = 尚需生产量</td>
+    <td>105</td>
+  </tr>
+</table>
+</div>
+
+<!-- Step 10.3 -->
+<div class="card">
+<h3>Step 10.3: 员工签到</h3>
+
+<div class="section-intro">
+  员工签到记录谁在什么时间参与了哪道工序，是计算工时和人工成本的基础数据。
+</div>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">在操作面板中找到「员工签到/签退」区域</div>
+    <div class="step-detail">
+      该区域显示两个按钮: 绿色「扫码签到」和红色「扫码签退」。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">点击绿色「扫码签到」按钮</div>
+    <div class="step-detail">
+      手机摄像头自动打开，进入扫码界面。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <div class="step-action">扫描员工工牌上的二维码</div>
+    <div class="step-detail">
+      将摄像头对准员工工牌上的二维码。工牌二维码格式为 <code class="code">CRETAS:EMP:{员工ID}:...</code> 或员工工号字符串。<br>
+      系统识别二维码 → 查找对应的员工信息 → 自动执行签到。<br><br>
+      <strong>工牌生成方式:</strong> 管理员在 Web Admin「系统管理 → 员工工牌生成」页面为员工生成并打印工牌。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-content">
+    <div class="step-action">确认签到结果</div>
+    <div class="step-detail">
+      <strong>成功:</strong> 弹出对话框提示 "签到成功 -- 陈工 已签到「拆箱分拣」"，点击「确定」关闭。<br>
+      <strong>失败 — 未识别:</strong> 提示 "无法识别此工牌"，检查工牌是否正确或已过期。<br>
+      <strong>失败 — 已签到:</strong> 如果该员工已经在此工序签到，系统会提示重复签到。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-content">
+    <div class="step-action">为所有参与本工序的员工逐一重复步骤 2-4</div>
+    <div class="step-detail">
+      每位员工依次扫码签到。签到后，该员工会出现在「报产量」区域的已签到员工列表中（蓝色标签形式）。
+    </div>
+  </div>
+</div>
+
+<div class="highlight">
+  <strong>签到数据用途:</strong><br>
+  1. 确定谁参与了哪道工序（人员追溯）<br>
+  2. 报工时从已签到列表选择员工（确保报工关联到人）<br>
+  3. 签退时自动计算工时（签到时间 → 签退时间）<br>
+  4. 管理员查看考勤报表时的数据来源
+</div>
+</div>
+
+<!-- Step 10.4 -->
+<div class="card">
+<h3>Step 10.4: 报产量（三种方式）</h3>
+
+<div class="section-intro">
+  报产量（报工）是记录每道工序产出数量的核心操作。系统支持三种报工方式，适用于不同场景。建议优先使用方式 A。
+</div>
+
+<div class="divider"></div>
+
+<!-- Method A -->
+<h4><span class="method-label">方式A</span> 从已签到员工列表选择（推荐）</h4>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">在操作面板中找到「报产量」区域</div>
+    <div class="step-detail">
+      区域顶部显示「选择员工(已签到)」标签，下方以蓝色圆角标签 (Chip) 形式显示所有已签到的员工名字。<br>
+      例如: <span style="background:#E8F0FE; color:#1890ff; padding:2px 8px; border-radius:12px; font-size:12px;">陈工</span>
+      <span style="background:#E8F0FE; color:#1890ff; padding:2px 8px; border-radius:12px; font-size:12px;">李工</span>
+      <span style="background:#E8F0FE; color:#1890ff; padding:2px 8px; border-radius:12px; font-size:12px;">王师傅</span><br>
+      如果没有看到任何标签，说明该工序还没有员工签到，需先执行 Step 10.3 签到操作。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">点击选择一位员工标签（如「陈工」）</div>
+    <div class="step-detail">
+      选中后显示: "报工员工: 陈工 [更换]"<br>
+      点击 [更换] 可以重新选择其他员工。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <div class="step-action">在「产出数量」输入框中填写本次报工数量</div>
+    <div class="step-detail">
+      输入框下方有快捷按钮:
+    </div>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th>快捷按钮</th>
+    <th>含义</th>
+    <th>示例</th>
+  </tr>
+  <tr>
+    <td>[剩余量]</td>
+    <td>自动填入当前剩余的未完成数量（计划量 - 已完成 - 待审批）</td>
+    <td>点击填入 105</td>
+  </tr>
+  <tr>
+    <td>[一半]</td>
+    <td>自动填入剩余量的 50%</td>
+    <td>点击填入 52.5</td>
+  </tr>
+</table>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-content">
+    <div class="step-action">（可选）在「备注」字段添加说明</div>
+    <div class="step-detail">
+      例如: "9:00-10:00 批次"、"半成品暂存"等。此字段不是必填的。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-content">
+    <div class="step-action">点击「提交报工」按钮</div>
+    <div class="step-detail">
+      <strong>成功:</strong> 弹出对话框提示 "报工成功 -- 拆箱分拣 -- 50 kg"<br>
+      对话框有两个按钮:<br>
+      <strong>[继续]</strong> — 留在当前页面继续报工（清空数量和备注，可选择下一位员工）<br>
+      <strong>[返回]</strong> — 返回工序列表页面<br><br>
+      <strong>失败:</strong> 如果数量为空、为 0 或负数，提示「请输入有效的产出数量」，不会提交。
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Method B -->
+<h4><span class="method-label-green">方式B</span> 扫码定位（适合车间巡视时操作）</h4>
+
+<div class="step">
+  <div class="step-num-green">1</div>
+  <div class="step-content">
+    <div class="step-action">在工序列表页面（尚未选择工序时），点击右上角扫码图标</div>
+    <div class="step-detail">
+      注意: 此扫码图标在工序列表页面的标题栏右侧，不是进入某个工序后的签到扫码。<br>
+      此操作的模式是「扫码定位」(locate) — 扫描员工工牌后自动找到该员工所在的工序。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num-green">2</div>
+  <div class="step-content">
+    <div class="step-action">扫描员工工牌二维码</div>
+    <div class="step-detail">
+      系统自动查询该员工当前签到在哪道工序。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num-green">3</div>
+  <div class="step-content">
+    <div class="step-action">系统自动跳转 + 自动选中员工</div>
+    <div class="step-detail">
+      <strong>成功:</strong> 自动跳转到该员工签到的工序操作面板，且报工区域已自动选中该员工。<br>
+      主管只需输入数量 → 提交即可。<br><br>
+      <strong>未找到:</strong> 提示 "XX 没有进行中的签到记录，请先签到" — 表示该员工尚未在任何工序签到。
+    </div>
+  </div>
+</div>
+
+<div class="highlight-blue">
+  <strong>方式B 的适用场景:</strong> 车间主管在车间巡视时，直接扫描正在工作的员工工牌，系统自动定位到该员工的工序，无需手动在列表中寻找工序再选择员工。效率高于方式A。
+</div>
+
+<div class="divider"></div>
+
+<!-- Method C -->
+<h4><span class="method-label-orange">方式C</span> 主管自己报（不关联具体员工）</h4>
+
+<div class="step">
+  <div class="step-num-orange">1</div>
+  <div class="step-content">
+    <div class="step-action">在操作面板的「报产量」区域，点击「主管自己报」按钮</div>
+    <div class="step-detail">
+      选中后显示: "报工员工: 主管自己 [更换]"<br>
+      此模式下报工数据不关联到具体的一线员工，仅记录在主管名下。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num-orange">2</div>
+  <div class="step-content">
+    <div class="step-action">输入数量 → 提交报工</div>
+    <div class="step-detail">
+      操作流程与方式A 的步骤 3-5 相同。<br>
+      区别: 报工记录的 targetWorkerId 不会关联到实际员工。
+    </div>
+  </div>
+</div>
+
+<div class="highlight">
+  <strong>方式C 的适用场景:</strong> 无法确定具体是哪位员工的产出时（如多人协作无法区分个人产量），或者员工忘记扫码签到但产量需要及时记录。<br>
+  <strong>建议:</strong> 尽量使用方式A 或方式B，确保报工数据关联到具体员工，便于后续计算人效和人工成本。
+</div>
+</div>
+
+<!-- Cumulative reporting -->
+<div class="card">
+<h3>Step 10.4 补充: 累计报工机制</h3>
+
+<div class="highlight-blue">
+  <strong>报工是累计的，不是覆盖的:</strong><br>
+  同一个工序、同一天内可以多次报工。每次提交都会创建一条独立的报工记录。<br><br>
+  <strong>示例:</strong><br>
+  9:00 报工: 陈工 50 箱<br>
+  10:30 报工: 陈工 45 箱<br>
+  12:00 报工: 李工 60 箱<br>
+  系统累计: 50 + 45 + 60 = 155 箱（显示在工序概况的「待审批」中）<br><br>
+  <strong>审批流程:</strong> 每笔报工记录都需要管理员在 Web Admin「生产管理 → 报工审批」页面逐一审批。审批通过后才计入「已完成」数量。
+</div>
+</div>
+
+<!-- Step 10.5 -->
+<div class="card">
+<h3>Step 10.5: 员工签退</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">当天工作结束后，在操作面板的「员工签到/签退」区域点击红色「扫码签退」按钮</div>
+    <div class="step-detail">
+      手机摄像头打开，进入扫码界面。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">扫描员工工牌二维码</div>
+    <div class="step-detail">
+      系统查找该员工在当前工序的签到记录。<br><br>
+      <strong>成功:</strong> 弹出对话框提示 "签退成功 -- 陈工 已签退「拆箱分拣」"<br>
+      <strong>失败 — 未找到签到记录:</strong> 提示 "陈工 未签到此工序" — 如果该员工没有在此工序签到，则无法签退。检查员工是否签到在其他工序。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <div class="step-action">对每位已签到的员工逐一扫码签退</div>
+    <div class="step-detail">
+      确保所有参与生产的员工在下班时全部签退。
+    </div>
+  </div>
+</div>
+
+<div class="step-auto">
+  签退时系统自动计算工时:<br>
+  签到时间: 2026-03-28 08:00 → 签退时间: 2026-03-28 17:00 → 工时: 9 小时<br>
+  此数据用于: HR 考勤统计、人工成本分摊到 SKU。
+</div>
+
+<div class="highlight">
+  <strong>忘记签退:</strong> 如果员工下班忘记签退，系统不会自动补签退。需要主管联系管理员在后台手动处理，或者次日签到前由系统提示异常。
+</div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- SECTION 11: 查看分析报表                                                -->
+<!-- ====================================================================== -->
+<h2>十一、查看分析报表</h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员</span>
+  <span class="badge badge-web">Web Admin</span>
+  <span style="color:#999; margin-left:8px;">生产完成后（通常次日查看）</span>
+</p>
+
+<div class="section-intro">
+  所有前面步骤采集到的数据 (BOM 用量、报工产量、人工工时、物料成本) 会自动汇总到分析报表中。管理员在 Web Admin 查看这些报表，用于决策和改进。
+</div>
+
+<!-- Report 1: BOM 达成率 -->
+<div class="card">
+<h3>11.1 BOM 达成率分析</h3>
+
+<div class="screen-path">菜单路径: 生产管理 → BOM达成率分析</div>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">左侧菜单: 生产管理 → BOM达成率分析</div>
+    <div class="step-detail">
+      进入页面后显示「BOM 达成率」报表。
+    </div>
+  </div>
+</div>
+
+<h4>页面顶部 — KPI 卡片区域</h4>
+
+<table>
+  <tr>
+    <th>KPI 指标</th>
+    <th>含义</th>
+    <th>示例</th>
+  </tr>
+  <tr>
+    <td><strong>总批次数</strong></td>
+    <td>查询范围内的生产批次总数</td>
+    <td>12</td>
+  </tr>
+  <tr>
+    <td><strong>平均达成率</strong></td>
+    <td>所有批次的 BOM 达成率算术平均值</td>
+    <td>96.3%</td>
+  </tr>
+  <tr>
+    <td><strong>超耗批次数</strong></td>
+    <td>达成率低于 95% 的批次数量（需要关注）</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td><strong>最低达成率</strong></td>
+    <td>所有批次中最差的一个达成率</td>
+    <td>82.5%</td>
+  </tr>
+</table>
+
+<h4>主表格 — 批次列表</h4>
+
+<table>
+  <tr>
+    <th>列名</th>
+    <th>含义</th>
+  </tr>
+  <tr>
+    <td>批次号</td>
+    <td>生产批次编号，如 BATCH-20260328-001</td>
+  </tr>
+  <tr>
+    <td>产品</td>
+    <td>产品类型名称</td>
+  </tr>
+  <tr>
+    <td>计划量 / 实际量</td>
+    <td>成品产出的计划量和实际量</td>
+  </tr>
+  <tr>
+    <td>达成率</td>
+    <td>
+      综合达成率，颜色编码:<br>
+      <span class="color-green">&ge;95%</span> /
+      <span class="color-yellow">85-94%</span> /
+      <span class="color-red">&lt;85%</span>
+    </td>
+  </tr>
+  <tr>
+    <td>状态</td>
+    <td>批次状态: 进行中 / 已完成</td>
+  </tr>
+  <tr>
+    <td>创建时间</td>
+    <td>批次创建时间</td>
+  </tr>
+</table>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">点击展开某一行，查看物料级明细</div>
+    <div class="step-detail">
+      展开后显示该批次每种物料的详细消耗数据:
+    </div>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th>子表列名</th>
+    <th>含义</th>
+    <th>示例</th>
+  </tr>
+  <tr>
+    <td>物料名称</td>
+    <td>原料/辅料名称</td>
+    <td>墨鱼</td>
+  </tr>
+  <tr>
+    <td>计划用量</td>
+    <td>BOM 计算的理论需求量</td>
+    <td>262.5 kg</td>
+  </tr>
+  <tr>
+    <td>实际用量</td>
+    <td>车间录入的实际消耗量</td>
+    <td>258.0 kg</td>
+  </tr>
+  <tr>
+    <td>差异量</td>
+    <td>实际 - 计划（正数超耗，负数节省）</td>
+    <td>-4.5 kg</td>
+  </tr>
+  <tr>
+    <td>达成率</td>
+    <td>单项物料的实际/计划 比率</td>
+    <td>98.3%</td>
+  </tr>
+</table>
+
+<div class="highlight-blue">
+  <strong>筛选功能:</strong> 页面顶部有日期范围选择器，可筛选特定时间段的批次数据（如"本周"、"本月"）。
+</div>
+</div>
+
+<!-- Report 2: SKU 毛利率 -->
+<div class="card">
+<h3>11.2 SKU 毛利率分析</h3>
+
+<div class="screen-path">菜单路径: 财务管理 → SKU毛利率分析</div>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">左侧菜单: 财务管理 → SKU毛利率分析</div>
+    <div class="step-detail">
+      页面展示每个 SKU 的完整成本结构和利润分析。
+    </div>
+  </div>
+</div>
+
+<h4>页面顶部 — KPI 卡片区域</h4>
+
+<table>
+  <tr>
+    <th>KPI 指标</th>
+    <th>含义</th>
+  </tr>
+  <tr>
+    <td><strong>平均毛利率</strong></td>
+    <td>所有 SKU 毛利率的平均值</td>
+  </tr>
+  <tr>
+    <td><strong>最优 SKU</strong></td>
+    <td>毛利率最高的 SKU 名称及毛利率</td>
+  </tr>
+  <tr>
+    <td><strong>最差 SKU</strong></td>
+    <td>毛利率最低的 SKU 名称及毛利率</td>
+  </tr>
+  <tr>
+    <td><strong>SKU 数量</strong></td>
+    <td>参与计算的 SKU 总数</td>
+  </tr>
+</table>
+
+<h4>主表格 — SKU 毛利率列表</h4>
+
+<table>
+  <tr>
+    <th>列名</th>
+    <th>含义</th>
+    <th>计算方式</th>
+  </tr>
+  <tr>
+    <td>产品名称</td>
+    <td>SKU 名称</td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td>生产数量</td>
+    <td>统计周期内该 SKU 的总生产量</td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td>原料成本</td>
+    <td>所有原辅料的总成本</td>
+    <td>各原料实际用量 x 移动加权平均单价</td>
+  </tr>
+  <tr>
+    <td>人工成本</td>
+    <td>生产过程中的人工费用</td>
+    <td>参与员工工时 x 时薪，按 SKU 分摊</td>
+  </tr>
+  <tr>
+    <td>总成本</td>
+    <td>原料成本 + 人工成本</td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td>单位成本</td>
+    <td>每 kg 的平均成本</td>
+    <td>总成本 / 生产数量</td>
+  </tr>
+  <tr>
+    <td>销售单价</td>
+    <td>客户定价</td>
+    <td>来自客户定价配置</td>
+  </tr>
+  <tr>
+    <td>毛利率</td>
+    <td>利润空间</td>
+    <td>(销售单价 - 单位成本) / 销售单价 x 100%</td>
+  </tr>
+</table>
+
+<h4>图表区域</h4>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">表格下方显示 ECharts 可视化图表</div>
+    <div class="step-detail">
+      柱状图 + 折线图混合展示: X 轴为 SKU 名称，左 Y 轴为成本金额（柱状），右 Y 轴为毛利率（折线）。<br>
+      直观对比不同 SKU 的成本构成和盈利能力。<br>
+      支持排序: 可按毛利率升序/降序排列，快速找到最赚钱和亏损的产品。
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Report 3: 原料价格趋势 -->
+<div class="card">
+<h3>11.3 原料价格趋势</h3>
+
+<div class="screen-path">菜单路径: 仓储管理 → 物料均价趋势</div>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">左侧菜单: 仓储管理 → 物料均价趋势</div>
+    <div class="step-detail">
+      显示每种原料的入库价格变化趋势，帮助采购决策。
+    </div>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th>内容</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><strong>移动平均价折线图</strong></td>
+    <td>每种原料的移动加权平均单价随时间变化的趋势线。可以看出价格是上涨还是下降。</td>
+  </tr>
+  <tr>
+    <td><strong>批次级价格散点</strong></td>
+    <td>每个入库批次的实际单价标记在图上。散点围绕均线波动属正常，偏离过大可能是采购异常。</td>
+  </tr>
+  <tr>
+    <td><strong>物料筛选</strong></td>
+    <td>可选择查看单种物料或全部物料。全部物料时多条折线叠加，不同颜色区分。</td>
+  </tr>
+  <tr>
+    <td><strong>时间范围</strong></td>
+    <td>可选择近 7 天、30 天、90 天或自定义日期范围。</td>
+  </tr>
+</table>
+</div>
+
+<!-- Report 4: 工序 IO 对比 -->
+<div class="card">
+<h3>11.4 工序投入产出对比</h3>
+
+<div class="screen-path">菜单路径: 生产管理 → 工序投入产出对比</div>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">左侧菜单: 生产管理 → 工序投入产出对比</div>
+    <div class="step-detail">
+      显示每道工序的投入和产出对比，用于分析各工序的转换效率和损耗情况。
+    </div>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th>内容</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><strong>工序列表</strong></td>
+    <td>按生产流程顺序列出所有工序: 拆箱分拣 → 清洗去内脏 → 切圈 → 裹粉 → 包装 等</td>
+  </tr>
+  <tr>
+    <td><strong>投入量 (Input)</strong></td>
+    <td>进入该工序的物料总量（上一道工序的产出 或 原料领用量）</td>
+  </tr>
+  <tr>
+    <td><strong>产出量 (Output)</strong></td>
+    <td>该工序完成后的合格品数量</td>
+  </tr>
+  <tr>
+    <td><strong>转换率</strong></td>
+    <td>产出量 / 投入量 x 100%。反映该工序的物料转化效率。</td>
+  </tr>
+  <tr>
+    <td><strong>损耗量</strong></td>
+    <td>投入量 - 产出量。即该工序的物料损失。</td>
+  </tr>
+</table>
+
+<div class="highlight-blue">
+  <strong>分析价值:</strong><br>
+  - 如果某道工序转换率持续偏低，说明该工序损耗过大，需排查原因（设备问题、操作不当、原料质量等）<br>
+  - 对比不同班次、不同操作人员在同一工序的转换率，找出最佳实践<br>
+  - 为 BOM 转换率的调整提供实际数据依据
+</div>
+</div>
+
+<!-- Report 5: 报工审批 -->
+<div class="card">
+<h3>11.5 报工审批（附加说明）</h3>
+
+<div class="screen-path">菜单路径: 生产管理 → 报工审批</div>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">左侧菜单: 生产管理 → 报工审批</div>
+    <div class="step-detail">
+      车间主管在 App 提交的每笔报工记录都会出现在此列表中，等待管理员审批。
+    </div>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th>列名</th>
+    <th>含义</th>
+  </tr>
+  <tr>
+    <td>报工编号</td>
+    <td>系统自动生成</td>
+  </tr>
+  <tr>
+    <td>工序名称</td>
+    <td>对应的工序</td>
+  </tr>
+  <tr>
+    <td>报工员工</td>
+    <td>报工关联的员工姓名（方式C为"主管自己"）</td>
+  </tr>
+  <tr>
+    <td>产出数量</td>
+    <td>本次报工的数量</td>
+  </tr>
+  <tr>
+    <td>状态</td>
+    <td>待审批 / 已通过 / 已驳回</td>
+  </tr>
+  <tr>
+    <td>操作</td>
+    <td>[通过] [驳回] 按钮</td>
+  </tr>
+</table>
+
+<div class="highlight">
+  <strong>审批通过后:</strong> 该笔报工数量计入工序的「已完成」总量，并反映在 App 工序操作面板的进度条中。<br>
+  <strong>驳回:</strong> 需填写驳回原因。驳回后数量不计入完成量，车间主管可重新提交。
+</div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- SECTION 12: AI 对话 + 常见问题                                          -->
+<!-- ====================================================================== -->
+<h2>十二、AI 对话 + 常见问题</h2>
+<p>
+  <span class="badge badge-ai">AI 助手</span>
+  <span style="color:#999; margin-left:8px;">所有角色均可使用</span>
+</p>
+
+<div class="section-intro">
+  系统内置 AI 对话助手，可在手机 App 和 Web Admin 中通过自然语言完成常见操作。AI 助手能理解中文指令，自动调用后台的 310+ 个工具完成任务。
+</div>
+
+<!-- AI Dialog -->
+<div class="card">
+<h3>12.1 如何使用 AI 对话</h3>
+
+<h4>手机 App</h4>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">在管理员首页找到 AI 相关入口</div>
+    <div class="step-detail">
+      工厂管理员首页通常有 AI 聊天卡片或 AI 快捷操作区域。<br>
+      点击进入 AI 对话页面。
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <div class="step-action">对话页面结构</div>
+    <div class="step-detail">
+      <strong>顶部:</strong> 标题栏，显示「AI 助手」或类似标题<br>
+      <strong>中间:</strong> 对话消息区域（滚动查看历史消息）。首次进入显示欢迎消息和快捷问题建议。<br>
+      <strong>快捷操作卡片:</strong> 常用功能的快捷入口网格（如"查库存"、"排产"等）<br>
+      <strong>底部:</strong> 输入框 + 语音输入按钮 + 发送按钮
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <div class="step-action">输入问题并发送</div>
+    <div class="step-detail">
+      在底部输入框中用中文描述你的需求，然后点击发送按钮（或按回车键）。<br>
+      也可以点击语音按钮用语音输入（集成讯飞语音识别）。
+    </div>
+  </div>
+</div>
+
+<h4>Web Admin</h4>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <div class="step-action">在特定页面使用 AI 辅助</div>
+    <div class="step-detail">
+      部分页面（如生产计划）提供绿色「AI对话创建」按钮。<br>
+      点击后右侧滑出 AI 对话抽屉，用自然语言描述需求，AI 解析后自动填充表单。
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- AI examples -->
+<div class="card">
+<h3>12.2 AI 对话示例（完整列表）</h3>
+
+<table>
+  <tr>
+    <th>你说的话</th>
+    <th>AI 执行的操作</th>
+    <th>返回结果</th>
+  </tr>
+  <tr>
+    <td>"给汇庭创建墨鱼圈SKU"</td>
+    <td>
+      意图识别 → SKU 组装工具<br>
+      自动匹配产品模板「墨鱼圈」+ 客户「汇庭商贸」<br>
+      克隆模板、绑定客户、复制 BOM
+    </td>
+    <td>
+      "已为汇庭商贸创建 SKU: CP-汇庭商贸-墨鱼圈"<br>
+      包含: SKU 编码、绑定的 BOM 配方信息
+    </td>
+  </tr>
+  <tr>
+    <td>"生产500kg带鱼段需要多少原料"</td>
+    <td>
+      意图识别 → BOM 展开工具 + 库存查询工具<br>
+      读取「带鱼段」的 BOM 配方<br>
+      按 500kg 计算各原料需求量<br>
+      同时检查当前库存是否充足
+    </td>
+    <td>
+      "生产 500kg 带鱼段需要:<br>
+      - 带鱼: 625 kg (库存: 800 kg, 充足)<br>
+      - 食盐: 10 kg (库存: 50 kg, 充足)<br>
+      - 包装袋: 500 个 (库存: 200, 不足)"
+    </td>
+  </tr>
+  <tr>
+    <td>"墨鱼还有多少库存"</td>
+    <td>
+      意图识别 → 库存查询工具<br>
+      查询原料类型为「墨鱼」的所有在库批次
+    </td>
+    <td>
+      "墨鱼当前库存汇总:<br>
+      - 总量: 425 kg<br>
+      - 批次1: 200kg (到期 4/15)<br>
+      - 批次2: 225kg (到期 5/20)"
+    </td>
+  </tr>
+  <tr>
+    <td>"帮我排200kg墨鱼圈"</td>
+    <td>
+      意图识别 → 生产计划创建工具<br>
+      自动匹配产品、设置数量、默认日期为明天
+    </td>
+    <td>
+      "已创建生产计划:<br>
+      产品: CP-汇庭商贸-墨鱼圈<br>
+      数量: 200 kg<br>
+      日期: 2026-03-29"
+    </td>
+  </tr>
+  <tr>
+    <td>"今天拆箱分拣报了多少"</td>
+    <td>
+      意图识别 → 报工查询工具<br>
+      查询今日「拆箱分拣」工序的所有报工记录
+    </td>
+    <td>
+      "今日拆箱分拣报工汇总:<br>
+      - 总量: 155 箱<br>
+      - 陈工: 95 箱<br>
+      - 李工: 60 箱<br>
+      - 待审批: 3 笔"
+    </td>
+  </tr>
+  <tr>
+    <td>"查看BOM达成率"</td>
+    <td>
+      意图识别 → BOM 达成率查询工具<br>
+      查询最近的 BOM 达成率数据
+    </td>
+    <td>
+      返回最近批次的 BOM 达成率概要，可能包含图表卡片
+    </td>
+  </tr>
+  <tr>
+    <td>"这个月销售了多少墨鱼圈"</td>
+    <td>
+      意图识别 → 销售查询工具<br>
+      查询本月墨鱼圈的销售数据
+    </td>
+    <td>
+      返回月度销售汇总: 总量、总金额、客户分布
+    </td>
+  </tr>
+</table>
+
+<div class="highlight">
+  <strong>AI 输入技巧:</strong><br>
+  1. <strong>尽量具体:</strong> "墨鱼还有多少库存" 比 "查一下库存" 更准确<br>
+  2. <strong>包含关键信息:</strong> 产品名、数量、客户名、日期等<br>
+  3. <strong>支持语音:</strong> 点击麦克风按钮，说出指令（适合车间嘈杂环境无法打字时）<br>
+  4. <strong>多轮对话:</strong> AI 记住上下文，可以追问 "那带鱼段呢？"
+</div>
+</div>
+
+<!-- FAQ -->
+<div class="card">
+<h3>12.3 常见问题 (FAQ)</h3>
+
+<div class="faq-q">Q1: 点击「生成调拨单」报错 "该产品无BOM配置"</div>
+<div class="faq-a">
+  <strong>原因:</strong> 选择的产品 (通常是基础模板而非 SKU) 没有配置 BOM 转换率。<br>
+  <strong>解决:</strong><br>
+  1. 确认排产时选的是 SKU (带 "CP-" 前缀)，不是基础模板<br>
+  2. 如果确实是 SKU，检查是否已配置转换率: 到「生产管理 → 转换率配置」查看<br>
+  3. 如果没有转换率，需先为该产品配置 BOM（见第一部分 Section 5B 配置 BOM 转换率）<br>
+  4. 配置完成后重新生成调拨单
+</div>
+
+<div class="faq-q">Q2: 仓储发货时报错 "库存不足"</div>
+<div class="faq-a">
+  <strong>原因:</strong> 仓库中该原料的可用库存量不足以满足调拨需求。<br>
+  <strong>解决:</strong><br>
+  1. 检查原料是否已完成入库: 到「仓储管理 → 原材料批次」查看库存<br>
+  2. 如果是采购的新物料尚未入库，需先完成采购入库操作（见第一部分 Section 6B 原料入库）<br>
+  3. 如果库存确实不够，需联系采购补货，或调整生产计划数量<br>
+  4. 库存充足后再回到调拨单点击「确认发运」
+</div>
+
+<div class="faq-q">Q3: 员工扫码签到失败，提示 "无法识别此工牌"</div>
+<div class="faq-a">
+  <strong>原因:</strong> 工牌二维码无法解析为有效的员工信息。<br>
+  <strong>排查步骤:</strong><br>
+  1. 确认工牌是否是系统生成的（在 Web Admin「系统管理 → 员工工牌生成」页面生成）<br>
+  2. 确认该员工已在「人事管理 → 员工管理」中创建且处于启用状态<br>
+  3. 确认工牌没有破损导致二维码不可读<br>
+  4. 尝试在光线充足的环境下重新扫码<br>
+  5. 如果工牌损坏，需要在 Web Admin 重新生成并打印
+</div>
+
+<div class="faq-q">Q4: 在报工界面看不到已签到员工列表（蓝色标签为空）</div>
+<div class="faq-a">
+  <strong>原因:</strong> 该工序当前没有员工签到。<br>
+  <strong>解决:</strong><br>
+  1. 员工必须先扫码签到（Step 10.3）才会出现在列表中<br>
+  2. 确认签到的工序与当前选择的工序一致（员工签到了「拆箱分拣」但你看的是「包装」）<br>
+  3. 尝试点击返回后重新进入该工序，触发数据刷新<br>
+  4. 如果不需要关联员工，可使用「方式C: 主管自己报」
+</div>
+
+<div class="faq-q">Q5: 报工提交后在哪里审批？</div>
+<div class="faq-a">
+  <strong>审批入口:</strong> 管理员登录 Web Admin → 左侧菜单「生产管理 → 报工审批」<br>
+  审批列表显示所有待审批的报工记录，管理员可逐一通过或驳回。<br>
+  只有审批通过的报工才会计入工序的「已完成」数量。
+</div>
+
+<div class="faq-q">Q6: BOM 达成率显示为 0% 或全部为空</div>
+<div class="faq-a">
+  <strong>原因:</strong> 车间主管没有录入实际原料用量（Step 9.2）。<br>
+  <strong>解决:</strong> 必须在 App 中进入批次详情 → 点击「原料领料」→ 为每种物料录入实际用量。<br>
+  没有实际用量数据，系统无法计算达成率。
+</div>
+
+<div class="faq-q">Q7: SKU 毛利率显示为 0 或数据不完整</div>
+<div class="faq-a">
+  <strong>可能原因及解决:</strong><br>
+  1. <strong>缺少原料成本:</strong> 检查原料入库时是否录入了单价 → 在「仓储管理 → 原材料批次」中查看<br>
+  2. <strong>缺少实际用量:</strong> 同 Q6，需录入 BOM 实际用量<br>
+  3. <strong>缺少销售价格:</strong> 需在客户定价或 SKU 配置中设置销售单价<br>
+  4. <strong>缺少人工工时:</strong> 员工需完成签到+签退，系统才能计算人工成本
+</div>
+
+<div class="faq-q">Q8: 员工签退提示 "未签到此工序"</div>
+<div class="faq-a">
+  <strong>原因:</strong> 该员工没有在当前选择的工序中签到，或者已经签退过了。<br>
+  <strong>排查:</strong><br>
+  1. 确认员工签到的是哪道工序（可能签到了其他工序）<br>
+  2. 使用扫码定位功能（工序列表页右上角扫码图标）扫描员工工牌，系统会显示该员工签到的工序<br>
+  3. 如果确实没有签到记录，可能是签到时操作失败或从未签到
+</div>
+
+<div class="faq-q">Q9: 如何修改已提交的报工数量？</div>
+<div class="faq-a">
+  已提交的报工记录无法直接修改。如果数量有误:<br>
+  1. 如果尚未审批: 让管理员在 Web Admin 驳回该笔报工<br>
+  2. 在 App 中重新提交正确的数量<br>
+  3. 如果已审批通过: 需联系管理员在后台处理
+</div>
+
+<div class="faq-q">Q10: 调拨单审批后能否撤回？</div>
+<div class="faq-a">
+  审批通过但尚未发运的调拨单，在 Web Admin 的「调拨管理 → 调拨单列表」中可以进行取消操作。<br>
+  已经确认发运的调拨单（库存已扣减），无法直接撤回，需要管理员通过反向调拨或库存调整来处理。
+</div>
+</div>
+
+<!-- Quick reference card -->
+<div class="card">
+<h3>12.4 完整流程速查卡</h3>
+
+<div class="timeline">
+  <div class="timeline-item">
+    <div class="timeline-time">Step 7 — Web Admin (管理员)</div>
+    <div class="timeline-action">生产管理 → 生产计划 → [新建计划] → 填写表单 → [确定]</div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-time">Step 7 — Web Admin (管理员)</div>
+    <div class="timeline-action">计划列表 → 操作列 → [生成调拨单] → [生成]</div>
+    <div class="step-auto" style="margin:4px 0">系统自动: BOM展开 → FEFO库存校验 → 创建调拨单 → 推送仓库</div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-time">Step 8 — 手机App (仓储主管)</div>
+    <div class="timeline-action">首页 → [领料调拨] → 审批通过 → 物理备货 → [确认发运]</div>
+    <div class="step-auto" style="margin:4px 0">系统自动: FEFO 扣减库存（不足则阻断）</div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-time">Step 9 — 手机App (车间主管)</div>
+    <div class="timeline-action">批次 Tab → 物料调拨 → [确认签收] → [确认入库]</div>
+    <div class="step-auto" style="margin:4px 0">系统自动: 工厂仓创建原料批次</div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-time">Step 9 — 手机App (车间主管)</div>
+    <div class="timeline-action">批次详情 → [原料领料] → 逐项 [录入实际用量] → 查看达成率</div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-time">Step 10 — 手机App (车间主管)</div>
+    <div class="timeline-action">首页 → [工序操作] → 选工序 → [扫码签到] → 扫工牌</div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-time">Step 10 — 手机App (车间主管)</div>
+    <div class="timeline-action">操作面板 → 选员工 → 输入产量 → [提交报工] (每小时重复)</div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-time">Step 10 — 手机App (车间主管)</div>
+    <div class="timeline-action">操作面板 → [扫码签退] → 扫工牌</div>
+    <div class="step-auto" style="margin:4px 0">系统自动: 计算工时</div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-time">Step 11 — Web Admin (管理员)</div>
+    <div class="timeline-action">生产管理 → 报工审批 → [通过]/[驳回]</div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-time">Step 11 — Web Admin (管理员)</div>
+    <div class="timeline-action">查看: BOM达成率 / SKU毛利率 / 原料价格趋势 / 工序IO对比</div>
+  </div>
+</div>
+</div>
+
+<!-- Data dependency diagram -->
+<div class="card">
+<h3>12.5 数据依赖关系（分析报表需要哪些输入）</h3>
+
+<div class="section-intro">
+  以下表格说明每份报表需要哪些上游数据。如果报表数据为空或不完整，请检查对应的数据是否已录入。
+</div>
+
+<table>
+  <tr>
+    <th>分析报表</th>
+    <th>需要的上游数据</th>
+    <th>对应操作步骤</th>
+  </tr>
+  <tr>
+    <td><strong>BOM 达成率</strong></td>
+    <td>
+      1. 生产批次 (含 BOM 配方)<br>
+      2. 实际原料用量
+    </td>
+    <td>
+      Step 7 创建计划<br>
+      Step 9.2 录入实际用量
+    </td>
+  </tr>
+  <tr>
+    <td><strong>SKU 毛利率</strong></td>
+    <td>
+      1. 原料成本 (入库单价)<br>
+      2. 实际原料用量<br>
+      3. 人工工时 (签到+签退)<br>
+      4. 销售单价 (客户定价)
+    </td>
+    <td>
+      第一部分 Section 6B 入库<br>
+      Step 9.2 录入用量<br>
+      Step 10.3/10.5 签到签退<br>
+      第一部分 客户定价配置
+    </td>
+  </tr>
+  <tr>
+    <td><strong>原料价格趋势</strong></td>
+    <td>
+      原料批次入库记录 (含单价)
+    </td>
+    <td>
+      第一部分 Section 6B 入库时填写单价
+    </td>
+  </tr>
+  <tr>
+    <td><strong>工序 IO 对比</strong></td>
+    <td>
+      1. 各工序的报工数据<br>
+      2. 物料流转记录
+    </td>
+    <td>
+      Step 10.4 报产量
+    </td>
+  </tr>
+</table>
+</div>
+
+<p style="text-align:center; color:#999; margin:30px 0; font-size:12px;">
+  白垩纪食品溯源系统 v1.0 | 六扇门食品定制版 | 第二部分: 生产流程 (Section 7-12) | 2026-03-27
+</p>
+
+</div>
+
+<!-- ==================== AI 助手悬浮窗 ==================== -->
+<div id="ai-fab" onclick="toggleChat()" title="AI 操作助手">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</div>
+
+<div id="ai-chat" style="display:none">
+  <div id="ai-resize"></div>
+  <div id="ai-header">
+    <span>🤖 AI 操作助手</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span onclick="clearChat()" style="cursor:pointer;font-size:12px;opacity:0.8;padding:2px 8px;border:1px solid rgba(255,255,255,0.4);border-radius:6px" title="清空对话">清空对话</span>
+      <span onclick="toggleChat()" style="cursor:pointer;font-size:20px">&times;</span>
+    </div>
+  </div>
+  <div id="ai-messages">
+    <div class="ai-msg bot">你好！我是白垩纪 AI Agent 操作助手。<br>你可以问我任何关于系统操作的问题，也可以发截图让我指导。<br>试试点击下方的常见问题开始：</div>
+    <div id="ai-welcome-btns" style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 14px"></div>
+  </div>
+  <div id="ai-input-wrap">
+    <label id="ai-upload-btn" title="上传截图">📷
+      <input type="file" id="ai-file" accept="image/*" style="display:none" onchange="handleImage(this)">
+    </label>
+    <div style="flex:1;display:flex;flex-direction:column">
+      <textarea id="ai-input" rows="1" placeholder="输入问题或上传截图..." onkeydown="handleInputKey(event)" oninput="autoResizeInput()"></textarea>
+      <span style="font-size:10px;color:#b0b0b0;margin-top:2px;padding-left:2px">按 Enter 发送，Shift+Enter 换行</span>
+    </div>
+    <button onclick="sendMsg()">发送</button>
+  </div>
+  <div id="ai-preview" style="display:none">
+    <img id="ai-preview-img" style="max-height:120px;border-radius:8px">
+    <span onclick="clearImage()" style="cursor:pointer;color:#999;margin-left:8px">✕ 移除</span>
+  </div>
+</div>
+
+<style>
+#ai-fab {
+  position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px;
+  border-radius: 28px; background: #667eea; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: 0 4px 16px rgba(102,126,234,0.4);
+  z-index: 9999; transition: transform 0.2s;
+}
+#ai-fab:hover { transform: scale(1.1); }
+#ai-chat {
+  position: fixed; bottom: 90px; right: 24px; width: 420px; height: 560px;
+  min-width: 300px; min-height: 350px; max-width: 90vw; max-height: 85vh;
+  background: #fff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  z-index: 9999; display: flex; flex-direction: column; overflow: hidden;
+}
+#ai-resize {
+  position: absolute; top: 0; left: 0; width: 18px; height: 18px;
+  cursor: nw-resize; z-index: 10000;
+}
+#ai-resize::after {
+  content: ''; position: absolute; top: 4px; left: 4px;
+  width: 8px; height: 8px; border-top: 2px solid #ccc; border-left: 2px solid #ccc;
+}
+#ai-header {
+  background: #667eea; color: #fff; padding: 14px 18px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 600; font-size: 15px;
+}
+#ai-messages {
+  flex: 1; overflow-y: auto; padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.ai-msg {
+  padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6;
+  max-width: 85%; word-break: break-word; position: relative;
+}
+.ai-msg.bot { background: #f0f4ff; color: #333; align-self: flex-start; }
+.ai-msg.user { background: #667eea; color: #fff; align-self: flex-end; }
+.ai-msg.loading { background: #f5f5f5; color: #999; font-style: italic; }
+/* Typing indicator animation */
+.ai-typing { display: inline-flex; align-items: center; gap: 4px; padding: 10px 18px; }
+.ai-typing .dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #999;
+  animation: typingBounce 1.4s ease-in-out infinite;
+}
+.ai-typing .dot:nth-child(2) { animation-delay: 0.2s; }
+.ai-typing .dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+/* Message timestamp */
+.ai-msg-time {
+  font-size: 10px; color: #aaa; margin-top: 4px; text-align: right;
+}
+.ai-msg.user .ai-msg-time { color: rgba(255,255,255,0.6); }
+/* Copy button on bot messages */
+.ai-copy-btn {
+  display: inline-block; font-size: 11px; color: #888; cursor: pointer;
+  margin-top: 6px; padding: 2px 8px; border: 1px solid #ddd; border-radius: 4px;
+  background: transparent; transition: all 0.2s;
+}
+.ai-copy-btn:hover { background: #e8ecf3; color: #555; }
+/* Related questions fade-in */
+.ai-related-wrap {
+  display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0;
+  animation: fadeInUp 0.3s ease-out;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Auto-resize textarea */
+#ai-input-wrap {
+  display: flex; gap: 8px; padding: 12px; border-top: 1px solid #eee; align-items: flex-end;
+}
+#ai-input {
+  flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 8px 12px;
+  font-size: 14px; outline: none; font-family: inherit;
+  resize: none; overflow-y: auto; min-height: 36px; max-height: 72px;
+  line-height: 1.5;
+}
+#ai-input:focus { border-color: #667eea; }
+#ai-input-wrap button {
+  background: #667eea; color: #fff; border: none; border-radius: 8px;
+  padding: 8px 16px; cursor: pointer; font-size: 14px; font-weight: 600;
+  align-self: flex-end;
+}
+#ai-input-wrap button:hover { background: #5a6fd6; }
+#ai-upload-btn {
+  cursor: pointer; font-size: 20px; display: flex; align-items: center;
+  padding: 4px; border-radius: 6px; transition: background 0.2s;
+  align-self: flex-end;
+}
+#ai-upload-btn:hover { background: #f0f0f0; }
+#ai-preview {
+  display: flex; align-items: center; padding: 8px 12px;
+  border-top: 1px solid #eee; background: #fafafa;
+}
+.ai-msg img { max-width: 200px; border-radius: 8px; margin-top: 6px; }
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+  #ai-chat { width: calc(100vw - 24px); right: 12px; bottom: 80px; }
+  #ai-fab { width: 48px; height: 48px; bottom: 16px; right: 16px; }
+  #ai-fab svg { width: 22px; height: 22px; }
+  .ai-related-wrap { display: grid; grid-template-columns: 1fr 1fr; }
+  .ai-msg { max-width: 92%; }
+}
+@media print { #ai-fab, #ai-chat { display: none !important; } }
+</style>
+
+<script>
+const API_BASE = 'http://47.100.235.168:10010/api/mobile';
+const RAG_BASE = 'http://47.100.235.168:8083/api/food-kb';
+let chatHistory = [];
+let pendingImage = null;
+
+const WELCOME_QUESTIONS = [
+  '怎么创建 SKU？',
+  '报工流程是什么？',
+  'BOM 转换率怎么配？',
+  '调拨单怎么操作？',
+  '如何生成工牌？',
+  '签到签退怎么用？',
+];
+
+// ==================== Utility: timestamp ====================
+function getTimestamp() {
+  return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ==================== Utility: copy to clipboard ====================
+function copyToClipboard(text, btn) {
+  function onSuccess() {
+    var orig = btn.textContent;
+    btn.textContent = '已复制';
+    btn.style.color = '#667eea';
+    setTimeout(function() { btn.textContent = orig; btn.style.color = ''; }, 1500);
+  }
+  function fallbackCopy() {
+    var ta = document.createElement('textarea');
+    ta.value = text || '';
+    ta.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    onSuccess();
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text || '').then(onSuccess).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+// ==================== Input: auto-resize + keyboard ====================
+function handleInputKey(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendMsg();
+  }
+}
+
+function autoResizeInput() {
+  const el = document.getElementById('ai-input');
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 72) + 'px';
+}
+
+// ==================== Clear chat ====================
+function clearChat() {
+  chatHistory = [];
+  window._lastRelatedQuestions = [];
+  const container = document.getElementById('ai-messages');
+  container.innerHTML = '';
+  // Re-add welcome message
+  const welcome = document.createElement('div');
+  welcome.className = 'ai-msg bot';
+  welcome.innerHTML = '你好！我是白垩纪 AI Agent 操作助手。<br>你可以问我任何关于系统操作的问题，也可以发截图让我指导。<br>试试点击下方的常见问题开始：'
+    + '<div class="ai-msg-time">' + getTimestamp() + '</div>';
+  container.appendChild(welcome);
+  const wrap = document.createElement('div');
+  wrap.id = 'ai-welcome-btns';
+  wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin:4px 14px';
+  container.appendChild(wrap);
+  initWelcomeButtons();
+}
+
+function initWelcomeButtons() {
+  const wrap = document.getElementById('ai-welcome-btns');
+  if (!wrap || wrap.children.length > 0) return;
+  WELCOME_QUESTIONS.forEach(q => {
+    const btn = document.createElement('button');
+    btn.textContent = q;
+    btn.style.cssText = 'background:#f0f4ff;border:1px solid #d0d8f0;border-radius:14px;padding:5px 12px;font-size:12px;color:#4F46E5;cursor:pointer';
+    btn.onmouseover = () => btn.style.background = '#e0e8ff';
+    btn.onmouseout = () => btn.style.background = '#f0f4ff';
+    btn.onclick = () => {
+      wrap.style.display = 'none';
+      document.getElementById('ai-input').value = q;
+      sendMsg();
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function toggleChat() {
+  const chat = document.getElementById('ai-chat');
+  chat.style.display = chat.style.display === 'none' ? 'flex' : 'none';
+  if (chat.style.display === 'flex') {
+    document.getElementById('ai-input').focus();
+    initWelcomeButtons();
+  }
+}
+
+function formatMsg(text) {
+  // Split into lines for block-level processing
+  const lines = text.split('\n');
+  let html = '';
+  let inTable = false;
+  let tableRows = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+
+    // Skip pure separator lines
+    if (/^[\s\-:|]+$/.test(line) && line.includes('|')) continue;
+    if (/^---+$/.test(line.trim())) { html += '<hr style="border:none;border-top:1px solid #e0e0e0;margin:8px 0">'; continue; }
+
+    // Table rows
+    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+      if (!inTable) { inTable = true; tableRows = []; }
+      const cells = line.split('|').filter(c => c.trim()).map(c => c.trim());
+      tableRows.push(cells);
+      // Check if next line is NOT a table row
+      if (i + 1 >= lines.length || !lines[i+1].trim().startsWith('|')) {
+        html += '<table style="width:100%;border-collapse:collapse;font-size:13px;margin:6px 0">';
+        tableRows.forEach((row, ri) => {
+          const tag = ri === 0 ? 'th' : 'td';
+          const bg = ri === 0 ? 'style="background:#667eea;color:#fff;padding:4px 8px;text-align:left"' : 'style="padding:4px 8px;border-bottom:1px solid #eee"';
+          html += '<tr>' + row.map(c => '<' + tag + ' ' + bg + '>' + inlineFmt(c) + '</' + tag + '>').join('') + '</tr>';
+        });
+        html += '</table>';
+        inTable = false; tableRows = [];
+      }
+      continue;
+    }
+
+    // Headers
+    if (/^###\s/.test(line)) { html += '<div style="font-size:15px;font-weight:700;color:#333;margin:10px 0 4px">' + inlineFmt(line.replace(/^###\s*/, '')) + '</div>'; continue; }
+    if (/^##\s/.test(line)) { html += '<div style="font-size:16px;font-weight:700;color:#4F46E5;margin:10px 0 4px">' + inlineFmt(line.replace(/^##\s*/, '')) + '</div>'; continue; }
+
+    // Blockquote
+    if (/^>\s/.test(line.trim())) { html += '<div style="border-left:3px solid #667eea;padding:4px 10px;margin:4px 0;color:#555;font-size:13px">' + inlineFmt(line.replace(/^>\s*/, '')) + '</div>'; continue; }
+
+    // Unordered list
+    if (/^\s*[-*]\s+/.test(line)) { html += '<div style="padding-left:16px;margin:2px 0">&bull; ' + inlineFmt(line.replace(/^\s*[-*]\s+/, '')) + '</div>'; continue; }
+
+    // Ordered list
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const num = line.match(/^\s*(\d+)\./)[1];
+      html += '<div style="padding-left:16px;margin:2px 0"><strong>' + num + '.</strong> ' + inlineFmt(line.replace(/^\s*\d+\.\s+/, '')) + '</div>';
+      continue;
+    }
+
+    // Empty line = paragraph break
+    if (line.trim() === '') { html += '<div style="height:6px"></div>'; continue; }
+
+    // Normal paragraph
+    html += '<div style="margin:2px 0">' + inlineFmt(line) + '</div>';
+  }
+
+  // Remove excessive emoji
+  const emojis = html.match(/[\u{1F300}-\u{1F9FF}]/gu) || [];
+  if (emojis.length > 1) {
+    let count = 0;
+    html = html.replace(/[\u{1F300}-\u{1F9FF}]/gu, (m) => ++count <= 1 ? m : '');
+  }
+  return html;
+}
+
+function inlineFmt(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;font-size:12px">$1</code>');
+}
+
+function addMsg(text, role, imgSrc) {
+  const container = document.getElementById('ai-messages');
+  const div = document.createElement('div');
+  div.className = 'ai-msg ' + role;
+
+  // Typing indicator for loading state
+  if (role === 'loading') {
+    div.innerHTML = '<div class="ai-typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  let html = role === 'bot' ? formatMsg(text) : text.replace(/\n/g, '<br>');
+  if (imgSrc) html = '<img src="' + imgSrc + '" style="max-width:200px;border-radius:8px;margin-bottom:6px"><br>' + html;
+
+  // Timestamp
+  const time = getTimestamp();
+  html += '<div class="ai-msg-time">' + time + '</div>';
+
+  // Copy button for bot messages
+  if (role === 'bot') {
+    div.innerHTML = html;
+    const copyBtn = document.createElement('span');
+    copyBtn.className = 'ai-copy-btn';
+    copyBtn.textContent = '复制';
+    copyBtn.onclick = function() { copyToClipboard(text, copyBtn); };
+    div.appendChild(copyBtn);
+  } else {
+    div.innerHTML = html;
+  }
+
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
+
+function handleImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    pendingImage = e.target.result;
+    document.getElementById('ai-preview').style.display = 'flex';
+    document.getElementById('ai-preview-img').src = pendingImage;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  pendingImage = null;
+  document.getElementById('ai-preview').style.display = 'none';
+  document.getElementById('ai-file').value = '';
+}
+
+async function sendMsg() {
+  const input = document.getElementById('ai-input');
+  const text = input.value.trim();
+  if (!text && !pendingImage) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  const userText = text || '请看截图，告诉我下一步怎么操作';
+  const imgForDisplay = pendingImage;
+  addMsg(userText, 'user', imgForDisplay);
+  const loadingDiv = addMsg('', 'loading');
+
+  try {
+    let reply = '';
+    let relatedQuestions = [];
+
+    if (pendingImage) {
+      // 有截图 -> 调通用 AI (vision model)
+      const res = await fetch(API_BASE + '/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: '你是白垩纪 AI Agent 操作助手。用户发来系统截图，请识别当前页面并指导下一步操作。菜单路径用→连接。' },
+            { role: 'user', content: [
+              { type: 'text', text: userText },
+              { type: 'image_url', image_url: { url: pendingImage } }
+            ]}
+          ],
+          factoryId: 'F001', maxTokens: 800
+        })
+      });
+      const data = await res.json();
+      reply = (data.success && data.data) ? (data.data.content || data.data.message || '') : '截图识别暂不可用，请用文字描述。';
+      clearImage();
+    } else {
+      // 纯文本 -> RAG 优先
+      try {
+        const ragRes = await fetch(RAG_BASE + '/manual-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: text, history: chatHistory.slice(-6) })
+        });
+        const ragData = await ragRes.json();
+        if (ragData.answer) {
+          reply = ragData.answer;
+          if (ragData.sources && ragData.sources.length > 0) {
+            var seen = {};
+            var uniqueSources = ragData.sources.filter(function(s) {
+              var key = (s.title || '').replace(/\s*\(Part [A-Z]\)/g, '').replace(/#\d+/g, '').trim();
+              if (seen[key]) return false;
+              seen[key] = true;
+              return true;
+            });
+            reply += '\n\n参考来源: ' + uniqueSources.slice(0, 3).map(function(s) {
+              return (s.title || '').replace(/#\d+/g, '').replace(/\s*\(\)$/g, '').trim();
+            }).join(' | ');
+          }
+          relatedQuestions = ragData.related_questions || [];
+        }
+      } catch (e) { /* RAG 不可用, fallback */ }
+
+      // Fallback: 通用 AI
+      if (!reply) {
+        const res = await fetch(API_BASE + '/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [
+              { role: 'system', content: '你是白垩纪 AI Agent 操作助手。简洁中文回答，菜单路径用→连接。' },
+              ...chatHistory.slice(-10)
+            ],
+            factoryId: 'F001', maxTokens: 500, model: 'fast'
+          })
+        });
+        const data = await res.json();
+        reply = (data.success && data.data) ? (data.data.content || data.data.message || '') : '';
+      }
+    }
+
+    loadingDiv.remove();
+    if (reply) {
+      const replyStr = typeof reply === 'string' ? reply : JSON.stringify(reply);
+      addMsg(replyStr, 'bot');
+      chatHistory.push({ role: 'user', content: userText }, { role: 'assistant', content: replyStr });
+      // Non-blocking related questions: show after a brief delay with fade-in
+      if (relatedQuestions.length > 0) {
+        setTimeout(() => addRelatedButtons(relatedQuestions), 200);
+      }
+    } else {
+      addMsg('抱歉，暂时无法回答。请稍后重试。', 'bot');
+    }
+  } catch (e) {
+    loadingDiv.remove();
+    addMsg('网络连接失败，请检查网络后重试。', 'bot');
+  }
+}
+
+// ==================== Resize drag ====================
+(function() {
+  const chat = document.getElementById('ai-chat');
+  const handle = document.getElementById('ai-resize');
+  let dragging = false, startX, startY, startW, startH, startR, startB;
+
+  handle.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    dragging = true;
+    startX = e.clientX; startY = e.clientY;
+    const rect = chat.getBoundingClientRect();
+    startW = rect.width; startH = rect.height;
+    startR = window.innerWidth - rect.right;
+    startB = window.innerHeight - rect.bottom;
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    const dx = startX - e.clientX;
+    const dy = startY - e.clientY;
+    chat.style.width = Math.max(300, startW + dx) + 'px';
+    chat.style.height = Math.max(350, startH + dy) + 'px';
+  });
+
+  document.addEventListener('mouseup', function() { dragging = false; });
+})();
+
+// ==================== Related questions (AI-generated, non-blocking with fade-in) ====================
+function addRelatedButtons(questions) {
+  if (!questions || questions.length === 0) return;
+  const container = document.getElementById('ai-messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'ai-related-wrap';
+  questions.forEach(q => {
+    const btn = document.createElement('button');
+    btn.textContent = q;
+    btn.style.cssText = 'background:#f0f4ff;border:1px solid #d0d8f0;border-radius:14px;padding:5px 12px;font-size:12px;color:#4F46E5;cursor:pointer;text-align:left;line-height:1.4';
+    btn.onmouseover = () => btn.style.background = '#e0e8ff';
+    btn.onmouseout = () => btn.style.background = '#f0f4ff';
+    btn.onclick = () => {
+      document.getElementById('ai-input').value = q;
+      sendMsg();
+    };
+    wrap.appendChild(btn);
+  });
+  container.appendChild(wrap);
+  container.scrollTop = container.scrollHeight;
+}
+</script>
+
+</body>
+</html>
