@@ -70,6 +70,12 @@ public class UserServiceImpl implements UserService {
         }
 
         // 创建用户实体
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            request.setPassword("123456"); // 默认密码
+        }
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            request.setEmail(request.getUsername() + "@cretas.com"); // 默认邮箱
+        }
         User user = userMapper.toEntity(request, factoryId);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 

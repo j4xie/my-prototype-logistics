@@ -26,13 +26,10 @@ public class CreateUserRequest {
     @Pattern(regexp = "^[a-zA-Z0-9_]{3,20}$", message = "用户名只能包含字母、数字和下划线，长度3-20")
     private String username;
 
-    @Schema(description = "密码", required = true)
-    @NotBlank(message = "密码不能为空")
-    @Pattern(regexp = "^.{6,20}$", message = "密码长度必须在6-20之间")
+    @Schema(description = "密码（创建时必填，更新时可选）")
     private String password;
 
-    @Schema(description = "邮箱", required = true)
-    @NotBlank(message = "邮箱不能为空")
+    @Schema(description = "邮箱（创建时必填，更新时可选）")
     @Email(message = "邮箱格式不正确")
     private String email;
 
