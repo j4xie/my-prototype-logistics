@@ -11,6 +11,8 @@ import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.ProductionPlanService;
+import com.cretas.aims.service.orchestration.ProductionWorkflowOrchestrator;
+import com.cretas.aims.entity.inventory.InternalTransfer;
 import com.cretas.aims.utils.TokenUtils;
 import com.cretas.aims.entity.ProductionBatch;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -51,6 +53,7 @@ public class ProductionPlanController {
     private final ProductionPlanService productionPlanService;
     private final MobileService mobileService;
     private final ProductionPlanRepository planRepository;
+    private final ProductionWorkflowOrchestrator workflowOrchestrator;
 
     /**
      * 创建生产计划
@@ -287,6 +290,25 @@ public class ProductionPlanController {
         ProductionPlanDTO plan = productionPlanService.updateActualCosts(
             factoryId, planId, materialCost, laborCost, equipmentCost, otherCost);
         return ApiResponse.success("成本更新成功", plan);
+    }
+
+    /**
+     * 排产 → 自动生成调拨单 (BOM展开 → 创建 InternalTransfer → 自动提交)
+     */
+    @PostMapping("/{planId}/generate-transfer")
+    @Operation(summary = "根据BOM生成调拨单")
+    public ApiResponse<InternalTransfer> generateTransfer(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotNull String planId,
+            @RequestParam(required = false) String targetFactoryId,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = TokenUtils.extractToken(authorization);
+        Long userId = mobileService.getUserFromToken(token).getId();
+        log.info("生成调拨单: factoryId={}, planId={}, target={}", factoryId, planId, targetFactoryId);
+        InternalTransfer transfer = workflowOrchestrator.generateTransferFromPlan(
+                factoryId, planId, targetFactoryId, userId);
+        return ApiResponse.success("调拨单生成成功，共 " + transfer.getItems().size() + " 项物料", transfer);
     }
 
     /**

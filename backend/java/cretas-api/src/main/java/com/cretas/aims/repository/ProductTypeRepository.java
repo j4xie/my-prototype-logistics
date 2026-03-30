@@ -82,6 +82,12 @@ public interface ProductTypeRepository extends JpaRepository<ProductType, String
      */
     List<ProductType> findByFactoryIdAndIsActiveTrue(String factoryId);
 
+    /** 查询产品模板列表 (templateId IS NULL, 即基础产品) */
+    List<ProductType> findByFactoryIdAndTemplateIdIsNullAndIsActiveTrue(String factoryId);
+
+    /** 查询某模板下的所有SKU */
+    List<ProductType> findByFactoryIdAndTemplateIdAndIsActiveTrue(String factoryId, String templateId);
+
     /**
      * 批量查询多个产品类型 - 解决 N+1 查询问题
      * @param ids 产品类型ID集合

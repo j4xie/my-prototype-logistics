@@ -56,10 +56,12 @@ public class ProductTypeServiceImpl implements ProductTypeService {
     @CacheEvict(value = "productTypes", key = "#factoryId")
     public ProductTypeDTO createProductType(String factoryId, ProductTypeDTO dto) {
         // 如果没有提供 code，自动生成 SKU
+        // 规则: CP{客户首字母拼音}{4位序号}，如 CPDD0001
         if (dto.getCode() == null || dto.getCode().trim().isEmpty()) {
-            String prefix = getCategoryPrefix(dto.getCategory());
+            String prefix = getCategoryPrefix(dto.getCategory() != null ? dto.getCategory() : dto.getProductCategory());
+            String customerInitials = getCustomerInitials(dto.getRelatedCustomer(), factoryId);
             long count = productTypeRepository.countByFactoryId(factoryId);
-            String generatedCode = String.format("%s-%s-%03d", prefix, factoryId, count + 1);
+            String generatedCode = String.format("%s%s%04d", prefix, customerInitials, count + 1);
             dto.setCode(generatedCode);
             log.info("自动生成产品代码: {}", generatedCode);
         }
@@ -82,6 +84,11 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         productType.setProductionTimeMinutes(dto.getProductionTimeMinutes());
         productType.setShelfLifeDays(dto.getShelfLifeDays());
         productType.setPackageSpec(dto.getPackageSpec());
+        productType.setSpecification(dto.getSpecification());
+        productType.setRelatedCustomer(dto.getRelatedCustomer());
+        productType.setImageUrl(dto.getImageUrl());
+        productType.setProductCategory(dto.getProductCategory());
+        productType.setTemperatureZone(dto.getTemperatureZone());
         productType.setNotes(dto.getNotes());
         productType.setIsActive(true);
         productType.setCreatedBy(dto.getCreatedBy() != null ? Long.valueOf(dto.getCreatedBy()) : null);
@@ -142,6 +149,11 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         if (dto.getPackageSpec() != null) productType.setPackageSpec(dto.getPackageSpec());
         if (dto.getNotes() != null) productType.setNotes(dto.getNotes());
         if (dto.getIsActive() != null) productType.setIsActive(dto.getIsActive());
+        if (dto.getSpecification() != null) productType.setSpecification(dto.getSpecification());
+        if (dto.getRelatedCustomer() != null) productType.setRelatedCustomer(dto.getRelatedCustomer());
+        if (dto.getImageUrl() != null) productType.setImageUrl(dto.getImageUrl());
+        if (dto.getProductCategory() != null) productType.setProductCategory(dto.getProductCategory());
+        if (dto.getTemperatureZone() != null) productType.setTemperatureZone(dto.getTemperatureZone());
 
         // Sprint 2 S2-1: Form Template Association
         if (dto.getFormTemplateId() != null) productType.setFormTemplateId(dto.getFormTemplateId());
@@ -304,6 +316,67 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         log.info("批量更新产品类型状态成功: count={}", ids.size());
     }
 
+    /**
+     * 获取客户名称的拼音首字母缩写（用于自动编码）
+     * 如 "大东" → "DD", "六扇门" → "LSM"
+     * 无客户则使用 factoryId 作为后备
+     */
+    private String getCustomerInitials(String customerName, String factoryId) {
+        if (customerName == null || customerName.trim().isEmpty()) {
+            return factoryId != null ? factoryId : "";
+        }
+        StringBuilder initials = new StringBuilder();
+        for (char c : customerName.trim().toCharArray()) {
+            if (c >= 0x4e00 && c <= 0x9fff) {
+                // 简易拼音首字母映射（基于 Unicode 区间粗略映射）
+                initials.append(getPinyinInitial(c));
+            } else if (Character.isLetter(c)) {
+                initials.append(Character.toUpperCase(c));
+            }
+        }
+        return initials.length() > 0 ? initials.toString() : (factoryId != null ? factoryId : "");
+    }
+
+    /**
+     * 简易汉字拼音首字母（基于 GB2312 区间近似映射）
+     */
+    private char getPinyinInitial(char ch) {
+        // 按 GB2312 转换后的拼音声母区间
+        byte[] bytes;
+        try {
+            bytes = String.valueOf(ch).getBytes("GBK");
+        } catch (Exception e) {
+            return 'X';
+        }
+        if (bytes.length < 2) return 'X';
+        int code = ((bytes[0] & 0xFF) << 8) | (bytes[1] & 0xFF);
+        if (code < 0xB0A1) return 'X';
+        if (code < 0xB0C5) return 'A';
+        if (code < 0xB2C1) return 'B';
+        if (code < 0xB4EE) return 'C';
+        if (code < 0xB6EA) return 'D';
+        if (code < 0xB7A2) return 'E';
+        if (code < 0xB8C1) return 'F';
+        if (code < 0xB9FE) return 'G';
+        if (code < 0xBBF7) return 'H';
+        if (code < 0xBFA6) return 'J';
+        if (code < 0xC0AC) return 'K';
+        if (code < 0xC2E8) return 'L';
+        if (code < 0xC4C3) return 'M';
+        if (code < 0xC5B6) return 'N';
+        if (code < 0xC5BE) return 'O';
+        if (code < 0xC6DA) return 'P';
+        if (code < 0xC8BB) return 'Q';
+        if (code < 0xC8F6) return 'R';
+        if (code < 0xCBFA) return 'S';
+        if (code < 0xCDDA) return 'T';
+        if (code < 0xCEF4) return 'W';
+        if (code < 0xD1B9) return 'X';
+        if (code < 0xD4D1) return 'Y';
+        if (code <= 0xD7F9) return 'Z';
+        return 'X';
+    }
+
     private String getCategoryPrefix(String category) {
         if (category == null) return "PT";
         switch (category.toUpperCase()) {
@@ -385,6 +458,10 @@ public class ProductTypeServiceImpl implements ProductTypeService {
                 .shelfLifeDays(productType.getShelfLifeDays())
                 .packageSpec(productType.getPackageSpec())
                 .relatedCustomer(productType.getRelatedCustomer())
+                .imageUrl(productType.getImageUrl())
+                .specification(productType.getSpecification())
+                .productCategory(productType.getProductCategory())
+                .temperatureZone(productType.getTemperatureZone())
                 .isActive(productType.getIsActive())
                 .notes(productType.getNotes())
                 .createdBy(productType.getCreatedBy())

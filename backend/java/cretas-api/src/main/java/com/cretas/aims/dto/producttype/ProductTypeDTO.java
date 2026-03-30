@@ -34,8 +34,20 @@ public class ProductTypeDTO {
     private Integer shelfLifeDays;
     private String packageSpec;
 
+    @Schema(description = "产品大类: FINISHED_PRODUCT, RAW_MATERIAL, PACKAGING, SEASONING, CUSTOMER_MATERIAL")
+    private String productCategory;
+
+    @Schema(description = "规格（如 310g*42袋/箱）")
+    private String specification;
+
     @Schema(description = "关联客户名称")
     private String relatedCustomer;
+
+    @Schema(description = "产品图片URL")
+    private String imageUrl;
+
+    @Schema(description = "温区: 常温, 冷藏, 冷冻")
+    private String temperatureZone;
 
     private Boolean isActive;
     private String notes;

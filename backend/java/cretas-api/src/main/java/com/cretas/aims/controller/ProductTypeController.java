@@ -4,8 +4,10 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.producttype.ProductTypeDTO;
+import com.cretas.aims.entity.ProductType;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.ProductTypeService;
+import com.cretas.aims.service.SkuAssemblyService;
 import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,6 +43,51 @@ public class ProductTypeController {
 
     private final ProductTypeService productTypeService;
     private final MobileService mobileService;
+    private final SkuAssemblyService skuAssemblyService;
+
+    /**
+     * SKU组装: 产品模板 + 客户 + 配方 → 独立SKU
+     */
+    @PostMapping("/assemble-sku")
+    @Operation(summary = "组装SKU", description = "从产品模板+客户+配方创建SKU")
+    public ApiResponse<ProductType> assembleSku(
+            @PathVariable String factoryId,
+            @RequestBody Map<String, Object> body,
+            @RequestHeader("Authorization") String authorization) {
+        String token = com.cretas.aims.utils.TokenUtils.extractToken(authorization);
+        Long userId = mobileService.getUserFromToken(token).getId();
+
+        String templateId = (String) body.get("templateId");
+        String customerId = (String) body.get("customerId");
+        String recipeVersion = (String) body.getOrDefault("recipeVersion", "default");
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, Object>> modifications =
+                (Map<String, Map<String, Object>>) body.get("recipeModifications");
+
+        log.info("组装SKU: factory={}, template={}, customer={}", factoryId, templateId, customerId);
+        ProductType sku = skuAssemblyService.assemblesku(
+                factoryId, templateId, customerId, recipeVersion, modifications, userId);
+        return ApiResponse.success("SKU创建成功: " + sku.getCode(), sku);
+    }
+
+    /**
+     * 查询产品模板列表 (非SKU)
+     */
+    @GetMapping("/templates")
+    @Operation(summary = "获取产品模板列表")
+    public ApiResponse<List<ProductType>> getTemplates(@PathVariable String factoryId) {
+        return ApiResponse.success("查询成功", skuAssemblyService.getTemplates(factoryId));
+    }
+
+    /**
+     * 查询模板下的SKU列表
+     */
+    @GetMapping("/templates/{templateId}/skus")
+    @Operation(summary = "获取模板下的SKU")
+    public ApiResponse<List<ProductType>> getSkusByTemplate(
+            @PathVariable String factoryId, @PathVariable String templateId) {
+        return ApiResponse.success("查询成功", skuAssemblyService.getSkusByTemplate(factoryId, templateId));
+    }
 
     /**
      * 创建产品类型

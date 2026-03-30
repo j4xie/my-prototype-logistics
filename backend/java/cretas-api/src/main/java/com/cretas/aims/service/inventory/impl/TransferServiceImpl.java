@@ -245,10 +245,32 @@ public class TransferServiceImpl implements TransferService {
     }
 
     private void deductSourceInventory(String factoryId, InternalTransferItem item) {
-        if (item.getItemType() == TransferItemType.RAW_MATERIAL) {
-            // 扣减原料库存（简化：找第一个可用批次）
-            // 实际可扩展为FIFO
-            log.debug("扣减原料库存: factoryId={}, materialTypeId={}, qty={}", factoryId, item.getMaterialTypeId(), item.getQuantity());
+        if (item.getItemType() == TransferItemType.RAW_MATERIAL || item.getItemType() == TransferItemType.PACKAGING_MATERIAL) {
+            // FEFO 扣减原料/包材库存（先到期先出）
+            List<MaterialBatch> batches = materialBatchRepository.findAvailableBatchesFEFO(factoryId, item.getMaterialTypeId());
+            BigDecimal remaining = item.getQuantity();
+            for (MaterialBatch batch : batches) {
+                if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
+                // 使用乐观锁思路: 读取→计算→保存，@Transactional 保证原子性
+                BigDecimal available = batch.getReceiptQuantity()
+                        .subtract(batch.getUsedQuantity())
+                        .subtract(batch.getReservedQuantity() != null ? batch.getReservedQuantity() : BigDecimal.ZERO);
+                if (available.compareTo(BigDecimal.ZERO) <= 0) continue;
+                BigDecimal deduct = remaining.min(available);
+                batch.setUsedQuantity(batch.getUsedQuantity().add(deduct));
+                if (batch.getReceiptQuantity().subtract(batch.getUsedQuantity()).compareTo(BigDecimal.ZERO) <= 0) {
+                    batch.setStatus(MaterialBatchStatus.DEPLETED);
+                }
+                materialBatchRepository.saveAndFlush(batch); // flush 立即写入，减少并发窗口
+                if (item.getSourceBatchId() == null) item.setSourceBatchId(batch.getId());
+                remaining = remaining.subtract(deduct);
+                log.info("扣减原料批次: batchId={}, deduct={}, remaining={}", batch.getId(), deduct, remaining);
+            }
+            if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+                throw new BusinessException(String.format(
+                    "原料库存不足: %s, 需要 %s, 缺少 %s",
+                    item.getMaterialTypeId(), item.getQuantity(), remaining));
+            }
         } else {
             // 扣减成品库存
             List<FinishedGoodsBatch> batches = finishedGoodsBatchRepository.findAvailableBatches(factoryId, item.getProductTypeId());

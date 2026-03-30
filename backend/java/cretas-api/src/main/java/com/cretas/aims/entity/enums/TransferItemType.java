@@ -5,7 +5,8 @@ package com.cretas.aims.entity.enums;
  */
 public enum TransferItemType {
     RAW_MATERIAL("原料/食材"),
-    FINISHED_GOODS("成品/菜品");
+    FINISHED_GOODS("成品/菜品"),
+    PACKAGING_MATERIAL("包材/包装材料");
 
     private final String displayName;
 

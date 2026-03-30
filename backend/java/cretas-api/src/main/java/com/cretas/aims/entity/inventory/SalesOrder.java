@@ -103,6 +103,46 @@ public class SalesOrder extends BaseEntity {
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
 
+    // ==================== 销售扩展字段 ====================
+
+    /** 业务员 */
+    @Column(name = "salesperson", length = 100)
+    private String salesperson;
+
+    /** 是否含运费 */
+    @Column(name = "shipping_included")
+    private Boolean shippingIncluded;
+
+    /** 运费 */
+    @Column(name = "shipping_fee", precision = 15, scale = 2)
+    private BigDecimal shippingFee;
+
+    /** 实际发货金额 */
+    @Column(name = "actual_shipped_amount", precision = 15, scale = 2)
+    private BigDecimal actualShippedAmount;
+
+    // ==================== 财务审核 ====================
+
+    /** 财务审核人ID */
+    @Column(name = "finance_reviewed_by")
+    private Long financeReviewedBy;
+
+    /** 财务审核时间 */
+    @Column(name = "finance_reviewed_at")
+    private LocalDateTime financeReviewedAt;
+
+    /** 财务审核意见 */
+    @Column(name = "finance_review_notes", columnDefinition = "TEXT")
+    private String financeReviewNotes;
+
+    /** 预估BOM成本（基于BOM + 历史采购均价） */
+    @Column(name = "estimated_cost", precision = 15, scale = 2)
+    private BigDecimal estimatedCost;
+
+    /** 预估利润（totalAmount - estimatedCost） */
+    @Column(name = "estimated_profit", precision = 15, scale = 2)
+    private BigDecimal estimatedProfit;
+
     // ==================== 关联 ====================
 
     @JsonIgnore

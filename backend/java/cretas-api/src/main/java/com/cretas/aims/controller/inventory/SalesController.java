@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreateDeliveryRequest;
 import com.cretas.aims.dto.inventory.CreateSalesOrderRequest;
+import com.cretas.aims.dto.inventory.FinanceReviewRequest;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.entity.inventory.FinishedGoodsBatch;
 import com.cretas.aims.entity.inventory.SalesDeliveryRecord;
@@ -100,6 +101,44 @@ public class SalesController {
             @PathVariable @NotBlank String orderId) {
         SalesOrder order = salesService.cancelOrder(factoryId, orderId);
         return ApiResponse.success("销售订单已取消", order);
+    }
+
+    // ==================== 财务审核 ====================
+
+    @PostMapping("/orders/{orderId}/submit-for-review")
+    @Operation(summary = "提交财务审核", description = "CONFIRMED -> PENDING_FINANCE_REVIEW")
+    @RequirePermission("sales:read_write")
+    public ApiResponse<SalesOrder> submitForFinanceReview(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId) {
+        SalesOrder order = salesService.submitForFinanceReview(factoryId, orderId);
+        return ApiResponse.success("销售订单已提交财务审核", order);
+    }
+
+    @PostMapping("/orders/{orderId}/finance-approve")
+    @Operation(summary = "财务审核通过", description = "PENDING_FINANCE_REVIEW -> FINANCE_APPROVED, 触发供应链联动")
+    @RequirePermission({"finance:read_write", "sales:read_write"})
+    public ApiResponse<SalesOrder> financeApproveOrder(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId,
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody FinanceReviewRequest request) {
+        Long reviewerId = extractUserId(authorization);
+        SalesOrder order = salesService.financeApproveOrder(factoryId, orderId, request.getNotes(), reviewerId);
+        return ApiResponse.success("销售订单财务审核通过", order);
+    }
+
+    @PostMapping("/orders/{orderId}/finance-reject")
+    @Operation(summary = "财务审核驳回", description = "PENDING_FINANCE_REVIEW -> FINANCE_REJECTED")
+    @RequirePermission({"finance:read_write", "sales:read_write"})
+    public ApiResponse<SalesOrder> financeRejectOrder(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId,
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody FinanceReviewRequest request) {
+        Long reviewerId = extractUserId(authorization);
+        SalesOrder order = salesService.financeRejectOrder(factoryId, orderId, request.getNotes(), reviewerId);
+        return ApiResponse.success("销售订单财务审核已驳回", order);
     }
 
     // ==================== 发货/出库 ====================

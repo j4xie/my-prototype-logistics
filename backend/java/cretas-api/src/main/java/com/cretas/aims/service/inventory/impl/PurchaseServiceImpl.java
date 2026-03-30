@@ -3,6 +3,7 @@ package com.cretas.aims.service.inventory.impl;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.CreateReceiveRecordRequest;
+import com.cretas.aims.dto.inventory.MaterialPriceComparisonDTO;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.RawMaterialType;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
@@ -12,9 +13,11 @@ import com.cretas.aims.entity.enums.PurchaseType;
 import com.cretas.aims.entity.inventory.*;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.entity.bom.BomItem;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.SupplierRepository;
+import com.cretas.aims.repository.bom.BomItemRepository;
 import com.cretas.aims.repository.inventory.PurchaseOrderItemRepository;
 import com.cretas.aims.repository.inventory.PurchaseOrderRepository;
 import com.cretas.aims.repository.inventory.PurchaseReceiveRecordRepository;
@@ -47,8 +50,12 @@ public class PurchaseServiceImpl implements PurchaseService {
     private final SupplierRepository supplierRepository;
     private final RawMaterialTypeRepository materialTypeRepository;
     private final MaterialBatchRepository materialBatchRepository;
+    private final BomItemRepository bomItemRepository;
     private final com.cretas.aims.service.finance.ArApService arApService;
     private final ApplicationEventPublisher applicationEventPublisher;
+
+    /** 三价对比偏差预警阈值（10%） */
+    private static final BigDecimal PRICE_ALERT_THRESHOLD = new BigDecimal("10");
 
     public PurchaseServiceImpl(PurchaseOrderRepository purchaseOrderRepository,
                                PurchaseOrderItemRepository purchaseOrderItemRepository,
@@ -56,6 +63,7 @@ public class PurchaseServiceImpl implements PurchaseService {
                                SupplierRepository supplierRepository,
                                RawMaterialTypeRepository materialTypeRepository,
                                MaterialBatchRepository materialBatchRepository,
+                               BomItemRepository bomItemRepository,
                                com.cretas.aims.service.finance.ArApService arApService,
                                ApplicationEventPublisher applicationEventPublisher) {
         this.purchaseOrderRepository = purchaseOrderRepository;
@@ -64,6 +72,7 @@ public class PurchaseServiceImpl implements PurchaseService {
         this.supplierRepository = supplierRepository;
         this.materialTypeRepository = materialTypeRepository;
         this.materialBatchRepository = materialBatchRepository;
+        this.bomItemRepository = bomItemRepository;
         this.arApService = arApService;
         this.applicationEventPublisher = applicationEventPublisher;
     }
@@ -407,6 +416,112 @@ public class PurchaseServiceImpl implements PurchaseService {
         stats.put("monthlyPurchaseAmount", monthlyAmount);
 
         return stats;
+    }
+
+    // ==================== 三价对比 ====================
+
+    @Override
+    public List<MaterialPriceComparisonDTO> getOrderPriceComparison(String factoryId, String orderId) {
+        PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
+        List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
+
+        return items.stream()
+                .map(item -> buildPriceComparison(factoryId, item.getMaterialTypeId(),
+                        item.getMaterialName(), item.getUnitPrice()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public MaterialPriceComparisonDTO getMaterialPriceInfo(String factoryId, String materialTypeId, BigDecimal currentPrice) {
+        RawMaterialType materialType = materialTypeRepository.findById(materialTypeId)
+                .orElseThrow(() -> new ResourceNotFoundException("原料类型不存在: " + materialTypeId));
+        if (!materialType.getFactoryId().equals(factoryId)) {
+            throw new BusinessException("无权访问该原料类型");
+        }
+        return buildPriceComparison(factoryId, materialTypeId, materialType.getName(), currentPrice);
+    }
+
+    /**
+     * 构建单个原料的三价对比数据
+     */
+    private MaterialPriceComparisonDTO buildPriceComparison(String factoryId, String materialTypeId,
+                                                             String materialName, BigDecimal currentPrice) {
+        // 1. 查询原料类型获取移动平均价和基础信息
+        RawMaterialType materialType = materialTypeRepository.findById(materialTypeId).orElse(null);
+        BigDecimal movingAvgPrice = materialType != null ? materialType.getMovingAvgPrice() : null;
+        String materialCode = materialType != null ? materialType.getCode() : null;
+        String unit = materialType != null ? materialType.getUnit() : null;
+        String name = materialName != null ? materialName : (materialType != null ? materialType.getName() : materialTypeId);
+
+        // 2. 查询BOM获取标准单价（如果该原料出现在多个产品的BOM中，取平均值）
+        List<BomItem> bomItems = bomItemRepository.findByFactoryIdAndMaterialTypeIdAndDeletedAtIsNull(factoryId, materialTypeId);
+        BigDecimal bomStandardPrice = null;
+        String bomProductNames = null;
+
+        if (!bomItems.isEmpty()) {
+            // 过滤掉没有单价的BOM项
+            List<BomItem> pricedItems = bomItems.stream()
+                    .filter(b -> b.getUnitPrice() != null && b.getUnitPrice().compareTo(BigDecimal.ZERO) > 0)
+                    .collect(Collectors.toList());
+
+            if (!pricedItems.isEmpty()) {
+                BigDecimal sum = pricedItems.stream()
+                        .map(BomItem::getUnitPrice)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                bomStandardPrice = sum.divide(new BigDecimal(pricedItems.size()), 4, BigDecimal.ROUND_HALF_UP);
+            }
+
+            // 收集关联的产品名称
+            bomProductNames = bomItems.stream()
+                    .map(BomItem::getProductName)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.joining(", "));
+            if (bomProductNames.isEmpty()) {
+                bomProductNames = null;
+            }
+        }
+
+        // 3. 计算偏差百分比
+        BigDecimal varianceFromBom = calculateVariance(currentPrice, bomStandardPrice);
+        BigDecimal varianceFromAvg = calculateVariance(currentPrice, movingAvgPrice);
+
+        // 4. 判断是否价格异常
+        boolean alert = false;
+        if (varianceFromBom != null && varianceFromBom.abs().compareTo(PRICE_ALERT_THRESHOLD) > 0) {
+            alert = true;
+        }
+        if (varianceFromAvg != null && varianceFromAvg.abs().compareTo(PRICE_ALERT_THRESHOLD) > 0) {
+            alert = true;
+        }
+
+        return MaterialPriceComparisonDTO.builder()
+                .materialTypeId(materialTypeId)
+                .materialName(name)
+                .materialCode(materialCode)
+                .unit(unit)
+                .bomStandardPrice(bomStandardPrice)
+                .movingAvgPrice(movingAvgPrice)
+                .currentPrice(currentPrice)
+                .varianceFromBom(varianceFromBom)
+                .varianceFromAvg(varianceFromAvg)
+                .priceAlert(alert)
+                .bomProductNames(bomProductNames)
+                .build();
+    }
+
+    /**
+     * 计算偏差百分比: (current - reference) / reference * 100
+     * @return 偏差百分比，正数表示当前价高于参考价；null 表示无法计算
+     */
+    private BigDecimal calculateVariance(BigDecimal currentPrice, BigDecimal referencePrice) {
+        if (currentPrice == null || referencePrice == null || referencePrice.compareTo(BigDecimal.ZERO) == 0) {
+            return null;
+        }
+        return currentPrice.subtract(referencePrice)
+                .divide(referencePrice, 4, BigDecimal.ROUND_HALF_UP)
+                .multiply(new BigDecimal("100"))
+                .setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
     // ==================== 内部方法 ====================

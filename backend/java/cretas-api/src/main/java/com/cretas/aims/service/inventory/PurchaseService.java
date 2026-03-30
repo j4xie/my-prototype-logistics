@@ -7,6 +7,8 @@ import com.cretas.aims.entity.inventory.PurchaseOrder;
 import com.cretas.aims.entity.inventory.PurchaseReceiveRecord;
 import com.cretas.aims.entity.enums.PurchaseOrderStatus;
 
+import com.cretas.aims.dto.inventory.MaterialPriceComparisonDTO;
+
 import java.util.List;
 import java.util.Map;
 
@@ -45,4 +47,18 @@ public interface PurchaseService {
     // ==================== 统计 ====================
 
     Map<String, Object> getPurchaseStatistics(String factoryId);
+
+    // ==================== 三价对比 ====================
+
+    /**
+     * 获取采购订单的三价对比数据
+     * 对每个行项目比较：BOM标准单价、移动平均价、当前采购单价
+     */
+    List<MaterialPriceComparisonDTO> getOrderPriceComparison(String factoryId, String orderId);
+
+    /**
+     * 获取单个原料的三价信息
+     * 用于采购下单时逐个原料查询参考价
+     */
+    MaterialPriceComparisonDTO getMaterialPriceInfo(String factoryId, String materialTypeId, java.math.BigDecimal currentPrice);
 }

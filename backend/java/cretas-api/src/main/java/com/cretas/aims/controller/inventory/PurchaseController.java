@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.CreateReceiveRecordRequest;
+import com.cretas.aims.dto.inventory.MaterialPriceComparisonDTO;
 import com.cretas.aims.entity.enums.PurchaseOrderStatus;
 import com.cretas.aims.entity.inventory.PurchaseOrder;
 import com.cretas.aims.entity.inventory.PurchaseReceiveRecord;
@@ -20,6 +21,7 @@ import com.cretas.aims.annotation.RequirePermission;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -192,6 +194,29 @@ public class PurchaseController {
             @PathVariable @NotBlank String factoryId) {
         Map<String, Object> stats = purchaseService.getPurchaseStatistics(factoryId);
         return ApiResponse.success("查询成功", stats);
+    }
+
+    // ==================== 三价对比 ====================
+
+    @GetMapping("/orders/{orderId}/price-comparison")
+    @Operation(summary = "采购订单三价对比", description = "对比每个行项目的BOM标准单价、移动平均价、当前采购单价")
+    @RequirePermission({"procurement:read_write", "procurement:read"})
+    public ApiResponse<List<MaterialPriceComparisonDTO>> getOrderPriceComparison(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId) {
+        List<MaterialPriceComparisonDTO> result = purchaseService.getOrderPriceComparison(factoryId, orderId);
+        return ApiResponse.success("查询成功", result);
+    }
+
+    @GetMapping("/materials/{materialTypeId}/price-info")
+    @Operation(summary = "原料三价查询", description = "查询单个原料的BOM标准单价、移动平均价，可选传入当前价计算偏差")
+    @RequirePermission({"procurement:read_write", "procurement:read"})
+    public ApiResponse<MaterialPriceComparisonDTO> getMaterialPriceInfo(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String materialTypeId,
+            @RequestParam(required = false) BigDecimal currentPrice) {
+        MaterialPriceComparisonDTO result = purchaseService.getMaterialPriceInfo(factoryId, materialTypeId, currentPrice);
+        return ApiResponse.success("查询成功", result);
     }
 
     // ==================== 内部方法 ====================

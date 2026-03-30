@@ -28,7 +28,9 @@ import java.util.UUID;
        },
        indexes = {
            @Index(name = "idx_product_factory", columnList = "factory_id"),
-           @Index(name = "idx_product_is_active", columnList = "is_active")
+           @Index(name = "idx_product_is_active", columnList = "is_active"),
+           @Index(name = "idx_product_template", columnList = "template_id"),
+           @Index(name = "idx_product_customer", columnList = "customer_id")
        }
 )
 public class ProductType extends BaseEntity {
@@ -177,7 +179,36 @@ public class ProductType extends BaseEntity {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    /**
+     * 温区: 常温, 冷藏, 冷冻
+     */
+    @Column(name = "temperature_zone", length = 20)
+    private String temperatureZone;
+
     // ==================== End 产品信息管理增强字段 ====================
+
+    // ==================== SKU 组装模型 ====================
+
+    /**
+     * 模板ID：null=此记录是产品模板, 有值=此记录是SKU(指向模板ProductType.id)
+     */
+    @Column(name = "template_id", length = 100)
+    private String templateId;
+
+    /**
+     * 客户ID：关联 Customer 实体 (六扇门要求每个SKU必须绑定客户)
+     * 画布引擎可配置此字段是否必填
+     */
+    @Column(name = "customer_id", length = 191)
+    private String customerId;
+
+    /**
+     * 配方版本标识：默认 "default"，用于同产品+同客户的不同配方变体
+     */
+    @Column(name = "recipe_version", length = 50)
+    private String recipeVersion;
+
+    // ==================== End SKU 组装模型 ====================
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;

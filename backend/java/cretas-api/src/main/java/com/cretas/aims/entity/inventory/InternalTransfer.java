@@ -41,7 +41,8 @@ import java.util.UUID;
                 @Index(name = "idx_it_target", columnList = "target_factory_id"),
                 @Index(name = "idx_it_status", columnList = "status"),
                 @Index(name = "idx_it_type", columnList = "transfer_type"),
-                @Index(name = "idx_it_transfer_date", columnList = "transfer_date")
+                @Index(name = "idx_it_transfer_date", columnList = "transfer_date"),
+                @Index(name = "idx_it_plan", columnList = "production_plan_id")
         }
 )
 public class InternalTransfer extends BaseEntity {
@@ -123,6 +124,10 @@ public class InternalTransfer extends BaseEntity {
 
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
+
+    /** 关联生产计划ID（排产→调拨可追溯） */
+    @Column(name = "production_plan_id", length = 191)
+    private String productionPlanId;
 
     // ==================== 关联 ====================
 

@@ -55,22 +55,40 @@ public class SupplyChainOrchestrator {
     private final QualityInspectionService qualityInspectionService;
     private final BatchConsumptionService batchConsumptionService;
 
-    // ═══════════ 正向链：SO → 库存 → 生产 → 采购 ═══════════
+    // ═══════════ 正向链：SO → 财务审核 → 库存 → 生产 → 采购 ═══════════
 
     /**
-     * 节点②: SO确认后 → 检查成品库存 → 满足则预留，不足则创建PP
+     * 节点①b: SO确认 → 仅记录日志（供应链联动已移至财务审核通过后）
      *
-     * <p>收到 {@link SalesOrderConfirmedEvent} 后：
+     * <p>保留此监听器用于日志/通知，但不再触发库存检查和生产计划创建。
+     * 供应链联动由 {@link #onSalesOrderFinanceApproved} 驱动。
+     */
+    @EventListener
+    @Transactional
+    public void onSalesOrderConfirmed(SalesOrderConfirmedEvent event) {
+        log.info("═══ 供应链通知: SO确认(等待财务审核) ═══ factoryId={}, SO={}",
+                event.getFactoryId(), event.getSalesOrderId());
+        // 供应链联动已移至 onSalesOrderFinanceApproved，此处仅做记录
+    }
+
+    /**
+     * 节点②: 财务审核通过后 → 检查成品库存 → 满足则预留，不足则创建PP
+     *
+     * <p>收到 {@link SalesOrderFinanceApprovedEvent} 后：
      * <ol>
      *   <li>逐行检查订单商品在成品库中的可用量</li>
      *   <li>库存充足 → {@code reserveStock} 预留</li>
      *   <li>库存不足 → {@code createProductionPlanFromSO} 创建PENDING状态的PP草稿，并触发BOM展开</li>
      * </ol>
+     *
+     * <p>业务规则变更（2026-03-26）：生产计划只有在财务审核通过后才可创建，
+     * 确保每笔订单的预估成本和利润已经过财务确认。
      */
     @EventListener
     @Transactional
-    public void onSalesOrderConfirmed(SalesOrderConfirmedEvent event) {
-        log.info("═══ 供应链联动: SO确认 ═══ factoryId={}, SO={}", event.getFactoryId(), event.getSalesOrderId());
+    public void onSalesOrderFinanceApproved(SalesOrderFinanceApprovedEvent event) {
+        log.info("═══ 供应链联动: 财务审核通过 ═══ factoryId={}, SO={}, approvedBy={}",
+                event.getFactoryId(), event.getSalesOrderId(), event.getApprovedBy());
 
         try {
             StockCheckResult result = inventoryMatchingService.checkAvailability(
@@ -90,7 +108,7 @@ public class SupplyChainOrchestrator {
                 }
             }
         } catch (Exception e) {
-            log.error("SO确认联动失败(不影响订单状态): SO={}", event.getSalesOrderId(), e);
+            log.error("财务审核通过联动失败(不影响审批状态): SO={}", event.getSalesOrderId(), e);
         }
     }
 

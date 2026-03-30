@@ -25,6 +25,15 @@ public interface SalesService {
 
     SalesOrder confirmOrder(String factoryId, String orderId);
 
+    /** 提交财务审核: CONFIRMED -> PENDING_FINANCE_REVIEW */
+    SalesOrder submitForFinanceReview(String factoryId, String orderId);
+
+    /** 财务审核通过: PENDING_FINANCE_REVIEW -> FINANCE_APPROVED, 触发供应链联动 */
+    SalesOrder financeApproveOrder(String factoryId, String orderId, String notes, Long reviewerId);
+
+    /** 财务审核驳回: PENDING_FINANCE_REVIEW -> FINANCE_REJECTED */
+    SalesOrder financeRejectOrder(String factoryId, String orderId, String reason, Long reviewerId);
+
     SalesOrder cancelOrder(String factoryId, String orderId);
 
     // ==================== 发货/出库 ====================

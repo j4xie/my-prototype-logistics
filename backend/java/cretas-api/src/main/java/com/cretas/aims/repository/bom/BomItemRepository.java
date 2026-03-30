@@ -51,4 +51,10 @@ public interface BomItemRepository extends JpaRepository<BomItem, Long> {
      */
     @Query("SELECT COUNT(b) FROM BomItem b WHERE b.factoryId = :factoryId AND b.productTypeId = :productTypeId AND b.deletedAt IS NULL")
     long countByFactoryIdAndProductTypeId(@Param("factoryId") String factoryId, @Param("productTypeId") String productTypeId);
+
+    /**
+     * 根据工厂ID和原辅料类型ID查询BOM项目
+     * 用于三价对比：查找某种原料在所有产品BOM中的配置
+     */
+    List<BomItem> findByFactoryIdAndMaterialTypeIdAndDeletedAtIsNull(String factoryId, String materialTypeId);
 }

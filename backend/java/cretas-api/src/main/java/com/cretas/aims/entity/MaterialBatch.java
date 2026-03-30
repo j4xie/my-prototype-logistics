@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.cretas.aims.entity.enums.InboundType;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
@@ -97,6 +98,11 @@ public class MaterialBatch extends BaseEntity {
     private String qualityCertificate;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    /** 入库类型 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "inbound_type", length = 30)
+    private InboundType inboundType;
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
     @Column(name = "last_used_at")
