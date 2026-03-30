@@ -60,7 +60,9 @@ const menuConfig: MenuItem[] = [
       { path: '/production/plans', title: '生产计划', icon: '', module: 'production' },
       { path: '/production/conversions', title: '转换率配置', icon: '', module: 'production' },
       { path: '/production/bom', title: 'BOM成本管理', icon: '', module: 'production' },
-      { path: '/production/approval', title: '报工审批', icon: '', module: 'production' }
+      { path: '/production/approval', title: '报工审批', icon: '', module: 'production' },
+      { path: '/production/bom-achievement', title: 'BOM达成率分析', icon: '', module: 'production' },
+      { path: '/production/process-io', title: '工序投入产出对比', icon: '', module: 'production' }
     ]
   },
   {
@@ -68,7 +70,8 @@ const menuConfig: MenuItem[] = [
     children: [
       { path: '/warehouse/materials', title: '原材料批次', icon: '', module: 'warehouse' },
       { path: '/warehouse/shipments', title: '出货管理', icon: '', module: 'warehouse' },
-      { path: '/warehouse/inventory', title: '盘点管理', icon: '', module: 'warehouse' }
+      { path: '/warehouse/inventory', title: '盘点管理', icon: '', module: 'warehouse' },
+      { path: '/warehouse/material-price-trend', title: '物料均价趋势', icon: '', module: 'warehouse' }
     ]
   },
   {
@@ -124,7 +127,8 @@ const menuConfig: MenuItem[] = [
     children: [
       { path: '/finance/costs', title: '成本分析', icon: '', module: 'finance' },
       { path: '/finance/reports', title: '财务报表', icon: '', module: 'finance' },
-      { path: '/finance/ar-ap', title: '应收应付', icon: '', module: 'finance' }
+      { path: '/finance/ar-ap', title: '应收应付', icon: '', module: 'finance' },
+      { path: '/finance/sku-margin', title: 'SKU毛利率分析', icon: '', module: 'finance' }
     ]
   },
   {
@@ -142,7 +146,8 @@ const menuConfig: MenuItem[] = [
       { path: '/system/workflow-designer', title: '工作流设计器', icon: '', module: 'system' },
       { path: '/system/features', title: '功能模块配置', icon: '', module: 'system' },
       { path: '/system/pos', title: 'POS集成', icon: '', module: 'system' },
-      { path: '/system/smartbi-config', title: 'SmartBI配置', icon: '', module: 'system' }
+      { path: '/system/smartbi-config', title: 'SmartBI配置', icon: '', module: 'system' },
+      { path: '/system/badge-generator', title: '员工工牌生成', icon: '', module: 'system' }
     ]
   },
   {
@@ -153,7 +158,8 @@ const menuConfig: MenuItem[] = [
       { path: '/analytics/ai-reports', title: 'AI分析报告', icon: '', module: 'analytics' },
       { path: '/analytics/kpi', title: 'KPI看板', icon: '', module: 'analytics' },
       { path: '/analytics/production-report', title: '车间实时生产报表', icon: '', module: 'analytics' },
-      { path: '/analytics/alert-dashboard', title: '异常预警', icon: '', module: 'analytics' }
+      { path: '/analytics/alert-dashboard', title: '异常预警', icon: '', module: 'analytics' },
+      { path: '/analytics/supply-chain', title: '进销存闭环总览', icon: '', module: 'analytics' }
     ]
   },
   {

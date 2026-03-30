@@ -1,0 +1,11 @@
+# Task ID: 1
+# Title: 阶段0: FactoryFeatureConfig 新增 production 模块配置
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: 在 factory_feature_config 表中为目标工厂插入 production 模块配置记录，包含 mode、cumulativeReporting、completionRule、reportingInterval 等字段。确保登录响应或 /auth/me 返回 featureConfig 摘要。
+# Details:
+参考方案文档第四节「阶段0」(约行270-290)。不需要新建表或枚举，只需在已有的 factory_feature_config 表插入记录。前端通过 factoryFeatureStore 获取 production.mode。
+
+# Test Strategy:
+验证 API 返回 production.mode = 'PROCESS'；前端 isProcessMode() 返回 true

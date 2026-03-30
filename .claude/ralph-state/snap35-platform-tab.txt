@@ -1,0 +1,354 @@
+- generic [ref=e59]:
+  - generic [ref=e60]:
+    - generic [ref=e67]:
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e71]: 平
+          - generic [ref=e72]:
+            - generic [ref=e73]: 你好, 平台超级管理员
+            - generic [ref=e74]: 平台管理员
+        - generic [ref=e75] [cursor=pointer]:
+          - img: 󰂜
+      - generic [ref=e80]:
+        - generic [ref=e81]: 功能模块
+        - generic [ref=e83] [cursor=pointer]:
+          - generic [ref=e85]:
+            - img: 󰒓
+          - generic [ref=e86]:
+            - generic [ref=e87]: 系统设置
+            - generic [ref=e88]: 个人设置、系统配置
+    - generic [ref=e117]:
+      - generic [ref=e119]:
+        - heading "平台管理中心" [level=1] [ref=e120]
+        - button [ref=e122] [cursor=pointer]:
+          - generic [ref=e124]:
+            - img: 󰂜
+      - generic [ref=e127]:
+        - generic [ref=e131]:
+          - generic [ref=e132]:
+            - img: 󰆥
+          - generic [ref=e133]:
+            - generic [ref=e134]: 欢迎回来，平台超级管理员
+            - generic [ref=e135]: 平台超级管理员
+        - generic [ref=e137]:
+          - generic [ref=e140]: 📊 平台概览
+          - generic [ref=e142]:
+            - generic [ref=e143]:
+              - generic [ref=e144]: "9"
+              - generic [ref=e145]: 工厂总数
+            - generic [ref=e146]:
+              - generic [ref=e147]: "60"
+              - generic [ref=e148]: 用户总数
+            - generic [ref=e149]:
+              - generic [ref=e150]: "0"
+              - generic [ref=e151]: 本周AI调用
+        - generic [ref=e153]:
+          - generic [ref=e156]: 🏭 生产概览
+          - generic [ref=e158]:
+            - generic [ref=e159]:
+              - generic [ref=e160]: "0.0"
+              - generic [ref=e161]: 今日总产量 (吨)
+            - generic [ref=e163]:
+              - generic [ref=e165]:
+                - generic [ref=e166]:
+                  - img: 󰏖
+                - generic [ref=e167]:
+                  - generic [ref=e168]: "153"
+                  - generic [ref=e169]: 总批次数
+              - generic [ref=e171]:
+                - generic [ref=e172]:
+                  - img: 󰗠
+                - generic [ref=e173]:
+                  - generic [ref=e174]: "0"
+                  - generic [ref=e175]: 已完成批次
+              - generic [ref=e177]:
+                - generic [ref=e178]:
+                  - img: 󰄪
+                - generic [ref=e179]:
+                  - generic [ref=e180]: 0.0%
+                  - generic [ref=e181]: 完成率
+        - generic [ref=e183]:
+          - generic [ref=e184]:
+            - generic [ref=e186]: 🏢 工厂状态
+            - generic [ref=e189] [cursor=pointer]: 查看全部
+          - generic [ref=e190]:
+            - generic [ref=e192] [cursor=pointer]:
+              - generic [ref=e193]:
+                - generic [ref=e194]:
+                  - img: 󰈏
+                - generic [ref=e195]:
+                  - generic [ref=e196]: 测试工厂
+                  - generic [ref=e197]: 食品加工 • 上海市浦东新区
+                - generic [ref=e198]:
+                  - button "已停用" [disabled]:
+                    - generic [ref=e200]: 已停用
+              - generic [ref=e201]:
+                - generic [ref=e202]:
+                  - generic [ref=e203]: 用户数
+                  - generic [ref=e204]: "0"
+                - generic [ref=e205]:
+                  - generic [ref=e206]: 批次数
+                  - generic [ref=e207]: "0"
+                - generic [ref=e208]:
+                  - generic [ref=e209]: 联系人
+                  - generic [ref=e210]: "-"
+            - generic [ref=e213] [cursor=pointer]:
+              - generic [ref=e214]:
+                - generic [ref=e215]:
+                  - img: 󰈏
+                - generic [ref=e216]:
+                  - generic [ref=e217]: 六膳门食品科技
+                  - generic [ref=e218]: 食品加工 • 地址未设置
+                - generic [ref=e219]:
+                  - button "运营中" [disabled]:
+                    - generic [ref=e221]: 运营中
+              - generic [ref=e222]:
+                - generic [ref=e223]:
+                  - generic [ref=e224]: 用户数
+                  - generic [ref=e225]: "0"
+                - generic [ref=e226]:
+                  - generic [ref=e227]: 批次数
+                  - generic [ref=e228]: "0"
+                - generic [ref=e229]:
+                  - generic [ref=e230]: 联系人
+                  - generic [ref=e231]: 张六膳
+            - generic [ref=e234] [cursor=pointer]:
+              - generic [ref=e235]:
+                - generic [ref=e236]:
+                  - img: 󰈏
+                - generic [ref=e237]:
+                  - generic [ref=e238]: E2E Test Factory
+                  - generic [ref=e239]: 食品加工 • 地址未设置
+                - generic [ref=e240]:
+                  - button "运营中" [disabled]:
+                    - generic [ref=e242]: 运营中
+              - generic [ref=e243]:
+                - generic [ref=e244]:
+                  - generic [ref=e245]: 用户数
+                  - generic [ref=e246]: "0"
+                - generic [ref=e247]:
+                  - generic [ref=e248]: 批次数
+                  - generic [ref=e249]: "0"
+                - generic [ref=e250]:
+                  - generic [ref=e251]: 联系人
+                  - generic [ref=e252]: Tester
+            - generic [ref=e255] [cursor=pointer]:
+              - generic [ref=e256]:
+                - generic [ref=e257]:
+                  - img: 󰈏
+                - generic [ref=e258]:
+                  - generic [ref=e259]: TestFactory
+                  - generic [ref=e260]: 食品加工 • 地址未设置
+                - generic [ref=e261]:
+                  - button "运营中" [disabled]:
+                    - generic [ref=e263]: 运营中
+              - generic [ref=e264]:
+                - generic [ref=e265]:
+                  - generic [ref=e266]: 用户数
+                  - generic [ref=e267]: "0"
+                - generic [ref=e268]:
+                  - generic [ref=e269]: 批次数
+                  - generic [ref=e270]: "0"
+                - generic [ref=e271]:
+                  - generic [ref=e272]: 联系人
+                  - generic [ref=e273]: Test
+            - generic [ref=e276] [cursor=pointer]:
+              - generic [ref=e277]:
+                - generic [ref=e278]:
+                  - img: 󰈏
+                - generic [ref=e279]:
+                  - generic [ref=e280]: E2E测试工厂
+                  - generic [ref=e281]: 食品加工 • 地址未设置
+                - generic [ref=e282]:
+                  - button "运营中" [disabled]:
+                    - generic [ref=e284]: 运营中
+              - generic [ref=e285]:
+                - generic [ref=e286]:
+                  - generic [ref=e287]: 用户数
+                  - generic [ref=e288]: "0"
+                - generic [ref=e289]:
+                  - generic [ref=e290]: 批次数
+                  - generic [ref=e291]: "0"
+                - generic [ref=e292]:
+                  - generic [ref=e293]: 联系人
+                  - generic [ref=e294]: 测试经理
+        - generic [ref=e296]:
+          - generic [ref=e299]: 🛠️ 管理功能
+          - generic [ref=e300]:
+            - generic [ref=e302]:
+              - generic [ref=e303]:
+                - img: 󰈏
+              - generic [ref=e304]:
+                - generic [ref=e305]: 工厂管理
+                - generic [ref=e306]: 管理所有工厂信息、配置
+              - generic [ref=e307]:
+                - generic [ref=e308]:
+                  - button "9" [disabled]:
+                    - generic [ref=e310]: "9"
+                - generic:
+                  - img: 󰅂
+            - generic [ref=e313]:
+              - generic [ref=e314]:
+                - img: 󰡉
+              - generic [ref=e315]:
+                - generic [ref=e316]: 用户管理
+                - generic [ref=e317]: 跨工厂用户管理、权限设置
+              - generic [ref=e318]:
+                - generic [ref=e319]:
+                  - button "60" [disabled]:
+                    - generic [ref=e321]: "60"
+                - generic:
+                  - img: 󰅂
+            - generic [ref=e324]:
+              - generic [ref=e325]:
+                - img: 󰕥
+              - generic [ref=e326]:
+                - generic [ref=e327]: 白名单管理
+                - generic [ref=e328]: 注册白名单、邀请码管理
+              - generic [ref=e329]:
+                - generic:
+                  - img: 󰅂
+            - generic [ref=e332]:
+              - generic [ref=e333]:
+                - img: 󰚩
+              - generic [ref=e334]:
+                - generic [ref=e335]: AI配额管理
+                - generic [ref=e336]: 管理各工厂AI调用配额
+              - generic [ref=e337]:
+                - generic [ref=e338]:
+                  - button "0/0" [disabled]:
+                    - generic [ref=e340]: 0/0
+                - generic:
+                  - img: 󰅂
+            - generic [ref=e343]:
+              - generic [ref=e344]:
+                - img: 󰨇
+              - generic [ref=e345]:
+                - generic [ref=e346]: 系统监控
+                - generic [ref=e347]: 平台运营数据、性能监控
+              - generic [ref=e348]:
+                - generic:
+                  - img: 󰅂
+            - generic [ref=e351]:
+              - generic [ref=e352]:
+                - img: 󰄨
+              - generic [ref=e353]:
+                - generic [ref=e354]: 平台报表
+                - generic [ref=e355]: 数据统计、导出报表
+              - generic [ref=e356]:
+                - generic:
+                  - img: 󰅂
+            - generic [ref=e359]:
+              - generic [ref=e360]:
+                - img: 󱔗
+              - generic [ref=e361]:
+                - generic [ref=e362]: 行业模板管理
+                - generic [ref=e363]: 管理行业模板包，配置表单结构
+              - generic [ref=e364]:
+                - generic:
+                  - img: 󰅂
+        - generic [ref=e366]:
+          - generic [ref=e369]: ⚡ 快捷操作
+          - generic [ref=e371]:
+            - generic [ref=e372] [cursor=pointer]:
+              - generic [ref=e373]:
+                - img: 󰐗
+              - generic [ref=e374]: 添加工厂
+            - generic [ref=e375] [cursor=pointer]:
+              - generic [ref=e376]:
+                - img: 󰀔
+              - generic [ref=e377]: 添加用户
+            - generic [ref=e378] [cursor=pointer]:
+              - generic [ref=e379]:
+                - img: 󰫚
+              - generic [ref=e380]: 添加白名单
+            - generic [ref=e381] [cursor=pointer]:
+              - generic [ref=e382]:
+                - img: 󰚩
+              - generic [ref=e383]: AI配额
+        - generic [ref=e385]:
+          - generic [ref=e388]: 🟢 系统状态
+          - generic [ref=e389]:
+            - generic [ref=e391]:
+              - generic [ref=e392]:
+                - img: 󰗠
+              - generic [ref=e393]:
+                - generic [ref=e394]: 系统运行正常
+                - generic [ref=e395]: 所有服务正常运行
+            - generic [ref=e397]:
+              - generic [ref=e398]:
+                - generic [ref=e399]:
+                  - img: 󱂛
+                - generic [ref=e400]: API服务
+              - generic [ref=e401]:
+                - button "正常" [disabled]:
+                  - generic [ref=e402]:
+                    - generic [ref=e403]:
+                      - img: 󰄬
+                    - generic [ref=e404]: 正常
+            - generic [ref=e406]:
+              - generic [ref=e407]:
+                - generic [ref=e408]:
+                  - img: 󰆼
+                - generic [ref=e409]: 数据库
+              - generic [ref=e410]:
+                - button "正常" [disabled]:
+                  - generic [ref=e411]:
+                    - generic [ref=e412]:
+                      - img: 󰄬
+                    - generic [ref=e413]: 正常
+            - generic [ref=e415]:
+              - generic [ref=e416]:
+                - generic [ref=e417]:
+                  - img: 󰚩
+                - generic [ref=e418]: AI 服务
+              - generic [ref=e419]:
+                - button "正常" [disabled]:
+                  - generic [ref=e420]:
+                    - generic [ref=e421]:
+                      - img: 󰄬
+                    - generic [ref=e422]: 正常
+            - generic [ref=e424]:
+              - generic [ref=e425]:
+                - generic [ref=e426]:
+                  - img: 󰛶
+                - generic [ref=e427]: 文件服务
+              - generic [ref=e428]:
+                - button "正常" [disabled]:
+                  - generic [ref=e429]:
+                    - generic [ref=e430]:
+                      - img: 󰄬
+                    - generic [ref=e431]: 正常
+            - generic [ref=e433]: 系统指标
+            - generic [ref=e434]:
+              - generic [ref=e435]:
+                - generic [ref=e436]: 运营中
+                - generic [ref=e437]: 8/9
+              - generic [ref=e438]:
+                - generic [ref=e439]: 活跃用户
+                - generic [ref=e440]: 60/60
+              - generic [ref=e441]:
+                - generic [ref=e442]: 完成率
+                - generic [ref=e443]: 0%
+  - tablist [ref=e91]:
+    - tab "首页" [ref=e93] [cursor=pointer]:
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - img: 󰋜
+        - generic [ref=e96]:
+          - img: 󰋜
+      - generic [ref=e97]: 首页
+    - tab "平台" [selected] [ref=e99] [cursor=pointer]:
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - img: 󱢼
+        - generic [ref=e102]:
+          - img: 󱢼
+      - generic [ref=e103]: 平台
+    - tab "我的" [ref=e105] [cursor=pointer]:
+      - generic [ref=e106]:
+        - generic [ref=e107]:
+          - img: 󰀄
+        - generic [ref=e108]:
+          - img: 󰀄
+      - generic [ref=e109]: 我的

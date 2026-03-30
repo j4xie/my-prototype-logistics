@@ -1,0 +1,115 @@
+appId: com.cretas.foodtrace
+---
+# Test 98: P0+P1 Input Mode Exhaustive
+# Verifies: send button disabled when empty, voice/keyboard toggle,
+# voice container visibility, keyboard mode persistence after send,
+# suggested action buttons after AI response
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# I-01: Navigate to AI Chat
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# I-02: Default = voice-first mode, no text input visible
+# ========================================
+- assertVisible:
+    id: "voice-first-container"
+- assertVisible:
+    id: "keyboard-toggle-btn"
+- takeScreenshot: screenshots/98-default-voice-mode
+
+# ========================================
+# I-03: Toggle to keyboard mode
+# ========================================
+- tapOn:
+    id: "keyboard-toggle-btn"
+- waitForAnimationToEnd
+
+# Voice container should be hidden
+- assertNotVisible:
+    id: "voice-first-container"
+    optional: true
+# Text input and send visible
+- assertVisible:
+    id: "ai-chat-input"
+- assertVisible:
+    id: "ai-chat-send-btn"
+- takeScreenshot: screenshots/98-keyboard-mode
+
+# ========================================
+# I-04: Send button should look disabled when input is empty
+# ========================================
+# (We can't directly assert disabled state, but we can verify it's visible)
+- takeScreenshot: screenshots/98-send-btn-empty-input
+
+# ========================================
+# I-05: Type text, send button becomes active
+# ========================================
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "help"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/98-send-btn-with-text
+
+# ========================================
+# I-06: Send message
+# ========================================
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+
+# Wait for AI response
+- extendedWaitUntil:
+    visible: ".*help.*|.*帮助.*|.*执行.*|.*识别.*"
+    timeout: 30000
+- takeScreenshot: screenshots/98-ai-response
+
+# ========================================
+# I-07: After sending, keyboard mode should persist
+# ========================================
+- assertVisible:
+    id: "ai-chat-input"
+- takeScreenshot: screenshots/98-keyboard-persists
+
+# ========================================
+# I-08: Check if suggested actions have adequate touch targets
+# ========================================
+# If AI returned suggested actions, they should be visible
+- assertVisible:
+    id: "suggested-action-0"
+    optional: true
+- takeScreenshot: screenshots/98-suggested-actions
+
+# ========================================
+# I-09: Send second message to verify multi-turn
+# ========================================
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "status"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*status.*|.*状态.*|.*执行.*|.*识别.*"
+    timeout: 30000
+- takeScreenshot: screenshots/98-multi-turn

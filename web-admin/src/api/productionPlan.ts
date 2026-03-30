@@ -32,14 +32,14 @@ export function exportProductionPlans(factoryId: string, params?: Record<string,
 
 /** Get all production lines for a factory */
 export function getProductionLines(factoryId: string, status?: string) {
-  return get<any[]>(`/${factoryId}/scheduling/production-lines`, {
+  return get<Array<{ id: string; name: string; status: string; [key: string]: unknown }>>(`/${factoryId}/scheduling/production-lines`, {
     params: status ? { status } : undefined
   })
 }
 
 /** Get supervisors (workshop supervisors) for a factory */
 export function getSupervisors(factoryId: string) {
-  return get<any[]>(`/${factoryId}/users`, {
+  return get<Array<{ id: number; username: string; realName?: string; [key: string]: unknown }>>(`/${factoryId}/users`, {
     params: { role: 'WORKSHOP_SUPERVISOR' },
   })
 }

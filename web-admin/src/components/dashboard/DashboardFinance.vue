@@ -83,7 +83,7 @@ async function loadFinanceData() {
     const startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
     const endDate = now.toISOString().split('T')[0];
 
-    const response = await get<any>(
+    const response = await get<Record<string, unknown>>(
       `/${factoryId.value}/smart-bi/analysis/finance`,
       { params: { startDate, endDate, analysisType: 'profit' } }
     );

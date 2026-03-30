@@ -1,0 +1,80 @@
+appId: com.cretas.foodtrace
+---
+# Test 93: P1 Voice-First Interaction
+# Verifies voice-first input mode: large mic default, keyboard toggle,
+# voice preview cancel, and back-to-voice after keyboard use
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# V-01: Navigate to AI Chat
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# V-02: Default state — large mic button visible
+# ========================================
+- assertVisible:
+    id: "voice-first-container"
+- assertVisible:
+    text: "\u70B9\u4E00\u4E0B\u8BF4\u8BDD"
+- assertVisible:
+    id: "keyboard-toggle-btn"
+# Text input should NOT be visible in default voice mode
+- assertNotVisible:
+    id: "ai-chat-input"
+    optional: true
+- takeScreenshot: screenshots/93-voice-default
+
+# ========================================
+# V-03: Toggle to keyboard mode
+# ========================================
+- tapOn:
+    id: "keyboard-toggle-btn"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "ai-chat-input"
+- assertVisible:
+    id: "ai-chat-send-btn"
+# Voice-first container should be hidden
+- assertNotVisible:
+    id: "voice-first-container"
+- takeScreenshot: screenshots/93-keyboard-mode
+
+# ========================================
+# V-04: Type and send a message via keyboard
+# ========================================
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "inventory check"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+
+# Wait for AI response
+- extendedWaitUntil:
+    visible: ".*\u5E93\u5B58.*|.*\u67E5\u770B.*|.*\u7269\u6599.*|.*\u6267\u884C.*"
+    timeout: 30000
+- takeScreenshot: screenshots/93-chat-response
+
+# ========================================
+# V-05: After sending, input area should still be in keyboard mode
+# ========================================
+- assertVisible:
+    id: "ai-chat-input"
+- takeScreenshot: screenshots/93-after-send-input

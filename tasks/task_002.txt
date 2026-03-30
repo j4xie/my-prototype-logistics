@@ -1,0 +1,11 @@
+# Task ID: 2
+# Title: 阶段1.1: 新建 WorkProcess 工序主数据实体 + CRUD API
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: 创建 WorkProcess 实体(id, factoryId, processName, processCategory, unit, estimatedMinutes, sortOrder, isActive)、Repository、Service、Controller。API: GET/POST/PUT/DELETE /{factoryId}/work-processes。编写数据库迁移 SQL。
+# Details:
+参考方案文档第二节2.1(约行100-120)和第四节阶段1.1(约行300-310)和SQL(约行430-445)。工序是独立实体，不依赖产品。
+
+# Test Strategy:
+CRUD API 测试通过；数据库表 work_processes 创建成功

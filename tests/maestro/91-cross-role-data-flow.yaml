@@ -1,0 +1,222 @@
+appId: com.cretas.foodtrace
+
+---
+
+# Test 91: Cross-Role Data Flow Verification
+
+# Verifies data visibility across different user roles
+
+# Flow: workshop_sup1 sees batches -> logout -> factory_admin1 sees management + AI tab
+
+
+
+- launchApp:
+
+    clearState: true
+
+- waitForAnimationToEnd
+
+
+
+# ========================================
+
+# Phase 1: Login as Workshop Supervisor
+
+# ========================================
+
+- runFlow: flows/login-ws.yaml
+
+- extendedWaitUntil:
+
+    visible: "Start Task"
+
+    timeout: 15000
+
+
+
+# ========================================
+
+# M-01: Navigate to Batches as WS
+
+# ========================================
+
+- tapOn:
+
+    text: "\u6279\u6B21"
+
+- waitForAnimationToEnd
+
+
+
+- extendedWaitUntil:
+
+    visible: ".*\u6279\u6B21.*|.*Batch.*"
+
+    timeout: 15000
+
+
+
+- takeScreenshot: screenshots/91-ws-batches
+
+
+
+# Note visible batch info
+
+- assertVisible:
+
+    text: ".*PB-.*|.*MB-.*|.*\u6279\u6B21.*"
+
+    optional: true
+
+
+
+# ========================================
+
+# M-02: Logout from workshop supervisor
+
+# ========================================
+
+# Navigate to Profile tab (WS has tab-profile testID)
+
+- tapOn:
+
+    text: "\u6211\u7684"
+
+- waitForAnimationToEnd
+
+
+
+# Look for logout button
+
+- scrollUntilVisible:
+
+    element:
+
+      text: ".*Logout.*|.*\u9000\u51FA.*|.*\u767B\u51FA.*"
+
+    direction: DOWN
+
+    timeout: 10000
+
+
+
+- tapOn:
+
+    text: ".*Logout.*|.*\u9000\u51FA.*|.*\u767B\u51FA.*"
+
+- waitForAnimationToEnd
+
+
+
+# Confirm logout
+
+- tapOn:
+
+    text: ".*OK.*|.*\u786E\u5B9A.*|.*Confirm.*"
+
+    optional: true
+
+- waitForAnimationToEnd
+
+
+
+- takeScreenshot: screenshots/91-logout
+
+
+
+# ========================================
+
+# Phase 2: Login as Factory Admin
+
+# ========================================
+
+- extendedWaitUntil:
+
+    visible: ".*Login.*|.*Cretas.*"
+
+    timeout: 20000
+
+
+
+- runFlow: flows/login.yaml
+
+- extendedWaitUntil:
+
+    visible: "Quality Rate"
+
+    timeout: 15000
+
+
+
+# ========================================
+
+# M-03: Verify FA home screen shows production data
+
+# ========================================
+
+- assertVisible:
+
+    text: "Quality Rate"
+
+
+
+- takeScreenshot: screenshots/91-fa-home
+
+
+
+# ========================================
+
+# M-04: Navigate to Management tab and verify items
+
+# ========================================
+
+- tapOn: "\u7BA1\u7406"
+
+- waitForAnimationToEnd
+
+
+
+- extendedWaitUntil:
+
+    visible: ".*\u7BA1\u7406.*"
+
+    timeout: 15000
+
+
+
+# Verify management items are visible
+
+- assertVisible:
+
+    text: ".*\u751F\u4EA7\u62A5\u5DE5.*"
+
+    optional: true
+
+
+
+- takeScreenshot: screenshots/91-fa-management
+
+
+
+# ========================================
+
+# M-05: Navigate to AI tab and verify
+
+# ========================================
+
+- tapOn: "AI\u5206\u6790"
+
+- waitForAnimationToEnd
+
+
+
+- extendedWaitUntil:
+
+    visible: ".*AI.*|.*\u52A9\u624B.*|.*\u667A\u80FD.*"
+
+    timeout: 15000
+
+
+
+- takeScreenshot: screenshots/91-fa-ai-tab
+

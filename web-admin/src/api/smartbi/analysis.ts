@@ -1388,7 +1388,7 @@ async function _doEnrichSheetAnalysis(
     let t0 = performance.now();
     const [tableRes, fieldsRes] = await Promise.all([
       getUploadTableData(uploadId, 0, 2000),
-      getUploadFields(uploadId).catch(() => ({ success: false, data: [] as any })),
+      getUploadFields(uploadId).catch(() => ({ success: false, data: [] as FieldDefinition[] })),
     ]);
     if (!tableRes.success || !tableRes.data?.data?.length) {
       return { success: false, error: '无法获取上传数据' };
@@ -1550,7 +1550,7 @@ async function _doEnrichSheetAnalysis(
       const series = config.series as unknown[] | undefined;
       if (!series) return true;
       const arr = Array.isArray(series) ? series : [series];
-      return arr.every((s: any) => !s.data || s.data.length === 0);
+      return arr.every((s: Record<string, unknown>) => !s.data || (s.data as unknown[]).length === 0);
     };
     const emptyIndices = charts
       .map((c, i) => isSeriesEmpty(c.config) ? i : -1)
@@ -1596,11 +1596,11 @@ async function _doEnrichSheetAnalysis(
     t0 = performance.now();
     for (const chart of charts) {
       if (chart.chartType !== 'line') continue;
-      const config = chart.config as any;
+      const config = chart.config as Record<string, unknown>;
       const series = config?.series;
       if (!Array.isArray(series)) continue;
 
-      const firstSeries = series.find((s: any) => s.type === 'line' && Array.isArray(s.data));
+      const firstSeries = series.find((s: Record<string, unknown>) => s.type === 'line' && Array.isArray(s.data));
       if (!firstSeries) continue;
       const numericData = firstSeries.data.filter((v: unknown) => typeof v === 'number' && !isNaN(v as number));
       if (numericData.length < 5) continue;

@@ -1,0 +1,249 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "阶段0: FactoryFeatureConfig 新增 production 模块配置",
+      "description": "在 factory_feature_config 表中为目标工厂插入 production 模块配置记录，包含 mode、cumulativeReporting、completionRule、reportingInterval 等字段。确保登录响应或 /auth/me 返回 featureConfig 摘要。",
+      "status": "done",
+      "dependencies": [],
+      "priority": "high",
+      "details": "参考方案文档第四节「阶段0」(约行270-290)。不需要新建表或枚举，只需在已有的 factory_feature_config 表插入记录。前端通过 factoryFeatureStore 获取 production.mode。",
+      "testStrategy": "验证 API 返回 production.mode = 'PROCESS'；前端 isProcessMode() 返回 true"
+    },
+    {
+      "id": 2,
+      "title": "阶段1.1: 新建 WorkProcess 工序主数据实体 + CRUD API",
+      "description": "创建 WorkProcess 实体(id, factoryId, processName, processCategory, unit, estimatedMinutes, sortOrder, isActive)、Repository、Service、Controller。API: GET/POST/PUT/DELETE /{factoryId}/work-processes。编写数据库迁移 SQL。",
+      "status": "done",
+      "dependencies": [
+        1
+      ],
+      "priority": "high",
+      "details": "参考方案文档第二节2.1(约行100-120)和第四节阶段1.1(约行300-310)和SQL(约行430-445)。工序是独立实体，不依赖产品。",
+      "testStrategy": "CRUD API 测试通过；数据库表 work_processes 创建成功"
+    },
+    {
+      "id": 3,
+      "title": "阶段1.2: 新建 ProductWorkProcess 关联实体 + API",
+      "description": "创建 ProductWorkProcess 实体(id, factoryId, productTypeId, workProcessId, processOrder, unitOverride, estimatedMinutesOverride)、Repository、Service、Controller。API 含批量排序。编写迁移 SQL。",
+      "status": "done",
+      "dependencies": [
+        2
+      ],
+      "priority": "high",
+      "details": "参考方案文档第二节2.2(约行120-130)和第四节阶段1.2(约行310-325)和SQL(约行445-460)。多对多关联，支持顺序和覆写参数。",
+      "testStrategy": "关联 API 测试通过；支持拖拽排序的批量更新 API"
+    },
+    {
+      "id": 4,
+      "title": "阶段1.3: 新建 ProcessTask 工序任务实体 + API",
+      "description": "创建 ProcessTask 实体（含 productionRunId、sourceDocType/Id、workflowVersionId、completedQuantity、pendingQuantity、previousTerminalStatus、version乐观锁）、ProcessTaskStatus 枚举（含 SUPPLEMENTING）、Repository、Service、Controller。API 含 active 查询、状态更新、关闭、汇总。编写迁移 SQL。",
+      "status": "done",
+      "dependencies": [
+        3
+      ],
+      "priority": "high",
+      "details": "参考方案文档第二节2.3(约行131-220)和第四节阶段1.3(约行325-345)和SQL(约行458-500)。核心实体，包含审核双轨(completedQuantity/pendingQuantity)和运行实例标识(productionRunId)。active = PENDING/IN_PROGRESS/SUPPLEMENTING。",
+      "testStrategy": "ProcessTask CRUD API 通过；active 查询返回正确状态；乐观锁并发测试"
+    },
+    {
+      "id": 5,
+      "title": "阶段1.4: 改造 ProcessCheckinRecord 和 ProductionReport",
+      "description": "为 ProcessCheckinRecord 新增 processTaskId 字段；为 ProductionReport 新增 processTaskId、isSupplemental、approvalStatus、approvedBy、approvedAt、rejectedReason 字段。编写 ALTER TABLE 迁移 SQL。",
+      "status": "done",
+      "dependencies": [
+        4
+      ],
+      "priority": "high",
+      "details": "参考方案文档第二节2.4(约行220-230)和SQL(约行500-510)。原有 batchId 保留，BATCH 模式继续使用。",
+      "testStrategy": "迁移 SQL 执行成功；现有 BATCH 模式功能不受影响（回归测试）"
+    },
+    {
+      "id": 6,
+      "title": "阶段1.5: 报工累计 API + 审批幂等规则",
+      "description": "实现报工提交(含 processTaskId)、按任务查询报工、按任务汇总、按员工汇总、在岗人员查询。实现审批 API(approve/reject/batch-approve)，确保条件更新(WHERE approval_status='PENDING')、冲销机制(reversal)、高权限自动审批、SUPPLEMENTING 联动。",
+      "status": "done",
+      "dependencies": [
+        5
+      ],
+      "priority": "high",
+      "details": "参考方案文档第四节阶段1.5-1.6(约行355-415)。审批幂等：条件更新返回影响行数为0则409；已审批记录不可修改，只能冲销；批量审批全部成功或全部回滚。completedQuantity 同步机制见第二节(约行162-183)。",
+      "testStrategy": "审批幂等测试（重复审批返回409）；冲销记录正确反向更新 completedQuantity；批量审批事务性测试"
+    },
+    {
+      "id": 7,
+      "title": "阶段1.6: 补报流程 + SUPPLEMENTING 状态闭环",
+      "description": "实现补报 API(supplement)；实现 SUPPLEMENTING 状态进入(记录 previousTerminalStatus)和退出(补报全部审批后自动恢复原终态)。实现定时校准任务(每小时 SUM 校准)和每日报工推送提醒。",
+      "status": "done",
+      "dependencies": [
+        6
+      ],
+      "priority": "high",
+      "details": "参考方案文档第三节3.2-3.4(约行255-295)。SUPPLEMENTING 进入条件：COMPLETED/CLOSED 任务由授权角色发起；退出条件：所有待审补报均已审批完成。推送提醒：下班前30分钟。",
+      "testStrategy": "SUPPLEMENTING 状态流转完整测试；定时校准任务验证 SUM 一致性；推送提醒触发逻辑"
+    },
+    {
+      "id": 8,
+      "title": "阶段2-Vue: 工厂配置中选择生产模式",
+      "description": "在 Vue Web-admin 的平台管理→工厂管理→工厂详情中，通过 FactoryFeatureConfig 提供生产模式选择（批次/工序/订单灰色）。保存时写入 factory_feature_config 表。",
+      "status": "done",
+      "dependencies": [
+        1
+      ],
+      "priority": "high",
+      "details": "参考方案文档第四节阶段2.1(约行495-510)。不修改 Factory 实体，只操作 FactoryFeatureConfig。",
+      "testStrategy": "Vue 页面可选模式并保存；API 正确写入配置"
+    },
+    {
+      "id": 9,
+      "title": "阶段2-Vue: 工序主数据管理页 + 产品-工序关联配置",
+      "description": "新建工序管理页(web-admin/src/views/system/work-processes/index.vue)，支持 CRUD + 启停。在产品详情中新增「工序配置」Tab，左侧可选工序列表，右侧已关联工序（拖拽排序），每行可覆写单位和工时。",
+      "status": "done",
+      "dependencies": [
+        2,
+        3,
+        8
+      ],
+      "priority": "high",
+      "details": "参考方案文档第四节阶段2.2-2.3(约行510-530)。路由 /system/work-processes，仅 PROCESS 模式显示。",
+      "testStrategy": "工序 CRUD 操作验证；产品-工序关联拖拽排序功能测试"
+    },
+    {
+      "id": 10,
+      "title": "阶段2-Vue: 生产计划创建（按模式分支）+ 报工审批页",
+      "description": "改造生产计划创建页：BATCH 模式不动；PROCESS 模式创建 ProcessTask（选产品→带出客户+工序→选工序→填计划量→选日期）。新建报工审批页，含待审列表、通过/驳回、补报高亮标识。",
+      "status": "done",
+      "dependencies": [
+        6,
+        9
+      ],
+      "priority": "high",
+      "details": "参考方案文档第四节阶段2.4-2.5(约行530-560)。",
+      "testStrategy": "PROCESS 模式创建任务完整流程测试；审批页功能测试"
+    },
+    {
+      "id": 11,
+      "title": "阶段2-RN: 工序任务列表页（替代批次列表）",
+      "description": "在 RN App 中，PROCESS 模式下将批次列表替换为工序任务列表。顶部下拉选择工序任务，显示产品名、工序名、进度条(completedQuantity+pendingQuantity/plannedQuantity)、状态标签。",
+      "status": "done",
+      "dependencies": [
+        4,
+        7
+      ],
+      "priority": "high",
+      "details": "参考方案文档第四节阶段3-RN(约行560-595)。进度条区分确认进度和预估进度。",
+      "testStrategy": "RN 工序列表正确显示；进度条双色区分审核前/后数量"
+    },
+    {
+      "id": 12,
+      "title": "阶段2-RN: 签到签退 + 累加报工 + 补报流程",
+      "description": "实现 RN 端工序任务签到/签退（NFC/扫码，绑定 processTaskId）、报工界面（选中工序卡片→输入产量→提交）、支持一小时一报累加。任务 COMPLETED/CLOSED 后报工入口变为「补报」，isSupplemental=true。",
+      "status": "done",
+      "dependencies": [
+        7,
+        11
+      ],
+      "priority": "high",
+      "details": "参考方案文档第四节阶段3-RN(约行560-595)。签到绑定 processTaskId 而非 batchId。",
+      "testStrategy": "签到/签退流程验证；报工提交后 pendingQuantity 正确更新；补报记录标记正确"
+    },
+    {
+      "id": 13,
+      "title": "阶段2-RN: 个人报工历史 + 工序汇总 + 批次总览",
+      "description": "实现三级累计展示：个人级（我的报工历史，按工序任务分组）、工序级（某任务的所有员工报工汇总）、批次级（同一 productionRunId 下所有工序的完成进度总览）。",
+      "status": "done",
+      "dependencies": [
+        12
+      ],
+      "priority": "medium",
+      "details": "参考方案文档第三节3.1(约行245-255)三级累计体系。汇总按 productionRunId 聚合。",
+      "testStrategy": "三级累计数据准确性验证"
+    },
+    {
+      "id": 14,
+      "title": "Drools 激活: 接入现有 DRL + 生产工作流规则组",
+      "description": "编写迁移脚本将 intent-validation.drl、field-validation.drl、data-operation-validation.drl 内容插入 drools_rules 表。修改 RuleEngineServiceImpl 支持 factory_id='SYSTEM' 全局规则 fallback。为生产工作流新增规则组(action:enter_supplementing, exit_supplementing, update_completed_qty, onTransition:PRODUCTION_WORKFLOW, production_validation)。",
+      "status": "done",
+      "dependencies": [
+        1
+      ],
+      "priority": "medium",
+      "details": "参考方案文档第十四节(约行1490-1570)。3个DRL文件在 src/main/resources/rules/ 下。RuleEngineServiceImpl.loadRulesFromDatabase() 需要 fallback 到 SYSTEM 级规则。",
+      "testStrategy": "intentValidation 规则组实际执行；生产工作流 action 规则触发验证"
+    },
+    {
+      "id": 15,
+      "title": "阶段2-引擎: StateMachine 版本治理 + 生产工作流定义",
+      "description": "修改 state_machines 表：新增 publish_status(draft/published/archived)、version 字段；创建唯一当前生效版本的部分索引。实现事务化发布（锁版本+发布+归档）。为 PRODUCTION_WORKFLOW 创建示例工作流 JSON（含 SUPPLEMENTING 状态和 SpEL 白名单 guard）。",
+      "status": "done",
+      "dependencies": [
+        7,
+        14
+      ],
+      "priority": "medium",
+      "details": "参考方案文档第八节阶段2(约行750-920)。版本状态机 draft→published→archived。发布事务规则见约行870-885。guard 使用现有 registerGuardFunctions + 新增4个生产函数。",
+      "testStrategy": "版本发布事务测试；唯一 published 约束验证；guard 函数注册和执行验证"
+    },
+    {
+      "id": 16,
+      "title": "阶段2-引擎: WorkflowNodeRegistry + GlobalConfigRegistry",
+      "description": "创建 WorkflowNodeDescriptor 接口和 WorkflowNodeRegistry（Spring DI 自动发现）。实现 GlobalConfigRegistry。创建首批节点 Descriptor（计划创建、签到签退、累加报工、审批、质检、完工标记）。暴露 API: GET /api/workflow/node-schemas。",
+      "status": "done",
+      "dependencies": [
+        15
+      ],
+      "priority": "medium",
+      "details": "参考方案文档第九节 Node Schema Registry(约行920-1000)。复用 ToolExecutor + ToolRegistry 模式。每个节点有 configSchema(JSON Schema)、allowedNextNodes、defaultConfig。",
+      "testStrategy": "API 返回所有注册节点 Schema；新增 Descriptor 类后自动出现在 API 结果中"
+    },
+    {
+      "id": 17,
+      "title": "阶段3a: 可视化流程设计器（Vue Flow 画布）",
+      "description": "在 Vue Web-admin 平台管理→工厂管理中新增生产流程配置页。使用 Vue Flow 实现拖拽画布，节点库从 /api/workflow/node-schemas 动态加载，属性面板根据 JSON Schema 动态生成表单，全局配置面板同理。支持保存到服务器草稿/本地 localStorage。",
+      "status": "done",
+      "dependencies": [
+        16
+      ],
+      "priority": "low",
+      "details": "参考方案文档第九节阶段3a(约行820-860,1085-1155)。仅 platform_admin 可见。Vue Flow (vue-flow.dev) 画布 + Element Plus 组件。",
+      "testStrategy": "拖拽创建流程并保存/发布；节点属性面板正确渲染 JSON Schema 表单"
+    },
+    {
+      "id": 18,
+      "title": "阶段3b: Factory Config Agent 追问机制 + 知识库",
+      "description": "创建 WorkflowConfigAgent，实现追问收集(topicsCovered/topicsRemaining 7个主题)、工作流生成/修改、模板推荐。复用 food_kb + pgvector，新增 workflow_config category。实现冷启动种子数据导入(5个行业模板)。实现配置进度指示器。",
+      "status": "done",
+      "dependencies": [
+        17
+      ],
+      "priority": "low",
+      "details": "参考方案文档第九节阶段3b(约行860-1085)。追问机制复用 Python topicsCovered 模式 + Vue AiEntryDrawer。知识库默认租户隔离检索。",
+      "testStrategy": "Agent 追问覆盖7个主题；知识库检索返回相关结果；种子数据入库验证"
+    },
+    {
+      "id": 19,
+      "title": "阶段3b: AI 学习机制 + 模板自动生成 + 安全策略",
+      "description": "实现发布时自动入库(analyzeAndIndex)、脱敏处理(sanitizeForSharing)、跨厂共享三条件(已发布+授权+脱敏)。创建 workflow_templates 表（含 review_status）。实现 extractTemplates() 定期从配置中抽取模板。模板人工审核流程。",
+      "status": "done",
+      "dependencies": [
+        18
+      ],
+      "priority": "low",
+      "details": "参考方案文档第九节学习机制(约行1194-1270)。租户隔离：默认只查本厂数据。模板质量阈值 source_count >= 3。",
+      "testStrategy": "发布配置后知识库自动入库；脱敏处理验证客户名等敏感字段被替换；跨厂检索隔离测试"
+    },
+    {
+      "id": 20,
+      "title": "Production Intent Agent — AI Tools 扩展",
+      "description": "新增 ProcessTaskQueryTool、ProcessTaskCreateTool、ProcessTaskSummaryTool、ProcessTaskAnalysisTool，通过 ToolRegistry 注册。实现工作流感知的 Tool 过滤（PROCESS 模式排除 BATCH-only Tools）。",
+      "status": "done",
+      "dependencies": [
+        7,
+        16
+      ],
+      "priority": "medium",
+      "details": "参考方案文档第十节(约行1300-1350)。复用现有 Tool-Skill 架构。",
+      "testStrategy": "AI 对话 '帮我排明天墨鱼圈的卤制' 成功创建 ProcessTask；进度查询返回准确数据"
+    }
+  ]
+}

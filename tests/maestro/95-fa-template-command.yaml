@@ -1,0 +1,99 @@
+appId: com.cretas.foodtrace
+---
+# Test 95: P1+P2 AI Chat Keyboard Intent Flow
+# Verifies keyboard-mode intent sending and card-tap inventory query.
+# NOTE: For real TemplateCommandSheet modal testing, see test 102.
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# T-01: Navigate to AI Chat
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# T-02: Verify card grid and voice-first are present
+# ========================================
+- assertVisible:
+    id: "quick-action-card-grid"
+- assertVisible:
+    id: "voice-first-container"
+- takeScreenshot: screenshots/95-initial-state
+
+# ========================================
+# T-03: Switch to keyboard mode and type a report intent
+# ========================================
+- tapOn:
+    id: "keyboard-toggle-btn"
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "report work"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/95-report-intent-typed
+
+# ========================================
+# T-04: Send the intent
+# ========================================
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+
+# Wait for AI response
+- extendedWaitUntil:
+    visible: ".*\u62A5\u5DE5.*|.*\u6267\u884C.*|.*\u4EA7\u54C1.*|.*\u6570\u91CF.*"
+    timeout: 30000
+- takeScreenshot: screenshots/95-report-response
+
+# ========================================
+# T-05: Verify suggested actions appear if intent needs clarification
+# ========================================
+# The AI may ask for clarification (product/quantity)
+- assertVisible:
+    text: ".*\u4EA7\u54C1.*|.*\u6570\u91CF.*|.*\u62A5\u5DE5.*"
+    optional: true
+- takeScreenshot: screenshots/95-suggested-actions
+
+# ========================================
+# T-06: Go back and try "查库存" flow
+# ========================================
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Tap card directly
+- extendedWaitUntil:
+    visible: "\u67E5\u5E93\u5B58"
+    timeout: 10000
+- tapOn:
+    text: "\u67E5\u5E93\u5B58"
+- waitForAnimationToEnd
+
+# Should get inventory response
+- extendedWaitUntil:
+    visible: ".*\u5E93\u5B58.*|.*\u7269\u6599.*|.*\u6267\u884C.*"
+    timeout: 30000
+- takeScreenshot: screenshots/95-inventory-result
+
+# Verify touch targets are adequate (buttons visible and tappable)
+- assertVisible:
+    id: "ai-chat-input"
+    optional: true
+- takeScreenshot: screenshots/95-final-state

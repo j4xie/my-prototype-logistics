@@ -32,8 +32,11 @@ const getRouter = async () => {
 // 请求拦截器
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Auth is handled by HttpOnly cookies (sent automatically via withCredentials).
-    // No need to read tokens from localStorage.
+    // Add Authorization header from localStorage token
+    const token = localStorage.getItem('cretas_access_token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
 
     // FormData 时删除 Content-Type，让浏览器自动设置 multipart/form-data
     if (config.data instanceof FormData) {

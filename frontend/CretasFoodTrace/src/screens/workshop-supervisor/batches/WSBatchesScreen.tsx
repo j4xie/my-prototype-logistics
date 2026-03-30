@@ -2,7 +2,7 @@
  * Workshop Supervisor 批次管理
  * 包含: 搜索、筛选标签、批次列表
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useFactoryFeatureStore } from '../../../store/factoryFeatureStore';
+import { TutorialOverlay } from '../../../components/common/TutorialOverlay';
+import { useTutorialStore, TUTORIAL_BATCHES, TUTORIAL_ENABLED, useTutorialTarget } from '../../../store/tutorialStore';
 import { WSBatchesStackParamList } from '../../../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<WSBatchesStackParamList, 'WSBatches'>;
@@ -52,6 +54,37 @@ export function WSBatchesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
+
+  // Tutorial
+  const activeTutorial = useTutorialStore(s => s.activeTutorial);
+  const activeStep = useTutorialStore(s => s.activeStep);
+  const completedBatches = useTutorialStore(s => s.completedTutorials[TUTORIAL_BATCHES.id]);
+  const showTutorial = activeTutorial === TUTORIAL_BATCHES.id;
+  const tgtFilter = useTutorialTarget('batches-filter');
+  const tgtBatchList = useTutorialTarget('batches-first-card');
+  const tgtProcessBtn = useTutorialTarget('batches-process-btn');
+
+  useEffect(() => {
+    if (TUTORIAL_ENABLED && !completedBatches && activeTutorial === null) {
+      const timer = setTimeout(() => {
+        const s = useTutorialStore.getState();
+        if (!s.activeTutorial && !s.completedTutorials[TUTORIAL_BATCHES.id]) {
+          s.startTutorial(TUTORIAL_BATCHES.id);
+        }
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [completedBatches]);
+
+  useEffect(() => {
+    if (showTutorial) {
+      setTimeout(() => {
+        tgtFilter.measure();
+        tgtBatchList.measure();
+        tgtProcessBtn.measure();
+      }, 200);
+    }
+  }, [showTutorial]);
 
   // 模拟批次数据
   const [batches] = useState<Batch[]>([
@@ -156,7 +189,7 @@ export function WSBatchesScreen() {
       {/* 头部 */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Text style={styles.headerTitle}>{t('batches.title')}</Text>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View ref={tgtProcessBtn.ref} onLayout={tgtProcessBtn.onLayout} style={{ flexDirection: 'row', gap: 8 }}>
           {useFactoryFeatureStore.getState().isProcessMode() && (
             <TouchableOpacity
               testID="ws-process-task-btn"
@@ -190,7 +223,7 @@ export function WSBatchesScreen() {
       </View>
 
       {/* 筛选标签 */}
-      <View style={styles.filterContainer}>
+      <View ref={tgtFilter.ref} onLayout={tgtFilter.onLayout} style={styles.filterContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {FILTER_TABS.map(tab => (
             <TouchableOpacity
@@ -223,6 +256,7 @@ export function WSBatchesScreen() {
       </View>
 
       {/* 批次列表 */}
+      <View ref={tgtBatchList.ref} onLayout={tgtBatchList.onLayout} style={{ flex: 1 }} collapsable={false}>
       <ScrollView
         style={styles.listContainer}
         refreshControl={
@@ -281,6 +315,7 @@ export function WSBatchesScreen() {
         })}
         <View style={{ height: 100 }} />
       </ScrollView>
+      </View>
 
       {/* 悬浮添加按钮 */}
       <TouchableOpacity
@@ -289,6 +324,15 @@ export function WSBatchesScreen() {
       >
         <Icon source="plus" size={28} color="#fff" />
       </TouchableOpacity>
+
+      {/* Tutorial */}
+      <TutorialOverlay
+        visible={showTutorial}
+        steps={TUTORIAL_BATCHES.steps}
+        currentStep={activeStep}
+        onNext={() => useTutorialStore.getState().nextStep(TUTORIAL_BATCHES.steps.length)}
+        onSkip={() => useTutorialStore.getState().skipTutorial()}
+      />
     </View>
   );
 }

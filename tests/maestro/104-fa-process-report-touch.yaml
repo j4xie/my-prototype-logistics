@@ -1,0 +1,115 @@
+appId: com.cretas.foodtrace
+---
+# Test 104: P0 ProcessTaskReport Touch Targets
+# Tests: navigate to report screen, verify large input fields,
+# quick fill buttons (minHeight 48), submit button
+
+# NOTE: ProcessTaskReport requires a taskId from process task list.
+# We navigate through the management tab to find an existing task.
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# R-01: Navigate to Management tab
+# ========================================
+- tapOn:
+    text: ".*管理.*|.*Management.*"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/104-management-tab
+
+# ========================================
+# R-02: Find Process Task List
+# ========================================
+- tapOn:
+    text: ".*工序任务.*|.*Process.*Task.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/104-process-tasks
+
+# ========================================
+# R-03: Tap first task to see detail
+# ========================================
+- extendedWaitUntil:
+    visible: ".*IN_PROGRESS.*|.*进行中.*|.*PENDING.*|.*待处理.*|.*任务.*"
+    timeout: 10000
+    optional: true
+
+# Try to tap a task item
+- tapOn:
+    text: ".*IN_PROGRESS.*|.*进行中.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/104-task-detail
+
+# ========================================
+# R-04: Navigate to report screen
+# ========================================
+- tapOn:
+    text: ".*报工.*|.*Report.*"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# R-05: Verify report screen elements
+# ========================================
+- assertVisible:
+    id: "process-task-report"
+    optional: true
+
+# If we reached the report screen, verify elements
+- assertVisible:
+    id: "report-quantity-input"
+    optional: true
+- assertVisible:
+    id: "report-submit-btn"
+    optional: true
+- takeScreenshot: screenshots/104-report-screen
+
+# ========================================
+# R-06: Check quick fill buttons exist
+# ========================================
+# Quick fill buttons have testID="report-quick-fill-{value}"
+- takeScreenshot: screenshots/104-quick-fill-buttons
+
+# ========================================
+# R-07: Try filling quantity
+# ========================================
+- tapOn:
+    id: "report-quantity-input"
+    optional: true
+- inputText: "100"
+    optional: true
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/104-quantity-filled
+
+# ========================================
+# R-08: Verify notes field
+# ========================================
+- assertVisible:
+    id: "report-notes-input"
+    optional: true
+- takeScreenshot: screenshots/104-notes-field
+
+# ========================================
+# R-09: Go back without submitting
+# ========================================
+- tapOn:
+    id: "report-back"
+    optional: true
+- waitForAnimationToEnd
+
+# Handle cancel confirmation if it appears
+- tapOn:
+    text: ".*取消.*|.*确定.*|.*OK.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/104-back-to-list

@@ -1,0 +1,166 @@
+appId: com.cretas.foodtrace
+
+---
+
+# Test 88: Warehouse Manager - Inbound Receipt Flow
+
+# Verifies inbound receipt create screen loads with form fields
+
+# NOTE: MaterialReceiptAI is only in ProcessingStack (not FA/WM navigator).
+
+#       Using WM inbound create as the closest equivalent.
+
+
+
+- launchApp:
+
+    clearState: true
+
+- waitForAnimationToEnd
+
+
+
+# Login as warehouse manager (has inbound access via 入库 tab)
+
+- runFlow: flows/login-wm.yaml
+
+- extendedWaitUntil:
+
+    visible: ".*\u4ED3\u50A8.*|.*\u5E93\u5B58.*|.*Warehouse.*|.*Inventory.*"
+
+    timeout: 15000
+
+
+
+# ========================================
+
+# M-01: Navigate to Inbound tab (WM tab: 入库)
+
+# ========================================
+
+- tapOn: "\u5165\u5E93"
+
+- waitForAnimationToEnd
+
+
+
+- extendedWaitUntil:
+
+    visible: ".*\u5165\u5E93.*|.*Inbound.*|.*All.*"
+
+    timeout: 15000
+
+
+
+- takeScreenshot: screenshots/88-inbound-list
+
+
+
+# ========================================
+
+# M-02: Tap New Inbound button
+
+# ========================================
+
+- tapOn:
+
+    text: ".*New Inbound.*|.*\u65B0\u5EFA\u5165\u5E93.*"
+
+    optional: true
+
+- waitForAnimationToEnd
+
+
+
+# Wait for the form to load
+
+- extendedWaitUntil:
+
+    visible: ".*\u5165\u5E93.*|.*\u7269\u6599.*|.*\u4F9B\u5E94\u5546.*|.*\u65B0\u5EFA.*"
+
+    timeout: 15000
+
+
+
+- takeScreenshot: screenshots/88-inbound-create-form
+
+
+
+# ========================================
+
+# M-03: Verify form fields are loaded
+
+# ========================================
+
+# The form should show material/supplier fields
+
+- assertVisible:
+
+    text: ".*\u7269\u6599.*|.*\u6570\u91CF.*|.*\u4F9B\u5E94\u5546.*"
+
+    optional: true
+
+
+
+- swipe:
+
+    direction: UP
+
+    duration: 500
+
+- waitForAnimationToEnd
+
+
+
+- takeScreenshot: screenshots/88-inbound-form-fields
+
+
+
+# ========================================
+
+# M-04: Verify submit area exists
+
+# ========================================
+
+- scrollUntilVisible:
+
+    element:
+
+      text: ".*\u786E\u8BA4\u5165\u5E93.*|.*\u63D0\u4EA4.*|.*\u4FDD\u5B58.*"
+
+    direction: DOWN
+
+    timeout: 10000
+
+
+
+- takeScreenshot: screenshots/88-inbound-submit-area
+
+
+
+# ========================================
+
+# M-05: Go back (cancel flow)
+
+# ========================================
+
+- back
+
+- waitForAnimationToEnd
+
+
+
+# Handle cancel confirmation dialog
+
+- tapOn:
+
+    text: ".*\u53D6\u6D88.*|.*\u786E\u5B9A.*|.*OK.*"
+
+    optional: true
+
+- waitForAnimationToEnd
+
+
+
+- takeScreenshot: screenshots/88-inbound-return
+

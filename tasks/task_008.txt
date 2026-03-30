@@ -1,0 +1,11 @@
+# Task ID: 8
+# Title: 阶段2-Vue: 工厂配置中选择生产模式
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: 在 Vue Web-admin 的平台管理→工厂管理→工厂详情中，通过 FactoryFeatureConfig 提供生产模式选择（批次/工序/订单灰色）。保存时写入 factory_feature_config 表。
+# Details:
+参考方案文档第四节阶段2.1(约行495-510)。不修改 Factory 实体，只操作 FactoryFeatureConfig。
+
+# Test Strategy:
+Vue 页面可选模式并保存；API 正确写入配置

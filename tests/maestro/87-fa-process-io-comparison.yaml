@@ -1,0 +1,254 @@
+appId: com.cretas.foodtrace
+
+---
+
+# Test 87: Factory Admin - Process Task Input/Output Comparison
+
+# Verifies process-io-comparison card with input, output, and conversion rate
+
+# Covers: process-io-comparison testID, 投入量/产出量/转化率 text
+
+
+
+- launchApp:
+
+    clearState: true
+
+- waitForAnimationToEnd
+
+
+
+# Login as factory_admin1
+
+- runFlow: flows/login.yaml
+
+- extendedWaitUntil:
+
+    visible: "Quality Rate"
+
+    timeout: 15000
+
+
+
+# ========================================
+
+# M-01: Navigate to Management tab (FA has no Processing tab)
+
+# ========================================
+
+- tapOn: "\u7BA1\u7406"
+
+- waitForAnimationToEnd
+
+
+
+- extendedWaitUntil:
+
+    visible: ".*\u7BA1\u7406.*"
+
+    timeout: 15000
+
+- takeScreenshot: screenshots/87-management-home
+
+
+
+# ========================================
+
+# M-02: Navigate to Process Task List via Management
+
+# ========================================
+
+- scrollUntilVisible:
+
+    element:
+
+      text: "\u5DE5\u5E8F\u4EFB\u52A1"
+
+    direction: DOWN
+
+    timeout: 10000
+
+
+
+- tapOn:
+
+    text: "\u5DE5\u5E8F\u4EFB\u52A1"
+
+
+
+- extendedWaitUntil:
+
+    visible: ".*\u5DE5\u5E8F.*|.*\u4EFB\u52A1.*"
+
+    timeout: 15000
+
+- takeScreenshot: screenshots/87-task-list
+
+
+
+# ========================================
+
+# M-03: Filter to show IN_PROGRESS tasks
+
+# ========================================
+
+- tapOn:
+
+    text: "\u8FDB\u884C\u4E2D"
+
+    optional: true
+
+- waitForAnimationToEnd
+
+
+
+# ========================================
+
+# M-04: Tap on first task to open detail
+
+# ========================================
+
+# Try tapping the first task card
+
+- tapOn:
+
+    text: ".*\u5DE5\u5E8F.*"
+
+    index: 0
+
+    optional: true
+
+- waitForAnimationToEnd
+
+
+
+# Wait for task detail screen
+
+- extendedWaitUntil:
+
+    visible: ".*\u4EFB\u52A1\u8BE6\u60C5.*|.*\u8BA1\u5212\u91CF.*"
+
+    timeout: 15000
+
+
+
+- takeScreenshot: screenshots/87-task-detail
+
+
+
+# ========================================
+
+# M-05: Verify quantity display
+
+# ========================================
+
+- assertVisible:
+
+    id: "task-detail-planned-qty"
+
+    optional: true
+
+
+
+- assertVisible:
+
+    id: "task-detail-completed-qty"
+
+    optional: true
+
+
+
+# ========================================
+
+# M-06: Look for Input/Output Comparison card
+
+# ========================================
+
+# The process-io-comparison card only shows when inputQuantity > 0 and completedQuantity > 0
+
+- scrollUntilVisible:
+
+    element:
+
+      text: ".*\u6295\u5165\u4EA7\u51FA.*|.*\u8F6C\u5316\u7387.*|.*\u62A5\u5DE5\u8BB0\u5F55.*"
+
+    direction: DOWN
+
+    timeout: 10000
+
+
+
+# Assert IO comparison card (may not be visible if no input data)
+
+- assertVisible:
+
+    id: "process-io-comparison"
+
+    optional: true
+
+
+
+# Assert text labels
+
+- assertVisible:
+
+    text: ".*\u6295\u5165.*"
+
+    optional: true
+
+
+
+- assertVisible:
+
+    text: ".*\u4EA7\u51FA.*"
+
+    optional: true
+
+
+
+- assertVisible:
+
+    text: ".*\u8F6C\u5316\u7387.*"
+
+    optional: true
+
+
+
+- takeScreenshot: screenshots/87-process-io-comparison
+
+
+
+# ========================================
+
+# M-07: Scroll to see reports section
+
+# ========================================
+
+- scrollUntilVisible:
+
+    element:
+
+      text: ".*\u62A5\u5DE5\u8BB0\u5F55.*"
+
+    direction: DOWN
+
+    timeout: 10000
+
+
+
+- takeScreenshot: screenshots/87-task-reports
+
+
+
+# ========================================
+
+# M-08: Go back to task list
+
+# ========================================
+
+- back
+
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/87-task-list-return
+

@@ -1,0 +1,87 @@
+- generic [ref=e59]:
+  - generic [ref=e60]:
+    - generic [ref=e67]:
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e71]: 平
+          - generic [ref=e72]:
+            - generic [ref=e73]: 你好, 平台超级管理员
+            - generic [ref=e74]: 平台管理员
+        - generic [ref=e75] [cursor=pointer]:
+          - img: 󰂜
+      - generic [ref=e80]:
+        - generic [ref=e81]: 功能模块
+        - generic [ref=e83] [cursor=pointer]:
+          - generic [ref=e85]:
+            - img: 󰒓
+          - generic [ref=e86]:
+            - generic [ref=e87]: 系统设置
+            - generic [ref=e88]: 个人设置、系统配置
+    - generic [ref=e448]:
+      - generic [ref=e450]:
+        - button "Back" [ref=e452] [cursor=pointer]:
+          - generic [ref=e454]:
+            - img: 󰁍
+        - heading "白名单管理" [level=1] [ref=e455]
+        - button [ref=e457] [cursor=pointer]:
+          - generic [ref=e459]:
+            - img: 󰑐
+      - generic [ref=e461]:
+        - generic [ref=e464]:
+          - generic [ref=e465]:
+            - generic:
+              - img: 󰋼
+            - generic [ref=e466]: 白名单说明
+          - generic [ref=e467]: • 只有白名单中的手机号才能注册用户 • 批量添加时每行一个手机号 • 用户注册后白名单状态自动变为"已使用"
+        - generic [ref=e471]:
+          - button "全部" [ref=e473] [cursor=pointer]:
+            - generic [ref=e475]: 全部
+          - button "待使用" [ref=e477] [cursor=pointer]:
+            - generic [ref=e479]: 待使用
+          - button "已使用" [ref=e481] [cursor=pointer]:
+            - generic [ref=e483]: 已使用
+          - button "已过期" [ref=e485] [cursor=pointer]:
+            - generic [ref=e487]: 已过期
+        - generic [ref=e491]:
+          - generic [ref=e492]:
+            - generic [ref=e493]: "0"
+            - generic [ref=e494]: 总数
+          - generic [ref=e495]:
+            - generic [ref=e496]: "0"
+            - generic [ref=e497]: 待使用
+          - generic [ref=e498]:
+            - generic [ref=e499]: "0"
+            - generic [ref=e500]: 已使用
+        - generic [ref=e503]:
+          - generic:
+            - img: 󰳈
+          - generic [ref=e504]: 暂无白名单
+          - generic [ref=e505]: 点击右下角"+"按钮批量添加
+      - button "批量添加" [ref=e508] [cursor=pointer]:
+        - generic:
+          - generic:
+            - generic:
+              - img: 󰐕
+          - generic: 批量添加
+  - tablist [ref=e91]:
+    - tab "首页" [ref=e93] [cursor=pointer]:
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - img: 󰋜
+        - generic [ref=e96]:
+          - img: 󰋜
+      - generic [ref=e97]: 首页
+    - tab "平台" [selected] [ref=e99] [cursor=pointer]:
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - img: 󱢼
+        - generic [ref=e102]:
+          - img: 󱢼
+      - generic [ref=e103]: 平台
+    - tab "我的" [ref=e105] [cursor=pointer]:
+      - generic [ref=e106]:
+        - generic [ref=e107]:
+          - img: 󰀄
+        - generic [ref=e108]:
+          - img: 󰀄
+      - generic [ref=e109]: 我的

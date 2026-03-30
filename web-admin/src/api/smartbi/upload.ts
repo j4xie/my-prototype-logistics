@@ -152,7 +152,7 @@ export function confirmUploadAndPersist(data: {
 export async function getUploadHistory(params?: { status?: string; page?: number; size?: number }): Promise<{ success: boolean; data: UploadHistoryItem[] }> {
   try {
     const mergedParams = { page: 0, size: 200, ...params };
-    const res = await get<any>(`${getSmartBIBasePath()}/uploads`, { params: mergedParams, _silent: true } as Record<string, unknown>);
+    const res = await get<{ content?: UploadHistoryItem[] } | UploadHistoryItem[]>(`${getSmartBIBasePath()}/uploads`, { params: mergedParams, _silent: true } as Record<string, unknown>);
     // Handle paginated response (Spring Page: { content: [], totalElements, ... })
     if (res.success && res.data && Array.isArray(res.data.content)) {
       return { success: true, data: res.data.content };

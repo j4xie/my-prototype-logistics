@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { BatchStatusBadge, BatchStatus } from '../../components/processing';
 import { processingApiClient, ProcessingBatch } from '../../services/api/processingApiClient';
-import { materialConsumptionApiClient, MaterialConsumption } from '../../services/api/materialConsumptionApiClient';
+import { materialConsumptionApiClient, MaterialConsumption, BatchConsumptionSummary } from '../../services/api/materialConsumptionApiClient';
 import { handleError } from '../../utils/errorHandler';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
@@ -40,20 +40,28 @@ export default function BatchDetailScreen() {
   const [consumptions, setConsumptions] = useState<MaterialConsumption[]>([]);
   const [consumptionLoading, setConsumptionLoading] = useState(false);
   const [consumptionStats, setConsumptionStats] = useState<{ totalQuantity: number; totalCost: number } | null>(null);
+  const [consumptionSummary, setConsumptionSummary] = useState<BatchConsumptionSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
       fetchBatchDetail();
       if (activeTab === 'consumption') {
         fetchConsumptions();
+        fetchConsumptionSummary();
       }
     }, [batchId, activeTab])
   );
 
   // 当切换到消耗 Tab 时加载数据
   React.useEffect(() => {
-    if (activeTab === 'consumption' && consumptions.length === 0) {
-      fetchConsumptions();
+    if (activeTab === 'consumption') {
+      if (consumptions.length === 0) {
+        fetchConsumptions();
+      }
+      if (!consumptionSummary) {
+        fetchConsumptionSummary();
+      }
     }
   }, [activeTab]);
 
@@ -94,11 +102,31 @@ export default function BatchDetailScreen() {
     }
   };
 
+  const fetchConsumptionSummary = async () => {
+    try {
+      setSummaryLoading(true);
+      const response = await materialConsumptionApiClient.getBatchConsumptionSummary(batchId);
+      if (response.success && response.data) {
+        setConsumptionSummary(response.data);
+      }
+    } catch (error) {
+      handleError(error, { showAlert: false, logError: true });
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  const getAchievementColor = (rate: number): string => {
+    if (rate >= 95) return '#4CAF50';
+    if (rate >= 85) return '#FF9800';
+    return '#F44336';
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchBatchDetail();
     if (activeTab === 'consumption') {
-      await fetchConsumptions();
+      await Promise.all([fetchConsumptions(), fetchConsumptionSummary()]);
     }
     setRefreshing(false);
   };
@@ -185,6 +213,95 @@ export default function BatchDetailScreen() {
         {activeTab === 'consumption' ? (
           /* 消耗记录 Tab */
           <>
+            {/* BOM达成率卡片 */}
+            {summaryLoading ? (
+              <Surface style={styles.bomCard} elevation={1}>
+                <View style={styles.bomLoadingContainer}>
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                  <Text style={styles.bomLoadingText}>加载BOM达成率...</Text>
+                </View>
+              </Surface>
+            ) : consumptionSummary ? (
+              <Surface style={styles.bomCard} elevation={1} testID="bom-achievement-card">
+                <View style={styles.bomHeader}>
+                  <Text style={styles.bomTitle}>BOM达成率</Text>
+                  <View
+                    testID="bom-achievement-rate"
+                    style={[
+                      styles.bomRateBadge,
+                      { backgroundColor: getAchievementColor(consumptionSummary.overallAchievementRate) + '18' },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.bomRateText,
+                        { color: getAchievementColor(consumptionSummary.overallAchievementRate) },
+                      ]}
+                    >
+                      {consumptionSummary.overallAchievementRate.toFixed(1)}%
+                    </Text>
+                  </View>
+                </View>
+
+                {/* 总量概览 */}
+                <View style={styles.bomOverviewRow}>
+                  <View style={styles.bomOverviewItem}>
+                    <Text style={styles.bomOverviewLabel}>计划总量</Text>
+                    <Text style={styles.bomOverviewValue}>
+                      {consumptionSummary.totalPlannedQuantity.toFixed(2)} kg
+                    </Text>
+                  </View>
+                  <View style={styles.bomOverviewDivider} />
+                  <View style={styles.bomOverviewItem}>
+                    <Text style={styles.bomOverviewLabel}>实际总量</Text>
+                    <Text style={styles.bomOverviewValue}>
+                      {consumptionSummary.totalActualQuantity.toFixed(2)} kg
+                    </Text>
+                  </View>
+                </View>
+
+                {/* 物料明细 */}
+                {consumptionSummary.materials.length > 0 && (
+                  <View style={styles.bomMaterialList}>
+                    <Text style={styles.bomMaterialListTitle}>物料明细</Text>
+                    {consumptionSummary.materials.map((material, index) => (
+                      <View key={index} style={styles.bomMaterialItem}>
+                        <View style={styles.bomMaterialHeader}>
+                          <Text style={styles.bomMaterialName}>{material.materialTypeName}</Text>
+                          <Text
+                            style={[
+                              styles.bomMaterialRate,
+                              { color: getAchievementColor(material.achievementRate) },
+                            ]}
+                          >
+                            {material.achievementRate.toFixed(1)}%
+                          </Text>
+                        </View>
+                        <View style={styles.bomMaterialDetails}>
+                          <Text style={styles.bomMaterialDetail}>
+                            计划: {material.plannedQuantity.toFixed(2)} kg
+                          </Text>
+                          <Text style={styles.bomMaterialDetail}>
+                            实际: {material.actualQuantity.toFixed(2)} kg
+                          </Text>
+                          <Text
+                            style={[
+                              styles.bomMaterialDetail,
+                              {
+                                color: material.variance >= 0 ? '#4CAF50' : '#F44336',
+                              },
+                            ]}
+                          >
+                            差异: {material.variance >= 0 ? '+' : ''}{material.variance.toFixed(2)} kg
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </Surface>
+            ) : null}
+
             {/* 消耗统计 */}
             {consumptionStats && (
               <Surface style={styles.statsCard} elevation={1}>
@@ -538,5 +655,108 @@ const styles = StyleSheet.create({
       fontSize: 13,
       fontWeight: '500',
       color: theme.colors.onSurface,
+  },
+  // BOM Achievement Card styles
+  bomCard: {
+      backgroundColor: '#FFF',
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+  },
+  bomLoadingContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 12,
+  },
+  bomLoadingText: {
+      marginLeft: 8,
+      fontSize: 13,
+      color: theme.colors.onSurfaceVariant,
+  },
+  bomHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+  },
+  bomTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.colors.onSurface,
+  },
+  bomRateBadge: {
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 12,
+  },
+  bomRateText: {
+      fontSize: 16,
+      fontWeight: '700',
+  },
+  bomOverviewRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: 8,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      marginBottom: 12,
+  },
+  bomOverviewItem: {
+      flex: 1,
+      alignItems: 'center',
+  },
+  bomOverviewDivider: {
+      width: 1,
+      height: 28,
+      backgroundColor: theme.colors.outlineVariant,
+  },
+  bomOverviewLabel: {
+      fontSize: 12,
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: 2,
+  },
+  bomOverviewValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.onSurface,
+  },
+  bomMaterialList: {
+      gap: 8,
+  },
+  bomMaterialListTitle: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: 4,
+  },
+  bomMaterialItem: {
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: 8,
+      padding: 10,
+  },
+  bomMaterialHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+  },
+  bomMaterialName: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: theme.colors.onSurface,
+  },
+  bomMaterialRate: {
+      fontSize: 14,
+      fontWeight: '600',
+  },
+  bomMaterialDetails: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+  },
+  bomMaterialDetail: {
+      fontSize: 12,
+      color: theme.colors.onSurfaceVariant,
   },
 });

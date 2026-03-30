@@ -4,9 +4,15 @@
  */
 
 import { userApiClient } from '../../../services/api/userApiClient';
-import { createApiMock, mockSuccessResponse, mockErrorResponse, resetApiMock } from '../../utils/mockApiClient';
+import { createApiMock, mockSuccessResponse as _mockSuccess, mockErrorResponse, resetApiMock } from '../../utils/mockApiClient';
 import { mockUser, expectSuccessResponse, expectApiError } from '../../utils/testHelpers';
 import MockAdapter from 'axios-mock-adapter';
+
+// userApiClient methods extract response.data internally,
+// so mock responses need to be wrapped in { data: ... } format
+function mockSuccessResponse(mock: MockAdapter, method: 'get' | 'post' | 'put' | 'delete', url: string | RegExp, responseData: any, status = 200) {
+  _mockSuccess(mock, method, url, { data: responseData }, status);
+}
 
 describe('userApiClient', () => {
   let mock: MockAdapter;
@@ -56,7 +62,7 @@ describe('userApiClient', () => {
 
       mock.onGet(/\/api\/mobile\/.*\/users/).reply((config) => {
         expect(config.params).toHaveProperty('keyword', '测试');
-        return [200, mockResponse];
+        return [200, { data: mockResponse }];
       });
 
       const result = await userApiClient.getUsers({ keyword: '测试' });
@@ -313,7 +319,7 @@ describe('userApiClient', () => {
 
       mock.onGet(/\/api\/mobile\/.*\/users\/search/).reply((config) => {
         expect(config.params).toHaveProperty('keyword', '张');
-        return [200, mockResponse];
+        return [200, { data: mockResponse }];
       });
 
       const result = await userApiClient.searchUsers({ keyword: '张' });
@@ -327,7 +333,7 @@ describe('userApiClient', () => {
 
       mock.onGet(/\/api\/mobile\/.*\/users\/search/).reply((config) => {
         expect(config.params).toHaveProperty('role', 'admin');
-        return [200, mockResponse];
+        return [200, { data: mockResponse }];
       });
 
       const result = await userApiClient.searchUsers({ keyword: 'admin', role: 'admin' });

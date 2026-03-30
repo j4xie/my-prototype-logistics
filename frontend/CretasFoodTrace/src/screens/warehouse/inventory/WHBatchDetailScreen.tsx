@@ -99,6 +99,7 @@ interface BatchDetail {
   inboundNumber: string;
   inspector: string;
   unitPrice: number;
+  movingAvgPrice: number | null;
   batchValue: number;
   qualityScore: number;
   qualityDetails: { name: string; value: number }[];
@@ -162,6 +163,7 @@ export function WHBatchDetailScreen() {
           inboundNumber: batch.batchNumber || `MB-${batch.id}`,
           inspector: '质检员',
           unitPrice,
+          movingAvgPrice: batch.movingAvgPrice ?? null,
           batchValue: currentQty * unitPrice,
           qualityScore: 94, // 质量评分需要从质检API获取，暂用默认值
           qualityDetails: [
@@ -376,6 +378,14 @@ export function WHBatchDetailScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('batch.detail.unitPrice')}</Text>
             <Text style={styles.infoValue}>¥{batchDetail.unitPrice}/kg</Text>
+          </View>
+          <View style={styles.infoRow} testID="moving-avg-price">
+            <Text style={styles.infoLabel}>移动均价</Text>
+            <Text style={styles.infoValue}>
+              {batchDetail.movingAvgPrice != null
+                ? `¥${batchDetail.movingAvgPrice.toFixed(2)}/kg`
+                : '暂无数据'}
+            </Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('batch.detail.batchValue')}</Text>

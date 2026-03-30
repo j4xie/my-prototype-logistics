@@ -1,0 +1,127 @@
+appId: com.cretas.foodtrace
+---
+# Test 103: P0 FAHome Edit Mode (Long Press)
+# Tests: long press → edit mode (shaking) → toolbar visible →
+# cancel with/without changes → save layout
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# E-01: Verify home loaded
+# ========================================
+- assertVisible:
+    id: "fa-home-root"
+- assertVisible:
+    id: "fa-home-ai-card"
+- takeScreenshot: screenshots/103-home-loaded
+
+# ========================================
+# E-02: Long press AI card to enter edit mode
+# ========================================
+- longPressOn:
+    id: "fa-home-ai-card"
+- waitForAnimationToEnd
+
+# Edit toolbar should appear at bottom
+- extendedWaitUntil:
+    visible: ".*取消.*|.*Cancel.*"
+    timeout: 5000
+- takeScreenshot: screenshots/103-edit-mode-entered
+
+# ========================================
+# E-03: Verify edit toolbar buttons
+# ========================================
+# Cancel button
+- assertVisible:
+    text: ".*取消.*|.*Cancel.*"
+# Add module button
+- assertVisible:
+    text: ".*添加.*|.*Add.*"
+# Done/Save button
+- assertVisible:
+    text: ".*完成.*|.*Done.*"
+- takeScreenshot: screenshots/103-edit-toolbar
+
+# ========================================
+# E-04: Verify advanced edit link
+# ========================================
+- assertVisible:
+    text: ".*高级编辑.*|.*Advanced.*"
+    optional: true
+- takeScreenshot: screenshots/103-advanced-link
+
+# ========================================
+# E-05: Cancel edit mode (no changes)
+# ========================================
+- tapOn:
+    text: ".*取消.*|.*Cancel.*"
+- waitForAnimationToEnd
+
+# Edit toolbar should disappear
+- assertNotVisible:
+    text: ".*完成.*|.*Done.*"
+- takeScreenshot: screenshots/103-edit-cancelled
+
+# ========================================
+# E-06: Re-enter edit mode via long press on stat card
+# ========================================
+- scrollUntilVisible:
+    element:
+      id: "fa-home-stat-todayProduction"
+    direction: DOWN
+    timeout: 10000
+    optional: true
+
+- longPressOn:
+    id: "fa-home-stat-todayProduction"
+    optional: true
+- waitForAnimationToEnd
+
+# If stat card not available, try AI card again
+- longPressOn:
+    id: "fa-home-ai-card"
+    optional: true
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*取消.*|.*Cancel.*|.*完成.*|.*Done.*"
+    timeout: 5000
+- takeScreenshot: screenshots/103-edit-mode-again
+
+# ========================================
+# E-07: Tap "完成" to save (no changes — should just exit)
+# ========================================
+- tapOn:
+    text: ".*完成.*|.*Done.*"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/103-save-done
+
+# Dismiss "Saved Successfully" alert
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# E-08: Verify normal mode restored
+# ========================================
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: "fa-home-ai-card"
+    direction: DOWN
+    timeout: 10000
+- assertNotVisible:
+    text: ".*完成.*|.*Done.*"
+- takeScreenshot: screenshots/103-normal-restored

@@ -18,6 +18,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { WSWorkersStackParamList } from '../../../types/navigation';
+import { TutorialOverlay } from '../../../components/common/TutorialOverlay';
+import { TUTORIAL_WORKERS, useTutorialTarget, useTutorial } from '../../../store/tutorialStore';
 
 type NavigationProp = NativeStackNavigationProp<WSWorkersStackParamList, 'WSWorkers'>;
 
@@ -49,6 +51,13 @@ export function WSWorkersScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
+
+  // Tutorial
+  const tgtFilter = useTutorialTarget('workers-filter');
+  const tgtList = useTutorialTarget('workers-list');
+  const tut = useTutorial(TUTORIAL_WORKERS, () => {
+    tgtFilter.measure(); tgtList.measure();
+  });
 
   // 模拟员工数据
   const [workers] = useState<Worker[]>([
@@ -186,7 +195,7 @@ export function WSWorkersScreen() {
       </View>
 
       {/* 筛选标签 */}
-      <View style={styles.filterContainer}>
+      <View ref={tgtFilter.ref} onLayout={tgtFilter.onLayout} style={styles.filterContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {FILTER_TABS.map(tab => {
             const labelKey = tab.key === 'on_duty' ? 'onDuty' : tab.key === 'on_leave' ? 'onLeave' : tab.key;
@@ -226,6 +235,7 @@ export function WSWorkersScreen() {
       </View>
 
       {/* 人员列表 */}
+      <View ref={tgtList.ref} onLayout={tgtList.onLayout} style={{ flex: 1 }} collapsable={false}>
       <ScrollView
         style={styles.listContainer}
         refreshControl={
@@ -277,6 +287,14 @@ export function WSWorkersScreen() {
         })}
         <View style={{ height: 100 }} />
       </ScrollView>
+      </View>
+      <TutorialOverlay
+        visible={tut.visible}
+        steps={TUTORIAL_WORKERS.steps}
+        currentStep={tut.step}
+        onNext={tut.onNext}
+        onSkip={tut.onSkip}
+      />
     </View>
   );
 }

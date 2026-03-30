@@ -166,7 +166,7 @@ interface Props {
   description?: string;
   showAction?: boolean;
   actionText?: string;
-  actionIcon?: any;
+  actionIcon?: ReturnType<typeof import('vue')['defineComponent']>;
 }
 
 const props = withDefaults(defineProps<Props>(), {

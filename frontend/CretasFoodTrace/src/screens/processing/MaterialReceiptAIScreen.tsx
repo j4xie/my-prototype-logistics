@@ -22,6 +22,7 @@ import {
   Badge,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import {
@@ -38,14 +39,17 @@ import { useAuthStore } from '../../store/authStore';
 import { getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 import type { MaterialBatchFormData } from '../../formily/schemas/materialBatch.schema';
+import { ProcessingStackParamList } from '../../types/navigation';
 
 const screenLogger = logger.createContextLogger('MaterialReceiptAI');
 
 /**
  * AI 智能原材料入库页面
  */
+type NavProp = NativeStackNavigationProp<ProcessingStackParamList, 'MaterialReceiptAI'>;
+
 export default function MaterialReceiptAIScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavProp>();
   const { user } = useAuthStore();
   const formRef = useRef<DynamicFormRef>(null);
   const { t } = useTranslation('processing');
@@ -215,27 +219,17 @@ export default function MaterialReceiptAIScreen() {
         aiConfidence: aiFillInfo?.confidence,
       });
 
-      const aiInfoText = aiFillInfo?.filled
-        ? t('materialReceiptAI.aiAssistedFill', { count: aiFillInfo.fieldCount })
-        : '';
+      // Resolve supplier display name from the loaded options
+      const matchedSupplier = suppliers.find(s => s.value === values.supplierId);
+      const supplierDisplayName = matchedSupplier ? matchedSupplier.label : '';
 
-      Alert.alert(
-        t('materialReceiptAI.inboundSuccess'),
-        t('materialReceiptAI.inboundSuccessMessage', { batchNumber, aiInfo: aiInfoText }),
-        [
-          {
-            text: t('materialReceiptAI.continueInbound'),
-            onPress: () => {
-              formRef.current?.reset();
-              setAiFillInfo(null);
-            },
-          },
-          {
-            text: t('materialReceiptAI.returnToList'),
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      // Navigate to success screen instead of showing Alert
+      navigation.replace('MaterialBatchSuccess', {
+        batchNumber,
+        materialName: typeof values.materialTypeId === 'string' ? values.materialTypeId : '',
+        quantity: values.quantity ?? 0,
+        supplierName: supplierDisplayName,
+      });
     } catch (error) {
       screenLogger.error('入库失败', error as Error);
       Alert.alert(t('materialReceiptAI.inboundFailed'), getErrorMsg(error) || t('materialReceiptAI.retryLater'));

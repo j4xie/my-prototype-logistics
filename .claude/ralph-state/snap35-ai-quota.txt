@@ -1,0 +1,237 @@
+- generic [ref=e8]:
+  - generic [ref=e9]:
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e20]: 平
+          - generic [ref=e21]:
+            - generic [ref=e22]: 你好, 平台超级管理员
+            - generic [ref=e23]: 平台管理员
+        - generic [ref=e24] [cursor=pointer]:
+          - img: 󰂜
+      - generic [ref=e29]:
+        - generic [ref=e30]: 功能模块
+        - generic [ref=e32] [cursor=pointer]:
+          - generic [ref=e34]:
+            - img: 󰒓
+          - generic [ref=e35]:
+            - generic [ref=e36]: 系统设置
+            - generic [ref=e37]: 个人设置、系统配置
+    - generic [ref=e399]:
+      - generic [ref=e401]:
+        - button "Back" [ref=e403] [cursor=pointer]:
+          - generic [ref=e405]:
+            - img: 󰁍
+        - heading "AI配额管理" [level=1] [ref=e406]
+        - button [ref=e408] [cursor=pointer]:
+          - generic [ref=e410]:
+            - img: 󰑐
+      - generic [ref=e412]:
+        - button "使用概览" [ref=e414] [cursor=pointer]:
+          - generic [ref=e415]:
+            - generic [ref=e416]:
+              - img: 󰄨
+            - generic [ref=e417]: 使用概览
+        - button "规则配置" [ref=e419] [cursor=pointer]:
+          - generic [ref=e420]:
+            - generic [ref=e421]:
+              - img: 󰒓
+            - generic [ref=e422]: 规则配置
+      - generic [ref=e425]:
+        - generic [ref=e427]:
+          - generic [ref=e430]: 📊 平台使用概览
+          - generic [ref=e432]:
+            - generic [ref=e433]:
+              - generic [ref=e434]: 本周期
+              - generic [ref=e435]: 2026-W11
+            - generic [ref=e436]:
+              - generic [ref=e437]: 总使用量
+              - generic [ref=e438]: 0次
+            - generic [ref=e439]:
+              - generic [ref=e440]: 工厂数量
+              - generic [ref=e441]: "8"
+        - generic [ref=e442]:
+          - generic [ref=e443]: 🏭 工厂配额列表
+          - generic [ref=e446]:
+            - generic [ref=e447]:
+              - generic [ref=e448]:
+                - generic:
+                  - img: 󰈏
+                - generic [ref=e449]: 六膳门食品科技
+              - button [ref=e451] [cursor=pointer]:
+                - img: 󰏫
+            - generic [ref=e453]:
+              - generic [ref=e454]: 每周配额
+              - generic [ref=e455]:
+                - generic [ref=e456]: "20"
+                - generic [ref=e457]: 次/周
+            - generic [ref=e459]:
+              - generic [ref=e460]:
+                - generic [ref=e461]: 本周使用
+                - generic [ref=e462]: 0/20 (0.00%)
+              - progressbar [ref=e463]
+              - generic [ref=e466]: "剩余: 20次"
+            - generic [ref=e469]: "历史总调用: 0次"
+          - generic [ref=e472]:
+            - generic [ref=e473]:
+              - generic [ref=e474]:
+                - generic:
+                  - img: 󰈏
+                - generic [ref=e475]: E2E Test Factory
+              - button [ref=e477] [cursor=pointer]:
+                - img: 󰏫
+            - generic [ref=e479]:
+              - generic [ref=e480]: 每周配额
+              - generic [ref=e481]:
+                - generic [ref=e482]: "50"
+                - generic [ref=e483]: 次/周
+            - generic [ref=e485]:
+              - generic [ref=e486]:
+                - generic [ref=e487]: 本周使用
+                - generic [ref=e488]: 0/50 (0.00%)
+              - progressbar [ref=e489]
+              - generic [ref=e492]: "剩余: 50次"
+            - generic [ref=e495]: "历史总调用: 0次"
+          - generic [ref=e498]:
+            - generic [ref=e499]:
+              - generic [ref=e500]:
+                - generic:
+                  - img: 󰈏
+                - generic [ref=e501]: TestFactory
+              - button [ref=e503] [cursor=pointer]:
+                - img: 󰏫
+            - generic [ref=e505]:
+              - generic [ref=e506]: 每周配额
+              - generic [ref=e507]:
+                - generic [ref=e508]: "50"
+                - generic [ref=e509]: 次/周
+            - generic [ref=e511]:
+              - generic [ref=e512]:
+                - generic [ref=e513]: 本周使用
+                - generic [ref=e514]: 0/50 (0.00%)
+              - progressbar [ref=e515]
+              - generic [ref=e518]: "剩余: 50次"
+            - generic [ref=e521]: "历史总调用: 0次"
+          - generic [ref=e524]:
+            - generic [ref=e525]:
+              - generic [ref=e526]:
+                - generic:
+                  - img: 󰈏
+                - generic [ref=e527]: E2E测试工厂
+              - button [ref=e529] [cursor=pointer]:
+                - img: 󰏫
+            - generic [ref=e531]:
+              - generic [ref=e532]: 每周配额
+              - generic [ref=e533]:
+                - generic [ref=e534]: "50"
+                - generic [ref=e535]: 次/周
+            - generic [ref=e537]:
+              - generic [ref=e538]:
+                - generic [ref=e539]: 本周使用
+                - generic [ref=e540]: 0/50 (0.00%)
+              - progressbar [ref=e541]
+              - generic [ref=e544]: "剩余: 50次"
+            - generic [ref=e547]: "历史总调用: 0次"
+          - generic [ref=e550]:
+            - generic [ref=e551]:
+              - generic [ref=e552]:
+                - generic:
+                  - img: 󰈏
+                - generic [ref=e553]: 白垩纪示范餐厅
+              - button [ref=e555] [cursor=pointer]:
+                - img: 󰏫
+            - generic [ref=e557]:
+              - generic [ref=e558]: 每周配额
+              - generic [ref=e559]:
+                - generic [ref=e560]: "100"
+                - generic [ref=e561]: 次/周
+            - generic [ref=e563]:
+              - generic [ref=e564]:
+                - generic [ref=e565]: 本周使用
+                - generic [ref=e566]: 0/100 (0.00%)
+              - progressbar [ref=e567]
+              - generic [ref=e570]: "剩余: 100次"
+            - generic [ref=e573]: "历史总调用: 0次"
+          - generic [ref=e576]:
+            - generic [ref=e577]:
+              - generic [ref=e578]:
+                - generic:
+                  - img: 󰈏
+                - generic [ref=e579]: 鲜味零售连锁有限公司
+              - button [ref=e581] [cursor=pointer]:
+                - img: 󰏫
+            - generic [ref=e583]:
+              - generic [ref=e584]: 每周配额
+              - generic [ref=e585]:
+                - generic [ref=e586]: "50"
+                - generic [ref=e587]: 次/周
+            - generic [ref=e589]:
+              - generic [ref=e590]:
+                - generic [ref=e591]: 本周使用
+                - generic [ref=e592]: 0/50 (0.00%)
+              - progressbar [ref=e593]
+              - generic [ref=e596]: "剩余: 50次"
+            - generic [ref=e599]: "历史总调用: 0次"
+          - generic [ref=e602]:
+            - generic [ref=e603]:
+              - generic [ref=e604]:
+                - generic:
+                  - img: 󰈏
+                - generic [ref=e605]: 张记餐饮管理有限公司
+              - button [ref=e607] [cursor=pointer]:
+                - img: 󰏫
+            - generic [ref=e609]:
+              - generic [ref=e610]: 每周配额
+              - generic [ref=e611]:
+                - generic [ref=e612]: "30"
+                - generic [ref=e613]: 次/周
+            - generic [ref=e615]:
+              - generic [ref=e616]:
+                - generic [ref=e617]: 本周使用
+                - generic [ref=e618]: 0/30 (0.00%)
+              - progressbar [ref=e619]
+              - generic [ref=e622]: "剩余: 30次"
+            - generic [ref=e625]: "历史总调用: 0次"
+          - generic [ref=e628]:
+            - generic [ref=e629]:
+              - generic [ref=e630]:
+                - generic:
+                  - img: 󰈏
+                - generic [ref=e631]: 绿源食品加工有限公司
+              - button [ref=e633] [cursor=pointer]:
+                - img: 󰏫
+            - generic [ref=e635]:
+              - generic [ref=e636]: 每周配额
+              - generic [ref=e637]:
+                - generic [ref=e638]: "30"
+                - generic [ref=e639]: 次/周
+            - generic [ref=e641]:
+              - generic [ref=e642]:
+                - generic [ref=e643]: 本周使用
+                - generic [ref=e644]: 0/30 (0.00%)
+              - progressbar [ref=e645]
+              - generic [ref=e648]: "剩余: 30次"
+            - generic [ref=e651]: "历史总调用: 0次"
+        - generic [ref=e656]: 💡 配额建议
+  - tablist [ref=e40]:
+    - tab "首页" [ref=e42] [cursor=pointer]:
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - img: 󰋜
+        - generic [ref=e45]:
+          - img: 󰋜
+      - generic [ref=e46]: 首页
+    - tab "平台" [selected] [ref=e48] [cursor=pointer]:
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img: 󱢼
+        - generic [ref=e51]:
+          - img: 󱢼
+      - generic [ref=e52]: 平台
+    - tab "我的" [ref=e54] [cursor=pointer]:
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - img: 󰀄
+        - generic [ref=e57]:
+          - img: 󰀄
+      - generic [ref=e58]: 我的

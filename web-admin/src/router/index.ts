@@ -98,6 +98,18 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'ProductionApproval',
             component: () => import('@/views/production/approval/list.vue'),
             meta: { requiresAuth: true, title: '报工审批', module: 'production' }
+          },
+          {
+            path: 'bom-achievement',
+            name: 'BomAchievement',
+            component: () => import('@/views/production/BomAchievementView.vue'),
+            meta: { requiresAuth: true, title: 'BOM达成率分析', module: 'production' }
+          },
+          {
+            path: 'process-io',
+            name: 'ProcessIOComparison',
+            component: () => import('@/views/production/ProcessIOComparison.vue'),
+            meta: { requiresAuth: true, title: '工序投入产出对比', module: 'production' }
           }
         ]
       },
@@ -126,6 +138,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'WarehouseInventory',
             component: () => import('@/views/warehouse/inventory/index.vue'),
             meta: { requiresAuth: true, title: '盘点管理', module: 'warehouse' }
+          },
+          {
+            path: 'material-price-trend',
+            name: 'MaterialPriceTrend',
+            component: () => import('@/views/warehouse/MaterialPriceTrendView.vue'),
+            meta: { requiresAuth: true, title: '物料均价趋势', module: 'warehouse' }
           }
         ]
       },
@@ -340,6 +358,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'FinanceArAp',
             component: () => import('@/views/finance/ar-ap/index.vue'),
             meta: { requiresAuth: true, title: '应收应付', module: 'finance' }
+          },
+          {
+            path: 'sku-margin',
+            name: 'FinanceSkuMargin',
+            component: () => import('@/views/finance/sku-margin/index.vue'),
+            meta: { requiresAuth: true, title: 'SKU毛利率分析', module: 'finance' }
           }
         ]
       },
@@ -440,6 +464,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SmartBIChartTemplates',
             component: () => import('@/views/smartbi-config/ChartTemplateView.vue'),
             meta: { requiresAuth: true, title: '图表模板', module: 'system' }
+          },
+          {
+            path: 'badge-generator',
+            name: 'BadgeGenerator',
+            component: () => import('@/views/system/employees/BadgeGenerator.vue'),
+            meta: { requiresAuth: true, title: '员工工牌生成', module: 'system' }
           }
         ]
       },
@@ -486,6 +516,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'AlertDashboard',
             component: () => import('@/views/analytics/AlertDashboard.vue'),
             meta: { requiresAuth: true, title: '生产异常预警', module: 'analytics' }
+          },
+          {
+            path: 'supply-chain',
+            name: 'SupplyChainOverview',
+            component: () => import('@/views/analytics/SupplyChainOverview.vue'),
+            meta: { requiresAuth: true, title: '进销存闭环总览', module: 'analytics' }
           }
         ]
       },

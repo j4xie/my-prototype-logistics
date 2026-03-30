@@ -1,0 +1,121 @@
+appId: com.cretas.foodtrace
+---
+# Test 100: P2 Card Navigation — Cards that navigate vs send intent
+# Verifies: BOM达成率 card navigates to different screen,
+# other cards send AI intents and get responses
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# N-01: Navigate to AI Chat
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# N-02: Verify cards and tap "毛利率" card (6th card, sends intent)
+# ========================================
+- assertVisible:
+    id: "quick-action-card-grid"
+
+# Scroll to bottom cards
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "quick-action-card-5"
+    optional: true
+- waitForAnimationToEnd
+
+# Should get AI response about profit margin
+- extendedWaitUntil:
+    visible: ".*毛利.*|.*利润.*|.*执行.*|.*识别.*|.*分析.*"
+    timeout: 30000
+- takeScreenshot: screenshots/100-profit-card-response
+
+# ========================================
+# N-03: Go back, re-enter AI Chat for BOM card test
+# ========================================
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# N-04: Tap "成本分析" card (5th card, sends intent)
+# ========================================
+- assertVisible:
+    id: "quick-action-card-grid"
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "quick-action-card-4"
+    optional: true
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*成本.*|.*cost.*|.*执行.*|.*识别.*|.*分析.*"
+    timeout: 30000
+- takeScreenshot: screenshots/100-cost-card-response
+
+# ========================================
+# N-05: Go back, re-enter, tap "原料入库" (2nd card)
+# ========================================
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: "quick-action-card-grid"
+- tapOn:
+    id: "quick-action-card-1"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*入库.*|.*原料.*|.*执行.*|.*识别.*"
+    timeout: 30000
+- takeScreenshot: screenshots/100-inbound-card-response
+
+# ========================================
+# N-06: Verify AI chat input still works after card-triggered messages
+# ========================================
+- tapOn:
+    id: "keyboard-toggle-btn"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-input"
+    optional: true
+- inputText: "hello"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*hello.*|.*你好.*|.*执行.*|.*识别.*|.*帮助.*"
+    timeout: 30000
+- takeScreenshot: screenshots/100-manual-after-cards

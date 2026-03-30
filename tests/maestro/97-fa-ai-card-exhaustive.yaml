@@ -1,0 +1,99 @@
+appId: com.cretas.foodtrace
+---
+# Test 97: P2 Exhaustive Card Grid Verification
+# Verifies all 6 FA card labels, scroll behavior, individual card taps,
+# and that cards disappear after first message
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# E-01: Navigate to AI Chat
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# E-02: Verify card grid container
+# ========================================
+- assertVisible:
+    id: "quick-action-card-grid"
+- takeScreenshot: screenshots/97-card-grid-visible
+
+# ========================================
+# E-03: Verify first row cards (top 2)
+# ========================================
+- assertVisible:
+    id: "quick-action-card-0"
+- assertVisible:
+    id: "quick-action-label-0"
+- assertVisible:
+    id: "quick-action-card-1"
+- assertVisible:
+    id: "quick-action-label-1"
+- takeScreenshot: screenshots/97-cards-row1
+
+# ========================================
+# E-04: Verify second row cards
+# ========================================
+- assertVisible:
+    id: "quick-action-card-2"
+- assertVisible:
+    id: "quick-action-card-3"
+- takeScreenshot: screenshots/97-cards-row2
+
+# ========================================
+# E-05: Scroll to see bottom row (cards 4-5)
+# ========================================
+- swipe:
+    direction: UP
+    duration: 300
+- waitForAnimationToEnd
+- assertVisible:
+    id: "quick-action-card-4"
+- assertVisible:
+    id: "quick-action-card-5"
+- takeScreenshot: screenshots/97-cards-row3
+
+# ========================================
+# E-06: Verify voice-first is also present
+# ========================================
+- assertVisible:
+    id: "voice-first-container"
+- takeScreenshot: screenshots/97-voice-and-cards
+
+# ========================================
+# E-07: Tap first card (生产报工)
+# ========================================
+- scrollUntilVisible:
+    element:
+      id: "quick-action-card-0"
+    direction: UP
+    timeout: 5000
+- tapOn:
+    id: "quick-action-card-0"
+- waitForAnimationToEnd
+
+# Wait for AI to process
+- extendedWaitUntil:
+    visible: ".*报工.*|.*执行.*|.*识别.*|.*产品.*|.*数量.*"
+    timeout: 30000
+- takeScreenshot: screenshots/97-card0-response
+
+# ========================================
+# E-08: Cards should be gone (chat mode)
+# ========================================
+- assertNotVisible:
+    id: "quick-action-card-grid"
+- takeScreenshot: screenshots/97-no-cards-chat-mode

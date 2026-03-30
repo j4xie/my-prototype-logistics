@@ -1,0 +1,76 @@
+- generic [ref=e8]:
+  - generic [ref=e9]:
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e20]: 平
+          - generic [ref=e21]:
+            - generic [ref=e22]: 你好, 平台超级管理员
+            - generic [ref=e23]: 平台管理员
+        - generic [ref=e24] [cursor=pointer]:
+          - img: 󰂜
+      - generic [ref=e29]:
+        - generic [ref=e30]: 功能模块
+        - generic [ref=e32] [cursor=pointer]:
+          - generic [ref=e34]:
+            - img: 󰒓
+          - generic [ref=e35]:
+            - generic [ref=e36]: 系统设置
+            - generic [ref=e37]: 个人设置、系统配置
+    - generic [ref=e399]:
+      - generic [ref=e401]:
+        - button "Back" [ref=e403] [cursor=pointer]:
+          - generic [ref=e405]:
+            - img: 󰁍
+        - heading "行业模板管理" [level=1] [ref=e406]
+        - button [ref=e408] [cursor=pointer]:
+          - generic [ref=e410]:
+            - img: 󰑐
+      - generic [ref=e411]:
+        - generic [ref=e413]:
+          - generic [ref=e414]:
+            - button "search" [disabled]:
+              - img: 󰍉
+          - search "搜索模板..." [ref=e415]
+          - button "clear" [ref=e417] [cursor=pointer]:
+            - img: 󰅖
+        - generic [ref=e418]:
+          - button "全部" [ref=e420] [cursor=pointer]:
+            - generic [ref=e422]: 全部
+          - button "推荐模板" [ref=e424] [cursor=pointer]:
+            - generic [ref=e426]: 推荐模板
+          - button "自定义模板" [ref=e428] [cursor=pointer]:
+            - generic [ref=e430]: 自定义模板
+        - generic [ref=e434]:
+          - generic [ref=e435]:
+            - img: 󰧮
+          - generic [ref=e436]: 暂无行业模板
+          - generic [ref=e437]: 点击右下角按钮创建新模板
+      - button "新建模板" [ref=e440] [cursor=pointer]:
+        - generic:
+          - generic:
+            - generic:
+              - img: 󰐕
+          - generic: 新建模板
+  - tablist [ref=e40]:
+    - tab "首页" [ref=e42] [cursor=pointer]:
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - img: 󰋜
+        - generic [ref=e45]:
+          - img: 󰋜
+      - generic [ref=e46]: 首页
+    - tab "平台" [selected] [ref=e48] [cursor=pointer]:
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img: 󱢼
+        - generic [ref=e51]:
+          - img: 󱢼
+      - generic [ref=e52]: 平台
+    - tab "我的" [ref=e54] [cursor=pointer]:
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - img: 󰀄
+        - generic [ref=e57]:
+          - img: 󰀄
+      - generic [ref=e58]: 我的

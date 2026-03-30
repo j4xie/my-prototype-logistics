@@ -1,0 +1,141 @@
+appId: com.cretas.foodtrace
+---
+# Test 109: Real Workflow — Card → AI Response → Follow-up → New Session
+# Simulates a factory worker's typical usage pattern:
+# 1. Open AI → tap "查库存" card → get inventory info
+# 2. Follow up with keyboard question
+# 3. Go back → re-enter → tap "成本分析" → get cost info
+# 4. Verify all interactions work end-to-end
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# W-01: Open AI Chat — verify welcome state
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: "quick-action-card-grid"
+- assertVisible:
+    id: "voice-first-container"
+- takeScreenshot: screenshots/109-welcome
+
+# ========================================
+# W-02: Tap "查库存" → AI processes inventory query
+# ========================================
+- tapOn:
+    id: "quick-action-card-2"
+- waitForAnimationToEnd
+
+# Cards disappear
+- assertNotVisible:
+    id: "quick-action-card-grid"
+
+# Wait for AI response
+- extendedWaitUntil:
+    visible: ".*库存.*|.*执行.*|.*识别.*|.*物料.*|.*查看.*"
+    timeout: 30000
+- takeScreenshot: screenshots/109-inventory-result
+
+# ========================================
+# W-03: Follow up with keyboard — ask about specific material
+# ========================================
+- tapOn:
+    id: "keyboard-toggle-btn"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "low stock"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*low.*|.*stock.*|.*库存.*|.*预警.*|.*执行.*"
+    timeout: 30000
+- takeScreenshot: screenshots/109-follow-up
+
+# ========================================
+# W-04: Go back → start fresh session
+# ========================================
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Fresh state — cards visible again
+- assertVisible:
+    id: "quick-action-card-grid"
+- assertVisible:
+    id: "voice-first-container"
+- takeScreenshot: screenshots/109-fresh-session
+
+# ========================================
+# W-05: Tap "成本分析" → different card, new context
+# ========================================
+- swipe:
+    direction: UP
+    duration: 300
+- waitForAnimationToEnd
+- tapOn:
+    id: "quick-action-card-4"
+    optional: true
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*成本.*|.*cost.*|.*执行.*|.*识别.*|.*分析.*"
+    timeout: 30000
+- takeScreenshot: screenshots/109-cost-result
+
+# ========================================
+# W-06: Third message — verify 3-turn conversation works
+# ========================================
+- tapOn:
+    id: "keyboard-toggle-btn"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-input"
+    optional: true
+- inputText: "report"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*report.*|.*报工.*|.*执行.*|.*识别.*"
+    timeout: 30000
+- takeScreenshot: screenshots/109-three-turns
+
+# ========================================
+# W-07: Return to home, verify home still works
+# ========================================
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*首页.*|.*Home.*"
+    optional: true
+- waitForAnimationToEnd
+- assertVisible:
+    id: "fa-home-root"
+- takeScreenshot: screenshots/109-home-after-workflow

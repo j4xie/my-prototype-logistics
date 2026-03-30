@@ -40,6 +40,7 @@ export interface MaterialBatch {
   qualityGrade?: string;
   storageLocation?: string;
   notes?: string;
+  movingAvgPrice?: number;      // 移动均价
   createdAt: string;
   updatedAt?: string;
   createdByName?: string;       // 创建人姓名

@@ -2,7 +2,7 @@
  * Workshop Supervisor 首页 Dashboard
  * 任务导向设计: 下一批任务最醒目 + 任务统计 + 进行中批次 + 人员/设备状态
  */
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,11 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Dimensions,
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -25,7 +26,7 @@ import { OfflineIndicator } from '../../../components/common/OfflineIndicator';
 import { QuickActionsGrid } from '../../../components/common/QuickActionsGrid';
 import { TutorialOverlay } from '../../../components/common/TutorialOverlay';
 import { WORKSHOP_SUP_ACTIONS } from '../../../store/quickActionsStore';
-import { useTutorialStore, TUTORIAL_HOME } from '../../../store/tutorialStore';
+import { useTutorialStore, TUTORIAL_HOME, TUTORIAL_ENABLED, useTutorialTarget, registerTutorialTarget } from '../../../store/tutorialStore';
 import { useDraftReportStore } from '../../../store/draftReportStore';
 import { dashboardAPI } from '../../../services/api/dashboardApiClient';
 import { processingApiClient } from '../../../services/api/processingApiClient';
@@ -96,14 +97,98 @@ export function WSHomeScreen() {
   const completedHome = useTutorialStore(s => s.completedTutorials[TUTORIAL_HOME.id]);
   const showTutorial = activeTutorial === TUTORIAL_HOME.id;
 
-  useEffect(() => {
-    if (!loading && !completedHome && activeTutorial === null) {
-      const timer = setTimeout(() => {
-        useTutorialStore.getState().startTutorial(TUTORIAL_HOME.id);
-      }, 1200);
-      return () => clearTimeout(timer);
+  // Spotlight targets
+  const tgtNextTask = useTutorialTarget('ws-home-next-task');
+
+  // Quick action button → target key mapping (for QuickActionsGrid)
+  const tutorialTargets = {
+    'process-operation': 'ws-home-qa-process-operation',
+    'my-reports': 'ws-home-qa-my-reports',
+    'process-tasks': 'ws-home-qa-process-tasks',
+    'three-step': 'ws-home-qa-three-step',
+  };
+
+  // Auto-start or resume tutorial — only when screen is focused
+  useFocusEffect(useCallback(() => {
+    if (!TUTORIAL_ENABLED || loading || completedHome) return undefined;
+
+    const state = useTutorialStore.getState();
+
+    // Case 1: Resume a paused tutorial (returning from sub-screen)
+    const paused = state.pausedTutorials[TUTORIAL_HOME.id];
+    if (paused !== undefined) {
+      const t = setTimeout(() => useTutorialStore.getState().resumeTutorial(TUTORIAL_HOME.id), 600);
+      return () => clearTimeout(t);
     }
-  }, [loading, completedHome]);
+
+    // Case 2: Fresh start — re-check at timer time to avoid races after reset
+    if (state.activeTutorial === null) {
+      const t = setTimeout(() => {
+        const s = useTutorialStore.getState();
+        if (!s.activeTutorial && !s.completedTutorials[TUTORIAL_HOME.id]) {
+          s.startTutorial(TUTORIAL_HOME.id);
+        }
+      }, 1200);
+      return () => clearTimeout(t);
+    }
+
+    return undefined;
+  }, [loading, completedHome]));
+
+  // Register tab bar position (estimated from screen bottom)
+  useEffect(() => {
+    const { width, height } = Dimensions.get('window');
+    registerTutorialTarget('ws-home-tab-bar', {
+      x: 0, y: height - 56 - insets.bottom, width, height: 56 + insets.bottom,
+    });
+  }, [insets.bottom]);
+
+  // ScrollView ref + scroll tracking
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
+
+  // Re-measure when tutorial starts/resumes
+  useEffect(() => {
+    if (showTutorial) {
+      setTimeout(() => tgtNextTask.measure(), 200);
+    }
+  }, [showTutorial]);
+
+  // Auto-scroll if target off-screen (e.g. next-task card below fold)
+  useEffect(() => {
+    if (!showTutorial) return;
+    const step = TUTORIAL_HOME.steps[activeStep];
+    if (!step?.targetKey || step.targetKey === 'ws-home-tab-bar') return;
+
+    // Only auto-scroll for targets we own a ref to (next-task)
+    if (step.targetKey === 'ws-home-next-task' && tgtNextTask.ref.current) {
+      tgtNextTask.ref.current.measureInWindow((_x: number, y: number, _w: number, h: number) => {
+        const screenH = Dimensions.get('window').height;
+        if (y + h > screenH - 100 || y < 0) {
+          const contentY = y + scrollOffsetRef.current;
+          scrollRef.current?.scrollTo({ y: Math.max(0, contentY - 80), animated: true });
+          setTimeout(() => tgtNextTask.measure(), 500);
+        }
+      });
+    }
+  }, [showTutorial, activeStep]);
+
+  // Tutorial next handler — supports navigateTo for cross-screen flow
+  const handleTutorialNext = useCallback(() => {
+    const { activeStep: step } = useTutorialStore.getState();
+    const currentStep = TUTORIAL_HOME.steps[step];
+
+    // Advance the step first
+    useTutorialStore.getState().nextStep(TUTORIAL_HOME.steps.length);
+
+    // If this step triggers navigation, pause and navigate
+    if (currentStep?.navigateTo) {
+      setTimeout(() => {
+        useTutorialStore.getState().pauseTutorial();
+        navigation.navigate(currentStep.navigateTo as never);
+      }, 100);
+    }
+  }, [navigation]);
 
   // 状态
   const [refreshing, setRefreshing] = useState(false);
@@ -306,6 +391,9 @@ export function WSHomeScreen() {
   return (
     <View style={styles.container}>
       <ScrollView
+        ref={scrollRef}
+        onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
+        scrollEventThrottle={100}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -349,12 +437,13 @@ export function WSHomeScreen() {
             onActionPress={(action) => {
               navigation.navigate(action.screen as never, action.params as never);
             }}
+            tutorialTargets={tutorialTargets}
           />
         </View>
 
         {/* 下一批任务卡片 - 最醒目 */}
         {nextTask && (
-          <View style={[styles.nextTaskCard, nextTask.isUrgent && styles.urgentCard]}>
+          <View ref={tgtNextTask.ref} onLayout={tgtNextTask.onLayout} style={[styles.nextTaskCard, nextTask.isUrgent && styles.urgentCard]}>
             <View style={styles.nextTaskHeader}>
               <View>
                 <View style={styles.nextTaskTitleRow}>
@@ -588,7 +677,7 @@ export function WSHomeScreen() {
         visible={showTutorial}
         steps={TUTORIAL_HOME.steps}
         currentStep={activeStep}
-        onNext={() => useTutorialStore.getState().nextStep(TUTORIAL_HOME.steps.length)}
+        onNext={handleTutorialNext}
         onSkip={() => useTutorialStore.getState().skipTutorial()}
       />
     </View>

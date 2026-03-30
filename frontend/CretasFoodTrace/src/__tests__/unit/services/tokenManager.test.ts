@@ -5,8 +5,11 @@
 
 import { TokenManager } from '../../../services/tokenManager';
 import * as SecureStore from 'expo-secure-store';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { wait } from '../../utils/testHelpers';
+
+// Get AsyncStorage mock via require (bypasses ts-jest ESM interop issue)
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const MockedAsyncStorage = require('@react-native-async-storage/async-storage').default;
 
 // Mock apiClient
 jest.mock('../../../services/api/apiClient', () => ({
@@ -27,19 +30,19 @@ describe('TokenManager', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset mocks
+    // Reset mocks — use SecureStore directly (setup.ts mocks it), AsyncStorage via require
     (SecureStore.setItemAsync as jest.Mock).mockReset();
     (SecureStore.getItemAsync as jest.Mock).mockReset();
     (SecureStore.deleteItemAsync as jest.Mock).mockReset();
-    (AsyncStorage.setItem as jest.Mock).mockReset();
-    (AsyncStorage.getItem as jest.Mock).mockReset();
-    (AsyncStorage.removeItem as jest.Mock).mockReset();
+    if (MockedAsyncStorage?.setItem?.mockReset) MockedAsyncStorage.setItem.mockReset();
+    if (MockedAsyncStorage?.getItem?.mockReset) MockedAsyncStorage.getItem.mockReset();
+    if (MockedAsyncStorage?.removeItem?.mockReset) MockedAsyncStorage.removeItem.mockReset();
   });
 
   describe('storeTokens', () => {
     it('应该成功存储tokens到SecureStore', async () => {
       (SecureStore.setItemAsync as jest.Mock).mockResolvedValue(undefined);
-      (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
+      (MockedAsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
 
       await TokenManager.storeTokens(mockTokens);
 
@@ -54,11 +57,11 @@ describe('TokenManager', () => {
       );
 
       // 验证AsyncStorage调用
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      expect(MockedAsyncStorage.setItem).toHaveBeenCalledWith(
         'token_expiry',
         mockTokens.expiresAt.toString()
       );
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      expect(MockedAsyncStorage.setItem).toHaveBeenCalledWith(
         'token_type',
         'Bearer'
       );
@@ -66,7 +69,7 @@ describe('TokenManager', () => {
 
     it('应该存储临时token（如果提供）', async () => {
       (SecureStore.setItemAsync as jest.Mock).mockResolvedValue(undefined);
-      (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
+      (MockedAsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
 
       const tokensWithTemp = {
         ...mockTokens,
@@ -89,7 +92,7 @@ describe('TokenManager', () => {
 
     it('应该使用默认过期时间（如果未提供）', async () => {
       (SecureStore.setItemAsync as jest.Mock).mockResolvedValue(undefined);
-      (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
+      (MockedAsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
 
       const tokensWithoutExpiry = {
         accessToken: 'test-token',
@@ -101,7 +104,7 @@ describe('TokenManager', () => {
       await TokenManager.storeTokens(tokensWithoutExpiry);
 
       // 验证设置了过期时间
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      expect(MockedAsyncStorage.setItem).toHaveBeenCalledWith(
         'token_expiry',
         expect.any(String)
       );
@@ -111,7 +114,7 @@ describe('TokenManager', () => {
   describe('getValidToken', () => {
     it('应该返回有效的访问token', async () => {
       (SecureStore.getItemAsync as jest.Mock).mockResolvedValue('valid-token');
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
+      (MockedAsyncStorage.getItem as jest.Mock).mockResolvedValue(
         String(Date.now() + 3600 * 1000) // 1 hour future
       );
 
@@ -134,7 +137,7 @@ describe('TokenManager', () => {
         .mockResolvedValueOnce('old-token') // getAccessToken
         .mockResolvedValueOnce('refresh-token'); // getRefreshToken
 
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
+      (MockedAsyncStorage.getItem as jest.Mock).mockResolvedValue(
         String(Date.now() + 60 * 1000) // 1 minute future
       );
 
@@ -146,7 +149,7 @@ describe('TokenManager', () => {
       });
 
       (SecureStore.setItemAsync as jest.Mock).mockResolvedValue(undefined);
-      (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
+      (MockedAsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
 
       const token = await TokenManager.getValidToken();
 
@@ -164,7 +167,7 @@ describe('TokenManager', () => {
     it('应该成功刷新token', async () => {
       (SecureStore.getItemAsync as jest.Mock).mockResolvedValue('refresh-token-123');
       (SecureStore.setItemAsync as jest.Mock).mockResolvedValue(undefined);
-      (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
+      (MockedAsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
 
       (apiClient.post as jest.Mock).mockResolvedValue({
         success: true,
@@ -203,7 +206,7 @@ describe('TokenManager', () => {
     it('应该防止并发刷新', async () => {
       (SecureStore.getItemAsync as jest.Mock).mockResolvedValue('refresh-token');
       (SecureStore.setItemAsync as jest.Mock).mockResolvedValue(undefined);
-      (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
+      (MockedAsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
 
       (apiClient.post as jest.Mock).mockImplementation(() =>
         wait(100).then(() => ({
@@ -229,7 +232,7 @@ describe('TokenManager', () => {
 
   describe('isTokenExpired', () => {
     it('应该在token已过期时返回true', async () => {
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
+      (MockedAsyncStorage.getItem as jest.Mock).mockResolvedValue(
         String(Date.now() - 1000) // 1 second in past
       );
 
@@ -239,7 +242,7 @@ describe('TokenManager', () => {
     });
 
     it('应该在token未过期时返回false', async () => {
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
+      (MockedAsyncStorage.getItem as jest.Mock).mockResolvedValue(
         String(Date.now() + 3600 * 1000) // 1 hour future
       );
 
@@ -249,7 +252,7 @@ describe('TokenManager', () => {
     });
 
     it('应该在token不存在时返回true', async () => {
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
+      (MockedAsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
 
       const isExpired = await TokenManager.isTokenExpired();
 
@@ -290,7 +293,7 @@ describe('TokenManager', () => {
   describe('clearTokens', () => {
     it('应该清除所有tokens', async () => {
       (SecureStore.deleteItemAsync as jest.Mock).mockResolvedValue(undefined);
-      (AsyncStorage.removeItem as jest.Mock).mockResolvedValue(undefined);
+      (MockedAsyncStorage.removeItem as jest.Mock).mockResolvedValue(undefined);
 
       await TokenManager.clearTokens();
 
@@ -300,13 +303,13 @@ describe('TokenManager', () => {
       expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('secure_temp_token');
 
       // 验证AsyncStorage清理
-      expect(AsyncStorage.removeItem).toHaveBeenCalledWith('token_expiry');
-      expect(AsyncStorage.removeItem).toHaveBeenCalledWith('token_type');
+      expect(MockedAsyncStorage.removeItem).toHaveBeenCalledWith('token_expiry');
+      expect(MockedAsyncStorage.removeItem).toHaveBeenCalledWith('token_type');
     });
 
     it('应该处理清理失败的情况', async () => {
       (SecureStore.deleteItemAsync as jest.Mock).mockRejectedValue(new Error('Delete failed'));
-      (AsyncStorage.removeItem as jest.Mock).mockResolvedValue(undefined);
+      (MockedAsyncStorage.removeItem as jest.Mock).mockResolvedValue(undefined);
 
       // 不应该抛出错误
       await expect(TokenManager.clearTokens()).resolves.not.toThrow();
@@ -322,7 +325,7 @@ describe('TokenManager', () => {
         .mockResolvedValueOnce('refresh-token')
         .mockResolvedValueOnce('temp-token');
 
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(String(futureTime));
+      (MockedAsyncStorage.getItem as jest.Mock).mockResolvedValue(String(futureTime));
 
       const info = await TokenManager.getTokenInfo();
 
@@ -336,7 +339,7 @@ describe('TokenManager', () => {
 
     it('应该处理缺失的tokens', async () => {
       (SecureStore.getItemAsync as jest.Mock).mockResolvedValue(null);
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
+      (MockedAsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
 
       const info = await TokenManager.getTokenInfo();
 

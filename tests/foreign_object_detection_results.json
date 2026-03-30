@@ -1,0 +1,82 @@
+[
+  {
+    "has_foreign_object": false,
+    "confidence": 0.98,
+    "foreign_objects": [],
+    "food_condition": "食品整体状态良好，肉质呈正常红色与白色脂肪纹理交织，无明显颜色异常、霉变、虫害或腐败迹象。肉卷排列整齐，厚度均匀，符合2mm规格描述。",
+    "packaging_condition": "包装完整，透明塑料膜覆盖严密，无破损、渗漏或污染迹象。标签粘贴牢固，未见脱落或碎片混入食品。",
+    "overall_verdict": "PASS",
+    "notes": "所有肉卷表面光滑，脂肪分布均匀，未发现毛发、塑料、金属、玻璃、纸屑、线头、橡皮筋等异物。无蓝色、绿色或黑色异常斑点。无虫体、虫卵或虫咬痕迹。包装完好，无污染风险。",
+    "_image": "9148fe77352de7d0a07981c9de66cc6e.jpg",
+    "_tokens": 1825,
+    "_model": "qwen-vl-max-latest"
+  },
+  {
+    "has_foreign_object": true,
+    "confidence": 0.95,
+    "foreign_objects": [
+      {
+        "type": "颜色异常点",
+        "description": "在中间偏右的肉卷上发现一个微小的蓝色斑点，不属于正常牛肉或脂肪的颜色，可能是染料残留或包装材料污染。",
+        "location": "中间偏右区域，靠近第三列从左数的肉卷表面",
+        "severity": "MEDIUM",
+        "color": "蓝色"
+      }
+    ],
+    "food_condition": "整体肉质新鲜，呈均匀的红白相间纹理，无明显霉变、虫害或腐败迹象。部分肉卷边缘有轻微干缩，属正常冷藏状态。",
+    "packaging_condition": "透明塑料膜完整覆盖，无破损或泄漏，标签清晰，未见包装材料混入食品。",
+    "overall_verdict": "REVIEW",
+    "notes": "蓝色异物虽小但颜色异常，需进一步确认是否为加工过程中的染料残留或包装污染。建议进行实验室检测以排除食品安全风险。",
+    "_image": "c20892e0fea7f920ea49215e9702ca76.jpg",
+    "_tokens": 1905,
+    "_model": "qwen-vl-max-latest"
+  },
+  {
+    "has_foreign_object": false,
+    "confidence": 0.98,
+    "foreign_objects": [],
+    "food_condition": "食品整体状态良好，肉质呈正常红色与白色脂肪纹理交织，无明显颜色异常、霉变或虫害痕迹。肉卷排列整齐，表面无可见异物。",
+    "packaging_condition": "包装完整，透明塑料膜覆盖良好，无破损或污染迹象。标签清晰，未见标签碎片混入食品。",
+    "overall_verdict": "PASS",
+    "notes": "所有肉卷厚度均匀，符合标注的2mm标准。脂肪分布均匀，呈现典型的和牛大理石纹路。未发现毛发、塑料、金属、玻璃、线头等异物。无蓝色、绿色或黑色异常斑点。无虫体、虫卵或霉斑。包装密封完好，无泄漏或污染。",
+    "_image": "c72cf022eee8794759f0fe51a347a5c0.jpg",
+    "_tokens": 1857,
+    "_model": "qwen-vl-max-latest"
+  },
+  {
+    "has_foreign_object": false,
+    "confidence": 0.98,
+    "foreign_objects": [],
+    "food_condition": "食品整体状态良好，肉卷颜色均匀，呈现正常红色与白色脂肪纹理，无明显变色、霉斑或腐败迹象。肉卷排列整齐，未见虫害痕迹或异常点。",
+    "packaging_condition": "包装完整，透明塑料膜覆盖良好，无破损、无污染，标签清晰，未见包装材料混入食品。",
+    "overall_verdict": "PASS",
+    "notes": "所有肉卷表面光滑，脂肪分布均匀，符合澳洲和牛翼板卷的正常外观特征。未发现毛发、塑料碎片、金属、玻璃、纸屑、线头、橡皮筋或标签碎片等异物。无蓝色、绿色或黑色异常斑点。无虫体、虫卵或虫咬痕迹。无霉变或变质迹象。",
+    "_image": "05bfda432fa8a35a900277ae162c0ae6.jpg",
+    "_tokens": 1835,
+    "_model": "qwen-vl-max-latest"
+  },
+  {
+    "has_foreign_object": false,
+    "confidence": 0.98,
+    "foreign_objects": [],
+    "food_condition": "食品整体状态良好，肉质呈正常红色与白色脂肪纹理交织，无明显颜色异常、霉变或虫害痕迹。肉卷排列整齐，厚度均匀，符合2mm规格描述。",
+    "packaging_condition": "包装完整，透明塑料膜覆盖严密，无破损、无污染迹象，标签清晰可辨，未见包装材料混入食品。",
+    "overall_verdict": "PASS",
+    "notes": "未发现毛发、塑料碎片、金属或玻璃碎片、纸屑、线头、橡皮筋、标签碎片等非食品异物；无蓝色、绿色或黑色异常斑点；无虫体、虫卵或虫咬痕迹；无霉斑或腐败迹象。所有肉卷均保持新鲜外观，符合食品安全标准。",
+    "_image": "09ae6c082ac4939159fe84327e6b4368.jpg",
+    "_tokens": 1829,
+    "_model": "qwen-vl-max-latest"
+  },
+  {
+    "has_foreign_object": false,
+    "confidence": 0.98,
+    "foreign_objects": [],
+    "food_condition": "食品整体状态良好，肉色呈正常鲜红色，脂肪分布均匀，无明显变色、霉斑或腐败迹象。肉卷切面整齐，厚度均匀，未见虫害痕迹或异常颜色点。",
+    "packaging_condition": "包装完整，透明塑料膜覆盖严密，无破损、无泄漏，标签清晰，未见包装材料混入食品。",
+    "overall_verdict": "PASS",
+    "notes": "所有肉卷排列整齐，表面无毛发、塑料碎片、金属或其他异物。脂肪纹理清晰，符合澳洲和牛翼板卷的正常特征。未发现任何污染或缺陷。",
+    "_image": "bfeeb0ff1cb6e0b2b08a9ea34b41fb2c.jpg",
+    "_tokens": 1801,
+    "_model": "qwen-vl-max-latest"
+  }
+]

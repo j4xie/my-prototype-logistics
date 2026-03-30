@@ -1,0 +1,106 @@
+appId: com.cretas.foodtrace
+---
+# Test 94: P2 Quick Action Card Grid (FA role)
+# Verifies card grid renders correctly with 6 cards for factory_super_admin
+# Cards: 生产报工, 原料入库, 查库存, BOM达成率, 成本分析, 毛利率
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# C-01: Navigate to AI Chat
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# C-02: Verify card grid is visible
+# ========================================
+- extendedWaitUntil:
+    visible: "\u751F\u4EA7\u62A5\u5DE5"
+    timeout: 10000
+- assertVisible:
+    id: "quick-action-card-grid"
+- takeScreenshot: screenshots/94-card-grid-top
+
+# ========================================
+# C-03: Verify first 4 card labels
+# ========================================
+- assertVisible:
+    text: "\u751F\u4EA7\u62A5\u5DE5"
+- assertVisible:
+    text: "\u539F\u6599\u5165\u5E93"
+- assertVisible:
+    text: "\u67E5\u5E93\u5B58"
+- assertVisible:
+    text: "BOM\u8FBE\u6210\u7387"
+- takeScreenshot: screenshots/94-card-labels-top
+
+# ========================================
+# C-04: Scroll to see bottom cards
+# ========================================
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+# Verify bottom cards
+- assertVisible:
+    text: ".*\u6210\u672C\u5206\u6790.*|.*\u6BDB\u5229\u7387.*"
+    optional: true
+- takeScreenshot: screenshots/94-card-labels-bottom
+
+# ========================================
+# C-05: Tap "查库存" card → sends intent → chat mode
+# ========================================
+- tapOn:
+    text: "\u67E5\u5E93\u5B58"
+- waitForAnimationToEnd
+
+# Should now be in chat mode (cards should be gone, messages visible)
+- extendedWaitUntil:
+    visible: ".*\u5E93\u5B58.*|.*\u67E5\u770B.*|.*\u6267\u884C.*|.*\u8BC6\u522B\u5230.*"
+    timeout: 30000
+- takeScreenshot: screenshots/94-card-tap-result
+
+# Card grid should no longer be visible (messages.length > 0)
+- assertNotVisible:
+    id: "quick-action-card-grid"
+    optional: true
+
+# ========================================
+# C-06: Verify chat response loaded
+# ========================================
+- takeScreenshot: screenshots/94-ai-response
+
+# ========================================
+# C-07: Tap "原料入库" card (go back first to reset)
+# ========================================
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "\u539F\u6599\u5165\u5E93"
+    timeout: 10000
+- tapOn:
+    text: "\u539F\u6599\u5165\u5E93"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*\u5165\u5E93.*|.*\u6267\u884C.*|.*\u8BC6\u522B.*"
+    timeout: 30000
+- takeScreenshot: screenshots/94-inbound-intent

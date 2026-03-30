@@ -1,0 +1,192 @@
+- generic [ref=e59]:
+  - generic [ref=e60]:
+    - generic [ref=e67]:
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e71]: 销
+          - generic [ref=e72]:
+            - generic [ref=e73]: 你好, 销售主管小吴
+            - generic [ref=e74]: sales_manager
+        - generic [ref=e75] [cursor=pointer]:
+          - img: 󰂜
+      - generic [ref=e80]:
+        - generic [ref=e81]: 功能模块
+        - generic [ref=e83] [cursor=pointer]:
+          - generic [ref=e85]:
+            - img: 󰒓
+          - generic [ref=e86]:
+            - generic [ref=e87]: 系统设置
+            - generic [ref=e88]: 个人设置、系统配置
+    - generic [ref=e123]:
+      - generic [ref=e125]:
+        - button "Back" [ref=e127] [cursor=pointer]:
+          - generic [ref=e129]:
+            - img: 󰁍
+        - heading "销售订单" [level=1] [ref=e130]
+        - button [ref=e132] [cursor=pointer]:
+          - generic [ref=e134]:
+            - img: 󰑐
+      - generic [ref=e136]:
+        - button "全部" [ref=e138] [cursor=pointer]:
+          - generic [ref=e140]: 全部
+        - button "草稿" [ref=e142] [cursor=pointer]:
+          - generic [ref=e144]: 草稿
+        - button "已确认" [ref=e146] [cursor=pointer]:
+          - generic [ref=e148]: 已确认
+        - button "已完成" [ref=e150] [cursor=pointer]:
+          - generic [ref=e152]: 已完成
+      - generic [ref=e155]:
+        - generic [ref=e160] [cursor=pointer]:
+          - generic [ref=e161]:
+            - generic [ref=e162]: SO-202501-001
+            - generic [ref=e163]:
+              - button "已完成" [disabled]:
+                - generic [ref=e165]: 已完成
+          - generic [ref=e166]:
+            - generic [ref=e167]: 客户
+            - generic [ref=e168]: CUS-F001-001
+          - generic [ref=e169]:
+            - generic [ref=e170]: 金额
+            - generic [ref=e171]: ¥245,000
+          - generic [ref=e172]:
+            - generic [ref=e173]: 下单日期
+            - generic [ref=e174]: 2025-01-13
+        - generic [ref=e179] [cursor=pointer]:
+          - generic [ref=e180]:
+            - generic [ref=e181]: SO-202501-002
+            - generic [ref=e182]:
+              - button "已完成" [disabled]:
+                - generic [ref=e184]: 已完成
+          - generic [ref=e185]:
+            - generic [ref=e186]: 客户
+            - generic [ref=e187]: CUS-F001-002
+          - generic [ref=e188]:
+            - generic [ref=e189]: 金额
+            - generic [ref=e190]: ¥180,000
+          - generic [ref=e191]:
+            - generic [ref=e192]: 下单日期
+            - generic [ref=e193]: 2025-01-16
+        - generic [ref=e198] [cursor=pointer]:
+          - generic [ref=e199]:
+            - generic [ref=e200]: SO-202501-003
+            - generic [ref=e201]:
+              - button "已完成" [disabled]:
+                - generic [ref=e203]: 已完成
+          - generic [ref=e204]:
+            - generic [ref=e205]: 客户
+            - generic [ref=e206]: CUS-F001-001
+          - generic [ref=e207]:
+            - generic [ref=e208]: 金额
+            - generic [ref=e209]: ¥320,000
+          - generic [ref=e210]:
+            - generic [ref=e211]: 下单日期
+            - generic [ref=e212]: 2025-01-22
+        - generic [ref=e217] [cursor=pointer]:
+          - generic [ref=e218]:
+            - generic [ref=e219]: SO-202501-004
+            - generic [ref=e220]:
+              - button "已完成" [disabled]:
+                - generic [ref=e222]: 已完成
+          - generic [ref=e223]:
+            - generic [ref=e224]: 客户
+            - generic [ref=e225]: CUS-F001-002
+          - generic [ref=e226]:
+            - generic [ref=e227]: 金额
+            - generic [ref=e228]: ¥150,000
+          - generic [ref=e229]:
+            - generic [ref=e230]: 下单日期
+            - generic [ref=e231]: 2025-01-28
+        - generic [ref=e236] [cursor=pointer]:
+          - generic [ref=e237]:
+            - generic [ref=e238]: SO-202502-001
+            - generic [ref=e239]:
+              - button "已完成" [disabled]:
+                - generic [ref=e241]: 已完成
+          - generic [ref=e242]:
+            - generic [ref=e243]: 客户
+            - generic [ref=e244]: CUS-F001-001
+          - generic [ref=e245]:
+            - generic [ref=e246]: 金额
+            - generic [ref=e247]: ¥198,000
+          - generic [ref=e248]:
+            - generic [ref=e249]: 下单日期
+            - generic [ref=e250]: 2025-02-06
+        - generic [ref=e255] [cursor=pointer]:
+          - generic [ref=e256]:
+            - generic [ref=e257]: SO-202502-002
+            - generic [ref=e258]:
+              - button "部分发货" [disabled]:
+                - generic [ref=e260]: 部分发货
+          - generic [ref=e261]:
+            - generic [ref=e262]: 客户
+            - generic [ref=e263]: CUS-F001-002
+          - generic [ref=e264]:
+            - generic [ref=e265]: 金额
+            - generic [ref=e266]: ¥135,000
+          - generic [ref=e267]:
+            - generic [ref=e268]: 下单日期
+            - generic [ref=e269]: 2025-02-10
+        - generic [ref=e274] [cursor=pointer]:
+          - generic [ref=e275]:
+            - generic [ref=e276]: SO-202502-003
+            - generic [ref=e277]:
+              - button "已确认" [disabled]:
+                - generic [ref=e279]: 已确认
+          - generic [ref=e280]:
+            - generic [ref=e281]: 客户
+            - generic [ref=e282]: CUS-F001-001
+          - generic [ref=e283]:
+            - generic [ref=e284]: 金额
+            - generic [ref=e285]: ¥280,000
+          - generic [ref=e286]:
+            - generic [ref=e287]: 下单日期
+            - generic [ref=e288]: 2025-02-18
+        - generic [ref=e293] [cursor=pointer]:
+          - generic [ref=e294]:
+            - generic [ref=e295]: SO-202502-004
+            - generic [ref=e296]:
+              - button "草稿" [disabled]:
+                - generic [ref=e298]: 草稿
+          - generic [ref=e299]:
+            - generic [ref=e300]: 客户
+            - generic [ref=e301]: CUS-F001-002
+          - generic [ref=e302]:
+            - generic [ref=e303]: 金额
+            - generic [ref=e304]: ¥95,000
+          - generic [ref=e305]:
+            - generic [ref=e306]: 下单日期
+            - generic [ref=e307]: 2025-02-24
+          - generic [ref=e308]:
+            - button "确认" [ref=e310]:
+              - generic [ref=e312]: 确认
+            - button "取消" [ref=e314]:
+              - generic [ref=e316]: 取消
+  - tablist [ref=e91]:
+    - tab "首页" [ref=e93] [cursor=pointer]:
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - img: 󰋜
+        - generic [ref=e96]:
+          - img: 󰋜
+      - generic [ref=e97]: 首页
+    - tab "销售" [selected] [ref=e99] [cursor=pointer]:
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - img: 󰄑
+        - generic [ref=e102]:
+          - img: 󰄑
+      - generic [ref=e103]: 销售
+    - tab "客户" [ref=e105] [cursor=pointer]:
+      - generic [ref=e106]:
+        - generic [ref=e107]:
+          - img: 󰭘
+        - generic [ref=e108]:
+          - img: 󰭘
+      - generic [ref=e109]: 客户
+    - tab "我的" [ref=e111] [cursor=pointer]:
+      - generic [ref=e112]:
+        - generic [ref=e113]:
+          - img: 󰀄
+        - generic [ref=e114]:
+          - img: 󰀄
+      - generic [ref=e115]: 我的

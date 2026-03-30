@@ -285,7 +285,6 @@ describe('processTaskApiClient', () => {
         processTaskApiClient.submitSupplement({
           processTaskId: 'task-1',
           outputQuantity: 10,
-          reportDate: '2026-03-12',
         })
       ).rejects.toThrow();
     });
@@ -314,7 +313,8 @@ describe('processTaskApiClient', () => {
 
       mock.onPut(`${BASE}/process-work-reporting/batch-approve`).reply((config) => {
         const body = JSON.parse(config.data);
-        expect(body.reportIds).toEqual(reportIds);
+        // batchApprove sends the array directly as body, not wrapped in { reportIds: ... }
+        expect(body).toEqual(reportIds);
         return [200, {
           success: true,
           code: 200,

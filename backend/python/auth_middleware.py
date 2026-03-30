@@ -59,6 +59,7 @@ PUBLIC_PREFIXES = (
     "/api/analysis/",  # Analysis endpoints
     "/api/forecast/",  # Forecast endpoints
     "/api/efficiency/",  # Efficiency recognition — called by Java backend internally
+    "/api/food-kb/manual-chat",  # Operation manual chat — public (HTML page)
     # "/api/smartbi/financial-dashboard/" — removed: requires JWT auth (IDOR fix)
 )
 

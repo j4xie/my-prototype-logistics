@@ -1,0 +1,277 @@
+- generic [ref=e23]:
+  - generic [ref=e24]:
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e38]: 上午好，factory_admin1
+          - generic [ref=e39]: 3月12日 周四
+        - generic [ref=e40]:
+          - generic [ref=e41] [cursor=pointer]:
+            - img: 󱥈
+          - generic [ref=e42] [cursor=pointer]:
+            - img: 󰂜
+            - generic [ref=e44]: "4"
+      - generic [ref=e46] [cursor=pointer]:
+        - generic [ref=e47]:
+          - generic [ref=e48]:
+            - img: 󰚩
+            - generic [ref=e49]: AI 智能洞察
+          - generic [ref=e51]: 已分析
+        - generic [ref=e52]: 今日良品率偏低，建议关注质检环节
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - generic [ref=e55]: 0.0%
+            - generic [ref=e56]: 良品率
+          - generic [ref=e58]:
+            - generic [ref=e59]: ¥0.0
+            - generic [ref=e60]: 单位成本
+          - generic [ref=e62]:
+            - generic [ref=e63]: 0.0h
+            - generic [ref=e64]: 平均周期
+      - generic [ref=e65]:
+        - generic [ref=e67]: 今日概览
+        - generic [ref=e68]:
+          - generic [ref=e69] [cursor=pointer]:
+            - generic [ref=e70]:
+              - img: 󰑲
+            - generic [ref=e71]: "0"
+            - generic [ref=e72]: 今日产量(kg)
+          - generic [ref=e73] [cursor=pointer]:
+            - generic [ref=e74]:
+              - img: 󰏖
+            - generic [ref=e75]: "0"
+            - generic [ref=e76]: 今日批次
+          - generic [ref=e77] [cursor=pointer]:
+            - generic [ref=e78]:
+              - img: 󰔾
+            - generic [ref=e79]: "8"
+            - generic [ref=e80]: 原料批次
+          - generic [ref=e81] [cursor=pointer]:
+            - generic [ref=e82]:
+              - img: 󰀨
+            - generic [ref=e83]: "4"
+            - generic [ref=e84]: 今日告警
+          - generic [ref=e85] [cursor=pointer]:
+            - generic [ref=e86]:
+              - img: 󰅎
+            - generic [ref=e87]: "10"
+            - generic [ref=e88]: 待审批报工
+      - generic [ref=e89]:
+        - generic [ref=e91]: 快捷操作
+        - generic [ref=e92]:
+          - generic [ref=e93] [cursor=pointer]:
+            - generic [ref=e94]:
+              - img: 󰐗
+            - generic [ref=e95]: 新建计划
+          - generic [ref=e96] [cursor=pointer]:
+            - generic [ref=e97]:
+              - img: 󰄪
+            - generic [ref=e98]: 数据报表
+          - generic [ref=e99] [cursor=pointer]:
+            - generic [ref=e100]:
+              - img: 󰡉
+            - generic [ref=e101]: 人员管理
+          - generic [ref=e102] [cursor=pointer]:
+            - generic [ref=e103]:
+              - img: 󰒓
+            - generic [ref=e104]: 系统配置
+    - generic [ref=e151]:
+      - generic [ref=e153]:
+        - button "Back" [ref=e155] [cursor=pointer]:
+          - generic [ref=e157]:
+            - img: 󰁍
+        - heading "数据分析中心" [level=1] [ref=e158]
+        - button [ref=e160] [cursor=pointer]:
+          - generic [ref=e162]:
+            - img: 󰑐
+        - button [ref=e164] [cursor=pointer]:
+          - generic [ref=e166]:
+            - img: 󰈇
+      - generic [ref=e169]:
+        - generic [ref=e171]:
+          - img: 󰙹
+          - generic [ref=e172]: "统计周期: 近7天"
+        - generic [ref=e175] [cursor=pointer]:
+          - generic [ref=e176]:
+            - generic [ref=e177]:
+              - img: 󰈏
+            - generic [ref=e179]: 生产概览
+            - generic [ref=e180]:
+              - img: 󰅂
+          - generic [ref=e182]:
+            - generic [ref=e183]:
+              - generic [ref=e184]: "0"
+              - generic [ref=e185]: 总批次
+            - generic [ref=e186]:
+              - generic [ref=e187]: "0"
+              - generic [ref=e188]: 已完成
+            - generic [ref=e189]:
+              - generic [ref=e190]: 0.0%
+              - generic [ref=e191]: 完成率
+            - generic [ref=e192]:
+              - generic [ref=e193]: "0"
+              - generic [ref=e194]: 总产出
+        - generic [ref=e197] [cursor=pointer]:
+          - generic [ref=e198]:
+            - generic [ref=e199]:
+              - img: 󰗠
+            - generic [ref=e201]: 质量概览
+            - generic [ref=e202]:
+              - img: 󰅂
+          - generic [ref=e203]:
+            - generic [ref=e204]:
+              - generic [ref=e205]:
+                - generic [ref=e206]: "0"
+                - generic [ref=e207]: 检验数
+              - generic [ref=e208]:
+                - generic [ref=e209]: "0"
+                - generic [ref=e210]: 合格
+              - generic [ref=e211]:
+                - generic [ref=e212]: "0"
+                - generic [ref=e213]: 不合格
+            - generic [ref=e214]:
+              - generic [ref=e215]: 合格率
+              - generic [ref=e216]: 0.0%
+            - progressbar [ref=e217]
+        - generic [ref=e222] [cursor=pointer]:
+          - generic [ref=e223]:
+            - generic [ref=e224]:
+              - img: 󰓅
+            - generic [ref=e226]: 效率概览
+            - generic [ref=e227]:
+              - img: 󰅂
+          - generic [ref=e228]:
+            - generic [ref=e229]:
+              - generic [ref=e230]: 设备OEE
+              - generic [ref=e231]: 75.0%
+            - progressbar [ref=e232]
+            - generic [ref=e235]:
+              - generic [ref=e236]: 设备利用率
+              - generic [ref=e237]: 0.0%
+            - progressbar [ref=e238]
+            - generic [ref=e241]:
+              - generic [ref=e242]: 综合效率
+              - generic [ref=e243]: 0.0%
+            - progressbar [ref=e244]
+        - generic [ref=e249] [cursor=pointer]:
+          - generic [ref=e250]:
+            - generic [ref=e251]:
+              - img: 󰇁
+            - generic [ref=e253]: 成本概览
+            - generic [ref=e254]:
+              - img: 󰅂
+          - generic [ref=e256]:
+            - generic [ref=e257]:
+              - generic [ref=e258]: ¥0
+              - generic [ref=e259]: 总成本
+            - generic [ref=e260]:
+              - generic [ref=e261]: ¥0
+              - generic [ref=e262]: 材料
+            - generic [ref=e263]:
+              - generic [ref=e264]: ¥0
+              - generic [ref=e265]: 人工
+            - generic [ref=e266]:
+              - generic [ref=e267]: ¥0
+              - generic [ref=e268]: 制造费用
+        - generic [ref=e271] [cursor=pointer]:
+          - generic [ref=e272]:
+            - generic [ref=e273]:
+              - img: 󰡉
+            - generic [ref=e275]: 人效概览
+            - generic [ref=e276]:
+              - img: 󰅂
+          - generic [ref=e278]:
+            - generic [ref=e279]:
+              - generic [ref=e280]: "0"
+              - generic [ref=e281]: 工人数
+            - generic [ref=e282]:
+              - generic [ref=e283]: "0"
+              - generic [ref=e284]: 总计件
+            - generic [ref=e285]:
+              - generic [ref=e286]: "0.0"
+              - generic [ref=e287]: 件/小时
+            - generic [ref=e288]:
+              - generic [ref=e289]: ¥0.00
+              - generic [ref=e290]: 单件成本
+        - generic [ref=e293] [cursor=pointer]:
+          - generic [ref=e294]:
+            - generic [ref=e295]:
+              - img: 󰄨
+            - generic [ref=e297]: 生产数据分析
+            - generic [ref=e298]:
+              - img: 󰅂
+          - generic [ref=e300]: 产量趋势 · 良率分析 · 产品对比 · 工序分布
+        - generic [ref=e303] [cursor=pointer]:
+          - generic [ref=e304]:
+            - generic [ref=e305]:
+              - img: 󰭖
+            - generic [ref=e307]: 人效分析
+            - generic [ref=e308]:
+              - img: 󰅂
+          - generic [ref=e310]: 人效排名 · 工时分布 · 效率趋势 · 交叉分析
+        - generic [ref=e313] [cursor=pointer]:
+          - generic [ref=e314]:
+            - generic [ref=e315]:
+              - img: 󰄨
+            - generic [ref=e317]: 更多报表
+            - generic [ref=e318]:
+              - img: 󰅂
+          - generic [ref=e320]:
+            - button "KPI指标" [ref=e322]:
+              - generic [ref=e323]:
+                - generic [ref=e324]:
+                  - img: 󰄪
+                - generic [ref=e325]: KPI指标
+            - button "OEE分析" [ref=e327]:
+              - generic [ref=e328]:
+                - generic [ref=e329]:
+                  - img: 󰊚
+                - generic [ref=e330]: OEE分析
+            - button "准时交付" [ref=e332]:
+              - generic [ref=e333]:
+                - generic [ref=e334]:
+                  - img: 󰔾
+                - generic [ref=e335]: 准时交付
+  - tablist [ref=e107]:
+    - tab "首页" [ref=e109] [cursor=pointer]:
+      - generic [ref=e110]:
+        - generic [ref=e111]:
+          - img: 󰋜
+        - generic [ref=e112]:
+          - img: 󰋜
+      - generic [ref=e113]: 首页
+    - tab "AI分析" [ref=e115] [cursor=pointer]:
+      - generic [ref=e116]:
+        - generic [ref=e117]:
+          - img: 󰄪
+        - generic [ref=e118]:
+          - img: 󰄪
+      - generic [ref=e119]: AI分析
+    - tab "报表" [selected] [ref=e121] [cursor=pointer]:
+      - generic [ref=e122]:
+        - generic [ref=e123]:
+          - img: 󰈕
+        - generic [ref=e124]:
+          - img: 󰈕
+      - generic [ref=e125]: 报表
+    - tab "智能分析" [ref=e127] [cursor=pointer]:
+      - generic [ref=e128]:
+        - generic [ref=e129]:
+          - img: 󰺓
+        - generic [ref=e130]:
+          - img: 󰺓
+      - generic [ref=e131]: 智能分析
+    - tab "管理" [ref=e133] [cursor=pointer]:
+      - generic [ref=e134]:
+        - generic [ref=e135]:
+          - img: 󰒓
+        - generic [ref=e136]:
+          - img: 󰒓
+      - generic [ref=e137]: 管理
+    - tab "我的" [ref=e139] [cursor=pointer]:
+      - generic [ref=e140]:
+        - generic [ref=e141]:
+          - img: 󰀄
+        - generic [ref=e142]:
+          - img: 󰀄
+      - generic [ref=e143]: 我的

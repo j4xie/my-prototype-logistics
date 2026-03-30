@@ -1,0 +1,11 @@
+# Task ID: 3
+# Title: 阶段1.2: 新建 ProductWorkProcess 关联实体 + API
+# Status: done
+# Dependencies: 2
+# Priority: high
+# Description: 创建 ProductWorkProcess 实体(id, factoryId, productTypeId, workProcessId, processOrder, unitOverride, estimatedMinutesOverride)、Repository、Service、Controller。API 含批量排序。编写迁移 SQL。
+# Details:
+参考方案文档第二节2.2(约行120-130)和第四节阶段1.2(约行310-325)和SQL(约行445-460)。多对多关联，支持顺序和覆写参数。
+
+# Test Strategy:
+关联 API 测试通过；支持拖拽排序的批量更新 API

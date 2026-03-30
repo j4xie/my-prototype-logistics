@@ -154,3 +154,7 @@ frontend/CretasFoodTrace/migrate-*.sh~$*
 nul
 scripts/run_new_server.py
 scripts/run_old_server.py
+
+# 食品标注数据集（太大不提交）
+食品标注/
+frontend/标注食品异物图片/

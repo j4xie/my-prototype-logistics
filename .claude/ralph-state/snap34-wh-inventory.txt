@@ -1,0 +1,341 @@
+- generic [ref=e261]:
+  - generic [ref=e262]:
+    - generic [ref=e317]:
+      - generic [ref=e318]:
+        - generic [ref=e319]:
+          - generic [ref=e320]: 仓储工作台
+          - generic [ref=e321]: 今日入库 5 单 | 待出货 5 单
+        - button [ref=e323] [cursor=pointer]:
+          - img: 󰂜
+      - generic [ref=e326]:
+        - generic [ref=e328]:
+          - button [ref=e399] [cursor=pointer]:
+            - generic [ref=e332]: 出货任务 (0)
+          - button [ref=e400] [cursor=pointer]:
+            - generic [ref=e336]: 入库任务 (5)
+        - generic [ref=e338]:
+          - generic [ref=e339]: 今日出货 - 按发出时间排序
+          - generic [ref=e341] [cursor=pointer]: 查看全部 >
+        - generic [ref=e342]:
+          - generic [ref=e343]:
+            - generic [ref=e345]: 📦
+            - generic [ref=e346]: 今日入库
+            - generic [ref=e347]: "0"
+            - generic [ref=e348]: kg
+          - generic [ref=e349]:
+            - generic [ref=e351]: 🚚
+            - generic [ref=e352]: 今日出库
+            - generic [ref=e353]: "0"
+            - generic [ref=e354]: kg
+          - generic [ref=e355]:
+            - generic [ref=e357]: ⏳
+            - generic [ref=e358]: 待出货
+            - generic [ref=e359]: "5"
+            - generic [ref=e360]: 单
+          - generic [ref=e361]:
+            - generic [ref=e363]: ⚠️
+            - generic [ref=e364]: 库存预警
+            - generic [ref=e365]: "1241"
+            - generic [ref=e366]: 项
+        - generic [ref=e368]:
+          - generic [ref=e369]: 库存预警
+          - generic [ref=e371] [cursor=pointer]: 查看全部 >
+        - generic [ref=e373] [cursor=pointer]:
+          - generic [ref=e374]:
+            - generic [ref=e375]: 温控监控
+            - generic [ref=e378]: 在线
+          - generic [ref=e379]:
+            - generic [ref=e380]:
+              - generic [ref=e381]:
+                - generic [ref=e382]: 冷藏区 A区
+                - generic [ref=e383]:
+                  - button [disabled]:
+                    - generic [ref=e385]: 正常
+              - generic [ref=e386]:
+                - generic [ref=e387]: "2.5"
+                - generic [ref=e388]: °C
+            - generic [ref=e389]:
+              - generic [ref=e390]:
+                - generic [ref=e391]: 冷冻区 B区
+                - generic [ref=e392]:
+                  - button [disabled]:
+                    - generic [ref=e394]: 正常
+              - generic [ref=e395]:
+                - generic [ref=e396]: "-18"
+                - generic [ref=e397]: °C
+    - generic [ref=e408]:
+      - generic [ref=e409]:
+        - generic [ref=e410]: 库存管理
+        - generic [ref=e411]: 在库 8 种 | 总量 1,167.90 kg
+      - generic [ref=e414]:
+        - generic [ref=e415]:
+          - generic [ref=e416] [cursor=pointer]:
+            - generic [ref=e418]: 󰢨
+            - generic [ref=e419]: 盘点
+          - generic [ref=e420] [cursor=pointer]:
+            - generic [ref=e422]: 󰓡
+            - generic [ref=e423]: 调拨
+          - generic [ref=e424] [cursor=pointer]:
+            - generic [ref=e426]: 󰍎
+            - generic [ref=e427]: 库位
+          - generic [ref=e428] [cursor=pointer]:
+            - generic [ref=e430]: 󰗎
+            - generic [ref=e431]: 过期
+          - generic [ref=e432] [cursor=pointer]:
+            - generic [ref=e434]: 󰺁
+            - generic [ref=e435]: 库存预警
+        - generic [ref=e436]:
+          - generic [ref=e437]:
+            - button "search" [disabled]:
+              - img: 󰍉
+          - search "搜索物料名称/批次号" [ref=e438]
+          - button "clear" [ref=e440] [cursor=pointer]:
+            - img: 󰅖
+        - generic [ref=e442]:
+          - button "全部(8)" [ref=e444] [cursor=pointer]:
+            - generic [ref=e445]:
+              - generic [ref=e446]:
+                - img: 󰄬
+              - generic [ref=e447]: 全部(8)
+          - button "鲜品(0)" [ref=e449] [cursor=pointer]:
+            - generic [ref=e451]: 鲜品(0)
+          - button "冻品(8)" [ref=e453] [cursor=pointer]:
+            - generic [ref=e455]: 冻品(8)
+          - button "干货(0)" [ref=e457] [cursor=pointer]:
+            - generic [ref=e459]: 干货(0)
+        - generic [ref=e460]:
+          - generic [ref=e462] [cursor=pointer]:
+            - generic [ref=e463]:
+              - generic [ref=e464]: 带鱼
+              - generic [ref=e466]: 冻品
+            - generic [ref=e467]:
+              - generic [ref=e468]:
+                - generic [ref=e469]: "100"
+                - generic [ref=e470]: kg
+              - generic [ref=e471]:
+                - generic [ref=e472]:
+                  - generic [ref=e473]: 批次
+                  - generic [ref=e474]: 1个
+                - generic [ref=e475]:
+                  - generic [ref=e476]: 库位
+                  - generic [ref=e477]: A区
+                - generic [ref=e478]:
+                  - generic [ref=e479]: 状态
+                  - generic [ref=e480]: 正常
+            - generic [ref=e481]:
+              - generic [ref=e482]: "更新: 2026-01-08"
+              - generic [ref=e483]:
+                - generic [ref=e484]: 查看详情
+                - generic [ref=e485]: 󰅂
+          - generic [ref=e487] [cursor=pointer]:
+            - generic [ref=e488]:
+              - generic [ref=e489]: 带鱼
+              - generic [ref=e491]: 冻品
+            - generic [ref=e492]:
+              - generic [ref=e493]:
+                - generic [ref=e494]: "83.9"
+                - generic [ref=e495]: kg
+              - generic [ref=e496]:
+                - generic [ref=e497]:
+                  - generic [ref=e498]: 批次
+                  - generic [ref=e499]: 1个
+                - generic [ref=e500]:
+                  - generic [ref=e501]: 库位
+                  - generic [ref=e502]: A区-冷库1
+                - generic [ref=e503]:
+                  - generic [ref=e504]: 预警
+                  - generic [ref=e505]: 已过期
+            - generic [ref=e506]:
+              - generic [ref=e507]: "更新: 2026-01-31"
+              - generic [ref=e508]:
+                - generic [ref=e509]: 查看详情
+                - generic [ref=e510]: 󰅂
+          - generic [ref=e512] [cursor=pointer]:
+            - generic [ref=e513]:
+              - generic [ref=e514]: 带鱼
+              - generic [ref=e516]: 冻品
+            - generic [ref=e517]:
+              - generic [ref=e518]:
+                - generic [ref=e519]: "40"
+                - generic [ref=e520]: kg
+              - generic [ref=e521]:
+                - generic [ref=e522]:
+                  - generic [ref=e523]: 批次
+                  - generic [ref=e524]: 1个
+                - generic [ref=e525]:
+                  - generic [ref=e526]: 库位
+                  - generic [ref=e527]: 冷库A区
+                - generic [ref=e528]:
+                  - generic [ref=e529]: 状态
+                  - generic [ref=e530]: 正常
+            - generic [ref=e531]:
+              - generic [ref=e532]: "更新: 2025-12-31"
+              - generic [ref=e533]:
+                - generic [ref=e534]: 查看详情
+                - generic [ref=e535]: 󰅂
+          - generic [ref=e537] [cursor=pointer]:
+            - generic [ref=e538]:
+              - generic [ref=e539]: 带鱼
+              - generic [ref=e541]: 冻品
+            - generic [ref=e542]:
+              - generic [ref=e543]:
+                - generic [ref=e544]: "100"
+                - generic [ref=e545]: kg
+              - generic [ref=e546]:
+                - generic [ref=e547]:
+                  - generic [ref=e548]: 批次
+                  - generic [ref=e549]: 1个
+                - generic [ref=e550]:
+                  - generic [ref=e551]: 库位
+                  - generic [ref=e552]: C区-测试
+                - generic [ref=e553]:
+                  - generic [ref=e554]: 状态
+                  - generic [ref=e555]: 正常
+            - generic [ref=e556]:
+              - generic [ref=e557]: "更新: 2025-12-27"
+              - generic [ref=e558]:
+                - generic [ref=e559]: 查看详情
+                - generic [ref=e560]: 󰅂
+          - generic [ref=e562] [cursor=pointer]:
+            - generic [ref=e563]:
+              - generic [ref=e564]: 带鱼
+              - generic [ref=e566]: 冻品
+            - generic [ref=e567]:
+              - generic [ref=e568]:
+                - generic [ref=e569]: "350"
+                - generic [ref=e570]: kg
+              - generic [ref=e571]:
+                - generic [ref=e572]:
+                  - generic [ref=e573]: 批次
+                  - generic [ref=e574]: 1个
+                - generic [ref=e575]:
+                  - generic [ref=e576]: 库位
+                  - generic [ref=e577]: A区
+                - generic [ref=e578]:
+                  - generic [ref=e579]: 状态
+                  - generic [ref=e580]: 正常
+            - generic [ref=e581]:
+              - generic [ref=e582]: "更新: 2026-01-05"
+              - generic [ref=e583]:
+                - generic [ref=e584]: 查看详情
+                - generic [ref=e585]: 󰅂
+          - generic [ref=e587] [cursor=pointer]:
+            - generic [ref=e588]:
+              - generic [ref=e589]: 黄鱼
+              - generic [ref=e591]: 冻品
+            - generic [ref=e592]:
+              - generic [ref=e593]:
+                - generic [ref=e594]: "244"
+                - generic [ref=e595]: kg
+              - generic [ref=e596]:
+                - generic [ref=e597]:
+                  - generic [ref=e598]: 批次
+                  - generic [ref=e599]: 1个
+                - generic [ref=e600]:
+                  - generic [ref=e601]: 库位
+                  - generic [ref=e602]: A区-02
+                - generic [ref=e603]:
+                  - generic [ref=e604]: 状态
+                  - generic [ref=e605]: 正常
+            - generic [ref=e606]:
+              - generic [ref=e607]: "更新: 2026-01-07"
+              - generic [ref=e608]:
+                - generic [ref=e609]: 查看详情
+                - generic [ref=e610]: 󰅂
+          - generic [ref=e612] [cursor=pointer]:
+            - generic [ref=e613]:
+              - generic [ref=e614]: 墨鱼
+              - generic [ref=e616]: 冻品
+            - generic [ref=e617]:
+              - generic [ref=e618]:
+                - generic [ref=e619]: "150"
+                - generic [ref=e620]: kg
+              - generic [ref=e621]:
+                - generic [ref=e622]:
+                  - generic [ref=e623]: 批次
+                  - generic [ref=e624]: 1个
+                - generic [ref=e625]:
+                  - generic [ref=e626]: 库位
+                  - generic [ref=e627]: B区-01
+                - generic [ref=e628]:
+                  - generic [ref=e629]: 状态
+                  - generic [ref=e630]: 正常
+            - generic [ref=e631]:
+              - generic [ref=e632]: "更新: 2025-12-26"
+              - generic [ref=e633]:
+                - generic [ref=e634]: 查看详情
+                - generic [ref=e635]: 󰅂
+          - generic [ref=e637] [cursor=pointer]:
+            - generic [ref=e638]:
+              - generic [ref=e639]: 虾仁
+              - generic [ref=e641]: 冻品
+            - generic [ref=e642]:
+              - generic [ref=e643]:
+                - generic [ref=e644]: "100"
+                - generic [ref=e645]: kg
+              - generic [ref=e646]:
+                - generic [ref=e647]:
+                  - generic [ref=e648]: 批次
+                  - generic [ref=e649]: 1个
+                - generic [ref=e650]:
+                  - generic [ref=e651]: 库位
+                  - generic [ref=e652]: B区-02
+                - generic [ref=e653]:
+                  - generic [ref=e654]: 状态
+                  - generic [ref=e655]: 正常
+            - generic [ref=e656]:
+              - generic [ref=e657]: "更新: 2025-12-26"
+              - generic [ref=e658]:
+                - generic [ref=e659]: 查看详情
+                - generic [ref=e660]: 󰅂
+        - generic [ref=e661]:
+          - generic [ref=e662]: 库存概览
+          - generic [ref=e663]:
+            - generic [ref=e664]:
+              - generic [ref=e665]: "8"
+              - generic [ref=e666]: 物料种类
+            - generic [ref=e667]:
+              - generic [ref=e668]: 1,167.90
+              - generic [ref=e669]: 总库存(kg)
+            - generic [ref=e670]:
+              - generic [ref=e671]: ¥9K
+              - generic [ref=e672]: 库存价值
+            - generic [ref=e673]:
+              - generic [ref=e674]: "0"
+              - generic [ref=e675]: 预警数
+  - tablist [ref=e286]:
+    - tab "首页" [ref=e288] [cursor=pointer]:
+      - generic [ref=e289]:
+        - generic [ref=e290]:
+          - img: 󰋜
+        - generic [ref=e291]:
+          - img: 󰋜
+      - generic [ref=e292]: 首页
+    - tab "入库" [ref=e294] [cursor=pointer]:
+      - generic [ref=e295]:
+        - generic [ref=e296]:
+          - img: 󰏔
+        - generic [ref=e297]:
+          - img: 󰏔
+      - generic [ref=e298]: 入库
+    - tab "出货" [ref=e300] [cursor=pointer]:
+      - generic [ref=e301]:
+        - generic [ref=e302]:
+          - img: 󰏕
+        - generic [ref=e303]:
+          - img: 󰏕
+      - generic [ref=e304]: 出货
+    - tab "库存" [selected] [ref=e306] [cursor=pointer]:
+      - generic [ref=e307]:
+        - generic [ref=e308]:
+          - img: 󰾁
+        - generic [ref=e309]:
+          - img: 󰾁
+      - generic [ref=e310]: 库存
+    - tab "我的" [ref=e312] [cursor=pointer]:
+      - generic [ref=e313]:
+        - generic [ref=e314]:
+          - img: 󰀄
+        - generic [ref=e315]:
+          - img: 󰀄
+      - generic [ref=e316]: 我的

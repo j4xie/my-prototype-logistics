@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, AuthTokens, isPlatformUser, isFactoryUser } from '../types/auth';
-import { useFactoryFeatureStore } from './factoryFeatureStore';
 import { logger } from '../utils/logger';
 
 // 创建AuthStore专用logger
@@ -69,6 +68,9 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        // Lazy require to break circular dependency:
+        // authStore → factoryFeatureStore → apiClient → authStore
+        const { useFactoryFeatureStore } = require('./factoryFeatureStore');
         useFactoryFeatureStore.getState().reset();
         set({
           user: null,

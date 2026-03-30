@@ -139,7 +139,8 @@ export function WSProfileScreen() {
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('profile.sections.helpSupport')}</Text>
           <View style={styles.menuGroup}>
-            <MenuItem
+            {/* TODO: 教程功能暂时隐藏，后续优化后恢复 */}
+            {/* <MenuItem
               icon="school-outline"
               title="操作教程"
               onPress={() => {
@@ -150,7 +151,7 @@ export function WSProfileScreen() {
                 ]);
               }}
               rightText="重新学习"
-            />
+            /> */}
             <MenuItem
               icon="information-outline"
               title={t('profile.menu.about')}

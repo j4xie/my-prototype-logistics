@@ -1,0 +1,11 @@
+# Task ID: 20
+# Title: Production Intent Agent — AI Tools 扩展
+# Status: done
+# Dependencies: 7, 16
+# Priority: medium
+# Description: 新增 ProcessTaskQueryTool、ProcessTaskCreateTool、ProcessTaskSummaryTool、ProcessTaskAnalysisTool，通过 ToolRegistry 注册。实现工作流感知的 Tool 过滤（PROCESS 模式排除 BATCH-only Tools）。
+# Details:
+参考方案文档第十节(约行1300-1350)。复用现有 Tool-Skill 架构。
+
+# Test Strategy:
+AI 对话 '帮我排明天墨鱼圈的卤制' 成功创建 ProcessTask；进度查询返回准确数据

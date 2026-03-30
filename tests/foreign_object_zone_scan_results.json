@@ -1,0 +1,204 @@
+{
+  "image_1": {
+    "filename": "9148fe77352de7d0a07981c9de66cc6e.jpg",
+    "detections": [
+      {
+        "type": "白色碎屑",
+        "description": "在第三排肉卷的中间偏右位置，存在一个不规则的白色小点，形状非连续脂肪纹理，边缘略显粗糙，与周围平滑的脂肪纹路明显不同。",
+        "location_in_zone": "中间偏右",
+        "size_estimate": "极小",
+        "color": "白色",
+        "severity": "MEDIUM"
+      },
+      {
+        "type": "颜色异常点",
+        "description": "在第四排肉卷左侧靠近边缘处，有一个微小的淡黄色斑点，颜色不同于正常脂肪或肌肉组织，可能为氧化或杂质残留。",
+        "location_in_zone": "左下",
+        "size_estimate": "极小",
+        "color": "淡黄",
+        "severity": "LOW"
+      },
+      {
+        "type": "毛发/线头",
+        "description": "在第二排肉卷右侧缝隙中，有一条极细的深色丝状物，宽度约1-2像素，呈直线状，与肉质纹理方向不一致，疑似毛发或纤维。",
+        "location_in_zone": "右上",
+        "size_estimate": "极小",
+        "color": "深黑",
+        "severity": "HIGH"
+      }
+    ],
+    "has_foreign_object": true
+  },
+  "image_2": {
+    "filename": "c20892e0fea7f920ea49215e9702ca76.jpg",
+    "detections": [
+      {
+        "type": "毛发/线头",
+        "description": "在中间偏右区域，肉卷表面可见一条极细的深色丝状物，宽度约1-2像素，呈直线状，与肉质纹理方向不一致，疑似毛发或线头。",
+        "location_in_zone": "中间偏右",
+        "size_estimate": "极小",
+        "color": "深黑",
+        "severity": "HIGH"
+      },
+      {
+        "type": "白色异物",
+        "description": "在右下角肉卷边缘处，存在一个不规则的白色碎屑，形状非连续脂肪纹理，呈孤立点状，与周围脂肪组织明显不同，疑似骨碎片或纸屑。",
+        "location_in_zone": "右下",
+        "size_estimate": "小",
+        "color": "白色",
+        "severity": "MEDIUM"
+      },
+      {
+        "type": "颜色异常点",
+        "description": "在左上角靠近标签边缘的肉卷表面，有一个微小的黄绿色斑点，颜色不属于正常肉质或脂肪范围，可能为污染或氧化产物。",
+        "location_in_zone": "左上",
+        "size_estimate": "极小",
+        "color": "黄绿",
+        "severity": "HIGH"
+      },
+      {
+        "type": "颜色异常",
+        "description": "在中间偏左的肉卷上，有一个微小的蓝色点状物，与周围红色肉质和白色脂肪明显不同，形状规则，疑似染料或标签残留。",
+        "location_in_zone": "中间偏左",
+        "size_estimate": "极小",
+        "color": "蓝色",
+        "severity": "HIGH"
+      },
+      {
+        "type": "毛发/线头",
+        "description": "在右下角区域，靠近包装膜边缘处，有一根极细的浅色丝状物，长度约2-3像素，呈直线状，可能为线头或纤维残留。",
+        "location_in_zone": "右下角",
+        "size_estimate": "极小",
+        "color": "浅色",
+        "severity": "MEDIUM"
+      },
+      {
+        "type": "白色异物",
+        "description": "在左侧第二块肉卷的底部边缘，存在一个不规则的白色碎屑，形状非连续脂肪纹理，略显孤立，疑似纸屑或骨粉残留。",
+        "location_in_zone": "左下",
+        "size_estimate": "小",
+        "color": "白色",
+        "severity": "MEDIUM"
+      }
+    ],
+    "has_foreign_object": true
+  },
+  "image_3": {
+    "filename": "c72cf022eee8794759f0fe51a347a5c0.jpg",
+    "detections": [
+      {
+        "type": "毛发/线头",
+        "description": "在右上角区域发现一条极细的深色丝状物，宽度约1-2像素，呈直线状，颜色为深褐色，与肉质纹理不连续，疑似毛发或线头。",
+        "location_in_zone": "右上",
+        "size_estimate": "极小",
+        "color": "深褐色",
+        "severity": "HIGH"
+      },
+      {
+        "type": "白色异物",
+        "description": "在中间偏下位置，有一处不规则的白色碎屑，形状非脂肪纹理的平滑连续性，边缘锐利，疑似骨碎片或纸屑残留。",
+        "location_in_zone": "中间偏下",
+        "size_estimate": "小",
+        "color": "白色",
+        "severity": "MEDIUM"
+      },
+      {
+        "type": "颜色异常点",
+        "description": "在左下角靠近包装边缘处，存在一个微小的黄绿色斑点，颜色明显不同于正常肉质和脂肪，可能为霉变初期或污染点。",
+        "location_in_zone": "左下",
+        "size_estimate": "极小",
+        "color": "黄绿色",
+        "severity": "HIGH"
+      },
+      {
+        "type": "毛发/线头",
+        "description": "一条极细的浅白色丝状物，横跨在中间偏左的肉卷表面，长度约3-4毫米，宽度仅1-2像素，与肉质纹理不连续，疑似外来纤维。",
+        "location_in_zone": "中间偏左",
+        "size_estimate": "极小",
+        "color": "浅白",
+        "severity": "HIGH"
+      },
+      {
+        "type": "白色异物",
+        "description": "右下角靠近包装边缘处有一小块不规则白色碎屑，形状非脂肪纹理特征，呈孤立点状，边缘锐利，疑似纸屑或骨碎片残留。",
+        "location_in_zone": "右下角",
+        "size_estimate": "小",
+        "color": "白色",
+        "severity": "MEDIUM"
+      },
+      {
+        "type": "颜色异常点",
+        "description": "左上角区域有一微小黄绿色斑点，直径约1像素，颜色明显偏离正常肉色和脂肪色，可能为霉变初期或污染颗粒。",
+        "location_in_zone": "左上角",
+        "size_estimate": "极小",
+        "color": "黄绿",
+        "severity": "HIGH"
+      }
+    ],
+    "has_foreign_object": true
+  },
+  "image_4": {
+    "filename": "05bfda432fa8a35a900277ae162c0ae6.jpg",
+    "detections": [
+      {
+        "type": "白色碎屑",
+        "description": "在第三层肉卷右侧边缘处，存在一个不规则的白色小点，形状非连续脂肪纹理，呈孤立状，与周围脂肪条纹明显不同，疑似骨碎片或纸屑类异物。",
+        "location_in_zone": "中间偏右",
+        "size_estimate": "极小",
+        "color": "白色",
+        "severity": "MEDIUM"
+      },
+      {
+        "type": "颜色异常点",
+        "description": "在第二层肉卷中部偏左位置，有一个微小的黄绿色斑点，颜色不属于正常肉质或脂肪范围，可能为霉变初期或外来污染物。",
+        "location_in_zone": "中间偏左",
+        "size_estimate": "极小",
+        "color": "黄绿色",
+        "severity": "HIGH"
+      },
+      {
+        "type": "毛发/线头",
+        "description": "在最上层肉卷左侧边缘，有一根极细的深色丝状物，宽度约1-2像素，呈直线状，与肉质纹理方向不一致，疑似毛发或线头。",
+        "location_in_zone": "上部偏左",
+        "size_estimate": "极小",
+        "color": "深褐色",
+        "severity": "LOW"
+      },
+      {
+        "type": "毛发/线头",
+        "description": "在中间偏右位置发现一条极细的深色丝状物，宽度约1-2像素，呈直线状，颜色为深褐色，与肉质纹理不连续，疑似毛发或线头。",
+        "location_in_zone": "中间偏右",
+        "size_estimate": "极小",
+        "color": "深褐色",
+        "severity": "HIGH"
+      },
+      {
+        "type": "白色异物",
+        "description": "在底部右侧肉卷边缘处存在一个不规则的白色碎屑，形状非脂肪纹理特征，呈孤立点状，表面略显粗糙，与周围平滑脂肪不同。",
+        "location_in_zone": "底部右侧",
+        "size_estimate": "小",
+        "color": "白色",
+        "severity": "MEDIUM"
+      },
+      {
+        "type": "颜色异常点",
+        "description": "在左上角第二层肉卷表面有一个微小的黄绿色斑点，直径约1-2像素，颜色明显偏离正常红白肉质，疑似污染或变质初期表现。",
+        "location_in_zone": "左上角",
+        "size_estimate": "极小",
+        "color": "黄绿色",
+        "severity": "HIGH"
+      }
+    ],
+    "has_foreign_object": true
+  },
+  "image_5": {
+    "filename": "09ae6c082ac4939159fe84327e6b4368.jpg",
+    "detections": [],
+    "has_foreign_object": false
+  },
+  "image_6": {
+    "filename": "bfeeb0ff1cb6e0b2b08a9ea34b41fb2c.jpg",
+    "detections": [],
+    "has_foreign_object": false
+  }
+}

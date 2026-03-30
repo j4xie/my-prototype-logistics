@@ -1,0 +1,11 @@
+# Task ID: 5
+# Title: 阶段1.4: 改造 ProcessCheckinRecord 和 ProductionReport
+# Status: done
+# Dependencies: 4
+# Priority: high
+# Description: 为 ProcessCheckinRecord 新增 processTaskId 字段；为 ProductionReport 新增 processTaskId、isSupplemental、approvalStatus、approvedBy、approvedAt、rejectedReason 字段。编写 ALTER TABLE 迁移 SQL。
+# Details:
+参考方案文档第二节2.4(约行220-230)和SQL(约行500-510)。原有 batchId 保留，BATCH 模式继续使用。
+
+# Test Strategy:
+迁移 SQL 执行成功；现有 BATCH 模式功能不受影响（回归测试）

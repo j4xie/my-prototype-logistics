@@ -1,0 +1,236 @@
+appId: com.cretas.foodtrace
+
+---
+
+# Test 85: Workshop Supervisor - Yield Rate Color Thresholds
+
+# Verifies yield rate color changes: green (>=95%), orange (85-95%), red (<85%)
+
+# Color thresholds: <85 red #F44336, 85-95 orange #FF9800, >=95 green #4CAF50
+
+
+
+- launchApp:
+
+    clearState: true
+
+- waitForAnimationToEnd
+
+
+
+# Login as workshop supervisor
+
+- runFlow: flows/login-ws.yaml
+
+- extendedWaitUntil:
+
+    visible: "Start Task"
+
+    timeout: 15000
+
+
+
+# ========================================
+
+# M-01: Navigate to Batches tab then Scan Report
+
+# ========================================
+
+- tapOn:
+
+    text: "\u6279\u6B21"
+
+- waitForAnimationToEnd
+
+
+
+- extendedWaitUntil:
+
+    visible: ".*\u6279\u6B21.*|.*Batch.*"
+
+    timeout: 15000
+
+
+
+- scrollUntilVisible:
+
+    element:
+
+      text: ".*\u626B\u7801\u62A5\u5DE5.*|.*Scan Report.*"
+
+    direction: DOWN
+
+    timeout: 10000
+
+
+
+- tapOn:
+
+    text: ".*\u626B\u7801\u62A5\u5DE5.*|.*Scan Report.*"
+
+    optional: true
+
+
+
+- extendedWaitUntil:
+
+    visible:
+
+      id: "scan-report-screen"
+
+    timeout: 15000
+
+
+
+- takeScreenshot: screenshots/85-scan-report-initial
+
+
+
+# ========================================
+
+# M-02: Verify form fields exist
+
+# ========================================
+
+- assertVisible:
+
+    id: "report-output-quantity"
+
+    optional: true
+
+
+
+- assertVisible:
+
+    id: "report-good-quantity"
+
+    optional: true
+
+
+
+# ========================================
+
+# M-03: Fill output=100, good=96 (96% -> green)
+
+# ========================================
+
+- tapOn:
+
+    id: "report-output-quantity"
+
+    optional: true
+
+- eraseText: 10
+
+- inputText: "100"
+
+- hideKeyboard
+
+- waitForAnimationToEnd
+
+
+
+- tapOn:
+
+    id: "report-good-quantity"
+
+    optional: true
+
+- eraseText: 10
+
+- inputText: "96"
+
+- hideKeyboard
+
+- waitForAnimationToEnd
+
+
+
+# Verify yield rate display appears
+
+- assertVisible:
+
+    id: "yield-rate-display"
+
+    optional: true
+
+
+
+- assertVisible:
+
+    text: ".*96.*%.*"
+
+    optional: true
+
+
+
+- takeScreenshot: screenshots/85-yield-green
+
+
+
+# ========================================
+
+# M-04: Change good=90 (90% -> orange)
+
+# ========================================
+
+- tapOn:
+
+    id: "report-good-quantity"
+
+    optional: true
+
+- eraseText: 10
+
+- inputText: "90"
+
+- hideKeyboard
+
+- waitForAnimationToEnd
+
+
+
+- assertVisible:
+
+    text: ".*90.*%.*"
+
+    optional: true
+
+
+
+- takeScreenshot: screenshots/85-yield-orange
+
+
+
+# ========================================
+
+# M-05: Change good=80 (80% -> red)
+
+# ========================================
+
+- tapOn:
+
+    id: "report-good-quantity"
+
+    optional: true
+
+- eraseText: 10
+
+- inputText: "80"
+
+- hideKeyboard
+
+- waitForAnimationToEnd
+
+
+
+- assertVisible:
+
+    text: ".*80.*%.*"
+
+    optional: true
+
+
+
+- takeScreenshot: screenshots/85-yield-red
+

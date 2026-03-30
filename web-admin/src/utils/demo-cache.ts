@@ -58,12 +58,12 @@ export interface DemoCacheData {
     tableType?: string;
     flowResult?: {
       recommendedChartType?: string;
-      chartConfig?: any;
+      chartConfig?: Record<string, unknown>;
       aiAnalysis?: string;
       charts?: Array<{ chartType: string; title: string; config: Record<string, unknown> }>;
-      kpiSummary?: { rowCount: number; columnCount: number; columns: any[] };
-      structuredAI?: any;
-      financialMetrics?: any;
+      kpiSummary?: { rowCount: number; columnCount: number; columns: Array<Record<string, unknown>> };
+      structuredAI?: Record<string, unknown>;
+      financialMetrics?: Record<string, unknown>;
     };
   }>;
   uploadResult: {

@@ -12,6 +12,8 @@ import {
 } from '../../services/api/processTaskApiClient';
 import { NeoButton, ScreenWrapper } from '../../components/ui';
 import { BarcodeScannerModal } from '../../components/processing/BarcodeScannerModal';
+import { TutorialOverlay } from '../../components/common/TutorialOverlay';
+import { useTutorialStore, TUTORIAL_THREE_STEP, useTutorialTarget, useTutorial } from '../../store/tutorialStore';
 import { theme } from '../../theme';
 import { apiClient } from '../../services/api/apiClient';
 import { requireFactoryId } from '../../utils/factoryIdHelper';
@@ -50,6 +52,13 @@ export default function ThreeStepReportScreen() {
   const [inputQty, setInputQty] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Tutorial
+  const tgtStepIndicator = useTutorialTarget('tsr-step-indicator');
+  const tgtScanArea = useTutorialTarget('tsr-scan-area');
+  const tut = useTutorial(TUTORIAL_THREE_STEP, () => {
+    tgtStepIndicator.measure(); tgtScanArea.measure();
+  });
 
   // Load active tasks when entering step 2
   const loadTasks = useCallback(async () => {
@@ -245,7 +254,7 @@ export default function ThreeStepReportScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
 
           {/* Step Indicator */}
-          <View style={styles.stepIndicator}>
+          <View ref={tgtStepIndicator.ref} onLayout={tgtStepIndicator.onLayout} style={styles.stepIndicator}>
             {[1, 2, 3].map(s => (
               <React.Fragment key={s}>
                 <TouchableOpacity
@@ -264,7 +273,7 @@ export default function ThreeStepReportScreen() {
 
           {/* ==================== STEP 1: Scan Worker ==================== */}
           {step === 1 && (
-            <Card style={styles.card}>
+            <Card ref={tgtScanArea.ref} onLayout={tgtScanArea.onLayout} style={styles.card}>
               <Card.Content>
                 <Text variant="titleLarge" style={styles.stepTitle}>扫描员工工牌</Text>
                 <Text style={styles.stepDesc}>请扫描报工员工的二维码工牌</Text>
@@ -472,6 +481,13 @@ export default function ThreeStepReportScreen() {
         visible={scannerVisible}
         onClose={() => setScannerVisible(false)}
         onScan={handleWorkerScan}
+      />
+      <TutorialOverlay
+        visible={tut.visible}
+        steps={TUTORIAL_THREE_STEP.steps}
+        currentStep={tut.step}
+        onNext={tut.onNext}
+        onSkip={tut.onSkip}
       />
     </ScreenWrapper>
   );

@@ -3,15 +3,9 @@
  * 在所有测试运行前执行
  */
 
-import '@testing-library/react-native/extend-expect';
-
-// Mock console方法以减少测试输出噪音
+// Mock console — 保留 error/warn 用于调试，静默 log/debug/info
 global.console = {
   ...console,
-  // 保留error和warn以便调试
-  error: jest.fn(),
-  warn: jest.fn(),
-  // 静默log和debug
   log: jest.fn(),
   debug: jest.fn(),
   info: jest.fn(),
@@ -19,37 +13,16 @@ global.console = {
 
 // Mock Logger 以避免 Platform.OS 问题
 jest.mock('../utils/logger', () => {
-  const mockContextLogger = {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  };
-
+  const makeLogger = (): Record<string, any> => ({
+    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    child: jest.fn(() => makeLogger()),
+    createContextLogger: jest.fn(() => makeLogger()),
+  });
   return {
-    logger: {
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      child: jest.fn(() => mockContextLogger),
-      createContextLogger: jest.fn(() => mockContextLogger),
-    },
-    Logger: jest.fn().mockImplementation(() => ({
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      child: jest.fn(() => mockContextLogger),
-      createContextLogger: jest.fn(() => mockContextLogger),
-    })),
-    ContextLogger: jest.fn().mockImplementation(() => mockContextLogger),
-    LogLevel: {
-      DEBUG: 0,
-      INFO: 1,
-      WARN: 2,
-      ERROR: 3,
-    },
+    logger: makeLogger(),
+    Logger: jest.fn().mockImplementation(makeLogger),
+    ContextLogger: jest.fn().mockImplementation(makeLogger),
+    LogLevel: { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 },
   };
 });
 
@@ -105,6 +78,11 @@ jest.mock('../utils/factoryIdHelper', () => {
 
 // Mock React Native模块
 jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+
+// Mock Alert
+jest.mock('react-native/Libraries/Alert/Alert', () => ({
+  alert: jest.fn(),
+}));
 
 // Mock Expo模块
 jest.mock('expo-secure-store', () => ({
@@ -171,50 +149,22 @@ jest.mock('react-native-paper', () => {
   };
 });
 
-// Mock Alert
-jest.mock('react-native/Libraries/Alert/Alert', () => ({
-  alert: jest.fn(),
-}));
-
 // Mock AsyncStorage - must provide both default and named exports
 // Zustand's persist middleware uses: import AsyncStorage from '...' (default import)
 // Then passes it to createJSONStorage(() => AsyncStorage)
 jest.mock('@react-native-async-storage/async-storage', () => {
   const store: Record<string, string> = {};
   const mockAsyncStorage = {
-    setItem: jest.fn((key: string, value: string) => {
-      store[key] = value;
-      return Promise.resolve();
-    }),
-    getItem: jest.fn((key: string) => {
-      return Promise.resolve(store[key] ?? null);
-    }),
-    removeItem: jest.fn((key: string) => {
-      delete store[key];
-      return Promise.resolve();
-    }),
-    clear: jest.fn(() => {
-      Object.keys(store).forEach(k => delete store[k]);
-      return Promise.resolve();
-    }),
+    setItem: jest.fn((key: string, value: string) => { store[key] = value; return Promise.resolve(); }),
+    getItem: jest.fn((key: string) => Promise.resolve(store[key] ?? null)),
+    removeItem: jest.fn((key: string) => { delete store[key]; return Promise.resolve(); }),
+    clear: jest.fn(() => { Object.keys(store).forEach(k => delete store[k]); return Promise.resolve(); }),
     getAllKeys: jest.fn(() => Promise.resolve(Object.keys(store))),
-    multiGet: jest.fn((keys: string[]) =>
-      Promise.resolve(keys.map(k => [k, store[k] ?? null]))
-    ),
-    multiSet: jest.fn((pairs: [string, string][]) => {
-      pairs.forEach(([k, v]) => { store[k] = v; });
-      return Promise.resolve();
-    }),
-    multiRemove: jest.fn((keys: string[]) => {
-      keys.forEach(k => delete store[k]);
-      return Promise.resolve();
-    }),
+    multiGet: jest.fn((keys: string[]) => Promise.resolve(keys.map(k => [k, store[k] ?? null]))),
+    multiSet: jest.fn((pairs: [string, string][]) => { pairs.forEach(([k, v]) => { store[k] = v; }); return Promise.resolve(); }),
+    multiRemove: jest.fn((keys: string[]) => { keys.forEach(k => delete store[k]); return Promise.resolve(); }),
   };
-  return {
-    __esModule: true,
-    default: mockAsyncStorage,
-    ...mockAsyncStorage,
-  };
+  return { __esModule: true, default: mockAsyncStorage, ...mockAsyncStorage };
 });
 
 // Mock expo-camera (用于BarcodeScannerModal)

@@ -1,0 +1,11 @@
+# Task ID: 4
+# Title: 阶段1.3: 新建 ProcessTask 工序任务实体 + API
+# Status: done
+# Dependencies: 3
+# Priority: high
+# Description: 创建 ProcessTask 实体（含 productionRunId、sourceDocType/Id、workflowVersionId、completedQuantity、pendingQuantity、previousTerminalStatus、version乐观锁）、ProcessTaskStatus 枚举（含 SUPPLEMENTING）、Repository、Service、Controller。API 含 active 查询、状态更新、关闭、汇总。编写迁移 SQL。
+# Details:
+参考方案文档第二节2.3(约行131-220)和第四节阶段1.3(约行325-345)和SQL(约行458-500)。核心实体，包含审核双轨(completedQuantity/pendingQuantity)和运行实例标识(productionRunId)。active = PENDING/IN_PROGRESS/SUPPLEMENTING。
+
+# Test Strategy:
+ProcessTask CRUD API 通过；active 查询返回正确状态；乐观锁并发测试

@@ -1,0 +1,1352 @@
+{
+  "version": 1,
+  "currentIteration": 522,
+  "summary": {
+    "total": 73,
+    "visited": 73,
+    "passBasic": 0,
+    "passDeep": 16,
+    "hasIssues": 0,
+    "needsOptimization": 0,
+    "fixed": 57,
+    "error": 0,
+    "totalOptimizations": 52,
+    "totalIssuesFound": 111,
+    "totalIssuesFixed": 112,
+    "statusCounts": {
+      "PASS_DEEP": 18,
+      "FIXED": 55,
+      "HAS_ISSUES": 0
+    }
+  },
+  "pages": [
+    {
+      "path": "/dashboard",
+      "name": "Dashboard",
+      "module": "dashboard",
+      "status": "pass",
+      "lastCheckedIteration": 521,
+      "lastDeepAnalysis": 521,
+      "checksCount": 45,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/production/batches",
+      "name": "生产批次",
+      "module": "production",
+      "status": "pass",
+      "lastCheckedIteration": 519,
+      "lastDeepAnalysis": 519,
+      "checksCount": 43,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/production/plans",
+      "name": "生产计划",
+      "module": "production",
+      "status": "FIXED",
+      "lastCheckedIteration": 519,
+      "lastDeepAnalysis": 519,
+      "checksCount": 43,
+      "issues": [
+        {
+          "id": "iter519-missing-factoryid-check",
+          "severity": "P1",
+          "description": "submitPlan() missing factoryId null-check, would call /undefined/production-plans. Added guard.",
+          "fixedInIteration": 519,
+          "status": "FIXED"
+        }
+      ],
+      "optimizations": [
+        {
+          "description": "产品类型列为空",
+          "severity": "P2",
+          "foundInIteration": 1,
+          "fixedInIteration": null,
+          "status": "OPEN",
+          "file": "web-admin/src/views/production/plans/list.vue"
+        }
+      ],
+      "fixedInIteration": 73
+    },
+    {
+      "path": "/production/bom",
+      "name": "BOM 配方",
+      "module": "production",
+      "status": "pass",
+      "lastCheckedIteration": 516,
+      "lastDeepAnalysis": 497,
+      "checksCount": 45,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/warehouse/materials",
+      "name": "原材料管理",
+      "module": "warehouse",
+      "status": "FIXED",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 517,
+      "checksCount": 47,
+      "issues": [],
+      "optimizations": [],
+      "fixedInIteration": 74
+    },
+    {
+      "path": "/warehouse/shipments",
+      "name": "出货管理",
+      "module": "warehouse",
+      "status": "pass",
+      "lastCheckedIteration": 516,
+      "lastDeepAnalysis": 497,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/warehouse/inventory",
+      "name": "库存管理",
+      "module": "warehouse",
+      "status": "pass",
+      "lastCheckedIteration": 519,
+      "lastDeepAnalysis": 519,
+      "checksCount": 45,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "材料类型列为空；库存总量/低库存预警/即将过期KPI卡片无数据",
+          "severity": "P2",
+          "foundInIteration": 1,
+          "fixedInIteration": null,
+          "status": "OPEN",
+          "file": "web-admin/src/views/warehouse/inventory/index.vue"
+        }
+      ]
+    },
+    {
+      "path": "/transfer/list",
+      "name": "调拨列表",
+      "module": "transfer",
+      "status": "pass",
+      "lastCheckedIteration": 519,
+      "lastDeepAnalysis": 519,
+      "checksCount": 45,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/quality/inspections",
+      "name": "质检记录",
+      "module": "quality",
+      "status": "pass",
+      "lastCheckedIteration": 519,
+      "lastDeepAnalysis": 519,
+      "checksCount": 46,
+      "issues": [],
+      "optimizations": [],
+      "fixedInIteration": 73
+    },
+    {
+      "path": "/quality/disposals",
+      "name": "处置记录",
+      "module": "quality",
+      "status": "pass",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 497,
+      "checksCount": 47,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/quality/standards",
+      "name": "质检标准",
+      "module": "quality",
+      "status": "FIXED",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 517,
+      "checksCount": 47,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/procurement/orders",
+      "name": "采购订单",
+      "module": "procurement",
+      "status": "FIXED",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 517,
+      "checksCount": 46,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "404 on /api/mobile/F001/materials/types endpoint — visible error toast on page load",
+          "severity": "P1",
+          "foundInIteration": 2,
+          "fixedInIteration": null,
+          "status": "OPEN",
+          "file": "backend API"
+        }
+      ],
+      "fixedInIteration": 393,
+      "lastFix": "API path /materials/types 404 -> /raw-material-types"
+    },
+    {
+      "path": "/procurement/suppliers",
+      "name": "供应商管理",
+      "module": "procurement",
+      "status": "pass",
+      "lastCheckedIteration": 520,
+      "lastDeepAnalysis": 520,
+      "checksCount": 45,
+      "issues": [
+        {
+          "description": "P1: Delete API path used /procurement/suppliers/ (wrong prefix) — would 404. Backend is /suppliers/. FIXED: aligned to /{factoryId}/suppliers/{id}",
+          "severity": "P1",
+          "foundInIteration": 495,
+          "fixedInIteration": 495,
+          "status": "FIXED",
+          "file": "web-admin/src/views/procurement/suppliers/list.vue"
+        }
+      ],
+      "optimizations": [],
+      "lastFix": "P1 delete API path mismatch"
+    },
+    {
+      "path": "/procurement/price-lists",
+      "name": "价格清单",
+      "module": "procurement",
+      "status": "FIXED",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 518,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/sales/orders",
+      "name": "销售订单",
+      "module": "sales",
+      "status": "FIXED",
+      "lastCheckedIteration": 520,
+      "lastDeepAnalysis": 520,
+      "checksCount": 46,
+      "issues": [
+        {
+          "description": "404 on /products/types — stale browser cache; code uses /product-types/active (correct)",
+          "severity": "P1",
+          "foundInIteration": 3,
+          "fixedInIteration": null,
+          "status": "WONTFIX",
+          "file": "backend API"
+        },
+        {
+          "id": "iter520-missing-canwrite-quick-actions",
+          "severity": "P1",
+          "description": "Destructive quick-action buttons (出库/开票/收款) missing canWrite permission guard. Read-only users could trigger financial writes.",
+          "fixedInIteration": 520,
+          "status": "FIXED"
+        }
+      ],
+      "optimizations": [],
+      "fixedInIteration": 390,
+      "lastFix": "API path /products/types 404 -> /product-types/active"
+    },
+    {
+      "path": "/sales/finished-goods",
+      "name": "成品管理",
+      "module": "sales",
+      "status": "pass",
+      "lastCheckedIteration": 520,
+      "lastDeepAnalysis": 520,
+      "checksCount": 42,
+      "issues": [],
+      "optimizations": [],
+      "fixedInIteration": 73
+    },
+    {
+      "path": "/sales/customers",
+      "name": "客户管理",
+      "module": "sales",
+      "status": "FIXED",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 518,
+      "checksCount": 45,
+      "issues": [
+        {
+          "id": "iter518-api-path-mismatch",
+          "severity": "P1",
+          "description": "Delete API path used /sales/customers/ prefix but backend CustomerController maps to /customers/. Would cause 404.",
+          "fixedInIteration": 518,
+          "status": "FIXED"
+        }
+      ],
+      "optimizations": []
+    },
+    {
+      "path": "/sales/shipments",
+      "name": "销售出货",
+      "module": "sales",
+      "status": "FIXED",
+      "lastCheckedIteration": 520,
+      "lastDeepAnalysis": 520,
+      "checksCount": 44,
+      "issues": [
+        {
+          "id": "iter520-pagination-off-by-one",
+          "severity": "P0",
+          "description": "Frontend sent 1-based page number but ShipmentController expects 0-based. First page of results was skipped.",
+          "fixedInIteration": 520,
+          "status": "FIXED"
+        }
+      ],
+      "optimizations": [],
+      "fixedInIteration": 74
+    },
+    {
+      "path": "/hr/employees",
+      "name": "员工管理",
+      "module": "hr",
+      "status": "FIXED",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 518,
+      "checksCount": 45,
+      "issues": [],
+      "optimizations": [],
+      "fixedInIteration": 74
+    },
+    {
+      "path": "/hr/attendance",
+      "name": "考勤管理",
+      "module": "hr",
+      "status": "pass",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 509,
+      "checksCount": 45,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/hr/whitelist",
+      "name": "白名单",
+      "module": "hr",
+      "status": "pass",
+      "lastCheckedIteration": 520,
+      "lastDeepAnalysis": 520,
+      "checksCount": 42,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "角色/部门/过期时间列全部为空",
+          "severity": "P2",
+          "foundInIteration": 3,
+          "fixedInIteration": null,
+          "status": "OPEN",
+          "file": "web-admin/src/views/hr/whitelist/index.vue"
+        }
+      ]
+    },
+    {
+      "path": "/hr/departments",
+      "name": "部门管理",
+      "module": "hr",
+      "status": "pass",
+      "lastCheckedIteration": 516,
+      "lastDeepAnalysis": 497,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/equipment/list",
+      "name": "设备列表",
+      "module": "equipment",
+      "status": "pass",
+      "lastCheckedIteration": 521,
+      "lastDeepAnalysis": 521,
+      "checksCount": 48,
+      "issues": [
+        {
+          "description": "P1: Action buttons (查看/维护/编辑/添加设备) have no click handlers — dead UI elements [FALSE POSITIVE: all 4 buttons have @click handlers - handleView/handleMaintenance/handleEdit/handleAdd]",
+          "severity": "P1",
+          "foundInIteration": 383,
+          "fixedInIteration": 479,
+          "status": "FIXED",
+          "file": "web-admin/src/views/equipment/list/index.vue"
+        }
+      ],
+      "optimizations": []
+    },
+    {
+      "path": "/equipment/maintenance",
+      "name": "维护记录",
+      "module": "equipment",
+      "status": "FIXED",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 518,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/equipment/alerts",
+      "name": "设备告警",
+      "module": "equipment",
+      "status": "pass",
+      "lastCheckedIteration": 521,
+      "lastDeepAnalysis": 521,
+      "checksCount": 45,
+      "issues": [
+        {
+          "description": "P1: 详情 button has no @click handler — dead button [FALSE POSITIVE: handleDetail/handleAcknowledge/handleResolve all have @click handlers]",
+          "severity": "P1",
+          "foundInIteration": 384,
+          "status": "FIXED",
+          "file": "web-admin/src/views/equipment/alerts/index.vue",
+          "fixedInIteration": 479
+        },
+        {
+          "description": "P1: KPI stats not refreshed on filter/acknowledge — stale global totals while table shows filtered data. FIXED: added loadStatistics() to handleSearch() and handleAcknowledge()",
+          "severity": "P1",
+          "foundInIteration": 486,
+          "fixedInIteration": 486,
+          "status": "FIXED",
+          "file": "web-admin/src/views/equipment/alerts/index.vue"
+        }
+      ],
+      "optimizations": [
+        {
+          "description": "告警信息列重复设备名称",
+          "severity": "P2",
+          "foundInIteration": 4,
+          "fixedInIteration": null,
+          "status": "OPEN",
+          "file": "web-admin/src/views/equipment/alerts/index.vue"
+        }
+      ],
+      "fixedInIteration": 385,
+      "lastFix": "dead detail button + undefined params"
+    },
+    {
+      "path": "/finance/costs",
+      "name": "成本管理",
+      "module": "finance",
+      "status": "FIXED",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 518,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/finance/reports",
+      "name": "财务报表",
+      "module": "finance",
+      "status": "pass",
+      "lastCheckedIteration": 520,
+      "lastDeepAnalysis": 520,
+      "checksCount": 45,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/finance/ar-ap",
+      "name": "应收应付",
+      "module": "finance",
+      "status": "FIXED",
+      "lastCheckedIteration": 520,
+      "lastDeepAnalysis": 520,
+      "checksCount": 45,
+      "issues": [
+        {
+          "id": "iter520-client-side-filter-on-paginated",
+          "severity": "P1",
+          "description": "AR/AP tabs used client-side .filter() on paginated data showing incomplete results. Replaced with server-side filtering via watch on activeTab.",
+          "fixedInIteration": 520,
+          "status": "FIXED"
+        }
+      ],
+      "optimizations": []
+    },
+    {
+      "path": "/system/users",
+      "name": "用户管理",
+      "module": "system",
+      "status": "FIXED",
+      "lastCheckedIteration": 521,
+      "lastDeepAnalysis": 521,
+      "checksCount": 45,
+      "issues": [
+        {
+          "description": "P0: 查看/编辑/重置密码 buttons had no @click handlers — dead UI. FIXED: implemented handleViewUser (detail dialog), handleEditUser (edit dialog), handleResetPassword (ElMessageBox.prompt + POST /auth/reset-password)",
+          "severity": "P0",
+          "foundInIteration": 495,
+          "fixedInIteration": 495,
+          "status": "FIXED",
+          "file": "web-admin/src/views/system/users/list.vue"
+        },
+        {
+          "description": "P1: production_manager role labeled \"调度\" (duplicate of dispatcher). FIXED: changed to \"生产主管\"",
+          "severity": "P1",
+          "foundInIteration": 495,
+          "fixedInIteration": 495,
+          "status": "FIXED",
+          "file": "web-admin/src/views/system/users/list.vue"
+        },
+        {
+          "id": "iter521-edit-save-uses-get",
+          "severity": "P0",
+          "description": "handleSaveEdit() used GET instead of PUT. User edits were silently discarded while showing success message. Changed to PUT with form data.",
+          "fixedInIteration": 521,
+          "status": "FIXED"
+        },
+        {
+          "id": "iter521-toggle-no-confirm",
+          "severity": "P0",
+          "description": "handleToggleActive() had no confirmation dialog before deactivating a user (locks them out). Added ElMessageBox.confirm.",
+          "fixedInIteration": 521,
+          "status": "FIXED"
+        },
+        {
+          "id": "iter521-password-in-query-params",
+          "severity": "P1",
+          "description": "handleResetPassword sent new password as query parameter (logged in access logs/proxies). Moved to request body.",
+          "fixedInIteration": 521,
+          "status": "FIXED"
+        }
+      ],
+      "optimizations": [],
+      "lastFix": "P0 dead buttons + P1 duplicate role label"
+    },
+    {
+      "path": "/system/roles",
+      "name": "角色管理",
+      "module": "system",
+      "status": "PASS_DEEP",
+      "lastCheckedIteration": 511,
+      "lastDeepAnalysis": 502,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/system/logs",
+      "name": "操作日志",
+      "module": "system",
+      "status": "PASS_DEEP",
+      "lastCheckedIteration": 509,
+      "lastDeepAnalysis": 509,
+      "checksCount": 45,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/system/settings",
+      "name": "系统设置",
+      "module": "system",
+      "status": "pass",
+      "lastCheckedIteration": 516,
+      "lastDeepAnalysis": 497,
+      "checksCount": 43,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/system/ai-intents",
+      "name": "AI 意图配置",
+      "module": "system",
+      "status": "pass",
+      "lastCheckedIteration": 516,
+      "lastDeepAnalysis": 497,
+      "checksCount": 45,
+      "issues": [
+        {
+          "description": "P0: api/intent.ts imports non-existent  from request.ts — dead import could cause bundler issues. FIXED: removed from import (local patch function at line 125 is the actual implementation)",
+          "severity": "P0",
+          "foundInIteration": 497,
+          "fixedInIteration": 497,
+          "status": "FIXED",
+          "file": "web-admin/src/api/intent.ts"
+        }
+      ],
+      "optimizations": []
+    },
+    {
+      "path": "/system/products",
+      "name": "产品管理",
+      "module": "system",
+      "status": "pass",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 497,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/system/features",
+      "name": "功能管理",
+      "module": "system",
+      "status": "pass",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 497,
+      "checksCount": 46,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/system/pos",
+      "name": "POS 配置",
+      "module": "system",
+      "status": "pass",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 509,
+      "checksCount": 43,
+      "issues": [
+        {
+          "description": "P1 SEC: appSecret stays in reactive ref after dialog close — sensitive data persists in memory. FIXED: added resetForm() that clears all fields including appSecret after successful creation.",
+          "severity": "P1",
+          "foundInIteration": 509,
+          "fixedInIteration": 509,
+          "status": "FIXED",
+          "file": "web-admin/src/views/system/pos/list.vue"
+        }
+      ],
+      "optimizations": [],
+      "lastFix": "P1 appSecret not cleared after dialog"
+    },
+    {
+      "path": "/system/smartbi-config",
+      "name": "SmartBI 配置",
+      "module": "system",
+      "status": "FIXED",
+      "lastCheckedIteration": 519,
+      "lastDeepAnalysis": 519,
+      "checksCount": 45,
+      "issues": [
+        {
+          "id": "iter519-shared-saving-flag",
+          "severity": "P1",
+          "description": "Shared thresholdSaving boolean caused all rows to show loading when any row saves. Replaced with per-row Set<number>.",
+          "fixedInIteration": 519,
+          "status": "FIXED"
+        }
+      ],
+      "optimizations": []
+    },
+    {
+      "path": "/system/smartbi-config/data-sources",
+      "name": "数据源管理",
+      "module": "system",
+      "status": "FIXED",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 517,
+      "checksCount": 45,
+      "issues": [
+        {
+          "description": "P1 SEC: connectionConfig credentials not cleared from editForm after dialog close. FIXED: added resetEditForm().",
+          "severity": "P1",
+          "foundInIteration": 517,
+          "fixedInIteration": 517,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smartbi-config/DataSourceConfigView.vue"
+        }
+      ],
+      "optimizations": [],
+      "lastFix": "P1 SEC: connectionConfig not cleared after dialog close"
+    },
+    {
+      "path": "/system/smartbi-config/chart-templates",
+      "name": "图表模板",
+      "module": "system",
+      "status": "FIXED",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 517,
+      "checksCount": 46,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "P1 CODE-DUP: ~150 lines duplicated CRUD logic with DataSourceConfigView. Extract useConfigCRUD composable.",
+          "severity": "P1",
+          "foundInIteration": 517,
+          "fixedInIteration": null,
+          "status": "OPEN",
+          "file": "web-admin/src/views/smartbi-config/ChartTemplateView.vue"
+        }
+      ]
+    },
+    {
+      "path": "/analytics/overview",
+      "name": "分析概览",
+      "module": "analytics",
+      "status": "FIXED",
+      "lastCheckedIteration": 512,
+      "lastDeepAnalysis": 502,
+      "checksCount": 46,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/analytics/trends",
+      "name": "趋势分析",
+      "module": "analytics",
+      "status": "pass",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 518,
+      "checksCount": 47,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "Charts render with empty data when no production in date range — blank canvas areas with only titles/axes visible. Not a rendering bug, charts correctly show empty state for 近7天 with no data.",
+          "severity": "P3",
+          "foundInIteration": 45,
+          "fixedInIteration": null,
+          "status": "OPEN",
+          "file": "web-admin/src/views/analytics/trends/index.vue"
+        }
+      ]
+    },
+    {
+      "path": "/analytics/ai-reports",
+      "name": "AI 报表",
+      "module": "analytics",
+      "status": "FIXED",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 517,
+      "checksCount": 46,
+      "issues": [],
+      "optimizations": [],
+      "fixedInIteration": 74
+    },
+    {
+      "path": "/analytics/kpi",
+      "name": "KPI 看板",
+      "module": "analytics",
+      "status": "FIXED",
+      "lastCheckedIteration": 519,
+      "lastDeepAnalysis": 519,
+      "checksCount": 46,
+      "issues": [
+        {
+          "id": "iter519-division-by-zero",
+          "severity": "P1",
+          "description": "getProgressStatus division by zero when target=0 produces Infinity, incorrectly returns success. Added guard.",
+          "fixedInIteration": 519,
+          "status": "FIXED"
+        }
+      ],
+      "optimizations": []
+    },
+    {
+      "path": "/analytics/production-report",
+      "name": "生产报表",
+      "module": "analytics",
+      "status": "pass",
+      "lastCheckedIteration": 521,
+      "lastDeepAnalysis": 521,
+      "checksCount": 46,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/analytics/alert-dashboard",
+      "name": "告警看板",
+      "module": "analytics",
+      "status": "FIXED",
+      "lastCheckedIteration": 510,
+      "lastDeepAnalysis": 502,
+      "checksCount": 41,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/calibration/list",
+      "name": "校准列表",
+      "module": "calibration",
+      "status": "FIXED",
+      "lastCheckedIteration": 511,
+      "lastDeepAnalysis": 502,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/scheduling/overview",
+      "name": "排程概览",
+      "module": "scheduling",
+      "status": "pass",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 509,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": [],
+      "fixedInIteration": 74
+    },
+    {
+      "path": "/scheduling/plans",
+      "name": "排程计划",
+      "module": "scheduling",
+      "status": "pass",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 509,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": [],
+      "fixedInIteration": 74
+    },
+    {
+      "path": "/scheduling/realtime",
+      "name": "实时排程",
+      "module": "scheduling",
+      "status": "pass",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 509,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": [],
+      "fixedInIteration": 74
+    },
+    {
+      "path": "/scheduling/workers",
+      "name": "人员排程",
+      "module": "scheduling",
+      "status": "PASS_DEEP",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 517,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/scheduling/alerts",
+      "name": "排程告警",
+      "module": "scheduling",
+      "status": "pass",
+      "lastCheckedIteration": 516,
+      "lastDeepAnalysis": 497,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/restaurant/requisitions",
+      "name": "领料申请",
+      "module": "restaurant",
+      "status": "FIXED",
+      "lastCheckedIteration": 482,
+      "lastDeepAnalysis": 482,
+      "checksCount": 40,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/restaurant/wastage",
+      "name": "损耗记录",
+      "module": "restaurant",
+      "status": "FIXED",
+      "lastCheckedIteration": 485,
+      "lastDeepAnalysis": 485,
+      "checksCount": 38,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/restaurant/recipes",
+      "name": "菜谱管理",
+      "module": "restaurant",
+      "status": "FIXED",
+      "lastCheckedIteration": 485,
+      "lastDeepAnalysis": 485,
+      "checksCount": 39,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/restaurant/stocktaking",
+      "name": "盘点管理",
+      "module": "restaurant",
+      "status": "FIXED",
+      "lastCheckedIteration": 485,
+      "lastDeepAnalysis": 485,
+      "checksCount": 39,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/restaurant/analytics",
+      "name": "餐饮分析",
+      "module": "restaurant",
+      "status": "PASS_DEEP",
+      "lastCheckedIteration": 500,
+      "lastDeepAnalysis": 488,
+      "checksCount": 41,
+      "issues": [
+        {
+          "description": "P2: ECharts instances not disposed on unmount — memory leak. Fixed: added onUnmounted cleanup.",
+          "severity": "P2",
+          "foundInIteration": 480,
+          "fixedInIteration": 481,
+          "status": "FIXED",
+          "file": "web-admin/src/views/restaurant/analytics/overview.vue"
+        }
+      ],
+      "optimizations": []
+    },
+    {
+      "path": "/restaurant/analytics/menu",
+      "name": "菜品分析",
+      "module": "restaurant",
+      "status": "PASS_DEEP",
+      "lastCheckedIteration": 500,
+      "lastDeepAnalysis": 488,
+      "checksCount": 41,
+      "issues": [
+        {
+          "description": "P2: ECharts instances not disposed on unmount — memory leak. Fixed: added onUnmounted cleanup.",
+          "severity": "P2",
+          "foundInIteration": 480,
+          "fixedInIteration": 481,
+          "status": "FIXED",
+          "file": "web-admin/src/views/restaurant/analytics/menu-board.vue"
+        }
+      ],
+      "optimizations": []
+    },
+    {
+      "path": "/restaurant/analytics/stores",
+      "name": "门店分析",
+      "module": "restaurant",
+      "status": "PASS_DEEP",
+      "lastCheckedIteration": 499,
+      "lastDeepAnalysis": 489,
+      "checksCount": 42,
+      "issues": [
+        {
+          "description": "P2: ECharts instances not disposed on unmount — memory leak. Fixed: added onUnmounted cleanup.",
+          "severity": "P2",
+          "foundInIteration": 480,
+          "fixedInIteration": 481,
+          "status": "FIXED",
+          "file": "web-admin/src/views/restaurant/analytics/store-comparison.vue"
+        }
+      ],
+      "optimizations": []
+    },
+    {
+      "path": "/restaurant/analytics/dianping",
+      "name": "点评分析",
+      "module": "restaurant",
+      "status": "PASS_DEEP",
+      "lastCheckedIteration": 499,
+      "lastDeepAnalysis": 489,
+      "checksCount": 40,
+      "issues": [
+        {
+          "description": "P2: ECharts instances not disposed on unmount — memory leak. Fixed: added onUnmounted cleanup.",
+          "severity": "P2",
+          "foundInIteration": 480,
+          "fixedInIteration": 481,
+          "status": "FIXED",
+          "file": "web-admin/src/views/restaurant/analytics/dianping-gap.vue"
+        }
+      ],
+      "optimizations": []
+    },
+    {
+      "path": "/production-analytics/production",
+      "name": "产线分析",
+      "module": "prod-analytics",
+      "status": "pass",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 509,
+      "checksCount": 44,
+      "issues": [
+        {
+          "description": "P1: Missing cancelAnimationFrame(resizeRaf) in onBeforeUnmount — pending RAF fires after chart disposal causing errors. FIXED: added cancelAnimationFrame guard.",
+          "severity": "P1",
+          "foundInIteration": 509,
+          "fixedInIteration": 509,
+          "status": "FIXED",
+          "file": "web-admin/src/views/production-analytics/ProductionAnalysis.vue"
+        }
+      ],
+      "optimizations": [],
+      "lastFix": "P1 missing cancelAnimationFrame cleanup"
+    },
+    {
+      "path": "/production-analytics/efficiency",
+      "name": "效率分析",
+      "module": "prod-analytics",
+      "status": "PASS_DEEP",
+      "lastCheckedIteration": 518,
+      "lastDeepAnalysis": 518,
+      "checksCount": 42,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/smart-bi/dashboard",
+      "name": "SmartBI 仪表盘",
+      "module": "smartbi",
+      "status": "pass",
+      "lastCheckedIteration": 521,
+      "lastDeepAnalysis": 521,
+      "checksCount": 45,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "P1 PERF: watch(dashboardData, ..., {deep: true}) re-initializes all charts when LLM insights arrive — FIXED: targeted watch on charts sub-object only",
+          "severity": "P1",
+          "foundInIteration": 56,
+          "fixedInIteration": 480,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/Dashboard.vue"
+        },
+        {
+          "description": "P1 PERF: ECharts instances may leak on rapid data source switches — FIXED: AbortController cancels pending fetches on source switch + unmount",
+          "severity": "P1",
+          "foundInIteration": 56,
+          "fixedInIteration": 480,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/Dashboard.vue"
+        },
+        {
+          "description": "P2 CHART-QUALITY: Dashboard with uploaded data shows ALL KPIs as -- and ALL charts empty. Analysis page renders 7 charts from same data.",
+          "severity": "P2",
+          "foundInIteration": 479,
+          "fixedInIteration": null,
+          "status": "OPEN",
+          "file": "web-admin/src/views/smart-bi/Dashboard.vue"
+        },
+        {
+          "description": "P1: loadLLMInsights() reads null abortController.signal on initial load — request not cancellable. FIXED: getSignal() at start of loadDashboardData()",
+          "severity": "P1",
+          "foundInIteration": 486,
+          "fixedInIteration": 486,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/Dashboard.vue"
+        }
+      ]
+    },
+    {
+      "path": "/smart-bi/finance",
+      "name": "SmartBI 财务",
+      "module": "smartbi",
+      "status": "pass",
+      "lastCheckedIteration": 521,
+      "lastDeepAnalysis": 521,
+      "checksCount": 46,
+      "issues": [
+        {
+          "description": "P1: onUnmounted missing AbortController abort + timer cleanup — requests/timers fire after unmount. FIXED: added financeAbortController.abort() + clearTimeout(financeWatchTimer)",
+          "severity": "P1",
+          "foundInIteration": 486,
+          "fixedInIteration": 486,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/FinanceAnalysis.vue"
+        }
+      ],
+      "optimizations": [
+        {
+          "description": "P2: Batch data 4x duplication in chart build POST body — FIXED: sample 1000 rows for chart building",
+          "severity": "P2",
+          "foundInIteration": 57,
+          "fixedInIteration": 480,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/FinanceAnalysis.vue"
+        }
+      ]
+    },
+    {
+      "path": "/smart-bi/sales",
+      "name": "SmartBI 销售",
+      "module": "smartbi",
+      "status": "pass",
+      "lastCheckedIteration": 515,
+      "lastDeepAnalysis": 496,
+      "checksCount": 44,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "P2: Duplicate ECharts rendering + 4x data duplication in batch chart build — FIXED: data sampling for chart plans",
+          "severity": "P2",
+          "foundInIteration": 57,
+          "fixedInIteration": 480,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/SalesAnalysis.vue"
+        }
+      ]
+    },
+    {
+      "path": "/smart-bi/query",
+      "name": "SmartBI 查询",
+      "module": "smartbi",
+      "status": "pass",
+      "lastCheckedIteration": 515,
+      "lastDeepAnalysis": 496,
+      "checksCount": 43,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "P2: chatHistory findIndex called repeatedly during streaming — FIXED: cached index with resolveTargetIdx()",
+          "severity": "P2",
+          "foundInIteration": 57,
+          "fixedInIteration": 480,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/AIQuery.vue"
+        }
+      ]
+    },
+    {
+      "path": "/smart-bi/query-templates",
+      "name": "查询模板",
+      "module": "smartbi",
+      "status": "FIXED",
+      "lastCheckedIteration": 510,
+      "lastDeepAnalysis": 502,
+      "checksCount": 42,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "Feature 1A/1B/1C: hover preview popover, one-click execute with inline chatAnalysis results, parameterized variable form (5 input types, live query preview). Competitive score 2.2->3.7",
+          "severity": "P1",
+          "foundInIteration": 489,
+          "fixedInIteration": 489,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/QueryTemplateManager.vue"
+        }
+      ],
+      "competitiveScore": {
+        "交互": 4,
+        "深度": 4,
+        "视觉": 3.5,
+        "自助": 4,
+        "接入": 3,
+        "average": 3.7,
+        "scoredInIteration": 489
+      }
+    },
+    {
+      "path": "/smart-bi/analysis",
+      "name": "SmartBI 分析",
+      "module": "smartbi",
+      "status": "pass",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 497,
+      "checksCount": 42,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "P2: ~130 lines duplicated chart rendering template for grouped vs flat layouts",
+          "severity": "P2",
+          "foundInIteration": 57,
+          "fixedInIteration": null,
+          "status": "OPEN",
+          "file": "web-admin/src/views/smart-bi/SmartBIAnalysis.vue"
+        }
+      ],
+      "competitiveScore": {
+        "交互": 4.5,
+        "深度": 4.5,
+        "视觉": 4,
+        "自助": 4.5,
+        "接入": 3.5,
+        "average": 4.2
+      }
+    },
+    {
+      "path": "/smart-bi/upload",
+      "name": "SmartBI 上传",
+      "module": "smartbi",
+      "status": "pass",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 497,
+      "checksCount": 41,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "P2: No AbortController for upload request; upload dragger lacks aria-label",
+          "severity": "P2",
+          "foundInIteration": 57,
+          "fixedInIteration": null,
+          "status": "OPEN",
+          "file": "web-admin/src/views/smart-bi/ExcelUpload.vue"
+        },
+        {
+          "description": "[DOWNGRADED to P2/FALSE POSITIVE] i383 report: type mismatch (type check passes), getElementById (correct for dynamic v-for), unused factoryId (used in auth), duplicated resize (minor). No actual P1.",
+          "severity": "P1",
+          "foundInIteration": 383,
+          "fixedInIteration": 480,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/ExcelUpload.vue"
+        }
+      ],
+      "competitiveScore": {
+        "交互": 4.5,
+        "深度": 3.5,
+        "视觉": 4,
+        "自助": 4,
+        "接入": 4,
+        "average": 4
+      }
+    },
+    {
+      "path": "/smart-bi/data-completeness",
+      "name": "数据完整性",
+      "module": "smartbi",
+      "status": "FIXED",
+      "lastCheckedIteration": 511,
+      "lastDeepAnalysis": 502,
+      "checksCount": 43,
+      "issues": [
+        {
+          "description": "P1: No AbortController or onUnmounted cleanup — in-flight pythonFetch continues after unmount. FIXED: added AbortController + signal + onUnmounted abort",
+          "severity": "P1",
+          "foundInIteration": 487,
+          "fixedInIteration": 487,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/DataCompletenessView.vue"
+        }
+      ],
+      "optimizations": [
+        {
+          "description": "P2: No AbortController on loadData; module cards lack role=button and keyboard interaction",
+          "severity": "P2",
+          "foundInIteration": 57,
+          "fixedInIteration": 487,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/DataCompletenessView.vue"
+        },
+        {
+          "description": "Feature 2A/2B: drill-to-detail drawer (click incomplete fields -> summary cards + visual bar + explanation), custom validation rules CRUD (5 rule types, localStorage, per-field indicators). Competitive score 2.4->3.6",
+          "severity": "P1",
+          "foundInIteration": 489,
+          "fixedInIteration": 489,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/DataCompletenessView.vue"
+        }
+      ],
+      "competitiveScore": {
+        "交互": 4,
+        "深度": 4,
+        "视觉": 3.5,
+        "自助": 3.5,
+        "接入": 3,
+        "average": 3.6,
+        "scoredInIteration": 489
+      }
+    },
+    {
+      "path": "/smart-bi/food-kb-feedback",
+      "name": "食品知识反馈",
+      "module": "smartbi",
+      "status": "pass",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 497,
+      "checksCount": 41,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "P2: Export results table renders all rows without pagination/virtual scroll",
+          "severity": "P2",
+          "foundInIteration": 57,
+          "fixedInIteration": null,
+          "status": "OPEN",
+          "file": "web-admin/src/views/smart-bi/FoodKBFeedback.vue"
+        }
+      ],
+      "competitiveScore": {
+        "交互": 4,
+        "深度": 3.5,
+        "视觉": 4,
+        "自助": 3.5,
+        "接入": 4,
+        "average": 3.8
+      }
+    },
+    {
+      "path": "/smart-bi/calibration",
+      "name": "SmartBI 校准",
+      "module": "smartbi",
+      "status": "FIXED",
+      "lastCheckedIteration": 510,
+      "lastDeepAnalysis": 502,
+      "checksCount": 41,
+      "issues": [],
+      "optimizations": []
+    },
+    {
+      "path": "/smart-bi/financial-dashboard",
+      "name": "财务仪表盘",
+      "module": "smartbi",
+      "status": "pass",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 497,
+      "checksCount": 42,
+      "issues": [],
+      "optimizations": [
+        {
+          "description": "目标达成进度 chart shows 'nan' as 4th product name — demo data has null/undefined product name rendering as nan",
+          "severity": "P3",
+          "foundInIteration": 45,
+          "fixedInIteration": null,
+          "status": "OPEN",
+          "file": "web-admin/src/views/smartbi/FinancialDashboard.vue"
+        },
+        {
+          "description": "P1 PERF: detectAnomalies()+getChart() called ~36+ times per render without memoization — needs computed caching",
+          "severity": "P1",
+          "foundInIteration": 56,
+          "fixedInIteration": 479,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/FinancialDashboardPBI.vue"
+        },
+        {
+          "description": "P1 PERF: connectCharts() mousemove dispatches to 42 charts per frame without throttle",
+          "severity": "P1",
+          "foundInIteration": 56,
+          "fixedInIteration": 479,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/FinancialDashboardPBI.vue"
+        },
+        {
+          "description": "P1 SEC: v-html on sparklineSVG() output without DOMPurify sanitization",
+          "severity": "P1",
+          "foundInIteration": 56,
+          "fixedInIteration": 479,
+          "status": "FIXED",
+          "file": "web-admin/src/views/smart-bi/FinancialDashboardPBI.vue"
+        }
+      ]
+    },
+    {
+      "path": "/smart-bi/whatif",
+      "name": "What-If 模拟器",
+      "module": "smartbi",
+      "status": "pass",
+      "lastCheckedIteration": 517,
+      "lastDeepAnalysis": 497,
+      "checksCount": 16,
+      "issues": [],
+      "optimizations": []
+    }
+  ],
+  "lastUpdated": "2026-03-14T04:00:00+08:00",
+  "analysisConfig": {
+    "mode": "LEVEL_3_DEEP",
+    "dimensions": [
+      "chart-quality",
+      "business-logic",
+      "ui-structure",
+      "error-handling",
+      "performance",
+      "accessibility"
+    ],
+    "currentDimensions": [
+      "状态依赖操作",
+      "数据一致性",
+      "空状态处理"
+    ],
+    "rotationIndex": 5
+  }
+}

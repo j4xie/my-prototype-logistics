@@ -1,0 +1,67 @@
+---
+description: 当用户说"执行下一个任务"、"继续"、"next task"、"下一个"时触发。驱动 Taskmaster 任务执行工作流。
+globs:
+alwaysApply: false
+---
+
+# Taskmaster 任务执行工作流
+
+## 触发条件
+
+当用户说"执行下一个任务"、"继续"、"next task"、"下一个"或类似指令时，按以下流程执行。
+
+## 执行流程
+
+### 1. 获取下一个任务
+
+调用 Taskmaster MCP：
+- `user-taskmaster-ai` → `next_task`，参数 `projectRoot: "c:/Users/Steve/my-prototype-logistics"`
+- 如果返回任务，记录其 `id`、`title`、`details`、`testStrategy`
+
+### 2. 读取方案文档对应章节
+
+主方案文档：`docs/plans/process-centric-production-plan.md`
+
+每个任务的 `details` 字段包含方案文档的行号引用（如"约行270-290"）。**只读这 20-50 行**，不读全文。
+
+### 3. 标记任务进行中
+
+调用 `user-taskmaster-ai` → `set_task_status`：
+- `id`: 任务 ID
+- `status`: "in-progress"
+- `projectRoot`: "c:/Users/Steve/my-prototype-logistics"
+
+### 4. 执行开发
+
+按任务描述和方案文档执行编码，遵循项目现有架构和编码规范。
+
+### 5. 验证
+
+按 `testStrategy` 字段执行验证：
+- TypeScript 检查：`cd frontend/CretasFoodTrace && npx tsc --noEmit --skipLibCheck`
+- Java 编译：`cd backend/java/cretas-api && mvn compile -DskipTests`
+- 功能测试：按任务具体要求
+
+### 6. 标记完成
+
+调用 `user-taskmaster-ai` → `set_task_status`：
+- `id`: 任务 ID
+- `status`: "done"
+
+### 7. 汇报 + 继续
+
+告知用户完成情况，询问是否继续下一个任务。
+
+## 查看整体进度
+
+用户说"进度"、"status"、"看看任务"时：
+- 调用 `user-taskmaster-ai` → `get_tasks`，参数 `projectRoot`
+- 展示 stats（完成率）和各任务状态
+
+## 重要规则
+
+- **不要每次读完整方案文档**（1600行），只读任务 details 引用的行号范围
+- 每个任务完成后必须 `set_task_status` 标记
+- 遵循项目的统一开发管理规则（development-management-unified.mdc）
+- 后端代码风格参考现有 entity/service/controller 结构
+- 前端 Vue 参考 web-admin 现有页面结构，RN 参考 CretasFoodTrace/src/screens 结构

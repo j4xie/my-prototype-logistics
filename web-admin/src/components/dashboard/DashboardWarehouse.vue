@@ -77,8 +77,8 @@ async function loadWarehouseData() {
   loading.value = true;
   try {
     const [materialsRes, shipmentsRes] = await Promise.allSettled([
-      get<{ content: any[]; totalElements: number }>(`/${factoryId.value}/material-batches?page=1&size=1`),
-      get<{ content: any[]; totalElements: number }>(`/${factoryId.value}/shipments?page=1&size=1`)
+      get<{ content: Record<string, unknown>[]; totalElements: number }>(`/${factoryId.value}/material-batches?page=1&size=1`),
+      get<{ content: Record<string, unknown>[]; totalElements: number }>(`/${factoryId.value}/shipments?page=1&size=1`)
     ]);
 
     if (materialsRes.status === 'fulfilled' && materialsRes.value.success) {

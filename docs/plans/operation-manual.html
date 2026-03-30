@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>白垩纪食品溯源系统 — 操作手册</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f7fa; color: #333; line-height: 1.7; }
+  .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+  h1 { text-align: center; font-size: 28px; color: #667eea; margin: 30px 0 10px; }
+  .subtitle { text-align: center; color: #999; font-size: 14px; margin-bottom: 30px; }
+  h2 { font-size: 22px; color: #333; margin: 30px 0 15px; padding-bottom: 8px; border-bottom: 3px solid #667eea; }
+  h3 { font-size: 17px; color: #4F46E5; margin: 20px 0 10px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .badge-web { background: #EEF2FF; color: #4F46E5; }
+  .badge-rn { background: #ECFDF5; color: #059669; }
+  .badge-auto { background: #FFF7ED; color: #EA580C; }
+  .badge-ai { background: #F5F3FF; color: #7C3AED; }
+  .step { display: flex; gap: 12px; margin: 8px 0; align-items: flex-start; }
+  .step-num { min-width: 28px; height: 28px; border-radius: 14px; background: #667eea; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-content { flex: 1; }
+  .step-action { font-weight: 600; color: #333; }
+  .step-detail { color: #666; font-size: 14px; margin-top: 2px; }
+  .step-auto { background: #FFF7ED; border-left: 3px solid #EA580C; padding: 6px 12px; margin-top: 4px; border-radius: 0 6px 6px 0; font-size: 13px; color: #EA580C; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th { background: #667eea; color: #fff; padding: 10px 12px; text-align: left; }
+  td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+  tr:hover td { background: #f8f9ff; }
+  .role-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 16px; font-size: 13px; font-weight: 600; }
+  .role-admin { background: #EEF2FF; color: #4F46E5; }
+  .role-warehouse { background: #E0F2FE; color: #0284C7; }
+  .role-workshop { background: #ECFDF5; color: #059669; }
+  .timeline { border-left: 3px solid #667eea; padding-left: 20px; margin: 16px 0; }
+  .timeline-item { position: relative; padding: 8px 0; }
+  .timeline-item::before { content: ''; position: absolute; left: -26px; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: #667eea; }
+  .timeline-time { font-size: 13px; color: #999; }
+  .timeline-action { font-weight: 600; }
+  .highlight { background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  .highlight strong { color: #B45309; }
+  .code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 13px; }
+  .accounts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .account-card { background: #f8f9ff; border-radius: 8px; padding: 12px; border: 1px solid #e8e8ff; }
+  .account-card .role { font-weight: 700; color: #4F46E5; margin-bottom: 4px; }
+  .account-card .cred { font-size: 13px; color: #666; }
+  @media print { body { background: #fff; } .container { max-width: 100%; } }
+  @media (max-width: 600px) { .accounts-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>白垩纪食品溯源系统</h1>
+<p class="subtitle">操作手册 v1.0 — 六扇门食品定制版 | 更新: 2026-03-27</p>
+
+<!-- ==================== 账号信息 ==================== -->
+<h2>一、测试账号</h2>
+<div class="accounts-grid">
+  <div class="account-card">
+    <div class="role">🏭 工厂管理员</div>
+    <div class="cred">账号: <code>factory_admin1</code> 密码: <code>123456</code></div>
+    <div class="cred">平台: Web Admin + RN App</div>
+  </div>
+  <div class="account-card">
+    <div class="role">📋 调度员</div>
+    <div class="cred">账号: <code>dispatcher1</code> 密码: <code>123456</code></div>
+    <div class="cred">平台: RN App</div>
+  </div>
+  <div class="account-card">
+    <div class="role">📦 仓储主管</div>
+    <div class="cred">账号: <code>warehouse_mgr1</code> 密码: <code>123456</code></div>
+    <div class="cred">平台: RN App</div>
+  </div>
+  <div class="account-card">
+    <div class="role">🔧 车间主管</div>
+    <div class="cred">账号: <code>workshop_sup1</code> 密码: <code>123456</code></div>
+    <div class="cred">平台: RN App</div>
+  </div>
+</div>
+<div class="card" style="margin-top:12px">
+  <strong>访问地址:</strong><br>
+  Web Admin: <code>http://139.196.165.140:8086</code><br>
+  后端API: <code>http://47.100.235.168:10010</code><br>
+  RN App: 安装 APK 到安卓手机/模拟器
+</div>
+
+<!-- ==================== 第零阶段 ==================== -->
+<h2>二、首次配置（只做一次）</h2>
+<p><span class="role-tag role-admin">🏭 管理员</span> <span class="badge badge-web">Web Admin</span></p>
+
+<div class="card">
+<h3>2.1 导入客户</h3>
+<div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-action">销售 → 客户管理 → 导入</div><div class="step-detail">上传客户 Excel，或逐个新增。如: 汇庭商贸、酒拾烤肉</div></div></div>
+</div>
+
+<div class="card">
+<h3>2.2 创建原料类型</h3>
+<div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-action">系统管理 → 原料管理 → 新增</div><div class="step-detail">填写: 名称(墨鱼)、单位(kg)、分类(海产)、存储方式(冷冻)</div></div></div>
+</div>
+
+<div class="card">
+<h3>2.3 创建产品模板</h3>
+<div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-action">系统管理 → 产品管理 → 新增产品</div><div class="step-detail">填写: 编码(YYQ)、名称(墨鱼圈)、单位(kg)、分类(成品)<br><strong>不填客户</strong> — 这是基础模板</div></div></div>
+</div>
+
+<div class="card">
+<h3>2.4 配置 BOM 转换率</h3>
+<div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-action">生产管理 → BOM → 转换率 → 新建</div><div class="step-detail">
+  产品: 墨鱼圈 | 原料: 墨鱼 | 转换率: 0.80 | 损耗: 5%<br>
+  产品: 墨鱼圈 | 原料: 食盐 | 转换率: 50.0 | 损耗: 0%<br>
+  <em>每种原料配一条记录</em>
+</div></div></div>
+<div class="highlight"><strong>转换率含义:</strong> 转换率=0.80 表示 1kg 原料产出 0.80kg 成品。即生产 1kg 成品需要 1/0.80=1.25kg 原料。</div>
+</div>
+
+<div class="card">
+<h3>2.5 组装 SKU ⭐</h3>
+<div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-action">产品管理 → 点黄色「SKU组装」按钮</div></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-action">选择产品模板 → 选择客户 → 点「创建SKU」</div><div class="step-detail">系统自动: 克隆模板 + 绑定客户 + 复制配方<br>生成: CP-汇庭商贸-墨鱼圈</div></div></div>
+<div class="step-auto">💡 也可以用 AI: 在对话框说 "给汇庭创建墨鱼圈SKU"</div>
+<div class="highlight"><strong>之后排产时选 SKU（不是模板），BOM 自动从 SKU 的配方展开。</strong></div>
+</div>
+
+<!-- ==================== 第一阶段 ==================== -->
+<h2>三、排产 + 生成调拨单</h2>
+<p><span class="role-tag role-admin">🏭 管理员/调度员</span> <span class="badge badge-web">Web Admin</span> <span style="color:#999">前一天下午</span></p>
+
+<div class="card">
+<div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-action">生产管理 → 生产计划 → 新建计划</div><div class="step-detail">产品: 选 SKU (如 CP-汇庭商贸-墨鱼圈)<br>计划量: 200kg<br>计划日期: 明天</div></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-action">计划列表 → 操作列 → 点「生成调拨单」</div></div></div>
+<div class="step-auto">
+⚡ 系统自动:<br>
+① BOM 展开计算原辅料需求 (含损耗)<br>
+② FEFO 库存校验 (先到期先出)<br>
+③ 创建调拨单 (状态: 已申请)<br>
+④ 推送给仓库审批
+</div>
+</div>
+
+<!-- ==================== 第二阶段 ==================== -->
+<h2>四、仓储审批 + 发货</h2>
+<p><span class="role-tag role-warehouse">📦 仓储主管</span> <span class="badge badge-rn">手机 App</span></p>
+
+<div class="card">
+<div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-action">首页 → 点橙色「领料调拨」卡片</div><div class="step-detail">看到待处理调拨单列表</div></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-action">点击调拨单 → 查看物料明细</div><div class="step-detail">显示: 原料名称、数量、单位</div></div></div>
+<div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-action">审批通过 → 状态变为「已批准」</div></div></div>
+<div class="step"><div class="step-num">4</div><div class="step-content"><div class="step-action">备货完成后 → 点「发货」</div></div></div>
+<div class="step-auto">⚡ 系统自动: FEFO 扣减原料库存。库存不足则阻断发货。</div>
+</div>
+
+<!-- ==================== 第三阶段 ==================== -->
+<h2>五、车间签收 + 领料确认</h2>
+<p><span class="role-tag role-workshop">🔧 车间主管</span> <span class="badge badge-rn">手机 App</span> <span style="color:#999">当天早上</span></p>
+
+<div class="card">
+<h3>5.1 签收物料</h3>
+<div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-action">底部「批次」Tab → 物料调拨</div><div class="step-detail">找到调拨单 → 核对实物 → 点「签收」→ 点「确认」</div></div></div>
+<div class="step-auto">⚡ 系统自动: 工厂仓创建新原料批次</div>
+</div>
+
+<div class="card">
+<h3>5.2 录入实际用量</h3>
+<div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-action">批次详情 → 点蓝色「原料领料」按钮</div></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-action">查看 BOM 物料清单 → 逐个点「录入实际用量」</div><div class="step-detail">弹窗输入实际用了多少 → 有快捷按钮(计划量/95%)</div></div></div>
+<div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-action">刷新查看达成率</div><div class="step-detail">如: 97.8% 🟢</div></div></div>
+</div>
+
+<!-- ==================== 第四阶段 ==================== -->
+<h2>六、生产报工</h2>
+<p><span class="role-tag role-workshop">🔧 车间主管</span> <span class="badge badge-rn">手机 App</span> <span style="color:#999">当天 8:00-17:00</span></p>
+
+<div class="card">
+<h3>6.1 员工签到</h3>
+<div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-action">首页 → 工序操作 → 选工序（如「拆箱分拣」）</div></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-action">绿色「扫码签到」→ 扫描员工工牌二维码</div><div class="step-detail">提示: "签到成功 — 陈工 已签到「拆箱分拣」"</div></div></div>
+</div>
+
+<div class="card">
+<h3>6.2 报产量（三种方式）</h3>
+
+<div class="highlight">
+<strong>方式A — 从列表选员工（推荐）:</strong><br>
+报产量区域自动显示已签到员工蓝色标签 → 点击标签选中 → 输入数量 → 提交
+</div>
+
+<div class="highlight">
+<strong>方式B — 扫码定位:</strong><br>
+工序列表页右上角扫码图标 → 扫员工工牌 → 自动跳转到该员工的工序 + 员工已选中
+</div>
+
+<div class="highlight">
+<strong>方式C — 主管自己报:</strong><br>
+点「主管自己报」按钮 → 输入数量 → 提交（不关联具体员工）
+</div>
+
+<div class="step"><div class="step-num">💡</div><div class="step-content"><div class="step-detail">每小时报一次，系统自动累加。每笔报工需后台审批。</div></div></div>
+</div>
+
+<div class="card">
+<h3>6.3 员工签退</h3>
+<div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-action">红色「扫码签退」→ 扫描员工工牌</div><div class="step-detail">系统自动计算工时: 签到8:00 → 签退17:00 = 9小时</div></div></div>
+</div>
+
+<!-- ==================== 第五阶段 ==================== -->
+<h2>七、查看分析</h2>
+<p><span class="role-tag role-admin">🏭 管理员</span> <span class="badge badge-web">Web Admin</span></p>
+
+<div class="card">
+<table>
+<tr><th>分析项</th><th>入口</th><th>内容</th></tr>
+<tr><td>BOM达成率</td><td>生产管理 → BOM达成率</td><td>每批次每种物料: 计划量 vs 实际量 vs 差异%</td></tr>
+<tr><td>SKU毛利率</td><td>财务 → SKU毛利率</td><td>原料成本+人工成本 vs 销售收入 = 毛利率</td></tr>
+<tr><td>原料价格趋势</td><td>库存 → 原料价格趋势</td><td>移动平均价 + 各批次入库价格折线图</td></tr>
+<tr><td>工序IO对比</td><td>生产管理 → 工序IO对比</td><td>每道工序投入产出比</td></tr>
+</table>
+</div>
+
+<!-- ==================== AI ==================== -->
+<h2>八、AI 对话（任意角色可用）</h2>
+<p><span class="badge badge-ai">AI 助手</span> 在 App 或 Web 的对话框中输入自然语言</p>
+
+<div class="card">
+<table>
+<tr><th>你说</th><th>AI 做什么</th></tr>
+<tr><td>"给汇庭创建墨鱼圈SKU"</td><td>自动匹配模板+客户 → 组装SKU</td></tr>
+<tr><td>"生产500kg带鱼段需要多少原料"</td><td>BOM展开 + 库存校验 → 返回物料清单</td></tr>
+<tr><td>"墨鱼还有多少库存"</td><td>查询原料库存 → 返回各批次明细</td></tr>
+<tr><td>"今天拆箱分拣报了多少"</td><td>查询报工汇总</td></tr>
+<tr><td>"帮我给汇庭排200kg墨鱼圈"</td><td>创建排产计划</td></tr>
+</table>
+</div>
+
+<!-- ==================== 完整时间线 ==================== -->
+<h2>九、完整流程时间线</h2>
+<div class="card">
+<div class="timeline">
+  <div class="timeline-item"><div class="timeline-time">首次配置</div><div class="timeline-action">管理员 <span class="badge badge-web">Web</span> 导入客户 + 原料 + 模板 + BOM + 组装SKU</div></div>
+  <div class="timeline-item"><div class="timeline-time">前天 16:00</div><div class="timeline-action">管理员 <span class="badge badge-web">Web</span> 创建生产计划（选SKU）</div></div>
+  <div class="timeline-item"><div class="timeline-time">前天 16:05</div><div class="timeline-action">管理员 <span class="badge badge-web">Web</span> 点「生成调拨单」</div><div class="step-auto" style="margin:4px 0">⚡ BOM展开 + 创建调拨 + 自动提交</div></div>
+  <div class="timeline-item"><div class="timeline-time">前天 16:30</div><div class="timeline-action">仓储 <span class="badge badge-rn">手机</span> 审批通过</div></div>
+  <div class="timeline-item"><div class="timeline-time">前天 17:00</div><div class="timeline-action">仓储 <span class="badge badge-rn">手机</span> 备货发货</div><div class="step-auto" style="margin:4px 0">⚡ FEFO扣减库存（不足则阻断）</div></div>
+  <div class="timeline-item"><div class="timeline-time">当天 7:30</div><div class="timeline-action">车间 <span class="badge badge-rn">手机</span> 签收 + 确认</div><div class="step-auto" style="margin:4px 0">⚡ 工厂仓入库</div></div>
+  <div class="timeline-item"><div class="timeline-time">当天 7:45</div><div class="timeline-action">车间 <span class="badge badge-rn">手机</span> 录入实际原料用量</div></div>
+  <div class="timeline-item"><div class="timeline-time">当天 8:00</div><div class="timeline-action">车间 <span class="badge badge-rn">手机</span> 扫码签到员工</div></div>
+  <div class="timeline-item"><div class="timeline-time">当天 9:00-16:00</div><div class="timeline-action">车间 <span class="badge badge-rn">手机</span> 每小时报产量（选员工/扫码/主管自己）</div></div>
+  <div class="timeline-item"><div class="timeline-time">当天 17:00</div><div class="timeline-action">车间 <span class="badge badge-rn">手机</span> 扫码签退</div><div class="step-auto" style="margin:4px 0">⚡ 自动计算工时</div></div>
+  <div class="timeline-item"><div class="timeline-time">当天 18:00</div><div class="timeline-action">管理员 <span class="badge badge-web">Web</span> 查看BOM达成率 + SKU毛利率</div></div>
+</div>
+</div>
+
+<!-- ==================== 按角色总结 ==================== -->
+<h2>十、按角色操作总结</h2>
+<div class="card">
+<table>
+<tr><th>角色</th><th>平台</th><th>日常操作</th><th>频率</th></tr>
+<tr><td><span class="role-tag role-admin">管理员</span></td><td>🖥️ Web</td><td>基础配置 + SKU组装 + 排产 + 生成调拨单 + 看分析</td><td>配置1次，排产每天</td></tr>
+<tr><td><span class="role-tag role-warehouse">仓储</span></td><td>📱 手机</td><td>审批调拨 + 备货发货</td><td>每次排产后</td></tr>
+<tr><td><span class="role-tag role-workshop">车间</span></td><td>📱 手机</td><td>签收 + 录入用量 + 签到/签退 + 报产量</td><td>每天</td></tr>
+<tr><td><span class="badge badge-ai">AI</span></td><td>对话框</td><td>创建SKU / 算物料 / 查库存 / 排产</td><td>随时</td></tr>
+</table>
+</div>
+
+<p style="text-align:center; color:#999; margin:30px 0; font-size:12px;">
+  白垩纪食品溯源系统 v1.0 | 六扇门食品定制版 | 2026-03-27
+</p>
+
+</div>
+</body>
+</html>

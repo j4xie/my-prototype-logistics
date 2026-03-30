@@ -40,9 +40,19 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@env$': '<rootDir>/src/__tests__/mocks/env.ts',
     '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2)$': 'jest-transform-stub',
+    // 'react-native' 是正则，会匹配所有含该子串的包名 (如 @react-native-xxx)
+    // 下面两行让这些包跳过宽泛匹配、正常解析到 jest.mock 工厂
+    '@react-native-async-storage/async-storage': '@react-native-async-storage/async-storage',
+    '@testing-library/react-native': '@testing-library/react-native',
+    // 宽泛匹配：react-native 本体 + 子路径 + react-native-xxx 三方包 → __mocks__/react-native.js
     'react-native': 'react-native'
   },
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest'
+    '^.+\\.(js|jsx)$': 'babel-jest',
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      tsconfig: {
+        jsx: 'react-jsx',
+      },
+    }],
   }
 };

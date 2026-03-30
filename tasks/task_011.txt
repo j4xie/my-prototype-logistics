@@ -1,0 +1,11 @@
+# Task ID: 11
+# Title: 阶段2-RN: 工序任务列表页（替代批次列表）
+# Status: done
+# Dependencies: 4, 7
+# Priority: high
+# Description: 在 RN App 中，PROCESS 模式下将批次列表替换为工序任务列表。顶部下拉选择工序任务，显示产品名、工序名、进度条(completedQuantity+pendingQuantity/plannedQuantity)、状态标签。
+# Details:
+参考方案文档第四节阶段3-RN(约行560-595)。进度条区分确认进度和预估进度。
+
+# Test Strategy:
+RN 工序列表正确显示；进度条双色区分审核前/后数量

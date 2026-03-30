@@ -41,7 +41,7 @@ const moduleConfig = [
 const accessibleModules = computed(() => {
   return moduleConfig.filter(m => {
     if (m.key === 'dashboard') return false; // 排除首页本身
-    return permissionStore.canAccess(m.key as any);
+    return permissionStore.canAccess(m.key as import('@/store/modules/permission').ModuleName);
   });
 });
 
@@ -71,7 +71,7 @@ function navigateTo(route: string) {
 
 // 获取权限标签
 function getPermissionLabel(module: string): string {
-  const permission = permissionStore.getPermission(module as any);
+  const permission = permissionStore.getPermissionLevel(module as import('@/store/modules/permission').ModuleName);
   if (permission === 'rw') return '读写';
   if (permission === 'r') return '只读';
   if (permission === 'w') return '只写';

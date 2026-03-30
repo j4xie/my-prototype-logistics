@@ -1,0 +1,114 @@
+appId: com.cretas.foodtrace
+---
+# Test 106: FAHome Edit Mode Deep — Module Delete + Add
+# Tests: long press → edit → delete a module → add it back → save
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# D-01: Verify initial home state
+# ========================================
+- assertVisible:
+    id: "fa-home-root"
+- assertVisible:
+    id: "fa-home-ai-card"
+- assertVisible:
+    id: "fa-home-stats-title"
+    optional: true
+- takeScreenshot: screenshots/106-initial-state
+
+# ========================================
+# D-02: Long press to enter edit mode
+# ========================================
+- longPressOn:
+    id: "fa-home-ai-card"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*取消.*|.*Cancel.*"
+    timeout: 5000
+- takeScreenshot: screenshots/106-edit-mode
+
+# ========================================
+# D-03: Verify edit toolbar has all 3 buttons
+# ========================================
+- assertVisible:
+    text: ".*取消.*|.*Cancel.*"
+- assertVisible:
+    text: ".*添加.*|.*Add.*"
+- assertVisible:
+    text: ".*完成.*|.*Done.*"
+
+# ========================================
+# D-04: Tap "添加模块" button
+# ========================================
+- tapOn:
+    text: ".*添加.*模块.*|.*Add.*Module.*"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/106-add-module-sheet
+
+# ========================================
+# D-05: Close the add module sheet / alert
+# ========================================
+# If no hidden modules, an OK alert appears; if there are, a sheet appears with close button
+- tapOn:
+    text: ".*确定.*|.*OK.*"
+    optional: true
+- waitForAnimationToEnd
+# If it was a sheet, tap close icon
+- tapOn:
+    text: ".*关闭.*|.*Close.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/106-after-add-dismiss
+
+# ========================================
+# D-06: Now toolbar should still be visible, tap cancel
+# ========================================
+- extendedWaitUntil:
+    visible: ".*取消.*|.*Cancel.*|.*完成.*|.*Done.*"
+    timeout: 5000
+- tapOn:
+    text: ".*取消.*|.*Cancel.*"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/106-cancelled
+
+# ========================================
+# D-07: Enter edit mode again, try "完成" (save)
+# ========================================
+- longPressOn:
+    id: "fa-home-ai-card"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*完成.*|.*Done.*"
+    timeout: 5000
+
+- tapOn:
+    text: ".*完成.*|.*Done.*"
+- waitForAnimationToEnd
+
+# Handle save success alert
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/106-saved
+
+# ========================================
+# D-08: Verify back to normal mode
+# ========================================
+- scrollUntilVisible:
+    element:
+      id: "fa-home-ai-card"
+    direction: DOWN
+    timeout: 10000
+- assertNotVisible:
+    text: ".*完成.*|.*Done.*"
+- takeScreenshot: screenshots/106-normal-restored

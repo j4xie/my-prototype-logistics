@@ -54,7 +54,7 @@ export function useBusinessMode() {
     const user = authStore.user;
     if (!user) return 'FACTORY';
     // factoryType stored in user.factoryUser after login
-    return (user as any).factoryType || 'FACTORY';
+    return (user as Record<string, unknown>).factoryType as string || 'FACTORY';
   });
 
   const mode = computed<BusinessMode>(() => {

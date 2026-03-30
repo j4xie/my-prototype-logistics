@@ -1,0 +1,11 @@
+# Task ID: 9
+# Title: 阶段2-Vue: 工序主数据管理页 + 产品-工序关联配置
+# Status: done
+# Dependencies: 2, 3, 8
+# Priority: high
+# Description: 新建工序管理页(web-admin/src/views/system/work-processes/index.vue)，支持 CRUD + 启停。在产品详情中新增「工序配置」Tab，左侧可选工序列表，右侧已关联工序（拖拽排序），每行可覆写单位和工时。
+# Details:
+参考方案文档第四节阶段2.2-2.3(约行510-530)。路由 /system/work-processes，仅 PROCESS 模式显示。
+
+# Test Strategy:
+工序 CRUD 操作验证；产品-工序关联拖拽排序功能测试

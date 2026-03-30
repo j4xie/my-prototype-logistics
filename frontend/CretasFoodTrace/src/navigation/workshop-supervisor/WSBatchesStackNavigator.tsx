@@ -86,6 +86,18 @@ export function WSBatchesStackNavigator() {
         options={{ title: "原料消耗" }}
       />
 
+      {/* 调拨签收 */}
+      <Stack.Screen
+        name="TransferList"
+        component={require("../../screens/factory-admin/inventory/TransferListScreen").default}
+        options={{ title: "物料调拨" }}
+      />
+      <Stack.Screen
+        name="TransferDetail"
+        component={require("../../screens/factory-admin/inventory/TransferDetailScreen").default}
+        options={{ title: "调拨详情" }}
+      />
+
       {/* 报工 */}
       <Stack.Screen
         name="ScanReport"

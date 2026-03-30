@@ -1,0 +1,11 @@
+# Task ID: 17
+# Title: 阶段3a: 可视化流程设计器（Vue Flow 画布）
+# Status: done
+# Dependencies: 16
+# Priority: low
+# Description: 在 Vue Web-admin 平台管理→工厂管理中新增生产流程配置页。使用 Vue Flow 实现拖拽画布，节点库从 /api/workflow/node-schemas 动态加载，属性面板根据 JSON Schema 动态生成表单，全局配置面板同理。支持保存到服务器草稿/本地 localStorage。
+# Details:
+参考方案文档第九节阶段3a(约行820-860,1085-1155)。仅 platform_admin 可见。Vue Flow (vue-flow.dev) 画布 + Element Plus 组件。
+
+# Test Strategy:
+拖拽创建流程并保存/发布；节点属性面板正确渲染 JSON Schema 表单

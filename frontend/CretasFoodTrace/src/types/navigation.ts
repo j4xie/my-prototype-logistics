@@ -499,6 +499,8 @@ export type WSBatchesStackParamList = {
   BatchStage: { batchId: string; stageType: string; stageName: string };
   BatchComplete: { batchId: string };
   MaterialConsumption: { batchId: string };
+  TransferList: undefined;
+  TransferDetail: { transferId: string };
   QualityCreate: { batchId: string };
   QualityDetail: { inspectionId: string };
   // 报工 - Work Reporting
@@ -589,6 +591,9 @@ export type WHHomeStackParamList = {
   InboundDetail: { batchId: string };
   AlertHandle: { alertId: string };
   TempMonitor: undefined;
+  // 调拨（领料审批）
+  TransferList: undefined;
+  TransferDetail: { transferId: string };
 };
 
 export type WHInboundStackParamList = {

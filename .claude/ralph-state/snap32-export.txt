@@ -1,0 +1,217 @@
+- generic [ref=e23]:
+  - generic [ref=e24]:
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e38]: 上午好，factory_admin1
+          - generic [ref=e39]: 3月12日 周四
+        - generic [ref=e40]:
+          - generic [ref=e41] [cursor=pointer]:
+            - img: 󱥈
+          - generic [ref=e42] [cursor=pointer]:
+            - img: 󰂜
+            - generic [ref=e44]: "4"
+      - generic [ref=e46] [cursor=pointer]:
+        - generic [ref=e47]:
+          - generic [ref=e48]:
+            - img: 󰚩
+            - generic [ref=e49]: AI 智能洞察
+          - generic [ref=e51]: 已分析
+        - generic [ref=e52]: 今日良品率偏低，建议关注质检环节
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - generic [ref=e55]: 0.0%
+            - generic [ref=e56]: 良品率
+          - generic [ref=e58]:
+            - generic [ref=e59]: ¥0.0
+            - generic [ref=e60]: 单位成本
+          - generic [ref=e62]:
+            - generic [ref=e63]: 0.0h
+            - generic [ref=e64]: 平均周期
+      - generic [ref=e65]:
+        - generic [ref=e67]: 今日概览
+        - generic [ref=e68]:
+          - generic [ref=e69] [cursor=pointer]:
+            - generic [ref=e70]:
+              - img: 󰑲
+            - generic [ref=e71]: "0"
+            - generic [ref=e72]: 今日产量(kg)
+          - generic [ref=e73] [cursor=pointer]:
+            - generic [ref=e74]:
+              - img: 󰏖
+            - generic [ref=e75]: "0"
+            - generic [ref=e76]: 今日批次
+          - generic [ref=e77] [cursor=pointer]:
+            - generic [ref=e78]:
+              - img: 󰔾
+            - generic [ref=e79]: "8"
+            - generic [ref=e80]: 原料批次
+          - generic [ref=e81] [cursor=pointer]:
+            - generic [ref=e82]:
+              - img: 󰀨
+            - generic [ref=e83]: "4"
+            - generic [ref=e84]: 今日告警
+          - generic [ref=e85] [cursor=pointer]:
+            - generic [ref=e86]:
+              - img: 󰅎
+            - generic [ref=e87]: "10"
+            - generic [ref=e88]: 待审批报工
+      - generic [ref=e89]:
+        - generic [ref=e91]: 快捷操作
+        - generic [ref=e92]:
+          - generic [ref=e93] [cursor=pointer]:
+            - generic [ref=e94]:
+              - img: 󰐗
+            - generic [ref=e95]: 新建计划
+          - generic [ref=e96] [cursor=pointer]:
+            - generic [ref=e97]:
+              - img: 󰄪
+            - generic [ref=e98]: 数据报表
+          - generic [ref=e99] [cursor=pointer]:
+            - generic [ref=e100]:
+              - img: 󰡉
+            - generic [ref=e101]: 人员管理
+          - generic [ref=e102] [cursor=pointer]:
+            - generic [ref=e103]:
+              - img: 󰒓
+            - generic [ref=e104]: 系统配置
+    - generic [ref=e207]:
+      - generic [ref=e209]:
+        - button "Back" [ref=e211] [cursor=pointer]:
+          - generic [ref=e213]:
+            - img: 󰁍
+        - heading "数据导出" [level=1] [ref=e214]
+      - generic [ref=e216]:
+        - generic [ref=e218]:
+          - generic [ref=e221]: 选择报表类型
+          - radiogroup [ref=e223]:
+            - generic [ref=e225]:
+              - radio [ref=e226] [cursor=pointer]:
+                - generic:
+                  - radio
+              - generic [ref=e227]:
+                - generic [ref=e229]: 生产报表
+                - generic [ref=e230]: 批次号、产品、消耗、产出、转换率、状态
+            - generic [ref=e233]:
+              - radio [ref=e234] [cursor=pointer]:
+                - generic:
+                  - radio
+              - generic [ref=e235]:
+                - generic [ref=e237]: 成本报表
+                - generic [ref=e238]: 批次号、成本明细、单位成本、偏差、超支金额
+            - generic [ref=e241]:
+              - radio [ref=e242] [cursor=pointer]:
+                - generic:
+                  - radio
+              - generic [ref=e243]:
+                - generic [ref=e245]: 工时报表
+                - generic [ref=e246]: 员工、部门、工作类型、工时、加班时间
+        - generic [ref=e248]:
+          - generic [ref=e251]: 日期范围
+          - generic [ref=e252]:
+            - generic [ref=e253]:
+              - generic [ref=e254]: 开始日期
+              - button "2026/2/10" [ref=e256] [cursor=pointer]:
+                - generic [ref=e257]:
+                  - generic [ref=e258]:
+                    - img: 󰃭
+                  - generic [ref=e259]: 2026/2/10
+            - generic [ref=e260]:
+              - generic [ref=e261]: 结束日期
+              - button "2026/3/12" [ref=e263] [cursor=pointer]:
+                - generic [ref=e264]:
+                  - generic [ref=e265]:
+                    - img: 󰃭
+                  - generic [ref=e266]: 2026/3/12
+            - generic [ref=e267]:
+              - generic [ref=e268]: 快捷选择：
+              - generic [ref=e269]:
+                - button "最近7天" [ref=e271] [cursor=pointer]:
+                  - generic [ref=e273]: 最近7天
+                - button "最近30天" [ref=e275] [cursor=pointer]:
+                  - generic [ref=e277]: 最近30天
+                - button "最近90天" [ref=e279] [cursor=pointer]:
+                  - generic [ref=e281]: 最近90天
+        - generic [ref=e283]:
+          - generic [ref=e286]: 选择导出格式
+          - generic [ref=e287]:
+            - generic [ref=e288]:
+              - button "Excel" [ref=e290] [cursor=pointer]:
+                - generic [ref=e291]:
+                  - generic [ref=e292]:
+                    - img: 󱎏
+                  - generic [ref=e293]: Excel
+              - button "PDF" [ref=e295] [cursor=pointer]:
+                - generic [ref=e296]:
+                  - generic [ref=e297]:
+                    - img: 󰈦
+                  - generic [ref=e298]: PDF
+              - button "CSV" [ref=e300] [cursor=pointer]:
+                - generic [ref=e301]:
+                  - generic [ref=e302]:
+                    - img: 󰈘
+                  - generic [ref=e303]: CSV
+            - generic [ref=e305]: • Excel格式支持数据筛选和图表
+        - generic [ref=e307]:
+          - generic [ref=e310]: 预览
+          - generic [ref=e311]:
+            - generic [ref=e312]:
+              - generic [ref=e313]: 报表类型：
+              - generic [ref=e314]:
+                - button "生产报表" [disabled]:
+                  - generic [ref=e316]: 生产报表
+            - generic [ref=e317]:
+              - generic [ref=e318]: 时间范围：
+              - generic [ref=e319]: 2026/2/10 - 2026/3/12(30 天)
+            - generic [ref=e320]:
+              - generic [ref=e321]: 导出格式：
+              - generic [ref=e322]: Excel (.xlsx)
+            - generic [ref=e324]: 包含内容：批次号、产品、消耗、产出、转换率、状态
+        - button "导出" [ref=e326] [cursor=pointer]:
+          - generic [ref=e327]:
+            - generic [ref=e328]:
+              - img: 󰇚
+            - generic [ref=e329]: 导出
+  - tablist [ref=e107]:
+    - tab "首页" [ref=e109] [cursor=pointer]:
+      - generic [ref=e110]:
+        - generic [ref=e111]:
+          - img: 󰋜
+        - generic [ref=e112]:
+          - img: 󰋜
+      - generic [ref=e113]: 首页
+    - tab "AI分析" [ref=e115] [cursor=pointer]:
+      - generic [ref=e116]:
+        - generic [ref=e117]:
+          - img: 󰄪
+        - generic [ref=e118]:
+          - img: 󰄪
+      - generic [ref=e119]: AI分析
+    - tab "报表" [ref=e121] [cursor=pointer]:
+      - generic [ref=e122]:
+        - generic [ref=e123]:
+          - img: 󰈕
+        - generic [ref=e124]:
+          - img: 󰈕
+      - generic [ref=e125]: 报表
+    - tab "智能分析" [ref=e127] [cursor=pointer]:
+      - generic [ref=e128]:
+        - generic [ref=e129]:
+          - img: 󰺓
+        - generic [ref=e130]:
+          - img: 󰺓
+      - generic [ref=e131]: 智能分析
+    - tab "管理" [ref=e133] [cursor=pointer]:
+      - generic [ref=e134]:
+        - generic [ref=e135]:
+          - img: 󰒓
+        - generic [ref=e136]:
+          - img: 󰒓
+      - generic [ref=e137]: 管理
+    - tab "我的" [selected] [ref=e139] [cursor=pointer]:
+      - generic [ref=e140]:
+        - generic [ref=e141]:
+          - img: 󰀄
+        - generic [ref=e142]:
+          - img: 󰀄
+      - generic [ref=e143]: 我的

@@ -234,6 +234,6 @@ const styles = StyleSheet.create({
   input: { backgroundColor: '#fff', fontSize: 20 },
   quickButtons: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
   quickLabel: { fontSize: 14, color: '#666' },
-  quickBtn: { minWidth: 64, height: 40 },
+  quickBtn: { minWidth: 64, minHeight: 48 },
   submitBtn: { marginTop: 12, height: 52 },
 });

@@ -73,5 +73,20 @@ export default defineConfig({
       name: 'liushanmen-rn-e2e',
       testMatch: 'liushanmen-rn-e2e.spec.ts',
     },
+    // Step 10: Web Admin 全模块 E2E (自注入 auth，不依赖 vue-auth)
+    {
+      name: 'web-admin-e2e',
+      testMatch: 'web-admin-e2e.spec.ts',
+    },
+    // Step 11: Web Admin CRUD Interactions E2E
+    {
+      name: 'web-admin-crud',
+      testMatch: 'web-admin-crud-e2e.spec.ts',
+    },
+    // Step 12: Web Admin Business Workflows E2E
+    {
+      name: 'web-admin-workflows',
+      testMatch: 'web-admin-workflows-e2e.spec.ts',
+    },
   ],
 });

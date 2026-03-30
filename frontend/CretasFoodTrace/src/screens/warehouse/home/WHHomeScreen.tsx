@@ -22,6 +22,7 @@ import {
   Text,
   Card,
   Surface,
+  Icon,
   IconButton,
   Chip,
   SegmentedButtons,
@@ -501,6 +502,21 @@ export default function WHHomeScreen() {
           />
         }
       >
+        {/* 领料调拨入口 */}
+        <TouchableOpacity
+          style={{ marginHorizontal: 16, marginBottom: 12, backgroundColor: '#fff', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
+          onPress={() => navigation.navigate('TransferList' as never)}
+        >
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFF7ED', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+            <Icon source="package-down" size={24} color="#EA580C" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text variant="titleSmall" style={{ fontWeight: '600', color: '#333' }}>领料调拨</Text>
+            <Text style={{ fontSize: 12, color: '#999', marginTop: 2 }}>查看和审批生产领料申请</Text>
+          </View>
+          <Icon source="chevron-right" size={24} color="#ccc" />
+        </TouchableOpacity>
+
         {/* 任务Tab切换 */}
         {(isScreenEnabled('OutboundManagement') || isScreenEnabled('InboundManagement')) && (
         <View style={styles.tabContainer}>

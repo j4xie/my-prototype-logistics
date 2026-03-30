@@ -1,0 +1,11 @@
+# Task ID: 10
+# Title: 阶段2-Vue: 生产计划创建（按模式分支）+ 报工审批页
+# Status: done
+# Dependencies: 6, 9
+# Priority: high
+# Description: 改造生产计划创建页：BATCH 模式不动；PROCESS 模式创建 ProcessTask（选产品→带出客户+工序→选工序→填计划量→选日期）。新建报工审批页，含待审列表、通过/驳回、补报高亮标识。
+# Details:
+参考方案文档第四节阶段2.4-2.5(约行530-560)。
+
+# Test Strategy:
+PROCESS 模式创建任务完整流程测试；审批页功能测试

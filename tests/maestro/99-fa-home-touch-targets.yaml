@@ -1,0 +1,110 @@
+appId: com.cretas.foodtrace
+---
+# Test 99: P0 FAHome Touch Targets & Stat Cards
+# Verifies stat cards, quick action buttons, AI insight card
+# are all tappable with adequate touch targets
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# H-01: Home screen loaded
+# ========================================
+- assertVisible:
+    id: "fa-home-root"
+- takeScreenshot: screenshots/99-home-loaded
+
+# ========================================
+# H-02: AI insight card visible and tappable
+# ========================================
+- assertVisible:
+    id: "fa-home-ai-card"
+- assertVisible:
+    id: "fa-home-ai-title"
+- takeScreenshot: screenshots/99-ai-card
+
+# ========================================
+# H-03: Stats section visible
+# ========================================
+- scrollUntilVisible:
+    element:
+      id: "fa-home-stats-title"
+    direction: DOWN
+    timeout: 10000
+- takeScreenshot: screenshots/99-stats-section
+
+# ========================================
+# H-04: Stat cards visible (production + batches)
+# ========================================
+- assertVisible:
+    id: "fa-home-stat-todayProduction"
+    optional: true
+- assertVisible:
+    id: "fa-home-stat-todayBatches"
+    optional: true
+- takeScreenshot: screenshots/99-stat-cards
+
+# ========================================
+# H-05: Tap a stat card → navigates
+# ========================================
+- tapOn:
+    id: "fa-home-stat-todayProduction"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/99-stat-card-tap
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# ========================================
+# H-06: Quick actions section
+# ========================================
+- scrollUntilVisible:
+    element:
+      id: "fa-home-quick-actions-title"
+    direction: DOWN
+    timeout: 10000
+- assertVisible:
+    id: "fa-home-quick-actions-title"
+- takeScreenshot: screenshots/99-quick-actions
+
+# ========================================
+# H-07: Verify quick action label font is readable (14px)
+# Take screenshot for visual verification
+# ========================================
+- takeScreenshot: screenshots/99-quick-action-labels
+
+# ========================================
+# H-08: Tap AI insight card → navigates
+# ========================================
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+- tapOn:
+    id: "fa-home-ai-card"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/99-ai-card-tap
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# ========================================
+# H-09: Verify AI metrics visible (if not restaurant mode)
+# ========================================
+- scrollUntilVisible:
+    element:
+      id: "fa-home-ai-metrics"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+- takeScreenshot: screenshots/99-ai-metrics

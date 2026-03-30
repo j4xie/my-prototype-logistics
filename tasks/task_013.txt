@@ -1,0 +1,11 @@
+# Task ID: 13
+# Title: 阶段2-RN: 个人报工历史 + 工序汇总 + 批次总览
+# Status: done
+# Dependencies: 12
+# Priority: medium
+# Description: 实现三级累计展示：个人级（我的报工历史，按工序任务分组）、工序级（某任务的所有员工报工汇总）、批次级（同一 productionRunId 下所有工序的完成进度总览）。
+# Details:
+参考方案文档第三节3.1(约行245-255)三级累计体系。汇总按 productionRunId 聚合。
+
+# Test Strategy:
+三级累计数据准确性验证

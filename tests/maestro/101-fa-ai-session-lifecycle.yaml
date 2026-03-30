@@ -1,0 +1,115 @@
+appId: com.cretas.foodtrace
+---
+# Test 101: AI Chat Session Lifecycle
+# Full lifecycle: fresh entry → card tap → multiple messages →
+# back → re-enter (fresh) → card tap again → verify isolation
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# L-01: First entry — fresh state with cards
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: "quick-action-card-grid"
+- assertVisible:
+    id: "voice-first-container"
+- takeScreenshot: screenshots/101-first-entry
+
+# ========================================
+# L-02: Send via card tap
+# ========================================
+- tapOn:
+    id: "quick-action-card-2"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*库存.*|.*执行.*|.*识别.*|.*查看.*"
+    timeout: 30000
+
+# Cards gone
+- assertNotVisible:
+    id: "quick-action-card-grid"
+- takeScreenshot: screenshots/101-first-message
+
+# ========================================
+# L-03: Send second message via keyboard
+# ========================================
+- tapOn:
+    id: "keyboard-toggle-btn"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-input"
+    optional: true
+- inputText: "help me"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*help.*|.*帮助.*|.*执行.*|.*识别.*"
+    timeout: 30000
+- takeScreenshot: screenshots/101-second-message
+
+# ========================================
+# L-04: Go back
+# ========================================
+- back
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/101-back-to-ai-center
+
+# ========================================
+# L-05: Re-enter — should be fresh (cards visible again)
+# ========================================
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: "quick-action-card-grid"
+- assertVisible:
+    id: "voice-first-container"
+- takeScreenshot: screenshots/101-re-entry-fresh
+
+# ========================================
+# L-06: Tap different card this time
+# ========================================
+- tapOn:
+    id: "quick-action-card-0"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*报工.*|.*执行.*|.*识别.*|.*产品.*"
+    timeout: 30000
+- takeScreenshot: screenshots/101-different-card
+
+# ========================================
+# L-07: Navigate to home tab and back to verify state isolation
+# ========================================
+- tapOn:
+    text: ".*首页.*|.*Home.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/101-home-after-chat
+
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/101-ai-tab-return

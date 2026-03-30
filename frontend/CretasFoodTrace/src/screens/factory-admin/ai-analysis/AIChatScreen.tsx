@@ -37,6 +37,11 @@ import { VoiceMicButton } from '../../../components/common/VoiceMicButton';
 import { aiApiClient } from '../../../services/api/aiApiClient';
 import type { IntentSSECallbacks } from '../../../services/api/aiApiClient';
 import type { FAAIStackParamList } from '../../../types/navigation';
+import { QuickActionCardGrid } from '../../../components/ai/QuickActionCardGrid';
+import { TemplateCommandSheet } from '../../../components/ai/TemplateCommandSheet';
+import { feedbackSounds } from '../../../services/audio/feedbackSounds';
+import { smartDefaults } from '../../../services/smartDefaults';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // 建议操作类型
 interface SuggestedAction {
@@ -164,6 +169,88 @@ export default function AIChatScreen() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [quotaRemaining, setQuotaRemaining] = useState<number | null>(null);
+
+  // P1: Voice-first input mode
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  // P1: Voice preview before auto-send
+  const [previewText, setPreviewText] = useState('');
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // P2: Template command sheet
+  const [templateVisible, setTemplateVisible] = useState(false);
+  const [templateType, setTemplateType] = useState<'report' | 'inbound' | 'inventory'>('report');
+  // P4: Smart defaults for template
+  const [templateDefaults, setTemplateDefaults] = useState<{
+    product?: string;
+    quantity?: string;
+    material?: string;
+  }>({});
+
+  // Get user role for card grid and audio feedback
+  const getUserRole = useAuthStore((s) => s.getUserRole);
+  const userRole = getUserRole() || 'factory_super_admin';
+
+  // P1: Voice result handler — show preview then auto-send
+  const handleVoiceResult = (text: string) => {
+    setPreviewText(text);
+    previewTimer.current = setTimeout(() => {
+      handleSend(text);
+      setPreviewText('');
+    }, 1500);
+  };
+
+  // Cancel voice preview
+  const cancelVoicePreview = useCallback(() => {
+    if (previewTimer.current) {
+      clearTimeout(previewTimer.current);
+      previewTimer.current = null;
+    }
+    setPreviewText('');
+  }, []);
+
+  // Cleanup preview timer
+  useEffect(() => {
+    return () => {
+      if (previewTimer.current) clearTimeout(previewTimer.current);
+    };
+  }, []);
+
+  // P2: Handle card grid actions
+  const handleCardNavigate = useCallback((screen: string) => {
+    try {
+      const parent = navigation.getParent();
+      if (parent) {
+        parent.navigate('FAManagementTab', { screen });
+      } else {
+        navigation.dispatch(CommonActions.navigate(screen));
+      }
+    } catch {
+      // Fallback: send as intent
+      handleSend(screen);
+    }
+  }, [navigation]);
+
+  // P3: Open template sheet with smart defaults
+  const openTemplate = useCallback(async (type: 'report' | 'inbound' | 'inventory') => {
+    setTemplateType(type);
+    const defaults: typeof templateDefaults = {};
+    if (type === 'report') {
+      const lastProduct = await smartDefaults.getLastProduct();
+      if (lastProduct) defaults.product = lastProduct.value;
+      const lastQty = await smartDefaults.getLastQuantity();
+      if (lastQty) defaults.quantity = lastQty;
+    } else if (type === 'inbound') {
+      const lastMaterial = await smartDefaults.getLastMaterial();
+      if (lastMaterial) defaults.material = lastMaterial.value;
+    }
+    setTemplateDefaults(defaults);
+    setTemplateVisible(true);
+  }, []);
+
+  // P3: Handle template confirm
+  const handleTemplateConfirm = (composedText: string) => {
+    setTemplateVisible(false);
+    handleSend(composedText);
+  };
 
   // 实时检测当前输入的分析模式
   const detectedMode = useMemo(() => {
@@ -486,6 +573,19 @@ export default function AIChatScreen() {
           setStreamStatus(null);
           setIsLoading(false);
           scrollToBottom();
+
+          // P5: Audio feedback for WRITE operations
+          if (resultData) {
+            const category = (resultData as Record<string, unknown>).intentCategory as string | undefined;
+            const status = (resultData as Record<string, unknown>).status as string | undefined;
+            const isWrite = category === 'DATA_OPERATION' || category === 'WRITE';
+            if (isWrite && status === 'SUCCESS') {
+              const msg = (resultData as Record<string, unknown>).message as string || '操作成功';
+              feedbackSounds.onWriteSuccess(msg, userRole);
+            } else if (status === 'NEED_MORE_INFO') {
+              feedbackSounds.onNeedMoreInfo(userRole);
+            }
+          }
         },
 
         onError: (message) => {
@@ -503,6 +603,8 @@ export default function AIChatScreen() {
           );
           setStreamStatus(null);
           setIsLoading(false);
+          // P5: Error audio feedback
+          feedbackSounds.onError(userRole);
         },
       };
 
@@ -662,7 +764,7 @@ export default function AIChatScreen() {
     );
   };
 
-  // 渲染欢迎消息
+  // 渲染欢迎消息 — P2: 使用大卡片网格替代小文字快捷问题
   const renderWelcome = () => (
     <View style={styles.welcomeContainer}>
       {/* AI 欢迎消息 */}
@@ -682,31 +784,15 @@ export default function AIChatScreen() {
           <Text style={[styles.aiMessageText, { marginTop: 8 }]}>
             {t('aiChat.canHelp')}
           </Text>
-          <View style={styles.bulletList}>
-            <Text style={styles.bulletItem}>• {t('aiChat.help1')}</Text>
-            <Text style={styles.bulletItem}>• {t('aiChat.help2')}</Text>
-            <Text style={styles.bulletItem}>• {t('aiChat.help3')}</Text>
-            <Text style={styles.bulletItem}>• {t('aiChat.help4')}</Text>
-          </View>
         </View>
       </View>
 
-      {/* 快捷问题 */}
-      <View style={styles.quickQuestionsContainer}>
-        <Text style={styles.quickQuestionsTitle}>{t('aiChat.quickQuestions')}</Text>
-        <View style={styles.quickQuestionsGrid}>
-          {QUICK_QUESTIONS.map((question, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.quickQuestionButton}
-              onPress={() => handleSend(question)}
-              disabled={isLoading}
-            >
-              <Text style={styles.quickQuestionText}>{question}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+      {/* P2: 大卡片网格 — 按角色显示常用操作 */}
+      <QuickActionCardGrid
+        userRole={userRole}
+        onSendIntent={(text) => handleSend(text)}
+        onNavigate={handleCardNavigate}
+      />
     </View>
   );
 
@@ -737,10 +823,19 @@ export default function AIChatScreen() {
           {messages.length === 0 ? renderWelcome() : messages.map(renderMessage)}
         </ScrollView>
 
-        {/* 输入区域 */}
+        {/* 输入区域 — P1: 语音优先 */}
         <View style={styles.inputAreaContainer}>
+          {/* P1: 语音预览浮层 */}
+          {previewText !== '' && (
+            <View style={styles.voicePreview}>
+              <Text style={styles.voicePreviewText}>{previewText}</Text>
+              <TouchableOpacity onPress={cancelVoicePreview} style={styles.voicePreviewCancel}>
+                <Text style={styles.voicePreviewCancelText}>取消</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {/* 实时模式检测指示器 - 仅在有输入时显示 */}
-          {detectedMode && (
+          {detectedMode && showKeyboard && (
             <View style={styles.inputModeIndicator}>
               <AIModeIndicator mode={detectedMode.mode} size="small" />
               <Text style={styles.inputModeHint}>
@@ -748,47 +843,88 @@ export default function AIChatScreen() {
               </Text>
             </View>
           )}
-          <View style={styles.inputContainer}>
-            <VoiceMicButton
-              onTranscript={(text) => setInputText(text)}
-              size={36}
-              color="#666"
-              activeColor="#EF4444"
-              disabled={isLoading}
-              style={styles.addButton}
-            />
-            <View style={styles.inputWrapper}>
-              <TextInput
-                testID="ai-chat-input"
-                style={styles.input}
-                value={inputText}
-                onChangeText={setInputText}
-                placeholder={t('aiChat.inputPlaceholder')}
-                placeholderTextColor="#999"
-                multiline
-                maxLength={500}
-                editable={!isLoading}
+          {showKeyboard ? (
+            /* 展开态: 文本输入 + 小麦克风 + 发送 */
+            <View style={styles.inputContainer}>
+              <VoiceMicButton
+                onTranscript={handleVoiceResult}
+                size={48}
+                color="#666"
+                activeColor="#EF4444"
+                disabled={isLoading}
+                style={styles.addButton}
               />
-            </View>
-            <TouchableOpacity
-              testID="ai-chat-send-btn"
-              style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
-              onPress={() => handleSend()}
-              disabled={isLoading || !inputText.trim()}
-            >
-              <LinearGradient
-                colors={isLoading || !inputText.trim() ? ['#ccc', '#ccc'] : ['#667eea', '#764ba2']}
-                style={styles.sendButtonGradient}
-              >
-                <IconButton
-                  icon="send"
-                  size={18}
-                  iconColor="#fff"
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  testID="ai-chat-input"
+                  style={styles.input}
+                  value={inputText}
+                  onChangeText={setInputText}
+                  placeholder={t('aiChat.inputPlaceholder')}
+                  placeholderTextColor="#999"
+                  multiline
+                  maxLength={500}
+                  editable={!isLoading}
                 />
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+              </View>
+              <TouchableOpacity
+                testID="ai-chat-send-btn"
+                style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
+                onPress={() => handleSend()}
+                disabled={isLoading || !inputText.trim()}
+              >
+                <LinearGradient
+                  colors={isLoading || !inputText.trim() ? ['#ccc', '#ccc'] : ['#667eea', '#764ba2']}
+                  style={styles.sendButtonGradient}
+                >
+                  <IconButton
+                    icon="send"
+                    size={20}
+                    iconColor="#fff"
+                  />
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            /* P1: 默认态 — 大号居中麦克风 */
+            <View testID="voice-first-container" style={styles.voiceFirstContainer}>
+              <View style={styles.voiceFirstRow}>
+                <TouchableOpacity
+                  testID="keyboard-toggle-btn"
+                  style={styles.keyboardToggle}
+                  onPress={() => setShowKeyboard(true)}
+                >
+                  <MaterialCommunityIcons name="keyboard-outline" size={24} color="#999" />
+                </TouchableOpacity>
+                <View style={styles.largeMicWrapper}>
+                  <LinearGradient
+                    colors={['#667eea', '#764ba2']}
+                    style={styles.largeMicGradient}
+                  >
+                    <VoiceMicButton
+                      onTranscript={handleVoiceResult}
+                      size={72}
+                      color="#fff"
+                      activeColor="#fff"
+                      disabled={isLoading}
+                    />
+                  </LinearGradient>
+                  <Text style={styles.voiceHintText}>点一下说话</Text>
+                </View>
+                <View style={{ width: 48 }} />
+              </View>
+            </View>
+          )}
         </View>
+
+        {/* P3: 模板命令底部弹窗 */}
+        <TemplateCommandSheet
+          visible={templateVisible}
+          templateType={templateType}
+          onConfirm={handleTemplateConfirm}
+          onClose={() => setTemplateVisible(false)}
+          defaultValues={templateDefaults}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -941,11 +1077,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e8e8e8',
     borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    minHeight: 48,
+    justifyContent: 'center',
   },
   quickQuestionText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#333',
   },
   inputContainer: {
@@ -955,9 +1093,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
@@ -978,16 +1116,16 @@ const styles = StyleSheet.create({
     maxHeight: 80,
   },
   sendButton: {
-    width: 36,
-    height: 36,
+    width: 48,
+    height: 48,
   },
   sendButtonDisabled: {
     opacity: 0.5,
   },
   sendButtonGradient: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1032,12 +1170,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#667eea',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     minWidth: 80,
+    minHeight: 48,
+    justifyContent: 'center',
   },
   suggestedActionText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#667eea',
     fontWeight: '500',
     textAlign: 'center',
@@ -1047,5 +1187,65 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 2,
     textAlign: 'center',
+  },
+  // P1: Voice-first input styles
+  voiceFirstContainer: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  voiceFirstRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  largeMicWrapper: {
+    alignItems: 'center',
+  },
+  largeMicGradient: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  voiceHintText: {
+    fontSize: 13,
+    color: '#999',
+    marginTop: 6,
+  },
+  keyboardToggle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // P1: Voice preview
+  voicePreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f0f5ff',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  voicePreviewText: {
+    fontSize: 15,
+    color: '#333',
+    flex: 1,
+  },
+  voicePreviewCancel: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  voicePreviewCancelText: {
+    fontSize: 15,
+    color: '#EF4444',
+    fontWeight: '500',
   },
 });

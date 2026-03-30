@@ -1,0 +1,123 @@
+- generic [ref=e66]:
+  - generic [ref=e81]:
+    - generic [ref=e82]:
+      - generic [ref=e83]:
+        - generic [ref=e84]: 调度工作台
+        - generic [ref=e86] [cursor=pointer]: 󰂜
+      - generic [ref=e87]:
+        - generic [ref=e88]:
+          - generic [ref=e89]: 调度员 · 2026/3/12
+          - generic [ref=e90]: dispatcher1
+        - generic [ref=e92]: d
+    - generic [ref=e94] [cursor=pointer]:
+      - generic [ref=e95]:
+        - generic [ref=e97]: 󰚩
+        - generic [ref=e98]:
+          - generic [ref=e99]: AI 智能调度中心
+          - generic [ref=e100]: Monte Carlo + OR-Tools + LLM
+      - generic [ref=e101]:
+        - generic [ref=e104]: 80%
+        - generic [ref=e105]:
+          - generic [ref=e106]:
+            - generic [ref=e107]: 今日完成概率
+            - generic [ref=e108]: 80%
+          - generic [ref=e109]:
+            - generic [ref=e110]: 待排产批次
+            - generic [ref=e111]: 5 个
+          - generic [ref=e112]:
+            - generic [ref=e113]: 优化空间
+            - generic [ref=e114]: +12%
+      - generic [ref=e115]:
+        - generic [ref=e116]: 󰉁
+        - generic [ref=e117]: 一键 AI 智能排产
+    - generic [ref=e118]:
+      - generic [ref=e120]: 󰀦
+      - generic [ref=e121]:
+        - generic [ref=e122]: AI 风险预警
+        - generic [ref=e123]: 检测到 2 个批次完成概率低于70%，建议调整人员配置或交期
+      - generic [ref=e125] [cursor=pointer]: 查看
+    - generic [ref=e126]:
+      - generic [ref=e127]:
+        - generic [ref=e128]: 今日待处理
+        - generic [ref=e129]: 工作优先级排序
+      - generic [ref=e130]:
+        - generic [ref=e131] [cursor=pointer]:
+          - generic [ref=e132]: "3"
+          - generic [ref=e133]: 待分配任务
+        - generic [ref=e134] [cursor=pointer]:
+          - generic [ref=e135]: "4"
+          - generic [ref=e136]: 进行中任务
+        - generic [ref=e137] [cursor=pointer]:
+          - generic [ref=e138]: "3"
+          - generic [ref=e139]: 待审批事项
+    - generic [ref=e140]:
+      - generic [ref=e141]: 车间实时状态
+      - generic [ref=e143] [cursor=pointer]: 查看全部 >
+    - generic [ref=e145] [cursor=pointer]:
+      - generic [ref=e147]:
+        - generic [ref=e148]: 一号加工线
+        - generic [ref=e149]: 0/0人 · 0个批次
+      - generic [ref=e151]: 80%
+    - generic [ref=e152]:
+      - generic [ref=e153]:
+        - generic [ref=e154]: 人员配置
+        - generic [ref=e156] [cursor=pointer]: 调动人员 >
+      - generic [ref=e157]:
+        - generic [ref=e158]: 一号加工线
+        - generic [ref=e160]: 0/0
+      - generic [ref=e163]:
+        - generic [ref=e164]: 机动人员
+        - generic [ref=e165]:
+          - generic [ref=e166]: 4人
+          - generic [ref=e168] [cursor=pointer]: AI优化 →
+    - generic [ref=e169]:
+      - generic [ref=e170]: 待审批事项
+      - generic [ref=e172] [cursor=pointer]: 3项待处理 >
+    - generic [ref=e173]:
+      - generic [ref=e174] [cursor=pointer]:
+        - generic [ref=e175]:
+          - generic [ref=e176]:
+            - generic [ref=e177]: 󰃭
+            - generic [ref=e178]: 计划
+          - generic [ref=e180]: 待审批
+        - generic [ref=e181]: 新增生产计划申请
+        - generic [ref=e182]: 带鱼片100kg · 张主任提交
+      - generic [ref=e183] [cursor=pointer]:
+        - generic [ref=e184]:
+          - generic [ref=e185]:
+            - generic [ref=e186]: 󰀙
+            - generic [ref=e187]: 调动
+          - generic [ref=e189]: 待审批
+        - generic [ref=e190]: 人员调动申请
+        - generic [ref=e191]: 冷冻→切片 · 2人
+  - tablist [ref=e194]:
+    - tab "󰕮 󰕮 首页" [selected] [ref=e196] [cursor=pointer]:
+      - generic [ref=e197]:
+        - generic [ref=e199]: 󰕮
+        - generic [ref=e201]: 󰕮
+      - generic [ref=e202]: 首页
+    - tab "󱃔 󱃔 计划" [ref=e204] [cursor=pointer]:
+      - generic [ref=e205]:
+        - generic [ref=e207]: 󱃔
+        - generic [ref=e209]: 󱃔
+      - generic [ref=e210]: 计划
+    - tab "󰚩 󰚩 AI调度" [ref=e212] [cursor=pointer]:
+      - generic [ref=e213]:
+        - generic [ref=e215]: 󰚩
+        - generic [ref=e217]: 󰚩
+      - generic [ref=e218]: AI调度
+    - tab "󰺓 󰺓 智能分析" [ref=e220] [cursor=pointer]:
+      - generic [ref=e221]:
+        - generic [ref=e223]: 󰺓
+        - generic [ref=e225]: 󰺓
+      - generic [ref=e226]: 智能分析
+    - tab "󰡉 󰡉 人员" [ref=e228] [cursor=pointer]:
+      - generic [ref=e229]:
+        - generic [ref=e231]: 󰡉
+        - generic [ref=e233]: 󰡉
+      - generic [ref=e234]: 人员
+    - tab "󰀉 󰀉 我的" [ref=e236] [cursor=pointer]:
+      - generic [ref=e237]:
+        - generic [ref=e239]: 󰀉
+        - generic [ref=e241]: 󰀉
+      - generic [ref=e242]: 我的

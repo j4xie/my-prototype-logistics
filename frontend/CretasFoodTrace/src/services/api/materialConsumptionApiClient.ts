@@ -67,6 +67,57 @@ export interface ConsumptionStats {
   }>;
 }
 
+export interface MaterialConsumptionSummaryItem {
+  materialTypeName: string;
+  plannedQuantity: number;
+  actualQuantity: number;
+  variance: number;
+  achievementRate: number;
+}
+
+// 后端原始返回格式
+interface RawSummaryItem {
+  materialTypeId?: string;
+  materialTypeName: string;
+  plannedQty: number;
+  actualQty: number;
+  variancePercent?: number;
+  unitPrice?: number;
+  cost?: number;
+}
+
+interface RawBatchConsumptionSummary {
+  items: RawSummaryItem[];
+  totalPlannedCost: number;
+  totalActualCost: number;
+  overallAchievementRate: number;
+}
+
+export interface BatchConsumptionSummary {
+  overallAchievementRate: number;
+  totalPlannedQuantity: number;
+  totalActualQuantity: number;
+  materials: MaterialConsumptionSummaryItem[];
+}
+
+function transformSummary(raw: RawBatchConsumptionSummary): BatchConsumptionSummary {
+  const materials = (raw.items || []).map(item => ({
+    materialTypeName: item.materialTypeName,
+    plannedQuantity: item.plannedQty || 0,
+    actualQuantity: item.actualQty || 0,
+    variance: (item.actualQty || 0) - (item.plannedQty || 0),
+    achievementRate: item.plannedQty > 0 ? (item.actualQty / item.plannedQty) * 100 : 0,
+  }));
+  const totalPlanned = materials.reduce((sum, m) => sum + m.plannedQuantity, 0);
+  const totalActual = materials.reduce((sum, m) => sum + m.actualQuantity, 0);
+  return {
+    overallAchievementRate: raw.overallAchievementRate || 0,
+    totalPlannedQuantity: totalPlanned,
+    totalActualQuantity: totalActual,
+    materials,
+  };
+}
+
 class MaterialConsumptionApiClient {
   private getPath(factoryId?: string) {
     const currentFactoryId = getCurrentFactoryId(factoryId);
@@ -113,6 +164,15 @@ class MaterialConsumptionApiClient {
   // 7. 获取生产批次的消耗成本汇总
   async getBatchConsumptionCost(productionBatchId: string, factoryId?: string): Promise<ApiResponse<{ totalCost: number; totalQuantity: number }>> {
     return await apiClient.get(`${this.getPath(factoryId)}/batch/${productionBatchId}/cost`);
+  }
+
+  // 8. 获取生产批次的消耗汇总（BOM达成率）
+  async getBatchConsumptionSummary(batchId: string, factoryId?: string): Promise<ApiResponse<BatchConsumptionSummary>> {
+    const raw: ApiResponse<RawBatchConsumptionSummary> = await apiClient.get(`${this.getPath(factoryId)}/batch/${batchId}/summary`);
+    if (raw.success && raw.data) {
+      return { ...raw, data: transformSummary(raw.data) };
+    }
+    return { ...raw, data: { overallAchievementRate: 0, totalPlannedQuantity: 0, totalActualQuantity: 0, materials: [] } };
   }
 }
 

@@ -7,8 +7,9 @@
  * - 持久化用户配置
  * - 首次使用气泡引导
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Animated } from 'react-native';
+import { registerTutorialTarget } from '../../store/tutorialStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuickActionsStore, QuickAction } from '../../store/quickActionsStore';
@@ -19,6 +20,8 @@ interface Props {
   onActionPress: (action: QuickAction) => void;
   /** 气泡引导配置 */
   guides?: Record<string, string>; // { actionId: '说明文字' }
+  /** Tutorial spotlight: 映射 actionId → targetKey */
+  tutorialTargets?: Record<string, string>;
 }
 
 // 气泡提示组件
@@ -40,7 +43,9 @@ function GuideBubble({ text, onDismiss }: { text: string; onDismiss: () => void 
   );
 }
 
-export function QuickActionsGrid({ role, allActions, onActionPress, guides }: Props) {
+export function QuickActionsGrid({ role, allActions, onActionPress, guides, tutorialTargets }: Props) {
+  // Refs for individual button measurement (tutorial spotlight)
+  const btnRefs = useRef<Record<string, View | null>>({});
   const [editMode, setEditMode] = useState(false);
   const [guideShown, setGuideShown] = useState<Record<string, boolean>>({});
   const [activeGuide, setActiveGuide] = useState<string | null>(null);
@@ -120,7 +125,21 @@ export function QuickActionsGrid({ role, allActions, onActionPress, guides }: Pr
           const showGuide = activeGuide === action.id && !editMode;
 
           return (
-            <View key={action.id} style={styles.actionWrapper}>
+            <View
+              key={action.id}
+              style={styles.actionWrapper}
+              ref={(el) => { if (tutorialTargets?.[action.id]) btnRefs.current[action.id] = el; }}
+              onLayout={() => {
+                const tKey = tutorialTargets?.[action.id];
+                if (tKey) {
+                  setTimeout(() => {
+                    btnRefs.current[action.id]?.measureInWindow((x, y, w, h) => {
+                      if (w > 0 && h > 0) registerTutorialTarget(tKey, { x, y, width: w, height: h });
+                    });
+                  }, 150);
+                }
+              }}
+            >
               <TouchableOpacity
                 style={[styles.actionBtn, editMode && !visible && styles.actionBtnHidden]}
                 onPress={() => {

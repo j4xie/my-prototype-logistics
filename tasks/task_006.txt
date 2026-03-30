@@ -1,0 +1,11 @@
+# Task ID: 6
+# Title: 阶段1.5: 报工累计 API + 审批幂等规则
+# Status: done
+# Dependencies: 5
+# Priority: high
+# Description: 实现报工提交(含 processTaskId)、按任务查询报工、按任务汇总、按员工汇总、在岗人员查询。实现审批 API(approve/reject/batch-approve)，确保条件更新(WHERE approval_status='PENDING')、冲销机制(reversal)、高权限自动审批、SUPPLEMENTING 联动。
+# Details:
+参考方案文档第四节阶段1.5-1.6(约行355-415)。审批幂等：条件更新返回影响行数为0则409；已审批记录不可修改，只能冲销；批量审批全部成功或全部回滚。completedQuantity 同步机制见第二节(约行162-183)。
+
+# Test Strategy:
+审批幂等测试（重复审批返回409）；冲销记录正确反向更新 completedQuantity；批量审批事务性测试

@@ -1,0 +1,118 @@
+appId: com.cretas.foodtrace
+---
+# Test 96: P2+P1 Integration — Card Grid + Voice-First + Chat Lifecycle
+# Full flow: welcome cards visible → tap card → cards disappear →
+# AI responds → input area still works → back → fresh start
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# I-01: Navigate to AI Chat
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# I-02: Welcome state — card grid + voice-first input
+# ========================================
+- assertVisible:
+    id: "quick-action-card-grid"
+- assertVisible:
+    id: "voice-first-container"
+- assertVisible:
+    text: "\u70B9\u4E00\u4E0B\u8BF4\u8BDD"
+
+# Verify multiple cards visible
+- assertVisible:
+    text: "\u751F\u4EA7\u62A5\u5DE5"
+- assertVisible:
+    text: "\u539F\u6599\u5165\u5E93"
+- takeScreenshot: screenshots/96-welcome-state
+
+# ========================================
+# I-03: Tap "成本分析" card → sends intent
+# ========================================
+- swipe:
+    direction: UP
+    duration: 300
+- waitForAnimationToEnd
+- tapOn:
+    text: "\u6210\u672C\u5206\u6790"
+- waitForAnimationToEnd
+
+# ========================================
+# I-04: Cards should disappear, chat mode active
+# ========================================
+# Wait for AI to respond
+- extendedWaitUntil:
+    visible: ".*\u6210\u672C.*|.*\u5206\u6790.*|.*\u6267\u884C.*|.*\u8BC6\u522B.*"
+    timeout: 30000
+
+# Card grid should be gone (messages exist now)
+- assertNotVisible:
+    id: "quick-action-card-grid"
+- takeScreenshot: screenshots/96-chat-mode-active
+
+# ========================================
+# I-05: Input area should still work (keyboard mode after card tap)
+# ========================================
+# The input area should show keyboard or voice-first
+- assertVisible:
+    text: ".*\u70B9\u4E00\u4E0B\u8BF4\u8BDD.*|.*ai-chat-input.*"
+    optional: true
+- takeScreenshot: screenshots/96-input-after-chat
+
+# ========================================
+# I-06: Switch to keyboard and send second message
+# ========================================
+- tapOn:
+    id: "keyboard-toggle-btn"
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "profit margin"
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+
+# Wait for second response
+- extendedWaitUntil:
+    visible: ".*\u6AF4\u5229.*|.*\u5229\u6DA6.*|.*\u6267\u884C.*"
+    timeout: 30000
+- takeScreenshot: screenshots/96-second-message
+
+# ========================================
+# I-07: Go back and verify fresh state on re-entry
+# ========================================
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Should see welcome cards again (fresh session)
+- extendedWaitUntil:
+    visible: "\u751F\u4EA7\u62A5\u5DE5"
+    timeout: 10000
+- assertVisible:
+    id: "quick-action-card-grid"
+- assertVisible:
+    id: "voice-first-container"
+- takeScreenshot: screenshots/96-fresh-reentry

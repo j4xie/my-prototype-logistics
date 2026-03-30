@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList, Alert, RefreshControl } from 'react-native';
-import { Text, Appbar, Card, Chip, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
+import { TutorialOverlay } from '../../components/common/TutorialOverlay';
+import { TUTORIAL_MY_REPORTS, useTutorialTarget, useTutorial } from '../../store/tutorialStore';
+import { Text, Appbar, Card, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { workReportingApiClient } from '../../services/api/workReportingApiClient';
 import type { WorkReportResponse } from '../../types/workReporting';
@@ -16,6 +18,10 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 const TYPE_MAP: Record<string, { label: string; color: string }> = {
   PROGRESS: { label: '进度', color: '#1890ff' },
   HOURS: { label: '工时', color: '#7c3aed' },
+  PRODUCTION: { label: '产量', color: '#059669' },
+  NORMAL: { label: '普通', color: '#909399' },
+  PACKAGING: { label: '包装', color: '#0891b2' },
+  SUPPLEMENTAL: { label: '补报', color: '#e6a23c' },
 };
 
 type FilterValue = 'ALL' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
@@ -34,6 +40,13 @@ export default function MyWorkReportsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterValue>('ALL');
+
+  // Tutorial
+  const tgtFilter = useTutorialTarget('mwr-filter');
+  const tgtList = useTutorialTarget('mwr-list');
+  const tut = useTutorial(TUTORIAL_MY_REPORTS, () => {
+    tgtFilter.measure(); tgtList.measure();
+  });
 
   const loadReports = useCallback(async () => {
     try {
@@ -75,24 +88,17 @@ export default function MyWorkReportsScreen() {
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeader}>
-            <View style={styles.cardHeaderLeft}>
-              <Text variant="titleMedium" style={styles.dateText}>
-                {item.reportDate || '-'}
-              </Text>
-              <Chip
-                style={[styles.typeChip, { backgroundColor: typeInfo.color + '15' }]}
-                textStyle={{ color: typeInfo.color, fontSize: 11 }}
-                compact
-              >
-                {typeInfo.label}
-              </Chip>
+            <Text variant="titleMedium" style={styles.dateText}>
+              {item.reportDate || '-'}
+            </Text>
+            <View style={styles.chipRow}>
+              <View style={[styles.badge, { backgroundColor: typeInfo.color + '15' }]}>
+                <Text style={[styles.badgeText, { color: typeInfo.color }]}>{typeInfo.label}</Text>
+              </View>
+              <View style={[styles.badge, { backgroundColor: status.color + '20' }]}>
+                <Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text>
+              </View>
             </View>
-            <Chip
-              style={[styles.chip, { backgroundColor: status.color + '20' }]}
-              textStyle={{ color: status.color, fontSize: 12 }}
-            >
-              {status.label}
-            </Chip>
           </View>
 
           {item.processCategory ? (
@@ -171,7 +177,7 @@ export default function MyWorkReportsScreen() {
         <Appbar.Action icon="refresh" onPress={onRefresh} />
       </Appbar.Header>
 
-      <View style={styles.filterRow}>
+      <View ref={tgtFilter.ref} onLayout={tgtFilter.onLayout} style={styles.filterRow}>
         <SegmentedButtons
           value={filter}
           onValueChange={(v) => setFilter(v as FilterValue)}
@@ -183,6 +189,7 @@ export default function MyWorkReportsScreen() {
       {loading ? (
         <ActivityIndicator style={styles.loader} size="large" />
       ) : (
+        <View ref={tgtList.ref} onLayout={tgtList.onLayout} style={{ flex: 1 }} collapsable={false}>
         <FlatList
           data={reports}
           keyExtractor={item => String(item.id)}
@@ -191,7 +198,15 @@ export default function MyWorkReportsScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={<Text style={styles.empty}>暂无报工记录</Text>}
         />
+        </View>
       )}
+      <TutorialOverlay
+        visible={tut.visible}
+        steps={TUTORIAL_MY_REPORTS.steps}
+        currentStep={tut.step}
+        onNext={tut.onNext}
+        onSkip={tut.onSkip}
+      />
     </View>
   );
 }
@@ -204,11 +219,11 @@ const styles = StyleSheet.create({
   list: { padding: 16, paddingBottom: 32 },
   empty: { textAlign: 'center', color: '#999', marginTop: 40, fontSize: 14 },
   card: { marginBottom: 12, borderRadius: 12, backgroundColor: '#fff', elevation: 2 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 8 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 },
+  chipRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dateText: { fontWeight: '600', color: '#333' },
-  typeChip: { height: 24 },
-  chip: { height: 28 },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  badgeText: { fontSize: 12, fontWeight: '500' },
   cardRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
   label: { color: '#999', fontSize: 13 },
   value: { color: '#333', fontSize: 13 },

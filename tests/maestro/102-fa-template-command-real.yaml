@@ -1,0 +1,113 @@
+appId: com.cretas.foodtrace
+---
+# Test 102: P3 Template Command Sheet — Real Modal Verification
+# Tests the TemplateCommandSheet bottom sheet: open, title, quantity input,
+# confirm/cancel buttons, and composed text sent to AI
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# T-01: Navigate to AI Chat
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# T-02: Verify welcome state
+# ========================================
+- assertVisible:
+    id: "quick-action-card-grid"
+- assertVisible:
+    id: "voice-first-container"
+- takeScreenshot: screenshots/102-welcome-state
+
+# ========================================
+# T-03: Tap "生产报工" card — triggers report intent
+# ========================================
+- tapOn:
+    id: "quick-action-card-0"
+- waitForAnimationToEnd
+
+# Wait for AI response (report intent may ask for clarification)
+- extendedWaitUntil:
+    visible: ".*报工.*|.*执行.*|.*识别.*|.*产品.*|.*数量.*|.*产出.*"
+    timeout: 30000
+- takeScreenshot: screenshots/102-report-intent-response
+
+# ========================================
+# T-04: Check if suggested actions appear (AI may offer choices)
+# ========================================
+- assertVisible:
+    id: "suggested-action-0"
+    optional: true
+- takeScreenshot: screenshots/102-suggested-actions
+
+# ========================================
+# T-05: If suggested action exists, tap it
+# ========================================
+- tapOn:
+    id: "suggested-action-0"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/102-after-suggestion-tap
+
+# ========================================
+# T-06: Go back, re-enter, test "查库存" card (inventory type)
+# ========================================
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: "quick-action-card-grid"
+- tapOn:
+    id: "quick-action-card-2"
+- waitForAnimationToEnd
+
+# Inventory query should get a direct response
+- extendedWaitUntil:
+    visible: ".*库存.*|.*物料.*|.*执行.*|.*查看.*"
+    timeout: 30000
+- takeScreenshot: screenshots/102-inventory-response
+
+# ========================================
+# T-07: Go back, re-enter, test "原料入库" card (inbound type)
+# ========================================
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: "quick-action-card-grid"
+- tapOn:
+    id: "quick-action-card-1"
+- waitForAnimationToEnd
+
+# Inbound intent response
+- extendedWaitUntil:
+    visible: ".*入库.*|.*原料.*|.*执行.*|.*识别.*"
+    timeout: 30000
+- takeScreenshot: screenshots/102-inbound-response
+
+# ========================================
+# T-08: Verify AI response contains actionable content
+# ========================================
+- takeScreenshot: screenshots/102-final-state

@@ -27,7 +27,7 @@ async function bootstrap() {
   const ElementPlusIconsVue = await import('@element-plus/icons-vue');
   for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
     if (key !== 'default') {
-      app.component(key, component as any);
+      app.component(key, component as ReturnType<typeof import('vue')['defineComponent']>);
     }
   }
 

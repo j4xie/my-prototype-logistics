@@ -1,0 +1,11 @@
+# Task ID: 15
+# Title: 阶段2-引擎: StateMachine 版本治理 + 生产工作流定义
+# Status: done
+# Dependencies: 7, 14
+# Priority: medium
+# Description: 修改 state_machines 表：新增 publish_status(draft/published/archived)、version 字段；创建唯一当前生效版本的部分索引。实现事务化发布（锁版本+发布+归档）。为 PRODUCTION_WORKFLOW 创建示例工作流 JSON（含 SUPPLEMENTING 状态和 SpEL 白名单 guard）。
+# Details:
+参考方案文档第八节阶段2(约行750-920)。版本状态机 draft→published→archived。发布事务规则见约行870-885。guard 使用现有 registerGuardFunctions + 新增4个生产函数。
+
+# Test Strategy:
+版本发布事务测试；唯一 published 约束验证；guard 函数注册和执行验证

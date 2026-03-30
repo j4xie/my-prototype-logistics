@@ -43,6 +43,7 @@ CHUNK_CONFIG = {
     "additive": {"max_chars": 500, "overlap": 50, "split_pattern": r"\n\n"},
     "microbe": {"max_chars": 500, "overlap": 50, "split_pattern": r"\n\n"},
     "industry_report": {"max_chars": 1500, "overlap": 200, "split_pattern": r"\n\n"},
+    "operation_manual": {"max_chars": 1200, "overlap": 200, "split_pattern": r"\n(?=#{2,3}\s)"},
 }
 
 

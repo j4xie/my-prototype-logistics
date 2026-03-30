@@ -1,0 +1,84 @@
+appId: com.cretas.foodtrace
+---
+# Test 105: Suggested Action Buttons — Tap & Follow-up
+# Verifies: AI returns suggested actions → tap one → follow-up response
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# S-01: Navigate to AI Chat, switch to keyboard
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    id: "keyboard-toggle-btn"
+- waitForAnimationToEnd
+
+# ========================================
+# S-02: Send ambiguous query that triggers clarification
+# ========================================
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "help"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+
+# Wait for AI response
+- extendedWaitUntil:
+    visible: ".*help.*|.*帮助.*|.*执行.*|.*识别.*|.*可以.*"
+    timeout: 30000
+- takeScreenshot: screenshots/105-initial-response
+
+# ========================================
+# S-03: Check for suggested action buttons
+# ========================================
+- assertVisible:
+    id: "suggested-action-0"
+    optional: true
+- takeScreenshot: screenshots/105-suggested-actions
+
+# ========================================
+# S-04: If suggested action exists, tap it
+# ========================================
+- tapOn:
+    id: "suggested-action-0"
+    optional: true
+- waitForAnimationToEnd
+
+# Wait for follow-up response
+- extendedWaitUntil:
+    visible: ".*执行.*|.*识别.*|.*结果.*|.*成功.*|.*查看.*"
+    timeout: 30000
+    optional: true
+- takeScreenshot: screenshots/105-after-suggestion
+
+# ========================================
+# S-05: Send another query to test multi-turn
+# ========================================
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "status"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*status.*|.*状态.*|.*执行.*|.*识别.*"
+    timeout: 30000
+- takeScreenshot: screenshots/105-multi-turn

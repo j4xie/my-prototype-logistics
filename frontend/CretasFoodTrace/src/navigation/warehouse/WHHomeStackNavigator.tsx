@@ -15,6 +15,8 @@ import WHOutboundDetailScreen from "../../screens/warehouse/outbound/WHOutboundD
 import WHInboundDetailScreen from "../../screens/warehouse/inbound/WHInboundDetailScreen";
 import WHAlertHandleScreen from "../../screens/warehouse/shared/WHAlertHandleScreen";
 import WHTempMonitorScreen from "../../screens/warehouse/inventory/WHTempMonitorScreen";
+import TransferListScreen from "../../screens/factory-admin/inventory/TransferListScreen";
+import TransferDetailScreen from "../../screens/factory-admin/inventory/TransferDetailScreen";
 
 const Stack = createNativeStackNavigator<WHHomeStackParamList>();
 
@@ -54,6 +56,18 @@ export function WHHomeStackNavigator() {
         name="TempMonitor"
         component={WHTempMonitorScreen}
         options={{ title: "温控监测" }}
+      />
+
+      {/* 调拨（领料审批） */}
+      <Stack.Screen
+        name="TransferList"
+        component={TransferListScreen as any}
+        options={{ title: "领料调拨" }}
+      />
+      <Stack.Screen
+        name="TransferDetail"
+        component={TransferDetailScreen as any}
+        options={{ title: "调拨详情" }}
       />
     </Stack.Navigator>
   );

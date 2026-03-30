@@ -1,0 +1,208 @@
+appId: com.cretas.foodtrace
+
+---
+
+# Test 82: BOM Achievement Card in Batch Detail
+
+# Verifies BOM achievement card visibility in batch detail consumption tab
+
+# Covers: bom-achievement-card, bom-achievement-rate, planned/actual quantities
+
+# NOTE: Uses WS role for reliable batch list access via 批次 tab
+
+
+
+- launchApp:
+
+    clearState: true
+
+- waitForAnimationToEnd
+
+
+
+# Login as workshop supervisor (has batch list via 批次 tab)
+
+- runFlow: flows/login-ws.yaml
+
+- extendedWaitUntil:
+
+    visible: "Start Task"
+
+    timeout: 15000
+
+
+
+# ========================================
+
+# M-01: Navigate to Batches tab (WS tab: 批次)
+
+# ========================================
+
+- tapOn:
+
+    text: "\u6279\u6B21"
+
+- waitForAnimationToEnd
+
+
+
+- extendedWaitUntil:
+
+    visible: ".*\u6279\u6B21.*|.*Batch.*"
+
+    timeout: 15000
+
+- takeScreenshot: screenshots/82-batch-list
+
+
+
+# ========================================
+
+# M-02: Open first batch detail
+
+# ========================================
+
+- tapOn:
+
+    text: ".*PB-.*|.*MB-.*|.*BATCH.*"
+
+    index: 0
+
+    optional: true
+
+
+
+- extendedWaitUntil:
+
+    visible: "\u6279\u6B21\u8BE6\u60C5"
+
+    timeout: 15000
+
+- takeScreenshot: screenshots/82-batch-detail-info
+
+
+
+# ========================================
+
+# M-03: Switch to Consumption tab
+
+# ========================================
+
+- tapOn:
+
+    text: "\u6D88\u8017\u8BB0\u5F55"
+
+
+
+- waitForAnimationToEnd
+
+
+
+# Wait for consumption content to load
+
+- extendedWaitUntil:
+
+    visible: ".*\u6D88\u8017.*|.*BOM.*|.*\u6682\u65E0\u6D88\u8017.*"
+
+    timeout: 15000
+
+
+
+# ========================================
+
+# M-04: Verify BOM Achievement Card
+
+# ========================================
+
+# Assert BOM achievement card testID
+
+- assertVisible:
+
+    id: "bom-achievement-card"
+
+    optional: true
+
+
+
+# Assert achievement rate badge
+
+- assertVisible:
+
+    id: "bom-achievement-rate"
+
+    optional: true
+
+
+
+# Assert "达成率" text visible
+
+- scrollUntilVisible:
+
+    element:
+
+      text: ".*\u8FBE\u6210\u7387.*|.*Achievement.*"
+
+    direction: DOWN
+
+    timeout: 10000
+
+
+
+- takeScreenshot: screenshots/82-bom-achievement-card
+
+
+
+# ========================================
+
+# M-05: Verify planned and actual quantities
+
+# ========================================
+
+- assertVisible:
+
+    text: ".*\u8BA1\u5212.*"
+
+    optional: true
+
+
+
+- assertVisible:
+
+    text: ".*\u5B9E\u9645.*"
+
+    optional: true
+
+
+
+- takeScreenshot: screenshots/82-bom-planned-actual
+
+
+
+# ========================================
+
+# M-06: Scroll to per-material breakdown
+
+# ========================================
+
+- swipe:
+
+    direction: UP
+
+    duration: 500
+
+- waitForAnimationToEnd
+
+
+
+# Look for material detail section
+
+- assertVisible:
+
+    text: ".*\u7269\u6599\u660E\u7EC6.*|.*\u5408\u8BA1.*"
+
+    optional: true
+
+
+
+- takeScreenshot: screenshots/82-bom-materials-detail
+

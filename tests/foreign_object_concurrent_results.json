@@ -1,0 +1,22 @@
+{
+  "strategy_a": {
+    "total_time": 31.37813663482666,
+    "l1_time": 31.37213659286499,
+    "l2_time": 0.0,
+    "l1_calls": 6,
+    "l2_calls": 0,
+    "suspicious_images": [],
+    "detected_images": []
+  },
+  "strategy_b": {
+    "total_time": 77.38247442245483,
+    "total_calls": 24,
+    "detected_images": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "serial_estimate": 309.52989768981934
+}

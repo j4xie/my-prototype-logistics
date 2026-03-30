@@ -1,0 +1,83 @@
+appId: com.cretas.foodtrace
+---
+# Test 107: FAHome Pull-to-Refresh + Error Recovery
+# Tests: pull-down refresh, notification badge, welcome greeting
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# R-01: Verify welcome greeting matches time of day
+# ========================================
+- assertVisible:
+    id: "fa-home-root"
+# Greeting should contain username
+- assertVisible:
+    text: ".*factory_admin1.*"
+- takeScreenshot: screenshots/107-greeting
+
+# ========================================
+# R-02: Verify date text is visible
+# ========================================
+- assertVisible:
+    text: ".*3/19.*|.*Mar.*|.*\\d+月.*"
+    optional: true
+- takeScreenshot: screenshots/107-date
+
+# ========================================
+# R-03: Pull-to-refresh
+# ========================================
+- swipe:
+    direction: DOWN
+    duration: 800
+    startPercentage: 30
+    endPercentage: 80
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/107-refreshing
+
+# Wait for data to reload
+- extendedWaitUntil:
+    visible:
+      id: "fa-home-ai-card"
+    timeout: 15000
+- takeScreenshot: screenshots/107-after-refresh
+
+# ========================================
+# R-04: Verify AI insight card still works after refresh
+# ========================================
+- assertVisible:
+    id: "fa-home-ai-card"
+- assertVisible:
+    id: "fa-home-ai-title"
+- takeScreenshot: screenshots/107-ai-card-post-refresh
+
+# ========================================
+# R-05: Verify stat cards reload
+# ========================================
+- scrollUntilVisible:
+    element:
+      id: "fa-home-stats-title"
+    direction: DOWN
+    timeout: 10000
+- takeScreenshot: screenshots/107-stats-post-refresh
+
+# ========================================
+# R-06: Navigate to AI tab and back — home state preserved
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/107-ai-tab
+
+- tapOn:
+    text: ".*首页.*|.*Home.*"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "fa-home-root"
+- takeScreenshot: screenshots/107-home-preserved

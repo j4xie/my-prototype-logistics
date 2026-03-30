@@ -198,6 +198,13 @@ export function BatchDetailScreen() {
       {/* 底部操作栏 */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: '#0891b2' }]}
+          onPress={() => navigation.navigate('MaterialConsumption', { batchId: batch.id })}
+        >
+          <Icon source="package-down" size={20} color="#fff" />
+          <Text style={styles.actionBtnText}>原料领料</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => navigation.navigate('BatchStage', { batchId: batch.id, stageType: batch.currentStage, stageName: batch.currentStage })}
         >

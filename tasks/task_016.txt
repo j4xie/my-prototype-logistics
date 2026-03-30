@@ -1,0 +1,11 @@
+# Task ID: 16
+# Title: 阶段2-引擎: WorkflowNodeRegistry + GlobalConfigRegistry
+# Status: done
+# Dependencies: 15
+# Priority: medium
+# Description: 创建 WorkflowNodeDescriptor 接口和 WorkflowNodeRegistry（Spring DI 自动发现）。实现 GlobalConfigRegistry。创建首批节点 Descriptor（计划创建、签到签退、累加报工、审批、质检、完工标记）。暴露 API: GET /api/workflow/node-schemas。
+# Details:
+参考方案文档第九节 Node Schema Registry(约行920-1000)。复用 ToolExecutor + ToolRegistry 模式。每个节点有 configSchema(JSON Schema)、allowedNextNodes、defaultConfig。
+
+# Test Strategy:
+API 返回所有注册节点 Schema；新增 Descriptor 类后自动出现在 API 结果中

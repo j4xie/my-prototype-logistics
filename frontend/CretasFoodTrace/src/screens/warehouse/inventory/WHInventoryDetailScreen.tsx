@@ -98,6 +98,7 @@ export function WHInventoryDetailScreen() {
     storageTemp: string;
     shelfLife: string;
     unitPrice: number;
+    movingAvgPrice: number | null;
     totalValue: number;
     batches: BatchItem[];
     locationDistribution: { name: string; quantity: number }[];
@@ -125,6 +126,7 @@ export function WHInventoryDetailScreen() {
         const statusInfo = getInventoryStatus(totalQty, safetyStock);
         const storageInfo = getStorageInfo(firstBatch.storageType);
         const unitPrice = firstBatch.unitPrice ?? 30;
+        const movingAvgPrice = firstBatch.movingAvgPrice ?? null;
 
         // 构建批次列表
         const batchItems: BatchItem[] = batchList.map((b, idx) => ({
@@ -159,6 +161,7 @@ export function WHInventoryDetailScreen() {
           storageTemp: storageInfo.temp,
           shelfLife: storageInfo.shelfLife,
           unitPrice,
+          movingAvgPrice,
           totalValue: totalQty * unitPrice,
           batches: batchItems,
           locationDistribution,
@@ -318,6 +321,14 @@ export function WHInventoryDetailScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('inventoryDetail.unitPrice')}</Text>
             <Text style={styles.infoValue}>¥{inventoryDetail.unitPrice}/kg</Text>
+          </View>
+          <View style={styles.infoRow} testID="moving-avg-price">
+            <Text style={styles.infoLabel}>移动均价</Text>
+            <Text style={styles.infoValue}>
+              {inventoryDetail.movingAvgPrice != null
+                ? `¥${inventoryDetail.movingAvgPrice.toFixed(2)}/kg`
+                : '暂无数据'}
+            </Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('inventoryDetail.totalValue')}</Text>

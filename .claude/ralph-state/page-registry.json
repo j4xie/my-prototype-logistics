@@ -1,0 +1,848 @@
+{
+  "version": 2,
+  "description": "Web Admin 全部 75 个可测试叶子页面注册表（含交互提示）",
+  "baseUrl": "http://139.196.165.140:8086",
+  "pages": [
+    {
+      "path": "/dashboard",
+      "name": "Dashboard",
+      "module": "dashboard",
+      "interactionHints": [
+        "KPI 卡片数据加载",
+        "图表区域渲染（柱状/折线/饼图）",
+        "日期范围切换",
+        "点击卡片跳转详情页"
+      ]
+    },
+
+    {
+      "path": "/production/batches",
+      "name": "生产批次",
+      "module": "production",
+      "interactionHints": [
+        "搜索筛选（批次号/产品/状态）",
+        "分页翻页",
+        "点击行查看批次详情",
+        "状态筛选下拉（进行中/已完成/已取消）"
+      ]
+    },
+    {
+      "path": "/production/plans",
+      "name": "生产计划",
+      "module": "production",
+      "interactionHints": [
+        "搜索筛选",
+        "分页翻页",
+        "新增计划弹窗",
+        "日期范围筛选",
+        "状态切换（待审批/进行中/已完成）"
+      ]
+    },
+    {
+      "path": "/production/bom",
+      "name": "BOM 配方",
+      "module": "production",
+      "interactionHints": [
+        "搜索筛选（产品名/配方号）",
+        "分页翻页",
+        "展开 BOM 树形结构",
+        "新增/编辑配方弹窗",
+        "配方版本切换"
+      ]
+    },
+
+    {
+      "path": "/warehouse/materials",
+      "name": "原材料管理",
+      "module": "warehouse",
+      "interactionHints": [
+        "搜索筛选（材料名/批次号/类型）",
+        "分页翻页",
+        "新增/编辑弹窗",
+        "库存预警颜色标识",
+        "导出功能"
+      ]
+    },
+    {
+      "path": "/warehouse/shipments",
+      "name": "出货管理",
+      "module": "warehouse",
+      "interactionHints": [
+        "搜索筛选（出货单号/客户/状态）",
+        "分页翻页",
+        "新建出货单弹窗",
+        "状态流转操作（待出库→已出库→已签收）"
+      ]
+    },
+    {
+      "path": "/warehouse/inventory",
+      "name": "库存管理",
+      "module": "warehouse",
+      "interactionHints": [
+        "搜索筛选（仓库/物料/批次）",
+        "分页翻页",
+        "库存盘点操作",
+        "低库存预警高亮",
+        "导入/导出功能"
+      ]
+    },
+
+    {
+      "path": "/transfer/list",
+      "name": "调拨列表",
+      "module": "transfer",
+      "interactionHints": [
+        "搜索筛选（调拨单号/源仓库/目标仓库）",
+        "分页翻页",
+        "新建调拨弹窗",
+        "点击行查看调拨详情",
+        "状态筛选（待审批/运输中/已完成）"
+      ]
+    },
+
+    {
+      "path": "/quality/inspections",
+      "name": "质检记录",
+      "module": "quality",
+      "interactionHints": [
+        "搜索筛选（批次号/质检员/结果）",
+        "分页翻页",
+        "新增质检记录弹窗",
+        "质检结果筛选（合格/不合格/待检）",
+        "点击查看质检详情和图片"
+      ]
+    },
+    {
+      "path": "/quality/disposals",
+      "name": "处置记录",
+      "module": "quality",
+      "interactionHints": [
+        "搜索筛选",
+        "分页翻页",
+        "处置方式筛选（退货/销毁/降级）",
+        "新增处置记录弹窗"
+      ]
+    },
+    {
+      "path": "/quality/standards",
+      "name": "质检标准",
+      "module": "quality",
+      "interactionHints": [
+        "搜索筛选（标准名/适用产品）",
+        "分页翻页",
+        "新增/编辑标准弹窗",
+        "指标项列表展开"
+      ]
+    },
+
+    {
+      "path": "/procurement/orders",
+      "name": "采购订单",
+      "module": "procurement",
+      "interactionHints": [
+        "搜索筛选（订单号/供应商/状态）",
+        "分页翻页",
+        "新建采购订单弹窗",
+        "点击行查看订单详情",
+        "状态流转（草稿→已下单→已收货→已完成）"
+      ]
+    },
+    {
+      "path": "/procurement/suppliers",
+      "name": "供应商管理",
+      "module": "procurement",
+      "interactionHints": [
+        "搜索筛选（供应商名/联系人/评级）",
+        "分页翻页",
+        "新增/编辑供应商弹窗",
+        "供应商评级标识"
+      ]
+    },
+    {
+      "path": "/procurement/price-lists",
+      "name": "价格清单",
+      "module": "procurement",
+      "interactionHints": [
+        "搜索筛选（物料名/供应商）",
+        "分页翻页",
+        "新增/编辑价格弹窗",
+        "价格历史查看"
+      ]
+    },
+
+    {
+      "path": "/sales/orders",
+      "name": "销售订单",
+      "module": "sales",
+      "interactionHints": [
+        "搜索筛选（订单号/客户/日期范围）",
+        "分页翻页",
+        "新建订单弹窗",
+        "点击行查看订单详情",
+        "状态流转操作"
+      ]
+    },
+    {
+      "path": "/sales/finished-goods",
+      "name": "成品管理",
+      "module": "sales",
+      "interactionHints": [
+        "搜索筛选（成品名/批次/仓库）",
+        "分页翻页",
+        "库存数量展示",
+        "导出功能"
+      ]
+    },
+    {
+      "path": "/sales/customers",
+      "name": "客户管理",
+      "module": "sales",
+      "interactionHints": [
+        "搜索筛选（客户名/联系方式/地区）",
+        "分页翻页",
+        "新增/编辑客户弹窗",
+        "客户等级标识"
+      ]
+    },
+    {
+      "path": "/sales/shipments",
+      "name": "销售出货",
+      "module": "sales",
+      "interactionHints": [
+        "搜索筛选（出货单号/客户/状态）",
+        "分页翻页",
+        "新建出货弹窗",
+        "物流状态追踪"
+      ]
+    },
+
+    {
+      "path": "/hr/employees",
+      "name": "员工管理",
+      "module": "hr",
+      "interactionHints": [
+        "搜索筛选（姓名/工号/部门/状态）",
+        "分页翻页",
+        "新增/编辑员工弹窗",
+        "部门筛选下拉",
+        "批量导入功能"
+      ]
+    },
+    {
+      "path": "/hr/attendance",
+      "name": "考勤管理",
+      "module": "hr",
+      "interactionHints": [
+        "日期范围筛选",
+        "员工筛选",
+        "考勤状态统计卡片",
+        "分页翻页",
+        "导出考勤报表"
+      ]
+    },
+    {
+      "path": "/hr/whitelist",
+      "name": "白名单",
+      "module": "hr",
+      "interactionHints": [
+        "搜索筛选",
+        "分页翻页",
+        "新增/删除白名单弹窗",
+        "批量操作"
+      ]
+    },
+    {
+      "path": "/hr/departments",
+      "name": "部门管理",
+      "module": "hr",
+      "interactionHints": [
+        "部门树形结构展开/折叠",
+        "新增/编辑部门弹窗",
+        "拖拽排序（如有）",
+        "部门人数统计"
+      ]
+    },
+
+    {
+      "path": "/equipment/list",
+      "name": "设备列表",
+      "module": "equipment",
+      "interactionHints": [
+        "搜索筛选（设备名/编号/类型/状态）",
+        "分页翻页",
+        "新增/编辑设备弹窗",
+        "设备状态颜色标识（在线/离线/故障）",
+        "点击查看设备详情"
+      ]
+    },
+    {
+      "path": "/equipment/maintenance",
+      "name": "维护记录",
+      "module": "equipment",
+      "interactionHints": [
+        "搜索筛选（设备/维护类型/日期）",
+        "分页翻页",
+        "新增维护记录弹窗",
+        "维护类型筛选（保养/维修/巡检）"
+      ]
+    },
+    {
+      "path": "/equipment/alerts",
+      "name": "设备告警",
+      "module": "equipment",
+      "interactionHints": [
+        "告警级别筛选（紧急/重要/一般）",
+        "分页翻页",
+        "告警详情展开",
+        "标记已处理操作",
+        "告警时间范围筛选"
+      ]
+    },
+
+    {
+      "path": "/finance/costs",
+      "name": "成本管理",
+      "module": "finance",
+      "interactionHints": [
+        "搜索筛选（成本类型/部门/日期）",
+        "分页翻页",
+        "新增成本记录弹窗",
+        "成本汇总统计卡片",
+        "导出功能"
+      ]
+    },
+    {
+      "path": "/finance/reports",
+      "name": "财务报表",
+      "module": "finance",
+      "interactionHints": [
+        "报表类型切换（利润表/资产负债表/现金流）",
+        "日期范围筛选",
+        "图表/表格视图切换",
+        "导出 PDF/Excel"
+      ]
+    },
+    {
+      "path": "/finance/ar-ap",
+      "name": "应收应付",
+      "module": "finance",
+      "interactionHints": [
+        "Tab 切换（应收/应付）",
+        "搜索筛选（客户/供应商/金额/状态）",
+        "分页翻页",
+        "账龄分析展示",
+        "核销操作弹窗"
+      ]
+    },
+
+    {
+      "path": "/system/users",
+      "name": "用户管理",
+      "module": "system",
+      "interactionHints": [
+        "搜索筛选（用户名/角色/状态）",
+        "分页翻页",
+        "新增/编辑用户弹窗",
+        "角色分配下拉",
+        "启用/禁用切换"
+      ]
+    },
+    {
+      "path": "/system/roles",
+      "name": "角色管理",
+      "module": "system",
+      "interactionHints": [
+        "搜索筛选",
+        "分页翻页",
+        "新增/编辑角色弹窗",
+        "权限树形勾选",
+        "角色用户数统计"
+      ]
+    },
+    {
+      "path": "/system/logs",
+      "name": "操作日志",
+      "module": "system",
+      "interactionHints": [
+        "日期范围筛选",
+        "操作类型筛选",
+        "用户筛选",
+        "分页翻页",
+        "日志详情展开"
+      ]
+    },
+    {
+      "path": "/system/settings",
+      "name": "系统设置",
+      "module": "system",
+      "interactionHints": [
+        "设置项分组 Tab 或折叠面板",
+        "表单输入与保存",
+        "开关切换项",
+        "保存成功提示"
+      ]
+    },
+    {
+      "path": "/system/ai-intents",
+      "name": "AI 意图配置",
+      "module": "system",
+      "interactionHints": [
+        "搜索筛选（意图名/意图码/分类）",
+        "分页翻页",
+        "新增/编辑意图弹窗",
+        "关键词标签编辑",
+        "Tool 绑定下拉选择",
+        "启用/禁用切换"
+      ]
+    },
+    {
+      "path": "/system/products",
+      "name": "产品管理",
+      "module": "system",
+      "interactionHints": [
+        "搜索筛选（产品名/编码/分类）",
+        "分页翻页",
+        "新增/编辑产品弹窗",
+        "产品分类树形筛选"
+      ]
+    },
+    {
+      "path": "/system/features",
+      "name": "功能管理",
+      "module": "system",
+      "interactionHints": [
+        "功能列表展示",
+        "启用/禁用切换",
+        "功能分组筛选"
+      ]
+    },
+    {
+      "path": "/system/pos",
+      "name": "POS 配置",
+      "module": "system",
+      "interactionHints": [
+        "搜索筛选（POS 名/编号）",
+        "分页翻页",
+        "新增/编辑 POS 弹窗",
+        "POS 状态切换"
+      ]
+    },
+    {
+      "path": "/system/smartbi-config",
+      "name": "SmartBI 配置",
+      "module": "system",
+      "interactionHints": [
+        "配置项分组展示",
+        "数据源/图表模板子菜单导航"
+      ]
+    },
+    {
+      "path": "/system/smartbi-config/data-sources",
+      "name": "数据源管理",
+      "module": "system",
+      "interactionHints": [
+        "搜索筛选",
+        "分页翻页",
+        "新增/编辑数据源弹窗",
+        "连接测试按钮",
+        "状态指示（已连接/断开）"
+      ]
+    },
+    {
+      "path": "/system/smartbi-config/chart-templates",
+      "name": "图表模板",
+      "module": "system",
+      "interactionHints": [
+        "模板列表/卡片视图切换",
+        "搜索筛选",
+        "预览图表弹窗",
+        "新增/编辑模板弹窗"
+      ]
+    },
+
+    {
+      "path": "/analytics/overview",
+      "name": "分析概览",
+      "module": "analytics",
+      "interactionHints": [
+        "KPI 卡片加载",
+        "多图表区域渲染",
+        "日期范围筛选",
+        "图表联动交互（点击柱状图筛选表格）"
+      ]
+    },
+    {
+      "path": "/analytics/trends",
+      "name": "趋势分析",
+      "module": "analytics",
+      "interactionHints": [
+        "时间维度切换（日/周/月/季/年）",
+        "指标选择下拉",
+        "图表类型切换（折线/面积/柱状）",
+        "数据对比叠加"
+      ]
+    },
+    {
+      "path": "/analytics/ai-reports",
+      "name": "AI 报表",
+      "module": "analytics",
+      "interactionHints": [
+        "报表列表加载",
+        "点击查看报表详情",
+        "AI 生成按钮触发",
+        "报表导出"
+      ]
+    },
+    {
+      "path": "/analytics/kpi",
+      "name": "KPI 看板",
+      "module": "analytics",
+      "interactionHints": [
+        "KPI 卡片网格布局",
+        "目标值 vs 实际值对比",
+        "趋势箭头/颜色指示",
+        "点击 KPI 展开详情图表"
+      ]
+    },
+    {
+      "path": "/analytics/production-report",
+      "name": "生产报表",
+      "module": "analytics",
+      "interactionHints": [
+        "日期范围筛选",
+        "产线/车间筛选",
+        "报表类型切换",
+        "图表与表格数据联动",
+        "导出功能"
+      ]
+    },
+    {
+      "path": "/analytics/alert-dashboard",
+      "name": "告警看板",
+      "module": "analytics",
+      "interactionHints": [
+        "告警级别分布图",
+        "实时告警列表刷新",
+        "告警趋势折线图",
+        "点击告警跳转详情",
+        "告警确认/处理操作"
+      ]
+    },
+
+    {
+      "path": "/calibration/list",
+      "name": "校准列表",
+      "module": "calibration",
+      "interactionHints": [
+        "搜索筛选（设备/校准状态/日期）",
+        "分页翻页",
+        "校准详情弹窗",
+        "校准到期提醒标识"
+      ]
+    },
+
+    {
+      "path": "/scheduling/overview",
+      "name": "排程概览",
+      "module": "scheduling",
+      "interactionHints": [
+        "甘特图/日历视图切换",
+        "产线筛选",
+        "日期范围拖拽",
+        "排程冲突高亮",
+        "点击排程块查看详情"
+      ]
+    },
+    {
+      "path": "/scheduling/plans",
+      "name": "排程计划",
+      "module": "scheduling",
+      "interactionHints": [
+        "搜索筛选（计划名/产线/状态）",
+        "分页翻页",
+        "新建排程计划",
+        "状态流转（草稿→已发布→执行中→已完成）"
+      ]
+    },
+    {
+      "path": "/scheduling/realtime",
+      "name": "实时排程",
+      "module": "scheduling",
+      "interactionHints": [
+        "实时数据自动刷新",
+        "产线状态卡片",
+        "当前任务进度条",
+        "紧急调整操作"
+      ]
+    },
+    {
+      "path": "/scheduling/workers",
+      "name": "人员排程",
+      "module": "scheduling",
+      "interactionHints": [
+        "员工日历/排班表视图",
+        "拖拽分配班次",
+        "按部门/技能筛选员工",
+        "班次模板选择"
+      ]
+    },
+    {
+      "path": "/scheduling/alerts",
+      "name": "排程告警",
+      "module": "scheduling",
+      "interactionHints": [
+        "告警列表加载",
+        "告警类型筛选（延期/冲突/资源不足）",
+        "分页翻页",
+        "标记已处理"
+      ]
+    },
+
+    {
+      "path": "/restaurant/requisitions",
+      "name": "领料申请",
+      "module": "restaurant",
+      "interactionHints": [
+        "搜索筛选（申请单号/门店/状态）",
+        "分页翻页",
+        "新建领料申请弹窗",
+        "审批操作（通过/驳回）"
+      ]
+    },
+    {
+      "path": "/restaurant/wastage",
+      "name": "损耗记录",
+      "module": "restaurant",
+      "interactionHints": [
+        "搜索筛选（门店/物料/日期）",
+        "分页翻页",
+        "新增损耗记录弹窗",
+        "损耗原因分类筛选",
+        "损耗统计汇总卡片"
+      ]
+    },
+    {
+      "path": "/restaurant/recipes",
+      "name": "菜谱管理",
+      "module": "restaurant",
+      "interactionHints": [
+        "搜索筛选（菜品名/分类）",
+        "分页翻页或卡片展示",
+        "新增/编辑菜谱弹窗",
+        "配料清单展开",
+        "成本自动计算"
+      ]
+    },
+    {
+      "path": "/restaurant/stocktaking",
+      "name": "盘点管理",
+      "module": "restaurant",
+      "interactionHints": [
+        "搜索筛选（门店/盘点日期/状态）",
+        "分页翻页",
+        "新建盘点单",
+        "盈亏差异高亮",
+        "盘点确认操作"
+      ]
+    },
+    {
+      "path": "/restaurant/analytics",
+      "name": "餐饮分析",
+      "module": "restaurant",
+      "interactionHints": [
+        "概览 KPI 卡片（营收/客单价/翻台率）",
+        "多图表区域渲染",
+        "日期范围筛选",
+        "门店对比维度切换"
+      ]
+    },
+    {
+      "path": "/restaurant/analytics/menu",
+      "name": "菜品分析",
+      "module": "restaurant",
+      "interactionHints": [
+        "菜品排行榜表格",
+        "销量/毛利/点击率维度切换",
+        "分类筛选（热菜/凉菜/饮品）",
+        "图表与表格联动"
+      ]
+    },
+    {
+      "path": "/restaurant/analytics/stores",
+      "name": "门店分析",
+      "module": "restaurant",
+      "interactionHints": [
+        "门店对比表格/图表",
+        "指标选择（营收/客流/翻台率）",
+        "日期范围筛选",
+        "门店排名柱状图"
+      ]
+    },
+    {
+      "path": "/restaurant/analytics/dianping",
+      "name": "点评分析",
+      "module": "restaurant",
+      "interactionHints": [
+        "评分趋势折线图",
+        "好评/差评分布",
+        "关键词词云展示",
+        "评论列表分页"
+      ]
+    },
+
+    {
+      "path": "/prod-analytics/production",
+      "name": "产线分析",
+      "module": "prod-analytics",
+      "interactionHints": [
+        "产线选择下拉",
+        "OEE/良品率/产量 KPI 卡片",
+        "趋势图（日/周/月）",
+        "产线对比柱状图"
+      ]
+    },
+    {
+      "path": "/prod-analytics/efficiency",
+      "name": "效率分析",
+      "module": "prod-analytics",
+      "interactionHints": [
+        "效率指标卡片",
+        "时间维度切换",
+        "员工/班组效率对比",
+        "效率趋势折线图"
+      ]
+    },
+
+    {
+      "path": "/smartbi/dashboard",
+      "name": "SmartBI 仪表盘",
+      "module": "smartbi",
+      "interactionHints": [
+        "已上传数据集列表",
+        "点击数据集进入分析",
+        "仪表盘自动生成（3-5 图表/sheet）",
+        "KPI 卡片区域",
+        "AI 分析摘要展示",
+        "图表全屏/缩放"
+      ]
+    },
+    {
+      "path": "/smartbi/finance",
+      "name": "SmartBI 财务",
+      "module": "smartbi",
+      "interactionHints": [
+        "5 个 Tab 切换（利润/成本/应收/应付/预算）",
+        "日期范围筛选器",
+        "图表类型切换（柱状/折线/饼图）",
+        "KPI 卡片联动",
+        "数据钻取（点击柱状图展开明细）"
+      ]
+    },
+    {
+      "path": "/smartbi/sales",
+      "name": "SmartBI 销售",
+      "module": "smartbi",
+      "interactionHints": [
+        "销售趋势折线图",
+        "客户/产品维度切换",
+        "日期范围筛选",
+        "Top N 排行表格",
+        "区域销售热力图"
+      ]
+    },
+    {
+      "path": "/smartbi/query",
+      "name": "SmartBI 查询",
+      "module": "smartbi",
+      "interactionHints": [
+        "AI 对话输入框",
+        "发送测试问题验证 SSE 流式响应",
+        "历史对话列表",
+        "图表内嵌渲染",
+        "Markdown 渲染验证",
+        "快捷问题模板点击"
+      ]
+    },
+    {
+      "path": "/smartbi/query-templates",
+      "name": "查询模板",
+      "module": "smartbi",
+      "interactionHints": [
+        "模板列表展示",
+        "搜索筛选（模板名/分类）",
+        "新增/编辑模板弹窗",
+        "模板预览"
+      ]
+    },
+    {
+      "path": "/smartbi/analysis",
+      "name": "SmartBI 分析",
+      "module": "smartbi",
+      "interactionHints": [
+        "数据集选择",
+        "分析维度/指标拖拽配置",
+        "图表自动生成",
+        "AI 洞察文本展示",
+        "分享按钮功能"
+      ]
+    },
+    {
+      "path": "/smartbi/upload",
+      "name": "SmartBI 上传",
+      "module": "smartbi",
+      "interactionHints": [
+        "拖拽上传区域",
+        "Excel 文件选择",
+        "SSE 上传进度条",
+        "字段识别预览表格",
+        "Sheet 选择（多 Sheet Excel）",
+        "上传成功后跳转"
+      ]
+    },
+    {
+      "path": "/smartbi/data-completeness",
+      "name": "数据完整性",
+      "module": "smartbi",
+      "interactionHints": [
+        "完整性评分卡片",
+        "字段缺失率表格",
+        "数据质量趋势图",
+        "问题字段高亮"
+      ]
+    },
+    {
+      "path": "/smartbi/food-kb-feedback",
+      "name": "食品知识反馈",
+      "module": "smartbi",
+      "interactionHints": [
+        "反馈列表展示",
+        "分页翻页",
+        "反馈状态筛选（待处理/已采纳/已拒绝）",
+        "反馈详情展开"
+      ]
+    },
+    {
+      "path": "/smartbi/calibration",
+      "name": "SmartBI 校准",
+      "module": "smartbi",
+      "interactionHints": [
+        "校准项列表",
+        "校准状态指示",
+        "执行校准操作",
+        "校准历史记录"
+      ]
+    },
+    {
+      "path": "/smartbi/financial-dashboard",
+      "name": "财务仪表盘",
+      "module": "smartbi",
+      "interactionHints": [
+        "10+ 行业基准图表渲染",
+        "图表缩放/全屏",
+        "ECharts 交互（hover tooltip、legend 切换）",
+        "数据区间筛选",
+        "对标指标切换"
+      ]
+    }
+  ]
+}

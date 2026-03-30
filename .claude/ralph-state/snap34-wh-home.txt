@@ -1,0 +1,100 @@
+- generic [ref=e261]:
+  - generic [ref=e317]:
+    - generic [ref=e318]:
+      - generic [ref=e319]:
+        - generic [ref=e320]: 仓储工作台
+        - generic [ref=e321]: 今日入库 5 单 | 待出货 5 单
+      - button [ref=e323] [cursor=pointer]:
+        - img: 󰂜
+    - generic [ref=e326]:
+      - generic [ref=e328]:
+        - button "出货任务 (0)" [ref=e330] [cursor=pointer]:
+          - generic [ref=e332]: 出货任务 (0)
+        - button "入库任务 (5)" [ref=e334] [cursor=pointer]:
+          - generic [ref=e336]: 入库任务 (5)
+      - generic [ref=e338]:
+        - generic [ref=e339]: 今日出货 - 按发出时间排序
+        - generic [ref=e341] [cursor=pointer]: 查看全部 >
+      - generic [ref=e342]:
+        - generic [ref=e343]:
+          - generic [ref=e345]: 📦
+          - generic [ref=e346]: 今日入库
+          - generic [ref=e347]: "0"
+          - generic [ref=e348]: kg
+        - generic [ref=e349]:
+          - generic [ref=e351]: 🚚
+          - generic [ref=e352]: 今日出库
+          - generic [ref=e353]: "0"
+          - generic [ref=e354]: kg
+        - generic [ref=e355]:
+          - generic [ref=e357]: ⏳
+          - generic [ref=e358]: 待出货
+          - generic [ref=e359]: "5"
+          - generic [ref=e360]: 单
+        - generic [ref=e361]:
+          - generic [ref=e363]: ⚠️
+          - generic [ref=e364]: 库存预警
+          - generic [ref=e365]: "1241"
+          - generic [ref=e366]: 项
+      - generic [ref=e368]:
+        - generic [ref=e369]: 库存预警
+        - generic [ref=e371] [cursor=pointer]: 查看全部 >
+      - generic [ref=e373] [cursor=pointer]:
+        - generic [ref=e374]:
+          - generic [ref=e375]: 温控监控
+          - generic [ref=e378]: 在线
+        - generic [ref=e379]:
+          - generic [ref=e380]:
+            - generic [ref=e381]:
+              - generic [ref=e382]: 冷藏区 A区
+              - generic [ref=e383]:
+                - button "正常" [disabled]:
+                  - generic [ref=e385]: 正常
+            - generic [ref=e386]:
+              - generic [ref=e387]: "2.5"
+              - generic [ref=e388]: °C
+          - generic [ref=e389]:
+            - generic [ref=e390]:
+              - generic [ref=e391]: 冷冻区 B区
+              - generic [ref=e392]:
+                - button "正常" [disabled]:
+                  - generic [ref=e394]: 正常
+            - generic [ref=e395]:
+              - generic [ref=e396]: "-18"
+              - generic [ref=e397]: °C
+  - tablist [ref=e286]:
+    - tab "首页" [selected] [ref=e288] [cursor=pointer]:
+      - generic [ref=e289]:
+        - generic [ref=e290]:
+          - img: 󰋜
+        - generic [ref=e291]:
+          - img: 󰋜
+      - generic [ref=e292]: 首页
+    - tab "入库" [ref=e294] [cursor=pointer]:
+      - generic [ref=e295]:
+        - generic [ref=e296]:
+          - img: 󰏔
+        - generic [ref=e297]:
+          - img: 󰏔
+      - generic [ref=e298]: 入库
+    - tab "出货" [ref=e300] [cursor=pointer]:
+      - generic [ref=e301]:
+        - generic [ref=e302]:
+          - img: 󰏕
+        - generic [ref=e303]:
+          - img: 󰏕
+      - generic [ref=e304]: 出货
+    - tab "库存" [ref=e306] [cursor=pointer]:
+      - generic [ref=e307]:
+        - generic [ref=e308]:
+          - img: 󰾁
+        - generic [ref=e309]:
+          - img: 󰾁
+      - generic [ref=e310]: 库存
+    - tab "我的" [ref=e312] [cursor=pointer]:
+      - generic [ref=e313]:
+        - generic [ref=e314]:
+          - img: 󰀄
+        - generic [ref=e315]:
+          - img: 󰀄
+      - generic [ref=e316]: 我的

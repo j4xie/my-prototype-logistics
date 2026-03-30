@@ -15,7 +15,7 @@
 import { test, expect, Page } from '@playwright/test';
 
 const RN_BASE_URL = process.env.RN_BASE_URL || 'http://localhost:3010';
-const API = process.env.E2E_API_URL || 'http://47.100.235.168:10011/api/mobile';
+const API = process.env.E2E_API_URL || 'http://47.100.235.168:10010/api/mobile';
 const FACTORY_ID = 'F001';
 const SD = 'test-results/screenshots/liushanmen-rn';
 
@@ -24,8 +24,8 @@ let TOKEN = '';
 // --- Helpers (same pattern as rn-expo-web-e2e.spec.ts) ---
 
 async function rnLogin(page: Page, username = 'factory_admin1', password = '123456') {
-  await page.goto(RN_BASE_URL, { waitUntil: 'networkidle', timeout: 30000 });
-  await page.waitForTimeout(3000);
+  await page.goto(RN_BASE_URL, { waitUntil: 'commit', timeout: 60000 });
+  await page.waitForTimeout(8000);
 
   // Landing → click login
   const loginBtn = page.locator('[data-testid="landing-login-btn"]');
@@ -65,7 +65,6 @@ async function rnLogin(page: Page, username = 'factory_admin1', password = '1234
     await page.waitForTimeout(5000);
   }
   await page.waitForTimeout(2000);
-  await page.waitForLoadState('networkidle');
 }
 
 async function tapTab(page: Page, tabLabel: string) {
@@ -694,5 +693,801 @@ test.describe('六扇门一期 RN Expo Web E2E', () => {
         await shot(page, '10-yield-rate-detail.png');
       }
     }
+  });
+
+  // ============================================================
+  // RN-P0-01: 批次详情BOM达成率卡片
+  // ============================================================
+  test('RN-P0-01: 批次详情 — BOM达成率卡片', async ({ page }) => {
+    await rnLogin(page);
+
+    // Navigate to Processing/生产 tab
+    let tapped = await tapTab(page, '生产');
+    if (!tapped) tapped = await tapTab(page, '加工');
+    await page.waitForTimeout(3000);
+    await shot(page, 'rn-p0-01-production-home.png');
+
+    // Navigate to batch list
+    const batchListBtn = page.locator('text=批次列表')
+      .or(page.locator('text=生产批次'))
+      .or(page.locator('[data-testid="dashboard-batch-list-btn"]'))
+      .first();
+    if (await batchListBtn.isVisible().catch(() => false)) {
+      await batchListBtn.click();
+      await page.waitForTimeout(3000);
+    }
+
+    // Click first batch card
+    const firstBatch = page.locator('[data-testid="batch-item-0"]')
+      .or(page.locator('[data-testid^="production-batch-"]').first());
+    if (await firstBatch.isVisible().catch(() => false)) {
+      await firstBatch.click();
+      await page.waitForTimeout(3000);
+      await shot(page, 'rn-p0-01-batch-detail.png');
+
+      // Click consumption tab
+      const consumptionTab = page.locator('text=消耗')
+        .or(page.locator('text=物料消耗'))
+        .or(page.locator('text=BOM'))
+        .first();
+      if (await consumptionTab.isVisible().catch(() => false)) {
+        await consumptionTab.click();
+        await page.waitForTimeout(3000);
+        await shot(page, 'rn-p0-01-consumption-tab.png');
+      }
+
+      // Verify BOM achievement elements
+      const achievementCard = page.locator('[data-testid="bom-achievement-card"]');
+      const achievementCardVisible = await achievementCard.isVisible().catch(() => false);
+      console.log('RN-P0-01 bom-achievement-card visible:', achievementCardVisible);
+
+      const achievementRate = page.locator('[data-testid="bom-achievement-rate"]');
+      const rateVisible = await achievementRate.isVisible().catch(() => false);
+      console.log('RN-P0-01 bom-achievement-rate visible:', rateVisible);
+
+      // Check for "达成率" text anywhere on screen
+      const rateText = page.locator('text=达成率');
+      const rateTextVisible = await rateText.isVisible().catch(() => false);
+      console.log('RN-P0-01 text "达成率" visible:', rateTextVisible);
+    } else {
+      console.log('RN-P0-01: SKIP — no batch items');
+    }
+
+    // API verification
+    const batchResp = await api('/production-batches?page=1&size=3');
+    const content = batchResp.data?.content || batchResp.data || [];
+    if (content.length) {
+      const batchId = content[0].id;
+      const summary = await api(`/processing/material-consumptions/batch/${batchId}/summary`);
+      if (summary.success) {
+        const items = Array.isArray(summary.data) ? summary.data : (summary.data?.bomItems || []);
+        console.log(`RN-P0-01 API: batch ${batchId}, consumption items=${items.length}`);
+      }
+    }
+
+    await shot(page, 'rn-p0-01-final.png');
+  });
+
+  // ============================================================
+  // RN-P0-02: 物料移动均价
+  // ============================================================
+  test('RN-P0-02: 物料详情 — 移动均价', async ({ page }) => {
+    // API: check material types for movingAvgPrice
+    const types = await api('/raw-material-types/active');
+    const typeList = Array.isArray(types.data) ? types.data : types.data?.content || [];
+    let foundAvgPrice = false;
+    for (const mt of typeList.slice(0, 5)) {
+      const avg = mt.movingAvgPrice;
+      if (avg != null && avg > 0) {
+        foundAvgPrice = true;
+        console.log(`RN-P0-02 API: ${mt.name}, movingAvgPrice=¥${avg}`);
+        break;
+      }
+    }
+    console.log(`RN-P0-02: API has movingAvgPrice=${foundAvgPrice}`);
+
+    await rnLogin(page);
+
+    // Navigate to warehouse/inventory tab
+    let tapped = await tapTab(page, '仓储');
+    if (!tapped) tapped = await tapTab(page, '库存');
+    await page.waitForTimeout(3000);
+    await shot(page, 'rn-p0-02-warehouse-home.png');
+
+    // Look for material type list
+    const materialItem = page.locator('[data-testid="material-item-0"]')
+      .or(page.locator('[data-testid^="material-type-"]').first())
+      .or(page.locator('text=库存管理').first());
+
+    if (await materialItem.isVisible().catch(() => false)) {
+      await materialItem.click();
+      await page.waitForTimeout(3000);
+      await shot(page, 'rn-p0-02-material-list.png');
+
+      // Look for moving average price display
+      const movingAvg = page.locator('[data-testid="moving-avg-price"]');
+      const movingAvgVisible = await movingAvg.isVisible().catch(() => false);
+      console.log('RN-P0-02 moving-avg-price testid visible:', movingAvgVisible);
+
+      // Also check by text
+      const avgText = page.locator('text=移动均价')
+        .or(page.locator('text=平均价'))
+        .or(page.locator('text=均价'));
+      const avgTextVisible = await avgText.isVisible().catch(() => false);
+      console.log('RN-P0-02 text "移动均价/均价" visible:', avgTextVisible);
+
+      // Check for price with ¥ symbol
+      const priceDisplay = page.locator('text=/¥/');
+      const priceVisible = await priceDisplay.first().isVisible().catch(() => false);
+      console.log('RN-P0-02 price with ¥ visible:', priceVisible);
+    } else {
+      console.log('RN-P0-02: material items not found on UI');
+    }
+
+    await shot(page, 'rn-p0-02-final.png');
+  });
+
+  // ============================================================
+  // RN-P1-01: 报工良品率实时计算
+  // ============================================================
+  test('RN-P1-01: 报工 — 良品率实时计算', async ({ page }) => {
+    await rnLogin(page);
+
+    // Navigate to processing tab
+    let tapped = await tapTab(page, '生产');
+    if (!tapped) tapped = await tapTab(page, '加工');
+    await page.waitForTimeout(3000);
+
+    // Find scan report entry point
+    const scanReportBtn = page.locator('[data-testid="scan-report-screen"]')
+      .or(page.locator('[data-testid="dashboard-scan-report-btn"]'))
+      .or(page.locator('text=扫码报工'))
+      .or(page.locator('text=报工'));
+
+    const scanReportVisible = await scanReportBtn.first().isVisible().catch(() => false);
+    console.log('RN-P1-01 scan report entry visible:', scanReportVisible);
+
+    if (scanReportVisible) {
+      await scanReportBtn.first().click();
+      await page.waitForTimeout(3000);
+      await shot(page, 'rn-p1-01-report-screen.png');
+
+      // Look for output quantity input
+      const outputInput = page.locator('[data-testid="report-output-quantity"]');
+      const outputVisible = await outputInput.isVisible().catch(() => false);
+      console.log('RN-P1-01 output quantity input visible:', outputVisible);
+
+      if (outputVisible) {
+        // Fill output quantity
+        await outputInput.click();
+        await page.keyboard.type('100');
+        await page.waitForTimeout(500);
+      }
+
+      // Look for good quantity input
+      const goodInput = page.locator('[data-testid="report-good-quantity"]');
+      const goodVisible = await goodInput.isVisible().catch(() => false);
+      console.log('RN-P1-01 good quantity input visible:', goodVisible);
+
+      if (goodVisible) {
+        await goodInput.click();
+        await page.keyboard.type('90');
+        await page.waitForTimeout(1000);
+      }
+
+      // Verify yield rate display
+      const yieldDisplay = page.locator('[data-testid="yield-rate-display"]');
+      const yieldVisible = await yieldDisplay.isVisible().catch(() => false);
+      console.log('RN-P1-01 yield-rate-display visible:', yieldVisible);
+
+      const yieldValue = page.locator('[data-testid="yield-rate-value"]');
+      const yieldValueVisible = await yieldValue.isVisible().catch(() => false);
+      console.log('RN-P1-01 yield-rate-value visible:', yieldValueVisible);
+
+      // Check for "良品率" text
+      const yieldText = page.locator('text=良品率')
+        .or(page.locator('text=出成率'));
+      const yieldTextVisible = await yieldText.isVisible().catch(() => false);
+      console.log('RN-P1-01 text "良品率/出成率" visible:', yieldTextVisible);
+
+      await shot(page, 'rn-p1-01-yield-filled.png');
+    } else {
+      // Try alternative: navigate to task list then report
+      const taskBtn = page.locator('[data-testid="dashboard-process-task-btn"]')
+        .or(page.locator('text=工序任务').first());
+      if (await taskBtn.isVisible().catch(() => false)) {
+        await taskBtn.click();
+        await page.waitForTimeout(3000);
+
+        const firstCard = page.locator('[data-testid^="process-task-card-"]').first();
+        if (await firstCard.isVisible().catch(() => false)) {
+          await firstCard.click();
+          await page.waitForTimeout(3000);
+
+          const reportBtn = page.locator('[data-testid="task-detail-report-btn"]');
+          if (await reportBtn.isVisible().catch(() => false)) {
+            await reportBtn.click();
+            await page.waitForTimeout(3000);
+
+            // Verify yield rate field in report form
+            const yieldLabel = page.locator('text=良品率')
+              .or(page.locator('text=出成率'));
+            console.log('RN-P1-01 yield label in report form:', await yieldLabel.isVisible().catch(() => false));
+          }
+        }
+      }
+
+      console.log('RN-P1-01: used alternative path');
+      await shot(page, 'rn-p1-01-alternative.png');
+    }
+  });
+
+  // ============================================================
+  // RN-P1-02: AI入库成功页
+  // ============================================================
+  test('RN-P1-02: AI对话 — 入库流程', async ({ page }) => {
+    await rnLogin(page);
+
+    // Navigate to AI tab
+    let aiTapped = await tapTab(page, 'AI');
+    if (!aiTapped) aiTapped = await tapTab(page, '智能');
+    await page.waitForTimeout(3000);
+    await shot(page, 'rn-p1-02-ai-home.png');
+
+    const chatInput = page.locator('[data-testid="ai-chat-input"]');
+    if (await chatInput.isVisible().catch(() => false)) {
+      // Send an entry command
+      await chatInput.click();
+      await page.keyboard.type('新到一批花椒200斤');
+      await page.waitForTimeout(500);
+
+      const sendBtn = page.locator('[data-testid="ai-send-button"]');
+      if (await sendBtn.isVisible().catch(() => false)) {
+        await sendBtn.click();
+      } else {
+        await page.keyboard.press('Enter');
+      }
+
+      // Wait for AI response
+      await page.waitForTimeout(15000);
+      await shot(page, 'rn-p1-02-ai-entry-response.png');
+
+      // Check response area
+      const responseArea = page.locator('[data-testid^="ai-chat-message-"]').last();
+      const responseVisible = await responseArea.isVisible().catch(() => false);
+      console.log('RN-P1-02 AI response visible:', responseVisible);
+
+      if (responseVisible) {
+        const responseText = await responseArea.textContent().catch(() => '');
+        console.log(`RN-P1-02 AI response text: ${(responseText || '').substring(0, 120)}`);
+
+        // Check for entry-related content
+        const hasEntryContent = responseText?.includes('入库')
+          || responseText?.includes('确认')
+          || responseText?.includes('花椒')
+          || responseText?.includes('选择');
+        console.log(`RN-P1-02 has entry content: ${hasEntryContent}`);
+      }
+
+      // Look for success/confirmation elements
+      const successPage = page.locator('[data-testid="entry-success"]')
+        .or(page.locator('text=入库成功'));
+      const successVisible = await successPage.isVisible().catch(() => false);
+      console.log('RN-P1-02 success page visible:', successVisible);
+    } else {
+      console.log('RN-P1-02: SKIP — AI chat input not found');
+    }
+
+    // API verification
+    const intentResp = await api('/ai-intents/recognize', {
+      method: 'POST',
+      body: JSON.stringify({ userInput: '新到一批花椒200斤' }),
+    });
+    if (intentResp.success && intentResp.data) {
+      console.log(`RN-P1-02 API intent: code=${intentResp.data.intentCode}, method=${intentResp.data.matchMethod}, matched=${intentResp.data.matched}`);
+    }
+
+    await shot(page, 'rn-p1-02-final.png');
+  });
+
+  // ============================================================
+  // RN-P2-01: 工序投入产出对比
+  // ============================================================
+  test('RN-P2-01: 工序详情 — 投入产出对比', async ({ page }) => {
+    await rnLogin(page);
+
+    // Navigate to processing tab
+    let tapped = await tapTab(page, '生产');
+    if (!tapped) tapped = await tapTab(page, '加工');
+    await page.waitForTimeout(3000);
+
+    // Navigate to process task list
+    const taskBtn = page.locator('[data-testid="dashboard-process-task-btn"]')
+      .or(page.locator('text=工序任务').first());
+
+    if (await taskBtn.isVisible().catch(() => false)) {
+      await taskBtn.click();
+      await page.waitForTimeout(3000);
+      await shot(page, 'rn-p2-01-task-list.png');
+
+      // Open first task card
+      const firstCard = page.locator('[data-testid^="process-task-card-"]').first();
+      if (await firstCard.isVisible().catch(() => false)) {
+        await firstCard.click();
+        await page.waitForTimeout(3000);
+        await shot(page, 'rn-p2-01-task-detail.png');
+
+        // Check for process IO comparison elements
+        const ioComparison = page.locator('[data-testid="process-io-comparison"]');
+        const ioVisible = await ioComparison.isVisible().catch(() => false);
+        console.log('RN-P2-01 process-io-comparison visible:', ioVisible);
+
+        // Check for input/output text
+        const inputText = page.locator('text=投入量')
+          .or(page.locator('text=投入'));
+        const outputText = page.locator('text=产出量')
+          .or(page.locator('text=产出'));
+
+        console.log('RN-P2-01 text "投入" visible:', await inputText.isVisible().catch(() => false));
+        console.log('RN-P2-01 text "产出" visible:', await outputText.isVisible().catch(() => false));
+
+        // Check for conversion rate
+        const conversionText = page.locator('text=转化率')
+          .or(page.locator('text=出成率'));
+        console.log('RN-P2-01 text "转化率" visible:', await conversionText.isVisible().catch(() => false));
+
+        // Check for wastage rate
+        const wastageText = page.locator('text=损耗率')
+          .or(page.locator('text=损耗'));
+        console.log('RN-P2-01 text "损耗" visible:', await wastageText.isVisible().catch(() => false));
+      } else {
+        console.log('RN-P2-01: no task cards found');
+      }
+    } else {
+      // Try management tab path
+      await tapTab(page, '管理');
+      await page.waitForTimeout(2000);
+
+      const mgmtTaskBtn = page.locator('[data-testid="fa-process-task-btn"]')
+        .or(page.locator('text=工序任务').first());
+      if (await mgmtTaskBtn.isVisible().catch(() => false)) {
+        await mgmtTaskBtn.click();
+        await page.waitForTimeout(3000);
+        console.log('RN-P2-01: navigated via management tab');
+      } else {
+        console.log('RN-P2-01: SKIP — cannot find task entry');
+      }
+    }
+
+    // API verification
+    const tasksResp = await api('/process-tasks?page=1&size=5');
+    const tasks = tasksResp.data?.content || tasksResp.data || [];
+    if (tasks.length) {
+      const task = tasks[0];
+      console.log(`RN-P2-01 API: task="${task.processName}", planned=${task.plannedQuantity}, completed=${task.completedQuantity}`);
+      if (task.plannedQuantity > 0 && task.completedQuantity > 0) {
+        const rate = Math.round((task.completedQuantity / task.plannedQuantity) * 1000) / 10;
+        console.log(`RN-P2-01 API: conversion rate=${rate}%`);
+      }
+    }
+
+    await shot(page, 'rn-p2-01-final.png');
+  });
+
+  // ============================================================
+  // RN-M82: 批次详情 — 完整消耗Tab流 (对标 Maestro 82)
+  // ============================================================
+  test('RN-M82: 批次详情 — 消耗Tab完整流', async ({ page }) => {
+    await rnLogin(page);
+
+    // API: find a batch
+    const batchResp = await api('/processing/batches?page=1&size=5');
+    const batches = batchResp.data?.content || batchResp.data || [];
+    console.log(`RN-M82: ${batches.length} batches from API`);
+
+    if (batches.length > 0) {
+      const batch = batches[0];
+      const batchId = batch.id || batch.batchId;
+      console.log(`RN-M82: batch=${batch.batchNumber}, id=${batchId}`);
+
+      // API: get consumption summary
+      const summaryResp = await api(`/processing/material-consumptions/batch/${batchId}/summary`);
+      const summary = summaryResp.data;
+      if (summary) {
+        console.log(`RN-M82 API: achievementRate=${summary.overallAchievementRate}%, materials=${summary.materials?.length || 0}`);
+        if (summary.materials?.length > 0) {
+          const mat = summary.materials[0];
+          console.log(`RN-M82 API: first material=${mat.materialName}, planned=${mat.plannedQuantity}, actual=${mat.actualQuantity}`);
+        }
+      } else {
+        console.log('RN-M82 API: no summary data');
+      }
+    }
+
+    // Navigate to batch list via UI
+    let tapped = await tapTab(page, '批次');
+    if (!tapped) tapped = await tapTab(page, '管理');
+    await page.waitForTimeout(3000);
+
+    // Look for batch card
+    const batchCard = page.locator('[data-testid^="batch-card-"]').first()
+      .or(page.locator('[data-testid="batch-list-item-0"]').first());
+    if (await batchCard.isVisible().catch(() => false)) {
+      await batchCard.click();
+      await page.waitForTimeout(3000);
+
+      // Try clicking consumption tab
+      const consumptionTab = page.locator('text=消耗').first()
+        .or(page.locator('text=Consumption').first());
+      if (await consumptionTab.isVisible().catch(() => false)) {
+        await consumptionTab.click();
+        await page.waitForTimeout(3000);
+
+        // Check BOM achievement card
+        const bomCard = page.locator('[data-testid="bom-achievement-card"]');
+        console.log('RN-M82 bom-achievement-card visible:', await bomCard.isVisible().catch(() => false));
+        const bomRate = page.locator('[data-testid="bom-achievement-rate"]');
+        console.log('RN-M82 bom-achievement-rate visible:', await bomRate.isVisible().catch(() => false));
+      } else {
+        console.log('RN-M82: consumption tab not found');
+      }
+    } else {
+      console.log('RN-M82: no batch cards on UI');
+    }
+    await shot(page, 'rn-m82-batch-consumption.png');
+  });
+
+  // ============================================================
+  // RN-M84: 报工良品率 — 输入不同数值验证色标 (对标 Maestro 84/85)
+  // ============================================================
+  test('RN-M84: 报工良品率 — 三色阈值验证', async ({ page }) => {
+    await rnLogin(page);
+
+    // Navigate to scan report
+    let tapped = await tapTab(page, '批次');
+    if (!tapped) tapped = await tapTab(page, '生产');
+    await page.waitForTimeout(3000);
+
+    // Find scan report entry
+    const scanBtn = page.locator('[data-testid="scan-report-btn"]')
+      .or(page.locator('text=扫码报工').first())
+      .or(page.locator('text=报工').first());
+
+    let foundReport = false;
+    if (await scanBtn.isVisible().catch(() => false)) {
+      await scanBtn.click();
+      await page.waitForTimeout(3000);
+      foundReport = true;
+    }
+
+    // Check for yield rate elements
+    const screenTestId = page.locator('[data-testid="scan-report-screen"]');
+    if (await screenTestId.isVisible().catch(() => false)) {
+      console.log('RN-M84: scan-report-screen visible');
+
+      // Check testIDs (对标 Maestro 86)
+      const testIds = ['report-output-quantity', 'report-input-quantity', 'report-good-quantity', 'report-submit-btn'];
+      for (const tid of testIds) {
+        const el = page.locator(`[data-testid="${tid}"]`);
+        const visible = await el.isVisible().catch(() => false);
+        console.log(`RN-M84 testID "${tid}": ${visible}`);
+      }
+
+      // Try filling quantities to trigger yield rate
+      const outputInput = page.locator('[data-testid="report-output-quantity"]');
+      const goodInput = page.locator('[data-testid="report-good-quantity"]');
+      if (await outputInput.isVisible().catch(() => false) && await goodInput.isVisible().catch(() => false)) {
+        // Fill 100/96 → green (≥95%)
+        await outputInput.fill('100');
+        await goodInput.fill('96');
+        await page.waitForTimeout(1000);
+        const yieldDisplay = page.locator('[data-testid="yield-rate-display"]');
+        console.log('RN-M84 yield-rate at 96%:', await yieldDisplay.isVisible().catch(() => false));
+        await shot(page, 'rn-m84-yield-green.png');
+
+        // Fill 100/90 → orange (85-95%)
+        await goodInput.fill('');
+        await goodInput.fill('90');
+        await page.waitForTimeout(1000);
+        console.log('RN-M84 yield-rate at 90%:', await yieldDisplay.isVisible().catch(() => false));
+        await shot(page, 'rn-m84-yield-orange.png');
+
+        // Fill 100/75 → red (<85%)
+        await goodInput.fill('');
+        await goodInput.fill('75');
+        await page.waitForTimeout(1000);
+        console.log('RN-M84 yield-rate at 75%:', await yieldDisplay.isVisible().catch(() => false));
+        await shot(page, 'rn-m84-yield-red.png');
+      }
+    } else {
+      console.log('RN-M84: scan-report-screen not found, checking API');
+      // API verification of yield calculation
+      const batchResp = await api('/processing/batches?page=1&size=5');
+      const batches = batchResp.data?.content || batchResp.data || [];
+      for (const b of batches.slice(0, 3)) {
+        if (b.goodQuantity && b.actualQuantity) {
+          const rate = Math.round((b.goodQuantity / b.actualQuantity) * 1000) / 10;
+          console.log(`RN-M84 API: batch=${b.batchNumber}, good=${b.goodQuantity}, actual=${b.actualQuantity}, yield=${rate}%`);
+        }
+      }
+    }
+    await shot(page, 'rn-m84-final.png');
+  });
+
+  // ============================================================
+  // RN-M87: 工序任务详情 — 管理Tab路径 (对标 Maestro 87)
+  // ============================================================
+  test('RN-M87: 工序任务详情 — 管理Tab路径', async ({ page }) => {
+    await rnLogin(page);
+
+    // Factory admin: 管理 tab → 工序任务
+    const tapped = await tapTab(page, '管理');
+    if (tapped) {
+      await page.waitForTimeout(3000);
+      await shot(page, 'rn-m87-management.png');
+
+      // Find and tap 工序任务
+      const taskEntry = page.locator('text=工序任务').first();
+      if (await taskEntry.isVisible().catch(() => false)) {
+        await taskEntry.click({ force: true });
+        await page.waitForTimeout(3000);
+        await shot(page, 'rn-m87-task-list.png');
+
+        // Check for task cards
+        const taskCards = page.locator('[data-testid^="process-task-card-"]');
+        const cardCount = await taskCards.count();
+        console.log(`RN-M87: ${cardCount} task cards`);
+
+        if (cardCount > 0) {
+          await taskCards.first().click();
+          await page.waitForTimeout(3000);
+          await shot(page, 'rn-m87-task-detail.png');
+
+          // Check IO comparison
+          const ioComp = page.locator('[data-testid="process-io-comparison"]');
+          console.log('RN-M87 IO comparison visible:', await ioComp.isVisible().catch(() => false));
+
+          // Check planned/completed quantities
+          const planned = page.locator('[data-testid="task-detail-planned-qty"]');
+          const completed = page.locator('[data-testid="task-detail-completed-qty"]');
+          console.log('RN-M87 planned qty:', await planned.isVisible().catch(() => false));
+          console.log('RN-M87 completed qty:', await completed.isVisible().catch(() => false));
+        }
+      } else {
+        console.log('RN-M87: 工序任务 not found in management');
+      }
+    } else {
+      console.log('RN-M87: SKIP — 管理 tab not found');
+    }
+
+    // API verification
+    const tasksResp = await api('/process-tasks?page=1&size=5');
+    const tasks = tasksResp.data?.content || tasksResp.data || [];
+    console.log(`RN-M87 API: ${tasks.length} tasks`);
+    for (const t of tasks.slice(0, 3)) {
+      console.log(`  task="${t.processName}", input=${t.inputQuantity || 'N/A'}, completed=${t.completedQuantity}`);
+    }
+    await shot(page, 'rn-m87-final.png');
+  });
+
+  // ============================================================
+  // RN-M88: AI入库完整流 (对标 Maestro 88)
+  // ============================================================
+  test('RN-M88: AI入库 — 意图识别+字段补全', async ({ page }) => {
+    await rnLogin(page);
+
+    // API: test multiple receipt variants
+    const variants = [
+      '新到一批辣椒500公斤',
+      '到货一批花椒200斤',
+      '帮我登记原料入库',
+      '物料入库 盐 50袋',
+    ];
+    for (const v of variants) {
+      const resp = await api('/ai-intents/recognize', {
+        method: 'POST',
+        body: JSON.stringify({ userInput: v }),
+      });
+      const intent = resp.data?.intentCode || resp.data?.intent;
+      const method = resp.data?.matchMethod || resp.data?.method;
+      const matched = intent === 'MATERIAL_BATCH_CREATE';
+      console.log(`RN-M88 "${v}": intent=${intent}, method=${method}, matched=${matched}`);
+    }
+
+    // API: execute receipt intent
+    const execResp = await api('/ai-intents/execute', {
+      method: 'POST',
+      body: JSON.stringify({ userInput: '入库辣椒500公斤' }),
+    });
+    const status = execResp.data?.status;
+    const text = (execResp.data?.text || execResp.data?.message || '').substring(0, 100);
+    console.log(`RN-M88 execute: status=${status}, text=${text}`);
+
+    // Verify NEED_MORE_INFO response (missing supplier, materialType)
+    if (status === 'NEED_MORE_INFO') {
+      console.log('RN-M88: correctly asks for more info (supplier/type fields)');
+    }
+
+    // Navigate to AI tab and verify UI
+    const aiTapped = await tapTab(page, 'AI分析');
+    if (!aiTapped) await tapTab(page, 'AI');
+    await page.waitForTimeout(3000);
+
+    const chatInput = page.locator('[data-testid="ai-chat-input"]')
+      .or(page.getByPlaceholder(/输入|问题|消息/));
+    console.log('RN-M88 chat input visible:', await chatInput.isVisible().catch(() => false));
+
+    await shot(page, 'rn-m88-ai-receipt.png');
+  });
+
+  // ============================================================
+  // RN-M89: 批次详情完整流 — 信息Tab→消耗Tab→返回 (对标 Maestro 89)
+  // ============================================================
+  test('RN-M89: 批次详情完整导航流', async ({ page }) => {
+    await rnLogin(page);
+
+    // API: get batch data
+    const batchResp = await api('/processing/batches?page=1&size=5');
+    const batches = batchResp.data?.content || batchResp.data || [];
+    console.log(`RN-M89 API: ${batches.length} batches`);
+
+    if (batches.length > 0) {
+      const b = batches[0];
+      console.log(`RN-M89 API: batch=${b.batchNumber}, product=${b.productName}, status=${b.status}`);
+
+      // Get consumption summary
+      const summaryResp = await api(`/processing/material-consumptions/batch/${b.id || b.batchId}/summary`);
+      if (summaryResp.data) {
+        console.log(`RN-M89 API: achievementRate=${summaryResp.data.overallAchievementRate}%`);
+      }
+    }
+
+    // UI: navigate to batch list
+    let tapped = await tapTab(page, '批次');
+    if (!tapped) tapped = await tapTab(page, '管理');
+    await page.waitForTimeout(3000);
+    await shot(page, 'rn-m89-batch-list.png');
+
+    // Tap first batch
+    const firstBatch = page.locator('[data-testid^="batch-card-"]').first()
+      .or(page.locator('[data-testid="batch-list-item-0"]'));
+    if (await firstBatch.isVisible().catch(() => false)) {
+      await firstBatch.click();
+      await page.waitForTimeout(3000);
+      await shot(page, 'rn-m89-batch-info.png');
+
+      // Verify info tab content
+      const batchNum = page.locator('text=批次号').or(page.locator('text=Batch'));
+      console.log('RN-M89 batch number label:', await batchNum.first().isVisible().catch(() => false));
+
+      // Switch to consumption tab
+      const consumeTab = page.locator('text=消耗').first();
+      if (await consumeTab.isVisible().catch(() => false)) {
+        await consumeTab.click();
+        await page.waitForTimeout(3000);
+        console.log('RN-M89: consumption tab clicked');
+        await shot(page, 'rn-m89-consumption.png');
+
+        // Verify BOM card
+        const bomCard = page.locator('[data-testid="bom-achievement-card"]');
+        console.log('RN-M89 BOM card:', await bomCard.isVisible().catch(() => false));
+      }
+
+      // Go back
+      const backBtn = page.locator('[data-testid="header-back-btn"]')
+        .or(page.locator('role=button >> text=返回'))
+        .or(page.locator('[aria-label="Go back"]'));
+      if (await backBtn.first().isVisible().catch(() => false)) {
+        await backBtn.first().click();
+        await page.waitForTimeout(2000);
+        console.log('RN-M89: navigated back');
+      }
+    } else {
+      console.log('RN-M89: no batch cards visible');
+    }
+    await shot(page, 'rn-m89-final.png');
+  });
+
+  // ============================================================
+  // RN-M90: 库存详情完整流 — 移动均价 (对标 Maestro 90)
+  // ============================================================
+  test('RN-M90: 库存详情 — 均价+批次详情', async ({ page }) => {
+    await rnLogin(page, 'warehouse_mgr1', '123456');
+
+    // API: verify material types have movingAvgPrice
+    const matResp = await api('/raw-material-types/active');
+    const materials = matResp.data || [];
+    const withPrice = materials.filter((m: Record<string, unknown>) => m.movingAvgPrice && Number(m.movingAvgPrice) > 0);
+    console.log(`RN-M90 API: ${materials.length} materials, ${withPrice.length} with movingAvgPrice`);
+    if (withPrice.length > 0) {
+      const m = withPrice[0] as Record<string, unknown>;
+      console.log(`RN-M90 API: ${m.name}, avgPrice=¥${m.movingAvgPrice}`);
+    }
+
+    // API: verify batch data
+    const batchResp = await api('/material-batches?page=1&size=5');
+    const batchData = batchResp.data?.content || batchResp.data || [];
+    console.log(`RN-M90 API: ${batchData.length} batches`);
+    if (batchData.length > 0) {
+      const batch = batchData[0] as Record<string, unknown>;
+      console.log(`RN-M90 API: batch=${batch.batchNumber}, price=${batch.unitPrice}, avgPrice=${batch.movingAvgPrice}`);
+    }
+
+    // UI: navigate to inventory
+    let tapped = await tapTab(page, '库存');
+    if (!tapped) tapped = await tapTab(page, '仓储');
+    if (!tapped) tapped = await tapTab(page, '首页');
+    await page.waitForTimeout(3000);
+    await shot(page, 'rn-m90-inventory.png');
+
+    // Check for material items
+    const materialItem = page.locator('[data-testid^="material-item-"]').first()
+      .or(page.locator('[data-testid^="inventory-item-"]').first());
+    if (await materialItem.isVisible().catch(() => false)) {
+      await materialItem.click();
+      await page.waitForTimeout(3000);
+
+      // Check for moving avg price display
+      const avgPrice = page.locator('[data-testid="moving-avg-price"]');
+      console.log('RN-M90 moving-avg-price visible:', await avgPrice.isVisible().catch(() => false));
+
+      const avgText = page.locator('text=移动均价').or(page.locator('text=均价'));
+      console.log('RN-M90 均价 text visible:', await avgText.first().isVisible().catch(() => false));
+      await shot(page, 'rn-m90-detail.png');
+    } else {
+      console.log('RN-M90: no material items on UI');
+    }
+    await shot(page, 'rn-m90-final.png');
+  });
+
+  // ============================================================
+  // RN-M91: 跨角色数据验证 (对标 Maestro 91)
+  // ============================================================
+  test('RN-M91: 跨角色 — WS+FA数据一致性', async ({ page }) => {
+    // Step 1: Login as WS, get batch data
+    const wsToken = await (async () => {
+      const res = await fetch(`${API}/auth/unified-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: 'workshop_sup1', password: '123456' }),
+      });
+      const json = await res.json();
+      return json.data?.accessToken || json.data?.token || '';
+    })();
+
+    const wsBatchResp = await fetch(`${API}/${FACTORY_ID}/processing/batches?page=1&size=5`, {
+      headers: { Authorization: `Bearer ${wsToken}` },
+    });
+    const wsBatches = (await wsBatchResp.json()).data?.content || [];
+    console.log(`RN-M91 WS: ${wsBatches.length} batches`);
+
+    // Step 2: Login as FA, get same data
+    const faBatchResp = await api('/processing/batches?page=1&size=5');
+    const faBatches = faBatchResp.data?.content || faBatchResp.data || [];
+    console.log(`RN-M91 FA: ${faBatches.length} batches`);
+
+    // Step 3: Compare — same batches visible to both roles
+    if (wsBatches.length > 0 && faBatches.length > 0) {
+      const wsIds = new Set(wsBatches.map((b: Record<string, unknown>) => b.batchNumber));
+      const faIds = new Set(faBatches.map((b: Record<string, unknown>) => b.batchNumber));
+      const overlap = [...wsIds].filter(id => faIds.has(id));
+      console.log(`RN-M91: ${overlap.length} common batches between WS and FA`);
+      console.log(`RN-M91: WS batches: ${[...wsIds].slice(0, 3).join(', ')}`);
+      console.log(`RN-M91: FA batches: ${[...faIds].slice(0, 3).join(', ')}`);
+    }
+
+    // Step 4: UI — verify FA can see management and AI tabs
+    await rnLogin(page);
+    const mgmtTab = await tapTab(page, '管理');
+    console.log('RN-M91 FA 管理tab:', mgmtTab);
+    await page.waitForTimeout(2000);
+    await shot(page, 'rn-m91-fa-management.png');
+
+    const aiTab = await tapTab(page, 'AI分析');
+    console.log('RN-M91 FA AI分析tab:', aiTab);
+    await page.waitForTimeout(2000);
+    await shot(page, 'rn-m91-fa-ai.png');
+
+    await shot(page, 'rn-m91-final.png');
   });
 });

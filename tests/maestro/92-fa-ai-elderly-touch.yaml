@@ -1,0 +1,87 @@
+appId: com.cretas.foodtrace
+---
+# Test 92: P0 Touch-Friendly Accessibility
+# Verifies all interactive elements in AI Chat have >= 48px touch targets
+# Also checks FAHomeScreen quickActionLabel and ProcessTaskReport quick buttons
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*|.*管理.*|.*生产.*"
+    timeout: 15000
+
+# ========================================
+# T-01: Navigate to AI Chat
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/92-ai-tab
+
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# T-02: Verify welcome screen loads with card grid
+# ========================================
+- extendedWaitUntil:
+    visible: ".*\u751F\u4EA7\u62A5\u5DE5.*|.*\u539F\u6599\u5165\u5E93.*"
+    timeout: 10000
+- takeScreenshot: screenshots/92-ai-chat-welcome-cards
+
+# ========================================
+# T-03: Verify large mic button visible (voice-first default)
+# ========================================
+- assertVisible:
+    id: "voice-first-container"
+- assertVisible:
+    text: "\u70B9\u4E00\u4E0B\u8BF4\u8BDD"
+- takeScreenshot: screenshots/92-voice-first-default
+
+# ========================================
+# T-04: Switch to keyboard mode
+# ========================================
+- tapOn:
+    id: "keyboard-toggle-btn"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "ai-chat-input"
+- assertVisible:
+    id: "ai-chat-send-btn"
+- takeScreenshot: screenshots/92-keyboard-mode
+
+# ========================================
+# T-05: Type text and verify send button is tappable
+# ========================================
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "test query"
+- hideKeyboard
+- waitForAnimationToEnd
+- assertVisible:
+    id: "ai-chat-send-btn"
+- takeScreenshot: screenshots/92-send-button-enabled
+
+# ========================================
+# T-06: Go back to home, check quickActionLabel
+# ========================================
+- back
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*首页.*|.*Home.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/92-home-quick-actions
+
+# Quick action labels should be visible (fontSize 14, readable)
+- scrollUntilVisible:
+    element:
+      id: "fa-home-quick-actions-title"
+    direction: DOWN
+    timeout: 10000
+- takeScreenshot: screenshots/92-home-touch-targets

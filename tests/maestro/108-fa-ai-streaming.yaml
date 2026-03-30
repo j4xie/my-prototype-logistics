@@ -1,0 +1,94 @@
+appId: com.cretas.foodtrace
+---
+# Test 108: AI Chat Streaming & Loading States
+# Verifies: loading indicator, streaming response, response time display,
+# mode indicator, and message bubble content
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as factory admin
+- runFlow: flows/login-fa.yaml
+- extendedWaitUntil:
+    visible: ".*首页.*|.*Home.*"
+    timeout: 15000
+
+# ========================================
+# L-01: Navigate to AI Chat
+# ========================================
+- tapOn: "AI\u5206\u6790"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*AI Chat.*|.*AI\u5BF9\u8BDD.*|.*AI \u5BF9\u8BDD.*"
+    optional: true
+- waitForAnimationToEnd
+
+# ========================================
+# L-02: Send a message and watch loading states
+# ========================================
+- tapOn:
+    id: "keyboard-toggle-btn"
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "inventory"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+
+# ========================================
+# L-03: Capture loading/streaming state
+# ========================================
+# During loading, we should see "思考中" or a status message
+- takeScreenshot: screenshots/108-loading-state
+
+# ========================================
+# L-04: Wait for complete response
+# ========================================
+- extendedWaitUntil:
+    visible: ".*inventory.*|.*库存.*|.*执行.*|.*识别.*|.*查看.*"
+    timeout: 30000
+- takeScreenshot: screenshots/108-complete-response
+
+# ========================================
+# L-05: Verify response time indicator (Ns format)
+# ========================================
+- assertVisible:
+    text: ".*\\d+\\.\\d+s.*"
+    optional: true
+- takeScreenshot: screenshots/108-response-time
+
+# ========================================
+# L-06: Send second message — verify both messages visible
+# ========================================
+- tapOn:
+    id: "ai-chat-input"
+- inputText: "cost"
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "ai-chat-send-btn"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*cost.*|.*成本.*|.*执行.*|.*识别.*"
+    timeout: 30000
+- takeScreenshot: screenshots/108-two-messages
+
+# ========================================
+# L-07: Scroll up to verify first message still visible
+# ========================================
+- swipe:
+    direction: DOWN
+    duration: 300
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/108-scroll-history
+
+# ========================================
+# L-08: Verify user message bubble styling
+# ========================================
+# User messages should have gradient background (visual check via screenshot)
+- takeScreenshot: screenshots/108-message-bubbles

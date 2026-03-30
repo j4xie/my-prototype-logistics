@@ -1,0 +1,10 @@
+- generic [ref=e210]:
+  - generic [ref=e212] [cursor=pointer]:
+    - generic [ref=e213]: 
+    - generic [ref=e214]: 简体中文
+  - generic [ref=e215]:
+    - generic [ref=e218]: 白垩纪工业Agent
+    - generic [ref=e219]: 欢迎使用白垩纪工业智能AI Agent
+  - generic [ref=e220]:
+    - generic [ref=e222] [cursor=pointer]: 登录
+    - generic [ref=e224] [cursor=pointer]: 注册用户

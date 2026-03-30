@@ -131,8 +131,15 @@ const ScanReportScreen: React.FC = () => {
     }
   }, [batchInfo, form, factoryId, navigation, addDraft]);
 
+  // Yield rate calculation
+  const outputQty = parseFloat(form.outputQuantity);
+  const goodQty = parseFloat(form.goodQuantity);
+  const showYieldRate = !isNaN(outputQty) && outputQty > 0 && !isNaN(goodQty) && goodQty > 0;
+  const yieldRate = showYieldRate ? (goodQty / outputQty) * 100 : 0;
+  const yieldRateColor = yieldRate < 85 ? '#F44336' : yieldRate < 95 ? '#FF9800' : '#4CAF50';
+
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top']} testID="scan-report-screen">
       <OfflineIndicator />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.title}>扫码报工</Text>
@@ -141,7 +148,7 @@ const ScanReportScreen: React.FC = () => {
           <View style={styles.scanPrompt}>
             <Text style={styles.scanIconText}>SCAN</Text>
             <Text style={styles.scanText}>扫描批次条码开始报工</Text>
-            <TouchableOpacity style={styles.scanButton} onPress={() => setScannerVisible(true)}>
+            <TouchableOpacity style={styles.scanButton} onPress={() => setScannerVisible(true)} testID="scan-button">
               <Text style={styles.scanButtonText}>开始扫码</Text>
             </TouchableOpacity>
           </View>
@@ -185,12 +192,14 @@ const ScanReportScreen: React.FC = () => {
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>产出数量 *</Text>
                 <TextInput style={styles.input} keyboardType="numeric" placeholder="输入产出数量"
+                  testID="report-output-quantity"
                   value={form.outputQuantity} onChangeText={v => setForm(p => ({...p, outputQuantity: v}))} />
               </View>
-              {isFieldVisible('PROCESSING_BATCH', 'inputQuantity') && (
+              {isFieldVisible('PROCESSING_BATCH', 'inputQuantity') !== false && (
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>投入量 (kg)</Text>
                 <TextInput style={styles.input} keyboardType="decimal-pad" placeholder="本工序投入原料量"
+                  testID="report-input-quantity"
                   value={form.inputQuantity} onChangeText={v => setForm(p => ({...p, inputQuantity: v}))} />
               </View>
               )}
@@ -198,6 +207,7 @@ const ScanReportScreen: React.FC = () => {
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>合格数量</Text>
                 <TextInput style={styles.input} keyboardType="numeric" placeholder="默认等于产出数量"
+                  testID="report-good-quantity"
                   value={form.goodQuantity} onChangeText={v => setForm(p => ({...p, goodQuantity: v}))} />
               </View>
               )}
@@ -208,6 +218,17 @@ const ScanReportScreen: React.FC = () => {
                   value={form.defectQuantity} onChangeText={v => setForm(p => ({...p, defectQuantity: v}))} />
               </View>
               )}
+              {/* Yield rate real-time display */}
+              {showYieldRate && (
+                <View style={styles.yieldRateContainer} testID="yield-rate-display">
+                  <View style={[styles.yieldRateDot, { backgroundColor: yieldRateColor }]} />
+                  <Text style={styles.yieldRateLabel}>良品率: </Text>
+                  <Text style={[styles.yieldRateValue, { color: yieldRateColor }]} testID="yield-rate-value">
+                    {yieldRate.toFixed(1)}%
+                  </Text>
+                </View>
+              )}
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>备注</Text>
                 <TextInput style={[styles.input, styles.textArea]} multiline numberOfLines={3}
@@ -217,7 +238,7 @@ const ScanReportScreen: React.FC = () => {
             </View>
 
             <TouchableOpacity style={[styles.submitButton, submitting && styles.submitDisabled]}
-              onPress={handleSubmit} disabled={submitting}>
+              onPress={handleSubmit} disabled={submitting} testID="report-submit-btn">
               {submitting ? <ActivityIndicator color="#fff" /> :
                 <Text style={styles.submitText}>提交报工</Text>}
             </TouchableOpacity>
@@ -260,6 +281,10 @@ const styles = StyleSheet.create({
   inputLabel: { fontSize: 14, color: '#333', marginBottom: 6, fontWeight: '500' },
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, backgroundColor: '#fafafa' },
   textArea: { height: 80, textAlignVertical: 'top' },
+  yieldRateContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8f9fa', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 14 },
+  yieldRateDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+  yieldRateLabel: { fontSize: 14, color: '#333', fontWeight: '500' },
+  yieldRateValue: { fontSize: 16, fontWeight: '700' },
   submitButton: { backgroundColor: '#4F46E5', paddingVertical: 15, borderRadius: 10, alignItems: 'center', marginBottom: 12 },
   submitDisabled: { opacity: 0.6 },
   submitText: { color: '#fff', fontSize: 17, fontWeight: '600' },

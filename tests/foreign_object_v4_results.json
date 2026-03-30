@@ -1,0 +1,42 @@
+{
+  "2x2": {
+    "time": 23.602792263031006,
+    "calls": 24,
+    "accuracy": 66.66666666666666,
+    "correct": 4,
+    "total": 6,
+    "tokens": 19280,
+    "payload_kb": 2514.3486328125,
+    "detections": {
+      "1": 0,
+      "2": 1,
+      "3": 1,
+      "4": 1,
+      "5": 0,
+      "6": 0
+    }
+  },
+  "3x3": {
+    "time": 33.40665626525879,
+    "calls": 54,
+    "accuracy": 83.33333333333334,
+    "correct": 5,
+    "total": 6,
+    "tokens": 26907,
+    "payload_kb": 3032.71875,
+    "detections": {
+      "1": 0,
+      "2": 4,
+      "3": 2,
+      "4": 1,
+      "5": 1,
+      "6": 0
+    }
+  },
+  "config": {
+    "model": "qwen-vl-max-latest",
+    "concurrent": 8,
+    "jpeg_quality": 80,
+    "max_tokens": 500
+  }
+}

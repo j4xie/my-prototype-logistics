@@ -14,7 +14,7 @@ import { Appbar, TextInput, Chip } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { TutorialOverlay } from '../../components/common/TutorialOverlay';
-import { useTutorialStore, TUTORIAL_PROCESS_OPERATION } from '../../store/tutorialStore';
+import { useTutorialStore, TUTORIAL_PROCESS_OPERATION, TUTORIAL_ENABLED, useTutorialTarget } from '../../store/tutorialStore';
 import { processTaskApiClient, ProcessTaskItem } from '../../services/api/processTaskApiClient';
 import { BarcodeScannerModal } from '../../components/processing/BarcodeScannerModal';
 import { ScreenWrapper } from '../../components/ui';
@@ -23,6 +23,7 @@ import { apiClient } from '../../services/api/apiClient';
 import { requireFactoryId } from '../../utils/factoryIdHelper';
 
 interface ScannedWorker { id: number; name: string; }
+const SUPERVISOR_SELF: ScannedWorker = { id: -1, name: '主管自己' };
 
 export default function ProcessOperationScreen() {
   const navigation = useNavigation<any>();
@@ -37,19 +38,42 @@ export default function ProcessOperationScreen() {
   const completedOp = useTutorialStore(s => s.completedTutorials[TUTORIAL_PROCESS_OPERATION.id]);
   const showTutorial = activeTutorial === TUTORIAL_PROCESS_OPERATION.id;
 
+  // Spotlight targets
+  const tgtTaskList = useTutorialTarget('po-task-list');
+  const tgtAttendance = useTutorialTarget('po-attendance');
+  const tgtReport = useTutorialTarget('po-report');
+
   useEffect(() => {
-    if (!loading && !completedOp && activeTutorial === null) {
+    if (TUTORIAL_ENABLED && !loading && !completedOp && activeTutorial === null) {
       const timer = setTimeout(() => {
-        useTutorialStore.getState().startTutorial(TUTORIAL_PROCESS_OPERATION.id);
+        const s = useTutorialStore.getState();
+        if (!s.activeTutorial && !s.completedTutorials[TUTORIAL_PROCESS_OPERATION.id]) {
+          s.startTutorial(TUTORIAL_PROCESS_OPERATION.id);
+        }
       }, 800);
       return () => clearTimeout(timer);
     }
   }, [loading, completedOp]);
 
+  // Re-measure when tutorial starts
+  useEffect(() => {
+    if (showTutorial) {
+      setTimeout(() => {
+        tgtTaskList.measure();
+        tgtAttendance.measure();
+        tgtReport.measure();
+      }, 200);
+    }
+  }, [showTutorial]);
+
   // Scanner
   const [scannerVisible, setScannerVisible] = useState(false);
-  const [scanMode, setScanMode] = useState<'checkin' | 'checkout' | 'report'>('checkin');
+  const [scanMode, setScanMode] = useState<'checkin' | 'checkout' | 'report' | 'locate'>('checkin');
   const [worker, setWorker] = useState<ScannedWorker | null>(null);
+
+  // Workers assigned to selected task (for picker)
+  const [taskWorkers, setTaskWorkers] = useState<ScannedWorker[]>([]);
+  const [workersLoading, setWorkersLoading] = useState(false);
 
   // Report form
   const [quantity, setQuantity] = useState('');
@@ -68,57 +92,103 @@ export default function ProcessOperationScreen() {
 
   useFocusEffect(useCallback(() => { loadTasks(); }, [loadTasks]));
 
-  // Parse scanned code
+  // Load workers assigned to / checked into a task
+  const loadTaskWorkers = useCallback(async (taskId: string) => {
+    setWorkersLoading(true);
+    setTaskWorkers([]);
+    try {
+      // Try getActiveCheckins first — these are workers actually on the floor
+      const checkinsRes = await processTaskApiClient.getActiveCheckins() as any;
+      const checkins = Array.isArray(checkinsRes?.data) ? checkinsRes.data : [];
+      const taskCheckins = checkins.filter((c: any) => String(c.processTaskId) === String(taskId));
+      if (taskCheckins.length > 0) {
+        const seen = new Set<number>();
+        const workers: ScannedWorker[] = [];
+        for (const c of taskCheckins) {
+          if (!seen.has(c.employeeId)) {
+            seen.add(c.employeeId);
+            workers.push({ id: c.employeeId, name: c.employeeName || c.workerName || `员工#${c.employeeId}` });
+          }
+        }
+        setTaskWorkers(workers);
+      } else {
+        // Fallback: try getWorkersByTask
+        const res = await processTaskApiClient.getWorkersByTask(taskId) as any;
+        const list = Array.isArray(res?.data) ? res.data : [];
+        setTaskWorkers(list.map((w: any) => ({ id: w.id || w.employeeId, name: w.name || w.fullName || `员工#${w.id}` })));
+      }
+    } catch { /* silent — worker list is optional */ }
+    finally { setWorkersLoading(false); }
+  }, []);
+
+  // When a task is selected, load its workers
+  useEffect(() => {
+    if (selectedTask) loadTaskWorkers(String(selectedTask.id));
+  }, [selectedTask, loadTaskWorkers]);
+
+  // Parse scanned code — shared resolver
+  const resolveEmployee = useCallback(async (raw: string): Promise<ScannedWorker | null> => {
+    const factoryId = requireFactoryId();
+    const nfcMatch = raw.match(/^CRETAS:EMP:(\d+):/);
+    if (nfcMatch?.[1]) {
+      return { id: parseInt(nfcMatch[1], 10), name: `员工#${nfcMatch[1]}` };
+    }
+    const res = await apiClient.get(`/api/mobile/${factoryId}/users/by-employee-code/${encodeURIComponent(raw.trim())}`) as any;
+    if (res?.success && res.data) {
+      return { id: res.data.id, name: res.data.fullName || res.data.username || `员工#${res.data.id}` };
+    }
+    const id = parseInt(raw, 10);
+    if (!isNaN(id) && id > 0) return { id, name: `员工#${id}` };
+    return null;
+  }, []);
+
   const handleScan = useCallback(async (raw: string) => {
     setScannerVisible(false);
     try {
-      const factoryId = requireFactoryId();
-      const nfcMatch = raw.match(/^CRETAS:EMP:(\d+):/);
-      let empId: number;
-      let empName: string;
+      const emp = await resolveEmployee(raw);
+      if (!emp) { Alert.alert('未识别', '无法识别此工牌'); return; }
 
-      if (nfcMatch?.[1]) {
-        empId = parseInt(nfcMatch[1], 10);
-        empName = `员工#${empId}`;
-      } else {
-        const res = await apiClient.get(`/api/mobile/${factoryId}/users/by-employee-code/${encodeURIComponent(raw.trim())}`) as any;
-        if (res?.success && res.data) {
-          empId = res.data.id;
-          empName = res.data.fullName || res.data.username || `员工#${res.data.id}`;
-        } else {
-          const id = parseInt(raw, 10);
-          if (!isNaN(id) && id > 0) { empId = id; empName = `员工#${id}`; }
-          else { Alert.alert('未识别', '无法识别此工牌'); return; }
+      if (scanMode === 'locate') {
+        // Scan-to-locate: find which task this employee is checked into
+        const checkinsRes = await processTaskApiClient.getActiveCheckins() as any;
+        const checkins = Array.isArray(checkinsRes?.data) ? checkinsRes.data : [];
+        const match = checkins.find((c: any) => c.employeeId === emp.id);
+        if (match) {
+          const task = tasks.find(t => String(t.id) === String(match.processTaskId));
+          if (task) {
+            setSelectedTask(task);
+            setWorker({ id: emp.id, name: match.employeeName || match.workerName || emp.name });
+            return;
+          }
         }
-      }
-
-      if (scanMode === 'checkin') {
+        Alert.alert('未找到', `${emp.name} 没有进行中的签到记录，请先签到`);
+      } else if (scanMode === 'checkin') {
         await processTaskApiClient.processCheckin({
-          employeeId: empId,
+          employeeId: emp.id,
           processName: selectedTask?.processName,
           processCategory: selectedTask?.processCategory,
           checkinMethod: 'QR_SCAN',
           processTaskId: selectedTask?.id,
         });
-        Alert.alert('签到成功', `${empName} 已签到「${selectedTask?.processName || '工序'}」`);
+        Alert.alert('签到成功', `${emp.name} 已签到「${selectedTask?.processName || '工序'}」`);
+        if (selectedTask) loadTaskWorkers(String(selectedTask.id)); // refresh worker list
       } else if (scanMode === 'checkout') {
-        // Get active checkins, find this employee, checkout
         const checkinsRes = await processTaskApiClient.getActiveCheckins() as any;
         const checkins = Array.isArray(checkinsRes?.data) ? checkinsRes.data : [];
-        const match = checkins.find((c: any) => c.employeeId === empId && c.processTaskId === selectedTask?.id);
+        const match = checkins.find((c: any) => c.employeeId === emp.id && String(c.processTaskId) === String(selectedTask?.id));
         if (match) {
           await processTaskApiClient.processCheckout(match.id);
-          Alert.alert('签退成功', `${empName} 已签退「${selectedTask?.processName || '工序'}」`);
+          Alert.alert('签退成功', `${emp.name} 已签退「${selectedTask?.processName || '工序'}」`);
         } else {
-          Alert.alert('未找到签到记录', `${empName} 未签到此工序`);
+          Alert.alert('未找到签到记录', `${emp.name} 未签到此工序`);
         }
       } else if (scanMode === 'report') {
-        setWorker({ id: empId, name: empName });
+        setWorker(emp);
       }
     } catch (e) {
       Alert.alert('操作失败', e instanceof Error ? e.message : '请重试');
     }
-  }, [scanMode, selectedTask]);
+  }, [scanMode, selectedTask, tasks, resolveEmployee, loadTaskWorkers]);
 
   // Submit report
   const handleSubmitReport = async () => {
@@ -133,7 +203,7 @@ export default function ProcessOperationScreen() {
         outputQuantity: qty,
         notes: notes || undefined,
       };
-      if (worker) {
+      if (worker && worker.id !== SUPERVISOR_SELF.id) {
         data.reporterName = worker.name;
         data.targetWorkerId = worker.id;
       }
@@ -158,14 +228,15 @@ export default function ProcessOperationScreen() {
         <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="工序操作" titleStyle={{ fontWeight: '600' }} />
+          <Appbar.Action icon="qrcode-scan" onPress={() => { setScanMode('locate'); setScannerVisible(true); }} />
         </Appbar.Header>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Text style={styles.hint}>选择要操作的工序</Text>
           {loading ? <ActivityIndicator size="large" style={{ marginTop: 40 }} /> :
             tasks.length === 0 ? <Text style={styles.empty}>暂无进行中的工序任务</Text> :
-            tasks.map(task => {
+            tasks.map((task, idx) => {
               const prog = task.plannedQuantity > 0 ? Math.min((task.completedQuantity / task.plannedQuantity) * 100, 100) : 0;
-              return (
+              const card = (
                 <TouchableOpacity key={task.id} style={styles.taskCard} onPress={() => setSelectedTask(task)} activeOpacity={0.7}>
                   <View style={styles.taskHeader}>
                     <Text style={styles.taskName}>{task.processName || '工序'}</Text>
@@ -186,9 +257,22 @@ export default function ProcessOperationScreen() {
                   </View>
                 </TouchableOpacity>
               );
+              // Spotlight wraps only the first card
+              return idx === 0 ? (
+                <View key={task.id} ref={tgtTaskList.ref} onLayout={tgtTaskList.onLayout} collapsable={false}>
+                  {card}
+                </View>
+              ) : card;
             })
           }
         </ScrollView>
+        <TutorialOverlay
+          visible={showTutorial}
+          steps={TUTORIAL_PROCESS_OPERATION.steps}
+          currentStep={activeStep}
+          onNext={() => useTutorialStore.getState().nextStep(TUTORIAL_PROCESS_OPERATION.steps.length)}
+          onSkip={() => useTutorialStore.getState().skipTutorial()}
+        />
       </ScreenWrapper>
     );
   }
@@ -224,7 +308,7 @@ export default function ProcessOperationScreen() {
           </View>
 
           {/* Attendance Buttons */}
-          <View style={styles.attendanceSection}>
+          <View ref={tgtAttendance.ref} onLayout={tgtAttendance.onLayout} style={styles.attendanceSection}>
             <Text style={styles.sectionTitle}>员工签到/签退</Text>
             <View style={styles.attendanceRow}>
               <TouchableOpacity
@@ -245,25 +329,52 @@ export default function ProcessOperationScreen() {
           </View>
 
           {/* Report Form */}
-          <View style={styles.reportSection}>
+          <View ref={tgtReport.ref} onLayout={tgtReport.onLayout} style={styles.reportSection}>
             <Text style={styles.sectionTitle}>报产量</Text>
 
             {worker ? (
               <View style={styles.workerBadge}>
+                <MaterialCommunityIcons name="account-check" size={18} color="#1890ff" />
                 <Text style={styles.workerLabel}>报工员工:</Text>
                 <Text style={styles.workerName}>{worker.name}</Text>
                 <TouchableOpacity onPress={() => setWorker(null)}>
-                  <Text style={{ color: '#999', fontSize: 12 }}>清除</Text>
+                  <Text style={{ color: '#999', fontSize: 12 }}>更换</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity
-                style={styles.scanWorkerBtn}
-                onPress={() => { setScanMode('report'); setScannerVisible(true); }}
-              >
-                <MaterialCommunityIcons name="qrcode-scan" size={18} color={theme.colors.primary} />
-                <Text style={styles.scanWorkerText}>扫描员工工牌 (选填，不扫=主管自己)</Text>
-              </TouchableOpacity>
+              <View>
+                {/* Worker picker — from active checkins */}
+                {workersLoading ? (
+                  <ActivityIndicator size="small" style={{ marginVertical: 8 }} />
+                ) : taskWorkers.length > 0 ? (
+                  <View style={styles.workerPickerWrap}>
+                    <Text style={styles.workerPickerLabel}>选择员工 (已签到)</Text>
+                    <View style={styles.workerPickerGrid}>
+                      {taskWorkers.map(w => (
+                        <TouchableOpacity key={w.id} style={styles.workerPickerBtn} onPress={() => setWorker(w)}>
+                          <MaterialCommunityIcons name="account" size={16} color="#1890ff" />
+                          <Text style={styles.workerPickerName} numberOfLines={1}>{w.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                ) : (
+                  <Text style={styles.noWorkerHint}>暂无已签到员工，可扫码或主管自己报工</Text>
+                )}
+                {/* Scan fallback + supervisor self */}
+                <View style={styles.workerActionsRow}>
+                  <TouchableOpacity
+                    style={styles.scanWorkerBtn}
+                    onPress={() => { setScanMode('report'); setScannerVisible(true); }}
+                  >
+                    <MaterialCommunityIcons name="qrcode-scan" size={16} color={theme.colors.primary} />
+                    <Text style={styles.scanWorkerText}>扫码工牌</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.selfReportBtn} onPress={() => setWorker(SUPERVISOR_SELF)}>
+                    <Text style={styles.selfReportText}>主管自己报</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             )}
 
             <TextInput
@@ -365,8 +476,17 @@ const styles = StyleSheet.create({
   workerBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#f0f9ff', padding: 10, borderRadius: 8, marginBottom: 12 },
   workerLabel: { fontSize: 13, color: '#666' },
   workerName: { fontSize: 15, fontWeight: '600', color: '#1890ff', flex: 1 },
-  scanWorkerBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#e8e8e8', marginBottom: 12 },
-  scanWorkerText: { fontSize: 13, color: '#888' },
+  workerPickerWrap: { marginBottom: 12 },
+  workerPickerLabel: { fontSize: 13, color: '#666', marginBottom: 8 },
+  workerPickerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  workerPickerBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f0f9ff', borderWidth: 1, borderColor: '#bae0ff' },
+  workerPickerName: { fontSize: 13, color: '#1890ff', fontWeight: '500', maxWidth: 80 },
+  noWorkerHint: { fontSize: 13, color: '#999', marginBottom: 8 },
+  workerActionsRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  scanWorkerBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#e8e8e8' },
+  scanWorkerText: { fontSize: 13, color: '#666' },
+  selfReportBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: '#f5f5f5' },
+  selfReportText: { fontSize: 13, color: '#999' },
   input: { backgroundColor: '#fff', fontSize: 18 },
   quickBtns: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
   quickBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.primary },

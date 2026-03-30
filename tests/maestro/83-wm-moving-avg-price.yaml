@@ -1,0 +1,208 @@
+appId: com.cretas.foodtrace
+
+---
+
+# Test 83: Warehouse Manager - Moving Average Price
+
+# Verifies moving average price display in inventory detail and batch detail
+
+# Covers: moving-avg-price testID, 移动均价 text
+
+
+
+- launchApp:
+
+    clearState: true
+
+- waitForAnimationToEnd
+
+
+
+# Login as warehouse manager
+
+- runFlow: flows/login-wm.yaml
+
+- extendedWaitUntil:
+
+    visible: ".*\u4ED3\u50A8.*|.*\u5E93\u5B58.*|.*Warehouse.*|.*Inventory.*"
+
+    timeout: 15000
+
+
+
+# ========================================
+
+# M-01: Navigate to Inventory tab (WM tab title: 库存)
+
+# ========================================
+
+- tapOn: "\u5E93\u5B58"
+
+- waitForAnimationToEnd
+
+
+
+- extendedWaitUntil:
+
+    visible: ".*\u5E93\u5B58.*|.*Inventory.*"
+
+    timeout: 15000
+
+- takeScreenshot: screenshots/83-inventory-list
+
+
+
+# ========================================
+
+# M-02: Tap on first inventory item
+
+# ========================================
+
+- tapOn:
+
+    text: ".*\u67E5\u770B\u8BE6\u60C5.*|.*View Detail.*"
+
+    optional: true
+
+- waitForAnimationToEnd
+
+
+
+- extendedWaitUntil:
+
+    visible: ".*\u5E93\u5B58\u8BE6\u60C5.*|.*Inventory Detail.*"
+
+    timeout: 15000
+
+
+
+# ========================================
+
+# M-03: Verify moving average price in inventory detail
+
+# ========================================
+
+# Scroll to find the moving avg price field
+
+- scrollUntilVisible:
+
+    element:
+
+      text: "\u79FB\u52A8\u5747\u4EF7"
+
+    direction: DOWN
+
+    timeout: 10000
+
+
+
+- assertVisible:
+
+    id: "moving-avg-price"
+
+
+
+- assertVisible:
+
+    text: "\u79FB\u52A8\u5747\u4EF7"
+
+
+
+- takeScreenshot: screenshots/83-moving-avg-price
+
+
+
+# ========================================
+
+# M-04: Navigate to batch detail from inventory
+
+# ========================================
+
+- swipe:
+
+    direction: UP
+
+    duration: 500
+
+- waitForAnimationToEnd
+
+
+
+# Look for batch list and tap first batch
+
+- scrollUntilVisible:
+
+    element:
+
+      text: ".*MB-.*|.*\u67E5\u770B\u8BE6\u60C5.*"
+
+    direction: DOWN
+
+    timeout: 10000
+
+
+
+- tapOn:
+
+    text: ".*\u67E5\u770B\u8BE6\u60C5.*"
+
+    optional: true
+
+- waitForAnimationToEnd
+
+
+
+# ========================================
+
+# M-05: Verify moving avg price in batch detail
+
+# ========================================
+
+- extendedWaitUntil:
+
+    visible: ".*\u6279\u6B21\u8BE6\u60C5.*|.*Batch Detail.*"
+
+    timeout: 15000
+
+
+
+# Scroll to find moving avg price
+
+- scrollUntilVisible:
+
+    element:
+
+      text: "\u79FB\u52A8\u5747\u4EF7"
+
+    direction: DOWN
+
+    timeout: 10000
+
+
+
+- assertVisible:
+
+    id: "moving-avg-price"
+
+
+
+- takeScreenshot: screenshots/83-batch-moving-avg-price
+
+
+
+# ========================================
+
+# M-06: Go back to inventory list
+
+# ========================================
+
+- back
+
+- waitForAnimationToEnd
+
+- back
+
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/83-inventory-return
+

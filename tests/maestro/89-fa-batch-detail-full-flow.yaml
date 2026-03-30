@@ -1,0 +1,254 @@
+appId: com.cretas.foodtrace
+
+---
+
+# Test 89: Complete Batch Detail Flow
+
+# Full flow: batch list -> detail (info tab) -> consumption tab -> BOM card -> back
+
+# Verifies navigation integrity and data loading across tabs
+
+# NOTE: Uses WS role for reliable batch list access via 批次 tab
+
+
+
+- launchApp:
+
+    clearState: true
+
+- waitForAnimationToEnd
+
+
+
+# Login as workshop supervisor (has batch list via 批次 tab)
+
+- runFlow: flows/login-ws.yaml
+
+- extendedWaitUntil:
+
+    visible: "Start Task"
+
+    timeout: 15000
+
+
+
+# ========================================
+
+# M-01: Navigate to Batches tab (WS tab: 批次)
+
+# ========================================
+
+- tapOn:
+
+    text: "\u6279\u6B21"
+
+- waitForAnimationToEnd
+
+
+
+- extendedWaitUntil:
+
+    visible: ".*\u6279\u6B21.*|.*Batch.*"
+
+    timeout: 15000
+
+- takeScreenshot: screenshots/89-batch-list
+
+
+
+# ========================================
+
+# M-02: Open first batch
+
+# ========================================
+
+- tapOn:
+
+    text: ".*PB-.*|.*MB-.*|.*BATCH.*"
+
+    index: 0
+
+    optional: true
+
+
+
+- extendedWaitUntil:
+
+    visible: "\u6279\u6B21\u8BE6\u60C5"
+
+    timeout: 15000
+
+
+
+# ========================================
+
+# M-03: Verify info tab content
+
+# ========================================
+
+# Batch number and product type should be visible
+
+- assertVisible:
+
+    text: ".*\u6279\u6B21\u53F7.*"
+
+    optional: true
+
+
+
+- assertVisible:
+
+    text: ".*\u57FA\u672C\u4FE1\u606F.*"
+
+    optional: true
+
+
+
+- takeScreenshot: screenshots/89-batch-info
+
+
+
+# ========================================
+
+# M-04: Switch to consumption tab
+
+# ========================================
+
+- tapOn:
+
+    text: "\u6D88\u8017\u8BB0\u5F55"
+
+
+
+- waitForAnimationToEnd
+
+
+
+# Wait for consumption data to load
+
+- extendedWaitUntil:
+
+    visible: ".*\u6D88\u8017.*|.*BOM.*|.*\u6682\u65E0\u6D88\u8017.*"
+
+    timeout: 15000
+
+
+
+# ========================================
+
+# M-05: Verify BOM achievement card or empty state
+
+# ========================================
+
+- assertVisible:
+
+    id: "bom-achievement-card"
+
+    optional: true
+
+
+
+- scrollUntilVisible:
+
+    element:
+
+      text: ".*\u8FBE\u6210\u7387.*|.*\u6682\u65E0\u6D88\u8017.*|.*\u7269\u6599\u660E\u7EC6.*"
+
+    direction: DOWN
+
+    timeout: 10000
+
+
+
+- takeScreenshot: screenshots/89-batch-consumption
+
+
+
+# ========================================
+
+# M-06: Switch back to detail tab
+
+# ========================================
+
+- tapOn:
+
+    text: "\u8BE6\u60C5"
+
+
+
+- waitForAnimationToEnd
+
+
+
+- assertVisible:
+
+    text: ".*\u57FA\u672C\u4FE1\u606F.*"
+
+    optional: true
+
+
+
+- takeScreenshot: screenshots/89-batch-detail-tab
+
+
+
+# ========================================
+
+# M-07: Check quick actions
+
+# ========================================
+
+- scrollUntilVisible:
+
+    element:
+
+      text: ".*\u5FEB\u6377\u64CD\u4F5C.*|.*\u8D28\u68C0\u8BB0\u5F55.*"
+
+    direction: DOWN
+
+    timeout: 10000
+
+
+
+- assertVisible:
+
+    text: ".*\u8D28\u68C0\u8BB0\u5F55.*"
+
+    optional: true
+
+
+
+- assertVisible:
+
+    text: ".*\u6210\u672C\u5206\u6790.*"
+
+    optional: true
+
+
+
+- takeScreenshot: screenshots/89-batch-actions
+
+
+
+# ========================================
+
+# M-08: Go back to batch list
+
+# ========================================
+
+- back
+
+- waitForAnimationToEnd
+
+
+
+- extendedWaitUntil:
+
+    visible: ".*\u6279\u6B21.*|.*Batch.*"
+
+    timeout: 15000
+
+
+
+- takeScreenshot: screenshots/89-batch-list-return
+

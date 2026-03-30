@@ -1,0 +1,11 @@
+# Task ID: 18
+# Title: 阶段3b: Factory Config Agent 追问机制 + 知识库
+# Status: done
+# Dependencies: 17
+# Priority: low
+# Description: 创建 WorkflowConfigAgent，实现追问收集(topicsCovered/topicsRemaining 7个主题)、工作流生成/修改、模板推荐。复用 food_kb + pgvector，新增 workflow_config category。实现冷启动种子数据导入(5个行业模板)。实现配置进度指示器。
+# Details:
+参考方案文档第九节阶段3b(约行860-1085)。追问机制复用 Python topicsCovered 模式 + Vue AiEntryDrawer。知识库默认租户隔离检索。
+
+# Test Strategy:
+Agent 追问覆盖7个主题；知识库检索返回相关结果；种子数据入库验证

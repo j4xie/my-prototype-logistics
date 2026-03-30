@@ -1,0 +1,11 @@
+# Task ID: 19
+# Title: 阶段3b: AI 学习机制 + 模板自动生成 + 安全策略
+# Status: done
+# Dependencies: 18
+# Priority: low
+# Description: 实现发布时自动入库(analyzeAndIndex)、脱敏处理(sanitizeForSharing)、跨厂共享三条件(已发布+授权+脱敏)。创建 workflow_templates 表（含 review_status）。实现 extractTemplates() 定期从配置中抽取模板。模板人工审核流程。
+# Details:
+参考方案文档第九节学习机制(约行1194-1270)。租户隔离：默认只查本厂数据。模板质量阈值 source_count >= 3。
+
+# Test Strategy:
+发布配置后知识库自动入库；脱敏处理验证客户名等敏感字段被替换；跨厂检索隔离测试

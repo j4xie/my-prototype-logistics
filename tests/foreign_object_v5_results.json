@@ -1,0 +1,41 @@
+[
+  {
+    "model": "qwen-vl-max-latest",
+    "label": "MAX (精确)",
+    "crop_time": 0.4281332492828369,
+    "api_time": 31.57658624649048,
+    "time": 32.004719495773315,
+    "accuracy": 66.66666666666666,
+    "correct": 4,
+    "tokens": 23400,
+    "cost_per_batch": 0.468,
+    "cost_per_day_100": 46.800000000000004,
+    "errors": 0
+  },
+  {
+    "model": "qwen-vl-plus-latest",
+    "label": "PLUS (快速)",
+    "crop_time": 0.44478464126586914,
+    "api_time": 32.44860577583313,
+    "time": 32.893390417099,
+    "accuracy": 83.33333333333334,
+    "correct": 5,
+    "tokens": 24155,
+    "cost_per_batch": 0.19324000000000002,
+    "cost_per_day_100": 19.324,
+    "errors": 0
+  },
+  {
+    "model": "qwen2.5-vl-72b-instruct",
+    "label": "72B (开源大)",
+    "crop_time": 0.4144012928009033,
+    "api_time": 39.30777931213379,
+    "time": 39.72218060493469,
+    "accuracy": 50.0,
+    "correct": 3,
+    "tokens": 28382,
+    "cost_per_batch": 0.56764,
+    "cost_per_day_100": 56.764,
+    "errors": 0
+  }
+]

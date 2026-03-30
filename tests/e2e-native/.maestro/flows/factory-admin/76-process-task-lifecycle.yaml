@@ -1,0 +1,176 @@
+# flows/factory-admin/76-process-task-lifecycle.yaml
+# Process Task Lifecycle E2E — verifies PROCESS mode task list, detail, report screens
+appId: com.cretas.foodtrace
+env:
+  USERNAME: factory_admin1
+  PASSWORD: "123456"
+  HOME_ROOT_ID: fa-home-root
+---
+- launchApp:
+    clearState: true
+
+# Handle ANR dialog
+- runFlow:
+    when:
+      visible: "Wait"
+    file: ../common/_dismiss_anr.yaml
+
+- runFlow: ../common/_wait_for_app.yaml
+
+- runFlow:
+    file: ../common/_login.yaml
+    env:
+      USERNAME: ${USERNAME}
+      PASSWORD: ${PASSWORD}
+      HOME_ROOT_ID: ${HOME_ROOT_ID}
+
+# Handle data load retry
+- runFlow:
+    when:
+      visible: "重试"
+    file: ../common/_retry_load.yaml
+
+# ========================================
+# M-01: Navigate to Process Task List
+# ========================================
+
+# Wait for home screen
+- extendedWaitUntil:
+    visible:
+      id: "fa-home-root"
+    timeout: 30000
+
+# Navigate to processing section (tap bottom tab or menu)
+- tapOn:
+    id: "bottom-tab-processing"
+
+- extendedWaitUntil:
+    visible:
+      text: "工序任务"
+    timeout: 15000
+
+# Tap on process task list entry
+- tapOn:
+    text: "工序任务"
+
+# Verify task list loads
+- extendedWaitUntil:
+    visible:
+      id: "process-task-list"
+    timeout: 15000
+
+- takeScreenshot: 76-01-process-task-list
+
+# ========================================
+# M-02: Filter by IN_PROGRESS
+# ========================================
+
+# Tap the "进行中" segment filter
+- runFlow:
+    when:
+      visible: "进行中"
+    commands:
+      - tapOn:
+          text: "进行中"
+
+- extendedWaitUntil:
+    visible:
+      id: "process-task-list"
+    timeout: 10000
+
+- takeScreenshot: 76-02-filter-in-progress
+
+# ========================================
+# M-03: Tap task -> Detail Screen
+# ========================================
+
+# Tap on first task card
+- tapOn:
+    id: "process-task-card-0"
+
+# Verify detail screen loads with quantities
+- extendedWaitUntil:
+    visible:
+      id: "task-detail-planned-qty"
+    timeout: 10000
+
+- assertVisible:
+    id: "task-detail-completed-qty"
+
+- assertVisible:
+    id: "task-detail-pending-qty"
+
+- takeScreenshot: 76-03-task-detail
+
+# ========================================
+# M-04: Navigate to Report Screen -> Submit
+# ========================================
+
+# Tap report button
+- runFlow:
+    when:
+      visible: "报工"
+    commands:
+      - tapOn:
+          text: "报工"
+
+# Wait for report form
+- extendedWaitUntil:
+    visible:
+      id: "report-quantity-input"
+    timeout: 10000
+
+# Input quantity
+- tapOn:
+    id: "report-quantity-input"
+- eraseText: 10
+- inputText: "50"
+- pressKey: back
+
+# Submit report
+- tapOn:
+    id: "report-submit-btn"
+
+# Wait for success feedback
+- extendedWaitUntil:
+    visible:
+      text: "提交成功"
+    timeout: 15000
+
+- tapOn:
+    text: "OK"
+
+- takeScreenshot: 76-04-report-submitted
+
+# ========================================
+# M-05: Go back -> Verify updated quantities
+# ========================================
+
+- pressKey: back
+
+# Navigate back to task list
+- extendedWaitUntil:
+    visible:
+      id: "process-task-list"
+    timeout: 10000
+
+- takeScreenshot: 76-05-after-report
+
+# ========================================
+# M-06: Navigate to History
+# ========================================
+
+# Tap "已完成" or "全部" tab to see completed tasks
+- runFlow:
+    when:
+      visible: "全部"
+    commands:
+      - tapOn:
+          text: "全部"
+
+- extendedWaitUntil:
+    visible:
+      id: "process-task-list"
+    timeout: 10000
+
+- takeScreenshot: 76-06-all-tasks

@@ -81,8 +81,8 @@ async function loadHRData() {
   try {
     // 获取员工列表来计算统计
     const [employeesRes, departmentsRes] = await Promise.allSettled([
-      get<{ content: any[]; totalElements: number }>(`/${factoryId.value}/users?page=1&size=1`),
-      get<{ content: any[]; totalElements: number }>(`/${factoryId.value}/departments?page=1&size=1`)
+      get<{ content: Record<string, unknown>[]; totalElements: number }>(`/${factoryId.value}/users?page=1&size=1`),
+      get<{ content: Record<string, unknown>[]; totalElements: number }>(`/${factoryId.value}/departments?page=1&size=1`)
     ]);
 
     if (employeesRes.status === 'fulfilled' && employeesRes.value.success) {

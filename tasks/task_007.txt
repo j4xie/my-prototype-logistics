@@ -1,0 +1,11 @@
+# Task ID: 7
+# Title: 阶段1.6: 补报流程 + SUPPLEMENTING 状态闭环
+# Status: done
+# Dependencies: 6
+# Priority: high
+# Description: 实现补报 API(supplement)；实现 SUPPLEMENTING 状态进入(记录 previousTerminalStatus)和退出(补报全部审批后自动恢复原终态)。实现定时校准任务(每小时 SUM 校准)和每日报工推送提醒。
+# Details:
+参考方案文档第三节3.2-3.4(约行255-295)。SUPPLEMENTING 进入条件：COMPLETED/CLOSED 任务由授权角色发起；退出条件：所有待审补报均已审批完成。推送提醒：下班前30分钟。
+
+# Test Strategy:
+SUPPLEMENTING 状态流转完整测试；定时校准任务验证 SUM 一致性；推送提醒触发逻辑

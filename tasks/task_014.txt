@@ -1,0 +1,11 @@
+# Task ID: 14
+# Title: Drools 激活: 接入现有 DRL + 生产工作流规则组
+# Status: done
+# Dependencies: 1
+# Priority: medium
+# Description: 编写迁移脚本将 intent-validation.drl、field-validation.drl、data-operation-validation.drl 内容插入 drools_rules 表。修改 RuleEngineServiceImpl 支持 factory_id='SYSTEM' 全局规则 fallback。为生产工作流新增规则组(action:enter_supplementing, exit_supplementing, update_completed_qty, onTransition:PRODUCTION_WORKFLOW, production_validation)。
+# Details:
+参考方案文档第十四节(约行1490-1570)。3个DRL文件在 src/main/resources/rules/ 下。RuleEngineServiceImpl.loadRulesFromDatabase() 需要 fallback 到 SYSTEM 级规则。
+
+# Test Strategy:
+intentValidation 规则组实际执行；生产工作流 action 规则触发验证

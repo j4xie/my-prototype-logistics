@@ -461,9 +461,9 @@ function togglePreviewMode() {
 
 // Resize all ECharts instances
 function resizeAllCharts() {
-  if (typeof window === 'undefined' || !(window as any).echarts) return;
+  if (typeof window === 'undefined' || !(window as unknown as Record<string, unknown>).echarts) return;
 
-  const echarts = (window as any).echarts;
+  const echarts = (window as unknown as Record<string, unknown>).echarts as { getInstanceByDom: (el: Element) => { resize: () => void; isDisposed?: () => boolean } | undefined };
   const containers = document.querySelectorAll('.card-content [_echarts_instance_]');
 
   containers.forEach((container) => {

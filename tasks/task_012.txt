@@ -1,0 +1,11 @@
+# Task ID: 12
+# Title: 阶段2-RN: 签到签退 + 累加报工 + 补报流程
+# Status: done
+# Dependencies: 7, 11
+# Priority: high
+# Description: 实现 RN 端工序任务签到/签退（NFC/扫码，绑定 processTaskId）、报工界面（选中工序卡片→输入产量→提交）、支持一小时一报累加。任务 COMPLETED/CLOSED 后报工入口变为「补报」，isSupplemental=true。
+# Details:
+参考方案文档第四节阶段3-RN(约行560-595)。签到绑定 processTaskId 而非 batchId。
+
+# Test Strategy:
+签到/签退流程验证；报工提交后 pendingQuantity 正确更新；补报记录标记正确
