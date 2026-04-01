@@ -440,6 +440,34 @@ public class IntentRecognitionPipelineServiceImpl implements IntentRecognitionPi
             return IntentMatchResult.empty(userInput);
         }
 
+        // v33.1: Pre-preprocess phrase matching — match on ORIGINAL input before preprocessing
+        // Prevents preprocessor from stripping keywords like "收款", "开票", "研发需求"
+        {
+            String rawNormalized = userInput.toLowerCase().trim();
+            String rawPhraseInput = filterFillerWordsForPhrase(rawNormalized);
+            Optional<String> earlyPhraseMatch = knowledgeBase.matchPhrase(rawPhraseInput, businessDomain);
+            if (earlyPhraseMatch.isPresent()) {
+                String matchedCode = earlyPhraseMatch.get();
+                List<AIIntentConfig> allIntents = configService.getAllIntents(factoryId);
+                Optional<AIIntentConfig> intentOpt = allIntents.stream()
+                        .filter(i -> i.getIntentCode().equals(matchedCode))
+                        .findFirst();
+                if (intentOpt.isPresent()) {
+                    AIIntentConfig intent = intentOpt.get();
+                    log.info("[v33.1-EarlyPhrase] Pre-preprocess phrase match: input='{}', intentCode={}",
+                            rawPhraseInput, matchedCode);
+                    IntentMatchResult result = IntentMatchResult.builder()
+                            .userInput(userInput)
+                            .bestMatch(intent)
+                            .confidence(0.96)
+                            .matchMethod(IntentMatchResult.MatchMethod.PHRASE_MATCH)
+                            .build();
+                    saveIntentMatchRecord(result, factoryId, userId, sessionId, false);
+                    return attachTiming(result, startTimeMs, preprocessEndMs);
+                }
+            }
+        }
+
         // Query preprocessing
         String processedInput = userInput;
         PreprocessedQuery preprocessedQuery = null;
