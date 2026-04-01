@@ -89,6 +89,15 @@ public class Customer extends BaseEntity {
     private Integer rating;
     @Column(name = "rating_notes", columnDefinition = "TEXT")
     private String ratingNotes;
+
+    /** 开户行 */
+    @Column(name = "bank_name", length = 200)
+    private String bankName;
+
+    /** 银行账号 */
+    @Column(name = "bank_account", length = 100)
+    private String bankAccount;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
     @Column(name = "notes", columnDefinition = "TEXT")
@@ -105,4 +114,9 @@ public class Customer extends BaseEntity {
     @BatchSize(size = 20)
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ShipmentRecord> shipmentRecords = new ArrayList<>();
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", referencedColumnName = "id", insertable = false, updatable = false)
+    private List<CustomerTrackingRecord> trackingRecords = new ArrayList<>();
 }

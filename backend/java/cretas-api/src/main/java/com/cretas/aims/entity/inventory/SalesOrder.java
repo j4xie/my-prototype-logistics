@@ -143,6 +143,40 @@ public class SalesOrder extends BaseEntity {
     @Column(name = "estimated_profit", precision = 15, scale = 2)
     private BigDecimal estimatedProfit;
 
+    // ==================== 开票/回款/扩展 ====================
+
+    /** 开票状态: NOT_INVOICED, PARTIAL_INVOICED, FULLY_INVOICED */
+    @Column(name = "invoice_status", length = 32)
+    private String invoiceStatus;
+
+    /** 已开票金额 */
+    @Column(name = "invoiced_amount", precision = 15, scale = 2)
+    private BigDecimal invoicedAmount;
+
+    /** 是否结清 */
+    @Column(name = "settlement_flag")
+    private Boolean settlementFlag;
+
+    /** 已收款金额 */
+    @Column(name = "paid_amount", precision = 15, scale = 2)
+    private BigDecimal paidAmount;
+
+    /** 关联报价单ID */
+    @Column(name = "quote_id", length = 191)
+    private String quoteId;
+
+    /** 运输计划状态 */
+    @Column(name = "transport_plan_status", length = 32)
+    private String transportPlanStatus;
+
+    /** 交付提醒日期 */
+    @Column(name = "delivery_reminder_date")
+    private java.time.LocalDate deliveryReminderDate;
+
+    /** 下单箱数 */
+    @Column(name = "box_quantity", precision = 15, scale = 2)
+    private BigDecimal boxQuantity;
+
     // ==================== 关联 ====================
 
     @JsonIgnore

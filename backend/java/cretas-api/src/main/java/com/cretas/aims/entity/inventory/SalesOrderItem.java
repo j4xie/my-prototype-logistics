@@ -66,6 +66,21 @@ public class SalesOrderItem extends BaseEntity {
     @Column(name = "remark", length = 500)
     private String remark;
 
+    /** 成本单价 (含税) */
+    @Column(name = "cost_unit_price", precision = 15, scale = 4)
+    private BigDecimal costUnitPrice;
+
+    /** 税率 (%) */
+    @Column(name = "tax_rate", precision = 5, scale = 2)
+    private BigDecimal taxRate;
+
+    /** 成本小计 = 数量 × 成本单价 */
+    @Transient
+    public BigDecimal getCostTotal() {
+        if (costUnitPrice == null || quantity == null) return BigDecimal.ZERO;
+        return quantity.multiply(costUnitPrice).setScale(2, BigDecimal.ROUND_HALF_UP);
+    }
+
     // ==================== 关联 ====================
 
     @JsonIgnore

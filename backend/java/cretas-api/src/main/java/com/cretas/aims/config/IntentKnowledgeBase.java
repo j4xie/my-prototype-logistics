@@ -7170,7 +7170,68 @@ public class IntentKnowledgeBase {
         commonPhraseMapping.put("创建技能", "GOVERNANCE_SKILL_COMPOSE");
         commonPhraseMapping.put("组合成skill", "GOVERNANCE_SKILL_COMPOSE");
 
-        log.debug("v32 公共短语映射初始化完成，共 {} 条映射", commonPhraseMapping.size());
+        // === v33.0: 研发样品 + 开票回款 新增意图 ===
+
+        // 研发需求
+        phraseToIntentMapping.put("创建研发需求", "RD_REQUEST_CREATE");
+        phraseToIntentMapping.put("新建研发需求", "RD_REQUEST_CREATE");
+        phraseToIntentMapping.put("提交研发需求", "RD_REQUEST_CREATE");
+        phraseToIntentMapping.put("研发需求", "RD_REQUEST_CREATE");
+        phraseToIntentMapping.put("新品开发需求", "RD_REQUEST_CREATE");
+        phraseToIntentMapping.put("新品开发", "RD_REQUEST_CREATE");
+        phraseToIntentMapping.put("开发需求", "RD_REQUEST_CREATE");
+        phraseToIntentMapping.put("样品需求", "RD_REQUEST_CREATE");
+        commonPhraseMapping.put("研发需求", "RD_REQUEST_CREATE");
+        commonPhraseMapping.put("新品开发", "RD_REQUEST_CREATE");
+
+        // 样品管理
+        phraseToIntentMapping.put("创建样品", "RD_SAMPLE_CREATE");
+        phraseToIntentMapping.put("新建样品", "RD_SAMPLE_CREATE");
+        phraseToIntentMapping.put("样品档案", "RD_SAMPLE_CREATE");
+        phraseToIntentMapping.put("登记样品", "RD_SAMPLE_CREATE");
+        commonPhraseMapping.put("创建样品", "RD_SAMPLE_CREATE");
+
+        // 样品审核
+        phraseToIntentMapping.put("审核样品", "RD_SAMPLE_APPROVE");
+        phraseToIntentMapping.put("样品审核", "RD_SAMPLE_APPROVE");
+        phraseToIntentMapping.put("样品通过", "RD_SAMPLE_APPROVE");
+        phraseToIntentMapping.put("批准样品", "RD_SAMPLE_APPROVE");
+        phraseToIntentMapping.put("驳回样品", "RD_SAMPLE_APPROVE");
+        commonPhraseMapping.put("样品审核", "RD_SAMPLE_APPROVE");
+
+        // 开票
+        phraseToIntentMapping.put("申请开票", "FINANCE_INVOICE_REQUEST");
+        phraseToIntentMapping.put("开票", "FINANCE_INVOICE_REQUEST");
+        phraseToIntentMapping.put("开发票", "FINANCE_INVOICE_REQUEST");
+        phraseToIntentMapping.put("申请发票", "FINANCE_INVOICE_REQUEST");
+        phraseToIntentMapping.put("开具发票", "FINANCE_INVOICE_REQUEST");
+        commonPhraseMapping.put("开票", "FINANCE_INVOICE_REQUEST");
+        commonPhraseMapping.put("发票", "FINANCE_INVOICE_REQUEST");
+
+        // 开票审核
+        phraseToIntentMapping.put("审核开票", "FINANCE_INVOICE_APPROVE");
+        phraseToIntentMapping.put("开票审核", "FINANCE_INVOICE_APPROVE");
+        phraseToIntentMapping.put("批准开票", "FINANCE_INVOICE_APPROVE");
+        commonPhraseMapping.put("开票审核", "FINANCE_INVOICE_APPROVE");
+
+        // 收款
+        phraseToIntentMapping.put("录入收款", "FINANCE_PAYMENT_RECORD");
+        phraseToIntentMapping.put("收款", "FINANCE_PAYMENT_RECORD");
+        phraseToIntentMapping.put("回款", "FINANCE_PAYMENT_RECORD");
+        phraseToIntentMapping.put("客户付款", "FINANCE_PAYMENT_RECORD");
+        phraseToIntentMapping.put("收到货款", "FINANCE_PAYMENT_RECORD");
+        phraseToIntentMapping.put("回款登记", "FINANCE_PAYMENT_RECORD");
+        phraseToIntentMapping.put("记录收款", "FINANCE_PAYMENT_RECORD");
+        commonPhraseMapping.put("收款", "FINANCE_PAYMENT_RECORD");
+        commonPhraseMapping.put("回款", "FINANCE_PAYMENT_RECORD");
+
+        // 采购财务审核
+        phraseToIntentMapping.put("采购财务审核", "PURCHASE_FINANCE_APPROVE");
+        phraseToIntentMapping.put("采购单审核", "PURCHASE_FINANCE_APPROVE");
+        phraseToIntentMapping.put("审核采购单", "PURCHASE_FINANCE_APPROVE");
+        commonPhraseMapping.put("采购财务审核", "PURCHASE_FINANCE_APPROVE");
+
+        log.debug("v33 公共短语映射初始化完成，共 {} 条映射", commonPhraseMapping.size());
     }
 
     /**

@@ -239,6 +239,18 @@ export function FAManagementScreen() {
               color="#f56c6c"
               onPress={() => navigation.navigate('ReturnOrderList')}
             />
+            <GridItem
+              icon="cash-check"
+              title="录入收款"
+              color="#52c41a"
+              onPress={() => navigation.navigate('PaymentRecord' as never)}
+            />
+            <GridItem
+              icon="flask-outline"
+              title="研发需求"
+              color="#722ed1"
+              onPress={() => navigation.navigate('RdRequestCreate' as never)}
+            />
           </View>
         </View>
 

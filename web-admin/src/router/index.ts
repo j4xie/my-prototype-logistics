@@ -364,6 +364,34 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'FinanceSkuMargin',
             component: () => import('@/views/finance/sku-margin/index.vue'),
             meta: { requiresAuth: true, title: 'SKU毛利率分析', module: 'finance' }
+          },
+          {
+            path: 'invoices',
+            name: 'FinanceInvoices',
+            component: () => import('@/views/finance/invoices/list.vue'),
+            meta: { requiresAuth: true, title: '开票管理', module: 'finance' }
+          },
+          {
+            path: 'payments',
+            name: 'FinancePayments',
+            component: () => import('@/views/finance/payments/list.vue'),
+            meta: { requiresAuth: true, title: '收款管理', module: 'finance' }
+          }
+        ]
+      },
+
+      // 研发管理
+      {
+        path: 'rd',
+        name: 'RD',
+        redirect: '/rd/samples',
+        meta: { requiresAuth: true, title: '研发管理', module: 'production' },
+        children: [
+          {
+            path: 'samples',
+            name: 'RdSamples',
+            component: () => import('@/views/rd/samples/list.vue'),
+            meta: { requiresAuth: true, title: '研发样品管理', module: 'production' }
           }
         ]
       },

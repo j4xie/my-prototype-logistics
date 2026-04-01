@@ -1,0 +1,27 @@
+package com.cretas.aims.repository;
+
+import com.cretas.aims.entity.finance.InvoiceRecord;
+import com.cretas.aims.entity.enums.InvoiceStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Repository
+public interface InvoiceRecordRepository extends JpaRepository<InvoiceRecord, String> {
+
+    Page<InvoiceRecord> findByFactoryIdAndDeletedAtIsNull(String factoryId, Pageable pageable);
+
+    Page<InvoiceRecord> findByFactoryIdAndStatusAndDeletedAtIsNull(String factoryId, InvoiceStatus status, Pageable pageable);
+
+    List<InvoiceRecord> findBySalesOrderIdAndDeletedAtIsNull(String salesOrderId);
+
+    @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM InvoiceRecord i WHERE i.salesOrderId = ?1 AND i.status = 'ISSUED' AND i.deletedAt IS NULL")
+    BigDecimal sumIssuedAmountBySalesOrderId(String salesOrderId);
+
+    long countByFactoryIdAndStatusAndDeletedAtIsNull(String factoryId, InvoiceStatus status);
+}

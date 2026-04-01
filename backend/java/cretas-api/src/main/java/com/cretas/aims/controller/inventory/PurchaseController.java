@@ -127,6 +127,45 @@ public class PurchaseController {
         return ApiResponse.success("采购订单已取消", order);
     }
 
+    // ==================== 财务审核 ====================
+
+    @PostMapping("/orders/{orderId}/submit-for-finance-review")
+    @Operation(summary = "提交采购订单财务审核")
+    @RequirePermission("procurement:read_write")
+    public ApiResponse<PurchaseOrder> submitForFinanceReview(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId) {
+        PurchaseOrder order = purchaseService.submitForFinanceReview(factoryId, orderId);
+        return ApiResponse.success("已提交财务审核", order);
+    }
+
+    @PostMapping("/orders/{orderId}/finance-approve")
+    @Operation(summary = "采购订单财务审核通过")
+    @RequirePermission("finance:read_write")
+    public ApiResponse<PurchaseOrder> financeApprove(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        Long userId = extractUserId(authorization);
+        String notes = body != null ? body.get("notes") : null;
+        PurchaseOrder order = purchaseService.financeApproveOrder(factoryId, orderId, userId, notes);
+        return ApiResponse.success("财务审核通过", order);
+    }
+
+    @PostMapping("/orders/{orderId}/finance-reject")
+    @Operation(summary = "采购订单财务审核驳回")
+    @RequirePermission("finance:read_write")
+    public ApiResponse<PurchaseOrder> financeReject(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody java.util.Map<String, String> body) {
+        Long userId = extractUserId(authorization);
+        PurchaseOrder order = purchaseService.financeRejectOrder(factoryId, orderId, userId, body.get("notes"));
+        return ApiResponse.success("财务审核已驳回", order);
+    }
+
     // ==================== 入库管理 ====================
 
     @PostMapping("/receives")

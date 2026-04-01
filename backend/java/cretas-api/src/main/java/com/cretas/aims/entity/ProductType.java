@@ -185,6 +185,30 @@ public class ProductType extends BaseEntity {
     @Column(name = "temperature_zone", length = 20)
     private String temperatureZone;
 
+    /** 箱规转换系数 (如 10kg/箱 则系数为10) */
+    @Column(name = "box_conversion_coefficient", precision = 10, scale = 4)
+    private java.math.BigDecimal boxConversionCoefficient;
+
+    /** 库存预警值 */
+    @Column(name = "inventory_warning_threshold", precision = 15, scale = 2)
+    private java.math.BigDecimal inventoryWarningThreshold;
+
+    /** 起订量 (MOQ) */
+    @Column(name = "minimum_order_quantity", precision = 15, scale = 2)
+    private java.math.BigDecimal minimumOrderQuantity;
+
+    /** 品牌 */
+    @Column(name = "brand", length = 100)
+    private String brand;
+
+    /** 结算方式 (月结/现结/预付等) */
+    @Column(name = "settlement_method", length = 50)
+    private String settlementMethod;
+
+    /** 含税单价 */
+    @Column(name = "tax_included_unit_price", precision = 15, scale = 4)
+    private java.math.BigDecimal taxIncludedUnitPrice;
+
     // ==================== End 产品信息管理增强字段 ====================
 
     // ==================== SKU 组装模型 ====================

@@ -397,6 +397,8 @@ export type FAManagementStackParamList = {
   TransferDetail: { transferId: string };
   ArApOverview: undefined;
   PriceList: undefined;
+  PaymentRecord: undefined;
+  RdRequestCreate: undefined;
   ReturnOrderList: undefined;
   ReturnOrderDetail: { returnId: string };
   // 报工审批

@@ -128,7 +128,15 @@ const menuConfig: MenuItem[] = [
       { path: '/finance/costs', title: '成本分析', icon: '', module: 'finance' },
       { path: '/finance/reports', title: '财务报表', icon: '', module: 'finance' },
       { path: '/finance/ar-ap', title: '应收应付', icon: '', module: 'finance' },
+      { path: '/finance/invoices', title: '开票管理', icon: '', module: 'finance' },
+      { path: '/finance/payments', title: '收款管理', icon: '', module: 'finance' },
       { path: '/finance/sku-margin', title: 'SKU毛利率分析', icon: '', module: 'finance' }
+    ]
+  },
+  {
+    path: '/rd', title: '研发管理', icon: 'Opportunity', module: 'production',
+    children: [
+      { path: '/rd/samples', title: '研发样品管理', icon: '', module: 'production' }
     ]
   },
   {

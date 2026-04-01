@@ -206,8 +206,31 @@ async function handleDelivered(deliveryId: string) {
           <el-descriptions-item label="含运费">{{ order.shippingIncluded ? '是' : '否' }}</el-descriptions-item>
           <el-descriptions-item label="运费">{{ order.shippingFee ? formatAmount(order.shippingFee) : '-' }}</el-descriptions-item>
           <el-descriptions-item label="实际发货金额">{{ order.actualShippedAmount ? formatAmount(order.actualShippedAmount) : '-' }}</el-descriptions-item>
+          <el-descriptions-item label="预估成本">{{ order.estimatedCost ? formatAmount(order.estimatedCost) : '-' }}</el-descriptions-item>
+          <el-descriptions-item label="预估利润">{{ order.estimatedProfit ? formatAmount(order.estimatedProfit) : '-' }}</el-descriptions-item>
+          <el-descriptions-item label="下单箱数">{{ order.boxQuantity || '-' }}</el-descriptions-item>
           <el-descriptions-item label="交货地址" :span="3">{{ order.deliveryAddress || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="交付提醒">{{ order.deliveryReminderDate || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="运输计划">
+            <el-tag v-if="order.transportPlanStatus" size="small">{{ { NOT_PLANNED: '未定制', PLANNED: '已安排', IN_TRANSIT: '运输中', DELIVERED: '已送达' }[order.transportPlanStatus] || order.transportPlanStatus }}</el-tag>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="关联报价单">{{ order.quoteId || '-' }}</el-descriptions-item>
           <el-descriptions-item label="备注" :span="3">{{ order.remark || '-' }}</el-descriptions-item>
+        </el-descriptions>
+
+        <!-- 财务状态 -->
+        <el-descriptions :column="4" border style="margin-top: 16px" title="财务状态">
+          <el-descriptions-item label="开票状态">
+            <el-tag :type="{ NOT_INVOICED: 'info', PARTIAL_INVOICED: 'warning', FULLY_INVOICED: 'success' }[order.invoiceStatus] || 'info'" size="small">
+              {{ { NOT_INVOICED: '未开票', PARTIAL_INVOICED: '部分开票', FULLY_INVOICED: '已开票' }[order.invoiceStatus] || '未开票' }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="已开票金额">{{ order.invoicedAmount ? formatAmount(order.invoicedAmount) : '0.00' }}</el-descriptions-item>
+          <el-descriptions-item label="已收款金额">{{ order.paidAmount ? formatAmount(order.paidAmount) : '0.00' }}</el-descriptions-item>
+          <el-descriptions-item label="是否结清">
+            <el-tag :type="order.settlementFlag ? 'success' : 'danger'" size="small">{{ order.settlementFlag ? '已结清' : '未结清' }}</el-tag>
+          </el-descriptions-item>
         </el-descriptions>
 
         <h3 style="margin: 20px 0 12px">{{ label('product') }}明细</h3>
@@ -215,13 +238,19 @@ async function handleDelivered(deliveryId: string) {
           <el-table-column prop="productName" :label="label('product')" min-width="150" />
           <el-table-column prop="quantity" label="订单数量" width="120" align="right" />
           <el-table-column prop="unit" label="单位" width="80" align="center" />
-          <el-table-column prop="unitPrice" label="单价" width="120" align="right">
+          <el-table-column prop="unitPrice" label="销售单价" width="120" align="right">
             <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
+          </el-table-column>
+          <el-table-column prop="costUnitPrice" label="成本单价" width="120" align="right">
+            <template #default="{ row }">{{ row.costUnitPrice ? formatAmount(row.costUnitPrice) : '-' }}</template>
+          </el-table-column>
+          <el-table-column prop="taxRate" label="税率" width="80" align="center">
+            <template #default="{ row }">{{ row.taxRate != null ? `${row.taxRate}%` : '-' }}</template>
           </el-table-column>
           <el-table-column label="已发货" width="100" align="right">
             <template #default="{ row }">{{ row.deliveredQuantity || 0 }}</template>
           </el-table-column>
-          <el-table-column label="小计" width="130" align="right">
+          <el-table-column label="销售小计" width="130" align="right">
             <template #default="{ row }">{{ formatAmount(row.quantity * row.unitPrice) }}</template>
           </el-table-column>
         </el-table>

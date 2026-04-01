@@ -6,6 +6,18 @@ import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 import type { FormInstance } from 'element-plus';
+import DynamicEntityForm from '@/components/DynamicEntityForm.vue';
+import type { FieldConfig } from '@/config/entityFieldConfigs';
+
+// 客户扩展字段 — 添加新字段只需在此数组加一行
+const customerExtendedFields: FieldConfig[] = [
+  { key: 'taxNumber', label: '纳税人识别号', type: 'text', group: '开票信息', order: 1 },
+  { key: 'billingAddress', label: '开票地址', type: 'text', group: '开票信息', order: 2 },
+  { key: 'bankName', label: '开户行', type: 'text', group: '开票信息', order: 3 },
+  { key: 'bankAccount', label: '银行账号', type: 'text', group: '开票信息', order: 4 },
+  { key: 'creditLimit', label: '信用额度', type: 'decimal', group: '信用管理', precision: 2, suffix: '元', order: 5 },
+  { key: 'paymentTerms', label: '结算模式', type: 'text', group: '信用管理', order: 6, placeholder: '如 月结30天' },
+];
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -146,7 +158,7 @@ async function handleSubmit() {
   await formRef.value.validate();
   submitting.value = true;
   try {
-    const payload = {
+    const payload: Record<string, unknown> = {
       name: formData.name,
       contactPerson: formData.contactPerson,
       phone: formData.phone,
@@ -155,6 +167,10 @@ async function handleSubmit() {
       type: formData.type || undefined,
       industry: formData.industry || undefined,
       notes: formData.notes || undefined,
+      // 扩展字段自动收集
+      ...Object.fromEntries(
+        customerExtendedFields.map(f => [f.key, (formData as Record<string, unknown>)[f.key] ?? null])
+      ),
     };
     let res;
     if (dialogMode.value === 'add') {
@@ -296,6 +312,17 @@ async function handleDelete(row: Record<string, unknown>) {
         <el-form-item label="备注" prop="notes">
           <el-input v-model="formData.notes" placeholder="请输入备注" type="textarea" :rows="2" />
         </el-form-item>
+
+        <!-- 扩展字段 (动态渲染) -->
+        <el-divider content-position="left">扩展信息</el-divider>
+        <DynamicEntityForm
+          :fields="customerExtendedFields"
+          :model-value="formData as Record<string, unknown>"
+          @update:model-value="Object.assign(formData, $event)"
+          :readonly="isViewMode"
+          :columns="2"
+          label-width="110px"
+        />
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">{{ isViewMode ? '关闭' : '取消' }}</el-button>

@@ -25,10 +25,31 @@ const receives = ref<Record<string, unknown>[]>([]);
 const receiveDialogVisible = ref(false);
 const receiveForm = ref<{ items: { materialTypeId: string; receivedQuantity: number; unit: string; unitPrice: number }[] }>({ items: [] });
 
+// 三价对比
+interface PriceComparison {
+  materialTypeId: string;
+  materialName: string;
+  materialCode: string;
+  unit: string;
+  bomStandardPrice: number | null;
+  movingAvgPrice: number | null;
+  currentPrice: number | null;
+  varianceFromBom: number | null;
+  varianceFromAvg: number | null;
+  priceAlert: boolean;
+  bomProductNames: string;
+}
+const priceComparisons = ref<PriceComparison[]>([]);
+const priceLoading = ref(false);
+const priceLoaded = ref(false);
+
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
   SUBMITTED: { text: '已提交', type: 'warning' },
   APPROVED: { text: '已审批', type: '' },
+  PENDING_FINANCE_REVIEW: { text: '待财务审核', type: 'warning' },
+  FINANCE_APPROVED: { text: '财务已审核', type: 'success' },
+  FINANCE_REJECTED: { text: '财务驳回', type: 'danger' },
   PARTIAL_RECEIVED: { text: '部分收货', type: 'warning' },
   COMPLETED: { text: '已完成', type: 'success' },
   CANCELLED: { text: '已取消', type: 'danger' },
@@ -67,6 +88,9 @@ async function handleAction(action: string) {
     submit: { label: '提交', url: `/${factoryId.value}/purchase/orders/${orderId.value}/submit` },
     approve: { label: '审批通过', url: `/${factoryId.value}/purchase/orders/${orderId.value}/approve` },
     cancel: { label: '取消', url: `/${factoryId.value}/purchase/orders/${orderId.value}/cancel` },
+    submitFinance: { label: '提交财务审核', url: `/${factoryId.value}/purchase/orders/${orderId.value}/submit-for-finance-review` },
+    financeApprove: { label: '财务审核通过', url: `/${factoryId.value}/purchase/orders/${orderId.value}/finance-approve` },
+    financeReject: { label: '财务驳回', url: `/${factoryId.value}/purchase/orders/${orderId.value}/finance-reject` },
   };
   const a = map[action];
   if (!a) return;
@@ -111,6 +135,34 @@ async function handleCreateReceive() {
   finally { submitting.value = false; }
 }
 
+async function loadPriceComparison() {
+  if (priceLoaded.value || priceLoading.value || !factoryId.value || !orderId.value) return;
+  priceLoading.value = true;
+  try {
+    const res = await get(`/${factoryId.value}/purchase/orders/${orderId.value}/price-comparison`);
+    if (res.success) {
+      priceComparisons.value = Array.isArray(res.data) ? res.data : [];
+      priceLoaded.value = true;
+    }
+  } catch { ElMessage.error('加载三价对比失败'); }
+  finally { priceLoading.value = false; }
+}
+
+function formatVariance(val: number | null): string {
+  if (val == null) return '-';
+  const sign = val > 0 ? '+' : '';
+  return `${sign}${val.toFixed(1)}%`;
+}
+
+function varianceClass(val: number | null): string {
+  if (val == null) return '';
+  return val > 0 ? 'variance-up' : val < 0 ? 'variance-down' : '';
+}
+
+function priceRowClassName({ row }: { row: PriceComparison }): string {
+  return row.priceAlert ? 'price-alert-row' : '';
+}
+
 async function confirmReceive(receiveId: string) {
   if (submitting.value) return;
   try {
@@ -141,7 +193,10 @@ async function confirmReceive(receiveId: string) {
           <div class="header-right" v-if="order && canWrite">
             <el-button v-if="order.status === 'DRAFT'" type="warning" :loading="submitting" @click="handleAction('submit')">提交审批</el-button>
             <el-button v-if="order.status === 'SUBMITTED'" type="success" :loading="submitting" @click="handleAction('approve')">审批通过</el-button>
-            <el-button v-if="['APPROVED','PARTIAL_RECEIVED'].includes(order.status)" type="primary" :loading="submitting" @click="openReceiveDialog">{{ label('receive') }}</el-button>
+            <el-button v-if="order.status === 'APPROVED'" type="warning" :loading="submitting" @click="handleAction('submitFinance')">提交财务审核</el-button>
+            <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="success" :loading="submitting" @click="handleAction('financeApprove')">财务通过</el-button>
+            <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="danger" :loading="submitting" @click="handleAction('financeReject')">财务驳回</el-button>
+            <el-button v-if="['FINANCE_APPROVED','PARTIAL_RECEIVED'].includes(order.status)" type="primary" :loading="submitting" @click="openReceiveDialog">{{ label('receive') }}</el-button>
             <el-button v-if="['DRAFT','SUBMITTED'].includes(order.status)" type="danger" :disabled="submitting" @click="handleAction('cancel')">取消</el-button>
           </div>
         </div>
@@ -175,6 +230,46 @@ async function confirmReceive(receiveId: string) {
             <template #default="{ row }">{{ formatAmount(row.quantity * row.unitPrice) }}</template>
           </el-table-column>
         </el-table>
+
+        <el-collapse style="margin: 20px 0 12px" @change="(val: string[]) => { if (val.includes('price')) loadPriceComparison(); }">
+          <el-collapse-item title="三价对比分析" name="price">
+            <div v-loading="priceLoading">
+              <el-alert v-if="priceComparisons.some(p => p.priceAlert)" type="warning" :closable="false" show-icon style="margin-bottom: 12px">
+                存在价格偏差超过10%的原料，请关注标红行
+              </el-alert>
+              <el-table :data="priceComparisons" border stripe :row-class-name="priceRowClassName" size="small" v-if="priceComparisons.length">
+                <el-table-column prop="materialName" label="原料名称" min-width="140" />
+                <el-table-column label="BOM标准价" width="120" align="right">
+                  <template #default="{ row }">{{ row.bomStandardPrice != null ? formatAmount(row.bomStandardPrice) : '-' }}</template>
+                </el-table-column>
+                <el-table-column label="移动均价" width="120" align="right">
+                  <template #default="{ row }">{{ row.movingAvgPrice != null ? formatAmount(row.movingAvgPrice) : '-' }}</template>
+                </el-table-column>
+                <el-table-column label="当前采购价" width="120" align="right">
+                  <template #default="{ row }">{{ row.currentPrice != null ? formatAmount(row.currentPrice) : '-' }}</template>
+                </el-table-column>
+                <el-table-column label="BOM偏差" width="100" align="center">
+                  <template #default="{ row }">
+                    <span :class="varianceClass(row.varianceFromBom)">{{ formatVariance(row.varianceFromBom) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="均价偏差" width="100" align="center">
+                  <template #default="{ row }">
+                    <span :class="varianceClass(row.varianceFromAvg)">{{ formatVariance(row.varianceFromAvg) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="预警" width="70" align="center">
+                  <template #default="{ row }">
+                    <el-tag v-if="row.priceAlert" type="danger" size="small">异常</el-tag>
+                    <el-tag v-else type="success" size="small">正常</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="bomProductNames" label="关联产品" min-width="120" show-overflow-tooltip />
+              </el-table>
+              <el-empty v-else-if="priceLoaded" description="暂无三价对比数据" :image-size="60" />
+            </div>
+          </el-collapse-item>
+        </el-collapse>
 
         <h3 style="margin: 20px 0 12px">{{ label('receive') }}记录</h3>
         <el-table :data="receives" border stripe>
@@ -232,4 +327,11 @@ async function confirmReceive(receiveId: string) {
   }
   .header-right { display: flex; gap: 8px; }
 }
+// 三价对比样式
+:deep(.price-alert-row) {
+  background-color: #fef0f0 !important;
+  td { background-color: #fef0f0 !important; }
+}
+.variance-up { color: #f56c6c; font-weight: 600; }
+.variance-down { color: #67c23a; font-weight: 600; }
 </style>

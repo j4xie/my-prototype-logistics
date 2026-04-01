@@ -88,6 +88,8 @@ import FinishedGoodsListScreen from "../../screens/factory-admin/inventory/Finis
 import TransferListScreen from "../../screens/factory-admin/inventory/TransferListScreen";
 import TransferDetailScreen from "../../screens/factory-admin/inventory/TransferDetailScreen";
 import ArApOverviewScreen from "../../screens/factory-admin/inventory/ArApOverviewScreen";
+import PaymentRecordScreen from "../../screens/factory-admin/finance/PaymentRecordScreen";
+import RdRequestCreateScreen from "../../screens/factory-admin/rd/RdRequestCreateScreen";
 import PriceListScreen from "../../screens/factory-admin/inventory/PriceListScreen";
 import ReturnOrderListScreen from "../../screens/factory-admin/inventory/ReturnOrderListScreen";
 import ReturnOrderDetailScreen from "../../screens/factory-admin/inventory/ReturnOrderDetailScreen";
@@ -478,6 +480,16 @@ export function FAManagementStackNavigator() {
         name="ArApOverview"
         component={ArApOverviewScreen}
         options={{ title: "应收应付" }}
+      />
+      <Stack.Screen
+        name="PaymentRecord"
+        component={PaymentRecordScreen}
+        options={{ title: "录入收款" }}
+      />
+      <Stack.Screen
+        name="RdRequestCreate"
+        component={RdRequestCreateScreen}
+        options={{ title: "新建研发需求" }}
       />
       <Stack.Screen
         name="PriceList"

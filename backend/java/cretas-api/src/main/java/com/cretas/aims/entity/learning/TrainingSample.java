@@ -179,12 +179,16 @@ public class TrainingSample {
     public enum MatchMethod {
         /** 精确表达匹配 */
         EXACT,
+        /** 短语映射匹配 */
+        PHRASE_MATCH,
         /** 正则匹配 */
         REGEX,
         /** 关键词匹配 */
         KEYWORD,
         /** 语义匹配 */
         SEMANTIC,
+        /** BERT 分类器 */
+        CLASSIFIER,
         /** 融合匹配 */
         FUSION,
         /** LLM Fallback */
@@ -195,6 +199,10 @@ public class TrainingSample {
         SIMILAR_EXPRESSION,
         /** 用户反馈 */
         USER_FEEDBACK,
+        /** 域默认 */
+        DOMAIN_DEFAULT,
+        /** 被拒绝 */
+        REJECTED,
         /** 未知 */
         UNKNOWN
     }

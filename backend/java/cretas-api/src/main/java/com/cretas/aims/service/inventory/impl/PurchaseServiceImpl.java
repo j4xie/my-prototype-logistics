@@ -187,6 +187,48 @@ public class PurchaseServiceImpl implements PurchaseService {
 
     @Override
     @Transactional
+    public PurchaseOrder submitForFinanceReview(String factoryId, String orderId) {
+        PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
+        if (order.getStatus() != PurchaseOrderStatus.APPROVED) {
+            throw new BusinessException("只有已审批状态的订单可以提交财务审核");
+        }
+        order.setStatus(PurchaseOrderStatus.PENDING_FINANCE_REVIEW);
+        log.info("采购订单提交财务审核: orderId={}", orderId);
+        return purchaseOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public PurchaseOrder financeApproveOrder(String factoryId, String orderId, Long reviewedBy, String notes) {
+        PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
+        if (order.getStatus() != PurchaseOrderStatus.PENDING_FINANCE_REVIEW) {
+            throw new BusinessException("只有待财务审核状态的订单可以审核");
+        }
+        order.setStatus(PurchaseOrderStatus.FINANCE_APPROVED);
+        order.setFinanceReviewedBy(reviewedBy);
+        order.setFinanceReviewedAt(java.time.LocalDateTime.now());
+        order.setFinanceReviewNotes(notes);
+        log.info("采购订单财务审核通过: orderId={}, reviewedBy={}", orderId, reviewedBy);
+        return purchaseOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public PurchaseOrder financeRejectOrder(String factoryId, String orderId, Long reviewedBy, String notes) {
+        PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
+        if (order.getStatus() != PurchaseOrderStatus.PENDING_FINANCE_REVIEW) {
+            throw new BusinessException("只有待财务审核状态的订单可以驳回");
+        }
+        order.setStatus(PurchaseOrderStatus.FINANCE_REJECTED);
+        order.setFinanceReviewedBy(reviewedBy);
+        order.setFinanceReviewedAt(java.time.LocalDateTime.now());
+        order.setFinanceReviewNotes(notes);
+        log.info("采购订单财务审核驳回: orderId={}, reviewedBy={}", orderId, reviewedBy);
+        return purchaseOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
     public PurchaseOrder cancelOrder(String factoryId, String orderId) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() == PurchaseOrderStatus.COMPLETED || order.getStatus() == PurchaseOrderStatus.CLOSED) {

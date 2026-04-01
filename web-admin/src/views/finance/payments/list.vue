@@ -1,0 +1,176 @@
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
+import { get, post } from '@/api/request';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { formatAmount } from '@/utils/tableFormatters';
+
+const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
+const factoryId = computed(() => authStore.factoryId);
+const canWrite = computed(() => permissionStore.canWrite('finance'));
+
+const loading = ref(false);
+const tableData = ref<Record<string, unknown>[]>([]);
+const pagination = ref({ page: 0, size: 20, total: 0 });
+const statusFilter = ref('');
+
+const statusMap: Record<string, { text: string; type: string }> = {
+  PENDING: { text: '待确认', type: 'warning' },
+  VERIFIED: { text: '已确认', type: 'success' },
+  REJECTED: { text: '已驳回', type: 'danger' },
+};
+
+const methodMap: Record<string, string> = {
+  BANK_TRANSFER: '银行转账', CASH: '现金', WECHAT: '微信', ALIPAY: '支付宝',
+  CHECK: '支票', CREDIT: '信用', POS: 'POS', OTHER: '其他',
+};
+
+onMounted(() => loadData());
+
+async function loadData() {
+  if (!factoryId.value) return;
+  loading.value = true;
+  try {
+    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
+    if (statusFilter.value) params.status = statusFilter.value;
+    const res = await get(`/${factoryId.value}/finance/payments`, { params });
+    if (res.success) {
+      tableData.value = res.data.content || [];
+      pagination.value.total = res.data.totalElements || 0;
+    }
+  } catch { ElMessage.error('加载收款列表失败'); }
+  finally { loading.value = false; }
+}
+
+async function handleVerify(id: string) {
+  try {
+    await ElMessageBox.confirm('确认此笔收款？', '确认');
+    const res = await post(`/${factoryId.value}/finance/payments/${id}/verify`);
+    if (res.success) { ElMessage.success('收款已确认'); loadData(); }
+    else { ElMessage.error(res.message || '确认失败'); }
+  } catch (e) { if (e !== 'cancel') ElMessage.error('操作失败'); }
+}
+
+async function handleReject(id: string) {
+  try {
+    const { value: reason } = await ElMessageBox.prompt('请输入驳回原因', '驳回');
+    const res = await post(`/${factoryId.value}/finance/payments/${id}/reject`, { reason });
+    if (res.success) { ElMessage.success('已驳回'); loadData(); }
+    else { ElMessage.error(res.message || '驳回失败'); }
+  } catch (e) { if (e !== 'cancel') ElMessage.error('操作失败'); }
+}
+
+// 录入收款弹窗
+const recordDialogVisible = ref(false);
+const recordForm = ref({
+  salesOrderId: '', amount: 0, paymentMethod: 'BANK_TRANSFER',
+  paymentDate: '', paymentReference: '', remark: ''
+});
+const submitting = ref(false);
+
+async function handleRecordSubmit() {
+  if (!recordForm.value.salesOrderId || !recordForm.value.amount) {
+    ElMessage.warning('请填写订单ID和收款金额'); return;
+  }
+  submitting.value = true;
+  try {
+    const res = await post(`/${factoryId.value}/finance/payments/record`, recordForm.value);
+    if (res.success) {
+      ElMessage.success('收款记录已创建');
+      recordDialogVisible.value = false;
+      loadData();
+    } else { ElMessage.error(res.message || '创建失败'); }
+  } catch { ElMessage.error('创建失败'); }
+  finally { submitting.value = false; }
+}
+</script>
+
+<template>
+  <div class="page-wrapper" v-loading="loading">
+    <el-card shadow="never">
+      <template #header>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:16px;font-weight:600">收款管理</span>
+          <div style="display:flex;gap:8px">
+            <el-select v-model="statusFilter" placeholder="全部状态" clearable style="width:140px" @change="loadData">
+              <el-option v-for="(v,k) in statusMap" :key="k" :label="v.text" :value="k" />
+            </el-select>
+            <el-button v-if="canWrite" type="primary" @click="recordDialogVisible = true">录入收款</el-button>
+          </div>
+        </div>
+      </template>
+
+      <el-table :data="tableData" border stripe>
+        <el-table-column prop="paymentNumber" label="收款编号" width="180" />
+        <el-table-column prop="customerName" label="客户" min-width="130" />
+        <el-table-column prop="amount" label="收款金额" width="130" align="right">
+          <template #default="{ row }">{{ formatAmount(row.amount) }}</template>
+        </el-table-column>
+        <el-table-column prop="paymentMethod" label="方式" width="100" align="center">
+          <template #default="{ row }">{{ methodMap[row.paymentMethod] || row.paymentMethod }}</template>
+        </el-table-column>
+        <el-table-column prop="paymentDate" label="收款日期" width="120" />
+        <el-table-column prop="paymentReference" label="流水号" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="receiptUrl" label="凭证" width="70" align="center">
+          <template #default="{ row }">
+            <a v-if="row.receiptUrl" :href="row.receiptUrl" target="_blank">查看</a>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="statusMap[row.status]?.type || 'info'" size="small">{{ statusMap[row.status]?.text || row.status }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" align="center" v-if="canWrite">
+          <template #default="{ row }">
+            <el-button v-if="row.status === 'PENDING'" type="success" link size="small" @click="handleVerify(row.id)">确认</el-button>
+            <el-button v-if="row.status === 'PENDING'" type="danger" link size="small" @click="handleReject(row.id)">驳回</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-pagination
+        v-if="pagination.total > pagination.size"
+        style="margin-top:16px;justify-content:flex-end"
+        :current-page="pagination.page + 1"
+        :page-size="pagination.size"
+        :total="pagination.total"
+        layout="total, prev, pager, next"
+        @current-change="(p: number) => { pagination.page = p - 1; loadData(); }"
+      />
+    </el-card>
+
+    <!-- 录入收款弹窗 -->
+    <el-dialog v-model="recordDialogVisible" title="录入收款" width="480px" destroy-on-close>
+      <el-form label-width="90px">
+        <el-form-item label="销售订单ID" required>
+          <el-input v-model="recordForm.salesOrderId" placeholder="输入销售订单ID" />
+        </el-form-item>
+        <el-form-item label="收款金额" required>
+          <el-input-number v-model="recordForm.amount" :min="0" :precision="2" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="支付方式">
+          <el-select v-model="recordForm.paymentMethod" style="width:100%">
+            <el-option v-for="(v,k) in methodMap" :key="k" :label="v" :value="k" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="收款日期">
+          <el-date-picker v-model="recordForm.paymentDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="流水号">
+          <el-input v-model="recordForm.paymentReference" placeholder="银行流水号/支付凭证号" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="recordForm.remark" type="textarea" :rows="2" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="recordDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleRecordSubmit">提交</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>

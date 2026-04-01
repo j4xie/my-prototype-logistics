@@ -103,6 +103,20 @@ public class PurchaseOrder extends BaseEntity {
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
 
+    // ==================== 财务审核 ====================
+
+    /** 财务审核人ID */
+    @Column(name = "finance_reviewed_by")
+    private Long financeReviewedBy;
+
+    /** 财务审核时间 */
+    @Column(name = "finance_reviewed_at")
+    private java.time.LocalDateTime financeReviewedAt;
+
+    /** 财务审核意见 */
+    @Column(name = "finance_review_notes", columnDefinition = "TEXT")
+    private String financeReviewNotes;
+
     // ==================== 关联 ====================
 
     @JsonIgnore

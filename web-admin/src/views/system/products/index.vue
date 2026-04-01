@@ -7,6 +7,25 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, Download, Upload, Picture, ChatDotRound, Setting, Rank, Delete as DeleteIcon } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PRODUCT_CONFIG } from '@/components/ai-entry/types';
+import DynamicEntityForm from '@/components/DynamicEntityForm.vue';
+import type { FieldConfig } from '@/config/entityFieldConfigs';
+
+// 产品扩展字段 — 添加新字段只需在此数组加一行
+const productExtendedFields: FieldConfig[] = [
+  { key: 'brand', label: '品牌', type: 'text', group: '商务信息', order: 1 },
+  { key: 'taxIncludedUnitPrice', label: '含税单价', type: 'decimal', group: '商务信息', precision: 4, suffix: '元', order: 2 },
+  { key: 'settlementMethod', label: '结算方式', type: 'select', group: '商务信息', order: 3,
+    options: [
+      { label: '月结', value: 'MONTHLY' },
+      { label: '现结', value: 'CASH' },
+      { label: '预付', value: 'PREPAID' },
+      { label: '货到付款', value: 'COD' },
+    ] },
+  { key: 'boxConversionCoefficient', label: '箱规转换系数', type: 'decimal', group: '商务信息', precision: 4, order: 4,
+    placeholder: '如 10kg/箱 填 10' },
+  { key: 'inventoryWarningThreshold', label: '库存预警值', type: 'decimal', group: '库存采购', precision: 2, order: 5 },
+  { key: 'minimumOrderQuantity', label: '起订量(MOQ)', type: 'decimal', group: '库存采购', precision: 2, order: 6 },
+];
 import {
   getActiveWorkProcesses,
   getProductWorkProcesses,
@@ -44,6 +63,14 @@ interface ProductType {
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
+  // 六扇门扩展字段
+  boxConversionCoefficient?: number;
+  inventoryWarningThreshold?: number;
+  minimumOrderQuantity?: number;
+  brand?: string;
+  settlementMethod?: string;
+  taxIncludedUnitPrice?: number;
+  [key: string]: unknown;
 }
 
 const authStore = useAuthStore();
@@ -301,6 +328,10 @@ async function handleSubmit() {
       temperatureZone: formData.temperatureZone,
       imageUrl: formData.imageUrl,
       notes: formData.notes,
+      // 扩展字段 — 从 productExtendedFields 自动收集
+      ...Object.fromEntries(
+        productExtendedFields.map(f => [f.key, formData[f.key as keyof typeof formData] ?? null])
+      ),
     };
     if (!isEditing.value) {
       payload.isActive = true;
@@ -688,6 +719,16 @@ function handleAiFill(params: Record<string, unknown>) {
             placeholder="请输入备注信息"
           />
         </el-form-item>
+
+        <!-- 扩展字段 (动态渲染，添加新字段只需修改 productExtendedFields 数组) -->
+        <el-divider content-position="left">扩展信息</el-divider>
+        <DynamicEntityForm
+          :fields="productExtendedFields"
+          :model-value="formData as Record<string, unknown>"
+          @update:model-value="Object.assign(formData, $event)"
+          :columns="2"
+          label-width="120px"
+        />
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>

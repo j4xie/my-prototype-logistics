@@ -30,6 +30,12 @@ public interface PurchaseService {
 
     PurchaseOrder cancelOrder(String factoryId, String orderId);
 
+    PurchaseOrder submitForFinanceReview(String factoryId, String orderId);
+
+    PurchaseOrder financeApproveOrder(String factoryId, String orderId, Long reviewedBy, String notes);
+
+    PurchaseOrder financeRejectOrder(String factoryId, String orderId, Long reviewedBy, String notes);
+
     PurchaseOrder updateDraftOrder(String factoryId, String orderId, CreatePurchaseOrderRequest request);
 
     // ==================== 采购入库 ====================

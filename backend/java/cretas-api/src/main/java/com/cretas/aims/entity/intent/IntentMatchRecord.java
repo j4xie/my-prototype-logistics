@@ -259,15 +259,18 @@ public class IntentMatchRecord extends BaseEntity {
      * 匹配方法枚举
      */
     public enum MatchMethod {
-        EXACT,      // 精确表达匹配 (hash查表)
-        REGEX,      // 正则表达式匹配
-        KEYWORD,    // 关键词匹配
-        SEMANTIC,   // 语义向量匹配
-        FUSION,     // 融合匹配（语义+关键词）
-        SIMILAR,    // 相似表达匹配 (编辑距离)
-        LLM,        // LLM fallback 匹配
+        EXACT,          // 精确表达匹配 (hash查表)
+        PHRASE_MATCH,   // 短语映射匹配
+        REGEX,          // 正则表达式匹配
+        KEYWORD,        // 关键词匹配
+        SEMANTIC,       // 语义向量匹配
+        CLASSIFIER,     // BERT 分类器匹配
+        FUSION,         // 融合匹配（语义+关键词）
+        SIMILAR,        // 相似表达匹配 (编辑距离)
+        LLM,            // LLM fallback 匹配
         DOMAIN_DEFAULT, // 域默认意图匹配 (Layer 3.5)
-        NONE        // 未匹配
+        REJECTED,       // 输入被拒绝
+        NONE            // 未匹配
     }
 
     /**
