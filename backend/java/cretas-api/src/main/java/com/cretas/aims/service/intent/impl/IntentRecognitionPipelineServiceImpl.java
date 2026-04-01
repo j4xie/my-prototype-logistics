@@ -684,9 +684,78 @@ public class IntentRecognitionPipelineServiceImpl implements IntentRecognitionPi
             QueryPreprocessorService.EnhancedPreprocessResult enhancedResult,
             IntentKnowledgeBase.VerbNounDisambiguationResult verbNounResult,
             boolean skipPhraseShortcut, String businessDomain) {
-        // Stub: In the actual deployed code, this contains the full ~1400-line method body
-        // from the original AIIntentServiceImpl lines 1317-2663.
-        // It has been preserved identically, with configService delegation.
+        // v33 patch: Restore phrase matching + keyword matching + regex matching
+        // (The original 1400-line method was lost in a refactor; this restores core matching)
+
+        List<AIIntentConfig> allIntents = configService.getAllIntents(factoryId);
+        String normalized = processedInput.toLowerCase().trim();
+
+        // Layer 1: Phrase matching via IntentKnowledgeBase
+        if (!skipPhraseShortcut) {
+            String phraseInput = filterFillerWordsForPhrase(normalized);
+            Optional<String> phraseMatch = knowledgeBase.matchPhrase(phraseInput, businessDomain);
+            if (phraseMatch.isPresent()) {
+                String matchedCode = phraseMatch.get();
+                Optional<AIIntentConfig> intentOpt = allIntents.stream()
+                        .filter(i -> i.getIntentCode().equals(matchedCode))
+                        .findFirst();
+                if (intentOpt.isPresent()) {
+                    AIIntentConfig intent = intentOpt.get();
+                    log.info("[v33-Phrase] Phrase matched: input='{}', intentCode={}", phraseInput, matchedCode);
+                    IntentMatchResult result = IntentMatchResult.builder()
+                            .userInput(originalInput)
+                            .bestMatch(intent)
+                            .confidence(0.95)
+                            .matchMethod(IntentMatchResult.MatchMethod.PHRASE_MATCH)
+                            .build();
+                    saveIntentMatchRecord(result, factoryId, null, null, false);
+                    return result;
+                }
+            }
+        }
+
+        // Layer 2: Regex matching via ai_intent_configs.regex_pattern
+        for (AIIntentConfig intent : allIntents) {
+            if (matchesByRegex(intent, normalized)) {
+                log.info("[v33-Regex] Regex matched: input='{}', intentCode={}", normalized, intent.getIntentCode());
+                IntentMatchResult result = IntentMatchResult.builder()
+                        .userInput(originalInput)
+                        .bestMatch(intent)
+                        .confidence(0.90)
+                        .matchMethod(IntentMatchResult.MatchMethod.REGEX)
+                        .build();
+                saveIntentMatchRecord(result, factoryId, null, null, false);
+                return result;
+            }
+        }
+
+        // Layer 3: Keyword scoring
+        for (AIIntentConfig intent : allIntents) {
+            String keywordsJson = intent.getKeywords();
+            if (keywordsJson != null && !keywordsJson.isEmpty()) {
+                try {
+                    List<String> keywords = new com.fasterxml.jackson.databind.ObjectMapper()
+                            .readValue(keywordsJson, new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
+                    long matchCount = keywords.stream().filter(normalized::contains).count();
+                    if (matchCount > 0 && matchCount >= Math.min(2, keywords.size())) {
+                        double conf = Math.min(0.85, 0.60 + matchCount * 0.10);
+                        log.info("[v33-Keyword] Keyword matched: input='{}', intentCode={}, matchedKw={}/{}",
+                                normalized, intent.getIntentCode(), matchCount, keywords.size());
+                        IntentMatchResult result = IntentMatchResult.builder()
+                                .userInput(originalInput)
+                                .bestMatch(intent)
+                                .confidence(conf)
+                                .matchMethod(IntentMatchResult.MatchMethod.KEYWORD)
+                                .build();
+                        saveIntentMatchRecord(result, factoryId, null, null, false);
+                        return result;
+                    }
+                } catch (Exception e) { /* ignore bad JSON */ }
+            }
+        }
+
+        // No match
+        log.info("[v33-NoMatch] No intent matched for input='{}'", normalized);
         return IntentMatchResult.empty(originalInput);
     }
 
