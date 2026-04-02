@@ -116,59 +116,11 @@ public class AttendanceAnomalyTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行考勤异常查询 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 解析参数
-        String userId = getString(params, "userId");
-        String departmentId = getString(params, "departmentId");
-        String anomalyType = getString(params, "anomalyType");
-
-        // 日期范围（默认最近7天）
-        String startDate = getString(params, "startDate");
-        String endDate = getString(params, "endDate");
-        if (endDate == null || endDate.trim().isEmpty()) {
-            endDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
-        }
-        if (startDate == null || startDate.trim().isEmpty()) {
-            startDate = LocalDate.now().minusDays(7).format(DateTimeFormatter.ISO_LOCAL_DATE);
-        }
-
-        Integer page = getInteger(params, "page", 1);
-        Integer size = getInteger(params, "size", 10);
-
-        // TODO: 调用实际服务获取数据
-        // Page<AttendanceAnomaly> anomalies = attendanceService.getAnomalies(
-        //     factoryId, userId, departmentId, anomalyType, startDate, endDate, page, size);
-
-        // 占位实现：返回模拟数据结构
-        List<Map<String, Object>> anomalies = new ArrayList<>();
-        // 模拟空异常列表
-
-        Map<String, Object> result = buildPageResult(anomalies, 0L, 0, page);
-
-        // 查询条件
-        Map<String, Object> queryConditions = new HashMap<>();
-        if (userId != null) queryConditions.put("userId", userId);
-        if (departmentId != null) queryConditions.put("departmentId", departmentId);
-        if (anomalyType != null) queryConditions.put("anomalyType", anomalyType);
-        queryConditions.put("startDate", startDate);
-        queryConditions.put("endDate", endDate);
-        result.put("queryConditions", queryConditions);
-
-        // 异常类型统计
-        Map<String, Integer> anomalyStats = new HashMap<>();
-        anomalyStats.put("LATE", 0);
-        anomalyStats.put("EARLY_LEAVE", 0);
-        anomalyStats.put("ABSENT", 0);
-        anomalyStats.put("MISSING_CLOCK_IN", 0);
-        anomalyStats.put("MISSING_CLOCK_OUT", 0);
-        result.put("anomalyStats", anomalyStats);
-
-        result.put("message", "请接入AttendanceService获取实际考勤异常数据");
-
-        log.info("考勤异常查询完成 - 日期范围: {} ~ {}", startDate, endDate);
-
-        return result;
+        // 考勤服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "考勤服务尚未接入，请联系管理员配置 TimeclockService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 
     @Override

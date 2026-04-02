@@ -72,46 +72,11 @@ public class AttendanceStatusTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行考勤状态查询 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 获取用户ID
-        String userId = getString(params, "userId");
-        if (userId == null || userId.trim().isEmpty()) {
-            Object contextUserId = context.get("userId");
-            if (contextUserId != null) {
-                userId = String.valueOf(contextUserId);
-            }
-        }
-
-        // 获取查询日期
-        String date = getString(params, "date");
-        if (date == null || date.trim().isEmpty()) {
-            date = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
-        }
-
-        // TODO: 调用实际服务获取数据
-        // AttendanceStatus status = attendanceService.getAttendanceStatus(factoryId, userId, date);
-
-        // 占位实现：返回模拟数据结构
-        Map<String, Object> result = new HashMap<>();
-        result.put("userId", userId);
-        result.put("userName", "当前用户");
-        result.put("date", date);
-        result.put("status", "UNKNOWN");
-        result.put("statusDescription", "未知状态");
-        result.put("isOnDuty", false);
-        result.put("isLate", false);
-        result.put("isEarlyLeave", false);
-        result.put("isAbsent", false);
-        result.put("clockInTime", null);
-        result.put("clockOutTime", null);
-        result.put("scheduledStartTime", "09:00");
-        result.put("scheduledEndTime", "18:00");
-        result.put("message", "请接入AttendanceService获取实际考勤状态");
-
-        log.info("考勤状态查询完成 - 用户: {}, 日期: {}", userId, date);
-
-        return result;
+        // 考勤服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "考勤服务尚未接入，请联系管理员配置 TimeclockService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 
     @Override

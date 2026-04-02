@@ -100,60 +100,11 @@ public class AttendanceStatsTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行考勤统计查询 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 解析参数
-        String userId = getString(params, "userId");
-        String departmentId = getString(params, "departmentId");
-        String period = getString(params, "period", "MONTH");
-        String startDate = getString(params, "startDate");
-        String endDate = getString(params, "endDate");
-
-        // 根据period计算日期范围
-        LocalDate now = LocalDate.now();
-        if (!"CUSTOM".equals(period)) {
-            DateRange range = calculateDateRange(period, now);
-            startDate = range.start.format(DateTimeFormatter.ISO_LOCAL_DATE);
-            endDate = range.end.format(DateTimeFormatter.ISO_LOCAL_DATE);
-        }
-
-        // TODO: 调用实际服务获取数据
-        // AttendanceStatistics stats = attendanceService.getStatistics(
-        //     factoryId, userId, departmentId, startDate, endDate);
-
-        // 占位实现：返回模拟数据结构
-        Map<String, Object> result = new HashMap<>();
-        result.put("period", period);
-        result.put("startDate", startDate);
-        result.put("endDate", endDate);
-        if (userId != null) result.put("userId", userId);
-        if (departmentId != null) result.put("departmentId", departmentId);
-
-        // 核心统计指标
-        Map<String, Object> metrics = new HashMap<>();
-        metrics.put("totalEmployees", 0);
-        metrics.put("workingDays", 0);
-        metrics.put("attendanceRate", 0.0);      // 出勤率
-        metrics.put("lateRate", 0.0);            // 迟到率
-        metrics.put("earlyLeaveRate", 0.0);      // 早退率
-        metrics.put("absentRate", 0.0);          // 缺勤率
-        metrics.put("averageWorkHours", 0.0);    // 平均工作时长
-        metrics.put("totalOvertimeHours", 0.0);  // 总加班时长
-        result.put("metrics", metrics);
-
-        // 趋势数据（按日/周汇总）
-        result.put("trends", Collections.emptyList());
-
-        // 部门排名（如果未指定部门）
-        if (departmentId == null) {
-            result.put("departmentRanking", Collections.emptyList());
-        }
-
-        result.put("message", "请接入AttendanceService获取实际考勤统计数据");
-
-        log.info("考勤统计查询完成 - 周期: {}, 日期范围: {} ~ {}", period, startDate, endDate);
-
-        return result;
+        // 考勤服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "考勤服务尚未接入，请联系管理员配置 TimeclockService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 
     /**

@@ -65,38 +65,11 @@ public class AttendanceTodayTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行今日考勤查询 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 获取用户ID（优先使用参数，否则从context获取当前用户）
-        String userId = getString(params, "userId");
-        if (userId == null || userId.trim().isEmpty()) {
-            Object contextUserId = context.get("userId");
-            if (contextUserId != null) {
-                userId = String.valueOf(contextUserId);
-            }
-        }
-
-        String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
-
-        // TODO: 调用实际服务获取数据
-        // AttendanceRecord record = attendanceService.getTodayAttendance(factoryId, userId);
-
-        // 占位实现：返回模拟数据结构
-        Map<String, Object> result = new HashMap<>();
-        result.put("date", today);
-        result.put("userId", userId);
-        result.put("userName", "当前用户");
-        result.put("clockInTime", null);
-        result.put("clockOutTime", null);
-        result.put("workDuration", 0);
-        result.put("status", "NOT_CLOCKED_IN");
-        result.put("isLate", false);
-        result.put("isEarlyLeave", false);
-        result.put("message", "请接入AttendanceService获取实际考勤数据");
-
-        log.info("今日考勤查询完成 - 用户: {}, 日期: {}", userId, today);
-
-        return result;
+        // 考勤服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "考勤服务尚未接入，请联系管理员配置 TimeclockService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 
     @Override

@@ -87,86 +87,11 @@ public class ClockOutTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行签退打卡 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 从context获取当前用户信息
-        Object contextUserId = context.get("userId");
-        String userId = contextUserId != null ? String.valueOf(contextUserId) : null;
-        Object contextUserName = context.get("userName");
-        String userName = contextUserName != null ? String.valueOf(contextUserName) : null;
-
-        if (userId == null || userId.trim().isEmpty()) {
-            throw new IllegalArgumentException("无法获取用户信息，请重新登录");
-        }
-
-        // 获取可选参数
-        String remark = getString(params, "remark");
-        String location = getString(params, "location");
-        Double latitude = params.get("latitude") != null ?
-                ((Number) params.get("latitude")).doubleValue() : null;
-        Double longitude = params.get("longitude") != null ?
-                ((Number) params.get("longitude")).doubleValue() : null;
-
-        LocalDateTime now = LocalDateTime.now();
-        String clockOutTime = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
-        // TODO: 调用实际服务执行签退
-        // ClockOutResult result = timeclockService.clockOut(factoryId, userId, remark, location, latitude, longitude);
-
-        // 判断是否早退（假设18:00为下班时间）
-        LocalTime scheduledEndTime = LocalTime.of(18, 0);
-        boolean isEarlyLeave = now.toLocalTime().isBefore(scheduledEndTime);
-        int earlyLeaveMinutes = 0;
-        if (isEarlyLeave) {
-            earlyLeaveMinutes = (int) Duration.between(now.toLocalTime(), scheduledEndTime).toMinutes();
-        }
-
-        // 计算工作时长（假设签到时间为9:00，实际应从数据库获取）
-        LocalTime assumedClockIn = LocalTime.of(9, 0);
-        double workHours = Duration.between(assumedClockIn, now.toLocalTime()).toMinutes() / 60.0;
-
-        // 计算加班时长
-        double overtimeHours = 0;
-        if (now.toLocalTime().isAfter(scheduledEndTime)) {
-            overtimeHours = Duration.between(scheduledEndTime, now.toLocalTime()).toMinutes() / 60.0;
-        }
-
-        // 占位实现：返回模拟结果
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("userId", userId);
-        result.put("userName", userName != null ? userName : "当前用户");
-        result.put("clockOutTime", clockOutTime);
-        result.put("date", now.toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE));
-        result.put("isEarlyLeave", isEarlyLeave);
-        result.put("earlyLeaveMinutes", earlyLeaveMinutes);
-        result.put("workHours", Math.round(workHours * 100.0) / 100.0);
-        result.put("overtimeHours", Math.round(overtimeHours * 100.0) / 100.0);
-
-        if (remark != null) result.put("remark", remark);
-        if (location != null) result.put("location", location);
-        if (latitude != null && longitude != null) {
-            Map<String, Double> coordinates = new HashMap<>();
-            coordinates.put("latitude", latitude);
-            coordinates.put("longitude", longitude);
-            result.put("coordinates", coordinates);
-        }
-
-        // 生成结果消息
-        StringBuilder message = new StringBuilder("签退成功！");
-        if (isEarlyLeave) {
-            message.append("您今天提前").append(earlyLeaveMinutes).append("分钟下班。");
-        } else if (overtimeHours > 0) {
-            message.append("您今天加班").append(String.format("%.1f", overtimeHours)).append("小时，辛苦了！");
-        }
-        message.append("今日工作时长：").append(String.format("%.1f", workHours)).append("小时。");
-
-        result.put("message", message.toString());
-        result.put("notice", "请接入TimeclockService完成实际签退");
-
-        log.info("签退打卡完成 - 用户: {}, 时间: {}, 工作时长: {}小时", userId, clockOutTime, workHours);
-
-        return result;
+        // 考勤服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "考勤服务尚未接入，请联系管理员配置 TimeclockService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 
     @Override

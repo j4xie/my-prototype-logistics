@@ -85,62 +85,11 @@ public class ClockInTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行签到打卡 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 从context获取当前用户信息
-        Object contextUserId = context.get("userId");
-        String userId = contextUserId != null ? String.valueOf(contextUserId) : null;
-        Object contextUserName = context.get("userName");
-        String userName = contextUserName != null ? String.valueOf(contextUserName) : null;
-
-        if (userId == null || userId.trim().isEmpty()) {
-            throw new IllegalArgumentException("无法获取用户信息，请重新登录");
-        }
-
-        // 获取可选参数
-        String remark = getString(params, "remark");
-        String location = getString(params, "location");
-        Double latitude = params.get("latitude") != null ?
-                ((Number) params.get("latitude")).doubleValue() : null;
-        Double longitude = params.get("longitude") != null ?
-                ((Number) params.get("longitude")).doubleValue() : null;
-
-        LocalDateTime now = LocalDateTime.now();
-        String clockInTime = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
-        // TODO: 调用实际服务执行签到
-        // ClockInResult result = timeclockService.clockIn(factoryId, userId, remark, location, latitude, longitude);
-
-        // 判断是否迟到（假设9:00为上班时间）
-        boolean isLate = now.getHour() >= 9 && (now.getHour() > 9 || now.getMinute() > 0);
-
-        // 占位实现：返回模拟结果
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("userId", userId);
-        result.put("userName", userName != null ? userName : "当前用户");
-        result.put("clockInTime", clockInTime);
-        result.put("date", now.toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE));
-        result.put("isLate", isLate);
-        result.put("lateMinutes", isLate ? (now.getHour() - 9) * 60 + now.getMinute() : 0);
-
-        if (remark != null) result.put("remark", remark);
-        if (location != null) result.put("location", location);
-        if (latitude != null && longitude != null) {
-            Map<String, Double> coordinates = new HashMap<>();
-            coordinates.put("latitude", latitude);
-            coordinates.put("longitude", longitude);
-            result.put("coordinates", coordinates);
-        }
-
-        result.put("message", isLate ?
-                "签到成功，您今天迟到了" + result.get("lateMinutes") + "分钟" :
-                "签到成功，祝您工作愉快！");
-        result.put("notice", "请接入TimeclockService完成实际签到");
-
-        log.info("签到打卡完成 - 用户: {}, 时间: {}, 是否迟到: {}", userId, clockInTime, isLate);
-
-        return result;
+        // 考勤服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "考勤服务尚未接入，请联系管理员配置 TimeclockService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 
     @Override

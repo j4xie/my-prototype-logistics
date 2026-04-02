@@ -96,48 +96,11 @@ public class AttendanceHistoryTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行考勤历史查询 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 获取用户ID
-        String userId = getString(params, "userId");
-        if (userId == null || userId.trim().isEmpty()) {
-            Object contextUserId = context.get("userId");
-            if (contextUserId != null) {
-                userId = String.valueOf(contextUserId);
-            }
-        }
-
-        // 获取日期范围（默认最近30天）
-        String startDate = getString(params, "startDate");
-        String endDate = getString(params, "endDate");
-        if (endDate == null || endDate.trim().isEmpty()) {
-            endDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
-        }
-        if (startDate == null || startDate.trim().isEmpty()) {
-            startDate = LocalDate.now().minusDays(30).format(DateTimeFormatter.ISO_LOCAL_DATE);
-        }
-
-        // 分页参数
-        Integer page = getInteger(params, "page", 1);
-        Integer size = getInteger(params, "size", 10);
-
-        // TODO: 调用实际服务获取数据
-        // Page<AttendanceRecord> records = attendanceService.getAttendanceHistory(
-        //     factoryId, userId, startDate, endDate, page, size);
-
-        // 占位实现：返回模拟数据结构
-        List<Map<String, Object>> records = new ArrayList<>();
-        // 模拟空记录列表
-
-        Map<String, Object> result = buildPageResult(records, 0L, 0, page);
-        result.put("userId", userId);
-        result.put("startDate", startDate);
-        result.put("endDate", endDate);
-        result.put("message", "请接入AttendanceService获取实际考勤历史");
-
-        log.info("考勤历史查询完成 - 用户: {}, 日期范围: {} ~ {}", userId, startDate, endDate);
-
-        return result;
+        // 考勤服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "考勤服务尚未接入，请联系管理员配置 TimeclockService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 
     @Override

@@ -86,57 +86,11 @@ public class AttendanceDepartmentTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行部门考勤查询 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 获取部门ID
-        String departmentId = getString(params, "departmentId");
-
-        // 获取查询日期或日期范围
-        String date = getString(params, "date");
-        String startDate = getString(params, "startDate");
-        String endDate = getString(params, "endDate");
-
-        // 如果只指定了date，使用date作为单日查询
-        if (date == null && startDate == null && endDate == null) {
-            date = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
-        }
-
-        // TODO: 调用实际服务获取数据
-        // DepartmentAttendanceSummary summary = attendanceService.getDepartmentAttendance(
-        //     factoryId, departmentId, date, startDate, endDate);
-
-        // 占位实现：返回模拟数据结构
-        Map<String, Object> result = new HashMap<>();
-        result.put("departmentId", departmentId);
-        result.put("departmentName", departmentId != null ? "指定部门" : "全部部门");
-
-        if (date != null) {
-            result.put("date", date);
-        } else {
-            result.put("startDate", startDate);
-            result.put("endDate", endDate);
-        }
-
-        // 统计数据
-        Map<String, Object> statistics = new HashMap<>();
-        statistics.put("totalEmployees", 0);
-        statistics.put("presentCount", 0);
-        statistics.put("absentCount", 0);
-        statistics.put("lateCount", 0);
-        statistics.put("earlyLeaveCount", 0);
-        statistics.put("onLeaveCount", 0);
-        statistics.put("attendanceRate", 0.0);
-        result.put("statistics", statistics);
-
-        // 员工列表（分页）
-        result.put("employees", Collections.emptyList());
-        result.put("message", "请接入AttendanceService获取实际部门考勤数据");
-
-        log.info("部门考勤查询完成 - 部门: {}, 日期: {}",
-                departmentId != null ? departmentId : "全部",
-                date != null ? date : (startDate + " ~ " + endDate));
-
-        return result;
+        // 考勤服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "考勤服务尚未接入，请联系管理员配置 TimeclockService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 
     @Override
