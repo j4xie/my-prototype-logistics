@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
@@ -16,6 +17,7 @@ import {
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PRODUCTION_PLAN_CONFIG } from '@/components/ai-entry/types';
 
+const router = useRouter();
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -46,6 +48,8 @@ const planForm = ref({
   batchDate: '',
 });
 const productTypes = ref<Record<string, unknown>[]>([]);
+const bomProcesses = ref<string[]>([]);
+const customers = ref<Record<string, unknown>[]>([]);
 
 // Import/Export & reference data
 const productionLines = ref<Record<string, unknown>[]>([]);
@@ -58,6 +62,7 @@ onMounted(() => {
   loadData();
   loadProductTypes();
   loadReferenceData();
+  loadCustomers();
 });
 
 async function loadData() {
@@ -100,6 +105,61 @@ async function loadProductTypes() {
     console.error('加载产品类型失败:', error);
     ElMessage.error('加载产品类型失败');
   }
+}
+
+async function loadCustomers() {
+  if (!factoryId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/customers`, { params: { size: 200 } });
+    if (res.success && res.data) {
+      customers.value = Array.isArray(res.data) ? res.data : res.data.content || [];
+    }
+  } catch { /* optional, ignore */ }
+}
+
+async function loadBomProcesses(productTypeId: string) {
+  if (!factoryId.value || !productTypeId) {
+    bomProcesses.value = [];
+    return;
+  }
+  try {
+    const res = await get(`/${factoryId.value}/bom/labor`, { params: { productTypeId } });
+    if (res.success && res.data && Array.isArray(res.data)) {
+      const names = res.data.map((item: Record<string, unknown>) => String(item.processName || '')).filter(Boolean);
+      // Also load global (no productTypeId) processes as fallback
+      if (names.length === 0) {
+        const globalRes = await get(`/${factoryId.value}/bom/labor/all`);
+        if (globalRes.success && globalRes.data && Array.isArray(globalRes.data)) {
+          const allNames = globalRes.data.map((item: Record<string, unknown>) => String(item.processName || '')).filter(Boolean);
+          bomProcesses.value = [...new Set(allNames)];
+          return;
+        }
+      }
+      bomProcesses.value = [...new Set(names)];
+    } else {
+      bomProcesses.value = [];
+    }
+  } catch {
+    bomProcesses.value = [];
+  }
+}
+
+function handleProductChange(productTypeId: string) {
+  if (!productTypeId) return;
+  const product = productTypes.value.find((p: Record<string, unknown>) => p.id === productTypeId);
+  if (product) {
+    // Auto-fill customer name from product's relatedCustomer or customerId
+    if (product.relatedCustomer) {
+      planForm.value.sourceCustomerName = String(product.relatedCustomer);
+    } else if (product.customerId) {
+      const customer = customers.value.find((c: Record<string, unknown>) => c.id === product.customerId);
+      if (customer) {
+        planForm.value.sourceCustomerName = String(customer.name || customer.companyName || '');
+      }
+    }
+  }
+  // Load BOM processes for the selected product
+  loadBomProcesses(productTypeId);
 }
 
 function handleSearch() {
@@ -219,9 +279,7 @@ async function handleCancel(row: Record<string, unknown>) {
       inputErrorMessage: '请输入取消原因'
     });
     actionLoading.value = true;
-    const response = await post(`/${factoryId.value}/production-plans/${row.id}/cancel`, {
-      reason: value
-    });
+    const response = await post(`/${factoryId.value}/production-plans/${row.id}/cancel?reason=${encodeURIComponent(value)}`);
     if (response.success) {
       ElMessage.success('计划已取消');
       loadData();
@@ -278,7 +336,19 @@ async function handleGenerateTransfer(row: Record<string, unknown>) {
       ElMessage.success(`调拨单已生成，共 ${count} 项物料，等待仓库审批`);
       loadData();
     } else {
-      ElMessage.error(response.message || '生成失败');
+      const msg = response.message || '生成失败';
+      // If the error is about missing BOM, offer to navigate to BOM config
+      if (msg.includes('BOM') || msg.includes('bom') || msg.includes('配方')) {
+        ElMessageBox.confirm(
+          `${msg}\n\n是否前往配置该产品的BOM配方？`,
+          '缺少BOM配置',
+          { type: 'warning', confirmButtonText: '去配置BOM', cancelButtonText: '取消' }
+        ).then(() => {
+          router.push('/production/bom');
+        }).catch(() => { /* user cancelled */ });
+      } else {
+        ElMessage.error(msg);
+      }
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -625,7 +695,7 @@ function handleAiFill(params: Record<string, unknown>) {
     <el-dialog v-model="dialogVisible" title="新建生产计划" width="500px">
       <el-form :model="planForm" label-width="100px">
         <el-form-item label="产品类型" required>
-          <el-select v-model="planForm.productTypeId" placeholder="选择产品类型" style="width: 100%">
+          <el-select v-model="planForm.productTypeId" placeholder="选择产品类型" filterable style="width: 100%" @change="handleProductChange">
             <el-option
               v-for="item in productTypes"
               :key="item.id"
@@ -635,10 +705,19 @@ function handleAiFill(params: Record<string, unknown>) {
           </el-select>
         </el-form-item>
         <el-form-item label="客户名称">
-          <el-input v-model="planForm.sourceCustomerName" placeholder="如: 永佑" />
+          <el-input v-model="planForm.sourceCustomerName" placeholder="选择产品后自动填充，也可手动输入" />
         </el-form-item>
         <el-form-item label="工序">
-          <el-input v-model="planForm.processName" placeholder="如: 分切、包装" />
+          <el-select
+            v-model="planForm.processName"
+            placeholder="选择产品后加载BOM工序"
+            filterable
+            allow-create
+            clearable
+            style="width: 100%"
+          >
+            <el-option v-for="p in bomProcesses" :key="p" :label="p" :value="p" />
+          </el-select>
         </el-form-item>
         <el-form-item label="批次日期">
           <el-date-picker

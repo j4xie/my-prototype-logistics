@@ -14,11 +14,44 @@
 
 ## 硬性规则 (违反则测试无效)
 
-1. **必须实际填写并提交表单** — 报告必须有 `填写字段:` 证据行
-2. **必须记录 API 响应** — 报告必须有 `toast:` 或 `API 响应:` 证据行
-3. **必须验证数据持久化** — 报告必须有 `刷新后:` 证据行
-4. **跨模块必须验证下拉列表** — 报告必须有 `下拉列表:` 证据行
+1. **必须实际填写并提交表单** — 报告必须有 `filled:` 证据行，列出每个填写字段的具体值
+2. **必须记录 API 响应** — 报告必须有 `toast:` 证据行，记录确切的 toast 文本（不能只说"success toast appeared"）
+3. **必须验证数据持久化** — 报告必须有 `list after:` 证据行，说明创建的数据在列表中是否可见
+4. **跨模块必须验证下拉列表** — 报告必须有 `下拉列表:` 证据行，列出实际看到的选项
 5. **禁止无证据 PASS** — 没有 evidence 区块的 PASS 标记为 ⚠️ UNVERIFIED
+6. **必须验证前后端校验一致** — 检查带星号(*)的前端必填字段 = 后端 @NotNull/@NotBlank 字段
+
+**强制证据模板 (必须逐项填写，不能省略):**
+
+```
+### [模块名] — [操作]
+  action: [点击了什么按钮，打开了什么弹窗]
+  evidence:
+    - filled: 字段A=值1, 字段B=值2, 字段C=值3
+    - toast: "确切的toast文本内容"
+    - API: HTTP [状态码], success=[true/false], message="..."
+    - list after: [数据在列表中可见/不可见，具体行内容]
+    - validation: 前端必填标记与后端一致=[YES/NO]
+  result: ✅ PASS / ❌ FAIL / ❌ KNOWN_BUG [原因]
+```
+
+不允许用"filled form with data"、"success toast appeared"这类模糊描述代替具体值。
+
+## 前后端校验一致性检查
+
+**必须检查每个创建/编辑表单的字段校验:**
+
+| 检查项 | 方法 | 失败标记 |
+|--------|------|---------|
+| 前端有星号 → 后端有 @NotNull | 对比 formRules 和 DTO 注解 | ⚠️ VALIDATION_MISMATCH |
+| 后端有 @NotNull → 前端有星号 | 反向对比 | ⚠️ VALIDATION_MISMATCH |
+| body vs query param | 检查前端 post(url, body) vs 后端 @RequestParam | ❌ PARAM_MISMATCH |
+| HTTP method | 前端 put/post/delete vs 后端 @PutMapping/@PostMapping | ❌ METHOD_MISMATCH |
+
+常见失败模式 (本项目已发现 4 次):
+- 前端 POST body 传参，后端 `@RequestParam` 期望 query param
+- 前端调 PUT，后端只有 POST (405 Method Not Allowed)
+- 后端必填字段前端没标星号，用户不填就 500
 
 ## Healer 模式 (--fix)
 

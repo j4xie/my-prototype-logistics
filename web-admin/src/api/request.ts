@@ -124,7 +124,12 @@ request.interceptors.response.use(
         );
 
         if (response.data.success) {
-          // Cookies are updated automatically by the browser from Set-Cookie headers
+          // Update localStorage fallback token
+          const newToken = (response.data.data as Record<string, string>)?.accessToken
+            || (response.data.data as Record<string, string>)?.token;
+          if (newToken) {
+            localStorage.setItem('cretas_access_token', newToken);
+          }
           processQueue(null);
           return request(originalRequest);
         } else {

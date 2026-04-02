@@ -19,6 +19,7 @@ public class WorkerAssignment {
     @Column(length = 36)
     private String id;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "schedule_id", nullable = false)
     private LineSchedule schedule;

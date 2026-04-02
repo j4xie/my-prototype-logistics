@@ -357,8 +357,16 @@ public class ProcessingController {
     public ApiResponse<Map<String, Object>> submitInspection(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam @Parameter(description = "批次ID", example = "123") String batchId,
-            @RequestBody @Parameter(description = "质检信息") Map<String, Object> inspection) {
+            @RequestBody @Parameter(description = "质检信息") Map<String, Object> inspection,
+            HttpServletRequest request) {
         log.info("提交质检记录: factoryId={}, batchId={}", factoryId, batchId);
+        // 如果前端没传 inspectorId，从 JWT token 获取
+        if (inspection.get("inspectorId") == null) {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId != null) {
+                inspection.put("inspectorId", userId);
+            }
+        }
         Map<String, Object> result = processingService.submitInspection(factoryId, batchId, inspection);
         return ApiResponse.success(result);
     }

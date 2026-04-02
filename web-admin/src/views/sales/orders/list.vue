@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
-import { get, post } from '@/api/request';
+import { get, post, put } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh, ChatDotRound } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
@@ -46,6 +46,7 @@ const form = ref({
 });
 const customers = ref<Record<string, unknown>[]>([]);
 const products = ref<Record<string, unknown>[]>([]);
+const salesEmployees = ref<Record<string, unknown>[]>([]);
 
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
@@ -59,7 +60,7 @@ const statusMap: Record<string, { text: string; type: string }> = {
   CANCELLED: { text: '已取消', type: 'danger' },
 };
 
-onMounted(() => { loadData(); loadCustomers(); loadProducts(); });
+onMounted(() => { loadData(); loadCustomers(); loadProducts(); loadSalesEmployees(); });
 
 async function loadData() {
   if (!factoryId.value) return;
@@ -99,6 +100,26 @@ async function loadProducts() {
   } catch { ElMessage.error('加载产品列表失败'); }
 }
 
+const salesRoles = ['sales_manager', 'factory_super_admin'];
+
+async function loadSalesEmployees() {
+  if (!factoryId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/users`, { params: { page: 1, size: 200 } });
+    if (res.success && res.data) {
+      const allUsers = res.data.content || [];
+      salesEmployees.value = allUsers.filter(
+        (u: Record<string, unknown>) => salesRoles.includes(String(u.roleCode || u.role || ''))
+          || String(u.departmentName || u.department || '').includes('销售')
+      );
+      // If no employees matched the filter, show all active employees as fallback
+      if (salesEmployees.value.length === 0) {
+        salesEmployees.value = allUsers.filter((u: Record<string, unknown>) => u.isActive !== false);
+      }
+    }
+  } catch { /* silently fail — user can still type manually */ }
+}
+
 function addItem() { form.value.items.push({ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }); }
 function removeItem(idx: number) { if (form.value.items.length > 1) form.value.items.splice(idx, 1); }
 
@@ -124,6 +145,59 @@ async function handleAction(orderId: string, action: string) {
     if (res.success) { ElMessage.success(`${a.label}成功`); loadData(); }
     else { ElMessage.error(res.message || `${a.label}失败`); }
   } catch (error) { if (error !== 'cancel') ElMessage.error(`${a.label}失败`); }
+}
+
+const editingOrderId = ref<string | null>(null);
+
+function handleEdit(row: Record<string, unknown>) {
+  editingOrderId.value = String(row.id);
+  form.value = {
+    customerId: String(row.customerId || row.customer?.id || ''),
+    requiredDeliveryDate: String(row.requiredDeliveryDate || ''),
+    deliveryAddress: String(row.deliveryAddress || ''),
+    remark: String(row.remark || ''),
+    salesperson: String(row.salesperson || ''),
+    shippingIncluded: !!row.shippingIncluded,
+    shippingFee: Number(row.shippingFee || 0),
+    items: Array.isArray(row.items) && row.items.length > 0
+      ? row.items.map((item: Record<string, unknown>) => ({
+          productTypeId: String(item.productTypeId || item.productType?.id || ''),
+          quantity: Number(item.quantity || 0),
+          unit: String(item.unit || 'kg'),
+          unitPrice: Number(item.unitPrice || 0),
+        }))
+      : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+  };
+  dialogVisible.value = true;
+}
+
+async function handleSave() {
+  if (editingOrderId.value) {
+    // Update existing order
+    if (!form.value.customerId) return ElMessage.warning('请选择客户');
+    try {
+      const res = await put(`/${factoryId.value}/sales/orders/${editingOrderId.value}`, form.value);
+      if (res.success) { ElMessage.success('保存成功'); dialogVisible.value = false; editingOrderId.value = null; loadData(); }
+      else { ElMessage.error(res.message || '保存失败'); }
+    } catch { ElMessage.error('保存失败'); }
+  } else {
+    await handleCreate();
+  }
+}
+
+function openCreateDialog() {
+  editingOrderId.value = null;
+  form.value = {
+    customerId: '',
+    requiredDeliveryDate: '',
+    deliveryAddress: '',
+    remark: '',
+    salesperson: '',
+    shippingIncluded: false,
+    shippingFee: 0,
+    items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+  };
+  dialogVisible.value = true;
 }
 
 function goDetail(id: string) { router.push(`/sales/orders/${id}`); }
@@ -275,7 +349,7 @@ async function submitQuickPayment() {
             <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
               AI录入
             </el-button>
-            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="dialogVisible = true">新建{{ label('salesOrder') }}</el-button>
+            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreateDialog">新建{{ label('salesOrder') }}</el-button>
           </div>
         </div>
       </template>
@@ -310,9 +384,10 @@ async function submitQuickPayment() {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right" align="center">
+        <el-table-column label="操作" width="320" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="goDetail(row.id)">详情</el-button>
+            <el-button v-if="row.status === 'DRAFT' && canWrite" type="warning" link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button v-if="row.status === 'DRAFT' && canWrite" type="success" link size="small" @click="handleAction(row.id, 'confirm')">确认</el-button>
             <el-button v-if="['DRAFT','CONFIRMED'].includes(row.status) && canWrite" type="danger" link size="small" @click="handleAction(row.id, 'cancel')">取消</el-button>
             <el-button
@@ -408,7 +483,7 @@ async function submitQuickPayment() {
       </template>
     </el-dialog>
 
-    <el-dialog v-model="dialogVisible" :title="`新建${label('salesOrder')}`" width="720px" destroy-on-close>
+    <el-dialog v-model="dialogVisible" :title="editingOrderId ? `编辑${label('salesOrder')}` : `新建${label('salesOrder')}`" width="720px" destroy-on-close>
       <el-form :model="form" label-width="100px">
         <el-form-item :label="label('customer')">
           <el-select v-model="form.customerId" placeholder="请选择" filterable style="width: 100%">
@@ -417,13 +492,24 @@ async function submitQuickPayment() {
         </el-form-item>
         <el-form-item label="交货日期"><el-date-picker v-model="form.requiredDeliveryDate" type="date" value-format="YYYY-MM-DD" /></el-form-item>
         <el-form-item label="交货地址"><el-input v-model="form.deliveryAddress" /></el-form-item>
-        <el-form-item label="业务员"><el-input v-model="form.salesperson" placeholder="负责业务员" /></el-form-item>
+        <el-form-item label="业务员">
+          <el-select v-model="form.salesperson" placeholder="请选择业务员" filterable allow-create style="width: 100%">
+            <el-option v-for="emp in salesEmployees" :key="emp.id" :label="emp.fullName" :value="emp.fullName" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="含运费">
           <el-switch v-model="form.shippingIncluded" />
           <el-input-number v-if="form.shippingIncluded" v-model="form.shippingFee" :min="0" :precision="2" placeholder="运费金额" style="width: 180px; margin-left: 12px" />
         </el-form-item>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
         <el-divider>{{ label('product') }}明细</el-divider>
+        <div class="item-row item-header">
+          <span style="width: 200px">品名</span>
+          <span style="width: 120px">下单数量</span>
+          <span style="width: 80px">商品单位</span>
+          <span style="width: 120px">商品单价</span>
+          <span style="width: 40px">操作</span>
+        </div>
         <div v-for="(item, idx) in form.items" :key="idx" class="item-row">
           <el-select v-model="item.productTypeId" placeholder="选择产品" filterable style="width: 200px">
             <el-option v-for="p in products" :key="p.id" :label="p.name" :value="p.id" />
@@ -437,7 +523,7 @@ async function submitQuickPayment() {
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleCreate">创建</el-button>
+        <el-button type="primary" @click="handleSave">{{ editingOrderId ? '保存' : '创建' }}</el-button>
       </template>
     </el-dialog>
 
@@ -465,4 +551,7 @@ async function submitQuickPayment() {
 .search-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .pagination-wrapper { display: flex; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #ebeef5; margin-top: 16px; }
 .item-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.item-header { font-size: 13px; font-weight: 600; color: #606266; margin-bottom: 4px;
+  span { text-align: center; display: inline-block; }
+}
 </style>

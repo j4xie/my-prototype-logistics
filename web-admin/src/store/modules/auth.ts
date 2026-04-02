@@ -83,6 +83,7 @@ export const useAuthStore = defineStore('auth', () => {
   function clearAuth() {
     user.value = null;
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('cretas_access_token');
     // Note: HttpOnly cookies are cleared by the server on logout
   }
 
@@ -95,8 +96,12 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.success && response.data) {
         const data = response.data;
-        // Tokens are now set as HttpOnly cookies by the server (Set-Cookie header).
-        // We only store the non-sensitive user info locally.
+        // Store token in localStorage as fallback for when HttpOnly cookies
+        // don't work (e.g. certain browser policies, cross-origin scenarios).
+        // The request interceptor reads this and sets the Authorization header.
+        if (data.token || data.accessToken) {
+          localStorage.setItem('cretas_access_token', data.token || data.accessToken);
+        }
 
         // 构建用户对象 - 后端返回的是工厂用户
         const userData: User = {

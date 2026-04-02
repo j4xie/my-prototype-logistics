@@ -44,6 +44,7 @@ const formRules = {
   name: [{ required: true, message: '请输入供应商名称', trigger: 'blur' }],
   contactPerson: [{ required: true, message: '请输入联系人', trigger: 'blur' }],
   phone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }],
+  address: [{ required: true, message: '请输入地址', trigger: 'blur' }],
 };
 
 onMounted(() => {
@@ -316,7 +317,7 @@ async function handleDelete(row: Record<string, unknown>) {
         <el-form-item label="邮箱">
           <el-input v-model="form.email" placeholder="请输入邮箱" />
         </el-form-item>
-        <el-form-item label="地址">
+        <el-form-item label="地址" prop="address">
           <el-input v-model="form.address" placeholder="请输入地址" />
         </el-form-item>
         <el-form-item label="银行账户">

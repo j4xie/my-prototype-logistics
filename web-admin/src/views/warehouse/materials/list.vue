@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put } from '@/api/request';
@@ -30,8 +30,9 @@ onMounted(() => {
 async function loadMaterialTypes() {
   if (!factoryId.value) return;
   try {
-    const res = await get(`/${factoryId.value}/product-types`, { params: { productCategory: 'RAW_MATERIAL', size: 200 } });
-    if (res.success && res.data) materialTypes.value = res.data.content || res.data || [];
+    // Bug B2 fix: use raw-material-types/active (same table the backend validates against)
+    const res = await get(`/${factoryId.value}/raw-material-types/active`);
+    if (res.success && res.data) materialTypes.value = Array.isArray(res.data) ? res.data : (res.data.content || []);
   } catch { /* silent */ }
 }
 
@@ -143,11 +144,30 @@ const formData = reactive({
 const formRules = {
   batchNumber: [{ required: true, message: '请输入批次号', trigger: 'blur' }],
   materialTypeId: [{ required: true, message: '请选择原料类型', trigger: 'change' }],
+  supplierId: [{ required: true, message: '请选择供应商', trigger: 'change' }],
   receiptQuantity: [{ required: true, message: '请输入数量', trigger: 'blur' }],
   receiptDate: [{ required: true, message: '请选择入库日期', trigger: 'change' }],
   totalWeight: [{ required: true, message: '请输入总重量(kg)', trigger: 'blur' }],
   totalValue: [{ required: true, message: '请输入总价值(元)', trigger: 'blur' }],
 };
+
+// Bug C5: auto-calculate totalWeight and totalValue from selected material's base info
+function autoCalcWeightAndValue() {
+  const qty = formData.receiptQuantity;
+  if (!formData.materialTypeId || qty == null || qty <= 0) return;
+  const mat = materialTypes.value.find((m: Record<string, unknown>) => m.id === formData.materialTypeId) as Record<string, unknown> | undefined;
+  if (!mat) return;
+  // totalWeight = quantity (unit is typically kg; use quantity directly as weight)
+  formData.totalWeight = Number((qty).toFixed(3));
+  // totalValue = quantity * unitPrice
+  const unitPrice = Number(mat.unitPrice || mat.movingAvgPrice || 0);
+  if (unitPrice > 0) {
+    formData.totalValue = Number((qty * unitPrice).toFixed(2));
+  }
+}
+
+watch(() => formData.materialTypeId, () => { autoCalcWeightAndValue(); });
+watch(() => formData.receiptQuantity, () => { autoCalcWeightAndValue(); });
 
 function handleCreate() {
   editingId.value = null;
@@ -299,8 +319,8 @@ async function handleFormSubmit() {
             <el-option v-for="mt in materialTypes" :key="mt.id" :label="mt.name" :value="mt.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="供应商">
-          <el-select v-model="formData.supplierId" placeholder="选择供应商" filterable clearable style="width: 100%">
+        <el-form-item label="供应商" prop="supplierId">
+          <el-select v-model="formData.supplierId" placeholder="选择供应商" filterable style="width: 100%">
             <el-option v-for="s in suppliers" :key="s.id" :label="s.name" :value="s.id" />
           </el-select>
         </el-form-item>

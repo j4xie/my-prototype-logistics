@@ -5,6 +5,7 @@ import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreateDeliveryRequest;
 import com.cretas.aims.dto.inventory.CreateSalesOrderRequest;
 import com.cretas.aims.dto.inventory.FinanceReviewRequest;
+import com.cretas.aims.dto.inventory.UpdateSalesOrderRequest;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.entity.inventory.FinishedGoodsBatch;
 import com.cretas.aims.entity.inventory.SalesDeliveryRecord;
@@ -71,6 +72,18 @@ public class SalesController {
             @RequestParam(defaultValue = "20") int size) {
         PageResponse<SalesOrder> result = salesService.getSalesOrdersByStatus(factoryId, status, page, size);
         return ApiResponse.success("查询成功", result);
+    }
+
+    @PutMapping("/orders/{orderId}")
+    @Operation(summary = "更新销售订单", description = "仅 DRAFT 状态可编辑")
+    @RequirePermission("sales:read_write")
+    public ApiResponse<SalesOrder> updateOrder(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId,
+            @Valid @RequestBody UpdateSalesOrderRequest request) {
+        log.info("更新销售订单: factoryId={}, orderId={}", factoryId, orderId);
+        SalesOrder order = salesService.updateSalesOrder(factoryId, orderId, request);
+        return ApiResponse.success("销售订单更新成功", order);
     }
 
     @GetMapping("/orders/{orderId}")

@@ -3,6 +3,7 @@ package com.cretas.aims.service.inventory;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreateDeliveryRequest;
 import com.cretas.aims.dto.inventory.CreateSalesOrderRequest;
+import com.cretas.aims.dto.inventory.UpdateSalesOrderRequest;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.entity.inventory.FinishedGoodsBatch;
 import com.cretas.aims.entity.inventory.SalesDeliveryRecord;
@@ -33,6 +34,8 @@ public interface SalesService {
 
     /** 财务审核驳回: PENDING_FINANCE_REVIEW -> FINANCE_REJECTED */
     SalesOrder financeRejectOrder(String factoryId, String orderId, String reason, Long reviewerId);
+
+    SalesOrder updateSalesOrder(String factoryId, String orderId, UpdateSalesOrderRequest request);
 
     SalesOrder cancelOrder(String factoryId, String orderId);
 

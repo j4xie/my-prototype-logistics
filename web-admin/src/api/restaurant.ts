@@ -99,7 +99,7 @@ export const getProductTypesActive = (factoryId: string) =>
   get<{ id: string; name: string; code?: string }[]>(`/${factoryId}/product-types/active`);
 
 export const getRawMaterialTypes = (factoryId: string) =>
-  get<{ content?: { id: string; name: string; code?: string }[] }>(`/${factoryId}/raw-material-types`);
+  get<{ id: string; name: string; code?: string }[]>(`/${factoryId}/raw-material-types/active`);
 
 // ==================== Dashboard 聚合 ====================
 

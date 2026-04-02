@@ -29,10 +29,12 @@ const form = ref({
   purchaseType: 'DIRECT',
   expectedDeliveryDate: '',
   remark: '',
+  relatedSalesOrderId: '',
   items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }]
 });
 const suppliers = ref<Record<string, unknown>[]>([]);
 const materials = ref<Record<string, unknown>[]>([]);
+const salesOrders = ref<Record<string, unknown>[]>([]);
 
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
@@ -48,6 +50,7 @@ onMounted(() => {
   loadData();
   loadSuppliers();
   loadMaterials();
+  loadSalesOrders();
 });
 
 async function loadData() {
@@ -84,9 +87,18 @@ async function loadSuppliers() {
 async function loadMaterials() {
   if (!factoryId.value) return;
   try {
-    const res = await get(`/${factoryId.value}/raw-material-types`);
+    // Bug B3 fix: use /active endpoint (unpaginated, same source as BOM and warehouse)
+    const res = await get(`/${factoryId.value}/raw-material-types/active`);
     if (res.success && res.data) materials.value = Array.isArray(res.data) ? res.data : res.data.content || [];
   } catch { ElMessage.error('加载原料列表失败'); }
+}
+
+async function loadSalesOrders() {
+  if (!factoryId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/sales/orders`, { params: { page: 1, size: 100 } });
+    if (res.success && res.data) salesOrders.value = res.data.content || [];
+  } catch { /* optional field, ignore errors */ }
 }
 
 function addItem() {
@@ -99,8 +111,22 @@ function removeItem(index: number) {
 
 async function handleCreate() {
   if (!form.value.supplierId) return ElMessage.warning('请选择供应商');
+  if (form.value.items.some(i => !i.materialTypeId)) return ElMessage.warning('请选择所有原料');
   try {
-    const res = await post(`/${factoryId.value}/purchase/orders`, form.value);
+    // Build remark with sales order reference if selected
+    let remark = form.value.remark || '';
+    if (form.value.relatedSalesOrderId) {
+      const so = salesOrders.value.find((o: Record<string, unknown>) => o.id === form.value.relatedSalesOrderId);
+      const soRef = so ? `[关联销售订单: ${so.orderNumber}]` : '';
+      remark = soRef ? (remark ? `${soRef} ${remark}` : soRef) : remark;
+    }
+    const { relatedSalesOrderId: _unused, ...formData } = form.value;
+    const payload = {
+      ...formData,
+      remark,
+      orderDate: new Date().toISOString().slice(0, 10), // backend requires @NotNull orderDate
+    };
+    const res = await post(`/${factoryId.value}/purchase/orders`, payload);
     if (res.success) {
       ElMessage.success('创建成功');
       dialogVisible.value = false;
@@ -115,7 +141,7 @@ async function handleCreate() {
 }
 
 function resetForm() {
-  form.value = { supplierId: '', purchaseType: 'DIRECT', expectedDeliveryDate: '', remark: '', items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }] };
+  form.value = { supplierId: '', purchaseType: 'DIRECT', expectedDeliveryDate: '', remark: '', relatedSalesOrderId: '', items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }] };
 }
 
 async function handleAction(orderId: string, action: string) {
@@ -264,6 +290,16 @@ function handleAiFill(params: Record<string, unknown>) {
             <el-radio value="URGENT">紧急采购</el-radio>
           </el-radio-group>
         </el-form-item>
+        <el-form-item label="关联销售订单">
+          <el-select v-model="form.relatedSalesOrderId" placeholder="可选 - 选择关联的销售订单" filterable clearable style="width: 100%">
+            <el-option
+              v-for="so in salesOrders"
+              :key="so.id"
+              :label="`${so.orderNumber} - ${so.customerName || so.customer?.name || ''}`"
+              :value="so.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="期望交货">
           <el-date-picker v-model="form.expectedDeliveryDate" type="date" value-format="YYYY-MM-DD" />
         </el-form-item>
@@ -271,6 +307,13 @@ function handleAiFill(params: Record<string, unknown>) {
           <el-input v-model="form.remark" type="textarea" :rows="2" />
         </el-form-item>
         <el-divider>{{ label('rawMaterial') }}明细</el-divider>
+        <div class="item-row item-header">
+          <span style="width: 200px">原料名称</span>
+          <span style="width: 120px">数量</span>
+          <span style="width: 80px">单位</span>
+          <span style="width: 120px">单价</span>
+          <span style="width: 40px">操作</span>
+        </div>
         <div v-for="(item, idx) in form.items" :key="idx" class="item-row">
           <el-select v-model="item.materialTypeId" placeholder="选择原料" filterable style="width: 200px">
             <el-option v-for="m in materials" :key="m.id" :label="m.name" :value="m.id" />
@@ -312,4 +355,7 @@ function handleAiFill(params: Record<string, unknown>) {
 .search-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .pagination-wrapper { display: flex; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #ebeef5; margin-top: 16px; }
 .item-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.item-header { font-size: 13px; font-weight: 600; color: #606266; margin-bottom: 4px;
+  span { text-align: center; display: inline-block; }
+}
 </style>

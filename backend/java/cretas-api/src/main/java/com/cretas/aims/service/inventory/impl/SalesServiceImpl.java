@@ -3,6 +3,7 @@ package com.cretas.aims.service.inventory.impl;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreateDeliveryRequest;
 import com.cretas.aims.dto.inventory.CreateSalesOrderRequest;
+import com.cretas.aims.dto.inventory.UpdateSalesOrderRequest;
 import com.cretas.aims.entity.enums.SalesDeliveryStatus;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.entity.inventory.*;
@@ -231,6 +232,37 @@ public class SalesServiceImpl implements SalesService {
         log.info("销售订单财务审核驳回: orderId={}, orderNumber={}, reviewerId={}, reason={}",
                 orderId, saved.getOrderNumber(), reviewerId, reason);
         return saved;
+    }
+
+    @Override
+    @Transactional
+    public SalesOrder updateSalesOrder(String factoryId, String orderId, UpdateSalesOrderRequest request) {
+        SalesOrder order = getSalesOrderById(factoryId, orderId);
+        if (order.getStatus() != SalesOrderStatus.DRAFT) {
+            throw new BusinessException("只有草稿状态的订单可以编辑");
+        }
+
+        if (request.getSalesperson() != null) {
+            order.setSalesperson(request.getSalesperson());
+        }
+        if (request.getDeliveryAddress() != null) {
+            order.setDeliveryAddress(request.getDeliveryAddress());
+        }
+        if (request.getRemark() != null) {
+            order.setRemark(request.getRemark());
+        }
+        if (request.getShippingIncluded() != null) {
+            order.setShippingIncluded(request.getShippingIncluded());
+        }
+        if (request.getShippingFee() != null) {
+            order.setShippingFee(request.getShippingFee());
+        }
+        if (request.getRequiredDeliveryDate() != null) {
+            order.setRequiredDeliveryDate(request.getRequiredDeliveryDate());
+        }
+
+        log.info("更新销售订单: orderId={}, orderNumber={}", orderId, order.getOrderNumber());
+        return salesOrderRepository.save(order);
     }
 
     @Override

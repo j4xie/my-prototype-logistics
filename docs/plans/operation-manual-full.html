@@ -452,6 +452,8 @@
     <li><a href="#section4">原料类型管理 (Raw Material Type Management)</a></li>
     <li><a href="#section5">产品模板与 BOM 配置 (Product Templates & BOM Configuration)</a></li>
     <li><a href="#section6">SKU 组装与原料入库 (SKU Assembly & Material Inbound)</a></li>
+    <li>6C. 销售订单管理 (Sales Order Management)</li>
+    <li>6D. 供应商管理 (Supplier Management)</li>
   </ol>
   <div class="toc-note">本手册为第一部分（基础配置），涵盖系统初始化到首次生产前的所有准备工作。第二部分（第 7-12 节）涵盖生产计划、报工、仓储、质检、AI 对话等运营流程。</div>
 </div>
@@ -1510,6 +1512,21 @@
           <td>包装规格说明。例如「500g/袋」「1kg/箱」「20个/盒」。用于出货单和标签打印。</td>
         </tr>
         <tr>
+          <td><strong>温区</strong></td>
+          <td><span class="code">temperatureZone</span></td>
+          <td class="optional">选填</td>
+          <td>冷冻</td>
+          <td>
+            产品存储温区。下拉选择：
+            <ul style="margin: 4px 0; padding-left: 16px; font-size: 13px;">
+              <li><span class="code" style="background:#FEF3C7; color:#92400E;">常温</span> — 常温存储</li>
+              <li><span class="code" style="background:#DBEAFE; color:#1E40AF;">冷藏</span> — 0-4°C 冷藏</li>
+              <li><span class="code" style="background:#E0E7FF; color:#3730A3;">冷冻</span> — -18°C 以下冷冻</li>
+            </ul>
+            列表中以彩色标签形式显示，方便快速区分。
+          </td>
+        </tr>
+        <tr>
           <td><strong>关联客户</strong></td>
           <td><span class="code">customerId</span></td>
           <td style="color:#DC2626; font-weight:700;">不要填！</td>
@@ -1518,6 +1535,18 @@
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="info-box tip">
+    <strong>产品编码自动生成规则</strong>
+    「产品编码」字段留空时，系统会自动生成编码。规则为：<span class="code">CP</span> + 客户名称首字母拼音 + 4 位序号。<br>
+    例如：客户「叮咚」→ <span class="code">CPDD0001</span>；客户「汇庭商贸」→ <span class="code">CPHT0001</span>。<br>
+    手动输入编码时以手动值为准，自动生成仅在留空时触发。
+  </div>
+
+  <div class="info-box tip">
+    <strong>关联客户字段改进</strong>
+    「关联客户」字段已升级为下拉选择框，从客户列表中选择（支持搜索过滤）。也可手动输入新客户名称。创建模板时仍然<strong>不要选择客户</strong>。
   </div>
 
   <div class="info-box danger">
@@ -1729,6 +1758,20 @@
       <li>心算验证：如果计划生产 100kg，需要的原料量是否符合实际经验</li>
       <li>如有偏差，直接编辑转换率修正</li>
     </ol>
+  </div>
+
+  <h4>BOM 成本与分类增强</h4>
+  <div class="info-box tip">
+    <strong>含税单价标注</strong>
+    BOM 中的单价字段标注为「单价（含税）」，明确为含税采购价格。可配置增值税率（如 13%），系统自动计算不含税成本。
+  </div>
+  <div class="info-box tip">
+    <strong>每份成本换算</strong>
+    系统同时显示 <strong>元/kg</strong> 和 <strong>元/份</strong> 两种成本维度。标准份量可在产品设置中配置（默认 0.5kg），用于计算每份原料成本，方便与零售定价对比。
+  </div>
+  <div class="info-box tip">
+    <strong>物料分类标签</strong>
+    BOM 物料按类型分组显示，每种物料前标注分类标签：<span class="code" style="background:#DBEAFE; color:#1E40AF;">原材料</span>、<span class="code" style="background:#FEF3C7; color:#92400E;">包材</span>、<span class="code" style="background:#D1FAE5; color:#065F46;">辅料</span>，便于快速识别配方构成。
   </div>
 </div>
 
@@ -2124,7 +2167,7 @@
 <div class="card" style="text-align: center; margin-top: 40px; border-top: 4px solid #667eea;">
   <h3 style="color: #667eea; margin: 0 0 10px;">第一部分完毕</h3>
   <p style="color: #64748b;">
-    以上 6 个章节涵盖了系统初始化和基础数据配置的完整流程。
+    以上章节涵盖了系统初始化和基础数据配置的完整流程（含销售订单和供应商管理）。
     <br>完成这些配置后，工厂即可进入生产运营阶段。
   </p>
   <p style="color: #94a3b8; font-size: 13px; margin-top: 12px;">
@@ -2135,6 +2178,227 @@
 </div> <!-- end .container -->
 
 <div class="container">
+
+<!-- ====================================================================== -->
+<!-- SECTION 6C: 销售订单管理                                                -->
+<!-- ====================================================================== -->
+<h2>六C、销售订单管理</h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员</span>
+  <span class="badge badge-web">Web Admin</span>
+</p>
+
+<div class="section-intro">
+  销售订单记录客户的采购需求，是排产计划的来源之一。订单经财务审核后可自动触发排产流程。
+</div>
+
+<div class="card">
+<h3>Step 6C.1: 创建销售订单</h3>
+
+<div class="menu-path">
+  销售管理 <span class="sep">&rsaquo;</span> 销售订单 <span class="sep">&rsaquo;</span> 点击「新增订单」按钮
+</div>
+
+<h4>新增字段说明</h4>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>字段名</th><th>必填</th><th>示例</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>业务员</strong></td>
+        <td class="optional">选填</td>
+        <td>张三</td>
+        <td>负责此订单的业务人员，用于业绩统计和订单跟踪。</td>
+      </tr>
+      <tr>
+        <td><strong>含运费</strong></td>
+        <td class="optional">选填</td>
+        <td>勾选</td>
+        <td>勾选后显示运费金额输入框。不勾选则运费为 0。</td>
+      </tr>
+      <tr>
+        <td><strong>运费</strong></td>
+        <td class="optional">选填</td>
+        <td>200.00</td>
+        <td>运费金额（元）。仅在勾选「含运费」后显示。计入订单总金额。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="card">
+<h3>Step 6C.2: 财务审核流程</h3>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">提交财务审核</div>
+      <div class="step-detail">在销售订单详情页，订单状态为「已确认」时，点击「提交财务审核」按钮。订单状态变为「待财务审核」。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">财务人员审核</div>
+      <div class="step-detail">
+        财务人员在订单列表中筛选「待财务审核」状态的订单，点击进入详情：
+        <ul style="margin-top:6px; padding-left:16px;">
+          <li><strong>审核通过</strong> — 可填写审核备注，点击「审核通过」</li>
+          <li><strong>审核驳回</strong> — 填写驳回原因，点击「审核驳回」，订单退回「已确认」状态</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">自动触发排产</div>
+      <div class="step-detail">财务审核通过后，订单状态变为「财务已批准」，系统自动触发排产流程，无需手动创建生产计划。</div>
+    </div>
+  </div>
+</div>
+
+<h4>订单状态流转</h4>
+<div class="flow-container" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0;">
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#F1F5F9; font-weight:600;">草稿</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#DBEAFE; font-weight:600;">已确认</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#FEF3C7; font-weight:600;">待财务审核</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#D1FAE5; font-weight:600;">财务已批准</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#E0E7FF; font-weight:600;">生产中</div>
+</div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- SECTION 6D: 供应商管理                                                  -->
+<!-- ====================================================================== -->
+<h2>六D、供应商管理</h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员</span>
+  <span class="badge badge-web">Web Admin</span>
+</p>
+
+<div class="section-intro">
+  供应商管理用于维护原料供应商信息，便于采购追溯和供应商评估分析。
+</div>
+
+<div class="card">
+<h3>Step 6D.1: 新增供应商</h3>
+
+<div class="menu-path">
+  采购管理 <span class="sep">&rsaquo;</span> 供应商管理 <span class="sep">&rsaquo;</span> 点击「新增供应商」按钮
+</div>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">点击「新增供应商」</div>
+      <div class="step-detail">弹出新增供应商对话框。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">填写供应商信息</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">点击「确定」保存</div>
+    </div>
+  </div>
+</div>
+
+<h4>字段说明</h4>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>字段名</th><th>必填</th><th>示例</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>供应商名称</strong></td>
+        <td class="required">必填</td>
+        <td>舟山渔业有限公司</td>
+        <td>供应商全称，同一工厂内不可重复。</td>
+      </tr>
+      <tr>
+        <td><strong>联系人</strong></td>
+        <td class="required">必填</td>
+        <td>王经理</td>
+        <td>供应商主要联系人姓名。</td>
+      </tr>
+      <tr>
+        <td><strong>联系电话</strong></td>
+        <td class="required">必填</td>
+        <td>138-0000-1234</td>
+        <td>联系人电话号码。</td>
+      </tr>
+      <tr>
+        <td><strong>地址</strong></td>
+        <td class="optional">选填</td>
+        <td>浙江省舟山市定海区</td>
+        <td>供应商办公或仓库地址。</td>
+      </tr>
+      <tr>
+        <td><strong>邮箱</strong></td>
+        <td class="optional">选填</td>
+        <td>wang@zhoushan.com</td>
+        <td>电子邮箱地址。</td>
+      </tr>
+      <tr>
+        <td><strong>银行账户</strong></td>
+        <td class="optional">选填</td>
+        <td>6222 0000 1234 5678</td>
+        <td>付款用银行账号信息。</td>
+      </tr>
+      <tr>
+        <td><strong>税号</strong></td>
+        <td class="optional">选填</td>
+        <td>91330901MA...</td>
+        <td>纳税人识别号，用于开票。</td>
+      </tr>
+      <tr>
+        <td><strong>备注</strong></td>
+        <td class="optional">选填</td>
+        <td>主要供应墨鱼、鱿鱼</td>
+        <td>供应商补充说明，如主营品类、合作方式等。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="card">
+<h3>Step 6D.2: 查看与编辑供应商</h3>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">「查看」按钮</div>
+      <div class="step-detail">只读查看供应商详细信息，不可修改。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">「编辑」按钮</div>
+      <div class="step-detail">修改供应商信息后点击「确定」保存更新。</div>
+    </div>
+  </div>
+</div>
+</div>
+
 
 <h1>白垩纪食品溯源系统</h1>
 <p class="subtitle">操作手册 第二部分: 生产流程 (Section 7-12) | 六扇门食品定制版 | 更新: 2026-03-27</p>

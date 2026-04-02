@@ -75,20 +75,22 @@ E2E_API_BASE=${E2E_API_BASE:-http://localhost:10010}
 
 **工具链 (按可靠性排序):**
 
-1. **首选: `browser_run_code`** — 写 Playwright 代码片段直接执行，最可靠
-   ```javascript
-   async (page) => {
-     await page.goto('http://...');
-     await page.getByRole('button', { name: '新建' }).click();
-     return await page.locator('.el-message').textContent();
-   }
-   ```
-2. **次选: 独立 Node.js 脚本** — `node test-xxx.mjs`，适合批量测试
-3. **备选: MCP 逐步操作** — `browser_navigate` + `browser_snapshot` + `browser_click`
-4. **避免: `plugin_playwright_playwright`** — 会和用户浏览器抢 Chrome profile 导致卡死
+1. **首选: 独立 Node.js 脚本** — `node test-xxx.mjs`，使用 `chromium.launch()` 启动独立浏览器，不受 Chrome profile 锁影响
+2. **备选: MCP `browser_run_code`** — 仅在用户关闭了所有 Chrome 浏览器时可用
+3. **避免: 所有 MCP 持久浏览器工具** — `browser_navigate`/`browser_click`/`browser_snapshot`/`browser_run_code` 均共享同一 Chrome profile，用户有 Chrome 打开时全部卡死
 
-> **已知问题**: `plugin_playwright_playwright` 在用户有 Chrome 浏览器打开时报
-> "Browser is already in use" 错误。优先用 `browser_run_code` 或独立脚本绕开。
+> **已知问题**: 所有 Playwright MCP 工具（包括 `browser_run_code`）在用户有 Chrome 打开时报
+> "Browser is already in use" 错误。**必须用 Node.js 脚本 `chromium.launch()` 绕开。**
+
+**Node.js 脚本模板:**
+```javascript
+import { chromium } from 'playwright';
+const browser = await chromium.launch({ headless: true });
+const page = await browser.newPage();
+// page.goto() 直接导航，不用侧边栏点击
+await page.goto('http://xxx/sales/orders');
+await browser.close();
+```
 
 **平台差异处理:**
 

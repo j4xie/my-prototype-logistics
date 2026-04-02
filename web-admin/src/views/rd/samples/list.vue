@@ -33,7 +33,7 @@ const requestStatusMap: Record<string, { text: string; type: string }> = {
   CANCELLED: { text: '已取消', type: 'info' },
 };
 
-onMounted(() => loadData());
+// loadData called in new onMounted below (with loadSalespersons)
 
 async function loadData() {
   if (!factoryId.value) return;
@@ -100,7 +100,33 @@ async function handleCreateRequest() {
 
 // 新建样品弹窗
 const sampleDialogVisible = ref(false);
-const sampleForm = ref({ rdRequestId: '', name: '', specification: '', grade: '', mainMaterial: '' });
+const sampleForm = ref({
+  rdRequestId: '',
+  name: '',
+  specification: '',
+  grade: '',
+  mainMaterial: '',
+  salesperson: '',
+  productLevel: '',
+  productStatus: '',
+  storageMethod: '',
+});
+
+// 业务员列表
+const salespersonList = ref<Record<string, unknown>[]>([]);
+
+async function loadSalespersons() {
+  if (!factoryId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/users`, { params: { size: 200 } });
+    if (res.success && res.data) {
+      salespersonList.value = Array.isArray(res.data) ? res.data : res.data.content || [];
+    }
+  } catch { /* optional */ }
+}
+
+// Load on mount
+onMounted(() => { loadData(); loadSalespersons(); });
 
 async function handleCreateSample() {
   if (!sampleForm.value.name) { ElMessage.warning('请填写样品名称'); return; }
@@ -113,6 +139,46 @@ async function handleCreateSample() {
       switchTab('samples');
     } else { ElMessage.error(res.message || '创建失败'); }
   } catch { ElMessage.error('创建失败'); }
+  finally { submitting.value = false; }
+}
+
+// 追踪记录
+const trackingDialogVisible = ref(false);
+const trackingSampleId = ref('');
+const trackingRecords = ref<{ date: string; content: string; attachment: string; recorder: string }[]>([]);
+const newTracking = ref({ date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: '' });
+
+function openTrackingDialog(row: Record<string, unknown>) {
+  trackingSampleId.value = String(row.id);
+  // Parse existing progress notes
+  try {
+    const notes = row.progressNotes ? JSON.parse(String(row.progressNotes)) : [];
+    trackingRecords.value = notes.map((n: Record<string, string>) => ({
+      date: n.time || n.date || '',
+      content: n.note || n.content || '',
+      attachment: n.photoUrl || n.attachment || '',
+      recorder: n.recorder || '',
+    }));
+  } catch { trackingRecords.value = []; }
+  newTracking.value = { date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: '' };
+  trackingDialogVisible.value = true;
+}
+
+async function addTrackingRecord() {
+  if (!newTracking.value.content) { ElMessage.warning('请输入追踪内容'); return; }
+  submitting.value = true;
+  try {
+    const res = await post(`/${factoryId.value}/rd/samples/${trackingSampleId.value}/progress`, {
+      note: `[${newTracking.value.date}] ${newTracking.value.content}${newTracking.value.recorder ? ' (记录员: ' + newTracking.value.recorder + ')' : ''}`,
+      photoUrl: newTracking.value.attachment || null,
+    });
+    if (res.success) {
+      ElMessage.success('追踪记录已添加');
+      trackingRecords.value.push({ ...newTracking.value });
+      newTracking.value = { date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: '' };
+      loadData(); // refresh list
+    } else { ElMessage.error(res.message || '添加失败'); }
+  } catch { ElMessage.error('添加失败'); }
   finally { submitting.value = false; }
 }
 </script>
@@ -159,20 +225,28 @@ async function handleCreateSample() {
 
       <!-- 样品列表 -->
       <el-table v-if="activeTab === 'samples'" :data="tableData" border stripe>
-        <el-table-column prop="sampleCode" label="样品编号" width="180" />
-        <el-table-column prop="name" label="样品名称" min-width="150" />
-        <el-table-column prop="specification" label="规格" width="120" />
-        <el-table-column prop="mainMaterial" label="主原料" width="120" />
-        <el-table-column prop="status" label="状态" width="100" align="center">
+        <el-table-column prop="sampleCode" label="样品编码" width="180" />
+        <el-table-column prop="name" label="样品名称" min-width="130" />
+        <el-table-column prop="specification" label="成品规格" width="120" />
+        <el-table-column prop="grade" label="产品级别" width="90" />
+        <el-table-column prop="mainMaterial" label="主原料" width="100" />
+        <el-table-column prop="salesperson" label="业务员" width="90" />
+        <el-table-column prop="storageMethod" label="储存方式" width="90">
+          <template #default="{ row }">{{ row.storageMethod || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="status" label="产品状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="sampleStatusMap[row.status]?.type || 'info'" size="small">{{ sampleStatusMap[row.status]?.text || row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" align="center" v-if="canWrite">
+        <el-table-column label="操作" width="260" align="center">
           <template #default="{ row }">
-            <el-button v-if="['DRAFT','IN_PROGRESS','TESTING'].includes(row.status)" type="warning" link size="small" @click="handleSampleAction(row.id, 'submit')">提交审核</el-button>
-            <el-button v-if="row.status === 'SUBMITTED'" type="success" link size="small" @click="handleSampleAction(row.id, 'approve')">通过</el-button>
-            <el-button v-if="row.status === 'SUBMITTED'" type="danger" link size="small" @click="handleSampleAction(row.id, 'reject')">驳回</el-button>
+            <el-button type="primary" link size="small" @click="openTrackingDialog(row)">追踪记录</el-button>
+            <template v-if="canWrite">
+              <el-button v-if="['DRAFT','IN_PROGRESS','TESTING'].includes(row.status)" type="warning" link size="small" @click="handleSampleAction(row.id, 'submit')">提交审核</el-button>
+              <el-button v-if="row.status === 'SUBMITTED'" type="success" link size="small" @click="handleSampleAction(row.id, 'approve')">通过</el-button>
+              <el-button v-if="row.status === 'SUBMITTED'" type="danger" link size="small" @click="handleSampleAction(row.id, 'reject')">驳回</el-button>
+            </template>
           </template>
         </el-table-column>
       </el-table>
@@ -229,17 +303,67 @@ async function handleCreateSample() {
     </el-dialog>
 
     <!-- 新建样品 -->
-    <el-dialog v-model="sampleDialogVisible" title="新建样品" width="520px" destroy-on-close>
+    <el-dialog v-model="sampleDialogVisible" title="新建样品" width="600px" destroy-on-close>
       <el-form label-width="90px">
+        <el-form-item label="业务员">
+          <el-select v-model="sampleForm.salesperson" placeholder="选择业务员" filterable allow-create clearable style="width: 100%">
+            <el-option v-for="u in salespersonList" :key="u.id" :label="u.fullName || u.username" :value="u.fullName || u.username" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="样品名称" required><el-input v-model="sampleForm.name" /></el-form-item>
-        <el-form-item label="规格"><el-input v-model="sampleForm.specification" placeholder="如 200g/盒" /></el-form-item>
-        <el-form-item label="等级"><el-input v-model="sampleForm.grade" /></el-form-item>
+        <el-form-item label="成品规格"><el-input v-model="sampleForm.specification" placeholder="如 200g/盒, 310g*42袋/箱" /></el-form-item>
+        <el-form-item label="产品级别"><el-input v-model="sampleForm.productLevel" placeholder="如 A级, 特级" /></el-form-item>
+        <el-form-item label="产品状态"><el-input v-model="sampleForm.productStatus" placeholder="如 新品开发, 配方调整" /></el-form-item>
+        <el-form-item label="储存方式">
+          <el-select v-model="sampleForm.storageMethod" placeholder="选择储存方式" clearable style="width: 100%">
+            <el-option label="冷冻" value="冷冻" />
+            <el-option label="冷藏" value="冷藏" />
+            <el-option label="常温" value="常温" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="主原料"><el-input v-model="sampleForm.mainMaterial" /></el-form-item>
+        <el-form-item label="等级"><el-input v-model="sampleForm.grade" /></el-form-item>
         <el-form-item label="关联需求"><el-input v-model="sampleForm.rdRequestId" placeholder="研发需求ID（可选）" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="sampleDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleCreateSample">创建</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 追踪记录 -->
+    <el-dialog v-model="trackingDialogVisible" title="追踪记录" width="700px" destroy-on-close>
+      <el-table v-if="trackingRecords.length > 0" :data="trackingRecords" border size="small" style="margin-bottom: 16px">
+        <el-table-column prop="date" label="日期" width="120" />
+        <el-table-column prop="content" label="追踪内容" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="attachment" label="附件" width="100">
+          <template #default="{ row }">
+            <a v-if="row.attachment" :href="row.attachment" target="_blank" style="color: #409eff">查看</a>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="recorder" label="记录员" width="100" />
+      </el-table>
+      <el-empty v-else description="暂无追踪记录" :image-size="60" />
+
+      <el-divider>添加追踪记录</el-divider>
+      <el-form label-width="80px">
+        <el-form-item label="日期">
+          <el-date-picker v-model="newTracking.date" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="追踪内容" required>
+          <el-input v-model="newTracking.content" type="textarea" :rows="3" placeholder="输入追踪内容..." />
+        </el-form-item>
+        <el-form-item label="附件">
+          <el-input v-model="newTracking.attachment" placeholder="附件链接URL（可选）" />
+        </el-form-item>
+        <el-form-item label="记录员">
+          <el-input v-model="newTracking.recorder" placeholder="记录员姓名" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="trackingDialogVisible = false">关闭</el-button>
+        <el-button type="primary" :loading="submitting" @click="addTrackingRecord" :disabled="!newTracking.content">添加记录</el-button>
       </template>
     </el-dialog>
   </div>

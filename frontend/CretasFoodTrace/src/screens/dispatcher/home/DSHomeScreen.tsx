@@ -51,9 +51,10 @@ export default function DSHomeScreen() {
       setLoading(true);
       setError(null);
       // P0 Fix: Parallel API requests to eliminate waterfall
+      // Each request catches independently so one failure doesn't block the rest
       const [dashboardRes, linesRes, plansRes] = await Promise.all([
-        schedulingApiClient.getDashboard(),
-        schedulingApiClient.getProductionLines(),
+        schedulingApiClient.getDashboard().catch(() => ({ success: false, data: null })),
+        schedulingApiClient.getProductionLines().catch(() => ({ success: false, data: [] })),
         productionPlanApiClient.getProductionPlans({ page: 1, size: 200 } as any).catch(() => null),
       ]);
 

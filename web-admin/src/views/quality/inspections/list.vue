@@ -21,10 +21,26 @@ const filterResult = ref('');
 // 新建对话框
 const dialogVisible = ref(false);
 const dialogForm = ref({
-  batchNumber: '',
-  productTypeId: '',
+  batchId: '',
+  sampleSize: null as number | null,
+  passCount: null as number | null,
+  failCount: null as number | null,
+  result: '' as string,
   notes: ''
 });
+
+// 生产批次列表（用于下拉选择）
+const productionBatches = ref<Record<string, unknown>[]>([]);
+
+async function loadProductionBatches() {
+  if (!factoryId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/processing/batches`, { params: { size: 200 } });
+    if (res.success && res.data) {
+      productionBatches.value = res.data.content || res.data || [];
+    }
+  } catch { /* silent */ }
+}
 
 // 详情抽屉
 const detailVisible = ref(false);
@@ -85,18 +101,45 @@ function handleSizeChange(size: number) {
 }
 
 function handleCreate() {
-  dialogForm.value = { batchNumber: '', productTypeId: '', notes: '' };
+  dialogForm.value = { batchId: '', sampleSize: null, passCount: null, failCount: null, result: '', notes: '' };
   dialogVisible.value = true;
+  loadProductionBatches();
 }
 
 async function submitCreateForm() {
-  if (!dialogForm.value.batchNumber) {
-    ElMessage.warning('请输入批次号');
+  if (!dialogForm.value.batchId) {
+    ElMessage.warning('请选择生产批次');
+    return;
+  }
+  if (!dialogForm.value.sampleSize || dialogForm.value.sampleSize <= 0) {
+    ElMessage.warning('请输入抽样数量');
+    return;
+  }
+  if (!dialogForm.value.result) {
+    ElMessage.warning('请选择检验结果');
     return;
   }
   submitting.value = true;
   try {
-    const response = await post(`/${factoryId.value}/processing/quality/inspections`, dialogForm.value);
+    const body: Record<string, unknown> = {
+      sampleSize: dialogForm.value.sampleSize,
+      passCount: dialogForm.value.passCount,
+      failCount: dialogForm.value.failCount,
+      result: dialogForm.value.result,
+      notes: dialogForm.value.notes || undefined
+    };
+    // 从 localStorage 获取当前用户 ID 作为 inspectorId
+    try {
+      const userStr = localStorage.getItem('cretas_user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.id) body.inspectorId = user.id;
+      }
+    } catch { /* ignore */ }
+    const response = await post(
+      `/${factoryId.value}/processing/quality/inspections?batchId=${encodeURIComponent(dialogForm.value.batchId)}`,
+      body
+    );
     if (response.success) {
       ElMessage.success('质检记录已创建');
       dialogVisible.value = false;
@@ -195,11 +238,31 @@ function showDetail(row: Record<string, unknown>) {
     <!-- 新建质检对话框 -->
     <el-dialog v-model="dialogVisible" title="新建质检记录" width="480px" :close-on-click-modal="false">
       <el-form :model="dialogForm" label-width="90px">
-        <el-form-item label="批次号" required>
-          <el-input v-model="dialogForm.batchNumber" placeholder="输入生产批次号" />
+        <el-form-item label="生产批次" required>
+          <el-select v-model="dialogForm.batchId" placeholder="选择生产批次" filterable style="width: 100%">
+            <el-option
+              v-for="b in productionBatches"
+              :key="String(b.id)"
+              :label="`${b.batchNumber || b.id}${b.productName ? ' - ' + b.productName : ''}`"
+              :value="String(b.id)"
+            />
+          </el-select>
         </el-form-item>
-        <el-form-item label="产品类型">
-          <el-input v-model="dialogForm.productTypeId" placeholder="产品类型ID（可选）" />
+        <el-form-item label="抽样数量" required>
+          <el-input-number v-model="dialogForm.sampleSize" :min="1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="合格数" required>
+          <el-input-number v-model="dialogForm.passCount" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="不合格数" required>
+          <el-input-number v-model="dialogForm.failCount" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="检验结果" required>
+          <el-select v-model="dialogForm.result" placeholder="选择检验结果" style="width: 100%">
+            <el-option label="合格" value="PASS" />
+            <el-option label="不合格" value="FAIL" />
+            <el-option label="待复检" value="PENDING" />
+          </el-select>
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="dialogForm.notes" type="textarea" :rows="2" />

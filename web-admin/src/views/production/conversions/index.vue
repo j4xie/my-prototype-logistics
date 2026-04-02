@@ -64,9 +64,9 @@ async function loadData() {
 async function loadMaterialTypes() {
   if (!factoryId.value) return;
   try {
-    const response = await get(`/${factoryId.value}/raw-material-types`);
+    const response = await get(`/${factoryId.value}/raw-material-types/active`);
     if (response.success && response.data) {
-      materialTypes.value = response.data.content || response.data || [];
+      materialTypes.value = Array.isArray(response.data) ? response.data : (response.data.content || []);
     }
   } catch (error) {
     console.error('加载原料类型失败:', error);

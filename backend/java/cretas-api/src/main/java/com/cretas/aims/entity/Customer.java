@@ -111,6 +111,7 @@ public class Customer extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", referencedColumnName = "id", insertable = false, updatable = false)
     private User createdByUser;
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @BatchSize(size = 20)
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ShipmentRecord> shipmentRecords = new ArrayList<>();

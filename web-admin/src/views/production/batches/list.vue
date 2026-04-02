@@ -85,8 +85,17 @@ function handleSizeChange(size: number) {
   loadData();
 }
 
+function generateBatchNumber() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  const rand = Math.random().toString(36).substring(2, 7).toUpperCase();
+  return `PB-${y}${m}${d}-${rand}`;
+}
+
 async function handleCreate() {
-  createForm.value = { productTypeId: '', plannedQuantity: null, unit: 'kg', notes: '' };
+  createForm.value = { batchNumber: generateBatchNumber(), productTypeId: '', plannedQuantity: null, unit: 'kg', notes: '' };
   createDialogVisible.value = true;
   // Load product types for dropdown
   if (productTypes.value.length === 0 && factoryId.value) {
@@ -104,6 +113,10 @@ async function handleCreate() {
 
 async function submitCreate() {
   if (!factoryId.value) return;
+  if (!createForm.value.batchNumber) {
+    ElMessage.warning('请输入批次号');
+    return;
+  }
   if (!createForm.value.productTypeId) {
     ElMessage.warning('请选择产品类型');
     return;
@@ -117,9 +130,11 @@ async function submitCreate() {
   creating.value = true;
   try {
     const response = await post(`/${factoryId.value}/processing/batches`, {
+      batchNumber: createForm.value.batchNumber,
       productTypeId: createForm.value.productTypeId,
       productName: selectedProduct?.name || selectedProduct?.productName || '',
       plannedQuantity: createForm.value.plannedQuantity,
+      quantity: createForm.value.plannedQuantity,
       unit: createForm.value.unit,
       notes: createForm.value.notes
     });
@@ -238,6 +253,9 @@ function getStatusText(status: string) {
     <!-- 创建批次对话框 -->
     <el-dialog v-model="createDialogVisible" title="创建生产批次" width="500px" :close-on-click-modal="false" destroy-on-close>
       <el-form :model="createForm" label-width="100px">
+        <el-form-item label="批次号" required>
+          <el-input v-model="createForm.batchNumber" placeholder="自动生成，可手动修改" />
+        </el-form-item>
         <el-form-item label="产品类型" required>
           <el-select v-model="createForm.productTypeId" placeholder="请选择产品类型" filterable style="width: 100%">
             <el-option

@@ -237,8 +237,8 @@ async function handleResetPassword(row: Record<string, unknown>) {
         type: 'warning'
       }
     );
-    const response = await post('/auth/reset-password', {
-      factoryId: factoryId.value, username: row.username, newPassword
+    const response = await post('/auth/reset-password', null, {
+      params: { factoryId: factoryId.value, username: row.username, newPassword }
     });
     if (response.success) {
       ElMessage.success('密码已重置');

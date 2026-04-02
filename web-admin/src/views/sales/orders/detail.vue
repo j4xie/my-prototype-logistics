@@ -125,13 +125,17 @@ function openDeliveryDialog() {
 
 async function handleCreateDelivery() {
   if (submitting.value) return;
+  const filteredItems = deliveryForm.value.items.filter(i => i.deliveredQuantity > 0);
+  if (filteredItems.length === 0) return ElMessage.warning('请至少填写一个发货数量');
   submitting.value = true;
   try {
     const res = await post(`/${factoryId.value}/sales/deliveries`, {
       salesOrderId: orderId.value,
+      customerId: order.value?.customerId || '', // backend requires @NotBlank customerId
+      deliveryDate: new Date().toISOString().slice(0, 10), // backend requires @NotNull deliveryDate
       deliveryAddress: deliveryForm.value.deliveryAddress,
       logisticsCompany: deliveryForm.value.logisticsCompany,
-      items: deliveryForm.value.items.filter(i => i.deliveredQuantity > 0),
+      items: filteredItems,
     });
     if (res.success) {
       ElMessage.success('发货单创建成功');

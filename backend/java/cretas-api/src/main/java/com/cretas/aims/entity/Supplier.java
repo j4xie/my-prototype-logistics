@@ -110,6 +110,7 @@ public class Supplier extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", referencedColumnName = "id", insertable = false, updatable = false)
     private User createdByUser;
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @BatchSize(size = 20)
     @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialBatch> materialBatches = new ArrayList<>();
