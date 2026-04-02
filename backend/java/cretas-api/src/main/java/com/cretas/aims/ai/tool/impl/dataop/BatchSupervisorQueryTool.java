@@ -1,7 +1,12 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.dto.common.PageRequest;
+import com.cretas.aims.dto.common.PageResponse;
+import com.cretas.aims.entity.ProductionBatch;
+import com.cretas.aims.service.ProcessingService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -19,6 +24,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class BatchSupervisorQueryTool extends AbstractBusinessTool {
+
+    @Autowired
+    private ProcessingService processingService;
 
     @Override
     public String getToolName() {
@@ -56,10 +64,25 @@ public class BatchSupervisorQueryTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 批次负责人查询服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "批次负责人查询服务尚未接入，请联系管理员配置 ProcessingService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String batchId = getString(params, "batchId");
+
+        try {
+            ProductionBatch batch = processingService.getBatchById(factoryId, batchId);
+            if (batch == null) {
+                return buildSimpleResult("未找到批次", Map.of("batchId", batchId, "found", false));
+            }
+
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("batchId", batchId);
+            result.put("batchNumber", batch.getBatchNumber());
+            result.put("supervisorId", batch.getSupervisorId());
+            result.put("status", batch.getStatus());
+            result.put("productTypeId", batch.getProductTypeId());
+
+            return buildSimpleResult("批次负责人查询成功", result);
+        } catch (Exception e) {
+            log.error("批次负责人查询失败: factoryId={}, batchId={}", factoryId, batchId, e);
+            throw e;
+        }
     }
 }

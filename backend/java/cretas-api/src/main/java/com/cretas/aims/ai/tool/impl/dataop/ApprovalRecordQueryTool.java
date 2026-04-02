@@ -1,7 +1,10 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.dto.quality.SpecialApprovalDTO;
+import com.cretas.aims.service.SpecialApprovalService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -19,6 +22,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class ApprovalRecordQueryTool extends AbstractBusinessTool {
+
+    @Autowired
+    private SpecialApprovalService specialApprovalService;
 
     @Override
     public String getToolName() {
@@ -47,10 +53,30 @@ public class ApprovalRecordQueryTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 审批记录查询服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "审批记录查询服务尚未接入，请联系管理员配置 ApprovalService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        // Extract userId from context if available for "my approvals"
+        Long userId = null;
+        if (context != null && context.get("userId") instanceof Number) {
+            userId = ((Number) context.get("userId")).longValue();
+        }
+
+        try {
+            List<SpecialApprovalDTO> pending = specialApprovalService.getPendingApprovals(factoryId);
+
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("pendingApprovals", pending);
+            result.put("pendingCount", pending != null ? pending.size() : 0);
+
+            // If we have a user context, also fetch their personal approval history
+            if (userId != null) {
+                List<SpecialApprovalDTO> myApprovals = specialApprovalService.getMyApprovals(factoryId, userId);
+                result.put("myApprovals", myApprovals);
+                result.put("myApprovalCount", myApprovals != null ? myApprovals.size() : 0);
+            }
+
+            return buildSimpleResult("审批记录查询成功", result);
+        } catch (Exception e) {
+            log.error("审批记录查询失败: factoryId={}", factoryId, e);
+            throw e;
+        }
     }
 }

@@ -1,7 +1,13 @@
 package com.cretas.aims.ai.tool.impl.system;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.entity.WorkOrder;
+import com.cretas.aims.service.WorkOrderService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -19,6 +25,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class TodoListTool extends AbstractBusinessTool {
+
+    @Autowired
+    private WorkOrderService workOrderService;
 
     @Override
     public String getToolName() {
@@ -47,10 +56,45 @@ public class TodoListTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 待办事项服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "待办事项服务尚未接入，请联系管理员配置 WorkOrderService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        try {
+            // Extract userId from context
+            Long userId = null;
+            Object userIdObj = context != null ? context.get("userId") : null;
+            if (userIdObj instanceof Long) {
+                userId = (Long) userIdObj;
+            } else if (userIdObj instanceof Number) {
+                userId = ((Number) userIdObj).longValue();
+            } else if (userIdObj instanceof String) {
+                try { userId = Long.parseLong((String) userIdObj); } catch (NumberFormatException ignored) {}
+            }
+
+            Map<String, Object> result = new HashMap<>();
+
+            // Query work orders assigned to this user
+            Pageable pageable = PageRequest.of(0, 20);
+            if (userId != null) {
+                Page<WorkOrder> assignedPage = workOrderService.getWorkOrdersByAssignee(factoryId, userId, pageable);
+                result.put("myWorkOrders", assignedPage.getContent());
+                result.put("myWorkOrderTotal", assignedPage.getTotalElements());
+            }
+
+            // Query overdue work orders for the factory
+            List<WorkOrder> overdueOrders = workOrderService.getOverdueWorkOrders(factoryId);
+            result.put("overdueWorkOrders", overdueOrders);
+            result.put("overdueCount", overdueOrders.size());
+
+            // Count pending work orders
+            long pendingCount = workOrderService.countByStatus(factoryId, "PENDING");
+            long inProgressCount = workOrderService.countByStatus(factoryId, "IN_PROGRESS");
+            result.put("pendingCount", pendingCount);
+            result.put("inProgressCount", inProgressCount);
+            result.put("factoryId", factoryId);
+            if (userId != null) result.put("userId", userId);
+
+            return buildSimpleResult("待办事项查询成功", result);
+        } catch (Exception e) {
+            log.error("查询待办事项失败 - 工厂ID: {}", factoryId, e);
+            throw e;
+        }
     }
 }

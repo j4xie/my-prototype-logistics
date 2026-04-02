@@ -1,7 +1,10 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.entity.ProductionBatch;
+import com.cretas.aims.service.ProcessingService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -20,6 +23,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class BatchStatusChangeTool extends AbstractBusinessTool {
+
+    @Autowired
+    private ProcessingService processingService;
 
     @Override
     public String getToolName() {
@@ -97,10 +103,34 @@ public class BatchStatusChangeTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 批次状态变更服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "批次状态变更服务尚未接入，请联系管理员配置 ProcessingService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String batchId = getString(params, "batchId");
+        String operation = getString(params, "operation");
+        String reason = getString(params, "reason");
+
+        try {
+            ProductionBatch result = switch (operation.toLowerCase()) {
+                case "start" -> {
+                    Long supervisorId = getLong(params, "supervisorId");
+                    Integer supervisorIdInt = supervisorId != null ? supervisorId.intValue() : null;
+                    yield processingService.startProduction(factoryId, batchId, supervisorIdInt);
+                }
+                case "pause" -> processingService.pauseProduction(factoryId, batchId, reason);
+                case "resume" -> processingService.resumeProduction(factoryId, batchId);
+                case "complete" -> {
+                    BigDecimal actualQty = getBigDecimal(params, "actualQuantity");
+                    BigDecimal goodQty = getBigDecimal(params, "goodQuantity");
+                    BigDecimal defectQty = getBigDecimal(params, "defectQuantity");
+                    yield processingService.completeProduction(factoryId, batchId, actualQty, goodQty, defectQty);
+                }
+                case "cancel" -> processingService.cancelProduction(factoryId, batchId, reason);
+                default -> throw new IllegalArgumentException("不支持的操作类型: " + operation);
+            };
+
+            return buildSimpleResult("批次状态变更成功", result);
+        } catch (Exception e) {
+            log.error("批次状态变更失败: factoryId={}, batchId={}, operation={}", factoryId, batchId, operation, e);
+            throw e;
+        }
     }
+
 }

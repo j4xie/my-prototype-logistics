@@ -1,7 +1,12 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.dto.common.PageRequest;
+import com.cretas.aims.dto.common.PageResponse;
+import com.cretas.aims.dto.producttype.ProductTypeDTO;
+import com.cretas.aims.service.ProductTypeService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -19,6 +24,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class ProductTypeQueryTool extends AbstractBusinessTool {
+
+    @Autowired
+    private ProductTypeService productTypeService;
 
     @Override
     public String getToolName() {
@@ -143,10 +151,29 @@ public class ProductTypeQueryTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 产品类型查询服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "产品类型查询服务尚未接入，请联系管理员配置 ProductTypeService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String keyword = getString(params, "productName");
+        if (keyword == null) keyword = getString(params, "productCode");
+
+        int page = 1;
+        int size = 20;
+        Object pageObj = params.get("page");
+        if (pageObj instanceof Number) page = ((Number) pageObj).intValue();
+        Object sizeObj = params.get("size");
+        if (sizeObj instanceof Number) size = ((Number) sizeObj).intValue();
+
+        try {
+            if (keyword != null && !keyword.isBlank()) {
+                PageRequest pageRequest = PageRequest.of(page, size);
+                PageResponse<ProductTypeDTO> result = productTypeService.searchProductTypes(factoryId, keyword, pageRequest);
+                return buildSimpleResult("产品类型查询成功", result);
+            } else {
+                // No keyword — return all active types or paginated list
+                List<ProductTypeDTO> activeTypes = productTypeService.getActiveProductTypes(factoryId);
+                return buildSimpleResult("产品类型查询成功", activeTypes);
+            }
+        } catch (Exception e) {
+            log.error("产品类型查询失败: factoryId={}, keyword={}", factoryId, keyword, e);
+            throw e;
+        }
     }
 }

@@ -1,7 +1,11 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.dto.quality.ApprovalDecisionRequest;
+import com.cretas.aims.dto.quality.SpecialApprovalDTO;
+import com.cretas.aims.service.SpecialApprovalService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -19,6 +23,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class OrderApprovalTool extends AbstractBusinessTool {
+
+    @Autowired
+    private SpecialApprovalService specialApprovalService;
 
     @Override
     public String getToolName() {
@@ -74,10 +81,28 @@ public class OrderApprovalTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 订单审批服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "订单审批服务尚未接入，请联系管理员配置 TransferService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String approvalId = getString(params, "transferId");
+        boolean isReject = Boolean.TRUE.equals(params.get("reject"));
+        String reason = getString(params, "reason");
+
+        // Extract approverId from context if available
+        Long approverId = null;
+        if (context != null && context.get("userId") instanceof Number) {
+            approverId = ((Number) context.get("userId")).longValue();
+        }
+
+        try {
+            ApprovalDecisionRequest decision = new ApprovalDecisionRequest();
+            decision.setDecision(isReject
+                    ? ApprovalDecisionRequest.ApprovalDecision.REJECT
+                    : ApprovalDecisionRequest.ApprovalDecision.APPROVE);
+            decision.setComment(reason != null ? reason : (isReject ? "拒绝" : "通过"));
+
+            SpecialApprovalDTO result = specialApprovalService.processDecision(factoryId, approvalId, decision, approverId);
+            return buildSimpleResult(isReject ? "审批拒绝成功" : "审批通过成功", result);
+        } catch (Exception e) {
+            log.error("订单审批失败: factoryId={}, approvalId={}, isReject={}", factoryId, approvalId, isReject, e);
+            throw e;
+        }
     }
 }

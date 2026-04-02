@@ -1,7 +1,10 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.entity.ProductionBatch;
+import com.cretas.aims.service.ProcessingService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -20,6 +23,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class ProcessingBatchCreateToolDataOp extends AbstractBusinessTool {
+
+    @Autowired
+    private ProcessingService processingService;
 
     @Override
     public String getToolName() {
@@ -62,10 +68,31 @@ public class ProcessingBatchCreateToolDataOp extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 生产批次创建服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "生产批次创建服务尚未接入，请联系管理员配置 ProcessingService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String productTypeId = getString(params, "productTypeId");
+
+        try {
+            ProductionBatch batch = new ProductionBatch();
+            batch.setFactoryId(factoryId);
+            batch.setProductTypeId(productTypeId);
+
+            Object plannedQtyObj = params.get("plannedQuantity");
+            if (plannedQtyObj != null) {
+                BigDecimal plannedQty;
+                if (plannedQtyObj instanceof BigDecimal) {
+                    plannedQty = (BigDecimal) plannedQtyObj;
+                } else if (plannedQtyObj instanceof Number) {
+                    plannedQty = BigDecimal.valueOf(((Number) plannedQtyObj).doubleValue());
+                } else {
+                    plannedQty = new BigDecimal(plannedQtyObj.toString());
+                }
+                batch.setPlannedQuantity(plannedQty);
+            }
+
+            ProductionBatch created = processingService.createBatch(factoryId, batch);
+            return buildSimpleResult("生产批次创建成功", created);
+        } catch (Exception e) {
+            log.error("生产批次创建失败: factoryId={}, productTypeId={}", factoryId, productTypeId, e);
+            throw e;
+        }
     }
 }

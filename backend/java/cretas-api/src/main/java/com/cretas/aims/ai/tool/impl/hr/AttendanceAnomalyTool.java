@@ -1,11 +1,13 @@
 package com.cretas.aims.ai.tool.impl.hr;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.dto.TimeStatsDTO;
+import com.cretas.aims.service.TimeStatsService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -24,9 +26,8 @@ import java.util.*;
 @Component
 public class AttendanceAnomalyTool extends AbstractBusinessTool {
 
-    // TODO: 注入实际的考勤服务
-    // @Autowired
-    // private AttendanceService attendanceService;
+    @Autowired
+    private TimeStatsService timeStatsService;
 
     @Override
     public String getToolName() {
@@ -116,11 +117,21 @@ public class AttendanceAnomalyTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 考勤服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "考勤服务尚未接入，请联系管理员配置 TimeclockService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String startDateStr = getString(params, "startDate");
+        String endDateStr = getString(params, "endDate");
+        LocalDate startDate = (startDateStr != null && !startDateStr.isEmpty())
+                ? LocalDate.parse(startDateStr) : LocalDate.now().minusDays(30);
+        LocalDate endDate = (endDateStr != null && !endDateStr.isEmpty())
+                ? LocalDate.parse(endDateStr) : LocalDate.now();
+
+        try {
+            TimeStatsDTO stats = timeStatsService.getAnomalyStats(factoryId, startDate, endDate);
+            log.info("查询考勤异常: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+            return buildSimpleResult("查询成功", stats);
+        } catch (Exception e) {
+            log.error("查询考勤异常失败: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate, e);
+            throw e;
+        }
     }
 
     @Override

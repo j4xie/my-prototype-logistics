@@ -1,7 +1,12 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.entity.Label;
+import com.cretas.aims.entity.ProductionBatch;
+import com.cretas.aims.service.LabelService;
+import com.cretas.aims.service.ProcessingService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -19,6 +24,12 @@ import java.util.*;
 @Slf4j
 @Component
 public class TraceGenerateTool extends AbstractBusinessTool {
+
+    @Autowired
+    private LabelService labelService;
+
+    @Autowired
+    private ProcessingService processingService;
 
     @Override
     public String getToolName() {
@@ -56,10 +67,46 @@ public class TraceGenerateTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 溯源码生成服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "溯源码生成服务尚未接入，请联系管理员配置 TraceService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String batchId = getString(params, "batchId");
+
+        try {
+            // Get the batch to find batchNumber
+            ProductionBatch batch = processingService.getBatchById(factoryId, batchId);
+            if (batch == null) {
+                return buildSimpleResult("未找到批次", Map.of("batchId", batchId, "found", false));
+            }
+
+            String batchNumber = batch.getBatchNumber();
+
+            // Generate trace code
+            String traceCode = labelService.generateTraceCode(factoryId, batchNumber);
+
+            // Create a label record
+            String labelCode = labelService.generateLabelCode(factoryId, "QR_CODE");
+            Label label = new Label();
+            label.setId(UUID.randomUUID().toString());
+            label.setFactoryId(factoryId);
+            label.setLabelCode(labelCode);
+            label.setLabelType("QR_CODE");
+            label.setBatchType("PRODUCTION");
+            label.setBatchId(batchId);
+            label.setProductionBatchId(batch.getId());
+            label.setTraceCode(traceCode);
+            label.setStatus("ACTIVE");
+
+            Label created = labelService.createLabel(label);
+
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("batchId", batchId);
+            result.put("batchNumber", batchNumber);
+            result.put("traceCode", traceCode);
+            result.put("labelCode", labelCode);
+            result.put("labelId", created.getId());
+
+            return buildSimpleResult("溯源码生成成功", result);
+        } catch (Exception e) {
+            log.error("溯源码生成失败: factoryId={}, batchId={}", factoryId, batchId, e);
+            throw e;
+        }
     }
 }

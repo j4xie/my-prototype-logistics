@@ -1,7 +1,9 @@
 package com.cretas.aims.ai.tool.impl.system;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.service.FactorySettingsService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -20,6 +22,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class FactoryFeatureToggleTool extends AbstractBusinessTool {
+
+    @Autowired
+    private FactorySettingsService factorySettingsService;
 
     @Override
     public String getToolName() {
@@ -108,11 +113,29 @@ public class FactoryFeatureToggleTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 工厂功能开关服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "工厂功能开关服务尚未接入，请联系管理员配置 FactoryConfigService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String featureCode = getString(params, "featureCode");
+        Boolean enabled = getBoolean(params, "enabled");
+        String reason = getString(params, "reason", null);
+
+        try {
+            log.info("切换功能开关 - 工厂ID: {}, 功能: {}, 启用: {}", factoryId, featureCode, enabled);
+            factorySettingsService.updateFeatureToggle(factoryId, featureCode, enabled);
+
+            Map<String, ?> featureInfo = getFeatureInfo(featureCode);
+            Map<String, Object> result = new HashMap<>();
+            result.put("factoryId", factoryId);
+            result.put("featureCode", featureCode);
+            result.put("featureName", featureInfo.get("name"));
+            result.put("enabled", enabled);
+            if (reason != null) {
+                result.put("reason", reason);
+            }
+            String action = enabled ? "启用" : "禁用";
+            return buildSimpleResult(featureInfo.get("name") + "已" + action, result);
+        } catch (Exception e) {
+            log.error("功能开关切换失败 - 工厂ID: {}, 功能: {}", factoryId, featureCode, e);
+            throw e;
+        }
     }
 
     /**

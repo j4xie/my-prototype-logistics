@@ -1,11 +1,12 @@
 package com.cretas.aims.ai.tool.impl.hr;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.service.TimeClockService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -24,9 +25,8 @@ import java.util.*;
 @Component
 public class AttendanceStatsTool extends AbstractBusinessTool {
 
-    // TODO: 注入实际的考勤服务
-    // @Autowired
-    // private AttendanceService attendanceService;
+    @Autowired
+    private TimeClockService timeClockService;
 
     @Override
     public String getToolName() {
@@ -100,11 +100,42 @@ public class AttendanceStatsTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 考勤服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "考勤服务尚未接入，请联系管理员配置 TimeclockService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String userIdParam = getString(params, "userId");
+        Long userId = (userIdParam != null && !userIdParam.isEmpty())
+                ? Long.parseLong(userIdParam) : getLong(context, "userId");
+
+        String period = getString(params, "period", "MONTH");
+        String startDateStr = getString(params, "startDate");
+        String endDateStr = getString(params, "endDate");
+
+        LocalDate now = LocalDate.now();
+        LocalDate startDate;
+        LocalDate endDate = now;
+
+        if ("CUSTOM".equals(period) && startDateStr != null && !startDateStr.isEmpty()) {
+            startDate = LocalDate.parse(startDateStr);
+            if (endDateStr != null && !endDateStr.isEmpty()) {
+                endDate = LocalDate.parse(endDateStr);
+            }
+        } else {
+            DateRange range = calculateDateRange(period, now);
+            startDate = range.start;
+            endDate = range.end;
+        }
+
+        try {
+            Map<String, Object> stats;
+            if (userIdParam != null && !userIdParam.isEmpty()) {
+                stats = timeClockService.getAttendanceStatistics(factoryId, userId, startDate, endDate);
+            } else {
+                stats = timeClockService.getAllEmployeesAttendanceStatistics(factoryId, startDate, endDate);
+            }
+            log.info("查询考勤统计: factoryId={}, period={}, userId={}", factoryId, period, userId);
+            return buildSimpleResult("查询成功", stats);
+        } catch (Exception e) {
+            log.error("查询考勤统计失败: factoryId={}, period={}", factoryId, period, e);
+            throw e;
+        }
     }
 
     /**

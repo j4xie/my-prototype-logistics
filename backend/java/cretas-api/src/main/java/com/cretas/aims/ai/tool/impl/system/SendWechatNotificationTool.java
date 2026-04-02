@@ -61,10 +61,10 @@ public class SendWechatNotificationTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 微信通知服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
+        // 企业微信集成尚未实现 — 保持 SERVICE_NOT_AVAILABLE 以明确告知用户
+        return buildSimpleResult("企业微信集成尚未实现", Map.of(
                 "success", false,
-                "error", "微信通知服务尚未接入，请联系管理员配置 WechatNotificationService",
+                "error", "企业微信集成尚未实现，发送微信通知功能暂不可用",
                 "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

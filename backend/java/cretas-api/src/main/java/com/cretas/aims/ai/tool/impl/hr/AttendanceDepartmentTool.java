@@ -1,11 +1,12 @@
 package com.cretas.aims.ai.tool.impl.hr;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.service.TimeClockService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -24,9 +25,8 @@ import java.util.*;
 @Component
 public class AttendanceDepartmentTool extends AbstractBusinessTool {
 
-    // TODO: 注入实际的考勤服务
-    // @Autowired
-    // private AttendanceService attendanceService;
+    @Autowired
+    private TimeClockService timeClockService;
 
     @Override
     public String getToolName() {
@@ -86,11 +86,19 @@ public class AttendanceDepartmentTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 考勤服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "考勤服务尚未接入，请联系管理员配置 TimeclockService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String department = getString(params, "departmentId");
+        String dateStr = getString(params, "date");
+        LocalDate date = (dateStr != null && !dateStr.isEmpty())
+                ? LocalDate.parse(dateStr) : LocalDate.now();
+
+        try {
+            Map<String, Object> result = timeClockService.getDepartmentAttendance(factoryId, department, date);
+            log.info("查询部门考勤: factoryId={}, department={}, date={}", factoryId, department, date);
+            return buildSimpleResult("查询成功", result);
+        } catch (Exception e) {
+            log.error("查询部门考勤失败: factoryId={}, department={}", factoryId, department, e);
+            throw e;
+        }
     }
 
     @Override

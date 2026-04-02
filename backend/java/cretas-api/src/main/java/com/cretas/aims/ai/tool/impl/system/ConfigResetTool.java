@@ -1,7 +1,10 @@
 package com.cretas.aims.ai.tool.impl.system;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.dto.FactorySettingsDTO;
+import com.cretas.aims.service.FactorySettingsService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -20,6 +23,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class ConfigResetTool extends AbstractBusinessTool {
+
+    @Autowired
+    private FactorySettingsService factorySettingsService;
 
     @Override
     public String getToolName() {
@@ -57,10 +63,22 @@ public class ConfigResetTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 系统配置重置服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "系统配置重置服务尚未接入，请联系管理员配置 SystemConfigResetService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        Boolean confirmed = getBoolean(params, "confirmed");
+        if (confirmed == null || !confirmed) {
+            return buildSimpleResult("请确认重置操作", Map.of(
+                    "requiresConfirmation", true,
+                    "message", "此操作将重置所有工厂配置为默认值，请确认后继续。设置 confirmed=true 以执行重置。"));
+        }
+
+        try {
+            log.info("执行配置重置 - 工厂ID: {}", factoryId);
+            FactorySettingsDTO result = factorySettingsService.resetToDefaults(factoryId);
+            return buildSimpleResult("系统配置已重置为默认值", Map.of(
+                    "factoryId", factoryId,
+                    "settings", result));
+        } catch (Exception e) {
+            log.error("配置重置失败 - 工厂ID: {}", factoryId, e);
+            throw e;
+        }
     }
 }

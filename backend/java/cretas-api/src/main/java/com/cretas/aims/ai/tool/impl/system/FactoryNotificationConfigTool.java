@@ -1,7 +1,10 @@
 package com.cretas.aims.ai.tool.impl.system;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.dto.FactorySettingsDTO;
+import com.cretas.aims.service.FactorySettingsService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -20,6 +23,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class FactoryNotificationConfigTool extends AbstractBusinessTool {
+
+    @Autowired
+    private FactorySettingsService factorySettingsService;
 
     @Override
     public String getToolName() {
@@ -134,11 +140,82 @@ public class FactoryNotificationConfigTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 工厂通知配置服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "工厂通知配置服务尚未接入，请联系管理员配置 NotificationConfigService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String notificationType = getString(params, "notificationType");
+        Boolean enabled = getBoolean(params, "enabled");
+
+        try {
+            // Get current notification settings
+            FactorySettingsDTO.NotificationSettings current = factorySettingsService.getNotificationSettings(factoryId);
+
+            // Build updated settings based on notificationType and enabled flag
+            FactorySettingsDTO.NotificationSettings updated = buildUpdatedSettings(current, notificationType, enabled, params);
+
+            FactorySettingsDTO.NotificationSettings saved = factorySettingsService.updateNotificationSettings(factoryId, updated);
+
+            Map<String, ?> typeInfo = getNotificationTypeInfo(notificationType);
+            Map<String, Object> result = new HashMap<>();
+            result.put("factoryId", factoryId);
+            result.put("notificationType", notificationType);
+            result.put("typeName", typeInfo.get("name"));
+            result.put("settings", saved);
+            if (enabled != null) {
+                result.put("enabled", enabled);
+            }
+            return buildSimpleResult("通知配置已更新", result);
+        } catch (Exception e) {
+            log.error("更新通知配置失败 - 工厂ID: {}, 类型: {}", factoryId, notificationType, e);
+            throw e;
+        }
+    }
+
+    private FactorySettingsDTO.NotificationSettings buildUpdatedSettings(
+            FactorySettingsDTO.NotificationSettings current,
+            String notificationType,
+            Boolean enabled,
+            Map<String, Object> params) {
+
+        if (current == null) {
+            current = FactorySettingsDTO.NotificationSettings.builder().build();
+        }
+
+        // Map notificationType + channels to the concrete boolean fields on NotificationSettings
+        Object channelsObj = params.get("channels");
+        List<String> channels = new ArrayList<>();
+        if (channelsObj instanceof List<?>) {
+            for (Object c : (List<?>) channelsObj) {
+                if (c != null) channels.add(c.toString());
+            }
+        }
+
+        Boolean emailEnabled = current.getEmailEnabled();
+        Boolean pushEnabled = current.getPushEnabled();
+        Boolean wechatEnabled = current.getWechatEnabled();
+
+        if (!channels.isEmpty()) {
+            // Explicit channel list provided — update those channels
+            if (channels.contains("EMAIL")) emailEnabled = (enabled == null || enabled);
+            if (channels.contains("APP_PUSH") || channels.contains("PUSH")) pushEnabled = (enabled == null || enabled);
+            if (channels.contains("WECHAT")) wechatEnabled = (enabled == null || enabled);
+        } else if (enabled != null) {
+            // No channel list — toggle all channels for the given notification type
+            switch (notificationType) {
+                case "ALERT", "TASK_REMINDER", "QUALITY_NOTICE",
+                        "INVENTORY_WARNING", "EXPIRY_WARNING",
+                        "SYSTEM_ANNOUNCEMENT", "ORDER_UPDATE", "PRODUCTION_STATUS" -> {
+                    emailEnabled = enabled;
+                    pushEnabled = enabled;
+                }
+                default -> {
+                    emailEnabled = enabled;
+                }
+            }
+        }
+
+        return FactorySettingsDTO.NotificationSettings.builder()
+                .emailEnabled(emailEnabled)
+                .pushEnabled(pushEnabled)
+                .wechatEnabled(wechatEnabled)
+                .build();
     }
 
     /**

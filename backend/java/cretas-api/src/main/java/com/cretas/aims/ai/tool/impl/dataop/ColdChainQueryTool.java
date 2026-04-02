@@ -1,9 +1,14 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.entity.iot.IotDeviceData;
+import com.cretas.aims.repository.IotDeviceDataRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -19,6 +24,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class ColdChainQueryTool extends AbstractBusinessTool {
+
+    @Autowired
+    private IotDeviceDataRepository iotDeviceDataRepository;
 
     @Override
     public String getToolName() {
@@ -61,10 +69,61 @@ public class ColdChainQueryTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 冷链温度查询服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "冷链温度查询服务尚未接入，请联系管理员配置 ColdChainService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String warehouseId = getString(params, "warehouseId");
+        String timeRange = getString(params, "timeRange");
+
+        try {
+            List<IotDeviceData> records;
+
+            if (warehouseId != null && !warehouseId.isBlank()) {
+                // Query by device code (warehouse ID maps to IoT device)
+                LocalDateTime endTime = LocalDateTime.now();
+                LocalDateTime startTime = resolveStartTime(timeRange, endTime);
+
+                records = iotDeviceDataRepository.findByDeviceIdAndTimeRange(warehouseId, startTime, endTime);
+
+                // Filter to only TEMPERATURE data type
+                records = records.stream()
+                        .filter(d -> "TEMPERATURE".equals(d.getDataType()))
+                        .limit(50)
+                        .collect(java.util.stream.Collectors.toList());
+            } else {
+                // Query by factory — recent temperature data
+                LocalDateTime endTime = LocalDateTime.now();
+                LocalDateTime startTime = resolveStartTime(timeRange, endTime);
+
+                records = iotDeviceDataRepository.findByTimeRange(factoryId, startTime, endTime).stream()
+                        .filter(d -> "TEMPERATURE".equals(d.getDataType()))
+                        .limit(50)
+                        .collect(java.util.stream.Collectors.toList());
+            }
+
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("records", records);
+            result.put("count", records.size());
+            result.put("warehouseId", warehouseId);
+            result.put("timeRange", timeRange);
+
+            if (records.isEmpty()) {
+                result.put("note", "未找到温度数据。冷链监控需要已配置的IoT温度传感器设备。");
+            }
+
+            return buildSimpleResult("冷链温度查询成功", result);
+        } catch (Exception e) {
+            log.error("冷链温度查询失败: factoryId={}, warehouseId={}", factoryId, warehouseId, e);
+            throw e;
+        }
+    }
+
+    private LocalDateTime resolveStartTime(String timeRange, LocalDateTime endTime) {
+        if (timeRange == null) return endTime.minusDays(1);
+        if (timeRange.contains("7天") || timeRange.contains("一周") || timeRange.contains("本周")) {
+            return endTime.minusDays(7);
+        }
+        if (timeRange.contains("30天") || timeRange.contains("一月") || timeRange.contains("本月")) {
+            return endTime.minusDays(30);
+        }
+        // Default: today
+        return endTime.toLocalDate().atStartOfDay();
     }
 }

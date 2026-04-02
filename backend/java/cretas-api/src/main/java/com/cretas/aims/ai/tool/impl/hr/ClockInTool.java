@@ -1,11 +1,12 @@
 package com.cretas.aims.ai.tool.impl.hr;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.entity.TimeClockRecord;
+import com.cretas.aims.service.TimeClockService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -24,9 +25,8 @@ import java.util.*;
 @Component
 public class ClockInTool extends AbstractBusinessTool {
 
-    // TODO: 注入实际的打卡服务
-    // @Autowired
-    // private TimeclockService timeclockService;
+    @Autowired
+    private TimeClockService timeClockService;
 
     @Override
     public String getToolName() {
@@ -85,11 +85,28 @@ public class ClockInTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 考勤服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "考勤服务尚未接入，请联系管理员配置 TimeclockService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        Long userId = getLong(context, "userId");
+        String location = getString(params, "location");
+        String device = getString(params, "device", "AI_TOOL");
+
+        Object latObj = params.get("latitude");
+        Object lngObj = params.get("longitude");
+        Double latitude = latObj != null ? ((Number) latObj).doubleValue() : null;
+        Double longitude = lngObj != null ? ((Number) lngObj).doubleValue() : null;
+
+        try {
+            TimeClockRecord record;
+            if (latitude != null && longitude != null) {
+                record = timeClockService.clockIn(factoryId, userId, location, device, latitude, longitude);
+            } else {
+                record = timeClockService.clockIn(factoryId, userId, location, device);
+            }
+            log.info("签到打卡成功: factoryId={}, userId={}", factoryId, userId);
+            return buildSimpleResult("签到打卡成功", record);
+        } catch (Exception e) {
+            log.error("签到打卡失败: factoryId={}, userId={}", factoryId, userId, e);
+            throw e;
+        }
     }
 
     @Override

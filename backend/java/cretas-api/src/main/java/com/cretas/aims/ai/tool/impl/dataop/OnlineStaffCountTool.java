@@ -1,9 +1,13 @@
 package com.cretas.aims.ai.tool.impl.dataop;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.repository.EmployeeWorkSessionRepository;
+import com.cretas.aims.repository.TimeClockRecordRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -19,6 +23,12 @@ import java.util.*;
 @Slf4j
 @Component
 public class OnlineStaffCountTool extends AbstractBusinessTool {
+
+    @Autowired
+    private EmployeeWorkSessionRepository workSessionRepository;
+
+    @Autowired
+    private TimeClockRecordRepository timeClockRecordRepository;
 
     @Override
     public String getToolName() {
@@ -47,10 +57,25 @@ public class OnlineStaffCountTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 在线人员统计服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "在线人员统计服务尚未接入，请联系管理员配置 OnlineStaffService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        try {
+            // Count active work sessions (employees currently working)
+            long activeWorkSessions = workSessionRepository.countByFactoryIdAndStatus(factoryId, "active");
+
+            // Count employees who clocked in today but haven't clocked out
+            LocalDateTime startOfDay = LocalDateTime.now().toLocalDate().atStartOfDay();
+            LocalDateTime endOfDay = startOfDay.plusDays(1);
+            long clockedInToday = timeClockRecordRepository.countDistinctUsersByFactoryIdAndClockDateBetween(
+                    factoryId, startOfDay, endOfDay);
+
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("activeWorkSessions", activeWorkSessions);
+            result.put("clockedInToday", clockedInToday);
+            result.put("queryTime", LocalDateTime.now().toString());
+
+            return buildSimpleResult("在线人员统计成功", result);
+        } catch (Exception e) {
+            log.error("在线人员统计失败: factoryId={}", factoryId, e);
+            throw e;
+        }
     }
 }

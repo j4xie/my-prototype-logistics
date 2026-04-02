@@ -1,7 +1,10 @@
 package com.cretas.aims.ai.tool.impl.system;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.entity.config.ApprovalChainConfig;
+import com.cretas.aims.service.ApprovalChainService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -19,6 +22,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class ApprovalConfigTool extends AbstractBusinessTool {
+
+    @Autowired
+    private ApprovalChainService approvalChainService;
 
     @Override
     public String getToolName() {
@@ -57,10 +63,45 @@ public class ApprovalConfigTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 审批流程配置服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "审批流程配置服务尚未接入，请联系管理员配置 ApprovalChainService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        try {
+            String decisionTypeStr = getString(params, "decisionType", null);
+
+            List<ApprovalChainConfig> configs;
+            if (decisionTypeStr != null && !decisionTypeStr.isEmpty()) {
+                ApprovalChainConfig.DecisionType decisionType = null;
+                // Map tool-facing enum names to actual DecisionType values
+                switch (decisionTypeStr) {
+                    case "PURCHASE_ORDER" -> decisionType = ApprovalChainConfig.DecisionType.CUSTOM;
+                    case "SUPPLIER_APPROVAL" -> decisionType = ApprovalChainConfig.DecisionType.SUPPLIER_APPROVAL;
+                    case "PRODUCTION_PLAN" -> decisionType = ApprovalChainConfig.DecisionType.PRODUCTION_PLAN_CHANGE;
+                    default -> {
+                        try {
+                            decisionType = ApprovalChainConfig.DecisionType.valueOf(decisionTypeStr);
+                        } catch (IllegalArgumentException ignored) {
+                            log.warn("未知的决策类型: {}, 查询所有配置", decisionTypeStr);
+                        }
+                    }
+                }
+                if (decisionType != null) {
+                    configs = approvalChainService.getConfigsByDecisionType(factoryId, decisionType);
+                } else {
+                    configs = approvalChainService.getAllConfigs(factoryId);
+                }
+            } else {
+                configs = approvalChainService.getAllConfigs(factoryId);
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("total", configs.size());
+            result.put("configs", configs);
+            result.put("factoryId", factoryId);
+            if (decisionTypeStr != null) {
+                result.put("decisionType", decisionTypeStr);
+            }
+            return buildSimpleResult("查询审批链配置成功，共 " + configs.size() + " 条记录", result);
+        } catch (Exception e) {
+            log.error("查询审批链配置失败 - 工厂ID: {}", factoryId, e);
+            throw e;
+        }
     }
 }

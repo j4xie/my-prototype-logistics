@@ -1,7 +1,10 @@
 package com.cretas.aims.ai.tool.impl.config;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.dto.ConversionDTO;
+import com.cretas.aims.service.ConversionService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -23,9 +26,8 @@ import java.util.*;
 @Component
 public class ConversionRateUpdateTool extends AbstractBusinessTool {
 
-    // TODO: 注入实际的配置服务
-    // @Autowired
-    // private ConversionRateConfigService conversionRateConfigService;
+    @Autowired
+    private ConversionService conversionService;
 
     @Override
     public String getToolName() {
@@ -90,11 +92,46 @@ public class ConversionRateUpdateTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 转化率配置服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "转化率配置服务尚未接入，请联系管理员配置 ConversionRateConfigService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String rawMaterialTypeId = getString(params, "rawMaterialTypeId");
+        String productTypeId = getString(params, "productTypeId");
+        Object rateObj = params.get("conversionRate");
+        BigDecimal conversionRate = rateObj instanceof Number
+                ? BigDecimal.valueOf(((Number) rateObj).doubleValue())
+                : new BigDecimal(rateObj.toString());
+        String remark = getString(params, "remark", null);
+
+        try {
+            log.info("更新转化率 - 工厂ID: {}, 原料: {}, 产品: {}, 转化率: {}",
+                    factoryId, rawMaterialTypeId, productTypeId, conversionRate);
+
+            // Check if an existing conversion already exists for this material+product pair
+            ConversionDTO existing = null;
+            try {
+                existing = conversionService.getConversionRate(factoryId, rawMaterialTypeId, productTypeId);
+            } catch (Exception ignored) {
+                // Not found — will create
+            }
+
+            ConversionDTO dto = ConversionDTO.builder()
+                    .materialTypeId(rawMaterialTypeId)
+                    .productTypeId(productTypeId)
+                    .conversionRate(conversionRate)
+                    .isActive(true)
+                    .notes(remark)
+                    .build();
+
+            ConversionDTO result;
+            if (existing != null && existing.getId() != null) {
+                result = conversionService.updateConversion(factoryId, existing.getId(), dto);
+                return buildSimpleResult("转化率已更新", result);
+            } else {
+                result = conversionService.createConversion(factoryId, dto);
+                return buildSimpleResult("转化率已创建", result);
+            }
+        } catch (Exception e) {
+            log.error("更新转化率失败 - 工厂ID: {}", factoryId, e);
+            throw e;
+        }
     }
 
     @Override

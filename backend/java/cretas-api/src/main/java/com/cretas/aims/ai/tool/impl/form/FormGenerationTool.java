@@ -1,7 +1,11 @@
 package com.cretas.aims.ai.tool.impl.form;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.entity.config.FormTemplate;
+import com.cretas.aims.service.FormTemplateService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -24,9 +28,11 @@ import java.util.*;
 @Component
 public class FormGenerationTool extends AbstractBusinessTool {
 
-    // TODO: 注入实际的表单生成服务
-    // @Autowired
-    // private FormGenerationService formGenerationService;
+    @Autowired
+    private FormTemplateService formTemplateService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public String getToolName() {
@@ -123,11 +129,69 @@ public class FormGenerationTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        // 表单生成服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
-        return buildSimpleResult("error", java.util.Map.of(
-                "success", false,
-                "error", "表单生成服务尚未接入，请联系管理员配置 FormGenerationService",
-                "code", "SERVICE_NOT_AVAILABLE"));
+        String entityType = getString(params, "entityType");
+        String formPurpose = getString(params, "formPurpose");
+        String layout = getString(params, "layout", "VERTICAL");
+
+        // Extract userId from context
+        Long userId = null;
+        Object userIdObj = context != null ? context.get("userId") : null;
+        if (userIdObj instanceof Long) {
+            userId = (Long) userIdObj;
+        } else if (userIdObj instanceof Number) {
+            userId = ((Number) userIdObj).longValue();
+        } else if (userIdObj instanceof String) {
+            try { userId = Long.parseLong((String) userIdObj); } catch (NumberFormatException ignored) {}
+        }
+        if (userId == null) userId = 0L;
+
+        try {
+            // Check if a custom template already exists for this factory+entityType
+            Optional<FormTemplate> existing = formTemplateService.getByFactoryAndEntityType(factoryId, entityType);
+            if (existing.isPresent() && "VIEW".equalsIgnoreCase(formPurpose)) {
+                FormTemplate template = existing.get();
+                Map<String, Object> result = new HashMap<>();
+                result.put("templateId", template.getId());
+                result.put("entityType", entityType);
+                result.put("formPurpose", formPurpose);
+                result.put("name", template.getName());
+                result.put("schemaJson", template.getSchemaJson());
+                result.put("source", "existing_template");
+                return buildSimpleResult("已找到现有表单模板: " + template.getName(), result);
+            }
+
+            // Generate form fields based on entityType + formPurpose
+            List<Map<String, Object>> fields = generateFormFields(entityType, formPurpose, null, null);
+            Map<String, Object> schemaMap = new HashMap<>();
+            schemaMap.put("entityType", entityType);
+            schemaMap.put("formPurpose", formPurpose);
+            schemaMap.put("layout", layout);
+            schemaMap.put("fields", fields);
+
+            String schemaJson = objectMapper.writeValueAsString(schemaMap);
+            String templateName = getEntityTypeName(entityType) + " - " + getFormPurposeName(formPurpose);
+
+            // Persist via FormTemplateService.createFromAI
+            FormTemplate created = formTemplateService.createFromAI(
+                    factoryId, entityType, templateName, schemaJson,
+                    "AI生成表单: " + templateName, userId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("templateId", created.getId());
+            result.put("entityType", entityType);
+            result.put("formPurpose", formPurpose);
+            result.put("name", created.getName());
+            result.put("layout", layout);
+            result.put("fieldCount", fields.size());
+            result.put("fields", fields);
+            result.put("schemaJson", schemaJson);
+            result.put("source", "ai_generated");
+
+            return buildSimpleResult(templateName + " 表单已生成，共 " + fields.size() + " 个字段", result);
+        } catch (Exception e) {
+            log.error("生成表单失败 - 工厂ID: {}, 实体类型: {}", factoryId, entityType, e);
+            throw e;
+        }
     }
 
     /**
