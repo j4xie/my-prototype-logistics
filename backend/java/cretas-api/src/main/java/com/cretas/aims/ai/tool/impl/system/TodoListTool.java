@@ -47,17 +47,10 @@ public class TodoListTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("查询待办事项 - 工厂ID: {}", factoryId);
-
-        Long userId = getLong(context, "userId");
-
-        // TODO: 调用 WorkOrderService 查询
-        Map<String, Object> result = new HashMap<>();
-        result.put("message", "待办事项查询完成");
-        result.put("factoryId", factoryId);
-        result.put("userId", userId);
-        result.put("notice", "请接入WorkOrderService完成实际查询");
-
-        return result;
+        // 待办事项服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "待办事项服务尚未接入，请联系管理员配置 WorkOrderService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

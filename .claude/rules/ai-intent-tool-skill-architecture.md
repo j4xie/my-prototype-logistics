@@ -29,7 +29,7 @@ IntentExecutorServiceImpl.execute()
   └─ 4. 无匹配 → 返回提示
 ```
 
-**关键数字**：310 个 Tool 已注册，13 个内置 Skill，51 个测试意图全部通过。
+**关键数字**：337+ 个 Tool 已注册，16 个内置 Skill，51 个测试意图全部通过。
 
 ---
 
@@ -203,12 +203,12 @@ Skill = 多个 Tool 的编排方案，适用于复杂查询需要调用 2+ 个 T
 
 ```
 SkillRegistry (ConcurrentHashMap)
-  ├─ 13 个内置 Skill (代码定义)
+  ├─ 16 个内置 Skill (代码定义)
   ├─ SKILL.md 文件 (YAML frontmatter)
   └─ 数据库 SmartBiSkill (最高优先级)
 ```
 
-**内置 Skill**: inventory-analysis, production-tracking, quality-inspection, material-batch, personnel-scheduling, report-generation, equipment-diagnosis, order-fulfillment, traceability, supplier-evaluation, restaurant-operations, restaurant-wastage, cost-analysis
+**内置 Skill**: inventory-analysis, production-tracking, quality-inspection, material-batch, personnel-scheduling, report-generation, equipment-diagnosis, order-fulfillment, traceability, supplier-evaluation, restaurant-operations, restaurant-wastage, cost-analysis, finance-invoice, finance-payment, rd-sample
 
 ---
 

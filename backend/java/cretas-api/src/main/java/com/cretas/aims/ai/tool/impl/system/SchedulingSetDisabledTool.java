@@ -67,62 +67,10 @@ public class SchedulingSetDisabledTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行调度模式设置为禁用 - 工厂ID: {}", factoryId);
-
-        String reason = getString(params, "reason");
-        String duration = getString(params, "duration");
-        Long userId = getLong(context, "userId");
-        String userName = getString(context, "username");
-
-        // TODO: 调用实际的调度服务设置模式
-        // schedulingService.setSchedulingMode(factoryId, SchedulingMode.DISABLED, userId);
-
-        // 构建返回结果
-        Map<String, Object> result = new HashMap<>();
-        result.put("message", "调度模式已设置为禁用状态");
-        result.put("factoryId", factoryId);
-        result.put("previousMode", "AUTO"); // TODO: 从服务获取之前的模式
-        result.put("currentMode", "DISABLED");
-        result.put("changedBy", userName);
-        result.put("changedAt", LocalDateTime.now().toString());
-
-        if (reason != null && !reason.trim().isEmpty()) {
-            result.put("reason", reason);
-        }
-        if (duration != null && !duration.trim().isEmpty()) {
-            result.put("estimatedDuration", duration);
-        }
-
-        // 添加模式说明
-        Map<String, Object> modeInfo = new HashMap<>();
-        modeInfo.put("mode", "DISABLED");
-        modeInfo.put("description", "调度功能已暂停，不会生成新的生产计划");
-        modeInfo.put("impact", Arrays.asList(
-                "不再自动生成生产计划",
-                "不处理新订单排程",
-                "已有计划保持当前状态",
-                "可继续执行已确认的计划"
-        ));
-        result.put("modeInfo", modeInfo);
-
-        // 添加重要警告
-        result.put("warnings", Arrays.asList(
-                "调度功能已完全禁用",
-                "新订单将不会被排程",
-                "请尽快完成维护并重新启用调度",
-                "长时间禁用可能影响订单交付"
-        ));
-
-        // 添加后续操作建议
-        result.put("nextSteps", Arrays.asList(
-                "通知相关人员调度已暂停",
-                "完成所需的维护或调整",
-                "维护完成后切换到自动或手动模式"
-        ));
-
-        log.info("调度模式设置完成 - 工厂ID: {}, 模式: DISABLED, 原因: {}",
-                factoryId, reason != null ? reason : "未提供");
-
-        return result;
+        // 调度模式服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "调度模式服务尚未接入，请联系管理员配置 SchedulingService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

@@ -47,13 +47,10 @@ public class WorkerRealtimeCountTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("查询车间实时工人数 - 工厂ID: {}", factoryId);
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("queryType", "worker_realtime_count");
-        result.put("factoryId", factoryId);
-        result.put("message", "车间实时工人数查询功能已就绪。请前往生产监控页面查看实时人员分布。");
-
-        return result;
+        // 车间实时工人数查询服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "车间实时工人数查询服务尚未接入，请联系管理员配置 WorkerRealtimeService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

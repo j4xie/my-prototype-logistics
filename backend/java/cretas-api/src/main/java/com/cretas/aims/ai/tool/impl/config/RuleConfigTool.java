@@ -113,69 +113,11 @@ public class RuleConfigTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行规则配置操作 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 获取参数
-        String ruleId = getString(params, "ruleId");
-        String ruleCode = getString(params, "ruleCode");
-        Object ruleConfig = params.get("ruleConfig");
-        String ruleName = getString(params, "ruleName");
-        String ruleType = getString(params, "ruleType");
-        Boolean enabled = getBoolean(params, "enabled", true);
-        String description = getString(params, "description");
-
-        // 验证：ruleId或ruleCode至少需要一个
-        if ((ruleId == null || ruleId.trim().isEmpty()) &&
-            (ruleCode == null || ruleCode.trim().isEmpty())) {
-            throw new IllegalArgumentException("ruleId或ruleCode至少需要提供一个");
-        }
-
-        // 验证ruleConfig
-        if (ruleConfig == null) {
-            throw new IllegalArgumentException("ruleConfig不能为空");
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        String timestamp = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
-        boolean isUpdate = ruleId != null && !ruleId.trim().isEmpty();
-
-        // TODO: 调用实际服务保存规则配置
-        // if (isUpdate) {
-        //     RuleConfig config = ruleConfigService.updateRule(factoryId, ruleId, ruleConfig, enabled);
-        // } else {
-        //     RuleConfig config = ruleConfigService.createRule(factoryId, ruleCode, ruleConfig, ruleName, ruleType, enabled);
-        // }
-
-        // 占位实现：返回模拟结果
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("operation", isUpdate ? "UPDATE" : "CREATE");
-        result.put("ruleId", ruleId != null ? ruleId : "RULE_" + System.currentTimeMillis());
-        result.put("ruleCode", ruleCode);
-        result.put("ruleConfig", ruleConfig);
-        result.put("enabled", enabled);
-        result.put("updatedAt", timestamp);
-
-        if (ruleName != null) {
-            result.put("ruleName", ruleName);
-        }
-        if (ruleType != null) {
-            result.put("ruleType", ruleType);
-            result.put("ruleTypeName", getRuleTypeName(ruleType));
-        }
-        if (description != null) {
-            result.put("description", description);
-        }
-
-        result.put("message", isUpdate ? "规则配置已更新成功" : "规则配置已创建成功");
-        result.put("notice", "请接入RuleConfigService完成实际规则配置");
-
-        log.info("规则配置操作完成 - 操作: {}, 规则: {}",
-                isUpdate ? "更新" : "创建",
-                ruleId != null ? ruleId : ruleCode);
-
-        return result;
+        // 规则配置服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "规则配置服务尚未接入，请联系管理员配置 RuleConfigService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 
     /**

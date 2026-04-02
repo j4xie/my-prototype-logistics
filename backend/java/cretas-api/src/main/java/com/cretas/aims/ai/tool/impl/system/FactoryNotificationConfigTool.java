@@ -133,86 +133,12 @@ public class FactoryNotificationConfigTool extends AbstractBusinessTool {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行工厂通知配置 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 解析参数
-        String notificationType = getString(params, "notificationType");
-        Boolean enabled = getBoolean(params, "enabled", true);
-        List<String> channels = getList(params, "channels");
-        String priority = getString(params, "priority", "MEDIUM");
-        Map<String, Object> quietHours = params.get("quietHours") instanceof Map ?
-                (Map<String, Object>) params.get("quietHours") : null;
-
-        Long userId = getLong(context, "userId");
-        String userName = getString(context, "username");
-
-        // 验证通知类型
-        if (!isValidNotificationType(notificationType)) {
-            throw new IllegalArgumentException("无效的通知类型: " + notificationType);
-        }
-
-        // TODO: 调用实际的通知配置服务
-        // notificationConfigService.updateConfig(factoryId, notificationType, config, userId);
-
-        // 获取通知类型信息
-        Map<String, String> typeInfo = getNotificationTypeInfo(notificationType);
-
-        // 构建返回结果
-        Map<String, Object> result = new HashMap<>();
-        result.put("message", String.format("「%s」通知配置已更新", typeInfo.get("name")));
-        result.put("factoryId", factoryId);
-        result.put("notificationType", notificationType);
-        result.put("notificationTypeName", typeInfo.get("name"));
-        result.put("changedBy", userName);
-        result.put("changedAt", LocalDateTime.now().toString());
-
-        // 构建配置详情
-        Map<String, Object> configDetails = new HashMap<>();
-        configDetails.put("type", notificationType);
-        configDetails.put("typeName", typeInfo.get("name"));
-        configDetails.put("enabled", enabled);
-        configDetails.put("priority", priority);
-
-        if (channels != null && !channels.isEmpty()) {
-            configDetails.put("channels", channels);
-            configDetails.put("channelNames", getChannelNames(channels));
-        } else {
-            // 默认渠道
-            configDetails.put("channels", Arrays.asList("APP_PUSH", "IN_APP"));
-            configDetails.put("channelNames", Arrays.asList("App推送", "应用内通知"));
-        }
-
-        if (quietHours != null) {
-            configDetails.put("quietHours", quietHours);
-        }
-
-        result.put("configDetails", configDetails);
-
-        // 添加配置摘要
-        StringBuilder summary = new StringBuilder();
-        summary.append(enabled ? "已启用" : "已禁用");
-        summary.append("，优先级: ").append(getPriorityName(priority));
-        if (channels != null && !channels.isEmpty()) {
-            summary.append("，渠道: ").append(String.join("、", getChannelNames(channels)));
-        }
-        result.put("configSummary", summary.toString());
-
-        // 添加后续操作建议
-        result.put("nextSteps", Arrays.asList(
-                "测试通知是否正常发送",
-                "确认接收人员是否正确",
-                "检查其他通知类型配置"
-        ));
-
-        // 列出所有通知类型供参考
-        result.put("availableNotificationTypes", getAvailableNotificationTypes());
-
-        log.info("通知配置更新完成 - 工厂ID: {}, 类型: {}, 启用: {}",
-                factoryId, notificationType, enabled);
-
-        return result;
+        // 工厂通知配置服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "工厂通知配置服务尚未接入，请联系管理员配置 NotificationConfigService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 
     /**

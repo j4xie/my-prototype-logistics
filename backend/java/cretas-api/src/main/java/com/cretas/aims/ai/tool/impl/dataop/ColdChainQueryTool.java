@@ -61,14 +61,10 @@ public class ColdChainQueryTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("冷链温度查询 - 工厂ID: {}", factoryId);
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("queryType", "cold_chain_temperature");
-        result.put("factoryId", factoryId);
-        result.put("message", "请指定需要查询哪个冷库的温度记录。可选参数:\n" +
-                "- 冷库编号或名称\n- 时间范围（如：今天、最近7天）");
-
-        return result;
+        // 冷链温度查询服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "冷链温度查询服务尚未接入，请联系管理员配置 ColdChainService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

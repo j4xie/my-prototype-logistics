@@ -97,27 +97,10 @@ public class BatchStatusChangeTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("批次状态变更 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        String batchId = getString(params, "batchId");
-        String operation = getString(params, "operation");
-
-        String operationName = switch (operation) {
-            case "start" -> "开始生产";
-            case "pause" -> "暂停";
-            case "resume" -> "恢复";
-            case "complete" -> "完成";
-            case "cancel" -> "取消";
-            default -> operation;
-        };
-
-        // TODO: 调用 ProcessingService 的对应方法
-        Map<String, Object> result = new HashMap<>();
-        result.put("batchId", batchId);
-        result.put("operation", operation);
-        result.put("message", "批次 " + batchId + " 已" + operationName);
-        result.put("notice", "请接入ProcessingService完成实际操作");
-
-        return result;
+        // 批次状态变更服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "批次状态变更服务尚未接入，请联系管理员配置 ProcessingService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

@@ -61,19 +61,10 @@ public class SendWechatNotificationTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("发送微信通知 - 工厂ID: {}", factoryId);
-
-        String recipient = getString(params, "recipient", "全体成员");
-        String messageContent = getString(params, "message", "来自AI助手的通知");
-
-        // TODO: 调用实际的微信通知服务
-        Map<String, Object> result = new HashMap<>();
-        result.put("message", "微信通知已发送给「" + recipient + "」");
-        result.put("recipient", recipient);
-        result.put("messageContent", messageContent);
-        result.put("channel", "wechat");
-        result.put("status", "queued");
-
-        return result;
+        // 微信通知服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "微信通知服务尚未接入，请联系管理员配置 WechatNotificationService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

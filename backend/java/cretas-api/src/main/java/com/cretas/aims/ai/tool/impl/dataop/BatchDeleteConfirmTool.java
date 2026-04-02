@@ -61,12 +61,10 @@ public class BatchDeleteConfirmTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("批量删除确认 - 工厂ID: {}", factoryId);
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("status", "NEED_CONFIRM");
-        result.put("message", "批量删除操作需要确认。请提供要删除的数据类型和筛选条件。\n此操作不可撤销！");
-
-        return result;
+        // 批量删除服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "批量删除服务尚未接入，请联系管理员配置 BatchDeleteService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

@@ -108,77 +108,11 @@ public class FactoryFeatureToggleTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行工厂功能开关 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 解析参数
-        String featureCode = getString(params, "featureCode");
-        Boolean enabled = getBoolean(params, "enabled");
-        String reason = getString(params, "reason");
-        Long userId = getLong(context, "userId");
-        String userName = getString(context, "username");
-
-        // 验证功能代码
-        if (!isValidFeatureCode(featureCode)) {
-            throw new IllegalArgumentException("无效的功能代码: " + featureCode);
-        }
-
-        // TODO: 调用实际的功能配置服务
-        // factoryConfigService.toggleFeature(factoryId, featureCode, enabled, userId);
-
-        // 获取功能信息
-        Map<String, String> featureInfo = getFeatureInfo(featureCode);
-
-        // 构建返回结果
-        Map<String, Object> result = new HashMap<>();
-        result.put("message", String.format("功能「%s」已%s",
-                featureInfo.get("name"),
-                enabled ? "启用" : "禁用"));
-        result.put("factoryId", factoryId);
-        result.put("featureCode", featureCode);
-        result.put("featureName", featureInfo.get("name"));
-        result.put("enabled", enabled);
-        result.put("previousState", !enabled); // TODO: 从服务获取之前的状态
-        result.put("changedBy", userName);
-        result.put("changedAt", LocalDateTime.now().toString());
-
-        if (reason != null && !reason.trim().isEmpty()) {
-            result.put("reason", reason);
-        }
-
-        // 添加功能详情
-        Map<String, Object> featureDetails = new HashMap<>();
-        featureDetails.put("code", featureCode);
-        featureDetails.put("name", featureInfo.get("name"));
-        featureDetails.put("description", featureInfo.get("description"));
-        featureDetails.put("currentState", enabled ? "已启用" : "已禁用");
-        result.put("featureDetails", featureDetails);
-
-        // 添加影响说明
-        if (enabled) {
-            result.put("enabledCapabilities", getFeatureCapabilities(featureCode));
-        } else {
-            result.put("disabledImpact", getFeatureDisableImpact(featureCode));
-        }
-
-        // 添加后续操作建议
-        if (enabled) {
-            result.put("nextSteps", Arrays.asList(
-                    "验证功能是否正常工作",
-                    "配置功能相关参数",
-                    "通知相关用户功能已启用"
-            ));
-        } else {
-            result.put("nextSteps", Arrays.asList(
-                    "确认禁用不会影响关键业务",
-                    "通知相关用户功能已禁用",
-                    "如需恢复可重新启用"
-            ));
-        }
-
-        log.info("功能开关操作完成 - 工厂ID: {}, 功能: {}, 状态: {}",
-                factoryId, featureCode, enabled ? "启用" : "禁用");
-
-        return result;
+        // 工厂功能开关服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "工厂功能开关服务尚未接入，请联系管理员配置 FactoryConfigService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 
     /**

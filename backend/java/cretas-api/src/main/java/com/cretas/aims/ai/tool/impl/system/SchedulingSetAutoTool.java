@@ -61,49 +61,10 @@ public class SchedulingSetAutoTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行调度模式设置为自动 - 工厂ID: {}", factoryId);
-
-        String reason = getString(params, "reason");
-        Long userId = getLong(context, "userId");
-        String userName = getString(context, "username");
-
-        // TODO: 调用实际的调度服务设置模式
-        // schedulingService.setSchedulingMode(factoryId, SchedulingMode.AUTO, userId);
-
-        // 构建返回结果
-        Map<String, Object> result = new HashMap<>();
-        result.put("message", "调度模式已设置为自动模式");
-        result.put("factoryId", factoryId);
-        result.put("previousMode", "MANUAL"); // TODO: 从服务获取之前的模式
-        result.put("currentMode", "AUTO");
-        result.put("changedBy", userName);
-        result.put("changedAt", LocalDateTime.now().toString());
-
-        if (reason != null && !reason.trim().isEmpty()) {
-            result.put("reason", reason);
-        }
-
-        // 添加模式说明
-        Map<String, Object> modeInfo = new HashMap<>();
-        modeInfo.put("mode", "AUTO");
-        modeInfo.put("description", "系统自动根据订单、库存和产能生成生产计划");
-        modeInfo.put("features", Arrays.asList(
-                "自动生成生产计划",
-                "智能排程优化",
-                "实时调整产能分配",
-                "自动处理紧急订单"
-        ));
-        result.put("modeInfo", modeInfo);
-
-        // 添加后续操作建议
-        result.put("nextSteps", Arrays.asList(
-                "确认自动调度配置参数",
-                "监控自动生成的计划",
-                "如需人工干预可切换到手动模式"
-        ));
-
-        log.info("调度模式设置完成 - 工厂ID: {}, 模式: AUTO", factoryId);
-
-        return result;
+        // 调度模式服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "调度模式服务尚未接入，请联系管理员配置 SchedulingService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

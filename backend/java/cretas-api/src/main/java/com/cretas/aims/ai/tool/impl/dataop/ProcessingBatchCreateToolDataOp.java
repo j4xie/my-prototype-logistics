@@ -62,19 +62,10 @@ public class ProcessingBatchCreateToolDataOp extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("创建生产批次 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        String productTypeId = getString(params, "productTypeId");
-        BigDecimal plannedQuantity = getBigDecimal(params, "plannedQuantity");
-
-        // TODO: 调用 ProcessingService.createBatch
-        Map<String, Object> result = new HashMap<>();
-        result.put("message", "生产批次创建请求已提交");
-        result.put("productTypeId", productTypeId);
-        if (plannedQuantity != null) result.put("plannedQuantity", plannedQuantity);
-        result.put("operation", "CREATE");
-        result.put("notice", "请接入ProcessingService完成实际创建");
-
-        return result;
+        // 生产批次创建服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "生产批次创建服务尚未接入，请联系管理员配置 ProcessingService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

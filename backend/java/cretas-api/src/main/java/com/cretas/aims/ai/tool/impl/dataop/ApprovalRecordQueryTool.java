@@ -47,13 +47,10 @@ public class ApprovalRecordQueryTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("查询审批记录 - 工厂ID: {}", factoryId);
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("queryType", "approval_record");
-        result.put("factoryId", factoryId);
-        result.put("message", "审批记录查询功能已就绪。请前往审批管理页面查看待审批和已审批记录。");
-
-        return result;
+        // 审批记录查询服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "审批记录查询服务尚未接入，请联系管理员配置 ApprovalService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

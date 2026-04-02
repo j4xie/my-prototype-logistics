@@ -143,56 +143,10 @@ public class ProductTypeQueryTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行产品类型查询 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 解析分页参数
-        Integer page = getInteger(params, "page", 1);
-        Integer size = getInteger(params, "size", 10);
-
-        // 解析筛选参数
-        String productName = getString(params, "productName");
-        String productCode = getString(params, "productCode");
-        String category = getString(params, "category");
-        String status = getString(params, "status");
-        Integer shelfLifeMin = getInteger(params, "shelfLifeMin");
-        Integer shelfLifeMax = getInteger(params, "shelfLifeMax");
-
-        // TODO: 调用实际的产品类型服务获取数据
-        // PageResponse<ProductTypeDTO> pageResponse = productTypeService.getProductTypeList(factoryId, queryRequest);
-
-        // 模拟查询结果
-        List<Map<String, Object>> mockContent = new ArrayList<>();
-        // 模拟数据 - 实际应从服务获取
-        Map<String, Object> product1 = new HashMap<>();
-        product1.put("productTypeId", "PT001");
-        product1.put("productName", "红烧牛肉");
-        product1.put("productCode", "HSNH001");
-        product1.put("category", "肉类");
-        product1.put("status", "ACTIVE");
-        product1.put("shelfLife", 180);
-        product1.put("unit", "kg");
-        mockContent.add(product1);
-
-        // 构建返回结果
-        Map<String, Object> result = buildPageResult(
-                mockContent,
-                1L,  // 模拟总记录数
-                1,   // 模拟总页数
-                page
-        );
-
-        // 添加查询条件摘要
-        Map<String, Object> queryConditions = new HashMap<>();
-        if (productName != null) queryConditions.put("productName", productName);
-        if (productCode != null) queryConditions.put("productCode", productCode);
-        if (category != null) queryConditions.put("category", category);
-        if (status != null) queryConditions.put("status", status);
-        if (shelfLifeMin != null) queryConditions.put("shelfLifeMin", shelfLifeMin);
-        if (shelfLifeMax != null) queryConditions.put("shelfLifeMax", shelfLifeMax);
-        result.put("queryConditions", queryConditions);
-
-        log.info("产品类型查询完成 - 总记录数: {}, 当前页: {}", 1, page);
-
-        return result;
+        // 产品类型查询服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "产品类型查询服务尚未接入，请联系管理员配置 ProductTypeService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

@@ -56,15 +56,10 @@ public class TraceGenerateTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("生成溯源码 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        String batchId = getString(params, "batchId");
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("batchId", batchId);
-        result.put("traceUrl", "https://trace.cretas.com/" + batchId);
-        result.put("message", "溯源码已生成，批次: " + batchId);
-
-        return result;
+        // 溯源码生成服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "溯源码生成服务尚未接入，请联系管理员配置 TraceService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

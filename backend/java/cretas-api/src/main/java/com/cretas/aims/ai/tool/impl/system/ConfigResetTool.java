@@ -57,30 +57,10 @@ public class ConfigResetTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("系统配置重置 - 工厂ID: {}", factoryId);
-
-        Boolean confirmed = getBoolean(params, "confirmed", false);
-
-        Map<String, Object> result = new HashMap<>();
-        if (!confirmed) {
-            result.put("status", "NEED_CONFIRM");
-            result.put("message", "确认要恢复系统默认配置吗？这将重置以下设置:\n" +
-                    "1. 排产设置 -> 手动确认模式\n" +
-                    "2. 功能开关 -> 全部启用\n" +
-                    "3. 通知设置 -> 默认渠道\n\n" +
-                    "请回复\"确认\"继续操作");
-        } else {
-            // TODO: 调用实际的配置重置服务
-            result.put("status", "COMPLETED");
-            result.put("message", "系统配置已恢复为默认设置");
-            result.put("resetItems", Arrays.asList(
-                    "排产设置已重置为手动确认模式",
-                    "功能开关已全部启用",
-                    "通知设置已恢复默认渠道"
-            ));
-        }
-
-        result.put("factoryId", factoryId);
-        return result;
+        // 系统配置重置服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "系统配置重置服务尚未接入，请联系管理员配置 SystemConfigResetService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

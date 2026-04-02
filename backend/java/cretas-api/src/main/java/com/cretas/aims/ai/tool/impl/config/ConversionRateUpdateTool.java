@@ -90,44 +90,11 @@ public class ConversionRateUpdateTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("执行转化率配置更新 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        // 获取必需参数
-        String rawMaterialTypeId = getString(params, "rawMaterialTypeId");
-        String productTypeId = getString(params, "productTypeId");
-        BigDecimal conversionRate = getBigDecimal(params, "conversionRate");
-
-        // 获取可选参数
-        String effectiveDate = getString(params, "effectiveDate");
-        String remark = getString(params, "remark");
-
-        // 参数验证
-        if (conversionRate == null || conversionRate.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("转化率必须大于0");
-        }
-
-        // TODO: 调用实际服务更新转化率配置
-        // ConversionRateConfig config = conversionRateConfigService.updateConversionRate(
-        //     factoryId, rawMaterialTypeId, productTypeId, conversionRate, effectiveDate, remark);
-
-        // 占位实现：返回模拟结果
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("configId", "CONFIG_" + System.currentTimeMillis());
-        result.put("rawMaterialTypeId", rawMaterialTypeId);
-        result.put("productTypeId", productTypeId);
-        result.put("conversionRate", conversionRate);
-        result.put("effectiveDate", effectiveDate != null ? effectiveDate : "立即生效");
-        if (remark != null) {
-            result.put("remark", remark);
-        }
-        result.put("message", "转化率配置已更新成功");
-        result.put("notice", "请接入ConversionRateConfigService完成实际配置更新");
-
-        log.info("转化率配置更新完成 - 原材料: {}, 产品: {}, 转化率: {}",
-                rawMaterialTypeId, productTypeId, conversionRate);
-
-        return result;
+        // 转化率配置服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "转化率配置服务尚未接入，请联系管理员配置 ConversionRateConfigService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 
     @Override

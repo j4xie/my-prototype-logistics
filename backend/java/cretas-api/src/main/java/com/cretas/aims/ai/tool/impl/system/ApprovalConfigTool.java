@@ -57,17 +57,10 @@ public class ApprovalConfigTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("查询审批配置 - 工厂ID: {}", factoryId);
-
-        String decisionType = getString(params, "decisionType", "PURCHASE_ORDER");
-
-        // TODO: 调用 ApprovalChainService.getConfigsByDecisionType
-        Map<String, Object> result = new HashMap<>();
-        result.put("message", "采购审批流程配置查询完成");
-        result.put("factoryId", factoryId);
-        result.put("decisionType", decisionType);
-        result.put("notice", "请接入ApprovalChainService完成实际查询");
-
-        return result;
+        // 审批流程配置服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "审批流程配置服务尚未接入，请联系管理员配置 ApprovalChainService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

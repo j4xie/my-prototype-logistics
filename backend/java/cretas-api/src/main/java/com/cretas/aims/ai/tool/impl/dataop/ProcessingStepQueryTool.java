@@ -56,16 +56,10 @@ public class ProcessingStepQueryTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("查询加工步骤 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        String batchId = getString(params, "batchId");
-
-        // TODO: 调用 ProcessingService.getBatchById
-        Map<String, Object> result = new HashMap<>();
-        result.put("batchId", batchId);
-        result.put("message", "批次 [" + batchId + "] 加工步骤查询完成");
-        result.put("notice", "请接入ProcessingService完成实际查询");
-
-        return result;
+        // 加工步骤查询服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "加工步骤查询服务尚未接入，请联系管理员配置 ProcessingService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

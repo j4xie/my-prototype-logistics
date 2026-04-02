@@ -74,24 +74,10 @@ public class OrderApprovalTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("审批订单 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        String transferId = getString(params, "transferId");
-        Boolean reject = getBoolean(params, "reject", false);
-        String reason = getString(params, "reason");
-
-        // TODO: 调用 TransferService.approveTransfer / rejectTransfer
-        String action = reject ? "审批拒绝" : "审批通过";
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("transferId", transferId);
-        result.put("action", action);
-        result.put("message", action + "。单据ID: " + transferId);
-        if (reject && reason != null) {
-            result.put("reason", reason);
-        }
-        result.put("notice", "请接入TransferService完成实际审批");
-
-        return result;
+        // 订单审批服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "订单审批服务尚未接入，请联系管理员配置 TransferService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }

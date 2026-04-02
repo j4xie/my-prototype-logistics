@@ -73,33 +73,10 @@ public class InventoryOperationTool extends AbstractBusinessTool {
 
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
-        log.info("库存操作 - 工厂ID: {}, 参数: {}", factoryId, params);
-
-        String batchId = getString(params, "batchId");
-        String operationType = getString(params, "operationType");
-        BigDecimal quantity = getBigDecimal(params, "quantity");
-        Boolean confirmed = getBoolean(params, "confirmed", false);
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("batchId", batchId);
-        result.put("operationType", operationType);
-
-        if ("CLEAR".equals(operationType)) {
-            if (!confirmed) {
-                result.put("status", "NEED_CONFIRM");
-                result.put("message", "确认清零批次 " + batchId + " 的库存？此操作不可撤销。");
-            } else {
-                result.put("message", "批次 " + batchId + " 已清零");
-                result.put("operation", "CLEAR");
-            }
-        } else {
-            BigDecimal qty = quantity != null ? quantity : BigDecimal.ONE;
-            result.put("quantity", qty);
-            result.put("message", "批次 " + batchId + " 出库 " + qty + " 成功");
-            result.put("operation", "OUTBOUND");
-        }
-
-        result.put("notice", "请接入MaterialBatchService完成实际操作");
-        return result;
+        // 库存操作服务未接入 — 禁止降级处理，返回明确错误而非模拟数据
+        return buildSimpleResult("error", java.util.Map.of(
+                "success", false,
+                "error", "库存操作服务尚未接入，请联系管理员配置 MaterialBatchService",
+                "code", "SERVICE_NOT_AVAILABLE"));
     }
 }
