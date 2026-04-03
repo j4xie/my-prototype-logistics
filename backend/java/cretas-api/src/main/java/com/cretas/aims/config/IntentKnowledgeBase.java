@@ -1634,6 +1634,9 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("今日考勤", "ATTENDANCE_TODAY");
         phraseToIntentMapping.put("今天考勤", "ATTENDANCE_TODAY");
         phraseToIntentMapping.put("考勤情况", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("出勤", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("出勤情况", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("今日出勤", "ATTENDANCE_TODAY");
         // v12.0/v12.1: 增加今日考勤打卡相关短语
         phraseToIntentMapping.put("今天员工打卡", "ATTENDANCE_TODAY");
         phraseToIntentMapping.put("今天打卡情况", "ATTENDANCE_TODAY");
