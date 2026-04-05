@@ -56,6 +56,13 @@ public class RdController {
                 (String) body.get("specification"), (String) body.get("grade"),
                 (String) body.get("mainMaterial"),
                 body.get("assignedTo") != null ? Long.valueOf(body.get("assignedTo").toString()) : userId);
+        // 新增字段: productLevel, storageMethod, customerName, salesperson
+        boolean needSave = false;
+        if (body.get("productLevel") != null) { sample.setProductLevel((String) body.get("productLevel")); needSave = true; }
+        if (body.get("storageMethod") != null) { sample.setStorageMethod((String) body.get("storageMethod")); needSave = true; }
+        if (body.get("customerName") != null) { sample.setCustomerName((String) body.get("customerName")); needSave = true; }
+        if (body.get("salesperson") != null) { sample.setSalesperson((String) body.get("salesperson")); needSave = true; }
+        if (needSave) sample = sampleService.updateSampleFields(sample);
         return ResponseEntity.ok(Map.of("success", true, "data", sample, "message", "样品已创建"));
     }
 

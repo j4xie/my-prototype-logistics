@@ -101,6 +101,11 @@ public class ProductSampleServiceImpl implements ProductSampleService {
     }
 
     @Override
+    public ProductSample updateSampleFields(ProductSample sample) {
+        return productSampleRepository.save(sample);
+    }
+
+    @Override
     @Transactional
     public ProductSample updateProgress(String sampleId, String note, String photoUrl) {
         ProductSample sample = getSample(sampleId);

@@ -23,6 +23,7 @@ public interface ProductSampleService {
     ProductSample rejectSample(String sampleId, Long approvedBy, String notes);
     Page<ProductSample> listSamples(String factoryId, String status, Pageable pageable);
     ProductSample getSample(String sampleId);
+    ProductSample updateSampleFields(ProductSample sample);
 
     // ==================== 报价任务 ====================
     QuotationTask getQuotationBySample(String sampleId);
