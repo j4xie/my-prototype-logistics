@@ -55,5 +55,9 @@ public class CreatePurchaseOrderRequest {
         private BigDecimal taxRate;
 
         private String remark;
+
+        private String specification;
+
+        private BigDecimal boxQuantity;
     }
 }

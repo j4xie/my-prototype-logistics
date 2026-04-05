@@ -37,4 +37,8 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, St
     /** 生成订单号：统计当天该工厂的采购单数量 */
     @Query("SELECT COUNT(po) FROM PurchaseOrder po WHERE po.factoryId = :factoryId AND po.orderDate = :date")
     long countByFactoryIdAndDate(@Param("factoryId") String factoryId, @Param("date") LocalDate date);
+
+    /** 生成订单号：查找当天最大订单号（避免并发冲突） */
+    @Query("SELECT MAX(po.orderNumber) FROM PurchaseOrder po WHERE po.factoryId = :factoryId AND po.orderNumber LIKE :prefix")
+    Optional<String> findMaxOrderNumberByPrefix(@Param("factoryId") String factoryId, @Param("prefix") String prefix);
 }

@@ -8,6 +8,7 @@ import com.cretas.aims.entity.enums.PurchaseOrderStatus;
 import com.cretas.aims.entity.enums.PurchaseType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import org.hibernate.annotations.Formula;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -67,6 +68,9 @@ public class PurchaseOrder extends BaseEntity {
     @NotBlank
     @Column(name = "supplier_id", nullable = false, length = 191)
     private String supplierId;
+
+    @Formula("(SELECT s.name FROM suppliers s WHERE s.id = supplier_id)")
+    private String supplierName;
 
     @NotNull
     @Enumerated(EnumType.STRING)

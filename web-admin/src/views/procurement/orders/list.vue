@@ -238,7 +238,7 @@ function handleAiFill(params: Record<string, unknown>) {
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="orderNumber" label="订单编号" width="170" />
         <el-table-column label="供应商" min-width="150" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.supplier?.name || row.supplierId || '-' }}</template>
+          <template #default="{ row }">{{ row.supplierName || row.supplier?.name || row.supplierId || '-' }}</template>
         </el-table-column>
         <el-table-column prop="purchaseType" label="类型" width="100" align="center">
           <template #default="{ row }">
@@ -309,18 +309,22 @@ function handleAiFill(params: Record<string, unknown>) {
         <el-divider>{{ label('rawMaterial') }}明细</el-divider>
         <div class="item-row item-header">
           <span style="width: 200px">原料名称</span>
-          <span style="width: 120px">数量</span>
+          <span style="width: 120px">规格</span>
+          <span style="width: 100px">数量</span>
           <span style="width: 80px">单位</span>
-          <span style="width: 120px">单价</span>
+          <span style="width: 100px">单价</span>
+          <span style="width: 80px">箱数</span>
           <span style="width: 40px">操作</span>
         </div>
         <div v-for="(item, idx) in form.items" :key="idx" class="item-row">
           <el-select v-model="item.materialTypeId" placeholder="选择原料" filterable style="width: 200px">
             <el-option v-for="m in materials" :key="m.id" :label="m.name" :value="m.id" />
           </el-select>
-          <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="width: 120px" />
+          <el-input v-model="item.specification" placeholder="规格" style="width: 120px" />
+          <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="width: 100px" />
           <el-input v-model="item.unit" style="width: 80px" />
-          <el-input-number v-model="item.unitPrice" :min="0" :precision="2" placeholder="单价" style="width: 120px" />
+          <el-input-number v-model="item.unitPrice" :min="0" :precision="2" placeholder="单价" style="width: 100px" />
+          <el-input-number v-model="item.boxQuantity" :min="0" :precision="2" placeholder="箱" style="width: 80px" />
           <el-button type="danger" link @click="removeItem(idx)" :disabled="form.items.length <= 1">删除</el-button>
         </div>
         <el-button style="width: 100%; margin-top: 8px" @click="addItem">+ 添加行</el-button>

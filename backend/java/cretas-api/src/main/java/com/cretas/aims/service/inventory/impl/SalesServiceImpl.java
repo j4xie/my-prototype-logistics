@@ -9,7 +9,9 @@ import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.entity.inventory.*;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.entity.ProductType;
 import com.cretas.aims.repository.CustomerRepository;
+import com.cretas.aims.repository.ProductTypeRepository;
 import com.cretas.aims.repository.inventory.*;
 import com.cretas.aims.event.SalesOrderConfirmedEvent;
 import com.cretas.aims.event.SalesOrderFinanceApprovedEvent;
@@ -40,6 +42,7 @@ public class SalesServiceImpl implements SalesService {
     private final SalesDeliveryRecordRepository deliveryRecordRepository;
     private final FinishedGoodsBatchRepository finishedGoodsBatchRepository;
     private final CustomerRepository customerRepository;
+    private final ProductTypeRepository productTypeRepository;
     private final com.cretas.aims.service.finance.ArApService arApService;
     private final ApplicationEventPublisher applicationEventPublisher;
 
@@ -48,6 +51,7 @@ public class SalesServiceImpl implements SalesService {
                             SalesDeliveryRecordRepository deliveryRecordRepository,
                             FinishedGoodsBatchRepository finishedGoodsBatchRepository,
                             CustomerRepository customerRepository,
+                            ProductTypeRepository productTypeRepository,
                             com.cretas.aims.service.finance.ArApService arApService,
                             ApplicationEventPublisher applicationEventPublisher) {
         this.salesOrderRepository = salesOrderRepository;
@@ -55,6 +59,7 @@ public class SalesServiceImpl implements SalesService {
         this.deliveryRecordRepository = deliveryRecordRepository;
         this.finishedGoodsBatchRepository = finishedGoodsBatchRepository;
         this.customerRepository = customerRepository;
+        this.productTypeRepository = productTypeRepository;
         this.arApService = arApService;
         this.applicationEventPublisher = applicationEventPublisher;
     }
@@ -87,6 +92,14 @@ public class SalesServiceImpl implements SalesService {
 
         order = salesOrderRepository.save(order);
 
+        // SKU 重复校验
+        Set<String> seenProductIds = new HashSet<>();
+        for (CreateSalesOrderRequest.SalesOrderItemDTO itemDTO : request.getItems()) {
+            if (!seenProductIds.add(itemDTO.getProductTypeId())) {
+                throw new BusinessException("同一订单不能添加重复的产品: " + (itemDTO.getProductName() != null ? itemDTO.getProductName() : itemDTO.getProductTypeId()));
+            }
+        }
+
         // 创建行项目
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<SalesOrderItem> items = new ArrayList<>();
@@ -95,12 +108,20 @@ public class SalesServiceImpl implements SalesService {
             SalesOrderItem item = new SalesOrderItem();
             item.setSalesOrderId(order.getId());
             item.setProductTypeId(itemDTO.getProductTypeId());
-            item.setProductName(itemDTO.getProductName());
+            // 自动填充产品名称
+            String productName = itemDTO.getProductName();
+            if (productName == null || productName.isBlank()) {
+                productName = productTypeRepository.findById(itemDTO.getProductTypeId())
+                        .map(ProductType::getName).orElse(null);
+            }
+            item.setProductName(productName);
             item.setQuantity(itemDTO.getQuantity());
             item.setUnit(itemDTO.getUnit());
             item.setUnitPrice(itemDTO.getUnitPrice());
             item.setDiscountRate(itemDTO.getDiscountRate() != null ? itemDTO.getDiscountRate() : BigDecimal.ZERO);
             item.setRemark(itemDTO.getRemark());
+            item.setSpecification(itemDTO.getSpecification());
+            item.setBoxQuantity(itemDTO.getBoxQuantity());
             items.add(item);
 
             totalAmount = totalAmount.add(item.getLineAmount());

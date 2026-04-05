@@ -4,25 +4,32 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { Search, Refresh } from '@element-plus/icons-vue';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('production'));
+const currentUser = computed(() => {
+  const u = authStore.user.value || authStore.user;
+  return (u as Record<string, unknown>)?.fullName || (u as Record<string, unknown>)?.username || '';
+});
 
 const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 0, size: 20, total: 0 });
-const statusFilter = ref('');
 const activeTab = ref('samples');
 
+// 搜索筛选
+const searchForm = ref({ customerName: '', status: '', name: '' });
+
 const sampleStatusMap: Record<string, { text: string; type: string }> = {
-  DRAFT: { text: '草稿', type: 'info' },
-  IN_PROGRESS: { text: '开发中', type: '' },
-  TESTING: { text: '测试中', type: 'warning' },
+  DRAFT: { text: '待研发', type: 'info' },
+  IN_PROGRESS: { text: '研发中', type: '' },
+  TESTING: { text: '已寄样', type: 'warning' },
   SUBMITTED: { text: '待审核', type: 'warning' },
-  APPROVED: { text: '已通过', type: 'success' },
-  REJECTED: { text: '已驳回', type: 'danger' },
+  APPROVED: { text: '样品通过', type: 'success' },
+  REJECTED: { text: '样品未通过', type: 'danger' },
 };
 
 const requestStatusMap: Record<string, { text: string; type: string }> = {
@@ -33,18 +40,32 @@ const requestStatusMap: Record<string, { text: string; type: string }> = {
   CANCELLED: { text: '已取消', type: 'info' },
 };
 
-// loadData called in new onMounted below (with loadSalespersons)
-
 async function loadData() {
   if (!factoryId.value) return;
   loading.value = true;
   try {
     const endpoint = activeTab.value === 'requests' ? 'requests' : activeTab.value === 'quotations' ? 'quotations' : 'samples';
     const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
-    if (statusFilter.value) params.status = statusFilter.value;
+    if (activeTab.value === 'samples') {
+      if (searchForm.value.status) params.status = searchForm.value.status;
+      if (searchForm.value.customerName) params.customerName = searchForm.value.customerName;
+      if (searchForm.value.name) params.name = searchForm.value.name;
+    }
     const res = await get(`/${factoryId.value}/rd/${endpoint}`, { params });
     if (res.success) {
-      tableData.value = res.data.content || [];
+      let items = res.data.content || [];
+      // 前端筛选（后端不支持customerName/name参数时的fallback）
+      if (activeTab.value === 'samples') {
+        if (searchForm.value.customerName) {
+          const kw = searchForm.value.customerName.toLowerCase();
+          items = items.filter((r: Record<string, unknown>) => String(r.customerName || '').toLowerCase().includes(kw));
+        }
+        if (searchForm.value.name) {
+          const kw = searchForm.value.name.toLowerCase();
+          items = items.filter((r: Record<string, unknown>) => String(r.name || '').toLowerCase().includes(kw));
+        }
+      }
+      tableData.value = items;
       pagination.value.total = res.data.totalElements || 0;
     }
   } catch { ElMessage.error('加载数据失败'); }
@@ -53,14 +74,25 @@ async function loadData() {
 
 function switchTab(tab: string) {
   activeTab.value = tab;
-  statusFilter.value = '';
+  searchForm.value = { customerName: '', status: '', name: '' };
+  pagination.value.page = 0;
+  loadData();
+}
+
+function handleSearch() {
+  pagination.value.page = 0;
+  loadData();
+}
+
+function resetSearch() {
+  searchForm.value = { customerName: '', status: '', name: '' };
   pagination.value.page = 0;
   loadData();
 }
 
 // 样品操作
 async function handleSampleAction(id: string, action: string) {
-  const labels: Record<string, string> = { submit: '提交审核', approve: '审核通过', reject: '驳回' };
+  const labels: Record<string, string> = { submit: '提交审核', approve: '审核通过', reject: '驳回', quote: '提交报价申请' };
   try {
     if (action === 'reject') {
       const { value: notes } = await ElMessageBox.prompt('请输入驳回原因', '驳回');
@@ -68,6 +100,9 @@ async function handleSampleAction(id: string, action: string) {
     } else if (action === 'approve') {
       const { value: notes } = await ElMessageBox.prompt('审核意见（可选）', '审核通过', { inputValue: '', required: false });
       await post(`/${factoryId.value}/rd/samples/${id}/approve`, { notes: notes || '' });
+    } else if (action === 'quote') {
+      await ElMessageBox.confirm('确认提交报价申请？样品将进入报价流程。', '提交报价申请');
+      await post(`/${factoryId.value}/rd/samples/${id}/request-quotation`);
     } else {
       await ElMessageBox.confirm(`确认${labels[action]}？`, '确认');
       await post(`/${factoryId.value}/rd/samples/${id}/${action}`);
@@ -102,13 +137,11 @@ async function handleCreateRequest() {
 const sampleDialogVisible = ref(false);
 const sampleForm = ref({
   rdRequestId: '',
+  customerName: '',
   name: '',
   specification: '',
-  grade: '',
-  mainMaterial: '',
-  salesperson: '',
   productLevel: '',
-  productStatus: '',
+  salesperson: '',
   storageMethod: '',
 });
 
@@ -125,7 +158,6 @@ async function loadSalespersons() {
   } catch { /* optional */ }
 }
 
-// Load on mount
 onMounted(() => { loadData(); loadSalespersons(); });
 
 async function handleCreateSample() {
@@ -150,7 +182,6 @@ const newTracking = ref({ date: new Date().toISOString().slice(0, 10), content: 
 
 function openTrackingDialog(row: Record<string, unknown>) {
   trackingSampleId.value = String(row.id);
-  // Parse existing progress notes
   try {
     const notes = row.progressNotes ? JSON.parse(String(row.progressNotes)) : [];
     trackingRecords.value = notes.map((n: Record<string, string>) => ({
@@ -160,7 +191,7 @@ function openTrackingDialog(row: Record<string, unknown>) {
       recorder: n.recorder || '',
     }));
   } catch { trackingRecords.value = []; }
-  newTracking.value = { date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: '' };
+  newTracking.value = { date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: String(currentUser.value) };
   trackingDialogVisible.value = true;
 }
 
@@ -169,14 +200,16 @@ async function addTrackingRecord() {
   submitting.value = true;
   try {
     const res = await post(`/${factoryId.value}/rd/samples/${trackingSampleId.value}/progress`, {
-      note: `[${newTracking.value.date}] ${newTracking.value.content}${newTracking.value.recorder ? ' (记录员: ' + newTracking.value.recorder + ')' : ''}`,
+      note: newTracking.value.content,
       photoUrl: newTracking.value.attachment || null,
+      recorder: newTracking.value.recorder || String(currentUser.value),
+      date: newTracking.value.date,
     });
     if (res.success) {
       ElMessage.success('追踪记录已添加');
       trackingRecords.value.push({ ...newTracking.value });
-      newTracking.value = { date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: '' };
-      loadData(); // refresh list
+      newTracking.value = { date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: String(currentUser.value) };
+      loadData();
     } else { ElMessage.error(res.message || '添加失败'); }
   } catch { ElMessage.error('添加失败'); }
   finally { submitting.value = false; }
@@ -203,6 +236,17 @@ async function addTrackingRecord() {
         </div>
       </template>
 
+      <!-- 样品搜索栏 -->
+      <div v-if="activeTab === 'samples'" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <el-input v-model="searchForm.name" placeholder="样品名称" clearable style="width:180px" :prefix-icon="Search" @keyup.enter="handleSearch" />
+        <el-input v-model="searchForm.customerName" placeholder="客户筛选" clearable style="width:160px" @keyup.enter="handleSearch" />
+        <el-select v-model="searchForm.status" placeholder="产品状态" clearable style="width:140px" @change="handleSearch">
+          <el-option v-for="(v, k) in sampleStatusMap" :key="k" :label="v.text" :value="k" />
+        </el-select>
+        <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
+        <el-button :icon="Refresh" @click="resetSearch">重置</el-button>
+      </div>
+
       <!-- 研发需求列表 -->
       <el-table v-if="activeTab === 'requests'" :data="tableData" border stripe>
         <el-table-column prop="requestNumber" label="需求编号" width="180" />
@@ -227,23 +271,26 @@ async function addTrackingRecord() {
       <el-table v-if="activeTab === 'samples'" :data="tableData" border stripe>
         <el-table-column prop="sampleCode" label="样品编码" width="180" />
         <el-table-column prop="name" label="样品名称" min-width="130" />
+        <el-table-column prop="customerName" label="客户名称" min-width="110" show-overflow-tooltip />
         <el-table-column prop="specification" label="成品规格" width="120" />
-        <el-table-column prop="grade" label="产品级别" width="90" />
-        <el-table-column prop="mainMaterial" label="主原料" width="100" />
+        <el-table-column prop="productLevel" label="产品级别" width="90" align="center">
+          <template #default="{ row }">{{ row.productLevel || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="salesperson" label="业务员" width="90" />
         <el-table-column prop="storageMethod" label="储存方式" width="90">
           <template #default="{ row }">{{ row.storageMethod || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="status" label="产品状态" width="100" align="center">
+        <el-table-column prop="status" label="产品状态" width="110" align="center">
           <template #default="{ row }">
             <el-tag :type="sampleStatusMap[row.status]?.type || 'info'" size="small">{{ sampleStatusMap[row.status]?.text || row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="260" align="center">
+        <el-table-column label="操作" width="300" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="openTrackingDialog(row)">追踪记录</el-button>
             <template v-if="canWrite">
               <el-button v-if="['DRAFT','IN_PROGRESS','TESTING'].includes(row.status)" type="warning" link size="small" @click="handleSampleAction(row.id, 'submit')">提交审核</el-button>
+              <el-button v-if="['APPROVED'].includes(row.status)" type="primary" link size="small" @click="handleSampleAction(row.id, 'quote')">提交报价申请</el-button>
               <el-button v-if="row.status === 'SUBMITTED'" type="success" link size="small" @click="handleSampleAction(row.id, 'approve')">通过</el-button>
               <el-button v-if="row.status === 'SUBMITTED'" type="danger" link size="small" @click="handleSampleAction(row.id, 'reject')">驳回</el-button>
             </template>
@@ -305,6 +352,7 @@ async function addTrackingRecord() {
     <!-- 新建样品 -->
     <el-dialog v-model="sampleDialogVisible" title="新建样品" width="600px" destroy-on-close>
       <el-form label-width="90px">
+        <el-form-item label="客户名称"><el-input v-model="sampleForm.customerName" placeholder="客户名称" /></el-form-item>
         <el-form-item label="业务员">
           <el-select v-model="sampleForm.salesperson" placeholder="选择业务员" filterable allow-create clearable style="width: 100%">
             <el-option v-for="u in salespersonList" :key="u.id" :label="u.fullName || u.username" :value="u.fullName || u.username" />
@@ -312,8 +360,14 @@ async function addTrackingRecord() {
         </el-form-item>
         <el-form-item label="样品名称" required><el-input v-model="sampleForm.name" /></el-form-item>
         <el-form-item label="成品规格"><el-input v-model="sampleForm.specification" placeholder="如 200g/盒, 310g*42袋/箱" /></el-form-item>
-        <el-form-item label="产品级别"><el-input v-model="sampleForm.productLevel" placeholder="如 A级, 特级" /></el-form-item>
-        <el-form-item label="产品状态"><el-input v-model="sampleForm.productStatus" placeholder="如 新品开发, 配方调整" /></el-form-item>
+        <el-form-item label="产品级别">
+          <el-select v-model="sampleForm.productLevel" placeholder="选择产品级别" clearable style="width: 100%">
+            <el-option label="A" value="A" />
+            <el-option label="B" value="B" />
+            <el-option label="C" value="C" />
+            <el-option label="D" value="D" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="储存方式">
           <el-select v-model="sampleForm.storageMethod" placeholder="选择储存方式" clearable style="width: 100%">
             <el-option label="冷冻" value="冷冻" />
@@ -321,8 +375,6 @@ async function addTrackingRecord() {
             <el-option label="常温" value="常温" />
           </el-select>
         </el-form-item>
-        <el-form-item label="主原料"><el-input v-model="sampleForm.mainMaterial" /></el-form-item>
-        <el-form-item label="等级"><el-input v-model="sampleForm.grade" /></el-form-item>
         <el-form-item label="关联需求"><el-input v-model="sampleForm.rdRequestId" placeholder="研发需求ID（可选）" /></el-form-item>
       </el-form>
       <template #footer>
@@ -349,7 +401,7 @@ async function addTrackingRecord() {
       <el-divider>添加追踪记录</el-divider>
       <el-form label-width="80px">
         <el-form-item label="日期">
-          <el-date-picker v-model="newTracking.date" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+          <el-date-picker v-model="newTracking.date" type="date" value-format="YYYY-MM-DD" style="width: 100%" disabled />
         </el-form-item>
         <el-form-item label="追踪内容" required>
           <el-input v-model="newTracking.content" type="textarea" :rows="3" placeholder="输入追踪内容..." />
@@ -358,7 +410,7 @@ async function addTrackingRecord() {
           <el-input v-model="newTracking.attachment" placeholder="附件链接URL（可选）" />
         </el-form-item>
         <el-form-item label="记录员">
-          <el-input v-model="newTracking.recorder" placeholder="记录员姓名" />
+          <el-input v-model="newTracking.recorder" disabled />
         </el-form-item>
       </el-form>
       <template #footer>

@@ -67,6 +67,14 @@ public class PurchaseOrderItem extends BaseEntity {
     @Column(name = "remark", length = 500)
     private String remark;
 
+    /** 规格 */
+    @Column(name = "specification", length = 200)
+    private String specification;
+
+    /** 箱数 */
+    @Column(name = "box_quantity", precision = 15, scale = 2)
+    private BigDecimal boxQuantity;
+
     // ==================== 关联 ====================
 
     @JsonIgnore

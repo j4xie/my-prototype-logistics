@@ -88,4 +88,20 @@ public class ProductSample extends BaseEntity {
 
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
+
+    /** 产品级别: A / B / C / D */
+    @Column(name = "product_level", length = 10)
+    private String productLevel;
+
+    /** 客户名称 */
+    @Column(name = "customer_name", length = 200)
+    private String customerName;
+
+    /** 业务员 */
+    @Column(name = "salesperson", length = 100)
+    private String salesperson;
+
+    /** 储存方式: 冷冻 / 冷藏 / 常温 */
+    @Column(name = "storage_method", length = 50)
+    private String storageMethod;
 }

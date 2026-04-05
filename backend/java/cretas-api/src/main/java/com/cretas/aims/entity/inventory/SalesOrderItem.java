@@ -74,6 +74,14 @@ public class SalesOrderItem extends BaseEntity {
     @Column(name = "tax_rate", precision = 5, scale = 2)
     private BigDecimal taxRate;
 
+    /** 规格 (如 200g/盒, 310g*42袋/箱) */
+    @Column(name = "specification", length = 200)
+    private String specification;
+
+    /** 箱数 = 数量/箱系数, 可手动修改 */
+    @Column(name = "box_quantity", precision = 15, scale = 2)
+    private BigDecimal boxQuantity;
+
     /** 成本小计 = 数量 × 成本单价 */
     @Transient
     public BigDecimal getCostTotal() {

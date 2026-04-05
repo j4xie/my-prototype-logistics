@@ -205,7 +205,7 @@ async function confirmReceive(receiveId: string) {
       <template v-if="order">
         <el-descriptions :column="3" border>
           <el-descriptions-item label="订单编号">{{ order.orderNumber }}</el-descriptions-item>
-          <el-descriptions-item :label="label('supplier')">{{ order.supplier?.name || order.supplierId }}</el-descriptions-item>
+          <el-descriptions-item :label="label('supplier')">{{ order.supplierName || order.supplier?.name || order.supplierId }}</el-descriptions-item>
           <el-descriptions-item label="采购类型">{{ order.purchaseType === 'DIRECT' ? '直接采购' : order.purchaseType === 'URGENT' ? '紧急采购' : '总部统采' }}</el-descriptions-item>
           <el-descriptions-item label="下单日期">{{ order.orderDate }}</el-descriptions-item>
           <el-descriptions-item label="期望交货">{{ order.expectedDeliveryDate || '-' }}</el-descriptions-item>
@@ -218,7 +218,13 @@ async function confirmReceive(receiveId: string) {
         <h3 style="margin: 20px 0 12px">{{ label('rawMaterial') }}明细</h3>
         <el-table :data="order.items || []" border stripe>
           <el-table-column prop="materialName" :label="label('rawMaterial')" min-width="150" />
-          <el-table-column prop="quantity" label="采购数量" width="120" align="right" />
+          <el-table-column prop="specification" label="规格" width="120" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.specification || '-' }}</template>
+          </el-table-column>
+          <el-table-column prop="quantity" label="采购数量" width="100" align="right" />
+          <el-table-column prop="boxQuantity" label="箱数" width="80" align="right">
+            <template #default="{ row }">{{ row.boxQuantity || '-' }}</template>
+          </el-table-column>
           <el-table-column prop="unit" label="单位" width="80" align="center" />
           <el-table-column prop="unitPrice" label="单价" width="120" align="right">
             <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>

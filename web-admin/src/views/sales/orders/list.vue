@@ -120,11 +120,29 @@ async function loadSalesEmployees() {
   } catch { /* silently fail — user can still type manually */ }
 }
 
-function addItem() { form.value.items.push({ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }); }
+function addItem() { form.value.items.push({ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, specification: '', boxQuantity: null }); }
 function removeItem(idx: number) { if (form.value.items.length > 1) form.value.items.splice(idx, 1); }
+
+function onProductSelect(item: Record<string, unknown>, productId: string) {
+  const p = products.value.find((x: Record<string, unknown>) => x.id === productId);
+  if (p) {
+    item.specification = p.specification || '';
+    item.unit = p.unit || item.unit || 'kg';
+    if (p.boxConversionCoefficient && item.quantity) calcBox(item);
+  }
+}
+function calcBox(item: Record<string, unknown>) {
+  const p = products.value.find((x: Record<string, unknown>) => x.id === item.productTypeId);
+  if (p?.boxConversionCoefficient && Number(p.boxConversionCoefficient) > 0 && Number(item.quantity) > 0) {
+    item.boxQuantity = Math.round((Number(item.quantity) / Number(p.boxConversionCoefficient)) * 100) / 100;
+  }
+}
 
 async function handleCreate() {
   if (!form.value.customerId) return ElMessage.warning('请选择客户');
+  // SKU 重复校验
+  const productIds = form.value.items.map((i: Record<string, unknown>) => i.productTypeId).filter(Boolean);
+  if (new Set(productIds).size !== productIds.length) return ElMessage.warning('同一订单不能添加重复的产品');
   try {
     const res = await post(`/${factoryId.value}/sales/orders`, form.value);
     if (res.success) { ElMessage.success('创建成功'); dialogVisible.value = false; loadData(); }
@@ -364,7 +382,7 @@ async function submitQuickPayment() {
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="orderNumber" label="订单编号" width="170" />
         <el-table-column label="客户" min-width="150" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.customer?.name || customers.find((c: Record<string, unknown>) => c.id === row.customerId)?.name || row.customerId || '-' }}</template>
+          <template #default="{ row }">{{ row.customerName || row.customer?.name || row.customerId || '-' }}</template>
         </el-table-column>
         <el-table-column prop="salesperson" label="业务员" width="100" show-overflow-tooltip />
         <el-table-column prop="orderDate" label="下单日期" width="120" />
@@ -505,18 +523,22 @@ async function submitQuickPayment() {
         <el-divider>{{ label('product') }}明细</el-divider>
         <div class="item-row item-header">
           <span style="width: 200px">品名</span>
-          <span style="width: 120px">下单数量</span>
-          <span style="width: 80px">商品单位</span>
-          <span style="width: 120px">商品单价</span>
+          <span style="width: 120px">规格</span>
+          <span style="width: 100px">下单数量</span>
+          <span style="width: 80px">单位</span>
+          <span style="width: 100px">单价</span>
+          <span style="width: 80px">箱数</span>
           <span style="width: 40px">操作</span>
         </div>
         <div v-for="(item, idx) in form.items" :key="idx" class="item-row">
-          <el-select v-model="item.productTypeId" placeholder="选择产品" filterable style="width: 200px">
+          <el-select v-model="item.productTypeId" placeholder="选择产品" filterable style="width: 200px" @change="(v: string) => onProductSelect(item, v)">
             <el-option v-for="p in products" :key="p.id" :label="p.name" :value="p.id" />
           </el-select>
-          <el-input-number v-model="item.quantity" :min="1" style="width: 120px" />
+          <el-input v-model="item.specification" placeholder="规格" style="width: 120px" />
+          <el-input-number v-model="item.quantity" :min="1" style="width: 100px" @change="() => calcBox(item)" />
           <el-input v-model="item.unit" style="width: 80px" />
-          <el-input-number v-model="item.unitPrice" :min="0" :precision="2" style="width: 120px" />
+          <el-input-number v-model="item.unitPrice" :min="0" :precision="2" style="width: 100px" />
+          <el-input-number v-model="item.boxQuantity" :min="0" :precision="2" style="width: 80px" placeholder="箱" />
           <el-button type="danger" link @click="removeItem(idx)" :disabled="form.items.length <= 1">删除</el-button>
         </div>
         <el-button style="width: 100%; margin-top: 8px" @click="addItem">+ 添加行</el-button>

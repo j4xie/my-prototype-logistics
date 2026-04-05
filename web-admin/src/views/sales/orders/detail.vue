@@ -201,7 +201,7 @@ async function handleDelivered(deliveryId: string) {
       <template v-if="order">
         <el-descriptions :column="3" border>
           <el-descriptions-item label="订单编号">{{ order.orderNumber }}</el-descriptions-item>
-          <el-descriptions-item :label="label('customer')">{{ order.customer?.name || order.customerId }}</el-descriptions-item>
+          <el-descriptions-item :label="label('customer')">{{ order.customerName || order.customer?.name || order.customerId }}</el-descriptions-item>
           <el-descriptions-item label="下单日期">{{ order.orderDate }}</el-descriptions-item>
           <el-descriptions-item label="业务员">{{ order.salesperson || '-' }}</el-descriptions-item>
           <el-descriptions-item label="交货日期">{{ order.requiredDeliveryDate || '-' }}</el-descriptions-item>
@@ -240,8 +240,14 @@ async function handleDelivered(deliveryId: string) {
         <h3 style="margin: 20px 0 12px">{{ label('product') }}明细</h3>
         <el-table :data="order.items || []" border stripe>
           <el-table-column prop="productName" :label="label('product')" min-width="150" />
-          <el-table-column prop="quantity" label="订单数量" width="120" align="right" />
+          <el-table-column prop="specification" label="规格" width="120" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.specification || '-' }}</template>
+          </el-table-column>
+          <el-table-column prop="quantity" label="订单数量" width="100" align="right" />
           <el-table-column prop="unit" label="单位" width="80" align="center" />
+          <el-table-column prop="boxQuantity" label="箱数" width="80" align="right">
+            <template #default="{ row }">{{ row.boxQuantity || '-' }}</template>
+          </el-table-column>
           <el-table-column prop="unitPrice" label="销售单价" width="120" align="right">
             <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
           </el-table-column>

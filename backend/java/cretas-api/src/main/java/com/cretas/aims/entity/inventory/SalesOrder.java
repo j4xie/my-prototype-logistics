@@ -7,6 +7,7 @@ import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import org.hibernate.annotations.Formula;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -67,6 +68,9 @@ public class SalesOrder extends BaseEntity {
     @NotBlank
     @Column(name = "customer_id", nullable = false, length = 191)
     private String customerId;
+
+    @Formula("(SELECT c.name FROM customers c WHERE c.id = customer_id)")
+    private String customerName;
 
     @NotNull
     @Column(name = "order_date", nullable = false)

@@ -112,12 +112,20 @@ public class PurchaseServiceImpl implements PurchaseService {
             PurchaseOrderItem item = new PurchaseOrderItem();
             item.setPurchaseOrderId(order.getId());
             item.setMaterialTypeId(itemDTO.getMaterialTypeId());
-            item.setMaterialName(itemDTO.getMaterialName());
+            // 自动填充原料名称：前端未传时从基础数据查询
+            String materialName = itemDTO.getMaterialName();
+            if (materialName == null || materialName.isBlank()) {
+                materialName = materialTypeRepository.findById(itemDTO.getMaterialTypeId())
+                        .map(RawMaterialType::getName).orElse(null);
+            }
+            item.setMaterialName(materialName);
             item.setQuantity(itemDTO.getQuantity());
             item.setUnit(itemDTO.getUnit());
             item.setUnitPrice(itemDTO.getUnitPrice());
             item.setTaxRate(itemDTO.getTaxRate() != null ? itemDTO.getTaxRate() : BigDecimal.ZERO);
             item.setRemark(itemDTO.getRemark());
+            item.setSpecification(itemDTO.getSpecification());
+            item.setBoxQuantity(itemDTO.getBoxQuantity());
             items.add(item);
 
             BigDecimal lineAmount = item.getLineAmount();
@@ -570,8 +578,18 @@ public class PurchaseServiceImpl implements PurchaseService {
 
     private String generateOrderNumber(String factoryId) {
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String prefix = "PO-" + dateStr + "-";
+        Optional<String> maxNumber = purchaseOrderRepository.findMaxOrderNumberByPrefix(factoryId, prefix + "%");
+        if (maxNumber.isPresent()) {
+            try {
+                int seq = Integer.parseInt(maxNumber.get().substring(prefix.length()));
+                return String.format("%s%04d", prefix, seq + 1);
+            } catch (NumberFormatException e) {
+                // 序号解析失败，回退到计数方式
+            }
+        }
         long count = purchaseOrderRepository.countByFactoryIdAndDate(factoryId, LocalDate.now());
-        return String.format("PO-%s-%04d", dateStr, count + 1);
+        return String.format("%s%04d", prefix, count + 1);
     }
 
     private String generateReceiveNumber(String factoryId) {

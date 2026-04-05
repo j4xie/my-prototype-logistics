@@ -61,5 +61,9 @@ public class CreateSalesOrderRequest {
         private BigDecimal discountRate;
 
         private String remark;
+
+        private String specification;
+
+        private BigDecimal boxQuantity;
     }
 }
