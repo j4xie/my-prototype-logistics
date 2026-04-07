@@ -11,6 +11,11 @@
 
 set -e
 
+# 自动加载用户的 ~/.bashrc 环境变量 (R2_*/SKIP_RSYNC 等)
+# 非交互式 shell 默认不 source .bashrc，所以这里显式加载
+# 用 || true 确保任何错误都不中断 deploy
+[ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc" 2>/dev/null || true
+
 # 加载共享函数库
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -58,10 +63,10 @@ OSS_DEPLOY_PATH="deploy/backend/"
 # Cloudflare R2 配置 (从环境变量读取，不要硬编码凭证)
 R2_BUCKET="cretas"
 # R2_ACCOUNT_ID 是公开标识符 (非凭证)，凭证为 R2_ACCESS_KEY_ID + R2_SECRET_ACCESS_KEY
-R2_ACCOUNT_ID="${R2_ACCOUNT_ID:-7ff7cc2e7bc3af46147d5c7df18062db}"
+R2_ACCOUNT_ID="${R2_ACCOUNT_ID:-b1251333e5f1465deb7cd31296edeaba}"
 R2_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID:-}"
 R2_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY:-}"
-R2_PUBLIC_URL="${R2_PUBLIC_URL:-https://pub-70da4e6da1f3446d9e055f2793d05837.r2.dev}"
+R2_PUBLIC_URL="${R2_PUBLIC_URL:-https://pub-4913880cb5fa48a0abb5cdf9260f9a61.r2.dev}"
 
 # ==================== 参数解析 ====================
 MODE="jar"
@@ -122,6 +127,11 @@ while [[ $# -gt 0 ]]; do
             echo "          - OSS 全球加速 + 内网下载"
             echo "          - Cloudflare R2 中转"
             echo ""
+            echo "环境变量:"
+            echo "  SKIP_RSYNC=1              永久禁用 rsync 通道 (本地 SSH 链路不稳时建议)"
+            echo "  SKIP_BUILD=1              跳过本地 Maven 打包 (使用 target/ 已有 jar)"
+            echo "  R2_ACCESS_KEY_ID/SECRET   启用 Cloudflare R2 备份通道"
+            echo ""
             echo "示例:"
             echo "  ./deploy-backend.sh              # JAR 部署到生产"
             echo "  ./deploy-backend.sh --env test   # JAR 部署到测试"
@@ -165,6 +175,27 @@ if command -v aws &> /dev/null; then
     HAS_R2=true
 fi
 
+# rsync 健康检查 (Windows 上 rsync 二进制经常缺 DLL，能 which 但执行 exit 127)
+# 也支持 SKIP_RSYNC=1 环境变量短路 (某些网络环境下 rsync over SSH 双向 stream 会被中间设备 RST)
+HAS_RSYNC=false
+RSYNC_FAIL_REASON=""
+if [ "${SKIP_RSYNC:-0}" = "1" ]; then
+    RSYNC_FAIL_REASON="SKIP_RSYNC=1 (用户主动禁用，建议本地 SSH 链路不稳定时使用)"
+elif command -v rsync &> /dev/null; then
+    if rsync --version &> /dev/null 2>&1; then
+        HAS_RSYNC=true
+    else
+        RSYNC_FAIL_REASON="rsync 二进制不可执行 (可能缺 DLL/依赖)"
+    fi
+fi
+
+# GitHub repo 可见性检测 (private repo 公共镜像无法下载 release asset)
+IS_PRIVATE_REPO=false
+if [ "$HAS_GH" = "true" ]; then
+    REPO_VISIBILITY=$(gh api "repos/$REPO" --jq '.private' 2>/dev/null || echo "unknown")
+    [ "$REPO_VISIBILITY" = "true" ] && IS_PRIVATE_REPO=true
+fi
+
 # 临时目录
 UPLOAD_STATUS_DIR="/tmp/jar-upload-$$"
 mkdir -p "$UPLOAD_STATUS_DIR"
@@ -196,16 +227,36 @@ deploy_jar() {
     local VERSION="${1:-v$(date +%Y%m%d_%H%M%S)}"
 
     # 统计可用方式
-    local METHODS=("rsync" "rsync+compress")
-    [ "$HAS_GH" = "true" ] && METHODS+=("GitHub+镜像" "GitHub直连")
+    local METHODS=()
+    [ "$HAS_RSYNC" = "true" ] && METHODS+=("rsync" "rsync+compress")
+    if [ "$HAS_GH" = "true" ] && [ "$IS_PRIVATE_REPO" != "true" ]; then
+        METHODS+=("GitHub+镜像" "GitHub直连")
+    fi
     [ "$HAS_OSS" = "true" ] && METHODS+=("OSS加速")
     [ "$HAS_R2" = "true" ] && METHODS+=("R2")
 
     echo "=========================================="
-    echo "  JAR 部署 v4.1 - 版本: $VERSION"
+    echo "  JAR 部署 v4.2 - 版本: $VERSION"
     echo "  部署环境: $DEPLOY_ENV"
-    echo "  可用方式: ${METHODS[*]}"
+    echo "  可用方式: ${METHODS[*]:-(无!)}"
     echo "=========================================="
+
+    # 预检警告
+    [ "$HAS_RSYNC" != "true" ] && [ -n "$RSYNC_FAIL_REASON" ] && \
+        echo "  ⚠️  rsync 不可用: $RSYNC_FAIL_REASON"
+    [ "$IS_PRIVATE_REPO" = "true" ] && \
+        echo "  ⚠️  $REPO 是 private — 跳过 GitHub 阶段 (镜像无 token 无法下载 release asset)"
+
+    if [ "${#METHODS[@]}" -eq 0 ]; then
+        echo ""
+        echo "❌ 没有可用的上传方式!"
+        echo "   请确保至少一项可用:"
+        echo "   - rsync (健康可执行)"
+        echo "   - gh + GitHub auth + public repo"
+        echo "   - ossutil + 有效的 ~/.ossutilconfig"
+        echo "   - aws CLI + R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY"
+        exit 1
+    fi
 
     # ----- 1. 本地 Maven 打包 -----
     echo ""
@@ -274,29 +325,41 @@ deploy_jar() {
 
     # === Fallback 方法1: rsync 增量传输 ===
     upload_rsync() {
+        [ "$HAS_RSYNC" != "true" ] && return 1
         check_winner && return 0
         local TMP_FILE="${JAR_NAME}.rsync"
+        local ERR_LOG="$UPLOAD_STATUS_DIR/rsync.err"
         echo "   [rsync] 开始上传..."
-        if rsync -az --timeout=60 "$JAR_PATH" "$SERVER:$REMOTE_TMP/$TMP_FILE" 2>/dev/null; then
+        if rsync -az --timeout=60 "$JAR_PATH" "$SERVER:$REMOTE_TMP/$TMP_FILE" 2> "$ERR_LOG"; then
             if ! check_winner; then
                 verify_and_claim "$TMP_FILE" "rsync"
             fi
         else
-            check_winner || echo "   [rsync] ✗ 失败"
+            if ! check_winner; then
+                local ERR
+                ERR=$(head -2 "$ERR_LOG" 2>/dev/null | tr '\n' ' ' | sed 's/  */ /g')
+                echo "   [rsync] ✗ 失败${ERR:+: $ERR}"
+            fi
         fi
     }
 
     # === Fallback 方法2: rsync 高压缩传输 ===
     upload_rsync_compress() {
+        [ "$HAS_RSYNC" != "true" ] && return 1
         check_winner && return 0
         local TMP_FILE="${JAR_NAME}.rsync_z"
+        local ERR_LOG="$UPLOAD_STATUS_DIR/rsync_z.err"
         echo "   [rsync+compress] 开始压缩上传..."
-        if rsync -az --compress-level=9 --timeout=60 "$JAR_PATH" "$SERVER:$REMOTE_TMP/$TMP_FILE" 2>/dev/null; then
+        if rsync -az --compress-level=9 --timeout=60 "$JAR_PATH" "$SERVER:$REMOTE_TMP/$TMP_FILE" 2> "$ERR_LOG"; then
             if ! check_winner; then
                 verify_and_claim "$TMP_FILE" "rsync+compress"
             fi
         else
-            check_winner || echo "   [rsync+compress] ✗ 失败"
+            if ! check_winner; then
+                local ERR
+                ERR=$(head -2 "$ERR_LOG" 2>/dev/null | tr '\n' ' ' | sed 's/  */ /g')
+                echo "   [rsync+compress] ✗ 失败${ERR:+: $ERR}"
+            fi
         fi
     }
 
@@ -306,10 +369,11 @@ deploy_jar() {
         check_winner && return 0
 
         local TMP_FILE="${JAR_NAME}.oss"
+        local OSS_LOG="$UPLOAD_STATUS_DIR/oss.log"
         echo "   [OSS加速] 使用全球加速上传..."
         local OSS_PATH="oss://${OSS_BUCKET}/${OSS_DEPLOY_PATH}${JAR_NAME}"
 
-        if $OSSUTIL_CMD cp "$JAR_PATH" "$OSS_PATH" -f -e "$OSS_ACCELERATE_ENDPOINT" 2>/dev/null; then
+        if $OSSUTIL_CMD cp "$JAR_PATH" "$OSS_PATH" -f -e "$OSS_ACCELERATE_ENDPOINT" > "$OSS_LOG" 2>&1; then
             check_winner && return 0
             echo "   [OSS加速] ✓ 上传成功，服务器内网下载..."
 
@@ -326,7 +390,15 @@ deploy_jar() {
                 check_winner || echo "   [OSS加速] ✗ 服务器下载失败"
             fi
         else
-            check_winner || echo "   [OSS加速] ✗ 上传失败"
+            if ! check_winner; then
+                if grep -qE "InvalidAccessKeyId|SignatureDoesNotMatch|AccessDenied" "$OSS_LOG" 2>/dev/null; then
+                    echo "   [OSS加速] ✗ AccessKey 失效或权限不足 — 请更新 ~/.ossutilconfig"
+                else
+                    local ERR
+                    ERR=$(grep -E "Error|ErrorCode" "$OSS_LOG" 2>/dev/null | head -1 | tr -d '\n')
+                    echo "   [OSS加速] ✗ 上传失败${ERR:+: $ERR}"
+                fi
+            fi
         fi
     }
 
@@ -372,16 +444,23 @@ deploy_jar() {
     UPLOAD_PIDS=()
 
     # ===== 阶段1: GitHub 并行竞争 (直连 + 5镜像) =====
-    if [ "$HAS_GH" = "true" ]; then
+    # private repo 跳过整个 GitHub 阶段:
+    # - GitHub release asset 对未授权请求返回 9 字节 "Not Found" 文本
+    # - 所有公共镜像 (ghproxy.cc/ghfast.top/...) 都不持有用户 token
+    # - 直连下载 curl 也不带 token，结果一样
+    # - 走 fallback (rsync/OSS/R2) 更稳
+    if [ "$HAS_GH" = "true" ] && [ "$IS_PRIVATE_REPO" != "true" ]; then
         echo "   [阶段1] GitHub 并行上传 (直连 + ${#GITHUB_MIRRORS[@]}镜像)..."
 
-        # 先创建 Release
+        # 先创建 Release (stderr 写日志，不要吞)
         echo "   创建 GitHub Release..."
-        gh release delete "$VERSION" --repo "$REPO" -y 2>/dev/null || true
+        gh release delete "$VERSION" --repo "$REPO" -y > "$UPLOAD_STATUS_DIR/gh-delete.log" 2>&1 || true
+
+        GH_LOG="$UPLOAD_STATUS_DIR/gh-release.log"
         if gh release create "$VERSION" "$JAR_PATH" \
             --repo "$REPO" \
             --title "Release $VERSION" \
-            --notes "Auto release $(date '+%Y-%m-%d %H:%M:%S')" 2>/dev/null; then
+            --notes "Auto release $(date '+%Y-%m-%d %H:%M:%S')" > "$GH_LOG" 2>&1; then
             echo "   ✓ Release 创建成功"
 
             # GitHub 直连下载
@@ -422,29 +501,36 @@ deploy_jar() {
                 UPLOAD_PIDS+=($!)
             done
         else
-            echo "   ✗ Release 创建失败，跳过 GitHub 方式"
+            echo "   ✗ Release 创建失败:"
+            sed 's/^/        /' "$GH_LOG" 2>/dev/null | head -10
+            echo "   跳过 GitHub 方式"
         fi
+    elif [ "$IS_PRIVATE_REPO" = "true" ]; then
+        echo "   [阶段1] 跳过 GitHub (private repo — 见预检警告)"
     fi
 
     # 等待 GitHub 方式完成 (最多60秒)
-    echo ""
-    echo "   等待 GitHub 下载完成 (超时: 60秒)..."
+    # private repo / 无 gh 时，GitHub 阶段从没启动过，直接跳到 fallback
     WINNER=""
-    GITHUB_TIMEOUT=60
-    ELAPSED=0
+    if [ "$HAS_GH" = "true" ] && [ "$IS_PRIVATE_REPO" != "true" ] && [ "${#UPLOAD_PIDS[@]}" -gt 0 ]; then
+        echo ""
+        echo "   等待 GitHub 下载完成 (超时: 60秒)..."
+        GITHUB_TIMEOUT=60
+        ELAPSED=0
 
-    while [ -z "$WINNER" ] && [ $ELAPSED -lt $GITHUB_TIMEOUT ]; do
-        if [ -f "$UPLOAD_STATUS_DIR/winner" ]; then
-            WINNER=$(cat "$UPLOAD_STATUS_DIR/winner")
-            break
-        fi
-        sleep 2
-        ELAPSED=$((ELAPSED + 2))
+        while [ -z "$WINNER" ] && [ $ELAPSED -lt $GITHUB_TIMEOUT ]; do
+            if [ -f "$UPLOAD_STATUS_DIR/winner" ]; then
+                WINNER=$(cat "$UPLOAD_STATUS_DIR/winner")
+                break
+            fi
+            sleep 2
+            ELAPSED=$((ELAPSED + 2))
 
-        if [ $((ELAPSED % 20)) -eq 0 ]; then
-            echo "   ... 已等待 ${ELAPSED}s"
-        fi
-    done
+            if [ $((ELAPSED % 20)) -eq 0 ]; then
+                echo "   ... 已等待 ${ELAPSED}s"
+            fi
+        done
+    fi
 
     # ===== 阶段2: Fallback (GitHub 超时或失败) =====
     if [ -z "$WINNER" ]; then
@@ -461,15 +547,15 @@ deploy_jar() {
         # 杀掉服务器上残留的 GitHub 下载 curl 进程
         ssh -o ConnectTimeout=5 $SERVER "pkill -f 'curl.*$JAR_NAME' 2>/dev/null; true" 2>/dev/null || true
 
-        # 启动 Fallback 方式
-        upload_rsync &
-        UPLOAD_PIDS+=($!)
+        # 启动 Fallback 方式 (按工具可用性决定)
+        [ "$HAS_RSYNC" = "true" ] && { upload_rsync & UPLOAD_PIDS+=($!); }
+        [ "$HAS_RSYNC" = "true" ] && { upload_rsync_compress & UPLOAD_PIDS+=($!); }
+        [ "$HAS_OSS"   = "true" ] && { upload_oss_accelerate & UPLOAD_PIDS+=($!); }
+        [ "$HAS_R2"    = "true" ] && { upload_r2 & UPLOAD_PIDS+=($!); }
 
-        upload_rsync_compress &
-        UPLOAD_PIDS+=($!)
-
-        [ "$HAS_OSS" = "true" ] && { upload_oss_accelerate & UPLOAD_PIDS+=($!); }
-        [ "$HAS_R2" = "true" ] && { upload_r2 & UPLOAD_PIDS+=($!); }
+        if [ "${#UPLOAD_PIDS[@]}" -eq 0 ]; then
+            echo "   ❌ 没有可用的 Fallback 方式 (rsync/oss/r2 均不可用)"
+        fi
 
         # 等待 Fallback 完成 (最多5分钟)
         echo "   等待 Fallback 完成 (超时: 5分钟)..."
