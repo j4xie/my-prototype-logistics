@@ -704,6 +704,33 @@ deploy_jar() {
         fi
     fi
 
+    # 防御性检查: 部署 prod 时也 ping test (反之亦然), 发现另一环境挂了就警告
+    # 这是为了避免 "默认 prod 永远不动 test" 导致 test 环境长期落后或宕机的问题
+    # 不阻塞 deploy, 仅提示用户
+    if [[ "$DEPLOY_ENV" == "prod" ]]; then
+        OTHER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
+            "http://${SERVER_IP}:10011/api/mobile/health" 2>/dev/null)
+        if [ "$OTHER_STATUS" != "200" ]; then
+            echo ""
+            echo "   ⚠️  [防御检查] test 10011 异常 (HTTP $OTHER_STATUS)"
+            echo "      test 环境可能宕机或长期未同步"
+            echo "      恢复: ssh $SERVER 'cd $REMOTE_JAR_DIR && bash restart.sh test'"
+            echo "      或下次用: ./scripts/deploy/deploy-backend.sh --env all"
+        else
+            echo "   ✓ [防御检查] test 10011 同步运行"
+        fi
+    elif [[ "$DEPLOY_ENV" == "test" ]]; then
+        OTHER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
+            "http://${SERVER_IP}:10010/api/mobile/health" 2>/dev/null)
+        if [ "$OTHER_STATUS" != "200" ]; then
+            echo ""
+            echo "   ⚠️  [防御检查] prod 10010 异常 (HTTP $OTHER_STATUS) — 生产可能宕机!"
+            echo "      恢复: ssh $SERVER 'systemctl restart cretas-backend'"
+        else
+            echo "   ✓ [防御检查] prod 10010 同步运行"
+        fi
+    fi
+
     echo ""
     echo "=========================================="
     echo "  ✅ 部署完成!"
