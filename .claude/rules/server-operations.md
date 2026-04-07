@@ -1,6 +1,6 @@
 # 服务器运维规范
 
-**最后更新**: 2026-02-28
+**最后更新**: 2026-04-07
 
 ## 服务器架构
 
@@ -181,13 +181,28 @@ ssh root@47.100.235.168 "journalctl -u cretas-backend --since '5 min ago' --no-p
 
 | 部署目标 | 脚本 | 说明 |
 |----------|------|------|
-| Java 后端 | `./scripts/deploy/deploy-backend.sh [--env prod\|test\|all]` | Maven 打包 → 并行上传 → 备份 → 部署 → 健康检查 |
+| Java 后端 | `./scripts/deploy/deploy-backend.sh [--env prod\|test\|all]` | Maven 打包 → OSS 加速 / R2 并行上传 → 备份 → 部署 → 健康检查 + 防御 ping 另一环境 |
 | Python 服务 | `./scripts/deploy/deploy-smartbi-python.sh [--env prod\|test\|all]` | rsync 增量同步 → 安装依赖 → 重启 → 健康检查 |
 | 全栈部署 | 使用 `/deploy-backend` skill | 根据指令自动选择部署范围 |
 
 `--env` 默认 `prod`，只更新生产环境。
 
-详见 `.claude/skills/deploy-backend/SKILL.md`。
+### 双环境部署最佳实践 (Apr 7 2026)
+
+两套环境**共享同一份 jar 但进程独立**, 默认 `--env prod` 不重启 test → **test 环境长期不被部署 → 容易宕机不被察觉** (今晚发现 test 已挂掉一段时间无人知).
+
+**推荐工作流**:
+```bash
+./scripts/deploy/deploy-backend.sh --env test       # 先部 test
+# smoke test 验证业务
+./scripts/deploy/deploy-backend.sh --env prod       # 满意后部 prod (防御检查会顺手 ping test)
+```
+
+紧急 hotfix: `./scripts/deploy/deploy-backend.sh --env all` 一次部两套.
+
+deploy-backend.sh v4.2 已加**防御性 health check**: 部 prod 完顺便 ping test 10011 (反之亦然), 挂了警告并提示恢复命令, 不阻塞 deploy. 所以即使忘记 `--env all`, 下次 deploy 会立即提醒.
+
+详见 `.claude/skills/deploy-backend/SKILL.md` 和 memory 里的 `feedback_deploy_pipeline.md`.
 
 ---
 
@@ -199,7 +214,10 @@ ssh root@47.100.235.168 "journalctl -u cretas-backend --since '5 min ago' --no-p
 4. **数据库**: 已迁移到 PostgreSQL，不再使用 MySQL
 5. **旧服务器 (139)**: 后端已停用，仅保留 Nginx 反代 + **Showcase 静态站** (www.cretaceousfuture.com)
 6. **Showcase 只部署到 139**: 不要向 47 传 showcase 文件，47 是纯后端服务器
-7. **文件传输使用 `rsync`，不用 `scp`** — rsync 支持增量传输、断点续传，效率更高
-8. **两套环境共享 JAR + Python 代码**: 部署一次代码后按需重启对应环境
+7. ~~文件传输使用 rsync~~ — **本地 rsync over SSH 在国内 ISP 下双向 stream 会被 RST**, 已永久禁用 (`SKIP_RSYNC=1` 在 `~/.bashrc`). 改用 OSS 加速 (~6 MB/s 并行) + R2 备份 (~1.5 MB/s).
+8. **两套环境共享 JAR + Python 代码**: 部署一次代码后按需重启对应环境. **进程独立**, 默认部 prod 不动 test, 见上方"双环境部署最佳实践".
 9. **修改 systemd 服务文件后**: 必须 `systemctl daemon-reload` 再 `systemctl restart <service>`
 10. **生产环境变量**: 集中在 `.env.prod`，修改后需重启对应服务才生效
+11. **本地启动 Java 后端**: 用 `mvn spring-boot:run` 不要用 `java -jar` (后者 mmap 锁 fat jar 会阻断 deploy 的 mvn package). 见 `feedback_deploy_pipeline.md`.
+12. **R2/OSS 凭证位置**: R2 在 `~/.r2-env` (NTFS ACL 仅 Steve+SYSTEM); OSS 在 `~/.ossutilconfig` (账号 B, **`cretas-media` bucket 属账号 B 不是 A**); `~/.bashrc` source 它们 + `SKIP_RSYNC=1`. deploy script v4.2 启动时自动 source ~/.bashrc.
+13. **Backup 文件清理**: deploy script 自动保留最近 3 份 `*.bak.YYYYMMDD_HHMMSS`. 历史命名 (`.bak4/5/6/.broken/.bak.pre_fix`) 不会被自动清理, 需手动 rm.
