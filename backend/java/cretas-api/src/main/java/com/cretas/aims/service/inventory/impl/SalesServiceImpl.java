@@ -282,6 +282,39 @@ public class SalesServiceImpl implements SalesService {
             order.setRequiredDeliveryDate(request.getRequiredDeliveryDate());
         }
 
+        // 行项目更新 + 总金额重算
+        if (request.getItems() != null && !request.getItems().isEmpty()) {
+            // 删除旧行项
+            List<SalesOrderItem> oldItems = salesOrderItemRepository.findBySalesOrderId(order.getId());
+            salesOrderItemRepository.deleteAll(oldItems);
+
+            // 创建新行项 + 重算总金额
+            BigDecimal totalAmount = BigDecimal.ZERO;
+            List<SalesOrderItem> newItems = new ArrayList<>();
+            for (CreateSalesOrderRequest.SalesOrderItemDTO itemDTO : request.getItems()) {
+                SalesOrderItem item = new SalesOrderItem();
+                item.setSalesOrderId(order.getId());
+                item.setProductTypeId(itemDTO.getProductTypeId());
+                String productName = itemDTO.getProductName();
+                if (productName == null || productName.isBlank()) {
+                    productName = productTypeRepository.findById(itemDTO.getProductTypeId())
+                            .map(ProductType::getName).orElse(null);
+                }
+                item.setProductName(productName);
+                item.setQuantity(itemDTO.getQuantity());
+                item.setUnit(itemDTO.getUnit());
+                item.setUnitPrice(itemDTO.getUnitPrice());
+                item.setDiscountRate(itemDTO.getDiscountRate() != null ? itemDTO.getDiscountRate() : BigDecimal.ZERO);
+                item.setRemark(itemDTO.getRemark());
+                item.setSpecification(itemDTO.getSpecification());
+                item.setBoxQuantity(itemDTO.getBoxQuantity());
+                newItems.add(item);
+                totalAmount = totalAmount.add(item.getLineAmount());
+            }
+            salesOrderItemRepository.saveAll(newItems);
+            order.setTotalAmount(totalAmount);
+        }
+
         log.info("更新销售订单: orderId={}, orderNumber={}", orderId, order.getOrderNumber());
         return salesOrderRepository.save(order);
     }

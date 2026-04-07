@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 销售订单更新请求 (仅 DRAFT 状态可编辑)
@@ -28,4 +29,7 @@ public class UpdateSalesOrderRequest {
     private BigDecimal shippingFee;
 
     private LocalDate requiredDeliveryDate;
+
+    /** 行项目更新 (为null时不更新行项) */
+    private List<CreateSalesOrderRequest.SalesOrderItemDTO> items;
 }
