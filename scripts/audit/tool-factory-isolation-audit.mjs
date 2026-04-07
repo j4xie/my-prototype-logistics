@@ -11,9 +11,10 @@
  *   2. scripts/audit/audit-results.md    - human-readable summary with high-risk list
  *
  * Risk classification:
- *   HIGH    - doExecute signature missing factoryId, OR factoryId is never used in body
- *   MEDIUM  - factoryId is referenced but suspicious calls exist (findAll/findById w/o factoryId, hardcoded "F001" etc.)
- *   LOW     - factoryId is propagated to at least one service/repo call, no suspicious patterns
+ *   HIGH      - doExecute signature missing factoryId, OR factoryId is never used in body
+ *   MEDIUM    - factoryId is referenced but suspicious calls exist (findAll/findById w/o factoryId, hardcoded "F001" etc.)
+ *   LOW       - factoryId is propagated to at least one service/repo call, no suspicious patterns
+ *   EXEMPT    - Tool source contains whitelist marker "factoryId 隔离豁免说明" or "@FactoryIsolationExempt"
  *
  * Usage:
  *   node scripts/audit/tool-factory-isolation-audit.mjs
@@ -221,6 +222,14 @@ function auditTool(filePath) {
     reason: '',
   };
 
+  // Whitelist check — Tool explicitly marked as exempt from factoryId isolation
+  // (e.g., meta/governance tools operating on global entities, unimplemented stubs)
+  if (/factoryId\s*隔离豁免说明|@FactoryIsolationExempt/.test(src)) {
+    result.risk = 'EXEMPT';
+    result.reason = '已声明 factoryId 隔离豁免（白名单）';
+    return result;
+  }
+
   // Non-BusinessTool utility: skip or mark as NOT_BUSINESS
   if (!result.extendsAbstractBusinessTool) {
     // Still check for factoryId references at all
@@ -319,6 +328,7 @@ function writeMarkdown(results, outPath) {
     HIGH: [],
     MEDIUM: [],
     LOW: [],
+    EXEMPT: [],
     NON_BUSINESS: [],
     NON_BUSINESS_W_FACTORY: [],
     UNKNOWN: [],
@@ -329,11 +339,12 @@ function writeMarkdown(results, outPath) {
 
   const byDomain = {};
   for (const r of results) {
-    if (!byDomain[r.domain]) byDomain[r.domain] = { HIGH: 0, MEDIUM: 0, LOW: 0, NON_BUSINESS: 0, total: 0 };
+    if (!byDomain[r.domain]) byDomain[r.domain] = { HIGH: 0, MEDIUM: 0, LOW: 0, EXEMPT: 0, NON_BUSINESS: 0, total: 0 };
     byDomain[r.domain].total++;
     if (r.risk === 'HIGH') byDomain[r.domain].HIGH++;
     else if (r.risk === 'MEDIUM') byDomain[r.domain].MEDIUM++;
     else if (r.risk === 'LOW') byDomain[r.domain].LOW++;
+    else if (r.risk === 'EXEMPT') byDomain[r.domain].EXEMPT++;
     else byDomain[r.domain].NON_BUSINESS++;
   }
 
@@ -350,18 +361,19 @@ function writeMarkdown(results, outPath) {
   md.push(`- 🔴 **HIGH 风险**: ${byRisk.HIGH.length}`);
   md.push(`- 🟡 **MEDIUM 风险**: ${byRisk.MEDIUM.length}`);
   md.push(`- 🟢 **LOW 风险**: ${byRisk.LOW.length}`);
+  md.push(`- ⚪ **EXEMPT（白名单豁免）**: ${byRisk.EXEMPT.length}`);
   md.push(`- ⚪ **NON_BUSINESS（非业务 Tool）**: ${byRisk.NON_BUSINESS.length + byRisk.NON_BUSINESS_W_FACTORY.length}`);
   md.push('');
 
   // Risk by domain
   md.push('## 按 Domain 分组');
   md.push('');
-  md.push('| Domain | Total | HIGH | MEDIUM | LOW | NON_BIZ |');
-  md.push('|--------|-------|------|--------|-----|---------|');
+  md.push('| Domain | Total | HIGH | MEDIUM | LOW | EXEMPT | NON_BIZ |');
+  md.push('|--------|-------|------|--------|-----|--------|---------|');
   const sortedDomains = Object.entries(byDomain).sort((a, b) => b[1].HIGH - a[1].HIGH);
   for (const [domain, stats] of sortedDomains) {
     md.push(
-      `| ${domain} | ${stats.total} | ${stats.HIGH ? '**' + stats.HIGH + '**' : stats.HIGH} | ${stats.MEDIUM} | ${stats.LOW} | ${stats.NON_BUSINESS} |`
+      `| ${domain} | ${stats.total} | ${stats.HIGH ? '**' + stats.HIGH + '**' : stats.HIGH} | ${stats.MEDIUM} | ${stats.LOW} | ${stats.EXEMPT} | ${stats.NON_BUSINESS} |`
     );
   }
   md.push('');
@@ -469,8 +481,8 @@ function main() {
     }
   }
 
-  // Sort: HIGH > MEDIUM > LOW > NON_BUSINESS
-  const order = { HIGH: 0, MEDIUM: 1, LOW: 2, NON_BUSINESS_W_FACTORY: 3, NON_BUSINESS: 4, UNKNOWN: 5 };
+  // Sort: HIGH > MEDIUM > LOW > EXEMPT > NON_BUSINESS
+  const order = { HIGH: 0, MEDIUM: 1, LOW: 2, EXEMPT: 3, NON_BUSINESS_W_FACTORY: 4, NON_BUSINESS: 5, UNKNOWN: 6 };
   results.sort((a, b) => {
     const ra = order[a.risk] ?? 99;
     const rb = order[b.risk] ?? 99;
@@ -486,16 +498,17 @@ function main() {
   writeMarkdown(results, mdPath);
 
   // Summary to stdout
-  const counts = { HIGH: 0, MEDIUM: 0, LOW: 0, NON_BUSINESS: 0, NON_BUSINESS_W_FACTORY: 0, UNKNOWN: 0 };
+  const counts = { HIGH: 0, MEDIUM: 0, LOW: 0, EXEMPT: 0, NON_BUSINESS: 0, NON_BUSINESS_W_FACTORY: 0, UNKNOWN: 0 };
   for (const r of results) counts[r.risk] = (counts[r.risk] || 0) + 1;
 
   console.log('');
   console.log('[audit] ═══════════════════════════════════════');
   console.log(`[audit]   Total:    ${results.length}`);
-  console.log(`[audit]   🔴 HIGH:  ${counts.HIGH}`);
-  console.log(`[audit]   🟡 MED:   ${counts.MEDIUM}`);
-  console.log(`[audit]   🟢 LOW:   ${counts.LOW}`);
-  console.log(`[audit]   ⚪ N/A:   ${counts.NON_BUSINESS + counts.NON_BUSINESS_W_FACTORY}`);
+  console.log(`[audit]   🔴 HIGH:   ${counts.HIGH}`);
+  console.log(`[audit]   🟡 MED:    ${counts.MEDIUM}`);
+  console.log(`[audit]   🟢 LOW:    ${counts.LOW}`);
+  console.log(`[audit]   ⚪ EXEMPT: ${counts.EXEMPT}`);
+  console.log(`[audit]   ⚪ N/A:    ${counts.NON_BUSINESS + counts.NON_BUSINESS_W_FACTORY}`);
   console.log('[audit] ═══════════════════════════════════════');
   console.log('');
   console.log(`[audit] CSV:  ${path.relative(PROJECT_ROOT, csvPath)}`);

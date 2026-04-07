@@ -59,7 +59,7 @@ public class TransferController {
     public ApiResponse<InternalTransfer> getTransfer(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String transferId) {
-        InternalTransfer transfer = transferService.getTransferById(transferId);
+        InternalTransfer transfer = transferService.getTransferById(factoryId, transferId);
         return ApiResponse.success("查询成功", transfer);
     }
 

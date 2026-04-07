@@ -11,13 +11,13 @@ public interface InvoiceService {
     InvoiceRecord requestInvoice(String factoryId, String salesOrderId, java.math.BigDecimal amount,
                                   java.math.BigDecimal taxAmount, String invoiceType, Long requestedBy, String remark);
 
-    InvoiceRecord approveInvoice(String invoiceId, Long reviewedBy, String notes);
+    InvoiceRecord approveInvoice(String factoryId, String invoiceId, Long reviewedBy, String notes);
 
-    InvoiceRecord rejectInvoice(String invoiceId, Long reviewedBy, String notes);
+    InvoiceRecord rejectInvoice(String factoryId, String invoiceId, Long reviewedBy, String notes);
 
-    InvoiceRecord issueInvoice(String invoiceId, MultipartFile pdfFile, Long issuedBy);
+    InvoiceRecord issueInvoice(String factoryId, String invoiceId, MultipartFile pdfFile, Long issuedBy);
 
     Page<InvoiceRecord> listInvoices(String factoryId, InvoiceStatus status, Pageable pageable);
 
-    InvoiceRecord getInvoice(String invoiceId);
+    InvoiceRecord getInvoice(String factoryId, String invoiceId);
 }

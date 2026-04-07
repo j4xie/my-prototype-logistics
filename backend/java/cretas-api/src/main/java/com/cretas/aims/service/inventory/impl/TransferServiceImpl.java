@@ -91,11 +91,23 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     @Transactional(readOnly = true)
-    public InternalTransfer getTransferById(String transferId) {
-        InternalTransfer transfer = transferRepository.findById(transferId)
-                .orElseThrow(() -> new ResourceNotFoundException("调拨单不存在"));
+    public InternalTransfer getTransferById(String factoryId, String transferId) {
+        InternalTransfer transfer = transferRepository.findByIdAndEitherFactoryId(transferId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("调拨单不存在或无权访问"));
         // Force-initialize items within transaction to prevent LazyInitializationException
         // and ensure clean serialization without duplicates
+        transfer.getItems().size();
+        return transfer;
+    }
+
+    /**
+     * Internal lookup without factoryId scoping — used by state-machine methods
+     * that will have their own factoryId check in MEDIUM-risk fix pass (W1 D3).
+     * TODO(W1 D3): migrate all state-machine methods to pass factoryId explicitly.
+     */
+    private InternalTransfer getTransferByIdInternal(String transferId) {
+        InternalTransfer transfer = transferRepository.findById(transferId)
+                .orElseThrow(() -> new ResourceNotFoundException("调拨单不存在"));
         transfer.getItems().size();
         return transfer;
     }
@@ -113,7 +125,7 @@ public class TransferServiceImpl implements TransferService {
     @Override
     @Transactional
     public InternalTransfer requestTransfer(String transferId, Long userId) {
-        InternalTransfer transfer = getTransferById(transferId);
+        InternalTransfer transfer = getTransferByIdInternal(transferId);
         assertStatus(transfer, TransferStatus.DRAFT, "提交申请");
         transfer.setStatus(TransferStatus.REQUESTED);
         transfer.setRequestedBy(userId);
@@ -125,7 +137,7 @@ public class TransferServiceImpl implements TransferService {
     @Override
     @Transactional
     public InternalTransfer approveTransfer(String transferId, Long userId) {
-        InternalTransfer transfer = getTransferById(transferId);
+        InternalTransfer transfer = getTransferByIdInternal(transferId);
         assertStatus(transfer, TransferStatus.REQUESTED, "审批");
         transfer.setStatus(TransferStatus.APPROVED);
         transfer.setApprovedBy(userId);
@@ -137,7 +149,7 @@ public class TransferServiceImpl implements TransferService {
     @Override
     @Transactional
     public InternalTransfer rejectTransfer(String transferId, Long userId, String reason) {
-        InternalTransfer transfer = getTransferById(transferId);
+        InternalTransfer transfer = getTransferByIdInternal(transferId);
         assertStatus(transfer, TransferStatus.REQUESTED, "驳回");
         transfer.setStatus(TransferStatus.REJECTED);
         transfer.setApprovedBy(userId);
@@ -150,7 +162,7 @@ public class TransferServiceImpl implements TransferService {
     @Override
     @Transactional
     public InternalTransfer shipTransfer(String transferId, Long userId) {
-        InternalTransfer transfer = getTransferById(transferId);
+        InternalTransfer transfer = getTransferByIdInternal(transferId);
         assertStatus(transfer, TransferStatus.APPROVED, "发货");
 
         // 调出方扣减库存
@@ -167,7 +179,7 @@ public class TransferServiceImpl implements TransferService {
     @Override
     @Transactional
     public InternalTransfer receiveTransfer(String transferId, Long userId) {
-        InternalTransfer transfer = getTransferById(transferId);
+        InternalTransfer transfer = getTransferByIdInternal(transferId);
         assertStatus(transfer, TransferStatus.SHIPPED, "签收");
         transfer.setStatus(TransferStatus.RECEIVED);
         transfer.setReceivedAt(LocalDateTime.now());
@@ -178,7 +190,7 @@ public class TransferServiceImpl implements TransferService {
     @Override
     @Transactional
     public InternalTransfer confirmTransfer(String transferId, Long userId) {
-        InternalTransfer transfer = getTransferById(transferId);
+        InternalTransfer transfer = getTransferByIdInternal(transferId);
         assertStatus(transfer, TransferStatus.RECEIVED, "确认");
 
         // 调入方增加库存
@@ -195,7 +207,7 @@ public class TransferServiceImpl implements TransferService {
     @Override
     @Transactional
     public InternalTransfer cancelTransfer(String transferId, Long userId, String reason) {
-        InternalTransfer transfer = getTransferById(transferId);
+        InternalTransfer transfer = getTransferByIdInternal(transferId);
         if (transfer.getStatus().isTerminal()) {
             throw new BusinessException("终态调拨单不能取消");
         }

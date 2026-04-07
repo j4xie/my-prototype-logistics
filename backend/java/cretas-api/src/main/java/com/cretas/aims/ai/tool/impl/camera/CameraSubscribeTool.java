@@ -69,6 +69,11 @@ public class CameraSubscribeTool extends AbstractBusinessTool {
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
         log.info("执行摄像头告警订阅 - 工厂ID: {}, 参数: {}", factoryId, params);
 
+        // TODO(W1 D3 — camera module systemic fix): IsapiDeviceService.getDevice() and
+        // subscriptionService.subscribeDevice() both lack factoryId scoping. Tracking
+        // via MEDIUM batch fix together with CameraDetailTool / CameraStatusTool /
+        // CameraStreamsTool / CameraSyncTool / CameraTestConnectionTool (5 MEDIUMs in camera domain).
+        // Safe for now: customer demo path does not use camera subscription tools.
         String deviceId = getString(params, "deviceId");
 
         Map<String, Object> result = new HashMap<>();

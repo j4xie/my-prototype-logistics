@@ -36,6 +36,7 @@ public class InvoiceApproveTool extends AbstractBusinessTool {
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
         var record = invoiceService.approveInvoice(
+                factoryId,
                 getString(params, "invoiceId"),
                 getLong(params, "userId"),
                 getString(params, "notes"));

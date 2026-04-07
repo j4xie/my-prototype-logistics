@@ -67,30 +67,32 @@ public class RdController {
     }
 
     @PostMapping("/samples/{sampleId}/progress")
-    public ResponseEntity<?> updateProgress(@PathVariable String sampleId, @RequestBody Map<String, String> body) {
-        var sample = sampleService.updateProgress(sampleId, body.get("note"), body.get("photoUrl"));
+    public ResponseEntity<?> updateProgress(@PathVariable String factoryId, @PathVariable String sampleId,
+                                             @RequestBody Map<String, String> body) {
+        var sample = sampleService.updateProgress(factoryId, sampleId, body.get("note"), body.get("photoUrl"));
         return ResponseEntity.ok(Map.of("success", true, "data", sample));
     }
 
     @PostMapping("/samples/{sampleId}/submit")
-    public ResponseEntity<?> submitForApproval(@PathVariable String sampleId,
+    public ResponseEntity<?> submitForApproval(@PathVariable String factoryId, @PathVariable String sampleId,
                                                 @RequestAttribute(value = "userId", required = false) Long userId) {
-        return ResponseEntity.ok(Map.of("success", true, "data", sampleService.submitForApproval(sampleId, userId)));
+        return ResponseEntity.ok(Map.of("success", true, "data", sampleService.submitForApproval(factoryId, sampleId, userId)));
     }
 
     @PostMapping("/samples/{sampleId}/approve")
-    public ResponseEntity<?> approve(@PathVariable String sampleId,
+    public ResponseEntity<?> approve(@PathVariable String factoryId, @PathVariable String sampleId,
                                       @RequestBody(required = false) Map<String, String> body,
                                       @RequestAttribute(value = "userId", required = false) Long userId) {
-        var sample = sampleService.approveSample(sampleId, userId, body != null ? body.get("notes") : null);
+        var sample = sampleService.approveSample(factoryId, sampleId, userId, body != null ? body.get("notes") : null);
         return ResponseEntity.ok(Map.of("success", true, "data", sample, "message", "样品审核通过，报价任务已自动创建"));
     }
 
     @PostMapping("/samples/{sampleId}/reject")
-    public ResponseEntity<?> reject(@PathVariable String sampleId, @RequestBody Map<String, String> body,
+    public ResponseEntity<?> reject(@PathVariable String factoryId, @PathVariable String sampleId,
+                                     @RequestBody Map<String, String> body,
                                      @RequestAttribute(value = "userId", required = false) Long userId) {
         return ResponseEntity.ok(Map.of("success", true, "data",
-                sampleService.rejectSample(sampleId, userId, body.get("notes"))));
+                sampleService.rejectSample(factoryId, sampleId, userId, body.get("notes"))));
     }
 
     @GetMapping("/samples")
@@ -103,8 +105,8 @@ public class RdController {
     }
 
     @GetMapping("/samples/{sampleId}")
-    public ResponseEntity<?> getSample(@PathVariable String sampleId) {
-        return ResponseEntity.ok(Map.of("success", true, "data", sampleService.getSample(sampleId)));
+    public ResponseEntity<?> getSample(@PathVariable String factoryId, @PathVariable String sampleId) {
+        return ResponseEntity.ok(Map.of("success", true, "data", sampleService.getSample(factoryId, sampleId)));
     }
 
     // ==================== 报价任务 ====================

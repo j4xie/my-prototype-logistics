@@ -17,12 +17,12 @@ public interface ProductSampleService {
     // ==================== 样品管理 ====================
     ProductSample createSample(String factoryId, String rdRequestId, String name,
                                 String specification, String grade, String mainMaterial, Long assignedTo);
-    ProductSample updateProgress(String sampleId, String note, String photoUrl);
-    ProductSample submitForApproval(String sampleId, Long submittedBy);
-    ProductSample approveSample(String sampleId, Long approvedBy, String notes);
-    ProductSample rejectSample(String sampleId, Long approvedBy, String notes);
+    ProductSample updateProgress(String factoryId, String sampleId, String note, String photoUrl);
+    ProductSample submitForApproval(String factoryId, String sampleId, Long submittedBy);
+    ProductSample approveSample(String factoryId, String sampleId, Long approvedBy, String notes);
+    ProductSample rejectSample(String factoryId, String sampleId, Long approvedBy, String notes);
     Page<ProductSample> listSamples(String factoryId, String status, Pageable pageable);
-    ProductSample getSample(String sampleId);
+    ProductSample getSample(String factoryId, String sampleId);
     ProductSample updateSampleFields(ProductSample sample);
 
     // ==================== 报价任务 ====================

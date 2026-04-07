@@ -72,7 +72,10 @@ public class FinancePptExportTool extends AbstractBusinessTool {
 
         log.info("Exporting financial PPT: {} charts, company={}", chartImages.size(), companyName);
 
+        // factoryId used as request origin marker — no data lookup needed here,
+        // all chart data is sent by the caller as base64 images.
         Map<String, Object> request = new HashMap<>();
+        request.put("factory_id", factoryId);
         request.put("chart_images", chartImages);
         request.put("analysis_results", analysisResults);
         request.put("year", year);

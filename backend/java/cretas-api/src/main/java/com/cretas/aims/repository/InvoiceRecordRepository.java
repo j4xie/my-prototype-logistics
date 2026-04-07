@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface InvoiceRecordRepository extends JpaRepository<InvoiceRecord, String> {
@@ -19,6 +20,9 @@ public interface InvoiceRecordRepository extends JpaRepository<InvoiceRecord, St
     Page<InvoiceRecord> findByFactoryIdAndStatusAndDeletedAtIsNull(String factoryId, InvoiceStatus status, Pageable pageable);
 
     List<InvoiceRecord> findBySalesOrderIdAndDeletedAtIsNull(String salesOrderId);
+
+    /** Factory-scoped lookup — enforces tenant isolation. */
+    Optional<InvoiceRecord> findByIdAndFactoryIdAndDeletedAtIsNull(String id, String factoryId);
 
     @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM InvoiceRecord i WHERE i.salesOrderId = ?1 AND i.status = 'ISSUED' AND i.deletedAt IS NULL")
     BigDecimal sumIssuedAmountBySalesOrderId(String salesOrderId);

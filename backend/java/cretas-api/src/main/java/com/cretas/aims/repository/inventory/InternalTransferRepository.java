@@ -30,4 +30,12 @@ public interface InternalTransferRepository extends JpaRepository<InternalTransf
 
     @Query("SELECT COUNT(t) FROM InternalTransfer t WHERE t.sourceFactoryId = :factoryId AND FUNCTION('DATE', t.createdAt) = CURRENT_DATE")
     long countTodayBySourceFactory(@Param("factoryId") String factoryId);
+
+    /**
+     * Factory-scoped lookup — enforces tenant isolation.
+     * Returns the transfer only if the given factoryId is either the source or the target,
+     * preventing cross-tenant data leakage when a user knows a transferId.
+     */
+    @Query("SELECT t FROM InternalTransfer t WHERE t.id = :id AND (t.sourceFactoryId = :factoryId OR t.targetFactoryId = :factoryId)")
+    Optional<InternalTransfer> findByIdAndEitherFactoryId(@Param("id") String id, @Param("factoryId") String factoryId);
 }

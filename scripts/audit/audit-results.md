@@ -1,68 +1,62 @@
 # factoryId 隔离审计报告
 
-**生成时间**: 2026-04-07T21:48:55.113Z
+**生成时间**: 2026-04-07T22:07:35.841Z
 **审计脚本**: scripts/audit/tool-factory-isolation-audit.mjs
 **扫描目录**: backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/
 
 ## 总览
 
 - **Total Tools 扫描数**: 338
-- 🔴 **HIGH 风险**: 8
+- 🔴 **HIGH 风险**: 1
 - 🟡 **MEDIUM 风险**: 17
-- 🟢 **LOW 风险**: 305
+- 🟢 **LOW 风险**: 309
+- ⚪ **EXEMPT（白名单豁免）**: 3
 - ⚪ **NON_BUSINESS（非业务 Tool）**: 8
 
 ## 按 Domain 分组
 
-| Domain | Total | HIGH | MEDIUM | LOW | NON_BIZ |
-|--------|-------|------|--------|-----|---------|
-| finance | 11 | **2** | 0 | 9 | 0 |
-| governance | 3 | **2** | 0 | 1 | 0 |
-| camera | 11 | **1** | 5 | 5 | 0 |
-| rd | 3 | **1** | 0 | 2 | 0 |
-| system | 23 | **1** | 2 | 20 | 0 |
-| transfer | 5 | **1** | 0 | 4 | 0 |
-| material | 27 | 0 | 2 | 25 | 0 |
-| dataop | 19 | 0 | 1 | 18 | 0 |
-| crm | 24 | 0 | 1 | 23 | 0 |
-| scale | 13 | 0 | 2 | 11 | 0 |
-| shipment | 16 | 0 | 2 | 14 | 0 |
-| report | 34 | 0 | 1 | 33 | 0 |
-| workreport | 4 | 0 | 1 | 3 | 0 |
-| alert | 9 | 0 | 0 | 9 | 0 |
-| hr | 14 | 0 | 0 | 14 | 0 |
-| quality | 12 | 0 | 0 | 12 | 0 |
-| config | 3 | 0 | 0 | 3 | 0 |
-| dahua | 3 | 0 | 0 | 3 | 0 |
-| equipment | 15 | 0 | 0 | 15 | 0 |
-| foodknowledge | 1 | 0 | 0 | 1 | 0 |
-| form | 1 | 0 | 0 | 1 | 0 |
-| decoration | 3 | 0 | 0 | 3 | 0 |
-| isapi | 3 | 0 | 0 | 3 | 0 |
-| pagedesign | 4 | 0 | 0 | 4 | 0 |
-| sales | 5 | 0 | 0 | 5 | 0 |
-| processing | 17 | 0 | 0 | 17 | 0 |
-| purchase | 6 | 0 | 0 | 6 | 0 |
-| restaurant | 27 | 0 | 0 | 27 | 0 |
-| returnorder | 5 | 0 | 0 | 5 | 0 |
-| scheduling | 3 | 0 | 0 | 3 | 0 |
-| sop | 3 | 0 | 0 | 3 | 0 |
-| user | 3 | 0 | 0 | 3 | 0 |
-| root | 5 | 0 | 0 | 0 | 5 |
-| dictionary | 3 | 0 | 0 | 0 | 3 |
+| Domain | Total | HIGH | MEDIUM | LOW | EXEMPT | NON_BIZ |
+|--------|-------|------|--------|-----|--------|---------|
+| camera | 11 | **1** | 5 | 5 | 0 | 0 |
+| material | 27 | 0 | 2 | 25 | 0 | 0 |
+| dataop | 19 | 0 | 1 | 18 | 0 | 0 |
+| system | 23 | 0 | 2 | 20 | 1 | 0 |
+| crm | 24 | 0 | 1 | 23 | 0 | 0 |
+| scale | 13 | 0 | 2 | 11 | 0 | 0 |
+| shipment | 16 | 0 | 2 | 14 | 0 | 0 |
+| report | 34 | 0 | 1 | 33 | 0 | 0 |
+| workreport | 4 | 0 | 1 | 3 | 0 | 0 |
+| alert | 9 | 0 | 0 | 9 | 0 | 0 |
+| hr | 14 | 0 | 0 | 14 | 0 | 0 |
+| quality | 12 | 0 | 0 | 12 | 0 | 0 |
+| config | 3 | 0 | 0 | 3 | 0 | 0 |
+| dahua | 3 | 0 | 0 | 3 | 0 | 0 |
+| equipment | 15 | 0 | 0 | 15 | 0 | 0 |
+| finance | 11 | 0 | 0 | 11 | 0 | 0 |
+| foodknowledge | 1 | 0 | 0 | 1 | 0 | 0 |
+| form | 1 | 0 | 0 | 1 | 0 | 0 |
+| decoration | 3 | 0 | 0 | 3 | 0 | 0 |
+| isapi | 3 | 0 | 0 | 3 | 0 | 0 |
+| pagedesign | 4 | 0 | 0 | 4 | 0 | 0 |
+| sales | 5 | 0 | 0 | 5 | 0 | 0 |
+| processing | 17 | 0 | 0 | 17 | 0 | 0 |
+| purchase | 6 | 0 | 0 | 6 | 0 | 0 |
+| rd | 3 | 0 | 0 | 3 | 0 | 0 |
+| restaurant | 27 | 0 | 0 | 27 | 0 | 0 |
+| returnorder | 5 | 0 | 0 | 5 | 0 | 0 |
+| scheduling | 3 | 0 | 0 | 3 | 0 | 0 |
+| sop | 3 | 0 | 0 | 3 | 0 | 0 |
+| governance | 3 | 0 | 0 | 1 | 2 | 0 |
+| transfer | 5 | 0 | 0 | 5 | 0 | 0 |
+| user | 3 | 0 | 0 | 3 | 0 | 0 |
+| root | 5 | 0 | 0 | 0 | 0 | 5 |
+| dictionary | 3 | 0 | 0 | 0 | 0 | 3 |
 
 ## 🔴 HIGH 风险清单（立即修复）
 
 | # | Domain | File | 原因 |
 |---|--------|------|------|
-| 1 | camera | `CameraSubscribeTool.java` | 存在 3 条可疑模式（findAll/findById/硬编码/裸 SQL） |
-| 2 | finance | `FinancePptExportTool.java` | doExecute body 中完全没有使用 factoryId（签名接收但从未使用） |
-| 3 | finance | `InvoiceApproveTool.java` | doExecute body 中完全没有使用 factoryId（签名接收但从未使用） |
-| 4 | rd | `SampleApproveTool.java` | doExecute body 中完全没有使用 factoryId（签名接收但从未使用） |
-| 5 | system | `SendWechatNotificationTool.java` | doExecute body 中完全没有使用 factoryId（签名接收但从未使用） |
-| 6 | governance | `SkillComposeTool.java` | doExecute body 中完全没有使用 factoryId（签名接收但从未使用） |
-| 7 | governance | `SkillManageTool.java` | doExecute body 中完全没有使用 factoryId（签名接收但从未使用） |
-| 8 | transfer | `TransferDetailTool.java` | doExecute body 中完全没有使用 factoryId（签名接收但从未使用） |
+| 1 | camera | `CameraSubscribeTool.java` | 存在 4 条可疑模式（findAll/findById/硬编码/裸 SQL） |
 
 ## 🟡 MEDIUM 风险清单（人工复核）
 
@@ -91,62 +85,14 @@
 ### [HIGH] CameraSubscribeTool.java
 - **路径**: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/camera/CameraSubscribeTool.java`
 - **Domain**: camera
-- **原因**: 存在 3 条可疑模式（findAll/findById/硬编码/裸 SQL）
+- **原因**: 存在 4 条可疑模式（findAll/findById/硬编码/裸 SQL）
 - **签名**: `protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {`
-- **factoryId 引用次数**: 2
+- **factoryId 引用次数**: 3
 - **可疑模式**:
+  - IsapiDeviceService.getDevice() — no factoryId arg
   - deviceService.getDevice(deviceId) — no factoryId arg
   - subscriptionService.getActiveSubscriptionCount() — no factoryId arg
   - subscriptionService.getActiveSubscriptionIds() — no factoryId arg
-
-### [HIGH] FinancePptExportTool.java
-- **路径**: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/finance/FinancePptExportTool.java`
-- **Domain**: finance
-- **原因**: doExecute body 中完全没有使用 factoryId（签名接收但从未使用）
-- **签名**: `protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {`
-- **factoryId 引用次数**: 0
-
-### [HIGH] InvoiceApproveTool.java
-- **路径**: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/finance/InvoiceApproveTool.java`
-- **Domain**: finance
-- **原因**: doExecute body 中完全没有使用 factoryId（签名接收但从未使用）
-- **签名**: `protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {`
-- **factoryId 引用次数**: 0
-
-### [HIGH] SampleApproveTool.java
-- **路径**: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/rd/SampleApproveTool.java`
-- **Domain**: rd
-- **原因**: doExecute body 中完全没有使用 factoryId（签名接收但从未使用）
-- **签名**: `protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {`
-- **factoryId 引用次数**: 0
-
-### [HIGH] SendWechatNotificationTool.java
-- **路径**: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/system/SendWechatNotificationTool.java`
-- **Domain**: system
-- **原因**: doExecute body 中完全没有使用 factoryId（签名接收但从未使用）
-- **签名**: `protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {`
-- **factoryId 引用次数**: 0
-
-### [HIGH] SkillComposeTool.java
-- **路径**: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/governance/SkillComposeTool.java`
-- **Domain**: governance
-- **原因**: doExecute body 中完全没有使用 factoryId（签名接收但从未使用）
-- **签名**: `protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {`
-- **factoryId 引用次数**: 0
-
-### [HIGH] SkillManageTool.java
-- **路径**: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/governance/SkillManageTool.java`
-- **Domain**: governance
-- **原因**: doExecute body 中完全没有使用 factoryId（签名接收但从未使用）
-- **签名**: `protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {`
-- **factoryId 引用次数**: 0
-
-### [HIGH] TransferDetailTool.java
-- **路径**: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/transfer/TransferDetailTool.java`
-- **Domain**: transfer
-- **原因**: doExecute body 中完全没有使用 factoryId（签名接收但从未使用）
-- **签名**: `protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {`
-- **factoryId 引用次数**: 0
 
 ### [MEDIUM] BatchConsumptionAdjustTool.java
 - **路径**: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/material/BatchConsumptionAdjustTool.java`

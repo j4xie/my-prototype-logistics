@@ -37,20 +37,22 @@ public class InvoiceController {
 
     @PostMapping("/{invoiceId}/approve")
     public ResponseEntity<?> approve(
+            @PathVariable String factoryId,
             @PathVariable String invoiceId,
             @RequestBody(required = false) Map<String, String> body,
             @RequestAttribute(value = "userId", required = false) Long userId) {
-        var record = invoiceService.approveInvoice(invoiceId, userId,
+        var record = invoiceService.approveInvoice(factoryId, invoiceId, userId,
                 body != null ? body.get("notes") : null);
         return ResponseEntity.ok(Map.of("success", true, "data", record, "message", "开票申请已审核通过"));
     }
 
     @PostMapping("/{invoiceId}/reject")
     public ResponseEntity<?> reject(
+            @PathVariable String factoryId,
             @PathVariable String invoiceId,
             @RequestBody Map<String, String> body,
             @RequestAttribute(value = "userId", required = false) Long userId) {
-        var record = invoiceService.rejectInvoice(invoiceId, userId, body.get("notes"));
+        var record = invoiceService.rejectInvoice(factoryId, invoiceId, userId, body.get("notes"));
         return ResponseEntity.ok(Map.of("success", true, "data", record, "message", "开票申请已驳回"));
     }
 
@@ -60,7 +62,7 @@ public class InvoiceController {
             @PathVariable String invoiceId,
             @RequestPart(value = "file", required = false) MultipartFile pdfFile,
             @RequestAttribute(value = "userId", required = false) Long userId) {
-        var record = invoiceService.issueInvoice(invoiceId, pdfFile, userId);
+        var record = invoiceService.issueInvoice(factoryId, invoiceId, pdfFile, userId);
         return ResponseEntity.ok(Map.of("success", true, "data", record, "message", "发票已开具"));
     }
 
@@ -77,7 +79,7 @@ public class InvoiceController {
     }
 
     @GetMapping("/{invoiceId}")
-    public ResponseEntity<?> detail(@PathVariable String invoiceId) {
-        return ResponseEntity.ok(Map.of("success", true, "data", invoiceService.getInvoice(invoiceId)));
+    public ResponseEntity<?> detail(@PathVariable String factoryId, @PathVariable String invoiceId) {
+        return ResponseEntity.ok(Map.of("success", true, "data", invoiceService.getInvoice(factoryId, invoiceId)));
     }
 }

@@ -24,6 +24,17 @@ import java.util.stream.Collectors;
  * - "把 material_batch_query 和 quality_check_query 组合成skill"
  * - "创建一个skill叫库存质检联查，包含库存查询和质检查询"
  * - "创建推荐的 material-auto-combo skill"
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * factoryId 隔离豁免说明 (Whitelist — Audit 2026-04-07)
+ * ───────────────────────────────────────────────────────────────────────────
+ * 本 Tool 属于"治理类元工具"，操作 SmartBiSkill 实体（当前全局无 factoryId）。
+ * 上游隔离手段:
+ *   1. AIIntentConfig 通过 factoryId + intent_code 绑定到允许该工厂使用的意图
+ *   2. permission 层拦截只允许 admin/super_admin 角色使用治理类 Tool
+ *   3. SmartBiSkill factory 级隔离属 V3 P2 任务 (需 DB 迁移)
+ * 一旦 SmartBiSkill 加 factory_id (V3 P2)，本 Tool 需同步加 factoryId 过滤。
+ * ═══════════════════════════════════════════════════════════════════════════
  */
 @Slf4j
 @Component

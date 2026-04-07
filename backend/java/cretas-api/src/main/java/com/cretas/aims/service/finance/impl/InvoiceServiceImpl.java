@@ -63,8 +63,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public InvoiceRecord approveInvoice(String invoiceId, Long reviewedBy, String notes) {
-        InvoiceRecord record = getInvoice(invoiceId);
+    public InvoiceRecord approveInvoice(String factoryId, String invoiceId, Long reviewedBy, String notes) {
+        InvoiceRecord record = getInvoice(factoryId, invoiceId);
         if (record.getStatus() != InvoiceStatus.REQUESTED) {
             throw new IllegalStateException("只能审核状态为REQUESTED的开票申请, 当前: " + record.getStatus());
         }
@@ -77,8 +77,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public InvoiceRecord rejectInvoice(String invoiceId, Long reviewedBy, String notes) {
-        InvoiceRecord record = getInvoice(invoiceId);
+    public InvoiceRecord rejectInvoice(String factoryId, String invoiceId, Long reviewedBy, String notes) {
+        InvoiceRecord record = getInvoice(factoryId, invoiceId);
         if (record.getStatus() != InvoiceStatus.REQUESTED) {
             throw new IllegalStateException("只能驳回状态为REQUESTED的开票申请");
         }
@@ -91,8 +91,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public InvoiceRecord issueInvoice(String invoiceId, MultipartFile pdfFile, Long issuedBy) {
-        InvoiceRecord record = getInvoice(invoiceId);
+    public InvoiceRecord issueInvoice(String factoryId, String invoiceId, MultipartFile pdfFile, Long issuedBy) {
+        InvoiceRecord record = getInvoice(factoryId, invoiceId);
         if (record.getStatus() != InvoiceStatus.APPROVED) {
             throw new IllegalStateException("只能对已审核的申请开具发票");
         }
@@ -128,9 +128,9 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    public InvoiceRecord getInvoice(String invoiceId) {
-        return invoiceRecordRepository.findById(invoiceId)
-                .orElseThrow(() -> new IllegalArgumentException("开票记录不存在: " + invoiceId));
+    public InvoiceRecord getInvoice(String factoryId, String invoiceId) {
+        return invoiceRecordRepository.findByIdAndFactoryIdAndDeletedAtIsNull(invoiceId, factoryId)
+                .orElseThrow(() -> new IllegalArgumentException("开票记录不存在或无权访问: " + invoiceId));
     }
 
     private void updateSalesOrderInvoiceStatus(String salesOrderId) {

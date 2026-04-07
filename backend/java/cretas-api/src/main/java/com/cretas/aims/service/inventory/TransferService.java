@@ -10,7 +10,11 @@ public interface TransferService {
 
     InternalTransfer createTransfer(String factoryId, CreateTransferRequest request, Long userId);
 
-    InternalTransfer getTransferById(String transferId);
+    /**
+     * Factory-scoped lookup — only returns the transfer if factoryId is its source or target.
+     * Prevents cross-tenant data leakage when a user knows a transferId.
+     */
+    InternalTransfer getTransferById(String factoryId, String transferId);
 
     /** 双向视角：调出或调入都能查到 */
     PageResponse<InternalTransfer> getTransfers(String factoryId, int page, int size);

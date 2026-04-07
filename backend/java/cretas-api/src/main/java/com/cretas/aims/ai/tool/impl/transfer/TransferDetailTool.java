@@ -50,7 +50,7 @@ public class TransferDetailTool extends AbstractBusinessTool {
     @Override
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
         String transferId = getString(params, "transferId");
-        InternalTransfer transfer = transferService.getTransferById(transferId);
+        InternalTransfer transfer = transferService.getTransferById(factoryId, transferId);
 
         Map<String, Object> result = new HashMap<>();
         result.put("transfer", transfer);

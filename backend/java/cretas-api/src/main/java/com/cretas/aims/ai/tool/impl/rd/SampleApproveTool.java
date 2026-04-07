@@ -26,10 +26,10 @@ public class SampleApproveTool extends AbstractBusinessTool {
     @Override protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
         String action = getString(params, "action");
         if ("approve".equalsIgnoreCase(action)) {
-            var sample = sampleService.approveSample(getString(params, "sampleId"), getLong(params, "userId"), getString(params, "notes"));
+            var sample = sampleService.approveSample(factoryId, getString(params, "sampleId"), getLong(params, "userId"), getString(params, "notes"));
             return buildSimpleResult("样品审核通过，报价任务已自动创建", Map.of("sampleCode", sample.getSampleCode(), "status", sample.getStatus()));
         } else {
-            var sample = sampleService.rejectSample(getString(params, "sampleId"), getLong(params, "userId"), getString(params, "notes"));
+            var sample = sampleService.rejectSample(factoryId, getString(params, "sampleId"), getLong(params, "userId"), getString(params, "notes"));
             return buildSimpleResult("样品已驳回", Map.of("sampleCode", sample.getSampleCode(), "status", sample.getStatus()));
         }
     }

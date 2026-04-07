@@ -107,8 +107,8 @@ public class ProductSampleServiceImpl implements ProductSampleService {
 
     @Override
     @Transactional
-    public ProductSample updateProgress(String sampleId, String note, String photoUrl) {
-        ProductSample sample = getSample(sampleId);
+    public ProductSample updateProgress(String factoryId, String sampleId, String note, String photoUrl) {
+        ProductSample sample = getSample(factoryId, sampleId);
         try {
             List<Map<String, String>> notes = objectMapper.readValue(
                     sample.getProgressNotes() != null ? sample.getProgressNotes() : "[]", List.class);
@@ -135,8 +135,8 @@ public class ProductSampleServiceImpl implements ProductSampleService {
 
     @Override
     @Transactional
-    public ProductSample submitForApproval(String sampleId, Long submittedBy) {
-        ProductSample sample = getSample(sampleId);
+    public ProductSample submitForApproval(String factoryId, String sampleId, Long submittedBy) {
+        ProductSample sample = getSample(factoryId, sampleId);
         sample.setStatus("SUBMITTED");
         sample.setSubmittedBy(submittedBy);
         return productSampleRepository.save(sample);
@@ -144,8 +144,8 @@ public class ProductSampleServiceImpl implements ProductSampleService {
 
     @Override
     @Transactional
-    public ProductSample approveSample(String sampleId, Long approvedBy, String notes) {
-        ProductSample sample = getSample(sampleId);
+    public ProductSample approveSample(String factoryId, String sampleId, Long approvedBy, String notes) {
+        ProductSample sample = getSample(factoryId, sampleId);
         if (!"SUBMITTED".equals(sample.getStatus())) {
             throw new IllegalStateException("只能审核已提交的样品");
         }
@@ -165,8 +165,8 @@ public class ProductSampleServiceImpl implements ProductSampleService {
 
     @Override
     @Transactional
-    public ProductSample rejectSample(String sampleId, Long approvedBy, String notes) {
-        ProductSample sample = getSample(sampleId);
+    public ProductSample rejectSample(String factoryId, String sampleId, Long approvedBy, String notes) {
+        ProductSample sample = getSample(factoryId, sampleId);
         sample.setStatus("REJECTED");
         sample.setApprovedBy(approvedBy);
         sample.setApprovedAt(LocalDateTime.now());
@@ -181,9 +181,9 @@ public class ProductSampleServiceImpl implements ProductSampleService {
     }
 
     @Override
-    public ProductSample getSample(String sampleId) {
-        return productSampleRepository.findById(sampleId)
-                .orElseThrow(() -> new IllegalArgumentException("样品不存在: " + sampleId));
+    public ProductSample getSample(String factoryId, String sampleId) {
+        return productSampleRepository.findByIdAndFactoryIdAndDeletedAtIsNull(sampleId, factoryId)
+                .orElseThrow(() -> new IllegalArgumentException("样品不存在或无权访问: " + sampleId));
     }
 
     // ==================== 报价任务 ====================
