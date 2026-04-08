@@ -22,9 +22,24 @@ const loading = ref(false);
 const submitting = ref(false);
 const order = ref<Record<string, unknown> | null>(null);
 const deliveries = ref<Record<string, unknown>[]>([]);
+const invoices = ref<Record<string, unknown>[]>([]);
+const payments = ref<Record<string, unknown>[]>([]);
+const purchaseOrders = ref<Record<string, unknown>[]>([]);
+const activeTab = ref('detail');
+
 const deliveryDialogVisible = ref(false);
 const deliveryForm = ref<{ deliveryAddress: string; logisticsCompany: string; items: Record<string, unknown>[] }>({
   deliveryAddress: '', logisticsCompany: '', items: [],
+});
+
+// 开票申请对话框
+const invoiceDialogVisible = ref(false);
+const invoiceForm = ref<{ invoiceType: string; remark: string }>({ invoiceType: 'NORMAL', remark: '' });
+
+// 收款登记对话框
+const paymentDialogVisible = ref(false);
+const paymentForm = ref<{ amount: number; paymentMethod: string; paymentDate: string; paymentReference: string; remark: string }>({
+  amount: 0, paymentMethod: 'BANK_TRANSFER', paymentDate: '', paymentReference: '', remark: '',
 });
 
 const statusMap: Record<string, { text: string; type: string }> = {
@@ -47,7 +62,27 @@ const delStatusMap: Record<string, { text: string; type: string }> = {
   RETURNED: { text: '已退回', type: 'danger' },
 };
 
-onMounted(() => { loadOrder(); loadDeliveries(); });
+const invoiceStatusMap: Record<string, { text: string; type: string }> = {
+  REQUESTED: { text: '待审核', type: 'warning' },
+  APPROVED: { text: '已审核', type: '' },
+  REJECTED: { text: '已驳回', type: 'danger' },
+  ISSUED: { text: '已开票', type: 'success' },
+  CANCELLED: { text: '已取消', type: 'info' },
+};
+
+const paymentStatusMap: Record<string, { text: string; type: string }> = {
+  PENDING: { text: '待确认', type: 'warning' },
+  VERIFIED: { text: '已确认', type: 'success' },
+  REJECTED: { text: '已驳回', type: 'danger' },
+};
+
+onMounted(() => {
+  loadOrder();
+  loadDeliveries();
+  loadInvoices();
+  loadPayments();
+  loadPurchaseOrders();
+});
 
 async function loadOrder() {
   if (!factoryId.value || !orderId.value) return;
@@ -65,6 +100,36 @@ async function loadDeliveries() {
     const res = await get(`/${factoryId.value}/sales/deliveries/by-order/${orderId.value}`);
     if (res.success) deliveries.value = Array.isArray(res.data) ? res.data : [];
   } catch { /* ignore */ }
+}
+
+async function loadInvoices() {
+  if (!factoryId.value || !orderId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/finance/invoices/by-sales-order/${orderId.value}`);
+    if (res.success) invoices.value = Array.isArray(res.data) ? res.data : [];
+  } catch { /* ignore — invoice module may not be initialised */ }
+}
+
+async function loadPayments() {
+  if (!factoryId.value || !orderId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/finance/payments/by-sales-order/${orderId.value}`);
+    if (res.success) payments.value = Array.isArray(res.data) ? res.data : [];
+  } catch { /* ignore */ }
+}
+
+async function loadPurchaseOrders() {
+  if (!factoryId.value || !orderId.value) return;
+  try {
+    // 关联采购订单 — 通过销售订单号查询
+    const res = await get(`/${factoryId.value}/purchase/orders`, {
+      params: { salesOrderId: orderId.value, page: 1, size: 50 },
+    });
+    if (res.success && res.data) {
+      const list = Array.isArray(res.data) ? res.data : (res.data.content || res.data.records || []);
+      purchaseOrders.value = list.filter((po: Record<string, unknown>) => po.salesOrderId === orderId.value);
+    }
+  } catch { /* ignore — 后端可能尚未实现按销售订单查询采购单 */ }
 }
 
 async function handleAction(action: string) {
@@ -91,18 +156,18 @@ async function handleAction(action: string) {
 async function handleFinanceAction(action: 'approve' | 'reject') {
   if (submitting.value) return;
   const isApprove = action === 'approve';
-  const label = isApprove ? '审核通过' : '审核驳回';
+  const labelText = isApprove ? '审核通过' : '审核驳回';
   try {
     const { value: notes } = await ElMessageBox.prompt(
       isApprove ? '确认财务审核通过？可选填备注：' : '请填写驳回原因：',
-      label,
-      { confirmButtonText: label, cancelButtonText: '取消', inputPlaceholder: isApprove ? '（选填）' : '驳回原因' }
+      labelText,
+      { confirmButtonText: labelText, cancelButtonText: '取消', inputPlaceholder: isApprove ? '（选填）' : '驳回原因' }
     );
     submitting.value = true;
     const url = `/${factoryId.value}/sales/orders/${orderId.value}/${isApprove ? 'finance-approve' : 'finance-reject'}`;
     const res = await post(url, { notes: notes || '' });
-    if (res.success) { ElMessage.success(`${label}成功`); loadOrder(); }
-    else { ElMessage.error(res.message || `${label}失败`); }
+    if (res.success) { ElMessage.success(`${labelText}成功`); loadOrder(); }
+    else { ElMessage.error(res.message || `${labelText}失败`); }
   } catch { /* cancelled */ }
   finally { submitting.value = false; }
 }
@@ -131,8 +196,8 @@ async function handleCreateDelivery() {
   try {
     const res = await post(`/${factoryId.value}/sales/deliveries`, {
       salesOrderId: orderId.value,
-      customerId: order.value?.customerId || '', // backend requires @NotBlank customerId
-      deliveryDate: new Date().toISOString().slice(0, 10), // backend requires @NotNull deliveryDate
+      customerId: order.value?.customerId || '',
+      deliveryDate: new Date().toISOString().slice(0, 10),
       deliveryAddress: deliveryForm.value.deliveryAddress,
       logisticsCompany: deliveryForm.value.logisticsCompany,
       items: filteredItems,
@@ -173,6 +238,110 @@ async function handleDelivered(deliveryId: string) {
   } catch { ElMessage.error('签收确认失败，请检查网络'); }
   finally { submitting.value = false; }
 }
+
+// ──────────────────────────────────────────────
+// 开票申请 (V3 P0-3 / G1 — 税率分组)
+// ──────────────────────────────────────────────
+
+function openInvoiceDialog() {
+  invoiceForm.value = { invoiceType: 'NORMAL', remark: '' };
+  invoiceDialogVisible.value = true;
+}
+
+async function handleCreateInvoice() {
+  if (submitting.value) return;
+  submitting.value = true;
+  try {
+    const res = await post(`/${factoryId.value}/finance/invoices/request-from-order`, {
+      salesOrderId: orderId.value,
+      invoiceType: invoiceForm.value.invoiceType,
+      remark: invoiceForm.value.remark,
+    });
+    if (res.success) {
+      ElMessage.success(`开票申请已提交 (${res.data?.taxBreakdown?.length || 0} 个税率组)`);
+      invoiceDialogVisible.value = false;
+      loadInvoices();
+      loadOrder();
+    } else { ElMessage.error(res.message || '开票申请创建失败'); }
+  } catch { ElMessage.error('开票申请创建失败，请检查网络'); }
+  finally { submitting.value = false; }
+}
+
+async function handleApproveInvoice(invoiceId: string) {
+  if (submitting.value) return;
+  try {
+    const { value: notes } = await ElMessageBox.prompt('审核备注 (选填)', '审核通过开票申请', {
+      confirmButtonText: '通过', cancelButtonText: '取消', inputPlaceholder: '（选填）',
+    });
+    submitting.value = true;
+    const res = await post(`/${factoryId.value}/finance/invoices/${invoiceId}/approve`, { notes: notes || '' });
+    if (res.success) { ElMessage.success('已审核通过'); loadInvoices(); }
+    else ElMessage.error(res.message || '审核失败');
+  } catch { /* cancelled */ }
+  finally { submitting.value = false; }
+}
+
+async function handleRejectInvoice(invoiceId: string) {
+  if (submitting.value) return;
+  try {
+    const { value: notes } = await ElMessageBox.prompt('请填写驳回原因', '驳回开票申请', {
+      confirmButtonText: '驳回', cancelButtonText: '取消', inputValidator: (v) => !!v || '驳回原因必填',
+    });
+    submitting.value = true;
+    const res = await post(`/${factoryId.value}/finance/invoices/${invoiceId}/reject`, { notes });
+    if (res.success) { ElMessage.success('已驳回'); loadInvoices(); }
+    else ElMessage.error(res.message || '驳回失败');
+  } catch { /* cancelled */ }
+  finally { submitting.value = false; }
+}
+
+// ──────────────────────────────────────────────
+// 收款登记
+// ──────────────────────────────────────────────
+
+function openPaymentDialog() {
+  const remaining = computedRemainingAmount();
+  paymentForm.value = {
+    amount: remaining > 0 ? remaining : 0,
+    paymentMethod: 'BANK_TRANSFER',
+    paymentDate: new Date().toISOString().slice(0, 10),
+    paymentReference: '',
+    remark: '',
+  };
+  paymentDialogVisible.value = true;
+}
+
+function computedRemainingAmount() {
+  if (!order.value) return 0;
+  const total = Number(order.value.totalAmount || 0);
+  const paid = Number(order.value.paidAmount || 0);
+  return Math.max(0, total - paid);
+}
+
+async function handleCreatePayment() {
+  if (submitting.value) return;
+  if (!paymentForm.value.amount || paymentForm.value.amount <= 0) {
+    return ElMessage.warning('收款金额必须 > 0');
+  }
+  submitting.value = true;
+  try {
+    const res = await post(`/${factoryId.value}/finance/payments/record`, {
+      salesOrderId: orderId.value,
+      amount: paymentForm.value.amount,
+      paymentMethod: paymentForm.value.paymentMethod,
+      paymentDate: paymentForm.value.paymentDate || null,
+      paymentReference: paymentForm.value.paymentReference,
+      remark: paymentForm.value.remark,
+    });
+    if (res.success) {
+      ElMessage.success('收款记录已创建');
+      paymentDialogVisible.value = false;
+      loadPayments();
+      loadOrder();
+    } else { ElMessage.error(res.message || '创建失败'); }
+  } catch { ElMessage.error('创建失败，请检查网络'); }
+  finally { submitting.value = false; }
+}
 </script>
 
 <template>
@@ -199,98 +368,238 @@ async function handleDelivered(deliveryId: string) {
       </template>
 
       <template v-if="order">
-        <el-descriptions :column="3" border>
+        <!-- 订单头部摘要 (4 状态联动) -->
+        <el-descriptions :column="4" border>
           <el-descriptions-item label="订单编号">{{ order.orderNumber }}</el-descriptions-item>
           <el-descriptions-item :label="label('customer')">{{ order.customerName || order.customer?.name || order.customerId }}</el-descriptions-item>
           <el-descriptions-item label="下单日期">{{ order.orderDate }}</el-descriptions-item>
           <el-descriptions-item label="业务员">{{ order.salesperson || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="交货日期">{{ order.requiredDeliveryDate || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="总金额">{{ formatAmount(order.totalAmount) }}</el-descriptions-item>
-          <el-descriptions-item label="折扣">{{ order.discountAmount ? formatAmount(order.discountAmount) : '-' }}</el-descriptions-item>
-          <el-descriptions-item label="含运费">{{ order.shippingIncluded ? '是' : '否' }}</el-descriptions-item>
-          <el-descriptions-item label="运费">{{ order.shippingFee ? formatAmount(order.shippingFee) : '-' }}</el-descriptions-item>
-          <el-descriptions-item label="实际发货金额">{{ order.actualShippedAmount ? formatAmount(order.actualShippedAmount) : '-' }}</el-descriptions-item>
-          <el-descriptions-item label="预估成本">{{ order.estimatedCost ? formatAmount(order.estimatedCost) : '-' }}</el-descriptions-item>
-          <el-descriptions-item label="预估利润">{{ order.estimatedProfit ? formatAmount(order.estimatedProfit) : '-' }}</el-descriptions-item>
-          <el-descriptions-item label="下单箱数">{{ order.boxQuantity || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="交货地址" :span="3">{{ order.deliveryAddress || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="交付提醒">{{ order.deliveryReminderDate || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="运输计划">
-            <el-tag v-if="order.transportPlanStatus" size="small">{{ { NOT_PLANNED: '未定制', PLANNED: '已安排', IN_TRANSIT: '运输中', DELIVERED: '已送达' }[order.transportPlanStatus] || order.transportPlanStatus }}</el-tag>
-            <span v-else>-</span>
-          </el-descriptions-item>
-          <el-descriptions-item label="关联报价单">{{ order.quoteId || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="备注" :span="3">{{ order.remark || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="订单总额">{{ formatAmount(order.totalAmount) }}</el-descriptions-item>
+          <el-descriptions-item label="已发货金额">{{ order.actualShippedAmount ? formatAmount(order.actualShippedAmount) : '0.00' }}</el-descriptions-item>
+          <el-descriptions-item label="已开票">{{ order.invoicedAmount ? formatAmount(order.invoicedAmount) : '0.00' }}</el-descriptions-item>
+          <el-descriptions-item label="已收款">{{ order.paidAmount ? formatAmount(order.paidAmount) : '0.00' }}</el-descriptions-item>
         </el-descriptions>
 
-        <!-- 财务状态 -->
-        <el-descriptions :column="4" border style="margin-top: 16px" title="财务状态">
-          <el-descriptions-item label="开票状态">
-            <el-tag :type="{ NOT_INVOICED: 'info', PARTIAL_INVOICED: 'warning', FULLY_INVOICED: 'success' }[order.invoiceStatus] || 'info'" size="small">
-              {{ { NOT_INVOICED: '未开票', PARTIAL_INVOICED: '部分开票', FULLY_INVOICED: '已开票' }[order.invoiceStatus] || '未开票' }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="已开票金额">{{ order.invoicedAmount ? formatAmount(order.invoicedAmount) : '0.00' }}</el-descriptions-item>
-          <el-descriptions-item label="已收款金额">{{ order.paidAmount ? formatAmount(order.paidAmount) : '0.00' }}</el-descriptions-item>
-          <el-descriptions-item label="是否结清">
-            <el-tag :type="order.settlementFlag ? 'success' : 'danger'" size="small">{{ order.settlementFlag ? '已结清' : '未结清' }}</el-tag>
-          </el-descriptions-item>
-        </el-descriptions>
+        <!-- 4 tab 业务中心 (V3 P0-11 — 金矿截图 49m17s) -->
+        <el-tabs v-model="activeTab" class="business-tabs">
 
-        <h3 style="margin: 20px 0 12px">{{ label('product') }}明细</h3>
-        <el-table :data="order.items || []" border stripe>
-          <el-table-column prop="productName" :label="label('product')" min-width="150" />
-          <el-table-column prop="specification" label="规格" width="120" show-overflow-tooltip>
-            <template #default="{ row }">{{ row.specification || '-' }}</template>
-          </el-table-column>
-          <el-table-column prop="quantity" label="订单数量" width="100" align="right" />
-          <el-table-column prop="unit" label="单位" width="80" align="center" />
-          <el-table-column prop="boxQuantity" label="箱数" width="80" align="right">
-            <template #default="{ row }">{{ row.boxQuantity || '-' }}</template>
-          </el-table-column>
-          <el-table-column prop="unitPrice" label="销售单价" width="120" align="right">
-            <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
-          </el-table-column>
-          <el-table-column prop="costUnitPrice" label="成本单价" width="120" align="right">
-            <template #default="{ row }">{{ row.costUnitPrice ? formatAmount(row.costUnitPrice) : '-' }}</template>
-          </el-table-column>
-          <el-table-column prop="taxRate" label="税率" width="80" align="center">
-            <template #default="{ row }">{{ row.taxRate != null ? `${row.taxRate}%` : '-' }}</template>
-          </el-table-column>
-          <el-table-column label="已发货" width="100" align="right">
-            <template #default="{ row }">{{ row.deliveredQuantity || 0 }}</template>
-          </el-table-column>
-          <el-table-column label="销售小计" width="130" align="right">
-            <template #default="{ row }">{{ formatAmount(row.quantity * row.unitPrice) }}</template>
-          </el-table-column>
-        </el-table>
+          <!-- ─── Tab 1: 订单详情 ─── -->
+          <el-tab-pane label="订单详情" name="detail">
+            <el-descriptions :column="3" border style="margin-top: 8px">
+              <el-descriptions-item label="交货日期">{{ order.requiredDeliveryDate || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="下单箱数">{{ order.boxQuantity || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="折扣">{{ order.discountAmount ? formatAmount(order.discountAmount) : '-' }}</el-descriptions-item>
+              <el-descriptions-item label="含运费">{{ order.shippingIncluded ? '是' : '否' }}</el-descriptions-item>
+              <el-descriptions-item label="运费">{{ order.shippingFee ? formatAmount(order.shippingFee) : '-' }}</el-descriptions-item>
+              <el-descriptions-item label="预估利润">{{ order.estimatedProfit ? formatAmount(order.estimatedProfit) : '-' }}</el-descriptions-item>
+              <el-descriptions-item label="交货地址" :span="3">{{ order.deliveryAddress || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="备注" :span="3">{{ order.remark || '-' }}</el-descriptions-item>
+            </el-descriptions>
 
-        <h3 style="margin: 20px 0 12px">{{ label('delivery') }}记录</h3>
-        <el-table :data="deliveries" border stripe>
-          <el-table-column prop="deliveryNumber" label="发货单号" width="170" />
-          <el-table-column prop="deliveryDate" label="发货日期" width="120" />
-          <el-table-column prop="logisticsCompany" label="物流公司" width="120" />
-          <el-table-column prop="trackingNumber" label="运单号" width="150" />
-          <el-table-column prop="status" label="状态" width="100" align="center">
-            <template #default="{ row }">
-              <el-tag :type="(delStatusMap[row.status]?.type) || 'info'" size="small">
-                {{ delStatusMap[row.status]?.text || row.status }}
-              </el-tag>
+            <h3 style="margin: 20px 0 12px">{{ label('product') }}明细</h3>
+            <el-table :data="order.items || []" border stripe>
+              <el-table-column prop="productName" :label="label('product')" min-width="150" />
+              <el-table-column prop="specification" label="规格" width="120" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.specification || '-' }}</template>
+              </el-table-column>
+              <el-table-column prop="quantity" label="订单数量" width="100" align="right" />
+              <el-table-column prop="unit" label="单位" width="80" align="center" />
+              <el-table-column prop="boxQuantity" label="箱数" width="80" align="right">
+                <template #default="{ row }">{{ row.boxQuantity || '-' }}</template>
+              </el-table-column>
+              <el-table-column prop="unitPrice" label="销售单价" width="120" align="right">
+                <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
+              </el-table-column>
+              <el-table-column prop="taxRate" label="税率" width="80" align="center">
+                <template #default="{ row }">
+                  <el-tag v-if="row.taxRate != null" size="small"
+                          :type="Number(row.taxRate) === 9 ? 'success' : (Number(row.taxRate) === 13 ? 'warning' : 'info')">
+                    {{ row.taxRate }}%
+                  </el-tag>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="已发货" width="100" align="right">
+                <template #default="{ row }">{{ row.deliveredQuantity || 0 }}</template>
+              </el-table-column>
+              <el-table-column label="销售小计" width="130" align="right">
+                <template #default="{ row }">{{ formatAmount(row.quantity * row.unitPrice) }}</template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+
+          <!-- ─── Tab 2: 开票申请 (V3 P0-3 / G1) ─── -->
+          <el-tab-pane name="invoice">
+            <template #label>
+              开票申请
+              <el-badge v-if="invoices.length" :value="invoices.length" :max="99" class="tab-badge" />
             </template>
-          </el-table-column>
-          <el-table-column prop="totalAmount" label="金额" width="130" align="right">
-            <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
-          </el-table-column>
-          <el-table-column label="操作" width="150" align="center">
-            <template #default="{ row }">
-              <el-button v-if="['DRAFT','PICKED'].includes(row.status) && canWrite" type="warning" link size="small" :disabled="submitting" @click="handleShip(row.id)">发货</el-button>
-              <el-button v-if="row.status === 'SHIPPED' && canWrite" type="success" link size="small" :disabled="submitting" @click="handleDelivered(row.id)">签收</el-button>
+
+            <div class="tab-toolbar">
+              <el-button v-if="canWrite" type="primary" @click="openInvoiceDialog">
+                + 一键开票申请 (按税率分组)
+              </el-button>
+              <span class="tab-hint">客户原话: 一笔订单可同时含 9% 原料 + 13% 加工费, 按税率分组拆分</span>
+            </div>
+
+            <el-table :data="invoices" border stripe style="margin-top: 12px">
+              <el-table-column prop="invoiceNumber" label="发票编号" width="180" />
+              <el-table-column label="状态" width="100" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="invoiceStatusMap[row.status]?.type || 'info'" size="small">
+                    {{ invoiceStatusMap[row.status]?.text || row.status }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="amount" label="不含税" width="120" align="right">
+                <template #default="{ row }">{{ formatAmount(row.amount) }}</template>
+              </el-table-column>
+              <el-table-column prop="taxAmount" label="税额" width="120" align="right">
+                <template #default="{ row }">{{ formatAmount(row.taxAmount) }}</template>
+              </el-table-column>
+              <el-table-column prop="totalAmount" label="价税合计" width="130" align="right">
+                <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
+              </el-table-column>
+              <el-table-column label="税率分组" min-width="240">
+                <template #default="{ row }">
+                  <div v-if="row.taxBreakdown && row.taxBreakdown.length" class="tax-breakdown">
+                    <el-tag
+                      v-for="(group, idx) in row.taxBreakdown"
+                      :key="idx"
+                      size="small"
+                      :type="Number(group.taxRate) === 9 ? 'success' : (Number(group.taxRate) === 13 ? 'warning' : 'info')"
+                      style="margin-right: 6px"
+                    >
+                      {{ group.taxRate }}% × {{ group.lineCount }} 行 = {{ formatAmount(group.taxableAmount) }} (税 {{ formatAmount(group.taxAmount) }})
+                    </el-tag>
+                  </div>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="requestedAt" label="申请时间" width="160" />
+              <el-table-column label="操作" width="160" align="center" fixed="right">
+                <template #default="{ row }">
+                  <el-button v-if="row.status === 'REQUESTED' && canWrite" type="success" link size="small" @click="handleApproveInvoice(row.id)">通过</el-button>
+                  <el-button v-if="row.status === 'REQUESTED' && canWrite" type="danger" link size="small" @click="handleRejectInvoice(row.id)">驳回</el-button>
+                  <el-link v-if="row.invoicePdfUrl" :href="row.invoicePdfUrl" target="_blank" type="primary">下载</el-link>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+
+          <!-- ─── Tab 3: 销售出库 ─── -->
+          <el-tab-pane name="delivery">
+            <template #label>
+              {{ label('delivery') }}记录
+              <el-badge v-if="deliveries.length" :value="deliveries.length" :max="99" class="tab-badge" />
             </template>
-          </el-table-column>
-        </el-table>
+
+            <div class="tab-toolbar">
+              <el-button v-if="['CONFIRMED','FINANCE_APPROVED','PROCESSING','PARTIAL_DELIVERED'].includes(order.status) && canWrite"
+                         type="primary" @click="openDeliveryDialog">
+                + 新建{{ label('delivery') }}单
+              </el-button>
+            </div>
+
+            <el-table :data="deliveries" border stripe style="margin-top: 12px">
+              <el-table-column prop="deliveryNumber" label="发货单号" width="170" />
+              <el-table-column prop="deliveryDate" label="发货日期" width="120" />
+              <el-table-column prop="logisticsCompany" label="物流公司" width="120" />
+              <el-table-column prop="trackingNumber" label="运单号" width="150" />
+              <el-table-column prop="status" label="状态" width="100" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="(delStatusMap[row.status]?.type) || 'info'" size="small">
+                    {{ delStatusMap[row.status]?.text || row.status }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="totalAmount" label="金额" width="130" align="right">
+                <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
+              </el-table-column>
+              <el-table-column label="操作" width="150" align="center">
+                <template #default="{ row }">
+                  <el-button v-if="['DRAFT','PICKED'].includes(row.status) && canWrite" type="warning" link size="small" :disabled="submitting" @click="handleShip(row.id)">发货</el-button>
+                  <el-button v-if="row.status === 'SHIPPED' && canWrite" type="success" link size="small" :disabled="submitting" @click="handleDelivered(row.id)">签收</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+
+          <!-- ─── Tab 4: 收款记录 ─── -->
+          <el-tab-pane name="payment">
+            <template #label>
+              收款记录
+              <el-badge v-if="payments.length" :value="payments.length" :max="99" class="tab-badge" />
+            </template>
+
+            <div class="tab-toolbar">
+              <el-button v-if="canWrite" type="primary" @click="openPaymentDialog">
+                + 登记收款
+              </el-button>
+              <span class="tab-hint">订单总额 {{ formatAmount(order.totalAmount) }} / 已收 {{ formatAmount(order.paidAmount || 0) }} / 待收 {{ formatAmount(computedRemainingAmount()) }}</span>
+            </div>
+
+            <el-table :data="payments" border stripe style="margin-top: 12px">
+              <el-table-column prop="paymentNumber" label="收款单号" width="180" />
+              <el-table-column prop="paymentDate" label="收款日期" width="120" />
+              <el-table-column prop="amount" label="收款金额" width="130" align="right">
+                <template #default="{ row }">{{ formatAmount(row.amount) }}</template>
+              </el-table-column>
+              <el-table-column prop="paymentMethod" label="收款方式" width="120" align="center">
+                <template #default="{ row }">
+                  {{ ({ BANK_TRANSFER: '银行转账', CASH: '现金', CHECK: '支票', WECHAT: '微信', ALIPAY: '支付宝', OTHER: '其他' })[row.paymentMethod] || row.paymentMethod }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="paymentReference" label="参考号/凭证" width="180" />
+              <el-table-column label="状态" width="100" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="paymentStatusMap[row.status]?.type || 'info'" size="small">
+                    {{ paymentStatusMap[row.status]?.text || row.status }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
+            </el-table>
+          </el-tab-pane>
+
+          <!-- ─── Tab 5: 关联采购订单 ─── -->
+          <el-tab-pane name="purchase">
+            <template #label>
+              关联采购
+              <el-badge v-if="purchaseOrders.length" :value="purchaseOrders.length" :max="99" class="tab-badge" />
+            </template>
+
+            <div class="tab-hint" style="padding: 12px 0">
+              客户原话: 主原料 (贵重料) 必须按销售订单做定点追踪, 防止多采浪费
+            </div>
+
+            <el-table :data="purchaseOrders" border stripe>
+              <el-table-column prop="orderNumber" label="采购单号" width="180" />
+              <el-table-column prop="supplierName" label="供应商" min-width="150" />
+              <el-table-column prop="orderDate" label="下单日期" width="120" />
+              <el-table-column prop="status" label="状态" width="100" align="center">
+                <template #default="{ row }">
+                  <el-tag size="small">{{ row.status }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="totalAmount" label="金额" width="130" align="right">
+                <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
+              </el-table-column>
+              <el-table-column label="操作" width="100" align="center">
+                <template #default="{ row }">
+                  <el-button link type="primary" size="small" @click="router.push(`/procurement/orders/${row.id}`)">查看</el-button>
+                </template>
+              </el-table-column>
+              <template #empty>
+                <el-empty description="暂无关联采购订单" :image-size="80" />
+              </template>
+            </el-table>
+          </el-tab-pane>
+        </el-tabs>
       </template>
     </el-card>
 
+    <!-- ─── 创建发货单对话框 ─── -->
     <el-dialog v-model="deliveryDialogVisible" :title="`创建${label('delivery')}单`" width="640px" destroy-on-close>
       <el-form label-width="90px">
         <el-form-item label="发货地址"><el-input v-model="deliveryForm.deliveryAddress" /></el-form-item>
@@ -313,6 +622,65 @@ async function handleDelivered(deliveryId: string) {
         <el-button type="primary" :loading="submitting" @click="handleCreateDelivery">创建发货单</el-button>
       </template>
     </el-dialog>
+
+    <!-- ─── 一键开票对话框 ─── -->
+    <el-dialog v-model="invoiceDialogVisible" title="一键开票申请 (按税率自动分组)" width="520px" destroy-on-close>
+      <el-alert
+        type="info"
+        :closable="false"
+        title="系统将自动按销售订单明细的税率分组聚合"
+        description="若订单含 9% 原料 + 13% 加工费, 会生成两组明细供财务审批。"
+        style="margin-bottom: 16px"
+      />
+      <el-form label-width="90px">
+        <el-form-item label="发票类型">
+          <el-radio-group v-model="invoiceForm.invoiceType">
+            <el-radio value="NORMAL">普通发票</el-radio>
+            <el-radio value="SPECIAL">增值税专票</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="invoiceForm.remark" type="textarea" :rows="2" placeholder="选填" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="invoiceDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleCreateInvoice">提交开票申请</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ─── 登记收款对话框 ─── -->
+    <el-dialog v-model="paymentDialogVisible" title="登记收款" width="520px" destroy-on-close>
+      <el-form label-width="90px">
+        <el-form-item label="收款金额" required>
+          <el-input-number v-model="paymentForm.amount" :min="0" :precision="2" style="width: 200px" />
+          <span style="margin-left: 12px; color: #909399">待收 {{ formatAmount(computedRemainingAmount()) }}</span>
+        </el-form-item>
+        <el-form-item label="收款方式">
+          <el-select v-model="paymentForm.paymentMethod" style="width: 200px">
+            <el-option label="银行转账" value="BANK_TRANSFER" />
+            <el-option label="现金" value="CASH" />
+            <el-option label="支票" value="CHECK" />
+            <el-option label="微信" value="WECHAT" />
+            <el-option label="支付宝" value="ALIPAY" />
+            <el-option label="其他" value="OTHER" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="收款日期">
+          <el-date-picker v-model="paymentForm.paymentDate" type="date" value-format="YYYY-MM-DD" />
+        </el-form-item>
+        <el-form-item label="参考号/凭证">
+          <el-input v-model="paymentForm.paymentReference" placeholder="银行流水号 / 凭证号" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="paymentForm.remark" type="textarea" :rows="2" placeholder="如: 定金 / 尾款" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="paymentDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleCreatePayment">登记收款</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -328,4 +696,11 @@ async function handleDelivered(deliveryId: string) {
   }
   .header-right { display: flex; gap: 8px; }
 }
+.business-tabs { margin-top: 20px; }
+.tab-toolbar {
+  display: flex; align-items: center; gap: 16px; padding: 4px 0 12px;
+  .tab-hint { color: #909399; font-size: 12px; }
+}
+.tab-badge { :deep(.el-badge__content) { transform: translateY(-2px) translateX(8px); } }
+.tax-breakdown { display: flex; flex-wrap: wrap; gap: 4px; }
 </style>

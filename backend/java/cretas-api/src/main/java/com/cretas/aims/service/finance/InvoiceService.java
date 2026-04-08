@@ -44,4 +44,7 @@ public interface InvoiceService {
     Page<InvoiceRecord> listInvoices(String factoryId, InvoiceStatus status, Pageable pageable);
 
     InvoiceRecord getInvoice(String factoryId, String invoiceId);
+
+    /** List all invoice records for a given sales order, factory-scoped. */
+    java.util.List<InvoiceRecord> listInvoicesBySalesOrder(String factoryId, String salesOrderId);
 }

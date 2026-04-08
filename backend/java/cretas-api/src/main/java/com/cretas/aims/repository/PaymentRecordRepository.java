@@ -20,6 +20,10 @@ public interface PaymentRecordRepository extends JpaRepository<PaymentRecord, St
 
     List<PaymentRecord> findBySalesOrderIdAndDeletedAtIsNull(String salesOrderId);
 
+    /** Factory-scoped lookup for sales order tab. */
+    List<PaymentRecord> findByFactoryIdAndSalesOrderIdAndDeletedAtIsNullOrderByCreatedAtDesc(
+            String factoryId, String salesOrderId);
+
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM PaymentRecord p WHERE p.salesOrderId = ?1 AND p.status = 'VERIFIED' AND p.deletedAt IS NULL")
     BigDecimal sumVerifiedAmountBySalesOrderId(String salesOrderId);
 }

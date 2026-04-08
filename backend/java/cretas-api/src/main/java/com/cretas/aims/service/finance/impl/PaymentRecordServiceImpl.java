@@ -121,6 +121,12 @@ public class PaymentRecordServiceImpl implements PaymentRecordService {
                 .orElseThrow(() -> new IllegalArgumentException("收款记录不存在: " + paymentId));
     }
 
+    @Override
+    public java.util.List<PaymentRecord> listPaymentsBySalesOrder(String factoryId, String salesOrderId) {
+        return paymentRecordRepository
+                .findByFactoryIdAndSalesOrderIdAndDeletedAtIsNullOrderByCreatedAtDesc(factoryId, salesOrderId);
+    }
+
     private void updateSalesOrderPaymentStatus(String salesOrderId, String factoryId) {
         if (salesOrderId == null) return;
         SalesOrder so = salesOrderRepository.findById(salesOrderId).orElse(null);

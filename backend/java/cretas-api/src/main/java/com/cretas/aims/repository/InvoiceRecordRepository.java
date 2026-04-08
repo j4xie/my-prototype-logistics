@@ -24,6 +24,10 @@ public interface InvoiceRecordRepository extends JpaRepository<InvoiceRecord, St
     /** Factory-scoped lookup — enforces tenant isolation. */
     Optional<InvoiceRecord> findByIdAndFactoryIdAndDeletedAtIsNull(String id, String factoryId);
 
+    /** Factory-scoped: list invoices for a specific sales order. */
+    List<InvoiceRecord> findByFactoryIdAndSalesOrderIdAndDeletedAtIsNullOrderByCreatedAtDesc(
+            String factoryId, String salesOrderId);
+
     @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM InvoiceRecord i WHERE i.salesOrderId = ?1 AND i.status = 'ISSUED' AND i.deletedAt IS NULL")
     BigDecimal sumIssuedAmountBySalesOrderId(String salesOrderId);
 

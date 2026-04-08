@@ -226,6 +226,12 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .orElseThrow(() -> new IllegalArgumentException("开票记录不存在或无权访问: " + invoiceId));
     }
 
+    @Override
+    public List<InvoiceRecord> listInvoicesBySalesOrder(String factoryId, String salesOrderId) {
+        return invoiceRecordRepository
+                .findByFactoryIdAndSalesOrderIdAndDeletedAtIsNullOrderByCreatedAtDesc(factoryId, salesOrderId);
+    }
+
     private void updateSalesOrderInvoiceStatus(String salesOrderId) {
         if (salesOrderId == null) return;
         SalesOrder so = salesOrderRepository.findById(salesOrderId).orElse(null);

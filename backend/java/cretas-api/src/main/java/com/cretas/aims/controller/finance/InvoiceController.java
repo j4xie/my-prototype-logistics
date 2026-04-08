@@ -110,4 +110,11 @@ public class InvoiceController {
     public ResponseEntity<?> detail(@PathVariable String factoryId, @PathVariable String invoiceId) {
         return ResponseEntity.ok(Map.of("success", true, "data", invoiceService.getInvoice(factoryId, invoiceId)));
     }
+
+    /** List all invoice records for a sales order — used by sales order detail page tab. */
+    @GetMapping("/by-sales-order/{salesOrderId}")
+    public ResponseEntity<?> listBySalesOrder(@PathVariable String factoryId, @PathVariable String salesOrderId) {
+        return ResponseEntity.ok(Map.of("success", true,
+                "data", invoiceService.listInvoicesBySalesOrder(factoryId, salesOrderId)));
+    }
 }

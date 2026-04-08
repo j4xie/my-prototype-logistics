@@ -71,4 +71,11 @@ public class PaymentRecordController {
     public ResponseEntity<?> detail(@PathVariable String paymentId) {
         return ResponseEntity.ok(Map.of("success", true, "data", paymentRecordService.getPayment(paymentId)));
     }
+
+    /** List all payment records for a sales order — used by sales order detail page tab. */
+    @GetMapping("/by-sales-order/{salesOrderId}")
+    public ResponseEntity<?> listBySalesOrder(@PathVariable String factoryId, @PathVariable String salesOrderId) {
+        return ResponseEntity.ok(Map.of("success", true,
+                "data", paymentRecordService.listPaymentsBySalesOrder(factoryId, salesOrderId)));
+    }
 }

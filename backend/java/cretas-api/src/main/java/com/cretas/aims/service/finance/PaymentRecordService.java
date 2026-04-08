@@ -23,4 +23,7 @@ public interface PaymentRecordService {
     Page<PaymentRecord> listPayments(String factoryId, PaymentRecordStatus status, Pageable pageable);
 
     PaymentRecord getPayment(String paymentId);
+
+    /** List all payment records for a given sales order, factory-scoped. */
+    java.util.List<PaymentRecord> listPaymentsBySalesOrder(String factoryId, String salesOrderId);
 }
