@@ -10,6 +10,22 @@ import { Plus, Refresh, ChatDotRound } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { SALES_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
+import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
+
+// G1: 税率分组开票对话框 (客户原话 2645-2660s)
+const taxGroupInvoiceVisible = ref(false);
+const taxGroupInvoiceOrder = ref<{ id: string; orderNumber: string; customerName: string; totalAmount: number | string }>({
+  id: '', orderNumber: '', customerName: '', totalAmount: 0,
+});
+function openTaxGroupInvoice(row: Record<string, unknown>) {
+  taxGroupInvoiceOrder.value = {
+    id: String(row.id || ''),
+    orderNumber: String(row.orderNumber || ''),
+    customerName: String(row.customerName || ''),
+    totalAmount: (row.totalAmount as number | string) ?? 0,
+  };
+  taxGroupInvoiceVisible.value = true;
+}
 
 // Quick action dialogs
 const deliveryDialogVisible = ref(false);
@@ -444,6 +460,13 @@ async function submitQuickPayment() {
               @click="handleQuickInvoice(row)"
             >开票</el-button>
             <el-button
+              v-if="(row.status === 'CONFIRMED' || row.status === 'PROCESSING' || row.status === 'SHIPPED' || row.status === 'COMPLETED') && canWrite"
+              type="success"
+              link
+              size="small"
+              @click="openTaxGroupInvoice(row)"
+            >税率分组开票</el-button>
+            <el-button
               v-if="(row.status === 'CONFIRMED' || row.status === 'PROCESSING' || row.status === 'SHIPPED') && canWrite"
               type="primary"
               link
@@ -586,6 +609,17 @@ async function submitQuickPayment() {
       v-model="aiEntryVisible"
       :config="SALES_ORDER_CONFIG"
       @fill-form="handleAiFill"
+    />
+
+    <!-- G1: 税率分组开票对话框 -->
+    <TaxGroupInvoiceDialog
+      v-model="taxGroupInvoiceVisible"
+      :factory-id="factoryId || ''"
+      :sales-order-id="taxGroupInvoiceOrder.id"
+      :order-number="taxGroupInvoiceOrder.orderNumber"
+      :customer-name="taxGroupInvoiceOrder.customerName"
+      :order-total-amount="taxGroupInvoiceOrder.totalAmount"
+      @success="loadData"
     />
   </div>
 </template>

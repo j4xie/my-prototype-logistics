@@ -1,0 +1,371 @@
+<script setup lang="ts">
+/**
+ * 税率分组开票对话框 — G1 演示杀手锏
+ *
+ * 客户原话 (Apr 7 会议 2645-2660s):
+ *   "开票的话,我们是 9 个点的原料 + 13 个点的加工费,
+ *    系统自动按税率分组聚合,一键生成两张发票"
+ *
+ * 调用后端: POST /api/mobile/{factoryId}/finance/invoices/request-from-order
+ * 响应 data.taxBreakdown: [{taxRate, taxableAmount, taxAmount, lineCount}]
+ */
+import { ref, computed, watch } from 'vue';
+import { post } from '@/api/request';
+import { ElMessage } from 'element-plus';
+
+interface TaxBreakdownEntry {
+  taxRate: number | string;
+  taxableAmount: number | string;
+  taxAmount: number | string;
+  lineCount: number;
+}
+
+interface InvoiceRecord {
+  id?: string;
+  invoiceNumber?: string;
+  salesOrderId?: string;
+  amount?: number | string;
+  taxAmount?: number | string;
+  totalAmount?: number | string;
+  taxBreakdown?: TaxBreakdownEntry[];
+}
+
+const props = defineProps<{
+  modelValue: boolean;
+  factoryId: string;
+  salesOrderId: string;
+  orderNumber?: string;
+  customerName?: string;
+  orderTotalAmount?: number | string;
+}>();
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', v: boolean): void;
+  (e: 'success'): void;
+}>();
+
+const visible = computed({
+  get: () => props.modelValue,
+  set: (v) => emit('update:modelValue', v),
+});
+
+const loading = ref(false);
+const issued = ref(false);
+const record = ref<InvoiceRecord | null>(null);
+const errorMsg = ref('');
+
+const breakdown = computed<TaxBreakdownEntry[]>(
+  () => record.value?.taxBreakdown || [],
+);
+
+function fmt(v: number | string | undefined): string {
+  if (v === undefined || v === null || v === '') return '0.00';
+  const n = typeof v === 'string' ? parseFloat(v) : v;
+  if (Number.isNaN(n)) return '0.00';
+  return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtRate(v: number | string | undefined): string {
+  if (v === undefined || v === null || v === '') return '0%';
+  const n = typeof v === 'string' ? parseFloat(v) : v;
+  if (Number.isNaN(n)) return '0%';
+  return `${n}%`;
+}
+
+function rateLabel(rate: number | string | undefined): string {
+  const n = typeof rate === 'string' ? parseFloat(rate) : (rate ?? 0);
+  if (n === 9) return '原料';
+  if (n === 13) return '加工费';
+  if (n === 6) return '服务费';
+  return '其他';
+}
+
+function rateColor(rate: number | string | undefined): string {
+  const n = typeof rate === 'string' ? parseFloat(rate) : (rate ?? 0);
+  if (n === 9) return '#67C23A';
+  if (n === 13) return '#409EFF';
+  return '#909399';
+}
+
+async function generateInvoices() {
+  loading.value = true;
+  errorMsg.value = '';
+  try {
+    const res = await post<InvoiceRecord>(
+      `/${props.factoryId}/finance/invoices/request-from-order`,
+      {
+        salesOrderId: props.salesOrderId,
+        invoiceType: 'NORMAL',
+        remark: `税率分组开票 — 订单 ${props.orderNumber || props.salesOrderId}`,
+      },
+    );
+    if (res.success && res.data) {
+      record.value = res.data;
+      issued.value = true;
+      const count = (res.data.taxBreakdown || []).length;
+      ElMessage.success(
+        count > 0
+          ? `已按税率生成 ${count} 组开票明细`
+          : '开票申请已提交',
+      );
+      emit('success');
+    } else {
+      errorMsg.value = res.message || '开票失败';
+      ElMessage.error(errorMsg.value);
+    }
+  } catch (e) {
+    const err = e as { message?: string };
+    errorMsg.value = err?.message || '开票失败';
+    ElMessage.error(errorMsg.value);
+  } finally {
+    loading.value = false;
+  }
+}
+
+function handleClose() {
+  visible.value = false;
+}
+
+// 重置
+watch(visible, (v) => {
+  if (v) {
+    issued.value = false;
+    record.value = null;
+    errorMsg.value = '';
+  }
+});
+</script>
+
+<template>
+  <el-dialog
+    v-model="visible"
+    title="税率分组开票 (G1 演示)"
+    width="680px"
+    :close-on-click-modal="false"
+    destroy-on-close
+  >
+    <!-- 订单信息 -->
+    <div class="order-info">
+      <div>
+        <span class="label">订单号:</span>
+        <span class="value">{{ orderNumber || salesOrderId }}</span>
+      </div>
+      <div>
+        <span class="label">客户:</span>
+        <span class="value">{{ customerName || '—' }}</span>
+      </div>
+      <div>
+        <span class="label">订单总额:</span>
+        <span class="value amount">¥{{ fmt(orderTotalAmount) }}</span>
+      </div>
+    </div>
+
+    <el-divider />
+
+    <!-- 未生成状态 -->
+    <div v-if="!issued" class="pending">
+      <el-alert
+        type="info"
+        :closable="false"
+        title="一笔订单可同时含 9% 原料 + 13% 加工费,系统将按税率自动分组拆分开票"
+        show-icon
+      />
+      <div v-if="errorMsg" class="error-box">
+        <el-alert type="error" :closable="false" :title="errorMsg" />
+      </div>
+      <div class="actions-center">
+        <el-button
+          type="primary"
+          size="large"
+          :loading="loading"
+          @click="generateInvoices"
+        >
+          一键按税率分组开票
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 已生成: 展示分组 -->
+    <div v-else class="result">
+      <div class="result-title">
+        <el-icon color="#67C23A"><svg viewBox="0 0 1024 1024" width="24" height="24"><path fill="currentColor" d="M406.656 706.944L195.84 496.256a32 32 0 10-45.248 45.248l256 256 512-512a32 32 0 00-45.248-45.248L406.592 706.944z"/></svg></el-icon>
+        <span>已生成 {{ breakdown.length }} 组开票明细</span>
+      </div>
+
+      <div v-if="breakdown.length === 0" class="empty-note">
+        <el-alert
+          type="warning"
+          :closable="false"
+          title="该订单明细未设置 tax_rate,已按总额生成单张发票"
+          description="演示前请确认销售订单行项目已填入 9% / 13% 税率"
+          show-icon
+        />
+      </div>
+
+      <div v-else class="groups">
+        <el-card
+          v-for="(g, idx) in breakdown"
+          :key="idx"
+          class="group-card"
+          :style="{ borderTop: `4px solid ${rateColor(g.taxRate)}` }"
+        >
+          <template #header>
+            <div class="group-header">
+              <el-tag
+                :color="rateColor(g.taxRate)"
+                effect="dark"
+                size="large"
+                style="font-size: 16px; font-weight: bold; color: #fff; border: none;"
+              >
+                {{ fmtRate(g.taxRate) }} · {{ rateLabel(g.taxRate) }}
+              </el-tag>
+              <span class="line-count">{{ g.lineCount }} 行明细</span>
+            </div>
+          </template>
+          <div class="group-body">
+            <div class="field">
+              <span class="k">不含税金额</span>
+              <span class="v big">¥{{ fmt(g.taxableAmount) }}</span>
+            </div>
+            <div class="field">
+              <span class="k">税额</span>
+              <span class="v">¥{{ fmt(g.taxAmount) }}</span>
+            </div>
+            <div class="field total-line">
+              <span class="k">发票金额</span>
+              <span class="v big strong">
+                ¥{{ fmt(Number(g.taxableAmount || 0) + Number(g.taxAmount || 0)) }}
+              </span>
+            </div>
+          </div>
+        </el-card>
+      </div>
+
+      <div v-if="record" class="summary">
+        <div>
+          <span class="label">申请单号:</span>
+          <span class="value">{{ record.invoiceNumber || record.id || '—' }}</span>
+        </div>
+        <div>
+          <span class="label">合计:</span>
+          <span class="value amount">¥{{ fmt(record.totalAmount) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <template #footer>
+      <el-button @click="handleClose">{{ issued ? '关闭' : '取消' }}</el-button>
+      <el-button v-if="!issued" type="primary" :loading="loading" @click="generateInvoices">
+        生成
+      </el-button>
+    </template>
+  </el-dialog>
+</template>
+
+<style scoped>
+.order-info {
+  display: flex;
+  gap: 28px;
+  padding: 8px 4px;
+  flex-wrap: wrap;
+}
+.order-info .label {
+  color: #909399;
+  margin-right: 6px;
+}
+.order-info .value {
+  color: #303133;
+  font-weight: 500;
+}
+.order-info .amount {
+  color: #E6A23C;
+  font-weight: bold;
+  font-size: 16px;
+}
+.pending {
+  padding: 12px 0;
+}
+.error-box {
+  margin-top: 12px;
+}
+.actions-center {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+.result-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #67C23A;
+  margin-bottom: 12px;
+}
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.group-card {
+  border-radius: 6px;
+}
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.group-header .line-count {
+  color: #909399;
+  font-size: 13px;
+}
+.group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.group-body .field {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+.group-body .k {
+  color: #606266;
+}
+.group-body .v {
+  color: #303133;
+}
+.group-body .v.big {
+  font-size: 20px;
+  font-weight: 500;
+}
+.group-body .v.strong {
+  color: #F56C6C;
+  font-weight: bold;
+}
+.group-body .total-line {
+  border-top: 1px dashed #dcdfe6;
+  padding-top: 6px;
+  margin-top: 4px;
+}
+.summary {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+.summary .label {
+  color: #909399;
+  margin-right: 6px;
+}
+.summary .amount {
+  color: #F56C6C;
+  font-size: 18px;
+  font-weight: bold;
+}
+.empty-note {
+  margin-bottom: 12px;
+}
+</style>
