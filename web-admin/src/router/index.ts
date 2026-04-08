@@ -710,6 +710,17 @@ const businessRoutes: RouteRecordRaw[] = [
         ]
       },
 
+      // 动态模块页 (Canvas配置系统)
+      {
+        path: 'modules/:moduleCode',
+        name: 'DynamicModule',
+        component: () => import('@/views/modules/DynamicModulePage.vue'),
+        meta: {
+          title: '动态模块',
+          requiresAuth: true,
+        },
+      },
+
       // 生产分析 & 人效分析 (独立模块)
       ...productionAnalyticsRoutes,
 
