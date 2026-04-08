@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import {
   Text,
@@ -18,8 +19,10 @@ import {
   Button,
   TextInput,
   RadioButton,
+  IconButton,
   useTheme,
 } from "react-native-paper";
+import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -117,6 +120,34 @@ export function WHShippingConfirmScreen() {
   const [driverPhone, setDriverPhone] = useState("");
   const [remarks, setRemarks] = useState("");
 
+  // P0-NEW-1 签收凭证(拍照 + 签收人) — 客户原话 2807s
+  const [signaturePhotos, setSignaturePhotos] = useState<string[]>([]);
+  const [signedByName, setSignedByName] = useState("");
+
+  const takeSignaturePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("权限不足", "需要相机权限才能拍照签收");
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.7,
+        allowsEditing: false,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setSignaturePhotos((prev) => [...prev, result.assets[0]!.uri]);
+      }
+    } catch (error) {
+      Alert.alert("错误", "拍照失败，请重试");
+    }
+  };
+
+  const removeSignaturePhoto = (index: number) => {
+    setSignaturePhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // 确认发货操作
   const confirmShipping = async () => {
     if (!shipmentId) {
@@ -124,11 +155,28 @@ export function WHShippingConfirmScreen() {
       return;
     }
 
+    // P0-NEW-1 签收凭证校验 — 客户原话 2807s 要求拍照签收
+    if (signaturePhotos.length === 0) {
+      Alert.alert('提示', '请至少拍一张签收照片');
+      return;
+    }
+    if (!signedByName.trim()) {
+      Alert.alert('提示', '请填写签收人姓名');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      // 更新出货状态为 shipped（已发货）
+      // 1. 上传签收凭证
+      // TODO: 集成 OSS upload, 替换 photoUrls 为真实 OSS URL (当前传 local URI)
+      await shipmentApiClient.uploadSignature(shipmentId, {
+        photoUrls: signaturePhotos,
+        signedByName: signedByName.trim(),
+        remark: remarks || undefined,
+      });
+      // 2. 更新出货状态为 shipped（已发货）
       await shipmentApiClient.updateStatus(shipmentId, 'shipped');
-      Alert.alert('成功', '发货成功，已通知客户！');
+      Alert.alert('成功', '签收凭证已提交，发货成功！');
       navigation.goBack();
     } catch (error) {
       handleError(error, { title: '确认发货失败' });
@@ -315,6 +363,71 @@ export function WHShippingConfirmScreen() {
             </View>
           </View>
         )}
+
+        {/* P0-NEW-1 签收凭证 — 客户原话 2807s */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>签收凭证 *</Text>
+          <View style={styles.formItem}>
+            <Text style={styles.label}>
+              签收人姓名 <Text style={styles.required}>*</Text>
+            </Text>
+            <TextInput
+              mode="outlined"
+              value={signedByName}
+              onChangeText={setSignedByName}
+              placeholder="请输入签收人姓名"
+              style={styles.input}
+              outlineColor="#ddd"
+              activeOutlineColor="#4CAF50"
+            />
+          </View>
+          <View style={styles.formItem}>
+            <Text style={styles.label}>
+              签收照片 <Text style={styles.required}>*</Text>
+            </Text>
+            <Button
+              mode="outlined"
+              icon="camera"
+              onPress={takeSignaturePhoto}
+              style={{ marginBottom: 8 }}
+            >
+              拍照签收 ({signaturePhotos.length})
+            </Button>
+            {signaturePhotos.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.photoThumbRow}
+              >
+                {signaturePhotos.map((uri, idx) => (
+                  <TouchableOpacity
+                    key={`${uri}-${idx}`}
+                    onPress={() =>
+                      Alert.alert('删除照片', '确定删除这张照片？', [
+                        { text: '取消', style: 'cancel' },
+                        {
+                          text: '删除',
+                          style: 'destructive',
+                          onPress: () => removeSignaturePhoto(idx),
+                        },
+                      ])
+                    }
+                    style={styles.photoThumbWrapper}
+                  >
+                    <Image source={{ uri }} style={styles.photoThumb} />
+                    <IconButton
+                      icon="close-circle"
+                      size={18}
+                      iconColor="#E53935"
+                      style={styles.photoThumbRemove}
+                      onPress={() => removeSignaturePhoto(idx)}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
 
         {/* 备注 */}
         <View style={styles.section}>
@@ -540,6 +653,27 @@ const styles = StyleSheet.create({
   confirmButtonLabel: {
     color: "#fff",
     fontWeight: "600",
+  },
+  photoThumbRow: {
+    flexDirection: "row",
+    marginTop: 4,
+  },
+  photoThumbWrapper: {
+    position: "relative",
+    marginRight: 8,
+  },
+  photoThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 6,
+    backgroundColor: "#eee",
+  },
+  photoThumbRemove: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    margin: 0,
+    backgroundColor: "#fff",
   },
 });
 
