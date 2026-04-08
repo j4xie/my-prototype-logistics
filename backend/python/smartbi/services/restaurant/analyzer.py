@@ -66,6 +66,7 @@ from .monthly_purchase_calibrator import MonthlyPurchaseCalibrator
 from .review_analyzer import ReviewAnalyzer
 from .review_analyzer_llm import LlmReviewAnalyzer
 from .sku_form_manager import SkuFormManager
+from .multi_store_comparator import MultiStoreComparator
 from .store_pnl_one_pager import StorePnlOnePager
 from .stored_value_analyzer import StoredValueAnalyzer
 
@@ -183,6 +184,9 @@ class RestaurantAnalyzerV2:
         # W5.5: LLM-based review analyzer (falls back to regex on failure)
         self.llm_review_analyzer = LlmReviewAnalyzer(fallback_analyzer=self.review_analyzer)
         self.member_rfm_analyzer = MemberRfmAnalyzer()
+
+        # W6.4: 多店对比分析器 (stateless)
+        self.multi_store_comparator = MultiStoreComparator()
 
         # W5.7: Layer A 月度校准历史报告 (lazy: 需要 db_session)
         self.calibration_reporter: Optional[MonthlyCalibrationReporter] = None
@@ -428,6 +432,36 @@ class RestaurantAnalyzerV2:
             except Exception as e:
                 logger.warning(f"temporal_comparator 失败: {e}")
                 report["warnings"].append(f"同店同比生成失败: {e}")
+
+        # ─── W6.4: 多店对比 (需 POS 含 门店名称 且 ≥2 店) ───
+        store_col = "门店名称"
+        if pos_df is not None and store_col in pos_df.columns:
+            unique_stores = pos_df[store_col].dropna().nunique()
+            if unique_stores >= 2:
+                try:
+                    multi_report = self.multi_store_comparator.compare(
+                        pos_df=pos_df,
+                        revenue_col=revenue_col,
+                        product_col=product_col,
+                        store_col=store_col,
+                        quantity_col=quantity_col,
+                        reviews=reviews,
+                    )
+                    report["sections"]["multiStoreComparison"] = multi_report.to_dict()
+                    # Top insight into executive summary
+                    if multi_report.insights:
+                        report["executiveSummary"].append(
+                            f"🏪 {multi_report.insights[0]}"
+                        )
+                    # Anomalies into executive summary
+                    for anomaly in multi_report.anomalies[:2]:
+                        if anomaly.severity == "critical":
+                            report["executiveSummary"].append(
+                                f"🔴 {anomaly.message_zh}"
+                            )
+                except Exception as e:
+                    logger.warning(f"multi_store_comparator 失败: {e}")
+                    report["warnings"].append(f"多店对比分析失败: {e}")
 
         # ─── W5.7: Layer A 月度校准历史 (需 db_session + ≥1 月数据) ───
         if self.calibration_reporter is not None:

@@ -57,6 +57,9 @@ Week 5+ (扩展):
   - long_tail_sku_detector.py      — 改进 9 长尾 SKU
   - member_rfm.py                  — 会员 RFM
   - monthly_calibration_report.py  — Layer A 月度报告
+
+Week 6 (连锁对比):
+  - multi_store_comparator.py      — W6.4 多店对比 (ranking/anomaly/insights)
 """
 from .menu_normalizer import RestaurantMenuNormalizer
 from .sku_form_manager import SkuFormEntry, SkuFormIngredient, SkuFormManager
@@ -73,6 +76,13 @@ from .review_analyzer import (
     ReviewAnalysisReport,
 )
 from .review_analyzer_llm import LlmReviewAnalyzer
+from .multi_store_comparator import (
+    MultiStoreComparator,
+    MultiStoreReport,
+    StoreAnomaly,
+    StoreProfile,
+    StoreRatingProfile,
+)
 from .monthly_calibration_report import (
     CalibrationAnomaly,
     CalibrationHistoryReport,
@@ -107,6 +117,12 @@ __all__ = [
     "MemberRfmAnalyzer",
     "RfmReport",
     "MemberScore",
+    # W6.4 — 多店对比分析
+    "MultiStoreComparator",
+    "MultiStoreReport",
+    "StoreProfile",
+    "StoreAnomaly",
+    "StoreRatingProfile",
     # W5.7 — Layer A 月度校准历史报告
     "MonthlyCalibrationReporter",
     "CalibrationHistoryReport",

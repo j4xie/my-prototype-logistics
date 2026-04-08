@@ -13,9 +13,11 @@
  * 数据流:
  *   用户选择 upload → POST /restaurant-analytics-v2/{id} → V2.analyze() → 渲染
  */
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import echarts from '@/utils/echarts';
+import type { ECharts as EChartsInstance } from 'echarts/core';
 import {
   Refresh,
   TrendCharts,
@@ -230,6 +232,229 @@ function segmentTagType(segment: string): string {
   if (segment === 'Lost') return 'danger';
   return '';
 }
+
+// ── ECharts refs & lifecycle ──────────────────────────────
+const heatmapChartRef = ref<HTMLDivElement | null>(null);
+const rfmPieChartRef = ref<HTMLDivElement | null>(null);
+const calibrationChartRef = ref<HTMLDivElement | null>(null);
+
+let heatmapChart: EChartsInstance | null = null;
+let rfmPieChart: EChartsInstance | null = null;
+let calibrationChart: EChartsInstance | null = null;
+
+function disposeChart(instance: EChartsInstance | null): null {
+  if (instance && !instance.isDisposed?.()) instance.dispose();
+  return null;
+}
+
+function handleChartsResize() {
+  heatmapChart?.resize();
+  rfmPieChart?.resize();
+  calibrationChart?.resize();
+}
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleChartsResize);
+  heatmapChart = disposeChart(heatmapChart);
+  rfmPieChart = disposeChart(rfmPieChart);
+  calibrationChart = disposeChart(calibrationChart);
+});
+
+// --- Chart 1: Dining Heatmap (7x24 grid) ---
+const DAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+const HOUR_LABELS = Array.from({ length: 24 }, (_, i) => `${i}时`);
+
+function renderHeatmapChart() {
+  if (!heatmapChartRef.value || !diningHeatmap.value?.cells?.length) return;
+  heatmapChart = disposeChart(heatmapChart);
+  heatmapChart = echarts.init(heatmapChartRef.value, 'cretas');
+
+  const cells = diningHeatmap.value.cells;
+  // Build [hour, dayIdx, revenue] tuples
+  const data = cells.map((c) => [c.hour, c.dayOfWeek, c.revenue]);
+  const revenues = cells.map((c) => c.revenue);
+  const maxRev = Math.max(...revenues, 1);
+
+  heatmapChart.setOption({
+    tooltip: {
+      position: 'top',
+      formatter: (p: any) => {
+        const [hour, day, rev] = p.data;
+        return `${DAY_LABELS[day]} ${hour}:00<br/>营收: <strong>¥${Number(rev).toLocaleString()}</strong>`;
+      },
+    },
+    grid: { top: 10, right: 80, bottom: 40, left: 60 },
+    xAxis: {
+      type: 'category',
+      data: HOUR_LABELS,
+      splitArea: { show: true },
+      axisLabel: { fontSize: 10 },
+    },
+    yAxis: {
+      type: 'category',
+      data: DAY_LABELS,
+      splitArea: { show: true },
+    },
+    visualMap: {
+      min: 0,
+      max: maxRev,
+      calculable: true,
+      orient: 'vertical',
+      right: 0,
+      top: 'center',
+      inRange: { color: ['#f0f9eb', '#b3e19d', '#67c23a', '#e6a23c', '#f56c6c'] },
+      formatter: (v: number) => `¥${Math.round(v).toLocaleString()}`,
+    },
+    series: [{
+      type: 'heatmap',
+      data,
+      label: { show: false },
+      emphasis: {
+        itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.3)' },
+      },
+    }],
+  });
+}
+
+// --- Chart 2: Member RFM Pie (segment distribution) ---
+function renderRfmPieChart() {
+  if (!rfmPieChartRef.value || !memberRfm.value?.analyzedMembers) return;
+  rfmPieChart = disposeChart(rfmPieChart);
+  rfmPieChart = echarts.init(rfmPieChartRef.value, 'cretas');
+
+  const segCounts = memberRfm.value.segmentCounts;
+  const segRevenue = memberRfm.value.segmentRevenue;
+  const segColors: Record<string, string> = {
+    Champions: '#67c23a', Loyal: '#409eff', Potential: '#36b37e',
+    New: '#4C9AFF', 'At Risk': '#e6a23c', Hibernating: '#909399', Lost: '#f56c6c',
+  };
+
+  const pieData = Object.entries(segCounts)
+    .filter(([, count]) => count > 0)
+    .map(([seg, count]) => ({
+      name: seg,
+      value: count,
+      revenue: segRevenue[seg] || 0,
+      itemStyle: { color: segColors[seg] || '#6B778C' },
+    }));
+
+  rfmPieChart.setOption({
+    tooltip: {
+      trigger: 'item',
+      formatter: (p: any) => {
+        const { name, value, data: d, percent } = p;
+        return `<strong>${name}</strong><br/>
+                人数: ${value} (${percent}%)<br/>
+                贡献营收: ¥${Number(d.revenue).toLocaleString()}`;
+      },
+    },
+    legend: {
+      orient: 'vertical',
+      right: 10,
+      top: 'center',
+      textStyle: { fontSize: 12 },
+    },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      center: ['40%', '50%'],
+      avoidLabelOverlap: true,
+      itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+      label: {
+        show: true,
+        formatter: '{b}: {c}',
+        fontSize: 11,
+      },
+      emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+      data: pieData,
+    }],
+  });
+}
+
+// --- Chart 3: Calibration Factor Trend Line ---
+function renderCalibrationChart() {
+  if (!calibrationChartRef.value || !calibrationHistory.value?.factorTrend?.length) return;
+  calibrationChart = disposeChart(calibrationChart);
+  calibrationChart = echarts.init(calibrationChartRef.value, 'cretas');
+
+  const trend = calibrationHistory.value.factorTrend;
+  const periods = trend.map((t) => t.period);
+  const factors = trend.map((t) => t.factor);
+  const ratios = trend.map((t) => t.ratio);
+
+  calibrationChart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params: any) => {
+        if (!Array.isArray(params)) return '';
+        const period = params[0]?.axisValue || '';
+        let html = `<strong>${period}</strong><br/>`;
+        params.forEach((p: any) => {
+          html += `${p.marker} ${p.seriesName}: <strong>${Number(p.value).toFixed(3)}</strong><br/>`;
+        });
+        return html;
+      },
+    },
+    legend: { bottom: 0, textStyle: { fontSize: 12 } },
+    grid: { top: 20, right: 20, bottom: 40, left: 60 },
+    xAxis: {
+      type: 'category',
+      data: periods,
+      boundaryGap: false,
+      axisLabel: { fontSize: 11 },
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { fontSize: 11, formatter: '{value}' },
+      splitLine: { lineStyle: { type: 'dashed' } },
+    },
+    series: [
+      {
+        name: '校准因子 (vs 基准)',
+        type: 'line',
+        data: factors,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 8,
+        lineStyle: { width: 3, color: '#409eff' },
+        itemStyle: { color: '#409eff' },
+        areaStyle: { color: 'rgba(64,158,255,0.08)' },
+        markLine: {
+          silent: true,
+          symbol: 'none',
+          lineStyle: { type: 'dashed', color: '#f56c6c', width: 2 },
+          data: [{ yAxis: 1.0, label: { formatter: '基准 1.0', position: 'end', fontSize: 11 } }],
+        },
+      },
+      {
+        name: '食材率',
+        type: 'line',
+        data: ratios,
+        smooth: true,
+        symbol: 'diamond',
+        symbolSize: 6,
+        lineStyle: { width: 2, color: '#e6a23c', type: 'dashed' },
+        itemStyle: { color: '#e6a23c' },
+      },
+    ],
+  });
+}
+
+// Watch report changes to re-render charts
+watch(
+  () => report.value,
+  async () => {
+    if (!report.value) return;
+    await nextTick();
+    renderHeatmapChart();
+    renderRfmPieChart();
+    renderCalibrationChart();
+    // Attach global resize listener (idempotent via remove-then-add)
+    window.removeEventListener('resize', handleChartsResize);
+    window.addEventListener('resize', handleChartsResize);
+  },
+  { flush: 'post' }
+);
 
 function modeLabel(mode?: string): string {
   if (mode === 'yoy') return '📅 同比 (YoY)';
@@ -736,6 +961,12 @@ function formatCurrency(v?: number): string {
           </el-table-column>
         </el-table>
 
+        <!-- ECharts Heatmap (7x24) -->
+        <div
+          ref="heatmapChartRef"
+          style="width: 100%; height: 300px; margin-top: 16px"
+        />
+
         <el-row :gutter="16" style="margin-top: 16px">
           <el-col :span="12">
             <h5>🔥 TOP 5 高峰时段</h5>
@@ -979,6 +1210,12 @@ function formatCurrency(v?: number): string {
           </el-table-column>
         </el-table>
 
+        <!-- ECharts RFM Pie Chart -->
+        <div
+          ref="rfmPieChartRef"
+          style="width: 100%; height: 300px; margin-top: 12px"
+        />
+
         <el-row :gutter="16" style="margin-top: 16px">
           <el-col :span="12">
             <h5>🌟 TOP 5 Champions (最佳客户)</h5>
@@ -1117,6 +1354,13 @@ function formatCurrency(v?: number): string {
             </template>
           </el-table-column>
         </el-table>
+        <!-- ECharts Calibration Trend Line -->
+        <div
+          v-if="calibrationHistory.factorTrend && calibrationHistory.factorTrend.length > 0"
+          ref="calibrationChartRef"
+          style="width: 100%; height: 300px; margin-bottom: 16px"
+        />
+
         <!-- Category Volatility (Top 5) -->
         <template v-if="calibrationHistory.categoryVolatility.length > 0">
           <h4 style="margin: 0 0 8px; color: #303133;">类目波动 (Top 5)</h4>
