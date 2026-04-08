@@ -103,6 +103,14 @@ public class MaterialBatch extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "inbound_type", length = 30)
     private InboundType inboundType;
+
+    /** 发起单类型 (P0-17): PURCHASE_RECEIVE / MATERIAL_REQUISITION_RETURN / SALES_RETURN / MANUAL_ADJUST */
+    @Column(name = "source_doc_type", length = 32)
+    private String sourceDocType;
+
+    /** 发起单ID (P0-17) */
+    @Column(name = "source_doc_id", length = 64)
+    private String sourceDocId;
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
     @Column(name = "last_used_at")
