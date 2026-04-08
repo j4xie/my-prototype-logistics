@@ -14,6 +14,12 @@
 -- 8. customer_level — 客户级别 (A/B/C)
 
 ALTER TABLE product_samples
+    -- 修复历史 schema 漂移: 4 个老字段在 entity 但 DB 没列 (E2E 时发现)
+    ADD COLUMN IF NOT EXISTS customer_name VARCHAR(200),
+    ADD COLUMN IF NOT EXISTS salesperson VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS product_level VARCHAR(10),
+    ADD COLUMN IF NOT EXISTS storage_method VARCHAR(50),
+    -- Round 2 Agent A 新增 8 个字段
     ADD COLUMN IF NOT EXISTS customer_expected_price NUMERIC(15, 2),
     ADD COLUMN IF NOT EXISTS product_status VARCHAR(50),
     ADD COLUMN IF NOT EXISTS customer_type VARCHAR(50),
