@@ -238,6 +238,23 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                 // SalesReturn entity 暂未建, 仅记录引用, 不强校验存在性
                 log.info("P0-17: 销售退货入库 sourceDocId={} (SalesReturn 单据校验暂 skip)", id);
                 break;
+            case "INVENTORY_GAIN":
+                // B9 (客户原话 4850s): 仓库盘点产生的盘盈入库, 不需 sourceDocId, 但 notes 必填说明盘点单号/原因
+                if (request.getNotes() == null || request.getNotes().isBlank()) {
+                    throw new IllegalArgumentException("盘盈入库必须在备注中说明盘点单号或原因");
+                }
+                log.info("B9: 盘盈入库 notes={}", request.getNotes());
+                break;
+            case "FREE_GIFT":
+                // B10 (客户原话 4929s): 供应商赠品入库, 不需 sourceDocId, 但 notes 必填说明来源供应商
+                if (request.getNotes() == null || request.getNotes().isBlank()) {
+                    throw new IllegalArgumentException("赠品入库必须在备注中说明来源供应商");
+                }
+                log.info("B10: 赠品入库 notes={}", request.getNotes());
+                break;
+            // TODO 出库类型 (客户原话 4947s): INVENTORY_LOSS 盘亏出库 / INTERNAL_USE 领用出库
+            //   出库链路不走 MaterialBatchService.createMaterialBatch (这里只管入库),
+            //   需在 sales shipment / warehouse outbound service 另开分支, 本轮范围外.
             default:
                 throw new IllegalArgumentException("不支持的 sourceDocType: " + type);
         }
