@@ -79,7 +79,7 @@ public class CreateMaterialBatchRequest {
     @Size(max = 500, message = "备注不能超过500个字符")
     private String notes;
 
-    @Schema(description = "发起单类型 (P0-17): PURCHASE_RECEIVE / MATERIAL_REQUISITION_RETURN / SALES_RETURN / MANUAL_ADJUST")
+    @Schema(description = "发起单类型 (P0-17/B9+B10): PURCHASE_RECEIVE 采购入库 / MATERIAL_REQUISITION_RETURN 生产退料 / SALES_RETURN 销售退货 / INVENTORY_GAIN 盘盈入库(notes必填) / FREE_GIFT 赠品入库(notes必填) / MANUAL_ADJUST 手工调整(notes必填)")
     @Size(max = 32)
     private String sourceDocType;
 
