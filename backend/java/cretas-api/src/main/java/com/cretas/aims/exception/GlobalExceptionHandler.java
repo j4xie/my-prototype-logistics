@@ -173,6 +173,27 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理 Spring MVC Controller 方法级参数校验异常 (Spring 6 新增).
+     * 之前这类异常会落到 RuntimeException handler 变成 500,导致客户端收到
+     * "系统处理异常" 而非 "参数错误". 必须显式映射为 400.
+     */
+    @ExceptionHandler(org.springframework.web.method.annotation.HandlerMethodValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<?> handleHandlerMethodValidationException(
+            org.springframework.web.method.annotation.HandlerMethodValidationException e) {
+        String message = e.getAllValidationResults().stream()
+                .flatMap(r -> r.getResolvableErrors().stream())
+                .map(err -> err.getDefaultMessage())
+                .filter(m -> m != null)
+                .collect(Collectors.joining(", "));
+        if (message.isEmpty()) {
+            message = "参数校验失败";
+        }
+        log.warn("Controller 参数校验失败: {}", message);
+        return ApiResponse.error(400, message);
+    }
+
+    /**
      * 处理参数绑定异常
      */
     @ExceptionHandler(BindException.class)
