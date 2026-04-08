@@ -4,9 +4,12 @@ import com.cretas.aims.entity.BaseEntity;
 import com.cretas.aims.entity.enums.InvoiceStatus;
 import com.cretas.aims.entity.enums.InvoiceType;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -55,17 +58,50 @@ public class InvoiceRecord extends BaseEntity {
     @Column(name = "customer_name", length = 200)
     private String customerName;
 
-    /** 不含税金额 */
+    /** 不含税金额 (各税率小计之和) */
     @Column(name = "amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
-    /** 税额 */
+    /** 税额 (各税率小计之和) */
     @Column(name = "tax_amount", precision = 15, scale = 2)
     private BigDecimal taxAmount;
 
     /** 价税合计 */
     @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount;
+
+    /**
+     * 税率分组明细 — 一笔订单可能同时含 9% 原料 + 13% 加工费两个税项,
+     * 开票申请按 tax_rate 自动分组聚合,财务审批和开票时按组显示。
+     *
+     * 结构示例:
+     * <pre>
+     * [
+     *   {"taxRate": 9.00,  "taxableAmount": 5000.00, "taxAmount": 450.00, "lineCount": 3},
+     *   {"taxRate": 13.00, "taxableAmount": 2000.00, "taxAmount": 260.00, "lineCount": 2}
+     * ]
+     * </pre>
+     *
+     * 来源: 客户原话 (会议 2645-2660s) — 六扇门最核心财务诉求 (V3 P0-3 / G1)
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "tax_breakdown", columnDefinition = "jsonb")
+    private List<TaxBreakdownEntry> taxBreakdown;
+
+    /** 税率分组明细行 */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TaxBreakdownEntry {
+        /** 税率百分比, 如 9.00 / 13.00 */
+        private BigDecimal taxRate;
+        /** 该税率下的不含税金额合计 */
+        private BigDecimal taxableAmount;
+        /** 该税率下的税额合计 = taxableAmount × taxRate / 100 */
+        private BigDecimal taxAmount;
+        /** 该税率涉及的订单行数 */
+        private Integer lineCount;
+    }
 
     @Enumerated(EnumType.STRING)
     @Column(name = "invoice_type", length = 20)

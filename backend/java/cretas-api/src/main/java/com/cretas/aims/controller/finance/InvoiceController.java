@@ -35,6 +35,34 @@ public class InvoiceController {
         return ResponseEntity.ok(Map.of("success", true, "data", record, "message", "开票申请已提交"));
     }
 
+    /**
+     * 基于销售订单一键生成开票申请,自动按 tax_rate 分组聚合。
+     *
+     * V3 P0-3 / G1 — 客户原话: 一笔订单可同时含 9% 原料 + 13% 加工费两个税项,
+     * 开票申请必须按税率分组拆分显示。
+     *
+     * 请求体:
+     * <pre>
+     * { "salesOrderId": "...", "invoiceType": "NORMAL", "remark": "..." }
+     * </pre>
+     *
+     * 响应里的 record.taxBreakdown 含分组明细供前端按组渲染。
+     */
+    @PostMapping("/request-from-order")
+    public ResponseEntity<?> requestInvoiceFromOrder(
+            @PathVariable String factoryId,
+            @RequestBody Map<String, Object> body,
+            @RequestAttribute(value = "userId", required = false) Long userId) {
+        var record = invoiceService.requestInvoiceFromOrder(
+                factoryId,
+                (String) body.get("salesOrderId"),
+                (String) body.get("invoiceType"),
+                userId,
+                (String) body.get("remark"));
+        return ResponseEntity.ok(Map.of("success", true, "data", record,
+                "message", "开票申请已提交 (按税率分组)"));
+    }
+
     @PostMapping("/{invoiceId}/approve")
     public ResponseEntity<?> approve(
             @PathVariable String factoryId,
