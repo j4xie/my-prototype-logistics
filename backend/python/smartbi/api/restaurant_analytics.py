@@ -672,61 +672,62 @@ async def compute_restaurant_analytics_v2(
                     sub_sector = detected
                     logger.info(f"V2: auto-detected sub_sector={sub_sector}")
 
-            # Week 4.4 — 把可选的 SKU 表单 + 月度采购注入 managers
-            sku_form_manager = None
-            monthly_calibrator = None
-            if sku_forms or monthly_purchases:
-                from services.restaurant.sku_form_manager import (
-                    SkuFormEntry,
-                    SkuFormIngredient,
-                    SkuFormManager,
-                )
-                from services.restaurant.monthly_purchase_calibrator import (
-                    MonthlyPurchaseCalibrator,
-                    MonthlyPurchaseEntry,
-                )
+            # W5.1 — BOM Layer 2+3 managers 永远 DB-backed
+            # 这样: (a) 不传新数据时读已有的 DB 数据 (b) 传新数据时 upsert 并持久化
+            from services.restaurant.sku_form_manager import (
+                SkuFormEntry,
+                SkuFormIngredient,
+                SkuFormManager,
+            )
+            from services.restaurant.monthly_purchase_calibrator import (
+                MonthlyPurchaseCalibrator,
+                MonthlyPurchaseEntry,
+            )
 
-                if sku_forms:
-                    sku_form_manager = SkuFormManager()
-                    entries = []
-                    for sf in sku_forms:
-                        ingredients = [
-                            SkuFormIngredient(
-                                name=ing.get("name", ""),
-                                cost=float(ing.get("cost", 0)),
-                                weight_g=ing.get("weightG") or ing.get("weight_g"),
-                                unit_price_per_kg=ing.get("unitPricePerKg"),
-                            )
-                            for ing in sf.get("ingredients", [])
-                        ]
-                        entries.append(
-                            SkuFormEntry(
-                                sku_name=sf.get("skuName") or sf.get("sku_name", ""),
-                                category=sf.get("category", ""),
-                                total_cogs_amount=float(sf.get("totalCogsAmount") or sf.get("total_cogs_amount", 0)),
-                                selling_price=sf.get("sellingPrice") or sf.get("selling_price"),
-                                monthly_sales_quantity=sf.get("monthlySalesQuantity") or sf.get("monthly_sales_quantity"),
-                                ingredients=ingredients,
-                                uploaded_by=sf.get("uploadedBy") or sf.get("uploaded_by"),
-                                notes=sf.get("notes"),
-                            )
-                        )
-                    sku_form_manager.upload(factory_id, entries)
+            sku_form_manager = SkuFormManager(db_session=db)
+            monthly_calibrator = MonthlyPurchaseCalibrator(db_session=db)
 
-                if monthly_purchases:
-                    monthly_calibrator = MonthlyPurchaseCalibrator()
-                    for mp in monthly_purchases:
-                        monthly_calibrator.upload(
-                            MonthlyPurchaseEntry(
-                                factory_id=factory_id,
-                                period=mp.get("period", ""),
-                                total_purchase=float(mp.get("totalPurchase") or mp.get("total_purchase", 0)),
-                                total_revenue=float(mp.get("totalRevenue") or mp.get("total_revenue", 0)),
-                                category_breakdown=mp.get("categoryBreakdown") or mp.get("category_breakdown", {}),
-                                store_id=mp.get("storeId") or mp.get("store_id"),
-                                notes=mp.get("notes"),
-                            )
+            # 如果 POST body 带了新的 sku_forms → UPSERT 到 DB
+            if sku_forms:
+                entries = []
+                for sf in sku_forms:
+                    ingredients = [
+                        SkuFormIngredient(
+                            name=ing.get("name", ""),
+                            cost=float(ing.get("cost", 0)),
+                            weight_g=ing.get("weightG") or ing.get("weight_g"),
+                            unit_price_per_kg=ing.get("unitPricePerKg"),
                         )
+                        for ing in sf.get("ingredients", [])
+                    ]
+                    entries.append(
+                        SkuFormEntry(
+                            sku_name=sf.get("skuName") or sf.get("sku_name", ""),
+                            category=sf.get("category", ""),
+                            total_cogs_amount=float(sf.get("totalCogsAmount") or sf.get("total_cogs_amount", 0)),
+                            selling_price=sf.get("sellingPrice") or sf.get("selling_price"),
+                            monthly_sales_quantity=sf.get("monthlySalesQuantity") or sf.get("monthly_sales_quantity"),
+                            ingredients=ingredients,
+                            uploaded_by=sf.get("uploadedBy") or sf.get("uploaded_by"),
+                            notes=sf.get("notes"),
+                        )
+                    )
+                sku_form_manager.upload(factory_id, entries)
+
+            # 如果 POST body 带了新的 monthly_purchases → UPSERT 到 DB
+            if monthly_purchases:
+                for mp in monthly_purchases:
+                    monthly_calibrator.upload(
+                        MonthlyPurchaseEntry(
+                            factory_id=factory_id,
+                            period=mp.get("period", ""),
+                            total_purchase=float(mp.get("totalPurchase") or mp.get("total_purchase", 0)),
+                            total_revenue=float(mp.get("totalRevenue") or mp.get("total_revenue", 0)),
+                            category_breakdown=mp.get("categoryBreakdown") or mp.get("category_breakdown", {}),
+                            store_id=mp.get("storeId") or mp.get("store_id"),
+                            notes=mp.get("notes"),
+                        )
+                    )
 
             # 跑 V2.analyze()
             t1 = time.perf_counter()
@@ -782,3 +783,328 @@ async def compute_restaurant_analytics_v2(
             "success": False,
             "message": f"Failed to compute V2 analytics: {str(e)[:200]}",
         }
+
+
+# ═══════════════════════════════════════════════════════════════
+# W5.2 — 客户数据录入 API (SKU 表单 + 月度采购)
+#
+# 这些端点让客户能独立上传 BOM Layer 2+3 数据, 不必每次跑 V2 分析
+# 都重新提交. 数据持久化在 restaurant_sku_forms + restaurant_monthly_purchases
+# 表, 下次分析时自动命中.
+# ═══════════════════════════════════════════════════════════════
+
+
+def _get_factory_id(request: Request) -> str:
+    """从请求 state 拿 factory_id (需登录, 不支持 internal)"""
+    factory_id = getattr(request.state, "factory_id", None)
+    if not factory_id:
+        # internal auth mode or test: 允许 query/body 里传 factory_id
+        return ""
+    return factory_id
+
+
+# ── SKU 表单 (Layer 2) ─────────────────────────────────────────
+
+
+@router.get("/restaurant-sku-forms")
+def list_sku_forms(request: Request, factory_id: Optional[str] = None):
+    """列出工厂的所有 SKU 主料成本表"""
+    if not is_postgres_enabled():
+        return {"success": False, "message": "PostgreSQL not enabled"}
+
+    fid = factory_id or _get_factory_id(request)
+    if not fid:
+        return {"success": False, "message": "factory_id required"}
+
+    try:
+        with get_db_context() as db:
+            from services.restaurant.sku_form_manager import SkuFormManager
+            mgr = SkuFormManager(db_session=db)
+            entries = mgr.list_all(fid)
+            return {
+                "success": True,
+                "data": {
+                    "factoryId": fid,
+                    "totalCount": len(entries),
+                    "byCategory": mgr.count_by_category(fid),
+                    "items": [e.to_dict() for e in entries],
+                },
+            }
+    except Exception as e:
+        logger.error(f"list_sku_forms({fid}) failed: {e}", exc_info=True)
+        return {"success": False, "message": f"Failed: {str(e)[:200]}"}
+
+
+@router.post("/restaurant-sku-forms")
+async def upload_sku_forms(request: Request):
+    """批量上传/更新 SKU 主料成本表 (UPSERT)
+
+    POST Body:
+        {
+            "factory_id": "F001",  // optional, 默认取 token
+            "entries": [
+                {
+                    "skuName": "招牌毛肚",
+                    "category": "招牌主菜",
+                    "totalCogsAmount": 18.5,
+                    "sellingPrice": 58.0,
+                    "monthlySalesQuantity": 820,
+                    "ingredients": [
+                        {"name": "毛肚", "cost": 14.0, "weightG": 180}
+                    ]
+                }
+            ]
+        }
+    """
+    if not is_postgres_enabled():
+        return {"success": False, "message": "PostgreSQL not enabled"}
+
+    try:
+        body = await request.json()
+    except Exception:
+        return {"success": False, "message": "Invalid JSON body"}
+
+    fid = body.get("factory_id") or _get_factory_id(request)
+    if not fid:
+        return {"success": False, "message": "factory_id required"}
+
+    entries_raw = body.get("entries") or []
+    if not isinstance(entries_raw, list):
+        return {"success": False, "message": "entries must be a list"}
+
+    try:
+        with get_db_context() as db:
+            from services.restaurant.sku_form_manager import (
+                SkuFormEntry,
+                SkuFormIngredient,
+                SkuFormManager,
+            )
+            mgr = SkuFormManager(db_session=db)
+
+            entries = []
+            for sf in entries_raw:
+                ingredients = [
+                    SkuFormIngredient(
+                        name=ing.get("name", ""),
+                        cost=float(ing.get("cost", 0)),
+                        weight_g=ing.get("weightG") or ing.get("weight_g"),
+                        unit_price_per_kg=ing.get("unitPricePerKg"),
+                    )
+                    for ing in sf.get("ingredients", [])
+                ]
+                entries.append(
+                    SkuFormEntry(
+                        sku_name=sf.get("skuName") or sf.get("sku_name", ""),
+                        category=sf.get("category", ""),
+                        total_cogs_amount=float(sf.get("totalCogsAmount") or sf.get("total_cogs_amount", 0)),
+                        selling_price=sf.get("sellingPrice") or sf.get("selling_price"),
+                        monthly_sales_quantity=sf.get("monthlySalesQuantity") or sf.get("monthly_sales_quantity"),
+                        ingredients=ingredients,
+                        uploaded_by=sf.get("uploadedBy") or sf.get("uploaded_by"),
+                        notes=sf.get("notes"),
+                    )
+                )
+
+            result = mgr.upload(fid, entries)
+            total_count = mgr.count(fid)
+            by_category = mgr.count_by_category(fid)
+
+            return {
+                "success": True,
+                "data": {
+                    "factoryId": fid,
+                    "uploaded": result["uploaded"],
+                    "updated": result["updated"],
+                    "invalid": result["invalid"],
+                    "totalAfterUpload": total_count,
+                    "byCategory": by_category,
+                },
+            }
+    except Exception as e:
+        logger.error(f"upload_sku_forms({fid}) failed: {e}", exc_info=True)
+        return {"success": False, "message": f"Failed: {str(e)[:200]}"}
+
+
+@router.delete("/restaurant-sku-forms/{sku_name}")
+def delete_sku_form(
+    sku_name: str, request: Request, factory_id: Optional[str] = None
+):
+    """删除某个 SKU 表单"""
+    if not is_postgres_enabled():
+        return {"success": False, "message": "PostgreSQL not enabled"}
+
+    fid = factory_id or _get_factory_id(request)
+    if not fid:
+        return {"success": False, "message": "factory_id required"}
+
+    try:
+        with get_db_context() as db:
+            from services.restaurant.sku_form_manager import SkuFormManager
+            mgr = SkuFormManager(db_session=db)
+            deleted = mgr.delete(fid, sku_name)
+            return {
+                "success": deleted,
+                "data": {"factoryId": fid, "skuName": sku_name, "deleted": deleted},
+            }
+    except Exception as e:
+        logger.error(f"delete_sku_form({fid},{sku_name}) failed: {e}", exc_info=True)
+        return {"success": False, "message": f"Failed: {str(e)[:200]}"}
+
+
+# ── 月度采购 (Layer 3) ─────────────────────────────────────────
+
+
+@router.get("/restaurant-monthly-purchases")
+def list_monthly_purchases(request: Request, factory_id: Optional[str] = None):
+    """列出工厂的所有月度采购汇总"""
+    if not is_postgres_enabled():
+        return {"success": False, "message": "PostgreSQL not enabled"}
+
+    fid = factory_id or _get_factory_id(request)
+    if not fid:
+        return {"success": False, "message": "factory_id required"}
+
+    try:
+        with get_db_context() as db:
+            from smartbi.database.models import RestaurantMonthlyPurchase
+            rows = (
+                db.query(RestaurantMonthlyPurchase)
+                .filter(RestaurantMonthlyPurchase.factory_id == fid)
+                .order_by(RestaurantMonthlyPurchase.period)
+                .all()
+            )
+
+            # Also compute current calibration status
+            from services.restaurant.monthly_purchase_calibrator import (
+                MonthlyPurchaseCalibrator,
+            )
+            cal = MonthlyPurchaseCalibrator(db_session=db)
+            calibration = cal.compute(fid)
+
+            return {
+                "success": True,
+                "data": {
+                    "factoryId": fid,
+                    "totalCount": len(rows),
+                    "items": [r.to_dict() for r in rows],
+                    "currentCalibration": calibration.to_dict() if calibration else None,
+                },
+            }
+    except Exception as e:
+        logger.error(f"list_monthly_purchases({fid}) failed: {e}", exc_info=True)
+        return {"success": False, "message": f"Failed: {str(e)[:200]}"}
+
+
+@router.post("/restaurant-monthly-purchases")
+async def upload_monthly_purchases(request: Request):
+    """批量上传/更新月度采购 (同 period UPSERT)
+
+    POST Body:
+        {
+            "factory_id": "F001",
+            "entries": [
+                {
+                    "period": "2026-02",
+                    "totalPurchase": 335212.75,
+                    "totalRevenue": 731047.52,
+                    "categoryBreakdown": {"肉类": 180000, ...},
+                    "storeId": "DENG-001",
+                    "notes": "..."
+                }
+            ]
+        }
+    """
+    if not is_postgres_enabled():
+        return {"success": False, "message": "PostgreSQL not enabled"}
+
+    try:
+        body = await request.json()
+    except Exception:
+        return {"success": False, "message": "Invalid JSON body"}
+
+    fid = body.get("factory_id") or _get_factory_id(request)
+    if not fid:
+        return {"success": False, "message": "factory_id required"}
+
+    entries_raw = body.get("entries") or []
+
+    try:
+        with get_db_context() as db:
+            from services.restaurant.monthly_purchase_calibrator import (
+                MonthlyPurchaseCalibrator,
+                MonthlyPurchaseEntry,
+            )
+            cal = MonthlyPurchaseCalibrator(db_session=db)
+
+            count_before = cal.count(fid)
+            saved = 0
+            errors: list[str] = []
+
+            for mp in entries_raw:
+                try:
+                    cal.upload(
+                        MonthlyPurchaseEntry(
+                            factory_id=fid,
+                            period=mp.get("period", ""),
+                            total_purchase=float(mp.get("totalPurchase") or mp.get("total_purchase", 0)),
+                            total_revenue=float(mp.get("totalRevenue") or mp.get("total_revenue", 0)),
+                            category_breakdown=mp.get("categoryBreakdown") or mp.get("category_breakdown", {}),
+                            store_id=mp.get("storeId") or mp.get("store_id"),
+                            notes=mp.get("notes"),
+                        )
+                    )
+                    saved += 1
+                except Exception as e:
+                    errors.append(f"{mp.get('period','?')}: {str(e)[:80]}")
+
+            count_after = cal.count(fid)
+            calibration = cal.compute(fid)
+
+            return {
+                "success": True,
+                "data": {
+                    "factoryId": fid,
+                    "saved": saved,
+                    "countBefore": count_before,
+                    "countAfter": count_after,
+                    "errors": errors,
+                    "currentCalibration": calibration.to_dict() if calibration else None,
+                },
+            }
+    except Exception as e:
+        logger.error(f"upload_monthly_purchases({fid}) failed: {e}", exc_info=True)
+        return {"success": False, "message": f"Failed: {str(e)[:200]}"}
+
+
+@router.delete("/restaurant-monthly-purchases/{period}")
+def delete_monthly_purchase(
+    period: str, request: Request, factory_id: Optional[str] = None
+):
+    """删除某期月度采购"""
+    if not is_postgres_enabled():
+        return {"success": False, "message": "PostgreSQL not enabled"}
+
+    fid = factory_id or _get_factory_id(request)
+    if not fid:
+        return {"success": False, "message": "factory_id required"}
+
+    try:
+        with get_db_context() as db:
+            from smartbi.database.models import RestaurantMonthlyPurchase
+            deleted = (
+                db.query(RestaurantMonthlyPurchase)
+                .filter(
+                    RestaurantMonthlyPurchase.factory_id == fid,
+                    RestaurantMonthlyPurchase.period == period,
+                    RestaurantMonthlyPurchase.store_id.is_(None),
+                )
+                .delete()
+            )
+            db.commit()
+            return {
+                "success": deleted > 0,
+                "data": {"factoryId": fid, "period": period, "deleted": deleted},
+            }
+    except Exception as e:
+        logger.error(f"delete_monthly_purchase({fid},{period}) failed: {e}", exc_info=True)
+        return {"success": False, "message": f"Failed: {str(e)[:200]}"}

@@ -1,4 +1,4 @@
-"""SKU 主料成本表单管理 — Layer 2 (Week 4.4, BOM 精度核心)
+"""SKU 主料成本表单管理 — Layer 2 (Week 4.4 + W5.1 DB 持久化)
 
 设计依据 (来自 Image 3 三层学习架构):
   - Layer 1 (类目均价) 精度 ±15% — 新店开业即用
@@ -15,9 +15,9 @@
   青花椒数据: 700 SKU, TOP 20 占 80% 销量 — 长尾不用填, 用 Layer 1 即可.
   邓总火锅: 按品类 (招牌主菜/肉类/蔬菜) 填 TOP 5-10 即可覆盖 80% 营收.
 
-数据存储:
-  Week 4: in-memory dict (factory_id → {sku_name → entry})
-  Week 5+: 持久化到 smart_bi_pg_restaurant_sku_forms 表
+数据存储 (W5.1 双模式):
+  1. in-memory (db_session=None)     — 单测/临时计算用
+  2. DB backed (传入 db_session)     — 生产, 持久化到 restaurant_sku_forms 表
 
 使用示例:
     >>> manager = SkuFormManager()
@@ -45,7 +45,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -127,21 +127,72 @@ class SkuFormEntry:
 class SkuFormManager:
     """SKU 主料成本表单管理器 — Layer 2 存储 + 查找
 
-    Week 4: in-memory 实现.
-    Week 5+: 切换到 DB (smart_bi_pg_restaurant_sku_forms).
+    双模式 (W5.1):
+      - db_session=None: in-memory (单测 / 临时计算)
+      - db_session=Session: DB 持久化 (生产, restaurant_sku_forms 表)
 
     API 设计: 按 factory_id 隔离, 与 factory domain 分开
     (restaurant 域与 factory 域不互相污染, 参见 __init__.py 隔离铁律).
     """
 
-    def __init__(self) -> None:
-        # factory_id → {normalized_sku_name → SkuFormEntry}
+    def __init__(self, db_session: Optional[Any] = None) -> None:
+        self.db_session = db_session
+        # in-memory fallback: factory_id → {normalized_sku_name → SkuFormEntry}
         self._store: dict[str, dict[str, SkuFormEntry]] = {}
+
+    # ── Internal: DB ORM helpers ────────────────────────
+
+    def _db_to_entry(self, row: Any) -> SkuFormEntry:
+        """Convert RestaurantSkuForm ORM row → SkuFormEntry dataclass"""
+        ingredients = [
+            SkuFormIngredient(
+                name=ing.get("name", ""),
+                cost=float(ing.get("cost", 0)),
+                weight_g=ing.get("weight_g") or ing.get("weightG"),
+                unit_price_per_kg=ing.get("unit_price_per_kg") or ing.get("unitPricePerKg"),
+            )
+            for ing in (row.ingredients or [])
+        ]
+        return SkuFormEntry(
+            sku_name=row.sku_name,
+            category=row.category,
+            total_cogs_amount=float(row.total_cogs_amount),
+            selling_price=float(row.selling_price) if row.selling_price is not None else None,
+            monthly_sales_quantity=float(row.monthly_sales_quantity) if row.monthly_sales_quantity is not None else None,
+            ingredients=ingredients,
+            uploaded_at=row.created_at.isoformat() if row.created_at else datetime.now().isoformat(),
+            uploaded_by=row.uploaded_by,
+            notes=row.notes,
+        )
+
+    @staticmethod
+    def _entry_to_db_kwargs(entry: SkuFormEntry, factory_id: str) -> dict:
+        """Convert SkuFormEntry → dict for RestaurantSkuForm insert/update"""
+        return {
+            "factory_id": factory_id,
+            "store_id": None,
+            "sku_name": entry.sku_name,
+            "category": entry.category,
+            "total_cogs_amount": entry.total_cogs_amount,
+            "selling_price": entry.selling_price,
+            "monthly_sales_quantity": entry.monthly_sales_quantity,
+            "ingredients": [
+                {
+                    "name": i.name,
+                    "cost": i.cost,
+                    "weight_g": i.weight_g,
+                    "unit_price_per_kg": i.unit_price_per_kg,
+                }
+                for i in entry.ingredients
+            ],
+            "uploaded_by": entry.uploaded_by,
+            "notes": entry.notes,
+        }
 
     # ── Upload / Upsert ─────────────────────────────────
 
     def upload(self, factory_id: str, entries: list[SkuFormEntry]) -> dict:
-        """批量上传 SKU 表单
+        """批量上传 SKU 表单 (UPSERT 策略: 同 factory+sku 覆盖)
 
         Returns:
             {uploaded: N, updated: M, invalid: [sku_name, ...]}
@@ -149,14 +200,12 @@ class SkuFormManager:
         if not factory_id:
             raise ValueError("factory_id 不能为空")
 
-        if factory_id not in self._store:
-            self._store[factory_id] = {}
-
-        store = self._store[factory_id]
         uploaded = 0
         updated = 0
         invalid: list[str] = []
 
+        # Filter invalid entries first
+        valid_entries = []
         for entry in entries:
             if not entry.sku_name:
                 invalid.append("(empty sku_name)")
@@ -169,17 +218,48 @@ class SkuFormManager:
                     f"SKU {entry.sku_name} 明细与总价差异 > 10%, "
                     f"total={entry.total_cogs_amount}, sum={entry.ingredient_cost_sum()}"
                 )
-                # 不阻止, 只警告
+            valid_entries.append(entry)
 
-            if entry.sku_name in store:
-                updated += 1
-            else:
-                uploaded += 1
-            store[entry.sku_name] = entry
+        if self.db_session is not None:
+            # DB mode
+            from smartbi.database.models import RestaurantSkuForm
+
+            for entry in valid_entries:
+                existing = (
+                    self.db_session.query(RestaurantSkuForm)
+                    .filter(
+                        RestaurantSkuForm.factory_id == factory_id,
+                        RestaurantSkuForm.store_id.is_(None),
+                        RestaurantSkuForm.sku_name == entry.sku_name,
+                    )
+                    .first()
+                )
+                kwargs = self._entry_to_db_kwargs(entry, factory_id)
+                if existing:
+                    for k, v in kwargs.items():
+                        setattr(existing, k, v)
+                    updated += 1
+                else:
+                    new_row = RestaurantSkuForm(**kwargs)
+                    self.db_session.add(new_row)
+                    uploaded += 1
+            self.db_session.commit()
+        else:
+            # in-memory mode
+            if factory_id not in self._store:
+                self._store[factory_id] = {}
+            store = self._store[factory_id]
+            for entry in valid_entries:
+                if entry.sku_name in store:
+                    updated += 1
+                else:
+                    uploaded += 1
+                store[entry.sku_name] = entry
 
         logger.debug(
             f"SkuFormManager.upload factory={factory_id}, "
-            f"uploaded={uploaded}, updated={updated}, invalid={len(invalid)}"
+            f"uploaded={uploaded}, updated={updated}, invalid={len(invalid)}, "
+            f"mode={'db' if self.db_session else 'memory'}"
         )
         return {"uploaded": uploaded, "updated": updated, "invalid": invalid}
 
@@ -189,35 +269,100 @@ class SkuFormManager:
         """按 SKU 名查找 (精确匹配)"""
         if not factory_id or not sku_name:
             return None
+
+        if self.db_session is not None:
+            from smartbi.database.models import RestaurantSkuForm
+            row = (
+                self.db_session.query(RestaurantSkuForm)
+                .filter(
+                    RestaurantSkuForm.factory_id == factory_id,
+                    RestaurantSkuForm.store_id.is_(None),
+                    RestaurantSkuForm.sku_name == sku_name,
+                )
+                .first()
+            )
+            return self._db_to_entry(row) if row else None
+
         return self._store.get(factory_id, {}).get(sku_name)
 
     def lookup_by_category(
         self, factory_id: str, category: str
     ) -> list[SkuFormEntry]:
-        """按品类查找所有 SKU (用于 Layer 3 校准时批量加载某类目的 Layer 2 基准)"""
+        """按品类查找所有 SKU"""
         if not factory_id:
             return []
+
+        if self.db_session is not None:
+            from smartbi.database.models import RestaurantSkuForm
+            rows = (
+                self.db_session.query(RestaurantSkuForm)
+                .filter(
+                    RestaurantSkuForm.factory_id == factory_id,
+                    RestaurantSkuForm.store_id.is_(None),
+                    RestaurantSkuForm.category == category,
+                )
+                .all()
+            )
+            return [self._db_to_entry(r) for r in rows]
+
         store = self._store.get(factory_id, {})
         return [e for e in store.values() if e.category == category]
 
     def list_all(self, factory_id: str) -> list[SkuFormEntry]:
         """列出所有 SKU 表单"""
+        if self.db_session is not None:
+            from smartbi.database.models import RestaurantSkuForm
+            rows = (
+                self.db_session.query(RestaurantSkuForm)
+                .filter(
+                    RestaurantSkuForm.factory_id == factory_id,
+                    RestaurantSkuForm.store_id.is_(None),
+                )
+                .order_by(RestaurantSkuForm.category, RestaurantSkuForm.sku_name)
+                .all()
+            )
+            return [self._db_to_entry(r) for r in rows]
+
         return list(self._store.get(factory_id, {}).values())
 
     def count(self, factory_id: str) -> int:
+        if self.db_session is not None:
+            from smartbi.database.models import RestaurantSkuForm
+            return (
+                self.db_session.query(RestaurantSkuForm)
+                .filter(
+                    RestaurantSkuForm.factory_id == factory_id,
+                    RestaurantSkuForm.store_id.is_(None),
+                )
+                .count()
+            )
         return len(self._store.get(factory_id, {}))
 
     def count_by_category(self, factory_id: str) -> dict[str, int]:
         """按品类统计 SKU 数"""
-        store = self._store.get(factory_id, {})
+        entries = self.list_all(factory_id)
         result: dict[str, int] = {}
-        for entry in store.values():
+        for entry in entries:
             result[entry.category] = result.get(entry.category, 0) + 1
         return result
 
     # ── Delete / Clear ──────────────────────────────────
 
     def delete(self, factory_id: str, sku_name: str) -> bool:
+        if self.db_session is not None:
+            from smartbi.database.models import RestaurantSkuForm
+            deleted = (
+                self.db_session.query(RestaurantSkuForm)
+                .filter(
+                    RestaurantSkuForm.factory_id == factory_id,
+                    RestaurantSkuForm.store_id.is_(None),
+                    RestaurantSkuForm.sku_name == sku_name,
+                )
+                .delete()
+            )
+            self.db_session.commit()
+            return deleted > 0
+
         store = self._store.get(factory_id, {})
         if sku_name in store:
             del store[sku_name]
@@ -226,6 +371,19 @@ class SkuFormManager:
 
     def clear(self, factory_id: str) -> int:
         """清空某 factory 的所有 SKU 表单, 返回删除的条数"""
+        if self.db_session is not None:
+            from smartbi.database.models import RestaurantSkuForm
+            deleted = (
+                self.db_session.query(RestaurantSkuForm)
+                .filter(
+                    RestaurantSkuForm.factory_id == factory_id,
+                    RestaurantSkuForm.store_id.is_(None),
+                )
+                .delete()
+            )
+            self.db_session.commit()
+            return deleted
+
         count = len(self._store.get(factory_id, {}))
         self._store[factory_id] = {}
         return count

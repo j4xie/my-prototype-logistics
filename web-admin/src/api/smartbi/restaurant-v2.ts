@@ -426,3 +426,151 @@ export async function computeRestaurantAnalyticsV2(
     body: JSON.stringify(payload),
   });
 }
+
+// ═══════════════════════════════════════════════════════════
+// W5.2 — 客户数据录入 API (SKU 表单 + 月度采购 持久化)
+// ═══════════════════════════════════════════════════════════
+
+export interface SkuFormListResponse {
+  success: boolean;
+  data?: {
+    factoryId: string;
+    totalCount: number;
+    byCategory: Record<string, number>;
+    items: Array<{
+      skuName: string;
+      category: string;
+      totalCogsAmount: number;
+      sellingPrice?: number;
+      cogsPct?: number;
+      monthlySalesQuantity?: number;
+      ingredients: Array<{ name: string; cost: number; weightG?: number }>;
+      uploadedAt?: string;
+      uploadedBy?: string;
+      notes?: string;
+    }>;
+  };
+  message?: string;
+}
+
+export interface SkuFormUploadResponse {
+  success: boolean;
+  data?: {
+    factoryId: string;
+    uploaded: number;
+    updated: number;
+    invalid: string[];
+    totalAfterUpload: number;
+    byCategory: Record<string, number>;
+  };
+  message?: string;
+}
+
+export interface MonthlyPurchaseListResponse {
+  success: boolean;
+  data?: {
+    factoryId: string;
+    totalCount: number;
+    items: Array<{
+      id: number;
+      period: string;
+      totalPurchase: number;
+      totalRevenue: number;
+      overallRatio: number;
+      categoryBreakdown: Record<string, number>;
+      createdAt: string;
+    }>;
+    currentCalibration?: {
+      sampleSize: number;
+      confidence: string;
+      overallActualRatio: number;
+      periodsUsed: string[];
+      warnings: string[];
+    };
+  };
+  message?: string;
+}
+
+export interface MonthlyPurchaseUploadResponse {
+  success: boolean;
+  data?: {
+    factoryId: string;
+    saved: number;
+    countBefore: number;
+    countAfter: number;
+    errors: string[];
+    currentCalibration?: MonthlyPurchaseListResponse['data'] extends infer D
+      ? D extends { currentCalibration?: infer C }
+        ? C
+        : never
+      : never;
+  };
+  message?: string;
+}
+
+/** GET 工厂的所有 SKU 表单 */
+export async function listSkuForms(factoryId: string): Promise<SkuFormListResponse> {
+  return pythonFetch<SkuFormListResponse>(
+    `/api/smartbi/restaurant-sku-forms?factory_id=${encodeURIComponent(factoryId)}`,
+    { method: 'GET' }
+  );
+}
+
+/** POST 批量上传/更新 SKU 表单 */
+export async function uploadSkuForms(
+  factoryId: string,
+  entries: SkuFormInput[]
+): Promise<SkuFormUploadResponse> {
+  return pythonFetch<SkuFormUploadResponse>('/api/smartbi/restaurant-sku-forms', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ factory_id: factoryId, entries }),
+  });
+}
+
+/** DELETE 某个 SKU 表单 */
+export async function deleteSkuForm(
+  factoryId: string,
+  skuName: string
+): Promise<{ success: boolean; data?: { deleted: boolean } }> {
+  return pythonFetch<{ success: boolean; data?: { deleted: boolean } }>(
+    `/api/smartbi/restaurant-sku-forms/${encodeURIComponent(skuName)}?factory_id=${encodeURIComponent(factoryId)}`,
+    { method: 'DELETE' }
+  );
+}
+
+/** GET 工厂的所有月度采购 */
+export async function listMonthlyPurchases(
+  factoryId: string
+): Promise<MonthlyPurchaseListResponse> {
+  return pythonFetch<MonthlyPurchaseListResponse>(
+    `/api/smartbi/restaurant-monthly-purchases?factory_id=${encodeURIComponent(factoryId)}`,
+    { method: 'GET' }
+  );
+}
+
+/** POST 批量上传/更新月度采购 */
+export async function uploadMonthlyPurchases(
+  factoryId: string,
+  entries: MonthlyPurchaseInput[]
+): Promise<MonthlyPurchaseUploadResponse> {
+  return pythonFetch<MonthlyPurchaseUploadResponse>(
+    '/api/smartbi/restaurant-monthly-purchases',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ factory_id: factoryId, entries }),
+    }
+  );
+}
+
+/** DELETE 某期月度采购 */
+export async function deleteMonthlyPurchase(
+  factoryId: string,
+  period: string
+): Promise<{ success: boolean; data?: { deleted: number } }> {
+  return pythonFetch<{ success: boolean; data?: { deleted: number } }>(
+    `/api/smartbi/restaurant-monthly-purchases/${encodeURIComponent(period)}?factory_id=${encodeURIComponent(factoryId)}`,
+    { method: 'DELETE' }
+  );
+}

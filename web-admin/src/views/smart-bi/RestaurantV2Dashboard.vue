@@ -43,6 +43,7 @@ import {
   type ReviewAnalysis,
   type BomLayerStatus,
 } from '@/api/smartbi/restaurant-v2';
+import BomIngestDialog from './BomIngestDialog.vue';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -207,6 +208,18 @@ const bomLayerStatus = computed<BomLayerStatus | undefined>(
   () => report.value?.sections?.bomLayerStatus
 );
 
+// W5.2 — BOM 数据录入 dialog state
+const bomIngestDialogVisible = ref(false);
+
+function openBomIngest() {
+  bomIngestDialogVisible.value = true;
+}
+
+function onBomDataChanged() {
+  // When user uploads new SKU/monthly data, offer to refresh analysis
+  ElMessage.info('BOM 数据已更新, 建议点"强制重算"刷新分析');
+}
+
 function headlineColorToTag(color?: string): string {
   if (color === 'red') return 'danger';
   if (color === 'yellow') return 'warning';
@@ -314,6 +327,9 @@ function formatCurrency(v?: number): string {
             </el-button>
             <el-button @click="showFinancialForm = !showFinancialForm">
               {{ showFinancialForm ? '收起财务' : '填财务数据' }}
+            </el-button>
+            <el-button type="success" :icon="Money" @click="openBomIngest">
+              BOM 数据录入
             </el-button>
           </el-form-item>
         </el-form>
@@ -956,6 +972,13 @@ function formatCurrency(v?: number): string {
       v-else-if="!loading"
       description="选择 upload → 点'跑 V2 分析' → 查看邓总救命组合"
       style="margin-top: 40px"
+    />
+
+    <!-- W5.2 — BOM Ingest Dialog -->
+    <BomIngestDialog
+      v-model="bomIngestDialogVisible"
+      :factory-id="factoryId || 'F001'"
+      @data-changed="onBomDataChanged"
     />
   </div>
 </template>

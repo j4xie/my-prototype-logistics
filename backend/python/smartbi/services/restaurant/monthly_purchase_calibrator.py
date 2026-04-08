@@ -54,7 +54,7 @@ import logging
 import statistics
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -158,43 +158,71 @@ class CalibrationResult:
 class MonthlyPurchaseCalibrator:
     """月度采购校准器 — Layer A 自学习引擎
 
+    双模式 (W5.1):
+      - db_session=None: in-memory (单测)
+      - db_session=Session: DB 持久化 (生产, restaurant_monthly_purchases 表)
+
     职责:
       1. 存储月度采购汇总 (多期)
       2. 计算整店级校准因子 (total_purchase / total_revenue)
       3. 计算类目级校准因子 (category_breakdown / layer1_category_cost)
       4. 多期平均 + 异常检测
       5. 返回 CalibrationResult 供 BomResolver 使用
-
-    Week 4: in-memory
-    Week 5+: 持久化到 smart_bi_pg_restaurant_monthly_purchases
     """
 
     # 异常边界 — 超出这个范围的 factor 视为数据错误, 不应用
     _FACTOR_MIN = 0.50
     _FACTOR_MAX = 2.00
 
-    def __init__(self) -> None:
-        # (factory_id, store_id or '') → list[MonthlyPurchaseEntry]
+    def __init__(self, db_session: Optional[Any] = None) -> None:
+        self.db_session = db_session
+        # in-memory fallback: (factory_id, store_id or '') → list[MonthlyPurchaseEntry]
         self._store: dict[tuple[str, str], list[MonthlyPurchaseEntry]] = {}
+
+    # ── Internal: DB helpers ───────────────────────────
+
+    @staticmethod
+    def _db_to_entry(row: Any) -> MonthlyPurchaseEntry:
+        """Convert RestaurantMonthlyPurchase ORM row → MonthlyPurchaseEntry dataclass"""
+        return MonthlyPurchaseEntry(
+            factory_id=row.factory_id,
+            period=row.period,
+            total_purchase=float(row.total_purchase),
+            total_revenue=float(row.total_revenue),
+            category_breakdown=row.category_breakdown or {},
+            store_id=row.store_id,
+            uploaded_at=row.created_at.isoformat() if row.created_at else datetime.now().isoformat(),
+            uploaded_by=row.uploaded_by,
+            notes=row.notes,
+        )
+
+    def _load_entries(
+        self, factory_id: str, store_id: Optional[str] = None
+    ) -> list[MonthlyPurchaseEntry]:
+        """统一读取入口: DB 或 memory"""
+        if self.db_session is not None:
+            from smartbi.database.models import RestaurantMonthlyPurchase
+            q = self.db_session.query(RestaurantMonthlyPurchase).filter(
+                RestaurantMonthlyPurchase.factory_id == factory_id
+            )
+            if store_id is None:
+                q = q.filter(RestaurantMonthlyPurchase.store_id.is_(None))
+            else:
+                q = q.filter(RestaurantMonthlyPurchase.store_id == store_id)
+            rows = q.order_by(RestaurantMonthlyPurchase.period).all()
+            return [self._db_to_entry(r) for r in rows]
+
+        key = (factory_id, store_id or "")
+        return list(self._store.get(key, []))
 
     # ── Upload ──────────────────────────────────────────
 
     def upload(self, entry: MonthlyPurchaseEntry) -> None:
-        """上传一条月度采购数据"""
+        """上传一条月度采购数据 (UPSERT: 同 period 覆盖)"""
         if not entry.factory_id:
             raise ValueError("factory_id 不能为空")
         if entry.total_purchase < 0 or entry.total_revenue < 0:
             raise ValueError("total_purchase 和 total_revenue 不能为负数")
-
-        key = (entry.factory_id, entry.store_id or "")
-        if key not in self._store:
-            self._store[key] = []
-
-        # 同 period 覆盖 (同月重复上传视为更新)
-        existing = [e for e in self._store[key] if e.period != entry.period]
-        existing.append(entry)
-        existing.sort(key=lambda e: e.period)
-        self._store[key] = existing
 
         if not entry.is_breakdown_consistent():
             logger.warning(
@@ -202,14 +230,65 @@ class MonthlyPurchaseCalibrator:
                 f"total={entry.total_purchase}, sum={entry.breakdown_sum}"
             )
 
+        if self.db_session is not None:
+            from smartbi.database.models import RestaurantMonthlyPurchase
+
+            q = self.db_session.query(RestaurantMonthlyPurchase).filter(
+                RestaurantMonthlyPurchase.factory_id == entry.factory_id,
+                RestaurantMonthlyPurchase.period == entry.period,
+            )
+            if entry.store_id is None:
+                q = q.filter(RestaurantMonthlyPurchase.store_id.is_(None))
+            else:
+                q = q.filter(RestaurantMonthlyPurchase.store_id == entry.store_id)
+            existing = q.first()
+
+            kwargs = {
+                "factory_id": entry.factory_id,
+                "store_id": entry.store_id,
+                "period": entry.period,
+                "total_purchase": entry.total_purchase,
+                "total_revenue": entry.total_revenue,
+                "category_breakdown": entry.category_breakdown or {},
+                "uploaded_by": entry.uploaded_by,
+                "notes": entry.notes,
+            }
+
+            if existing:
+                for k, v in kwargs.items():
+                    setattr(existing, k, v)
+            else:
+                new_row = RestaurantMonthlyPurchase(**kwargs)
+                self.db_session.add(new_row)
+            self.db_session.commit()
+            return
+
+        # in-memory mode
+        key = (entry.factory_id, entry.store_id or "")
+        if key not in self._store:
+            self._store[key] = []
+        existing = [e for e in self._store[key] if e.period != entry.period]
+        existing.append(entry)
+        existing.sort(key=lambda e: e.period)
+        self._store[key] = existing
+
     def list_periods(
         self, factory_id: str, store_id: Optional[str] = None
     ) -> list[str]:
         """列出已上传的 period"""
-        key = (factory_id, store_id or "")
-        return [e.period for e in self._store.get(key, [])]
+        return [e.period for e in self._load_entries(factory_id, store_id)]
 
     def count(self, factory_id: str, store_id: Optional[str] = None) -> int:
+        if self.db_session is not None:
+            from smartbi.database.models import RestaurantMonthlyPurchase
+            q = self.db_session.query(RestaurantMonthlyPurchase).filter(
+                RestaurantMonthlyPurchase.factory_id == factory_id
+            )
+            if store_id is None:
+                q = q.filter(RestaurantMonthlyPurchase.store_id.is_(None))
+            else:
+                q = q.filter(RestaurantMonthlyPurchase.store_id == store_id)
+            return q.count()
         key = (factory_id, store_id or "")
         return len(self._store.get(key, []))
 
@@ -231,8 +310,7 @@ class MonthlyPurchaseCalibrator:
         Returns:
             CalibrationResult, 没有数据时返回 None
         """
-        key = (factory_id, store_id or "")
-        entries = self._store.get(key, [])
+        entries = self._load_entries(factory_id, store_id)
         if not entries:
             return None
 

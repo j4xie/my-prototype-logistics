@@ -8,7 +8,7 @@ Uses PostgreSQL JSONB for flexible schema storage.
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-from sqlalchemy import Column, BigInteger, String, Integer, DateTime, Text, Boolean, Enum as SAEnum
+from sqlalchemy import Column, BigInteger, String, Integer, DateTime, Text, Boolean, Numeric, Enum as SAEnum, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -199,6 +199,116 @@ class SmartBiDashboardLayout(Base):
             "userId": self.user_id,
             "layoutName": self.layout_name,
             "layoutData": self.layout_data,
+            "createdAt": self.created_at.isoformat() if self.created_at else None,
+            "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+# ═══════════════════════════════════════════════════════════════
+# W5.1 — 餐饮 BOM Layer 2+3 持久化模型
+# Week 4.4 SkuFormManager + MonthlyPurchaseCalibrator 的 DB 版本
+# ═══════════════════════════════════════════════════════════════
+
+
+class RestaurantSkuForm(Base):
+    """
+    Layer 2: TOP 20 SKU 主料成本表
+    客户填的 SKU 级成本清单, 精度 ±8%.
+    """
+    __tablename__ = "restaurant_sku_forms"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    factory_id = Column(String(64), nullable=False, index=True)
+    store_id = Column(String(64), nullable=True)              # NULL = 工厂级
+    sku_name = Column(String(255), nullable=False)            # 规范化后的菜品名
+    category = Column(String(128), nullable=False)            # 招牌主菜 / 肉类 / ...
+
+    total_cogs_amount = Column(Numeric(12, 2), nullable=False)  # 元/份
+    selling_price = Column(Numeric(12, 2), nullable=True)
+    monthly_sales_quantity = Column(Numeric(14, 2), nullable=True)
+
+    # [{name, cost, weight_g, unit_price_per_kg}, ...]
+    ingredients = Column(JSONB, nullable=True)
+
+    uploaded_by = Column(String(64), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("factory_id", "store_id", "sku_name", name="uk_sku_forms_factory_store_sku"),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        total_cogs = float(self.total_cogs_amount) if self.total_cogs_amount is not None else 0.0
+        selling_price = float(self.selling_price) if self.selling_price is not None else None
+        cogs_pct = total_cogs / selling_price if selling_price and selling_price > 0 else None
+        return {
+            "id": self.id,
+            "factoryId": self.factory_id,
+            "storeId": self.store_id,
+            "skuName": self.sku_name,
+            "category": self.category,
+            "totalCogsAmount": round(total_cogs, 2),
+            "sellingPrice": selling_price,
+            "cogsPct": round(cogs_pct, 4) if cogs_pct is not None else None,
+            "monthlySalesQuantity": float(self.monthly_sales_quantity) if self.monthly_sales_quantity is not None else None,
+            "ingredients": self.ingredients or [],
+            "uploadedBy": self.uploaded_by,
+            "notes": self.notes,
+            "createdAt": self.created_at.isoformat() if self.created_at else None,
+            "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class RestaurantMonthlyPurchase(Base):
+    """
+    Layer 3: 月度采购反推校准 (Layer A 自学习源数据)
+    每月一条, 同 factory+store+period UNIQUE (重复上传 = 更新).
+    """
+    __tablename__ = "restaurant_monthly_purchases"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    factory_id = Column(String(64), nullable=False, index=True)
+    store_id = Column(String(64), nullable=True)
+    period = Column(String(16), nullable=False)               # "2026-02"
+
+    total_purchase = Column(Numeric(14, 2), nullable=False)
+    total_revenue = Column(Numeric(14, 2), nullable=False)
+
+    # {"肉类": 180000, "海鲜": 55000, ...}
+    category_breakdown = Column(JSONB, nullable=True)
+
+    uploaded_by = Column(String(64), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("factory_id", "store_id", "period", name="uk_monthly_purchases_factory_store_period"),
+    )
+
+    @property
+    def overall_ratio(self) -> float:
+        """整店食材成本率 (0-1)"""
+        if not self.total_revenue or float(self.total_revenue) <= 0:
+            return 0.0
+        return float(self.total_purchase) / float(self.total_revenue)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "factoryId": self.factory_id,
+            "storeId": self.store_id,
+            "period": self.period,
+            "totalPurchase": float(self.total_purchase) if self.total_purchase is not None else 0.0,
+            "totalRevenue": float(self.total_revenue) if self.total_revenue is not None else 0.0,
+            "overallRatio": round(self.overall_ratio, 4),
+            "categoryBreakdown": self.category_breakdown or {},
+            "uploadedBy": self.uploaded_by,
+            "notes": self.notes,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
             "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
         }
