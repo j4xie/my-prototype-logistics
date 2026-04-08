@@ -370,6 +370,107 @@ function computedRemainingAmount() {
   return Math.max(0, total - paid);
 }
 
+// V3 P0-11 补强 — 审批进度时间线 (Verification Round 2 / Agent A 截图 3 硬伤)
+// 客户截图底部固定显示 "张权 提交申请 → 刘会林 审批人(已同意)" timeline
+// 我们从现有 SalesOrder 字段直接渲染, 不加新字段
+const approvalTimeline = computed<Array<{
+  type: 'success' | 'warning' | 'danger' | 'primary' | 'info';
+  title: string;
+  user: string;
+  time: string;
+  notes?: string;
+}>>(() => {
+  if (!order.value) return [];
+  const o = order.value as Record<string, unknown>;
+  const nodes: Array<{ type: 'success' | 'warning' | 'danger' | 'primary' | 'info'; title: string; user: string; time: string; notes?: string }> = [];
+
+  // 节点 1: 创建
+  if (o.createdAt) {
+    nodes.push({
+      type: 'primary',
+      title: '订单创建',
+      user: String(o.salesperson || o.createdByName || `用户#${o.createdBy || '?'}`),
+      time: String(o.createdAt),
+    });
+  }
+
+  // 节点 2: 确认
+  if (o.confirmedAt) {
+    nodes.push({
+      type: 'primary',
+      title: '订单确认',
+      user: String(o.confirmedByName || o.salesperson || '业务员'),
+      time: String(o.confirmedAt),
+    });
+  }
+
+  // 节点 3: 提交财务审核 (从 status 推断, 无独立时间字段)
+  if (o.status === 'PENDING_FINANCE_REVIEW') {
+    nodes.push({
+      type: 'warning',
+      title: '已提交财务审核',
+      user: '系统',
+      time: String(o.updatedAt || ''),
+    });
+  }
+
+  // 节点 4: 财务审核通过 / 驳回
+  if (o.financeReviewedAt) {
+    const isApproved = ['FINANCE_APPROVED', 'PROCESSING', 'PARTIAL_DELIVERED', 'COMPLETED'].includes(String(o.status));
+    nodes.push({
+      type: isApproved ? 'success' : 'danger',
+      title: isApproved ? '财务审核通过' : '财务审核驳回',
+      user: String(o.financeReviewedByName || `财务#${o.financeReviewedBy || '?'}`),
+      time: String(o.financeReviewedAt),
+      notes: o.financeReviewNotes ? String(o.financeReviewNotes) : undefined,
+    });
+  }
+
+  // 节点 5: 发货 (有 deliveries 记录就显示)
+  if (deliveries.value.length > 0) {
+    const latestDelivery = deliveries.value[0];
+    nodes.push({
+      type: ['DELIVERED'].includes(String(latestDelivery.status)) ? 'success' : 'warning',
+      title: deliveries.value.length === 1 ? '已发货' : `已发货 (${deliveries.value.length} 单)`,
+      user: '仓库',
+      time: String(latestDelivery.shippedAt || latestDelivery.createdAt || latestDelivery.deliveryDate || ''),
+    });
+  }
+
+  // 节点 6: 收款 (有 payments 记录就显示)
+  if (payments.value.length > 0) {
+    const latestPayment = payments.value[0];
+    nodes.push({
+      type: ['VERIFIED'].includes(String(latestPayment.status)) ? 'success' : 'warning',
+      title: payments.value.length === 1 ? '已收款' : `已收款 (${payments.value.length} 笔)`,
+      user: '财务',
+      time: String(latestPayment.paymentDate || latestPayment.createdAt || ''),
+    });
+  }
+
+  // 节点 7: 取消 (终态)
+  if (o.status === 'CANCELLED') {
+    nodes.push({
+      type: 'danger',
+      title: '订单已取消',
+      user: '系统',
+      time: String(o.updatedAt || ''),
+    });
+  }
+
+  // 节点 8: 完成 (终态)
+  if (o.status === 'COMPLETED') {
+    nodes.push({
+      type: 'success',
+      title: '订单完成',
+      user: '系统',
+      time: String(o.updatedAt || ''),
+    });
+  }
+
+  return nodes;
+});
+
 async function handleCreatePayment() {
   if (submitting.value) return;
   if (!paymentForm.value.amount || paymentForm.value.amount <= 0) {
@@ -478,6 +579,31 @@ async function handleCreatePayment() {
                 <template #default="{ row }">{{ formatAmount(row.quantity * row.unitPrice) }}</template>
               </el-table-column>
             </el-table>
+
+            <!-- ─── 审批进度时间线 (V3 P0-11 补强 — 客户金矿截图 49m17s 底部 timeline) ─── -->
+            <div class="approval-timeline-section">
+              <h3>审批进度</h3>
+              <el-empty v-if="approvalTimeline.length === 0" description="暂无审批记录" :image-size="60" />
+              <el-timeline v-else>
+                <el-timeline-item
+                  v-for="(node, idx) in approvalTimeline"
+                  :key="idx"
+                  :type="node.type"
+                  :timestamp="node.time"
+                  placement="top"
+                  size="large"
+                >
+                  <el-card shadow="hover" class="timeline-card">
+                    <div class="timeline-title">{{ node.title }}</div>
+                    <div class="timeline-meta">
+                      <el-icon><i class="el-icon-user" /></el-icon>
+                      <span>{{ node.user }}</span>
+                    </div>
+                    <div v-if="node.notes" class="timeline-notes">备注: {{ node.notes }}</div>
+                  </el-card>
+                </el-timeline-item>
+              </el-timeline>
+            </div>
           </el-tab-pane>
 
           <!-- ─── Tab 2: 开票申请 (V3 P0-3 / G1) ─── -->
@@ -787,4 +913,20 @@ async function handleCreatePayment() {
 }
 .tab-badge { :deep(.el-badge__content) { transform: translateY(-2px) translateX(8px); } }
 .tax-breakdown { display: flex; flex-wrap: wrap; gap: 4px; }
+
+// V3 P0-11 补强 — 审批 timeline
+.approval-timeline-section {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px dashed #ebeef5;
+
+  h3 { margin: 0 0 16px; font-size: 15px; color: #303133; }
+
+  .timeline-card { padding: 8px 12px;
+    .timeline-title { font-weight: 600; color: #303133; font-size: 14px; margin-bottom: 4px; }
+    .timeline-meta { color: #606266; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+    .timeline-notes { margin-top: 6px; padding: 6px 8px; background: #fafafa; border-radius: 4px;
+      color: #909399; font-size: 12px; }
+  }
+}
 </style>
