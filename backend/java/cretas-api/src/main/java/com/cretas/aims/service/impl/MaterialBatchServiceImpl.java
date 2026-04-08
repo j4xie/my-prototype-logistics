@@ -212,28 +212,28 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         switch (type) {
             case "MANUAL_ADJUST":
                 if (request.getNotes() == null || request.getNotes().isBlank()) {
-                    throw new IllegalArgumentException("手工调整入库必须填写备注作为凭证");
+                    throw new BusinessException("手工调整入库必须填写备注作为凭证");
                 }
                 break;
             case "PURCHASE_RECEIVE":
                 if (id == null || id.isBlank()) {
-                    throw new IllegalArgumentException("入库必须关联有效的发起单 (PURCHASE_RECEIVE sourceDocId 为空)");
+                    throw new BusinessException("入库必须关联有效的发起单 (PURCHASE_RECEIVE sourceDocId 为空)");
                 }
                 if (purchaseReceiveRecordRepository == null || !purchaseReceiveRecordRepository.existsById(id)) {
-                    throw new IllegalArgumentException("入库必须关联有效的发起单: 采购到货通知 " + id + " 不存在");
+                    throw new BusinessException("入库必须关联有效的发起单: 采购到货通知 " + id + " 不存在");
                 }
                 break;
             case "MATERIAL_REQUISITION_RETURN":
                 if (id == null || id.isBlank()) {
-                    throw new IllegalArgumentException("入库必须关联有效的发起单 (MATERIAL_REQUISITION_RETURN sourceDocId 为空)");
+                    throw new BusinessException("入库必须关联有效的发起单 (MATERIAL_REQUISITION_RETURN sourceDocId 为空)");
                 }
                 if (factoryMaterialRequisitionRepository == null || !factoryMaterialRequisitionRepository.existsById(id)) {
-                    throw new IllegalArgumentException("入库必须关联有效的发起单: 领料退料单 " + id + " 不存在");
+                    throw new BusinessException("入库必须关联有效的发起单: 领料退料单 " + id + " 不存在");
                 }
                 break;
             case "SALES_RETURN":
                 if (id == null || id.isBlank()) {
-                    throw new IllegalArgumentException("入库必须关联有效的发起单 (SALES_RETURN sourceDocId 为空)");
+                    throw new BusinessException("入库必须关联有效的发起单 (SALES_RETURN sourceDocId 为空)");
                 }
                 // SalesReturn entity 暂未建, 仅记录引用, 不强校验存在性
                 log.info("P0-17: 销售退货入库 sourceDocId={} (SalesReturn 单据校验暂 skip)", id);
@@ -241,14 +241,14 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             case "INVENTORY_GAIN":
                 // B9 (客户原话 4850s): 仓库盘点产生的盘盈入库, 不需 sourceDocId, 但 notes 必填说明盘点单号/原因
                 if (request.getNotes() == null || request.getNotes().isBlank()) {
-                    throw new IllegalArgumentException("盘盈入库必须在备注中说明盘点单号或原因");
+                    throw new BusinessException("盘盈入库必须在备注中说明盘点单号或原因");
                 }
                 log.info("B9: 盘盈入库 notes={}", request.getNotes());
                 break;
             case "FREE_GIFT":
                 // B10 (客户原话 4929s): 供应商赠品入库, 不需 sourceDocId, 但 notes 必填说明来源供应商
                 if (request.getNotes() == null || request.getNotes().isBlank()) {
-                    throw new IllegalArgumentException("赠品入库必须在备注中说明来源供应商");
+                    throw new BusinessException("赠品入库必须在备注中说明来源供应商");
                 }
                 log.info("B10: 赠品入库 notes={}", request.getNotes());
                 break;
@@ -256,7 +256,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             //   出库链路不走 MaterialBatchService.createMaterialBatch (这里只管入库),
             //   需在 sales shipment / warehouse outbound service 另开分支, 本轮范围外.
             default:
-                throw new IllegalArgumentException("不支持的 sourceDocType: " + type);
+                throw new BusinessException("不支持的 sourceDocType: " + type);
         }
     }
 
