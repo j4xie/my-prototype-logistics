@@ -55,6 +55,12 @@ const businessRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/dashboard/index.vue'),
         meta: { requiresAuth: true, title: '首页', icon: 'House', module: 'dashboard' }
       },
+      {
+        path: 'dashboard/production-progress',
+        name: 'ProductionProgressDashboard',
+        component: () => import('@/views/dashboard/production-progress.vue'),
+        meta: { requiresAuth: true, title: '生产进度看板', icon: 'Monitor', module: 'dashboard' }
+      },
 
       // 生产管理
       {
