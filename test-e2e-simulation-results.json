@@ -1,0 +1,255 @@
+{
+  "timestamp": "2026-04-05T04:13:35.997Z",
+  "pass": 41,
+  "fail": 0,
+  "warn": 0,
+  "total": 41,
+  "results": [
+    {
+      "role": "采购员",
+      "test": "1.查供应商列表",
+      "status": "PASS",
+      "evidence": "10个供应商, 选\"北京飞熊\""
+    },
+    {
+      "role": "采购员",
+      "test": "2.查原材料",
+      "status": "PASS",
+      "evidence": "20个原料, 选\"八角\""
+    },
+    {
+      "role": "采购员",
+      "test": "3.下采购单",
+      "status": "PASS",
+      "evidence": "PO-20260405-0037 ¥900 供应商=北京飞熊"
+    },
+    {
+      "role": "采购员",
+      "test": "4.提交审批",
+      "status": "PASS",
+      "evidence": "状态→SUBMITTED"
+    },
+    {
+      "role": "采购员",
+      "test": "5.列表可见",
+      "status": "PASS",
+      "evidence": "在首页找到PO-20260405-0037"
+    },
+    {
+      "role": "采购员",
+      "test": "6.详情-供应商名",
+      "status": "PASS",
+      "evidence": "\"北京飞熊\""
+    },
+    {
+      "role": "采购员",
+      "test": "6.详情-原料名",
+      "status": "PASS",
+      "evidence": "\"八角\""
+    },
+    {
+      "role": "采购员",
+      "test": "6.详情-规格箱数列",
+      "status": "PASS",
+      "evidence": "列: [原材料,规格,采购数量,箱数,单位,单价,已收货,小计,收货单号,收货日期,状态,金额,操作]"
+    },
+    {
+      "role": "管理员",
+      "test": "1.审批采购单",
+      "status": "PASS",
+      "evidence": "PO-20260405-0037 → APPROVED"
+    },
+    {
+      "role": "仓管",
+      "test": "2.创建入库单",
+      "status": "PASS",
+      "evidence": "RCV-20260405-0374"
+    },
+    {
+      "role": "仓管",
+      "test": "3.确认入库",
+      "status": "PASS",
+      "evidence": "状态→CONFIRMED"
+    },
+    {
+      "role": "仓管",
+      "test": "4.PO已收货数",
+      "status": "PASS",
+      "evidence": "已收货=50 (期望≥50)"
+    },
+    {
+      "role": "仓管",
+      "test": "5.库存有新批次",
+      "status": "PASS",
+      "evidence": "UI: \"八角\"在库存页"
+    },
+    {
+      "role": "销售员",
+      "test": "1.查客户",
+      "status": "PASS",
+      "evidence": "24个客户, 选\"DS-Debug-Customer-2\""
+    },
+    {
+      "role": "销售员",
+      "test": "2.查产品",
+      "status": "PASS",
+      "evidence": "10个产品, 选\"带鱼段_updated\""
+    },
+    {
+      "role": "销售员",
+      "test": "3.下销售单",
+      "status": "PASS",
+      "evidence": "SO-20260405-0041 客户=DS-Debug-Customer-2 ¥500"
+    },
+    {
+      "role": "销售员",
+      "test": "4.确认订单",
+      "status": "PASS",
+      "evidence": "状态→CONFIRMED"
+    },
+    {
+      "role": "销售员",
+      "test": "5.列表客户名",
+      "status": "PASS",
+      "evidence": "列1=\"DS-Debug-Customer-2\""
+    },
+    {
+      "role": "销售员",
+      "test": "6.详情核对",
+      "status": "PASS",
+      "evidence": "客户=\"DS-Debug-Customer-2\", 业务员=\"销售模拟211893\""
+    },
+    {
+      "role": "销售员",
+      "test": "6.行项目产品名",
+      "status": "PASS",
+      "evidence": "\"带鱼段_updated\""
+    },
+    {
+      "role": "销售员",
+      "test": "7.创建发货单",
+      "status": "PASS",
+      "evidence": "DLV-20260405-7712"
+    },
+    {
+      "role": "研发员",
+      "test": "1.创建研发需求",
+      "status": "PASS",
+      "evidence": "RD-REQ-20260405-1393"
+    },
+    {
+      "role": "研发员",
+      "test": "2.创建样品",
+      "status": "PASS",
+      "evidence": "SP-20260405-2815 级别=A 储存=冷冻"
+    },
+    {
+      "role": "研发员",
+      "test": "3.追踪记录",
+      "status": "PASS",
+      "evidence": "添加成功"
+    },
+    {
+      "role": "研发员",
+      "test": "4.API确认存在",
+      "status": "PASS",
+      "evidence": "SP-20260405-2815 status=IN_PROGRESS"
+    },
+    {
+      "role": "研发员",
+      "test": "5.列头正确",
+      "status": "PASS",
+      "evidence": "客户名称=true, 产品级别=true, 无旧列=true, 实际: [样品编码,样品名称,客户名称,成品规格,产品级别,业务员,储存方式,产品状态,操作]"
+    },
+    {
+      "role": "研发员",
+      "test": "6.搜索功能",
+      "status": "PASS",
+      "evidence": "搜索\"模拟牛肉粒211893\" → 1条结果"
+    },
+    {
+      "role": "研发员",
+      "test": "7.提交审核",
+      "status": "PASS",
+      "evidence": "状态→SUBMITTED"
+    },
+    {
+      "role": "管理员",
+      "test": "1.审核样品",
+      "status": "PASS",
+      "evidence": "SP-20260405-2815 → APPROVED"
+    },
+    {
+      "role": "管理员",
+      "test": "2.状态(API)",
+      "status": "PASS",
+      "evidence": "status=\"APPROVED\""
+    },
+    {
+      "role": "管理员",
+      "test": "3.UI状态标签",
+      "status": "PASS",
+      "evidence": "\"样品通过\" (搜索到1行)"
+    },
+    {
+      "role": "管理员",
+      "test": "4.报价按钮",
+      "status": "PASS",
+      "evidence": "[追踪记录,提交报价申请]"
+    },
+    {
+      "role": "老板巡检",
+      "test": "销售订单-客户名",
+      "status": "PASS",
+      "evidence": "10行, UUID=0, 示例: \"DS-Debug-Customer-2\""
+    },
+    {
+      "role": "老板巡检",
+      "test": "采购订单-供应商名",
+      "status": "PASS",
+      "evidence": "10行, UUID=0, 示例: \"北京飞熊\""
+    },
+    {
+      "role": "老板巡检",
+      "test": "研发样品-状态中文",
+      "status": "PASS",
+      "evidence": "20个标签, 英文=0, 示例: [样品通过,样品通过,样品通过,样品通过,样品通过]"
+    },
+    {
+      "role": "老板巡检",
+      "test": "原材料库存-供应商名",
+      "status": "PASS",
+      "evidence": "5行, UUID=0"
+    },
+    {
+      "role": "老板巡检",
+      "test": "员工管理",
+      "status": "PASS",
+      "evidence": "10条记录"
+    },
+    {
+      "role": "老板巡检",
+      "test": "生产计划-状态",
+      "status": "PASS",
+      "evidence": "20个标签全中文"
+    },
+    {
+      "role": "老板巡检",
+      "test": "质检记录",
+      "status": "PASS",
+      "evidence": "10条记录"
+    },
+    {
+      "role": "老板巡检",
+      "test": "设备管理",
+      "status": "PASS",
+      "evidence": "10条记录"
+    },
+    {
+      "role": "老板巡检",
+      "test": "仪表盘",
+      "status": "PASS",
+      "evidence": "177字内容"
+    }
+  ]
+}

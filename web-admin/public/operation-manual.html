@@ -430,11 +430,11 @@
   <h1>白垩纪食品溯源系统</h1>
   <div class="subtitle">完整操作手册 (Cretas Food Traceability System — Operation Manual)</div>
   <div class="meta">
-    <span>版本 2.0</span>
+    <span>版本 3.2</span>
     <span>|</span>
-    <span>2026 年 3 月</span>
+    <span>2026 年 4 月 4 日</span>
     <span>|</span>
-    <span>第一部分：基础配置 (Sections 1-6)</span>
+    <span>完整操作手册 (Sections 1-14)</span>
   </div>
 </div>
 
@@ -452,10 +452,26 @@
     <li><a href="#section4">原料类型管理 (Raw Material Type Management)</a></li>
     <li><a href="#section5">产品模板与 BOM 配置 (Product Templates & BOM Configuration)</a></li>
     <li><a href="#section6">SKU 组装与原料入库 (SKU Assembly & Material Inbound)</a></li>
-    <li>6C. 销售订单管理 (Sales Order Management)</li>
-    <li>6D. 供应商管理 (Supplier Management)</li>
+    <li><a href="#section6c">6C. 销售订单管理 (Sales Order Management)</a></li>
+    <li><a href="#section6d">6D. 供应商管理 (Supplier Management)</a></li>
+    <li><a href="#section6e">6E. 采购订单管理 (Purchase Order Management)</a> <span class="badge badge-danger">新功能</span></li>
+    <li><a href="#section6f">6F. 质检记录管理 (Quality Inspection)</a> <span class="badge badge-danger">新功能</span></li>
+    <li>7. 创建生产计划 + 生成调拨单</li>
+    <li>8. 仓储审批 + 发货</li>
+    <li>9. 车间签收 + 领料确认</li>
+    <li>10. 员工签到 + 报工 + 签退</li>
+    <li>11. 查看分析报表</li>
+    <li>12. AI 对话 + 常见问题</li>
+    <li><a href="#section-smartbi">13. SmartBI 智能分析</a> <span class="badge badge-danger">新</span></li>
+    <li><a href="#section-finance">14. 财务管理</a> <span class="badge badge-danger">新</span></li>
+    <li><a href="#section-equipment">15. 设备管理</a> <span class="badge badge-danger">新</span></li>
+    <li><a href="#section-analytics">16. 数据分析</a> <span class="badge badge-danger">新</span></li>
+    <li><a href="#section-scheduling">17. 调度管理</a> <span class="badge badge-danger">新</span></li>
+    <li><a href="#section-supplement">18. 补充模块 (质检标准/废弃/价格表/成品库存/考勤/部门/角色/日志/设置)</a></li>
+    <li><a href="#section-rd">19. 研发管理</a></li>
+    <li><a href="#section-system">20. 系统管理</a></li>
   </ol>
-  <div class="toc-note">本手册为第一部分（基础配置），涵盖系统初始化到首次生产前的所有准备工作。第二部分（第 7-12 节）涵盖生产计划、报工、仓储、质检、AI 对话等运营流程。</div>
+  <div class="toc-note">本手册涵盖系统全部 20 个功能模块、80+ 页面。版本 3.2 更新于 2026-04-04。</div>
 </div>
 
 
@@ -1359,6 +1375,11 @@
     </table>
   </div>
 
+  <div class="info-box tip">
+    <strong>统一原料数据源</strong>
+    系统中所有模块（BOM 配方、采购订单、仓储入库、原料管理列表）均使用统一的原料接口，确保在任何页面看到的原料列表完全一致。在原料管理页面新增或修改的原料类型，会实时同步到 BOM 配置、采购下单、入库操作等所有下拉选择中。
+  </div>
+
   <div class="info-box info">
     <strong>「原料类型」与「原料批次」的区别</strong>
     <ul style="margin-top: 6px; padding-left: 20px;">
@@ -2021,8 +2042,8 @@
     <div class="step">
       <div class="step-num">7</div>
       <div class="step-content">
-        <div class="step-action">填写供应商（选填）</div>
-        <div class="step-detail">输入供应商名称，如「舟山渔业」「中盐集团」。用于后续供应商追溯和分析。</div>
+        <div class="step-action">选择供应商 <span class="badge badge-danger">必填</span></div>
+        <div class="step-detail">从下拉列表中选择供应商（如「舟山渔业」「中盐集团」）。供应商信息用于采购追溯和供应商评估分析。如列表中没有对应供应商，需先在「采购管理 &rsaquo; 供应商管理」中新增。</div>
       </div>
     </div>
     <div class="step">
@@ -2093,10 +2114,10 @@
         </tr>
         <tr>
           <td><strong>供应商</strong></td>
-          <td><span class="code">supplier</span></td>
-          <td class="optional">选填</td>
-          <td>舟山渔业</td>
-          <td>原料供应商名称。用于供应商追溯和来源分析。</td>
+          <td><span class="code">supplierId</span></td>
+          <td class="required">必填</td>
+          <td>舟山渔业有限公司</td>
+          <td>从供应商列表中选择（下拉选择框）。用于采购追溯和供应商评估。如列表中无对应供应商，需先在「采购管理 &rsaquo; 供应商管理」中新增。</td>
         </tr>
       </tbody>
     </table>
@@ -2140,9 +2161,15 @@
     </div>
   </div>
 
+  <div class="info-box tip">
+    <strong>自动计算</strong>
+    填写入库数量和单价后，系统自动计算并显示本批次的<strong>总重量</strong>和<strong>总金额</strong>（数量 x 单价），方便核对。
+  </div>
+
   <div class="info-box warning">
     <strong>入库注意事项</strong>
     <ul style="margin-top: 6px; padding-left: 20px;">
+      <li><strong>供应商必填</strong>：入库时必须选择供应商，无法留空提交。如供应商不在列表中，需先在「采购管理 &rsaquo; 供应商管理」中新增。</li>
       <li><strong>数量必须准确</strong>：入库数量直接影响库存余量。如果到货时需要质检扣减，应在质检后再填写实际合格数量入库。</li>
       <li><strong>单价影响成本</strong>：入库单价用于计算移动平均价，进而影响 SKU 成本核算和毛利率分析。填写实际采购价，不要填含税价。</li>
       <li><strong>到期日期很重要</strong>：填错到期日期会导致 FEFO 排序错乱。建议核对供应商提供的生产日期和保质期进行换算。</li>
@@ -2182,6 +2209,7 @@
 <!-- ====================================================================== -->
 <!-- SECTION 6C: 销售订单管理                                                -->
 <!-- ====================================================================== -->
+<div id="section6c" class="section-anchor"></div>
 <h2>六C、销售订单管理</h2>
 <p>
   <span class="role-tag role-admin">工厂管理员</span>
@@ -2189,7 +2217,7 @@
 </p>
 
 <div class="section-intro">
-  销售订单记录客户的采购需求，是排产计划的来源之一。订单经财务审核后可自动触发排产流程。
+  销售订单记录客户的采购需求，是排产计划的来源之一。订单经财务审核后可自动触发排产流程。支持草稿编辑、确认后出库等完整业务流程。
 </div>
 
 <div class="card">
@@ -2199,7 +2227,58 @@
   销售管理 <span class="sep">&rsaquo;</span> 销售订单 <span class="sep">&rsaquo;</span> 点击「新增订单」按钮
 </div>
 
-<h4>新增字段说明</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">点击右上角蓝色「新增订单」按钮</div>
+      <div class="step-detail">弹出新增订单对话框。也可通过绿色「AI 对话创建」按钮，用自然语言描述订单内容由 AI 自动填充。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">选择客户 <span class="badge badge-danger">必填</span></div>
+      <div class="step-detail">从下拉列表中选择客户。客户列表来自「客户管理」中已创建的客户。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">选择业务员</div>
+      <div class="step-detail">从<strong>下拉列表</strong>中选择负责此订单的业务员。列表显示系统中的销售经理和管理员。用于业绩统计和订单跟踪。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <div class="step-action">添加成品明细</div>
+      <div class="step-detail">
+        在成品明细区域填写订单包含的产品：
+        <div class="table-wrapper" style="margin-top: 8px;">
+          <table>
+            <thead>
+              <tr><th>品名</th><th>数量</th><th>单位</th><th>单价</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>从产品列表选择</td><td>填写数字</td><td>默认 kg</td><td>填写单价(元)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        点击「+ 添加明细」可增加更多产品行，点击行尾「-」可删除。
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <div class="step-action">填写其他信息并提交</div>
+      <div class="step-detail">填写交货日期、交货地址、备注、运费（勾选「含运费」后输入金额）等可选字段，点击「确定」提交。</div>
+    </div>
+  </div>
+</div>
+
+<h4>字段说明</h4>
 <div class="table-wrapper">
   <table>
     <thead>
@@ -2207,10 +2286,22 @@
     </thead>
     <tbody>
       <tr>
+        <td><strong>客户</strong></td>
+        <td class="required">必填</td>
+        <td>汇庭商贸</td>
+        <td>下拉选择框，从已创建的客户列表中选择。</td>
+      </tr>
+      <tr>
         <td><strong>业务员</strong></td>
         <td class="optional">选填</td>
         <td>张三</td>
-        <td>负责此订单的业务人员，用于业绩统计和订单跟踪。</td>
+        <td><strong>下拉选择框</strong>（非文本输入）。显示系统中的销售/管理人员。用于业绩统计和订单跟踪。</td>
+      </tr>
+      <tr>
+        <td><strong>成品明细</strong></td>
+        <td class="required">必填</td>
+        <td>墨鱼圈 / 200 / kg / 45.00</td>
+        <td>表格形式，表头为「品名 / 数量 / 单位 / 单价」。至少填写一条产品明细。</td>
       </tr>
       <tr>
         <td><strong>含运费</strong></td>
@@ -2230,7 +2321,54 @@
 </div>
 
 <div class="card">
-<h3>Step 6C.2: 财务审核流程</h3>
+<h3>Step 6C.2: 草稿订单编辑</h3>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">找到草稿状态的订单</div>
+      <div class="step-detail">在订单列表中，状态为「草稿」的订单在操作列显示黄色「编辑」按钮。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">点击「编辑」修改订单</div>
+      <div class="step-detail">弹出编辑对话框，自动回填原有数据（客户、业务员、产品明细等）。修改后点击「确定」保存。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box tip">
+  <strong>草稿编辑</strong>
+  只有「草稿」状态的订单可以编辑。订单确认后不可再修改。如需更改已确认订单，需取消后重新创建。
+</div>
+</div>
+
+<div class="card">
+<h3>Step 6C.3: 确认并创建出库</h3>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">确认订单</div>
+      <div class="step-detail">草稿订单点击「确认」按钮，状态变为「已确认」。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">快速出库</div>
+      <div class="step-detail">已确认的订单在操作列显示「出库」按钮。点击后弹出出库对话框，自动带入订单中的产品和数量，选择发货日期后确认出库。</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="card">
+<h3>Step 6C.4: 财务审核流程</h3>
 
 <div class="steps">
   <div class="step">
@@ -2279,6 +2417,7 @@
 <!-- ====================================================================== -->
 <!-- SECTION 6D: 供应商管理                                                  -->
 <!-- ====================================================================== -->
+<div id="section6d" class="section-anchor"></div>
 <h2>六D、供应商管理</h2>
 <p>
   <span class="role-tag role-admin">工厂管理员</span>
@@ -2286,7 +2425,7 @@
 </p>
 
 <div class="section-intro">
-  供应商管理用于维护原料供应商信息，便于采购追溯和供应商评估分析。
+  供应商管理用于维护原料供应商信息，便于采购追溯和供应商评估分析。原料入库时必须选择供应商，请先在此创建供应商。
 </div>
 
 <div class="card">
@@ -2307,13 +2446,14 @@
   <div class="step">
     <div class="step-num">2</div>
     <div class="step-content">
-      <div class="step-action">填写供应商信息</div>
+      <div class="step-action">填写供应商信息（详见下方字段说明）</div>
     </div>
   </div>
   <div class="step">
     <div class="step-num">3</div>
     <div class="step-content">
       <div class="step-action">点击「确定」保存</div>
+      <div class="step-detail">保存后该供应商可在原料入库、采购订单中被选择。</div>
     </div>
   </div>
 </div>
@@ -2345,9 +2485,9 @@
       </tr>
       <tr>
         <td><strong>地址</strong></td>
-        <td class="optional">选填</td>
+        <td class="required">必填 <span class="badge badge-danger">必填</span></td>
         <td>浙江省舟山市定海区</td>
-        <td>供应商办公或仓库地址。</td>
+        <td>供应商办公或仓库地址。此字段为必填项，不填写无法保存。</td>
       </tr>
       <tr>
         <td><strong>邮箱</strong></td>
@@ -2400,12 +2540,277 @@
 </div>
 
 
-<h1>白垩纪食品溯源系统</h1>
-<p class="subtitle">操作手册 第二部分: 生产流程 (Section 7-12) | 六扇门食品定制版 | 更新: 2026-03-27</p>
+<!-- ====================================================================== -->
+<!-- SECTION 6E: 采购订单管理                                                -->
+<!-- ====================================================================== -->
+<div id="section6e" class="section-anchor"></div>
+<h2>六E、采购订单管理 <span class="badge badge-danger">新功能</span></h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员</span>
+  <span class="badge badge-web">Web Admin</span>
+</p>
 
 <div class="section-intro">
-  本部分涵盖日常生产的全部操作流程: 从管理员创建生产计划开始，经过仓库审批发货、车间签收领料、员工签到报工，到最后查看分析报表和使用AI对话。<br>
-  <strong>前提条件:</strong> 第一部分 (Section 1-6) 中的基础配置已完成 -- 客户、原料、产品模板、BOM转换率、SKU 均已配置完毕。
+  采购订单用于管理向供应商的原料采购流程。可关联销售订单，实现「销售驱动采购」的业务闭环。支持从创建、提交、审批到收货完结的全流程管理。
+</div>
+
+<div class="card">
+<h3>Step 6E.1: 创建采购订单</h3>
+
+<div class="menu-path">
+  采购管理 <span class="sep">&rsaquo;</span> 采购订单 <span class="sep">&rsaquo;</span> 点击「新建采购单」按钮
+</div>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">点击右上角蓝色「新建采购单」按钮</div>
+      <div class="step-detail">弹出新建采购订单对话框。也可通过绿色「AI 对话创建」按钮自然语言创建。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">选择供应商 <span class="badge badge-danger">必填</span></div>
+      <div class="step-detail">从下拉列表中选择供应商。如列表中无对应供应商，需先在「采购管理 &rsaquo; 供应商管理」中新增。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">选择采购类型</div>
+      <div class="step-detail">下拉选择：「直接采购」(DIRECT) 或其他类型。默认为直接采购。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <div class="step-action">关联销售订单（可选）</div>
+      <div class="step-detail">如果本次采购是为了满足某个销售订单的需求，可从「关联销售订单」下拉列表中选择对应的销售订单。关联后方便追溯采购与销售的对应关系。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <div class="step-action">添加原料明细</div>
+      <div class="step-detail">
+        在原料明细区域添加本次采购的原料项目：
+        <div class="table-wrapper" style="margin-top: 8px;">
+          <table>
+            <thead>
+              <tr><th>原料名称</th><th>数量</th><th>单位</th><th>单价</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>从原料列表选择</td><td>填写数字</td><td>默认 kg</td><td>填写单价(元)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        点击「+ 添加」可增加更多原料行。原料列表与 BOM 配方、仓储入库使用同一数据源。
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <div class="step-action">选择预计交货日期并提交</div>
+      <div class="step-detail">选择供应商预计送货日期，填写备注后点击「确定」提交。</div>
+    </div>
+  </div>
+</div>
+
+<h4>字段说明</h4>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>字段名</th><th>必填</th><th>示例</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>供应商</strong></td>
+        <td class="required">必填</td>
+        <td>舟山渔业有限公司</td>
+        <td>下拉选择框，从供应商管理中已创建的供应商列表选择。</td>
+      </tr>
+      <tr>
+        <td><strong>采购类型</strong></td>
+        <td class="optional">选填</td>
+        <td>直接采购</td>
+        <td>默认「直接采购」(DIRECT)。</td>
+      </tr>
+      <tr>
+        <td><strong>关联销售订单</strong></td>
+        <td class="optional">选填</td>
+        <td>SO-20260401-001</td>
+        <td>下拉选择框，显示现有销售订单列表。关联后可追溯采购与销售的对应关系。</td>
+      </tr>
+      <tr>
+        <td><strong>预计交货日期</strong></td>
+        <td class="optional">选填</td>
+        <td>2026-04-05</td>
+        <td>供应商预计送达日期。</td>
+      </tr>
+      <tr>
+        <td><strong>原料明细</strong></td>
+        <td class="required">必填</td>
+        <td>墨鱼 / 300 / kg / 22.00</td>
+        <td>表格形式，包含原料名称、数量、单位、单价。至少填写一条明细。</td>
+      </tr>
+      <tr>
+        <td><strong>备注</strong></td>
+        <td class="optional">选填</td>
+        <td>周四上午送达</td>
+        <td>采购备注信息。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>采购订单状态流转</h4>
+<div class="flow-container" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0;">
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#F1F5F9; font-weight:600;">草稿</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#FEF3C7; font-weight:600;">已提交</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#DBEAFE; font-weight:600;">已审批</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#D1FAE5; font-weight:600;">已完成</div>
+</div>
+</div>
+
+
+<!-- ====================================================================== -->
+<!-- SECTION 6F: 质检记录管理                                                -->
+<!-- ====================================================================== -->
+<div id="section6f" class="section-anchor"></div>
+<h2>六F、质检记录管理 <span class="badge badge-danger">新功能</span></h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员 / 质检员</span>
+  <span class="badge badge-web">Web Admin</span>
+</p>
+
+<div class="section-intro">
+  质检记录用于记录生产批次的质量检验结果。每条质检记录关联一个生产批次，记录抽样数量、合格/不合格数、检验结论等信息。
+</div>
+
+<div class="card">
+<h3>Step 6F.1: 新建质检记录</h3>
+
+<div class="menu-path">
+  质量管理 <span class="sep">&rsaquo;</span> 质检记录 <span class="sep">&rsaquo;</span> 点击「新建质检」按钮
+</div>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">点击右上角蓝色「新建质检」按钮</div>
+      <div class="step-detail">弹出新建质检记录对话框。系统自动加载可选的生产批次列表。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">选择生产批次 <span class="badge badge-danger">必填</span></div>
+      <div class="step-detail">从<strong>下拉列表</strong>中选择要质检的生产批次（支持搜索过滤）。列表显示批次号和产品名称，格式如「PB-20260401-001 - 墨鱼圈」。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">填写抽样数量 <span class="badge badge-danger">必填</span></div>
+      <div class="step-detail">输入本次质检的抽样数量（正整数）。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <div class="step-action">填写合格数和不合格数</div>
+      <div class="step-detail">分别填写检验合格的数量和不合格的数量。系统自动计算合格率。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <div class="step-action">选择检验结果 <span class="badge badge-danger">必填</span></div>
+      <div class="step-detail">从下拉列表中选择最终结论：<strong>合格</strong> / <strong>不合格</strong> / <strong>待复检</strong>。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <div class="step-action">填写备注并提交</div>
+      <div class="step-detail">可选填写质检备注（如异常描述、检验方法等），点击「确定」提交。质检员 ID 自动从当前登录用户获取。</div>
+    </div>
+  </div>
+</div>
+
+<h4>字段说明</h4>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>字段名</th><th>必填</th><th>示例</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>生产批次</strong></td>
+        <td class="required">必填</td>
+        <td>PB-20260401-001</td>
+        <td>下拉选择框（支持搜索），从现有生产批次列表中选择。</td>
+      </tr>
+      <tr>
+        <td><strong>抽样数量</strong></td>
+        <td class="required">必填</td>
+        <td>50</td>
+        <td>本次抽样检验的数量，最小值为 1。</td>
+      </tr>
+      <tr>
+        <td><strong>合格数</strong></td>
+        <td class="required">必填</td>
+        <td>48</td>
+        <td>检验合格的数量。</td>
+      </tr>
+      <tr>
+        <td><strong>不合格数</strong></td>
+        <td class="required">必填</td>
+        <td>2</td>
+        <td>检验不合格的数量。</td>
+      </tr>
+      <tr>
+        <td><strong>检验结果</strong></td>
+        <td class="required">必填</td>
+        <td>合格</td>
+        <td>下拉选择：合格 (PASS) / 不合格 (FAIL) / 待复检 (PENDING)。</td>
+      </tr>
+      <tr>
+        <td><strong>质检员</strong></td>
+        <td style="color:#EA580C; font-weight:600;">自动填充</td>
+        <td>当前登录用户</td>
+        <td>系统自动获取当前登录用户 ID 作为质检员，无需手动填写。</td>
+      </tr>
+      <tr>
+        <td><strong>备注</strong></td>
+        <td class="optional">选填</td>
+        <td>外观检查正常</td>
+        <td>质检备注信息。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="info-box tip">
+  <strong>质检列表功能</strong>
+  质检记录列表支持按质检编号/批次号搜索，支持按检测结果（合格/不合格）筛选。点击「查看详情」可在右侧抽屉中查看完整质检信息。
+</div>
+</div>
+
+
+<h1>白垩纪食品溯源系统</h1>
+<p class="subtitle">操作手册 第二部分: 生产流程 (Section 7-12) | v3.2 | 更新: 2026-04-04</p>
+
+<div class="section-intro">
+  本部分涵盖日常生产的全部操作流程: 从管理员创建生产计划开始，经过仓库审批发货、车间签收领料、员工签到报工，到最后查看分析报表和使用 AI 对话。<br>
+  <strong>前提条件:</strong> 第一部分 (Section 1-6) 中的基础配置已完成 -- 客户、原料、产品模板、BOM 转换率、SKU、供应商 均已配置完毕。
 </div>
 
 <!-- ====================================================================== -->
@@ -2497,18 +2902,18 @@
     <td>汇庭商贸</td>
     <td>
       <strong>文本输入框</strong>。填写本批生产的目标客户名称。<br>
-      如果选择的产品类型是 SKU (如 CP-汇庭商贸-墨鱼圈)，客户信息已包含在 SKU 名称中，此字段可用来做额外备注。<br>
+      <strong>自动填充：</strong>选择产品类型后，如果该产品（SKU）关联了客户，系统会自动填入客户名称，无需手动输入。<br>
       填写后会在计划列表的「客户」列显示，方便筛选和识别。
     </td>
   </tr>
   <tr>
     <td>工序</td>
     <td class="required-no">选填</td>
-    <td>分切、包装</td>
+    <td>分切</td>
     <td>
-      <strong>文本输入框</strong>。如果本批次只涉及特定工序可以在此注明。<br>
-      留空表示按产品标准工序流程执行全部工序。<br>
-      BOM 展开不依赖此字段，它是给车间主管的参考信息。
+      <strong>下拉选择框</strong>。选择产品类型后，系统自动加载该产品 BOM 中配置的工序列表供选择。<br>
+      如果本批次只涉及特定工序可以在此选择注明。<br>
+      留空表示按产品标准工序流程执行全部工序。
     </td>
   </tr>
   <tr>
@@ -2673,7 +3078,7 @@
 
 <div class="highlight-red">
   <strong>可能的错误及处理:</strong><br>
-  <strong>"该产品无BOM配置"</strong> — 选择的产品没有配置转换率/BOM。解决: 先到「生产管理 → 转换率配置」为该产品添加 BOM（见第一部分 Section 5B）。<br>
+  <strong>"该产品无BOM配置"</strong> — 选择的产品没有配置转换率/BOM。系统弹窗会提供「去配置BOM」快捷按钮，点击后直接跳转到 BOM 配方管理页面为该产品添加配方。也可手动到「生产管理 &rarr; 转换率配置」添加（见第一部分 Section 5B）。<br>
   <strong>"产品类型不存在"</strong> — 选择的产品已被删除或ID无效。解决: 重新选择正确的产品类型。<br>
   <strong>网络错误</strong> — 检查网络连接后重试。
 </div>
@@ -2683,7 +3088,7 @@
   <strong>[转为批次]</strong> — 将计划直接转为生产批次（不走调拨流程，适用于车间已有物料的情况）。<br>
   <strong>[开始]</strong> — 将计划状态改为「进行中」，表示已开始执行。<br>
   <strong>[完成]</strong> — (进行中状态才显示) 弹窗输入实际产量后完成计划。<br>
-  <strong>[取消]</strong> — 弹窗输入取消原因后取消计划。
+  <strong>[取消]</strong> — 弹窗输入取消原因（必填）后取消计划。取消原因会记录在计划备注中，方便后续查询。
 </div>
 </div>
 
@@ -4316,8 +4721,1845 @@
 </table>
 </div>
 
+<!-- ====================================================================== -->
+<!-- SECTION 13: SmartBI 智能分析                                             -->
+<!-- ====================================================================== -->
+<div id="section-smartbi" class="section-anchor"></div>
+<h2 class="section-title">
+  <span class="section-num">13</span>
+  SmartBI 智能分析 (Smart Analytics)
+</h2>
+
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="badge badge-ai">AI</span>
+    <span class="card-title">SmartBI 模块概述</span>
+  </div>
+  <p style="color:#64748b;">
+    SmartBI 是系统内置的智能数据分析平台，支持经营驾驶舱、Excel 上传自动分析、AI 自然语言问答、财务看板、What-If 模拟和数据分享。无需第三方 BI 工具即可完成从数据导入到洞察输出的全流程。
+  </p>
+</div>
+
+<!-- 13.1 经营驾驶舱 -->
+<h3>13.1 经营驾驶舱</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">经营驾驶舱 (Dashboard)</span>
+  </div>
+
+  <div class="menu-path">
+    智能分析 <span class="sep">&rsaquo;</span> 经营驾驶舱
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入驾驶舱页面</div>
+        <div class="step-detail">左侧菜单「智能分析」&rsaquo;「经营驾驶舱」，进入总览仪表盘。路由路径: <span class="code">/smart-bi/dashboard</span></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">查看 KPI 卡片</div>
+        <div class="step-detail">页面顶部显示核心经营指标卡片，包括：<strong>本月产量</strong>、<strong>良品率</strong>、<strong>订单完成率</strong>、<strong>库存周转天数</strong>等。每张卡片显示当前值、同比/环比变化趋势箭头和百分比。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">查看趋势图表</div>
+        <div class="step-detail">KPI 卡片下方为多个 ECharts 图表区域：<strong>产量趋势折线图</strong>（按日/周/月切换）、<strong>产线产能对比柱状图</strong>、<strong>原料消耗饼图</strong>、<strong>质检合格率走势图</strong>等。鼠标悬停图表可查看详细数据 tooltip。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">切换时间范围</div>
+        <div class="step-detail">页面右上角的时间选择器支持切换「今日 / 本周 / 本月 / 自定义日期范围」，所有卡片和图表会自动刷新。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box tip">
+    <strong>驾驶舱使用建议</strong>
+    经营驾驶舱适合每天早晨快速浏览工厂运营状态。重点关注 KPI 卡片中显示红色向下箭头的指标，这表示该指标相比上期有所下降，可能需要关注。
+  </div>
+</div>
+
+<!-- 13.2 Excel 上传分析 -->
+<h3>13.2 Excel 上传分析</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="badge badge-ai">AI</span>
+    <span class="card-title">Excel 上传 &rarr; 自动分析</span>
+  </div>
+
+  <div class="menu-path">
+    智能分析 <span class="sep">&rsaquo;</span> 数据上传
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">点击上传，选择 Excel 文件</div>
+        <div class="step-detail">进入「智能分析」&rsaquo;「数据上传」页面，路由路径: <span class="code">/smart-bi/upload</span>。点击页面中央的上传区域或拖拽 Excel 文件（支持 <span class="code">.xlsx</span> / <span class="code">.xls</span> 格式，单文件最大 20MB）。上传后页面显示 SSE 进度条，实时反馈解析状态。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">系统自动解析 Sheet，检测字段类型</div>
+        <div class="step-detail">系统后端（Python 服务）自动识别 Excel 中的每个 Sheet，解析列标题和数据类型（数值、文本、日期、百分比等）。解析完成后自动跳转到分析页面: <span class="code">/smart-bi/analysis</span>。左侧面板显示所有已识别的 Sheet 列表和字段定义。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">查看自动生成的图表、KPI 卡片和 AI 洞察</div>
+        <div class="step-detail">每个 Sheet 自动生成 3-5 个推荐图表（柱状图、折线图、饼图等）+ KPI 摘要卡片 + AI 文字洞察分析。图表由系统根据数据类型自动推荐最合适的可视化方式。AI 洞察（由 LLM 生成）会指出数据中的关键趋势、异常值和建议。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">通过 Tab 切换不同 Sheet</div>
+        <div class="step-detail">如果 Excel 包含多个 Sheet，页面顶部显示 Tab 标签页，点击即可切换查看不同 Sheet 的分析结果。每个 Sheet 独立生成图表和洞察。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box info">
+    <strong>支持的数据格式</strong>
+    支持任意结构的 Excel 文件 -- 系统会自动识别标题行和数据区域。建议第一行为列标题，从第二行开始为数据。如果数据包含合并单元格，系统会尝试自动拆分。
+  </div>
+
+  <div class="info-box tip">
+    <strong>分析耗时说明</strong>
+    解析和图表生成采用 SSE（Server-Sent Events）实时推送。通常 1-3 个 Sheet 的 Excel 在 10-30 秒内完成全部分析（含 AI 洞察生成）。大文件（10+ Sheet 或 10000+ 行）可能需要 1-2 分钟。
+  </div>
+</div>
+
+<!-- 13.3 AI 智能问答 -->
+<h3>13.3 AI 智能问答</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="badge badge-ai">AI</span>
+    <span class="card-title">自然语言数据问答</span>
+  </div>
+
+  <div class="menu-path">
+    智能分析 <span class="sep">&rsaquo;</span> AI 问答
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入 AI 问答页面</div>
+        <div class="step-detail">左侧菜单「智能分析」&rsaquo;「AI 问答」，路由路径: <span class="code">/smart-bi/query</span>。页面呈对话界面，顶部显示已上传的数据集列表（可选择分析哪个数据集）。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">输入自然语言问题</div>
+        <div class="step-detail">在底部输入框中输入问题，如「本月产量是多少」「良品率最高的产线是哪条」「上周和本周的产量对比」。按 Enter 发送，系统将调用 LLM 分析已上传的数据并生成回答。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">查看分析结果</div>
+        <div class="step-detail">AI 回复会包含文字分析 + 自动生成的图表（如果问题涉及可视化需求）。回复使用 SSE 流式输出，实时显示生成过程。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box tip">
+    <strong>推荐问题示例</strong>
+    <div class="sub-steps">
+      <div class="sub-step">「本月各产线的产量对比如何？」</div>
+      <div class="sub-step">「哪些原料的消耗量最大？」</div>
+      <div class="sub-step">「最近 30 天的良品率趋势是什么？」</div>
+      <div class="sub-step">「本月销售额 TOP5 客户是谁？」</div>
+      <div class="sub-step">「帮我分析一下成本结构」</div>
+    </div>
+  </div>
+</div>
+
+<!-- 13.4 财务分析看板 -->
+<h3>13.4 财务分析看板</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">财务分析看板 (Financial Dashboard)</span>
+  </div>
+
+  <div class="menu-path">
+    智能分析 <span class="sep">&rsaquo;</span> 财务看板
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入财务分析看板</div>
+        <div class="step-detail">左侧菜单「智能分析」&rsaquo;「财务看板」，路由路径: <span class="code">/smart-bi/financial-dashboard</span>。页面以多图表形式展示企业核心财务指标。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">查看收入趋势</div>
+        <div class="step-detail">顶部区域显示<strong>月度收入趋势折线图</strong>，X 轴为月份，Y 轴为金额。支持按季度/年度切换视图。同时展示同比增长率标注。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">查看成本构成</div>
+        <div class="step-detail">中部区域为<strong>成本构成饼图/堆叠柱状图</strong>，按「原料成本 / 人工成本 / 制造费用 / 管理费用」等科目分类。鼠标悬停查看各科目占比和金额。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">查看利润分析</div>
+        <div class="step-detail">下方展示<strong>利润趋势图</strong>（收入 vs 成本 vs 利润三线对比）和<strong>毛利率走势</strong>。红色区域表示亏损月份，绿色表示盈利月份。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box info">
+    <strong>数据来源</strong>
+    财务看板的数据来自系统中的销售订单、采购订单、工资记录等业务数据的自动汇总。也可以通过 Excel 上传补充外部财务数据。
+  </div>
+</div>
+
+<!-- 13.5 What-If 模拟器 -->
+<h3>13.5 What-If 模拟器</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="badge badge-ai">AI</span>
+    <span class="card-title">What-If 情景模拟</span>
+  </div>
+
+  <div class="menu-path">
+    智能分析 <span class="sep">&rsaquo;</span> What-If 模拟
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入 What-If 模拟页面</div>
+        <div class="step-detail">左侧菜单「智能分析」&rsaquo;「What-If 模拟」，路由路径: <span class="code">/smart-bi/whatif</span>。页面分为左侧参数面板和右侧图表预览区。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">调整参数滑块</div>
+        <div class="step-detail">左侧面板提供多个可调参数滑块：<strong>售价调整</strong>（-30% ~ +30%）、<strong>产量调整</strong>（-50% ~ +100%）、<strong>原料成本变动</strong>（-20% ~ +40%）、<strong>人工成本变动</strong>（-10% ~ +30%）。拖动滑块或直接输入数值。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">查看模拟结果</div>
+        <div class="step-detail">每次调整参数后，右侧图表实时更新，显示模拟后的<strong>收入预测</strong>、<strong>利润变化</strong>、<strong>盈亏平衡点</strong>等。对比线显示调整前（虚线）与调整后（实线）的差异。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">保存模拟方案</div>
+        <div class="step-detail">点击右上角「保存方案」可将当前参数组合保存为命名方案，方便后续对比不同情景。已保存的方案可在下拉列表中快速加载。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box warning">
+    <strong>模拟数据说明</strong>
+    What-If 模拟基于当前系统数据和假设条件进行预测，仅供决策参考。实际经营结果受市场、政策等多因素影响，请结合实际情况综合判断。
+  </div>
+</div>
+
+<!-- 13.6 数据分享 -->
+<h3>13.6 数据分享</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">分析结果分享</span>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">在分析页面点击「分享」按钮</div>
+        <div class="step-detail">在任意分析结果页面（经营驾驶舱、Excel 分析、财务看板等），点击页面右上角的「分享」按钮。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">生成公开分享链接</div>
+        <div class="step-detail">系统自动生成一个公开访问链接（无需登录即可查看）。链接格式: <span class="code">/public/shared-view/{shareId}</span>。可设置链接有效期（默认 7 天）。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">复制并发送链接</div>
+        <div class="step-detail">点击「复制链接」按钮，将链接通过微信、邮件等方式发送给需要查看的人。接收方打开链接即可直接查看分析图表和数据，无需注册或登录系统。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box tip">
+    <strong>分享安全说明</strong>
+    分享链接为只读模式，接收方只能查看不能修改。链接到期后自动失效。管理员可在分享管理页面随时撤销已生成的链接。
+  </div>
+</div>
+
+
+<!-- ====================================================================== -->
+<!-- SECTION 14: 财务管理                                                     -->
+<!-- ====================================================================== -->
+<div id="section-finance" class="section-anchor"></div>
+<h2 class="section-title">
+  <span class="section-num">14</span>
+  财务管理 (Finance Management)
+</h2>
+
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">财务管理模块概述</span>
+  </div>
+  <p style="color:#64748b;">
+    财务管理模块提供完整的企业财务管理功能，涵盖成本分析、财务报表、应收应付账款、开票管理和收付款记录。帮助管理者实时掌控工厂财务状况，实现从生产到收款的全链路财务追踪。
+  </p>
+</div>
+
+<!-- 14.1 成本分析 -->
+<h3>14.1 成本分析</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">成本分析 (Cost Analysis)</span>
+  </div>
+
+  <div class="menu-path">
+    财务管理 <span class="sep">&rsaquo;</span> 成本分析
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入成本分析页面</div>
+        <div class="step-detail">左侧菜单「财务管理」&rsaquo;「成本分析」，路由路径: <span class="code">/finance/costs</span>。页面显示成本明细表格和汇总图表。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">查看成本明细表格</div>
+        <div class="step-detail">
+          表格按成本类型分类显示，主要列包括：
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>列名</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>成本类型</strong></td><td>原料成本 / 人工成本 / 制造费用 / 包装成本 / 物流成本</td></tr>
+        <tr><td><strong>本月金额</strong></td><td>当月累计发生金额</td></tr>
+        <tr><td><strong>上月金额</strong></td><td>上月同期金额，用于环比分析</td></tr>
+        <tr><td><strong>环比变化</strong></td><td>与上月对比的增减百分比，红色表示上升，绿色表示下降</td></tr>
+        <tr><td><strong>占比</strong></td><td>该成本类型占总成本的比例（饼图同步展示）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">按时间段筛选</div>
+        <div class="step-detail">使用顶部的日期范围选择器切换「本月 / 本季度 / 本年度 / 自定义」，表格和图表自动刷新。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">查看成本趋势图</div>
+        <div class="step-detail">页面下方的趋势图以折线图展示各类成本的月度变化走势，便于发现成本异常波动。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box tip">
+    <strong>成本分析建议</strong>
+    重点关注「原料成本」占比和环比变化。如果原料成本占比持续上升超过 60%，建议检查采购价格或供应商报价。
+  </div>
+</div>
+
+<!-- 14.2 财务报表 -->
+<h3>14.2 财务报表</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">财务报表 (Financial Reports)</span>
+  </div>
+
+  <div class="menu-path">
+    财务管理 <span class="sep">&rsaquo;</span> 财务报表
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入报表列表页</div>
+        <div class="step-detail">左侧菜单「财务管理」&rsaquo;「财务报表」，路由路径: <span class="code">/finance/reports</span>。页面以列表形式显示所有可查看的财务报表。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">选择报表类型</div>
+        <div class="step-detail">
+          顶部 Tab 或筛选器切换报表类型：
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>报表类型</th><th>内容</th><th>生成频率</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>利润表</strong></td><td>收入、成本、费用和利润汇总</td><td>月度自动生成</td></tr>
+        <tr><td><strong>现金流量表</strong></td><td>经营、投资、筹资活动现金流</td><td>月度自动生成</td></tr>
+        <tr><td><strong>成本明细表</strong></td><td>按产品/产线/成本科目的详细成本分摊</td><td>月度自动生成</td></tr>
+        <tr><td><strong>自定义报表</strong></td><td>按用户选择的维度和指标组合生成</td><td>按需生成</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">选择报表期间</div>
+        <div class="step-detail">在日期选择器中选择「月度 / 季度 / 年度」和具体期间。系统根据选择的范围展示对应的报表数据。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">查看和导出报表</div>
+        <div class="step-detail">点击列表中的报表名称打开详情。报表支持在线查看和导出为 Excel / PDF 格式。点击右上角「导出」按钮选择格式。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 14.3 应收应付 -->
+<h3>14.3 应收应付</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">应收应付账款 (AR/AP Ledger)</span>
+  </div>
+
+  <div class="menu-path">
+    财务管理 <span class="sep">&rsaquo;</span> 应收应付
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入应收应付页面</div>
+        <div class="step-detail">左侧菜单「财务管理」&rsaquo;「应收应付」，路由路径: <span class="code">/finance/ar-ap</span>。页面顶部通过 Tab 切换「应收账款」和「应付账款」。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">查看应收账款（AR）</div>
+        <div class="step-detail">
+          应收账款列表显示客户欠款明细：
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>字段</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>客户名称</strong></td><td>欠款客户</td></tr>
+        <tr><td><strong>关联订单号</strong></td><td>产生应收的销售订单编号，可点击跳转</td></tr>
+        <tr><td><strong>应收金额</strong></td><td>订单总金额</td></tr>
+        <tr><td><strong>已收金额</strong></td><td>已收到的付款金额</td></tr>
+        <tr><td><strong>未收余额</strong></td><td>应收 - 已收 = 剩余应收</td></tr>
+        <tr><td><strong>账龄</strong></td><td>从出货日到今天的天数。超过 30 天显示黄色，超过 90 天显示红色</td></tr>
+        <tr><td><strong>状态</strong></td><td>未收款 / 部分收款 / 已结清</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">查看应付账款（AP）</div>
+        <div class="step-detail">切换到「应付账款」Tab，显示工厂对供应商的欠款。字段与应收类似，主要包括：供应商名称、采购订单号、应付金额、已付金额、未付余额和状态。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">筛选和搜索</div>
+        <div class="step-detail">支持按客户/供应商名称搜索、按状态筛选（未收款/已结清）、按账龄排序。也可导出为 Excel 进行对账。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box warning">
+    <strong>账龄预警</strong>
+    系统会自动标注超期账款：超过 30 天的应收账款显示黄色警告，超过 90 天显示红色警告。建议定期检查并跟进超期账款的催收。
+  </div>
+</div>
+
+<!-- 14.4 开票管理 -->
+<h3>14.4 开票管理</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">开票管理 (Invoice Management)</span>
+  </div>
+
+  <div class="menu-path">
+    财务管理 <span class="sep">&rsaquo;</span> 开票管理
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入开票管理页面</div>
+        <div class="step-detail">左侧菜单「财务管理」&rsaquo;「开票管理」，路由路径: <span class="code">/finance/invoices</span>。页面显示发票列表和操作按钮。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">创建新发票</div>
+        <div class="step-detail">点击右上角「新建发票」按钮，弹出创建表单。填写以下字段：</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>字段名</th><th>必填</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>客户名称</strong></td><td class="required">必填</td><td>下拉选择已有客户。发票抬头默认使用客户全称。</td></tr>
+        <tr><td><strong>关联订单</strong></td><td class="optional">选填</td><td>可关联一个或多个销售订单，自动带入商品明细和金额。</td></tr>
+        <tr><td><strong>发票类型</strong></td><td class="required">必填</td><td>增值税普通发票 / 增值税专用发票</td></tr>
+        <tr><td><strong>开票金额</strong></td><td class="required">必填</td><td>如关联了订单，金额自动填入，可手动调整。</td></tr>
+        <tr><td><strong>税率</strong></td><td class="required">必填</td><td>默认 13%（食品行业），可选 6%、9%、13% 等。</td></tr>
+        <tr><td><strong>开票日期</strong></td><td class="required">必填</td><td>默认今天，可修改。</td></tr>
+        <tr><td><strong>备注</strong></td><td class="optional">选填</td><td>发票附加说明。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">查看发票列表</div>
+        <div class="step-detail">列表显示所有已开发票，包含：发票号、客户、金额、开票日期、状态（已开 / 已作废）。支持按客户名称搜索和按日期范围筛选。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">作废发票</div>
+        <div class="step-detail">在列表中找到需要作废的发票，点击操作列的「作废」按钮。系统弹出确认对话框，确认后发票状态变为「已作废」，关联的应收金额会自动调整。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box info">
+    <strong>发票与应收联动</strong>
+    创建发票后，系统自动在应收账款中生成对应记录。当客户付款确认后，应收状态自动更新为「已结清」。
+  </div>
+</div>
+
+<!-- 14.5 收付款 -->
+<h3>14.5 收付款</h3>
+<div class="card">
+  <div class="card-header">
+    <span class="badge badge-web">WEB ADMIN</span>
+    <span class="card-title">收付款记录 (Payment Records)</span>
+  </div>
+
+  <div class="menu-path">
+    财务管理 <span class="sep">&rsaquo;</span> 收付款
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-action">进入收付款页面</div>
+        <div class="step-detail">左侧菜单「财务管理」&rsaquo;「收付款」，路由路径: <span class="code">/finance/payments</span>。页面通过 Tab 切换「收款记录」和「付款记录」。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-action">登记收款</div>
+        <div class="step-detail">在「收款记录」Tab 下点击「登记收款」按钮，弹出表单：</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>字段名</th><th>必填</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>客户名称</strong></td><td class="required">必填</td><td>下拉选择付款客户</td></tr>
+        <tr><td><strong>收款金额</strong></td><td class="required">必填</td><td>本次实际收到的金额</td></tr>
+        <tr><td><strong>收款方式</strong></td><td class="required">必填</td><td>银行转账 / 现金 / 支票 / 承兑汇票</td></tr>
+        <tr><td><strong>收款日期</strong></td><td class="required">必填</td><td>实际到账日期</td></tr>
+        <tr><td><strong>关联发票</strong></td><td class="optional">选填</td><td>可关联一张或多张发票，自动核销应收</td></tr>
+        <tr><td><strong>备注</strong></td><td class="optional">选填</td><td>收款说明（如银行流水号等）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-action">登记付款</div>
+        <div class="step-detail">切换到「付款记录」Tab，点击「登记付款」。字段与收款类似：供应商名称、付款金额、付款方式、付款日期、关联采购订单等。确认提交后，应付账款自动更新。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-action">查看收付款流水</div>
+        <div class="step-detail">列表显示所有收付款记录，包含：流水号、客户/供应商、金额、方式、日期、关联单据。支持按日期范围筛选和导出 Excel。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box tip">
+    <strong>自动核销机制</strong>
+    登记收款时如关联了发票，系统自动核销对应的应收账款。如果收款金额小于发票金额，应收状态更新为「部分收款」；收款金额等于发票金额，状态更新为「已结清」。
+  </div>
+
+  <div class="info-box info">
+    <strong>收付款与银行对账</strong>
+    建议每月末将系统中的收付款记录导出 Excel，与银行流水进行核对，确保账务准确性。
+  </div>
+</div>
+
+
+
+<!--
+  操作手册补充内容: 设备管理 / 数据分析 / 调度管理 / 补充模块
+  用于插入 operation-manual-full.html, 使用相同 CSS class 体系
+  生成日期: 2026-04-03
+-->
+
+
+<!-- ============================================================ -->
+<!-- SECTION: 设备管理 (Equipment Management)                      -->
+<!-- ============================================================ -->
+<div id="section-equipment" class="section-anchor"></div>
+<h2>设备管理 (Equipment Management)</h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员</span>
+  <span class="badge badge-web">Web Admin</span>
+</p>
+
+<div class="section-intro">
+  设备管理模块覆盖工厂全部设备的台账管理、维护记录跟踪和告警监控。通过设备状态一目了然地掌握每台设备的运行情况，并在设备异常时第一时间收到告警通知。
+</div>
+
+<!-- Equipment List -->
+<div class="card">
+<h3>设备列表</h3>
+
+<div class="menu-path">
+  设备管理 <span class="sep">&rsaquo;</span> 设备列表
+</div>
+
+<div class="screen-path">菜单路径: 设备管理 &rarr; 设备列表 (/equipment/list)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  设备列表页展示当前工厂全部设备的台账信息。页面顶部有搜索栏和筛选条件，列表以卡片或表格形式展示每台设备。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">设备卡片 / 表格列表</div>
+      <div class="step-detail">每台设备显示：设备名称、设备编号、设备类型、所属车间/产线，以及当前状态标签。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">状态指示器</div>
+      <div class="step-detail">
+        每台设备有彩色状态标签：
+        <span class="color-green">运行中</span> /
+        <span class="color-yellow">待维护</span> /
+        <span class="color-red">故障停机</span> /
+        <span style="color:#94a3b8; font-weight:600;">已停用</span>。
+        可通过状态筛选快速定位需要关注的设备。
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">搜索与筛选</div>
+      <div class="step-detail">支持按设备名称、编号关键词搜索，按设备类型和状态下拉筛选。</div>
+    </div>
+  </div>
+</div>
+
+<h4>关键操作</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">新增设备</div>
+      <div class="step-detail">点击右上角「新增设备」按钮，填写设备名称、编号、类型、所属车间、购买日期、使用寿命等信息后提交。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">编辑 / 查看详情</div>
+      <div class="step-detail">点击设备行的「编辑」按钮修改信息，或点击设备名称查看完整详情页（包含维护历史、告警记录等）。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">停用 / 启用设备</div>
+      <div class="step-detail">对已报废或暂不使用的设备可点击「停用」，停用后不再参与维护提醒和告警统计。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box tip">
+  <strong>建议</strong>
+  设备编号建议采用统一格式（如 EQ-001、EQ-002），便于后续维护记录和告警关联查询。设备类型建议提前规划好分类（如：分切机、包装机、冷冻设备等）。
+</div>
+</div>
+
+
+<!-- Equipment Maintenance -->
+<div class="card">
+<h3>维护记录</h3>
+
+<div class="menu-path">
+  设备管理 <span class="sep">&rsaquo;</span> 维护记录
+</div>
+
+<div class="screen-path">菜单路径: 设备管理 &rarr; 维护记录 (/equipment/maintenance)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  维护记录页面管理所有设备的保养和维修历史。支持按设备筛选查看维护历史，并可创建新的维护记录。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">维护记录列表</div>
+      <div class="step-detail">列表按时间倒序展示全部维护记录。每条记录包含：设备名称、维护类型（日常保养/故障维修/定期检修）、维护日期、维护人员、维护内容摘要、状态。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">维护计划提醒</div>
+      <div class="step-detail">系统根据设备的上次维护日期和维护周期，自动提示即将到期的设备维护。到期设备行会显示黄色高亮提醒。</div>
+    </div>
+  </div>
+</div>
+
+<h4>关键操作</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">新建维护记录</div>
+      <div class="step-detail">点击「新建维护记录」按钮。选择设备（下拉搜索）、维护类型、维护日期、填写维护内容描述，点击确定提交。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">按设备筛选</div>
+      <div class="step-detail">页面顶部「设备」下拉框可筛选某台设备的全部维护历史，方便查看单台设备的保养记录。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">导出维护报表</div>
+      <div class="step-detail">点击「导出」按钮将维护记录导出为 Excel 文件，用于归档或提交给设备供应商。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box info">
+  <strong>维护类型说明</strong>
+  <strong>日常保养</strong>：常规清洁、润滑、检查，频率较高（每日/每周）。<br>
+  <strong>定期检修</strong>：按维护周期（月度/季度）进行的系统性检修。<br>
+  <strong>故障维修</strong>：设备异常停机后的紧急维修，需记录故障原因和处理方案。
+</div>
+</div>
+
+
+<!-- Equipment Alerts -->
+<div class="card">
+<h3>设备告警</h3>
+
+<div class="menu-path">
+  设备管理 <span class="sep">&rsaquo;</span> 告警管理
+</div>
+
+<div class="screen-path">菜单路径: 设备管理 &rarr; 告警管理 (/equipment/alerts)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  告警管理页面汇总展示所有设备的告警事件。告警来源包括：传感器异常、维护超期、手动上报等。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">告警列表</div>
+      <div class="step-detail">列表展示所有告警事件，每条包含：告警时间、设备名称、告警类型、严重级别（高/中/低）、告警内容、当前状态（待处理/已确认/已解决）。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">严重级别颜色标识</div>
+      <div class="step-detail">
+        <span class="color-red">高</span> 红色背景 — 需立即处理（如设备停机、安全隐患）；
+        <span class="color-yellow">中</span> 橙色 — 需当日关注（如温度偏高）；
+        <span class="color-green">低</span> 蓝色 — 信息提醒（如维护到期提醒）。
+      </div>
+    </div>
+  </div>
+</div>
+
+<h4>关键操作</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">确认告警</div>
+      <div class="step-detail">对于未处理的告警，点击操作列的「确认」按钮表示已知悉并开始处理。确认后告警状态变为「已确认」。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">解决告警</div>
+      <div class="step-detail">处理完毕后点击「解决」按钮，填写处理说明（可选），状态变为「已解决」。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">筛选与排序</div>
+      <div class="step-detail">支持按严重级别、状态（待处理/已确认/已解决）、设备名称筛选。默认按时间倒序排列，「待处理」的高级别告警置顶。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box warning">
+  <strong>注意</strong>
+  高级别告警需及时确认和处理。如果一条告警长时间（超过 24 小时）处于「待处理」状态，系统会在首页 Dashboard 和 App 端推送提醒。
+</div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION: 数据分析 (Analytics)                                  -->
+<!-- ============================================================ -->
+<div id="section-analytics" class="section-anchor"></div>
+<h2>数据分析 (Analytics)</h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员</span>
+  <span class="badge badge-web">Web Admin</span>
+  <span style="color:#999; margin-left:8px;">分析模块主要面向管理层和调度员使用</span>
+</p>
+
+<div class="section-intro">
+  数据分析模块提供多维度的生产运营数据可视化，包括生产 KPI、人效分析、趋势图表、进销存闭环等。帮助管理者快速把握工厂运营状态并发现问题。
+</div>
+
+<!-- Production Analytics -->
+<div class="card">
+<h3>生产数据分析</h3>
+
+<div class="menu-path">
+  生产分析 <span class="sep">&rsaquo;</span> 生产数据分析
+</div>
+
+<div class="screen-path">菜单路径: 生产分析 &rarr; 生产数据分析 (/production-analytics/production)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  生产数据分析页面集中展示工厂的核心生产指标，支持按时间范围和产线维度切换查看。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">核心 KPI 卡片</div>
+      <div class="step-detail">页面顶部展示关键数据卡片：当日/本周/本月产量、计划完成率、良品率、设备稼动率。每个卡片带环比变化箭头（涨/跌）。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">产量趋势图</div>
+      <div class="step-detail">折线图展示选定时间段内的每日产量趋势，支持按产线叠加展示。可切换日/周/月粒度。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">产线对比柱状图</div>
+      <div class="step-detail">柱状图横向对比各产线的产量、良品率等指标，直观展示哪条产线表现更优。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <div class="step-action">时间范围选择器</div>
+      <div class="step-detail">页面顶部提供快捷按钮（今天/本周/本月/自定义），切换后所有图表和 KPI 卡片同步刷新。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box tip">
+  <strong>数据来源</strong>
+  生产数据分析的数据来自员工报工记录和生产批次表。确保车间员工正常签到、报工、签退后，数据才会完整呈现。
+</div>
+</div>
+
+
+<!-- Efficiency Analysis -->
+<div class="card">
+<h3>人效分析</h3>
+
+<div class="menu-path">
+  生产分析 <span class="sep">&rsaquo;</span> 人效分析
+</div>
+
+<div class="screen-path">菜单路径: 生产分析 &rarr; 人效分析 (/production-analytics/efficiency)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  人效分析页面从劳动效率角度分析各产线和员工的生产效率，帮助发现效率瓶颈和优秀员工。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">人效 KPI 概览</div>
+      <div class="step-detail">人均产量、人均工时、单位人工成本等核心人效指标。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">员工效率排名</div>
+      <div class="step-detail">表格列出各员工在选定时段内的产量、工时、人均产出，支持按指标排序。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">产线人效对比</div>
+      <div class="step-detail">横向对比各产线的人员配置和产出效率，用于评估产线人力分配是否合理。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box info">
+  <strong>计算口径</strong>
+  人均产量 = 总产量 / 参与人数。工时数据来自员工签到签退记录。若员工忘记签退，工时数据可能不准确，建议管理员定期检查考勤记录。
+</div>
+</div>
+
+
+<!-- KPI Dashboard -->
+<div class="card">
+<h3>KPI 看板</h3>
+
+<div class="menu-path">
+  数据分析 <span class="sep">&rsaquo;</span> KPI 看板
+</div>
+
+<div class="screen-path">菜单路径: 数据分析 &rarr; KPI 看板 (/analytics/kpi)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  KPI 看板以仪表盘形式一屏展示工厂最核心的运营指标，适合大屏投放或管理层每日查看。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">核心仪表盘</div>
+      <div class="step-detail">多个 KPI 卡片以网格布局展示：日产量、良品率、订单完成率、设备稼动率、库存周转天数、人均产出等。每个 KPI 带颜色编码（绿/黄/红表示达标/临界/告警）。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">环比/同比变化</div>
+      <div class="step-detail">每个 KPI 指标下方显示与上一周期的对比变化（箭头 + 百分比），快速判断趋势方向。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">自动刷新</div>
+      <div class="step-detail">看板数据默认每 5 分钟自动刷新一次，也可手动点击右上角刷新按钮立即更新。</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- Trends Analysis -->
+<div class="card">
+<h3>趋势分析</h3>
+
+<div class="menu-path">
+  数据分析 <span class="sep">&rsaquo;</span> 趋势分析
+</div>
+
+<div class="screen-path">菜单路径: 数据分析 &rarr; 趋势分析 (/analytics/trends)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  趋势分析页面提供可配置的多指标时间序列图表，用于发现长期运营趋势和周期性规律。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">多指标折线图</div>
+      <div class="step-detail">支持同时选择多个指标在一张图上叠加展示（如产量 + 良品率 + 订单量），使用双 Y 轴适配不同量纲。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">时间粒度切换</div>
+      <div class="step-detail">支持日/周/月三种时间粒度。月粒度适合查看季节性趋势，日粒度适合排查具体问题。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">指标选择器</div>
+      <div class="step-detail">左侧或顶部的指标勾选面板可勾选/取消感兴趣的指标类别（生产、质量、仓储、财务等），图表实时更新。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box tip">
+  <strong>建议用法</strong>
+  周报/月报时使用趋势分析页面，选择过去 4 周或 3 个月的数据，对比产量和良品率的变化。如果发现良品率持续下降，结合质检记录查找原因。
+</div>
+</div>
+
+
+<!-- Supply Chain Overview -->
+<div class="card">
+<h3>进销存闭环总览</h3>
+
+<div class="menu-path">
+  数据分析 <span class="sep">&rsaquo;</span> 进销存闭环总览
+</div>
+
+<div class="screen-path">菜单路径: 数据分析 &rarr; 进销存闭环总览 (/analytics/supply-chain)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  进销存闭环总览是一张全局视图，将采购（进）、生产+仓储（存）、销售+出货（销）三大环节串联起来，帮助管理者看清全链路的物料和资金流动。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">三大环节概览卡片</div>
+      <div class="step-detail">页面顶部三个大卡片分别展示：采购金额/数量汇总、当前库存价值/周转天数、销售金额/出货量汇总。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">流转示意图</div>
+      <div class="step-detail">以桑基图或流程图形式展示物料从采购入库到生产消耗再到成品出库的流转路径和数量比例。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">异常预警</div>
+      <div class="step-detail">当出现库存积压（周转天数过长）、采购与消耗不匹配等情况时，页面会以红色/橙色标注提醒。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box info">
+  <strong>闭环逻辑</strong>
+  进销存闭环的核心是确保：采购量 &asymp; 生产消耗量 + 安全库存调整，销售量 &asymp; 生产产出量。如果两侧数据长期偏差过大，说明供应链存在浪费或短缺风险。
+</div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION: 调度管理 (Scheduling)                                -->
+<!-- ============================================================ -->
+<div id="section-scheduling" class="section-anchor"></div>
+<h2>调度管理 (Scheduling)</h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员 / 调度员</span>
+  <span class="badge badge-web">Web Admin</span>
+</p>
+
+<div class="section-intro">
+  智能调度模块提供可视化的排产调度能力，整合生产计划、设备、人员三个维度，辅助调度员做出更合理的排产安排。
+</div>
+
+<!-- Scheduling Overview -->
+<div class="card">
+<h3>调度中心</h3>
+
+<div class="menu-path">
+  智能调度 <span class="sep">&rsaquo;</span> 调度中心
+</div>
+
+<div class="screen-path">菜单路径: 智能调度 &rarr; 调度中心 (/scheduling/overview)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  调度中心是调度模块的总览仪表盘，一屏展示当前排产状态、产线负载和待处理事项。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">产线负载概览</div>
+      <div class="step-detail">以甘特图或进度条形式展示各产线当前和近期的排产负载，直观判断哪条产线有余量、哪条过载。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">待排任务</div>
+      <div class="step-detail">未排入产线的生产计划以列表形式展示在侧边栏，调度员可拖拽或选择分配到具体产线和时间段。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">告警与冲突提示</div>
+      <div class="step-detail">当排产出现时间冲突、人员不足、设备维护冲突时，顶部告警条会提示需要调整的计划。</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- Scheduling Plans -->
+<div class="card">
+<h3>调度计划</h3>
+
+<div class="menu-path">
+  智能调度 <span class="sep">&rsaquo;</span> 调度计划
+</div>
+
+<div class="screen-path">菜单路径: 智能调度 &rarr; 调度计划 (/scheduling/plans)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  调度计划列表管理全部已创建的调度计划，支持创建新计划、查看计划详情和调整计划状态。
+</p>
+
+<h4>关键操作</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">查看计划列表</div>
+      <div class="step-detail">列表展示所有调度计划，包含：计划编号、计划日期、关联生产计划、状态（草稿/已发布/执行中/已完成）。支持按日期和状态筛选。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">创建新调度计划</div>
+      <div class="step-detail">点击「新建计划」按钮（或从调度中心直接创建），选择计划日期、关联的生产计划和产线，配置人员分配后保存。路径：/scheduling/plans/create</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">查看计划详情</div>
+      <div class="step-detail">点击计划行进入详情页，查看完整的时间线、产线分配、人员安排。可在详情页内修改和发布计划。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box tip">
+  <strong>调度与生产计划的关系</strong>
+  生产计划（Section 7）定义了「做什么、做多少」，调度计划在此基础上进一步确定「什么时间、哪条产线、谁来做」。调度计划创建后需发布才能生效，发布后相关人员可在 App 端看到当日排班。
+</div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION: 补充模块 (Additional Modules)                        -->
+<!-- ============================================================ -->
+<div id="section-supplement" class="section-anchor"></div>
+<h2>补充模块 (Additional Modules)</h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员</span>
+  <span class="badge badge-web">Web Admin</span>
+</p>
+
+<div class="section-intro">
+  以下模块是系统运营中的辅助功能，涵盖质检标准配置、废弃处理、采购价格表、成品库存、考勤、部门管理、角色权限和系统日志等。按需使用。
+</div>
+
+<!-- Quality Standards -->
+<div class="card">
+<h3>质检标准管理</h3>
+
+<div class="menu-path">
+  质量管理 <span class="sep">&rsaquo;</span> 质检标准
+</div>
+
+<div class="screen-path">菜单路径: 质量管理 &rarr; 质检标准 (/quality/standards)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  质检标准定义了不同产品或原料的质量检验项目和合格范围。创建质检记录时，系统会自动关联对应的质检标准。
+</p>
+
+<h4>关键操作</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">查看标准列表</div>
+      <div class="step-detail">列表展示全部质检标准，包含标准名称、适用对象（产品/原料类型）、检验项目数量、状态（启用/停用）。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">创建质检标准</div>
+      <div class="step-detail">点击「新建标准」，填写标准名称、适用的产品或原料类型，然后逐项添加检验指标（如温度范围、微生物限值、外观要求等）及其合格范围。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">编辑 / 停用标准</div>
+      <div class="step-detail">对已有标准可以修改检验项目和合格范围。停用后该标准不再出现在新建质检时的关联选项中，但历史记录不受影响。</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- Quality Disposals -->
+<div class="card">
+<h3>废弃处理</h3>
+
+<div class="menu-path">
+  质量管理 <span class="sep">&rsaquo;</span> 废弃处理
+</div>
+
+<div class="screen-path">菜单路径: 质量管理 &rarr; 废弃处理 (/quality/disposals)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  废弃处理记录不合格品的处置过程和结果。质检不合格后需创建废弃处理记录，确保不合格品有据可查。
+</p>
+
+<h4>关键操作</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">查看废弃记录</div>
+      <div class="step-detail">列表展示所有废弃处理记录，包含：关联质检单号、产品/原料名称、废弃数量、处理方式（销毁/退回供应商/降级使用）、处理日期。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">创建废弃记录</div>
+      <div class="step-detail">点击「新建废弃处理」，选择关联的质检记录（或直接选择批次），填写废弃数量、处理方式和原因说明后提交。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box warning">
+  <strong>溯源要求</strong>
+  食品安全法要求不合格品处理必须有完整记录。废弃处理记录会关联到质检记录和对应的生产批次，确保可追溯。
+</div>
+</div>
+
+
+<!-- Procurement Price Lists -->
+<div class="card">
+<h3>价格表管理</h3>
+
+<div class="menu-path">
+  采购管理 <span class="sep">&rsaquo;</span> 价格表管理
+</div>
+
+<div class="screen-path">菜单路径: 采购管理 &rarr; 价格表管理 (/procurement/price-lists)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  价格表管理维护各供应商对不同原材料的报价信息，创建采购订单时系统自动引用最新价格。
+</p>
+
+<h4>关键操作</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">查看价格表列表</div>
+      <div class="step-detail">列表展示所有价格条目，包含：供应商名称、原料名称、单价、币种、有效期（起止日期）、最小起订量。支持按供应商或原料筛选。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">新增 / 更新报价</div>
+      <div class="step-detail">点击「新增」按钮，选择供应商和原料，填写单价、有效期等信息。同一供应商和原料可以有多条历史报价，系统自动使用有效期内最新的一条。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">价格对比</div>
+      <div class="step-detail">选择某种原料后，可以横向对比各供应商的报价和历史价格变化，辅助采购决策。</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- Finished Goods -->
+<div class="card">
+<h3>成品库存</h3>
+
+<div class="menu-path">
+  销售管理 <span class="sep">&rsaquo;</span> 成品库存
+</div>
+
+<div class="screen-path">菜单路径: 销售管理 &rarr; 成品库存 (/sales/finished-goods)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  成品库存页面展示已完成生产并入库的成品库存情况，是出货管理的基础数据来源。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">成品库存列表</div>
+      <div class="step-detail">列表展示所有成品的当前库存：产品名称（SKU）、规格、批次号、库存数量、库位、入库日期、保质期截止日期。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">库存预警</div>
+      <div class="step-detail">临近保质期的成品行以橙色标注，已过期的以红色标注。库存不足（低于安全库存）的产品也会高亮提示。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">搜索与筛选</div>
+      <div class="step-detail">支持按产品名称搜索、按批次号精确查找、按库存状态（正常/预警/过期）筛选。</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- HR Attendance -->
+<div class="card">
+<h3>考勤管理</h3>
+
+<div class="menu-path">
+  人事管理 <span class="sep">&rsaquo;</span> 考勤管理
+</div>
+
+<div class="screen-path">菜单路径: 人事管理 &rarr; 考勤管理 (/hr/attendance)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  考勤管理页面汇总展示员工的签到签退记录。数据来自 App 端员工的签到/签退操作。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">考勤记录列表</div>
+      <div class="step-detail">列表按日期展示每位员工的签到时间、签退时间、工时、出勤状态（正常/迟到/早退/缺勤）。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">日期与员工筛选</div>
+      <div class="step-detail">顶部提供日期范围选择器和员工姓名搜索框，可查看特定员工或特定日期的考勤情况。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">考勤统计</div>
+      <div class="step-detail">按月汇总的出勤天数、迟到次数、缺勤次数等统计数据，可导出用于薪资计算。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box info">
+  <strong>数据来源</strong>
+  考勤数据由 App 端员工操作产生。车间主管在 App 点击「签到」开始当班，「签退」结束当班。Web 端只做查看和统计，不支持手动补签。
+</div>
+</div>
+
+
+<!-- HR Departments -->
+<div class="card">
+<h3>部门管理</h3>
+
+<div class="menu-path">
+  人事管理 <span class="sep">&rsaquo;</span> 部门管理
+</div>
+
+<div class="screen-path">菜单路径: 人事管理 &rarr; 部门管理 (/hr/departments)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  部门管理用于配置工厂的组织架构，创建和维护各部门信息。员工创建时需要关联所属部门。
+</p>
+
+<h4>关键操作</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">查看部门列表</div>
+      <div class="step-detail">以树形结构或平铺列表展示所有部门，包含部门名称、部门编号、上级部门、负责人、人数。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">创建 / 编辑部门</div>
+      <div class="step-detail">点击「新增部门」，填写部门名称、编号、选择上级部门（可为空表示顶级部门）和部门负责人后提交。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">删除部门</div>
+      <div class="step-detail">仅允许删除没有下级部门且没有关联员工的空部门。有员工的部门需先转移员工再删除。</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- System Roles -->
+<div class="card">
+<h3>角色管理</h3>
+
+<div class="menu-path">
+  系统管理 <span class="sep">&rsaquo;</span> 角色管理
+</div>
+
+<div class="screen-path">菜单路径: 系统管理 &rarr; 角色管理 (/system/roles)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  角色管理页面配置系统中的角色和对应的权限。系统内置了常用角色（工厂管理员、调度员、仓储主管、车间主管等），管理员可查看和调整权限分配。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">角色列表</div>
+      <div class="step-detail">列表展示所有角色，包含：角色名称、角色代码（如 factory_super_admin、dispatcher 等）、描述、关联用户数。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">权限配置</div>
+      <div class="step-detail">点击角色行的「权限」按钮，以树形勾选框形式展示所有功能模块和操作权限。勾选/取消勾选即可调整该角色的访问范围。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">新建自定义角色</div>
+      <div class="step-detail">如果内置角色不满足需求，可以点击「新建角色」创建自定义角色并配置权限。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box warning">
+  <strong>注意</strong>
+  修改角色权限后，已登录用户需要重新登录才能生效。内置角色（factory_super_admin 等）建议不要删除，可以修改其权限范围。
+</div>
+</div>
+
+
+<!-- System Logs -->
+<div class="card">
+<h3>操作日志</h3>
+
+<div class="menu-path">
+  系统管理 <span class="sep">&rsaquo;</span> 操作日志
+</div>
+
+<div class="screen-path">菜单路径: 系统管理 &rarr; 操作日志 (/system/logs)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  操作日志记录系统中所有关键操作的审计追踪，用于安全审计和问题排查。
+</p>
+
+<h4>用户看到什么</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">日志列表</div>
+      <div class="step-detail">列表按时间倒序展示操作日志，每条包含：操作时间、操作人、操作类型（创建/修改/删除/登录/导出）、操作模块、操作内容摘要、IP 地址。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">搜索与筛选</div>
+      <div class="step-detail">支持按操作人、操作类型、时间范围和关键词搜索。例如，可以筛选「删除」类型的操作来审计数据删除行为。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">日志详情</div>
+      <div class="step-detail">点击日志行可查看详细信息，包括操作前后的数据变化（对于修改操作）和完整的请求参数。</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- System Settings -->
+<div class="card">
+<h3>系统设置</h3>
+
+<div class="menu-path">
+  系统管理 <span class="sep">&rsaquo;</span> 系统设置
+</div>
+
+<div class="screen-path">菜单路径: 系统管理 &rarr; 系统设置 (/system/settings)</div>
+
+<p style="color:#64748b; margin-bottom:14px;">
+  系统设置页面管理当前工厂的基础配置、通知配置和安全配置。配置项按分类分组为多个 Tab 页签。
+</p>
+
+<h4>配置分组</h4>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">基础设置</div>
+      <div class="step-detail">工厂名称、工厂编号、联系方式、地址等基本信息。修改后全局生效（如报表中的工厂名称）。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">通知设置</div>
+      <div class="step-detail">配置系统通知的发送规则，如：库存低于安全线是否发送提醒、设备告警是否推送到 App、质检不合格是否通知管理员等。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">安全设置</div>
+      <div class="step-detail">密码策略（最小长度、过期时间）、登录安全（失败锁定次数）等安全相关配置。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box tip">
+  <strong>建议</strong>
+  新工厂接入后第一步应完善基础设置中的工厂信息，确保报表和打印输出的工厂名称正确。通知设置可根据实际管理需求逐步启用。
+</div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- END OF SUPPLEMENT CONTENT                                     -->
+<!-- ============================================================ -->
+<div class="divider"></div>
+<p style="text-align:center; color:#999; font-size:12px;">
+  操作手册补充内容 — 设备管理 / 数据分析 / 调度管理 / 补充模块 | 2026-04-03
+</p>
+
+<!-- ====================================================================== -->
+<!-- SECTION: 研发管理                                                       -->
+<!-- ====================================================================== -->
+<div id="section-rd" class="section-anchor"></div>
+<h2>研发管理 (R&D Management) <span class="badge badge-danger">新功能</span></h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员 / 研发人员</span>
+  <span class="badge badge-web">Web Admin</span>
+</p>
+
+<div class="section-intro">
+  研发管理模块包含三个子功能：<strong>研发需求</strong>（记录客户的产品开发需求）、<strong>样品管理</strong>（跟踪样品从创建到审核的全过程）、<strong>报价任务</strong>（计算成本并生成报价）。三个子功能通过顶部 Tab 切换。
+</div>
+
+<div class="card">
+<h3>新建样品</h3>
+
+<div class="menu-path">
+  研发管理 <span class="sep">&rsaquo;</span> 样品管理 Tab <span class="sep">&rsaquo;</span> 点击「新建样品」按钮
+</div>
+
+<h4>字段说明</h4>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>字段名</th><th>必填</th><th>示例</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>业务员</strong></td>
+        <td class="optional">选填</td>
+        <td>张三</td>
+        <td><strong>下拉选择框</strong>（支持搜索和手动输入）。显示系统中已有的用户列表。负责此样品的业务人员。</td>
+      </tr>
+      <tr>
+        <td><strong>样品名称</strong></td>
+        <td class="required">必填</td>
+        <td>香辣墨鱼圈</td>
+        <td>样品的名称。</td>
+      </tr>
+      <tr>
+        <td><strong>成品规格</strong></td>
+        <td class="optional">选填</td>
+        <td>200g/盒, 310g*42袋/箱</td>
+        <td>产品包装规格说明。</td>
+      </tr>
+      <tr>
+        <td><strong>产品级别</strong></td>
+        <td class="optional">选填</td>
+        <td>A级, 特级</td>
+        <td>产品品质等级。</td>
+      </tr>
+      <tr>
+        <td><strong>产品状态</strong></td>
+        <td class="optional">选填</td>
+        <td>新品开发, 配方调整</td>
+        <td>描述样品当前的研发阶段。</td>
+      </tr>
+      <tr>
+        <td><strong>储存方式</strong></td>
+        <td class="optional">选填</td>
+        <td>冷冻</td>
+        <td>下拉选择：冷冻 / 冷藏 / 常温。</td>
+      </tr>
+      <tr>
+        <td><strong>主原料</strong></td>
+        <td class="optional">选填</td>
+        <td>墨鱼</td>
+        <td>样品的主要原料名称。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="card">
+<h3>追踪记录</h3>
+
+<div class="section-intro">
+  每个样品支持添加追踪记录，形成时间线，记录研发过程中的关键节点。
+</div>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">在样品列表中点击「追踪记录」</div>
+      <div class="step-detail">弹出追踪记录对话框，显示已有的追踪时间线。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">添加新追踪记录</div>
+      <div class="step-detail">
+        填写以下字段：
+        <ul style="margin-top:6px; padding-left:16px;">
+          <li><strong>日期</strong> — 默认当天，可选择其他日期</li>
+          <li><strong>追踪内容</strong> — 记录本次进展（必填）</li>
+          <li><strong>附件链接</strong> — 可填写照片或文档的 URL 链接</li>
+          <li><strong>记录员</strong> — 填写记录人姓名</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-action">点击「添加」提交</div>
+      <div class="step-detail">记录添加成功后，时间线自动更新。</div>
+    </div>
+  </div>
+</div>
+
+<h4>样品状态流转</h4>
+<div class="flow-container" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0;">
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#F1F5F9; font-weight:600;">草稿</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#DBEAFE; font-weight:600;">开发中</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#FEF3C7; font-weight:600;">测试中</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#FEF3C7; font-weight:600;">待审核</div>
+  <span style="color:#94a3b8;">&rarr;</span>
+  <div class="flow-box" style="padding:6px 14px; border-radius:8px; background:#D1FAE5; font-weight:600;">已通过</div>
+</div>
+
+<div class="info-box tip">
+  <strong>审核操作</strong>
+  待审核状态的样品可由管理员点击「通过」或「驳回」。驳回时需填写驳回原因。
+</div>
+</div>
+
+
+<!-- ====================================================================== -->
+<!-- SECTION: 系统管理                                                       -->
+<!-- ====================================================================== -->
+<div id="section-system" class="section-anchor"></div>
+<h2>系统管理</h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员</span>
+  <span class="badge badge-web">Web Admin</span>
+</p>
+
+<div class="card">
+<h3>用户管理 — 密码重置</h3>
+
+<div class="menu-path">
+  系统管理 <span class="sep">&rsaquo;</span> 用户管理
+</div>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-action">找到需要重置密码的用户</div>
+      <div class="step-detail">在用户列表中搜索或浏览找到目标用户。</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-action">点击操作列的红色「重置密码」按钮</div>
+      <div class="step-detail">系统弹出确认对话框，输入新密码后点击确认。密码重置后用户下次登录使用新密码。</div>
+    </div>
+  </div>
+</div>
+
+<div class="info-box info">
+  <strong>密码重置说明</strong>
+  管理员可以为任何用户重置密码。重置后请及时通知用户新密码。建议用户登录后自行修改密码。
+</div>
+</div>
+
+
 <p style="text-align:center; color:#999; margin:30px 0; font-size:12px;">
-  白垩纪食品溯源系统 v1.0 | 六扇门食品定制版 | 第二部分: 生产流程 (Section 7-12) | 2026-03-27
+  白垩纪食品溯源系统 v3.2 | 完整操作手册 | 更新: 2026-04-04
 </p>
 
 </div>

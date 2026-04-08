@@ -1,0 +1,117 @@
+{
+  "timestamp": "2026-04-05T20:19:51.177Z",
+  "pass": 18,
+  "fail": 0,
+  "warn": 0,
+  "total": 18,
+  "results": [
+    {
+      "chain": "供应商-Edit",
+      "test": "E1a.修改地址",
+      "status": "PASS",
+      "evidence": "filled: 旧=\"上海市供应路MNIF4K31号\" → 新=\"深度地址301950\""
+    },
+    {
+      "chain": "供应商-Result",
+      "test": "E1b.刷新核对地址",
+      "status": "PASS",
+      "evidence": "detail_check: input values中含\"深度地址301950\"=true"
+    },
+    {
+      "chain": "供应商-Edit",
+      "test": "E1c.还原地址",
+      "status": "PASS",
+      "evidence": "restored"
+    },
+    {
+      "chain": "员工-Edit",
+      "test": "E2a.修改手机",
+      "status": "PASS",
+      "evidence": "filled: 旧=\"13700009999\" → 新=\"13930195000\""
+    },
+    {
+      "chain": "员工-Result",
+      "test": "E2b.列表核对手机",
+      "status": "PASS",
+      "evidence": "detail_check: 列表含\"13930195000\"=true"
+    },
+    {
+      "chain": "员工-Edit",
+      "test": "E2c.还原手机",
+      "status": "PASS",
+      "evidence": "restored"
+    },
+    {
+      "chain": "产品-Edit",
+      "test": "E3a.修改规格",
+      "status": "PASS",
+      "evidence": "filled: 旧=\"25kg/箱\" → 新=\"深度规格301950\""
+    },
+    {
+      "chain": "产品-Result",
+      "test": "E3b.列表含新规格",
+      "status": "PASS",
+      "evidence": "detail_check: 列表含\"深度规格301950\"=true"
+    },
+    {
+      "chain": "产品-Edit",
+      "test": "E3c.还原规格",
+      "status": "PASS",
+      "evidence": "restored"
+    },
+    {
+      "chain": "原材料-Create",
+      "test": "E4a.填写入库",
+      "status": "PASS",
+      "evidence": "filled: 批次=MB-DEPTH-301950, 数量=77, 总重量=77, 总价值=1155"
+    },
+    {
+      "chain": "原材料-Create",
+      "test": "E4b.提交",
+      "status": "PASS",
+      "evidence": "toast: 入库成功"
+    },
+    {
+      "chain": "原材料-Result",
+      "test": "E4c.列表含新批次",
+      "status": "PASS",
+      "evidence": "list after: 含\"MB-DEPTH-301950\"=true"
+    },
+    {
+      "chain": "原材料-Result",
+      "test": "E4d.详情数量=77",
+      "status": "PASS",
+      "evidence": "detail_check: 详情含\"77\"=true"
+    },
+    {
+      "chain": "生产-State",
+      "test": "E5a.行按钮",
+      "status": "PASS",
+      "evidence": "state_change: 按钮=[查看,转为批次,生成调拨单,开始,取消]"
+    },
+    {
+      "chain": "生产-State",
+      "test": "E5b.开始后状态",
+      "status": "PASS",
+      "evidence": "state_change: 标签=[进行中,手动,待执行,手动,进行中]"
+    },
+    {
+      "chain": "质检-Calc",
+      "test": "E6a.合格率列存在",
+      "status": "PASS",
+      "evidence": "calculation: 合格率=\"90.0%\", 列头=[质检编号,批次/备注,抽样数,质检员ID,检测结果,等级,合格率,检测日期,操作]"
+    },
+    {
+      "chain": "质检-Result",
+      "test": "E6b.详情内容",
+      "status": "PASS",
+      "evidence": "detail_check: 含抽样=true, 含结果=true"
+    },
+    {
+      "chain": "质检-Error",
+      "test": "E6c.空批次被拦截",
+      "status": "PASS",
+      "evidence": "error_check: dialog仍开=true, 错误提示=true"
+    }
+  ]
+}

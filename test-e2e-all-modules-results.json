@@ -1,0 +1,338 @@
+{
+  "timestamp": "2026-04-04T23:11:54.661Z",
+  "pass": 35,
+  "fail": 2,
+  "warn": 10,
+  "total": 47,
+  "results": [
+    {
+      "layer": "L1",
+      "module": "销售订单",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "客户管理",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "采购订单",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "供应商管理",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "研发样品",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "生产计划",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "生产批次",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "原材料库存",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "成品库存",
+      "test": "页面加载",
+      "status": "WARN",
+      "evidence": "no table/card/main"
+    },
+    {
+      "layer": "L1",
+      "module": "BOM配方",
+      "test": "页面加载",
+      "status": "WARN",
+      "evidence": "no table/card/main"
+    },
+    {
+      "layer": "L1",
+      "module": "质量检测",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "出货记录",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "员工管理",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "设备管理",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "调拨管理",
+      "test": "页面加载",
+      "status": "WARN",
+      "evidence": "no table/card/main"
+    },
+    {
+      "layer": "L1",
+      "module": "财务管理",
+      "test": "页面加载",
+      "status": "WARN",
+      "evidence": "no table/card/main"
+    },
+    {
+      "layer": "L1",
+      "module": "产品管理",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "用户管理",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "价格表",
+      "test": "页面加载",
+      "status": "WARN",
+      "evidence": "no table/card/main"
+    },
+    {
+      "layer": "L1",
+      "module": "智能BI",
+      "test": "页面加载",
+      "status": "WARN",
+      "evidence": "no table/card/main"
+    },
+    {
+      "layer": "L1",
+      "module": "生产分析",
+      "test": "页面加载",
+      "status": "WARN",
+      "evidence": "no table/card/main"
+    },
+    {
+      "layer": "L5.1",
+      "module": "销售订单",
+      "test": "UUID检测",
+      "status": "PASS",
+      "evidence": "5行, 0 UUID"
+    },
+    {
+      "layer": "L5.5",
+      "module": "销售订单",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "[订单编号,客户,业务员,下单日期,总金额,运费,折扣,状态,操作]"
+    },
+    {
+      "layer": "L5.1",
+      "module": "客户管理",
+      "test": "UUID检测",
+      "status": "PASS",
+      "evidence": "5行, 0 UUID"
+    },
+    {
+      "layer": "L5.5",
+      "module": "客户管理",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "[客户编号,客户名称,联系人,联系电话,收货地址,状态,操作]"
+    },
+    {
+      "layer": "L5.1",
+      "module": "采购订单",
+      "test": "UUID检测",
+      "status": "PASS",
+      "evidence": "5行, 0 UUID"
+    },
+    {
+      "layer": "L5.5",
+      "module": "采购订单",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "[订单编号,供应商,类型,下单日期,总金额,状态,操作]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "供应商管理",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "[供应商编号,供应商名称,联系人,联系电话,地址,状态,操作]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "研发样品",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "[样品编码,样品名称,客户名称,成品规格,产品级别,业务员,储存方式,产品状态,操作]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "生产计划",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "[计划编号,产品类型,客户,工序,批次日期,计划数量,实际数量,计划日期,状态,建议产线,预计工人,指派主管,来源,创建时间,操作]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "生产批次",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "[批次号,产品类型,计划数量,实际数量,状态,负责人,创建时间,操作]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "原材料库存",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "[批次号,原料类型,供应商,数量,单位,状态,过期日期,入库时间,操作]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "成品库存",
+      "test": "列检查",
+      "status": "WARN",
+      "evidence": "无表头"
+    },
+    {
+      "layer": "L5.5",
+      "module": "BOM配方",
+      "test": "列检查",
+      "status": "WARN",
+      "evidence": "无表头"
+    },
+    {
+      "layer": "L5.5",
+      "module": "质量检测",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "[质检编号,批次/备注,抽样数,质检员ID,检测结果,等级,合格率,检测日期,操作]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "出货记录",
+      "test": "列完整性",
+      "status": "FAIL",
+      "evidence": "缺:[订单] 应删:[] 实际:[出货单号,客户名称,产品,数量,状态,出货时间,操作]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "员工管理",
+      "test": "列完整性",
+      "status": "FAIL",
+      "evidence": "缺:[工号] 应删:[] 实际:[用户名,姓名,手机号,角色,部门,状态,操作]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "设备管理",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "[设备编号,设备名称,型号,位置,状态,上次维护,操作]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "调拨管理",
+      "test": "列检查",
+      "status": "WARN",
+      "evidence": "无表头"
+    },
+    {
+      "layer": "L5.5",
+      "module": "产品管理",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "[关联客户,产品编号,产品名称,规格,单位,产品大类,温区,图片,备注,操作]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "用户管理",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "[用户名,姓名,手机号,角色,部门,状态,创建时间,操作]"
+    },
+    {
+      "layer": "L5.6",
+      "module": "销售订单",
+      "test": "状态标签",
+      "status": "PASS",
+      "evidence": "10个全中文"
+    },
+    {
+      "layer": "L5.6",
+      "module": "采购订单",
+      "test": "状态标签",
+      "status": "PASS",
+      "evidence": "20个全中文"
+    },
+    {
+      "layer": "L5.6",
+      "module": "研发样品",
+      "test": "状态标签",
+      "status": "PASS",
+      "evidence": "8个全中文"
+    },
+    {
+      "layer": "L5.6",
+      "module": "生产计划",
+      "test": "状态标签",
+      "status": "PASS",
+      "evidence": "20个全中文"
+    },
+    {
+      "layer": "L5.6",
+      "module": "生产批次",
+      "test": "状态标签",
+      "status": "PASS",
+      "evidence": "10个全中文"
+    },
+    {
+      "layer": "L5.6",
+      "module": "质量检测",
+      "test": "状态标签",
+      "status": "PASS",
+      "evidence": "10个全中文"
+    }
+  ]
+}

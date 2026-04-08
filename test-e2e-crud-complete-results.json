@@ -1,0 +1,201 @@
+{
+  "timestamp": "2026-04-05T18:01:21.749Z",
+  "pass": 32,
+  "fail": 0,
+  "warn": 0,
+  "total": 32,
+  "results": [
+    {
+      "module": "客户",
+      "test": "C1.填写表单",
+      "status": "PASS",
+      "evidence": "filled: 名称=\"E2E客户887384\", 联系人=\"联系人887384\", 电话=13800001234, 邮箱=e2e887384@test.com, 地址=\"上海市浦东新区E2E测试路887384号\""
+    },
+    {
+      "module": "客户",
+      "test": "C2.提交",
+      "status": "PASS",
+      "evidence": "toast: 新增成功"
+    },
+    {
+      "module": "客户",
+      "test": "C3.列表验证",
+      "status": "PASS",
+      "evidence": "list after: 含\"E2E客户887384\"=true"
+    },
+    {
+      "module": "客户",
+      "test": "C4.查看详情",
+      "status": "PASS",
+      "evidence": "detail check: 含名称=true, 含电话=true"
+    },
+    {
+      "module": "客户",
+      "test": "C5.编辑保存",
+      "status": "PASS",
+      "evidence": "toast: 编辑成功"
+    },
+    {
+      "module": "客户",
+      "test": "C6.删除",
+      "status": "PASS",
+      "evidence": "toast: 删除成功"
+    },
+    {
+      "module": "客户",
+      "test": "C7.删除验证",
+      "status": "PASS",
+      "evidence": "list after: 已不含\"E2E客户887384\""
+    },
+    {
+      "module": "供应商",
+      "test": "C1.填写表单",
+      "status": "PASS",
+      "evidence": "filled: 名称=\"E2E供应商887384\", 联系人=\"供应联系人887384\", 电话=13900005678, 地址=\"深圳市E2E供应商路887384号\""
+    },
+    {
+      "module": "供应商",
+      "test": "C2.提交",
+      "status": "PASS",
+      "evidence": "toast: 创建成功"
+    },
+    {
+      "module": "供应商",
+      "test": "C3.列表验证",
+      "status": "PASS",
+      "evidence": "list after: 含\"E2E供应商887384\""
+    },
+    {
+      "module": "供应商",
+      "test": "C4.查看详情",
+      "status": "PASS",
+      "evidence": "查看弹窗打开"
+    },
+    {
+      "module": "供应商",
+      "test": "C5.编辑保存",
+      "status": "PASS",
+      "evidence": "toast: 保存成功"
+    },
+    {
+      "module": "供应商",
+      "test": "C6.删除",
+      "status": "PASS",
+      "evidence": "toast: 删除成功"
+    },
+    {
+      "module": "员工",
+      "test": "C1.填写表单",
+      "status": "PASS",
+      "evidence": "filled: 姓名=\"E2E员工887384\", 用户名=\"e2e_emp_887384\", 角色=操作员"
+    },
+    {
+      "module": "员工",
+      "test": "C2.提交",
+      "status": "PASS",
+      "evidence": "toast: 添加成功"
+    },
+    {
+      "module": "员工",
+      "test": "C3.列表验证",
+      "status": "PASS",
+      "evidence": "list after: 含\"E2E员工887384\""
+    },
+    {
+      "module": "员工",
+      "test": "C4.查看详情",
+      "status": "PASS",
+      "evidence": "查看弹窗打开"
+    },
+    {
+      "module": "产品",
+      "test": "C1.填写表单",
+      "status": "PASS",
+      "evidence": "filled: 名称=\"E2E产品887384\", 单位=kg, 规格=500g/盒"
+    },
+    {
+      "module": "产品",
+      "test": "C2.提交",
+      "status": "PASS",
+      "evidence": "toast: 创建成功"
+    },
+    {
+      "module": "产品",
+      "test": "C3.列表验证",
+      "status": "PASS",
+      "evidence": "list after: 找到\"E2E产品887384\""
+    },
+    {
+      "module": "产品",
+      "test": "C4.编辑弹窗",
+      "status": "PASS",
+      "evidence": "编辑弹窗打开"
+    },
+    {
+      "module": "产品",
+      "test": "C5.删除",
+      "status": "PASS",
+      "evidence": "toast: 删除成功"
+    },
+    {
+      "module": "原材料",
+      "test": "C1.填写入库表单",
+      "status": "PASS",
+      "evidence": "filled: 批次=MB-E2E-887384, 数量=100, 总重量=100, 总价值=1500"
+    },
+    {
+      "module": "原材料",
+      "test": "C2.提交",
+      "status": "PASS",
+      "evidence": "toast: 入库成功"
+    },
+    {
+      "module": "原材料",
+      "test": "C3.列表验证",
+      "status": "PASS",
+      "evidence": "list after: 含\"MB-E2E-887384\""
+    },
+    {
+      "module": "生产计划",
+      "test": "C1.选产品",
+      "status": "PASS",
+      "evidence": "filled: 产品=\"测试01\""
+    },
+    {
+      "module": "生产计划",
+      "test": "C2.填写表单",
+      "status": "PASS",
+      "evidence": "filled: 计划数量=500, 计划日期=today"
+    },
+    {
+      "module": "生产计划",
+      "test": "C3.提交",
+      "status": "PASS",
+      "evidence": "dialog已关闭(提交成功)"
+    },
+    {
+      "module": "生产计划",
+      "test": "C4.查看详情",
+      "status": "PASS",
+      "evidence": "详情打开"
+    },
+    {
+      "module": "质检",
+      "test": "C1.填写表单",
+      "status": "PASS",
+      "evidence": "filled: 批次=\"DS-20260403-15Z6C - 带鱼段_updated\", 抽样=10, 合格=9, 不合格=1, 结果=合格"
+    },
+    {
+      "module": "质检",
+      "test": "C2.提交",
+      "status": "PASS",
+      "evidence": "toast: 创建成功"
+    },
+    {
+      "module": "质检",
+      "test": "C3.查看详情",
+      "status": "PASS",
+      "evidence": "详情打开"
+    }
+  ]
+}

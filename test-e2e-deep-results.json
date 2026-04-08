@@ -1,0 +1,176 @@
+{
+  "timestamp": "2026-04-05T02:58:40.725Z",
+  "pass": 20,
+  "fail": 0,
+  "warn": 4,
+  "results": [
+    {
+      "layer": "L2",
+      "module": "销售订单",
+      "test": "创建",
+      "status": "PASS",
+      "evidence": "SO-20260405-0030 ¥528"
+    },
+    {
+      "layer": "L2",
+      "module": "销售订单",
+      "test": "详情核对",
+      "status": "PASS",
+      "evidence": "客户=\"DS-Debug-Customer-2\", 单号=\"SO-20260405-0030\", 业务员=\"深验864510\""
+    },
+    {
+      "layer": "L2",
+      "module": "销售订单",
+      "test": "行项目名称",
+      "status": "PASS",
+      "evidence": "1行: [带鱼段_updated]"
+    },
+    {
+      "layer": "L2",
+      "module": "采购订单",
+      "test": "创建",
+      "status": "PASS",
+      "evidence": "PO-20260405-0026"
+    },
+    {
+      "layer": "L2",
+      "module": "采购订单",
+      "test": "详情-供应商名",
+      "status": "PASS",
+      "evidence": "供应商=\"东海水产批发\""
+    },
+    {
+      "layer": "L2",
+      "module": "采购订单",
+      "test": "详情-原料名",
+      "status": "PASS",
+      "evidence": "1行: [八角]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "采购订单",
+      "test": "详情-规格箱数列",
+      "status": "PASS",
+      "evidence": "规格=true, 箱数=true"
+    },
+    {
+      "layer": "L3",
+      "module": "跨模块",
+      "test": "1.创建客户",
+      "status": "PASS",
+      "evidence": "L3深验客户864510"
+    },
+    {
+      "layer": "L3",
+      "module": "跨模块",
+      "test": "2.用新客户创建SO",
+      "status": "PASS",
+      "evidence": "SO-20260405-0031"
+    },
+    {
+      "layer": "L3",
+      "module": "跨模块",
+      "test": "3.详情客户名=新客户",
+      "status": "PASS",
+      "evidence": "\"L3深验客户864510\" 包含 \"L3深验客户864510\""
+    },
+    {
+      "layer": "L4",
+      "module": "销售链路",
+      "test": "1.创建+确认",
+      "status": "PASS",
+      "evidence": "SO-20260405-0032 → CONFIRMED"
+    },
+    {
+      "layer": "L4",
+      "module": "销售链路",
+      "test": "2.创建发货单",
+      "status": "PASS",
+      "evidence": "DLV-20260405-4710 状态=DRAFT"
+    },
+    {
+      "layer": "L4",
+      "module": "销售链路",
+      "test": "3.确认发货",
+      "status": "WARN",
+      "evidence": "成品库存不足: 产品=PT-F001-001, 缺少数量=10.0000 (可能缺库存)"
+    },
+    {
+      "layer": "L4",
+      "module": "销售链路",
+      "test": "4.SO已发货数",
+      "status": "WARN",
+      "evidence": "已发货=0 (期望≥10) (发货未确认,数量未更新符合预期)"
+    },
+    {
+      "layer": "L4",
+      "module": "销售链路",
+      "test": "5.出货记录页",
+      "status": "WARN",
+      "evidence": "查找\"DLV-20260405-4710\": 需翻页或确认后出现"
+    },
+    {
+      "layer": "L4",
+      "module": "采购链路",
+      "test": "1.创建+审批",
+      "status": "PASS",
+      "evidence": "PO-20260405-0027 → APPROVED"
+    },
+    {
+      "layer": "L4",
+      "module": "采购链路",
+      "test": "2.创建入库单",
+      "status": "PASS",
+      "evidence": "RCV-20260405-2629 状态=DRAFT"
+    },
+    {
+      "layer": "L4",
+      "module": "采购链路",
+      "test": "3.确认入库",
+      "status": "PASS",
+      "evidence": "状态→CONFIRMED"
+    },
+    {
+      "layer": "L4",
+      "module": "采购链路",
+      "test": "4.PO已收货数",
+      "status": "PASS",
+      "evidence": "已收货=20 (期望≥20)"
+    },
+    {
+      "layer": "L4",
+      "module": "采购链路",
+      "test": "5.原材料库存",
+      "status": "PASS",
+      "evidence": "查找\"八角\": 找到"
+    },
+    {
+      "layer": "L4",
+      "module": "研发链路",
+      "test": "1.创建→审核通过",
+      "status": "PASS",
+      "evidence": "SP-20260405-2338 → APPROVED"
+    },
+    {
+      "layer": "L4",
+      "module": "研发链路",
+      "test": "2.报价按钮",
+      "status": "PASS",
+      "evidence": "按钮: [追踪记录,提交报价申请]"
+    },
+    {
+      "layer": "L4",
+      "module": "研发链路",
+      "test": "3.状态标签",
+      "status": "PASS",
+      "evidence": "期望\"样品通过\", 实际\"样品通过\""
+    },
+    {
+      "layer": "L4",
+      "module": "研发链路",
+      "test": "4.自动生成报价任务",
+      "status": "WARN",
+      "evidence": "未找到(可能事件异步未完成)"
+    }
+  ]
+}

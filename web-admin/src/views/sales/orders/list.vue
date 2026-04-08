@@ -126,8 +126,11 @@ function removeItem(idx: number) { if (form.value.items.length > 1) form.value.i
 function onProductSelect(item: Record<string, unknown>, productId: string) {
   const p = products.value.find((x: Record<string, unknown>) => x.id === productId);
   if (p) {
-    item.specification = p.specification || '';
+    item.specification = p.specification || p.packageSpec || '';
     item.unit = p.unit || item.unit || 'kg';
+    if (p.unitPrice != null && (item.unitPrice == null || item.unitPrice === 0)) {
+      item.unitPrice = Number(p.unitPrice);
+    }
     if (p.boxConversionCoefficient && item.quantity) calcBox(item);
   }
 }
@@ -140,6 +143,8 @@ function calcBox(item: Record<string, unknown>) {
 
 async function handleCreate() {
   if (!form.value.customerId) return ElMessage.warning('请选择客户');
+  // 数量校验: 不允许0或负数
+  if (form.value.items.some((i: Record<string, unknown>) => !i.quantity || Number(i.quantity) <= 0)) return ElMessage.warning('产品数量必须大于0');
   // SKU 重复校验
   const productIds = form.value.items.map((i: Record<string, unknown>) => i.productTypeId).filter(Boolean);
   if (new Set(productIds).size !== productIds.length) return ElMessage.warning('同一订单不能添加重复的产品');

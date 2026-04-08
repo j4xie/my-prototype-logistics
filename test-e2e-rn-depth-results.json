@@ -1,0 +1,111 @@
+{
+  "timestamp": "2026-04-07T01:26:06.306Z",
+  "pass": 8,
+  "fail": 3,
+  "warn": 6,
+  "total": 17,
+  "results": [
+    {
+      "module": "RN登录",
+      "test": "Login成功",
+      "status": "PASS",
+      "evidence": "factory_admin1 logged in"
+    },
+    {
+      "module": "RN首页",
+      "test": "R1a.AI洞察卡片",
+      "status": "FAIL",
+      "evidence": "data-testid=\"fa-home-ai-card\" 不存在, text=\"\""
+    },
+    {
+      "module": "RN首页",
+      "test": "R1b.统计指标",
+      "status": "FAIL",
+      "evidence": "0个统计卡片: []"
+    },
+    {
+      "module": "RN首页",
+      "test": "R1c.无错误提示",
+      "status": "PASS",
+      "evidence": "首页107字, 含错误=false"
+    },
+    {
+      "module": "RN导航",
+      "test": "R2.AI分析页",
+      "status": "PASS",
+      "evidence": "318字, 含期望关键词=true"
+    },
+    {
+      "module": "RN导航",
+      "test": "R2.报表页",
+      "status": "PASS",
+      "evidence": "328字, 含期望关键词=true"
+    },
+    {
+      "module": "RN导航",
+      "test": "R2.管理页",
+      "status": "PASS",
+      "evidence": "718字, 含期望关键词=true"
+    },
+    {
+      "module": "RN导航",
+      "test": "R2.我的页",
+      "status": "PASS",
+      "evidence": "840字, 含期望关键词=true"
+    },
+    {
+      "module": "RN管理",
+      "test": "R3a.管理项列表",
+      "status": "PASS",
+      "evidence": "发现6个管理项: [用户管理,产品,工序,意图,AI,系统设置]"
+    },
+    {
+      "module": "RN管理",
+      "test": "R3b.进入用户管理",
+      "status": "PASS",
+      "evidence": "3814字内容"
+    },
+    {
+      "module": "RN-AI",
+      "test": "R4a.AI功能列表",
+      "status": "WARN",
+      "evidence": "0个AI功能: []"
+    },
+    {
+      "module": "RN个人",
+      "test": "R5a.用户名显示",
+      "status": "WARN",
+      "evidence": "含\"factory_admin1\"=false"
+    },
+    {
+      "module": "RN个人",
+      "test": "R5b.角色显示",
+      "status": "WARN",
+      "evidence": "含角色信息=false"
+    },
+    {
+      "module": "RN个人",
+      "test": "R5c.设置项",
+      "status": "WARN",
+      "evidence": "[]"
+    },
+    {
+      "module": "RN报表",
+      "test": "R7a.报表内容",
+      "status": "WARN",
+      "evidence": "0字"
+    },
+    {
+      "module": "RN报表",
+      "test": "R7b.报表类型",
+      "status": "WARN",
+      "evidence": "[]"
+    },
+    {
+      "module": "RN-Console",
+      "test": "R6.错误扫描",
+      "status": "FAIL",
+      "evidence": "2个错误: [21:24:02.049][ERROR][web] [PushNotification] 未找到 EAS Project ID undefined undefined | [21:24:02.065][ERROR][web] [PushNotification] 推送通知权限被拒绝 undefined undefined"
+    }
+  ]
+}

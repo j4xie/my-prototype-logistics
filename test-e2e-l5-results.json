@@ -1,0 +1,212 @@
+{
+  "timestamp": "2026-04-04T23:00:02.581Z",
+  "pass": 29,
+  "fail": 0,
+  "warn": 0,
+  "total": 29,
+  "results": [
+    {
+      "layer": "L1",
+      "module": "销售订单",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "客户管理",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "采购订单",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "供应商管理",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L1",
+      "module": "研发样品",
+      "test": "页面加载",
+      "status": "PASS",
+      "evidence": "table=true, card=true"
+    },
+    {
+      "layer": "L5.1",
+      "module": "销售订单",
+      "test": "UUID检测",
+      "status": "PASS",
+      "evidence": "5行×[客户]列, 0 UUID"
+    },
+    {
+      "layer": "L5.5",
+      "module": "销售订单列表",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "期望6列全在, 实际: [订单编号,客户,业务员,下单日期,总金额,运费,折扣,状态,操作]"
+    },
+    {
+      "layer": "L5.6",
+      "module": "销售订单",
+      "test": "状态标签中文",
+      "status": "PASS",
+      "evidence": "10个标签全中文: [草稿,草稿,财务已批准,草稿,已确认...]"
+    },
+    {
+      "layer": "L5.2",
+      "module": "销售订单",
+      "test": "非空检测",
+      "status": "PASS",
+      "evidence": "客户=\"DS-Debug-Custom\", 订单编号=\"SO-20260405-000\", 下单日期=\"2026-04-05\", 总金额=\"¥500.00\"; 1行名称非空"
+    },
+    {
+      "layer": "L2",
+      "module": "销售订单",
+      "test": "创建(API)",
+      "status": "PASS",
+      "evidence": "订单号=SO-20260405-0003, 金额=500"
+    },
+    {
+      "layer": "L5.1",
+      "module": "销售订单",
+      "test": "创建后客户名",
+      "status": "PASS",
+      "evidence": "客户=\"DS-Debug-Customer-2\""
+    },
+    {
+      "layer": "L5.5",
+      "module": "销售行项目",
+      "test": "规格+箱数列",
+      "status": "PASS",
+      "evidence": "规格=true, 箱数=true"
+    },
+    {
+      "layer": "L5.3A",
+      "module": "销售订单",
+      "test": "SKU去重",
+      "status": "PASS",
+      "evidence": "被拒: 同一订单不能添加重复的产品: PT-F001-001"
+    },
+    {
+      "layer": "L5.1",
+      "module": "采购订单",
+      "test": "UUID检测",
+      "status": "PASS",
+      "evidence": "5行×[供应商]列, 0 UUID"
+    },
+    {
+      "layer": "L5.5",
+      "module": "采购订单列表",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "期望6列全在, 实际: [订单编号,供应商,类型,下单日期,总金额,状态,操作]"
+    },
+    {
+      "layer": "L5.6",
+      "module": "采购订单",
+      "test": "状态标签中文",
+      "status": "PASS",
+      "evidence": "20个标签全中文: [直接,草稿,直接,草稿,直接...]"
+    },
+    {
+      "layer": "L5.2",
+      "module": "采购订单",
+      "test": "非空检测",
+      "status": "PASS",
+      "evidence": "供应商=\"东海水产批发\", 订单编号=\"PO-20260405-000\", 下单日期=\"2026-04-04\"; 1行名称非空"
+    },
+    {
+      "layer": "L5.3B",
+      "module": "采购订单",
+      "test": "连续创建",
+      "status": "PASS",
+      "evidence": "PO#1=PO-20260405-0005, PO#2=PO-20260405-0006"
+    },
+    {
+      "layer": "L5.9",
+      "module": "采购订单",
+      "test": "订单号递增",
+      "status": "PASS",
+      "evidence": "5 → 6"
+    },
+    {
+      "layer": "L5.5",
+      "module": "采购行项目",
+      "test": "规格+箱数列",
+      "status": "PASS",
+      "evidence": "规格=true, 箱数=true, 实际: [原材料,规格,采购数量,箱数,单位,单价,已收货,小计,收货单号,收货日期,状态,金额,操作]"
+    },
+    {
+      "layer": "L5.5",
+      "module": "研发样品列表",
+      "test": "列完整性",
+      "status": "PASS",
+      "evidence": "期望7列全在, 实际: [样品编码,样品名称,客户名称,成品规格,产品级别,业务员,储存方式,产品状态,操作]"
+    },
+    {
+      "layer": "L5.6",
+      "module": "研发样品",
+      "test": "状态标签中文",
+      "status": "PASS",
+      "evidence": "7个标签全中文: [待研发,待研发,待研发,样品通过,研发中...]"
+    },
+    {
+      "layer": "L5.10",
+      "module": "研发样品",
+      "test": "搜索栏存在",
+      "status": "PASS",
+      "evidence": "名称=true, 客户=true, 状态=true"
+    },
+    {
+      "layer": "L5.4",
+      "module": "研发样品",
+      "test": "产品级别=下拉",
+      "status": "PASS",
+      "evidence": "el-select found"
+    },
+    {
+      "layer": "L5.4",
+      "module": "研发样品",
+      "test": "储存方式=下拉",
+      "status": "PASS",
+      "evidence": "el-select found"
+    },
+    {
+      "layer": "L2",
+      "module": "研发样品",
+      "test": "创建(API)",
+      "status": "PASS",
+      "evidence": "名称=E2E样品508024, 客户=测试客户508024, 级别=A, 储存=冷冻"
+    },
+    {
+      "layer": "L2",
+      "module": "研发样品",
+      "test": "UI列表验证",
+      "status": "PASS",
+      "evidence": "列表首行包含 E2E样品508024"
+    },
+    {
+      "layer": "L5.11",
+      "module": "研发样品",
+      "test": "样品通过→有报价按钮",
+      "status": "PASS",
+      "evidence": "buttons: [追踪记录,提交报价申请]"
+    },
+    {
+      "layer": "L5.11",
+      "module": "研发样品",
+      "test": "研发中→无报价按钮",
+      "status": "PASS",
+      "evidence": "buttons: [追踪记录,提交审核]"
+    }
+  ]
+}

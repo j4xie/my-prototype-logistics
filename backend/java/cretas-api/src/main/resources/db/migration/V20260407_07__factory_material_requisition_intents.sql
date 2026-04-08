@@ -2,7 +2,7 @@
 -- 3 tools: factory_material_requisition_generate/query_pending/close
 -- 客户原话锚点: 会议 3124-3252s
 
-INSERT INTO ai_intent_config (id, intent_code, intent_name, intent_category,
+INSERT INTO ai_intent_configs (id, intent_code, intent_name, intent_category,
   tool_name, keywords, is_active, sensitivity_level)
 VALUES
   (gen_random_uuid(), 'FACTORY_MR_GENERATE', '生成物料需求单', 'DATA_OPERATION',
