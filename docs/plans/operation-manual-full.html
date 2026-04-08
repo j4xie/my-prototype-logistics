@@ -6558,8 +6558,151 @@
 </div>
 
 
+<!-- ====================================================================== -->
+<!-- SECTION: Apr 8 新增功能 (v3 P0 + 深度核对补丁)                          -->
+<!-- ====================================================================== -->
+<div id="section-apr8" class="section-anchor"></div>
+<h2>Apr 8 新增功能 (v3 P0 + 深度核对补丁) <span class="badge badge-danger">新功能</span></h2>
+<p>
+  <span class="role-tag role-admin">工厂管理员</span>
+  <span class="role-tag">销售</span>
+  <span class="role-tag">生产</span>
+  <span class="badge badge-web">Web Admin</span>
+  <span class="badge">RN App</span>
+</p>
+
+<div class="card">
+<h3>一、权限与角色新增</h3>
+
+<h4>1.1 指定人员授权 (P0-6)</h4>
+<p><strong>使用场景</strong>: 在标准角色基础上，对个别用户单独 GRANT / REVOKE 菜单权限，无需新建角色。</p>
+<ol>
+  <li>系统管理 → 用户管理 → 选中用户 → 「菜单权限」Tab</li>
+  <li>对某菜单点击「授予」(GRANT) 或「收回」(REVOKE)</li>
+  <li>权限立即生效，该用户登录后菜单按用户级覆盖规则显示</li>
+</ol>
+<p><strong>API</strong>: <code>GET/POST/DELETE /users/{userId}/menu-permissions</code> 共 5 个端点</p>
+<p><strong>注意事项</strong>: 用户级授权优先于角色级。REVOKE 会屏蔽该用户通过角色继承来的菜单。</p>
+
+<h4>1.2 两级组长角色 (P0-18)</h4>
+<p><strong>使用场景</strong>: 车间大班组需要二级管理时使用。</p>
+<ul>
+  <li><strong>TEAM_LEADER 班长</strong> (Level 25)：7 项权限，可审阅本班组报工、调度人力</li>
+  <li><strong>GROUP_LEADER 组长</strong> (Level 28)：5 项权限，组内报工查看 + 异常上报</li>
+</ul>
+<p>在用户管理里为相关员工选择对应新角色即可。</p>
+</div>
+
+<div class="card">
+<h3>二、生产管理新增</h3>
+
+<h4>2.1 生产计划关联销售订单行 (P0-12)</h4>
+<p><strong>使用场景</strong>: 排产时精确到「哪张 SO 的哪一行产品」，避免混单。</p>
+<ol>
+  <li>生产管理 → 生产计划 → 新建</li>
+  <li>「来源类型」选「销售订单」→ 选择 SO 单号 → 该 SO 下产品行自动联动下拉</li>
+  <li>选中的行 ID 写入 <code>sourceOrderItemId</code>，后续发货时该 SO 行显示对应生产状态</li>
+</ol>
+
+<h4>2.2 发货批次强制分配 (P0-13)</h4>
+<p><strong>使用场景</strong>: 同一产品多批次出库时必须明确指定批次，保证溯源。</p>
+<ol>
+  <li>销售订单 → 发货 → 发货单明细页</li>
+  <li>每行产品点击「批次分配」→ 选择批次 + 填入数量 (可拆多批)</li>
+  <li>合计数量必须等于出货数量，否则无法发货</li>
+  <li>点击「确认发货」系统校验每行必须完成批次分配，未分配直接报错阻断</li>
+</ol>
+<p><strong>注意事项</strong>: 该校验不可绕过，历史待发货订单补传批次后才能发。</p>
+
+<h4>2.3 BOM 按原料/辅料/包材分 3 块 (P0-14)</h4>
+<p><strong>使用场景</strong>: 食品加工的 BOM 天然分原料、辅料、包装材料，合并展示不直观。</p>
+<ol>
+  <li>研发管理 → BOM 管理 → 编辑 BOM</li>
+  <li>页面顶部 3 个 Tab：「原料 RAW」「辅料 AUXILIARY」「包材 PACKAGING」</li>
+  <li>每条 BOM 行的 <code>materialCategory</code> 决定归属哪个 Tab</li>
+</ol>
+
+<h4>2.4 报工三种模式 mode_1/2/3 (P0-15)</h4>
+<p><strong>使用场景</strong>: 不同车间报工粒度不同，可在工单级选择。</p>
+<ul>
+  <li><strong>mode_1 按工序报工</strong> (默认)：每道工序独立报工</li>
+  <li><strong>mode_2 按批次报工</strong>：整批次一次报，适合连续作业</li>
+  <li><strong>mode_3 按人头报工</strong>：按人计件，适合非标品</li>
+</ul>
+<p>在生产计划新建时「报工模式」字段下拉选择，报工时 App / Web 自动切换对应表单。</p>
+
+<h4>2.5 生产进度数字打屏看板 (B8)</h4>
+<p><strong>使用场景</strong>: 车间门口大屏实时展示当日生产进度。</p>
+<ol>
+  <li>浏览器访问 <code>/dashboard/production-progress</code></li>
+  <li>页面全屏、大字、黑底绿字，每 30 秒自动刷新</li>
+  <li>显示当日各工序进度、完成率、异常工单数</li>
+</ol>
+<p><strong>注意事项</strong>: 无需登录 (内网只读)，可直接投影到车间电视。</p>
+</div>
+
+<div class="card">
+<h3>三、仓库管理新增</h3>
+
+<h4>3.1 入库发起单强制分类 (P0-17)</h4>
+<p><strong>使用场景</strong>: 所有入库必须标明来源凭据类型，杜绝"裸入库"。</p>
+<p>新建入库单时「来源类型」必选，共 6 类：</p>
+<ul>
+  <li><strong>PURCHASE_RECEIVE</strong> 采购收货 (关联 PO)</li>
+  <li><strong>MATERIAL_REQUISITION_RETURN</strong> 车间退料</li>
+  <li><strong>SALES_RETURN</strong> 销售退货</li>
+  <li><strong>INVENTORY_GAIN</strong> 盘盈入库 (关联盘点单)</li>
+  <li><strong>FREE_GIFT</strong> 赠品入库 (供应商随货赠送)</li>
+  <li><strong>MANUAL_ADJUST</strong> 手工调整 (需主管审批)</li>
+</ul>
+<p><code>MaterialBatch.sourceDocType</code> 字段记录，便于后续追溯。</p>
+
+<h4>3.2 RN App 拍照签收 (P0-16)</h4>
+<p><strong>使用场景</strong>: 车间领料签收时现场拍照留证。</p>
+<ol>
+  <li>RN App → 领料签收页 → 点击「拍照」按钮</li>
+  <li>调用 expo-image-picker 打开相机拍照</li>
+  <li>照片随签收记录一起上传</li>
+</ol>
+
+<h4>3.3 周转耗材(框)管理 (C4)</h4>
+<p><strong>使用场景</strong>: 周转筐/框随货发给客户，需要追踪归还情况，丢失按金额赔偿。</p>
+<ol>
+  <li>仓储管理 → 周转耗材管理 → 维护容器主数据 (编号、类型、押金)</li>
+  <li>发货时关联容器：状态流转 <code>SHIP_OUT</code>（随货出）</li>
+  <li>客户归还 → 「归还登记」→ 状态 <code>RETURN_IN</code></li>
+  <li>丢失 → 「报损」→ 状态 <code>LOSS</code>，自动生成赔偿明细</li>
+  <li>盘点差异 → 「调整」→ 状态 <code>ADJUST</code></li>
+</ol>
+<p><strong>注意事项</strong>: 容器状态机 SHIP_OUT → RETURN_IN / LOSS / ADJUST，不支持跨状态回退。</p>
+</div>
+
+<div class="card">
+<h3>四、销售订单与开票新增</h3>
+
+<h4>4.1 销售订单运费 + 其他费用 (B1/B2)</h4>
+<p><strong>使用场景</strong>: 订单除货款外，常有运费、装卸费、包装费等附加费用需明细。</p>
+<ol>
+  <li>销售订单 → 新建/编辑</li>
+  <li><strong>运费</strong>：「是否含运费」勾选后填金额 (<code>shippingIncluded</code> + <code>shippingFee</code>)</li>
+  <li><strong>其他费用</strong>：「附加费用」区可新增多条 <code>{name, amount, remark}</code>，存储为 JSONB 数组 <code>extraFees</code></li>
+  <li>总金额 = 货款 + 运费 + Σ其他费用</li>
+</ol>
+
+<h4>4.2 税率分组开票 (G1 — 客户会议杀手锏)</h4>
+<p><strong>客户原话依据</strong>: 会议 2645s 客户明确要求"一张订单能分别开 9 个点原料和 13 个点加工费的两张发票"。</p>
+<p><strong>使用场景</strong>: 食品加工订单原料与加工费税率不同，需按税率拆分开票。</p>
+<ol>
+  <li>销售订单详情 → 点击「开票申请」按钮 → 弹出 <strong>TaxGroupInvoiceDialog</strong></li>
+  <li>系统按订单行自动聚合 <code>taxBreakdown</code>：9% 原料 ¥2500、13% 加工费 ¥800</li>
+  <li>每组可调整金额 / 备注，确认后一键生成对应数量的开票申请</li>
+  <li>调用接口 <code>POST /finance/invoices/request-from-order</code></li>
+</ol>
+<p><strong>注意事项</strong>: 后端会自动校验各税率组金额合计不能超过订单剩余可开票金额。</p>
+</div>
+
 <p style="text-align:center; color:#999; margin:30px 0; font-size:12px;">
-  白垩纪食品溯源系统 v3.2 | 完整操作手册 | 更新: 2026-04-04
+  白垩纪食品溯源系统 v3.3 | 完整操作手册 | 更新: 2026-04-08
 </p>
 
 </div>
