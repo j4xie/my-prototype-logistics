@@ -552,6 +552,8 @@ async def compute_restaurant_analytics_v2(
                 {"id": 1, "rating": 4.5, "content": "招牌毛肚很嫩", "created_at": "2026-02-01"},
                 ...
             ],
+            // W5.5: LLM 驱动评论分析 (默认 false → regex)
+            "use_llm_reviews": false,
             // Week 4.4: BOM Layer 2 — TOP 20 SKU 主料成本表
             "sku_forms": [
                 {
@@ -619,6 +621,9 @@ async def compute_restaurant_analytics_v2(
 
     # W5.4 会员 RFM
     members = body.get("members")  # list[dict] — [{member_id, last_order_days_ago, order_count, total_amount}]
+
+    # W5.5 LLM-based review analysis (default false → keep regex 作为安全默认)
+    use_llm_reviews = bool(body.get("use_llm_reviews", False))
 
     try:
         with get_db_context() as db:
@@ -749,7 +754,26 @@ async def compute_restaurant_analytics_v2(
                 period=period,
                 reviews=reviews,
                 members=members,
+                use_llm_reviews=False,  # sync pass always uses regex
             )
+
+            # W5.5: async LLM review analysis (must be awaited from async endpoint)
+            if use_llm_reviews and reviews:
+                try:
+                    llm_report = await v2.llm_review_analyzer.analyze_async(
+                        reviews, min_mentions=2, max_reviews=200
+                    )
+                    section = llm_report.to_dict()
+                    section["usedLlm"] = True
+                    result["sections"]["reviewAnalysis"] = section
+                    # Update executive summary with LLM-sourced alerts
+                    for alert in llm_report.risk_alerts[:2]:
+                        if alert not in result.get("executiveSummary", []):
+                            result.setdefault("executiveSummary", []).append(alert)
+                except Exception as e:
+                    logger.warning(f"W5.5 LLM review async failed: {e}")
+                    # Regex fallback already ran in v2.analyze(), keep it
+
             t_compute = time.perf_counter() - t1
 
             # 保存缓存

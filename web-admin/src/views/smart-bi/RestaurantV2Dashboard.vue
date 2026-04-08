@@ -44,6 +44,7 @@ import {
   type BomLayerStatus,
   type TemporalComparison,
   type MemberRfm,
+  type CalibrationHistoryReport,
 } from '@/api/smartbi/restaurant-v2';
 import BomIngestDialog from './BomIngestDialog.vue';
 
@@ -205,6 +206,9 @@ const longTailSku = computed<LongTailSku | undefined>(
 );
 const reviewAnalysis = computed<ReviewAnalysis | undefined>(
   () => report.value?.sections?.reviewAnalysis
+);
+const calibrationHistory = computed<CalibrationHistoryReport | undefined>(
+  () => report.value?.sections?.calibrationHistory
 );
 const bomLayerStatus = computed<BomLayerStatus | undefined>(
   () => report.value?.sections?.bomLayerStatus
@@ -1074,6 +1078,105 @@ function formatCurrency(v?: number): string {
             </template>
           </el-table-column>
         </el-table>
+      </el-card>
+
+      <!-- W5.7: Calibration History (Layer A 月度校准报告) -->
+      <el-card v-if="calibrationHistory" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#409EFF"><TrendCharts /></el-icon>
+            <span>月度校准历史 (Calibration History)</span>
+            <el-tag size="small" type="info">W5.7</el-tag>
+          </div>
+        </template>
+        <!-- Summary -->
+        <p style="margin: 0 0 12px; color: #606266;">{{ calibrationHistory.summary }}</p>
+        <!-- Factor Trend Table -->
+        <h4 style="margin: 0 0 8px; color: #303133;">食材成本率走势</h4>
+        <el-table :data="calibrationHistory.periods" border size="small" style="margin-bottom: 16px;">
+          <el-table-column prop="period" label="月份" width="110" />
+          <el-table-column label="采购额" width="130">
+            <template #default="{ row }">{{ formatCurrency(row.totalPurchase) }}</template>
+          </el-table-column>
+          <el-table-column label="营收" width="130">
+            <template #default="{ row }">{{ formatCurrency(row.totalRevenue) }}</template>
+          </el-table-column>
+          <el-table-column label="食材率" width="100">
+            <template #default="{ row }">
+              <strong>{{ (row.overallRatio * 100).toFixed(1) }}%</strong>
+            </template>
+          </el-table-column>
+          <el-table-column label="vs 基准" width="100">
+            <template #default="{ row }">
+              <el-tag
+                :type="row.factorVsBaseline > 1.1 ? 'danger' : row.factorVsBaseline < 0.9 ? 'success' : 'info'"
+                size="small"
+              >
+                {{ row.factorVsBaseline.toFixed(2) }}x
+              </el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+        <!-- Category Volatility (Top 5) -->
+        <template v-if="calibrationHistory.categoryVolatility.length > 0">
+          <h4 style="margin: 0 0 8px; color: #303133;">类目波动 (Top 5)</h4>
+          <el-table :data="calibrationHistory.categoryVolatility.slice(0, 5)" border size="small" style="margin-bottom: 16px;">
+            <el-table-column prop="category" label="类目" width="120" />
+            <el-table-column label="均值" width="100">
+              <template #default="{ row }">{{ (row.meanRatio * 100).toFixed(2) }}%</template>
+            </el-table-column>
+            <el-table-column label="CV%" width="100">
+              <template #default="{ row }">
+                <el-tag
+                  :type="row.cvPct > 0.3 ? 'danger' : row.cvPct > 0.2 ? 'warning' : 'info'"
+                  size="small"
+                >
+                  {{ (row.cvPct * 100).toFixed(0) }}%
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="peakPeriod" label="峰值月" width="100" />
+            <el-table-column prop="troughPeriod" label="谷值月" width="100" />
+          </el-table>
+        </template>
+        <!-- Anomalies -->
+        <template v-if="calibrationHistory.anomalies.length > 0">
+          <h4 style="margin: 0 0 8px; color: #303133;">异常告警</h4>
+          <div v-for="(anomaly, idx) in calibrationHistory.anomalies.slice(0, 5)" :key="idx" style="margin-bottom: 6px;">
+            <el-tag :type="anomaly.severity === 'critical' ? 'danger' : 'warning'" size="small">
+              {{ anomaly.severity }}
+            </el-tag>
+            <span style="margin-left: 8px; color: #606266;">
+              {{ anomaly.period }}
+              <template v-if="anomaly.category"> / {{ anomaly.category }}</template>
+              : 实际 {{ (anomaly.actualRatio * 100).toFixed(1) }}% vs 预期 {{ (anomaly.expectedRatio * 100).toFixed(1) }}%
+              ({{ anomaly.deltaPct > 0 ? '+' : '' }}{{ (anomaly.deltaPct * 100).toFixed(0) }}%)
+            </span>
+          </div>
+        </template>
+        <!-- Insights + Recommendations -->
+        <template v-if="calibrationHistory.insights.length > 0">
+          <el-alert
+            v-for="(insight, idx) in calibrationHistory.insights"
+            :key="'ci-' + idx"
+            :title="insight"
+            type="info"
+            :closable="false"
+            show-icon
+            style="margin-top: 8px;"
+          />
+        </template>
+        <template v-if="calibrationHistory.recommendations.length > 0">
+          <el-alert
+            v-for="(rec, idx) in calibrationHistory.recommendations"
+            :key="'cr-' + idx"
+            :title="rec"
+            type="warning"
+            :closable="false"
+            show-icon
+            style="margin-top: 8px;"
+          />
+        </template>
       </el-card>
 
       <!-- Week 4.4: BOM Layer Status -->

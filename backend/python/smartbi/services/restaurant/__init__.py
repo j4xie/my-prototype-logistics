@@ -72,6 +72,14 @@ from .review_analyzer import (
     ReviewAnalyzer,
     ReviewAnalysisReport,
 )
+from .review_analyzer_llm import LlmReviewAnalyzer
+from .monthly_calibration_report import (
+    CalibrationAnomaly,
+    CalibrationHistoryReport,
+    CalibrationSnapshot,
+    CategoryVolatility,
+    MonthlyCalibrationReporter,
+)
 from .member_rfm import (
     MemberRfmAnalyzer,
     MemberScore,
@@ -93,8 +101,16 @@ __all__ = [
     "DishMention",
     "RatingTrend",
     "PeriodRating",
+    # W5.5 — LLM 驱动评论分析
+    "LlmReviewAnalyzer",
     # W5.4 — 会员 RFM
     "MemberRfmAnalyzer",
     "RfmReport",
     "MemberScore",
+    # W5.7 — Layer A 月度校准历史报告
+    "MonthlyCalibrationReporter",
+    "CalibrationHistoryReport",
+    "CalibrationSnapshot",
+    "CategoryVolatility",
+    "CalibrationAnomaly",
 ]

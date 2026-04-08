@@ -96,6 +96,8 @@ export interface V2AnalyzePayload {
     order_count: number;
     total_amount: number;
   }>;
+  // W5.5 — LLM-based review analysis (default: false → regex)
+  use_llm_reviews?: boolean;
 }
 
 // ── Result types ────────────────────────────────────────────
@@ -393,6 +395,47 @@ export interface MemberRfm {
   recommendations: string[];
 }
 
+// W5.7 — Calibration History (Layer A 月度校准报告)
+export interface CalibrationSnapshot {
+  period: string;
+  totalPurchase: number;
+  totalRevenue: number;
+  overallRatio: number;
+  categoryRatios: Record<string, number>;
+  factorVsBaseline: number;
+}
+
+export interface CategoryVolatility {
+  category: string;
+  meanRatio: number;
+  stddevRatio: number;
+  cvPct: number;
+  peakPeriod: string;
+  troughPeriod: string;
+}
+
+export interface CalibrationAnomaly {
+  period: string;
+  category?: string | null;
+  actualRatio: number;
+  expectedRatio: number;
+  deltaPct: number;
+  severity: 'info' | 'warning' | 'critical';
+}
+
+export interface CalibrationHistoryReport {
+  factoryId: string;
+  storeId?: string | null;
+  totalPeriods: number;
+  periods: CalibrationSnapshot[];
+  factorTrend: Array<{ period: string; factor: number; ratio: number }>;
+  categoryVolatility: CategoryVolatility[];
+  anomalies: CalibrationAnomaly[];
+  summary: string;
+  insights: string[];
+  recommendations: string[];
+}
+
 // W5.6 — Temporal Comparison (同店同比)
 export interface TemporalDelta {
   groupName: string;
@@ -435,9 +478,10 @@ export interface V2UnifiedReport {
     longTailSku?: LongTailSku;
     reviewAnalysis?: ReviewAnalysis;
     bomLayerStatus?: BomLayerStatus;
-    // W5.4 + W5.6
+    // W5.4 + W5.6 + W5.7
     memberRfm?: MemberRfm;
     temporalComparison?: TemporalComparison;
+    calibrationHistory?: CalibrationHistoryReport;
   };
   warnings: string[];
   executiveSummary: string[];

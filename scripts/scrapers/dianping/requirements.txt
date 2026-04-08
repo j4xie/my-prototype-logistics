@@ -1,0 +1,21 @@
+# Dianping scraper dependencies
+
+# Browser automation (anti-detect Playwright fork)
+patchright>=1.40.0
+
+# Font parsing for CSS @font-face deobfuscation
+fonttools>=4.40.0
+
+# HTTP client (used by font_decoder.from_url)
+requests>=2.31.0
+
+# Data export
+pandas>=2.0.0
+openpyxl>=3.1.0
+
+# Optional: image-based fallback for font matching
+# Pillow>=10.0.0
+# imagehash>=4.3.0
+
+# After install, run once to fetch Chromium:
+#   patchright install chromium

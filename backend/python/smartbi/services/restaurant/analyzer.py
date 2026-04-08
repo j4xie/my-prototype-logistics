@@ -61,8 +61,10 @@ from .dining_period_heatmap import DiningPeriodHeatmap
 from .long_tail_sku_detector import LongTailSkuDetector
 from .member_rfm import MemberRfmAnalyzer
 from .menu_normalizer import RestaurantMenuNormalizer
+from .monthly_calibration_report import MonthlyCalibrationReporter
 from .monthly_purchase_calibrator import MonthlyPurchaseCalibrator
 from .review_analyzer import ReviewAnalyzer
+from .review_analyzer_llm import LlmReviewAnalyzer
 from .sku_form_manager import SkuFormManager
 from .store_pnl_one_pager import StorePnlOnePager
 from .stored_value_analyzer import StoredValueAnalyzer
@@ -178,7 +180,16 @@ class RestaurantAnalyzerV2:
         self.stored_value_analyzer = StoredValueAnalyzer()
         self.long_tail_detector = LongTailSkuDetector()
         self.review_analyzer = ReviewAnalyzer()
+        # W5.5: LLM-based review analyzer (falls back to regex on failure)
+        self.llm_review_analyzer = LlmReviewAnalyzer(fallback_analyzer=self.review_analyzer)
         self.member_rfm_analyzer = MemberRfmAnalyzer()
+
+        # W5.7: Layer A 月度校准历史报告 (lazy: 需要 db_session)
+        self.calibration_reporter: Optional[MonthlyCalibrationReporter] = None
+        if db_session is not None:
+            self.calibration_reporter = MonthlyCalibrationReporter(
+                db_session=db_session
+            )
 
         # W5.6 同店同比 (Week 3 写的 module, W5 集成进来)
         self.temporal_comparator = TemporalComparator(group_col="门店名称")
@@ -199,6 +210,7 @@ class RestaurantAnalyzerV2:
         quantity_col: str = "数量",
         reviews: Optional[list[dict]] = None,
         members: Optional[list[dict]] = None,  # W5.4 会员 RFM
+        use_llm_reviews: bool = False,         # W5.5: LLM-based review analysis
     ) -> dict:
         """V2 主分析入口
 
@@ -350,18 +362,35 @@ class RestaurantAnalyzerV2:
             except Exception as e:
                 logger.warning(f"long_tail_detector 失败: {e}")
 
-        # ─── Week 4.5: 大众点评评论分析 (需 reviews 输入) ───
+        # ─── Week 4.5 / W5.5: 大众点评评论分析 (需 reviews 输入) ───
         if reviews:
-            try:
-                review_report = self.review_analyzer.analyze(
-                    reviews=reviews, min_mentions=2
-                )
-                report["sections"]["reviewAnalysis"] = review_report.to_dict()
+            review_report = None
+            used_llm = False
+            if use_llm_reviews:
+                try:
+                    review_report = self.llm_review_analyzer.analyze(
+                        reviews, min_mentions=2, max_reviews=200
+                    )
+                    used_llm = True
+                except Exception as e:
+                    logger.warning(f"LLM review_analyzer failed, fallback to regex: {e}")
+                    review_report = None
+                    used_llm = False
+            if review_report is None:
+                try:
+                    review_report = self.review_analyzer.analyze(
+                        reviews=reviews, min_mentions=2
+                    )
+                except Exception as e:
+                    logger.warning(f"review_analyzer failed: {e}")
+                    report["warnings"].append(f"评论分析失败: {e}")
+                    review_report = None
+            if review_report is not None:
+                section = review_report.to_dict()
+                section["usedLlm"] = used_llm
+                report["sections"]["reviewAnalysis"] = section
                 for alert in review_report.risk_alerts[:2]:
                     report["executiveSummary"].append(alert)
-            except Exception as e:
-                logger.warning(f"review_analyzer 失败: {e}")
-                report["warnings"].append(f"评论分析失败: {e}")
 
         # ─── W5.4: 会员 RFM 分析 (需 members 或 POS 含 member_id) ───
         if members:
@@ -399,6 +428,38 @@ class RestaurantAnalyzerV2:
             except Exception as e:
                 logger.warning(f"temporal_comparator 失败: {e}")
                 report["warnings"].append(f"同店同比生成失败: {e}")
+
+        # ─── W5.7: Layer A 月度校准历史 (需 db_session + ≥1 月数据) ───
+        if self.calibration_reporter is not None:
+            try:
+                history_report = self.calibration_reporter.generate(
+                    factory_id=self.factory_id,
+                    store_id=store_id,
+                    months_back=6,
+                )
+                # 没数据时不添加 section, 用户感受不到 (graceful skip)
+                if history_report.total_periods > 0:
+                    report["sections"]["calibrationHistory"] = (
+                        history_report.to_dict()
+                    )
+                    # 严重异常进 executive summary
+                    critical_anomalies = [
+                        a
+                        for a in history_report.anomalies
+                        if a.severity == "critical"
+                    ]
+                    if critical_anomalies:
+                        report["executiveSummary"].append(
+                            f"📅 BOM 校准历史: {len(critical_anomalies)} 个严重月份异常, "
+                            "建议复盘"
+                        )
+                    elif history_report.total_periods >= 6 and not history_report.anomalies:
+                        report["executiveSummary"].append(
+                            f"✅ BOM 校准历史: {history_report.total_periods} 月走势稳定"
+                        )
+            except Exception as e:
+                logger.warning(f"calibration_reporter 失败: {e}")
+                report["warnings"].append(f"月度校准历史报告失败: {e}")
 
         # ─── Week 4.4: BOM Layer status (报告当前精度状态) ───
         report["sections"]["bomLayerStatus"] = self._build_bom_layer_status()
