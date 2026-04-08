@@ -124,7 +124,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Summary Cards -->
-    <div class="summary-row" v-if="data">
+    <div class="summary-row" v-if="data && data.summary">
       <div class="summary-card">
         <div class="summary-label">总计划</div>
         <div class="summary-value">{{ data.summary.totalPlans }}</div>
