@@ -10,6 +10,11 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
+// P1-NEW-3: 仓库角色隐藏价格字段 (客户需求 4907-4925s: 商业机密, 仓库看不到价格)
+const isWarehouseOnly = computed(() => {
+  const role = authStore.currentRole;
+  return role === 'warehouse_manager' || role === 'warehouse_worker';
+});
 
 const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
@@ -422,7 +427,7 @@ function getStatusText(status: string) {
           <span class="detail-label">预留数量</span>
           <span class="detail-value">{{ detailData.reservedQuantity ?? '-' }}</span>
         </div>
-        <div class="detail-item">
+        <div v-if="!isWarehouseOnly" class="detail-item">
           <span class="detail-label">单价</span>
           <span class="detail-value">{{ detailData.unitPrice != null ? `¥${detailData.unitPrice}` : '-' }}</span>
         </div>
