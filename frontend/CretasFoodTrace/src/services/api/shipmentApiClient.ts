@@ -257,6 +257,33 @@ class ShipmentApiClient {
     );
     return response.data || response;
   }
+
+  /**
+   * 11. 出库签收凭证上传 (P0-NEW-1)
+   * POST /api/mobile/{factoryId}/sales/deliveries/{deliveryId}/signature
+   * 客户原话 2807s — 要求拍照签收凭证
+   *
+   * TODO: 集成 OSS upload, 当前传递 local URI, 后续替换为真实 OSS URL
+   */
+  async uploadSignature(
+    deliveryId: string,
+    data: {
+      photoUrls: string[];
+      signedByName: string;
+      remark?: string;
+    },
+    factoryId?: string
+  ): Promise<{ success: boolean }> {
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    const response = await apiClient.post<any>(
+      `/api/mobile/${currentFactoryId}/sales/deliveries/${deliveryId}/signature`,
+      data
+    );
+    return response;
+  }
 }
 
 export const shipmentApiClient = new ShipmentApiClient();
