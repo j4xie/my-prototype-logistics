@@ -146,6 +146,12 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: '盘点管理', module: 'warehouse' }
           },
           {
+            path: 'reusable-containers',
+            name: 'WarehouseReusableContainers',
+            component: () => import('@/views/warehouse/reusable-containers/list.vue'),
+            meta: { requiresAuth: true, title: '周转耗材管理', module: 'warehouse' }
+          },
+          {
             path: 'material-price-trend',
             name: 'MaterialPriceTrend',
             component: () => import('@/views/warehouse/MaterialPriceTrendView.vue'),
