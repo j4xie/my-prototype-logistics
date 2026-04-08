@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.cretas.aims.entity.enums.ReportMode;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import lombok.*;
 import org.hibernate.annotations.Type;
@@ -53,6 +54,11 @@ public class ProductionReport {
 
     @Column(name = "report_type", nullable = false, length = 30)
     private String reportType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "report_mode", nullable = false, length = 16)
+    @Builder.Default
+    private ReportMode reportMode = ReportMode.MODE_1;
 
     @Column(name = "schema_id", length = 36)
     private String schemaId;

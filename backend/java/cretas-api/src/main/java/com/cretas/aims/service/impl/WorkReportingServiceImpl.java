@@ -6,6 +6,7 @@ import com.cretas.aims.entity.BatchWorkSession;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.entity.ProductionReport;
+import com.cretas.aims.entity.enums.ReportMode;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.ProductionBatchStatus;
 import com.cretas.aims.event.BatchCompletedEvent;
@@ -45,6 +46,21 @@ public class WorkReportingServiceImpl {
     public WorkReportResponse submitReport(String factoryId, Long workerId, WorkReportSubmitRequest request) {
         log.info("提交报工: factoryId={}, workerId={}, type={}", factoryId, workerId, request.getReportType());
 
+        // P0-15: 报工模式差异化校验
+        ReportMode mode = request.getReportMode() != null ? request.getReportMode() : ReportMode.MODE_1;
+        if (request.getOutputQuantity() == null) {
+            throw new BusinessException("产量(outputQuantity)必填");
+        }
+        if (request.getTotalWorkMinutes() == null || request.getTotalWorkMinutes() <= 0) {
+            throw new BusinessException("耗时(totalWorkMinutes)必填且>0");
+        }
+        if (mode == ReportMode.MODE_2 && request.getBatchId() == null) {
+            throw new BusinessException("MODE_2 按批次报工必须关联生产批次(batchId)");
+        }
+        if (mode == ReportMode.MODE_3 && (request.getWorkerIds() == null || request.getWorkerIds().isEmpty())) {
+            throw new BusinessException("MODE_3 按人头报工必须提供 workerIds 列表");
+        }
+
         // P1-2: 防重提交 — 同一工人+同一批次+同一报工类型+同一日期只能提交一次
         if (request.getReportDate() != null) {
             boolean duplicate;
@@ -73,6 +89,7 @@ public class WorkReportingServiceImpl {
                 .workerId(workerId)
                 .batchId(request.getBatchId())
                 .reportType(request.getReportType())
+                .reportMode(mode)
                 .schemaId(request.getSchemaId())
                 .reportDate(request.getReportDate())
                 .reporterName(reporterName)
