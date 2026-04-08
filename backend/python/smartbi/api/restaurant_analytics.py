@@ -21,6 +21,8 @@ from smartbi.database.models import (
     SmartBiDynamicData,
     SmartBiPgAnalysisResult,
     SmartBiPgExcelUpload,
+    RestaurantReviewSource,
+    RestaurantReview,
 )
 from services.food_industry_detector import detect_restaurant_chain
 from services.restaurant_analyzer import RestaurantAnalyzer
@@ -1136,3 +1138,389 @@ def delete_monthly_purchase(
     except Exception as e:
         logger.error(f"delete_monthly_purchase({fid},{period}) failed: {e}", exc_info=True)
         return {"success": False, "message": f"Failed: {str(e)[:200]}"}
+
+
+# ═══════════════════════════════════════════════════════════════
+# W6 — Review Collection System
+# ═══════════════════════════════════════════════════════════════
+
+
+@router.post("/restaurant-review-sources")
+async def register_review_source(request: Request):
+    """Register a store for review collection.
+
+    Body: {factory_id, store_name, city?, platform?, shop_id?, scrape_schedule?}
+    """
+    if not is_postgres_enabled():
+        return {"success": False, "message": "PostgreSQL not enabled"}
+
+    try:
+        body = await request.json()
+    except Exception:
+        return {"success": False, "message": "Invalid JSON body"}
+
+    fid = body.get("factory_id") or _get_factory_id(request)
+    if not fid:
+        return {"success": False, "message": "factory_id required"}
+
+    store_name = body.get("store_name", "").strip()
+    if not store_name:
+        return {"success": False, "message": "store_name required"}
+
+    try:
+        with get_db_context() as db:
+            # Check for existing source (dedup)
+            existing = (
+                db.query(RestaurantReviewSource)
+                .filter(
+                    RestaurantReviewSource.factory_id == fid,
+                    RestaurantReviewSource.store_name == store_name,
+                    RestaurantReviewSource.platform == body.get("platform", "dianping"),
+                )
+                .first()
+            )
+            if existing:
+                return {
+                    "success": True,
+                    "data": existing.to_dict(),
+                    "message": "Source already registered",
+                }
+
+            source = RestaurantReviewSource(
+                factory_id=fid,
+                store_name=store_name,
+                city=body.get("city", "上海"),
+                platform=body.get("platform", "dianping"),
+                shop_id=body.get("shop_id"),
+                scrape_schedule=body.get("scrape_schedule", "weekly"),
+            )
+            db.add(source)
+            db.flush()
+            result = source.to_dict()
+            return {"success": True, "data": result}
+
+    except IntegrityError:
+        return {"success": True, "message": "Source already registered"}
+    except Exception as e:
+        logger.error(f"register_review_source({fid},{store_name}) failed: {e}", exc_info=True)
+        return {"success": False, "message": f"Failed: {str(e)[:200]}"}
+
+
+@router.get("/restaurant-review-sources")
+def list_review_sources(request: Request, factory_id: Optional[str] = None):
+    """List registered review sources for a factory."""
+    if not is_postgres_enabled():
+        return {"success": False, "data": []}
+
+    fid = factory_id or _get_factory_id(request)
+    if not fid:
+        return {"success": False, "message": "factory_id required"}
+
+    try:
+        with get_db_context() as db:
+            sources = (
+                db.query(RestaurantReviewSource)
+                .filter(RestaurantReviewSource.factory_id == fid)
+                .order_by(RestaurantReviewSource.created_at.desc())
+                .all()
+            )
+            return {
+                "success": True,
+                "data": [s.to_dict() for s in sources],
+            }
+    except Exception as e:
+        logger.error(f"list_review_sources({fid}) failed: {e}", exc_info=True)
+        return {"success": False, "data": [], "message": f"Failed: {str(e)[:200]}"}
+
+
+@router.delete("/restaurant-review-sources/{source_id}")
+def delete_review_source(source_id: int, request: Request):
+    """Delete a review source."""
+    if not is_postgres_enabled():
+        return {"success": False, "message": "PostgreSQL not enabled"}
+
+    try:
+        with get_db_context() as db:
+            # Nullify FK in reviews first to avoid FK violation
+            db.query(RestaurantReview).filter(
+                RestaurantReview.source_id == source_id
+            ).update({"source_id": None})
+            deleted = (
+                db.query(RestaurantReviewSource)
+                .filter(RestaurantReviewSource.id == source_id)
+                .delete()
+            )
+            return {
+                "success": deleted > 0,
+                "data": {"sourceId": source_id, "deleted": deleted},
+            }
+    except Exception as e:
+        logger.error(f"delete_review_source({source_id}) failed: {e}", exc_info=True)
+        return {"success": False, "message": f"Failed: {str(e)[:200]}"}
+
+
+@router.post("/restaurant-reviews/upload")
+async def upload_reviews(request: Request):
+    """Upload reviews from Excel export or JSON array.
+
+    Body: {
+        factory_id: str,
+        store_name: str,
+        platform?: str,
+        reviews: [
+            {rating, content, review_time?, review_id?, taste_score?, env_score?,
+             service_score?, reviewer?}
+        ]
+    }
+
+    Dedup: same review_id for same factory+store is skipped, not errored.
+    """
+    if not is_postgres_enabled():
+        return {"success": False, "message": "PostgreSQL not enabled"}
+
+    try:
+        body = await request.json()
+    except Exception:
+        return {"success": False, "message": "Invalid JSON body"}
+
+    fid = body.get("factory_id") or _get_factory_id(request)
+    if not fid:
+        return {"success": False, "message": "factory_id required"}
+
+    store_name = body.get("store_name", "").strip()
+    if not store_name:
+        return {"success": False, "message": "store_name required"}
+
+    reviews_raw = body.get("reviews") or []
+    if not isinstance(reviews_raw, list) or len(reviews_raw) == 0:
+        return {"success": False, "message": "reviews must be a non-empty list"}
+
+    platform = body.get("platform", "dianping")
+
+    try:
+        with get_db_context() as db:
+            # Find or create source
+            source = (
+                db.query(RestaurantReviewSource)
+                .filter(
+                    RestaurantReviewSource.factory_id == fid,
+                    RestaurantReviewSource.store_name == store_name,
+                    RestaurantReviewSource.platform == platform,
+                )
+                .first()
+            )
+            source_id = source.id if source else None
+
+            # Fetch existing review_ids for dedup
+            existing_review_ids: set[str] = set()
+            if any(r.get("review_id") or r.get("reviewId") or r.get("评价ID") for r in reviews_raw):
+                rows = (
+                    db.query(RestaurantReview.review_id)
+                    .filter(
+                        RestaurantReview.factory_id == fid,
+                        RestaurantReview.store_name == store_name,
+                        RestaurantReview.review_id.isnot(None),
+                    )
+                    .all()
+                )
+                existing_review_ids = {r[0] for r in rows}
+
+            inserted = 0
+            skipped = 0
+            errors: list[str] = []
+
+            for i, rv in enumerate(reviews_raw):
+                try:
+                    rid = rv.get("review_id") or rv.get("reviewId") or rv.get("评价ID")
+                    if rid and str(rid) in existing_review_ids:
+                        skipped += 1
+                        continue
+
+                    rating_val = rv.get("rating") or rv.get("星级分") or rv.get("评分")
+                    if rating_val is None:
+                        errors.append(f"review[{i}]: rating missing")
+                        continue
+
+                    content_val = rv.get("content") or rv.get("评价详情") or rv.get("评论内容", "")
+                    if not content_val:
+                        errors.append(f"review[{i}]: content missing")
+                        continue
+
+                    # Parse review_time from various formats
+                    review_time = None
+                    time_raw = rv.get("review_time") or rv.get("reviewTime") or rv.get("评价时间") or rv.get("created_at")
+                    if time_raw:
+                        if isinstance(time_raw, str):
+                            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%Y/%m/%d %H:%M:%S", "%Y/%m/%d"):
+                                try:
+                                    review_time = datetime.strptime(time_raw, fmt)
+                                    break
+                                except ValueError:
+                                    continue
+
+                    review = RestaurantReview(
+                        factory_id=fid,
+                        source_id=source_id,
+                        store_name=store_name,
+                        review_id=str(rid) if rid else None,
+                        platform=platform,
+                        rating=float(rating_val),
+                        content=content_val,
+                        taste_score=_safe_float(rv.get("taste_score") or rv.get("tasteScore") or rv.get("口味分")),
+                        env_score=_safe_float(rv.get("env_score") or rv.get("envScore") or rv.get("环境分")),
+                        service_score=_safe_float(rv.get("service_score") or rv.get("serviceScore") or rv.get("服务分")),
+                        reviewer=rv.get("reviewer") or rv.get("评价人"),
+                        review_time=review_time,
+                        collection_source="upload",
+                    )
+                    db.add(review)
+                    inserted += 1
+
+                    if rid:
+                        existing_review_ids.add(str(rid))
+
+                except Exception as e:
+                    errors.append(f"review[{i}]: {str(e)[:80]}")
+
+            db.flush()
+
+            # Update source review count
+            if source:
+                total = (
+                    db.query(RestaurantReview)
+                    .filter(
+                        RestaurantReview.factory_id == fid,
+                        RestaurantReview.store_name == store_name,
+                    )
+                    .count()
+                )
+                source.total_reviews_collected = total
+                source.updated_at = datetime.utcnow()
+
+            return {
+                "success": True,
+                "data": {
+                    "factoryId": fid,
+                    "storeName": store_name,
+                    "inserted": inserted,
+                    "skipped": skipped,
+                    "errors": errors[:10],
+                },
+            }
+
+    except Exception as e:
+        logger.error(f"upload_reviews({fid},{store_name}) failed: {e}", exc_info=True)
+        return {"success": False, "message": f"Failed: {str(e)[:200]}"}
+
+
+def _safe_float(val) -> Optional[float]:
+    """Safely parse a numeric value to float, returning None on failure."""
+    if val is None:
+        return None
+    try:
+        f = float(val)
+        return f if f > 0 else None
+    except (ValueError, TypeError):
+        return None
+
+
+@router.get("/restaurant-reviews")
+def list_reviews(
+    request: Request,
+    factory_id: Optional[str] = None,
+    store_name: Optional[str] = None,
+    limit: int = 100,
+):
+    """List collected reviews (paginated)."""
+    if not is_postgres_enabled():
+        return {"success": False, "data": []}
+
+    fid = factory_id or _get_factory_id(request)
+    if not fid:
+        return {"success": False, "message": "factory_id required"}
+
+    # Cap limit to prevent huge responses
+    limit = min(limit, 500)
+
+    try:
+        with get_db_context() as db:
+            query = (
+                db.query(RestaurantReview)
+                .filter(RestaurantReview.factory_id == fid)
+            )
+            if store_name:
+                query = query.filter(RestaurantReview.store_name == store_name)
+
+            total = query.count()
+            reviews = (
+                query
+                .order_by(RestaurantReview.review_time.desc().nullslast())
+                .limit(limit)
+                .all()
+            )
+
+            return {
+                "success": True,
+                "data": {
+                    "factoryId": fid,
+                    "total": total,
+                    "returned": len(reviews),
+                    "items": [r.to_dict() for r in reviews],
+                },
+            }
+    except Exception as e:
+        logger.error(f"list_reviews({fid}) failed: {e}", exc_info=True)
+        return {"success": False, "data": [], "message": f"Failed: {str(e)[:200]}"}
+
+
+@router.get("/restaurant-reviews/stats")
+def review_stats(request: Request, factory_id: Optional[str] = None):
+    """Get review collection statistics per store."""
+    if not is_postgres_enabled():
+        return {"success": False, "data": {}}
+
+    fid = factory_id or _get_factory_id(request)
+    if not fid:
+        return {"success": False, "message": "factory_id required"}
+
+    try:
+        from sqlalchemy import func
+
+        with get_db_context() as db:
+            # Per-store stats
+            store_stats = (
+                db.query(
+                    RestaurantReview.store_name,
+                    func.count(RestaurantReview.id).label("count"),
+                    func.avg(RestaurantReview.rating).label("avg_rating"),
+                    func.min(RestaurantReview.review_time).label("earliest"),
+                    func.max(RestaurantReview.review_time).label("latest"),
+                )
+                .filter(RestaurantReview.factory_id == fid)
+                .group_by(RestaurantReview.store_name)
+                .all()
+            )
+
+            total_reviews = sum(s[1] for s in store_stats)
+            stores = []
+            for store, count, avg_rating, earliest, latest in store_stats:
+                stores.append({
+                    "storeName": store,
+                    "reviewCount": count,
+                    "avgRating": round(float(avg_rating), 2) if avg_rating else None,
+                    "earliestReview": earliest.isoformat() if earliest else None,
+                    "latestReview": latest.isoformat() if latest else None,
+                })
+
+            return {
+                "success": True,
+                "data": {
+                    "factoryId": fid,
+                    "totalReviews": total_reviews,
+                    "storeCount": len(stores),
+                    "stores": stores,
+                },
+            }
+    except Exception as e:
+        logger.error(f"review_stats({fid}) failed: {e}", exc_info=True)
+        return {"success": False, "data": {}, "message": f"Failed: {str(e)[:200]}"}

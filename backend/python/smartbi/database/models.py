@@ -8,7 +8,7 @@ Uses PostgreSQL JSONB for flexible schema storage.
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-from sqlalchemy import Column, BigInteger, String, Integer, DateTime, Text, Boolean, Numeric, Enum as SAEnum, UniqueConstraint
+from sqlalchemy import Column, BigInteger, String, Integer, DateTime, Text, Boolean, Numeric, Enum as SAEnum, UniqueConstraint, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -311,4 +311,99 @@ class RestaurantMonthlyPurchase(Base):
             "notes": self.notes,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
             "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+# ═══════════════════════════════════════════════════════════════
+# W6 — Restaurant Review Collection System
+# ═══════════════════════════════════════════════════════════════
+
+
+class RestaurantReviewSource(Base):
+    """
+    Customer's registered stores for review collection.
+    Tracks scrape schedule and collection status per store/platform.
+    """
+    __tablename__ = "restaurant_review_sources"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    factory_id = Column(String(64), nullable=False, index=True)
+    store_name = Column(String(255), nullable=False)
+    city = Column(String(64), nullable=False, default="上海")
+    platform = Column(String(32), nullable=False, default="dianping")
+    shop_id = Column(String(128), nullable=True)
+    scrape_schedule = Column(String(32), default="weekly")
+    last_scrape_at = Column(DateTime, nullable=True)
+    last_scrape_status = Column(String(32), nullable=True)
+    total_reviews_collected = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("factory_id", "store_name", "platform", name="uk_review_source"),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "factoryId": self.factory_id,
+            "storeName": self.store_name,
+            "city": self.city,
+            "platform": self.platform,
+            "shopId": self.shop_id,
+            "scrapeSchedule": self.scrape_schedule,
+            "lastScrapeAt": self.last_scrape_at.isoformat() if self.last_scrape_at else None,
+            "lastScrapeStatus": self.last_scrape_status,
+            "totalReviewsCollected": self.total_reviews_collected,
+            "isActive": self.is_active,
+            "createdAt": self.created_at.isoformat() if self.created_at else None,
+            "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class RestaurantReview(Base):
+    """
+    Collected reviews from upload or scrape.
+    Dedup by (factory_id, store_name, review_id).
+    """
+    __tablename__ = "restaurant_reviews"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    factory_id = Column(String(64), nullable=False, index=True)
+    source_id = Column(BigInteger, ForeignKey("restaurant_review_sources.id"), nullable=True)
+    store_name = Column(String(255), nullable=False)
+    review_id = Column(String(64), nullable=True)
+    platform = Column(String(32), default="dianping")
+    rating = Column(Numeric(3, 1), nullable=False)
+    content = Column(Text, nullable=False)
+    taste_score = Column(Numeric(3, 1), nullable=True)
+    env_score = Column(Numeric(3, 1), nullable=True)
+    service_score = Column(Numeric(3, 1), nullable=True)
+    reviewer = Column(String(128), nullable=True)
+    review_time = Column(DateTime, nullable=True)
+    collection_source = Column(String(32), nullable=False)
+    collected_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("factory_id", "store_name", "review_id", name="uk_review"),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "factoryId": self.factory_id,
+            "sourceId": self.source_id,
+            "storeName": self.store_name,
+            "reviewId": self.review_id,
+            "platform": self.platform,
+            "rating": float(self.rating) if self.rating is not None else None,
+            "content": self.content,
+            "tasteScore": float(self.taste_score) if self.taste_score is not None else None,
+            "envScore": float(self.env_score) if self.env_score is not None else None,
+            "serviceScore": float(self.service_score) if self.service_score is not None else None,
+            "reviewer": self.reviewer,
+            "reviewTime": self.review_time.isoformat() if self.review_time else None,
+            "collectionSource": self.collection_source,
+            "collectedAt": self.collected_at.isoformat() if self.collected_at else None,
         }

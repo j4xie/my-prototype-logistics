@@ -366,6 +366,33 @@ class RestaurantAnalyzerV2:
             except Exception as e:
                 logger.warning(f"long_tail_detector 失败: {e}")
 
+        # ─── W6: Auto-load reviews from DB if not provided in request ───
+        if not reviews and self.db_session:
+            try:
+                from smartbi.database.models import RestaurantReview
+                db_reviews = (
+                    self.db_session.query(RestaurantReview)
+                    .filter(RestaurantReview.factory_id == self.factory_id)
+                    .order_by(RestaurantReview.review_time.desc())
+                    .limit(500)
+                    .all()
+                )
+                if db_reviews:
+                    reviews = [
+                        {
+                            "id": r.review_id or r.id,
+                            "rating": float(r.rating),
+                            "content": r.content,
+                            "created_at": r.review_time.isoformat() if r.review_time else "",
+                            "store_name": r.store_name,
+                            "platform": r.platform,
+                        }
+                        for r in db_reviews
+                    ]
+                    logger.info(f"Auto-loaded {len(reviews)} reviews from DB for factory {self.factory_id}")
+            except Exception as e:
+                logger.warning(f"Failed to auto-load reviews from DB: {e}")
+
         # ─── Week 4.5 / W5.5: 大众点评评论分析 (需 reviews 输入) ───
         if reviews:
             review_report = None
