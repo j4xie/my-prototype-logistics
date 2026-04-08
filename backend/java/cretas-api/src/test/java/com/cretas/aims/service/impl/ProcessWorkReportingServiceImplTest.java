@@ -307,7 +307,7 @@ class ProcessWorkReportingServiceImplTest {
             when(taskRepository.save(any())).thenReturn(task);
 
             Map<String, Object> result = service.submitSupplement(
-                    FACTORY_ID, TASK_ID, WORKER_ID, "张三", new BigDecimal("25"), "切割");
+                    FACTORY_ID, TASK_ID, WORKER_ID, "张三", new BigDecimal("25"), "切割", null);
 
             assertEquals("SUPPLEMENTING", result.get("taskStatus"));
 
@@ -331,7 +331,7 @@ class ProcessWorkReportingServiceImplTest {
             when(reportRepository.save(any())).thenReturn(savedReport);
             when(taskRepository.save(any())).thenReturn(task);
 
-            service.submitSupplement(FACTORY_ID, TASK_ID, WORKER_ID, "张三", new BigDecimal("10"), "包装");
+            service.submitSupplement(FACTORY_ID, TASK_ID, WORKER_ID, "张三", new BigDecimal("10"), "包装", null);
 
             verify(taskRepository, atLeastOnce()).save(taskCaptor.capture());
             ProcessTask firstSave = taskCaptor.getAllValues().get(0);
@@ -352,7 +352,7 @@ class ProcessWorkReportingServiceImplTest {
             when(reportRepository.save(any())).thenReturn(savedReport);
             when(taskRepository.save(any())).thenReturn(task);
 
-            service.submitSupplement(FACTORY_ID, TASK_ID, WORKER_ID, "李四", new BigDecimal("15"), "切割");
+            service.submitSupplement(FACTORY_ID, TASK_ID, WORKER_ID, "李四", new BigDecimal("15"), "切割", null);
 
             // Task save should only happen for pending quantity update, not for status transition
             verify(taskRepository, atLeastOnce()).save(taskCaptor.capture());
@@ -374,7 +374,7 @@ class ProcessWorkReportingServiceImplTest {
 
             BusinessException ex = assertThrows(BusinessException.class,
                     () -> service.submitSupplement(
-                            FACTORY_ID, TASK_ID, WORKER_ID, "张三", new BigDecimal("10"), "切割"));
+                            FACTORY_ID, TASK_ID, WORKER_ID, "张三", new BigDecimal("10"), "切割", null));
 
             assertTrue(ex.getMessage().contains("只有已完成或已关闭的任务可以补报"));
             verify(reportRepository, never()).save(any());
@@ -391,7 +391,7 @@ class ProcessWorkReportingServiceImplTest {
             when(reportRepository.save(any())).thenReturn(savedReport);
             when(taskRepository.save(any())).thenReturn(task);
 
-            service.submitSupplement(FACTORY_ID, TASK_ID, WORKER_ID, "张三", new BigDecimal("30"), "切割");
+            service.submitSupplement(FACTORY_ID, TASK_ID, WORKER_ID, "张三", new BigDecimal("30"), "切割", null);
 
             verify(reportRepository).save(reportCaptor.capture());
             ProductionReport createdReport = reportCaptor.getValue();

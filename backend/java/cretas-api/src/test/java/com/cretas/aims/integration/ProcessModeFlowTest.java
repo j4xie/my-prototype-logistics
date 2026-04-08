@@ -285,7 +285,7 @@ class ProcessModeFlowTest {
         Map<String, Object> supplementResult = reportingService.submitSupplement(
                 TEST_FACTORY_ID, task.getId(),
                 TEST_WORKER_ID, TEST_REPORTER_NAME,
-                new BigDecimal("5.00"), TEST_PROCESS_CATEGORY);
+                new BigDecimal("5.00"), TEST_PROCESS_CATEGORY, null);
 
         assertThat(supplementResult).containsEntry("taskStatus", "SUPPLEMENTING");
         Long supplementReportId = ((Number) supplementResult.get("reportId")).longValue();
