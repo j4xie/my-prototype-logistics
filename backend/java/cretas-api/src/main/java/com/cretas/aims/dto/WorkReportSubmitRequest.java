@@ -1,5 +1,6 @@
 package com.cretas.aims.dto;
 
+import com.cretas.aims.entity.enums.ReportMode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,6 +25,12 @@ public class WorkReportSubmitRequest {
 
     @NotBlank(message = "reportType不能为空")
     private String reportType;
+
+    /** P0-15: 报工模式，不传默认 MODE_1 */
+    private ReportMode reportMode;
+
+    /** P0-15 MODE_3 专用: 工人 ID 列表 */
+    private List<Long> workerIds;
 
     private String schemaId;
 
