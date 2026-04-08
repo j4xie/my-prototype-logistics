@@ -19,6 +19,10 @@ module.exports = ({ config }) => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.cretaceousfuture',
+      infoPlist: {
+        NSCameraUsageDescription: '需要使用相机拍摄收货签收照片作为凭证',
+        NSPhotoLibraryUsageDescription: '需要访问相册选择收货凭证照片',
+      },
     },
     android: {
       adaptiveIcon: {
@@ -27,12 +31,22 @@ module.exports = ({ config }) => {
       },
       edgeToEdgeEnabled: true,
       package: 'com.cretas.foodtrace',
+      permissions: ['android.permission.CAMERA'],
     },
     web: {
       favicon: './assets/favicon.png',
       bundler: 'metro',
     },
-    plugins: ['expo-secure-store', 'expo-localization'],
+    plugins: [
+      'expo-secure-store',
+      'expo-localization',
+      [
+        'expo-image-picker',
+        {
+          cameraPermission: '需要使用相机拍摄收货签收照片作为凭证',
+        },
+      ],
+    ],
     extra: {
       // 将环境变量传递给应用
       env: env,
