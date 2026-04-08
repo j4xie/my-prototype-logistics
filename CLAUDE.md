@@ -185,6 +185,7 @@ frontend/CretasFoodTrace/src/
 - `database-entity-sync.md` - 数据库同步
 - `field-naming-convention.md` - 字段命名
 - `server-operations.md` - 服务器运维规范
+- `concurrent-edit-safety.md` - **并发编辑安全（共享脚本修改前必读）**
 
 ### 核心原则
 1. **禁止降级处理** - 不返回假数据，明确显示错误
