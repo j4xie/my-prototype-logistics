@@ -13,6 +13,10 @@
 ALTER TABLE material_batches
     ADD COLUMN IF NOT EXISTS inbound_type VARCHAR(30);
 
+-- G1 税率分组开票 dry-run 暴露: customers.bank_name
+ALTER TABLE customers
+    ADD COLUMN IF NOT EXISTS bank_name VARCHAR(200);
+
 -- ============================================================
 -- 2. customers (Customer.java)
 --    源: customer 列表 500 (c1_0.bank_account)
