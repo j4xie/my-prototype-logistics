@@ -46,10 +46,52 @@ const planForm = ref({
   sourceCustomerName: '',
   processName: '',
   batchDate: '',
+  sourceType: 'MANUAL' as 'MANUAL' | 'CUSTOMER_ORDER' | 'AI_FORECAST',
+  sourceOrderId: '' as string | undefined,
 });
 const productTypes = ref<Record<string, unknown>[]>([]);
 const bomProcesses = ref<string[]>([]);
 const customers = ref<Record<string, unknown>[]>([]);
+const selectableSalesOrders = ref<Record<string, unknown>[]>([]);
+const salesOrdersLoading = ref(false);
+
+async function loadSelectableSalesOrders() {
+  if (!factoryId.value) return;
+  salesOrdersLoading.value = true;
+  try {
+    const res = await get(`/${factoryId.value}/production-plans/sales-orders/selectable`);
+    if (res.success && Array.isArray(res.data)) {
+      selectableSalesOrders.value = res.data;
+    } else if (res.success === false) {
+      ElMessage.error(res.message || '加载销售订单失败');
+    }
+  } catch {
+    ElMessage.error('加载销售订单失败');
+  } finally {
+    salesOrdersLoading.value = false;
+  }
+}
+
+function handleSourceTypeChange(val: string) {
+  if (val === 'CUSTOMER_ORDER') {
+    if (selectableSalesOrders.value.length === 0) loadSelectableSalesOrders();
+  } else {
+    planForm.value.sourceOrderId = '';
+  }
+}
+
+function handleSalesOrderSelect(orderId: string) {
+  const so = selectableSalesOrders.value.find((o) => o.id === orderId);
+  if (so) {
+    planForm.value.sourceCustomerName = String(so.customerName || '');
+    // Try to auto-select first item's product type if none chosen yet
+    const items = Array.isArray(so.items) ? so.items as Record<string, unknown>[] : [];
+    if (!planForm.value.productTypeId && items.length > 0 && items[0].productTypeId) {
+      planForm.value.productTypeId = String(items[0].productTypeId);
+      handleProductChange(planForm.value.productTypeId);
+    }
+  }
+}
 
 // Import/Export & reference data
 const productionLines = ref<Record<string, unknown>[]>([]);
@@ -196,6 +238,8 @@ function handleCreate() {
     sourceCustomerName: '',
     processName: '',
     batchDate: '',
+    sourceType: 'MANUAL',
+    sourceOrderId: '',
   };
   dialogVisible.value = true;
 }
@@ -203,6 +247,10 @@ function handleCreate() {
 async function submitPlan() {
   if (!planForm.value.productTypeId || !planForm.value.plannedQuantity || !planForm.value.plannedDate) {
     ElMessage.warning('请填写完整信息');
+    return;
+  }
+  if (planForm.value.sourceType === 'CUSTOMER_ORDER' && !planForm.value.sourceOrderId) {
+    ElMessage.warning('选择"销售订单"来源时必须选择关联的销售订单');
     return;
   }
 
@@ -515,6 +563,8 @@ function handleAiFill(params: Record<string, unknown>) {
     sourceCustomerName: String(params.sourceCustomerName || ''),
     processName: String(params.processName || ''),
     batchDate: String(params.batchDate || ''),
+    sourceType: 'MANUAL',
+    sourceOrderId: '',
   };
   dialogVisible.value = true;
 }
@@ -694,6 +744,30 @@ function handleAiFill(params: Record<string, unknown>) {
     <!-- 新建计划对话框 -->
     <el-dialog v-model="dialogVisible" title="新建生产计划" width="500px">
       <el-form :model="planForm" label-width="100px">
+        <el-form-item label="来源类型" required>
+          <el-radio-group v-model="planForm.sourceType" @change="handleSourceTypeChange">
+            <el-radio label="MANUAL">手动</el-radio>
+            <el-radio label="CUSTOMER_ORDER">销售订单</el-radio>
+            <el-radio label="AI_FORECAST">AI预测</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="planForm.sourceType === 'CUSTOMER_ORDER'" label="销售订单" required>
+          <el-select
+            v-model="planForm.sourceOrderId"
+            placeholder="选择关联的销售订单"
+            filterable
+            :loading="salesOrdersLoading"
+            style="width: 100%"
+            @change="handleSalesOrderSelect"
+          >
+            <el-option
+              v-for="so in selectableSalesOrders"
+              :key="String(so.id)"
+              :label="`${so.orderNo} | ${so.customerName || ''} | ¥${so.totalAmount || 0} | ${so.statusLabel || ''}`"
+              :value="String(so.id)"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="产品类型" required>
           <el-select v-model="planForm.productTypeId" placeholder="选择产品类型" filterable style="width: 100%" @change="handleProductChange">
             <el-option

@@ -17,6 +17,8 @@ import com.cretas.aims.mapper.ProductionPlanMapper;
 import com.cretas.aims.entity.ProductionLine;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.repository.*;
+import com.cretas.aims.repository.inventory.SalesOrderRepository;
+import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.service.ProductionPlanService;
 import com.cretas.aims.service.SchedulingService;
 import com.cretas.aims.utils.ExcelUtil;
@@ -60,6 +62,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     private final ProductionLineRepository productionLineRepository;
     private final UserRepository userRepository;
     private final ExcelUtil excelUtil;
+    private final SalesOrderRepository salesOrderRepository;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public ProductionPlanServiceImpl(
@@ -75,7 +78,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             SchedulingService schedulingService,
             ProductionLineRepository productionLineRepository,
             UserRepository userRepository,
-            ExcelUtil excelUtil) {
+            ExcelUtil excelUtil,
+            SalesOrderRepository salesOrderRepository) {
         this.productionPlanRepository = productionPlanRepository;
         this.productionBatchRepository = productionBatchRepository;
         this.processTaskRepository = processTaskRepository;
@@ -89,6 +93,28 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         this.productionLineRepository = productionLineRepository;
         this.userRepository = userRepository;
         this.excelUtil = excelUtil;
+        this.salesOrderRepository = salesOrderRepository;
+    }
+
+    /**
+     * P0-12: 校验销售订单来源,自动回填客户名
+     */
+    private void validateAndEnrichSalesOrderSource(String factoryId, CreateProductionPlanRequest request) {
+        if (request.getSourceType() != PlanSourceType.CUSTOMER_ORDER) {
+            return;
+        }
+        if (request.getSourceOrderId() == null || request.getSourceOrderId().isBlank()) {
+            throw new BusinessException("选择客户订单来源时,必须指定关联的销售订单");
+        }
+        SalesOrder so = salesOrderRepository.findById(request.getSourceOrderId())
+                .orElseThrow(() -> new BusinessException("关联的销售订单不存在: " + request.getSourceOrderId()));
+        if (!factoryId.equals(so.getFactoryId())) {
+            throw new BusinessException("无权关联其他工厂的销售订单");
+        }
+        if ((request.getSourceCustomerName() == null || request.getSourceCustomerName().isBlank())
+                && so.getCustomerName() != null) {
+            request.setSourceCustomerName(so.getCustomerName());
+        }
     }
 
     @Override
@@ -98,6 +124,9 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         if (!productTypeRepository.existsById(request.getProductTypeId())) {
             throw new ResourceNotFoundException("产品类型不存在");
         }
+
+        // P0-12: 校验销售订单来源 + 回填客户名
+        validateAndEnrichSalesOrderSource(factoryId, request);
 
         // P1-4: 客户订单来源必须填写工序名称和批次日期
         if (request.getSourceType() == PlanSourceType.CUSTOMER_ORDER) {
@@ -157,6 +186,9 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         if (plan.getStatus() != ProductionPlanStatus.PENDING) {
             throw new BusinessException("只能修改待处理的生产计划");
         }
+
+        // P0-12: 校验销售订单来源 + 回填客户名
+        validateAndEnrichSalesOrderSource(factoryId, request);
 
         // 更新计划信息
         productionPlanMapper.updateEntity(plan, request);
