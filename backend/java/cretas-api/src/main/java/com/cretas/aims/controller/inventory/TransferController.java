@@ -71,7 +71,7 @@ public class TransferController {
             @PathVariable @NotBlank String transferId,
             @RequestHeader("Authorization") String authorization) {
         Long userId = extractUserId(authorization);
-        InternalTransfer transfer = transferService.requestTransfer(transferId, userId);
+        InternalTransfer transfer = transferService.requestTransfer(factoryId, transferId, userId);
         return ApiResponse.success("调拨申请已提交", transfer);
     }
 
@@ -83,7 +83,7 @@ public class TransferController {
             @PathVariable @NotBlank String transferId,
             @RequestHeader("Authorization") String authorization) {
         Long userId = extractUserId(authorization);
-        InternalTransfer transfer = transferService.approveTransfer(transferId, userId);
+        InternalTransfer transfer = transferService.approveTransfer(factoryId, transferId, userId);
         return ApiResponse.success("调拨已审批通过", transfer);
     }
 
@@ -96,7 +96,7 @@ public class TransferController {
             @RequestHeader("Authorization") String authorization,
             @RequestParam(required = false) String reason) {
         Long userId = extractUserId(authorization);
-        InternalTransfer transfer = transferService.rejectTransfer(transferId, userId, reason);
+        InternalTransfer transfer = transferService.rejectTransfer(factoryId, transferId, userId, reason);
         return ApiResponse.success("调拨已驳回", transfer);
     }
 
@@ -108,7 +108,7 @@ public class TransferController {
             @PathVariable @NotBlank String transferId,
             @RequestHeader("Authorization") String authorization) {
         Long userId = extractUserId(authorization);
-        InternalTransfer transfer = transferService.shipTransfer(transferId, userId);
+        InternalTransfer transfer = transferService.shipTransfer(factoryId, transferId, userId);
         return ApiResponse.success("调拨已发货", transfer);
     }
 
@@ -120,7 +120,7 @@ public class TransferController {
             @PathVariable @NotBlank String transferId,
             @RequestHeader("Authorization") String authorization) {
         Long userId = extractUserId(authorization);
-        InternalTransfer transfer = transferService.receiveTransfer(transferId, userId);
+        InternalTransfer transfer = transferService.receiveTransfer(factoryId, transferId, userId);
         return ApiResponse.success("调拨已签收", transfer);
     }
 
@@ -132,7 +132,7 @@ public class TransferController {
             @PathVariable @NotBlank String transferId,
             @RequestHeader("Authorization") String authorization) {
         Long userId = extractUserId(authorization);
-        InternalTransfer transfer = transferService.confirmTransfer(transferId, userId);
+        InternalTransfer transfer = transferService.confirmTransfer(factoryId, transferId, userId);
         return ApiResponse.success("调拨已确认，库存已更新", transfer);
     }
 
@@ -145,7 +145,7 @@ public class TransferController {
             @RequestHeader("Authorization") String authorization,
             @RequestParam(required = false) String reason) {
         Long userId = extractUserId(authorization);
-        InternalTransfer transfer = transferService.cancelTransfer(transferId, userId, reason);
+        InternalTransfer transfer = transferService.cancelTransfer(factoryId, transferId, userId, reason);
         return ApiResponse.success("调拨已取消", transfer);
     }
 

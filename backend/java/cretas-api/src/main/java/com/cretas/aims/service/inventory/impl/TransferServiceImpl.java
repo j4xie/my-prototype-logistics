@@ -101,15 +101,12 @@ public class TransferServiceImpl implements TransferService {
     }
 
     /**
-     * Internal lookup without factoryId scoping — used by state-machine methods
-     * that will have their own factoryId check in MEDIUM-risk fix pass (W1 D3).
-     * TODO(W1 D3): migrate all state-machine methods to pass factoryId explicitly.
+     * State-machine helper — factory-scoped lookup with eager item init.
+     * Replaces the previous {@code getTransferByIdInternal} which was a TODO leftover from
+     * Apr 7 W1 D2; now all state transitions enforce factoryId via {@link #getTransferById}.
      */
-    private InternalTransfer getTransferByIdInternal(String transferId) {
-        InternalTransfer transfer = transferRepository.findById(transferId)
-                .orElseThrow(() -> new ResourceNotFoundException("调拨单不存在"));
-        transfer.getItems().size();
-        return transfer;
+    private InternalTransfer loadForStateChange(String factoryId, String transferId) {
+        return getTransferById(factoryId, transferId);
     }
 
     @Override
@@ -124,8 +121,10 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     @Transactional
-    public InternalTransfer requestTransfer(String transferId, Long userId) {
-        InternalTransfer transfer = getTransferByIdInternal(transferId);
+    public InternalTransfer requestTransfer(String factoryId, String transferId, Long userId) {
+        InternalTransfer transfer = loadForStateChange(factoryId, transferId);
+        // Source-side action: 只有调出方可以提交申请
+        assertSourceFactory(factoryId, transfer, "提交申请");
         assertStatus(transfer, TransferStatus.DRAFT, "提交申请");
         transfer.setStatus(TransferStatus.REQUESTED);
         transfer.setRequestedBy(userId);
@@ -136,8 +135,9 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     @Transactional
-    public InternalTransfer approveTransfer(String transferId, Long userId) {
-        InternalTransfer transfer = getTransferByIdInternal(transferId);
+    public InternalTransfer approveTransfer(String factoryId, String transferId, Long userId) {
+        InternalTransfer transfer = loadForStateChange(factoryId, transferId);
+        assertSourceFactory(factoryId, transfer, "审批");
         assertStatus(transfer, TransferStatus.REQUESTED, "审批");
         transfer.setStatus(TransferStatus.APPROVED);
         transfer.setApprovedBy(userId);
@@ -148,8 +148,9 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     @Transactional
-    public InternalTransfer rejectTransfer(String transferId, Long userId, String reason) {
-        InternalTransfer transfer = getTransferByIdInternal(transferId);
+    public InternalTransfer rejectTransfer(String factoryId, String transferId, Long userId, String reason) {
+        InternalTransfer transfer = loadForStateChange(factoryId, transferId);
+        assertSourceFactory(factoryId, transfer, "驳回");
         assertStatus(transfer, TransferStatus.REQUESTED, "驳回");
         transfer.setStatus(TransferStatus.REJECTED);
         transfer.setApprovedBy(userId);
@@ -161,11 +162,12 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     @Transactional
-    public InternalTransfer shipTransfer(String transferId, Long userId) {
-        InternalTransfer transfer = getTransferByIdInternal(transferId);
+    public InternalTransfer shipTransfer(String factoryId, String transferId, Long userId) {
+        InternalTransfer transfer = loadForStateChange(factoryId, transferId);
+        // 只有调出方可以发货 (因为要扣减调出方库存)
+        assertSourceFactory(factoryId, transfer, "发货");
         assertStatus(transfer, TransferStatus.APPROVED, "发货");
 
-        // 调出方扣减库存
         for (InternalTransferItem item : transfer.getItems()) {
             deductSourceInventory(transfer.getSourceFactoryId(), item);
         }
@@ -178,8 +180,10 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     @Transactional
-    public InternalTransfer receiveTransfer(String transferId, Long userId) {
-        InternalTransfer transfer = getTransferByIdInternal(transferId);
+    public InternalTransfer receiveTransfer(String factoryId, String transferId, Long userId) {
+        InternalTransfer transfer = loadForStateChange(factoryId, transferId);
+        // 只有调入方可以签收
+        assertTargetFactory(factoryId, transfer, "签收");
         assertStatus(transfer, TransferStatus.SHIPPED, "签收");
         transfer.setStatus(TransferStatus.RECEIVED);
         transfer.setReceivedAt(LocalDateTime.now());
@@ -189,11 +193,12 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     @Transactional
-    public InternalTransfer confirmTransfer(String transferId, Long userId) {
-        InternalTransfer transfer = getTransferByIdInternal(transferId);
+    public InternalTransfer confirmTransfer(String factoryId, String transferId, Long userId) {
+        InternalTransfer transfer = loadForStateChange(factoryId, transferId);
+        // 只有调入方可以确认 (因为要增加调入方库存)
+        assertTargetFactory(factoryId, transfer, "确认");
         assertStatus(transfer, TransferStatus.RECEIVED, "确认");
 
-        // 调入方增加库存
         for (InternalTransferItem item : transfer.getItems()) {
             createTargetInventory(transfer.getTargetFactoryId(), item, userId);
         }
@@ -206,8 +211,9 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     @Transactional
-    public InternalTransfer cancelTransfer(String transferId, Long userId, String reason) {
-        InternalTransfer transfer = getTransferByIdInternal(transferId);
+    public InternalTransfer cancelTransfer(String factoryId, String transferId, Long userId, String reason) {
+        InternalTransfer transfer = loadForStateChange(factoryId, transferId);
+        // 调出方或调入方都可取消, 但已发货后须走退货流程
         if (transfer.getStatus().isTerminal()) {
             throw new BusinessException("终态调拨单不能取消");
         }
@@ -218,6 +224,22 @@ public class TransferServiceImpl implements TransferService {
         transfer.setRejectReason(reason);
         log.info("取消调拨: transferId={}, reason={}", transferId, reason);
         return transferRepository.save(transfer);
+    }
+
+    /** 校验当前 factoryId 必须是调拨单的调出方 */
+    private void assertSourceFactory(String factoryId, InternalTransfer transfer, String action) {
+        if (!factoryId.equals(transfer.getSourceFactoryId())) {
+            throw new BusinessException(action + "操作只允许调出方执行 (当前: " + factoryId
+                    + ", 调出方: " + transfer.getSourceFactoryId() + ")");
+        }
+    }
+
+    /** 校验当前 factoryId 必须是调拨单的调入方 */
+    private void assertTargetFactory(String factoryId, InternalTransfer transfer, String action) {
+        if (!factoryId.equals(transfer.getTargetFactoryId())) {
+            throw new BusinessException(action + "操作只允许调入方执行 (当前: " + factoryId
+                    + ", 调入方: " + transfer.getTargetFactoryId() + ")");
+        }
     }
 
     @Override

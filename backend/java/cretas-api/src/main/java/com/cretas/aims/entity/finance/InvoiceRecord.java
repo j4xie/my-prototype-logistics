@@ -139,6 +139,10 @@ public class InvoiceRecord extends BaseEntity {
     @Column(name = "invoice_pdf_url", length = 500)
     private String invoicePdfUrl;
 
+    /** 发票PDF原文件名 (供下载时保留客户上传的文件名) */
+    @Column(name = "invoice_file_name", length = 255)
+    private String invoiceFileName;
+
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
 }

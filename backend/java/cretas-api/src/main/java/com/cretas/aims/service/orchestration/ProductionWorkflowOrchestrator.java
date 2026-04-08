@@ -88,7 +88,7 @@ public class ProductionWorkflowOrchestrator {
         transferRepository.save(transfer);
 
         // Step 5: 自动提交申请 — FUTURE TOOL: transfer_approve (action=request)
-        transfer = transferService.requestTransfer(transfer.getId(), userId);
+        transfer = transferService.requestTransfer(factoryId, transfer.getId(), userId);
 
         log.info("调拨单生成成功: transferId={}, planId={}, items={}",
                 transfer.getId(), planId, requirements.size());

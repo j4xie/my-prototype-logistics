@@ -36,6 +36,11 @@ const deliveryForm = ref<{ deliveryAddress: string; logisticsCompany: string; it
 const invoiceDialogVisible = ref(false);
 const invoiceForm = ref<{ invoiceType: string; remark: string }>({ invoiceType: 'NORMAL', remark: '' });
 
+// 上传发票 PDF 对话框 (V3 P0-3c)
+const issueDialogVisible = ref(false);
+const issueTargetInvoiceId = ref<string>('');
+const issuePdfFile = ref<File | null>(null);
+
 // 收款登记对话框
 const paymentDialogVisible = ref(false);
 const paymentForm = ref<{ amount: number; paymentMethod: string; paymentDate: string; paymentReference: string; remark: string }>({
@@ -295,6 +300,53 @@ async function handleRejectInvoice(invoiceId: string) {
   finally { submitting.value = false; }
 }
 
+// V3 P0-3c — 开具发票 (上传 PDF 闭环)
+function openIssueDialog(invoiceId: string) {
+  issueTargetInvoiceId.value = invoiceId;
+  issuePdfFile.value = null;
+  issueDialogVisible.value = true;
+}
+
+function handleFileChange(file: { raw: File }) {
+  issuePdfFile.value = file.raw;
+}
+
+async function handleIssueInvoice() {
+  if (submitting.value) return;
+  if (!issuePdfFile.value) {
+    return ElMessage.warning('请先选择发票 PDF 文件 (客户要求: 销售从订单页下载发票必须有附件)');
+  }
+  if (!issuePdfFile.value.name.toLowerCase().endsWith('.pdf')) {
+    return ElMessage.warning('只支持 PDF 文件');
+  }
+  submitting.value = true;
+  try {
+    const formData = new FormData();
+    formData.append('file', issuePdfFile.value);
+    // 用原生 fetch 调 multipart endpoint, 走 vite proxy 不需要全 URL
+    const url = `/api/mobile/${factoryId.value}/finance/invoices/${issueTargetInvoiceId.value}/issue`;
+    const token = localStorage.getItem('cretas_access_token') || '';
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const data = await resp.json();
+    if (data.success) {
+      ElMessage.success('发票已开具, 销售可在订单页下载');
+      issueDialogVisible.value = false;
+      loadInvoices();
+      loadOrder();
+    } else {
+      ElMessage.error(data.message || '开具失败');
+    }
+  } catch {
+    ElMessage.error('开具失败, 请检查网络');
+  } finally {
+    submitting.value = false;
+  }
+}
+
 // ──────────────────────────────────────────────
 // 收款登记
 // ──────────────────────────────────────────────
@@ -477,11 +529,14 @@ async function handleCreatePayment() {
                 </template>
               </el-table-column>
               <el-table-column prop="requestedAt" label="申请时间" width="160" />
-              <el-table-column label="操作" width="160" align="center" fixed="right">
+              <el-table-column label="操作" width="200" align="center" fixed="right">
                 <template #default="{ row }">
                   <el-button v-if="row.status === 'REQUESTED' && canWrite" type="success" link size="small" @click="handleApproveInvoice(row.id)">通过</el-button>
                   <el-button v-if="row.status === 'REQUESTED' && canWrite" type="danger" link size="small" @click="handleRejectInvoice(row.id)">驳回</el-button>
-                  <el-link v-if="row.invoicePdfUrl" :href="row.invoicePdfUrl" target="_blank" type="primary">下载</el-link>
+                  <el-button v-if="row.status === 'APPROVED' && canWrite" type="primary" link size="small" @click="openIssueDialog(row.id)">上传发票</el-button>
+                  <el-link v-if="row.invoicePdfUrl" :href="row.invoicePdfUrl" target="_blank" type="primary" :download="row.invoiceFileName || ''">
+                    下载{{ row.invoiceFileName ? ` (${row.invoiceFileName})` : '' }}
+                  </el-link>
                 </template>
               </el-table-column>
             </el-table>
@@ -646,6 +701,35 @@ async function handleCreatePayment() {
       <template #footer>
         <el-button @click="invoiceDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleCreateInvoice">提交开票申请</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ─── 上传发票 PDF 对话框 (V3 P0-3c — 4 步开票闭环最后一环) ─── -->
+    <el-dialog v-model="issueDialogVisible" title="开具发票 — 上传 PDF 附件" width="520px" destroy-on-close>
+      <el-alert
+        type="warning"
+        :closable="false"
+        title="客户原话: 销售从订单页直接下载发票"
+        description="财务开具的发票 PDF 必须以附件形式上传到本申请, 否则无法完成开票闭环。"
+        style="margin-bottom: 16px"
+      />
+      <el-upload
+        :auto-upload="false"
+        :limit="1"
+        accept=".pdf,application/pdf"
+        :on-change="handleFileChange"
+        :on-remove="() => { issuePdfFile = null; }"
+        drag
+      >
+        <el-icon class="el-icon--upload"><i class="el-icon-upload" /></el-icon>
+        <div class="el-upload__text">将 PDF 文件拖到此处, 或<em>点击选择</em></div>
+        <template #tip>
+          <div class="el-upload__tip">仅支持 .pdf 格式, 单文件 ≤ 10MB</div>
+        </template>
+      </el-upload>
+      <template #footer>
+        <el-button @click="issueDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" :disabled="!issuePdfFile" @click="handleIssueInvoice">确认开具</el-button>
       </template>
     </el-dialog>
 

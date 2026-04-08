@@ -86,13 +86,13 @@ public class TransferApproveTool extends AbstractBusinessTool {
         log.info("调拨单操作 - factoryId={}, transferId={}, action={}", factoryId, transferId, action);
 
         InternalTransfer result = switch (action.toLowerCase()) {
-            case "request" -> transferService.requestTransfer(transferId, userId);
-            case "approve" -> transferService.approveTransfer(transferId, userId);
-            case "reject" -> transferService.rejectTransfer(transferId, userId, reason != null ? reason : "审批拒绝");
-            case "ship" -> transferService.shipTransfer(transferId, userId);
-            case "receive" -> transferService.receiveTransfer(transferId, userId);
-            case "confirm" -> transferService.confirmTransfer(transferId, userId);
-            case "cancel" -> transferService.cancelTransfer(transferId, userId, reason != null ? reason : "AI工具取消");
+            case "request" -> transferService.requestTransfer(factoryId, transferId, userId);
+            case "approve" -> transferService.approveTransfer(factoryId, transferId, userId);
+            case "reject" -> transferService.rejectTransfer(factoryId, transferId, userId, reason != null ? reason : "审批拒绝");
+            case "ship" -> transferService.shipTransfer(factoryId, transferId, userId);
+            case "receive" -> transferService.receiveTransfer(factoryId, transferId, userId);
+            case "confirm" -> transferService.confirmTransfer(factoryId, transferId, userId);
+            case "cancel" -> transferService.cancelTransfer(factoryId, transferId, userId, reason != null ? reason : "AI工具取消");
             default -> throw new IllegalArgumentException("不支持的操作: " + action);
         };
 

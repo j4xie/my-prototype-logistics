@@ -175,11 +175,17 @@ interface EntitySchema {
 
 ### 4.1 P0 立即修 (Week 1，本周必须开工)
 
+> **v3.1 重排说明 (Apr 7 verification)**: 客户原话 2585-2974s 这一段连续讲了 "税率分组 → 财务审批 → 上传发票 PDF → 销售下载 → 出库后金额切换 → 定金尾款追踪", **是同一段连贯的财务诉求, 不能拆**. 因此 P0-3 现在是一个完整闭环, 把原 P0-10 (金额联动) 和原 P2-2 (附件回传) 合并进来.
+
 | # | 需求 | 拒收级 | 来源 | 实体/文件 |
 |---|------|--------|------|-----------|
 | P0-1 | factoryId 行级隔离审计 + 修复 | 🔴 | Critic 新增 | `scripts/audit/*` + 各 Tool |
 | P0-2 | 产品大类隔离 bug（G5，线上 bug 不是新功能）| 🔴 | 会议 1503s | `ProductCategoryServiceImpl` |
-| P0-3 | 税率分组开票（G1，9% 原料 + 13% 加工费）| 🔴 | 会议 2645s | `SalesOrder.taxBreakdown` JSON + `InvoiceService` |
+| **P0-3** | **开票完整闭环 (G1) — 税率分组 + 出库金额 + 附件回传** | 🔴 | 会议 2585-2974s | `InvoiceRecord.taxBreakdown` JSON + `InvoiceService.requestInvoiceFromOrder` (按出库金额) + `issueInvoice` 上传 PDF |
+| P0-3a | └─ 税率分组聚合 (9% 原料 + 13% 加工费 自动按 SalesOrderItem.taxRate 分组) | 🔴 | 会议 2645s | ✅ 已实现 (commit 310b30a4) |
+| P0-3b | └─ **金额按出库联动** (未出库=订单金额, 已出库=出库金额) | 🔴 | 会议 2906s "不然金额会对不上" | ⚠️ 需修 `aggregateByTaxRate` 接 shipped quantity |
+| P0-3c | └─ **财务上传发票 PDF + 销售下载** (4 步闭环) | 🔴 | 会议 2585+2675s | `InvoiceRecord.invoicePdfUrl` 字段已有, `issueInvoice` 已经接受 MultipartFile, 待补 OSS 上传逻辑 + 前端下载 |
+| P0-3d | └─ **同订单多次付款** (定金 + 尾款 + 凭证) | 🟡 | 会议 2931-2952s | PaymentRecord 已有, 前端弹窗已加备注字段, 待补凭证字段联动 |
 | P0-4 | 销售运营报价流程（L1）| 🔴 | 会议 1670s | 新建 `OperationalQuote` 实体 |
 | P0-5 | 物料需求单实体（G3）| 🔴 | 会议 3128s | 新建 `MaterialRequisition` |
 | P0-6 | 指定人员授权（L2，不是岗位）| 🟡 | 会议 1737s | 权限表加 user_id |
@@ -191,8 +197,8 @@ interface EntitySchema {
 | P0-7 | 销售订单 SKU 去重（A3.2）| 🔴 | 会议 1879s | 前后端校验 |
 | P0-8 | 销售订单明细字段补全（A3.1）| 🟡 | v1 §2.4.1 | 已部分完成 (specification/box_quantity) |
 | P0-9 | 销售订单 3 个状态字段（A3.4）| 🟡 | v1 §2.4.4 | payment/invoice/delivery status |
-| P0-10 | 销售订单金额联动（A3.5）| 🟡 | 会议 2906s | 出库前/后金额切换 |
-| P0-11 | 销售订单业务中心 tabs（A3.3）| 🔴 | 金矿截图 49m17s | 开票/出库/收款/采购 4 tab |
+| ~~P0-10~~ | ~~销售订单金额联动 → **已合并到 P0-3b**~~ | — | — | 见 §4.1 P0-3b |
+| P0-11 | 销售订单业务中心 tabs（A3.3）| 🔴 | 金矿截图 49m17s | 开票/出库/收款/采购 4 tab ✅ 已实现 (commit 80afe8bb) |
 | P0-12 | 生产计划必须关联销售订单（A3）| 🔴 | 会议 4141s | ProductionPlan 加 sales_order_id |
 | P0-13 | PC 批次字段强制（A4）| 🔴 | 会议 5016s | ProductionReport + 出库单 |
 | P0-14 | BOM 原辅料拆 3 块（A2）| 🔴 | 会议 1151s | BomItem.group 字段 + 前端 3 tab |
@@ -226,10 +232,10 @@ interface EntitySchema {
 | # | 需求 | 原 v2 等级 | v3 调整 |
 |---|------|-----------|---------|
 | P2-1 | 采购订单深化 (关联销售订单/主原料定点追踪) | v2 P0 | v3 P2 |
-| P2-2 | 开票申请流程完整闭环 | v2 P0 | v3 P2 (基础版在 P0-3) |
-| P2-3 | 收款记录多账户+多次付款 | v2 P0 | v3 P2 |
+| ~~P2-2~~ | ~~开票申请流程完整闭环~~ → **已合并到 P0-3c (附件回传 4 步闭环)** | v2 P0 | **v3.1 提到 P0** |
+| ~~P2-3~~ | ~~收款记录多账户+多次付款~~ → **部分合并到 P0-3d (定金+尾款+凭证)** | v2 P0 | **v3.1 部分提到 P0** |
 | P2-4 | 人事模块 | v2 P2 | v3 P2 |
-| P2-5 | 财务模块深化 | v2 P0 | v3 P2 |
+| P2-5 | 财务模块深化 (除 P0-3 外的报表/对账) | v2 P0 | v3 P2 |
 | P2-6 | SmartBiSkill 加 factory_id | v2 P1 | v3 P2 (非演示路径) |
 
 ### 4.5 P3 愿景 (V2.0, 不承诺时间)

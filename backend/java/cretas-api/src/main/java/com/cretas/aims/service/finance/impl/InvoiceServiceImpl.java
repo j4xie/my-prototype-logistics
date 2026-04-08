@@ -123,9 +123,23 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     /**
      * 按 tax_rate 对销售订单行进行分组聚合。
-     * null tax_rate 视为 0% (兼容历史数据)。
-     * 行金额 = quantity × unit_price × (1 - discount/100), 与 SalesOrderItem.getLineAmount() 对齐。
-     * 税额 = 行金额 × tax_rate / 100。
+     *
+     * <h3>金额来源策略 (V3 P0-3b — 客户原话 2906-2921s)</h3>
+     * <pre>
+     * "如果这个订单还没有出库, 那么只显示我们的订单金额,
+     *  一旦有出库了, 就要显示我们的那个出库金额,
+     *  不然的话我们金额会对不上, 因为出库金额跟订单金额有时候是不一样的"
+     * </pre>
+     *
+     * <ul>
+     *   <li>当订单尚未出库 (任意行 deliveredQty=0) → 该行用 <b>订单数量</b></li>
+     *   <li>当行有出库 (deliveredQty > 0) → 该行用 <b>已发货数量</b></li>
+     *   <li>这样做的好处: 部分出库订单只对已发货部分开票, 不会出现 "开了 10 万但只发了 8 万" 的对账错</li>
+     * </ul>
+     *
+     * <p>null tax_rate 视为 0% (兼容历史数据)</p>
+     * <p>行金额 = effectiveQty × unit_price × (1 - discount/100)</p>
+     * <p>税额 = 行金额 × tax_rate / 100</p>
      */
     private List<TaxBreakdownEntry> aggregateByTaxRate(List<SalesOrderItem> items) {
         // LinkedHashMap 保持插入顺序的稳定输出
@@ -136,7 +150,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             // Normalize scale so 9.0 and 9.00 are same key
             BigDecimal key = taxRate.setScale(2, RoundingMode.HALF_UP);
 
-            BigDecimal lineAmount = item.getLineAmount();  // 含折扣的不含税金额
+            BigDecimal lineAmount = computeLineAmountForInvoice(item);
             BigDecimal lineTax = lineAmount
                     .multiply(taxRate)
                     .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
@@ -152,6 +166,43 @@ public class InvoiceServiceImpl implements InvoiceService {
         List<TaxBreakdownEntry> result = new ArrayList<>(grouped.values());
         result.sort(Comparator.comparing(TaxBreakdownEntry::getTaxRate));
         return result;
+    }
+
+    /**
+     * 计算单行的开票金额 — V3 P0-3b 出库联动。
+     *
+     * 规则:
+     * <ol>
+     *   <li>该行已有出库 (deliveredQuantity > 0) → 用 deliveredQuantity</li>
+     *   <li>该行未出库 (deliveredQuantity = 0 或 null) → 退回 quantity (订单数量)</li>
+     * </ol>
+     *
+     * 折扣始终应用 (订单数量和出库数量都要按折扣率打折)。
+     */
+    private BigDecimal computeLineAmountForInvoice(SalesOrderItem item) {
+        if (item.getUnitPrice() == null) return BigDecimal.ZERO;
+
+        BigDecimal effectiveQty;
+        BigDecimal delivered = item.getDeliveredQuantity();
+        if (delivered != null && delivered.compareTo(BigDecimal.ZERO) > 0) {
+            // 部分或全部已出库 — 按出库数量开票
+            effectiveQty = delivered;
+        } else {
+            // 未出库 — 按订单数量开票 (退回原 SalesOrderItem.getLineAmount() 行为)
+            effectiveQty = item.getQuantity() != null ? item.getQuantity() : BigDecimal.ZERO;
+        }
+
+        BigDecimal amount = effectiveQty
+                .multiply(item.getUnitPrice())
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal discountRate = item.getDiscountRate();
+        if (discountRate != null && discountRate.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal discountMultiplier = BigDecimal.ONE.subtract(
+                    discountRate.divide(new BigDecimal("100"), 6, RoundingMode.HALF_UP));
+            amount = amount.multiply(discountMultiplier).setScale(2, RoundingMode.HALF_UP);
+        }
+        return amount;
     }
 
     @Override
@@ -187,14 +238,19 @@ public class InvoiceServiceImpl implements InvoiceService {
     public InvoiceRecord issueInvoice(String factoryId, String invoiceId, MultipartFile pdfFile, Long issuedBy) {
         InvoiceRecord record = getInvoice(factoryId, invoiceId);
         if (record.getStatus() != InvoiceStatus.APPROVED) {
-            throw new IllegalStateException("只能对已审核的申请开具发票");
+            throw new IllegalStateException("只能对已审核的申请开具发票, 当前: " + record.getStatus());
+        }
+
+        // V3 P0-3c — 客户原话 2675-2693s "发票必须以附件形式上传"
+        // PDF 文件强制必填, 否则销售方无法在订单页下载, 闭环不闭
+        if (pdfFile == null || pdfFile.isEmpty()) {
+            throw new IllegalArgumentException("开具发票必须上传 PDF 附件 (客户要求: 销售从订单页下载发票)");
         }
 
         // 上传发票PDF到OSS
-        if (pdfFile != null && !pdfFile.isEmpty()) {
-            String pdfUrl = ossService.uploadFile(pdfFile, "invoices", record.getFactoryId());
-            record.setInvoicePdfUrl(pdfUrl);
-        }
+        String pdfUrl = ossService.uploadFile(pdfFile, "invoices", record.getFactoryId());
+        record.setInvoicePdfUrl(pdfUrl);
+        record.setInvoiceFileName(pdfFile.getOriginalFilename());
 
         record.setStatus(InvoiceStatus.ISSUED);
         record.setIssuedAt(LocalDateTime.now());
@@ -208,7 +264,8 @@ public class InvoiceServiceImpl implements InvoiceService {
                 this, record.getFactoryId(), record.getId(),
                 record.getSalesOrderId(), record.getTotalAmount()));
 
-        log.info("发票已开具: invoiceId={}, pdfUrl={}", invoiceId, record.getInvoicePdfUrl());
+        log.info("发票已开具: invoiceId={}, fileName={}, pdfUrl={}",
+                invoiceId, record.getInvoiceFileName(), record.getInvoicePdfUrl());
         return saved;
     }
 

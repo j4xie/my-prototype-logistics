@@ -1,15 +1,15 @@
 # factoryId 隔离审计报告
 
-**生成时间**: 2026-04-07T22:07:35.841Z
+**生成时间**: 2026-04-08T02:25:12.449Z
 **审计脚本**: scripts/audit/tool-factory-isolation-audit.mjs
 **扫描目录**: backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/
 
 ## 总览
 
-- **Total Tools 扫描数**: 338
+- **Total Tools 扫描数**: 339
 - 🔴 **HIGH 风险**: 1
 - 🟡 **MEDIUM 风险**: 17
-- 🟢 **LOW 风险**: 309
+- 🟢 **LOW 风险**: 310
 - ⚪ **EXEMPT（白名单豁免）**: 3
 - ⚪ **NON_BUSINESS（非业务 Tool）**: 8
 
@@ -32,7 +32,7 @@
 | config | 3 | 0 | 0 | 3 | 0 | 0 |
 | dahua | 3 | 0 | 0 | 3 | 0 | 0 |
 | equipment | 15 | 0 | 0 | 15 | 0 | 0 |
-| finance | 11 | 0 | 0 | 11 | 0 | 0 |
+| finance | 12 | 0 | 0 | 12 | 0 | 0 |
 | foodknowledge | 1 | 0 | 0 | 1 | 0 | 0 |
 | form | 1 | 0 | 0 | 1 | 0 | 0 |
 | decoration | 3 | 0 | 0 | 3 | 0 | 0 |
