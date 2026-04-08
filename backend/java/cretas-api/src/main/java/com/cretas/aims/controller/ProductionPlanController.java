@@ -8,7 +8,10 @@ import com.cretas.aims.dto.production.CreateProductionPlanRequest;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.entity.ProductionPlan;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
+import com.cretas.aims.entity.enums.SalesOrderStatus;
+import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.repository.ProductionPlanRepository;
+import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.ProductionPlanService;
 import com.cretas.aims.service.orchestration.ProductionWorkflowOrchestrator;
@@ -54,6 +57,7 @@ public class ProductionPlanController {
     private final MobileService mobileService;
     private final ProductionPlanRepository planRepository;
     private final ProductionWorkflowOrchestrator workflowOrchestrator;
+    private final SalesOrderRepository salesOrderRepository;
 
     /**
      * 创建生产计划
@@ -513,5 +517,59 @@ public class ProductionPlanController {
         }).collect(Collectors.toList());
 
         return ApiResponse.success(cards);
+    }
+
+    /**
+     * P0-12: 获取可关联的销售订单列表(用于生产计划来源选择器)
+     * 仅返回已确认/处理中/部分发货等尚未完成的订单
+     */
+    @GetMapping("/sales-orders/selectable")
+    @Operation(summary = "获取可关联的销售订单列表")
+    public ApiResponse<List<Map<String, Object>>> getSelectableSalesOrders(
+            @Parameter(description = "工厂ID", required = true, example = "F001")
+            @PathVariable @NotBlank String factoryId) {
+
+        List<SalesOrderStatus> selectableStatuses = List.of(
+                SalesOrderStatus.CONFIRMED,
+                SalesOrderStatus.PENDING_FINANCE_REVIEW,
+                SalesOrderStatus.FINANCE_APPROVED,
+                SalesOrderStatus.PROCESSING,
+                SalesOrderStatus.PARTIAL_DELIVERED
+        );
+
+        List<SalesOrder> orders = salesOrderRepository.findAll().stream()
+                .filter(so -> factoryId.equals(so.getFactoryId()))
+                .filter(so -> so.getStatus() != null && selectableStatuses.contains(so.getStatus()))
+                .sorted((a, b) -> {
+                    if (a.getCreatedAt() == null) return 1;
+                    if (b.getCreatedAt() == null) return -1;
+                    return b.getCreatedAt().compareTo(a.getCreatedAt());
+                })
+                .limit(200)
+                .collect(Collectors.toList());
+
+        List<Map<String, Object>> result = orders.stream().map(so -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", so.getId());
+            m.put("orderNo", so.getOrderNumber());
+            m.put("customerId", so.getCustomerId());
+            m.put("customerName", so.getCustomerName());
+            m.put("totalAmount", so.getTotalAmount());
+            m.put("status", so.getStatus() != null ? so.getStatus().name() : null);
+            m.put("statusLabel", so.getStatus() != null ? so.getStatus().getDisplayName() : null);
+            m.put("orderDate", so.getOrderDate());
+            List<Map<String, Object>> items = so.getItems() == null ? List.of() :
+                    so.getItems().stream().map(it -> {
+                        Map<String, Object> im = new HashMap<>();
+                        im.put("productTypeId", it.getProductTypeId());
+                        im.put("productName", it.getProductName());
+                        im.put("quantity", it.getQuantity());
+                        return im;
+                    }).collect(Collectors.toList());
+            m.put("items", items);
+            return m;
+        }).collect(Collectors.toList());
+
+        return ApiResponse.success(result);
     }
 }
