@@ -1,6 +1,8 @@
 package com.cretas.aims.service.impl;
 
 import com.cretas.aims.dto.bom.BomCostSummaryDTO;
+import com.cretas.aims.dto.config.EffectiveField;
+import com.cretas.aims.dto.config.EffectiveModuleConfig;
 import com.cretas.aims.entity.bom.BomItem;
 import com.cretas.aims.entity.bom.LaborCostConfig;
 import com.cretas.aims.entity.bom.OverheadCostConfig;
@@ -9,6 +11,7 @@ import com.cretas.aims.repository.bom.BomItemRepository;
 import com.cretas.aims.repository.bom.LaborCostConfigRepository;
 import com.cretas.aims.repository.bom.OverheadCostConfigRepository;
 import com.cretas.aims.service.BomService;
+import com.cretas.aims.service.config.FactoryConfigService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +50,10 @@ public class BomServiceImpl implements BomService {
     private final LaborCostConfigRepository laborCostConfigRepository;
     private final OverheadCostConfigRepository overheadCostConfigRepository;
 
+    /** Canvas Config — 可选注入，模块未部署时不影响现有逻辑 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private FactoryConfigService factoryConfigService;
+
     // ============ BOM Items ============
 
     @Override
@@ -70,15 +77,24 @@ public class BomServiceImpl implements BomService {
         log.info("保存BOM项目: factoryId={}, productTypeId={}, materialTypeId={}",
             bomItem.getFactoryId(), bomItem.getProductTypeId(), bomItem.getMaterialTypeId());
 
-        // 设置默认值
+        // 设置默认值（优先从 Canvas Config 读取，不可用时使用硬编码 fallback）
         if (bomItem.getYieldRate() == null) {
-            bomItem.setYieldRate(new BigDecimal("100.00"));
+            Object configDefault = getConfigDefault(bomItem.getFactoryId(), "yieldRate", new BigDecimal("100.00"));
+            bomItem.setYieldRate(configDefault instanceof Number
+                    ? new BigDecimal(configDefault.toString())
+                    : new BigDecimal("100.00"));
         }
         if (bomItem.getTaxRate() == null) {
-            bomItem.setTaxRate(BigDecimal.ZERO);
+            Object configDefault = getConfigDefault(bomItem.getFactoryId(), "taxRate", BigDecimal.ZERO);
+            bomItem.setTaxRate(configDefault instanceof Number
+                    ? new BigDecimal(configDefault.toString())
+                    : BigDecimal.ZERO);
         }
         if (bomItem.getSortOrder() == null) {
-            bomItem.setSortOrder(0);
+            Object configDefault = getConfigDefault(bomItem.getFactoryId(), "sortOrder", 0);
+            bomItem.setSortOrder(configDefault instanceof Number
+                    ? ((Number) configDefault).intValue()
+                    : 0);
         }
 
         BomItem saved = bomItemRepository.save(bomItem);
@@ -343,6 +359,22 @@ public class BomServiceImpl implements BomService {
     }
 
     // ============ Private Helper Methods ============
+
+    /**
+     * Canvas Config: 从配置中获取字段默认值。
+     * 如果 factoryConfigService 未注入（模块未部署），返回 fallback。
+     */
+    private Object getConfigDefault(String factoryId, String fieldCode, Object fallback) {
+        if (factoryConfigService != null) {
+            try {
+                Object val = factoryConfigService.getFieldDefault(factoryId, "bom", fieldCode);
+                return val != null ? val : fallback;
+            } catch (Exception e) {
+                log.debug("获取BOM字段 {} 配置默认值失败，使用 fallback: {}", fieldCode, fallback);
+            }
+        }
+        return fallback;
+    }
 
     /**
      * 计算实际用量（考虑出成率）

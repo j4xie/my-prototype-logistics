@@ -15,6 +15,7 @@ import com.cretas.aims.repository.ProductTypeRepository;
 import com.cretas.aims.repository.inventory.*;
 import com.cretas.aims.event.SalesOrderConfirmedEvent;
 import com.cretas.aims.event.SalesOrderFinanceApprovedEvent;
+import com.cretas.aims.service.config.FactoryConfigService;
 import com.cretas.aims.service.inventory.SalesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,10 @@ public class SalesServiceImpl implements SalesService {
     /** P0-13 批次分配校验（可选注入，避免破坏现有构造器）。 */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.service.sales.SalesDeliveryBatchAllocationService batchAllocationService;
+
+    /** Canvas Config — 可选注入，模块未部署时不影响现有逻辑 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private FactoryConfigService factoryConfigService;
 
     public SalesServiceImpl(SalesOrderRepository salesOrderRepository,
                             SalesOrderItemRepository salesOrderItemRepository,
@@ -172,6 +177,7 @@ public class SalesServiceImpl implements SalesService {
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
             throw new BusinessException("只有草稿状态的订单可以确认");
         }
+        checkTransitionAllowed(factoryId, order.getStatus().name(), "CONFIRMED");
         order.setStatus(SalesOrderStatus.CONFIRMED);
         order.setConfirmedAt(LocalDateTime.now());
         SalesOrder saved = salesOrderRepository.save(order);
@@ -198,6 +204,7 @@ public class SalesServiceImpl implements SalesService {
                 && order.getStatus() != SalesOrderStatus.FINANCE_REJECTED) {
             throw new BusinessException("只有已确认或财务驳回状态的订单可以提交财务审核");
         }
+        checkTransitionAllowed(factoryId, order.getStatus().name(), "PENDING_FINANCE_REVIEW");
         order.setStatus(SalesOrderStatus.PENDING_FINANCE_REVIEW);
         // 清除上一次审核记录，重新审核
         order.setFinanceReviewedBy(null);
@@ -217,6 +224,7 @@ public class SalesServiceImpl implements SalesService {
         if (order.getStatus() != SalesOrderStatus.PENDING_FINANCE_REVIEW) {
             throw new BusinessException("只有待财务审核状态的订单可以审批");
         }
+        checkTransitionAllowed(factoryId, order.getStatus().name(), "FINANCE_APPROVED");
         order.setStatus(SalesOrderStatus.FINANCE_APPROVED);
         order.setFinanceReviewedBy(reviewerId);
         order.setFinanceReviewedAt(LocalDateTime.now());
@@ -250,6 +258,7 @@ public class SalesServiceImpl implements SalesService {
         if (order.getStatus() != SalesOrderStatus.PENDING_FINANCE_REVIEW) {
             throw new BusinessException("只有待财务审核状态的订单可以驳回");
         }
+        checkTransitionAllowed(factoryId, order.getStatus().name(), "FINANCE_REJECTED");
         order.setStatus(SalesOrderStatus.FINANCE_REJECTED);
         order.setFinanceReviewedBy(reviewerId);
         order.setFinanceReviewedAt(LocalDateTime.now());
@@ -589,6 +598,18 @@ public class SalesServiceImpl implements SalesService {
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         long ts = System.currentTimeMillis() % 10000;
         return String.format("FG-%s-%04d", dateStr, ts);
+    }
+
+    /**
+     * Canvas Config: 检查工作流状态转换是否被配置允许。
+     * 如果 factoryConfigService 未注入（模块未部署），默认允许所有转换（向后兼容）。
+     */
+    private void checkTransitionAllowed(String factoryId, String fromStatus, String toStatus) {
+        if (factoryConfigService != null) {
+            if (!factoryConfigService.isTransitionAllowed(factoryId, "sales_order", fromStatus, toStatus)) {
+                throw new BusinessException("当前配置不允许从 " + fromStatus + " 转换到 " + toStatus);
+            }
+        }
     }
 
     /**
