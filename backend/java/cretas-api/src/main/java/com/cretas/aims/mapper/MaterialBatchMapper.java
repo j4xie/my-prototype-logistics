@@ -160,6 +160,10 @@ public class MaterialBatchMapper {
         }
         batch.setCreatedBy(createdBy);
 
+        // P0-17: 发起单来源
+        batch.setSourceDocType(request.getSourceDocType());
+        batch.setSourceDocId(request.getSourceDocId());
+
         // 设置到期日期（如果提供了）
         if (request.getExpireDate() != null) {
             batch.setExpireDate(request.getExpireDate());

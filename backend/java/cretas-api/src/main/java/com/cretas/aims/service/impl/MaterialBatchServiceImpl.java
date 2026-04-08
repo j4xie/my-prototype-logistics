@@ -21,6 +21,9 @@ import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.MaterialConsumptionRepository;
 import com.cretas.aims.repository.ProductionPlanBatchUsageRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
+import com.cretas.aims.repository.factory.FactoryMaterialRequisitionRepository;
+import com.cretas.aims.repository.inventory.PurchaseReceiveRecordRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import com.cretas.aims.service.FuturePlanMatchingService;
 import com.cretas.aims.service.MaterialBatchService;
 import org.slf4j.Logger;
@@ -121,6 +124,11 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     private final ExcelUtil excelUtil;
     private final FuturePlanMatchingService futurePlanMatchingService;
 
+    @Autowired(required = false)
+    private PurchaseReceiveRecordRepository purchaseReceiveRecordRepository;
+    @Autowired(required = false)
+    private FactoryMaterialRequisitionRepository factoryMaterialRequisitionRepository;
+
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public MaterialBatchServiceImpl(
             MaterialBatchRepository materialBatchRepository,
@@ -144,6 +152,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     @Override
     @Transactional
     public MaterialBatchDTO createMaterialBatch(String factoryId, CreateMaterialBatchRequest request, Long userId) {
+        // P0-17: 入库必须有发起单校验
+        validateSourceDoc(request);
         // 验证并获取原材料类型
         var materialType = materialTypeRepository.findById(request.getMaterialTypeId())
             .orElseThrow(() -> new ResourceNotFoundException("原材料类型不存在"));
@@ -182,6 +192,55 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         }
 
         return materialBatchMapper.toDTO(batch);
+    }
+
+    /**
+     * P0-17: 入库必须关联有效的发起单
+     * - sourceDocType == null: 向后兼容历史数据, warn log 但允许
+     * - MANUAL_ADJUST: 必填 remark (notes)
+     * - 其他类型: sourceDocId 必填, 且验证单据存在
+     */
+    private void validateSourceDoc(CreateMaterialBatchRequest request) {
+        String type = request.getSourceDocType();
+        String id = request.getSourceDocId();
+
+        if (type == null || type.isBlank()) {
+            log.warn("⚠️ P0-17: 创建原材料批次未提供 sourceDocType (向后兼容允许, 但应补全发起单)");
+            return;
+        }
+
+        switch (type) {
+            case "MANUAL_ADJUST":
+                if (request.getNotes() == null || request.getNotes().isBlank()) {
+                    throw new IllegalArgumentException("手工调整入库必须填写备注作为凭证");
+                }
+                break;
+            case "PURCHASE_RECEIVE":
+                if (id == null || id.isBlank()) {
+                    throw new IllegalArgumentException("入库必须关联有效的发起单 (PURCHASE_RECEIVE sourceDocId 为空)");
+                }
+                if (purchaseReceiveRecordRepository == null || !purchaseReceiveRecordRepository.existsById(id)) {
+                    throw new IllegalArgumentException("入库必须关联有效的发起单: 采购到货通知 " + id + " 不存在");
+                }
+                break;
+            case "MATERIAL_REQUISITION_RETURN":
+                if (id == null || id.isBlank()) {
+                    throw new IllegalArgumentException("入库必须关联有效的发起单 (MATERIAL_REQUISITION_RETURN sourceDocId 为空)");
+                }
+                if (factoryMaterialRequisitionRepository == null || !factoryMaterialRequisitionRepository.existsById(id)) {
+                    throw new IllegalArgumentException("入库必须关联有效的发起单: 领料退料单 " + id + " 不存在");
+                }
+                break;
+            case "SALES_RETURN":
+                if (id == null || id.isBlank()) {
+                    throw new IllegalArgumentException("入库必须关联有效的发起单 (SALES_RETURN sourceDocId 为空)");
+                }
+                // SalesReturn entity 暂未建, 仅记录引用, 不强校验存在性
+                log.info("P0-17: 销售退货入库 sourceDocId={} (SalesReturn 单据校验暂 skip)", id);
+                break;
+            default:
+                throw new IllegalArgumentException("不支持的 sourceDocType: " + type);
+        }
     }
 
     @Override
