@@ -803,6 +803,33 @@ deploy_jar() {
             sleep 5
             ssh $SERVER "systemctl stop $ACTIVE_SERVICE" || true
 
+            # [BG 5/5] Systemd 收尾 (v5.1):
+            # - stop 后 SIGTERM 可能把旧 active 标记为 'failed' (status=143), 清理之
+            # - 验证新 active service 状态 + 端口监听
+            # - 幂等: 如新 active systemd 非 running, 尝试 restart 一次
+            echo "   [BG 5/5] Systemd 收尾检查..."
+            ssh $SERVER "
+                # 清理旧 active 的 failed 状态 (SIGTERM 导致的 exit 143 会被记为 failed)
+                systemctl reset-failed $ACTIVE_SERVICE 2>/dev/null || true
+
+                # 验证新 active 在 running
+                if ! systemctl is-active --quiet $IDLE_SERVICE; then
+                    echo '   ⚠️  新 active ($IDLE_SERVICE) systemd 非 running, 尝试 restart'
+                    systemctl reset-failed $IDLE_SERVICE 2>/dev/null || true
+                    systemctl restart $IDLE_SERVICE
+                    sleep 10
+                    systemctl is-active --quiet $IDLE_SERVICE || { echo '   ❌ 新 active systemd 仍非 running'; exit 1; }
+                fi
+
+                # 验证新 active 端口监听
+                if ! ss -tln | grep -q ':$IDLE_PORT '; then
+                    echo '   ❌ 新 active 端口 $IDLE_PORT 未监听'
+                    exit 1
+                fi
+                echo '   ✓ 新 active ($IDLE_SERVICE) systemd running + 端口 $IDLE_PORT 监听'
+                echo '   ✓ 旧 active ($ACTIVE_SERVICE) failed 状态已清理'
+            " || echo "   ⚠️  systemd 收尾检查有警告, 请手动 verify"
+
             echo "   ✅ Blue-Green 切换完成: $ACTIVE_COLOR → $IDLE_COLOR"
         fi
     fi
