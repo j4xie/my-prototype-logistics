@@ -252,6 +252,12 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: '销售订单详情', module: 'sales', hidden: true }
           },
           {
+            path: 'quotes',
+            name: 'SalesQuotes',
+            component: () => import('@/views/sales/quotes/list.vue'),
+            meta: { requiresAuth: true, title: '运营报价', module: 'sales' }
+          },
+          {
             path: 'finished-goods',
             name: 'SalesFinishedGoods',
             component: () => import('@/views/sales/finished-goods/list.vue'),
