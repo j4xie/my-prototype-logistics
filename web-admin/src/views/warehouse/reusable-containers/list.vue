@@ -136,13 +136,31 @@ function openCreate() {
   createVisible.value = true;
 }
 async function submitCreate() {
+  // 前端必填校验 — 防止静默提交空表单
+  if (!createForm.value.containerCode || !createForm.value.containerCode.trim()) {
+    ElMessage.warning('请填写编号');
+    return;
+  }
+  if (!createForm.value.containerName || !createForm.value.containerName.trim()) {
+    ElMessage.warning('请填写名称');
+    return;
+  }
+  if (!factoryId.value) {
+    ElMessage.error('工厂信息未就绪，请重新登录');
+    return;
+  }
   try {
-    await post(baseUrl.value, createForm.value);
+    const res: any = await post(baseUrl.value, createForm.value);
+    if (res && res.success === false) {
+      throw new Error(res.message || '创建失败');
+    }
     ElMessage.success('创建成功');
     createVisible.value = false;
+    // 重置到首页以确保新建行可见 (按 createdAt desc 排序时)
+    page.value = 1;
     await loadList();
   } catch (e: any) {
-    ElMessage.error(e?.message || '创建失败');
+    ElMessage.error(e?.message || e?.response?.data?.message || '创建失败');
   }
 }
 
