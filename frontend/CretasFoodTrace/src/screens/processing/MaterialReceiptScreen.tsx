@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Image, TouchableOpacity } from 'react-native';
 import {
   Text,
   Appbar,
@@ -9,9 +9,11 @@ import {
   ActivityIndicator,
   List,
   HelperText,
+  IconButton,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
+import * as ImagePicker from 'expo-image-picker';
 import { materialBatchApiClient } from '../../services/api/materialBatchApiClient';
 import { supplierApiClient } from '../../services/api/supplierApiClient';
 import { useAuthStore } from '../../store/authStore';
@@ -54,6 +56,34 @@ export default function MaterialReceiptScreen() {
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // P0-16 签收照片(本地 URI, 待后端接入附件上传接口)
+  const [signaturePhotos, setSignaturePhotos] = useState<string[]>([]);
+
+  const takeSignaturePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('权限不足', '需要相机权限才能拍照签收');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.7,
+        allowsEditing: false,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setSignaturePhotos(prev => [...prev, result.assets[0]!.uri]);
+      }
+    } catch (error) {
+      materialReceiptLogger.error('拍照失败', error as Error);
+      Alert.alert('错误', '拍照失败，请重试');
+    }
+  };
+
+  const removeSignaturePhoto = (index: number) => {
+    setSignaturePhotos(prev => prev.filter((_, i) => i !== index));
+  };
 
   // 储存类型选项
   const storageTypeOptions = [
@@ -171,6 +201,8 @@ export default function MaterialReceiptScreen() {
         qualityNotes: formData.qualityNotes || undefined,
         qualityPhotos: formData.qualityPhotos.length > 0 ? formData.qualityPhotos : undefined,
         notes: formData.notes || undefined,
+        // P0-16 签收照片本地 URI 列表 — TODO: 待后端加附件上传接口后改为上传后的 URL 列表
+        photoUris: signaturePhotos.length > 0 ? signaturePhotos : undefined,
       };
 
       await materialBatchApiClient.createBatch(batchData, factoryId);
@@ -205,6 +237,7 @@ export default function MaterialReceiptScreen() {
               qualityPhotos: [],
               notes: '',
             });
+            setSignaturePhotos([]);
             setErrors({});
           },
         },
@@ -429,10 +462,46 @@ export default function MaterialReceiptScreen() {
               placeholder="质检备注信息"
             />
 
-            {/* 14. Quality Photos (Placeholder) */}
-            <View style={styles.photoPlaceholder}>
-              <List.Icon icon="camera" color="#999" />
-              <Text style={styles.photoPlaceholderText}>质检照片上传（待实现）</Text>
+            {/* 14. 收货签收照片 (P0-16) */}
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>收货签收照片</Text>
+              <Button
+                mode="outlined"
+                icon="camera"
+                onPress={takeSignaturePhoto}
+                style={styles.photoButton}
+              >
+                拍照签收 ({signaturePhotos.length})
+              </Button>
+              {signaturePhotos.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.photoThumbRow}
+                >
+                  {signaturePhotos.map((uri, idx) => (
+                    <TouchableOpacity
+                      key={`${uri}-${idx}`}
+                      onPress={() =>
+                        Alert.alert('删除照片', '确定删除这张照片？', [
+                          { text: '取消', style: 'cancel' },
+                          { text: '删除', style: 'destructive', onPress: () => removeSignaturePhoto(idx) },
+                        ])
+                      }
+                      style={styles.photoThumbWrapper}
+                    >
+                      <Image source={{ uri }} style={styles.photoThumb} />
+                      <IconButton
+                        icon="close-circle"
+                        size={18}
+                        iconColor="#E53935"
+                        style={styles.photoThumbRemove}
+                        onPress={() => removeSignaturePhoto(idx)}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
             </View>
           </Card.Content>
         </Card>
@@ -543,6 +612,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1565C0',
     marginTop: 2,
+  },
+  photoButton: {
+    marginTop: 4,
+  },
+  photoThumbRow: {
+    marginTop: 12,
+  },
+  photoThumbWrapper: {
+    marginRight: 8,
+    position: 'relative',
+  },
+  photoThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: 6,
+    backgroundColor: '#eee',
+  },
+  photoThumbRemove: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    margin: 0,
+    backgroundColor: '#fff',
   },
   photoPlaceholder: {
     flexDirection: 'row',
