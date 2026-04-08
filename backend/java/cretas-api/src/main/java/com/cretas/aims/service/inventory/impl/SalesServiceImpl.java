@@ -91,6 +91,7 @@ public class SalesServiceImpl implements SalesService {
         order.setSalesperson(request.getSalesperson());
         order.setShippingIncluded(request.getShippingIncluded());
         order.setShippingFee(request.getShippingFee());
+        order.setExtraFees(request.getExtraFees());
         order.setStatus(SalesOrderStatus.DRAFT);
         order.setCreatedBy(userId);
 
@@ -281,6 +282,9 @@ public class SalesServiceImpl implements SalesService {
         }
         if (request.getShippingFee() != null) {
             order.setShippingFee(request.getShippingFee());
+        }
+        if (request.getExtraFees() != null) {
+            order.setExtraFees(request.getExtraFees());
         }
         if (request.getRequiredDeliveryDate() != null) {
             order.setRequiredDeliveryDate(request.getRequiredDeliveryDate());
