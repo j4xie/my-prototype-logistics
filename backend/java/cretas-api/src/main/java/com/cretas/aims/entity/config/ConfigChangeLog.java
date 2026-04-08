@@ -47,6 +47,7 @@ public class ConfigChangeLog {
     private Long operatorId;
 
     @Column(name = "operator_type", length = 16, nullable = false)
+    @Builder.Default
     private String operatorType = "USER";
 
     @Column(name = "ai_prompt", columnDefinition = "TEXT")

@@ -32,40 +32,50 @@ public class FactoryModuleConfig {
     private String moduleCode;
 
     @Column(name = "config_version", nullable = false)
+    @Builder.Default
     private Integer configVersion = 1;
 
     @Column(name = "enabled", nullable = false)
+    @Builder.Default
     private Boolean enabled = true;
 
     @Type(JsonBinaryType.class)
     @Column(name = "field_config", columnDefinition = "jsonb", nullable = false)
+    @Builder.Default
     private Map<String, Object> fieldConfig = Map.of();
 
     @Type(JsonBinaryType.class)
     @Column(name = "workflow_config", columnDefinition = "jsonb", nullable = false)
+    @Builder.Default
     private Map<String, Object> workflowConfig = Map.of();
 
     @Type(JsonBinaryType.class)
     @Column(name = "validation_config", columnDefinition = "jsonb", nullable = false)
+    @Builder.Default
     private Map<String, Object> validationConfig = Map.of();
 
     @Type(JsonBinaryType.class)
     @Column(name = "permission_config", columnDefinition = "jsonb", nullable = false)
+    @Builder.Default
     private Map<String, Object> permissionConfig = Map.of();
 
     @Type(JsonBinaryType.class)
     @Column(name = "layout_config", columnDefinition = "jsonb", nullable = false)
+    @Builder.Default
     private Map<String, Object> layoutConfig = Map.of();
 
     @Type(JsonBinaryType.class)
     @Column(name = "custom_labels", columnDefinition = "jsonb", nullable = false)
+    @Builder.Default
     private Map<String, Object> customLabels = Map.of();
 
     @Type(JsonBinaryType.class)
     @Column(name = "computed_fields", columnDefinition = "jsonb", nullable = false)
+    @Builder.Default
     private Map<String, Object> computedFields = Map.of();
 
     @Column(name = "rendering_mode", length = 16, nullable = false)
+    @Builder.Default
     private String renderingMode = "LEGACY";
 
     @Column(name = "created_at")

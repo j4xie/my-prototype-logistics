@@ -28,6 +28,7 @@ public class ModuleSchema {
     private String moduleCategory;
 
     @Column(name = "module_version", nullable = false)
+    @Builder.Default
     private Integer moduleVersion = 1;
 
     @Type(JsonBinaryType.class)
@@ -54,6 +55,7 @@ public class ModuleSchema {
     private String description;
 
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
 
     @Column(name = "created_at")

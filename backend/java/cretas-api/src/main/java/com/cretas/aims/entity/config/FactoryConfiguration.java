@@ -28,9 +28,11 @@ public class FactoryConfiguration {
     private Long templateId;
 
     @Column(name = "config_version", nullable = false)
+    @Builder.Default
     private Integer configVersion = 1;
 
     @Column(name = "status", length = 16, nullable = false)
+    @Builder.Default
     private String status = "DRAFT";
 
     @Column(name = "published_at")
