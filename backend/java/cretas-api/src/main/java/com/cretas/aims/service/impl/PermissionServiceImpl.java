@@ -84,6 +84,26 @@ public class PermissionServiceImpl implements PermissionService {
         workshopPerms.put("report", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.workshop_supervisor, workshopPerms);
 
+        // team_leader (大组长) — 车间主任下一级,去掉 hr/report 审批类
+        Map<String, String> teamLeaderPerms = new HashMap<>();
+        teamLeaderPerms.put("dashboard", "read");
+        teamLeaderPerms.put("production", "read_write");
+        teamLeaderPerms.put("warehouse", "read");
+        teamLeaderPerms.put("quality", "write");
+        teamLeaderPerms.put("equipment", "read");
+        teamLeaderPerms.put("scheduling", "read");
+        teamLeaderPerms.put("work_report", "read_write");
+        PERMISSION_MATRIX.put(FactoryUserRole.team_leader, teamLeaderPerms);
+
+        // group_leader (小组长) — 只管本组,去掉 scheduling 全局查看
+        Map<String, String> groupLeaderPerms = new HashMap<>();
+        groupLeaderPerms.put("dashboard", "read");
+        groupLeaderPerms.put("production", "read_write");
+        groupLeaderPerms.put("quality", "write");
+        groupLeaderPerms.put("equipment", "read");
+        groupLeaderPerms.put("work_report", "read_write");
+        PERMISSION_MATRIX.put(FactoryUserRole.group_leader, groupLeaderPerms);
+
         // quality_inspector
         Map<String, String> inspectorPerms = new HashMap<>();
         inspectorPerms.put("dashboard", "read");

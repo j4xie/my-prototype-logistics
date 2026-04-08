@@ -87,6 +87,18 @@ public enum FactoryUserRole {
      */
     workshop_supervisor("车间主任", "车间日常、人员调度", 20, "workshop"),
 
+    /**
+     * 大组长
+     * 管理多个小组,承担车间主任下一级的带班职责
+     */
+    team_leader("大组长", "多组带班、任务分派", 25, "workshop"),
+
+    /**
+     * 小组长
+     * 管理单个生产小组,负责本组日常执行
+     */
+    group_leader("小组长", "本组日常、现场执行", 28, "workshop"),
+
     // ===== Level 30: 一线员工 =====
     /**
      * 质检员
@@ -221,6 +233,8 @@ public enum FactoryUserRole {
             case dispatcher:
             case production_manager:
             case workshop_supervisor:
+            case team_leader:
+            case group_leader:
             case operator:
                 return "production";
             case warehouse_manager:
