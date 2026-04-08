@@ -159,6 +159,7 @@ function handleAddBomItem() {
     productTypeId: selectedProductTypeId.value,
     materialTypeId: '',
     materialName: '',
+    materialCategory: activeCategoryTab.value,
     standardQuantity: 0,
     yieldRate: 100,
     unit: 'kg',
@@ -177,6 +178,7 @@ function handleEditBomItem(row: Record<string, unknown>) {
     productTypeId: row.productTypeId,
     materialTypeId: row.materialTypeId,
     materialName: row.materialName,
+    materialCategory: (row.materialCategory as string) || 'RAW',
     standardQuantity: row.standardQuantity || 0,
     yieldRate: row.yieldRate || 100,
     unit: row.unit || 'kg',
@@ -501,6 +503,24 @@ const groupedBomItems = computed(() => {
 
 const hasMultipleCategories = computed(() => groupedBomItems.value.length > 1);
 
+// P0-14: Tab filtering by materialCategory (RAW/AUXILIARY/PACKAGING)
+const activeCategoryTab = ref<'RAW' | 'AUXILIARY' | 'PACKAGING'>('RAW');
+function matchCategory(row: Record<string, unknown>, code: 'RAW' | 'AUXILIARY' | 'PACKAGING') {
+  const c = String(row.materialCategory || row.category || '').toUpperCase();
+  if (code === 'RAW') return c === 'RAW' || c === '原材料' || c === '' || c === '其他';
+  if (code === 'AUXILIARY') return c === 'AUXILIARY' || c === '辅料' || c === '调味料';
+  if (code === 'PACKAGING') return c === 'PACKAGING' || c === '包材';
+  return false;
+}
+const rawItems = computed(() => bomItems.value.filter((i: Record<string, unknown>) => matchCategory(i, 'RAW')));
+const auxiliaryItems = computed(() => bomItems.value.filter((i: Record<string, unknown>) => matchCategory(i, 'AUXILIARY')));
+const packagingItems = computed(() => bomItems.value.filter((i: Record<string, unknown>) => matchCategory(i, 'PACKAGING')));
+const currentTabItems = computed(() => {
+  if (activeCategoryTab.value === 'RAW') return rawItems.value;
+  if (activeCategoryTab.value === 'AUXILIARY') return auxiliaryItems.value;
+  return packagingItems.value;
+});
+
 // Issue 11: Cost per serving
 const costPerServing = computed(() => {
   if (standardServingWeight.value <= 0) return 0;
@@ -625,7 +645,12 @@ function refreshData() {
             </div>
           </div>
         </template>
-        <el-table empty-text="暂无数据" :data="bomItems" v-loading="loading" stripe border size="small" style="width: 100%"
+        <el-tabs v-model="activeCategoryTab" class="bom-category-tabs">
+          <el-tab-pane name="RAW" :label="`原料 (${rawItems.length})`" />
+          <el-tab-pane name="AUXILIARY" :label="`辅料 (${auxiliaryItems.length})`" />
+          <el-tab-pane name="PACKAGING" :label="`包材 (${packagingItems.length})`" />
+        </el-tabs>
+        <el-table empty-text="暂无数据" :data="currentTabItems" v-loading="loading" stripe border size="small" style="width: 100%"
           :row-class-name="({ row }: { row: Record<string, unknown> }) => row._isCategoryHeader ? 'category-header-row' : ''">
           <!-- Issue 12: Show material category column -->
           <el-table-column prop="materialCategory" label="类型" width="70" align="center">
@@ -784,6 +809,13 @@ function refreshData() {
       <el-form :model="bomForm" label-width="100px">
         <el-form-item label="物料名称" required>
           <el-input v-model="bomForm.materialName" placeholder="请输入物料名称" />
+        </el-form-item>
+        <el-form-item label="物料类别" required>
+          <el-select v-model="bomForm.materialCategory" style="width: 100%">
+            <el-option label="原料" value="RAW" />
+            <el-option label="辅料" value="AUXILIARY" />
+            <el-option label="包材" value="PACKAGING" />
+          </el-select>
         </el-form-item>
         <el-form-item label="关联原料">
           <el-select v-model="bomForm.materialTypeId" placeholder="选择原料类型(可选)" clearable style="width: 100%">
