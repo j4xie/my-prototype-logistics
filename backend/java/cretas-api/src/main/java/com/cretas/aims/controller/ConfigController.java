@@ -13,7 +13,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/platform/config/{factoryId}")
+@RequestMapping("/api/mobile/{factoryId}/config")
 @RequiredArgsConstructor
 @Tag(name = "Canvas Configuration", description = "画布配置系统 API")
 public class ConfigController {

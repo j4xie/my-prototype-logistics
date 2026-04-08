@@ -10,7 +10,7 @@ import type {
   FieldConfigDTO,
 } from '@/types/config'
 
-const BASE = '/api/platform/config'
+// 路径: /api/mobile/{factoryId}/config/... (request baseURL 已含 /api/mobile)
 
 // ========== 配置消费 API (前端渲染器用) ==========
 
@@ -21,12 +21,12 @@ export function getEffectiveConfig(
   roleCode?: string,
 ): Promise<ApiResponse<EffectiveModuleConfig>> {
   const params = roleCode ? { roleCode } : {}
-  return request.get(`${BASE}/${factoryId}/modules/${moduleCode}/effective`, { params })
+  return request.get(`/${factoryId}/config/modules/${moduleCode}/effective`, { params })
 }
 
 /** 获取所有模块摘要 */
 export function getModules(factoryId: string): Promise<ApiResponse<ModuleSummary[]>> {
-  return request.get(`${BASE}/${factoryId}/modules`)
+  return request.get(`/${factoryId}/config/modules`)
 }
 
 // ========== 配置管理 API (画布编辑器用) ==========
@@ -37,7 +37,7 @@ export function saveModuleConfig(
   moduleCode: string,
   dto: ModuleConfigDTO,
 ): Promise<ApiResponse<void>> {
-  return request.put(`${BASE}/${factoryId}/modules/${moduleCode}`, dto)
+  return request.put(`/${factoryId}/config/modules/${moduleCode}`, dto)
 }
 
 /** 更新单个字段配置 */
@@ -47,7 +47,7 @@ export function updateFieldConfig(
   fieldCode: string,
   dto: FieldConfigDTO,
 ): Promise<ApiResponse<void>> {
-  return request.patch(`${BASE}/${factoryId}/modules/${moduleCode}/fields/${fieldCode}`, dto)
+  return request.patch(`/${factoryId}/config/modules/${moduleCode}/fields/${fieldCode}`, dto)
 }
 
 /** 开关模块 */
@@ -56,7 +56,7 @@ export function toggleModule(
   moduleCode: string,
   enabled: boolean,
 ): Promise<ApiResponse<void>> {
-  return request.patch(`${BASE}/${factoryId}/modules/${moduleCode}/toggle`, null, {
+  return request.patch(`/${factoryId}/config/modules/${moduleCode}/toggle`, null, {
     params: { enabled },
   })
 }
@@ -68,7 +68,7 @@ export function publishConfig(
   factoryId: string,
   summary?: string,
 ): Promise<ApiResponse<void>> {
-  return request.post(`${BASE}/${factoryId}/publish`, null, {
+  return request.post(`/${factoryId}/config/publish`, null, {
     params: summary ? { summary } : {},
   })
 }
@@ -78,5 +78,5 @@ export function rollbackConfig(
   factoryId: string,
   version: number,
 ): Promise<ApiResponse<void>> {
-  return request.post(`${BASE}/${factoryId}/rollback/${version}`)
+  return request.post(`/${factoryId}/config/rollback/${version}`)
 }
