@@ -3,6 +3,7 @@ package com.cretas.aims.controller.inventory;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreateDeliveryRequest;
+import com.cretas.aims.dto.inventory.SignatureUploadRequest;
 import com.cretas.aims.dto.inventory.CreateSalesOrderRequest;
 import com.cretas.aims.dto.inventory.FinanceReviewRequest;
 import com.cretas.aims.dto.inventory.UpdateSalesOrderRequest;
@@ -210,6 +211,22 @@ public class SalesController {
             @PathVariable @NotBlank String deliveryId) {
         SalesDeliveryRecord record = salesService.confirmDelivered(factoryId, deliveryId);
         return ApiResponse.success("签收确认成功", record);
+    }
+
+    @PostMapping("/deliveries/{deliveryId}/signature")
+    @Operation(summary = "上传签收凭证 (P0-NEW-1 — 客户原话 2807s)")
+    @RequirePermission("sales:read_write")
+    public ApiResponse<SalesDeliveryRecord> uploadSignature(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String deliveryId,
+            @Valid @RequestBody SignatureUploadRequest request) {
+        log.info("上传签收凭证: factoryId={}, deliveryId={}, 照片数={}",
+                factoryId, deliveryId,
+                request.getPhotoUrls() == null ? 0 : request.getPhotoUrls().size());
+        SalesDeliveryRecord record = salesService.uploadDeliverySignature(
+                factoryId, deliveryId,
+                request.getPhotoUrls(), request.getSignedByName(), request.getRemark());
+        return ApiResponse.success("签收凭证已保存", record);
     }
 
     @GetMapping("/deliveries/by-order/{orderId}")

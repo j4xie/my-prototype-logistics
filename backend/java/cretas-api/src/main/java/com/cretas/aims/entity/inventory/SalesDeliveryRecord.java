@@ -11,6 +11,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -91,6 +92,24 @@ public class SalesDeliveryRecord extends BaseEntity {
 
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
+
+    // ==================== P0-NEW-1 签收凭证 (客户原话 2807s) ====================
+
+    /** 签收照片 URL 列表 (JSON 数组字符串) */
+    @Column(name = "signature_photo_urls", columnDefinition = "TEXT")
+    private String signaturePhotoUrls;
+
+    /** 签收人姓名 */
+    @Column(name = "signed_by_name", length = 100)
+    private String signedByName;
+
+    /** 签收时间 */
+    @Column(name = "signed_at")
+    private LocalDateTime signedAt;
+
+    /** 签收备注 */
+    @Column(name = "signature_remark", length = 500)
+    private String signatureRemark;
 
     // ==================== 关联 ====================
 
