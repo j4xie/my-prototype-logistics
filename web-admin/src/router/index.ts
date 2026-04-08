@@ -110,6 +110,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'ProcessIOComparison',
             component: () => import('@/views/production/ProcessIOComparison.vue'),
             meta: { requiresAuth: true, title: '工序投入产出对比', module: 'production' }
+          },
+          {
+            path: 'material-requisitions',
+            name: 'FactoryMaterialRequisitions',
+            component: () => import('@/views/factory/material-requisitions/list.vue'),
+            meta: { requiresAuth: true, title: '物料需求单', module: 'production' }
           }
         ]
       },
