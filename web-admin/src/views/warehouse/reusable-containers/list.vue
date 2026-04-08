@@ -12,7 +12,7 @@
         <el-table-column prop="containerCode" label="编号" width="120" />
         <el-table-column prop="containerName" label="名称" min-width="160" />
         <el-table-column prop="specification" label="规格" min-width="180" />
-        <el-table-column prop="unitPrice" label="单价/赔偿价" width="120" />
+        <el-table-column v-if="!isWarehouseOnly" prop="unitPrice" label="单价/赔偿价" width="120" />
         <el-table-column prop="totalQuantity" label="总持有" width="100" />
         <el-table-column prop="inWarehouseQuantity" label="在库" width="100" />
         <el-table-column prop="inTransitQuantity" label="在客户处" width="110" />
@@ -102,6 +102,11 @@ import { useAuthStore } from '@/store/modules/auth';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
+// P1-NEW-3: 仓库角色隐藏价格字段 (客户需求 4907-4925s: 商业机密, 仓库看不到价格)
+const isWarehouseOnly = computed(() => {
+  const role = authStore.currentRole;
+  return role === 'warehouse_manager' || role === 'warehouse_worker';
+});
 
 const loading = ref(false);
 const rows = ref<any[]>([]);

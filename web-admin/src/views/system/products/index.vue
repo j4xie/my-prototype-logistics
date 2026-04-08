@@ -157,6 +157,13 @@ const formData = reactive<Partial<ProductType>>({
   notes: ''
 });
 
+// P1-NEW-2: 产品大类=成品时隐藏"商务信息"组 (客户需求 1567-1572s: 成品不展示, 原辅料才展示)
+const visibleExtendedFields = computed<FieldConfig[]>(() =>
+  formData.productCategory === 'FINISHED_PRODUCT'
+    ? productExtendedFields.filter(f => f.group !== '商务信息')
+    : productExtendedFields
+);
+
 // 客户下拉列表
 const customers = ref<{ id: string; name: string }[]>([]);
 
@@ -723,7 +730,7 @@ function handleAiFill(params: Record<string, unknown>) {
         <!-- 扩展字段 (动态渲染，添加新字段只需修改 productExtendedFields 数组) -->
         <el-divider content-position="left">扩展信息</el-divider>
         <DynamicEntityForm
-          :fields="productExtendedFields"
+          :fields="visibleExtendedFields"
           :model-value="formData as Record<string, unknown>"
           @update:model-value="Object.assign(formData, $event)"
           :columns="2"

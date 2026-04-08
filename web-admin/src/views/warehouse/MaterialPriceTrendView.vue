@@ -10,6 +10,11 @@ import type { ECharts } from 'echarts/core';
 // ---------- auth ----------
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
+// P1-NEW-3: 仓库角色隐藏价格字段 (客户需求 4907-4925s: 商业机密, 仓库看不到价格)
+const isWarehouseOnly = computed(() => {
+  const role = authStore.currentRole;
+  return role === 'warehouse_manager' || role === 'warehouse_worker';
+});
 
 // ---------- state ----------
 const loading = ref(false);
@@ -286,14 +291,14 @@ onBeforeUnmount(() => {
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="当前均价" width="130" align="right">
+        <el-table-column v-if="!isWarehouseOnly" label="当前均价" width="130" align="right">
           <template #default="{ row }">
             <span class="price-value">
               {{ formatPrice(row.movingAvgPrice ?? row.unitPrice) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="最近入库价" width="130" align="right">
+        <el-table-column v-if="!isWarehouseOnly" label="最近入库价" width="130" align="right">
           <template #default="{ row }">
             {{ formatPrice(row.unitPrice) }}
           </template>
