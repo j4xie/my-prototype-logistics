@@ -32,7 +32,20 @@ public interface ProductTypeService {
      * 获取产品类型列表（分页）
       */
     PageResponse<ProductTypeDTO> getProductTypes(String factoryId, PageRequest pageRequest);
-     /**
+
+    /**
+     * 获取产品类型列表 — 支持按 productCategory 过滤 (V3 P0-2 修复).
+     * 客户原话 (会议 1503-1510s): "选成品但能看到原料" — 此前 productCategory 参数被忽略.
+     *
+     * @param factoryId        工厂 ID
+     * @param productCategory  产品大类 (FINISHED_PRODUCT/RAW_MATERIAL/PACKAGING/SEASONING/CUSTOMER_MATERIAL),
+     *                         null 或空字符串 → 不过滤 (兼容老调用)
+     * @param keyword          关键词 (搜索 name/code), 可空
+     */
+    PageResponse<ProductTypeDTO> getProductTypes(String factoryId, String productCategory,
+                                                  String keyword, PageRequest pageRequest);
+
+    /**
      * 获取所有激活的产品类型
       */
     List<ProductTypeDTO> getActiveProductTypes(String factoryId);

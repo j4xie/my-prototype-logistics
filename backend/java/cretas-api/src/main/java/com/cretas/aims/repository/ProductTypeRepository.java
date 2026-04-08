@@ -54,6 +54,23 @@ public interface ProductTypeRepository extends JpaRepository<ProductType, String
     Page<ProductType> searchProductTypes(@Param("factoryId") String factoryId,
                                          @Param("keyword") String keyword,
                                          Pageable pageable);
+
+    /**
+     * V3 P0-2 修复 (Apr 7) — 按产品大类隔离查询.
+     * 客户原话 (会议 1503-1510s): "选成品但能看到原料" — 此前 Service 完全忽略
+     * productCategory 参数, 4 个 tab 共享同一份数据.
+     */
+    Page<ProductType> findByFactoryIdAndProductCategory(String factoryId, String productCategory, Pageable pageable);
+
+    /** 按工厂 + 大类 + 关键词搜索 (兼顾过滤 + 搜索两种场景) */
+    @Query("SELECT p FROM ProductType p WHERE p.factoryId = :factoryId " +
+           "AND p.productCategory = :productCategory AND " +
+           "(LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           " LOWER(p.code) LIKE LOWER(CONCAT(:keyword, '%')))")
+    Page<ProductType> searchByFactoryIdAndProductCategory(@Param("factoryId") String factoryId,
+                                                          @Param("productCategory") String productCategory,
+                                                          @Param("keyword") String keyword,
+                                                          Pageable pageable);
      /**
      * 检查产品代码是否存在
       */

@@ -217,8 +217,15 @@ public class ProductTypeServiceImpl implements ProductTypeService {
 
     @Override
     public PageResponse<ProductTypeDTO> getProductTypes(String factoryId, PageRequest pageRequest) {
-        log.info("获取产品类型列表: factoryId={}, page={}, size={}",
-                factoryId, pageRequest.getPage(), pageRequest.getSize());
+        // 兼容老调用 — 不传 productCategory / keyword
+        return getProductTypes(factoryId, null, null, pageRequest);
+    }
+
+    @Override
+    public PageResponse<ProductTypeDTO> getProductTypes(String factoryId, String productCategory,
+                                                         String keyword, PageRequest pageRequest) {
+        log.info("获取产品类型列表: factoryId={}, productCategory={}, keyword={}, page={}, size={}",
+                factoryId, productCategory, keyword, pageRequest.getPage(), pageRequest.getSize());
 
         org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPage() - 1,
@@ -226,7 +233,22 @@ public class ProductTypeServiceImpl implements ProductTypeService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<ProductType> page = productTypeRepository.findByFactoryId(factoryId, pageable);
+        // V3 P0-2 修复 — 按 productCategory 真正隔离查询
+        boolean hasCategory = productCategory != null && !productCategory.trim().isEmpty();
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+
+        Page<ProductType> page;
+        if (hasCategory && hasKeyword) {
+            page = productTypeRepository.searchByFactoryIdAndProductCategory(
+                    factoryId, productCategory, keyword, pageable);
+        } else if (hasCategory) {
+            page = productTypeRepository.findByFactoryIdAndProductCategory(factoryId, productCategory, pageable);
+        } else if (hasKeyword) {
+            page = productTypeRepository.searchProductTypes(factoryId, keyword, pageable);
+        } else {
+            page = productTypeRepository.findByFactoryId(factoryId, pageable);
+        }
+
         List<ProductTypeDTO> dtos = page.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());

@@ -149,18 +149,26 @@ public class ProductTypeController {
 
     /**
      * 获取产品类型列表
+     *
+     * V3 P0-2 修复 (Apr 7) — 加 productCategory 参数支持按大类隔离查询.
+     * 客户原话 (会议 1503-1510s): "选成品但能看到原料" — 此前后端 Service
+     * 完全忽略前端传的 productCategory 参数, 4 个 tab 共享同一份数据.
      */
     @GetMapping
-    @Operation(summary = "获取产品类型列表", description = "分页获取产品类型列表")
+    @Operation(summary = "获取产品类型列表", description = "分页获取产品类型列表, 支持按大类和关键词过滤")
     public ApiResponse<PageResponse<ProductTypeDTO>> getProductTypes(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam(required = false) @Parameter(description = "产品大类: FINISHED_PRODUCT/RAW_MATERIAL/PACKAGING/SEASONING/CUSTOMER_MATERIAL") String productCategory,
+            @RequestParam(required = false) @Parameter(description = "关键词 (搜索 name/code)") String keyword,
             @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
             @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
-        log.info("获取产品类型列表: factoryId={}, page={}, size={}", factoryId, page, size);
+        log.info("获取产品类型列表: factoryId={}, productCategory={}, keyword={}, page={}, size={}",
+                factoryId, productCategory, keyword, page, size);
         PageRequest pageRequest = new PageRequest();
         pageRequest.setPage(page);
         pageRequest.setSize(size);
-        PageResponse<ProductTypeDTO> result = productTypeService.getProductTypes(factoryId, pageRequest);
+        PageResponse<ProductTypeDTO> result = productTypeService.getProductTypes(
+                factoryId, productCategory, keyword, pageRequest);
         return ApiResponse.success(result);
     }
 
