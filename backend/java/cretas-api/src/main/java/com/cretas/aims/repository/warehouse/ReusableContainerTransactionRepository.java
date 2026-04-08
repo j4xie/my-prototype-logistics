@@ -34,12 +34,17 @@ public interface ReusableContainerTransactionRepository
            "-SUM(t.quantity) as inUseQuantity " +
            "FROM ReusableContainerTransaction t " +
            "WHERE t.factoryId = :factoryId AND t.customerId IS NOT NULL " +
-           "AND t.transactionType IN (com.cretas.aims.entity.warehouse.ReusableContainerTransaction.TransactionType.SHIP_OUT, " +
-           "com.cretas.aims.entity.warehouse.ReusableContainerTransaction.TransactionType.RETURN_IN, " +
-           "com.cretas.aims.entity.warehouse.ReusableContainerTransaction.TransactionType.LOSS) " +
+           "AND t.transactionType IN :types " +
            "GROUP BY t.customerId, t.customerName, t.containerId " +
            "HAVING -SUM(t.quantity) > 0")
-    List<CustomerContainerBalance> findCustomerBalances(@Param("factoryId") String factoryId);
+    List<CustomerContainerBalance> findCustomerBalances(
+            @Param("factoryId") String factoryId,
+            @Param("types") List<TransactionType> types);
+
+    default List<CustomerContainerBalance> findCustomerBalances(String factoryId) {
+        return findCustomerBalances(factoryId,
+                List.of(TransactionType.SHIP_OUT, TransactionType.RETURN_IN, TransactionType.LOSS));
+    }
 
     interface CustomerContainerBalance {
         String getCustomerId();
