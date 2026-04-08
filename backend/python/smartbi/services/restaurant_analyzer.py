@@ -398,7 +398,10 @@ class RestaurantAnalyzer:
             store_count = df[store_col].nunique()
         analysis_mode = "chain" if store_count >= 3 else "single"
 
-        quadrant = self._menu_quadrant(df, product_col, actual_col, qty_single_col)
+        # 改进 11 fix (Week 3.2): 把 qty_combo_col 也传进去, 合并单卖 + 套餐内销量
+        # 背景: 青花椒数据中 "招牌青花椒味(单人份)" 在单卖列 345 份 + 套餐子商品列 304 份,
+        # 原逻辑只用 qty_single_col, 套餐内销量 被完全忽略, menu quadrant 数据失真.
+        quadrant = self._menu_quadrant(df, product_col, actual_col, qty_single_col, qty_combo_col)
         # profitMedian is actually unit_price median (no cost data → not true profit)
         price_median = quadrant.get("profitMedian", 0)
 
@@ -490,13 +493,30 @@ class RestaurantAnalyzer:
         self, df: pd.DataFrame,
         product_col: Optional[str], actual_col: Optional[str],
         qty_single_col: Optional[str],
+        qty_combo_col: Optional[str] = None,  # 改进 11 (Week 3.2): 套餐内销量合并
     ) -> Dict[str, Any]:
         empty = {"items": [], "qtyMedian": 0, "profitMedian": 0,
                  "summary": {"starCount": 0, "plowCount": 0, "puzzleCount": 0, "dogCount": 0}}
         if not product_col or not actual_col:
             return empty
 
+        # 改进 11 fix: 如果 qty_combo_col 存在, 先算合并数量列 (单卖 + 套餐内) 再 groupby.
+        # 原逻辑只用 qty_single, 套餐子商品销量被丢弃导致 menu quadrant 数据失真.
+        # 青花椒真实数据证据: "招牌青花椒味(单人份)" 单卖 345 + 套餐内 304 = 649 真实销量.
         qty_col = qty_single_col
+        if qty_col and qty_combo_col and qty_combo_col in df.columns:
+            # 合并前先确保 numeric
+            df = df.copy()
+            df["_merged_qty"] = (
+                pd.to_numeric(df[qty_col], errors="coerce").fillna(0)
+                + pd.to_numeric(df[qty_combo_col], errors="coerce").fillna(0)
+            )
+            qty_col = "_merged_qty"
+            logger.debug(
+                f"_menu_quadrant (改进11): merged qty_single ({qty_single_col}) "
+                f"+ qty_combo ({qty_combo_col}) into _merged_qty"
+            )
+
         if qty_col:
             item_df = df.groupby(product_col).agg(
                 total_revenue=pd.NamedAgg(column=actual_col, aggfunc="sum"),

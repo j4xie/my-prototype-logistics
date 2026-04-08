@@ -1,0 +1,317 @@
+# 餐饮类目均价 (BOM 80% 三层学习的 Layer 1 默认值)
+#
+# 用途:
+#   bom_resolver.py 在客户没有上传月度采购数据时, 用此文件作为初始 COGS 估算.
+#   客户上传后, Layer A (CategoryPriceCalibrator) 会用真实数据自动校准, 写入
+#   restaurant_category_price_calibrated 表覆盖此默认值.
+#
+# 数据来源:
+#   - 中国饭店协会 2024 年度行业报告
+#   - 海底捞/呷哺呷哺/九毛九 2024 年报
+#   - 餐宝典 NCBD 2024 餐饮成本结构白皮书
+#   - .claude/agent-team-outputs/2026-03-12_restaurant-industry-data-sources.md (33 份整理)
+#
+# 精度说明:
+#   - 基于行业基准, 单店实际可能 ±15% 偏差
+#   - 第一次校准 (3 个月) 后精度升到 ±10%
+#   - 12 个月后精度收敛到 ±6-8% (Layer A 物理上限)
+
+domain: restaurant
+last_updated: 2026-04-08
+expected_accuracy_pp: 15.0  # 初始精度 ±15 个百分点
+
+categories:
+  # ── 火锅 ─────────────────────────────────────────
+  火锅:
+    锅底:
+      avg_price: 12.0
+      unit: 元/锅
+      range: [8, 18]
+      source: 海底捞 2024 年报 + 呷哺呷哺 2024 年报
+      notes: 牛油锅底成本明显高于清汤/番茄
+
+    肉类涮品:
+      avg_price: 28.0
+      unit: 元/份
+      range: [22, 42]
+      source: 中国饭店协会 / 餐宝典
+      notes: 牛羊肉为主, 不含和牛/雪花等高端品类
+
+    海鲜涮品:
+      avg_price: 35.0
+      unit: 元/份
+      range: [25, 50]
+      notes: 虾滑/鱼丸/活鲜, 鱼类波动大
+
+    叶菜涮品:
+      avg_price: 8.0
+      unit: 元/份
+      range: [6, 12]
+      notes: 包括 '叶菜组' = 油麦菜/茼蒿/菠菜/生菜/娃娃菜...
+
+    菌菇涮品:
+      avg_price: 10.0
+      unit: 元/份
+      range: [8, 15]
+      notes: 金针菇/香菇/杏鲍菇/茶树菇/平菇...
+
+    豆制品:
+      avg_price: 6.0
+      unit: 元/份
+      range: [4, 9]
+      notes: 豆腐皮/千页豆腐/腐竹/豆腐...
+
+    主食:
+      avg_price: 5.0
+      unit: 元/份
+      range: [3, 8]
+      notes: 米饭/面条/年糕/土豆粉
+
+    饮料:
+      avg_price: 4.0
+      unit: 元/份
+      range: [2, 8]
+      notes: 自助饮料/瓶装水/可乐/啤酒 (酒精类毛利不同)
+
+  # ── 鱼类餐饮 (青花椒所属子行业) ─────────────────
+  鱼类餐饮:
+    主鱼:
+      avg_price: 38.0
+      unit: 元/斤
+      range: [28, 55]
+      notes: 花鲢/草鱼/清江鱼/江团等. 价格随季节波动 ±20%
+
+    配菜:
+      avg_price: 8.0
+      unit: 元/份
+      range: [5, 14]
+      notes: 鱼锅伴侣 — 娃娃菜/豆腐皮/金针菇/莴笋/年糕
+
+    主食:
+      avg_price: 5.0
+      unit: 元/份
+      range: [3, 7]
+
+    甜品冰品:
+      avg_price: 9.0
+      unit: 元/份
+      range: [6, 14]
+      notes: 红糖冰粉/手工冰粉/双皮奶/糍粑
+
+    招牌主菜:
+      avg_price: 30.0
+      unit: 元/份
+      range: [22, 45]
+      notes: 招牌青花椒鱼/烤鱼煲/酸菜鱼
+
+  # ── 快餐 ─────────────────────────────────────────
+  快餐:
+    主食:
+      avg_price: 6.5
+      unit: 元/份
+      range: [5, 9]
+      notes: 米饭/面条/煎饼/包子
+
+    肉菜:
+      avg_price: 18.0
+      unit: 元/份
+      range: [12, 25]
+
+    素菜:
+      avg_price: 8.0
+      unit: 元/份
+      range: [5, 12]
+
+    汤品:
+      avg_price: 6.0
+      unit: 元/份
+      range: [4, 9]
+
+    饮品:
+      avg_price: 4.0
+      unit: 元/份
+      range: [2, 8]
+
+  # ── 烧烤 ─────────────────────────────────────────
+  烧烤:
+    肉串:
+      avg_price: 4.5
+      unit: 元/串
+      range: [2, 8]
+      notes: 羊肉/牛肉/鸡肉串
+
+    海鲜:
+      avg_price: 28.0
+      unit: 元/份
+      range: [18, 50]
+
+    蔬菜:
+      avg_price: 6.0
+      unit: 元/份
+      range: [4, 10]
+
+    主食:
+      avg_price: 8.0
+      unit: 元/份
+      range: [5, 14]
+      notes: 烤馒头/烤红薯/炒饭/炒面
+
+    啤酒:
+      avg_price: 12.0
+      unit: 元/瓶
+      range: [8, 25]
+
+  # ── 西餐 ─────────────────────────────────────────
+  西餐:
+    主菜:
+      avg_price: 88.0
+      unit: 元/份
+      range: [55, 168]
+      notes: 牛排/三文鱼/羊排, 进口食材波动大
+
+    意面披萨:
+      avg_price: 65.0
+      unit: 元/份
+      range: [42, 98]
+
+    沙拉:
+      avg_price: 38.0
+      unit: 元/份
+      range: [25, 58]
+
+    汤品:
+      avg_price: 28.0
+      unit: 元/份
+      range: [18, 45]
+
+    甜品:
+      avg_price: 32.0
+      unit: 元/份
+      range: [22, 48]
+
+    酒水:
+      avg_price: 58.0
+      unit: 元/份
+      range: [28, 168]
+      notes: 葡萄酒/香槟/特调, 利润率最高品类
+
+  # ── 日料 ─────────────────────────────────────────
+  日料:
+    寿司:
+      avg_price: 28.0
+      unit: 元/份
+      range: [18, 58]
+
+    刺身:
+      avg_price: 88.0
+      unit: 元/份
+      range: [55, 168]
+      notes: 三文鱼/金枪鱼/北极贝, 高保鲜成本
+
+    天妇罗:
+      avg_price: 38.0
+      unit: 元/份
+      range: [25, 58]
+
+    日式主食:
+      avg_price: 32.0
+      unit: 元/份
+      range: [22, 48]
+      notes: 鳗鱼饭/猪排饭/拉面
+
+    日式酒水:
+      avg_price: 38.0
+      unit: 元/份
+      range: [22, 88]
+
+  # ── 牛肉面 ───────────────────────────────────────
+  牛肉面:
+    招牌主食:
+      avg_price: 18.0
+      unit: 元/碗
+      range: [12, 28]
+
+    配菜:
+      avg_price: 6.0
+      unit: 元/份
+      range: [4, 12]
+
+    饮品:
+      avg_price: 4.0
+      unit: 元/份
+      range: [2, 8]
+
+  # ── 中式海鲜 ─────────────────────────────────────
+  中式海鲜:
+    活鲜:
+      avg_price: 128.0
+      unit: 元/斤
+      range: [55, 268]
+      notes: 龙虾/螃蟹/鲍鱼, 价格波动剧烈
+
+    冻品:
+      avg_price: 48.0
+      unit: 元/份
+      range: [28, 88]
+
+    配菜:
+      avg_price: 12.0
+      unit: 元/份
+      range: [8, 18]
+
+  # ── 咖啡 ─────────────────────────────────────────
+  咖啡:
+    咖啡饮品:
+      avg_price: 22.0
+      unit: 元/杯
+      range: [15, 38]
+
+    甜品:
+      avg_price: 18.0
+      unit: 元/份
+      range: [12, 28]
+
+    轻食:
+      avg_price: 28.0
+      unit: 元/份
+      range: [18, 45]
+
+  # ── 奶茶 ─────────────────────────────────────────
+  奶茶:
+    招牌奶茶:
+      avg_price: 16.0
+      unit: 元/杯
+      range: [10, 28]
+
+    水果茶:
+      avg_price: 18.0
+      unit: 元/杯
+      range: [12, 28]
+
+    小食:
+      avg_price: 12.0
+      unit: 元/份
+      range: [8, 18]
+
+  # ── 餐饮连锁 (兜底默认) ──────────────────────────
+  餐饮连锁:
+    主菜:
+      avg_price: 32.0
+      unit: 元/份
+      range: [18, 58]
+      notes: 通用菜品 fallback, 当 sub_sector 未识别时使用
+
+    配菜:
+      avg_price: 12.0
+      unit: 元/份
+      range: [6, 22]
+
+    主食:
+      avg_price: 6.0
+      unit: 元/份
+      range: [3, 12]
+
+    饮品:
+      avg_price: 6.0
+      unit: 元/份
+      range: [2, 18]

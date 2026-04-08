@@ -1,0 +1,1231 @@
+<script setup lang="ts">
+/**
+ * SmartBI 餐饮 V2 Dashboard — 邓总救命组合 (Week 3.5)
+ *
+ * 渲染 RestaurantAnalyzerV2 的 5 sections:
+ *   1. Executive Summary (摘要 + 关键建议)
+ *   2. 财务指标卡片 (food/labor/cost_rigidity)
+ *   3. 诊断列表 (DiagnosticsEngine 输出)
+ *   4. 对标预警列表 (BenchmarkAlertEngine 输出, 含年度影响)
+ *   5. 渠道毛利率表格 (ChannelMarginCalculator, 含 cogs_source 透明度)
+ *   6. 命名归一统计 (MenuNormalizer)
+ *
+ * 数据流:
+ *   用户选择 upload → POST /restaurant-analytics-v2/{id} → V2.analyze() → 渲染
+ */
+import { computed, onMounted, ref } from 'vue';
+import { useAuthStore } from '@/store/modules/auth';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import {
+  Refresh,
+  TrendCharts,
+  WarningFilled,
+  CircleCheckFilled,
+  InfoFilled,
+  Money,
+  DataAnalysis,
+} from '@element-plus/icons-vue';
+import { getUploadHistory, type UploadHistoryItem } from '@/api/smartbi/upload';
+import {
+  computeRestaurantAnalyticsV2,
+  getRestaurantAnalyticsV2,
+  type V2UnifiedReport,
+  type V2AnalyzePayload,
+  type FinancialData,
+  type Diagnosis,
+  type BenchmarkAlert,
+  type ChannelMarginRow,
+  // Week 4 types
+  type StorePnlOnePager,
+  type DiningHeatmap,
+  type StoredValueDependency,
+  type LongTailSku,
+  type ReviewAnalysis,
+  type BomLayerStatus,
+} from '@/api/smartbi/restaurant-v2';
+
+const authStore = useAuthStore();
+const factoryId = computed(() => authStore.factoryId);
+
+// ── State ──────────────────────────────────────────
+const uploads = ref<UploadHistoryItem[]>([]);
+const selectedUploadId = ref<number | null>(null);
+const loading = ref(false);
+const report = ref<V2UnifiedReport | null>(null);
+const lastError = ref<string>('');
+const performanceInfo = ref<{ totalSeconds: number; posRows: number } | null>(null);
+
+// Financial data (可选, 用户填)
+const showFinancialForm = ref(false);
+const financialCurrent = ref({
+  revenue: 0,
+  food_cost: 0,
+  labor_cost: 0,
+  rent: 0,
+});
+const financialPrevious = ref({
+  revenue: 0,
+  food_cost: 0,
+  labor_cost: 0,
+  rent: 0,
+});
+const subSector = ref<string>('火锅');
+const storeName = ref<string>('');
+const period = ref<string>('2026-02');
+
+// 邓总 demo 快捷填写
+function fillDengHuoguoDemo() {
+  financialCurrent.value = {
+    revenue: 731047.52,
+    food_cost: 335212.75,
+    labor_cost: 237660.0,
+    rent: 57328.0,
+  };
+  financialPrevious.value = {
+    revenue: 1390503.28,
+    food_cost: 578603.27,
+    labor_cost: 323805.0,
+    rent: 57324.0,
+  };
+  subSector.value = '火锅';
+  storeName.value = '鼎鲜火锅·义乌';
+  period.value = '2026-02';
+  ElMessage.success('已填入邓总火锅 2026-02 真实 P&L 数据');
+}
+
+// ── Lifecycle ──────────────────────────────────────
+onMounted(async () => {
+  await loadUploads();
+});
+
+async function loadUploads() {
+  try {
+    const response = await getUploadHistory(factoryId.value || 'F001');
+    uploads.value = response.data || [];
+    if (uploads.value.length > 0) {
+      selectedUploadId.value = uploads.value[0].id;
+    }
+  } catch (e: any) {
+    ElMessage.error(`加载 upload 列表失败: ${e.message}`);
+  }
+}
+
+// ── Core: 触发 V2 分析 ─────────────────────────────
+async function runAnalysis(force: boolean = false) {
+  if (!selectedUploadId.value) {
+    ElMessage.warning('请先选择一个上传的 Excel');
+    return;
+  }
+
+  loading.value = true;
+  lastError.value = '';
+  report.value = null;
+  performanceInfo.value = null;
+
+  try {
+    const payload: V2AnalyzePayload = {
+      sub_sector: subSector.value,
+      store_name: storeName.value || undefined,
+      period: period.value,
+    };
+
+    // 只有当 current revenue 有值时才带财务数据
+    if (financialCurrent.value.revenue > 0) {
+      const financial: FinancialData = {
+        current: { ...financialCurrent.value },
+        monthly_revenue: financialCurrent.value.revenue,
+      };
+      if (financialPrevious.value.revenue > 0) {
+        financial.previous = { ...financialPrevious.value };
+      }
+      payload.financial_data = financial;
+    }
+
+    const response = await computeRestaurantAnalyticsV2(
+      selectedUploadId.value,
+      payload,
+      force
+    );
+
+    if (response.success && response.data) {
+      report.value = response.data;
+      if (response.performance) {
+        performanceInfo.value = {
+          totalSeconds: response.performance.totalSeconds,
+          posRows: response.performance.posRows,
+        };
+      }
+      if (response.cached) {
+        ElMessage.info('已使用缓存结果, 点"重新计算"强制更新');
+      } else {
+        ElMessage.success(
+          `V2 分析完成 (${response.performance?.posRows || 0} 行, ${response.performance?.totalSeconds || 0}s)`
+        );
+      }
+    } else {
+      lastError.value = response.message || '分析失败';
+      ElMessage.error(lastError.value);
+    }
+  } catch (e: any) {
+    lastError.value = String(e?.message || e);
+    ElMessage.error(`分析异常: ${lastError.value}`);
+  } finally {
+    loading.value = false;
+  }
+}
+
+// ── Computed helpers ───────────────────────────────
+
+const executiveSummary = computed(() => report.value?.executiveSummary || []);
+const financialMetrics = computed(() => report.value?.sections?.financialMetrics);
+const diagnostics = computed<Diagnosis[]>(
+  () => report.value?.sections?.diagnostics || []
+);
+const benchmarkAlerts = computed<BenchmarkAlert[]>(
+  () => report.value?.sections?.benchmarkAlerts || []
+);
+const channelMargin = computed(() => report.value?.sections?.channelMargin);
+const menuNormalization = computed(() => report.value?.sections?.menuNormalization);
+
+// Week 4 sections
+const storePnlOnePager = computed<StorePnlOnePager | undefined>(
+  () => report.value?.sections?.storePnlOnePager
+);
+const diningHeatmap = computed<DiningHeatmap | undefined>(
+  () => report.value?.sections?.diningHeatmap
+);
+const storedValueDependency = computed<StoredValueDependency | undefined>(
+  () => report.value?.sections?.storedValueDependency
+);
+const longTailSku = computed<LongTailSku | undefined>(
+  () => report.value?.sections?.longTailSku
+);
+const reviewAnalysis = computed<ReviewAnalysis | undefined>(
+  () => report.value?.sections?.reviewAnalysis
+);
+const bomLayerStatus = computed<BomLayerStatus | undefined>(
+  () => report.value?.sections?.bomLayerStatus
+);
+
+function headlineColorToTag(color?: string): string {
+  if (color === 'red') return 'danger';
+  if (color === 'yellow') return 'warning';
+  return 'success';
+}
+
+function trendDirectionLabel(direction?: string): string {
+  if (direction === 'sharp_decline') return '🔴 急剧下滑';
+  if (direction === 'declining') return '🟡 缓慢下滑';
+  if (direction === 'rising') return '📈 上升';
+  if (direction === 'stable') return '✅ 稳定';
+  return '—';
+}
+
+function severityTagType(severity: string): string {
+  if (severity === 'critical' || severity === 'red') return 'danger';
+  if (severity === 'warning' || severity === 'yellow') return 'warning';
+  return 'info';
+}
+
+function formatPercent(v?: number): string {
+  if (v === null || v === undefined) return '—';
+  if (Math.abs(v) <= 1) return `${(v * 100).toFixed(2)}%`;
+  return `${v.toFixed(2)}%`;
+}
+
+function formatCurrency(v?: number): string {
+  if (v === null || v === undefined) return '—';
+  return `¥${v.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`;
+}
+</script>
+
+<template>
+  <div class="restaurant-v2-dashboard">
+    <!-- Header -->
+    <el-card class="header-card" shadow="hover">
+      <template #header>
+        <div class="header-title">
+          <el-icon><DataAnalysis /></el-icon>
+          <span>餐饮 SmartBI V2 — 邓总救命组合</span>
+          <el-tag type="success" size="small">Week 2+3</el-tag>
+        </div>
+      </template>
+
+      <div class="header-controls">
+        <el-form :inline="true" label-width="90px">
+          <el-form-item label="选择数据">
+            <el-select
+              v-model="selectedUploadId"
+              placeholder="选择上传的 Excel"
+              style="width: 320px"
+            >
+              <el-option
+                v-for="u in uploads"
+                :key="u.id"
+                :label="`${u.fileName || u.originalName || 'upload'} (${u.id})`"
+                :value="u.id"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="子行业">
+            <el-select v-model="subSector" style="width: 140px">
+              <el-option label="火锅" value="火锅" />
+              <el-option label="鱼类餐饮" value="鱼类餐饮" />
+              <el-option label="快餐" value="快餐" />
+              <el-option label="烧烤" value="烧烤" />
+              <el-option label="西餐" value="西餐" />
+              <el-option label="日料" value="日料" />
+              <el-option label="牛肉面" value="牛肉面" />
+              <el-option label="中式海鲜" value="中式海鲜" />
+              <el-option label="咖啡" value="咖啡" />
+              <el-option label="奶茶" value="奶茶" />
+              <el-option label="餐饮连锁" value="餐饮连锁" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="门店">
+            <el-input
+              v-model="storeName"
+              placeholder="例: 鼎鲜火锅·义乌"
+              style="width: 200px"
+            />
+          </el-form-item>
+
+          <el-form-item label="期间">
+            <el-input v-model="period" placeholder="2026-02" style="width: 110px" />
+          </el-form-item>
+
+          <el-form-item>
+            <el-button
+              type="primary"
+              :loading="loading"
+              @click="runAnalysis(false)"
+              :disabled="!selectedUploadId"
+            >
+              <el-icon><TrendCharts /></el-icon> 跑 V2 分析
+            </el-button>
+            <el-button
+              :loading="loading"
+              @click="runAnalysis(true)"
+              :disabled="!selectedUploadId"
+            >
+              <el-icon><Refresh /></el-icon> 强制重算
+            </el-button>
+            <el-button @click="showFinancialForm = !showFinancialForm">
+              {{ showFinancialForm ? '收起财务' : '填财务数据' }}
+            </el-button>
+          </el-form-item>
+        </el-form>
+
+        <!-- Financial data form (optional) -->
+        <el-collapse-transition>
+          <div v-if="showFinancialForm" class="financial-form">
+            <el-alert type="info" :closable="false" style="margin-bottom: 12px">
+              <template #default>
+                填财务数据后, 系统能跑成本弹性指数 + 对标预警 + 诊断. 不填则只做渠道毛利率 + 命名归一.
+                <el-button link type="primary" @click="fillDengHuoguoDemo">
+                  一键填入邓总火锅 demo 数据
+                </el-button>
+              </template>
+            </el-alert>
+
+            <el-row :gutter="16">
+              <el-col :span="12">
+                <h4>当期财务 (Current)</h4>
+                <el-form label-width="90px" size="small">
+                  <el-form-item label="营业收入">
+                    <el-input-number
+                      v-model="financialCurrent.revenue"
+                      :min="0"
+                      :controls="false"
+                      style="width: 180px"
+                    />
+                  </el-form-item>
+                  <el-form-item label="食材成本">
+                    <el-input-number
+                      v-model="financialCurrent.food_cost"
+                      :min="0"
+                      :controls="false"
+                      style="width: 180px"
+                    />
+                  </el-form-item>
+                  <el-form-item label="人力成本">
+                    <el-input-number
+                      v-model="financialCurrent.labor_cost"
+                      :min="0"
+                      :controls="false"
+                      style="width: 180px"
+                    />
+                  </el-form-item>
+                  <el-form-item label="房租">
+                    <el-input-number
+                      v-model="financialCurrent.rent"
+                      :min="0"
+                      :controls="false"
+                      style="width: 180px"
+                    />
+                  </el-form-item>
+                </el-form>
+              </el-col>
+              <el-col :span="12">
+                <h4>上期财务 (Previous) — 用于 cost_rigidity</h4>
+                <el-form label-width="90px" size="small">
+                  <el-form-item label="营业收入">
+                    <el-input-number
+                      v-model="financialPrevious.revenue"
+                      :min="0"
+                      :controls="false"
+                      style="width: 180px"
+                    />
+                  </el-form-item>
+                  <el-form-item label="食材成本">
+                    <el-input-number
+                      v-model="financialPrevious.food_cost"
+                      :min="0"
+                      :controls="false"
+                      style="width: 180px"
+                    />
+                  </el-form-item>
+                  <el-form-item label="人力成本">
+                    <el-input-number
+                      v-model="financialPrevious.labor_cost"
+                      :min="0"
+                      :controls="false"
+                      style="width: 180px"
+                    />
+                  </el-form-item>
+                  <el-form-item label="房租">
+                    <el-input-number
+                      v-model="financialPrevious.rent"
+                      :min="0"
+                      :controls="false"
+                      style="width: 180px"
+                    />
+                  </el-form-item>
+                </el-form>
+              </el-col>
+            </el-row>
+          </div>
+        </el-collapse-transition>
+      </div>
+    </el-card>
+
+    <!-- Error -->
+    <el-alert
+      v-if="lastError"
+      type="error"
+      :closable="false"
+      :title="lastError"
+      style="margin-top: 16px"
+    />
+
+    <!-- Report sections -->
+    <template v-if="report">
+      <!-- Executive Summary -->
+      <el-card class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#409EFF"><InfoFilled /></el-icon>
+            <span>执行摘要 (Executive Summary)</span>
+            <el-tag v-if="performanceInfo" size="small" type="info">
+              {{ performanceInfo.posRows.toLocaleString() }} 行, {{ performanceInfo.totalSeconds }}s
+            </el-tag>
+          </div>
+        </template>
+        <ul class="summary-list">
+          <li v-for="(line, idx) in executiveSummary" :key="idx" class="summary-item">
+            {{ line }}
+          </li>
+          <li v-if="executiveSummary.length === 0" class="summary-empty">
+            无告警 (数据可能不足或健康状态)
+          </li>
+        </ul>
+      </el-card>
+
+      <!-- Financial Metrics 卡片 -->
+      <el-card v-if="financialMetrics" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#F56C6C"><Money /></el-icon>
+            <span>财务指标 (Financial Metrics)</span>
+          </div>
+        </template>
+
+        <el-row :gutter="16" class="metrics-row">
+          <el-col :span="6">
+            <div class="metric-card">
+              <div class="metric-label">营业收入</div>
+              <div class="metric-value">{{ formatCurrency(financialMetrics.revenue) }}</div>
+              <div v-if="financialMetrics.revenueChangePct !== null && financialMetrics.revenueChangePct !== undefined" class="metric-delta">
+                环比 {{ formatPercent(financialMetrics.revenueChangePct) }}
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="metric-card">
+              <div class="metric-label">食材成本率</div>
+              <div class="metric-value">{{ formatPercent(financialMetrics.foodCostRatio) }}</div>
+              <div v-if="financialMetrics.foodCostChangePct !== null && financialMetrics.foodCostChangePct !== undefined" class="metric-delta">
+                环比 {{ formatPercent(financialMetrics.foodCostChangePct) }}
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="metric-card">
+              <div class="metric-label">人力成本率</div>
+              <div class="metric-value">{{ formatPercent(financialMetrics.laborCostRatio) }}</div>
+              <div v-if="financialMetrics.laborCostChangePct !== null && financialMetrics.laborCostChangePct !== undefined" class="metric-delta">
+                环比 {{ formatPercent(financialMetrics.laborCostChangePct) }}
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="metric-card" :class="{ 'metric-critical': (financialMetrics.costRigidity ?? 1) < 0.5 }">
+              <div class="metric-label">成本弹性指数</div>
+              <div class="metric-value">
+                {{ financialMetrics.costRigidity !== null && financialMetrics.costRigidity !== undefined
+                  ? financialMetrics.costRigidity.toFixed(3)
+                  : '—' }}
+              </div>
+              <div class="metric-delta">健康 ≥ 0.85</div>
+            </div>
+          </el-col>
+        </el-row>
+      </el-card>
+
+      <!-- Diagnostics -->
+      <el-card v-if="diagnostics.length > 0" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#E6A23C"><WarningFilled /></el-icon>
+            <span>诊断引擎 (Diagnostics) — {{ diagnostics.length }} 项</span>
+          </div>
+        </template>
+        <el-collapse>
+          <el-collapse-item
+            v-for="(d, idx) in diagnostics"
+            :key="idx"
+            :name="idx"
+          >
+            <template #title>
+              <el-tag :type="severityTagType(d.severity)" size="small">
+                {{ d.severity.toUpperCase() }}
+              </el-tag>
+              <span class="diag-name">{{ d.metricNameZh }}</span>
+              <span class="diag-value">实测 {{ d.actualValue }}</span>
+              <span class="diag-status">{{ d.status }}</span>
+            </template>
+            <div class="diag-body">
+              <p>{{ d.descriptionZh }}</p>
+              <div v-if="d.suggestionZh && d.suggestionZh.length > 0">
+                <h5>建议:</h5>
+                <ul>
+                  <li v-for="(s, si) in d.suggestionZh" :key="si">{{ s }}</li>
+                </ul>
+              </div>
+              <div v-if="d.subSectorNotes && d.subSectorNotes.length > 0">
+                <h5>子行业提示:</h5>
+                <ul>
+                  <li v-for="(n, ni) in d.subSectorNotes" :key="ni">{{ n }}</li>
+                </ul>
+              </div>
+              <div v-if="d.playbookId" class="diag-playbook">
+                Playbook: <code>{{ d.playbookId }}</code>
+              </div>
+            </div>
+          </el-collapse-item>
+        </el-collapse>
+      </el-card>
+
+      <!-- Benchmark Alerts -->
+      <el-card v-if="benchmarkAlerts.length > 0" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#F56C6C"><WarningFilled /></el-icon>
+            <span>对标预警 (Benchmark Alerts) — {{ benchmarkAlerts.length }} 项</span>
+          </div>
+        </template>
+        <div v-for="(a, idx) in benchmarkAlerts" :key="idx" class="alert-item">
+          <el-tag :type="severityTagType(a.severity)" size="small">
+            {{ a.severity === 'red' ? '🔴 严重' : a.severity === 'yellow' ? '🟡 警戒' : 'ℹ️ 信息' }}
+          </el-tag>
+          <div class="alert-content">
+            <div class="alert-message">{{ a.messageZh }}</div>
+            <div v-if="a.estimatedYearlyImpact" class="alert-impact">
+              💰 估算年度影响: <strong>{{ formatCurrency(Math.abs(a.estimatedYearlyImpact)) }}</strong>
+            </div>
+            <div v-if="a.actionHint" class="alert-action">建议: {{ a.actionHint }}</div>
+          </div>
+        </div>
+      </el-card>
+
+      <!-- Channel Margin Table -->
+      <el-card v-if="channelMargin && channelMargin.rows.length > 0" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#67C23A"><TrendCharts /></el-icon>
+            <span>渠道毛利率 (Channel Margin) — 整体 {{ formatPercent(channelMargin.overallGrossMarginPct) }}</span>
+          </div>
+        </template>
+
+        <el-table :data="channelMargin.rows" stripe>
+          <el-table-column prop="channel" label="渠道" width="130" />
+          <el-table-column prop="revenue" label="营收" width="130">
+            <template #default="{ row }">{{ formatCurrency(row.revenue) }}</template>
+          </el-table-column>
+          <el-table-column prop="orderCount" label="订单数" width="90" />
+          <el-table-column prop="commissionRate" label="抽佣率" width="90">
+            <template #default="{ row }">{{ formatPercent(row.commissionRate) }}</template>
+          </el-table-column>
+          <el-table-column prop="commissionAmount" label="抽佣金额" width="120">
+            <template #default="{ row }">{{ formatCurrency(row.commissionAmount) }}</template>
+          </el-table-column>
+          <el-table-column prop="cogs" label="COGS" width="130">
+            <template #default="{ row }">{{ formatCurrency(row.cogs) }}</template>
+          </el-table-column>
+          <el-table-column prop="cogsSource" label="COGS 来源" width="140">
+            <template #default="{ row }">
+              <el-tag size="small" :type="row.cogsSource === 'manual_override' ? 'success' : 'info'">
+                {{ row.cogsSource }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="grossProfit" label="毛利" width="130">
+            <template #default="{ row }">{{ formatCurrency(row.grossProfit) }}</template>
+          </el-table-column>
+          <el-table-column prop="grossMarginPct" label="毛利率" width="100">
+            <template #default="{ row }">
+              <strong :class="{ 'text-danger': row.grossMarginPct < 0.15 }">
+                {{ formatPercent(row.grossMarginPct) }}
+              </strong>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <el-alert
+          v-for="(advice, idx) in channelMargin.adviceZh"
+          :key="idx"
+          :title="advice"
+          type="info"
+          :closable="false"
+          style="margin-top: 8px"
+        />
+      </el-card>
+
+      <!-- ═══ Week 4 新增 sections ═══════════════════════ -->
+
+      <!-- Week 4.1: Store P&L One Pager (销售杀手级单页) -->
+      <el-card v-if="storePnlOnePager" class="section-card pnl-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#F56C6C"><Money /></el-icon>
+            <span>单店 P&L 一页纸 (Store P&L One Pager)</span>
+            <el-tag size="small" type="info">Week 4.1</el-tag>
+          </div>
+        </template>
+        <div class="pnl-headline" :class="`headline-${storePnlOnePager.headlineColor}`">
+          {{ storePnlOnePager.emoji }} {{ storePnlOnePager.headline }}
+        </div>
+        <div v-if="storePnlOnePager.topInsights && storePnlOnePager.topInsights.length > 0" class="pnl-insights">
+          <h5>关键洞察:</h5>
+          <ul>
+            <li v-for="(ins, idx) in storePnlOnePager.topInsights" :key="idx">{{ ins }}</li>
+          </ul>
+        </div>
+        <div v-if="storePnlOnePager.topRecommendations && storePnlOnePager.topRecommendations.length > 0" class="pnl-recommendations">
+          <h5>立即执行:</h5>
+          <ul>
+            <li v-for="(rec, idx) in storePnlOnePager.topRecommendations" :key="idx">{{ rec }}</li>
+          </ul>
+        </div>
+      </el-card>
+
+      <!-- Week 4.2: Dining Heatmap (营业时段热力图) -->
+      <el-card v-if="diningHeatmap && diningHeatmap.cells.length > 0" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#E6A23C"><TrendCharts /></el-icon>
+            <span>营业时段热力图 (Dining Heatmap)</span>
+            <el-tag size="small" type="info">Week 4.2</el-tag>
+          </div>
+        </template>
+
+        <el-row :gutter="16" style="margin-bottom: 12px">
+          <el-col :span="6">
+            <el-statistic :value="diningHeatmap.totalRevenue" title="总营收" :precision="0" prefix="¥" />
+          </el-col>
+          <el-col :span="6">
+            <el-statistic :value="diningHeatmap.totalOrders" title="总订单" />
+          </el-col>
+          <el-col :span="6">
+            <el-statistic :value="diningHeatmap.avgHourlyRevenue" title="小时均收" :precision="0" prefix="¥" />
+          </el-col>
+          <el-col :span="6">
+            <el-statistic :value="diningHeatmap.peakOffPeakRatio" title="峰谷比" :precision="1" suffix="x" />
+          </el-col>
+        </el-row>
+
+        <h5>餐段营收占比:</h5>
+        <el-table :data="diningHeatmap.mealPeriods" size="small" stripe>
+          <el-table-column prop="period" label="餐段" width="100" />
+          <el-table-column prop="hourRange" label="时段">
+            <template #default="{ row }">{{ row.hourRange[0] }}:00 - {{ row.hourRange[1] % 24 }}:00</template>
+          </el-table-column>
+          <el-table-column prop="revenue" label="营收" width="130">
+            <template #default="{ row }">{{ formatCurrency(row.revenue) }}</template>
+          </el-table-column>
+          <el-table-column prop="orderCount" label="订单数" width="100" />
+          <el-table-column prop="revenuePct" label="占比" width="100">
+            <template #default="{ row }">{{ formatPercent(row.revenuePct) }}</template>
+          </el-table-column>
+          <el-table-column prop="avgTicket" label="客单" width="100">
+            <template #default="{ row }">{{ formatCurrency(row.avgTicket) }}</template>
+          </el-table-column>
+        </el-table>
+
+        <el-row :gutter="16" style="margin-top: 16px">
+          <el-col :span="12">
+            <h5>🔥 TOP 5 高峰时段</h5>
+            <ul class="period-list">
+              <li v-for="(p, idx) in diningHeatmap.topPeakHours" :key="'peak-' + idx">
+                {{ p.emoji }} {{ p.dayLabel }} {{ p.hour }}:00 —
+                <strong>{{ formatCurrency(p.revenue) }}</strong>
+                ({{ p.orderCount }} 单)
+              </li>
+            </ul>
+          </el-col>
+          <el-col :span="12">
+            <h5>💤 TOP 5 低谷时段</h5>
+            <ul class="period-list">
+              <li v-for="(p, idx) in diningHeatmap.bottomOffPeakHours" :key="'off-' + idx">
+                {{ p.emoji }} {{ p.dayLabel }} {{ p.hour }}:00 —
+                {{ formatCurrency(p.revenue) }}
+                ({{ p.orderCount }} 单)
+              </li>
+            </ul>
+          </el-col>
+        </el-row>
+
+        <el-alert
+          v-for="(ins, idx) in diningHeatmap.insights"
+          :key="'ins-' + idx"
+          :title="ins"
+          type="info"
+          :closable="false"
+          style="margin-top: 6px"
+        />
+      </el-card>
+
+      <!-- Week 4.3a: Stored Value Dependency -->
+      <el-card v-if="storedValueDependency" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#F56C6C"><WarningFilled /></el-icon>
+            <span>充卡依赖度 (Stored Value Dependency)</span>
+            <el-tag :type="severityTagType(storedValueDependency.severity)" size="small">
+              {{ storedValueDependency.severity.toUpperCase() }}
+            </el-tag>
+            <el-tag size="small" type="info">Week 4.3</el-tag>
+          </div>
+        </template>
+        <div class="sv-message">{{ storedValueDependency.messageZh }}</div>
+        <el-row :gutter="16" style="margin-top: 12px">
+          <el-col :span="8">
+            <el-statistic :value="storedValueDependency.storedValueGiveaway" title="充卡赠送" :precision="0" prefix="¥" />
+          </el-col>
+          <el-col :span="8">
+            <el-statistic :value="storedValueDependency.dependencyPct * 100" title="占营收比例" :precision="2" suffix="%" />
+          </el-col>
+          <el-col :span="8">
+            <el-statistic
+              v-if="storedValueDependency.chargeToRevenueRatio !== null && storedValueDependency.chargeToRevenueRatio !== undefined"
+              :value="(storedValueDependency.chargeToRevenueRatio || 0) * 100"
+              title="新充占营收"
+              :precision="1"
+              suffix="%"
+            />
+          </el-col>
+        </el-row>
+        <ul v-if="storedValueDependency.warnings.length > 0" class="sv-warnings">
+          <li v-for="(w, idx) in storedValueDependency.warnings" :key="idx">⚠️ {{ w }}</li>
+        </ul>
+        <ul v-if="storedValueDependency.recommendations.length > 0" class="sv-recs">
+          <li v-for="(r, idx) in storedValueDependency.recommendations" :key="idx">📋 {{ r }}</li>
+        </ul>
+      </el-card>
+
+      <!-- Week 4.3b: Long Tail SKU -->
+      <el-card v-if="longTailSku && longTailSku.totalSkuCount > 0" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#909399"><InfoFilled /></el-icon>
+            <span>长尾 SKU 识别 — 建议下架 {{ longTailSku.recommendedDelistCount }} 个</span>
+            <el-tag size="small" type="info">Week 4.3</el-tag>
+          </div>
+        </template>
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-statistic :value="longTailSku.totalSkuCount" title="总 SKU 数" />
+          </el-col>
+          <el-col :span="6">
+            <el-statistic :value="longTailSku.top20PctSkusContribute * 100" title="TOP 20% 贡献" :precision="1" suffix="%" />
+          </el-col>
+          <el-col :span="6">
+            <el-statistic :value="longTailSku.recommendedDelistCount" title="建议下架" />
+          </el-col>
+          <el-col :span="6">
+            <el-statistic :value="longTailSku.estimatedCostSaving" title="年省成本" :precision="0" prefix="¥" />
+          </el-col>
+        </el-row>
+
+        <el-table
+          v-if="longTailSku.lowEfficiencySkus.length > 0"
+          :data="longTailSku.lowEfficiencySkus.slice(0, 15)"
+          size="small"
+          stripe
+          style="margin-top: 12px"
+        >
+          <el-table-column prop="name" label="SKU" />
+          <el-table-column prop="quantity" label="销量" width="90" />
+          <el-table-column prop="revenue" label="营收" width="120">
+            <template #default="{ row }">{{ formatCurrency(row.revenue) }}</template>
+          </el-table-column>
+          <el-table-column prop="score" label="综合分" width="100">
+            <template #default="{ row }">{{ (row.score * 100).toFixed(1) }}%</template>
+          </el-table-column>
+          <el-table-column prop="recommendation" label="建议" width="140">
+            <template #default="{ row }">
+              <el-tag :type="row.recommendation.includes('下架') ? 'danger' : 'warning'" size="small">
+                {{ row.recommendation }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="reason" label="原因" />
+        </el-table>
+
+        <el-alert
+          v-for="(rec, idx) in longTailSku.recommendations"
+          :key="'lt-rec-' + idx"
+          :title="rec"
+          type="info"
+          :closable="false"
+          style="margin-top: 6px"
+        />
+      </el-card>
+
+      <!-- Week 4.5: Review Analysis -->
+      <el-card v-if="reviewAnalysis && reviewAnalysis.totalReviews > 0" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#67C23A"><CircleCheckFilled /></el-icon>
+            <span>
+              大众点评分析 — {{ reviewAnalysis.totalReviews }} 评论, 平均 {{ reviewAnalysis.avgRating.toFixed(2) }} 星
+            </span>
+            <el-tag size="small" type="info">Week 4.5</el-tag>
+          </div>
+        </template>
+
+        <div v-if="reviewAnalysis.ratingTrend" class="review-trend">
+          <strong>趋势: </strong>{{ trendDirectionLabel(reviewAnalysis.ratingTrend.direction) }}
+          <span class="trend-delta">
+            ({{ reviewAnalysis.ratingTrend.earliestAvg.toFixed(2) }} →
+            {{ reviewAnalysis.ratingTrend.latestAvg.toFixed(2) }},
+            delta {{ reviewAnalysis.ratingTrend.totalDelta > 0 ? '+' : '' }}{{ reviewAnalysis.ratingTrend.totalDelta.toFixed(2) }})
+          </span>
+        </div>
+
+        <el-row :gutter="16" style="margin-top: 12px">
+          <el-col :span="12">
+            <h5>🌟 TOP 客户口中的招牌 (真正的好菜)</h5>
+            <ul class="dish-list">
+              <li v-for="d in reviewAnalysis.topPraisedDishes" :key="'p-' + d.dishName">
+                <strong>{{ d.dishName }}</strong> —
+                {{ d.mentionCount }} 次提及,
+                {{ (d.positiveRate * 100).toFixed(0) }}% 好评
+              </li>
+            </ul>
+          </el-col>
+          <el-col :span="12">
+            <h5>👎 差评集中 (需检查/下架)</h5>
+            <ul class="dish-list">
+              <li v-for="d in reviewAnalysis.topComplainedDishes" :key="'c-' + d.dishName">
+                <strong>{{ d.dishName }}</strong> —
+                差评 {{ d.negativeCount }} 次,
+                好评率仅 {{ (d.positiveRate * 100).toFixed(0) }}%
+              </li>
+            </ul>
+          </el-col>
+        </el-row>
+
+        <div v-if="reviewAnalysis.hiddenGems && reviewAnalysis.hiddenGems.length > 0">
+          <h5>💎 潜力菜 (低曝光高好评)</h5>
+          <ul class="dish-list">
+            <li v-for="d in reviewAnalysis.hiddenGems" :key="'g-' + d.dishName">
+              <strong>{{ d.dishName }}</strong> —
+              {{ d.mentionCount }} 次提及,
+              {{ (d.positiveRate * 100).toFixed(0) }}% 好评
+            </li>
+          </ul>
+        </div>
+
+        <el-alert
+          v-for="(alert, idx) in reviewAnalysis.riskAlerts"
+          :key="'r-alert-' + idx"
+          :title="alert"
+          type="warning"
+          :closable="false"
+          style="margin-top: 6px"
+        />
+      </el-card>
+
+      <!-- Week 4.4: BOM Layer Status -->
+      <el-card v-if="bomLayerStatus" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#409EFF"><DataAnalysis /></el-icon>
+            <span>BOM 精度层级 (BOM Layer Status)</span>
+            <el-tag size="small" type="info">Week 4.4</el-tag>
+          </div>
+        </template>
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <div class="metric-card">
+              <div class="metric-label">当前层级</div>
+              <div class="metric-value">{{ bomLayerStatus.currentLayer }}</div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="metric-card">
+              <div class="metric-label">当前精度</div>
+              <div class="metric-value">±{{ bomLayerStatus.currentAccuracyPp }}%</div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="metric-card">
+              <div class="metric-label">Layer 2 SKU 表单</div>
+              <div class="metric-value">{{ bomLayerStatus.layer2SkuCount }}</div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="metric-card">
+              <div class="metric-label">Layer 3 月采购数据</div>
+              <div class="metric-value">{{ bomLayerStatus.layer3PeriodCount }}</div>
+            </div>
+          </el-col>
+        </el-row>
+        <el-alert
+          :title="bomLayerStatus.upgradeHint"
+          type="info"
+          :closable="false"
+          style="margin-top: 12px"
+        />
+      </el-card>
+
+      <!-- ═══ Week 2-3 existing sections ═══════════════ -->
+
+      <!-- Menu Normalization -->
+      <el-card v-if="menuNormalization" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#909399"><CircleCheckFilled /></el-icon>
+            <span>命名归一 (Menu Normalization)</span>
+          </div>
+        </template>
+        <el-row :gutter="16">
+          <el-col :span="8">
+            <el-statistic :value="menuNormalization.originalUniqueCount" title="原始 SKU 数" />
+          </el-col>
+          <el-col :span="8">
+            <el-statistic :value="menuNormalization.normalizedUniqueCount" title="归一后 SKU 数" />
+          </el-col>
+          <el-col :span="8">
+            <el-statistic
+              :value="menuNormalization.reductionPct"
+              title="减少百分比 (%)"
+              :precision="2"
+            />
+          </el-col>
+        </el-row>
+        <p class="menu-note">{{ menuNormalization.note }}</p>
+      </el-card>
+    </template>
+
+    <!-- Empty state -->
+    <el-empty
+      v-else-if="!loading"
+      description="选择 upload → 点'跑 V2 分析' → 查看邓总救命组合"
+      style="margin-top: 40px"
+    />
+  </div>
+</template>
+
+<style scoped>
+.restaurant-v2-dashboard {
+  padding: 16px;
+}
+
+.header-card {
+  margin-bottom: 16px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.header-controls {
+  padding: 8px 0;
+}
+
+.financial-form {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+
+.financial-form h4 {
+  margin: 0 0 12px;
+  color: #303133;
+}
+
+.section-card {
+  margin-bottom: 16px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.summary-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.summary-item {
+  margin-bottom: 8px;
+  line-height: 1.6;
+  color: #606266;
+}
+
+.summary-empty {
+  color: #909399;
+  font-style: italic;
+}
+
+.metrics-row {
+  margin-top: 8px;
+}
+
+.metric-card {
+  padding: 16px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  text-align: center;
+  border-left: 3px solid #409eff;
+}
+
+.metric-card.metric-critical {
+  border-left-color: #f56c6c;
+  background: #fef0f0;
+}
+
+.metric-label {
+  color: #909399;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.metric-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.metric-delta {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+}
+
+.diag-name {
+  margin: 0 12px;
+  font-weight: 600;
+}
+
+.diag-value,
+.diag-status {
+  margin-left: 12px;
+  color: #909399;
+  font-size: 13px;
+}
+
+.diag-body {
+  padding: 8px 16px;
+  color: #606266;
+  line-height: 1.7;
+}
+
+.diag-body h5 {
+  margin: 8px 0 4px;
+  color: #303133;
+}
+
+.diag-body ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.diag-playbook {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.alert-item:last-child {
+  border-bottom: none;
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-message {
+  color: #303133;
+  line-height: 1.6;
+}
+
+.alert-impact {
+  color: #f56c6c;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.alert-action {
+  color: #909399;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.text-danger {
+  color: #f56c6c;
+}
+
+.menu-note {
+  margin-top: 16px;
+  color: #909399;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Week 4 specific styles */
+.pnl-card {
+  border-left: 4px solid #F56C6C;
+}
+
+.pnl-headline {
+  font-size: 20px;
+  font-weight: 700;
+  padding: 16px;
+  border-radius: 4px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.headline-red {
+  background: #fef0f0;
+  color: #f56c6c;
+  border: 1px solid #fbc4c4;
+}
+
+.headline-yellow {
+  background: #fdf6ec;
+  color: #e6a23c;
+  border: 1px solid #f5dab1;
+}
+
+.headline-green {
+  background: #f0f9eb;
+  color: #67c23a;
+  border: 1px solid #c2e7b0;
+}
+
+.pnl-insights,
+.pnl-recommendations {
+  margin-top: 12px;
+}
+
+.pnl-insights h5,
+.pnl-recommendations h5 {
+  margin: 0 0 4px;
+  color: #303133;
+}
+
+.pnl-insights ul,
+.pnl-recommendations ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #606266;
+  line-height: 1.7;
+}
+
+.period-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #606266;
+  line-height: 1.8;
+}
+
+.sv-message {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+
+.sv-warnings,
+.sv-recs {
+  margin-top: 12px;
+  padding-left: 20px;
+  line-height: 1.7;
+  color: #606266;
+}
+
+.review-trend {
+  font-size: 14px;
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  color: #303133;
+}
+
+.trend-delta {
+  color: #909399;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.dish-list {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.8;
+  color: #606266;
+}
+</style>

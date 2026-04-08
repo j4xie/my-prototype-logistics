@@ -25,6 +25,9 @@ from smartbi.database.models import (
 from services.food_industry_detector import detect_restaurant_chain
 from services.restaurant_analyzer import RestaurantAnalyzer
 
+# V2 编排层 (Week 2+ 邓总救命组合)
+from services.restaurant.analyzer import RestaurantAnalyzerV2
+
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
@@ -415,3 +418,367 @@ def compute_restaurant_analytics(upload_id: int, request: Request, force: bool =
     except Exception as e:
         logger.error(f"compute_restaurant_analytics({upload_id}) failed: {e}", exc_info=True)
         return {"success": False, "message": "Failed to compute restaurant analytics"}
+
+
+# ═══════════════════════════════════════════════════════════════════
+# V2 Endpoints — 邓总救命组合 (Week 2+)
+# ═══════════════════════════════════════════════════════════════════
+#
+# V2 编排层调用 RestaurantAnalyzerV2, 产出 5 sections:
+#   - menuNormalization (改进 1 菜品命名归一 apply)
+#   - channelMargin (改进 6 渠道毛利率 with 4 层 COGS)
+#   - financialMetrics (cost_rigidity + 财务率)
+#   - diagnostics (诊断引擎)
+#   - benchmarkAlerts (对标预警, 估算年度影响)
+#
+# 跟 V1 (compute_restaurant_analytics) 的区别:
+#   - V1: POS only, 输出 menuQuadrant + storeComparison + categoryBreakdown 等
+#   - V2: POS + financial_data (可选), 输出诊断/对标预警/渠道毛利率
+#   - 两者并存, 不互相替代
+# ═══════════════════════════════════════════════════════════════════
+
+
+def _load_v2_from_cache(db, upload_id: int) -> Optional[Dict[str, Any]]:
+    """读 V2 缓存 (用 analysis_type='restaurant_analytics_v2' 区分 V1)"""
+    cache = (
+        db.query(SmartBiPgAnalysisResult)
+        .filter(
+            SmartBiPgAnalysisResult.upload_id == upload_id,
+            SmartBiPgAnalysisResult.analysis_type == "restaurant_analytics_v2",
+        )
+        .order_by(SmartBiPgAnalysisResult.created_at.desc())
+        .first()
+    )
+    if cache is None:
+        return None
+    return {
+        "success": True,
+        "cached": True,
+        "data": cache.analysis_result,
+        "cachedAt": cache.created_at.isoformat() if cache.created_at else None,
+    }
+
+
+def _save_v2_cache(
+    db,
+    upload_id: int,
+    factory_id: str,
+    result: Dict[str, Any],
+    is_new: bool = True,
+) -> None:
+    """保存 V2 缓存"""
+    try:
+        if is_new:
+            existing = (
+                db.query(SmartBiPgAnalysisResult)
+                .filter(
+                    SmartBiPgAnalysisResult.upload_id == upload_id,
+                    SmartBiPgAnalysisResult.analysis_type == "restaurant_analytics_v2",
+                )
+                .first()
+            )
+            if existing:
+                existing.analysis_result = result
+                existing.created_at = datetime.utcnow()
+            else:
+                cache = SmartBiPgAnalysisResult(
+                    upload_id=upload_id,
+                    factory_id=factory_id,
+                    analysis_type="restaurant_analytics_v2",
+                    analysis_result=result,
+                    created_at=datetime.utcnow(),
+                )
+                db.add(cache)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        logger.warning(f"V2 cache race condition for upload {upload_id}")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to save V2 cache for upload {upload_id}: {e}", exc_info=True)
+
+
+@router.get("/restaurant-analytics-v2/{upload_id}")
+def get_restaurant_analytics_v2(upload_id: int, request: Request):
+    """V2 缓存读取 — 没算过返回 {success: False, cached: False}"""
+    if not is_postgres_enabled():
+        return {"success": False, "message": "PostgreSQL not enabled"}
+    try:
+        with get_db_context() as db:
+            error = _check_upload_ownership(db, upload_id, request)
+            if error:
+                return error
+
+            cached = _load_v2_from_cache(db, upload_id)
+            if cached:
+                return cached
+            return {"success": False, "cached": False, "message": "尚未计算 V2 分析, 请 POST 触发"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"get_restaurant_analytics_v2({upload_id}) failed: {e}", exc_info=True)
+        return {"success": False, "message": "Failed to get V2 analytics"}
+
+
+@router.post("/restaurant-analytics-v2/{upload_id}")
+async def compute_restaurant_analytics_v2(
+    upload_id: int,
+    request: Request,
+    force: bool = False,
+):
+    """V2 计算 — POS DataFrame + 可选 financial_data + Week 4 inputs → unified report
+
+    POST Body (JSON, 全部可选):
+        {
+            "sub_sector": "火锅",
+            "store_id": "DENG-001",
+            "store_name": "鼎鲜火锅·义乌",
+            "period": "2026-02",
+            "financial_data": {
+                "current": {
+                    "revenue": 731047.52,
+                    "food_cost": 335212.75,
+                    "labor_cost": 237660.00,
+                    "rent": 57328.00,
+                    "net_profit": -49724.24,
+                    "stored_value_giveaway": 51680.61,   // Week 4.3 充卡赠送
+                    "stored_value_charge": 200000         // Week 4.3 充卡新充
+                },
+                "previous": { ... },
+                "monthly_revenue": 731047.52
+            },
+            // Week 4.5: 大众点评评论分析
+            "reviews": [
+                {"id": 1, "rating": 4.5, "content": "招牌毛肚很嫩", "created_at": "2026-02-01"},
+                ...
+            ],
+            // Week 4.4: BOM Layer 2 — TOP 20 SKU 主料成本表
+            "sku_forms": [
+                {
+                    "skuName": "招牌毛肚", "category": "招牌主菜",
+                    "totalCogsAmount": 18.50, "sellingPrice": 58.0,
+                    "ingredients": [
+                        {"name": "毛肚", "cost": 14.0, "weightG": 180}
+                    ]
+                }
+            ],
+            // Week 4.4: BOM Layer 3 — 月度采购汇总
+            "monthly_purchases": [
+                {
+                    "period": "2026-02",
+                    "totalPurchase": 335212.75,
+                    "totalRevenue": 731047.52,
+                    "categoryBreakdown": {"肉类": 180000, "海鲜": 55000}
+                }
+            ]
+        }
+
+    Returns: {
+        "success": True,
+        "cached": False,
+        "data": {
+            "sections": {
+                "menuNormalization": {...},
+                "channelMargin": {...},
+                "financialMetrics": {...},
+                "diagnostics": [...],
+                "benchmarkAlerts": [...],
+                // Week 4 新增 sections
+                "storePnlOnePager": {...},         // Week 4.1
+                "diningHeatmap": {...},            // Week 4.2
+                "storedValueDependency": {...},    // Week 4.3a
+                "longTailSku": {...},              // Week 4.3b
+                "reviewAnalysis": {...},           // Week 4.5
+                "bomLayerStatus": {...}            // Week 4.4
+            },
+            "executiveSummary": [...],
+            "summary": {...},
+            "warnings": [...]
+        }
+    }
+    """
+    if not is_postgres_enabled():
+        return {"success": False, "message": "PostgreSQL not enabled"}
+
+    # 读 POST body
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    sub_sector = body.get("sub_sector") or "餐饮连锁"
+    store_id = body.get("store_id")
+    store_name = body.get("store_name")
+    period = body.get("period") or "current"
+    financial_data = body.get("financial_data")
+
+    # Week 4 新增输入 (全部可选)
+    reviews = body.get("reviews")  # list[dict] — 大众点评评论
+    sku_forms = body.get("sku_forms")  # list[dict] — TOP 20 SKU 主料成本表
+    monthly_purchases = body.get("monthly_purchases")  # list[dict] — 月度采购汇总
+
+    try:
+        with get_db_context() as db:
+            # Upload 权限检查 (跟 V1 一致)
+            upload = (
+                db.query(SmartBiPgExcelUpload.id, SmartBiPgExcelUpload.factory_id)
+                .filter(SmartBiPgExcelUpload.id == upload_id)
+                .first()
+            )
+            if not upload:
+                raise HTTPException(
+                    status_code=404, detail=f"Upload {upload_id} not found"
+                )
+            factory_id = upload[1] or "unknown"
+
+            token_factory = getattr(request.state, "factory_id", None)
+            auth_method = getattr(request.state, "auth_method", None)
+            if (
+                auth_method != "internal"
+                and token_factory
+                and upload[1]
+                and upload[1] != token_factory
+            ):
+                logger.warning(
+                    f"V2 IDOR blocked: user factory={token_factory}, upload factory={upload[1]}"
+                )
+                return {
+                    "success": False,
+                    "message": "Access denied",
+                    "code": "FACTORY_MISMATCH",
+                }
+
+            # 缓存检查
+            if not force:
+                cached = _load_v2_from_cache(db, upload_id)
+                if cached:
+                    return cached
+
+            # 加载 POS 数据
+            t0 = time.perf_counter()
+            df, is_large = _load_upload_df(db, upload_id)
+            t_load = time.perf_counter() - t0
+            logger.info(
+                f"V2 analytics: upload={upload_id}, rows={len(df)}, load={t_load:.3f}s"
+            )
+
+            # 自动子行业检测 (如果 sub_sector 没指定或是默认)
+            if sub_sector == "餐饮连锁":
+                sample = df.head(20).to_dict("records") if len(df) > 0 else None
+                from services.food_industry_detector import detect_food_sub_sector
+
+                detected = detect_food_sub_sector(df.columns.tolist(), sample)
+                if detected:
+                    sub_sector = detected
+                    logger.info(f"V2: auto-detected sub_sector={sub_sector}")
+
+            # Week 4.4 — 把可选的 SKU 表单 + 月度采购注入 managers
+            sku_form_manager = None
+            monthly_calibrator = None
+            if sku_forms or monthly_purchases:
+                from services.restaurant.sku_form_manager import (
+                    SkuFormEntry,
+                    SkuFormIngredient,
+                    SkuFormManager,
+                )
+                from services.restaurant.monthly_purchase_calibrator import (
+                    MonthlyPurchaseCalibrator,
+                    MonthlyPurchaseEntry,
+                )
+
+                if sku_forms:
+                    sku_form_manager = SkuFormManager()
+                    entries = []
+                    for sf in sku_forms:
+                        ingredients = [
+                            SkuFormIngredient(
+                                name=ing.get("name", ""),
+                                cost=float(ing.get("cost", 0)),
+                                weight_g=ing.get("weightG") or ing.get("weight_g"),
+                                unit_price_per_kg=ing.get("unitPricePerKg"),
+                            )
+                            for ing in sf.get("ingredients", [])
+                        ]
+                        entries.append(
+                            SkuFormEntry(
+                                sku_name=sf.get("skuName") or sf.get("sku_name", ""),
+                                category=sf.get("category", ""),
+                                total_cogs_amount=float(sf.get("totalCogsAmount") or sf.get("total_cogs_amount", 0)),
+                                selling_price=sf.get("sellingPrice") or sf.get("selling_price"),
+                                monthly_sales_quantity=sf.get("monthlySalesQuantity") or sf.get("monthly_sales_quantity"),
+                                ingredients=ingredients,
+                                uploaded_by=sf.get("uploadedBy") or sf.get("uploaded_by"),
+                                notes=sf.get("notes"),
+                            )
+                        )
+                    sku_form_manager.upload(factory_id, entries)
+
+                if monthly_purchases:
+                    monthly_calibrator = MonthlyPurchaseCalibrator()
+                    for mp in monthly_purchases:
+                        monthly_calibrator.upload(
+                            MonthlyPurchaseEntry(
+                                factory_id=factory_id,
+                                period=mp.get("period", ""),
+                                total_purchase=float(mp.get("totalPurchase") or mp.get("total_purchase", 0)),
+                                total_revenue=float(mp.get("totalRevenue") or mp.get("total_revenue", 0)),
+                                category_breakdown=mp.get("categoryBreakdown") or mp.get("category_breakdown", {}),
+                                store_id=mp.get("storeId") or mp.get("store_id"),
+                                notes=mp.get("notes"),
+                            )
+                        )
+
+            # 跑 V2.analyze()
+            t1 = time.perf_counter()
+            v2 = RestaurantAnalyzerV2(
+                factory_id=factory_id,
+                sub_sector=sub_sector,
+                db_session=db,
+                sku_form_manager=sku_form_manager,
+                monthly_calibrator=monthly_calibrator,
+            )
+            result = v2.analyze(
+                pos_df=df,
+                financial_data=financial_data,
+                store_id=store_id,
+                store_name=store_name,
+                period=period,
+                reviews=reviews,
+            )
+            t_compute = time.perf_counter() - t1
+
+            # 保存缓存
+            _save_v2_cache(db, upload_id, factory_id, result, is_new=True)
+            t_total = time.perf_counter() - t0
+
+            logger.info(
+                f"V2 analytics done: upload={upload_id}, "
+                f"compute={t_compute:.3f}s, total={t_total:.3f}s, "
+                f"sections={list(result.get('sections', {}).keys())}"
+            )
+
+            resp: Dict[str, Any] = {
+                "success": True,
+                "cached": False,
+                "data": result,
+                "performance": {
+                    "loadSeconds": round(t_load, 3),
+                    "computeSeconds": round(t_compute, 3),
+                    "totalSeconds": round(t_total, 3),
+                    "posRows": len(df),
+                },
+            }
+            if is_large:
+                resp["warning"] = f"数据量较大({len(df)}行), V2 分析基于完整数据完成"
+            return resp
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"compute_restaurant_analytics_v2({upload_id}) failed: {e}", exc_info=True
+        )
+        return {
+            "success": False,
+            "message": f"Failed to compute V2 analytics: {str(e)[:200]}",
+        }

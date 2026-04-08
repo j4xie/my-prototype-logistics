@@ -1,0 +1,172 @@
+# 成本弹性指数偏高 — 邓总救命 playbook
+#
+# 触发条件: cost_rigidity < 0.85 (营收掉了, 人工没跟着掉)
+# 严重程度:
+#   warning: 0.5 <= cost_rigidity < 0.85
+#   critical: cost_rigidity < 0.5
+#
+# 业务背景:
+#   邓总火锅 2026-02 数据: 营收 -47.4% (139万→73万), 人工只 -26.6% (32.4万→23.7万)
+#   弹性指数 = -26.6% / -47.4% = 0.56 (critical)
+#   结果: 经营利润由 +7万 变 -7.07万 (一个月由盈转亏)
+
+diagnosis_code: cost_rigidity_high
+trigger_metric: cost_rigidity
+trigger_condition: "value < 0.85"
+display_name: 成本结构刚性过强
+
+severity_levels:
+  warning:
+    condition: "0.5 <= value < 0.85"
+    label: 弹性偏弱
+    urgency: 建议优化
+    color: yellow
+  critical:
+    condition: "value < 0.5"
+    label: 严重刚性
+    urgency: 立即行动
+    color: red
+
+# ── 诊断检查清单 ────────────────────────────────
+diagnosis_checklist:
+  - question: 营收下降是季节性原因还是经营恶化?
+    if_seasonal: 评估是否在淡季前就该减员
+    if_operational: 紧急执行 P0 重排班 + 营销诊断
+
+  - question: 人工成本结构里全职 vs 兼职比例是多少?
+    if_full_time_high: "全职 >70% 时弹性必然差, 增加兼职比例"
+
+  - question: 是否有最低保底排班合同?
+    if_yes: "标记为'刚性成本', 排查可降部分 (例如取消最低保底, 改弹性排班)"
+
+  - question: 房租/物业等纯固定成本占比是否过高?
+    if_yes: "弹性指数低不全是排班问题, 部分是固定成本结构问题"
+
+# ── 行动方案 ────────────────────────────────────
+action_plans:
+  - id: 1
+    name: 立即重排班
+    priority: P0
+    actions:
+      - 按未来 30 天预测客流, 重新排班全部门店
+      - 把全职兼职比例从当前调到 60% : 40% (或更激进)
+      - 高峰时段保留全职, 低峰时段切换兼职
+      - 评估关闭低客流时段 (例: 下午 14:00-17:00 闭店)
+    expected_impact: 工资占比降 5-10 个百分点, 单月节省 ¥{savings_estimate}
+    timeline: 1 周内执行
+
+  - id: 2
+    name: 营销诊断 (止血)
+    priority: P0
+    actions:
+      - 分析营收下滑根因 (新客 vs 老客 / 堂食 vs 外卖 / 平台评分变化)
+      - 立即启动一次低成本拉新活动 (大众点评/抖音 199-299 套餐)
+      - 联系流失老客做回访问卷
+      - 检查最近 30 天差评, 解决具体客诉
+    expected_impact: 营收止跌, 给排班调整争取时间
+    timeline: 2 周内见效
+
+  - id: 3
+    name: 锁定刚性成本
+    priority: P1
+    actions:
+      - 核对房租/物业/SaaS 合同, 看是否有可降空间 (一般无)
+      - 把所有'看似可变实际刚性'的成本明确标记 (例: 最低保底排班)
+      - 评估能否引入分时计费的水电方案
+    expected_impact: 明确刚性成本占比, 避免误判
+    timeline: 1 个月内完成
+
+  - id: 4
+    name: 启动弹性预警
+    priority: P1
+    actions:
+      - 在 SmartBI 设置每周自动跑 cost_rigidity 检测
+      - 弹性指数连续 2 周 < 0.7 自动推送告警到老板微信
+      - 月度自动出"成本弹性曲线"报告
+    expected_impact: 防止下次再发生 1 个月由盈转亏
+    timeline: 启用后立即生效
+
+# ── 子行业差异化建议 ────────────────────────────
+sub_sector_notes:
+  火锅:
+    - 火锅人工占比行业基准 25-35%, 邓总当前 32.5% 在上限, 应压到 25-28%
+    - 火锅最大的弹性空间是后厨切配人员 (淡季减半很常见)
+    - 海底捞模式 (服务员>厨师) 在淡季弹性很差, 大众火锅模式更灵活
+    - 火锅淡季 (春节后 + 夏季 7-8 月) 是必然的, 应该提前 1 个月就开始减员
+    - 参考海底捞 2024 年报: 淡季员工总数环比 -8% (有央厨承接部分人力)
+
+  快餐:
+    - 快餐人工标准 18-25%, 当前 {current_pct}% 严重过高
+    - 快餐弹性最强 (大量兼职), 调整空间 5-8 个百分点
+    - 检查是否有过度全职化倾向
+
+  烧烤:
+    - 烧烤晚间高峰 + 白天空挡, 全职 >50% 必然弹性差
+    - 改用 4 小时兼职窗口 (17:00-21:00) 可大幅提弹性
+
+  鱼类餐饮:
+    - 与火锅类似, 但鱼类前处理 (杀鱼/切片) 需要稳定人手, 弹性空间略小
+    - 评估是否可以集中切配 (中央厨房模式)
+
+  西餐:
+    - 西餐厨房高度专业化, 人工弹性差是常态
+    - 真正的弹性来自服务员 + 兼职帮厨, 厨师不动
+
+  日料:
+    - 与西餐类似, 寿司师傅刚性
+    - 但侍应/吧台/收银 弹性空间大
+
+# ── 决策树 ──────────────────────────────────────
+decision_tree:
+  root: 弹性指数是否 < 0.5?
+  yes:
+    action: 立即执行 P0 重排班 + P0 营销止血, 同时启动 P1 锁定刚性成本
+    timeline: 7 天内
+
+  no:
+    question: 弹性指数 0.5-0.7?
+    yes:
+      action: 执行 P0 重排班, P1 启动弹性预警
+      timeline: 14 天内
+    no:
+      question: 弹性指数 0.7-0.85?
+      yes:
+        action: 仅启动 P1 弹性预警, 监控趋势
+        timeline: 月度复盘
+      no:
+        action: 弹性健康, 无需行动
+
+# ── 量化收益预估公式 ────────────────────────────
+expected_savings_formula:
+  description: 重排班可节省的人工成本估算
+  formula: |
+    target_labor_pct = sub_sector_median_labor_ratio
+    current_excess_pp = current_labor_pct - target_labor_pct
+    monthly_savings = revenue * (current_excess_pp / 100)
+
+  example_dengs_huoguo:
+    revenue_2feb: 731047.52
+    current_labor_pct: 32.51
+    sub_sector_median: 30.0
+    excess_pp: 2.51
+    monthly_savings_to_median: 18349
+    aggressive_target_pct: 25.0
+    excess_pp_aggressive: 7.51
+    monthly_savings_aggressive: 54896
+    notes: |
+      邓总火锅 2 月数据示例:
+      - 降到行业中位数 30%: 月省 ¥18,349
+      - 降到激进目标 25% (大众火锅模式): 月省 ¥54,896
+      - 当月亏损 ¥49,724, 激进目标可完全弥补亏损
+
+# ── 报告模板 (诊断引擎渲染时填空) ────────────────
+report_template_zh: |
+  您的店铺人工成本未跟随营收下滑同步调整 (弹性指数 {value}, 健康范围 ≥ 0.85).
+  营收变化 {revenue_change_pct}%, 但人工只变化 {labor_change_pct}%,
+  说明排班/兼职比例没有按客流调整, 这是亏损根因.
+
+  当前人工成本占营收 {current_labor_pct}%, 行业基准 {sub_sector_median}%.
+  如果通过重排班降到行业基准, 单月可节省 ¥{monthly_savings_to_median}.
+  如果按激进目标 {aggressive_target_pct}% (大众火锅模式) 优化, 单月可节省 ¥{monthly_savings_aggressive}.
+
+  建议立即执行 P0 重排班 + P0 营销止血, 同时启动 P1 弹性预警自动监控.

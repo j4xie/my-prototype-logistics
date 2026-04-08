@@ -1,0 +1,144 @@
+# 餐饮诊断指标注册表
+#
+# 用途:
+#   shared/diagnostics_engine.py 通过此文件加载所有 metric, 实测对比 benchmark
+#   后触发对应 playbook YAML, 不需要写 Python 代码新增 metric.
+#
+# 设计原则:
+#   - threshold_source 指向 benchmarks/{sub_sector}.yaml 时, 使用子行业 range/median
+#   - threshold_inline 写死时, 适用于跨子行业的通用指标 (例: cost_rigidity)
+#   - higher_is_worse: true 表示数值越高越糟 (例: 食材成本率), false 表示越低越糟 (例: 弹性指数)
+#   - playbook 字段对应 playbooks/{playbook_id}.yaml 文件名 (不含扩展名)
+#
+# 添加新 metric 步骤:
+#   1. 在此文件 metrics: 下加一项
+#   2. 在 playbooks/ 下新建 {playbook_id}.yaml
+#   3. 不需要改任何 Python 代码
+
+domain: restaurant
+last_updated: 2026-04-08
+
+metrics:
+  # ── 已有 4 个 (对应已存在的 4 个 playbook) ────────────
+
+  food_cost_ratio:
+    name_zh: 食材成本率
+    name_en: Food Cost Ratio
+    formula: food_cost / revenue
+    threshold_source: "benchmarks/{sub_sector}.yaml#metrics.food_cost_ratio"
+    higher_is_worse: true
+    playbook: food_cost_ratio_high
+    description_zh: 食材采购成本占营业收入的比例
+
+  labor_cost_ratio:
+    name_zh: 人力成本率
+    name_en: Labor Cost Ratio
+    formula: labor_cost / revenue
+    threshold_source: "benchmarks/{sub_sector}.yaml#metrics.labor_cost_ratio"
+    higher_is_worse: true
+    playbook: labor_cost_ratio_high
+    description_zh: 人力薪资+福利占营业收入的比例
+
+  discount_rate:
+    name_zh: 折扣率
+    name_en: Discount Rate
+    formula: discount_amount / gross_revenue
+    threshold_source: "benchmarks/{sub_sector}.yaml#metrics.discount_rate"
+    higher_is_worse: true
+    playbook: discount_rate_high
+    description_zh: 折扣金额占折前营收的比例
+
+  table_turnover:
+    name_zh: 翻台率
+    name_en: Table Turnover
+    formula: total_orders / table_count
+    threshold_source: "benchmarks/{sub_sector}.yaml#metrics.table_turnover"
+    higher_is_worse: false  # 翻台率越低越糟
+    playbook: table_turnover_low
+    description_zh: 每张餐桌每日的平均使用次数
+
+  # ── 新增 (Week 2 起) ───────────────────────────────
+
+  cost_rigidity:
+    name_zh: 成本弹性指数
+    name_en: Cost Rigidity Index
+    formula: labor_cost_change_pct / revenue_change_pct
+    threshold_inline:
+      healthy: ">= 0.85"
+      warning: ">= 0.5 and < 0.85"
+      critical: "< 0.5"
+    higher_is_worse: false  # 弹性越低越糟 (僵化)
+    playbook: cost_rigidity_high
+    description_zh: 成本随营收变化的弹性系数, 衡量排班/采购是否跟随客流调整
+    requires_temporal: true  # 需要至少 2 个连续月度数据
+    notes: |
+      邓总救命指标. 当营收下滑时, 健康的店应该立即减少兼职/削减采购,
+      让 labor_cost 下滑速度接近 revenue 下滑速度. 弹性 < 0.5 表示成本结构刚性,
+      继续亏损只是时间问题.
+
+  channel_collection_rate:
+    name_zh: 渠道收款率
+    name_en: Channel Collection Rate
+    formula: (revenue - commission) / revenue
+    threshold_inline:
+      healthy: ">= 0.78"
+      warning: ">= 0.70 and < 0.78"
+      critical: "< 0.70"
+    higher_is_worse: false
+    playbook: channel_collection_rate_low
+    description_zh: 扣除平台抽佣后的实际到手率 (不含 COGS)
+    notes: |
+      渠道毛利率的中间产物. BOM MVP 完成后, 此 metric 升级为 channel_gross_margin
+      (再扣 COGS), 给客户真"毛利率".
+
+  channel_gross_margin:
+    name_zh: 渠道毛利率
+    name_en: Channel Gross Margin
+    formula: (revenue - commission - cogs) / revenue
+    threshold_inline:
+      healthy: ">= 0.25"
+      warning: ">= 0.15 and < 0.25"
+      critical: "< 0.15"
+    higher_is_worse: false
+    playbook: channel_margin_low
+    description_zh: 渠道维度的真实毛利率, 含 COGS 扣除
+    requires_cogs: true  # 必须有 BOM 数据 (Layer 1+ 即可)
+    notes: |
+      要求 BomResolver 已配置. 没有 BOM 数据时降级为 channel_collection_rate.
+
+  stored_value_dependency:
+    name_zh: 充卡赠送依赖度
+    name_en: Stored Value Dependency
+    formula: stored_value_giveaway / revenue
+    threshold_inline:
+      healthy: "< 0.05"
+      warning: ">= 0.05 and < 0.10"
+      critical: ">= 0.10"
+    higher_is_worse: true
+    playbook: stored_value_dependency_high
+    description_zh: 充卡赠送金额占营收比例 (隐性折扣)
+
+  delivery_dependency:
+    name_zh: 外卖依赖度
+    name_en: Delivery Channel Dependency
+    formula: delivery_revenue / total_revenue
+    threshold_inline:
+      healthy: "< 0.50"
+      warning: ">= 0.50 and < 0.70"
+      critical: ">= 0.70"
+    higher_is_worse: true
+    playbook: delivery_dependency_high
+    description_zh: 外卖渠道营收占总营收比例 (>70% 高度依赖平台)
+
+  review_score_decline:
+    name_zh: 评分趋势下滑
+    name_en: Review Score Decline
+    formula: (current_5star_pct - prev_5star_pct)
+    threshold_inline:
+      healthy: ">= -0.02"
+      warning: ">= -0.05 and < -0.02"
+      critical: "< -0.05"
+    higher_is_worse: false  # 下滑越多越糟
+    playbook: review_score_decline
+    description_zh: 5 星评价占比的环比变化, < -5pp 触发严重告警
+    requires_temporal: true

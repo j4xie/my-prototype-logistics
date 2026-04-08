@@ -84,6 +84,12 @@ const smartBIRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/smart-bi/WhatIfSimulator.vue'),
         meta: { requiresAuth: true, title: 'What-If模拟', icon: 'TrendCharts', module: 'analytics' },
       },
+      {
+        path: 'restaurant-v2',
+        name: 'SmartBIRestaurantV2',
+        component: () => import('@/views/smart-bi/RestaurantV2Dashboard.vue'),
+        meta: { requiresAuth: true, title: '餐饮 V2 Dashboard', icon: 'DataAnalysis', module: 'analytics' },
+      },
     ],
   },
 ];
