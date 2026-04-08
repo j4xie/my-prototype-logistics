@@ -192,12 +192,12 @@ watch(visible, (v) => {
         <span>已生成 {{ breakdown.length }} 组开票明细</span>
       </div>
 
-      <div v-if="breakdown.length === 0" class="empty-note">
+      <div v-if="breakdown.length === 0 || (breakdown.length === 1 && Number(breakdown[0].taxRate) === 0)" class="empty-note">
         <el-alert
           type="warning"
           :closable="false"
-          title="该订单明细未设置 tax_rate,已按总额生成单张发票"
-          description="演示前请确认销售订单行项目已填入 9% / 13% 税率"
+          title="该订单明细未设置 tax_rate (展示为 0% 其他)"
+          description="请先到销售订单详情设置行项目的税率 (原料 9% / 加工费 13%),再重新开票"
           show-icon
         />
       </div>
