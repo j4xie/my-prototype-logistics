@@ -489,6 +489,32 @@ public class SalesServiceImpl implements SalesService {
         return deliveryRecordRepository.findBySalesOrderId(salesOrderId);
     }
 
+    @Override
+    @Transactional
+    public SalesDeliveryRecord uploadDeliverySignature(String factoryId, String deliveryId,
+                                                        List<String> photoUrls, String signedByName, String remark) {
+        SalesDeliveryRecord record = getDeliveryRecordById(factoryId, deliveryId);
+        // 将 photoUrls 存为简单 JSON 数组字符串 (避免注入 ObjectMapper)
+        String json = "[]";
+        if (photoUrls != null && !photoUrls.isEmpty()) {
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < photoUrls.size(); i++) {
+                if (i > 0) sb.append(",");
+                String url = photoUrls.get(i) == null ? "" : photoUrls.get(i).replace("\\", "\\\\").replace("\"", "\\\"");
+                sb.append("\"").append(url).append("\"");
+            }
+            sb.append("]");
+            json = sb.toString();
+        }
+        record.setSignaturePhotoUrls(json);
+        record.setSignedByName(signedByName);
+        record.setSignedAt(LocalDateTime.now());
+        record.setSignatureRemark(remark);
+        log.info("上传签收凭证: deliveryId={}, 照片数={}, 签收人={}",
+                deliveryId, photoUrls == null ? 0 : photoUrls.size(), signedByName);
+        return deliveryRecordRepository.save(record);
+    }
+
     // ==================== 成品库存 ====================
 
     @Override

@@ -53,6 +53,10 @@ public interface SalesService {
 
     List<SalesDeliveryRecord> getDeliveryRecordsByOrder(String salesOrderId);
 
+    /** P0-NEW-1 上传签收凭证 (照片+签收人+备注) */
+    SalesDeliveryRecord uploadDeliverySignature(String factoryId, String deliveryId,
+                                                 List<String> photoUrls, String signedByName, String remark);
+
     // ==================== 成品库存 ====================
 
     PageResponse<FinishedGoodsBatch> getFinishedGoodsBatches(String factoryId, int page, int size);
