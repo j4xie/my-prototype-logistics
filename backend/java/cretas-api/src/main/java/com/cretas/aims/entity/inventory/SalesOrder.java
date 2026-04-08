@@ -5,9 +5,12 @@ import com.cretas.aims.entity.Customer;
 import com.cretas.aims.entity.Factory;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
+import com.cretas.aims.dto.sales.ExtraFeeItem;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.Formula;
+import org.hibernate.annotations.Type;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -120,6 +123,11 @@ public class SalesOrder extends BaseEntity {
     /** 运费 */
     @Column(name = "shipping_fee", precision = 15, scale = 2)
     private BigDecimal shippingFee;
+
+    /** 其他费用 (装卸费/包装费/...) — JSON 数组 [{name, amount, remark}] */
+    @Type(JsonBinaryType.class)
+    @Column(name = "extra_fees", columnDefinition = "jsonb")
+    private List<ExtraFeeItem> extraFees;
 
     /** 实际发货金额 */
     @Column(name = "actual_shipped_amount", precision = 15, scale = 2)

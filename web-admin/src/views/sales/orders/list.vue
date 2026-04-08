@@ -42,6 +42,7 @@ const form = ref({
   salesperson: '',
   shippingIncluded: false,
   shippingFee: 0,
+  extraFees: [] as Array<{ name: string; amount: number; remark: string }>,
   items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
 });
 const customers = ref<Record<string, unknown>[]>([]);
@@ -182,6 +183,13 @@ function handleEdit(row: Record<string, unknown>) {
     salesperson: String(row.salesperson || ''),
     shippingIncluded: !!row.shippingIncluded,
     shippingFee: Number(row.shippingFee || 0),
+    extraFees: Array.isArray(row.extraFees)
+      ? (row.extraFees as Array<Record<string, unknown>>).map((f) => ({
+          name: String(f.name || ''),
+          amount: Number(f.amount || 0),
+          remark: String(f.remark || ''),
+        }))
+      : [],
     items: Array.isArray(row.items) && row.items.length > 0
       ? row.items.map((item: Record<string, unknown>) => ({
           productTypeId: String(item.productTypeId || item.productType?.id || ''),
@@ -218,9 +226,17 @@ function openCreateDialog() {
     salesperson: '',
     shippingIncluded: false,
     shippingFee: 0,
+    extraFees: [],
     items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
   };
   dialogVisible.value = true;
+}
+
+function addExtraFee() {
+  form.value.extraFees.push({ name: '', amount: 0, remark: '' });
+}
+function removeExtraFee(idx: number) {
+  form.value.extraFees.splice(idx, 1);
 }
 
 function goDetail(id: string) { router.push(`/sales/orders/${id}`); }
@@ -523,6 +539,17 @@ async function submitQuickPayment() {
         <el-form-item label="含运费">
           <el-switch v-model="form.shippingIncluded" />
           <el-input-number v-if="form.shippingIncluded" v-model="form.shippingFee" :min="0" :precision="2" placeholder="运费金额" style="width: 180px; margin-left: 12px" />
+        </el-form-item>
+        <el-form-item label="其他费用">
+          <div style="width: 100%">
+            <div v-for="(fee, idx) in form.extraFees" :key="idx" style="display: flex; gap: 8px; margin-bottom: 6px">
+              <el-input v-model="fee.name" placeholder="费用名称 (如装卸费)" style="width: 200px" />
+              <el-input-number v-model="fee.amount" :min="0" :precision="2" placeholder="金额" style="width: 140px" />
+              <el-input v-model="fee.remark" placeholder="备注" style="flex: 1" />
+              <el-button type="danger" link @click="removeExtraFee(idx)">删除</el-button>
+            </div>
+            <el-button size="small" @click="addExtraFee">+ 添加费用项</el-button>
+          </div>
         </el-form-item>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
         <el-divider>{{ label('product') }}明细</el-divider>

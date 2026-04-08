@@ -1,5 +1,6 @@
 package com.cretas.aims.dto.inventory;
 
+import com.cretas.aims.dto.sales.ExtraFeeItem;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,6 +36,9 @@ public class CreateSalesOrderRequest {
     private Boolean shippingIncluded;
 
     private BigDecimal shippingFee;
+
+    /** 其他费用 (装卸/包装/加急等) */
+    private List<ExtraFeeItem> extraFees;
 
     @Valid
     @NotEmpty(message = "订单行项目不能为空")
