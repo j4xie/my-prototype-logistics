@@ -46,6 +46,10 @@ public class SalesServiceImpl implements SalesService {
     private final com.cretas.aims.service.finance.ArApService arApService;
     private final ApplicationEventPublisher applicationEventPublisher;
 
+    /** P0-13 批次分配校验（可选注入，避免破坏现有构造器）。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.service.sales.SalesDeliveryBatchAllocationService batchAllocationService;
+
     public SalesServiceImpl(SalesOrderRepository salesOrderRepository,
                             SalesOrderItemRepository salesOrderItemRepository,
                             SalesDeliveryRecordRepository deliveryRecordRepository,
@@ -399,6 +403,17 @@ public class SalesServiceImpl implements SalesService {
         SalesDeliveryRecord record = getDeliveryRecordById(factoryId, deliveryId);
         if (record.getStatus() != SalesDeliveryStatus.DRAFT && record.getStatus() != SalesDeliveryStatus.PICKED) {
             throw new BusinessException("只有草稿或已拣货状态的发货单可以发货");
+        }
+
+        // P0-13 强制批次分配校验：发货行必须已完成批次分配才能发货
+        if (batchAllocationService != null) {
+            for (SalesDeliveryItem item : record.getItems()) {
+                String itemIdStr = String.valueOf(item.getId());
+                if (!batchAllocationService.isFullyAllocated(factoryId, itemIdStr)) {
+                    throw new BusinessException("发货行 " + itemIdStr
+                            + "（产品：" + item.getProductName() + "）未完成批次分配，无法确认发货");
+                }
+            }
         }
 
         // FIFO 扣减成品库存
