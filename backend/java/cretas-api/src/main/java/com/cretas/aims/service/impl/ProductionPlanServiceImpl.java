@@ -18,7 +18,9 @@ import com.cretas.aims.entity.ProductionLine;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
+import com.cretas.aims.repository.inventory.SalesOrderItemRepository;
 import com.cretas.aims.entity.inventory.SalesOrder;
+import com.cretas.aims.entity.inventory.SalesOrderItem;
 import com.cretas.aims.service.ProductionPlanService;
 import com.cretas.aims.service.SchedulingService;
 import com.cretas.aims.utils.ExcelUtil;
@@ -63,6 +65,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     private final UserRepository userRepository;
     private final ExcelUtil excelUtil;
     private final SalesOrderRepository salesOrderRepository;
+    private final SalesOrderItemRepository salesOrderItemRepository;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public ProductionPlanServiceImpl(
@@ -79,7 +82,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             ProductionLineRepository productionLineRepository,
             UserRepository userRepository,
             ExcelUtil excelUtil,
-            SalesOrderRepository salesOrderRepository) {
+            SalesOrderRepository salesOrderRepository,
+            SalesOrderItemRepository salesOrderItemRepository) {
         this.productionPlanRepository = productionPlanRepository;
         this.productionBatchRepository = productionBatchRepository;
         this.processTaskRepository = processTaskRepository;
@@ -94,26 +98,58 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         this.userRepository = userRepository;
         this.excelUtil = excelUtil;
         this.salesOrderRepository = salesOrderRepository;
+        this.salesOrderItemRepository = salesOrderItemRepository;
     }
 
     /**
-     * P0-12: 校验销售订单来源,自动回填客户名
+     * P0-12: 校验销售订单行来源 (字段粒度修正),自动回填订单/客户/产品
+     * 客户原话 4216s: "关联销售订单产品 / 客户名称应该自动带出来"
      */
     private void validateAndEnrichSalesOrderSource(String factoryId, CreateProductionPlanRequest request) {
         if (request.getSourceType() != PlanSourceType.CUSTOMER_ORDER) {
             return;
         }
-        if (request.getSourceOrderId() == null || request.getSourceOrderId().isBlank()) {
-            throw new BusinessException("选择客户订单来源时,必须指定关联的销售订单");
+        // 优先使用 sourceOrderItemId (新粒度); 兼容老 sourceOrderId 调用方
+        String itemIdStr = request.getSourceOrderItemId();
+        if (itemIdStr == null || itemIdStr.isBlank()) {
+            if (request.getSourceOrderId() != null && !request.getSourceOrderId().isBlank()) {
+                // 向后兼容: 旧调用只传 sourceOrderId — 仅校验订单, 不回填行
+                SalesOrder so = salesOrderRepository.findById(request.getSourceOrderId())
+                        .orElseThrow(() -> new BusinessException("关联的销售订单不存在: " + request.getSourceOrderId()));
+                if (!factoryId.equals(so.getFactoryId())) {
+                    throw new BusinessException("无权关联其他工厂的销售订单");
+                }
+                if ((request.getSourceCustomerName() == null || request.getSourceCustomerName().isBlank())
+                        && so.getCustomerName() != null) {
+                    request.setSourceCustomerName(so.getCustomerName());
+                }
+                return;
+            }
+            throw new BusinessException("选择客户订单来源时,必须指定关联的销售订单产品行 (sourceOrderItemId)");
         }
-        SalesOrder so = salesOrderRepository.findById(request.getSourceOrderId())
-                .orElseThrow(() -> new BusinessException("关联的销售订单不存在: " + request.getSourceOrderId()));
+
+        Long itemId;
+        try {
+            itemId = Long.parseLong(itemIdStr);
+        } catch (NumberFormatException e) {
+            throw new BusinessException("销售订单行ID格式无效: " + itemIdStr);
+        }
+        SalesOrderItem item = salesOrderItemRepository.findById(itemId)
+                .orElseThrow(() -> new BusinessException("销售订单行不存在或不属于本工厂"));
+        SalesOrder so = salesOrderRepository.findById(item.getSalesOrderId())
+                .orElseThrow(() -> new BusinessException("销售订单行不存在或不属于本工厂"));
         if (!factoryId.equals(so.getFactoryId())) {
-            throw new BusinessException("无权关联其他工厂的销售订单");
+            throw new BusinessException("销售订单行不存在或不属于本工厂");
         }
-        if ((request.getSourceCustomerName() == null || request.getSourceCustomerName().isBlank())
-                && so.getCustomerName() != null) {
+
+        // 自动回填: 订单ID/客户名/产品类型
+        request.setSourceOrderId(so.getId());
+        if (request.getSourceCustomerName() == null || request.getSourceCustomerName().isBlank()) {
             request.setSourceCustomerName(so.getCustomerName());
+        }
+        if ((request.getProductTypeId() == null || request.getProductTypeId().isBlank())
+                && item.getProductTypeId() != null) {
+            request.setProductTypeId(item.getProductTypeId());
         }
     }
 

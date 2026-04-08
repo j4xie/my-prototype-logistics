@@ -91,6 +91,7 @@ public class ProductionPlanMapper {
         dto.setSourceType(plan.getSourceType());
         dto.setSourceTypeDisplayName(plan.getSourceTypeDisplayName());
         dto.setSourceOrderId(plan.getSourceOrderId());
+        dto.setSourceOrderItemId(plan.getSourceOrderItemId());
         dto.setSourceCustomerName(plan.getSourceCustomerName());
         dto.setProcessName(plan.getProcessName());
         dto.setBatchDate(plan.getBatchDate());
@@ -173,6 +174,7 @@ public class ProductionPlanMapper {
         // 设置调度员模块扩展字段
         plan.setSourceType(request.getSourceType() != null ? request.getSourceType() : PlanSourceType.MANUAL);
         plan.setSourceOrderId(request.getSourceOrderId());
+        plan.setSourceOrderItemId(request.getSourceOrderItemId());
         plan.setSourceCustomerName(request.getSourceCustomerName());
         plan.setProcessName(request.getProcessName());
         plan.setBatchDate(request.getBatchDate());
@@ -255,6 +257,9 @@ public class ProductionPlanMapper {
         // 更新调度员模块扩展字段
         if (request.getSourceType() != null) {
             plan.setSourceType(request.getSourceType());
+        }
+        if (request.getSourceOrderItemId() != null) {
+            plan.setSourceOrderItemId(request.getSourceOrderItemId());
         }
         if (request.getSourceOrderId() != null) {
             plan.setSourceOrderId(request.getSourceOrderId());

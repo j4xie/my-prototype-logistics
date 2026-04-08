@@ -561,9 +561,16 @@ public class ProductionPlanController {
             List<Map<String, Object>> items = so.getItems() == null ? List.of() :
                     so.getItems().stream().map(it -> {
                         Map<String, Object> im = new HashMap<>();
+                        // P0-12: 暴露行ID,前端 sourceOrderItemId 用
+                        im.put("id", it.getId() != null ? String.valueOf(it.getId()) : null);
                         im.put("productTypeId", it.getProductTypeId());
                         im.put("productName", it.getProductName());
+                        im.put("specification", it.getSpecification());
                         im.put("quantity", it.getQuantity());
+                        im.put("deliveredQuantity", it.getDeliveredQuantity());
+                        java.math.BigDecimal q = it.getQuantity() != null ? it.getQuantity() : java.math.BigDecimal.ZERO;
+                        java.math.BigDecimal d = it.getDeliveredQuantity() != null ? it.getDeliveredQuantity() : java.math.BigDecimal.ZERO;
+                        im.put("remainingQty", q.subtract(d));
                         return im;
                     }).collect(Collectors.toList());
             m.put("items", items);

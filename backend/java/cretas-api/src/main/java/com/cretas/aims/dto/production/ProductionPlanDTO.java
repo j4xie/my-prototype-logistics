@@ -176,6 +176,9 @@ public class ProductionPlanDTO {
     @Schema(description = "关联订单ID")
     private String sourceOrderId;
 
+    @Schema(description = "关联销售订单行ID (P0-12)")
+    private String sourceOrderItemId;
+
     @Schema(description = "客户名称")
     private String sourceCustomerName;
 

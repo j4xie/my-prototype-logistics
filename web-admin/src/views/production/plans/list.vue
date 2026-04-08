@@ -48,6 +48,7 @@ const planForm = ref({
   batchDate: '',
   sourceType: 'MANUAL' as 'MANUAL' | 'CUSTOMER_ORDER' | 'AI_FORECAST',
   sourceOrderId: '' as string | undefined,
+  sourceOrderItemId: '' as string | undefined,
 });
 const productTypes = ref<Record<string, unknown>[]>([]);
 const bomProcesses = ref<string[]>([]);
@@ -77,19 +78,39 @@ function handleSourceTypeChange(val: string) {
     if (selectableSalesOrders.value.length === 0) loadSelectableSalesOrders();
   } else {
     planForm.value.sourceOrderId = '';
+    planForm.value.sourceOrderItemId = '';
   }
 }
 
+// P0-12: 当前选中订单的可选产品行
+const selectedOrderItems = computed<Record<string, unknown>[]>(() => {
+  const oid = planForm.value.sourceOrderId;
+  if (!oid) return [];
+  const so = selectableSalesOrders.value.find((o) => String(o.id) === String(oid));
+  return so && Array.isArray(so.items) ? (so.items as Record<string, unknown>[]) : [];
+});
+
 function handleSalesOrderSelect(orderId: string) {
-  const so = selectableSalesOrders.value.find((o) => o.id === orderId);
+  const so = selectableSalesOrders.value.find((o) => String(o.id) === String(orderId));
+  // 切换订单时清空已选行
+  planForm.value.sourceOrderItemId = '';
   if (so) {
     planForm.value.sourceCustomerName = String(so.customerName || '');
-    // Try to auto-select first item's product type if none chosen yet
-    const items = Array.isArray(so.items) ? so.items as Record<string, unknown>[] : [];
-    if (!planForm.value.productTypeId && items.length > 0 && items[0].productTypeId) {
-      planForm.value.productTypeId = String(items[0].productTypeId);
-      handleProductChange(planForm.value.productTypeId);
-    }
+  }
+}
+
+// P0-12: 选中销售订单行后,自动回填产品/客户
+function handleSalesOrderItemSelect(itemId: string) {
+  const item = selectedOrderItems.value.find((it) => String(it.id) === String(itemId));
+  if (!item) return;
+  if (item.productTypeId) {
+    planForm.value.productTypeId = String(item.productTypeId);
+    handleProductChange(planForm.value.productTypeId);
+  }
+  // 客户名已在选订单时回填,这里再补一次以防订单未选时直接选行
+  const so = selectableSalesOrders.value.find((o) => String(o.id) === String(planForm.value.sourceOrderId));
+  if (so && so.customerName) {
+    planForm.value.sourceCustomerName = String(so.customerName);
   }
 }
 
@@ -240,6 +261,7 @@ function handleCreate() {
     batchDate: '',
     sourceType: 'MANUAL',
     sourceOrderId: '',
+    sourceOrderItemId: '',
   };
   dialogVisible.value = true;
 }
@@ -249,8 +271,8 @@ async function submitPlan() {
     ElMessage.warning('请填写完整信息');
     return;
   }
-  if (planForm.value.sourceType === 'CUSTOMER_ORDER' && !planForm.value.sourceOrderId) {
-    ElMessage.warning('选择"销售订单"来源时必须选择关联的销售订单');
+  if (planForm.value.sourceType === 'CUSTOMER_ORDER' && !planForm.value.sourceOrderItemId) {
+    ElMessage.warning('选择"销售订单"来源时必须选择关联的销售订单产品行');
     return;
   }
 
@@ -565,6 +587,7 @@ function handleAiFill(params: Record<string, unknown>) {
     batchDate: String(params.batchDate || ''),
     sourceType: 'MANUAL',
     sourceOrderId: '',
+    sourceOrderItemId: '',
   };
   dialogVisible.value = true;
 }
@@ -765,6 +788,26 @@ function handleAiFill(params: Record<string, unknown>) {
               :key="String(so.id)"
               :label="`${so.orderNo} | ${so.customerName || ''} | ¥${so.totalAmount || 0} | ${so.statusLabel || ''}`"
               :value="String(so.id)"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item
+          v-if="planForm.sourceType === 'CUSTOMER_ORDER' && planForm.sourceOrderId"
+          label="产品行"
+          required
+        >
+          <el-select
+            v-model="planForm.sourceOrderItemId"
+            placeholder="选择关联的销售订单产品行"
+            filterable
+            style="width: 100%"
+            @change="handleSalesOrderItemSelect"
+          >
+            <el-option
+              v-for="it in selectedOrderItems"
+              :key="String(it.id)"
+              :label="`${it.productName || ''}${it.specification ? ' | ' + it.specification : ''} | 数量 ${it.quantity || 0} | 待发 ${it.remainingQty || 0}`"
+              :value="String(it.id)"
             />
           </el-select>
         </el-form-item>

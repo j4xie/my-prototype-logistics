@@ -98,9 +98,13 @@ public class CreateProductionPlanRequest {
     @Schema(description = "计划来源类型: CUSTOMER_ORDER/AI_FORECAST/SAFETY_STOCK/MANUAL/URGENT_INSERT")
     private PlanSourceType sourceType = PlanSourceType.MANUAL;
 
-    @Schema(description = "关联订单ID（来自客户订单时）")
+    @Schema(description = "关联订单ID（来自客户订单时；P0-12 后由 sourceOrderItemId 自动回填）")
     @Size(max = 50, message = "关联订单ID不能超过50个字符")
     private String sourceOrderId;
+
+    @Schema(description = "关联销售订单行ID (P0-12 字段粒度修正; CUSTOMER_ORDER 必填)")
+    @Size(max = 50, message = "关联销售订单行ID不能超过50个字符")
+    private String sourceOrderItemId;
 
     @Schema(description = "客户名称")
     @Size(max = 100, message = "客户名称不能超过100个字符")

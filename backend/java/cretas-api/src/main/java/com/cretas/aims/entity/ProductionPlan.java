@@ -126,6 +126,13 @@ public class ProductionPlan extends BaseEntity {
     private String sourceOrderId;
 
     /**
+     * 关联销售订单行ID (P0-12 字段粒度修正)
+     * 客户原话 4216s: "关联销售订单产品" — 关联到行项目而非订单主表
+     */
+    @Column(name = "source_order_item_id", length = 50)
+    private String sourceOrderItemId;
+
+    /**
      * 客户名称
      */
     @Column(name = "source_customer_name", length = 100)
