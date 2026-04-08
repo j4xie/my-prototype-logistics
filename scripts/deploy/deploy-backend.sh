@@ -1,13 +1,19 @@
 #!/bin/bash
-# 后端部署脚本 v4.0
-# 修复: 独立临时文件 + MD5校验 + orphan进程清理
+# 后端部署脚本 v5.0 — Blue-Green 部署 + OSS/R2 上传 + private repo 兼容
 #
-# 模式1 - JAR 部署 (推荐，默认):
-#   ./deploy-backend.sh              # 本地打包 + 并行上传 + 服务器部署
-#   ./deploy-backend.sh --jar v1.0   # 指定版本号
+# 核心特性:
+#   - Blue-Green 生产部署 (零中断, 默认): 启动 idle 实例 → nginx upstream 切换 → 停旧 active
+#   - in-place 部署 (test 环境或 --mode=inplace): 替换 jar + systemctl restart
+#   - 自动检测 private repo / rsync 健康 / 多通道并行上传 (OSS 加速 / R2 备份)
+#   - 部署后通过 nginx upstream 验证 (不直接打端口, BG 兼容)
 #
-# 模式2 - Git 部署 (旧方式):
-#   ./deploy-backend.sh --git        # git push + 服务器编译
+# 常用命令:
+#   ./deploy-backend.sh                     # 生产 Blue-Green (默认)
+#   ./deploy-backend.sh --env test          # test in-place
+#   ./deploy-backend.sh --env all           # prod Blue-Green + test in-place
+#   ./deploy-backend.sh --mode inplace      # 强制生产 in-place (紧急回退)
+#   ./deploy-backend.sh --git               # Git 部署 (服务器端编译)
+#   ./deploy-backend.sh --rollback          # 回滚到上一备份
 
 set -e
 
@@ -41,8 +47,16 @@ fi
 REPO="j4xie/my-prototype-logistics"
 JAR_NAME="cretas-backend-system-1.0.0.jar"
 SERVER="root@47.100.235.168"
+GATEWAY="root@139.196.165.140"         # Nginx 网关 (Blue-Green upstream 切换)
 REMOTE_JAR_DIR="/www/wwwroot/cretas"
 REMOTE_TMP="/tmp"
+
+# Blue-Green 部署配置
+NGINX_UPSTREAM_FILE="/www/server/panel/vhost/nginx/_upstream_cretas.conf"
+BLUE_PORT=10010
+BLUE_SERVICE="cretas-backend"
+GREEN_PORT=10020
+GREEN_SERVICE="cretas-backend-green"
 
 # GitHub 镜像列表
 GITHUB_MIRRORS=(
@@ -71,7 +85,8 @@ R2_PUBLIC_URL="${R2_PUBLIC_URL:-https://pub-4913880cb5fa48a0abb5cdf9260f9a61.r2.
 # ==================== 参数解析 ====================
 MODE="jar"
 ARG=""
-DEPLOY_ENV="prod"  # prod | test | all
+DEPLOY_ENV="prod"        # prod | test | all
+DEPLOY_MODE="bluegreen"  # bluegreen (默认, 生产零中断) | inplace (传统, 紧急回退)
 
 # Parse all arguments
 while [[ $# -gt 0 ]]; do
@@ -102,6 +117,14 @@ while [[ $# -gt 0 ]]; do
             fi
             shift 2
             ;;
+        --mode)
+            DEPLOY_MODE="$2"
+            if [[ ! "$DEPLOY_MODE" =~ ^(bluegreen|inplace)$ ]]; then
+                echo "错误: --mode 参数必须是 bluegreen 或 inplace"
+                exit 1
+            fi
+            shift 2
+            ;;
         -h|--help)
             echo "用法: ./deploy-backend.sh [选项] [参数]"
             echo ""
@@ -109,14 +132,21 @@ while [[ $# -gt 0 ]]; do
             echo "  --jar [version]   JAR 部署模式 (默认)"
             echo "  --git [branch]    Git 部署模式"
             echo "  --env ENV         部署环境: prod (默认), test, all"
+            echo "  --mode MODE       部署策略: bluegreen (默认, 零中断) 或 inplace (传统, 60s 中断)"
             echo "  --dry-run         仅构建和验证，不上传/部署"
             echo "  --rollback        回滚到上一个备份版本"
             echo "  -h, --help        显示帮助"
             echo ""
             echo "环境说明:"
-            echo "  prod   生产环境 (端口 10010+8083, 数据库 cretas_prod_db)"
+            echo "  prod   生产环境 (端口 10010 blue / 10020 green, 数据库 cretas_prod_db)"
             echo "  test   测试环境 (端口 10011+8084, 数据库 cretas_db)"
-            echo "  all    部署后重启两套环境"
+            echo "  all    部署 prod (Blue-Green) + 重启 test"
+            echo ""
+            echo "部署策略说明:"
+            echo "  bluegreen  启动 idle 实例 → 等健康 → nginx upstream 切换 → 停旧 active (零中断)"
+            echo "             需要 139 Nginx upstream cretas_backend 已配置, 47 有 cretas-backend-green.service"
+            echo "  inplace    替换 jar + systemctl restart cretas-backend (60s 中断, 紧急回退用)"
+            echo "  注意: test 环境始终 in-place (test 没有 Green 实例)"
             echo ""
             echo "上传策略:"
             echo "  [阶段1] GitHub 并行 (直连 + 5镜像同时竞争)"
@@ -236,8 +266,8 @@ deploy_jar() {
     [ "$HAS_R2" = "true" ] && METHODS+=("R2")
 
     echo "=========================================="
-    echo "  JAR 部署 v4.2 - 版本: $VERSION"
-    echo "  部署环境: $DEPLOY_ENV"
+    echo "  JAR 部署 v5.0 - 版本: $VERSION"
+    echo "  部署环境: $DEPLOY_ENV   策略: $DEPLOY_MODE"
     echo "  可用方式: ${METHODS[*]:-(无!)}"
     echo "=========================================="
 
@@ -678,9 +708,122 @@ deploy_jar() {
     # 清理 .jar.new (防止 restart.sh 的 auto-swap 覆盖刚部署的 JAR)
     ssh -o ConnectTimeout=5 $SERVER "rm -f $REMOTE_JAR_DIR/aims-0.0.1-SNAPSHOT.jar.new 2>/dev/null" 2>/dev/null || true
 
-    # 重启服务 (根据 --env 参数选择环境)
-    echo "   重启服务 (环境: $DEPLOY_ENV)..."
-    ssh $SERVER "cd $REMOTE_JAR_DIR && bash restart.sh $DEPLOY_ENV" || true
+    # 重启服务: 根据 --env + --mode 选择策略
+    # - prod + bluegreen  → 启动 idle → 切 upstream → 停旧 active (零中断)
+    # - prod + inplace    → systemctl restart cretas-backend (60s 中断, 紧急回退)
+    # - test              → restart.sh test (test 没有 Green 实例, 始终 in-place)
+    # - all               → prod 走 bluegreen/inplace, test 走 in-place
+
+    if [[ "$DEPLOY_ENV" == "prod" || "$DEPLOY_ENV" == "all" ]] && [ "$DEPLOY_MODE" = "bluegreen" ]; then
+        echo ""
+        echo "🔄 [3b] Blue-Green 切换..."
+
+        # 检测当前 active port (从 139 nginx upstream 读)
+        # 用 grep -oP 而不是 awk, 避免 shell $3 扩展问题
+        ACTIVE_PORT=$(ssh $GATEWAY "grep -oP 'server 47\\.100\\.235\\.168:\\K[0-9]+' $NGINX_UPSTREAM_FILE | head -1" 2>/dev/null)
+
+        if [ -z "$ACTIVE_PORT" ] || [[ ! "$ACTIVE_PORT" =~ ^(10010|10020)$ ]]; then
+            echo "   ❌ 无法检测 nginx upstream active port (got: '$ACTIVE_PORT')"
+            echo "   请确认 $NGINX_UPSTREAM_FILE 在 139 存在且含 'server 47.100.235.168:10010;' 这样的行"
+            echo "   回退到 in-place 部署"
+            DEPLOY_MODE="inplace"
+        else
+            if [ "$ACTIVE_PORT" = "$BLUE_PORT" ]; then
+                IDLE_COLOR="green"; IDLE_SERVICE="$GREEN_SERVICE"; IDLE_PORT="$GREEN_PORT"
+                ACTIVE_COLOR="blue"; ACTIVE_SERVICE="$BLUE_SERVICE"
+            else
+                IDLE_COLOR="blue"; IDLE_SERVICE="$BLUE_SERVICE"; IDLE_PORT="$BLUE_PORT"
+                ACTIVE_COLOR="green"; ACTIVE_SERVICE="$GREEN_SERVICE"
+            fi
+
+            echo "   当前 active: $ACTIVE_COLOR ($ACTIVE_PORT) → 切换到: $IDLE_COLOR ($IDLE_PORT)"
+
+            # [BG 1/4] 启动 idle service (它会读取刚部署的新 jar)
+            echo "   [BG 1/4] 启动 $IDLE_COLOR ($IDLE_SERVICE)..."
+            if ! ssh $SERVER "systemctl restart $IDLE_SERVICE"; then
+                echo "   ❌ 无法启动 $IDLE_SERVICE, 中止切换"
+                exit 1
+            fi
+
+            # [BG 2/4] 等 idle 健康 — 单次 ssh + 远端 loop
+            # 避免 client-side ssh roundtrip 每轮建立连接导致的卡死
+            echo "   [BG 2/4] 等待 $IDLE_COLOR 健康 (远端 loop, 最多 150s)..."
+            BG_T0=$(date +%s)
+            IDLE_HEALTHY=false
+            BG_RESULT=$(ssh -o ConnectTimeout=10 -o ServerAliveInterval=15 $SERVER "
+                for i in \$(seq 1 150); do
+                    STATUS=\$(curl -s -o /dev/null --max-time 2 -w '%{http_code}' http://localhost:$IDLE_PORT/api/mobile/health 2>/dev/null)
+                    if [ \"\$STATUS\" = '200' ]; then
+                        echo \"UP:\${i}\"
+                        exit 0
+                    fi
+                    sleep 1
+                done
+                echo 'TIMEOUT'
+                exit 1
+            " 2>/dev/null)
+            BG_EXIT=$?
+            BG_ELAPSED=$(( $(date +%s) - BG_T0 ))
+
+            if [ "$BG_EXIT" = "0" ] && [[ "$BG_RESULT" == UP:* ]]; then
+                echo "   ✓ $IDLE_COLOR 健康 (${BG_ELAPSED}s, 远端计数: ${BG_RESULT#UP:}s)"
+                IDLE_HEALTHY=true
+            else
+                echo "   ❌ $IDLE_COLOR 健康检查失败 (${BG_ELAPSED}s elapsed, result: '$BG_RESULT')"
+                echo "   保持原 active 不切换, 停止 idle"
+                ssh $SERVER "systemctl stop $IDLE_SERVICE" 2>/dev/null || true
+                exit 1
+            fi
+
+            # [BG 3/4] 切换 139 nginx upstream
+            echo "   [BG 3/4] 切换 139 nginx upstream: $ACTIVE_PORT → $IDLE_PORT..."
+            if ! ssh $GATEWAY "
+                sed -i 's|server 47\\.100\\.235\\.168:$ACTIVE_PORT;|server 47.100.235.168:$IDLE_PORT;|' $NGINX_UPSTREAM_FILE &&
+                nginx -t >/dev/null 2>&1 &&
+                nginx -s reload
+            "; then
+                echo "   ❌ nginx upstream 切换失败, 回滚 upstream 并停 idle"
+                ssh $GATEWAY "sed -i 's|server 47\\.100\\.235\\.168:$IDLE_PORT;|server 47.100.235.168:$ACTIVE_PORT;|' $NGINX_UPSTREAM_FILE && nginx -s reload" 2>/dev/null || true
+                ssh $SERVER "systemctl stop $IDLE_SERVICE" 2>/dev/null || true
+                exit 1
+            fi
+            echo "   ✓ upstream 切换完成"
+
+            # 切换后验证 (通过 139 本地 https)
+            sleep 1
+            VERIFY=$(ssh $GATEWAY "curl -sk -o /dev/null --max-time 5 -w '%{http_code}' -H 'Host: api.cretaceousfuture.com' https://127.0.0.1/api/mobile/health" 2>/dev/null)
+            if [ "$VERIFY" = "200" ]; then
+                echo "   ✓ 切换后验证通过 (HTTP 200 via nginx)"
+            else
+                echo "   ⚠️  切换后验证异常 (HTTP $VERIFY), 请手动排查"
+            fi
+
+            # [BG 4/4] 停旧 active (5s 优雅等待让现有连接完成)
+            echo "   [BG 4/4] 停旧 active ($ACTIVE_COLOR $ACTIVE_SERVICE), 5s 优雅等待..."
+            sleep 5
+            ssh $SERVER "systemctl stop $ACTIVE_SERVICE" || true
+
+            echo "   ✅ Blue-Green 切换完成: $ACTIVE_COLOR → $IDLE_COLOR"
+        fi
+    fi
+
+    # test 环境 或 prod 回退到 in-place
+    if [ "$DEPLOY_ENV" = "test" ] || [ "$DEPLOY_MODE" = "inplace" ] || [ "$DEPLOY_ENV" = "all" ]; then
+        # all 模式下: prod 已经 bluegreen 切换完, 这里重启 test
+        # test 模式下: 直接重启 test
+        # inplace 模式下: 直接 restart.sh prod/test/all
+        if [ "$DEPLOY_MODE" = "inplace" ]; then
+            echo "   重启服务 (环境: $DEPLOY_ENV, in-place)..."
+            ssh $SERVER "cd $REMOTE_JAR_DIR && bash restart.sh $DEPLOY_ENV" || true
+        elif [ "$DEPLOY_ENV" = "all" ]; then
+            echo ""
+            echo "   重启 test 环境..."
+            ssh $SERVER "cd $REMOTE_JAR_DIR && bash restart.sh test" || true
+        else
+            echo "   重启服务 (环境: $DEPLOY_ENV)..."
+            ssh $SERVER "cd $REMOTE_JAR_DIR && bash restart.sh $DEPLOY_ENV" || true
+        fi
+    fi
 
     # 清理残留临时文件
     ssh -o ConnectTimeout=5 $SERVER "rm -f $REMOTE_TMP/${JAR_NAME}.* $REMOTE_TMP/aims-new.jar $REMOTE_TMP/deploy.jar.gz 2>/dev/null" 2>/dev/null || true
@@ -690,10 +833,23 @@ deploy_jar() {
     echo "🔍 [4/4] 验证部署..."
     SERVER_IP="${SERVER#*@}"
 
+    # 生产验证:
+    # - bluegreen 模式: 通过 139 nginx upstream 验证 (不直接打 10010/10020, 因为可能其中一个已停)
+    # - inplace 模式: 直接打 10010
     if [[ "$DEPLOY_ENV" == "prod" || "$DEPLOY_ENV" == "all" ]]; then
-        echo "   [生产] 检查 10010..."
-        if ! wait_for_health "http://${SERVER_IP}:10010/api/mobile/health" 30 2; then
-            echo "   请手动检查: ssh $SERVER 'tail -50 $REMOTE_JAR_DIR/cretas-prod.log'"
+        if [ "$DEPLOY_MODE" = "bluegreen" ]; then
+            echo "   [生产] 通过 nginx upstream 验证 (Blue-Green)..."
+            PROD_STATUS=$(ssh -o ConnectTimeout=5 $GATEWAY "curl -sk -o /dev/null --max-time 5 -w '%{http_code}' -H 'Host: api.cretaceousfuture.com' https://127.0.0.1/api/mobile/health" 2>/dev/null)
+            if [ "$PROD_STATUS" = "200" ]; then
+                echo "   ✓ 生产服务正常 (HTTP 200 via nginx)"
+            else
+                echo "   ⚠️  生产验证异常 (HTTP $PROD_STATUS via nginx), 请手动排查"
+            fi
+        else
+            echo "   [生产] 检查 10010..."
+            if ! wait_for_health "http://${SERVER_IP}:10010/api/mobile/health" 30 2; then
+                echo "   请手动检查: ssh $SERVER 'tail -50 $REMOTE_JAR_DIR/cretas-prod.log'"
+            fi
         fi
     fi
 
@@ -705,8 +861,6 @@ deploy_jar() {
     fi
 
     # 防御性检查: 部署 prod 时也 ping test (反之亦然), 发现另一环境挂了就警告
-    # 这是为了避免 "默认 prod 永远不动 test" 导致 test 环境长期落后或宕机的问题
-    # 不阻塞 deploy, 仅提示用户
     if [[ "$DEPLOY_ENV" == "prod" ]]; then
         OTHER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
             "http://${SERVER_IP}:10011/api/mobile/health" 2>/dev/null)
@@ -720,14 +874,14 @@ deploy_jar() {
             echo "   ✓ [防御检查] test 10011 同步运行"
         fi
     elif [[ "$DEPLOY_ENV" == "test" ]]; then
-        OTHER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
-            "http://${SERVER_IP}:10010/api/mobile/health" 2>/dev/null)
+        # 通过 nginx upstream 检查 prod (兼容 Blue-Green 和 in-place)
+        OTHER_STATUS=$(ssh -o ConnectTimeout=5 $GATEWAY "curl -sk -o /dev/null --max-time 5 -w '%{http_code}' -H 'Host: api.cretaceousfuture.com' https://127.0.0.1/api/mobile/health" 2>/dev/null)
         if [ "$OTHER_STATUS" != "200" ]; then
             echo ""
-            echo "   ⚠️  [防御检查] prod 10010 异常 (HTTP $OTHER_STATUS) — 生产可能宕机!"
+            echo "   ⚠️  [防御检查] prod 异常 (HTTP $OTHER_STATUS via nginx) — 生产可能宕机!"
             echo "      恢复: ssh $SERVER 'systemctl restart cretas-backend'"
         else
-            echo "   ✓ [防御检查] prod 10010 同步运行"
+            echo "   ✓ [防御检查] prod 同步运行 (via nginx)"
         fi
     fi
 
