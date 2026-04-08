@@ -56,14 +56,52 @@ public class RdController {
                 (String) body.get("specification"), (String) body.get("grade"),
                 (String) body.get("mainMaterial"),
                 body.get("assignedTo") != null ? Long.valueOf(body.get("assignedTo").toString()) : userId);
-        // 新增字段: productLevel, storageMethod, customerName, salesperson
+        boolean needSave = applyExtendedFields(sample, body);
+        if (needSave) sample = sampleService.updateSampleFields(sample);
+        return ResponseEntity.ok(Map.of("success", true, "data", sample, "message", "样品已创建"));
+    }
+
+    /** 单独的更新字段 endpoint, 给前端编辑用 */
+    @PutMapping("/samples/{sampleId}")
+    public ResponseEntity<?> updateSampleFields(@PathVariable String factoryId, @PathVariable String sampleId,
+                                                  @RequestBody Map<String, Object> body) {
+        var sample = sampleService.getSample(factoryId, sampleId);
+        applyExtendedFields(sample, body);
+        sample = sampleService.updateSampleFields(sample);
+        return ResponseEntity.ok(Map.of("success", true, "data", sample, "message", "样品已更新"));
+    }
+
+    /**
+     * 把请求 body 里的可选字段应用到 sample 实体上 — V3 + Round 2 Agent A 字段补齐.
+     * 返回是否有改动 (用来决定是否调用 save).
+     */
+    private boolean applyExtendedFields(com.cretas.aims.entity.rd.ProductSample sample, Map<String, Object> body) {
         boolean needSave = false;
+        // V3 P0 / 客户截图 14:09 字段集
+        if (body.get("specification") != null) { sample.setSpecification((String) body.get("specification")); needSave = true; }
+        if (body.get("grade") != null) { sample.setGrade((String) body.get("grade")); needSave = true; }
+        if (body.get("mainMaterial") != null) { sample.setMainMaterial((String) body.get("mainMaterial")); needSave = true; }
         if (body.get("productLevel") != null) { sample.setProductLevel((String) body.get("productLevel")); needSave = true; }
         if (body.get("storageMethod") != null) { sample.setStorageMethod((String) body.get("storageMethod")); needSave = true; }
         if (body.get("customerName") != null) { sample.setCustomerName((String) body.get("customerName")); needSave = true; }
         if (body.get("salesperson") != null) { sample.setSalesperson((String) body.get("salesperson")); needSave = true; }
-        if (needSave) sample = sampleService.updateSampleFields(sample);
-        return ResponseEntity.ok(Map.of("success", true, "data", sample, "message", "样品已创建"));
+        if (body.get("remark") != null) { sample.setRemark((String) body.get("remark")); needSave = true; }
+        // Round 2 Agent A 新增 8 个字段
+        if (body.get("customerExpectedPrice") != null) {
+            sample.setCustomerExpectedPrice(new java.math.BigDecimal(body.get("customerExpectedPrice").toString()));
+            needSave = true;
+        }
+        if (body.get("productStatus") != null) { sample.setProductStatus((String) body.get("productStatus")); needSave = true; }
+        if (body.get("customerType") != null) { sample.setCustomerType((String) body.get("customerType")); needSave = true; }
+        if (body.get("customerLatestRequirement") != null) {
+            sample.setCustomerLatestRequirement((String) body.get("customerLatestRequirement"));
+            needSave = true;
+        }
+        if (body.get("sampleVersion") != null) { sample.setSampleVersion((String) body.get("sampleVersion")); needSave = true; }
+        if (body.get("sellingPoints") != null) { sample.setSellingPoints((String) body.get("sellingPoints")); needSave = true; }
+        if (body.get("customerCode") != null) { sample.setCustomerCode((String) body.get("customerCode")); needSave = true; }
+        if (body.get("customerLevel") != null) { sample.setCustomerLevel((String) body.get("customerLevel")); needSave = true; }
+        return needSave;
     }
 
     @PostMapping("/samples/{sampleId}/progress")

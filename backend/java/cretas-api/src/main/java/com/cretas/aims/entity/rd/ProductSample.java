@@ -104,4 +104,40 @@ public class ProductSample extends BaseEntity {
     /** 储存方式: 冷冻 / 冷藏 / 常温 */
     @Column(name = "storage_method", length = 50)
     private String storageMethod;
+
+    // ════════════════════════════════════════════════════════════════
+    // V3 P0 + Round 2 Agent A 截图 1 字段补齐 (Apr 7)
+    // ════════════════════════════════════════════════════════════════
+
+    /** 客户预期价格 — 客户原话: 有些客户自带价格过来 */
+    @Column(name = "customer_expected_price", precision = 15, scale = 2)
+    private java.math.BigDecimal customerExpectedPrice;
+
+    /** 产品状态: 试样研发 / 不适宜合作 / 可合作 / 已转报模 / 已废弃 */
+    @Column(name = "product_status", length = 50)
+    private String productStatus;
+
+    /** 客户性质: 餐饮 / 商超 / 新零售 / 团餐 / 其他 */
+    @Column(name = "customer_type", length = 50)
+    private String customerType;
+
+    /** 客户最新要求 (长文本, 截图示例: "口味:咸鲜, 出成率 80% 左右, 煎出来后没异味") */
+    @Column(name = "customer_latest_requirement", columnDefinition = "TEXT")
+    private String customerLatestRequirement;
+
+    /** 样品版本号: "第一次打样" / "第二次打样" / "确认版" */
+    @Column(name = "sample_version", length = 50)
+    private String sampleVersion;
+
+    /** 产品卖点 (长文本) */
+    @Column(name = "selling_points", columnDefinition = "TEXT")
+    private String sellingPoints;
+
+    /** 客户编码 (如 LSM20250037) — 关联 customer 主表的 code */
+    @Column(name = "customer_code", length = 100)
+    private String customerCode;
+
+    /** 客户级别: A / B / C */
+    @Column(name = "customer_level", length = 10)
+    private String customerLevel;
 }
