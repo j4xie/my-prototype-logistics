@@ -93,6 +93,14 @@ public class BomItem extends BaseEntity {
     private BigDecimal taxRate = BigDecimal.ZERO;
 
     /**
+     * 物料分类: RAW (原料) / AUXILIARY (辅料) / PACKAGING (包材)
+     * P0-14 客户需求: BOM 拆原料/辅料/包材 3 块
+     */
+    @Column(name = "material_category", nullable = false, length = 32)
+    @Builder.Default
+    private String materialCategory = "RAW";
+
+    /**
      * 排序顺序
      */
     @Column(name = "sort_order")

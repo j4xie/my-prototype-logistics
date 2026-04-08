@@ -66,7 +66,16 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
             item.setRequisition(mr);
             item.setMaterialTypeId(bom.getMaterialTypeId());
             item.setMaterialName(bom.getMaterialName());
-            item.setMaterialCategory(MaterialCategory.RAW);  // 默认 RAW, BOM 当前无细分
+            // P0-14: 从 BOM 透传物料分类 (RAW/AUXILIARY/PACKAGING)
+            MaterialCategory category = MaterialCategory.RAW;
+            if (bom.getMaterialCategory() != null) {
+                try {
+                    category = MaterialCategory.valueOf(bom.getMaterialCategory());
+                } catch (IllegalArgumentException ex) {
+                    log.warn("未知的 BOM materialCategory={}, 降级为 RAW", bom.getMaterialCategory());
+                }
+            }
+            item.setMaterialCategory(category);
             item.setBomItemId(bom.getId());
             // required_qty = planned_quantity * actual_quantity (按出成率调整)
             BigDecimal perUnit = bom.getActualQuantity();
