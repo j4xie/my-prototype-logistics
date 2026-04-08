@@ -16,6 +16,24 @@
 
 **编译验证**: ✅ `mvnw compile` (54s) + ✅ `vite build` (28s)
 
+## ✅ test 环境 E2E PASS (2026-04-08 12:22)
+
+`v20260408_000814` 已部署到 test 10011, P0-5 完整状态机通过:
+
+| 步骤 | 结果 |
+|---|---|
+| login factory_admin1 | ✅ |
+| POST /material-requisitions/generate (PLAN-FORECAST-030) | ✅ MR20260408-0001, 4 行 BOM 展开 (带鱼 148.23kg / 面粉 8.57kg / 调味料 3.15kg / 包装) |
+| PUT /start-picking | ✅ PICKING |
+| PUT /transfer | ✅ TRANSFERRED |
+| PUT /receive | ✅ ISSUED |
+| PUT /close | ✅ CLOSED (退料自动算) |
+
+**test 环境手工补的 schema 修复** (需固化到 migration):
+- `factory_material_requisitions` + `factory_material_requisition_items` 建表 (V20260407_06 跑过, 但 Flyway 未启用需手动 psql)
+- 3 条 FACTORY_MR intent 插入 `ai_intent_configs` (需带 created_at/updated_at NOW())
+- `production_plans` 补 4 列: `assigned_supervisor_id`, `batch_date`, `estimated_workers`, `process_name`, `suggested_production_line_id` (预先存在的 schema 漂移, 非 W2 新增, 应起独立修复 PR)
+
 ---
 
 ## W2-3 关键设计决策
