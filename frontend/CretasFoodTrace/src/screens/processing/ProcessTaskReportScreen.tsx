@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, Appbar, Card, TextInput, ActivityIndicator } from 'react-native-paper';
+import { Text, Appbar, Card, TextInput, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { processTaskApiClient, ProcessTaskItem } from '../../services/api/processTaskApiClient';
@@ -19,6 +19,8 @@ export default function ProcessTaskReportScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
+  const [reportMode, setReportMode] = useState<'MODE_1' | 'MODE_2' | 'MODE_3'>('MODE_1');
+  const [batchNumber, setBatchNumber] = useState('');
 
   const loadTask = useCallback(async () => {
     try {
@@ -63,6 +65,10 @@ export default function ProcessTaskReportScreen() {
   };
 
   const doSubmit = async (qty: number) => {
+    if (reportMode === 'MODE_2' && !batchNumber.trim()) {
+      Alert.alert('提示', '按批次报工需填写批次号');
+      return;
+    }
     setSubmitting(true);
     try {
       if (isSupplemental) {
@@ -79,6 +85,8 @@ export default function ProcessTaskReportScreen() {
           processTaskId: taskId,
           outputQuantity: qty,
           notes: notes || undefined,
+          reportMode,
+          batchNumber: reportMode === 'MODE_2' ? batchNumber.trim() : undefined,
         });
         Alert.alert('成功', '报工已提交，等待审批', [
           { text: '确定', onPress: () => navigation.goBack() },
@@ -164,6 +172,32 @@ export default function ProcessTaskReportScreen() {
           <Card style={styles.card}>
             <Card.Content>
               <Text variant="titleMedium" style={styles.sectionTitle}>填写报工</Text>
+
+              {!isSupplemental && (
+                <View style={{ marginBottom: 12 }}>
+                  <Text style={{ fontSize: 13, color: '#666', marginBottom: 6 }}>报工模式</Text>
+                  <SegmentedButtons
+                    value={reportMode}
+                    onValueChange={(v) => setReportMode(v as 'MODE_1' | 'MODE_2' | 'MODE_3')}
+                    buttons={[
+                      { value: 'MODE_1', label: '按工序' },
+                      { value: 'MODE_2', label: '按批次' },
+                      { value: 'MODE_3', label: '按人头' },
+                    ]}
+                  />
+                </View>
+              )}
+
+              {!isSupplemental && reportMode === 'MODE_2' && (
+                <TextInput
+                  testID="report-batch-number-input"
+                  label="批次号"
+                  value={batchNumber}
+                  onChangeText={setBatchNumber}
+                  mode="outlined"
+                  style={[styles.input, { marginBottom: 12 }]}
+                />
+              )}
 
               <TextInput
                 testID="report-quantity-input"

@@ -110,6 +110,8 @@ const roleOptions = [
   { value: 'quality_manager', label: '质量经理' },
   { value: 'finance_manager', label: '财务主管' },
   { value: 'workshop_supervisor', label: '车间主任' },
+  { value: 'team_leader', label: '大组长' },
+  { value: 'group_leader', label: '小组长' },
   { value: 'quality_inspector', label: '质检员' },
   { value: 'operator', label: '操作员' },
   { value: 'warehouse_worker', label: '仓库员' },

@@ -27,6 +27,10 @@ export const FACTORY_ROLES = {
   // Level 20 - 车间管理
   WORKSHOP_SUPERVISOR: 'workshop_supervisor',
 
+  // Level 25/28 - 组长
+  TEAM_LEADER: 'team_leader',
+  GROUP_LEADER: 'group_leader',
+
   // Level 30 - 一线员工
   QUALITY_INSPECTOR: 'quality_inspector',
   OPERATOR: 'operator',
@@ -69,6 +73,8 @@ export const ROLE_METADATA: Record<string, RoleMetadata> = {
 
   // Level 20 - 车间管理
   workshop_supervisor: { displayName: '车间主任', description: '车间日常、人员调度', level: 20, department: 'workshop' },
+  team_leader: { displayName: '大组长', description: '大组带班、现场协调', level: 25, department: 'workshop' },
+  group_leader: { displayName: '小组长', description: '小组带班、任务分派', level: 28, department: 'workshop' },
 
   // Level 30 - 一线员工
   quality_inspector: { displayName: '质检员', description: '执行质检、提交报告', level: 30, department: 'quality' },

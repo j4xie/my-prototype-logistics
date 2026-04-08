@@ -157,7 +157,7 @@ class ProcessTaskApiClient {
     return apiClient.put(`${base}/process-work-reporting/batch-approve`, reportIds);
   }
 
-  async submitNormalReport(data: { processTaskId: string; outputQuantity: number; reporterName?: string; targetWorkerId?: number; notes?: string }, factoryId?: string) {
+  async submitNormalReport(data: { processTaskId: string; outputQuantity: number; reporterName?: string; targetWorkerId?: number; notes?: string; reportMode?: 'MODE_1' | 'MODE_2' | 'MODE_3'; batchNumber?: string; workerIds?: number[] }, factoryId?: string) {
     const base = this.getBase(factoryId);
     return apiClient.post(`${base}/process-work-reporting/normal`, data);
   }
