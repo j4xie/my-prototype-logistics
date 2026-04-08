@@ -72,6 +72,11 @@ from .review_analyzer import (
     ReviewAnalyzer,
     ReviewAnalysisReport,
 )
+from .member_rfm import (
+    MemberRfmAnalyzer,
+    MemberScore,
+    RfmReport,
+)
 
 __all__ = [
     "RestaurantMenuNormalizer",
@@ -88,4 +93,8 @@ __all__ = [
     "DishMention",
     "RatingTrend",
     "PeriodRating",
+    # W5.4 — 会员 RFM
+    "MemberRfmAnalyzer",
+    "RfmReport",
+    "MemberScore",
 ]

@@ -617,6 +617,9 @@ async def compute_restaurant_analytics_v2(
     sku_forms = body.get("sku_forms")  # list[dict] — TOP 20 SKU 主料成本表
     monthly_purchases = body.get("monthly_purchases")  # list[dict] — 月度采购汇总
 
+    # W5.4 会员 RFM
+    members = body.get("members")  # list[dict] — [{member_id, last_order_days_ago, order_count, total_amount}]
+
     try:
         with get_db_context() as db:
             # Upload 权限检查 (跟 V1 一致)
@@ -745,6 +748,7 @@ async def compute_restaurant_analytics_v2(
                 store_name=store_name,
                 period=period,
                 reviews=reviews,
+                members=members,
             )
             t_compute = time.perf_counter() - t1
 

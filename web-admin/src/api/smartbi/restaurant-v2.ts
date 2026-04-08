@@ -89,6 +89,13 @@ export interface V2AnalyzePayload {
   reviews?: ReviewInput[];
   sku_forms?: SkuFormInput[];
   monthly_purchases?: MonthlyPurchaseInput[];
+  // W5.4 inputs
+  members?: Array<{
+    member_id: string;
+    last_order_days_ago: number;
+    order_count: number;
+    total_amount: number;
+  }>;
 }
 
 // ── Result types ────────────────────────────────────────────
@@ -347,6 +354,67 @@ export interface BomLayerStatus {
   upgradeHint: string;
 }
 
+// W5.4 — Member RFM
+export interface MemberRfmInput {
+  memberId?: string;  // or member_id
+  member_id?: string;
+  lastOrderDaysAgo?: number;
+  last_order_days_ago?: number;
+  orderCount?: number;
+  order_count?: number;
+  totalAmount?: number;
+  total_amount?: number;
+}
+
+export interface MemberScore {
+  memberId: string;
+  recencyDays: number;
+  frequency: number;
+  monetary: number;
+  avgTicket: number;
+  rScore: number;
+  fScore: number;
+  mScore: number;
+  segment: string;
+}
+
+export interface MemberRfm {
+  totalMembers: number;
+  analyzedMembers: number;
+  asOfDate: string;
+  segmentCounts: Record<string, number>;
+  segmentRevenue: Record<string, number>;
+  topChampions: MemberScore[];
+  atRiskMembers: MemberScore[];
+  avgRecency: number;
+  avgFrequency: number;
+  avgMonetary: number;
+  insights: string[];
+  recommendations: string[];
+}
+
+// W5.6 — Temporal Comparison (同店同比)
+export interface TemporalDelta {
+  groupName: string;
+  metric: string;
+  currentValue: number;
+  compareValue: number;
+  deltaAbs: number;
+  deltaPct: number;
+  trend: 'up' | 'down' | 'flat';
+}
+
+export interface TemporalComparison {
+  mode: 'yoy' | 'qoq' | 'mom' | 'insufficient';
+  monthsAvailable: number;
+  currentPeriod: string;
+  comparePeriod: string;
+  deltas: TemporalDelta[];
+  messageZh: string;
+  insufficientReason?: string;
+  groupCount: number;
+}
+
 export interface V2UnifiedReport {
   factoryId: string;
   subSector: string;
@@ -367,6 +435,9 @@ export interface V2UnifiedReport {
     longTailSku?: LongTailSku;
     reviewAnalysis?: ReviewAnalysis;
     bomLayerStatus?: BomLayerStatus;
+    // W5.4 + W5.6
+    memberRfm?: MemberRfm;
+    temporalComparison?: TemporalComparison;
   };
   warnings: string[];
   executiveSummary: string[];

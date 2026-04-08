@@ -53,11 +53,13 @@ from sqlalchemy.orm import Session
 from shared.benchmark_alert_engine import BenchmarkAlertEngine
 from shared.diagnostics_engine import DiagnosticsEngine
 from shared.dynamic_config_resolver import DynamicConfigResolver
+from shared.temporal_comparator import TemporalComparator
 
 from .bom_resolver import RestaurantBomResolver
 from .channel_margin_calculator import ChannelMarginCalculator
 from .dining_period_heatmap import DiningPeriodHeatmap
 from .long_tail_sku_detector import LongTailSkuDetector
+from .member_rfm import MemberRfmAnalyzer
 from .menu_normalizer import RestaurantMenuNormalizer
 from .monthly_purchase_calibrator import MonthlyPurchaseCalibrator
 from .review_analyzer import ReviewAnalyzer
@@ -176,6 +178,10 @@ class RestaurantAnalyzerV2:
         self.stored_value_analyzer = StoredValueAnalyzer()
         self.long_tail_detector = LongTailSkuDetector()
         self.review_analyzer = ReviewAnalyzer()
+        self.member_rfm_analyzer = MemberRfmAnalyzer()
+
+        # W5.6 同店同比 (Week 3 写的 module, W5 集成进来)
+        self.temporal_comparator = TemporalComparator(group_col="门店名称")
 
     # ── 主入口 ─────────────────────────────────────────
 
@@ -192,6 +198,7 @@ class RestaurantAnalyzerV2:
         datetime_col: str = "开单时间",
         quantity_col: str = "数量",
         reviews: Optional[list[dict]] = None,
+        members: Optional[list[dict]] = None,  # W5.4 会员 RFM
     ) -> dict:
         """V2 主分析入口
 
@@ -355,6 +362,43 @@ class RestaurantAnalyzerV2:
             except Exception as e:
                 logger.warning(f"review_analyzer 失败: {e}")
                 report["warnings"].append(f"评论分析失败: {e}")
+
+        # ─── W5.4: 会员 RFM 分析 (需 members 或 POS 含 member_id) ───
+        if members:
+            try:
+                rfm_report = self.member_rfm_analyzer.analyze(
+                    members=members, as_of_date=period
+                )
+                report["sections"]["memberRfm"] = rfm_report.to_dict()
+                champions = rfm_report.segment_counts.get("Champions", 0)
+                if champions > 0 and rfm_report.analyzed_members > 0:
+                    champ_rev = rfm_report.segment_revenue.get("Champions", 0)
+                    total_rev = sum(rfm_report.segment_revenue.values()) or 1
+                    report["executiveSummary"].append(
+                        f"🌟 Champions {champions} 人贡献 {champ_rev / total_rev * 100:.0f}% 营收"
+                    )
+            except Exception as e:
+                logger.warning(f"member_rfm 失败: {e}")
+                report["warnings"].append(f"会员 RFM 失败: {e}")
+
+        # ─── W5.6: 同店同比 (需 POS 含时间 + 门店名称 + 实收额) ───
+        if pos_df is not None and datetime_col in pos_df.columns and revenue_col in pos_df.columns:
+            try:
+                # Check if 门店名称 column exists
+                if "门店名称" in pos_df.columns:
+                    temporal_report = self.temporal_comparator.compare(
+                        df=pos_df,
+                        date_col=datetime_col,
+                        metric_cols=[revenue_col],
+                    )
+                    report["sections"]["temporalComparison"] = temporal_report.to_dict()
+                    if temporal_report.mode != "insufficient":
+                        report["executiveSummary"].append(
+                            f"📊 {temporal_report.message_zh}"
+                        )
+            except Exception as e:
+                logger.warning(f"temporal_comparator 失败: {e}")
+                report["warnings"].append(f"同店同比生成失败: {e}")
 
         # ─── Week 4.4: BOM Layer status (报告当前精度状态) ───
         report["sections"]["bomLayerStatus"] = self._build_bom_layer_status()

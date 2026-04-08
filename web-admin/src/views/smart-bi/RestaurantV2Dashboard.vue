@@ -42,6 +42,8 @@ import {
   type LongTailSku,
   type ReviewAnalysis,
   type BomLayerStatus,
+  type TemporalComparison,
+  type MemberRfm,
 } from '@/api/smartbi/restaurant-v2';
 import BomIngestDialog from './BomIngestDialog.vue';
 
@@ -207,6 +209,36 @@ const reviewAnalysis = computed<ReviewAnalysis | undefined>(
 const bomLayerStatus = computed<BomLayerStatus | undefined>(
   () => report.value?.sections?.bomLayerStatus
 );
+const temporalComparison = computed<TemporalComparison | undefined>(
+  () => report.value?.sections?.temporalComparison
+);
+const memberRfm = computed<MemberRfm | undefined>(
+  () => report.value?.sections?.memberRfm
+);
+
+function segmentTagType(segment: string): string {
+  if (segment === 'Champions') return 'success';
+  if (segment === 'Loyal') return 'success';
+  if (segment === 'New') return 'info';
+  if (segment === 'Potential') return 'info';
+  if (segment === 'At Risk') return 'warning';
+  if (segment === 'Hibernating') return 'warning';
+  if (segment === 'Lost') return 'danger';
+  return '';
+}
+
+function modeLabel(mode?: string): string {
+  if (mode === 'yoy') return '📅 同比 (YoY)';
+  if (mode === 'qoq') return '📅 环比 (QoQ)';
+  if (mode === 'mom') return '📅 月环比 (MoM)';
+  return '—';
+}
+
+function trendIcon(trend?: string): string {
+  if (trend === 'up') return '📈';
+  if (trend === 'down') return '📉';
+  return '➡️';
+}
 
 // W5.2 — BOM 数据录入 dialog state
 const bomIngestDialogVisible = ref(false);
@@ -895,6 +927,155 @@ function formatCurrency(v?: number): string {
         />
       </el-card>
 
+      <!-- W5.4: Member RFM Analysis (会员 RFM 分析) -->
+      <el-card v-if="memberRfm && memberRfm.analyzedMembers > 0" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#67C23A"><DataAnalysis /></el-icon>
+            <span>会员 RFM 分析 — {{ memberRfm.analyzedMembers }} 会员</span>
+            <el-tag size="small" type="info">W5.4</el-tag>
+          </div>
+        </template>
+
+        <el-row :gutter="16" style="margin-bottom: 12px">
+          <el-col :span="6">
+            <el-statistic :value="memberRfm.avgRecency" title="平均 Recency (天)" :precision="0" />
+          </el-col>
+          <el-col :span="6">
+            <el-statistic :value="memberRfm.avgFrequency" title="平均 Frequency" :precision="1" />
+          </el-col>
+          <el-col :span="6">
+            <el-statistic :value="memberRfm.avgMonetary" title="平均 Monetary" :precision="0" prefix="¥" />
+          </el-col>
+          <el-col :span="6">
+            <el-statistic :value="memberRfm.analyzedMembers" title="参与分析会员" />
+          </el-col>
+        </el-row>
+
+        <h5>客群分布</h5>
+        <el-table :data="Object.entries(memberRfm.segmentCounts).map(([segment, count]) => ({
+          segment,
+          count,
+          revenue: memberRfm.segmentRevenue[segment] || 0,
+          pct: (count / memberRfm.analyzedMembers * 100).toFixed(1),
+        }))" size="small" stripe>
+          <el-table-column label="客群" width="140">
+            <template #default="{ row }">
+              <el-tag :type="segmentTagType(row.segment)" size="small">
+                {{ row.segment }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="count" label="人数" width="100" />
+          <el-table-column prop="pct" label="占比" width="100">
+            <template #default="{ row }">{{ row.pct }}%</template>
+          </el-table-column>
+          <el-table-column prop="revenue" label="贡献营收" width="160">
+            <template #default="{ row }">{{ formatCurrency(row.revenue) }}</template>
+          </el-table-column>
+        </el-table>
+
+        <el-row :gutter="16" style="margin-top: 16px">
+          <el-col :span="12">
+            <h5>🌟 TOP 5 Champions (最佳客户)</h5>
+            <ul class="member-list">
+              <li v-for="m in memberRfm.topChampions.slice(0, 5)" :key="'ch-' + m.memberId">
+                <strong>{{ m.memberId }}</strong> —
+                消费 {{ m.frequency }} 次,
+                {{ formatCurrency(m.monetary) }},
+                {{ m.recencyDays }} 天前
+              </li>
+            </ul>
+          </el-col>
+          <el-col :span="12">
+            <h5>⚠️ TOP 5 At Risk (召回候选)</h5>
+            <ul class="member-list">
+              <li v-for="m in memberRfm.atRiskMembers.slice(0, 5)" :key="'ar-' + m.memberId">
+                <strong>{{ m.memberId }}</strong> —
+                曾消费 {{ formatCurrency(m.monetary) }},
+                已 {{ m.recencyDays }} 天未来
+              </li>
+            </ul>
+          </el-col>
+        </el-row>
+
+        <el-alert
+          v-for="(ins, idx) in memberRfm.insights"
+          :key="'rfm-ins-' + idx"
+          :title="ins"
+          type="info"
+          :closable="false"
+          style="margin-top: 6px"
+        />
+      </el-card>
+
+      <!-- W5.6: Temporal Comparison (同店同比) -->
+      <el-card
+        v-if="temporalComparison && temporalComparison.mode !== 'insufficient'"
+        class="section-card"
+        shadow="hover"
+      >
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#409EFF"><TrendCharts /></el-icon>
+            <span>
+              同店同比 (Temporal Comparison) — {{ modeLabel(temporalComparison.mode) }}
+            </span>
+            <el-tag size="small" type="info">W5.6</el-tag>
+          </div>
+        </template>
+
+        <div class="temporal-message">
+          {{ temporalComparison.messageZh }}
+        </div>
+
+        <el-row :gutter="16" style="margin-top: 12px">
+          <el-col :span="8">
+            <el-statistic :value="temporalComparison.monthsAvailable" title="可用月数" />
+          </el-col>
+          <el-col :span="8">
+            <div class="metric-card">
+              <div class="metric-label">当期</div>
+              <div class="metric-value">{{ temporalComparison.currentPeriod }}</div>
+            </div>
+          </el-col>
+          <el-col :span="8">
+            <div class="metric-card">
+              <div class="metric-label">对比期</div>
+              <div class="metric-value">{{ temporalComparison.comparePeriod }}</div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <el-table
+          :data="temporalComparison.deltas.slice(0, 15)"
+          size="small"
+          stripe
+          style="margin-top: 12px"
+        >
+          <el-table-column prop="groupName" label="门店" />
+          <el-table-column prop="currentValue" label="当期" width="130">
+            <template #default="{ row }">{{ formatCurrency(row.currentValue) }}</template>
+          </el-table-column>
+          <el-table-column prop="compareValue" label="对比期" width="130">
+            <template #default="{ row }">{{ formatCurrency(row.compareValue) }}</template>
+          </el-table-column>
+          <el-table-column prop="deltaPct" label="变化" width="130">
+            <template #default="{ row }">
+              <strong
+                :class="{
+                  'text-success': row.trend === 'up',
+                  'text-danger': row.trend === 'down',
+                }"
+              >
+                {{ trendIcon(row.trend) }}
+                {{ row.deltaPct > 0 ? '+' : '' }}{{ (row.deltaPct * 100).toFixed(1) }}%
+              </strong>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+
       <!-- Week 4.4: BOM Layer Status -->
       <el-card v-if="bomLayerStatus" class="section-card" shadow="hover">
         <template #header>
@@ -1250,5 +1431,27 @@ function formatCurrency(v?: number): string {
   padding-left: 20px;
   line-height: 1.8;
   color: #606266;
+}
+
+/* W5.4 RFM member list */
+.member-list {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.8;
+  color: #606266;
+  font-size: 13px;
+}
+
+/* W5.6 temporal comparison */
+.temporal-message {
+  font-size: 14px;
+  padding: 10px 14px;
+  background: #ecf5ff;
+  border-left: 4px solid #409eff;
+  color: #303133;
+}
+
+.text-success {
+  color: #67c23a;
 }
 </style>
