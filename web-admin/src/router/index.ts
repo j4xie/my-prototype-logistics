@@ -717,7 +717,9 @@ const businessRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/platform/canvas-editor/index.vue'),
         meta: {
           title: 'Canvas 配置编辑器',
+          icon: 'Setting',
           requiresAuth: true,
+          showInMenu: true,
         },
       },
       // 动态模块页 (Canvas配置系统)

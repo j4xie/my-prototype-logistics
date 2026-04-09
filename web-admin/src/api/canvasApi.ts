@@ -2,7 +2,8 @@
 import request from '@/utils/request'
 import type {
   ToolConfig, SkillConfig, TriggerChain, ValidationRule,
-  DefaultValue, Formula, SchedulerConfig
+  DefaultValue, Formula, SchedulerConfig,
+  ConfigVersion, PublishWindow, CompletenessCheck
 } from '@/types/canvas'
 
 const v2 = (factoryId: string) => `/${factoryId}/config/v2`
@@ -69,3 +70,33 @@ export const aiChat = (factoryId: string, body: { message: string; mode: string;
 
 export const aiApplyDiffs = (factoryId: string, diffs: Record<string, unknown>[]) =>
   request.post(`${v2(factoryId)}/ai/apply-diffs`, diffs)
+
+// Config version status
+export const getConfigVersion = (factoryId: string) =>
+  request.get<ConfigVersion>(`/${factoryId}/config/current-version`)
+
+export const submitForReview = (factoryId: string) =>
+  request.post(`/${factoryId}/config/submit-review`)
+
+export const approveConfig = (factoryId: string, notes?: string) =>
+  request.post(`/${factoryId}/config/approve`, { notes })
+
+export const rejectConfig = (factoryId: string, reason: string) =>
+  request.post(`/${factoryId}/config/reject`, { reason })
+
+export const publishNow = (factoryId: string) =>
+  request.post(`/${factoryId}/config/publish-now`)
+
+export const cancelApproval = (factoryId: string) =>
+  request.post(`/${factoryId}/config/cancel-approval`)
+
+// Publish window
+export const getPublishWindow = (factoryId: string) =>
+  request.get<PublishWindow>(`/${factoryId}/config/publish-window`)
+
+export const setPublishWindow = (factoryId: string, window: PublishWindow) =>
+  request.put(`/${factoryId}/config/publish-window`, window)
+
+// Completeness check
+export const checkCompleteness = (factoryId: string) =>
+  request.get<CompletenessCheck>(`/${factoryId}/config/completeness-check`)

@@ -7,10 +7,32 @@
     </div>
     <div class="module-list">
       <div
-        v-for="mod in filteredModules"
+        v-for="mod in enabledModules"
         :key="mod.moduleCode"
         class="module-item"
         :class="{ active: mod.moduleCode === selectedModule }"
+        draggable="true"
+        @dragstart="onDragStart($event, mod)"
+        @dragover.prevent
+        @drop="onDrop($event, mod)"
+        @click="$emit('select', mod.moduleCode)"
+      >
+        <span class="drag-handle">⠿</span>
+        <span class="module-name">{{ mod.displayName || mod.moduleCode }}</span>
+        <el-switch
+          v-model="mod.enabled"
+          size="small"
+          @click.stop
+          @change="toggleModule(mod)"
+        />
+      </div>
+      <div style="border-top:1px solid var(--el-border-color-lighter);margin:6px 0"></div><div style="font-size:10px;color:var(--el-text-color-placeholder);margin-bottom:4px">已禁用</div>
+      <div
+        v-for="mod in disabledModules"
+        :key="mod.moduleCode"
+        class="module-item"
+        :class="{ active: mod.moduleCode === selectedModule }"
+        style="opacity:0.4"
         draggable="true"
         @dragstart="onDragStart($event, mod)"
         @dragover.prevent
@@ -60,6 +82,9 @@ const filteredModules = computed(() =>
     m.displayName.includes(search.value) || m.moduleCode.includes(search.value)
   )
 )
+
+const enabledModules = computed(() => filteredModules.value.filter(m => m.enabled))
+const disabledModules = computed(() => filteredModules.value.filter(m => !m.enabled))
 
 async function loadModules() {
   if (!props.factoryId) return

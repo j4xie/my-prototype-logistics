@@ -101,3 +101,43 @@ export interface ConfigDiff {
   after: unknown
   description: string
 }
+
+export type ConfigStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'REJECTED'
+
+export interface ConfigVersion {
+  id: number
+  factoryId: string
+  configVersion: number
+  status: ConfigStatus
+  publishedAt?: string
+  publishedBy?: number
+  submittedBy?: number
+  submittedAt?: string
+  reviewedBy?: number
+  reviewedAt?: string
+  reviewNotes?: string
+  changeSummary?: string
+}
+
+export interface PublishWindow {
+  startHour: number   // 0-23, default 22
+  startMinute: number // 0-59, default 0
+  endHour: number     // 0-23, default 6
+  endMinute: number   // 0-59, default 0
+}
+
+export interface OnboardingState {
+  step: 1 | 2 | 3 | 4
+  selectedTemplate: string | null
+  enabledModules: string[]
+  workflowsConfirmed: boolean
+}
+
+export interface CompletenessCheck {
+  passed: boolean
+  checks: {
+    name: string
+    passed: boolean
+    message: string
+  }[]
+}

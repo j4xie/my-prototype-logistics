@@ -1,6 +1,6 @@
 <!-- WorkflowDesigner.vue — Tab 2: Vue Flow state machine -->
 <template>
-  <div class="workflow-designer" style="height:500px">
+  <div class="workflow-designer" style="flex:1;min-height:300px">
     <VueFlow
       :nodes="nodes"
       :edges="edges"
