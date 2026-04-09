@@ -441,10 +441,137 @@ GET    /api/mobile/{factoryId}/config/v2/ddl-log                  — DDL 执行
 
 ---
 
-## 14. 不在 V3 范围内
+## 14. V4a — DynamicFormRenderer（配置驱动渲染）
 
-- PageEditor 画布拖拽编辑器 (P3-1)
-- 49 页 el-form 全站迁移 (P3-4)
+### 14.1 现状
+
+已有基础设施：
+- `web-admin/src/views/modules/components/SchemaFormRenderer.vue` — 已实现 schema 驱动渲染，支持 10+ 字段类型、字段分组、条件显隐、只读模式
+- `web-admin/src/views/modules/DynamicModulePage.vue` — 通用路由 `/modules/:moduleCode`
+- 26 个 Canvas 编辑器组件已就位
+
+### 14.2 需要扩展
+
+在 `SchemaFormRenderer` 基础上扩展，不重写：
+
+| 能力 | 现有 | V4a 补齐 |
+|------|------|---------|
+| 基础字段类型 | string/text/decimal/integer/boolean/date/select | + attachment/sub_table |
+| 动态字段 | 不支持 | source=dynamic 的字段自动混入，CRUD 走 DynamicFieldService |
+| 条件显隐 | dependsOn 简单逻辑 | visibleWhen SpEL 表达式（前端执行） |
+| 动态计算 | 不支持 | computedWhen SpEL 表达式（前端执行） |
+| 子表渲染 | line_items 固定结构 | type=sub_table 动态列定义，可编辑 el-table |
+| 附件上传 | 不支持 | type=attachment，el-upload + OSS |
+| Tab 布局 | 无结构 | layoutConfig.tabs 驱动 el-tabs 渲染 |
+| 用户权限 | 角色级 | userId 级字段权限过滤 |
+
+### 14.3 SpEL → JavaScript 转换
+
+前端需要一个轻量 SpEL 解析器执行 `visibleWhen`/`computedWhen`：
+
+```typescript
+// spelEvaluator.ts
+// 支持: ==, !=, >, <, >=, <=, &&, ||, !, 三元运算符, 属性访问
+// 输入: "status == 'SHIPPED' && amount > 0"
+// 上下文: { status: 'SHIPPED', amount: 3300 }
+// 输出: true
+function evaluateSpel(expression: string, context: Record<string, any>): any;
+```
+
+### 14.4 客户演示路径页面替换（6 页）
+
+优先替换六扇门核心演示路径的硬编码页面为 DynamicModulePage：
+1. 销售订单 (sales_order) — 含 4 tab
+2. 研发样品 (rd_sample)
+3. BOM (bom) — 含原辅料 3 tab
+4. 生产计划 (production_plan)
+5. 物料需求单 (material_requisition)
+6. 发票记录 (invoice_record)
+
+其余 43 页保持硬编码，后续按需迁移。
+
+---
+
+## 15. V4b — PageEditor（拖拽编辑器）
+
+### 15.1 技术选型
+
+- `@vue-flow/core` ^1.48.2 — 已安装，用于流程图/连线
+- `vuedraggable` (vue-draggable-next) — 新增，字段拖拽排序
+- Canvas 编辑器已有 26 个组件 — 在此基础上扩展
+
+### 15.2 PageEditor 组件架构
+
+```
+canvas-editor/
+├─ index.vue                     (已有，扩展)
+├─ PageEditor.vue                (NEW — 主编辑器)
+│   ├─ FieldPalette.vue          (NEW — 左侧字段类型面板，拖拽源)
+│   ├─ FormCanvas.vue            (NEW — 中间画布，拖拽目标)
+│   ├─ FieldPropertyDrawer.vue   (已有，扩展 — 右侧属性面板)
+│   └─ PreviewPanel.vue          (NEW — 实时预览)
+├─ TabLayoutEditor.vue           (NEW — Tab 拖拽编排)
+└─ composables/
+    └─ usePageEditor.ts          (NEW — 编辑器状态管理)
+```
+
+### 15.3 FieldPalette（字段类型面板）
+
+左侧面板展示可拖入的字段类型：
+
+```
+基础字段          扩展字段          布局
+─────────       ─────────       ─────────
+📝 文本          📎 附件           ── 分割线
+🔢 数字          📋 子表           📑 Tab 分组
+💰 金额          🔗 关联引用       📦 折叠面板
+📅 日期          📊 聚合公式
+☑️ 开关
+🔽 下拉选择
+```
+
+拖入画布后自动生成 `CanvasDynamicField` 配置。
+
+### 15.4 FormCanvas（画布）
+
+- 显示当前模块所有字段（JPA + 动态），按 layoutConfig 排列
+- 支持拖拽排序（vuedraggable）
+- 点击字段 → 右侧 FieldPropertyDrawer 显示属性
+- 支持拖拽到不同 Tab/分组
+
+### 15.5 PreviewPanel（实时预览）
+
+- 复用 SchemaFormRenderer 渲染当前配置
+- 切换预览模式：桌面 / 移动端
+- 切换角色/用户预览权限效果
+
+### 15.6 交互流程
+
+```
+1. 管理员进入 Canvas → 选模块 → 进入 PageEditor
+2. 左侧拖字段到画布 → 自动创建动态字段定义 (PENDING_DDL)
+3. 点击字段 → 右侧配属性 (label/type/visibleWhen/required...)
+4. 拖拽 Tab → 配 Tab 内容
+5. 右上预览 → 切换角色查看效果
+6. 保存 Draft → 提交审核 → 发布 (执行 DDL)
+```
+
+---
+
+## 16. 更新后的代码量估算
+
+| 阶段 | 组件 | 文件数 | 估算行数 |
+|------|------|--------|---------|
+| **V3 后端** | DDL + Dynamic + Aggregate + AI Tools | ~18 | ~2060 |
+| **V4a 渲染** | SchemaFormRenderer 扩展 + SpEL 解析 + 6 页迁移 | ~12 | ~1500 |
+| **V4b 编辑器** | PageEditor + FieldPalette + FormCanvas + Preview + TabLayout | ~8 | ~2000 |
+| **合计** | | **~38 文件** | **~5560 行** |
+
+---
+
+## 17. 不在本次范围内
+
+- 49 页 el-form 全站迁移（只做 6 页演示路径）
 - RN App 端 schemaJson 渲染 (P3-7)
 - Formily 引入 (P3-11)
 - 3 种报工模式 (P3-9)
