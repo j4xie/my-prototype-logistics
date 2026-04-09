@@ -334,7 +334,34 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                     draft.setConfigVersion(getNextVersion(factoryId));
                     draft.setStatus("DRAFT");
                     draft.setCreatedBy(operatorId);
-                    return factoryConfigurationRepository.save(draft);
+                    FactoryConfiguration saved = factoryConfigurationRepository.save(draft);
+
+                    // 从上个 published 版本 copy 所有 module configs 到新 draft
+                    factoryConfigurationRepository.findLatestPublished(factoryId)
+                            .ifPresent(published -> {
+                                List<FactoryModuleConfig> prevModules = factoryModuleConfigRepository
+                                        .findByFactoryIdAndConfigVersion(factoryId, published.getConfigVersion());
+                                for (FactoryModuleConfig src : prevModules) {
+                                    FactoryModuleConfig copy = new FactoryModuleConfig();
+                                    copy.setFactoryId(factoryId);
+                                    copy.setModuleCode(src.getModuleCode());
+                                    copy.setConfigVersion(saved.getConfigVersion());
+                                    copy.setEnabled(src.getEnabled());
+                                    copy.setFieldConfig(new HashMap<>(src.getFieldConfig()));
+                                    copy.setWorkflowConfig(new HashMap<>(src.getWorkflowConfig()));
+                                    copy.setValidationConfig(new HashMap<>(src.getValidationConfig()));
+                                    copy.setPermissionConfig(new HashMap<>(src.getPermissionConfig()));
+                                    copy.setLayoutConfig(new HashMap<>(src.getLayoutConfig()));
+                                    copy.setCustomLabels(new HashMap<>(src.getCustomLabels()));
+                                    copy.setComputedFields(new HashMap<>(src.getComputedFields()));
+                                    copy.setRenderingMode(src.getRenderingMode());
+                                    factoryModuleConfigRepository.save(copy);
+                                }
+                                log.info("新 draft v{} 从 published v{} 继承了 {} 个模块配置",
+                                        saved.getConfigVersion(), published.getConfigVersion(), prevModules.size());
+                            });
+
+                    return saved;
                 });
     }
 
