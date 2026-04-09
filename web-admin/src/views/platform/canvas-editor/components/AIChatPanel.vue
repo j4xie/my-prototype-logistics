@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
-import request from '@/utils/request'
+import request from '@/api/request'
 import type { AIAgentMode, AIMessage, ConfigDiff } from '@/types/canvas'
 
 const props = defineProps<{

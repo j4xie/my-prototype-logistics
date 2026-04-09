@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getModuleSummaries } from '@/api/configApi'
+import { getModules } from '@/api/configApi'
 
 const props = defineProps<{ factoryId: string; modules: string[] }>()
 const emit = defineEmits<{ 'update:modules': [codes: string[]] }>()
@@ -27,7 +27,7 @@ const dragItem = ref<ModuleItem | null>(null)
 
 onMounted(async () => {
   try {
-    const res = await getModuleSummaries(props.factoryId)
+    const res = await getModules(props.factoryId)
     allModules.value = (res.data || []).map((m: any) => ({
       code: m.moduleCode, name: m.moduleName || m.moduleCode,
       category: m.moduleCategory || '', enabled: props.modules.includes(m.moduleCode),

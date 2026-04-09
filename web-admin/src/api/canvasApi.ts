@@ -1,5 +1,5 @@
 // web-admin/src/api/canvasApi.ts
-import request from '@/utils/request'
+import request from './request'
 import type {
   ToolConfig, SkillConfig, TriggerChain, ValidationRule,
   DefaultValue, Formula, SchedulerConfig,

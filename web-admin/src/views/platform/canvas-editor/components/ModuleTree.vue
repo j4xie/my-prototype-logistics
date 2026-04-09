@@ -54,7 +54,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { getModuleSummaries } from '@/api/configApi'
+import { getModules } from '@/api/configApi'
 import { ElMessage } from 'element-plus'
 
 interface ModuleItem {
@@ -89,7 +89,7 @@ const disabledModules = computed(() => filteredModules.value.filter(m => !m.enab
 async function loadModules() {
   if (!props.factoryId) return
   try {
-    const res = await getModuleSummaries(props.factoryId)
+    const res = await getModules(props.factoryId)
     modules.value = (res.data || []).map((m: any) => ({
       moduleCode: m.moduleCode,
       displayName: m.moduleName || m.moduleCode,
