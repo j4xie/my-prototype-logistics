@@ -13,4 +13,7 @@ public interface FactoryDefaultValueRepository extends JpaRepository<FactoryDefa
     @Query("SELECT d FROM FactoryDefaultValue d WHERE d.factoryId IS NULL AND d.moduleCode = :moduleCode AND d.fieldCode = :fieldCode")
     List<FactoryDefaultValue> findGlobalDefaults(@Param("moduleCode") String moduleCode, @Param("fieldCode") String fieldCode);
     List<FactoryDefaultValue> findByFactoryIdAndModuleCode(String factoryId, String moduleCode);
+
+    @Query("SELECT d FROM FactoryDefaultValue d WHERE d.factoryId = :factoryId OR d.factoryId IS NULL ORDER BY d.moduleCode, d.fieldCode")
+    List<FactoryDefaultValue> findAllForFactory(@Param("factoryId") String factoryId);
 }

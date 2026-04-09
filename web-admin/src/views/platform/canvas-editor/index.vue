@@ -79,6 +79,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/store/modules/auth'
+import { aiApplyDiffs } from '@/api/canvasApi'
+import { ElMessage } from 'element-plus'
 import type { ConfigDiff } from '@/types/canvas'
 import ModuleTree from './components/ModuleTree.vue'
 import FieldConfigPanel from './components/FieldConfigPanel.vue'
@@ -102,8 +104,20 @@ function handleAIDiff(diffs: ConfigDiff[]) {
 }
 
 async function applyChanges() {
-  // TODO: Task 12 implements this
-  pendingChanges.value = []
+  if (!factoryId.value) return
+  try {
+    const diffs = pendingChanges.value.map(c => ({
+      type: c.type,
+      tool: c.path,
+      params: c.after,
+      description: c.description,
+    }))
+    const res = await aiApplyDiffs(factoryId.value, diffs)
+    ElMessage.success(res.data || '变更已应用')
+    pendingChanges.value = []
+  } catch {
+    ElMessage.error('应用变更失败')
+  }
 }
 </script>
 

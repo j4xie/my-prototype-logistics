@@ -183,6 +183,8 @@ public class SalesServiceImpl implements SalesService {
     @Transactional
     public SalesOrder confirmOrder(String factoryId, String orderId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
+        runConfiguredValidation(factoryId, "STATUS_CHANGE", Map.of(
+                "status", order.getStatus().name(), "targetStatus", "CONFIRMED"));
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
             throw new BusinessException("只有草稿状态的订单可以确认");
         }
@@ -209,6 +211,8 @@ public class SalesServiceImpl implements SalesService {
     @Transactional
     public SalesOrder submitForFinanceReview(String factoryId, String orderId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
+        runConfiguredValidation(factoryId, "STATUS_CHANGE", Map.of(
+                "status", order.getStatus().name(), "targetStatus", "PENDING_FINANCE_REVIEW"));
         if (order.getStatus() != SalesOrderStatus.CONFIRMED
                 && order.getStatus() != SalesOrderStatus.FINANCE_REJECTED) {
             throw new BusinessException("只有已确认或财务驳回状态的订单可以提交财务审核");

@@ -55,3 +55,17 @@ export const getSchedulerConfigs = (factoryId: string) =>
 
 export const setSchedulerConfig = (factoryId: string, taskCode: string, body: Partial<SchedulerConfig>) =>
   request.put<SchedulerConfig>(`${v2(factoryId)}/scheduler/${taskCode}`, body)
+
+// Templates
+export const getTemplates = (factoryId: string) =>
+  request.get(`${v2(factoryId)}/templates`)
+
+export const applyTemplate = (factoryId: string, templateCode: string) =>
+  request.post(`${v2(factoryId)}/apply-template/${templateCode}`)
+
+// AI Agent
+export const aiChat = (factoryId: string, body: { message: string; mode: string; moduleCode?: string }) =>
+  request.post(`${v2(factoryId)}/ai/chat`, body)
+
+export const aiApplyDiffs = (factoryId: string, diffs: Record<string, unknown>[]) =>
+  request.post(`${v2(factoryId)}/ai/apply-diffs`, diffs)

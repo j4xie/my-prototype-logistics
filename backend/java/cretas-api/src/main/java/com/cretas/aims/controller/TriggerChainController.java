@@ -3,9 +3,12 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.config.*;
 import com.cretas.aims.repository.config.*;
+import com.cretas.aims.service.config.FactoryConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,12 +17,19 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/config/v2")
 @RequiredArgsConstructor
-@Tag(name = "Canvas V2 Config", description = "Tool/Skill/TriggerChain 工厂级配置")
+@Tag(name = "Canvas V2 Config", description = "Tool/Skill/TriggerChain/Template 工厂级配置")
 public class TriggerChainController {
 
     private final FactoryToolConfigRepository toolConfigRepo;
     private final FactorySkillConfigRepository skillConfigRepo;
     private final FactoryTriggerChainRepository triggerChainRepo;
+
+    @Autowired(required = false)
+    private FactoryTemplateRepository templateRepo;
+
+    @Autowired(required = false)
+    @Qualifier("canvasFactoryConfigService")
+    private FactoryConfigService configService;
 
     // ========== Tool Config ==========
 
@@ -117,5 +127,23 @@ public class TriggerChainController {
         if (body.getEventType() != null) chain.setEventType(body.getEventType());
         if (body.getDescription() != null) chain.setDescription(body.getDescription());
         return ApiResponse.success(triggerChainRepo.save(chain));
+    }
+
+    // ========== Templates ==========
+
+    @GetMapping("/templates")
+    @Operation(summary = "获取行业模板列表")
+    public ApiResponse<List<FactoryTemplate>> getTemplates(@PathVariable String factoryId) {
+        if (templateRepo == null) return ApiResponse.success(List.of());
+        return ApiResponse.success(templateRepo.findByIsActiveTrue());
+    }
+
+    @PostMapping("/apply-template/{templateCode}")
+    @Operation(summary = "应用行业模板到工厂")
+    public ApiResponse<String> applyTemplate(
+            @PathVariable String factoryId, @PathVariable String templateCode) {
+        if (configService == null) throw new com.cretas.aims.exception.BusinessException("配置服务未就绪");
+        configService.applyTemplate(factoryId, templateCode, 0L);
+        return ApiResponse.success("模板 " + templateCode + " 已应用到工厂 " + factoryId);
     }
 }

@@ -80,6 +80,8 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
      * 在 getFilteredToolsForQuery() 中读取。
      */
     private static final ThreadLocal<String> originalInputHolder = new ThreadLocal<>();
+    /** Canvas V2: factoryId for per-factory tool filtering in getFilteredToolsForQuery */
+    private static final ThreadLocal<String> factoryIdHolder = new ThreadLocal<>();
 
     @Value("${cretas.ai.service.url:http://localhost:8083}")
     private String aiServiceUrl;
@@ -327,11 +329,17 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         log.info("Calling LLM fallback for intent classification: factoryId={}, userId={}, role={}, input='{}'",
                  factoryId, userId, userRole, truncate(userInput, 50));
 
-        // 根据配置选择调用方式
-        if (shouldUseDashScopeDirect()) {
-            return classifyIntentDirect(userInput, availableIntents, factoryId, userId, userRole);
-        } else {
-            return classifyIntentViaPython(userInput, availableIntents, factoryId, userId, userRole);
+        // Canvas V2: store factoryId for per-factory tool filtering
+        factoryIdHolder.set(factoryId);
+        try {
+            // 根据配置选择调用方式
+            if (shouldUseDashScopeDirect()) {
+                return classifyIntentDirect(userInput, availableIntents, factoryId, userId, userRole);
+            } else {
+                return classifyIntentViaPython(userInput, availableIntents, factoryId, userId, userRole);
+            }
+        } finally {
+            factoryIdHolder.remove();
         }
     }
 
@@ -2978,7 +2986,32 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
                     : toolRegistry.getAllToolDefinitions();
         }
 
-        return filtered;
+        return applyFactoryToolFilter(filtered);
+    }
+
+    /**
+     * Canvas V2: Remove tools disabled for the current factory.
+     * Uses factoryIdHolder ThreadLocal set in classifyIntent().
+     */
+    private List<Tool> applyFactoryToolFilter(List<Tool> tools) {
+        String factoryId = factoryIdHolder.get();
+        if (factoryId == null || factoryId.isBlank()) return tools;
+
+        // Get factory-enabled tools (returns all if no config exists)
+        List<Tool> factoryTools = toolRegistry.getToolsForFactory(factoryId);
+        Set<String> enabledNames = factoryTools.stream()
+                .map(t -> t.getFunction().getName())
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<Tool> result = tools.stream()
+                .filter(t -> enabledNames.contains(t.getFunction().getName()))
+                .collect(java.util.stream.Collectors.toList());
+
+        if (result.size() < tools.size()) {
+            log.info("[Canvas V2] Factory {} tool filter: {} → {} tools",
+                    factoryId, tools.size(), result.size());
+        }
+        return result;
     }
 
     /**

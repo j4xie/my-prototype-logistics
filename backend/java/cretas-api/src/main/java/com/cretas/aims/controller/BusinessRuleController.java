@@ -31,10 +31,7 @@ public class BusinessRuleController {
         if (moduleCode != null) {
             return ApiResponse.success(validationRuleRepo.findByFactoryIdAndModuleCode(factoryId, moduleCode));
         }
-        // Return factory rules + global rules
-        List<FactoryValidationRule> rules = validationRuleRepo.findByFactoryIdAndModuleCode(factoryId, null);
-        rules.addAll(validationRuleRepo.findByFactoryIdAndModuleCode(null, null));
-        return ApiResponse.success(rules);
+        return ApiResponse.success(validationRuleRepo.findAllForFactory(factoryId));
     }
 
     @PutMapping("/validation-rules/{ruleCode}")
@@ -65,7 +62,7 @@ public class BusinessRuleController {
     public ApiResponse<List<FactoryDefaultValue>> getDefaultValues(
             @PathVariable String factoryId, @RequestParam(required = false) String moduleCode) {
         if (moduleCode != null) return ApiResponse.success(defaultValueRepo.findByFactoryIdAndModuleCode(factoryId, moduleCode));
-        return ApiResponse.success(defaultValueRepo.findByFactoryIdAndModuleCode(factoryId, null));
+        return ApiResponse.success(defaultValueRepo.findAllForFactory(factoryId));
     }
 
     @PutMapping("/default-values")
