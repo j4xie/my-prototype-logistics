@@ -511,6 +511,7 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
 
         for (Map<String, Object> schemaDef : schemaDefs) {
             String code = (String) schemaDef.getOrDefault("code", schemaDef.get("fieldCode"));
+            if (code == null) continue; // skip malformed field definitions
             Map<String, Object> override = fieldOverrides.containsKey(code)
                     ? (Map<String, Object>) fieldOverrides.get(code)
                     : Map.of();
@@ -528,9 +529,9 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                     ? override.get("defaultValue")
                     : schemaDef.get("defaultValue");
 
-            List<Map<String, Object>> options = override.containsKey("options")
-                    ? (List<Map<String, Object>>) override.get("options")
-                    : (List<Map<String, Object>>) schemaDef.get("options");
+            Object options = override.containsKey("options")
+                    ? override.get("options")
+                    : schemaDef.get("options");
 
             Map<String, Object> extra = new HashMap<>();
             if (schemaDef.containsKey("dependsOn")) extra.put("dependsOn", schemaDef.get("dependsOn"));

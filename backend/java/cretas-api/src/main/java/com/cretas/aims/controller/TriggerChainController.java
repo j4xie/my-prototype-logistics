@@ -94,11 +94,16 @@ public class TriggerChainController {
     @GetMapping("/trigger-chains")
     @Operation(summary = "获取工厂触发链列表")
     public ApiResponse<List<FactoryTriggerChain>> getTriggerChains(@PathVariable String factoryId) {
-        List<FactoryTriggerChain> chains = triggerChainRepo.findByFactoryId(factoryId);
-        if (chains.isEmpty()) {
-            chains = triggerChainRepo.findByFactoryId(null);
+        // Merge: factory-specific chains + global chains (where factory doesn't override)
+        List<FactoryTriggerChain> factoryChains = triggerChainRepo.findByFactoryId(factoryId);
+        List<FactoryTriggerChain> globalChains = triggerChainRepo.findByFactoryId(null);
+        java.util.Set<String> factoryCodes = factoryChains.stream()
+                .map(FactoryTriggerChain::getChainCode).collect(java.util.stream.Collectors.toSet());
+        List<FactoryTriggerChain> merged = new java.util.ArrayList<>(factoryChains);
+        for (FactoryTriggerChain g : globalChains) {
+            if (!factoryCodes.contains(g.getChainCode())) merged.add(g);
         }
-        return ApiResponse.success(chains);
+        return ApiResponse.success(merged);
     }
 
     @PutMapping("/trigger-chains/{chainCode}")

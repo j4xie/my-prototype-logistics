@@ -13,7 +13,7 @@ public class EffectiveField {
     private boolean visible;
     private boolean readonly;
     private Object defaultValue;
-    private List<Map<String, Object>> options;
+    private Object options; // List<String> (Phase 2d) or List<Map> (Phase 1)
     private String group;
     private int order;
     private Map<String, Object> extra;
