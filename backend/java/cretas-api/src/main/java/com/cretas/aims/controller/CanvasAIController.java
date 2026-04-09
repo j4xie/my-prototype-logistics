@@ -1,9 +1,11 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.ai.client.DashScopeClient;
 import com.cretas.aims.ai.tool.ToolExecutor;
 import com.cretas.aims.ai.tool.ToolRegistry;
 import com.cretas.aims.ai.dto.ToolCall;
 import com.cretas.aims.dto.common.ApiResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,16 +20,33 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/config/v2/ai")
 @RequiredArgsConstructor
-@Tag(name = "Canvas AI Agent", description = "Canvas AI 配置助手")
+@Tag(name = "Canvas AI Agent", description = "Canvas AI 配置助手 (DashScope Qwen)")
 public class CanvasAIController {
 
     private final ToolRegistry toolRegistry;
     private final ObjectMapper objectMapper;
+    private final DashScopeClient dashScopeClient;
+
+    private static final String CANVAS_SYSTEM_PROMPT = """
+            你是工厂配置助手。用户通过 Canvas 配置系统管理工厂的模块、字段、工作流、校验规则、触发链和AI工具。
+
+            你可以调用以下 Canvas 配置工具:
+            - canvas_toggle_module: 启用/禁用工厂模块 (参数: moduleCode, enabled)
+            - canvas_toggle_tool: 启用/禁用AI工具 (参数: toolName, enabled)
+            - canvas_toggle_skill: 启用/禁用AI技能 (参数: skillName, enabled)
+            - canvas_update_field: 修改字段属性 (参数: moduleCode, fieldCode, property[visible/required/label/defaultValue], value)
+            - canvas_update_trigger_chain: 修改触发链 (参数: chainCode, enabled, stepOrder, stepEnabled)
+            - canvas_apply_template: 应用行业模板 (参数: templateCode[FOOD_PROCESSING/BAKERY/RESTAURANT/AQUACULTURE])
+
+            可用模块: sales_order, purchase_order, bom, production_plan, production_report,
+            quality_inspection, inventory, inbound, outbound, equipment, customer, supplier,
+            finance_ar, finance_ap, hr_employee, transfer, traceability
+            """;
 
     @Data
     public static class AIRequest {
         private String message;
-        private String mode;
+        private String mode; // autopilot, plan, action
         private String moduleCode;
     }
 
@@ -39,7 +58,7 @@ public class CanvasAIController {
     }
 
     @PostMapping("/chat")
-    @Operation(summary = "Canvas AI 对话")
+    @Operation(summary = "Canvas AI 对话 (DashScope Qwen)")
     public ApiResponse<AIResponse> chat(
             @PathVariable String factoryId,
             @RequestBody AIRequest request) {
@@ -49,22 +68,27 @@ public class CanvasAIController {
         String message = request.getMessage();
         log.info("Canvas AI [{}] factory={}: {}", mode, factoryId, message);
 
-        switch (mode) {
-            case "autopilot" -> {
-                response.setReply(executeAutopilot(factoryId, message));
-                response.setApplied(true);
+        try {
+            switch (mode) {
+                case "autopilot" -> {
+                    response.setReply(executeAutopilot(factoryId, message));
+                    response.setApplied(true);
+                }
+                case "plan" -> {
+                    List<Map<String, Object>> diffs = generatePlan(factoryId, message);
+                    response.setDiffs(diffs);
+                    response.setReply("已生成 " + diffs.size() + " 项变更方案，请逐项审核后应用。");
+                    response.setApplied(false);
+                }
+                case "action" -> {
+                    response.setReply(analyzeImpact(factoryId, message));
+                    response.setApplied(false);
+                }
+                default -> response.setReply("未知模式: " + mode);
             }
-            case "plan" -> {
-                List<Map<String, Object>> diffs = generatePlan(factoryId, message);
-                response.setDiffs(diffs);
-                response.setReply("已生成 " + diffs.size() + " 项变更方案，请逐项审核。");
-                response.setApplied(false);
-            }
-            case "action" -> {
-                response.setReply(analyzeImpact(factoryId, message));
-                response.setApplied(false);
-            }
-            default -> response.setReply("未知模式: " + mode);
+        } catch (Exception e) {
+            log.error("Canvas AI error: {}", e.getMessage(), e);
+            response.setReply("AI 处理失败: " + e.getMessage());
         }
 
         return ApiResponse.success(response);
@@ -77,12 +101,16 @@ public class CanvasAIController {
             @RequestBody List<Map<String, Object>> diffs) {
 
         int applied = 0;
+        List<String> errors = new ArrayList<>();
         for (Map<String, Object> diff : diffs) {
             String toolName = (String) diff.get("tool");
             if (toolName == null) continue;
 
             Optional<ToolExecutor> executor = toolRegistry.getExecutor(toolName);
-            if (executor.isEmpty()) continue;
+            if (executor.isEmpty()) {
+                errors.add("工具不存在: " + toolName);
+                continue;
+            }
 
             try {
                 @SuppressWarnings("unchecked")
@@ -92,36 +120,156 @@ public class CanvasAIController {
                 executor.get().execute(toolCall, Map.of("factoryId", factoryId));
                 applied++;
             } catch (Exception e) {
+                errors.add(toolName + ": " + e.getMessage());
                 log.warn("Failed to apply diff {}: {}", toolName, e.getMessage());
             }
         }
 
-        return ApiResponse.success("已应用 " + applied + "/" + diffs.size() + " 项变更");
+        String msg = "已应用 " + applied + "/" + diffs.size() + " 项变更";
+        if (!errors.isEmpty()) msg += "。失败: " + String.join("; ", errors);
+        return ApiResponse.success(msg);
     }
 
+    /**
+     * Autopilot: LLM 分析用户意图 → 直接调用 canvas tools 执行
+     */
     private String executeAutopilot(String factoryId, String message) {
-        if (message.contains("模板") || message.contains("template")) {
-            return "请使用模板选择器选择行业模板，或告诉我行业类型（如'烘焙'、'水产'），AI 将自动配置。";
+        String prompt = CANVAS_SYSTEM_PROMPT + """
+
+                模式: AUTOPILOT (全自动执行)
+                工厂ID: %s
+
+                用户指令: "%s"
+
+                请分析用户需求，返回需要执行的操作列表。格式为 JSON 数组:
+                [{"tool":"canvas_xxx","params":{"key":"value"},"description":"说明"}]
+
+                只返回 JSON 数组，不要其他文字。如果不需要任何操作，返回空数组 []。
+                """.formatted(factoryId, message);
+
+        String llmResponse = dashScopeClient.chatFast(prompt, message);
+        log.info("Canvas AI Autopilot LLM response: {}", llmResponse);
+
+        // Parse and execute
+        try {
+            // Extract JSON array from response
+            String json = extractJson(llmResponse);
+            List<Map<String, Object>> actions = objectMapper.readValue(json,
+                    new TypeReference<List<Map<String, Object>>>() {});
+
+            if (actions.isEmpty()) return "分析完成，当前无需操作。";
+
+            StringBuilder result = new StringBuilder("已执行 " + actions.size() + " 项操作:\n");
+            for (Map<String, Object> action : actions) {
+                String toolName = (String) action.get("tool");
+                String desc = (String) action.getOrDefault("description", toolName);
+                @SuppressWarnings("unchecked")
+                Map<String, Object> params = (Map<String, Object>) action.getOrDefault("params", Map.of());
+
+                Optional<ToolExecutor> executor = toolRegistry.getExecutor(toolName);
+                if (executor.isEmpty()) {
+                    result.append("- ❌ ").append(desc).append(" (工具不存在)\n");
+                    continue;
+                }
+
+                try {
+                    String argsJson = objectMapper.writeValueAsString(params);
+                    ToolCall toolCall = ToolCall.of("autopilot-" + toolName, toolName, argsJson);
+                    executor.get().execute(toolCall, Map.of("factoryId", factoryId));
+                    result.append("- ✅ ").append(desc).append("\n");
+                } catch (Exception e) {
+                    result.append("- ❌ ").append(desc).append(": ").append(e.getMessage()).append("\n");
+                }
+            }
+            return result.toString();
+        } catch (Exception e) {
+            log.warn("Autopilot JSON parse failed, returning raw LLM response: {}", e.getMessage());
+            return llmResponse;
         }
-        if (message.contains("禁用") || message.contains("disable")) {
-            return "请指定要禁用的模块或工具名称，如: '禁用排程模块' 或 '禁用 scheduling_list 工具'";
-        }
-        return "Autopilot 已收到指令: " + message + "。正在分析配置方案...";
     }
 
+    /**
+     * Plan Mode: LLM 生成变更方案 (不执行)，用户逐项审核后批量应用
+     */
     private List<Map<String, Object>> generatePlan(String factoryId, String message) {
-        List<Map<String, Object>> diffs = new ArrayList<>();
-        // In production, LLM analyzes message and generates tool call list
-        diffs.add(Map.of(
-            "type", "FIELD_CHANGE",
-            "tool", "canvas_update_field",
-            "params", Map.of("moduleCode", "sales_order", "fieldCode", "example", "property", "required", "value", false),
-            "description", "示例变更 — 连接 LLM 后将生成真实变更"
-        ));
-        return diffs;
+        String prompt = CANVAS_SYSTEM_PROMPT + """
+
+                模式: PLAN (生成方案，不执行)
+                工厂ID: %s
+
+                用户需求: "%s"
+
+                请分析需求，生成配置变更方案。格式为 JSON 数组:
+                [{"type":"TOOL_TOGGLE|FIELD_CHANGE|TRIGGER_CHAIN_CHANGE|VALIDATION_RULE_CHANGE",
+                  "tool":"canvas_xxx",
+                  "params":{"key":"value"},
+                  "description":"中文说明这个变更的目的"}]
+
+                只返回 JSON 数组。每个变更必须有清晰的中文 description。
+                """.formatted(factoryId, message);
+
+        String llmResponse = dashScopeClient.chatFast(prompt, message);
+        log.info("Canvas AI Plan LLM response: {}", llmResponse);
+
+        try {
+            String json = extractJson(llmResponse);
+            return objectMapper.readValue(json, new TypeReference<List<Map<String, Object>>>() {});
+        } catch (Exception e) {
+            log.warn("Plan JSON parse failed: {}", e.getMessage());
+            // Return a single item explaining the error
+            return List.of(Map.of(
+                    "type", "INFO",
+                    "tool", "",
+                    "params", Map.of(),
+                    "description", "AI 分析: " + llmResponse
+            ));
+        }
     }
 
+    /**
+     * Action Mode: LLM 分析用户操作的关联影响
+     */
     private String analyzeImpact(String factoryId, String message) {
-        return "提示: 此操作可能影响关联模块配置。详细影响分析将在连接 LLM 服务后启用。";
+        String prompt = CANVAS_SYSTEM_PROMPT + """
+
+                模式: ACTION (实时提示)
+                工厂ID: %s
+
+                用户正在操作: "%s"
+
+                请分析这个操作可能的关联影响:
+                1. 哪些模块/字段/工具会受影响？
+                2. 有什么潜在风险？
+                3. 有什么建议？
+
+                用简洁的中文回答，不超过 200 字。
+                """.formatted(factoryId, message);
+
+        return dashScopeClient.chatFast(prompt, message);
+    }
+
+    /**
+     * Extract JSON array from LLM response (handles markdown code blocks)
+     */
+    private String extractJson(String response) {
+        if (response == null) return "[]";
+        String trimmed = response.trim();
+        // Remove markdown code block if present
+        if (trimmed.startsWith("```json")) {
+            trimmed = trimmed.substring(7);
+        } else if (trimmed.startsWith("```")) {
+            trimmed = trimmed.substring(3);
+        }
+        if (trimmed.endsWith("```")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 3);
+        }
+        trimmed = trimmed.trim();
+        // Find first [ and last ]
+        int start = trimmed.indexOf('[');
+        int end = trimmed.lastIndexOf(']');
+        if (start >= 0 && end > start) {
+            return trimmed.substring(start, end + 1);
+        }
+        return "[]";
     }
 }
