@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.Type;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Entity
@@ -33,7 +34,7 @@ public class ModuleSchema {
 
     @Type(JsonBinaryType.class)
     @Column(name = "field_schema", columnDefinition = "jsonb", nullable = false)
-    private Map<String, Object> fieldSchema;
+    private Object fieldSchema;
 
     @Type(JsonBinaryType.class)
     @Column(name = "workflow_schema", columnDefinition = "jsonb")

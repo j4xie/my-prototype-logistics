@@ -83,8 +83,18 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
         }
 
         // Build EffectiveField list from schema.fieldSchema
-        List<EffectiveField> fields = buildEffectiveFields(schema.getFieldSchema(), effectiveFieldConfig, customLabels);
-        List<FieldGroup> groups = buildFieldGroups(schema.getFieldSchema());
+        // fieldSchema can be: Map {"fields":[...]} (Phase 1) or List [{...},...] (Phase 2d)
+        Map<String, Object> fieldSchemaMap;
+        Object rawFieldSchema = schema.getFieldSchema();
+        if (rawFieldSchema instanceof Map) {
+            fieldSchemaMap = (Map<String, Object>) rawFieldSchema;
+        } else if (rawFieldSchema instanceof List) {
+            fieldSchemaMap = Map.of("fields", rawFieldSchema);
+        } else {
+            fieldSchemaMap = Map.of("fields", List.of());
+        }
+        List<EffectiveField> fields = buildEffectiveFields(fieldSchemaMap, effectiveFieldConfig, customLabels);
+        List<FieldGroup> groups = buildFieldGroups(fieldSchemaMap);
 
         // Build workflow states and transitions
         List<WorkflowStateDTO> workflowStates = buildWorkflowStates(schema.getWorkflowSchema(), effectiveWorkflowConfig);
@@ -500,7 +510,7 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
         int order = 0;
 
         for (Map<String, Object> schemaDef : schemaDefs) {
-            String code = (String) schemaDef.get("code");
+            String code = (String) schemaDef.getOrDefault("code", schemaDef.get("fieldCode"));
             Map<String, Object> override = fieldOverrides.containsKey(code)
                     ? (Map<String, Object>) fieldOverrides.get(code)
                     : Map.of();
