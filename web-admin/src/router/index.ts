@@ -710,6 +710,16 @@ const businessRoutes: RouteRecordRaw[] = [
         ]
       },
 
+      // Canvas 配置编辑器
+      {
+        path: 'canvas-editor',
+        name: 'CanvasEditor',
+        component: () => import('@/views/platform/canvas-editor/index.vue'),
+        meta: {
+          title: 'Canvas 配置编辑器',
+          requiresAuth: true,
+        },
+      },
       // 动态模块页 (Canvas配置系统)
       {
         path: 'modules/:moduleCode',
