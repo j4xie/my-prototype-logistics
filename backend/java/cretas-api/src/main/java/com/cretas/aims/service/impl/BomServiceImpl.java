@@ -54,6 +54,14 @@ public class BomServiceImpl implements BomService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private FactoryConfigService factoryConfigService;
 
+    /** Canvas V2: DB-driven formula engine */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.FormulaEngine formulaEngine;
+
+    /** Canvas V2: DB-driven default value resolver */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DefaultValueResolver defaultValueResolver;
+
     // ============ BOM Items ============
 
     @Override
@@ -256,8 +264,8 @@ public class BomServiceImpl implements BomService {
         BigDecimal materialCostTotal = BigDecimal.ZERO;
 
         for (BomItem item : bomItems) {
-            BigDecimal actualQuantity = calculateActualQuantity(item.getStandardQuantity(), item.getYieldRate());
-            BigDecimal subtotal = calculateMaterialCost(actualQuantity, item.getUnitPrice());
+            BigDecimal actualQuantity = calculateActualQuantity(factoryId, item.getStandardQuantity(), item.getYieldRate());
+            BigDecimal subtotal = calculateMaterialCost(factoryId, actualQuantity, item.getUnitPrice());
 
             BomCostSummaryDTO.MaterialCostItem costItem = BomCostSummaryDTO.MaterialCostItem.builder()
                 .materialName(item.getMaterialName())
@@ -280,7 +288,7 @@ public class BomServiceImpl implements BomService {
         BigDecimal laborCostTotal = BigDecimal.ZERO;
 
         for (LaborCostConfig config : laborCosts) {
-            BigDecimal subtotal = calculateLaborCost(config.getUnitPrice(), config.getDefaultQuantity());
+            BigDecimal subtotal = calculateLaborCost(factoryId, config.getUnitPrice(), config.getDefaultQuantity());
 
             BomCostSummaryDTO.LaborCostItem costItem = BomCostSummaryDTO.LaborCostItem.builder()
                 .processName(config.getProcessName())
@@ -300,7 +308,7 @@ public class BomServiceImpl implements BomService {
         BigDecimal overheadCostTotal = BigDecimal.ZERO;
 
         for (OverheadCostConfig config : overheadCosts) {
-            BigDecimal subtotal = calculateOverheadCost(config.getUnitPrice(), config.getAllocationRate());
+            BigDecimal subtotal = calculateOverheadCost(factoryId, config.getUnitPrice(), config.getAllocationRate());
 
             BomCostSummaryDTO.OverheadCostItem costItem = BomCostSummaryDTO.OverheadCostItem.builder()
                 .name(config.getName())
@@ -365,10 +373,20 @@ public class BomServiceImpl implements BomService {
      * 如果 factoryConfigService 未注入（模块未部署），返回 fallback。
      */
     private Object getConfigDefault(String factoryId, String fieldCode, Object fallback) {
+        // Canvas V2 Layer B: try DefaultValueResolver first (condition-based defaults)
+        if (defaultValueResolver != null) {
+            try {
+                Object val = defaultValueResolver.resolve(factoryId, "bom", fieldCode, java.util.Map.of());
+                if (val != null) return val;
+            } catch (Exception e) {
+                log.debug("DefaultValueResolver failed for bom.{}: {}", fieldCode, e.getMessage());
+            }
+        }
+        // Phase 1: try FactoryConfigService (schema-level defaults)
         if (factoryConfigService != null) {
             try {
                 Object val = factoryConfigService.getFieldDefault(factoryId, "bom", fieldCode);
-                return val != null ? val : fallback;
+                if (val != null) return val;
             } catch (Exception e) {
                 log.debug("获取BOM字段 {} 配置默认值失败，使用 fallback: {}", fieldCode, fallback);
             }
@@ -380,13 +398,18 @@ public class BomServiceImpl implements BomService {
      * 计算实际用量（考虑出成率）
      * 公式: 实际用量 = 标准用量 / (出成率 / 100)
      */
-    private BigDecimal calculateActualQuantity(BigDecimal standardQuantity, BigDecimal yieldRate) {
-        if (standardQuantity == null) {
-            return BigDecimal.ZERO;
+    private BigDecimal calculateActualQuantity(String factoryId, BigDecimal standardQuantity, BigDecimal yieldRate) {
+        if (standardQuantity == null) return BigDecimal.ZERO;
+        if (yieldRate == null || yieldRate.compareTo(BigDecimal.ZERO) == 0) return standardQuantity;
+
+        // Canvas V2: try DB formula first
+        if (formulaEngine != null && factoryId != null) {
+            BigDecimal result = formulaEngine.evaluate(factoryId, "bom", "ACTUAL_QUANTITY",
+                    java.util.Map.of("standardQuantity", standardQuantity, "yieldRate", yieldRate));
+            if (result != null) return result;
         }
-        if (yieldRate == null || yieldRate.compareTo(BigDecimal.ZERO) == 0) {
-            return standardQuantity;
-        }
+
+        // Hardcoded fallback
         return standardQuantity.divide(
             yieldRate.divide(new BigDecimal("100"), 6, RoundingMode.HALF_UP),
             6, RoundingMode.HALF_UP
@@ -397,9 +420,13 @@ public class BomServiceImpl implements BomService {
      * 计算原料成本
      * 公式: 成本 = 实际用量 * 单价
      */
-    private BigDecimal calculateMaterialCost(BigDecimal actualQuantity, BigDecimal unitPrice) {
-        if (actualQuantity == null || unitPrice == null) {
-            return BigDecimal.ZERO;
+    private BigDecimal calculateMaterialCost(String factoryId, BigDecimal actualQuantity, BigDecimal unitPrice) {
+        if (actualQuantity == null || unitPrice == null) return BigDecimal.ZERO;
+
+        if (formulaEngine != null && factoryId != null) {
+            BigDecimal result = formulaEngine.evaluate(factoryId, "bom", "MATERIAL_COST",
+                    java.util.Map.of("actualQuantity", actualQuantity, "unitPrice", unitPrice));
+            if (result != null) return result;
         }
         return actualQuantity.multiply(unitPrice).setScale(4, RoundingMode.HALF_UP);
     }
@@ -408,11 +435,15 @@ public class BomServiceImpl implements BomService {
      * 计算人工成本
      * 公式: 成本 = 单价 * 操作量
      */
-    private BigDecimal calculateLaborCost(BigDecimal unitPrice, BigDecimal quantity) {
-        if (unitPrice == null) {
-            return BigDecimal.ZERO;
-        }
+    private BigDecimal calculateLaborCost(String factoryId, BigDecimal unitPrice, BigDecimal quantity) {
+        if (unitPrice == null) return BigDecimal.ZERO;
         BigDecimal qty = quantity != null ? quantity : BigDecimal.ONE;
+
+        if (formulaEngine != null && factoryId != null) {
+            BigDecimal result = formulaEngine.evaluate(factoryId, "bom", "LABOR_COST",
+                    java.util.Map.of("unitPrice", unitPrice, "quantity", qty));
+            if (result != null) return result;
+        }
         return unitPrice.multiply(qty).setScale(4, RoundingMode.HALF_UP);
     }
 
@@ -420,11 +451,15 @@ public class BomServiceImpl implements BomService {
      * 计算均摊费用
      * 公式: 成本 = 单价 * 分摊比例
      */
-    private BigDecimal calculateOverheadCost(BigDecimal unitPrice, BigDecimal allocationRate) {
-        if (unitPrice == null) {
-            return BigDecimal.ZERO;
-        }
+    private BigDecimal calculateOverheadCost(String factoryId, BigDecimal unitPrice, BigDecimal allocationRate) {
+        if (unitPrice == null) return BigDecimal.ZERO;
         BigDecimal rate = allocationRate != null ? allocationRate : BigDecimal.ONE;
+
+        if (formulaEngine != null && factoryId != null) {
+            BigDecimal result = formulaEngine.evaluate(factoryId, "bom", "OVERHEAD_COST",
+                    java.util.Map.of("unitPrice", unitPrice, "allocationRate", rate));
+            if (result != null) return result;
+        }
         return unitPrice.multiply(rate).setScale(4, RoundingMode.HALF_UP);
     }
 }

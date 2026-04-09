@@ -1254,14 +1254,28 @@ public class SkillRegistryImpl implements SkillRegistry {
         if (config.isEmpty()) return base;
         if (!config.get().getEnabled()) return null;
 
-        // Custom triggers override
-        if (config.get().getCustomTriggers() != null && !config.get().getCustomTriggers().isEmpty()) {
+        FactorySkillConfig fc = config.get();
+        boolean hasCustomTriggers = fc.getCustomTriggers() != null && !fc.getCustomTriggers().isEmpty();
+        boolean hasCustomDag = fc.getCustomDag() != null && !fc.getCustomDag().isEmpty();
+
+        if (hasCustomTriggers || hasCustomDag) {
+            // Build overridden skill: custom triggers and/or custom DAG (tool list)
+            List<String> triggers = hasCustomTriggers ? fc.getCustomTriggers() : base.getTriggers();
+
+            @SuppressWarnings("unchecked")
+            List<String> tools = hasCustomDag && fc.getCustomDag().containsKey("tools")
+                    ? (List<String>) fc.getCustomDag().get("tools")
+                    : base.getTools();
+
+            String promptTemplate = hasCustomDag && fc.getCustomDag().containsKey("promptTemplate")
+                    ? (String) fc.getCustomDag().get("promptTemplate")
+                    : base.getPromptTemplate();
+
             base = SkillDefinition.builder()
                     .name(base.getName()).displayName(base.getDisplayName())
                     .description(base.getDescription()).version(base.getVersion())
-                    .triggers(config.get().getCustomTriggers())
-                    .tools(base.getTools()).contextNeeded(base.getContextNeeded())
-                    .promptTemplate(base.getPromptTemplate()).source(base.getSource())
+                    .triggers(triggers).tools(tools).contextNeeded(base.getContextNeeded())
+                    .promptTemplate(promptTemplate).source(base.getSource())
                     .enabled(true).build();
         }
 

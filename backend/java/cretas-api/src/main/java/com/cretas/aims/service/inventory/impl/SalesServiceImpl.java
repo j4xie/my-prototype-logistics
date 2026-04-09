@@ -59,6 +59,14 @@ public class SalesServiceImpl implements SalesService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
 
+    /** Canvas V2: DB-driven default values */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DefaultValueResolver defaultValueResolver;
+
+    /** Canvas V2: DB-driven formula engine */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.FormulaEngine formulaEngine;
+
     public SalesServiceImpl(SalesOrderRepository salesOrderRepository,
                             SalesOrderItemRepository salesOrderItemRepository,
                             SalesDeliveryRecordRepository deliveryRecordRepository,
@@ -143,7 +151,7 @@ public class SalesServiceImpl implements SalesService {
             item.setBoxQuantity(itemDTO.getBoxQuantity());
             items.add(item);
 
-            totalAmount = totalAmount.add(item.getLineAmount());
+            totalAmount = totalAmount.add(calculateLineAmount(factoryId, item));
         }
 
         salesOrderItemRepository.saveAll(items);
@@ -621,6 +629,25 @@ public class SalesServiceImpl implements SalesService {
      * Canvas V2: Run DB-driven validation rules before hardcoded checks.
      * If no DB rules exist, this is a no-op — existing hardcoded validation still runs.
      */
+    /**
+     * Canvas V2: Calculate line amount using FormulaEngine, fall back to entity method.
+     */
+    private BigDecimal calculateLineAmount(String factoryId, SalesOrderItem item) {
+        if (formulaEngine != null && factoryId != null && item.getQuantity() != null && item.getUnitPrice() != null) {
+            try {
+                Map<String, Object> vars = new HashMap<>();
+                vars.put("quantity", item.getQuantity());
+                vars.put("unitPrice", item.getUnitPrice());
+                vars.put("discountRate", item.getDiscountRate() != null ? item.getDiscountRate() : BigDecimal.ZERO);
+                BigDecimal result = formulaEngine.evaluate(factoryId, "sales_order", "LINE_AMOUNT", vars);
+                if (result != null) return result;
+            } catch (Exception e) {
+                log.debug("FormulaEngine LINE_AMOUNT failed, using entity method: {}", e.getMessage());
+            }
+        }
+        return item.getLineAmount();
+    }
+
     private void runConfiguredValidation(String factoryId, String operation, Map<String, Object> context) {
         if (validationRuleEvaluator == null) return;
         try {
