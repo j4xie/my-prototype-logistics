@@ -55,6 +55,10 @@ public class SalesServiceImpl implements SalesService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private FactoryConfigService factoryConfigService;
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
     public SalesServiceImpl(SalesOrderRepository salesOrderRepository,
                             SalesOrderItemRepository salesOrderItemRepository,
                             SalesDeliveryRecordRepository deliveryRecordRepository,
@@ -78,6 +82,11 @@ public class SalesServiceImpl implements SalesService {
     @Override
     @Transactional
     public SalesOrder createSalesOrder(String factoryId, CreateSalesOrderRequest request, Long userId) {
+        // Canvas V2: DB-driven validation
+        runConfiguredValidation(factoryId, "CREATE", Map.of(
+                "itemCount", request.getItems() != null ? request.getItems().size() : 0,
+                "hasDuplicateProduct", false));
+
         // 验证客户
         customerRepository.findByIdAndFactoryId(request.getCustomerId(), factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("客户不存在或不属于当前组织"));
@@ -604,6 +613,21 @@ public class SalesServiceImpl implements SalesService {
      * Canvas Config: 检查工作流状态转换是否被配置允许。
      * 如果 factoryConfigService 未注入（模块未部署），默认允许所有转换（向后兼容）。
      */
+    /**
+     * Canvas V2: Run DB-driven validation rules before hardcoded checks.
+     * If no DB rules exist, this is a no-op — existing hardcoded validation still runs.
+     */
+    private void runConfiguredValidation(String factoryId, String operation, Map<String, Object> context) {
+        if (validationRuleEvaluator == null) return;
+        try {
+            validationRuleEvaluator.validate(factoryId, "sales_order", operation, context);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+        }
+    }
+
     private void checkTransitionAllowed(String factoryId, String fromStatus, String toStatus) {
         if (factoryConfigService != null) {
             if (!factoryConfigService.isTransitionAllowed(factoryId, "sales_order", fromStatus, toStatus)) {

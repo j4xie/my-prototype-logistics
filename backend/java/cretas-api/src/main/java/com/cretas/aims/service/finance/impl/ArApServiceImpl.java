@@ -36,6 +36,10 @@ public class ArApServiceImpl implements ArApService {
     private final CustomerRepository customerRepository;
     private final SupplierRepository supplierRepository;
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
     public ArApServiceImpl(ArApTransactionRepository transactionRepository,
                            CustomerRepository customerRepository,
                            SupplierRepository supplierRepository) {
@@ -51,6 +55,17 @@ public class ArApServiceImpl implements ArApService {
     public ArApTransaction recordReceivable(String factoryId, String customerId,
                                              String salesOrderId, BigDecimal amount,
                                              LocalDate dueDate, Long operatedBy, String remark) {
+        // Canvas V2: DB-driven validation
+        if (validationRuleEvaluator != null) {
+            try {
+                boolean existingAr = transactionRepository.existsByFactoryIdAndSalesOrderIdAndTransactionType(
+                        factoryId, salesOrderId, ArApTransactionType.AR_INVOICE);
+                validationRuleEvaluator.validate(factoryId, "finance_ar", "CREATE",
+                        Map.of("amount", amount, "existingArForSO", existingAr));
+            } catch (BusinessException e) { throw e; }
+            catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
+        }
+
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("应收金额必须大于0");
         }

@@ -27,6 +27,18 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     private final ConfigChangeLogRepository configChangeLogRepository;
     private final ObjectMapper objectMapper;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private FactoryTemplateRepository factoryTemplateRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private FactoryToolConfigRepository factoryToolConfigRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private FactoryDefaultValueRepository factoryDefaultValueRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.ai.tool.ToolRegistry toolRegistry;
+
     // ========== 合并配置读取 ==========
 
     @Override
@@ -319,9 +331,97 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
 
     @Override
     @Transactional
+    @SuppressWarnings("unchecked")
     public void applyTemplate(String factoryId, String templateCode, Long operatorId) {
-        log.info("applyTemplate: factoryId={}, templateCode={} (Phase 2)", factoryId, templateCode);
-        throw new BusinessException("模板系统将在 Phase 2 实现");
+        if (factoryTemplateRepository == null) {
+            throw new BusinessException("模板系统未就绪");
+        }
+        FactoryTemplate template = factoryTemplateRepository.findByTemplateCode(templateCode)
+                .orElseThrow(() -> new BusinessException("模板不存在: " + templateCode));
+
+        // 1. Create draft
+        FactoryConfiguration config = getOrCreateDraft(factoryId, operatorId);
+
+        // 2. Parse base_config
+        Map<String, Object> baseConfig = template.getBaseConfig();
+        Map<String, Object> moduleConfigs = (Map<String, Object>) baseConfig.getOrDefault("moduleConfigs", Map.of());
+        List<String> enabledModules = (List<String>) moduleConfigs.getOrDefault("enabledModules", List.of());
+        List<String> disabledModules = (List<String>) moduleConfigs.getOrDefault("disabledModules", List.of());
+
+        // 3. Enable modules
+        for (String moduleCode : enabledModules) {
+            if (moduleSchemaRepository.findByModuleCode(moduleCode).isEmpty()) continue;
+            FactoryModuleConfig fmc = factoryModuleConfigRepository
+                    .findByFactoryIdAndModuleCodeAndConfigVersion(factoryId, moduleCode, config.getConfigVersion())
+                    .orElseGet(() -> {
+                        FactoryModuleConfig c = new FactoryModuleConfig();
+                        c.setConfigVersion(config.getConfigVersion());
+                        c.setModuleCode(moduleCode);
+                        c.setFactoryId(factoryId);
+                        return c;
+                    });
+            fmc.setEnabled(true);
+            factoryModuleConfigRepository.save(fmc);
+        }
+
+        // 4. Disable modules
+        for (String moduleCode : disabledModules) {
+            FactoryModuleConfig fmc = factoryModuleConfigRepository
+                    .findByFactoryIdAndModuleCodeAndConfigVersion(factoryId, moduleCode, config.getConfigVersion())
+                    .orElseGet(() -> {
+                        FactoryModuleConfig c = new FactoryModuleConfig();
+                        c.setConfigVersion(config.getConfigVersion());
+                        c.setModuleCode(moduleCode);
+                        c.setFactoryId(factoryId);
+                        return c;
+                    });
+            fmc.setEnabled(false);
+            factoryModuleConfigRepository.save(fmc);
+        }
+
+        // 5. Apply default overrides
+        Map<String, Object> overrides = (Map<String, Object>) baseConfig.getOrDefault("defaultOverrides", Map.of());
+        Map<String, Map<String, Object>> defaultValues = (Map<String, Map<String, Object>>)
+                overrides.getOrDefault("defaultValues", Map.of());
+
+        if (factoryDefaultValueRepository != null) {
+            for (var entry : defaultValues.entrySet()) {
+                String modCode = entry.getKey();
+                for (var fieldEntry : entry.getValue().entrySet()) {
+                    FactoryDefaultValue fdv = new FactoryDefaultValue();
+                    fdv.setFactoryId(factoryId);
+                    fdv.setModuleCode(modCode);
+                    fdv.setFieldCode(fieldEntry.getKey());
+                    fdv.setDefaultValue(fieldEntry.getValue());
+                    fdv.setDescription("模板 " + templateCode);
+                    factoryDefaultValueRepository.save(fdv);
+                }
+            }
+        }
+
+        // 6. Apply tool disables
+        List<String> disabledToolPatterns = (List<String>) overrides.getOrDefault("disabledTools", List.of());
+        if (factoryToolConfigRepository != null && toolRegistry != null && !disabledToolPatterns.isEmpty()) {
+            for (String toolName : toolRegistry.getAllToolNames()) {
+                boolean shouldDisable = disabledToolPatterns.stream().anyMatch(p ->
+                        p.endsWith("*") ? toolName.startsWith(p.substring(0, p.length() - 1)) : toolName.equals(p));
+                if (shouldDisable) {
+                    FactoryToolConfig ftc = factoryToolConfigRepository.findByFactoryIdAndToolName(factoryId, toolName)
+                            .orElseGet(() -> { FactoryToolConfig c = new FactoryToolConfig(); c.setFactoryId(factoryId); c.setToolName(toolName); return c; });
+                    ftc.setEnabled(false);
+                    factoryToolConfigRepository.save(ftc);
+                }
+            }
+        }
+
+        // 7. Log + update usage count
+        logChange(factoryId, null, "TEMPLATE_APPLIED", null, null,
+                "应用模板: " + templateCode, operatorId);
+        template.setUsageCount(template.getUsageCount() + 1);
+        factoryTemplateRepository.save(template);
+
+        log.info("Template {} applied to factory {} — {} enabled, {} disabled",
+                templateCode, factoryId, enabledModules.size(), disabledModules.size());
     }
 
     // ========== Private Helpers ==========

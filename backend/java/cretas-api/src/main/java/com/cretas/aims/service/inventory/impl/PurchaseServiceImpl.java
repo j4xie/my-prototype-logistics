@@ -54,6 +54,10 @@ public class PurchaseServiceImpl implements PurchaseService {
     private final com.cretas.aims.service.finance.ArApService arApService;
     private final ApplicationEventPublisher applicationEventPublisher;
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
     /** 三价对比偏差预警阈值（10%） */
     private static final BigDecimal PRICE_ALERT_THRESHOLD = new BigDecimal("10");
 
@@ -82,6 +86,15 @@ public class PurchaseServiceImpl implements PurchaseService {
     @Override
     @Transactional
     public PurchaseOrder createPurchaseOrder(String factoryId, CreatePurchaseOrderRequest request, Long userId) {
+        // Canvas V2: DB-driven validation
+        if (validationRuleEvaluator != null) {
+            try {
+                validationRuleEvaluator.validate(factoryId, "purchase_order", "CREATE",
+                        java.util.Map.of("itemCount", request.getItems() != null ? request.getItems().size() : 0));
+            } catch (com.cretas.aims.exception.BusinessException e) { throw e; }
+            catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
+        }
+
         // 验证供应商
         supplierRepository.findByIdAndFactoryId(request.getSupplierId(), factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("供应商不存在或不属于当前组织"));
