@@ -436,6 +436,58 @@ export interface CalibrationHistoryReport {
   recommendations: string[];
 }
 
+// W6.4 — Multi-Store Comparison
+export interface StoreProfile {
+  storeName: string;
+  totalRevenue: number;
+  orderCount: number;
+  uniqueSkuCount: number;
+  avgTicket: number;
+  rank: number;
+  vsAvgRevenuePct: number;
+}
+
+export interface StoreAnomaly {
+  storeName: string;
+  metric: string;
+  value: number;
+  chainAvg: number;
+  deltaPct: number;
+  severity: 'warning' | 'critical';
+}
+
+export interface MultiStoreComparison {
+  storeCount: number;
+  storeRankings: StoreProfile[];
+  topStore: StoreProfile;
+  bottomStore: StoreProfile;
+  anomalies: StoreAnomaly[];
+  revenueSpreadRatio: number;
+  insights: string[];
+  recommendations: string[];
+}
+
+// W6.5 — Cross-Chain Benchmark
+export interface ChainProfile {
+  name: string;
+  subSector: string;
+  totalRevenue: number;
+  skuCount: number;
+  storeCount: number;
+  avgTicket: number;
+  medianPrice: number;
+  topCategory: string;
+}
+
+export interface CrossChainReport {
+  chainCount: number;
+  chainProfiles: ChainProfile[];
+  priceBandComparison: Array<{chain: string; lowPct: number; midPct: number; highPct: number}>;
+  commonDishes: Array<{dish: string; chainCount: number; chains: string[]}>;
+  insights: string[];
+  recommendations: string[];
+}
+
 // W5.6 — Temporal Comparison (同店同比)
 export interface TemporalDelta {
   groupName: string;
@@ -482,6 +534,8 @@ export interface V2UnifiedReport {
     memberRfm?: MemberRfm;
     temporalComparison?: TemporalComparison;
     calibrationHistory?: CalibrationHistoryReport;
+    // W6.4
+    multiStoreComparison?: MultiStoreComparison;
   };
   warnings: string[];
   executiveSummary: string[];
@@ -687,5 +741,69 @@ export async function deleteMonthlyPurchase(
   return pythonFetch<{ success: boolean; data?: { deleted: number } }>(
     `/api/smartbi/restaurant-monthly-purchases/${encodeURIComponent(period)}?factory_id=${encodeURIComponent(factoryId)}`,
     { method: 'DELETE' }
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// W6.5 — Cross-Chain Benchmark API (separate endpoint)
+// ═══════════════════════════════════════════════════════════
+
+/** POST cross-chain benchmark (dedicated endpoint, not part of V2 response) */
+export async function runCrossChainBenchmark(
+  _factoryId: string,
+  _uploadIds: number[]
+): Promise<{ success: boolean; data?: CrossChainReport }> {
+  // Endpoint not yet implemented on backend; return stub
+  return { success: false, data: undefined };
+}
+
+// ═══════════════════════════════════════════════════════════
+// W6 — Review Collection Management API
+// ═══════════════════════════════════════════════════════════
+
+/** GET 工厂已注册的评论源 */
+export async function listReviewSources(
+  factoryId: string
+): Promise<unknown> {
+  return pythonFetch(
+    `/api/smartbi/restaurant-review-sources?factory_id=${encodeURIComponent(factoryId)}`,
+    { method: 'GET' }
+  );
+}
+
+/** POST 注册新评论源 (门店+城市+平台) */
+export async function registerReviewSource(
+  factoryId: string,
+  storeName: string,
+  city: string,
+  platform: string
+): Promise<unknown> {
+  return pythonFetch('/api/smartbi/restaurant-review-sources', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ factory_id: factoryId, store_name: storeName, city, platform }),
+  });
+}
+
+/** POST 批量上传评论 */
+export async function uploadReviews(
+  factoryId: string,
+  storeName: string,
+  reviews: ReviewInput[]
+): Promise<unknown> {
+  return pythonFetch('/api/smartbi/restaurant-reviews/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ factory_id: factoryId, store_name: storeName, reviews }),
+  });
+}
+
+/** GET 评论统计概要 */
+export async function getReviewStats(
+  factoryId: string
+): Promise<unknown> {
+  return pythonFetch(
+    `/api/smartbi/restaurant-reviews/stats?factory_id=${encodeURIComponent(factoryId)}`,
+    { method: 'GET' }
   );
 }

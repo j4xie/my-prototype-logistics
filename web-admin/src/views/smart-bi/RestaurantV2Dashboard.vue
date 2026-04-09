@@ -31,6 +31,7 @@ import { getUploadHistory, type UploadHistoryItem } from '@/api/smartbi/upload';
 import {
   computeRestaurantAnalyticsV2,
   getRestaurantAnalyticsV2,
+  getReviewStats,
   type V2UnifiedReport,
   type V2AnalyzePayload,
   type FinancialData,
@@ -47,6 +48,8 @@ import {
   type TemporalComparison,
   type MemberRfm,
   type CalibrationHistoryReport,
+  // W6.4 types
+  type MultiStoreComparison,
 } from '@/api/smartbi/restaurant-v2';
 import BomIngestDialog from './BomIngestDialog.vue';
 
@@ -221,6 +224,26 @@ const temporalComparison = computed<TemporalComparison | undefined>(
 const memberRfm = computed<MemberRfm | undefined>(
   () => report.value?.sections?.memberRfm
 );
+const multiStoreComparison = computed<MultiStoreComparison | undefined>(
+  () => report.value?.sections?.multiStoreComparison
+);
+
+// W6 — Review collection stats (separate API call)
+const reviewStats = ref<{ totalReviews: number; storeCount: number; lastUpload?: string } | null>(null);
+
+async function loadReviewStats() {
+  try {
+    const resp = await getReviewStats(factoryId.value || 'F001') as {
+      success?: boolean;
+      data?: { totalReviews: number; storeCount: number; lastUpload?: string };
+    };
+    if (resp?.success && resp.data) {
+      reviewStats.value = resp.data;
+    }
+  } catch {
+    // Silently fail — review stats are non-critical
+  }
+}
 
 function segmentTagType(segment: string): string {
   if (segment === 'Champions') return 'success';
@@ -440,7 +463,7 @@ function renderCalibrationChart() {
   });
 }
 
-// Watch report changes to re-render charts
+// Watch report changes to re-render charts + load auxiliary data
 watch(
   () => report.value,
   async () => {
@@ -452,6 +475,8 @@ watch(
     // Attach global resize listener (idempotent via remove-then-add)
     window.removeEventListener('resize', handleChartsResize);
     window.addEventListener('resize', handleChartsResize);
+    // Load review collection stats when report is ready
+    loadReviewStats();
   },
   { flush: 'post' }
 );
@@ -1317,6 +1342,118 @@ function formatCurrency(v?: number): string {
         </el-table>
       </el-card>
 
+      <!-- W6.4: Multi-Store Comparison (多门店对比) -->
+      <el-card v-if="multiStoreComparison" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#409EFF"><DataAnalysis /></el-icon>
+            <span>多门店对比 (Multi-Store Comparison) — {{ multiStoreComparison.storeCount }} 门店</span>
+            <el-tag size="small" type="info">W6.4</el-tag>
+          </div>
+        </template>
+
+        <el-row :gutter="16" style="margin-bottom: 12px">
+          <el-col :span="8">
+            <el-statistic :value="multiStoreComparison.storeCount" title="门店数量" />
+          </el-col>
+          <el-col :span="8">
+            <el-statistic :value="multiStoreComparison.revenueSpreadRatio" title="营收离散系数" :precision="2" />
+          </el-col>
+          <el-col :span="8">
+            <el-statistic :value="multiStoreComparison.anomalies.length" title="异常项" />
+          </el-col>
+        </el-row>
+
+        <!-- Top / Bottom store highlight -->
+        <el-row :gutter="16" style="margin-bottom: 12px">
+          <el-col :span="12">
+            <div class="metric-card store-highlight-top">
+              <div class="metric-label">TOP 门店</div>
+              <div class="metric-value">{{ multiStoreComparison.topStore.storeName }}</div>
+              <div class="metric-delta">
+                {{ formatCurrency(multiStoreComparison.topStore.totalRevenue) }} /
+                客单 {{ formatCurrency(multiStoreComparison.topStore.avgTicket) }}
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="metric-card store-highlight-bottom">
+              <div class="metric-label">末位门店</div>
+              <div class="metric-value">{{ multiStoreComparison.bottomStore.storeName }}</div>
+              <div class="metric-delta">
+                {{ formatCurrency(multiStoreComparison.bottomStore.totalRevenue) }} /
+                客单 {{ formatCurrency(multiStoreComparison.bottomStore.avgTicket) }}
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <!-- Rankings table -->
+        <el-table
+          :data="multiStoreComparison.storeRankings"
+          size="small"
+          stripe
+          style="margin-bottom: 12px"
+        >
+          <el-table-column prop="rank" label="#" width="60" />
+          <el-table-column prop="storeName" label="门店" />
+          <el-table-column prop="totalRevenue" label="营收" width="130">
+            <template #default="{ row }">{{ formatCurrency(row.totalRevenue) }}</template>
+          </el-table-column>
+          <el-table-column prop="orderCount" label="订单" width="90" />
+          <el-table-column prop="avgTicket" label="客单" width="100">
+            <template #default="{ row }">{{ formatCurrency(row.avgTicket) }}</template>
+          </el-table-column>
+          <el-table-column prop="uniqueSkuCount" label="SKU 数" width="90" />
+          <el-table-column prop="vsAvgRevenuePct" label="vs 均值" width="120">
+            <template #default="{ row }">
+              <strong :class="{ 'text-success': row.vsAvgRevenuePct > 0, 'text-danger': row.vsAvgRevenuePct < 0 }">
+                {{ row.vsAvgRevenuePct > 0 ? '+' : '' }}{{ (row.vsAvgRevenuePct * 100).toFixed(1) }}%
+              </strong>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!-- Anomalies -->
+        <template v-if="multiStoreComparison.anomalies.length > 0">
+          <h5 style="margin: 0 0 8px; color: #303133;">异常检测</h5>
+          <div
+            v-for="(a, idx) in multiStoreComparison.anomalies"
+            :key="'msa-' + idx"
+            style="margin-bottom: 6px;"
+          >
+            <el-tag :type="a.severity === 'critical' ? 'danger' : 'warning'" size="small">
+              {{ a.severity }}
+            </el-tag>
+            <span style="margin-left: 8px; color: #606266;">
+              {{ a.storeName }} — {{ a.metric }}:
+              {{ a.value.toFixed(1) }} vs 链均 {{ a.chainAvg.toFixed(1) }}
+              ({{ a.deltaPct > 0 ? '+' : '' }}{{ (a.deltaPct * 100).toFixed(0) }}%)
+            </span>
+          </div>
+        </template>
+
+        <!-- Insights + Recommendations -->
+        <el-alert
+          v-for="(ins, idx) in multiStoreComparison.insights"
+          :key="'ms-ins-' + idx"
+          :title="ins"
+          type="info"
+          :closable="false"
+          show-icon
+          style="margin-top: 6px"
+        />
+        <el-alert
+          v-for="(rec, idx) in multiStoreComparison.recommendations"
+          :key="'ms-rec-' + idx"
+          :title="rec"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-top: 6px"
+        />
+      </el-card>
+
       <!-- W5.7: Calibration History (Layer A 月度校准报告) -->
       <el-card v-if="calibrationHistory" class="section-card" shadow="hover">
         <template #header>
@@ -1460,6 +1597,39 @@ function formatCurrency(v?: number): string {
         </el-row>
         <el-alert
           :title="bomLayerStatus.upgradeHint"
+          type="info"
+          :closable="false"
+          style="margin-top: 12px"
+        />
+      </el-card>
+
+      <!-- W6: Review Collection Status (评论数据概览) -->
+      <el-card v-if="reviewStats" class="section-card" shadow="hover">
+        <template #header>
+          <div class="section-title">
+            <el-icon color="#67C23A"><CircleCheckFilled /></el-icon>
+            <span>评论数据管理 (Review Collection)</span>
+            <el-tag size="small" type="info">W6</el-tag>
+          </div>
+        </template>
+        <el-row :gutter="16">
+          <el-col :span="8">
+            <el-statistic :value="reviewStats.totalReviews" title="评论总数" />
+          </el-col>
+          <el-col :span="8">
+            <el-statistic :value="reviewStats.storeCount" title="已注册门店" />
+          </el-col>
+          <el-col :span="8">
+            <div class="metric-card">
+              <div class="metric-label">最近上传</div>
+              <div class="metric-value" style="font-size: 14px;">
+                {{ reviewStats.lastUpload || '暂无' }}
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+        <el-alert
+          title="评论分析结果会在 V2 分析中自动包含 (Week 4.5 Review Analysis)。如需管理评论源或上传评论, 请使用 API 接口。"
           type="info"
           :closable="false"
           style="margin-top: 12px"
@@ -1800,5 +1970,16 @@ function formatCurrency(v?: number): string {
 
 .text-success {
   color: #67c23a;
+}
+
+/* W6.4 Multi-Store Comparison */
+.store-highlight-top {
+  border-left-color: #67c23a;
+  background: #f0f9eb;
+}
+
+.store-highlight-bottom {
+  border-left-color: #f56c6c;
+  background: #fef0f0;
 }
 </style>
