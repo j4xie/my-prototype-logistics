@@ -17,7 +17,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Service
+@Service("canvasFactoryConfigService")
 @RequiredArgsConstructor
 public class FactoryConfigServiceImpl implements FactoryConfigService {
 
