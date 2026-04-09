@@ -981,6 +981,127 @@ git commit -m "feat(canvas-v2): REST API for tool/skill/trigger chain config"
 
 ---
 
+## Task 10: Canvas AI Tools — 6 Tools for AI Config Management
+
+**Files:**
+- Create: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/canvas/CanvasToggleModuleTool.java`
+- Create: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/canvas/CanvasToggleToolTool.java`
+- Create: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/canvas/CanvasToggleSkillTool.java`
+- Create: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/canvas/CanvasUpdateFieldTool.java`
+- Create: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/canvas/CanvasUpdateTriggerChainTool.java`
+- Create: `backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/canvas/CanvasApplyTemplateTool.java`
+
+**Context:** These Tools let AI agents (Autopilot/Plan/Action modes) modify canvas config through the standard Tool-Skill architecture. They call the same config APIs/services used by the REST controllers.
+
+- [ ] **Step 1: Create CanvasToggleModuleTool**
+
+```java
+package com.cretas.aims.ai.tool.impl.canvas;
+
+import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.service.config.FactoryConfigService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+
+@Slf4j
+@Component
+public class CanvasToggleModuleTool extends AbstractBusinessTool {
+
+    @Autowired @Qualifier("canvasFactoryConfigService")
+    private FactoryConfigService configService;
+
+    @Override public String getToolName() { return "canvas_toggle_module"; }
+    @Override public String getDescription() { return "启用或禁用工厂的某个功能模块 (如排程、质检、财务)"; }
+
+    @Override public Map<String, Object> getParametersSchema() {
+        return Map.of("type", "object", "properties", Map.of(
+            "moduleCode", Map.of("type", "string", "description", "模块代码，如 scheduling, quality_inspection"),
+            "enabled", Map.of("type", "boolean", "description", "true=启用, false=禁用")
+        ), "required", List.of("moduleCode", "enabled"));
+    }
+
+    @Override protected List<String> getRequiredParameters() { return List.of("moduleCode", "enabled"); }
+
+    @Override
+    protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
+        String moduleCode = getString(params, "moduleCode");
+        boolean enabled = Boolean.TRUE.equals(params.get("enabled"));
+        configService.toggleModule(factoryId, moduleCode, enabled);
+        return buildSimpleResult(String.format("模块 %s 已%s", moduleCode, enabled ? "启用" : "禁用"), null);
+    }
+}
+```
+
+- [ ] **Step 2: Create CanvasToggleToolTool**
+
+```java
+package com.cretas.aims.ai.tool.impl.canvas;
+
+import com.cretas.aims.ai.tool.AbstractBusinessTool;
+import com.cretas.aims.entity.config.FactoryToolConfig;
+import com.cretas.aims.repository.config.FactoryToolConfigRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+
+@Slf4j
+@Component
+public class CanvasToggleToolTool extends AbstractBusinessTool {
+
+    @Autowired private FactoryToolConfigRepository toolConfigRepo;
+
+    @Override public String getToolName() { return "canvas_toggle_tool"; }
+    @Override public String getDescription() { return "启用或禁用工厂的某个 AI 工具"; }
+
+    @Override public Map<String, Object> getParametersSchema() {
+        return Map.of("type", "object", "properties", Map.of(
+            "toolName", Map.of("type", "string", "description", "工具名称，如 scheduling_list"),
+            "enabled", Map.of("type", "boolean", "description", "true=启用, false=禁用")
+        ), "required", List.of("toolName", "enabled"));
+    }
+
+    @Override protected List<String> getRequiredParameters() { return List.of("toolName", "enabled"); }
+
+    @Override
+    protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
+        String toolName = getString(params, "toolName");
+        boolean enabled = Boolean.TRUE.equals(params.get("enabled"));
+        FactoryToolConfig config = toolConfigRepo.findByFactoryIdAndToolName(factoryId, toolName)
+            .orElseGet(() -> { FactoryToolConfig c = new FactoryToolConfig(); c.setFactoryId(factoryId); c.setToolName(toolName); return c; });
+        config.setEnabled(enabled);
+        toolConfigRepo.save(config);
+        return buildSimpleResult(String.format("工具 %s 已%s", toolName, enabled ? "启用" : "禁用"), null);
+    }
+}
+```
+
+- [ ] **Step 3: Create remaining 4 Tools (same pattern)**
+
+Create `CanvasToggleSkillTool.java` — same pattern, uses `FactorySkillConfigRepository`, toolName = `canvas_toggle_skill`.
+
+Create `CanvasUpdateFieldTool.java` — parameters: moduleCode, fieldCode, property (label/required/listVisible/formVisible), value. Uses `FactoryConfigService.updateFieldConfig()`.
+
+Create `CanvasUpdateTriggerChainTool.java` — parameters: chainCode, action (enable/disable/addStep/removeStep). Uses `FactoryTriggerChainRepository`.
+
+Create `CanvasApplyTemplateTool.java` — parameters: templateCode. Uses `FactoryConfigService.applyTemplate()`. For AI Autopilot mode.
+
+- [ ] **Step 4: Compile + Commit**
+
+```bash
+git add src/main/java/com/cretas/aims/ai/tool/impl/canvas/
+git commit -m "feat(canvas-v2): 6 Canvas AI Tools for config management"
+```
+
+---
+
 ## Verification Criteria (Phase 2a Done)
 
 1. `GET /api/mobile/F001/config/v2/tools` — returns factory tool config list

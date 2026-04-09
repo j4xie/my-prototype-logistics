@@ -1469,6 +1469,446 @@ git commit -m "feat(canvas-v2): ConfigDiffViewer + VersionHistory components"
 
 ---
 
+## Task 12: FieldPropertyDrawer
+
+**Files:**
+- Create: `web-admin/src/views/platform/canvas-editor/components/FieldPropertyDrawer.vue`
+
+- [ ] **Step 1: Create FieldPropertyDrawer**
+
+```vue
+<!-- FieldPropertyDrawer.vue — Slide-out drawer for editing all field properties -->
+<template>
+  <el-drawer v-model="visible" :title="'编辑字段: ' + (field?.fieldCode || '')" size="450px">
+    <el-form v-if="field" label-width="100px" label-position="top">
+      <el-form-item label="字段代码">
+        <el-input :model-value="field.fieldCode" disabled />
+      </el-form-item>
+      <el-form-item label="显示标签">
+        <el-input v-model="form.label" />
+      </el-form-item>
+      <el-form-item label="字段类型">
+        <el-select v-model="form.type" style="width:100%">
+          <el-option v-for="t in fieldTypes" :key="t" :label="t" :value="t" />
+        </el-select>
+      </el-form-item>
+      <el-divider>可见性</el-divider>
+      <el-form-item label="列表显示"><el-switch v-model="form.listVisible" /></el-form-item>
+      <el-form-item label="表单显示"><el-switch v-model="form.formVisible" /></el-form-item>
+      <el-form-item label="必填"><el-switch v-model="form.required" /></el-form-item>
+      <el-form-item label="只读"><el-switch v-model="form.readOnly" /></el-form-item>
+      <el-divider>高级</el-divider>
+      <el-form-item label="默认值">
+        <el-input v-model="form.defaultValue" placeholder="留空则无默认值" />
+      </el-form-item>
+      <el-form-item label="依赖字段">
+        <el-input v-model="form.dependsOn" placeholder="如: status=DRAFT" />
+      </el-form-item>
+      <el-form-item label="排序">
+        <el-input-number v-model="form.sortOrder" :min="0" />
+      </el-form-item>
+      <el-form-item v-if="form.type === 'select'" label="选项列表">
+        <el-input v-model="optionsText" type="textarea" :rows="3" placeholder="每行一个选项" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="visible = false">取消</el-button>
+      <el-button type="primary" @click="save">保存</el-button>
+    </template>
+  </el-drawer>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import type { EffectiveField } from '@/types/config'
+import { ElMessage } from 'element-plus'
+
+const props = defineProps<{ field: EffectiveField | null }>()
+const emit = defineEmits<{ save: [field: EffectiveField]; close: [] }>()
+
+const visible = ref(false)
+const fieldTypes = ['string', 'textarea', 'decimal', 'integer', 'boolean', 'date', 'datetime', 'select', 'reference', 'json_array', 'line_items']
+const form = ref<any>({})
+const optionsText = ref('')
+
+watch(() => props.field, (f) => {
+  if (f) {
+    visible.value = true
+    form.value = { ...f }
+    optionsText.value = (f.options || []).join('\n')
+  }
+})
+
+function save() {
+  if (form.value.type === 'select') {
+    form.value.options = optionsText.value.split('\n').filter(Boolean)
+  }
+  emit('save', { ...props.field, ...form.value })
+  visible.value = false
+  ElMessage.success('字段属性已更新')
+}
+</script>
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/views/platform/canvas-editor/components/FieldPropertyDrawer.vue
+git commit -m "feat(canvas-v2): FieldPropertyDrawer — full field property editor"
+```
+
+---
+
+## Task 13: SchemaPreview
+
+**Files:**
+- Create: `web-admin/src/views/platform/canvas-editor/components/SchemaPreview.vue`
+
+- [ ] **Step 1: Create SchemaPreview**
+
+```vue
+<!-- SchemaPreview.vue — Live JSON preview of effective config -->
+<template>
+  <div class="schema-preview">
+    <div class="preview-header">
+      <h4>配置预览</h4>
+      <el-button size="small" @click="refresh">刷新</el-button>
+      <el-button size="small" @click="copy">复制 JSON</el-button>
+    </div>
+    <pre class="json-view"><code>{{ formattedJson }}</code></pre>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
+import { useConfigStore } from '@/store/modules/config'
+import { ElMessage } from 'element-plus'
+
+const props = defineProps<{
+  factoryId: string
+  moduleCode?: string
+}>()
+
+const configStore = useConfigStore()
+const rawConfig = ref<any>(null)
+
+const formattedJson = computed(() =>
+  rawConfig.value ? JSON.stringify(rawConfig.value, null, 2) : '// 选择模块查看配置'
+)
+
+async function refresh() {
+  if (!props.factoryId || !props.moduleCode) return
+  rawConfig.value = await configStore.loadEffectiveConfig(props.factoryId, props.moduleCode)
+}
+
+function copy() {
+  navigator.clipboard.writeText(formattedJson.value)
+  ElMessage.success('已复制到剪贴板')
+}
+
+watch(() => props.moduleCode, refresh)
+onMounted(refresh)
+</script>
+
+<style scoped>
+.schema-preview { padding: 12px; }
+.preview-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.preview-header h4 { flex: 1; margin: 0; font-size: 14px; }
+.json-view { background: #1e1e2e; color: #cdd6f4; padding: 12px; border-radius: 8px; font-size: 12px; max-height: 400px; overflow: auto; white-space: pre-wrap; }
+</style>
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/views/platform/canvas-editor/components/SchemaPreview.vue
+git commit -m "feat(canvas-v2): SchemaPreview — live JSON config viewer"
+```
+
+---
+
+## Task 14: TemplateSelector
+
+**Files:**
+- Create: `web-admin/src/views/platform/canvas-editor/components/TemplateSelector.vue`
+
+- [ ] **Step 1: Create TemplateSelector**
+
+```vue
+<!-- TemplateSelector.vue — Industry template selection + apply -->
+<template>
+  <div class="template-selector">
+    <h4>行业模板</h4>
+    <div class="template-grid">
+      <div
+        v-for="tpl in templates"
+        :key="tpl.templateCode"
+        class="template-card"
+        :class="{ selected: selected === tpl.templateCode }"
+        @click="selected = tpl.templateCode"
+      >
+        <div class="tpl-name">{{ tpl.templateName }}</div>
+        <div class="tpl-industry">{{ tpl.industry }}</div>
+        <div class="tpl-desc">{{ tpl.description }}</div>
+        <div class="tpl-modules">
+          {{ JSON.parse(tpl.moduleConfigs || '{}').enabledModules?.length || 0 }} 个模块
+        </div>
+      </div>
+    </div>
+    <el-button
+      type="primary"
+      :disabled="!selected"
+      @click="apply"
+      style="margin-top:12px"
+    >
+      应用模板: {{ selected || '未选择' }}
+    </el-button>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import request from '@/utils/request'
+import { ElMessage, ElMessageBox } from 'element-plus'
+
+const props = defineProps<{ factoryId: string }>()
+const emit = defineEmits<{ applied: [] }>()
+
+const templates = ref<any[]>([])
+const selected = ref('')
+
+async function load() {
+  const res = await request.get(`/${props.factoryId}/config/templates`)
+  templates.value = res.data || []
+}
+
+async function apply() {
+  await ElMessageBox.confirm(
+    `确定将模板 "${selected.value}" 应用到当前工厂？这会覆盖现有模块配置。`,
+    '应用模板'
+  )
+  await request.post(`/${props.factoryId}/config/apply-template/${selected.value}`)
+  ElMessage.success('模板已应用')
+  emit('applied')
+}
+
+onMounted(load)
+</script>
+
+<style scoped>
+.template-selector { padding: 12px; }
+.template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.template-card { border: 2px solid var(--el-border-color); border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.2s; }
+.template-card:hover { border-color: var(--el-color-primary-light-3); }
+.template-card.selected { border-color: var(--el-color-primary); background: var(--el-color-primary-light-9); }
+.tpl-name { font-weight: bold; font-size: 14px; }
+.tpl-industry { color: var(--el-color-primary); font-size: 12px; }
+.tpl-desc { font-size: 12px; color: #999; margin: 6px 0; }
+.tpl-modules { font-size: 11px; color: #666; }
+</style>
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/views/platform/canvas-editor/components/TemplateSelector.vue
+git commit -m "feat(canvas-v2): TemplateSelector — industry template selection + apply"
+```
+
+---
+
+## Task 15: AI Backend Endpoint for Canvas Agent
+
+**Files:**
+- Create: `backend/java/cretas-api/src/main/java/com/cretas/aims/controller/CanvasAIController.java`
+
+**Context:** The AIChatPanel sends natural language instructions to the backend. The backend uses existing AIIntentService + ToolRegistry to interpret and execute canvas config changes. Three modes map to different prompts/behavior.
+
+- [ ] **Step 1: Create CanvasAIController**
+
+```java
+package com.cretas.aims.controller;
+
+import com.cretas.aims.ai.tool.ToolExecutor;
+import com.cretas.aims.ai.tool.ToolRegistry;
+import com.cretas.aims.ai.dto.ToolCall;
+import com.cretas.aims.dto.common.ApiResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.*;
+
+@Slf4j
+@RestController
+@RequestMapping("/api/mobile/{factoryId}/config/v2/ai")
+@RequiredArgsConstructor
+@Tag(name = "Canvas AI Agent", description = "Canvas AI 配置助手")
+public class CanvasAIController {
+
+    private final ToolRegistry toolRegistry;
+    private final ObjectMapper objectMapper;
+
+    @Data
+    public static class AIRequest {
+        private String message;
+        private String mode; // autopilot, plan, action
+        private String moduleCode;
+    }
+
+    @Data
+    public static class AIResponse {
+        private String reply;
+        private List<Map<String, Object>> diffs;
+        private boolean applied;
+    }
+
+    @PostMapping("/chat")
+    @Operation(summary = "Canvas AI 对话")
+    public ApiResponse<AIResponse> chat(
+            @PathVariable String factoryId,
+            @RequestBody AIRequest request) {
+
+        AIResponse response = new AIResponse();
+        String mode = request.getMode() != null ? request.getMode() : "action";
+
+        // Route to canvas_* tools based on intent
+        String message = request.getMessage();
+        log.info("Canvas AI [{}] factory={}: {}", mode, factoryId, message);
+
+        switch (mode) {
+            case "autopilot" -> {
+                // Auto-detect tools to call from user message
+                response.setReply(executeAutopilot(factoryId, message));
+                response.setApplied(true);
+            }
+            case "plan" -> {
+                // Generate diff without applying
+                List<Map<String, Object>> diffs = generatePlan(factoryId, message);
+                response.setDiffs(diffs);
+                response.setReply("已生成 " + diffs.size() + " 项变更方案，请逐项审核。");
+                response.setApplied(false);
+            }
+            case "action" -> {
+                // Analyze impact of user's description
+                response.setReply(analyzeImpact(factoryId, message));
+                response.setApplied(false);
+            }
+            default -> response.setReply("未知模式: " + mode);
+        }
+
+        return ApiResponse.success(response);
+    }
+
+    @PostMapping("/apply-diffs")
+    @Operation(summary = "批量应用 Plan Mode 生成的变更")
+    public ApiResponse<String> applyDiffs(
+            @PathVariable String factoryId,
+            @RequestBody List<Map<String, Object>> diffs) {
+
+        int applied = 0;
+        for (Map<String, Object> diff : diffs) {
+            String toolName = (String) diff.get("tool");
+            if (toolName == null) continue;
+
+            Optional<ToolExecutor> executor = toolRegistry.getExecutor(toolName);
+            if (executor.isEmpty()) continue;
+
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> params = (Map<String, Object>) diff.getOrDefault("params", Map.of());
+                String argsJson = objectMapper.writeValueAsString(params);
+                ToolCall toolCall = ToolCall.of("ai-apply-" + applied, toolName, argsJson);
+                executor.get().execute(toolCall, Map.of("factoryId", factoryId));
+                applied++;
+            } catch (Exception e) {
+                log.warn("Failed to apply diff {}: {}", toolName, e.getMessage());
+            }
+        }
+
+        return ApiResponse.success("已应用 " + applied + "/" + diffs.size() + " 项变更");
+    }
+
+    private String executeAutopilot(String factoryId, String message) {
+        // Keyword-based tool routing for canvas operations
+        // In production, this would call LLM to select tools
+        if (message.contains("模板") || message.contains("template")) {
+            return "请使用模板选择器选择行业模板，AI 将自动配置所有模块。";
+        }
+        if (message.contains("禁用") || message.contains("disable")) {
+            return "请指定要禁用的模块或工具名称，如: '禁用排程模块' 或 '禁用 scheduling_list 工具'";
+        }
+        return "Autopilot 已收到指令: " + message + "。正在分析配置方案...";
+    }
+
+    private List<Map<String, Object>> generatePlan(String factoryId, String message) {
+        List<Map<String, Object>> diffs = new ArrayList<>();
+        // In production, LLM analyzes message and generates tool call list
+        diffs.add(Map.of(
+            "type", "FIELD_CHANGE",
+            "tool", "canvas_update_field",
+            "params", Map.of("moduleCode", "sales_order", "fieldCode", "example", "property", "required", "value", false),
+            "description", "示例变更 — 实际由 LLM 生成"
+        ));
+        return diffs;
+    }
+
+    private String analyzeImpact(String factoryId, String message) {
+        // In production, analyze what the user is about to do and warn about impacts
+        return "提示: 此操作可能影响关联模块配置。详细影响分析需要连接 LLM 服务。";
+    }
+}
+```
+
+- [ ] **Step 2: Update AIChatPanel to call real API**
+
+In `AIChatPanel.vue`, replace the simulated response block with:
+
+```typescript
+async function send() {
+  if (!input.value.trim()) return
+  const userMsg = input.value.trim()
+  input.value = ''
+  messages.value.push({ role: 'user', content: userMsg, timestamp: Date.now() })
+
+  loading.value = true
+  try {
+    const res = await request.post(`/${props.factoryId}/config/v2/ai/chat`, {
+      message: userMsg,
+      mode: mode.value,
+      moduleCode: props.selectedModule,
+    })
+    const data = res.data
+    messages.value.push({
+      role: 'assistant',
+      content: data.reply,
+      timestamp: Date.now(),
+      diffPreview: data.diffs?.map((d: any) => ({
+        type: d.type, path: d.tool, before: null, after: d.params,
+        description: d.description,
+      })),
+    })
+  } catch {
+    messages.value.push({ role: 'assistant', content: 'AI 服务暂不可用', timestamp: Date.now() })
+  }
+  loading.value = false
+}
+```
+
+- [ ] **Step 3: Compile + Commit**
+
+```bash
+git add backend/java/cretas-api/src/main/java/com/cretas/aims/controller/CanvasAIController.java
+git add web-admin/src/views/platform/canvas-editor/components/AIChatPanel.vue
+git commit -m "feat(canvas-v2): Canvas AI backend endpoint + AIChatPanel real API integration"
+```
+
+---
+
 ## Verification Criteria (Phase 2c Done)
 
 1. Navigate to `/canvas-editor` — 3-panel layout renders

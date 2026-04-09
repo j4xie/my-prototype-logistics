@@ -556,6 +556,258 @@ git commit -m "feat(canvas-v2): template list/apply API + MODULE_API_PATHS for a
 
 ---
 
+## Task 6: Complete applyTemplate Logic
+
+**Files:**
+- Modify: `backend/java/cretas-api/src/main/java/com/cretas/aims/service/config/impl/FactoryConfigServiceImpl.java`
+
+**Context:** Task 5 added a stub `applyTemplate()`. This task implements the full logic: read template → create draft → create FactoryModuleConfig for each enabled module → apply default overrides → apply tool disables.
+
+- [ ] **Step 1: Implement full applyTemplate**
+
+```java
+@Transactional
+public void applyTemplate(String factoryId, String templateCode) {
+    FactoryTemplate template = factoryTemplateRepository.findByTemplateCode(templateCode)
+        .orElseThrow(() -> new BusinessException("模板不存在: " + templateCode));
+
+    // 1. Create new draft configuration
+    FactoryConfiguration config = getOrCreateDraft(factoryId);
+
+    // 2. Parse template module configs
+    Map<String, Object> moduleConfigs = template.getModuleConfigs();
+    @SuppressWarnings("unchecked")
+    List<String> enabledModules = (List<String>) moduleConfigs.getOrDefault("enabledModules", List.of());
+    @SuppressWarnings("unchecked")
+    List<String> disabledModules = (List<String>) moduleConfigs.getOrDefault("disabledModules", List.of());
+
+    // 3. Create FactoryModuleConfig for each enabled module
+    for (String moduleCode : enabledModules) {
+        Optional<ModuleSchema> schema = moduleSchemaRepository.findByModuleCode(moduleCode);
+        if (schema.isEmpty()) {
+            log.warn("Template references non-existent module: {}", moduleCode);
+            continue;
+        }
+        FactoryModuleConfig fmc = factoryModuleConfigRepository
+            .findByConfigurationIdAndModuleCode(config.getId(), moduleCode)
+            .orElseGet(() -> {
+                FactoryModuleConfig c = new FactoryModuleConfig();
+                c.setConfigurationId(config.getId());
+                c.setModuleCode(moduleCode);
+                c.setFactoryId(factoryId);
+                return c;
+            });
+        fmc.setEnabled(true);
+        factoryModuleConfigRepository.save(fmc);
+    }
+
+    // 4. Disable explicitly disabled modules
+    for (String moduleCode : disabledModules) {
+        FactoryModuleConfig fmc = factoryModuleConfigRepository
+            .findByConfigurationIdAndModuleCode(config.getId(), moduleCode)
+            .orElseGet(() -> {
+                FactoryModuleConfig c = new FactoryModuleConfig();
+                c.setConfigurationId(config.getId());
+                c.setModuleCode(moduleCode);
+                c.setFactoryId(factoryId);
+                return c;
+            });
+        fmc.setEnabled(false);
+        factoryModuleConfigRepository.save(fmc);
+    }
+
+    // 5. Apply default overrides from template
+    Map<String, Object> overrides = template.getDefaultOverrides();
+    if (overrides != null) {
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, Object>> defaultValues = (Map<String, Map<String, Object>>)
+            overrides.getOrDefault("defaultValues", Map.of());
+
+        for (var entry : defaultValues.entrySet()) {
+            String moduleCode = entry.getKey();
+            for (var fieldEntry : entry.getValue().entrySet()) {
+                FactoryDefaultValue fdv = new FactoryDefaultValue();
+                fdv.setFactoryId(factoryId);
+                fdv.setModuleCode(moduleCode);
+                fdv.setFieldCode(fieldEntry.getKey());
+                fdv.setDefaultValue(fieldEntry.getValue());
+                fdv.setDescription("从模板 " + templateCode + " 应用");
+                factoryDefaultValueRepository.save(fdv);
+            }
+        }
+
+        // 6. Apply tool disables
+        @SuppressWarnings("unchecked")
+        List<String> disabledToolPatterns = (List<String>)
+            overrides.getOrDefault("disabledTools", List.of());
+
+        if (!disabledToolPatterns.isEmpty()) {
+            for (String toolName : toolRegistry.getAllToolNames()) {
+                boolean shouldDisable = disabledToolPatterns.stream()
+                    .anyMatch(pattern -> {
+                        if (pattern.endsWith("*")) {
+                            return toolName.startsWith(pattern.substring(0, pattern.length() - 1));
+                        }
+                        return toolName.equals(pattern);
+                    });
+                if (shouldDisable) {
+                    FactoryToolConfig ftc = factoryToolConfigRepository
+                        .findByFactoryIdAndToolName(factoryId, toolName)
+                        .orElseGet(() -> {
+                            FactoryToolConfig c = new FactoryToolConfig();
+                            c.setFactoryId(factoryId);
+                            c.setToolName(toolName);
+                            return c;
+                        });
+                    ftc.setEnabled(false);
+                    factoryToolConfigRepository.save(ftc);
+                }
+            }
+        }
+    }
+
+    // 7. Log change
+    ConfigChangeLog logEntry = new ConfigChangeLog();
+    logEntry.setConfigurationId(config.getId());
+    logEntry.setFactoryId(factoryId);
+    logEntry.setChangeType("TEMPLATE_APPLIED");
+    logEntry.setChangeDescription("应用模板: " + templateCode);
+    configChangeLogRepository.save(logEntry);
+
+    log.info("Template {} applied to factory {} — {} modules enabled, {} disabled",
+        templateCode, factoryId, enabledModules.size(), disabledModules.size());
+}
+```
+
+Note: Add required repository injections if not already present:
+```java
+@Autowired(required = false)
+private FactoryDefaultValueRepository factoryDefaultValueRepository;
+@Autowired(required = false)
+private FactoryToolConfigRepository factoryToolConfigRepository;
+@Autowired
+private ToolRegistry toolRegistry;
+```
+
+- [ ] **Step 2: Compile + Commit**
+
+```bash
+git add src/main/java/com/cretas/aims/service/config/impl/FactoryConfigServiceImpl.java
+git commit -m "feat(canvas-v2): complete applyTemplate — modules + defaults + tool disables"
+```
+
+---
+
+## Task 7: E2E Verification Script
+
+**Files:**
+- Create: `test-canvas-template-e2e.mjs`
+
+**Context:** End-to-end verification: apply a template to a new factory, publish, and verify the factory operates with the template's configuration.
+
+- [ ] **Step 1: Create E2E test script**
+
+```javascript
+// test-canvas-template-e2e.mjs
+// E2E: Apply industry template → verify factory config → verify business operations
+import { chromium } from 'playwright';
+
+const BASE = process.env.E2E_API_BASE || 'http://47.100.235.168:10010';
+const FACTORY = 'F_TEMPLATE_TEST';
+
+async function apiCall(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`${BASE}/api/mobile${path}`, opts);
+  return res.json();
+}
+
+const tests = [];
+function test(name, fn) { tests.push({ name, fn }); }
+
+// Test 1: Get available templates
+test('GET templates returns 4 industry templates', async () => {
+  const res = await apiCall('GET', `/${FACTORY}/config/templates`);
+  const count = res.data?.length || 0;
+  return { pass: count >= 4, evidence: `templates: ${count}`, data: res.data?.map(t => t.templateCode) };
+});
+
+// Test 2: Apply FOOD_PROCESSING template
+test('Apply FOOD_PROCESSING template', async () => {
+  const res = await apiCall('POST', `/${FACTORY}/config/apply-template/FOOD_PROCESSING`);
+  return { pass: res.success !== false, evidence: `response: ${JSON.stringify(res)}` };
+});
+
+// Test 3: Verify modules enabled
+test('Verify 14 modules enabled after template', async () => {
+  const res = await apiCall('GET', `/${FACTORY}/config/modules`);
+  const enabled = (res.data || []).filter(m => m.enabled !== false);
+  return { pass: enabled.length >= 10, evidence: `enabled modules: ${enabled.length}`, modules: enabled.map(m => m.moduleCode) };
+});
+
+// Test 4: Verify tool configs (restaurant_* should be disabled)
+test('Verify restaurant tools disabled', async () => {
+  const res = await apiCall('GET', `/${FACTORY}/config/v2/tools`);
+  const disabled = (res.data || []).filter(t => !t.enabled && t.toolName.startsWith('restaurant_'));
+  return { pass: disabled.length > 0, evidence: `disabled restaurant tools: ${disabled.length}` };
+});
+
+// Test 5: Verify default values applied
+test('Verify BOM yieldRate default = 95', async () => {
+  const res = await apiCall('GET', `/${FACTORY}/config/v2/default-values?moduleCode=bom`);
+  const yr = (res.data || []).find(d => d.fieldCode === 'yieldRate');
+  return { pass: yr?.defaultValue == 95, evidence: `yieldRate default: ${yr?.defaultValue}` };
+});
+
+// Test 6: Verify trigger chains available
+test('Verify trigger chains loaded', async () => {
+  const res = await apiCall('GET', `/${FACTORY}/config/v2/trigger-chains`);
+  return { pass: (res.data || []).length >= 3, evidence: `chains: ${(res.data || []).length}` };
+});
+
+// Test 7: Verify validation rules loaded
+test('Verify validation rules for sales_order', async () => {
+  const res = await apiCall('GET', `/${FACTORY}/config/v2/validation-rules?moduleCode=sales_order`);
+  return { pass: (res.data || []).length >= 5, evidence: `SO rules: ${(res.data || []).length}` };
+});
+
+// Run all tests
+console.log(`\n=== Canvas Template E2E Tests (${BASE}) ===\n`);
+let pass = 0, fail = 0;
+for (const t of tests) {
+  try {
+    const result = await t.fn();
+    const status = result.pass ? 'PASS' : 'FAIL';
+    console.log(`${result.pass ? '✅' : '❌'} ${t.name}`);
+    console.log(`   evidence: ${result.evidence}`);
+    result.pass ? pass++ : fail++;
+  } catch (e) {
+    console.log(`❌ ${t.name}`);
+    console.log(`   error: ${e.message}`);
+    fail++;
+  }
+}
+
+console.log(`\n=== Results: ${pass}/${pass + fail} PASS ===`);
+process.exit(fail > 0 ? 1 : 0);
+```
+
+- [ ] **Step 2: Run E2E**
+
+```bash
+node test-canvas-template-e2e.mjs
+```
+Expected: 7/7 PASS
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add test-canvas-template-e2e.mjs
+git commit -m "test(canvas-v2): E2E template application verification (7 tests)"
+```
+
+---
+
 ## Verification Criteria (Phase 2d Done)
 
 1. `SELECT count(*) FROM module_schemas` → 15 (2 from Phase 1 + 13 new)

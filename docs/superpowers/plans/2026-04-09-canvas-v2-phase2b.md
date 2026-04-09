@@ -1380,6 +1380,226 @@ git commit -m "feat(canvas-v2): wire ValidationRuleEvaluator into SalesServiceIm
 
 ---
 
+## Task 12: Bulk Migration — Validation Rules (~80 core rules)
+
+**Files:**
+- Create: `backend/java/cretas-api/src/main/resources/db/migration/V20260410_05__seed_bulk_validation_rules.sql`
+
+**Context:** The codebase has ~100 `throw new BusinessException(...)` across service/impl. Task 10 seeded 14 rules for sales_order + finance. This task migrates the remaining core modules. Focus on rules users would want to toggle per-factory (status gates, uniqueness checks, amount guards). Skip factoryId access guards (those are security, not business rules).
+
+- [ ] **Step 1: Write bulk rules migration**
+
+```sql
+-- V20260410_05__seed_bulk_validation_rules.sql
+-- Bulk migration of remaining validation rules from service code
+
+-- Purchase Order rules (from PurchaseServiceImpl)
+INSERT INTO factory_validation_rules (factory_id, module_code, rule_code, operation, condition, error_message, severity, sort_order) VALUES
+(NULL, 'purchase_order', 'DRAFT_ONLY_SUBMIT', 'STATUS_CHANGE', '#status != ''DRAFT'' AND #targetStatus == ''SUBMITTED''', '只有草稿状态的订单可以提交', 'BLOCK', 10),
+(NULL, 'purchase_order', 'SUBMITTED_ONLY_APPROVE', 'STATUS_CHANGE', '#status != ''SUBMITTED'' AND #targetStatus == ''APPROVED''', '只有已提交状态的订单可以审批', 'BLOCK', 20),
+(NULL, 'purchase_order', 'APPROVED_ONLY_FINANCE', 'STATUS_CHANGE', '#status != ''APPROVED'' AND #targetStatus == ''PENDING_FINANCE_REVIEW''', '只有已审批状态的订单可以提交财务审核', 'BLOCK', 30),
+(NULL, 'purchase_order', 'FINANCE_ONLY_APPROVE', 'STATUS_CHANGE', '#status != ''PENDING_FINANCE_REVIEW'' AND #targetStatus == ''FINANCE_APPROVED''', '只有待财务审核状态的订单可以审核', 'BLOCK', 40),
+(NULL, 'purchase_order', 'FINANCE_ONLY_REJECT', 'STATUS_CHANGE', '#status != ''PENDING_FINANCE_REVIEW'' AND #targetStatus == ''REJECTED''', '只有待财务审核状态的订单可以驳回', 'BLOCK', 50),
+(NULL, 'purchase_order', 'NO_CANCEL_COMPLETED', 'STATUS_CHANGE', '(#status == ''COMPLETED'' OR #status == ''CLOSED'') AND #targetStatus == ''CANCELLED''', '已完成或已关闭的订单不能取消', 'BLOCK', 60),
+(NULL, 'purchase_order', 'DRAFT_ONLY_EDIT', 'UPDATE', '#status != ''DRAFT''', '只有草稿状态的订单可以编辑', 'BLOCK', 70),
+(NULL, 'purchase_order', 'APPROVED_ONLY_RECEIVE', 'CREATE', '#status != ''APPROVED'' AND #status != ''PARTIAL_RECEIVED''', '只有已审批或部分到货状态的订单可以入库', 'BLOCK', 80),
+
+-- Transfer rules (from TransferServiceImpl)
+(NULL, 'transfer', 'NO_CANCEL_TERMINAL', 'STATUS_CHANGE', '#isTerminal == true AND #targetStatus == ''CANCELLED''', '终态调拨单不能取消', 'BLOCK', 10),
+(NULL, 'transfer', 'STOCK_SUFFICIENT', 'CREATE', '#stockInsufficient == true', '库存不足，无法创建调拨', 'BLOCK', 20),
+
+-- Return Order rules (from ReturnOrderServiceImpl)
+(NULL, 'return_order', 'DRAFT_ONLY_SUBMIT', 'STATUS_CHANGE', '#status != ''DRAFT'' AND #targetStatus == ''SUBMITTED''', '只有草稿状态的退货单可以提交', 'BLOCK', 10),
+(NULL, 'return_order', 'SUBMITTED_ONLY_APPROVE', 'STATUS_CHANGE', '#status != ''SUBMITTED'' AND #targetStatus == ''APPROVED''', '只有已提交状态的退货单可以审批', 'BLOCK', 20),
+(NULL, 'return_order', 'SUBMITTED_ONLY_REJECT', 'STATUS_CHANGE', '#status != ''SUBMITTED'' AND #targetStatus == ''REJECTED''', '只有已提交状态的退货单可以驳回', 'BLOCK', 30),
+(NULL, 'return_order', 'APPROVED_ONLY_COMPLETE', 'STATUS_CHANGE', '#status != ''APPROVED'' AND #targetStatus == ''COMPLETED''', '只有已审批状态的退货单可以完成', 'BLOCK', 40),
+
+-- Supplier rules (from SupplierServiceImpl)
+(NULL, 'supplier', 'UNIQUE_NAME', 'CREATE', '#nameExists == true', '供应商名称已存在', 'BLOCK', 10),
+(NULL, 'supplier', 'UNIQUE_NAME_UPDATE', 'UPDATE', '#nameExists == true', '供应商名称已存在', 'BLOCK', 20),
+(NULL, 'supplier', 'NO_DELETE_WITH_BATCHES', 'DELETE', '#hasBatches == true', '供应商有关联的原材料批次，无法删除', 'BLOCK', 30),
+(NULL, 'supplier', 'RATING_RANGE', 'UPDATE', '#rating < 1 OR #rating > 5', '评级必须在1-5之间', 'BLOCK', 40),
+(NULL, 'supplier', 'POSITIVE_CREDIT', 'UPDATE', '#creditLimit < 0', '信用额度不能为负数', 'BLOCK', 50),
+
+-- Customer rules (from CustomerServiceImpl)
+(NULL, 'customer', 'UNIQUE_NAME', 'CREATE', '#nameExists == true', '客户名称已存在', 'BLOCK', 10),
+(NULL, 'customer', 'UNIQUE_NAME_UPDATE', 'UPDATE', '#nameExists == true', '客户名称已存在', 'BLOCK', 20),
+(NULL, 'customer', 'NO_DELETE_WITH_DELIVERIES', 'DELETE', '#hasDeliveries == true', '客户有关联的出货记录，无法删除', 'BLOCK', 30),
+(NULL, 'customer', 'RATING_RANGE', 'UPDATE', '#rating < 1 OR #rating > 5', '评级必须在1-5之间', 'BLOCK', 40),
+(NULL, 'customer', 'POSITIVE_CREDIT', 'UPDATE', '#creditLimit < 0', '信用额度不能为负数', 'BLOCK', 50),
+
+-- Finance AP rules (from ArApServiceImpl)
+(NULL, 'finance_ap', 'POSITIVE_AMOUNT', 'CREATE', '#amount <= 0', '应付金额必须大于0', 'BLOCK', 10),
+(NULL, 'finance_ap', 'DUPLICATE_PO_AP', 'CREATE', '#existingApForPO == true', '该采购订单已生成应付记录', 'BLOCK', 20),
+(NULL, 'finance_payment', 'POSITIVE_AMOUNT', 'CREATE', '#amount <= 0', '付款金额必须大于0', 'BLOCK', 10),
+(NULL, 'finance_payment', 'DUPLICATE_REF', 'CREATE', '#refExists == true', '付款单号已存在，请勿重复提交', 'BLOCK', 20),
+(NULL, 'finance_receipt', 'POSITIVE_AMOUNT', 'CREATE', '#amount <= 0', '收款金额必须大于0', 'BLOCK', 10),
+(NULL, 'finance_receipt', 'DUPLICATE_REF', 'CREATE', '#refExists == true', '收款单号已存在，请勿重复提交', 'BLOCK', 20),
+(NULL, 'finance_receipt', 'EXCEED_BALANCE', 'CREATE', '#amount > #remainingBalance AND #remainingBalance > 0', '收款金额超过客户应收余额', 'WARN', 30)
+ON CONFLICT (factory_id, module_code, rule_code) DO NOTHING;
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/main/resources/db/migration/V20260410_05__seed_bulk_validation_rules.sql
+git commit -m "feat(canvas-v2): seed 31 additional validation rules (PO/transfer/return/supplier/customer/AP)"
+```
+
+---
+
+## Task 13: Bulk Migration — Default Values
+
+**Files:**
+- Create: `backend/java/cretas-api/src/main/resources/db/migration/V20260410_06__seed_default_values.sql`
+
+- [ ] **Step 1: Write default values migration**
+
+```sql
+-- V20260410_06__seed_default_values.sql
+-- Default values extracted from service code null-checks
+
+INSERT INTO factory_default_values (factory_id, module_code, field_code, default_value, condition, description) VALUES
+-- Sales Order defaults
+(NULL, 'sales_order', 'orderDate', '"TODAY"', NULL, '下单日期默认今天'),
+(NULL, 'sales_order', 'discountAmount', '0', NULL, '折扣默认0'),
+(NULL, 'sales_order', 'discountRate', '0', NULL, '行项目折扣率默认0'),
+
+-- Purchase Order defaults
+(NULL, 'purchase_order', 'taxRate', '0', NULL, '税率默认0'),
+(NULL, 'purchase_order', 'receivedQuantity', '0', NULL, '已收数量默认0'),
+
+-- BOM defaults
+(NULL, 'bom', 'yieldRate', '95', NULL, '默认良率95% (食品加工通用)'),
+(NULL, 'bom', 'yieldRate', '90', '#industryType == ''BAKERY''', '烘焙行业良率90%'),
+(NULL, 'bom', 'yieldRate', '75', '#industryType == ''AQUACULTURE''', '水产行业良率75%'),
+(NULL, 'bom', 'laborQuantity', '1', NULL, '人工数量默认1'),
+(NULL, 'bom', 'overheadRate', '1', NULL, '制造费用分摊比例默认1'),
+(NULL, 'bom', 'taxRate', '13', NULL, 'BOM 默认税率13%'),
+(NULL, 'bom', 'sortOrder', '0', NULL, '排序默认0'),
+
+-- Finance defaults
+(NULL, 'finance_ar', 'currentBalance', '0', NULL, '客户当前余额默认0'),
+(NULL, 'finance_ap', 'currentBalance', '0', NULL, '供应商当前余额默认0'),
+(NULL, 'finance_payment', 'paymentMethod', '"BANK_TRANSFER"', NULL, '默认付款方式: 银行转账'),
+(NULL, 'finance_payment', 'paymentDate', '"TODAY"', NULL, '付款日期默认今天'),
+
+-- Invoice defaults
+(NULL, 'invoice', 'taxAmount', '0', NULL, '税额默认0'),
+(NULL, 'invoice', 'invoiceType', '"NORMAL"', NULL, '发票类型默认普票'),
+(NULL, 'invoice', 'taxRate', '0', NULL, '行项目税率默认0'),
+
+-- Supplier/Customer defaults
+(NULL, 'supplier', 'creditLimit', '0', NULL, '供应商授信默认0'),
+(NULL, 'customer', 'creditLimit', '0', NULL, '客户授信默认0'),
+(NULL, 'customer', 'currentBalance', '0', NULL, '客户当前余额默认0'),
+
+-- R&D Sample defaults
+(NULL, 'rd_sample', 'urgency', '"MEDIUM"', NULL, '紧急程度默认中'),
+
+-- Inventory defaults
+(NULL, 'inventory', 'defaultShelfLifeDays', '90', NULL, '默认保质期90天'),
+(NULL, 'inventory', 'defaultShelfLifeDays', '7', '#industryType == ''BAKERY''', '烘焙默认保质期7天'),
+(NULL, 'inventory', 'defaultShelfLifeDays', '14', '#industryType == ''AQUACULTURE''', '水产默认保质期14天'),
+
+-- Production defaults
+(NULL, 'production_plan', 'priority', '"NORMAL"', NULL, '排产优先级默认NORMAL'),
+(NULL, 'production_report', 'defectQuantity', '0', NULL, '不良品数默认0');
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/main/resources/db/migration/V20260410_06__seed_default_values.sql
+git commit -m "feat(canvas-v2): seed 28 default values across 10 modules"
+```
+
+---
+
+## Task 14: Bulk Migration — Scheduler Configs (configurable subset)
+
+**Files:**
+- Create: `backend/java/cretas-api/src/main/resources/db/migration/V20260410_07__seed_scheduler_configs.sql`
+
+**Context:** 44 @Scheduled tasks exist. Only factory-specific business tasks are worth externalizing (AI reports, batch expiry, production sync). Global system tasks (cache cleanup, model training, health checks) stay as @Scheduled. Seed 12 most-configurable factory tasks.
+
+- [ ] **Step 1: Write scheduler config seed**
+
+```sql
+-- V20260410_07__seed_scheduler_configs.sql
+-- Factory-configurable scheduled tasks (subset of 44 @Scheduled tasks)
+-- Only business-relevant tasks that factories may want to adjust timing
+
+INSERT INTO factory_scheduler_configs (factory_id, task_code, cron_expression, enabled, tool_or_method, params, description) VALUES
+-- AI Report generation (factories may want different times)
+(NULL, 'AI_DAILY_REPORT', '0 0 20 * * *', true, 'report_daily_generate', '{}', '每日AI报告 (默认20:00)'),
+(NULL, 'AI_WEEKLY_REPORT', '0 0 6 * * MON', true, 'report_weekly_generate', '{}', '每周AI报告 (默认周一06:00)'),
+(NULL, 'AI_MONTHLY_REPORT', '0 0 6 1 * *', true, 'report_monthly_generate', '{}', '每月AI报告 (默认1号06:00)'),
+
+-- Material batch expiry check (critical for food safety)
+(NULL, 'BATCH_EXPIRY_CHECK', '0 0 2 * * ?', true, 'material_batch_expiry_check', '{}', '过期批次检查 (默认02:00)'),
+
+-- Production report sync to SmartBI
+(NULL, 'PRODUCTION_SYNC', '0 0 2 * * ?', true, 'production_report_sync', '{}', '报工数据同步 (默认02:00)'),
+
+-- Anomaly detection (factories may want more/less frequent)
+(NULL, 'ANOMALY_DETECTION', '0 0 */2 * * *', true, 'quality_anomaly_detect', '{}', '异常检测 (默认每2小时)'),
+
+-- Process task calibration (PROCESS-mode factories)
+(NULL, 'TASK_CALIBRATION', '0 0 * * * *', true, 'production_task_calibrate', '{}', '工序任务校准 (默认每小时)'),
+
+-- Active learning (AI improvement)
+(NULL, 'ACTIVE_LEARNING_DAILY', '0 0 2 * * ?', true, 'ai_active_learning_analyze', '{}', 'AI主动学习分析 (默认02:00)'),
+
+-- Behavior calibration
+(NULL, 'BEHAVIOR_CALIBRATION', '0 0 1 * * ?', true, 'ai_behavior_calibrate', '{}', '行为校准 (默认01:00)'),
+
+-- Error attribution analysis
+(NULL, 'ERROR_ATTRIBUTION', '0 0 1 * * ?', true, 'ai_error_attribution', '{}', '错误归因分析 (默认01:00)'),
+
+-- Weight adjustment for APS
+(NULL, 'APS_WEIGHT_ADJUST', '0 0 2 * * ?', true, 'scheduling_weight_adjust', '{}', 'APS权重自调整 (默认02:00)'),
+
+-- Alert auto-verification
+(NULL, 'ALERT_VERIFY', '0 30 */4 * * *', true, 'quality_alert_verify', '{}', '告警自动验证 (默认每4小时)')
+ON CONFLICT (factory_id, task_code) DO NOTHING;
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/main/resources/db/migration/V20260410_07__seed_scheduler_configs.sql
+git commit -m "feat(canvas-v2): seed 12 factory-configurable scheduled tasks"
+```
+
+---
+
+## Task 15: Wire Engines into More Services
+
+**Files:**
+- Modify: `backend/java/cretas-api/src/main/java/com/cretas/aims/service/impl/PurchaseServiceImpl.java`
+- Modify: `backend/java/cretas-api/src/main/java/com/cretas/aims/service/finance/impl/ArApServiceImpl.java`
+
+**Context:** Task 11 wired ValidationRuleEvaluator into SalesServiceImpl. Apply the same pattern to 2 more high-value services.
+
+- [ ] **Step 1: Wire into PurchaseServiceImpl**
+
+Add the same `@Autowired(required = false) ValidationRuleEvaluator` + `runConfiguredValidation()` helper. Call at top of `createPurchaseOrder()` and `updateStatus()`.
+
+- [ ] **Step 2: Wire into ArApServiceImpl**
+
+Add `@Autowired(required = false) ValidationRuleEvaluator`. Call before existing hardcoded throws in `createInvoiceFromSalesOrder()` and `recordPayment()`.
+
+- [ ] **Step 3: Compile + Commit**
+
+```bash
+git add src/main/java/com/cretas/aims/service/impl/PurchaseServiceImpl.java \
+        src/main/java/com/cretas/aims/service/finance/impl/ArApServiceImpl.java
+git commit -m "feat(canvas-v2): wire ValidationRuleEvaluator into PurchaseService + ArApService"
+```
+
+---
+
 ## Verification Criteria (Phase 2b Done)
 
 1. `GET /api/mobile/F001/config/v2/validation-rules?moduleCode=sales_order` — returns seeded rules
