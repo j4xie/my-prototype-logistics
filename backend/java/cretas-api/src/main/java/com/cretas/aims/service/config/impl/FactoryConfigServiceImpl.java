@@ -218,10 +218,18 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     @Transactional
     public void updateFieldConfig(String factoryId, String moduleCode, String fieldCode,
                                   FieldConfigDTO fieldConfig, Long operatorId) {
+        moduleSchemaRepository.findByModuleCode(moduleCode)
+                .orElseThrow(() -> new ResourceNotFoundException("ModuleSchema", "moduleCode", moduleCode));
         FactoryConfiguration config = getOrCreateDraft(factoryId, operatorId);
         FactoryModuleConfig fmc = factoryModuleConfigRepository
                 .findByFactoryIdAndModuleCodeAndConfigVersion(factoryId, moduleCode, config.getConfigVersion())
-                .orElseThrow(() -> new BusinessException("请先初始化模块配置"));
+                .orElseGet(() -> {
+                    FactoryModuleConfig newFmc = new FactoryModuleConfig();
+                    newFmc.setFactoryId(factoryId);
+                    newFmc.setModuleCode(moduleCode);
+                    newFmc.setConfigVersion(config.getConfigVersion());
+                    return newFmc;
+                });
 
         Map<String, Object> fieldConfigMap = new HashMap<>(fmc.getFieldConfig());
         @SuppressWarnings("unchecked")
