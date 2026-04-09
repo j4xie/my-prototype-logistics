@@ -2,17 +2,20 @@ package com.cretas.aims.service.orchestration;
 
 import com.cretas.aims.dto.orchestration.*;
 import com.cretas.aims.entity.*;
+import com.cretas.aims.entity.config.FactoryTriggerChain;
 import com.cretas.aims.entity.enums.*;
 import com.cretas.aims.entity.inventory.FinishedGoodsBatch;
 import com.cretas.aims.event.*;
 import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.ProductionPlanRepository;
+import com.cretas.aims.repository.config.FactoryTriggerChainRepository;
 import com.cretas.aims.repository.inventory.FinishedGoodsBatchRepository;
 import com.cretas.aims.service.BatchConsumptionService;
 import com.cretas.aims.service.QualityInspectionService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -55,6 +58,22 @@ public class SupplyChainOrchestrator {
     private final QualityInspectionService qualityInspectionService;
     private final BatchConsumptionService batchConsumptionService;
 
+    @Autowired(required = false)
+    private FactoryTriggerChainRepository triggerChainRepository;
+
+    /**
+     * Canvas V2: Check if a configurable trigger chain exists for this event.
+     * If yes, skip the hardcoded logic (TriggerChainExecutor handles it).
+     */
+    private boolean hasConfiguredChain(String factoryId, String eventType) {
+        if (triggerChainRepository == null) return false;
+        List<FactoryTriggerChain> chains = triggerChainRepository
+                .findByFactoryIdAndEventTypeAndEnabledTrue(factoryId, eventType);
+        if (!chains.isEmpty()) return true;
+        chains = triggerChainRepository.findGlobalByEventType(eventType);
+        return !chains.isEmpty();
+    }
+
     // ═══════════ 正向链：SO → 财务审核 → 库存 → 生产 → 采购 ═══════════
 
     /**
@@ -66,6 +85,10 @@ public class SupplyChainOrchestrator {
     @EventListener
     @Transactional
     public void onSalesOrderConfirmed(SalesOrderConfirmedEvent event) {
+        if (hasConfiguredChain(event.getFactoryId(), "SalesOrderConfirmedEvent")) {
+            log.info("Trigger chain configured for SalesOrderConfirmedEvent — skipping hardcoded handler");
+            return;
+        }
         log.info("═══ 供应链通知: SO确认(等待财务审核) ═══ factoryId={}, SO={}",
                 event.getFactoryId(), event.getSalesOrderId());
         // 供应链联动已移至 onSalesOrderFinanceApproved，此处仅做记录
@@ -87,6 +110,10 @@ public class SupplyChainOrchestrator {
     @EventListener
     @Transactional
     public void onSalesOrderFinanceApproved(SalesOrderFinanceApprovedEvent event) {
+        if (hasConfiguredChain(event.getFactoryId(), "SalesOrderFinanceApprovedEvent")) {
+            log.info("Trigger chain configured for SalesOrderFinanceApprovedEvent — skipping hardcoded handler");
+            return;
+        }
         log.info("═══ 供应链联动: 财务审核通过 ═══ factoryId={}, SO={}, approvedBy={}",
                 event.getFactoryId(), event.getSalesOrderId(), event.getApprovedBy());
 
@@ -122,6 +149,10 @@ public class SupplyChainOrchestrator {
     @EventListener
     @Transactional
     public void onMaterialReceived(MaterialReceivedEvent event) {
+        if (hasConfiguredChain(event.getFactoryId(), "MaterialReceivedEvent")) {
+            log.info("Trigger chain configured for MaterialReceivedEvent — skipping hardcoded handler");
+            return;
+        }
         log.info("═══ 供应链联动: 物料入库 ═══ factoryId={}, material={}, qty={}",
                 event.getFactoryId(), event.getMaterialTypeId(), event.getReceivedQuantity());
 
@@ -161,6 +192,10 @@ public class SupplyChainOrchestrator {
     @Transactional
     public void onBatchCompleted(BatchCompletedEvent event) {
         ProductionBatch batch = event.getBatch();
+        if (hasConfiguredChain(batch.getFactoryId(), "BatchCompletedEvent")) {
+            log.info("Trigger chain configured for BatchCompletedEvent — skipping hardcoded handler");
+            return;
+        }
         log.info("═══ 供应链联动: 批次完成 ═══ factoryId={}, batchId={}, goodQty={}",
                 batch.getFactoryId(), batch.getId(), batch.getGoodQuantity());
 
@@ -201,6 +236,10 @@ public class SupplyChainOrchestrator {
     @EventListener
     @Transactional
     public void onPaymentReceived(PaymentReceivedEvent event) {
+        if (hasConfiguredChain(event.getFactoryId(), "PaymentReceivedEvent")) {
+            log.info("Trigger chain configured for PaymentReceivedEvent — skipping hardcoded handler");
+            return;
+        }
         log.info("═══ 供应链联动: 回款 ═══ factoryId={}, counterparty={}, amount={}",
                 event.getFactoryId(), event.getCounterpartyId(), event.getAmount());
         // TODO: Phase C — 回款门控出库

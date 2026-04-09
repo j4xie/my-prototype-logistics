@@ -1,6 +1,8 @@
 package com.cretas.aims.ai.tool;
 
 import com.cretas.aims.ai.dto.Tool;
+import com.cretas.aims.entity.config.FactoryToolConfig;
+import com.cretas.aims.repository.config.FactoryToolConfigRepository;
 import com.cretas.aims.service.governance.ToolSimilarityService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +53,9 @@ public class ToolRegistry {
     @Autowired
     @Lazy
     private ToolSimilarityService toolSimilarityService;
+
+    @Autowired(required = false)
+    private FactoryToolConfigRepository factoryToolConfigRepository;
 
     /**
      * 初始化时注册所有工具
@@ -517,6 +522,39 @@ public class ToolRegistry {
         report.put("deprecatedTools", deprecatedTools);
 
         return report;
+    }
+
+    // ==================== Canvas V2: Factory-Level Filtering ====================
+
+    /**
+     * Canvas V2: Returns tools filtered by factory-level enable/disable config.
+     * If no factory config exists for a tool, it's enabled by default.
+     */
+    public List<Tool> getToolsForFactory(String factoryId) {
+        List<Tool> allTools = getAllToolDefinitions();
+        if (factoryToolConfigRepository == null) return allTools;
+
+        List<FactoryToolConfig> configs = factoryToolConfigRepository.findByFactoryId(factoryId);
+        if (configs.isEmpty()) return allTools;
+
+        Set<String> disabledTools = configs.stream()
+                .filter(c -> !c.getEnabled())
+                .map(FactoryToolConfig::getToolName)
+                .collect(Collectors.toSet());
+
+        return allTools.stream()
+                .filter(t -> !disabledTools.contains(t.getFunction().getName()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Canvas V2: Check if a specific tool is enabled for a factory.
+     */
+    public boolean isToolEnabledForFactory(String factoryId, String toolName) {
+        if (factoryToolConfigRepository == null) return true;
+        return factoryToolConfigRepository.findByFactoryIdAndToolName(factoryId, toolName)
+                .map(FactoryToolConfig::getEnabled)
+                .orElse(true);
     }
 
     /**

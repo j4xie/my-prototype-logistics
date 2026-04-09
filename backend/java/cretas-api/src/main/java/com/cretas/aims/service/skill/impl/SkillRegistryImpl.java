@@ -1,7 +1,9 @@
 package com.cretas.aims.service.skill.impl;
 
 import com.cretas.aims.dto.skill.SkillDefinition;
+import com.cretas.aims.entity.config.FactorySkillConfig;
 import com.cretas.aims.entity.smartbi.SmartBiSkill;
+import com.cretas.aims.repository.config.FactorySkillConfigRepository;
 import com.cretas.aims.repository.smartbi.SmartBiSkillRepository;
 import com.cretas.aims.service.skill.SkillRegistry;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -83,6 +85,9 @@ public class SkillRegistryImpl implements SkillRegistry {
      */
     @Value("${cretas.skills.load-defaults:true}")
     private boolean loadDefaults;
+
+    @Autowired(required = false)
+    private FactorySkillConfigRepository factorySkillConfigRepository;
 
     @Autowired
     public SkillRegistryImpl(SmartBiSkillRepository skillRepository, ObjectMapper objectMapper) {
@@ -1211,5 +1216,55 @@ public class SkillRegistryImpl implements SkillRegistry {
         return skillMap.values().stream()
                 .filter(s -> s.needsContext(contextField) && s.isEnabled())
                 .collect(Collectors.toList());
+    }
+
+    // ==================== Canvas V2: Factory-Level Filtering ====================
+
+    /**
+     * Canvas V2: Get skills filtered by factory config.
+     */
+    public List<SkillDefinition> getSkillsForFactory(String factoryId) {
+        List<SkillDefinition> allSkills = new ArrayList<>(skillMap.values());
+        if (factorySkillConfigRepository == null) return allSkills;
+
+        List<FactorySkillConfig> configs = factorySkillConfigRepository.findByFactoryId(factoryId);
+        if (configs.isEmpty()) return allSkills;
+
+        Map<String, FactorySkillConfig> configMap = configs.stream()
+                .collect(Collectors.toMap(FactorySkillConfig::getSkillName, c -> c));
+
+        return allSkills.stream()
+                .filter(s -> {
+                    FactorySkillConfig fc = configMap.get(s.getName());
+                    return fc == null || fc.getEnabled();
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Canvas V2: Get a skill with factory-level overrides.
+     */
+    public SkillDefinition getSkillForFactory(String factoryId, String skillName) {
+        SkillDefinition base = skillMap.get(skillName);
+        if (base == null || factorySkillConfigRepository == null) return base;
+
+        Optional<FactorySkillConfig> config = factorySkillConfigRepository
+                .findByFactoryIdAndSkillName(factoryId, skillName);
+
+        if (config.isEmpty()) return base;
+        if (!config.get().getEnabled()) return null;
+
+        // Custom triggers override
+        if (config.get().getCustomTriggers() != null && !config.get().getCustomTriggers().isEmpty()) {
+            base = SkillDefinition.builder()
+                    .name(base.getName()).displayName(base.getDisplayName())
+                    .description(base.getDescription()).version(base.getVersion())
+                    .triggers(config.get().getCustomTriggers())
+                    .tools(base.getTools()).contextNeeded(base.getContextNeeded())
+                    .promptTemplate(base.getPromptTemplate()).source(base.getSource())
+                    .enabled(true).build();
+        }
+
+        return base;
     }
 }
