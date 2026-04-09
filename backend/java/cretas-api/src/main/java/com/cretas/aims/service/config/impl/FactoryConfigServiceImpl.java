@@ -37,6 +37,7 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     private FactoryDefaultValueRepository factoryDefaultValueRepository;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
     private com.cretas.aims.ai.tool.ToolRegistry toolRegistry;
 
     // ========== 合并配置读取 ==========

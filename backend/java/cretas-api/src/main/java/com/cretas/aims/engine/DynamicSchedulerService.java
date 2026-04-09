@@ -6,8 +6,8 @@ import com.cretas.aims.ai.dto.ToolCall;
 import com.cretas.aims.entity.config.FactorySchedulerConfig;
 import com.cretas.aims.repository.config.FactorySchedulerConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
@@ -23,28 +23,30 @@ import java.util.concurrent.ScheduledFuture;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class DynamicSchedulerService {
 
     private final FactorySchedulerConfigRepository schedulerRepo;
     private final ToolRegistry toolRegistry;
     private final ObjectMapper objectMapper;
-    private TaskScheduler taskScheduler;
-
-    @Autowired
-    public DynamicSchedulerService(FactorySchedulerConfigRepository schedulerRepo,
-                                    ToolRegistry toolRegistry, ObjectMapper objectMapper) {
-        this.schedulerRepo = schedulerRepo;
-        this.toolRegistry = toolRegistry;
-        this.objectMapper = objectMapper;
-        // Create our own TaskScheduler to avoid dependency on @EnableScheduling's bean
-        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(2);
-        scheduler.setThreadNamePrefix("canvas-scheduler-");
-        scheduler.initialize();
-        this.taskScheduler = scheduler;
-    }
 
     private final Map<String, ScheduledFuture<?>> activeTasks = new ConcurrentHashMap<>();
+    private volatile TaskScheduler taskScheduler;
+
+    private TaskScheduler getOrCreateScheduler() {
+        if (taskScheduler == null) {
+            synchronized (this) {
+                if (taskScheduler == null) {
+                    ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+                    scheduler.setPoolSize(2);
+                    scheduler.setThreadNamePrefix("canvas-scheduler-");
+                    scheduler.initialize();
+                    taskScheduler = scheduler;
+                }
+            }
+        }
+        return taskScheduler;
+    }
 
     @PostConstruct
     public void loadSchedules() {
@@ -67,7 +69,7 @@ public class DynamicSchedulerService {
         if (existing != null) { existing.cancel(false); activeTasks.remove(key); }
 
         try {
-            ScheduledFuture<?> future = taskScheduler.schedule(
+            ScheduledFuture<?> future = getOrCreateScheduler().schedule(
                     () -> executeTask(config), new CronTrigger(config.getCronExpression()));
             activeTasks.put(key, future);
             log.info("Scheduled task: {} [{}] cron={}", key, config.getToolOrMethod(), config.getCronExpression());
