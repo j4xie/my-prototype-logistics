@@ -145,4 +145,11 @@ export const MODULE_API_PATHS: Record<string, string> = {
   quality_inspection: 'quality-inspections',
   equipment: 'equipment',
   inventory: 'inventory',
+  customer: 'customers',
+  supplier: 'suppliers',
+  finance_ar: 'finance/ar',
+  finance_ap: 'finance/ap',
+  hr_employee: 'hr/employees',
+  transfer: 'transfers',
+  traceability: 'traceability',
 }
