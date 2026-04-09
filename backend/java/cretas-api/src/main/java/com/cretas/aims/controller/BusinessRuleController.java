@@ -29,7 +29,7 @@ public class BusinessRuleController {
     public ApiResponse<List<FactoryValidationRule>> getValidationRules(
             @PathVariable String factoryId, @RequestParam(required = false) String moduleCode) {
         if (moduleCode != null) {
-            return ApiResponse.success(validationRuleRepo.findByFactoryIdAndModuleCode(factoryId, moduleCode));
+            return ApiResponse.success(validationRuleRepo.findByModuleCodeForFactory(factoryId, moduleCode));
         }
         return ApiResponse.success(validationRuleRepo.findAllForFactory(factoryId));
     }
@@ -61,7 +61,7 @@ public class BusinessRuleController {
     @Operation(summary = "获取工厂默认值列表")
     public ApiResponse<List<FactoryDefaultValue>> getDefaultValues(
             @PathVariable String factoryId, @RequestParam(required = false) String moduleCode) {
-        if (moduleCode != null) return ApiResponse.success(defaultValueRepo.findByFactoryIdAndModuleCode(factoryId, moduleCode));
+        if (moduleCode != null) return ApiResponse.success(defaultValueRepo.findByModuleCodeForFactory(factoryId, moduleCode));
         return ApiResponse.success(defaultValueRepo.findAllForFactory(factoryId));
     }
 
@@ -76,8 +76,8 @@ public class BusinessRuleController {
     @Operation(summary = "获取工厂公式列表")
     public ApiResponse<List<FactoryFormula>> getFormulas(
             @PathVariable String factoryId, @RequestParam(required = false) String moduleCode) {
-        if (moduleCode != null) return ApiResponse.success(formulaRepo.findByFactoryIdAndModuleCode(factoryId, moduleCode));
-        return ApiResponse.success(formulaRepo.findByFactoryIdAndModuleCode(factoryId, null));
+        if (moduleCode != null) return ApiResponse.success(formulaRepo.findByModuleCodeForFactory(factoryId, moduleCode));
+        return ApiResponse.success(formulaRepo.findAllForFactory(factoryId));
     }
 
     @PutMapping("/formulas/{formulaCode}")
@@ -96,7 +96,7 @@ public class BusinessRuleController {
     @GetMapping("/scheduler")
     @Operation(summary = "获取工厂定时任务列表")
     public ApiResponse<List<FactorySchedulerConfig>> getSchedulerConfigs(@PathVariable String factoryId) {
-        return ApiResponse.success(schedulerRepo.findByFactoryId(factoryId));
+        return ApiResponse.success(schedulerRepo.findAllForFactory(factoryId));
     }
 
     @PutMapping("/scheduler/{taskCode}")

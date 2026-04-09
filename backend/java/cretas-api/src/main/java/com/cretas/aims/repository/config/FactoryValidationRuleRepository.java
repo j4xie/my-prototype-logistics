@@ -17,4 +17,7 @@ public interface FactoryValidationRuleRepository extends JpaRepository<FactoryVa
 
     @Query("SELECT r FROM FactoryValidationRule r WHERE r.factoryId = :factoryId OR r.factoryId IS NULL ORDER BY r.moduleCode, r.sortOrder")
     List<FactoryValidationRule> findAllForFactory(@Param("factoryId") String factoryId);
+
+    @Query("SELECT r FROM FactoryValidationRule r WHERE (r.factoryId = :factoryId OR r.factoryId IS NULL) AND r.moduleCode = :moduleCode ORDER BY r.sortOrder")
+    List<FactoryValidationRule> findByModuleCodeForFactory(@Param("factoryId") String factoryId, @Param("moduleCode") String moduleCode);
 }

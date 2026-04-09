@@ -14,4 +14,10 @@ public interface FactoryFormulaRepository extends JpaRepository<FactoryFormula, 
     @Query("SELECT f FROM FactoryFormula f WHERE f.factoryId IS NULL AND f.moduleCode = :moduleCode AND f.formulaCode = :formulaCode")
     Optional<FactoryFormula> findGlobalFormula(@Param("moduleCode") String moduleCode, @Param("formulaCode") String formulaCode);
     List<FactoryFormula> findByFactoryIdAndModuleCode(String factoryId, String moduleCode);
+
+    @Query("SELECT f FROM FactoryFormula f WHERE (f.factoryId = :factoryId OR f.factoryId IS NULL) AND f.moduleCode = :moduleCode ORDER BY f.formulaCode")
+    List<FactoryFormula> findByModuleCodeForFactory(@Param("factoryId") String factoryId, @Param("moduleCode") String moduleCode);
+
+    @Query("SELECT f FROM FactoryFormula f WHERE f.factoryId = :factoryId OR f.factoryId IS NULL ORDER BY f.moduleCode, f.formulaCode")
+    List<FactoryFormula> findAllForFactory(@Param("factoryId") String factoryId);
 }
